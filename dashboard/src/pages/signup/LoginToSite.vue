@@ -77,14 +77,7 @@ export default {
 			product_trial_request: this.$route.query.product_trial_request,
 			progressCount: 0,
 			currentBuildStep: 'Configuring your setup',
-			mockProgressTimer: null,
 		};
-	},
-	mounted() {
-		if (this.isMockMode) this.startMockProgress();
-	},
-	beforeUnmount() {
-		clearInterval(this.mockProgressTimer);
 	},
 	resources: {
 		saasProduct() {
@@ -92,7 +85,7 @@ export default {
 				type: 'document',
 				doctype: 'Product Trial',
 				name: this.productId,
-				auto: !this.isMockMode,
+				auto: true,
 			};
 		},
 		siteRequest() {
@@ -101,7 +94,7 @@ export default {
 				doctype: 'Product Trial Request',
 				name: this.product_trial_request,
 				realtime: true,
-				auto: !this.isMockMode,
+				auto: true,
 				onSuccess(doc) {
 					if (doc.status === 'Site Created') {
 						this.showCompleteProgress();
@@ -178,33 +171,10 @@ export default {
 		},
 	},
 	computed: {
-		isMockMode() {
-			return (
-				this.$route.name === 'ProductTrialProgressMock' ||
-				this.$route.query.mock === '1'
-			);
-		},
 		saasProduct() {
-			if (this.isMockMode) {
-				return {
-					logo: '/assets/press/images/frappe-cloud-logo.png',
-					help_texts: [
-						{ help_text: 'We are preparing your trial workspace.' },
-						{ help_text: 'This preview is using local mock data.' },
-						{ help_text: 'The real page updates from Agent Job progress.' },
-					],
-				};
-			}
 			return this.$resources.saasProduct.doc;
 		},
 		siteRequestDoc() {
-			if (this.isMockMode) {
-				return {
-					status: 'Adding Domain',
-					domain: 'acme.frappe.cloud',
-					site: 'acme.frappe.cloud',
-				};
-			}
 			return this.$resources?.siteRequest?.doc;
 		},
 		currentHelpText() {
@@ -226,24 +196,6 @@ export default {
 		},
 	},
 	methods: {
-		startMockProgress() {
-			let tick = 0;
-			const mockSteps = [
-				'Configuring your site',
-				'Configuring your domain',
-				'Finalizing your setup',
-				'Almost there',
-			];
-
-			this.progressCount = 18;
-			this.currentBuildStep = mockSteps[0];
-			this.mockProgressTimer = setInterval(() => {
-				const activeStep = Math.min(Math.floor(tick / 4), mockSteps.length - 1);
-				this.currentBuildStep = mockSteps[activeStep];
-				this.progressCount = Math.min(95, this.progressCount + 2.4);
-				tick += 1;
-			}, 1000);
-		},
 		showCompleteProgress() {
 			this.progressCount = 100;
 			this.currentBuildStep = 'Almost there';
