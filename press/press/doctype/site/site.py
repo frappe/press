@@ -5025,6 +5025,7 @@ def process_restore_tables_job_update(job):
 		"Running": "Updating",
 		"Success": "Active",
 		"Failure": "Broken",
+		"Delivery Failure": "Broken",
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
@@ -5044,7 +5045,7 @@ def process_restore_tables_job_update(job):
 			frappe.db.set_value("Site", job.site, "database_name", None)
 			create_site_status_update_webhook_event(job.site)
 			# A failed recovery fallback ends here; put back any bumped max_statement_time.
-			if job.status == "Failure" and (
+			if job.status in ("Failure", "Delivery Failure") and (
 				fatal_update := frappe.db.get_value("Site", job.site, "fatal_site_update")
 			):
 				frappe.get_doc("Site Update", fatal_update).restore_max_statement_time()
