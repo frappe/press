@@ -277,6 +277,8 @@ class Cluster(Document):
 		self._add_digital_ocean_firewall(client=client)
 		# Add proxy firewall to digital ocean, if it doesn't already exist
 		self._add_digital_ocean_proxy_firewall(client=client)
+		# Add NAT firewall to digital ocean, if it doesn't already exist
+		self._add_digital_ocean_nat_security_group(client=client)
 
 		self.save()
 
@@ -340,6 +342,69 @@ class Cluster(Document):
 			self.proxy_security_group_id = firewall["firewall"]["id"]
 		except Exception as e:
 			frappe.throw(f"Failed to create Proxy Firewall on Digital Ocean: {e!s}")
+
+	def _add_digital_ocean_nat_security_group(self, client):
+		"""Adds the NAT firewall to Digital Ocean if it doesn't already exist"""
+
+		firewalls = client.firewalls.list()
+		firewalls = firewalls.get("firewalls", [])
+
+		firewall_name = f"Frappe Cloud - {self.name} - NAT - Security Group".replace(" ", "")
+
+		existing_firewalls = [fw for fw in firewalls if fw["name"] == firewall_name]
+
+		if existing_firewalls:
+			self.nat_security_group_id = existing_firewalls[0]["id"]
+			return
+
+		try:
+			firewall = client.firewalls.create(
+				{
+					"name": firewall_name,
+					"inbound_rules": [
+						{
+							"protocol": "tcp",
+							"ports": "1-65535",
+							"sources": {"addresses": [self.subnet_cidr_block]},
+						},
+						{
+							"protocol": "udp",
+							"ports": "1-65535",
+							"sources": {"addresses": [self.subnet_cidr_block]},
+						},
+						{
+							"protocol": "icmp",
+							"ports": "0",
+							"sources": {"addresses": [self.subnet_cidr_block]},
+						},
+					],
+					"outbound_rules": [
+						{
+							"protocol": "tcp",
+							"ports": "0",
+							"destinations": {"addresses": ["0.0.0.0/0"]},
+						},
+						{
+							"protocol": "udp",
+							"ports": "0",
+							"destinations": {"addresses": ["0.0.0.0/0"]},
+						},
+						{
+							"protocol": "icmp",
+							"ports": "0",
+							"destinations": {"addresses": ["0.0.0.0/0"]},
+						},
+					],
+				}
+			)
+
+			if "id" not in firewall.get("firewall", {}):
+				frappe.throw("Failed to create NAT Firewall on Digital Ocean.")
+
+			self.nat_security_group_id = firewall["firewall"]["id"]
+
+		except Exception as e:
+			frappe.throw(f"Failed to create NAT Firewall on Digital Ocean: {e!s}")
 
 	def _add_digital_ocean_firewall(self, client):
 		"""Adds the firewall to Digital Ocean if it doesn't already exist"""
