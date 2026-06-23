@@ -87,7 +87,9 @@ class SiteDomain(Document):
 
 		if self.has_root_tls_certificate:
 			server = frappe.db.get_value("Site", self.site, "server")
-			self.agent.add_domain_to_upstream(server=server, site=self.site, domain=self.domain)
+			self.flags.add_domain_to_upstream_job = self.agent.add_domain_to_upstream(
+				server=server, site=self.site, domain=self.domain
+			)
 			return
 
 		self.create_tls_certificate()
@@ -245,10 +247,10 @@ def process_add_domain_to_upstream_job_update(job):
 	if updated_status != domain_status:
 		frappe.db.set_value("Site Domain", domain, "status", updated_status)
 
-	if job.status in ["Failure", "Delivery Failure"]:
-		frappe.db.set_value(
-			"Product Trial Request", {"domain": request_data.get("domain")}, "status", "Error"
-		)
+	if job.status in ["Failure", "Delivery Failure"] and (
+		request := frappe.db.get_value("Product Trial Request", {"domain": domain})
+	):
+		frappe.get_doc("Product Trial Request", request).update_status_from_agent_jobs(job.data)
 
 
 def update_dns_type():

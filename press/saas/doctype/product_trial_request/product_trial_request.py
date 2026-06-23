@@ -66,7 +66,24 @@ class ProductTrialRequest(Document):
 			"Update Site Configuration": "Configuring your site",
 			"Enable Scheduler": "Finalizing your setup",
 			"Bench Setup Nginx": "Finalizing your setup",
+			"Bench Setup NGINX": "Finalizing your setup",
 			"Reload Nginx": "Almost there",
+			"Reload NGINX": "Almost there",
+		},
+		"Update Site Configuration": {
+			"Update Site Configuration": "Configuring your site",
+		},
+		"Add Domain to Upstream": {
+			"Add Site File to Upstream Directory": "Configuring your domain",
+			"Reload Nginx": "Finalizing your setup",
+			"Reload NGINX": "Finalizing your setup",
+		},
+		"Add Domain": {
+			"Update Site Configuration": "Configuring your domain",
+			"Bench Setup Nginx": "Finalizing your setup",
+			"Bench Setup NGINX": "Finalizing your setup",
+			"Reload Nginx": "Almost there",
+			"Reload NGINX": "Almost there",
 		},
 	}
 
@@ -132,6 +149,102 @@ class ProductTrialRequest(Document):
 				self.db_set({"is_site_accessible": "No"})
 		except Exception as e:
 			self.db_set({"is_site_accessible": "No", "error": str(e)})
+
+	def add_agent_job(self, agent_job, purpose: str | None = None, required_for_completion: bool = True):
+		if not agent_job:
+			return
+
+		agent_job_name = getattr(agent_job, "name", agent_job)
+		if any(row.agent_job == agent_job_name for row in self.agent_jobs):
+			return
+
+		job_type = getattr(agent_job, "job_type", None) or frappe.db.get_value(
+			"Agent Job", agent_job_name, "job_type"
+		)
+		self.append(
+			"agent_jobs",
+			{
+				"agent_job": agent_job_name,
+				"job_type": job_type,
+				"purpose": purpose or job_type,
+				"required_for_completion": required_for_completion,
+				"sequence": len(self.agent_jobs) + 1,
+			},
+		)
+
+		if required_for_completion and not self.agent_job:
+			self.agent_job = agent_job_name
+
+	def add_agent_jobs(self, agent_jobs):
+		for agent_job in agent_jobs or []:
+			self.add_agent_job(**agent_job)
+
+	def get_required_agent_job_names(self) -> list[str]:
+		return [
+			row.agent_job
+			for row in sorted(self.agent_jobs, key=lambda row: row.sequence or 0)
+			if row.required_for_completion and row.agent_job
+		]
+
+	def get_current_agent_job(self) -> str | None:
+		agent_jobs = self.get_required_agent_job_names()
+		if not agent_jobs:
+			return self.agent_job
+
+		for agent_job in agent_jobs:
+			status = frappe.db.get_value("Agent Job", agent_job, "status")
+			if status != "Success":
+				return agent_job
+		return agent_jobs[-1]
+
+	def has_failed_required_agent_job(self) -> bool:
+		agent_jobs = self.get_required_agent_job_names()
+		if not agent_jobs:
+			return False
+		return bool(
+			frappe.db.exists(
+				"Agent Job",
+				{
+					"name": ("in", agent_jobs),
+					"status": ("in", ["Failure", "Delivery Failure"]),
+				},
+			)
+		)
+
+	def required_agent_jobs_complete(self) -> bool:
+		agent_jobs = self.get_required_agent_job_names()
+		if not agent_jobs:
+			return True
+
+		completed_jobs = frappe.db.count(
+			"Agent Job",
+			{
+				"name": ("in", agent_jobs),
+				"status": "Success",
+			},
+		)
+		return completed_jobs == len(agent_jobs)
+
+	def update_status_from_agent_jobs(self, error=None):
+		if error:
+			self.status = "Error"
+			self.error = error
+			self.save(ignore_permissions=True)
+			return False
+
+		if self.has_failed_required_agent_job():
+			self.status = "Error"
+			self.save(ignore_permissions=True)
+			return False
+
+		if not self.required_agent_jobs_complete():
+			return False
+
+		self.status = "Site Created"
+		if not self.site_creation_completed_on:
+			self.site_creation_completed_on = now_datetime()
+		self.save(ignore_permissions=True)
+		return True
 
 	def after_insert(self):
 		self.capture_posthog_event("product_trial_request_created")
@@ -237,7 +350,7 @@ class ProductTrialRequest(Document):
 			self.domain = f"{subdomain}.{domain}"
 			cluster = frappe.db.get_value("Root Domain", domain, "default_cluster")
 			self.cluster = cluster
-			site, agent_job_name, is_standby_site = product.setup_trial_site(
+			site, agent_jobs, is_standby_site = product.setup_trial_site(
 				subdomain=subdomain,
 				domain=domain,
 				team=self.team,
@@ -245,14 +358,19 @@ class ProductTrialRequest(Document):
 				account_request=self.account_request,
 			)
 			self.is_standby_site = is_standby_site
-			self.agent_job = agent_job_name
 			self.site = site.name
+			self.add_agent_jobs(agent_jobs)
 			if not is_standby_site:
 				self.is_subscription_created = 1
 			self.save()
 
 			if is_standby_site:
 				self.prefill_setup_wizard_data()
+				if self.required_agent_jobs_complete():
+					self.update_status_from_agent_jobs()
+				elif self.site != self.domain:
+					self.status = "Adding Domain"
+					self.save()
 
 			user_mail = frappe.db.get_value("Team", self.team, "user")
 			frappe.get_doc(
@@ -279,15 +397,22 @@ class ProductTrialRequest(Document):
 	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):  # noqa: C901
 		current_progress = current_progress or 10
-		if self.agent_job:
-			filters = {"name": self.agent_job, "site": self.site}
+		if agent_job := self.get_current_agent_job():
+			job_name, status, job_type = frappe.db.get_value(
+				"Agent Job",
+				{"name": agent_job, "site": self.site},
+				["name", "status", "job_type"],
+			)
 		else:
-			filters = {"site": self.site, "job_type": ["in", ["New Site", "Rename Site"]]}
-		job_name, status, job_type = frappe.db.get_value(
-			"Agent Job",
-			filters,
-			["name", "status", "job_type"],
-		)
+			job_name, status, job_type = frappe.db.get_value(
+				"Agent Job",
+				{"site": self.site, "job_type": ["in", ["New Site", "Rename Site"]]},
+				["name", "status", "job_type"],
+			)
+
+		if status in ("Failure", "Delivery Failure"):
+			return {"progress": current_progress, "current_step": self.status, "error": True}
+
 		if status == "Success":
 			if self.status == "Site Created":
 				return {"progress": 100, "current_step": self.status}
