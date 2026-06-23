@@ -109,7 +109,7 @@ class NATServer(BaseServer):
 		if self.provider != "AWS EC2":
 			frappe.throw(
 				"This action is only applicable to AWS EC2 NAT instances. "
-				"No manual security group attachment is required for Hetzner."
+				"No manual security group attachment is required for Hetzner and Frappe Compute"
 			)
 			return None
 
