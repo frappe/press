@@ -602,7 +602,18 @@ class VirtualMachine(Document):
 			raise
 
 		if self.series == "nat":
-			cluster.add_hetzner_nat_route(self.private_ip_address)  # Route needed for outbound connection
+			try:
+				cluster.add_hetzner_nat_route(self.private_ip_address)  # Route needed for outbound connection
+			except Exception:
+				# Route attachment failed.
+				# Server is live on Hetzner but unusable — delete it to avoid billing.
+				with suppress(Exception):
+					self.client().servers.delete(server).wait_until_finished(HETZNER_ACTION_RETRIES)
+					self.instance_id = None
+					self.status = "Terminated"
+					self.save()
+					frappe.db.commit()
+					raise
 
 		self.status = self.get_hetzner_status_map()[server.status]
 		self.save()
