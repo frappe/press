@@ -432,7 +432,10 @@ class ProductTrialRequest(Document):
 
 	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):  # noqa: C901
-		current_progress = float(current_progress or 10)
+		try:
+			current_progress = float(current_progress or 10)
+		except (TypeError, ValueError):
+			current_progress = 10.0
 		if agent_job := self.get_current_agent_job():
 			agent_job_data = frappe.db.get_value(
 				"Agent Job",
