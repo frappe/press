@@ -16,6 +16,8 @@
 		"account_request",
 		"agent_job",
 		"cluster",
+		"agent_jobs_tab",
+		"agent_jobs",
 		"section_break_zlzx",
 		"site_creation_started_on",
 		"is_standby_site",
@@ -127,6 +129,17 @@
 			"fieldname": "is_subscription_created",
 			"fieldtype": "Check",
 			"label": "Is Subscription Created"
+		},
+		{
+			"fieldname": "agent_jobs_tab",
+			"fieldtype": "Tab Break",
+			"label": "Agent Jobs"
+		},
+		{
+			"fieldname": "agent_jobs",
+			"fieldtype": "Table",
+			"label": "Agent Jobs",
+			"options": "Product Trial Request Agent Job"
 		}
 	],
 	"grid_page_length": 50,
