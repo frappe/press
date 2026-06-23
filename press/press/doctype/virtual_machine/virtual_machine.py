@@ -225,9 +225,14 @@ class VirtualMachine(Document):
 
 		self.validate_data_disk_snapshot()
 
-		if self.series == "nat" and self.cloud_provider not in ("AWS EC2", "Frappe Compute", "Hetzner"):
+		if self.series == "nat" and self.cloud_provider not in (
+			"AWS EC2",
+			"Frappe Compute",
+			"Hetzner",
+			"DigitalOcean",
+		):
 			frappe.throw(
-				"NAT Servers are only supported on AWS EC2, Frappe Compute, and Hetzner. "
+				"NAT Servers are only supported on AWS EC2, Frappe Compute, Hetzner, and DigitalOcean. "
 				f"Change the cloud provider from {self.cloud_provider} to a supported provider."
 			)
 
@@ -533,6 +538,7 @@ class VirtualMachine(Document):
 					"vpc_uuid": cluster.vpc_id,
 					"tags": [droplet_tag],
 					"user_data": self.get_cloud_init() if self.virtual_machine_image else "",
+					"public_networking": bool(self.assign_public_ip),
 				}
 			)
 			self.instance_id = droplet["droplet"]["id"]
