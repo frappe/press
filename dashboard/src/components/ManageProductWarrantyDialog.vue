@@ -66,10 +66,30 @@ const nextChangeAvailableOn = computed(() => {
 	}
 })
 
+const hasWarrantyQuota = computed(
+	() => site.doc?.dedicated_server_warranty_limit?.available > 0,
+)
+
+const cooldownPassed = computed(
+	() => nextChangeAvailableOn.value === 'Available Now',
+)
+
+// Enabling warranty is gated only by available quota (the cooldown does not
+// apply, so a site can reclaim a free slot any time); disabling is gated by the
+// cooldown.
+const isToggleDisabled = computed(() =>
+	isSupportEnabled.value ? !cooldownPassed.value : !hasWarrantyQuota.value,
+)
+
 const disablePrimaryAction = computed(
-	() =>
-		switchValue.value === isSupportEnabled.value ||
-		nextChangeAvailableOn.value !== 'Available Now',
+	() => switchValue.value === isSupportEnabled.value || isToggleDisabled.value,
+)
+
+// The cooldown only blocks disabling, so this date is relevant only while
+// warranty is on and the cooldown has not yet elapsed. Hide it otherwise — when
+// the change is possible there is nothing to wait for.
+const showNextChangeAvailableOn = computed(
+	() => isSupportEnabled.value && !cooldownPassed.value,
 )
 
 function onClickSave() {
@@ -102,7 +122,7 @@ function onClickSave() {
 						v-model="switchValue"
 						size="md"
 						class="px-4"
-						:disabled="nextChangeAvailableOn !== 'Available Now' || (site.doc?.dedicated_server_warranty_limit?.available <= 0 && !isSupportEnabled)"
+						:disabled="isToggleDisabled"
 					/>
 				</div>
 
@@ -136,17 +156,9 @@ function onClickSave() {
 							sites
 						</p>
 					</div>
-					<div class="flex">
+					<div v-if="showNextChangeAvailableOn" class="flex">
 						<p class="flex-grow text-ink-gray-6">Next change available after</p>
-						<p
-							:class="
-								nextChangeAvailableOn === 'Available Now'
-									? 'text-ink-green-3 font-medium'
-									: ''
-							"
-						>
-							{{ nextChangeAvailableOn }}
-						</p>
+						<p>{{ nextChangeAvailableOn }}</p>
 					</div>
 				</div>
 
