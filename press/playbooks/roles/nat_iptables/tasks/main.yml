@@ -17,7 +17,7 @@
   when:
     - nat_gateway_ip is defined
     - nat_gateway_ip
-    - cloud_provider in ["AWS EC2", "Frappe Compute"]
+    - cloud_provider in ["AWS EC2", "Frappe Compute", "DigitalOcean"]
 
 - name: Configure Hetzner private networking
   copy:
@@ -62,3 +62,4 @@
   when:
     - nat_gateway_ip is defined and nat_gateway_ip
       or cloud_provider == "Hetzner"
+      or cloud_provider == "DigitalOcean"
