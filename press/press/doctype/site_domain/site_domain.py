@@ -247,9 +247,10 @@ def process_add_domain_to_upstream_job_update(job):
 	if updated_status != domain_status:
 		frappe.db.set_value("Site Domain", domain, "status", updated_status)
 
-	if job.status in ["Failure", "Delivery Failure"]:
-		if request := frappe.db.get_value("Product Trial Request", {"domain": domain}):
-			frappe.get_doc("Product Trial Request", request).update_status_from_agent_jobs(job.data)
+	if job.status in ["Failure", "Delivery Failure"] and (
+		request := frappe.db.get_value("Product Trial Request", {"domain": domain})
+	):
+		frappe.get_doc("Product Trial Request", request).update_status_from_agent_jobs(job.data)
 
 
 def update_dns_type():

@@ -732,8 +732,8 @@ class Site(Document, TagHelpers):
 		}
 		if create_agent_job:
 			return self.update_site_config(config)
-		else:
-			self._update_configuration(config=config, save=save)
+
+		self._update_configuration(config=config, save=save)
 		return None
 
 	def rename_upstream(self, new_name: str):
@@ -4542,14 +4542,11 @@ def process_complete_setup_wizard_job_update(job):
 	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
-		if product_trial_request.update_status_from_agent_jobs():
-			return
 		if frappe.get_all("Site Domain", filters={"site": job.site, "status": ["!=", "Active"]}):
 			product_trial_request.status = "Adding Domain"
+			product_trial_request.save(ignore_permissions=True)
 		else:
-			product_trial_request.status = "Site Created"
-			product_trial_request.site_creation_completed_on = now_datetime()
-		product_trial_request.save(ignore_permissions=True)
+			product_trial_request.update_status_from_agent_jobs()
 	elif job.status in ("Failure", "Delivery Failure"):
 		product_trial_request.status = "Error"
 		product_trial_request.save(ignore_permissions=True)
