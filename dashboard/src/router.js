@@ -478,6 +478,17 @@ let router = createRouter({
 			name: 'Enable Servers',
 			component: () => import('./pages/EnableServers.vue'),
 		},
+		...(import.meta.env.DEV
+			? [
+					{
+						name: 'ProductTrialProgressMock',
+						path: '/dev/product-trial-progress',
+						component: () => import('./pages/signup/LoginToSite.vue'),
+						props: { productId: 'hrms' },
+						meta: { allowGuest: true, hideSidebar: true },
+					},
+				]
+			: []),
 		{
 			path: '/database-analyzer',
 			name: 'DB Analyzer',
@@ -658,7 +669,7 @@ router.beforeEach(async (to, from, next) => {
 			next()
 		}
 	} else {
-		if (goingToLoginPage) {
+		if (goingToLoginPage || to.meta.allowGuest) {
 			next()
 		} else {
 			if (to.name == 'Site Login') {
