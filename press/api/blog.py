@@ -15,11 +15,10 @@ from press.press.doctype.blog_read_status.blog_read_status import get_blog_read_
 @frappe.whitelist()
 def latest_blog():
 	url = frappe.db.get_single_value("Press Settings", "latest_blog_url")
-	status = get_blog_read_status(frappe.session.user)
-
 	if not url:
 		return {"url": None, "show": False}
 
+	status = get_blog_read_status(frappe.session.user)
 	metadata = get_blog_metadata(url)
 	return {
 		"url": url,
