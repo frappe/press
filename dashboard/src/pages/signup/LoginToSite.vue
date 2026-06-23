@@ -2,12 +2,9 @@
 	<div class="flex h-screen overflow-hidden">
 		<div class="w-full overflow-auto">
 			<LoginBox
-				v-if="$resources?.siteRequest?.doc?.status === 'Error'"
+				v-if="siteRequestDoc?.status === 'Error'"
 				title="Site creation failed"
-				:subtitle="
-					$resources?.siteRequest?.doc?.domain ||
-					$resources?.siteRequest?.doc?.site
-				"
+				:subtitle="siteRequestDoc?.domain || siteRequestDoc?.site"
 			>
 				<template v-slot:logo v-if="saasProduct">
 					<div class="flex space-x-2">
@@ -35,10 +32,7 @@
 			<LoginBox
 				v-else
 				title="Let's set up your site"
-				:subtitle="
-					this.$resources?.siteRequest?.doc?.domain ||
-					this.$resources?.siteRequest?.doc?.site
-				"
+				:subtitle="siteRequestDoc?.domain || siteRequestDoc?.site"
 			>
 				<template v-slot:logo v-if="saasProduct">
 					<div class="flex space-x-2">
@@ -49,7 +43,7 @@
 					</div>
 				</template>
 				<template v-slot:default>
-					<div class="flex mt-12 flex-col items-center justify-center">
+					<div class="mt-12 flex flex-col items-center justify-center">
 						<Progress
 							size="lg"
 							:value="progressCount"
@@ -83,7 +77,14 @@ export default {
 			product_trial_request: this.$route.query.product_trial_request,
 			progressCount: 0,
 			currentBuildStep: 'Configuring your setup',
+			mockProgressTimer: null,
 		};
+	},
+	mounted() {
+		if (this.isMockMode) this.startMockProgress();
+	},
+	beforeUnmount() {
+		clearInterval(this.mockProgressTimer);
 	},
 	resources: {
 		saasProduct() {
@@ -91,7 +92,7 @@ export default {
 				type: 'document',
 				doctype: 'Product Trial',
 				name: this.productId,
-				auto: true,
+				auto: !this.isMockMode,
 			};
 		},
 		siteRequest() {
@@ -100,16 +101,14 @@ export default {
 				doctype: 'Product Trial Request',
 				name: this.product_trial_request,
 				realtime: true,
-				auto: true,
+				auto: !this.isMockMode,
 				onSuccess(doc) {
 					if (doc.status === 'Site Created') {
+						this.showCompleteProgress();
 						setTimeout(() => {
 							this.loginToSite();
-						}, 2000);
-					} else if (
-						doc.status === 'Wait for Site' ||
-						doc.status === 'Prefilling Setup Wizard'
-					) {
+						}, 500);
+					} else if (this.isSiteProvisioning(doc.status)) {
 						this.$resources.siteRequest.getProgress.reload();
 					}
 				},
@@ -118,15 +117,15 @@ export default {
 						method: 'get_progress',
 						makeParams() {
 							return {
-								current_progress:
-									this.$resources.siteRequest.getProgress.data?.progress || 0,
+								current_progress: this.progressCount,
 							};
 						},
 						onSuccess: (data) => {
 							if (data.current_step === 'Site Created') {
+								this.showCompleteProgress();
 								setTimeout(() => {
 									this.loginToSite();
-								}, 2000);
+								}, 500);
 								return;
 							}
 
@@ -142,7 +141,7 @@ export default {
 								currentStepMap[data.current_step] ||
 								data.current_step ||
 								this.currentBuildStep;
-							this.progressCount += 1;
+							const nextProgress = Number(data.progress || 0);
 
 							if (
 								!(
@@ -150,7 +149,11 @@ export default {
 									this.progressCount <= 10
 								)
 							) {
-								this.progressCount = Math.round(data.progress * 10) / 10;
+								const visibleProgress = Math.min(
+									Math.max(nextProgress, this.progressCount + 0.2),
+									95,
+								);
+								this.progressCount = Math.round(visibleProgress * 10) / 10;
 								setTimeout(() => {
 									if (
 										['Site Created', 'Error'].includes(
@@ -175,8 +178,34 @@ export default {
 		},
 	},
 	computed: {
+		isMockMode() {
+			return (
+				this.$route.name === 'ProductTrialProgressMock' ||
+				this.$route.query.mock === '1'
+			);
+		},
 		saasProduct() {
+			if (this.isMockMode) {
+				return {
+					logo: '/assets/press/images/frappe-cloud-logo.png',
+					help_texts: [
+						{ help_text: 'We are preparing your trial workspace.' },
+						{ help_text: 'This preview is using local mock data.' },
+						{ help_text: 'The real page updates from Agent Job progress.' },
+					],
+				};
+			}
 			return this.$resources.saasProduct.doc;
+		},
+		siteRequestDoc() {
+			if (this.isMockMode) {
+				return {
+					status: 'Adding Domain',
+					domain: 'acme.frappe.cloud',
+					site: 'acme.frappe.cloud',
+				};
+			}
+			return this.$resources?.siteRequest?.doc;
 		},
 		currentHelpText() {
 			const defaultHelpTexts = [
@@ -197,6 +226,33 @@ export default {
 		},
 	},
 	methods: {
+		startMockProgress() {
+			let tick = 0;
+			const mockSteps = [
+				'Configuring your site',
+				'Configuring your domain',
+				'Finalizing your setup',
+				'Almost there',
+			];
+
+			this.progressCount = 18;
+			this.currentBuildStep = mockSteps[0];
+			this.mockProgressTimer = setInterval(() => {
+				const activeStep = Math.min(Math.floor(tick / 4), mockSteps.length - 1);
+				this.currentBuildStep = mockSteps[activeStep];
+				this.progressCount = Math.min(95, this.progressCount + 2.4);
+				tick += 1;
+			}, 1000);
+		},
+		showCompleteProgress() {
+			this.progressCount = 100;
+			this.currentBuildStep = 'Almost there';
+		},
+		isSiteProvisioning(status) {
+			return ['Wait for Site', 'Prefilling Setup Wizard', 'Adding Domain'].includes(
+				status,
+			);
+		},
 		loginToSite() {
 			this.$resources.siteRequest.getLoginSid.submit();
 		},
