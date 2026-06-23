@@ -234,8 +234,6 @@ class ProductTrialRequest(Document):
 
 		if self.has_failed_required_agent_job():
 			self.status = "Error"
-			if error:
-				self.error = error
 			self.save(ignore_permissions=True)
 			return False
 
