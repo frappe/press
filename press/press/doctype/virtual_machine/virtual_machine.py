@@ -227,8 +227,8 @@ class VirtualMachine(Document):
 
 		if self.series == "nat" and self.cloud_provider not in ("AWS EC2", "Frappe Compute", "Hetzner"):
 			frappe.throw(
-				"NAT Servers are only supported on AWS EC2, Frappe Compute, and Hetzner."
-				"Check if NAT server has supported providers."
+				"NAT Servers are only supported on AWS EC2, Frappe Compute, and Hetzner. "
+				f"Change the cloud provider from {self.cloud_provider} to a supported provider."
 			)
 
 	def validate_data_disk_snapshot(self):
@@ -507,8 +507,8 @@ class VirtualMachine(Document):
 		"""Provision a Digital Ocean Droplet"""
 		if not self.machine_image:
 			frappe.throw(
-				"Machine Image is required to provision Digital Ocean Virtual Machine."
-				"Check if Machine Image is set."
+				"Machine Image is required to provision a DigitalOcean Virtual Machine. "
+				"Set the Machine Image field and try again."
 			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
