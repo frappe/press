@@ -189,9 +189,23 @@ class ProductTrialRequest(Document):
 		try:
 			tracked_agent_jobs = frappe.parse_json(self.tracked_agent_jobs) or []
 		except Exception:
+			with suppress(Exception):
+				frappe.log_error(
+					title="Product Trial Request Tracked Agent Jobs Parse Error",
+					message=frappe.get_traceback(with_context=True),
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
 			return []
 
 		if not isinstance(tracked_agent_jobs, list):
+			with suppress(Exception):
+				frappe.log_error(
+					title="Product Trial Request Tracked Agent Jobs Invalid Data",
+					message=f"Expected list, got {type(tracked_agent_jobs).__name__}: {self.tracked_agent_jobs}",
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
 			return []
 		return [row for row in tracked_agent_jobs if isinstance(row, dict)]
 
