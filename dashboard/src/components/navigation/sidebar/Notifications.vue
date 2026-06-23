@@ -15,6 +15,7 @@ import { h, nextTick, ref, watch} from "vue";
 import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 import { isMobile } from "@/utils/device";
+import { sanitizeHtml } from "@/utils/format";
 
 import Scrollbar from "@/components/common/Scrollbar.vue";
 import SupportAccessDialog from "@/components/SupportAccessDialog.vue";
@@ -30,10 +31,6 @@ import { dayjsLocal } from "@/utils/dayjs";
 import { getDocResource } from "@/utils/resource";
 import { renderDialog } from "@/utils/components";
 import { getTeam } from "@/data/team";
-
-const formatHtml = (str: string) => {
-  return str.replace(/<(?!\/?b\b)[^>]*>/g, "").split("\n")[0];
-};
 
 const scrollRef = ref(null);
 const router = useRouter();
@@ -272,7 +269,7 @@ useRealtimeNotifs((data) => {
 
             <!-- info -->
             <div class="text-base leading-relaxed flex flex-wrap gap-2 w-full min-w-0">
-              <p v-html="formatHtml(x.message)" class="w-full" />
+              <p v-html="sanitizeHtml(x.message)" class="w-full" />
 
               <Badge class="text-xs mr-auto">
                 {{ x.title }}

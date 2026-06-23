@@ -1114,9 +1114,10 @@ class TestAPISiteDomain(FrappeTestCase):
 class TestCheckWarrantyRestrictions(FrappeTestCase):
 	"""Tests for _check_warranty_restrictions.
 
-	The cooldown applies to both enabling and disabling. The server quota,
-	however, only gates enabling (which consumes a slot) — disabling is
-	always allowed once the cooldown has passed.
+	Enabling support is gated only by the server quota (it consumes a slot) and is
+	allowed irrespective of the cooldown, so a site can reclaim a free slot any
+	time. Disabling support is gated only by the cooldown, which deters freeing a
+	slot only to rotate it onto another site.
 	"""
 
 	def _check(self, *, current_supported, new_supported, quota_available=0, cooldown_active=False):
@@ -1166,6 +1167,27 @@ class TestCheckWarrantyRestrictions(FrappeTestCase):
 	def test_enabling_warranty_allowed_when_quota_available(self):
 		"""Enabling support with quota left must not throw."""
 		self._check(current_supported=False, new_supported=True, quota_available=1)
+
+	def test_enabling_warranty_allowed_during_cooldown_when_quota_available(self):
+		"""Reclaiming a free slot is allowed even while the cooldown is active."""
+		self._check(
+			current_supported=False,
+			new_supported=True,
+			quota_available=1,
+			cooldown_active=True,
+		)
+
+	def test_enabling_warranty_blocked_when_quota_exhausted_during_cooldown(self):
+		"""Enabling with no free slot must throw on quota, not silently pass."""
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"exhausted the site warranty quota",
+			self._check,
+			current_supported=False,
+			new_supported=True,
+			quota_available=0,
+			cooldown_active=True,
+		)
 
 	def test_disabling_warranty_blocked_during_cooldown(self):
 		"""Disabling support is still subject to the cooldown window."""

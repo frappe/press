@@ -1045,6 +1045,9 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_replication_setup = True
+				# A replication-configured server must not auto purge binlogs by size
+				# (enforced in on_update). New DB servers default it on, so disable it.
+				self.auto_purge_binlog_based_on_size = False
 				self.mariadb_root_password = mariadb_root_password
 			else:
 				self.status = "Broken"
@@ -1312,6 +1315,13 @@ class DatabaseServer(BaseServer):
 		if self.is_primary:
 			return
 
+		# Provisioning steps run as separate jobs. The preceding Prepare step leaves
+		# MariaDB running, but a retry of Configure in isolation could hit a stopped
+		# server and fail with a connection-refused deep in the agent. Make sure it is
+		# up before issuing replication commands (restart_mysql.yml uses a Type=notify
+		# unit, so it returns only once MariaDB accepts connections).
+		self._restart_mariadb()
+
 		primary_db: "DatabaseServer" = frappe.get_doc("Database Server", self.primary)
 
 		agent = self.agent
@@ -1325,6 +1335,10 @@ class DatabaseServer(BaseServer):
 
 		if not self.is_replication_setup:
 			self.is_replication_setup = True
+			# New DB servers default binlog auto purge on, but a replication-configured
+			# server must not auto purge binlogs by size (enforced in on_update). Disable
+			# it as the server becomes a replica.
+			self.auto_purge_binlog_based_on_size = False
 			self.save()
 
 	def reset_replication(self):

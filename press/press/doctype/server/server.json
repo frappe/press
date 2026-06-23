@@ -103,6 +103,7 @@
 		"ram",
 		"backups_section",
 		"skip_scheduled_backups",
+		"stream_backups",
 		"standalone_section",
 		"is_standalone",
 		"column_break_edyf",
@@ -250,6 +251,12 @@
 			"fieldname": "use_for_new_sites",
 			"fieldtype": "Check",
 			"label": "Use For New Sites"
+		},
+		{
+			"default": "0",
+			"fieldname": "skip_standby_site_creation",
+			"fieldtype": "Check",
+			"label": "Skip Standby Site Creation"
 		},
 		{
 			"fieldname": "cluster",
@@ -498,6 +505,13 @@
 			"fieldname": "skip_scheduled_backups",
 			"fieldtype": "Check",
 			"label": "Skip Scheduled Backups"
+		},
+		{
+			"default": "0",
+			"description": "Stream backups directly to offsite storage instead of staging them on the server",
+			"fieldname": "stream_backups",
+			"fieldtype": "Check",
+			"label": "Stream Backups"
 		},
 		{
 			"fieldname": "column_break_pdbx",
@@ -807,7 +821,7 @@
 			"link_fieldname": "app_server"
 		}
 	],
-	"modified": "2026-06-09 14:44:11.417294",
+	"modified": "2026-06-18 10:49:09.702133",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Server",
