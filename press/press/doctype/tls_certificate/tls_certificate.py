@@ -117,7 +117,6 @@ class TLSCertificate(Document):
 		frappe.set_user(user)
 		frappe.session.data = session_data
 
-	@frappe.whitelist()
 	def _obtain_certificate(self):
 		if self.provider != "Let's Encrypt":
 			return
