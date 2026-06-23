@@ -15,9 +15,8 @@
 		"status",
 		"account_request",
 		"agent_job",
+		"tracked_agent_jobs",
 		"cluster",
-		"agent_jobs_tab",
-		"agent_jobs",
 		"section_break_zlzx",
 		"site_creation_started_on",
 		"is_standby_site",
@@ -72,6 +71,12 @@
 			"options": "Agent Job",
 			"read_only": 1,
 			"search_index": 1
+		},
+		{
+			"fieldname": "tracked_agent_jobs",
+			"fieldtype": "Code",
+			"label": "Tracked Agent Jobs",
+			"read_only": 1
 		},
 		{
 			"fieldname": "product_trial",
@@ -129,17 +134,6 @@
 			"fieldname": "is_subscription_created",
 			"fieldtype": "Check",
 			"label": "Is Subscription Created"
-		},
-		{
-			"fieldname": "agent_jobs_tab",
-			"fieldtype": "Tab Break",
-			"label": "Agent Jobs"
-		},
-		{
-			"fieldname": "agent_jobs",
-			"fieldtype": "Table",
-			"label": "Agent Jobs",
-			"options": "Product Trial Request Agent Job"
 		}
 	],
 	"grid_page_length": 50,
