@@ -12,6 +12,7 @@ import typing
 from contextlib import suppress
 from datetime import timedelta
 from functools import cached_property
+from ipaddress import ip_network
 
 import boto3
 import frappe
@@ -2059,6 +2060,9 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(self.doctype, self.name, "_install_nat_iptables")
 
 	def _install_nat_iptables(self):
+		vm: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		cluster: Cluster = frappe.get_doc("Cluster", vm.cluster)
+
 		try:
 			ansible = Ansible(
 				playbook="nat_iptables.yml",
@@ -2067,6 +2071,12 @@ class BaseServer(Document, TagHelpers):
 				port=self._ssh_port(),
 				variables={
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
+					"cloud_provider": vm.cloud_provider,
+					"network_gateway": (
+						str(ip_network(cluster.cidr_block).network_address + 1)
+						if vm.cloud_provider == "Hetzner" and cluster.cidr_block
+						else ""
+					),
 				},
 			)
 			return ansible.run()
@@ -3289,6 +3299,8 @@ class Server(BaseServer):
 			else None
 		)
 
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
 		try:
 			ansible = Ansible(
 				playbook=("self_hosted.yml" if getattr(self, "is_self_hosted", False) else "server.yml"),
@@ -3315,6 +3327,12 @@ class Server(BaseServer):
 					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
 					"agent_update_args": " --skip-repo-setup=true",
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
+					"cloud_provider": self.provider,
+					"network_gateway": (
+						str(ip_network(cluster.cidr_block).network_address + 1)
+						if self.provider == "Hetzner" and cluster.cidr_block
+						else ""
+					),
 					**self.get_mount_variables(),
 				},
 			)

@@ -26,7 +26,7 @@ class NATServer(BaseServer):
 		is_server_setup: DF.Check
 		is_static_ip: DF.Check
 		private_ip: DF.Data | None
-		provider: DF.Literal["AWS EC2", "Frappe Compute"]
+		provider: DF.Literal["AWS EC2", "Frappe Compute", "Hetzner"]
 		root_public_key: DF.Code | None
 		secondary_private_ip: DF.Data | None
 		ssh_port: DF.Data | None
@@ -106,6 +106,13 @@ class NATServer(BaseServer):
 
 	@frappe.whitelist()
 	def attach_nat_security_group(self):
+		if self.provider != "AWS EC2":
+			frappe.throw(
+				"This action is only applicable to AWS EC2 NAT instances. "
+				"No manual security group attachment is required for Hetzner and Frappe Compute"
+			)
+			return None
+
 		vm = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		ec2 = vm.client()
 		response = ec2.describe_instances(InstanceIds=[vm.instance_id])
