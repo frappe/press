@@ -4,7 +4,9 @@
 import socket
 import time
 from contextlib import suppress
+from ipaddress import ip_network
 from itertools import groupby
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
@@ -14,6 +16,9 @@ from frappe.query_builder.functions import Now
 from press.agent import Agent
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.runner import Ansible, StepHandler
+
+if TYPE_CHECKING:
+	from press.press.doctype.cluster.cluster import Cluster
 
 
 class IPRemovalLog(Document, StepHandler):
@@ -114,6 +119,8 @@ class IPRemovalLog(Document, StepHandler):
 		doc.nat_server = self.nat_server
 		doc.save()
 
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
 		try:
 			ansible = Ansible(
 				playbook="nat_iptables.yml",
@@ -123,6 +130,12 @@ class IPRemovalLog(Document, StepHandler):
 				variables={
 					"nat_gateway_ip": frappe.cache.get_value(f"{self.name}:{self.nat_server}"),
 					"is_frappe_compute": doc.provider == "Frappe Compute",
+					"cloud_provider": cluster.cloud_provider,
+					"network_gateway": (
+						str(ip_network(cluster.cidr_block).network_address + 1)
+						if cluster.cloud_provider == "Hetzner" and cluster.cidr_block
+						else ""
+					),
 				},
 			)
 			self.handle_ansible_play(step, ansible)

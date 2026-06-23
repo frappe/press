@@ -403,6 +403,38 @@ class Cluster(Document):
 			"To add this cluster to monitoring, go to the Monitor Server and trigger the 'Reconfigure Monitor Server' action from the Actions menu."
 		)
 
+	def add_hetzner_nat_route(self, nat_ip):
+		from hcloud.networks.domain import NetworkRoute
+
+		client = self.get_hetzner_client()
+
+		network = client.networks.get_by_id(int(self.vpc_id))
+		if not network:
+			frappe.throw(f"Hetzner network {self.vpc_id} not found")
+
+		for route in network.routes:
+			if route.destination == "0.0.0.0/0":
+				if route.gateway == nat_ip:
+					return
+
+				action = client.networks.delete_route(
+					network=network,
+					route=route,
+				)
+				action.wait_until_finished()
+
+				break
+
+		action = client.networks.add_route(
+			network=network,
+			route=NetworkRoute(
+				destination="0.0.0.0/0",
+				gateway=nat_ip,
+			),
+		)
+
+		action.wait_until_finished()
+
 	def provision_on_hetzner(self):
 		try:
 			# Get Hetzner API token from Press Settings
@@ -533,6 +565,8 @@ class Cluster(Document):
 			self.save()
 		except APIException as e:
 			frappe.throw(f"Failed to provision proxy server firewall on Hetzner: {e!s}")
+
+		self.create_nat_security_group_hetzner()
 
 	def on_trash(self):
 		machines = frappe.get_all(
@@ -817,6 +851,56 @@ class Cluster(Document):
 				},
 			],
 		)
+
+	def create_nat_security_group_hetzner(self):
+		client = self.get_hetzner_client()
+
+		# Reuse existing firewall if already created
+		if self.nat_security_group_id:
+			try:
+				firewall = client.firewalls.get_by_id(int(self.nat_security_group_id))
+				if firewall:
+					return firewall
+			except APIException:
+				pass
+
+		try:
+			response = client.firewalls.create(
+				name=f"Frappe Cloud - {self.name} - NAT - Security Group",
+				rules=[
+					HetznerFirewallRule(
+						description="Allow TCP from private network",
+						direction="in",
+						protocol="tcp",
+						port="1-65535",
+						source_ips=[self.subnet_cidr_block],
+					),
+					HetznerFirewallRule(
+						description="Allow UDP from private network",
+						direction="in",
+						protocol="udp",
+						port="1-65535",
+						source_ips=[self.subnet_cidr_block],
+					),
+					HetznerFirewallRule(
+						description="Allow ICMP from private network",
+						direction="in",
+						protocol="icmp",
+						source_ips=[self.subnet_cidr_block],
+					),
+				],
+			)
+
+			self.nat_security_group_id = response.firewall.id
+			self.save()
+
+			return response.firewall
+
+		except APIException as e:
+			frappe.throw(
+				f"Failed to provision NAT firewall on Hetzner. "
+				f"Please verify Hetzner API access and firewall configuration. Error: {e!s}"
+			)
 
 	def create_nat_security_group(self):
 		client = self.get_aws_client()
