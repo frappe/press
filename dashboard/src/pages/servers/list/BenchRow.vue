@@ -40,6 +40,7 @@ const sites = createListResource({
 	fields: ['name', 'status', 'bench', 'creation', 'host_name'],
 	filters: {
 		group: props.data.name,
+		host_name: ['is', 'set'],
 		skip_team_filter_for_system_user_and_support_agent: true,
 	},
 	orderBy: 'creation desc',
@@ -153,11 +154,36 @@ const benchOptions = (bench) => [
 	},
 ]
 
+const dropSite = (site) => {
+	const ArchiveSiteDialog = defineAsyncComponent(
+		() => import('@/components/site/ArchiveSiteDialog.vue'),
+	)
+	const siteResource = createDocumentResource({
+		doctype: 'Site',
+		name: site.name,
+		auto: true,
+	})
+	renderDialog(
+		h(ArchiveSiteDialog, {
+			site: siteResource,
+			modelValue: true,
+			onArchived: () => sites.reload(),
+		}),
+	)
+}
+
 const siteOptions = (site) => [
 	{
 		label: 'Site Actions',
 		route: `/sites/${site.name}/actions`,
 		icon: LucideSlidersVertical,
+	},
+	{
+		label: 'Drop site',
+		theme: 'red',
+		variant: 'subtle',
+		icon: 'trash-2',
+		onClick: () => dropSite(site),
 	},
 ]
 
@@ -179,12 +205,7 @@ const defaultSiteStatusBadge = {
 	dot: 'bg-surface-gray-4',
 }
 
-const transientSiteStatuses = [
-	'Pending',
-	'Installing',
-	'Updating',
-	'Recovering',
-]
+const transientStatuses = ['Pending', 'Installing', 'Updating', 'Recovering']
 const wiredSites = reactive(new Set<string>())
 
 const handleSiteUpdate = (x) => {
@@ -200,7 +221,7 @@ watch(
 	(data) => {
 		data?.forEach((site) => {
 			if (
-				transientSiteStatuses.includes(site.status) &&
+				transientStatuses.includes(site.status) &&
 				!wiredSites.has(site.name)
 			) {
 				socket.emit('doc_subscribe', 'Site', site.name)
@@ -213,9 +234,7 @@ watch(
 
 onBeforeUnmount(() => {
 	socket.off('doc_update', handleSiteUpdate)
-	wiredSites.forEach((name) => {
-		socket.emit('doc_unsubscribe', 'Site', name)
-	})
+	wiredSites.forEach((name) => socket.emit('doc_unsubscribe', 'Site', name))
 })
 </script>
 
@@ -309,7 +328,7 @@ onBeforeUnmount(() => {
 			</div>
 		</template>
 
-		<div class="p-10 flex" v-if="sites?.list?.loading">
+		<div class="p-10 flex" v-if="sites?.list?.loading && !sites?.data?.length">
 			<span class="flex gap-2 items-center m-auto">
 				<Spinner />
 				Loading...
@@ -369,11 +388,11 @@ onBeforeUnmount(() => {
 			<router-link
 				v-if="['Pending', 'Installing', 'Updating', 'Recovering'].includes(site.status)"
 				:to="`/sites/${site.name}`"
-				class="flex gap-2 items-center text-ink-gray-8"
+				class="flex gap-2 items-center text-xs text-ink-gray-8"
 			>
-				<Spinner />
+				<Spinner class="!size-3.5" />
 				{{ site.status }}
-				<LucideExternalLink class="size-4" />
+				<LucideExternalLink class="size-3.5" />
 			</router-link>
 
 			<Badge
