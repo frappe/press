@@ -24,7 +24,7 @@
 	</div>
 
 	<Toaster
-		position="top-right"
+		position="bottom-right"
 		:toastOptions="{ class: 'text-sm prose-sm dark:bg-surface-cards dark:border-outline-gray-2 text-ink-gray-9' }"
 	/>
 	<component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
