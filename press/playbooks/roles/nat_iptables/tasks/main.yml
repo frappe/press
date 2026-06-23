@@ -17,7 +17,7 @@
   when:
     - nat_gateway_ip is defined
     - nat_gateway_ip
-    - cloud_provider != "Hetzner"
+    - cloud_provider == "AWS EC2"
 
 - name: Configure Hetzner private networking
   copy:
