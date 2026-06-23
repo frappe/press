@@ -159,7 +159,11 @@ class TLSCertificate(Document):
 			self.retry_count += 1
 			self.status = "Failure"
 			log_error("TLS Certificate Exception", certificate=self.name)
-		self.save()
+		# Runs only from the scheduled renewal job or a background job enqueued by the
+		# already permission-checked `obtain_certificate`. `get_current_team()` can't
+		# reliably resolve the team in that job context, so the team-scoped permission
+		# check in `has_permission` isn't meaningful here.
+		self.save(ignore_permissions=True)
 		self.trigger_site_domain_callback()
 		self.trigger_self_hosted_server_callback()
 		if self.wildcard:
