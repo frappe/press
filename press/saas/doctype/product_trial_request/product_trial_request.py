@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import urllib
 import urllib.parse
 from contextlib import suppress
@@ -55,6 +56,7 @@ class ProductTrialRequest(Document):
 			"Expired",
 		]
 		team: DF.Link | None
+		tracked_agent_jobs: DF.Code | None
 	# end: auto-generated types
 
 	dashboard_fields = ("site", "status", "product_trial", "domain")
@@ -155,22 +157,23 @@ class ProductTrialRequest(Document):
 			return
 
 		agent_job_name = getattr(agent_job, "name", agent_job)
-		if any(row.agent_job == agent_job_name for row in self.agent_jobs):
+		tracked_agent_jobs = self.get_tracked_agent_jobs()
+		if any(row.get("agent_job") == agent_job_name for row in tracked_agent_jobs):
 			return
 
 		job_type = getattr(agent_job, "job_type", None) or frappe.db.get_value(
 			"Agent Job", agent_job_name, "job_type"
 		)
-		self.append(
-			"agent_jobs",
+		tracked_agent_jobs.append(
 			{
 				"agent_job": agent_job_name,
 				"job_type": job_type,
 				"purpose": purpose or job_type,
 				"required_for_completion": required_for_completion,
-				"sequence": len(self.agent_jobs) + 1,
-			},
+				"sequence": len(tracked_agent_jobs) + 1,
+			}
 		)
+		self.tracked_agent_jobs = json.dumps(tracked_agent_jobs, indent=2)
 
 		if required_for_completion and not self.agent_job:
 			self.agent_job = agent_job_name
@@ -179,12 +182,45 @@ class ProductTrialRequest(Document):
 		for agent_job in agent_jobs or []:
 			self.add_agent_job(**agent_job)
 
+	def get_tracked_agent_jobs(self) -> list[dict]:
+		if not self.tracked_agent_jobs:
+			return []
+
+		try:
+			tracked_agent_jobs = frappe.parse_json(self.tracked_agent_jobs) or []
+		except Exception:
+			with suppress(Exception):
+				frappe.log_error(
+					title="Product Trial Request Tracked Agent Jobs Parse Error",
+					message=frappe.get_traceback(with_context=True),
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
+			return []
+
+		if not isinstance(tracked_agent_jobs, list):
+			with suppress(Exception):
+				frappe.log_error(
+					title="Product Trial Request Tracked Agent Jobs Invalid Data",
+					message=f"Expected list, got {type(tracked_agent_jobs).__name__}: {self.tracked_agent_jobs}",
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
+			return []
+		return [row for row in tracked_agent_jobs if isinstance(row, dict)]
+
 	def get_required_agent_job_names(self) -> list[str]:
-		return [
-			row.agent_job
-			for row in sorted(self.agent_jobs, key=lambda row: row.sequence or 0)
-			if row.required_for_completion and row.agent_job
-		]
+		tracked_agent_jobs = self.get_tracked_agent_jobs()
+		if tracked_agent_jobs:
+			required_agent_jobs = [
+				row["agent_job"]
+				for row in sorted(tracked_agent_jobs, key=lambda row: row.get("sequence") or 0)
+				if row.get("required_for_completion") and row.get("agent_job")
+			]
+			if required_agent_jobs:
+				return required_agent_jobs
+
+		return [self.agent_job] if self.agent_job else []
 
 	def get_current_agent_job(self) -> str | None:
 		agent_jobs = self.get_required_agent_job_names()
