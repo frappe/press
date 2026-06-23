@@ -8,7 +8,7 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from press.api.blog import latest_blog, mark_read, mark_reviewed
+from press.api.blog import latest_blog, mark_read
 from press.press.doctype.blog_read_status.blog_read_status import get_blog_read_status
 
 BLOG = "https://frappe.io/blog/frappe-cloud/whats-new"
@@ -46,7 +46,7 @@ class TestBlogReadStatus(FrappeTestCase):
 
 	@patch("press.api.blog.get_blog_metadata", return_value=METADATA)
 	def test_reviewing_does_not_hide_an_unread_blog(self, _):
-		mark_reviewed()
+		get_blog_read_status(frappe.session.user).mark_reviewed()
 
 		self.assertTrue(latest_blog()["show"])
 

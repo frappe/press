@@ -39,9 +39,9 @@ def get_blog_metadata(url: str) -> dict:
 	response = requests.get(url, timeout=10)
 	response.raise_for_status()
 
-	# title has | Frappe Blog at the end, remove it
+	title = extract_meta_tag(response.text, "og:title")
 	return {
-		"title": extract_meta_tag(response.text, "og:title").split(" | ")[0].strip(),
+		"title": title.split(" | ")[0].strip() if title else None,
 		"description": extract_meta_tag(response.text, "og:description"),
 	}
 
