@@ -398,12 +398,6 @@ class Cluster(Document):
 				}
 			)
 
-			if "id" not in firewall.get("firewall", {}):
-				frappe.throw(
-					"Failed to create NAT Firewall on Digital Ocean. "
-					"Please check your Digital Ocean account and ensure that you have the necessary permissions to create firewalls."
-				)
-
 			self.nat_security_group_id = firewall["firewall"]["id"]
 
 		except Exception as e:
