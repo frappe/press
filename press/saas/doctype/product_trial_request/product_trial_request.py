@@ -432,19 +432,28 @@ class ProductTrialRequest(Document):
 
 	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):  # noqa: C901
-		current_progress = current_progress or 10
+		try:
+			current_progress = float(current_progress or 10)
+		except (TypeError, ValueError):
+			current_progress = 10.0
 		if agent_job := self.get_current_agent_job():
-			job_name, status, job_type = frappe.db.get_value(
+			agent_job_data = frappe.db.get_value(
 				"Agent Job",
 				{"name": agent_job, "site": self.site},
 				["name", "status", "job_type"],
+				as_dict=True,
 			)
 		else:
-			job_name, status, job_type = frappe.db.get_value(
+			agent_job_data = frappe.db.get_value(
 				"Agent Job",
 				{"site": self.site, "job_type": ["in", ["New Site", "Rename Site"]]},
 				["name", "status", "job_type"],
+				as_dict=True,
 			)
+
+		job_name = agent_job_data.name if agent_job_data else None
+		status = agent_job_data.status if agent_job_data else None
+		job_type = agent_job_data.job_type if agent_job_data else None
 
 		if status in ("Failure", "Delivery Failure"):
 			return {"progress": current_progress, "current_step": self.status, "error": True}
@@ -477,13 +486,13 @@ class ProductTrialRequest(Document):
 						step.step_name, step.step_name
 					)
 					break
-			return {"progress": progress + 0.1, "current_step": current_running_step}
+			return {"progress": progress + 0.1, "current_step": current_running_step or self.status}
 
 		if self.status == "Error":
-			return {"progress": current_progress, "error": True}
+			return {"progress": current_progress, "current_step": self.status, "error": True}
 
 		# If agent job is undelivered, pending
-		return {"progress": current_progress + 0.1}
+		return {"progress": current_progress + 0.1, "current_step": self.status}
 
 	def prefill_setup_wizard_data(self):
 		if self.status == "Prefilling Setup Wizard":
