@@ -19,7 +19,6 @@
 		"invited_by_parent_team",
 		"press_roles",
 		"agreed_to_terms",
-		"press_role",
 		"saas_sign_up_section",
 		"saas",
 		"saas_app",
@@ -45,6 +44,7 @@
 		"state",
 		"is_us_eu",
 		"agreed_to_partner_consent",
+		"is_reseller",
 		"referrer_data",
 		"referral_source",
 		"url_args",
@@ -302,18 +302,17 @@
 			"label": "Agreed to Terms and Conditions"
 		},
 		{
-			"description": "Role which should be granted to a user upon accepting this account request.",
-			"fieldname": "press_role",
-			"fieldtype": "Link",
-			"label": "Press Role",
-			"options": "Press Role"
+			"default": "0",
+			"fieldname": "is_reseller",
+			"fieldtype": "Check",
+			"label": "Is Reseller"
 		}
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-06-04 10:58:33.441832",
-	"modified_by": "hello@ssiyad.com",
+	"modified": "2026-06-24 17:49:12.442974",
+	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Account Request",
 	"owner": "Administrator",

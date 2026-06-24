@@ -44,6 +44,7 @@ class AccountRequest(Document):
 		invited_by_parent_team: DF.Check
 		ip_address: DF.Data | None
 		is_mobile: DF.Check
+		is_reseller: DF.Check
 		is_us_eu: DF.Check
 		last_name: DF.Data | None
 		no_of_employees: DF.Data | None
@@ -53,7 +54,6 @@ class AccountRequest(Document):
 		otp_generated_at: DF.Datetime | None
 		phone_number: DF.Data | None
 		plan: DF.Link | None
-		press_role: DF.Link | None
 		press_roles: DF.TableMultiSelect[AccountRequestPressRole]
 		product_trial: DF.Link | None
 		referral_source: DF.Data | None
