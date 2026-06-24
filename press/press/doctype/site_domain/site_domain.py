@@ -250,10 +250,12 @@ def process_add_domain_to_upstream_job_update(job):
 	if updated_status == "Active" and job.site:
 		_set_product_trial_site_host_name(job.site, domain)
 
-	if job.status in ["Failure", "Delivery Failure"] and (
-		request := frappe.db.get_value("Product Trial Request", {"domain": domain})
-	):
-		frappe.get_doc("Product Trial Request", request).update_status_from_agent_jobs(job.data)
+	if request := frappe.db.get_value("Product Trial Request", {"domain": domain}):
+		product_trial_request = frappe.get_doc("Product Trial Request", request)
+		if job.status == "Success":
+			product_trial_request.update_status_from_agent_jobs()
+		elif job.status in ["Failure", "Delivery Failure"]:
+			product_trial_request.update_status_from_agent_jobs(job.data)
 
 
 def _set_product_trial_site_host_name(site_name: str, domain: str):
