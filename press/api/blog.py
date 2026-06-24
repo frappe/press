@@ -9,7 +9,7 @@ import frappe
 import requests
 from frappe.utils.caching import redis_cache
 
-from press.press.doctype.blog_read_status.blog_read_status import get_blog_read_status
+from press.press.doctype.blog_read_status.blog_read_status import get_blog_read_status, has_read_blog
 
 
 @frappe.whitelist()
@@ -18,13 +18,12 @@ def latest_blog():
 	if not url:
 		return {"url": None, "show": False}
 
-	status = get_blog_read_status(frappe.session.user)
 	metadata = get_blog_metadata(url)
 	return {
 		"url": url,
 		"title": metadata["title"],
 		"description": metadata["description"],
-		"show": not status.has_read(url),
+		"show": not has_read_blog(frappe.session.user, url),
 	}
 
 
