@@ -1,5 +1,5 @@
 ---
-- name: Prune docker system for last 10h hours
+- name: Prune docker system older than 10h
   command: 'docker system prune -af --filter "until=10h"'
   async: 7200
   poll: 30
