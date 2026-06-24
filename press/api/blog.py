@@ -19,6 +19,9 @@ def latest_blog():
 		return {"url": None, "show": False}
 
 	metadata = get_blog_metadata(url)
+	if not metadata:
+		return {"url": url, "show": False}
+
 	return {
 		"url": url,
 		"title": metadata["title"],
@@ -33,9 +36,12 @@ def mark_read(blog: str):
 
 
 @redis_cache(ttl=60 * 60)
-def get_blog_metadata(url: str) -> dict:
-	response = requests.get(url, timeout=10)
-	response.raise_for_status()
+def get_blog_metadata(url: str) -> dict | None:
+	try:
+		response = requests.get(url, timeout=10)
+		response.raise_for_status()
+	except requests.RequestException:
+		return None
 
 	title = extract_meta_tag(response.text, "og:title")
 	return {
