@@ -1675,7 +1675,8 @@ class VirtualMachine(Document):
 	def disassociate_auto_assigned_public_ip(self):
 		if self.cloud_provider not in ("AWS EC2", "Frappe Compute", "Hetzner"):
 			frappe.throw(
-				"Public IP disassociation is currently only supported for AWS EC2, Frappe Compute, and Hetzner instances"
+				"Public IP disassociation is currently only supported for AWS EC2, Frappe Compute, and Hetzner instances. "
+				"Please choose a different cloud provider that is supported for this operation."
 			)
 
 		if not self.public_ip_address:
