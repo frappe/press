@@ -99,6 +99,7 @@ class AutoScaleTriggerRow(TypedDict):
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
+GLASS_FILE_SIZE = 200 * 1024 * 1024  # /root/glass, see glass_file.yml
 
 
 class BaseServer(Document, TagHelpers):
@@ -970,10 +971,8 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
-	def cleanup_unused_files(self, force: bool = False):
-		if self.is_build_server():
-			return
-
+	def cleanup_unused_files(self, force: bool = True):
+		# User-triggered cleanup forces; the scheduled sweep passes force=False.
 		with suppress(frappe.DoesNotExistError):
 			cleanup_job: "AgentJob" = frappe.get_last_doc(
 				"Agent Job", {"server": self.name, "job_type": "Cleanup Unused Files"}
@@ -1005,10 +1004,18 @@ class BaseServer(Document, TagHelpers):
 		return False
 
 	def _cleanup_unused_files(self, force: bool = False):
-		agent = Agent(self.name, self.doctype)
-		if agent.should_skip_requests():
+		if self.is_build_server():
 			return
+		agent = Agent(self.name, self.doctype)
+		if not force and agent.should_skip_requests():
+			return
+		if force and self.agent_disk_full():
+			self.break_glass()
 		agent.cleanup_unused_files(force)
+
+	def agent_disk_full(self) -> bool:
+		# On unified servers the agent shares the data disk; a full data volume starves it.
+		return self.free_space("/") < GLASS_FILE_SIZE
 
 	def on_trash(self):
 		plays = frappe.get_all("Ansible Play", filters={"server": self.name})
@@ -1680,9 +1687,25 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			ansible.run()
+			return ansible.run()
 		except Exception:
 			log_error("Add Glass File Exception", doc=self)
+			return None
+
+	def restore_glass_file(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_restore_glass_file", enqueue_after_commit=True)
+
+	def _restore_glass_file(self):
+		play = self._add_glass_file()
+		if play and play.status == "Success":
+			return
+		TelegramMessage.enqueue(
+			f"Could not restore break-glass file on "
+			f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
+			f"after cleanup — server has no emergency disk buffer.",
+			"Information",
+			priority="High",
+		)
 
 	@frappe.whitelist()
 	def setup_mysqldump(self):
@@ -4229,9 +4252,18 @@ def cleanup_unused_files():
 	servers = frappe.get_all("Server", fields=["name"], filters={"status": "Active"})
 	for server in servers:
 		try:
-			frappe.get_doc("Server", server.name).cleanup_unused_files()
+			frappe.get_doc("Server", server.name)._cleanup_unused_files(force=False)
 		except Exception:
 			log_error("Server File Cleanup Error", server=server)
+
+
+def process_cleanup_unused_files_job_update(job):
+	# A forced cleanup breaks glass for room; restore the buffer once it settles.
+	if job.status not in ("Success", "Failure"):
+		return
+	if not json.loads(job.request_data or "{}").get("force"):
+		return
+	frappe.get_doc(job.server_type, job.server).restore_glass_file()
 
 
 def process_running_benches_on_server():
