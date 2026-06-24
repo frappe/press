@@ -37,6 +37,7 @@ from press.utils import log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
 AGENT_JOB_TIMEOUT_HOURS = 4
+CALLBACK_FAILURE_LIMIT = 5000
 
 BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
 
@@ -1174,6 +1175,15 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 				reference_doctype="Agent Job",
 				reference_name=job_name,
 			)
+
+		if failure_count >= CALLBACK_FAILURE_LIMIT:
+			frappe.db.rollback()
+			frappe.db.set_value("Agent Job", job_name, "status", "Failure")
+			job.add_comment(
+				text=f"Callback processing stopped after {failure_count} failures.\n\n{traceback.format_exc()}"
+			)
+			return
+
 		log_update(job, start, e)
 		raise AgentCallbackException from e
 
