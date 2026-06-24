@@ -4570,6 +4570,9 @@ def process_add_domain_job_update(job):
 			return
 
 		site = Site("Site", job.site)
+		if site.host_name == site_domain:
+			return  # already set by process_add_domain_to_upstream_job_update
+
 		auto_generated_domain = site.host_name
 		site.host_name = site_domain
 		site.save()
