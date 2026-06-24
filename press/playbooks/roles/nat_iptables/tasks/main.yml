@@ -37,6 +37,8 @@
   when:
     - cloud_provider == "Hetzner"
     - network_gateway is defined
+    - should_setup_nat_gateway is defined
+    - should_setup_nat_gateway
     - network_gateway
 
 - name: Configure private interface (Frappe Compute specific)
