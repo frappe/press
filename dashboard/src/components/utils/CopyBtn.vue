@@ -30,18 +30,3 @@ const copy = () => {
 		<lucide-check v-else class="size-3.5 animate-in fade-in" />
 	</button>
 </template>
-
-<style scoped>
-.fade-in {
-	animation: fadeIn 0.4s ease-in-out;
-}
-
-@keyframes fadeIn {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
-</style>
