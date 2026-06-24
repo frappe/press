@@ -4565,6 +4565,10 @@ def process_add_domain_job_update(job):
 		product_trial_request.update_status_from_agent_jobs()
 
 		site_domain = json.loads(job.request_data).get("domain")
+		site_domain_status = frappe.db.get_value("Site Domain", site_domain, "status")
+		if site_domain_status != "Active":
+			return
+
 		site = Site("Site", job.site)
 		auto_generated_domain = site.host_name
 		site.host_name = site_domain
