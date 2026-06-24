@@ -1249,6 +1249,19 @@ class VirtualMachine(Document):
 		self.save()
 		self.update_servers()
 
+	def _get_hetzner_public_ip(self, server_instance):
+		# Always reset and repopulate from Hetzner state
+		public_ip_address = ""
+
+		if server_instance.public_net:
+			try:
+				if server_instance.public_net.primary_ipv4:
+					public_ip_address = server_instance.public_net.primary_ipv4.ip
+			except AttributeError:
+				pass
+
+		return public_ip_address
+
 	def _sync_hetzner(self, server_instance=None):
 		if not server_instance:
 			try:
@@ -1273,8 +1286,7 @@ class VirtualMachine(Document):
 		self.ram = server_instance.server_type.memory * 1024
 
 		self.private_ip_address = server_instance.private_net[0].ip if server_instance.private_net else ""
-		if self.assign_public_ip:
-			self.public_ip_address = server_instance.public_net.ipv4.ip
+		self.public_ip_address = self._get_hetzner_public_ip(server_instance)
 
 		self.termination_protection = server_instance.protection.get("delete", False)
 
@@ -1632,11 +1644,38 @@ class VirtualMachine(Document):
 			SourceDestCheck={"Value": True},
 		)
 
+	def disassociate_hetzner_public_ip(self):
+		client = self.client()
+		server_instance = self.get_hetzner_server_instance(fetch_data=True)
+
+		should_power_on = server_instance.status == "running"
+
+		if should_power_on:
+			client.servers.power_off(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
+
+		server_instance = self.get_hetzner_server_instance(fetch_data=True)
+
+		if server_instance.public_net:
+			if server_instance.public_net.primary_ipv4:
+				client.primary_ips.unassign(server_instance.public_net.primary_ipv4).wait_until_finished(
+					HETZNER_ACTION_RETRIES
+				)
+
+			if server_instance.public_net.primary_ipv6:
+				client.primary_ips.unassign(server_instance.public_net.primary_ipv6).wait_until_finished(
+					HETZNER_ACTION_RETRIES
+				)
+
+		if should_power_on:
+			client.servers.power_on(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
+
+		time.sleep(25)  # Wait for sshd to come back before using ansible
+
 	@frappe.whitelist()
 	def disassociate_auto_assigned_public_ip(self):
-		if self.cloud_provider not in ("AWS EC2", "Frappe Compute"):
+		if self.cloud_provider not in ("AWS EC2", "Frappe Compute", "Hetzner"):
 			frappe.throw(
-				"Public IP disassociation is currently only supported for AWS EC2 and Frappe Compute instances"
+				"Public IP disassociation is currently only supported for AWS EC2, Frappe Compute, and Hetzner instances"
 			)
 
 		if not self.public_ip_address:
@@ -1661,6 +1700,9 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "Frappe Compute":
 			client = self.client()
 			client.remove_public_ip_from_virtual_machine(self.instance_id)
+
+		elif self.cloud_provider == "Hetzner":
+			self.disassociate_hetzner_public_ip()
 
 		frappe.flags.force_update_dns = True
 		self.sync()

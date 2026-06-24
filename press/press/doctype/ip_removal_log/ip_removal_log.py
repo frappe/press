@@ -129,13 +129,14 @@ class IPRemovalLog(Document, StepHandler):
 				port=doc._ssh_port(),
 				variables={
 					"nat_gateway_ip": frappe.cache.get_value(f"{self.name}:{self.nat_server}"),
-					"is_frappe_compute": doc.provider == "Frappe Compute",
+					"is_frappe_compute": True if doc.provider == "Frappe Compute" else None,
 					"cloud_provider": cluster.cloud_provider,
 					"network_gateway": (
 						str(ip_network(cluster.cidr_block).network_address + 1)
 						if cluster.cloud_provider == "Hetzner" and cluster.cidr_block
 						else ""
 					),
+					"should_setup_nat_gateway": True if doc.provider == "Hetzner" else None,
 				},
 			)
 			self.handle_ansible_play(step, ansible)
