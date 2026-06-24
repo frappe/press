@@ -228,7 +228,7 @@ class ProductTrial(Document):
 		return proxy_servers_for_available_clusters
 
 	def set_site_domain(self, site: Site, site_domain: str):
-		agent_jobs = []
+		agent_jobs: list[dict] = []
 		if not site_domain:
 			return agent_jobs
 
@@ -240,7 +240,6 @@ class ProductTrial(Document):
 				{
 					"agent_job": add_domain_to_upstream_job,
 					"purpose": "Add Domain to Upstream",
-					"required_for_completion": False,
 				}
 			)
 		if add_domain_job := site.add_domain_to_config(site_domain):
@@ -378,7 +377,9 @@ class ProductTrial(Document):
 
 		server = self.get_server_from_cluster(cluster)
 		cluster_domains = frappe.db.get_all(
-			"Root Domain", {"name": ("like", f"%.{self.domain}"), "enabled": 1}, ["name", "default_cluster as cluster"]
+			"Root Domain",
+			{"name": ("like", f"%.{self.domain}"), "enabled": 1},
+			["name", "default_cluster as cluster"],
 		)
 		cluster_domain = find(
 			cluster_domains,
