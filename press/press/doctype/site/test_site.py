@@ -38,6 +38,7 @@ from press.press.doctype.site.site import (
 	process_rename_site_job_update,
 	suspend_sites_exceeding_disk_usage_for_last_14_days,
 )
+from press.press.doctype.site_migration.site_migration import SiteMigration
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
@@ -199,6 +200,24 @@ class TestSite(FrappeTestCase):
 
 		self.assertEqual(site.db_server_restore_space(app, unified_db, db_required=100, app_required=30), 130)
 		self.assertEqual(site.db_server_restore_space(app, split_db, db_required=100, app_required=30), 100)
+
+	def test_has_recent_failed_migration_only_true_for_a_recent_failure(self):
+		site = create_test_site("testsubdomain")
+		self.assertFalse(site.has_recent_failed_migration())
+
+		bench = create_test_bench()
+		with patch.object(SiteMigration, "after_insert"):
+			migration = frappe.get_doc(
+				{"doctype": "Site Migration", "site": site.name, "destination_bench": bench.name}
+			).insert()
+
+		frappe.db.set_value("Site Migration", migration.name, "status", "Failure")
+		self.assertTrue(site.has_recent_failed_migration())
+
+		frappe.db.set_value(
+			"Site Migration", migration.name, "creation", frappe.utils.add_to_date(None, days=-2)
+		)
+		self.assertFalse(site.has_recent_failed_migration())
 
 	def test_site_has_default_site_domain_on_create(self):
 		"""Ensure site has default site domain on create."""
