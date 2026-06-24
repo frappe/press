@@ -4396,6 +4396,7 @@ class Site(Document, TagHelpers):
 			region.inbound_ip = self.inbound_ip_in_cluster(region.name)
 
 		return {
+			"has_recent_failed_migration": self.has_recent_failed_migration(),
 			"In-Place Migrate Site": {
 				"hidden": False,
 				"allow_scheduling": False,
@@ -4423,6 +4424,17 @@ class Site(Document, TagHelpers):
 				},
 			},
 		}
+
+	def has_recent_failed_migration(self) -> bool:
+		# A failed move leaves restore files behind, so a retry hits the space pre-check.
+		return frappe.db.exists(
+			"Site Migration",
+			{
+				"site": self.name,
+				"status": "Failure",
+				"creation": (">", frappe.utils.add_to_date(frappe.utils.now(), days=-1)),
+			},
+		)
 
 	@property
 	def recent_offsite_backups_(self):
