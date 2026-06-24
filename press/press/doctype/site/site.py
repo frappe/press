@@ -1068,15 +1068,27 @@ class Site(Document, TagHelpers):
 			app, self.backup_space_required_on_app, no_increase=no_increase, purpose="backup site"
 		)
 
+	def db_server_restore_space(
+		self, app: Server, db: DatabaseServer, db_required: int, app_required: int
+	) -> int:
+		"""Disk space the database server needs for a restore.
+
+		On a unified server the app and database share one disk, so the database
+		server's disk must also accommodate the app-side restore files.
+		"""
+		if db.private_ip == app.private_ip:
+			return db_required + app_required
+		return db_required
+
 	def check_space_on_server_for_restore(self):
 		app: Server = frappe.get_doc("Server", self.server)
 		self.check_and_increase_disk(app, self.restore_space_required_on_app)
 
 		if app.database_server:
 			db: DatabaseServer = frappe.get_doc("Database Server", app.database_server)
-			space_required = self.restore_space_required_on_db
-			if db.private_ip == app.private_ip:
-				space_required += self.restore_space_required_on_app
+			space_required = self.db_server_restore_space(
+				app, db, self.restore_space_required_on_db, self.restore_space_required_on_app
+			)
 			self.check_and_increase_disk(db, space_required)
 
 	def create_agent_request(self):

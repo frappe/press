@@ -190,6 +190,16 @@ class TestSite(FrappeTestCase):
 		site.host_name = "balu.codes"  # domain that doesn't exist
 		self.assertRaises(frappe.exceptions.ValidationError, site.save)
 
+	def test_db_server_restore_space_includes_app_space_on_unified_server(self):
+		"""On a unified server (shared disk) the db requirement must include app space."""
+		site = frappe.new_doc("Site")
+		app = frappe._dict(private_ip="10.0.0.1")
+		unified_db = frappe._dict(private_ip="10.0.0.1")
+		split_db = frappe._dict(private_ip="10.0.0.2")
+
+		self.assertEqual(site.db_server_restore_space(app, unified_db, db_required=100, app_required=30), 130)
+		self.assertEqual(site.db_server_restore_space(app, split_db, db_required=100, app_required=30), 100)
+
 	def test_site_has_default_site_domain_on_create(self):
 		"""Ensure site has default site domain on create."""
 		site = create_test_site("testsubdomain")

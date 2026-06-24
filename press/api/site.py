@@ -2187,7 +2187,12 @@ def validate_restoration_space_requirements(
 		public_file_size=public_file_size,
 		private_file_size=private_file_size,
 	)
-	required_space_on_db_server = site.get_restore_space_required_on_db(db_file_size=db_file_size)
+	required_space_on_db_server = site.db_server_restore_space(
+		server,
+		database_server,
+		site.get_restore_space_required_on_db(db_file_size=db_file_size),
+		required_space_on_app_server,
+	)
 
 	free_space_on_app_server = server.free_space(server.guess_data_disk_mountpoint())
 	free_space_on_db_server = database_server.free_space(database_server.guess_data_disk_mountpoint())
