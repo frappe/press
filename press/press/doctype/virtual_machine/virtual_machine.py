@@ -1676,10 +1676,15 @@ class VirtualMachine(Document):
 		if self.cloud_provider not in ("AWS EC2", "Frappe Compute", "Hetzner"):
 			frappe.throw(
 <<<<<<< HEAD
+<<<<<<< HEAD
 				"Public IP disassociation is currently only supported for AWS EC2 and Frappe Compute instances. Please try another provider."
 =======
 				"Public IP disassociation is currently only supported for AWS EC2, Frappe Compute, and Hetzner instances"
 >>>>>>> 7c95897f0 (feat(nat): IP removal for hetzner)
+=======
+				"Public IP disassociation is currently only supported for AWS EC2, Frappe Compute, and Hetzner instances. "
+				"Please choose a different cloud provider that is supported for this operation."
+>>>>>>> 286778578 (fix: Fix semgrep issue)
 			)
 
 		if not self.public_ip_address:
