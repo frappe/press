@@ -100,6 +100,7 @@ class VirtualMachine(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.cluster.cluster import Cluster
 		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import (
 			VirtualMachineTemporaryVolume,
 		)
@@ -224,9 +225,10 @@ class VirtualMachine(Document):
 
 		self.validate_data_disk_snapshot()
 
-		if self.series == "nat" and self.cloud_provider not in ("AWS EC2", "Frappe Compute"):
+		if self.series == "nat" and self.cloud_provider not in ("AWS EC2", "Frappe Compute", "Hetzner"):
 			frappe.throw(
-				"NAT servers are only supported on AWS EC2 and Frappe Compute. Please pick one of these cloud providers, or use a non-NAT series."
+				"NAT Servers are only supported on AWS EC2, Frappe Compute, and Hetzner. "
+				f"Change the cloud provider from {self.cloud_provider} to a supported provider."
 			)
 
 	def validate_data_disk_snapshot(self):
@@ -507,7 +509,8 @@ class VirtualMachine(Document):
 		"""Provision a Digital Ocean Droplet"""
 		if not self.machine_image:
 			frappe.throw(
-				"A machine image is required to provision a Digital Ocean droplet. Please attach a Virtual Machine Image before provisioning."
+				"Machine Image is required to provision a DigitalOcean Virtual Machine. "
+				"Set the Machine Image field and try again."
 			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
@@ -561,7 +564,7 @@ class VirtualMachine(Document):
 				"A machine image is required to provision a Hetzner virtual machine. Please attach a Virtual Machine Image before provisioning."
 			)
 
-		cluster = frappe.get_doc("Cluster", self.cluster)
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 
 		server = (
 			self.client()
@@ -575,16 +578,15 @@ class VirtualMachine(Document):
 				],
 				location=Location(name=cluster.region),
 				public_net=ServerCreatePublicNetwork(
-					enable_ipv4=True,
+					enable_ipv4=bool(self.assign_public_ip),
 					enable_ipv6=False,
 				),
-				ssh_keys=[
-					SSHKey(name=self.ssh_key),
-				],
+				ssh_keys=[SSHKey(name=self.ssh_key)],
 				user_data=self.get_cloud_init() if self.virtual_machine_image else "",
 			)
 			.server
 		)
+
 		self.instance_id = server.id
 		self.save()
 		# To ensure, we don't lose state, because machine has been created at this point
@@ -608,6 +610,20 @@ class VirtualMachine(Document):
 			self.save()
 			frappe.db.commit()
 			raise
+
+		if self.series == "nat":
+			try:
+				cluster.add_hetzner_nat_route(self.private_ip_address)  # Route needed for outbound connection
+			except Exception:
+				# Route attachment failed.
+				# Server is live on Hetzner but unusable — delete it to avoid billing.
+				with suppress(Exception):
+					self.client().servers.delete(server).wait_until_finished(HETZNER_ACTION_RETRIES)
+				self.instance_id = None
+				self.status = "Terminated"
+				self.save()
+				frappe.db.commit()
+				raise
 
 		self.status = self.get_hetzner_status_map()[server.status]
 		self.save()
@@ -1269,7 +1285,8 @@ class VirtualMachine(Document):
 		self.ram = server_instance.server_type.memory * 1024
 
 		self.private_ip_address = server_instance.private_net[0].ip if server_instance.private_net else ""
-		self.public_ip_address = server_instance.public_net.ipv4.ip
+		if self.assign_public_ip:
+			self.public_ip_address = server_instance.public_net.ipv4.ip
 
 		self.termination_protection = server_instance.protection.get("delete", False)
 

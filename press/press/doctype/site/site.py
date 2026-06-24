@@ -720,23 +720,24 @@ class Site(Document, TagHelpers):
 
 	def generate_saas_communication_secret(self, create_agent_job=False, save=True):
 		if self.saas_communication_secret:
-			return
+			return None
 
 		# Ensure site isn't owned by Administrator
 		if not self.team:
-			return
+			return None
 
 		if frappe.get_value("Team", self.team, "user") == "Administrator":
-			return
+			return None
 
 		self.saas_communication_secret = frappe.generate_hash(length=32)
 		config = {
 			"fc_communication_secret": self.saas_communication_secret,
 		}
 		if create_agent_job:
-			self.update_site_config(config)
-		else:
-			self._update_configuration(config=config, save=save)
+			return self.update_site_config(config)
+
+		self._update_configuration(config=config, save=save)
+		return None
 
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
@@ -1192,6 +1193,9 @@ class Site(Document, TagHelpers):
 		):
 			raise Exception(f"Remote File {self.remote_database_file} is unavailable on S3")
 
+		if self.remote_config_file and not frappe.get_doc("Remote File", self.remote_config_file).exists():
+			raise Exception(f"Remote File {self.remote_config_file} is unavailable on S3")
+
 		agent = Agent(self.server)
 		job = agent.restore_site(self, skip_failing_patches=skip_failing_patches)
 		log_site_activity(self.name, "Restore", job=job.name)
@@ -1623,7 +1627,7 @@ class Site(Document, TagHelpers):
 		domain = domain.lower().strip(".")
 		log_site_activity(self.name, "Add Domain")
 		create_dns_record(doc=self, record_name=domain)
-		frappe.get_doc(
+		site_domain = frappe.get_doc(
 			{
 				"doctype": "Site Domain",
 				"status": "Pending",
@@ -1632,6 +1636,7 @@ class Site(Document, TagHelpers):
 				"dns_type": "CNAME",
 			}
 		).insert(ignore_if_duplicate=True)
+		return site_domain.flags.get("add_domain_to_upstream_job")
 
 	@frappe.whitelist()
 	def create_dns_record(self):
@@ -1665,7 +1670,7 @@ class Site(Document, TagHelpers):
 		domains.add(domain)
 		self._update_configuration({"domains": list(domains)})
 		agent = Agent(self.server)
-		agent.add_domain(self, domain)
+		return agent.add_domain(self, domain)
 
 	def remove_domain_from_config(self, domain):
 		domains = set(self.get_config_value_for_key("domains") or [])
@@ -4547,8 +4552,7 @@ def update_product_trial_request_status_based_on_site_status(site, is_site_activ
 	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 	if is_site_active:
 		product_trial_request.prefill_setup_wizard_data()
-		product_trial_request.status = "Site Created"
-		product_trial_request.save(ignore_permissions=True)
+		product_trial_request.update_status_from_agent_jobs()
 	else:
 		product_trial_request.status = "Error"
 		product_trial_request.error = error
@@ -4564,10 +4568,9 @@ def process_complete_setup_wizard_job_update(job):
 		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 		if frappe.get_all("Site Domain", filters={"site": job.site, "status": ["!=", "Active"]}):
 			product_trial_request.status = "Adding Domain"
+			product_trial_request.save(ignore_permissions=True)
 		else:
-			product_trial_request.status = "Site Created"
-			product_trial_request.site_creation_completed_on = now_datetime()
-		product_trial_request.save(ignore_permissions=True)
+			product_trial_request.update_status_from_agent_jobs()
 	elif job.status in ("Failure", "Delivery Failure"):
 		product_trial_request.status = "Error"
 		product_trial_request.save(ignore_permissions=True)
@@ -4583,10 +4586,7 @@ def process_add_domain_job_update(job):
 		if product_trial_request.status == "Site Created":
 			return
 
-		product_trial_request.status = "Site Created"
-		product_trial_request.site_creation_completed_on = now_datetime()
-
-		product_trial_request.save(ignore_permissions=True)
+		product_trial_request.update_status_from_agent_jobs()
 
 		site_domain = json.loads(job.request_data).get("domain")
 		site = Site("Site", job.site)
@@ -4601,8 +4601,7 @@ def process_add_domain_job_update(job):
 			job.db_set("retry_count", job.retry_count + 1)
 			job.retry_in_place()
 		else:
-			product_trial_request.status = "Error"
-			product_trial_request.save(ignore_permissions=True)
+			product_trial_request.update_status_from_agent_jobs(job.data)
 
 
 def get_remove_step_status(job):

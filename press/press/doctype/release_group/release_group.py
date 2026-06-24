@@ -1173,6 +1173,9 @@ class ReleaseGroup(Document, TagHelpers):
 		if not self.enabled:
 			return "Disabled"
 
+		if self.deploy_in_progress or self.has_running_release_pipeline:
+			return "Deploying"
+
 		active_benches = frappe.db.get_all(
 			"Bench", {"group": self.name, "status": "Active"}, limit=1, order_by="creation desc"
 		)

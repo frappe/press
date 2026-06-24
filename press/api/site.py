@@ -301,19 +301,24 @@ def _check_warranty_restrictions(
 	is_new_plan_supported = is_product_warranty_enabled_for_plan_(new_plan)
 	if is_current_plan_supported == is_new_plan_supported:
 		return
+	if is_new_plan_supported:
+		# Enabling warranty is gated only by the server quota (it consumes a slot).
+		# The cooldown deliberately does not apply: the only enable the cooldown
+		# would block is a site reclaiming the slot it itself just gave up, which
+		# is legitimate as long as a slot is free. Rotating support to a *different*
+		# site is already prevented by the quota plus the cooldown on disabling.
+		quota = get_available_warranty_quota_for_server(server)
+		if quota.get("available") <= 0:
+			frappe.throw(
+				"You have exhausted the site warranty quota for this server. To increase limit, please contact support."
+			)
+		return
+	# Disabling warranty is gated by the cooldown to deter freeing a slot only to
+	# rotate it onto another site.
 	next_warranty_change = get_next_allowed_dedicated_product_warranty_change_date(site)
 	if get_datetime() < next_warranty_change:
 		pretty_date = format_datetime(next_warranty_change, "MMM d, YYYY hh:mm a")
 		frappe.throw(f"Cannot change product warranty for this site before {pretty_date}")  # nosemgrep
-	# The quota check only gates enabling warranty (which consumes a slot);
-	# disabling is always allowed once the cooldown above has passed.
-	if not is_new_plan_supported:
-		return
-	quota = get_available_warranty_quota_for_server(server)
-	if quota.get("available") <= 0:
-		frappe.throw(
-			"You have exhausted the site warranty quota for this server. To increase limit, please contact support."
-		)
 
 
 def _is_plan_allowed_on_server(server: str, new_site_plan: dict) -> bool:

@@ -12,6 +12,7 @@ import typing
 from contextlib import suppress
 from datetime import timedelta
 from functools import cached_property
+from ipaddress import ip_network
 
 import boto3
 import frappe
@@ -1840,6 +1841,12 @@ class BaseServer(Document, TagHelpers):
 		if not self.virtual_machine:
 			return
 		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		if machine.data_disk_snapshot and not machine.data_disk_snapshot_attached:
+			# The VMI's default data volume is about to be deleted and replaced by the
+			# volume created from data_disk_snapshot. Don't seed mounts off the doomed
+			# volume — sync_attached_volumes seeds them after the snapshot volume is
+			# attached, once data_disk_snapshot_attached is set.
+			return
 		if machine.has_data_volume and len(machine.volumes) > 1 and not self.mounts:
 			self.fetch_volumes_from_virtual_machine()
 			self.set_default_mount_points()
@@ -2065,6 +2072,9 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(self.doctype, self.name, "_install_nat_iptables")
 
 	def _install_nat_iptables(self):
+		vm: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		cluster: Cluster = frappe.get_doc("Cluster", vm.cluster)
+
 		try:
 			ansible = Ansible(
 				playbook="nat_iptables.yml",
@@ -2073,6 +2083,12 @@ class BaseServer(Document, TagHelpers):
 				port=self._ssh_port(),
 				variables={
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
+					"cloud_provider": vm.cloud_provider,
+					"network_gateway": (
+						str(ip_network(cluster.cidr_block).network_address + 1)
+						if vm.cloud_provider == "Hetzner" and cluster.cidr_block
+						else ""
+					),
 				},
 			)
 			return ansible.run()
@@ -2896,6 +2912,7 @@ class Server(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		stop_deployments: DF.Check
 		stop_incident_actions: DF.Check
+		stream_backups: DF.Check
 		supported_site_quota: DF.Int
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
@@ -3190,6 +3207,10 @@ class Server(BaseServer):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu")
 
 	@frappe.whitelist()
+	def setup_rclone(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_rclone")
+
+	@frappe.whitelist()
 	def install_nfs_common(self):
 		"""Install nfs common on this server"""
 		frappe.enqueue_doc(self.doctype, self.name, "_install_nfs_common")
@@ -3217,6 +3238,18 @@ class Server(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Install and ncdu Setup Exception", server=self.as_dict())
+
+	def _setup_rclone(self):
+		try:
+			ansible = Ansible(
+				playbook="install_rclone.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Install Rclone Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def add_upstream_to_proxy(self):
@@ -3278,6 +3311,8 @@ class Server(BaseServer):
 			else None
 		)
 
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
 		try:
 			ansible = Ansible(
 				playbook=("self_hosted.yml" if getattr(self, "is_self_hosted", False) else "server.yml"),
@@ -3304,6 +3339,12 @@ class Server(BaseServer):
 					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
 					"agent_update_args": " --skip-repo-setup=true",
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
+					"cloud_provider": self.provider,
+					"network_gateway": (
+						str(ip_network(cluster.cidr_block).network_address + 1)
+						if self.provider == "Hetzner" and cluster.cidr_block
+						else ""
+					),
 					**self.get_mount_variables(),
 				},
 			)
