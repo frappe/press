@@ -40,3 +40,7 @@ def get_blog_read_status(user: str) -> BlogReadStatus:
 		return frappe.get_doc("Blog Read Status", user)
 
 	return frappe.get_doc(doctype="Blog Read Status", user=user).insert(ignore_permissions=True)
+
+
+def has_read_blog(user: str, blog: str) -> bool:
+	return frappe.db.get_value("Blog Read Status", user, "last_read_blog", cache=True) == blog
