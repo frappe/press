@@ -827,7 +827,7 @@ def is_secondary_ready_for_scale_down(server: Server) -> bool:
 	if not scale_down_thresholds:
 		return True
 
-	secondary_server_usage = get_cpu_and_memory_usage(server.secondary_server)
+	secondary_server_usage = get_cpu_and_memory_usage(server.secondary_server)  # type: ignore[arg-type]
 	secondary_server_cpu_usage = secondary_server_usage["vcpu"] * 100
 	secondary_server_memory_usage = secondary_server_usage["memory"] * 100
 

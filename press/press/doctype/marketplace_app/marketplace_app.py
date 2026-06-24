@@ -846,7 +846,7 @@ def marketplace_app_hook(app=None, site: Site | None = None, op="install"):
 		for app_name in site_apps:
 			run_script(app_name, site, op)
 	else:
-		run_script(app, site, op)
+		run_script(app, site, op)  # type: ignore[arg-type]
 
 
 def get_script_name(app, op):

@@ -161,7 +161,7 @@ def make_spamd_request(press_settings: PressSettings, message: bytes):
 		spamd_api_secret = get_decrypted_password("Press Settings", "Press Settings", "spamd_api_secret")
 		headers["Authorization"] = f"token {press_settings.spamd_api_key}:{spamd_api_secret}"
 	r = requests.post(
-		press_settings.spamd_endpoint,
+		press_settings.spamd_endpoint,  # type: ignore[arg-type]
 		headers=headers,
 		files={"message": message},
 	)

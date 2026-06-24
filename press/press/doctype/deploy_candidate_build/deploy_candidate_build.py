@@ -142,10 +142,10 @@ def get_asset_store_credentials() -> AssetStoreCredentials:
 
 	return {
 		"secret_access_key": settings.get_password("asset_store_secret_access_key"),
-		"access_key": settings.asset_store_access_key,
-		"region_name": settings.asset_store_region,
-		"endpoint_url": settings.asset_store_endpoint,
-		"bucket_name": settings.asset_store_bucket_name,
+		"access_key": settings.asset_store_access_key,  # type: ignore[typeddict-item]
+		"region_name": settings.asset_store_region,  # type: ignore[typeddict-item]
+		"endpoint_url": settings.asset_store_endpoint,  # type: ignore[typeddict-item]
+		"bucket_name": settings.asset_store_bucket_name,  # type: ignore[typeddict-item]
 	}
 
 

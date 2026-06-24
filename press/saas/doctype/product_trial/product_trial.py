@@ -230,7 +230,7 @@ class ProductTrial(Document):
 		return proxy_servers_for_available_clusters
 
 	def set_site_domain(self, site: Site, site_domain: str):
-		agent_jobs = []
+		agent_jobs: list = []
 		if not site_domain:
 			return agent_jobs
 

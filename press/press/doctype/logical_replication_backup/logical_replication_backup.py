@@ -914,7 +914,7 @@ class LogicalReplicationBackup(Document):
 
 	def store_replication_config_of_bench(self, save: bool = True):
 		config = {}
-		common_site_config: dict = json.loads(self.release_group_doc.common_site_config)
+		common_site_config: dict = json.loads(self.release_group_doc.common_site_config)  # type: ignore[arg-type]
 		for key in REPLICATION_CONFIG_KEYS:
 			value = common_site_config.get(key)
 			if value is not None:

@@ -299,6 +299,7 @@ class ServerSnapshotRecovery(Document):
 
 		if not site_record:
 			frappe.throw(f"Site {site} not found in recovery sites.")
+		assert site_record  # frappe.throw above raises; narrows the type for mypy
 
 		if job.status == "Failure":
 			site_record.status = "Failure"
@@ -334,6 +335,7 @@ class ServerSnapshotRecovery(Document):
 				break
 		if not site_record:
 			frappe.throw(f"Site {site} not found in recovery sites.")
+		assert site_record  # frappe.throw above raises; narrows the type for mypy
 
 		if job.status == "Failure":
 			site_record.status = "Failure"
@@ -384,6 +386,7 @@ class ServerSnapshotRecovery(Document):
 
 		if not site_record:
 			frappe.throw(f"Site {site} not found in recovery sites.")
+		assert site_record  # frappe.throw above raises; narrows the type for mypy
 
 		if (
 			(file_type == "public" and not site_record.public_remote_file)

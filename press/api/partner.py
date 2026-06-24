@@ -669,7 +669,7 @@ def get_partner_leads(
 	lead_owner: str | None = None,
 ) -> list[dict] | None:
 	team = get_current_team()
-	filters = {"partner_team": team}
+	filters: dict = {"partner_team": team}
 	if lead_name:
 		filters["lead_name"] = ("like", f"%{lead_name}%")
 	if status and status != "All":

@@ -52,4 +52,4 @@ class MariaDBVariable(Document):
 
 	def set_on_server(self, server: DatabaseServer):
 		value = self.get_default_value()
-		server.add_or_update_mariadb_variable(self.name, f"value_{self.datatype.lower()}", value)
+		server.add_or_update_mariadb_variable(self.name, f"value_{self.datatype.lower()}", value)  # type: ignore[arg-type]

@@ -738,7 +738,7 @@ class PhysicalBackupRestoration(Document):
 
 	@frappe.whitelist()
 	def force_continue(self) -> None:
-		first_failed_step: PhysicalBackupRestorationStep = None
+		first_failed_step: PhysicalBackupRestorationStep | None = None
 		# Mark all failed and skipped steps as pending
 		for step in self.steps:
 			if step.status in ("Failure", "Skipped"):

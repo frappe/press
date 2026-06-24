@@ -123,7 +123,7 @@ class PrometheusAlertRule(Document):
 		return routes_dict
 
 	def react(self, instance_type: str, instance: str, labels: dict | None = None):
-		return self.run_press_job(self.press_job_type, instance_type, instance, labels)
+		return self.run_press_job(self.press_job_type, instance_type, instance, labels)  # type: ignore[arg-type]
 
 	def run_press_job(
 		self, job_name: str, server_type: str, server_name: str, labels: dict | None = None, arguments=None
