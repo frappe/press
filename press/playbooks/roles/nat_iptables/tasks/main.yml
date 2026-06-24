@@ -4,6 +4,7 @@
     primary_interface: "{{ ansible_interfaces | difference(['lo']) | first }}"
   when: cloud_provider == "Hetzner"
 
+# AWS / Frappe Compute
 - name: Add NAT gateway
   copy:
     dest: /etc/netplan/99-custom-gateway.yaml
@@ -17,8 +18,27 @@
   when:
     - nat_gateway_ip is defined
     - nat_gateway_ip
-    - cloud_provider in ["AWS EC2", "Frappe Compute", "DigitalOcean"]
+    - cloud_provider in ["AWS EC2", "Frappe Compute"]
 
+# DigitalOcean
+- name: Add NAT override routes
+  copy:
+    dest: /etc/netplan/99-custom-gateway.yaml
+    content: |
+      network:
+        ethernets:
+          {{ ansible_default_ipv4.interface }}:
+            routes:
+              - to: 0.0.0.0/1
+                via: {{ nat_gateway_ip }}
+              - to: 128.0.0.0/1
+                via: {{ nat_gateway_ip }}
+  when:
+    - nat_gateway_ip is defined
+    - nat_gateway_ip
+    - cloud_provider == "DigitalOcean"
+
+# Hetzner
 - name: Configure Hetzner private networking
   copy:
     dest: /etc/netplan/99-custom-gateway.yaml
@@ -39,6 +59,7 @@
     - network_gateway is defined
     - network_gateway
 
+# Frappe Compute specific
 - name: Configure private interface (Frappe Compute specific)
   copy:
     dest: /etc/netplan/51-private-interface.yaml
@@ -51,15 +72,18 @@
               addresses:
                 - 8.8.8.8
                 - 4.4.4.4
-  when: is_frappe_compute is defined and is_frappe_compute
+  when:
+    - is_frappe_compute is defined
+    - is_frappe_compute
 
 - name: Move original netplan (Frappe Compute specific)
   command: mv /etc/netplan/50-cloud-init.yaml /etc/netplan/50-cloud-init.yaml.bkp
-  when: is_frappe_compute is defined and is_frappe_compute
+  when:
+    - is_frappe_compute is defined
+    - is_frappe_compute
 
 - name: Apply Netplan
   command: netplan apply
-  when:
-    - nat_gateway_ip is defined and nat_gateway_ip
-      or cloud_provider == "Hetzner"
-      or cloud_provider == "DigitalOcean"
+  when: >
+    (nat_gateway_ip is defined and nat_gateway_ip)
+    or cloud_provider == "Hetzner"
