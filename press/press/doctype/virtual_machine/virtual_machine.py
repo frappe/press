@@ -1664,6 +1664,26 @@ class VirtualMachine(Document):
 		return result.status == "Success"
 
 	def wait_for_ssh(self, timeout=120, interval=2):
+		server_doc = frappe.db.get_value(
+			"Server",
+			{
+				"cluster": self.cluster,
+				"status": "Active",
+				"virtual_machine": self.name,
+			},
+			["name"],
+			as_dict=True,
+		) or frappe.db.get_value(
+			"Database Server",
+			{
+				"cluster": self.cluster,
+				"status": "Active",
+				"virtual_machine": self.name,
+			},
+			["name"],
+			as_dict=True,
+		)
+
 		server = frappe._dict(
 			private_ip=self.private_ip_address,
 			bastion_host=frappe.db.get_value(
@@ -1672,11 +1692,7 @@ class VirtualMachine(Document):
 				["ssh_user", "ssh_port", "name as ip"],
 				as_dict=True,
 			),
-			server=frappe.db.get_value(
-				"Server",
-				{"cluster": self.cluster, "status": "Active", "virtual_machine": self.name},
-				as_dict=True,
-			),
+			server=server_doc,
 		)
 
 		if not server.bastion_host:
