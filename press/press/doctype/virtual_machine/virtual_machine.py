@@ -2428,7 +2428,7 @@ class VirtualMachine(Document):
 		elif self.series == "nat":
 			if self.cloud_provider == "Hetzner":
 				cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
-				groups.append(cluster.create_nat_security_group_hetzner())
+				groups.append(cluster.create_nat_security_group_hetzner().id)
 			else:
 				groups.append(frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id"))
 
