@@ -1700,24 +1700,27 @@ class VirtualMachine(Document):
 
 		should_power_on = server_instance.status == "running"
 
-		if should_power_on:
-			client.servers.power_off(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
+		try:
+			if should_power_on:
+				client.servers.power_off(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
 
-		server_instance = self.get_hetzner_server_instance(fetch_data=True)
+			server_instance = self.get_hetzner_server_instance(fetch_data=True)
 
-		if server_instance.public_net:
-			if server_instance.public_net.primary_ipv4:
-				client.primary_ips.unassign(server_instance.public_net.primary_ipv4).wait_until_finished(
-					HETZNER_ACTION_RETRIES
-				)
+			if server_instance.public_net:
+				if server_instance.public_net.primary_ipv4:
+					client.primary_ips.unassign(server_instance.public_net.primary_ipv4).wait_until_finished(
+						HETZNER_ACTION_RETRIES
+					)
 
-			if server_instance.public_net.primary_ipv6:
-				client.primary_ips.unassign(server_instance.public_net.primary_ipv6).wait_until_finished(
-					HETZNER_ACTION_RETRIES
-				)
+				if server_instance.public_net.primary_ipv6:
+					client.primary_ips.unassign(server_instance.public_net.primary_ipv6).wait_until_finished(
+						HETZNER_ACTION_RETRIES
+					)
 
-		if should_power_on:
-			client.servers.power_on(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
+		finally:
+			if should_power_on:
+				server_instance = self.get_hetzner_server_instance(fetch_data=True)
+				client.servers.power_on(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
 
 		self.wait_for_ssh()  # Wait for sshd to come back before using ansible
 
