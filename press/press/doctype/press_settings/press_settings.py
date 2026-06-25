@@ -172,6 +172,7 @@ class PressSettings(Document):
 		hybrid_cluster: DF.Link | None
 		hybrid_domain: DF.Link | None
 		ic_key: DF.Password | None
+		latest_blog_url: DF.Data | None
 		log_server: DF.Link | None
 		mailgun_api_key: DF.Data | None
 		max_allowed_screenshots: DF.Int
