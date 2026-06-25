@@ -1644,6 +1644,48 @@ class VirtualMachine(Document):
 			SourceDestCheck={"Value": True},
 		)
 
+	def wait_for_ssh(self, timeout=120, interval=2):
+		import subprocess
+
+		server = frappe._dict(
+			ip="",
+			private_ip=self.private_ip_address,
+			bastion_host=frappe.db.get_value(
+				"Proxy Server",
+				{"cluster": self.cluster, "status": "Active"},
+				["ssh_user", "ssh_port", "name as ip"],
+				as_dict=True,
+			),
+		)
+
+		deadline = time.monotonic() + timeout
+
+		while time.monotonic() < deadline:
+			result = subprocess.run(
+				[
+					"ssh",
+					"-o",
+					"BatchMode=yes",
+					"-o",
+					"StrictHostKeyChecking=no",
+					"-o",
+					"ConnectTimeout=5",
+					"-J",
+					f"{server.bastion_host.ssh_user}@{server.bastion_host.ip}:{server.bastion_host.ssh_port}",
+					f"root@{server.private_ip}",
+					"true",
+				],
+				stdout=subprocess.DEVNULL,
+				stderr=subprocess.DEVNULL,
+			)
+
+			if result.returncode == 0:
+				return
+
+			time.sleep(interval)
+
+		frappe.throw(f"Timed out waiting for SSH on {self.name}")
+
 	def disassociate_hetzner_public_ip(self):
 		client = self.client()
 		server_instance = self.get_hetzner_server_instance(fetch_data=True)
@@ -1669,7 +1711,7 @@ class VirtualMachine(Document):
 		if should_power_on:
 			client.servers.power_on(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
 
-		time.sleep(25)  # Wait for sshd to come back before using ansible
+		self.wait_for_ssh()  # Wait for sshd to come back before using ansible
 
 		frappe.flags.force_update_dns = True
 		self.sync()
