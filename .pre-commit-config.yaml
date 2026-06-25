@@ -71,15 +71,7 @@ repos:
     rev: v1.18.2
     hooks:
       - id: mypy
-        args:
-          [
-            --ignore-missing-imports,
-            --follow-imports=skip,
-            --exclude-gitignore,
-            --no-warn-no-return,
-            --disable-error-code=annotation-unchecked,
-            --python-version=3.10,
-          ]
+        args: [--config-file=mypy.ini]
         exclude: ^tests/|test_.*\.py$ # Exclude the 'tests/' directory and files starting with 'test_'
         additional_dependencies:
           [
