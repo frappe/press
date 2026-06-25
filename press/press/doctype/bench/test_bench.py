@@ -627,6 +627,13 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			self.assertEqual(redis_cache_uri.password, redis_queue_uri.password)
 			self.assertEqual(redis_cache_uri.password, None)
 
+	def test_bench_common_site_config_has_server_ip(self):
+		with fake_agent_job({"New Bench": {"status": "Success"}, "Add User to Proxy": {"status": "Success"}}):
+			bench = create_test_bench()
+			server_private_ip = frappe.db.get_value("Server", bench.server, "private_ip")
+			common_site_config = json.loads(bench.config)
+			self.assertEqual(common_site_config.get("server_ip"), server_private_ip)
+
 	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
 	@patch("press.press.doctype.bench.bench.frappe.db.commit", Mock())
 	@patch.object(Bench, "update_bench_config", Mock())

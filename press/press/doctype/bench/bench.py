@@ -327,10 +327,12 @@ class Bench(Document):
 		if press_settings_common_site_config:
 			config.update(json.loads(press_settings_common_site_config))
 
-		self.update_config_with_rg_config(config)
-
 		if not (server_private_ip := frappe.db.get_value("Server", self.server, "private_ip")):
 			frappe.throw("Server must have a private IP to create Bench")  # nosemgrep
+
+		config["server_ip"] = server_private_ip
+
+		self.update_config_with_rg_config(config)
 
 		bench_config = {
 			"docker_image": self.docker_image,
