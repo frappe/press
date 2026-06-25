@@ -1684,7 +1684,10 @@ class VirtualMachine(Document):
 
 			time.sleep(interval)
 
-		frappe.throw(f"Timed out waiting for SSH on {self.name}")
+		frappe.throw(
+			f"Timed out waiting for SSH on {self.name}. "
+			"Please check the server status and network connectivity."
+		)
 
 	def disassociate_hetzner_public_ip(self):
 		client = self.client()
