@@ -83,7 +83,7 @@
 							/>
 							<PhoneInput
 								v-if="!isInvitation"
-								label="Phone Number(Optional)"
+								label="Phone"
 								v-model="phoneNumber"
 								:countries="countries"
 								:country="country"
