@@ -1656,7 +1656,7 @@ class VirtualMachine(Document):
 			playbook="ping.yml",
 			server=frappe._dict(
 				{
-					"doctype": "Server",
+					"doctype": server.server_doctype,
 					"name": server.server.name,
 					"ssh_user": "root",
 					"ssh_port": 22,
@@ -1679,16 +1679,22 @@ class VirtualMachine(Document):
 			},
 			["name"],
 			as_dict=True,
-		) or frappe.db.get_value(
-			"Database Server",
-			{
-				"cluster": self.cluster,
-				"status": "Active",
-				"virtual_machine": self.name,
-			},
-			["name"],
-			as_dict=True,
 		)
+
+		server_doctype = "Server"
+
+		if not server_doc:
+			server_doc = frappe.db.get_value(
+				"Database Server",
+				{
+					"cluster": self.cluster,
+					"status": "Active",
+					"virtual_machine": self.name,
+				},
+				["name"],
+				as_dict=True,
+			)
+			server_doctype = "Database Server"
 
 		server = frappe._dict(
 			private_ip=self.private_ip_address,
@@ -1699,6 +1705,7 @@ class VirtualMachine(Document):
 				as_dict=True,
 			),
 			server=server_doc,
+			server_doctype=server_doctype,
 		)
 
 		if not server.bastion_host:
