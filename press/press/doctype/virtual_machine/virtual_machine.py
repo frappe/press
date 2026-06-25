@@ -44,6 +44,7 @@ from oci.exceptions import TransientServiceError
 from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
+from press.runner import Ansible
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 
@@ -1645,27 +1646,22 @@ class VirtualMachine(Document):
 		)
 
 	def ping_server(self, server):
-		import subprocess
-
-		result = subprocess.run(
-			[
-				"ssh",
-				"-o",
-				"BatchMode=yes",
-				"-o",
-				"StrictHostKeyChecking=no",
-				"-o",
-				"ConnectTimeout=5",
-				"-J",
-				f"{server.bastion_host.ssh_user}@{server.bastion_host.ip}:{server.bastion_host.ssh_port}",
-				f"root@{server.private_ip}",
-				"true",
-			],
-			stdout=subprocess.DEVNULL,
-			stderr=subprocess.DEVNULL,
+		ping = Ansible(
+			playbook="ping.yml",
+			server=frappe._dict(
+				{
+					"doctype": "Server",
+					"name": server.server.name,
+					"ssh_user": "root",
+					"ssh_port": 22,
+					"private_ip": server.private_ip,
+					"bastion_host": server.bastion_host,
+				}
+			),
 		)
 
-		return result.returncode == 0
+		result = ping.run()
+		return result.status == "Success"
 
 	def wait_for_ssh(self, timeout=120, interval=2):
 		server = frappe._dict(
@@ -1674,6 +1670,11 @@ class VirtualMachine(Document):
 				"Proxy Server",
 				{"cluster": self.cluster, "status": "Active"},
 				["ssh_user", "ssh_port", "name as ip"],
+				as_dict=True,
+			),
+			server=frappe.db.get_value(
+				"Server",
+				{"cluster": self.cluster, "status": "Active", "virtual_machine": self.name},
 				as_dict=True,
 			),
 		)
