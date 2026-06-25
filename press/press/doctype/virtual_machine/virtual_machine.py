@@ -1644,9 +1644,30 @@ class VirtualMachine(Document):
 			SourceDestCheck={"Value": True},
 		)
 
-	def wait_for_ssh(self, timeout=120, interval=2):
+	def ping_server(self, server):
 		import subprocess
 
+		result = subprocess.run(
+			[
+				"ssh",
+				"-o",
+				"BatchMode=yes",
+				"-o",
+				"StrictHostKeyChecking=no",
+				"-o",
+				"ConnectTimeout=5",
+				"-J",
+				f"{server.bastion_host.ssh_user}@{server.bastion_host.ip}:{server.bastion_host.ssh_port}",
+				f"root@{server.private_ip}",
+				"true",
+			],
+			stdout=subprocess.DEVNULL,
+			stderr=subprocess.DEVNULL,
+		)
+
+		return result.returncode == 0
+
+	def wait_for_ssh(self, timeout=120, interval=2):
 		server = frappe._dict(
 			private_ip=self.private_ip_address,
 			bastion_host=frappe.db.get_value(
@@ -1666,25 +1687,7 @@ class VirtualMachine(Document):
 		deadline = time.monotonic() + timeout
 
 		while time.monotonic() < deadline:
-			result = subprocess.run(
-				[
-					"ssh",
-					"-o",
-					"BatchMode=yes",
-					"-o",
-					"StrictHostKeyChecking=no",
-					"-o",
-					"ConnectTimeout=5",
-					"-J",
-					f"{server.bastion_host.ssh_user}@{server.bastion_host.ip}:{server.bastion_host.ssh_port}",
-					f"root@{server.private_ip}",
-					"true",
-				],
-				stdout=subprocess.DEVNULL,
-				stderr=subprocess.DEVNULL,
-			)
-
-			if result.returncode == 0:
+			if self.ping_server(server):
 				return
 
 			time.sleep(interval)
