@@ -19,6 +19,7 @@ from press.runner import Ansible, StepHandler
 
 if TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class IPRemovalLog(Document, StepHandler):
@@ -105,8 +106,11 @@ class IPRemovalLog(Document, StepHandler):
 		doc = frappe.get_doc(self.server_type, step.server)
 		if doc.ip:
 			try:
-				vm = frappe.get_doc("Virtual Machine", doc.virtual_machine)
-				vm.disassociate_auto_assigned_public_ip()
+				vm: VirtualMachine = frappe.get_doc("Virtual Machine", doc.virtual_machine)
+				if vm.cloud_provider == "Hetzner":
+					vm.disassociate_hetzner_public_ip()
+				else:
+					vm.disassociate_auto_assigned_public_ip()
 			except frappe.ValidationError:
 				step.output = "Failed to disassociate public ip. Possibly failed to get a lock on the VM."
 				step.status = "Failure"

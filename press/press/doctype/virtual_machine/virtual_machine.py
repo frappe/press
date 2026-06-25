@@ -1671,10 +1671,14 @@ class VirtualMachine(Document):
 
 		time.sleep(25)  # Wait for sshd to come back before using ansible
 
+		frappe.flags.force_update_dns = True
+		self.sync()
+
 	@frappe.whitelist()
 	def disassociate_auto_assigned_public_ip(self):
-		if self.cloud_provider not in ("AWS EC2", "Frappe Compute", "Hetzner"):
+		if self.cloud_provider not in ("AWS EC2", "Frappe Compute"):
 			frappe.throw(
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 				"Public IP disassociation is currently only supported for AWS EC2 and Frappe Compute instances. Please try another provider."
@@ -1685,6 +1689,10 @@ class VirtualMachine(Document):
 				"Public IP disassociation is currently only supported for AWS EC2, Frappe Compute, and Hetzner instances. "
 				"Please choose a different cloud provider that is supported for this operation."
 >>>>>>> 286778578 (fix: Fix semgrep issue)
+=======
+				"Public IP disassociation is currently only supported for AWS EC2 and Frappe Compute instances. "
+				"Please choose a different cloud provider that is supported for this operation. For hetzner, use ip removal log"
+>>>>>>> 6a573b305 (fix(nat): Remove hetzner from whitelisted disassociate ip)
 			)
 
 		if not self.public_ip_address:
@@ -1709,9 +1717,6 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "Frappe Compute":
 			client = self.client()
 			client.remove_public_ip_from_virtual_machine(self.instance_id)
-
-		elif self.cloud_provider == "Hetzner":
-			self.disassociate_hetzner_public_ip()
 
 		frappe.flags.force_update_dns = True
 		self.sync()
