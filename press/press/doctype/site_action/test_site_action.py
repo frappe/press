@@ -363,7 +363,7 @@ class TestSiteAction(FrappeTestCase):
 			).insert()
 			self.fail("Expected validation error for unavailable action type")
 		except frappe.ValidationError as e:
-			self.assertIn("not available", str(e).lower())
+			self.assertIn("isn't available", str(e).lower())
 
 	def test_cancel_action_raises_when_not_scheduled(self):
 		"""Cancel should raise when action is not in Scheduled state"""
