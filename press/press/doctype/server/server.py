@@ -2072,7 +2072,7 @@ class BaseServer(Document, TagHelpers):
 						if vm.cloud_provider == "Hetzner" and cluster.cidr_block
 						else ""
 					),
-					"should_setup_nat_gateway": True if vm.public_ip_address else None,
+					"should_setup_nat_gateway": True if not vm.public_ip_address else None,
 				},
 			)
 			ansible.run()
@@ -3334,7 +3334,7 @@ class Server(BaseServer):
 						if self.provider == "Hetzner" and cluster.cidr_block
 						else ""
 					),
-					"should_setup_nat_gateway": True if vm.public_ip_address else None,
+					"should_setup_nat_gateway": True if not vm.public_ip_address else None,
 					**self.get_mount_variables(),
 				},
 			)

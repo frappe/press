@@ -1,7 +1,13 @@
 ---
 - name: Determine Hetzner interface
   set_fact:
-    primary_interface: "{{ ansible_interfaces | difference(['lo']) | first }}"
+    primary_interface: >-
+      {{
+        ansible_interfaces
+        | reject('equalto', 'lo')
+        | reject('equalto', 'docker0')
+        | first
+      }}
   when: cloud_provider == "Hetzner"
 
 - name: Add NAT gateway
