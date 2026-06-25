@@ -296,7 +296,7 @@ def get_group_for_new_site_and_set_localisation_app(site, apps):
 		.where(ReleaseGroup.name.notin(restricted_release_group_names or [""]))
 		.where(ReleaseGroup.version == site.get("version"))
 		.groupby(ReleaseGroup.name)
-		.having(Count(ReleaseGroupApp.app.distinct()) == len(localisation_apps))
+		.having(Count(ReleaseGroupApp.app).distinct() == len(localisation_apps))
 		.run(pluck="name")
 	)
 	if not groups:
