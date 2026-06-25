@@ -50,8 +50,12 @@
     dest: /etc/netplan/99-custom-gateway.yaml
     content: |
       network:
+        version: 2
         ethernets:
           {{ primary_interface }}:
+            dhcp4: true
+            dhcp4-overrides:
+              use-routes: false
             routes:
               - to: default
                 via: {{ network_gateway }}
