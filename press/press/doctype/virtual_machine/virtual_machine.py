@@ -1699,10 +1699,12 @@ class VirtualMachine(Document):
 		server_instance = self.get_hetzner_server_instance(fetch_data=True)
 
 		should_power_on = server_instance.status == "running"
+		powered_off = False
 
 		try:
 			if should_power_on:
 				client.servers.power_off(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
+				powered_off = True
 
 			server_instance = self.get_hetzner_server_instance(fetch_data=True)
 
@@ -1718,7 +1720,7 @@ class VirtualMachine(Document):
 					)
 
 		finally:
-			if should_power_on:
+			if powered_off:
 				server_instance = self.get_hetzner_server_instance(fetch_data=True)
 				client.servers.power_on(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
 
