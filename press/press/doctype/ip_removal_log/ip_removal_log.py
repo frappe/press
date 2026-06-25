@@ -140,7 +140,6 @@ class IPRemovalLog(Document, StepHandler):
 						if cluster.cloud_provider == "Hetzner" and cluster.cidr_block
 						else ""
 					),
-					"should_setup_nat_gateway": True if doc.provider == "Hetzner" else None,
 				},
 			)
 			self.handle_ansible_play(step, ansible)

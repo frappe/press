@@ -822,7 +822,6 @@ class DatabaseServer(BaseServer):
 	def _setup_server(self):
 		config = self._get_config()
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		vm = frappe.get_doc("Virtual Machine", self.virtual_machine)
 
 		try:
 			ansible = Ansible(
@@ -856,7 +855,6 @@ class DatabaseServer(BaseServer):
 						if self.provider == "Hetzner" and cluster.cidr_block
 						else ""
 					),
-					"should_setup_nat_gateway": True if not vm.public_ip_address else None,
 					**self.get_mount_variables(),
 				},
 			)
