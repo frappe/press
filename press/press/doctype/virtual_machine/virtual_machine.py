@@ -1258,7 +1258,7 @@ class VirtualMachine(Document):
 				if server_instance.public_net.primary_ipv4:
 					public_ip_address = server_instance.public_net.primary_ipv4.ip
 			except AttributeError:
-				pass
+				frappe.log_error("Failed to read Hetzner public IP", self.name)
 
 		return public_ip_address
 
