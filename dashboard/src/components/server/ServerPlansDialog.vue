@@ -236,10 +236,8 @@ export default {
 					title: 'Downgrade Server Plan',
 					message: `
 						Are you sure you want to downgrade this server's plan?<br><br>
-						<div class="text-bg-base bg-surface-gray-2 p-2 rounded-md">
 						The new plan has fewer resources than the current one. Sites and
 						background jobs on this server may run slower or fail under load.
-						</div>
 					`,
 					primaryAction: {
 						label: 'Downgrade Plan',
