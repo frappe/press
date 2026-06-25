@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 
 DEFAULT_GITHUB_REDIRECT_PATH = "/dashboard"
+GITHUB_OAUTH_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
 GITHUB_OAUTH_STATE_MAX_AGE = timedelta(minutes=10)
 
 
@@ -212,12 +213,26 @@ def get_safe_github_redirect_url(redirect_url: str | None = None) -> str:
 	return redirect_path
 
 
+def get_github_authorize_url(state: str) -> str:
+	"""User-authorization URL used to obtain a fresh OAuth code (and token).
+
+	GitHub redirects back to the app's registered callback (/github/authorize),
+	so we don't pass a redirect_uri and avoid a callback URL mismatch.
+	"""
+	client_id = frappe.db.get_single_value("Press Settings", "github_app_client_id")
+	return f"{GITHUB_OAUTH_AUTHORIZE_URL}?{urlencode({'client_id': client_id, 'state': state})}"
+
+
 def get_github_callback_login_redirect(code: str | None, state: str | None) -> str:
 	login_url = "/dashboard/login"
-	if not (code and state):
+	if not state:
 		return frappe.utils.get_url(login_url)
 
-	callback_url = f"/github/authorize?{urlencode({'code': code, 'state': state})}"
+	params = {}
+	if code:
+		params["code"] = code
+	params["state"] = state
+	callback_url = f"/github/authorize?{urlencode(params)}"
 	return frappe.utils.get_url(f"{login_url}?{urlencode({'redirect': callback_url})}")
 
 
