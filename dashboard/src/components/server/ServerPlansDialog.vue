@@ -167,6 +167,7 @@
 </template>
 <script>
 import { Checkbox, getCachedDocumentResource, Spinner } from 'frappe-ui'
+import { confirmDialog } from '../../utils/components'
 import ServerPlansCards from './ServerPlansCards.vue'
 
 export default {
@@ -230,6 +231,28 @@ export default {
 		changePlan() {
 			// TODO: Add confirmation dialog for hetzner plan upgrade
 
+			if (this.isDowngrade) {
+				return confirmDialog({
+					title: 'Downgrade Server Plan',
+					message: `
+						Are you sure you want to downgrade this server's plan?<br><br>
+						<div class="text-bg-base bg-surface-gray-2 p-2 rounded-md">
+						The new plan has fewer resources than the current one. Sites and
+						background jobs on this server may run slower or fail under load.
+						</div>
+					`,
+					primaryAction: {
+						label: 'Downgrade Plan',
+						variant: 'solid',
+						theme: 'red',
+						onClick: ({ hide }) => this.submitPlanChange().then(hide),
+					},
+				})
+			}
+
+			return this.submitPlanChange()
+		},
+		submitPlanChange() {
 			return this.$server.changePlan.submit(
 				{
 					plan: this.plan.name,
@@ -282,6 +305,16 @@ export default {
 				plans = this.serverPlans.filter((p) => p.premium === 0)
 			}
 			return plans.filter((plan) => plan.plan_type === this.serverPlanType)
+		},
+		isDowngrade() {
+			const currentPlan = this.$server?.doc?.current_plan
+			if (!this.plan || !currentPlan) return false
+			// A plan with fewer resources than the current one is a downgrade.
+			return (
+				this.plan.vcpu < currentPlan.vcpu ||
+				this.plan.memory < currentPlan.memory ||
+				this.plan.disk < currentPlan.disk
+			)
 		},
 	},
 }
