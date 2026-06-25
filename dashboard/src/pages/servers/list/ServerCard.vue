@@ -70,15 +70,15 @@ const serverActions = (server) => [
 			<div class="flex flex-wrap gap-1.5 items-center">
 				<Tooltip text="Go to server dashboard">
 					<router-link :to="`/servers/${data.name}`" class="hover:underline">
-						<span class="font-medium">{{ data?.title }}</span>
+						<span class="font-medium text-lg">{{ data?.title }}</span>
 					</router-link>
 				</Tooltip>
 
 				<div
-					class="rounded-full size-1.5 ml-1"
+					class="rounded-full size-2 ml-1"
 					:class="data.status === 'Active' ? 'bg-surface-green-3' : 'bg-surface-red-5'"
 				/>
-				<span class="text-xs">{{ data.status }}</span>
+				<span>{{ data.status }}</span>
 				<span class="w-full text-ink-gray-6 text-sm">
 					{{ data.vcpu }}
 					vCPU, {{ Math.round(data.memory / 1024) }} GB RAM,
