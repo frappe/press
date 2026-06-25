@@ -232,15 +232,17 @@ export default {
 			// TODO: Add confirmation dialog for hetzner plan upgrade
 
 			if (this.isDowngrade) {
-				const fromPlan = this.$format.planTitle(this.$server.doc.current_plan)
-				const toPlan = this.$format.planTitle(this.plan)
+				const planLabel = (plan) =>
+					`${this.$format.planTitle(plan)}/mo (${plan.vcpu} vCPU / ${this.$format.bytes(plan.memory, 0, 2)} RAM)`
+				const fromPlan = planLabel(this.$server.doc.current_plan)
+				const toPlan = planLabel(this.plan)
 				// Hide the Change Plan dialog so the confirmation isn't stacked on top of it.
 				this.show = false
 				return confirmDialog({
 					title: 'Downgrade Server Plan',
 					message: `
 						Are you sure you want to downgrade this server's plan from
-						<b>${fromPlan}/mo</b> to <b>${toPlan}/mo</b>?<br><br>
+						<b>${fromPlan}</b> to <b>${toPlan}</b>?<br><br>
 						The new plan has fewer resources than the current one. Sites and
 						background jobs on this server may run slower or fail under load.
 					`,
