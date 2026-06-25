@@ -322,6 +322,16 @@ export default {
 								options: ['', 'Active', 'Inactive', 'Suspended', 'Broken'],
 							},
 							{
+								type: 'select',
+								label: 'Plan',
+								fieldname: 'plan.support_included',
+								options: [
+									{ label: 'All', value: null },
+									{ label: 'Supported', value: '1' },
+									{ label: 'Not Supported', value: '0' },
+								],
+							},
+							{
 								type: 'link',
 								label: 'Version',
 								fieldname: 'group.version',
