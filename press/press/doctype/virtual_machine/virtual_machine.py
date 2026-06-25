@@ -2451,16 +2451,17 @@ class VirtualMachine(Document):
 
 	def get_security_groups(self):
 		groups = [self.security_group_id]
+
 		if self.series == "n":
 			groups.append(frappe.db.get_value("Cluster", self.cluster, "proxy_security_group_id"))
-		elif self.series == "nat":
-			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
-			if self.cloud_provider == "Hetzner" and not frappe.db.get_value(
-				"Cluster", cluster, "nat_security_group_id"
-			):
-				cluster.create_nat_security_group_hetzner()  # Hetzner API fails to create NAT VM with None in the list
 
-			groups.append(frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id"))
+		elif self.series == "nat":
+			if self.cloud_provider == "Hetzner":
+				cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+				groups.append(cluster.create_nat_security_group_hetzner())
+			else:
+				groups.append(frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id"))
+
 		return groups
 
 	@frappe.whitelist()
