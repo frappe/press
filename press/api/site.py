@@ -13,6 +13,7 @@ from botocore.exceptions import ClientError
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.query_builder import Case
+from frappe.query_builder.functions import Count
 from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, flt, sbool, time_diff_in_hours
 from frappe.utils.data import format_datetime, get_datetime
@@ -247,16 +248,36 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 	}
 
 
+def get_localisation_apps_for_country(country, apps):
+	"""Return the localisation marketplace apps for the country.
+
+	Multiple marketplace apps can define a localisation app for the same
+	country, so return every one whose parent marketplace app is among the
+	apps being installed instead of an arbitrary single match.
+	"""
+	app_names = [app["app"] for app in apps]
+	MarketplaceLocalisationApp = frappe.qb.DocType("Marketplace Localisation App")
+	MarketplaceApp = frappe.qb.DocType("Marketplace App")
+	return (
+		frappe.qb.from_(MarketplaceLocalisationApp)
+		.join(MarketplaceApp)
+		.on(MarketplaceLocalisationApp.parent == MarketplaceApp.name)
+		.select(MarketplaceLocalisationApp.marketplace_app)
+		.where(MarketplaceLocalisationApp.country == country)
+		.where(MarketplaceApp.app.isin(app_names or [""]))
+		.run(pluck="marketplace_app")
+	)
+
+
 def get_group_for_new_site_and_set_localisation_app(site, apps):
 	if not (localisation_country := site.get("localisation_country")):
 		return site.get("group")
 
-	# if localisation country is selected, move site to a public bench with the same localisation app
-	localisation_app = frappe.db.get_value(
-		"Marketplace Localisation App",
-		{"country": localisation_country},
-		"marketplace_app",
-	)
+	# if localisation country is selected, move site to a public bench with the same localisation apps
+	localisation_apps = get_localisation_apps_for_country(localisation_country, apps)
+	if not localisation_apps:
+		# none of the selected apps require a localisation app for this country
+		return site.get("group")
 	restricted_release_group_names = frappe.db.get_all(
 		"Site Plan Release Group",
 		pluck="release_group",
@@ -269,19 +290,21 @@ def get_group_for_new_site_and_set_localisation_app(site, apps):
 		.select(ReleaseGroup.name)
 		.join(ReleaseGroupApp)
 		.on(ReleaseGroup.name == ReleaseGroupApp.parent)
-		.where(ReleaseGroupApp.app == localisation_app)
+		.where(ReleaseGroupApp.app.isin(localisation_apps or [""]))
 		.where(ReleaseGroup.public == 1)
 		.where(ReleaseGroup.enabled == 1)
 		.where(ReleaseGroup.name.notin(restricted_release_group_names or [""]))
 		.where(ReleaseGroup.version == site.get("version"))
+		.groupby(ReleaseGroup.name)
+		.having(Count(ReleaseGroupApp.app).distinct() == len(localisation_apps))
 		.run(pluck="name")
 	)
 	if not groups:
 		frappe.throw(
-			f"Localisation app for {frappe.bold(localisation_country)} is not available for version {99}"
+			f"Localisation app for {frappe.bold(localisation_country)} is not available for version {site.get('version')}"
 		)  # nosemgrep
 
-	apps.append({"app": localisation_app})
+	apps.extend({"app": app} for app in localisation_apps)
 	return groups[0]
 
 
