@@ -4505,6 +4505,10 @@ def process_new_site_job_update(job):  # noqa: C901
 	elif "Failure" in (first, second) or "Delivery Failure" in (first, second):
 		updated_status = "Broken"
 		frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
+		# Status is set via db.set_value below, which bypasses on_update ->
+		# update_subscription. Disable the subscription explicitly so the user
+		# isn't billed for a site that never came up (#6110).
+		Site("Site", job.site).disable_subscription()
 	elif "Running" in (first, second):
 		updated_status = "Installing"
 	else:

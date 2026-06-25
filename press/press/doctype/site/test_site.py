@@ -35,6 +35,7 @@ from press.press.doctype.site.site import (
 	Site,
 	archive_suspended_sites,
 	notify_sites_before_archival,
+	process_new_site_job_update,
 	process_rename_site_job_update,
 	suspend_sites_exceeding_disk_usage_for_last_14_days,
 )
@@ -626,6 +627,25 @@ class TestSite(FrappeTestCase):
 		self.assertFalse(site.site_usage_exceeded)
 		self.assertIsNone(site.site_usage_exceeded_on)
 		self.assertEqual(site.status, "Active")
+
+	def test_subscription_is_disabled_when_site_creation_fails(self):
+		"""A failed site creation must disable the subscription so the user isn't billed (#6110)."""
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		plan = create_test_plan("Site", plan_name="USD 10")
+		site: Site = create_test_site(plan=plan.name)
+		site.create_subscription(plan=plan.name)
+
+		subscription = frappe.get_doc("Subscription", {"document_type": "Site", "document_name": site.name})
+		self.assertTrue(subscription.enabled)
+
+		job = create_test_agent_job("New Site", server=site.server, status="Failure")
+		job.db_set("site", site.name)
+
+		process_new_site_job_update(job)
+
+		self.assertEqual(frappe.db.get_value("Site", site.name, "status"), "Broken")
+		self.assertFalse(frappe.db.get_value("Subscription", subscription.name, "enabled"))
 
 	def test_reset_disk_usage_exceed_alert_on_changing_plan(self):
 		team = create_test_team()
