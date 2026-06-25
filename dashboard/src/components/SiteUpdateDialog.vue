@@ -178,6 +178,32 @@ export default {
 							}
 						},
 					},
+					{
+						label: 'Changes',
+						type: 'Button',
+						width: 0.5,
+						align: 'right',
+						Button({ row }) {
+							let url;
+							if (row.will_branch_change) {
+								url = `${row.repository_url}/commit/${row.branch}`;
+							} else if (row.current_hash && row.next_hash) {
+								url = `${row.repository_url}/compare/${row.current_hash}...${row.next_hash}`;
+							} else if (row.next_hash) {
+								url = `${row.repository_url}/commit/${row.next_hash}`;
+							}
+
+							if (!url) return null;
+
+							return {
+								label: 'View',
+								variant: 'ghost',
+								onClick() {
+									window.open(url, '_blank');
+								},
+							};
+						},
+					},
 				],
 			};
 		},
