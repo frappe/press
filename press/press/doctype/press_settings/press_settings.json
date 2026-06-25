@@ -192,6 +192,11 @@
 		"column_break_xhfy",
 		"spamd_api_key",
 		"spamd_api_secret",
+		"raven_section",
+		"raven_access_key_id",
+		"raven_url",
+		"column_break_kvah",
+		"raven_secret_access_key",
 		"chatwoot_section",
 		"enable_chat",
 		"chat_base_url",
@@ -1727,11 +1732,11 @@
 			"description": "Default number of days before the site warranty setting can be changed for newly created dedicated servers",
 			"fieldname": "default_dedicated_server_site_warranty_change_cooldown",
 			"fieldtype": "Int",
-			"label": "Default Dedicated Server Site Warranty change Cooldown"
+			"label": "Default Dedicated Server Site Warranty Change Cooldown"
 		},
 		{
 			"default": "5",
-			"description": "Default max number of sites with product warranty for newly created dedicated servers\n",
+			"description": "Default max number of sites with product warranty for newly created dedicated servers",
 			"fieldname": "default_dedicated_server_site_warranty_quota",
 			"fieldtype": "Int",
 			"label": "Default Dedicated Server Supported Site Quota"
@@ -1838,11 +1843,35 @@
 			"fieldname": "allow_patch_builds",
 			"fieldtype": "Check",
 			"label": "Allow Patch Builds"
+		},
+		{
+			"fieldname": "raven_access_key_id",
+			"fieldtype": "Data",
+			"label": "Raven Access Key ID"
+		},
+		{
+			"fieldname": "raven_secret_access_key",
+			"fieldtype": "Password",
+			"label": "Raven Secret Access Key"
+		},
+		{
+			"fieldname": "raven_section",
+			"fieldtype": "Section Break",
+			"label": "Raven"
+		},
+		{
+			"fieldname": "raven_url",
+			"fieldtype": "Data",
+			"label": "Raven URL"
+		},
+		{
+			"fieldname": "column_break_kvah",
+			"fieldtype": "Column Break"
 		}
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-06-02 22:46:34.584687",
+	"modified": "2026-06-19 14:42:12.364571",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",
