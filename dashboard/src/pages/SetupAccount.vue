@@ -46,6 +46,7 @@
 									<FormControl
 										label="First name"
 										type="text"
+										placeholder="Enter First Name"
 										v-model="firstName"
 										name="fname"
 										autocomplete="given-name"
@@ -56,6 +57,7 @@
 									<FormControl
 										label="Last name"
 										type="text"
+										placeholder="Enter Last Name"
 										v-model="lastName"
 										name="lname"
 										autocomplete="family-name"
@@ -65,44 +67,43 @@
 									/>
 								</div>
 							</template>
-							<FormControl
-								label="Email"
-								type="text"
-								:modelValue="email"
-								variant="outline"
-								disabled
-							/>
-							<FormControl
-								type="select"
-								:options="countryOptions"
-								v-if="!isInvitation"
-								label="Country"
-								v-model="country"
-								variant="outline"
-								required
-							/>
+
 							<PhoneInput
 								v-if="!isInvitation"
-								label="Phone Number(Optional)"
+								label="Phone"
 								v-model="phoneNumber"
 								:countries="countries"
 								:country="country"
 								placeholder="9876543210"
 							/>
-							<FormControl
-								v-if="!isInvitation"
-								type="select"
-								:options="['Manufacturing', 'Trading / Distribution / E-Commerce', 'Services', 'Other']"
-								v-model="domain"
-								label="Domain"
-								variant="outline"
-							/>
+
+							<div class="grid grid-cols-2 gap-2">
+								<FormControl
+									type="select"
+									:options="countryOptions"
+									v-if="!isInvitation"
+									label="Country"
+									v-model="country"
+									variant="outline"
+									required
+								/>
+
+								<FormControl
+									v-if="!isInvitation"
+									type="select"
+									:options="['Manufacturing', 'Trading / Distribution / E-Commerce', 'Services', 'Other']"
+									v-model="domain"
+									label="Domain"
+									variant="outline"
+								/>
+							</div>
+
 							<FormControl
 								v-if="!isInvitation"
 								type="checkbox"
 								v-model="reseller"
-								label="I am evaluating Frappe Products on behalf of a client"
-								variant="outline"
+								label="I'm evaluating Frappe Products for a client"
+								class="[&_label]:font-normal"
 							/>
 						</div>
 						<ErrorMessage
