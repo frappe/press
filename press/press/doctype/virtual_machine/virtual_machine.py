@@ -1648,7 +1648,6 @@ class VirtualMachine(Document):
 		import subprocess
 
 		server = frappe._dict(
-			ip="",
 			private_ip=self.private_ip_address,
 			bastion_host=frappe.db.get_value(
 				"Proxy Server",
@@ -1657,6 +1656,12 @@ class VirtualMachine(Document):
 				as_dict=True,
 			),
 		)
+
+		if not server.bastion_host:
+			frappe.throw(
+				f"No active proxy server found for cluster {self.cluster}. "
+				"Provision a proxy server to use as a bastion host for SSH access."
+			)
 
 		deadline = time.monotonic() + timeout
 
