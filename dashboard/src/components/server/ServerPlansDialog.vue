@@ -243,8 +243,12 @@ export default {
 					message: `
 						Are you sure you want to downgrade this server's plan from
 						<b>${fromPlan}</b> to <b>${toPlan}</b>?<br><br>
-						The new plan has fewer resources than the current one. Sites and
+						The new plan has fewer resources than the current one, so sites and
 						background jobs on this server may run slower or fail under load.
+						If you're not sure the smaller plan can handle this server's
+						workload, reach out at
+						<a href="https://support.frappe.io" target="_blank" class="underline">support.frappe.io</a>
+						before downgrading.
 					`,
 					primaryAction: {
 						label: 'Downgrade Plan',
