@@ -1249,6 +1249,19 @@ class VirtualMachine(Document):
 		self.save()
 		self.update_servers()
 
+	def _get_hetzner_public_ip(self, server_instance):
+		# Always reset and repopulate from Hetzner state
+		public_ip_address = ""
+
+		if server_instance.public_net:
+			try:
+				if server_instance.public_net.primary_ipv4:
+					public_ip_address = server_instance.public_net.primary_ipv4.ip
+			except AttributeError:
+				frappe.log_error("Failed to read Hetzner public IP", self.name)
+
+		return public_ip_address
+
 	def _sync_hetzner(self, server_instance=None):
 		if not server_instance:
 			try:
@@ -1273,8 +1286,7 @@ class VirtualMachine(Document):
 		self.ram = server_instance.server_type.memory * 1024
 
 		self.private_ip_address = server_instance.private_net[0].ip if server_instance.private_net else ""
-		if self.assign_public_ip:
-			self.public_ip_address = server_instance.public_net.ipv4.ip
+		self.public_ip_address = self._get_hetzner_public_ip(server_instance)
 
 		self.termination_protection = server_instance.protection.get("delete", False)
 
@@ -1632,11 +1644,100 @@ class VirtualMachine(Document):
 			SourceDestCheck={"Value": True},
 		)
 
+	def ping_server(self, server):
+		import subprocess
+
+		result = subprocess.run(
+			[
+				"ssh",
+				"-o",
+				"BatchMode=yes",
+				"-o",
+				"StrictHostKeyChecking=no",
+				"-o",
+				"ConnectTimeout=5",
+				"-J",
+				f"{server.bastion_host.ssh_user}@{server.bastion_host.ip}:{server.bastion_host.ssh_port}",
+				f"root@{server.private_ip}",
+				"true",
+			],
+			stdout=subprocess.DEVNULL,
+			stderr=subprocess.DEVNULL,
+		)
+
+		return result.returncode == 0
+
+	def wait_for_ssh(self, timeout=120, interval=2):
+		server = frappe._dict(
+			private_ip=self.private_ip_address,
+			bastion_host=frappe.db.get_value(
+				"Proxy Server",
+				{"cluster": self.cluster, "status": "Active"},
+				["ssh_user", "ssh_port", "name as ip"],
+				as_dict=True,
+			),
+		)
+
+		if not server.bastion_host:
+			frappe.throw(
+				f"No active proxy server found for cluster {self.cluster}. "
+				"Provision a proxy server to use as a bastion host for SSH access."
+			)
+
+		deadline = time.monotonic() + timeout
+
+		while time.monotonic() < deadline:
+			if self.ping_server(server):
+				return
+
+			time.sleep(interval)
+
+		frappe.throw(
+			f"Timed out waiting for SSH on {self.name}. "
+			"Please check the server status and network connectivity."
+		)
+
+	def disassociate_hetzner_public_ip(self):
+		client = self.client()
+		server_instance = self.get_hetzner_server_instance(fetch_data=True)
+
+		should_power_on = server_instance.status == "running"
+		powered_off = False
+
+		try:
+			if should_power_on:
+				client.servers.power_off(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
+				powered_off = True
+
+			server_instance = self.get_hetzner_server_instance(fetch_data=True)
+
+			if server_instance.public_net:
+				if server_instance.public_net.primary_ipv4:
+					client.primary_ips.unassign(server_instance.public_net.primary_ipv4).wait_until_finished(
+						HETZNER_ACTION_RETRIES
+					)
+
+				if server_instance.public_net.primary_ipv6:
+					client.primary_ips.unassign(server_instance.public_net.primary_ipv6).wait_until_finished(
+						HETZNER_ACTION_RETRIES
+					)
+
+		finally:
+			if powered_off:
+				server_instance = self.get_hetzner_server_instance(fetch_data=True)
+				client.servers.power_on(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
+
+		self.wait_for_ssh()  # Wait for sshd to come back before using ansible
+
+		frappe.flags.force_update_dns = True
+		self.sync()
+
 	@frappe.whitelist()
 	def disassociate_auto_assigned_public_ip(self):
 		if self.cloud_provider not in ("AWS EC2", "Frappe Compute"):
 			frappe.throw(
-				"Public IP disassociation is currently only supported for AWS EC2 and Frappe Compute instances"
+				"Public IP disassociation is currently only supported for AWS EC2 and Frappe Compute instances. "
+				"Please choose a different cloud provider that is supported for this operation. For hetzner, use ip removal log"
 			)
 
 		if not self.public_ip_address:
