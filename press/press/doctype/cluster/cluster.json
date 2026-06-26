@@ -67,6 +67,9 @@
 		"network_acl_id",
 		"route_table_id",
 		"nat_security_group_id",
+		"vpc_flow_logs_s3_bucket",
+		"vpc_flow_logs_enabled",
+		"flow_log_id",
 		"docker_section",
 		"repository",
 		"database_section",
@@ -420,6 +423,26 @@
 			"fieldname": "nat_security_group_id",
 			"fieldtype": "Data",
 			"label": "NAT Security Group ID",
+			"read_only": 1
+		},
+		{
+			"depends_on": "eval: doc.cloud_provider == \"AWS EC2\"",
+			"description": "Destination S3 bucket for VPC Flow Logs. The bucket must allow delivery.logs.amazonaws.com to put objects.",
+			"fieldname": "vpc_flow_logs_s3_bucket",
+			"fieldtype": "Data",
+			"label": "VPC Flow Logs S3 Bucket"
+		},
+		{
+			"default": "0",
+			"fieldname": "vpc_flow_logs_enabled",
+			"fieldtype": "Check",
+			"label": "VPC Flow Logs Enabled",
+			"read_only": 1
+		},
+		{
+			"fieldname": "flow_log_id",
+			"fieldtype": "Data",
+			"label": "Flow Log ID",
 			"read_only": 1
 		},
 		{
