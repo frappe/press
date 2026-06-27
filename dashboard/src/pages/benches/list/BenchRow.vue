@@ -32,7 +32,7 @@ const sites = createListResource({
 
 function onToggle(toggle: () => void) {
 	toggle()
-	if (!sites.data) sites.reload()
+	if (!sites.data && props.data.site_count) sites.reload()
 }
 
 const siteStatusBadges: Record<string, { theme: 'green' | 'red' | 'orange' | 'blue' | 'gray' | null; dot: string }> = {
@@ -88,7 +88,7 @@ const groupOptions = [
 							<span class="truncate">{{ data.title }}</span>
 						</router-link>
 					</Tooltip>
-					<Tooltip :text="`${data.site_count || 0} sites`">
+					<Tooltip :text="`${data.site_count || 0} sites`" v-if='data.site_count'>
 						<span class="text-xs bg-surface-gray-2 text-ink-gray-6 rounded px-1.5 py-0.5 font-medium shrink-0">
 							{{ data.site_count || 0 }}
 						</span>
@@ -201,7 +201,7 @@ const groupOptions = [
 		</template>
 
 		<div
-			v-else-if="sites.data != null"
+			v-else-if="data.site_count == 0"
 			class="bench-grid px-2 py-3 items-center"
 			:class="!isLast ? 'border-b dark:border-outline-gray-2' : ''"
 		>
