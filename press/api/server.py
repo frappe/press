@@ -818,6 +818,9 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 						filters.update({"cluster": effective_cluster})
 					if effective_platform:
 						filters.update({"platform": effective_platform})
+				else:
+					filters.pop("cluster", None)
+					filters.pop("platform", None)
 			else:
 				filters.update({"legacy_plan": False})
 
