@@ -141,7 +141,7 @@ const groupOptions = [
 			<div
 				v-for="(site, i) in sites.data"
 				:key="site.name"
-				class="bench-grid px-2 py-2 items-center"
+				class="bench-grid px-2 py-2 items-center fade-in"
 				:class="(i < sites.data.length - 1 || sites.hasNextPage) ? 'border-b dark:border-outline-gray-2' : (!isLast ? 'border-b dark:border-outline-gray-2' : '')"
 			>
 				<span />
