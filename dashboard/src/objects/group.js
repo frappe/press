@@ -43,75 +43,7 @@ export default {
 	list: {
 		route: '/groups',
 		title: 'Benches',
-		fields: [{ apps: ['app'] }],
-		searchField: 'title',
-		filterControls() {
-			return [
-				{
-					type: 'link',
-					label: 'Version',
-					fieldname: 'version',
-					options: {
-						doctype: 'Frappe Version',
-					},
-				},
-				{
-					type: 'link',
-					label: 'Tag',
-					fieldname: 'tags.tag',
-					options: {
-						doctype: 'Press Tag',
-						filters: {
-							doctype_name: 'Release Group',
-						},
-					},
-				},
-			];
-		},
-		columns: [
-			{ label: 'Title', fieldname: 'title', class: 'font-medium' },
-			{
-				label: 'Status',
-				fieldname: 'active_benches',
-				type: 'Badge',
-				width: 0.5,
-				format: (value, row) => {
-					if (!value) return 'Awaiting Deploy';
-					else return 'Active';
-				},
-			},
-			{
-				label: 'Version',
-				fieldname: 'version',
-				width: 0.5,
-			},
-			{
-				label: 'Apps',
-				fieldname: 'app',
-				format: (value, row) => {
-					return (row.apps || []).map((d) => d.app).join(', ');
-				},
-				width: '25rem',
-			},
-			{
-				label: 'Sites',
-				fieldname: 'site_count',
-				class: 'text-ink-gray-6',
-				width: 0.25,
-			},
-		],
-		primaryAction() {
-			return {
-				label: 'New Bench',
-				variant: 'solid',
-				slots: {
-					prefix: icon('plus'),
-				},
-				onClick() {
-					router.push({ name: 'New Release Group' });
-				},
-			};
-		},
+		component: () => import('../pages/benches/list/Page.vue'),
 	},
 	detail: {
 		titleField: 'title',
