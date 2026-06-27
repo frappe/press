@@ -56,86 +56,95 @@ const applyFilter = (key: string, val: any) => {
 </script>
 
 <template>
-	<Header class="sticky top-0 z-10 bg-surface-white mb-5">
-		<Breadcrumbs :items="[{ label: 'Benches', route: '/groups' }]" />
-		<Button class="ml-auto mr-2" @click="groups.reload()">
-			<template #icon><lucide-refresh-ccw class="size-4" /></template>
-		</Button>
-		<Button :route="{ name: 'New Release Group' }" variant="solid">New Bench</Button>
-	</Header>
+	<div class="flex flex-col h-full">
+		<Header class="bg-surface-white shrink-0">
+			<Breadcrumbs :items="[{ label: 'Benches', route: '/groups' }]" />
+			<Button class="ml-auto mr-2" @click="groups.reload()">
+				<template #icon><lucide-refresh-ccw class="size-4" /></template>
+			</Button>
+			<Button :route="{ name: 'New Release Group' }" variant="solid"
+				>New Bench</Button
+			>
+		</Header>
 
-	<div class="flex gap-3 items-center px-5">
-		<TextInput
-			placeholder="Search bench"
-			:debounce="500"
-			@update:modelValue="v => applyFilter('title', v ? ['like', `%${v}%`] : undefined)"
-		>
-			<template #prefix>
-				<lucide-search class="size-4 text-ink-gray-5" />
-			</template>
-		</TextInput>
+		<div class="flex gap-3 items-center px-5 py-3 shrink-0">
+			<TextInput
+				placeholder="Search bench"
+				:debounce="500"
+				@update:modelValue="v => applyFilter('title', v ? ['like', `%${v}%`] : undefined)"
+			>
+				<template #prefix>
+					<lucide-search class="size-4 text-ink-gray-5" />
+				</template>
+			</TextInput>
 
-		<Combobox
-			placeholder="Version"
-			class="!w-36"
-			:openOnFocus="true"
-			:options="versionOptions"
-			@update:modelValue="v => applyFilter('version', v)"
-		>
-			<template #prefix>
-				<LucideCircleDotDashed class="size-4 text-ink-gray-5" />
-			</template>
-		</Combobox>
+			<Combobox
+				placeholder="Version"
+				class="!w-36"
+				:openOnFocus="true"
+				:options="versionOptions"
+				@update:modelValue="v => applyFilter('version', v)"
+			>
+				<template #prefix>
+					<LucideCircleDotDashed class="size-4 text-ink-gray-5" />
+				</template>
+			</Combobox>
 
-		<Combobox
-			placeholder="Tag"
-			class="!w-32"
-			:openOnFocus="true"
-			:options="tagOptions"
-			@update:modelValue="v => applyFilter('tags.tag', v)"
-		>
-			<template #prefix>
-				<LucideTag class="size-4 text-ink-gray-5" />
-			</template>
-		</Combobox>
-	</div>
-
-	<div class="p-5">
-		<div
-			v-if="groups.list?.loading && !groups.data?.length"
-			class="flex justify-center py-10"
-		>
-			<Spinner class="size-5" />
+			<Combobox
+				placeholder="Tag"
+				class="!w-32"
+				:openOnFocus="true"
+				:options="tagOptions"
+				@update:modelValue="v => applyFilter('tags.tag', v)"
+			>
+				<template #prefix>
+					<LucideTag class="size-4 text-ink-gray-5" />
+				</template>
+			</Combobox>
 		</div>
 
-		<div v-else class="overflow-x-auto">
-			<div class="min-w-[44rem]">
-				<div class="bench-grid px-2 py-2 text-xs text-ink-gray-5 bg-surface-gray-1 rounded">
-					<span />
-					<span>Title</span>
-					<span>Status</span>
-					<span>Version</span>
-					<span>Apps</span>
-					<span />
-				</div>
+		<div class="flex-1 min-h-0 overflow-y-auto px-5">
+			<div
+				v-if="groups.list?.loading && !groups.data?.length"
+				class="flex justify-center py-10"
+			>
+				<Spinner class="size-5" />
+			</div>
 
-				<BenchRow
-					v-for="(group, i) in groups.data"
-					:key="group.name"
-					:data="group"
-					:isLast="i === (groups.data?.length ?? 0) - 1"
-				/>
+			<div v-else class="overflow-x-auto pb-5">
+				<div class="min-w-[44rem]">
+					<div
+						class="bench-grid px-2 py-2 text-xs text-ink-gray-5 bg-surface-gray-1 rounded"
+					>
+						<span />
+						<span>Title</span>
+						<span>Status</span>
+						<span>Version</span>
+						<span>Apps</span>
+						<span />
+					</div>
 
-				<div v-if="!groups.data?.length" class="py-10 text-center text-sm text-ink-gray-5">
-					No benches
-				</div>
+					<BenchRow
+						v-for="(group, i) in groups.data"
+						:key="group.name"
+						:data="group"
+						:isLast="i === (groups.data?.length ?? 0) - 1"
+					/>
 
-				<div v-if="groups.hasNextPage" class="px-4 py-2 border-t dark:border-outline-gray-2">
-					<Button variant="ghost" :loading="groups.list?.loading" @click="groups.next()">
-						Load more
-					</Button>
+					<div
+						v-if="!groups.data?.length"
+						class="py-10 text-center text-sm text-ink-gray-5"
+					>
+						No benches
+					</div>
 				</div>
 			</div>
+		</div>
+
+		<div v-if="groups.hasNextPage" class="shrink-0 px-5 py-2 flex justify-end">
+			<Button :loading="groups.list?.loading" @click="groups.next()"
+				>Load more</Button
+			>
 		</div>
 	</div>
 </template>
