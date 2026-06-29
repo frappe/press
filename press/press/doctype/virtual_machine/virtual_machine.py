@@ -40,7 +40,7 @@ from oci.core.models import (
 	UpdateInstanceShapeConfigDetails,
 	UpdateVolumeDetails,
 )
-from oci.exceptions import ServiceError, TransientServiceError
+from oci.exceptions import TransientServiceError
 
 from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -1834,17 +1834,11 @@ class VirtualMachine(Document):
 				"Cannot disassociate public IP without a private IP."
 			)
 
-		try:
-			public_ip = network_client.get_public_ip_by_private_ip_id(
-				GetPublicIpByPrivateIpIdDetails(
-					private_ip_id=private_ips[0].id,
-				)
-			).data
-		except ServiceError as e:
-			if e.status == 404:
-				# No public IP attached
-				return None
-			raise
+		public_ip = network_client.get_public_ip_by_private_ip_id(
+			GetPublicIpByPrivateIpIdDetails(
+				private_ip_id=private_ips[0].id,
+			)
+		).data
 
 		nat_server = frappe.db.get_value(
 			"NAT Server",
@@ -1856,12 +1850,13 @@ class VirtualMachine(Document):
 		)
 
 		if not nat_server:
-			return False
+			frappe.throw(
+				"No active NAT servers found in the cluster. "
+				"Please create a NAT server before removing public IP"
+			)
 
 		cluster.attach_route_table_to_instance_vnic_oci(self, cluster.oci_nat_route_table_id)
 		network_client.delete_public_ip(public_ip.id)
-
-		return True
 
 	@frappe.whitelist()
 	def disassociate_auto_assigned_public_ip(self):
@@ -1898,9 +1893,7 @@ class VirtualMachine(Document):
 			client = self.client()
 			client.remove_public_ip_from_virtual_machine(self.instance_id)
 		elif self.cloud_provider == "OCI":
-			success = self.disassociate_oci_public_ip()
-			if not success:
-				return
+			self.disassociate_oci_public_ip()
 
 		frappe.flags.force_update_dns = True
 		self.sync()
