@@ -32,6 +32,8 @@ from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.cluster.cluster import Cluster
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class DatabaseServer(BaseServer):
@@ -821,7 +823,12 @@ class DatabaseServer(BaseServer):
 
 	def _setup_server(self):
 		config = self._get_config()
-		cluster = frappe.get_doc("Cluster", self.cluster)
+
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+		vm: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+
+		if not bool(vm.assign_public_ip):
+			cluster.attach_route_table_to_instance_vnic_oci(self, cluster.oci_nat_route_table_id)
 
 		try:
 			ansible = Ansible(

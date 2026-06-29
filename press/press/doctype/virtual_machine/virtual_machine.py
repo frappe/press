@@ -29,6 +29,7 @@ from oci.core.models import (
 	CreateVnicDetails,
 	CreateVolumeBackupDetails,
 	GetPublicIpByIpAddressDetails,
+	GetPublicIpByPrivateIpIdDetails,
 	InstanceOptions,
 	InstanceSourceViaImageDetails,
 	LaunchInstanceDetails,
@@ -39,7 +40,7 @@ from oci.core.models import (
 	UpdateInstanceShapeConfigDetails,
 	UpdateVolumeDetails,
 )
-from oci.exceptions import TransientServiceError
+from oci.exceptions import ServiceError, TransientServiceError
 
 from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -231,9 +232,10 @@ class VirtualMachine(Document):
 			"Frappe Compute",
 			"Hetzner",
 			"DigitalOcean",
+			"OCI",
 		):
 			frappe.throw(
-				"NAT Servers are only supported on AWS EC2, Frappe Compute, Hetzner, and DigitalOcean. "
+				"NAT Servers are only supported on AWS EC2, Frappe Compute, Hetzner, DigitalOcean, and OCI. "
 				f"Change the cloud provider from {self.cloud_provider} to a supported provider."
 			)
 
@@ -754,6 +756,7 @@ class VirtualMachine(Document):
 					create_vnic_details=CreateVnicDetails(
 						private_ip=self.private_ip_address,
 						assign_private_dns_record=True,
+						assign_public_ip=bool(self.assign_public_ip),
 						nsg_ids=self.get_security_groups(),
 					),
 					subnet_id=self.subnet_id,
@@ -1628,28 +1631,70 @@ class VirtualMachine(Document):
 		self.sync()
 
 	def disable_source_dest_check(self):
-		if self.cloud_provider != "AWS EC2":
-			frappe.throw(
-				"Source/Destination check modification is currently only supported for AWS EC2 instances"
+		if self.cloud_provider == "AWS EC2":
+			ec2 = self.client()
+			ec2.modify_instance_attribute(
+				InstanceId=self.instance_id,
+				SourceDestCheck={"Value": False},
 			)
 
-		ec2 = self.client()
-		ec2.modify_instance_attribute(
-			InstanceId=self.instance_id,
-			SourceDestCheck={"Value": False},
-		)
+		elif self.cloud_provider == "OCI":
+			from oci.core import ComputeClient, VirtualNetworkClient
+			from oci.core.models import UpdateVnicDetails
+
+			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+			compute_client: ComputeClient = self.client(ComputeClient)
+			network_client: VirtualNetworkClient = self.client(VirtualNetworkClient)
+
+			vnic_attachments = compute_client.list_vnic_attachments(
+				compartment_id=cluster.oci_tenancy,
+				instance_id=self.instance_id,
+			).data
+
+			network_client.update_vnic(
+				vnic_attachments[0].vnic_id,
+				UpdateVnicDetails(skip_source_dest_check=True),
+			)
+
+		else:
+			frappe.throw(
+				f"Source/Destination check modification is not supported for {self.cloud_provider}. "
+				"Please use AWS EC2 or OCI for this operation."
+			)
 
 	def enable_source_dest_check(self):
-		if self.cloud_provider != "AWS EC2":
-			frappe.throw(
-				"Source/Destination check modification is currently only supported for AWS EC2 instances"
+		if self.cloud_provider == "AWS EC2":
+			ec2 = self.client()
+			ec2.modify_instance_attribute(
+				InstanceId=self.instance_id,
+				SourceDestCheck={"Value": True},
 			)
 
-		ec2 = self.client()
-		ec2.modify_instance_attribute(
-			InstanceId=self.instance_id,
-			SourceDestCheck={"Value": True},
-		)
+		elif self.cloud_provider == "OCI":
+			from oci.core import ComputeClient, VirtualNetworkClient
+			from oci.core.models import UpdateVnicDetails
+
+			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+			compute_client: ComputeClient = self.client(ComputeClient)
+			network_client: VirtualNetworkClient = self.client(VirtualNetworkClient)
+
+			vnic_attachments = compute_client.list_vnic_attachments(
+				compartment_id=cluster.oci_tenancy,
+				instance_id=self.instance_id,
+			).data
+
+			network_client.update_vnic(
+				vnic_attachments[0].vnic_id,
+				UpdateVnicDetails(skip_source_dest_check=False),
+			)
+
+		else:
+			frappe.throw(
+				f"Source/Destination check modification is not supported for {self.cloud_provider}. "
+				"Please use AWS EC2 or OCI for this operation."
+			)
 
 	def ping_server(self, server):
 		ping = Ansible(
@@ -1762,22 +1807,71 @@ class VirtualMachine(Document):
 		frappe.flags.force_update_dns = True
 		self.sync()
 
+	def disassociate_oci_public_ip(self):
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+		compute_client = ComputeClient(cluster.get_oci_config())
+		network_client = VirtualNetworkClient(cluster.get_oci_config())
+
+		vnic_attachments = compute_client.list_vnic_attachments(
+			compartment_id=cluster.oci_tenancy,
+			instance_id=self.instance_id,
+		).data
+
+		if not vnic_attachments:
+			frappe.throw(
+				f"No VNIC attached to instance {self.instance_id}. "
+				"Cannot disassociate public IP without a VNIC."
+			)
+
+		private_ips = network_client.list_private_ips(
+			vnic_id=vnic_attachments[0].vnic_id,
+		).data
+		if not private_ips:
+			frappe.throw(
+				f"No private IP found for instance {self.instance_id}. "
+				"Cannot disassociate public IP without a private IP."
+			)
+
+		try:
+			public_ip = network_client.get_public_ip_by_private_ip_id(
+				GetPublicIpByPrivateIpIdDetails(
+					private_ip_id=private_ips[0].id,
+				)
+			).data
+		except ServiceError as e:
+			if e.status == 404:
+				# No public IP attached
+				return
+			raise
+
+		network_client.delete_public_ip(public_ip.id)
+
+		cluster.attach_route_table_to_instance_vnic_oci(self, cluster.oci_nat_route_table_id)
+
+		frappe.flags.force_update_dns = True
+		self.sync()
+
 	@frappe.whitelist()
 	def disassociate_auto_assigned_public_ip(self):
-		if self.cloud_provider not in ("AWS EC2", "Frappe Compute"):
+		if self.cloud_provider not in ("AWS EC2", "Frappe Compute", "OCI"):
 			frappe.throw(
-				"Public IP disassociation is currently only supported for AWS EC2 and Frappe Compute instances. "
+				"Public IP disassociation is currently only supported for AWS EC2, Frappe Compute, and OCI instances. "
 				"Please choose a different cloud provider that is supported for this operation. For hetzner, use ip removal log"
 			)
 
 		if not self.public_ip_address:
-			frappe.throw("No public IP associated with this instance.")
+			frappe.throw(
+				"No public IP associated with this instance. "
+				"Please ensure that the instance has a public IP before attempting to disassociate it."
+			)
 
 		try:
 			frappe.db.get_value(self.doctype, self.name, "status", for_update=True, wait=False)
 		except frappe.QueryTimeoutError:
 			frappe.throw(
-				"Unable to get a lock on the vm at this time. Some other process is probably underway"
+				"Unable to get a lock on the vm at this time. Some other process is probably underway. "
+				"Please try again after a few seconds."
 			)
 
 		if self.cloud_provider == "AWS EC2":
@@ -1792,6 +1886,8 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "Frappe Compute":
 			client = self.client()
 			client.remove_public_ip_from_virtual_machine(self.instance_id)
+		elif self.cloud_provider == "OCI":
+			self.disassociate_oci_public_ip()
 
 		frappe.flags.force_update_dns = True
 		self.sync()
