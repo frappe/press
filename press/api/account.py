@@ -281,6 +281,10 @@ def accept_team_invite(key: str):
 	press_roles = account_request.press_roles
 
 	team_doc = frappe.get_doc("Team", team, ignore_permissions=True)
+	if is_user_part_of_team(email, team):
+		account_request.db_set("request_key", None)
+		return
+
 	team_doc.create_user_for_member(
 		first_name,
 		last_name,
