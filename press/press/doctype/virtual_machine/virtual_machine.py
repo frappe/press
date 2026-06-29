@@ -1861,9 +1861,6 @@ class VirtualMachine(Document):
 		cluster.attach_route_table_to_instance_vnic_oci(self, cluster.oci_nat_route_table_id)
 		network_client.delete_public_ip(public_ip.id)
 
-		frappe.flags.force_update_dns = True
-		self.sync()
-
 		return True
 
 	@frappe.whitelist()
