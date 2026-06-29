@@ -1846,11 +1846,18 @@ class VirtualMachine(Document):
 				return
 			raise
 
-		cluster.attach_route_table_to_instance_vnic_oci(self, cluster.oci_nat_route_table_id)
-		network_client.delete_public_ip(public_ip.id)
+		nat_server = frappe.db.get_value(
+			"NAT Server",
+			{"virtual_machine": self.name},
+			"name",
+		)
 
-		frappe.flags.force_update_dns = True
-		self.sync()
+		if nat_server:
+			cluster.attach_route_table_to_instance_vnic_oci(self, cluster.oci_nat_route_table_id)
+			network_client.delete_public_ip(public_ip.id)
+
+			frappe.flags.force_update_dns = True
+			self.sync()
 
 	@frappe.whitelist()
 	def disassociate_auto_assigned_public_ip(self):
