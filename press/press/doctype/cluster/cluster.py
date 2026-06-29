@@ -15,6 +15,7 @@ import boto3
 import frappe
 import oci
 import pydo
+from frappe.desk.utils import slug
 from frappe.model.document import Document
 from frappe.query_builder import Criterion
 from frappe.query_builder.functions import Count, Sum
@@ -1298,7 +1299,7 @@ class Cluster(Document):
 			ResourceIds=[self.vpc_id],
 			TrafficType="ALL",
 			LogDestinationType="s3",
-			LogDestination=f"arn:aws:s3:::{self.vpc_flow_logs_s3_bucket}",
+			LogDestination=f"arn:aws:s3:::{self.vpc_flow_logs_s3_bucket}/flow-logs/{slug(self.name)}/",
 			TagSpecifications=[
 				{
 					"ResourceType": "vpc-flow-log",
