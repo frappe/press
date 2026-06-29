@@ -698,9 +698,16 @@ class Site(Document, TagHelpers):
 
 		if self.has_value_changed("team"):
 			frappe.db.set_value("Site Domain", {"site": self.name}, "team", self.team)
-			# Team changed on a live site (standby claim, setup-wizard handover) — push
-			# the new fc_team so its Pulse events carry the right team from now on.
-			self.sync_fc_team_config(create_agent_job=True)
+			# Enqueued, not inline: sync_fc_team_config saves the site, which from within
+			# on_update would re-enter it and re-run its unguarded effects.
+			frappe.enqueue_doc(
+				"Site",
+				self.name,
+				"sync_fc_team_config",
+				create_agent_job=True,
+				enqueue_after_commit=True,
+				queue="short",
+			)
 
 		if self.status not in [
 			"Pending",
