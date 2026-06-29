@@ -1,11 +1,17 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
+from typing import TYPE_CHECKING
+
 import frappe
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from press.press.doctype.cluster.cluster import Cluster
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class NATServer(BaseServer):
@@ -26,7 +32,7 @@ class NATServer(BaseServer):
 		is_server_setup: DF.Check
 		is_static_ip: DF.Check
 		private_ip: DF.Data | None
-		provider: DF.Literal["AWS EC2", "Frappe Compute", "Hetzner", "DigitalOcean"]
+		provider: DF.Literal["AWS EC2", "Frappe Compute", "Hetzner", "DigitalOcean", "OCI"]
 		root_public_key: DF.Code | None
 		secondary_private_ip: DF.Data | None
 		ssh_port: DF.Data | None
@@ -68,6 +74,25 @@ class NATServer(BaseServer):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_server", queue="long", timeout=2400)
 
 	def _setup_server(self):
+		if self.provider == "OCI":
+			vm: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+			vm.disable_source_dest_check()
+			cluster.create_nat_route_table_oci(vm.private_ip_address)
+
+			try:
+				ansible = Ansible(
+					playbook="oci.yml", server=self, user="ubuntu"
+				)  # Prepare server for OCI first.
+				play = ansible.run()
+				self.reload()
+			except Exception:
+				self.status = "Broken"
+				log_error("OCI Server Setup Exception", server=self.as_dict())
+				self.save()
+				return
+
 		try:
 			config = self.get_config() | {
 				"primary_ip": self.private_ip,
