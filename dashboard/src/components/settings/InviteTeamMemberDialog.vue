@@ -119,7 +119,11 @@ export default {
 				this.$team.inviteTeamMember.submit(
 					{
 						email: this.email,
+<<<<<<< HEAD
 						roles: this.selectedRoles.map((role) => role.value),
+=======
+						roles: [this.selectedRole],
+>>>>>>> ff7c23b9f (fix(invite): Update API endpoint URLs)
 					},
 					{
 						validate: () => {
