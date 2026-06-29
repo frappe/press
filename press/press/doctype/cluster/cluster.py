@@ -2170,7 +2170,12 @@ class Cluster(Document):
 		return None
 
 	def get_nat_server_if_supported(self):
-		if self.disable_public_ips_for_servers and self.cloud_provider in ("AWS EC2", "Frappe Compute"):
+		if self.disable_public_ips_for_servers and self.cloud_provider in (
+			"AWS EC2",
+			"Frappe Compute",
+			"Hetzner",
+			"DigitalOcean",
+		):
 			nat_server = frappe.db.get_value(
 				"NAT Server",
 				{"status": "Active", "cluster": self.name, "secondary_private_ip": ("is", "set")},
