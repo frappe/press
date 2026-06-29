@@ -136,6 +136,12 @@ SERVER_SCRIPT_DISABLED_VERSION = (
 )
 TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
 
+# Conditions a site must satisfy for the agent to stream offsite backup
+# artifacts straight to S3 instead of uploading them after the dump finishes.
+STREAMING_BACKUP_REQUIREMENTS = {
+	"minimum_frappe_version": 13,
+}
+
 
 class Site(Document, TagHelpers):
 	# begin: auto-generated types
@@ -174,6 +180,7 @@ class Site(Document, TagHelpers):
 		database_access_connection_limit: DF.Int
 		database_name: DF.Data | None
 		disable_site_usage_exceed_check: DF.Check
+		disable_streaming_backups: DF.Check
 		domain: DF.Link | None
 		erpnext_consultant: DF.Link | None
 		fatal_site_update: DF.Link | None
@@ -974,6 +981,18 @@ class Site(Document, TagHelpers):
 	def is_this_version_or_above(self, version: int) -> bool:
 		group: ReleaseGroup = frappe.get_cached_doc("Release Group", self.group)
 		return group.is_this_version_or_above(version)
+
+	def is_streaming_backup_supported(self) -> bool:
+		"""Whether the agent may stream this site's offsite backups straight to S3.
+
+		Requires the server to enable streaming, the site to not have opted
+		out, and the site's frappe version to be recent enough.
+		"""
+		if self.disable_streaming_backups:
+			return False
+		if not frappe.get_cached_value("Server", self.server, "stream_backups"):
+			return False
+		return self.is_this_version_or_above(STREAMING_BACKUP_REQUIREMENTS["minimum_frappe_version"])
 
 	@property
 	def restore_space_required_on_app(self):

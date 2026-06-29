@@ -587,7 +587,7 @@ class Agent:
 					),
 					# Streaming only applies to offsite backups (agent streams the
 					# artifacts straight to S3), so only send it for offsite jobs.
-					"stream": bool(frappe.get_value("Server", site.server, "stream_backups")),
+					"stream": site.is_streaming_backup_supported(),
 				}
 			)
 
