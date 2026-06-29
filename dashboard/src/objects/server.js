@@ -976,13 +976,24 @@ export default {
 					doctype: 'Plan Change',
 					filters: (server) => {
 						return {
-							document_type: 'Server',
-							document_name: server.doc?.name,
+							document_name: [
+								'in',
+								[server.doc?.name, server.doc?.database_server].filter(Boolean),
+							],
 						};
 					},
-					fields: ['from_plan', 'to_plan', 'type', 'timestamp', 'owner'],
+					fields: ['from_plan', 'to_plan', 'type', 'timestamp', 'owner', 'document_type'],
 					orderBy: 'timestamp desc',
 					columns: [
+						{
+							label: 'Server Type',
+							fieldname: 'document_type',
+							format(value) {
+								if (value === 'Server') return 'Application Server';
+								if (value === 'Database Server') return 'Database Server';
+								return value || '—';
+							},
+						},
 						{
 							label: 'Changed To',
 							fieldname: 'to_plan',
@@ -1017,6 +1028,20 @@ export default {
 							align: 'right',
 						},
 					],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Server Type',
+								fieldname: 'document_type',
+								options: [
+									{ label: 'All', value: null },
+									{ label: 'Application Server', value: 'Server' },
+									{ label: 'Database Server', value: 'Database Server' },
+								],
+							},
+						];
+					},
 				},
 			},
 		],
