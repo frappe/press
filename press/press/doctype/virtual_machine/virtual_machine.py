@@ -1848,7 +1848,10 @@ class VirtualMachine(Document):
 
 		nat_server = frappe.db.get_value(
 			"NAT Server",
-			{"virtual_machine": self.name},
+			{
+				"cluster": self.cluster,
+				"status": "Active",
+			},
 			"name",
 		)
 
