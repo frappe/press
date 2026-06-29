@@ -12,6 +12,7 @@ from press.press.doctype.team.test_team import create_test_team
 
 @contextmanager
 def user_context(user: str):
+	"""Run the wrapped block as `user`, restoring the session afterwards."""
 	session_user = frappe.session.user
 	session_data = frappe.session.data.copy()
 	try:
@@ -27,6 +28,21 @@ class TestAccountApi(TestCase):
 
 	def tearDown(self):
 		frappe.db.rollback()
+
+	def _create_invite(self, team, email):
+		"""Create a pending team invitation (Account Request) and return its key."""
+		key = frappe.generate_hash(length=32)
+		frappe.get_doc(
+			{
+				"doctype": "Account Request",
+				"team": team.name,
+				"email": email,
+				"invited_by": team.user,
+				"request_key": key,
+				"request_key_expiration_time": frappe.utils.add_days(frappe.utils.now_datetime(), 1),
+			}
+		).insert(ignore_permissions=True)
+		return key
 
 	def _fake_signup(self, email: str | None = None) -> Mock:
 		"""Call press.api.account.signup without sending verification mail."""
@@ -187,6 +203,27 @@ class TestAccountApi(TestCase):
 			accept_team_invite(key)
 		self.assertIn("can't be accepted with the current account", str(cm.exception))
 		self.assertFalse(frappe.db.exists("Team Member", {"parent": team.name, "user": intruder}))
+
+	def test_accept_team_invite_recovers_from_quoted_printable_break_in_key(self):
+		"""The invite URL is long enough that email transport wraps it with a
+		quoted-printable soft break ("=" + newline). If that artifact leaks into
+		the key (e.g. the recipient copies the link instead of clicking), accept
+		must still resolve the right Account Request and add the member."""
+		team = create_test_team()
+		invited = frappe.mock("email")
+		create_test_user(invited)
+
+		key = self._create_invite(team, invited)
+		# Soft break landing inside the key, as it appears in an undecoded link.
+		corrupted_key = key[:3] + "=\n" + key[3:]
+
+		with user_context(invited):
+			accept_team_invite(corrupted_key)
+
+		self.assertTrue(frappe.db.exists("Team Member", {"parent": team.name, "user": invited}))
+		self.assertFalse(
+			frappe.db.get_value("Account Request", {"team": team.name, "email": invited}, "request_key")
+		)
 
 	def test_pincode_is_correctly_set(self):
 		"""Test if pincode is correctly set on account creation."""
