@@ -522,6 +522,7 @@ export default {
 					email: this.email,
 					referrer: this.getReferrerIfAny(),
 					product: this.$route.query.product,
+					aid: this.getAidIfAny(),
 				},
 				onSuccess(account_request) {
 					this.account_request = account_request;
@@ -795,6 +796,11 @@ export default {
 			const params = location.search;
 			const searchParams = new URLSearchParams(params);
 			return searchParams.get('referrer');
+		},
+		getAidIfAny() {
+			// Pulse anonymous id forwarded from the product website (?aid=…), so
+			// pre-signup browsing stitches to this account at team creation.
+			return new URLSearchParams(location.search).get('aid');
 		},
 		async login() {
 			await this.$session.login.submit(

@@ -38,7 +38,9 @@ if TYPE_CHECKING:
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
-def signup(email: str, product: str | None = None, referrer: str | None = None) -> str:
+def signup(
+	email: str, product: str | None = None, referrer: str | None = None, aid: str | None = None
+) -> str:
 	frappe.utils.validate_email_address(email, True)
 
 	email = email.strip().lower()
@@ -70,9 +72,16 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 				"send_email": True,
 				"product_trial": product,
 				"agreed_to_terms": 1,
+				# Pulse: anonymous browser id forwarded from the product website as
+				# ?aid=…; aliased onto the account user when the team is created.
+				"pulse_anonymous_id": aid,
 			}
 		).insert(ignore_permissions=True)
 		account_request = account_request_doc.name
+	elif aid:
+		# Reusing a prior request (same email/referrer/product) — keep the latest aid
+		# so a returning visitor's pre-signup browsing still stitches.
+		frappe.db.set_value("Account Request", account_request, "pulse_anonymous_id", aid)
 
 	return account_request
 

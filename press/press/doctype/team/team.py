@@ -460,6 +460,8 @@ class Team(Document):
 
 		if not team.via_erpnext and not account_request.invited_by_parent_team:
 			team.create_upcoming_invoice()
+
+		account_request.stitch_pulse_identity()
 		return team
 
 	@staticmethod
