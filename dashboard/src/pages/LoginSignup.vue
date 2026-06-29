@@ -470,6 +470,11 @@ export default {
 	},
 	mounted() {
 		this.email = localStorage.getItem('login_email');
+		if (this.$route.name === 'Signup' && this.$route.query.product) {
+			this.$pulse?.capture('signup_viewed', {
+				product: this.$route.query.product,
+			});
+		}
 		if (window.posthog?.__loaded) {
 			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
 				app: 'frappe_cloud',

@@ -144,3 +144,32 @@ def anonymize_user(user: str | None) -> str | None:
 	site_salt = frappe.local.site or "default"
 	user_hash = hashlib.sha256(f"{user}:{site_salt}".encode()).hexdigest()
 	return f"user_{user_hash[:12]}"
+
+
+def pulse_boot_config(team: str | None = None) -> dict:
+	"""Pulse browser-client config for the dashboard SPA (served in dashboard boot).
+
+	The `key` is the public write-only ingest key. `user` is the anonymized session
+	user, null for a guest (mid-signup) — the client then runs cookieless and the
+	forwarded `?aid=…` stitches server-side via `alias`. Returns `{enabled: False}`
+	when Pulse isn't configured.
+	"""
+	pulse_site = frappe.db.get_single_value("Press Settings", "pulse_site")
+	pulse_api_key = frappe.db.get_single_value("Press Settings", "pulse_api_key")
+	if not pulse_site or not pulse_api_key:
+		return {"enabled": False}
+
+	host = f"https://{pulse_site}"
+	session_user = frappe.session.user
+	if session_user in frappe.STANDARD_USERS:
+		session_user = None
+
+	return {
+		"enabled": True,
+		"host": host,
+		"client_url": f"{host}/assets/pulse/js/pulse_client.js",
+		"key": pulse_api_key,
+		"site": frappe.local.site,
+		"user": anonymize_user(session_user),
+		"team": team,
+	}

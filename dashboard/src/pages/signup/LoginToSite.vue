@@ -206,6 +206,10 @@ export default {
 			);
 		},
 		loginToSite() {
+			this.$pulse?.capture('trial_redirected_to_site', {
+				product: this.productId,
+				site: this.siteRequestDoc?.site,
+			});
 			this.$resources.siteRequest.getLoginSid.submit();
 		},
 	},
