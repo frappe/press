@@ -1585,6 +1585,56 @@ export default {
 					},
 				},
 			},
+
+			{
+				label: 'Plan History',
+				icon: icon('credit-card'),
+				route: 'plan-history',
+				type: 'list',
+				list: {
+					doctype: 'Site Plan Change',
+					filters: (site) => {
+						return { site: site.doc?.name }
+					},
+					fields: ['from_plan', 'to_plan', 'type', 'timestamp', 'owner'],
+					orderBy: 'timestamp desc',
+					columns: [
+						{
+							label: 'Changed To',
+							fieldname: 'to_plan',
+						},
+						{
+							label: 'Changed From',
+							fieldname: 'from_plan',
+							class: 'text-ink-gray-6',
+							format(value) {
+								return value || '—'
+							},
+						},
+						{
+							label: 'Type',
+							fieldname: 'type',
+							type: 'Badge',
+							theme(value) {
+								if (value === 'Upgrade') return 'green'
+								if (value === 'Downgrade') return 'red'
+								return 'gray'
+							},
+						},
+						{
+							label: 'Changed By',
+							fieldname: 'owner',
+							class: 'text-ink-gray-6',
+						},
+						{
+							label: 'Date',
+							fieldname: 'timestamp',
+							type: 'Timestamp',
+							align: 'right',
+						},
+					],
+				},
+			},
 		],
 		actions(context) {
 			let { documentResource: site } = context;

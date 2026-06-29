@@ -91,6 +91,7 @@ ALLOWED_DOCTYPES = [
 	"Server Snapshot",
 	"Server Snapshot Recovery",
 	"Support Access",
+	"Site Plan Change",
 ]
 
 whitelisted_methods = set()
