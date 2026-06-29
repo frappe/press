@@ -22,12 +22,10 @@
 			</AlertBanner>
 			<!-- Migration shortcuts: deep-link to the Migrations tab with the dialog
 			     opened and the right migration type preselected. -->
-			<template
-				v-if="group.group == 'General Actions' && $site?.doc?.status !== 'Archived'"
-			>
+			<template v-if="$site?.doc?.status !== 'Archived'">
 				<div
 					class="py-3 first:pt-0 last:pb-0"
-					v-for="shortcut in migrationShortcuts"
+					v-for="shortcut in migrationShortcutsFor(group.group)"
 					:key="shortcut.action"
 				>
 					<div class="flex items-center justify-between gap-1">
@@ -41,7 +39,15 @@
 							class="whitespace-nowrap"
 							@click="openMigration(shortcut.action)"
 						>
-							{{ shortcut.buttonLabel }}
+							<p
+								:class="
+									group.group === 'Dangerous Actions'
+										? 'text-red-600'
+										: 'text-ink-gray-8'
+								"
+							>
+								{{ shortcut.buttonLabel }}
+							</p>
 						</Button>
 					</div>
 				</div>
@@ -77,7 +83,8 @@ export default {
 	data() {
 		return {
 			// `action` matches the keys returned by Site.get_migration_options, which
-			// the migration dialog uses to preselect the migration type.
+			// the migration dialog uses to preselect the migration type. `group`
+			// places the shortcut under the matching site action section.
 			migrationShortcuts: [
 				{
 					label: 'In-Place Migrate Site',
@@ -85,18 +92,21 @@ export default {
 					description:
 						'Run bench migrate on the current bench to apply pending patches and schema changes.',
 					buttonLabel: 'Migrate Site',
+					group: 'Dangerous Actions',
 				},
 				{
 					label: 'Move to a Different Server / Bench',
 					action: 'Move Site To Different Server / Bench',
 					description: 'Move this site to another private bench or server.',
 					buttonLabel: 'Move Site',
+					group: 'General Actions',
 				},
 				{
 					label: 'Move to a Different Region',
 					action: 'Move Site To Different Region',
 					description: 'Move this site to a bench in another region.',
 					buttonLabel: 'Move Site',
+					group: 'General Actions',
 				},
 			],
 		}
@@ -122,6 +132,11 @@ export default {
 		},
 	},
 	methods: {
+		migrationShortcutsFor(group) {
+			return this.migrationShortcuts.filter(
+				(shortcut) => shortcut.group === group,
+			)
+		},
 		openSiteMigrationsDoc() {
 			window.open(
 				'https://docs.frappe.io/cloud/site/site-migrations/introduction-to-site-migration',
