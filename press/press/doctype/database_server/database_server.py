@@ -842,8 +842,8 @@ class DatabaseServer(BaseServer):
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 		vm: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 
-		if not bool(vm.assign_public_ip):
-			cluster.attach_route_table_to_instance_vnic_oci(self, cluster.oci_nat_route_table_id)
+		if not bool(vm.assign_public_ip) and vm.cloud_provider == "OCI":
+			cluster.attach_route_table_to_instance_vnic_oci(vm, cluster.oci_nat_route_table_id)
 
 		try:
 			ansible = Ansible(
