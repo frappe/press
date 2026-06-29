@@ -1843,7 +1843,7 @@ class VirtualMachine(Document):
 		except ServiceError as e:
 			if e.status == 404:
 				# No public IP attached
-				return
+				return None
 			raise
 
 		nat_server = frappe.db.get_value(
@@ -1852,12 +1852,16 @@ class VirtualMachine(Document):
 			"name",
 		)
 
-		if nat_server:
-			cluster.attach_route_table_to_instance_vnic_oci(self, cluster.oci_nat_route_table_id)
-			network_client.delete_public_ip(public_ip.id)
+		if not nat_server:
+			return False
 
-			frappe.flags.force_update_dns = True
-			self.sync()
+		cluster.attach_route_table_to_instance_vnic_oci(self, cluster.oci_nat_route_table_id)
+		network_client.delete_public_ip(public_ip.id)
+
+		frappe.flags.force_update_dns = True
+		self.sync()
+
+		return True
 
 	@frappe.whitelist()
 	def disassociate_auto_assigned_public_ip(self):
@@ -1894,7 +1898,9 @@ class VirtualMachine(Document):
 			client = self.client()
 			client.remove_public_ip_from_virtual_machine(self.instance_id)
 		elif self.cloud_provider == "OCI":
-			self.disassociate_oci_public_ip()
+			success = self.disassociate_oci_public_ip()
+			if not success:
+				return
 
 		frappe.flags.force_update_dns = True
 		self.sync()
