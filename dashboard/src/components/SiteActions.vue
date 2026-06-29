@@ -1,34 +1,5 @@
 <template>
 	<div class="mx-auto max-w-3xl space-y-4" v-if="$site?.doc?.actions">
-		<!-- Migration shortcuts: deep-link to the Migrations tab with the modal
-		     opened and the right migration type preselected. -->
-		<div
-			v-if="$site?.doc?.status !== 'Archived'"
-			class="divide-y rounded border border-outline-gray-1 p-5"
-		>
-			<div class="pb-3 text-lg font-semibold">Migrations</div>
-			<div
-				class="py-3 first:pt-0 last:pb-0"
-				v-for="shortcut in migrationShortcuts"
-				:key="shortcut.action"
-			>
-				<div class="flex items-center justify-between gap-1">
-					<div>
-						<h3 class="text-base font-medium">{{ shortcut.label }}</h3>
-						<p class="mt-1 text-p-base text-ink-gray-6">
-							{{ shortcut.description }}
-						</p>
-					</div>
-					<Button
-						class="whitespace-nowrap"
-						@click="openMigration(shortcut.action)"
-					>
-						{{ shortcut.buttonLabel }}
-					</Button>
-				</div>
-			</div>
-		</div>
-
 		<div
 			v-for="group in actions"
 			:key="group.group"
@@ -49,6 +20,32 @@
 					View Documentation
 				</Button>
 			</AlertBanner>
+			<!-- Migration shortcuts: deep-link to the Migrations tab with the dialog
+			     opened and the right migration type preselected. -->
+			<template
+				v-if="group.group == 'General Actions' && $site?.doc?.status !== 'Archived'"
+			>
+				<div
+					class="py-3 first:pt-0 last:pb-0"
+					v-for="shortcut in migrationShortcuts"
+					:key="shortcut.action"
+				>
+					<div class="flex items-center justify-between gap-1">
+						<div>
+							<h3 class="text-base font-medium">{{ shortcut.label }}</h3>
+							<p class="mt-1 text-p-base text-ink-gray-6">
+								{{ shortcut.description }}
+							</p>
+						</div>
+						<Button
+							class="whitespace-nowrap"
+							@click="openMigration(shortcut.action)"
+						>
+							{{ shortcut.buttonLabel }}
+						</Button>
+					</div>
+				</div>
+			</template>
 			<div
 				class="py-3 first:pt-0 last:pb-0"
 				v-for="row in group.actions"
