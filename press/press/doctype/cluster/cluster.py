@@ -2174,6 +2174,7 @@ class Cluster(Document):
 			"AWS EC2",
 			"Frappe Compute",
 			"Hetzner",
+			"DigitalOcean",
 		):
 			nat_server = frappe.db.get_value(
 				"NAT Server",
