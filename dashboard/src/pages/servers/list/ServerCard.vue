@@ -131,10 +131,9 @@ const serverActions = (server) => [
 
 		<div
 			v-if="benches.hasNextPage"
-			class="px-6 py-2 border-t dark:border-outline-gray-2"
+			class="flex px-6 py-2 border-t dark:border-outline-gray-2"
 		>
 			<Button
-				variant="ghost"
 				@click="benches.next()"
 				:loading="benches.list?.loading"
 			>
