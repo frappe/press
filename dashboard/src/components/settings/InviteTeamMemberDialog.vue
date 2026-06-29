@@ -100,7 +100,7 @@ export default {
 				this.$team.inviteTeamMember.submit(
 					{
 						email: this.email,
-						roles: this.selectedRole === 'Admin' ? [] : [this.selectedRole],
+						roles: [this.selectedRole],
 					},
 					{
 						validate: () => {
