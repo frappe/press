@@ -281,6 +281,10 @@ def accept_team_invite(key: str):
 	press_roles = account_request.press_roles
 
 	team_doc = frappe.get_doc("Team", team, ignore_permissions=True)
+	if is_user_part_of_team(email, team):
+		account_request.db_set("request_key", None)
+		return
+
 	team_doc.create_user_for_member(
 		first_name,
 		last_name,
@@ -513,11 +517,22 @@ def set_country(country):
 def get_account_request_from_key(key: str):
 	"""Find Account Request using `key`"""
 
-	if not key or not isinstance(key, str) or not key.strip():
+	if not key or not isinstance(key, str):
+		frappe.throw(_("Invalid Key"))
+
+	# Invite/verification links are long enough that email transport wraps them
+	# at 76 chars with a quoted-printable soft break ("=" + newline). If the
+	# recipient copies the link (instead of clicking) or their client renders it
+	# as plain text, that "=" can leak into the URL path. Request keys are always
+	# alphanumeric (random_string), so any whitespace or "=" is an artifact and
+	# safe to drop before lookup.
+	key = re.sub(r"[\s=]", "", key)
+
+	if not key:
 		frappe.throw(_("Invalid Key"))
 
 	try:
-		return frappe.get_doc("Account Request", {"request_key": key.strip()})
+		return frappe.get_doc("Account Request", {"request_key": key})
 	except frappe.DoesNotExistError:
 		return None
 

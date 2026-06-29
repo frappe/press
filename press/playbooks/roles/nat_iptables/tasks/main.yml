@@ -1,7 +1,13 @@
 ---
 - name: Determine Hetzner interface
   set_fact:
-    primary_interface: "{{ ansible_interfaces | difference(['lo']) | first }}"
+    primary_interface: >-
+      {{
+        ansible_interfaces
+        | reject('equalto', 'lo')
+        | reject('equalto', 'docker0')
+        | first
+      }}
   when: cloud_provider == "Hetzner"
 
 # AWS / Frappe Compute
@@ -10,8 +16,12 @@
     dest: /etc/netplan/99-custom-gateway.yaml
     content: |
       network:
+        version: 2
         ethernets:
           {{ ansible_default_ipv4.interface }}:
+            dhcp4: true
+            dhcp4-overrides:
+              use-routes: false
             routes:
               - to: default
                 via: {{ nat_gateway_ip }}
@@ -44,8 +54,12 @@
     dest: /etc/netplan/99-custom-gateway.yaml
     content: |
       network:
+        version: 2
         ethernets:
           {{ primary_interface }}:
+            dhcp4: true
+            dhcp4-overrides:
+              use-routes: false
             routes:
               - to: default
                 via: {{ network_gateway }}
@@ -57,6 +71,8 @@
   when:
     - cloud_provider == "Hetzner"
     - network_gateway is defined
+    - nat_gateway_ip is defined
+    - nat_gateway_ip
     - network_gateway
 
 # Frappe Compute specific

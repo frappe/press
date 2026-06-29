@@ -308,6 +308,8 @@ class Team(Document):
 		roles = [role["label"] for role in get_roles(self.name)]
 		# Validate that each team member has a valid role assigned.
 		for member in self.team_members:
+			if not member.role:
+				member.role = "Member"
 			# If the role is not in the list of valid roles, throw an error.
 			if member.role not in roles:
 				frappe.throw(
@@ -1120,7 +1122,12 @@ class Team(Document):
 		from press.press.doctype.team.team_members import get_roles
 
 		all_roles = all_roles or get_roles(str(self.name))
-		if not any(r["value"] == role for r in all_roles):
+		# A role is identified either by its label/title (predefined roles and the
+		# update-invitation dialog) or by its Press Role name (the invite dialog
+		# sends the document name for custom roles). Accept both, mirroring
+		# _set_invitation_role which resolves either form to a press_role.
+		valid_roles = {r["value"] for r in all_roles} | {r["name"] for r in all_roles if r.get("name")}
+		if role not in valid_roles:
 			frappe.throw(
 				_('Invalid role "{0}". Must be one of: {1}').format(
 					role, ", ".join(r["value"] for r in all_roles)
@@ -1192,6 +1199,24 @@ class Team(Document):
 			account_request.press_role = matched[0]["name"]
 		else:
 			account_request.press_role = role
+
+	def _get_invitation_role(self, roles) -> str | None:
+		if isinstance(roles, str):
+			try:
+				roles = frappe.parse_json(roles)
+			except ValueError:
+				return roles
+
+		if isinstance(roles, str):
+			return roles
+
+		if isinstance(roles, (list, tuple)):
+			return roles[0] if roles else None
+
+		if not roles:
+			return None
+
+		raise frappe.ValidationError(_("Invalid role"))
 
 	@dashboard_whitelist()
 	@feature_preview.beta_testing()
@@ -1287,9 +1312,11 @@ class Team(Document):
 			}
 		)
 
-		selected_role = roles[0] if roles else None
+		selected_role = self._get_invitation_role(roles)
 		if selected_role:
-			account_request.press_role = selected_role
+			self._validate_role(selected_role)
+			self._set_invitation_role(account_request, selected_role)
+			account_request.flags.ignore_links = True
 
 		account_request.insert()
 

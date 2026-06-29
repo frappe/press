@@ -796,6 +796,7 @@
 		"UDF",
 		"mcp",
 		"hicm",
-		"kcore"
+		"kcore",
+		"MRR"
 	]
 }

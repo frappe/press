@@ -41,7 +41,7 @@ interface Role {
 
 // ─── Fetch roles ──────────────────────────────────────────────────────
 const rolesResource = createResource({
-	url: 'run_doc_method',
+	url: 'press.api.client.run_doc_method',
 	auto: false,
 	makeParams: () => ({
 		method: 'get_roles',
@@ -95,7 +95,7 @@ const openRoleDetail = (role: Role) => {
 
 // ─── Permission editing (custom roles only) ───────────────────────────
 const setPermissionResource = createResource({
-	url: 'run_doc_method',
+	url: 'press.api.client.run_doc_method',
 })
 
 const updatePermission = (key: string, value: boolean) => {

@@ -86,6 +86,7 @@ class Cluster(Document):
 		disable_public_ips_for_servers: DF.Check
 		enable_autoscaling: DF.Check
 		enable_periodic_flush_table: DF.Check
+		flow_log_id: DF.Data | None
 		flush_table_execution_hour: DF.Int
 		frappe_compute_api_key: DF.Data | None
 		frappe_compute_api_secret: DF.Password | None
@@ -115,6 +116,8 @@ class Cluster(Document):
 		subnet_id: DF.Data | None
 		team: DF.Link | None
 		title: DF.Data | None
+		vpc_flow_logs_enabled: DF.Check
+		vpc_flow_logs_s3_bucket: DF.Data | None
 		vpc_id: DF.Data | None
 	# end: auto-generated types
 
@@ -1277,6 +1280,41 @@ class Cluster(Document):
 		self.save()
 
 	@frappe.whitelist()
+	def setup_vpc_flow_logs(self):
+		"""Create an S3-delivered, ALL-traffic flow log for this cluster's VPC."""
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw("VPC Flow Logs are only supported on AWS EC2", frappe.ValidationError)
+		if self.status != "Active":
+			frappe.throw("Cluster is not active", frappe.ValidationError)
+		if not self.vpc_id:
+			frappe.throw("Cluster has no VPC", frappe.ValidationError)
+		if self.vpc_flow_logs_enabled:
+			frappe.throw("VPC Flow Logs are already enabled", frappe.ValidationError)
+		if not self.vpc_flow_logs_s3_bucket:
+			frappe.throw("Set the VPC Flow Logs S3 bucket on the cluster first", frappe.ValidationError)
+
+		response = self.get_aws_client().create_flow_logs(
+			ResourceType="VPC",
+			ResourceIds=[self.vpc_id],
+			TrafficType="ALL",
+			LogDestinationType="s3",
+			LogDestination=f"arn:aws:s3:::{self.vpc_flow_logs_s3_bucket}",
+			TagSpecifications=[
+				{
+					"ResourceType": "vpc-flow-log",
+					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Flow Logs"}],
+				},
+			],
+		)
+		# Fail loud at the boundary: CreateFlowLogs returns partial success.
+		if response.get("Unsuccessful"):
+			error = response["Unsuccessful"][0].get("Error", {})
+			frappe.throw(f"Failed to create VPC Flow Logs: {error.get('Message', error)}")
+		self.flow_log_id = response["FlowLogIds"][0]
+		self.vpc_flow_logs_enabled = 1
+		self.save()
+
+	@frappe.whitelist()
 	def create_proxy(self):
 		"""Creates a proxy server for the cluster"""
 		if self.get_same_region_vmis(get_series=True).count("n") < 1:
@@ -2132,7 +2170,11 @@ class Cluster(Document):
 		return None
 
 	def get_nat_server_if_supported(self):
-		if self.disable_public_ips_for_servers and self.cloud_provider in ("AWS EC2", "Frappe Compute"):
+		if self.disable_public_ips_for_servers and self.cloud_provider in (
+			"AWS EC2",
+			"Frappe Compute",
+			"Hetzner",
+		):
 			nat_server = frappe.db.get_value(
 				"NAT Server",
 				{"status": "Active", "cluster": self.name, "secondary_private_ip": ("is", "set")},
