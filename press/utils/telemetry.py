@@ -55,18 +55,35 @@ def capture_read_event(email: str | None = None):
 		frappe.response.update(frappe.utils.get_imaginary_pixel_response())
 
 
-def _pulse_post(method: str, payload: dict):
+def _pulse_credentials():
+	return (
+		frappe.db.get_single_value("Press Settings", "pulse_site"),
+		frappe.db.get_single_value("Press Settings", "pulse_api_key"),
+	)
+
+
+def _pulse_post(method: str, payload: dict, enqueue: bool = False):
 	"""POST to a Pulse API method server-to-server (key in the X-Pulse-API-Key header).
 
-	Telemetry never raises to the caller: a dropped event or a missed identity stitch
-	must not break the signup/billing flow it rides on, and identify self-heals on the
-	next change. We post directly (no framework client) because cloud.frappe.io's
-	framework predates `frappe.utils.telemetry.pulse`.
+	Best-effort, never raises. With `enqueue`, the POST runs in a background job after
+	commit — for identity calls (identify/alias) that ride the guest signup request, so
+	a slow Pulse host can't block account creation and a rolled-back signup emits
+	nothing. capture stays synchronous (one job per event would flood the queue). We
+	post directly (no framework client) because cloud.frappe.io's framework predates
+	`frappe.utils.telemetry.pulse`.
 	"""
-	pulse_site = frappe.db.get_single_value("Press Settings", "pulse_site")
-	pulse_api_key = frappe.db.get_single_value("Press Settings", "pulse_api_key")
-
+	pulse_site, pulse_api_key = _pulse_credentials()
 	if not pulse_site or not pulse_api_key:
+		return
+
+	if enqueue:
+		frappe.enqueue(
+			"press.utils.telemetry._pulse_post",
+			queue="short",
+			enqueue_after_commit=True,
+			method=method,
+			payload=payload,
+		)
 		return
 
 	try:
@@ -111,6 +128,7 @@ def pulse_identify(user: str, properties: dict | None = None):
 			"user": anonymize_user(user),
 			"properties": properties or {},
 		},
+		enqueue=True,
 	)
 
 
@@ -124,6 +142,7 @@ def pulse_alias(previous_id: str, user: str):
 			"previous_id": previous_id,
 			"user": anonymize_user(user),
 		},
+		enqueue=True,
 	)
 
 
@@ -154,8 +173,7 @@ def pulse_boot_config(team: str | None = None) -> dict:
 	forwarded `?aid=…` stitches server-side via `alias`. Returns `{enabled: False}`
 	when Pulse isn't configured.
 	"""
-	pulse_site = frappe.db.get_single_value("Press Settings", "pulse_site")
-	pulse_api_key = frappe.db.get_single_value("Press Settings", "pulse_api_key")
+	pulse_site, pulse_api_key = _pulse_credentials()
 	if not pulse_site or not pulse_api_key:
 		return {"enabled": False}
 

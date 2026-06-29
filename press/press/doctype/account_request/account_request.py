@@ -381,8 +381,8 @@ class AccountRequest(Document):
 
 		Runs once when the team is created (covers every signup path). `alias` stitches
 		the `?aid=…` forwarded from the product website onto the account's `user_…`;
-		`identify` attaches product/plan attributes. Both are server-side only — never
-		browser-reachable — and never raise to the signup flow.
+		`identify` attaches product/plan attributes. Both POST off-request (enqueued,
+		see `_pulse_post`), so a slow Pulse host can't block account creation.
 		"""
 		from press.utils.telemetry import pulse_alias, pulse_identify
 
