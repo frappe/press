@@ -2301,6 +2301,7 @@ class Cluster(Document):
 			"Frappe Compute",
 			"Hetzner",
 			"DigitalOcean",
+			"OCI",
 		):
 			nat_server = frappe.db.get_value(
 				"NAT Server",
