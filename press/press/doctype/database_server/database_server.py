@@ -843,7 +843,18 @@ class DatabaseServer(BaseServer):
 		vm: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 
 		if not bool(vm.assign_public_ip) and vm.cloud_provider == "OCI":
-			cluster.attach_route_table_to_instance_vnic_oci(vm, cluster.oci_nat_route_table_id)
+			nat_server = frappe.db.get_value(
+				"NAT Server",
+				{
+					"cluster": self.cluster,
+					"status": "Active",
+				},
+				"name",
+			)
+			if nat_server:
+				cluster.attach_route_table_to_instance_vnic_oci(vm, cluster.oci_nat_route_table_id)
+			else:
+				frappe.throw("Failed to create server. Please create a NAT server in the cluster first")
 
 		try:
 			ansible = Ansible(
