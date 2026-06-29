@@ -48,6 +48,7 @@ export default {
 					label: 'Marketplace Payouts',
 					route: { name: 'BillingMarketplacePayouts' },
 				},
+				{ label: 'Subscriptions', route: { name: 'BillingSubscriptions' } },
 			]
 
 			if (this.$team?.doc?.apply_limits && this.$team?.doc?.tier) {

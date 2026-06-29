@@ -78,6 +78,52 @@ def get_balance_credit():
 
 @frappe.whitelist()
 @role_guard.api("billing")
+def subscriptions():
+	"""Active subscriptions owned by the current team, grouped by type, for the
+	billing Subscriptions tab: sites, servers, and marketplace apps (with the
+	sites each app is installed on)."""
+	team = get_current_team()
+
+	rows = frappe.get_all(
+		"Subscription",
+		filters={
+			"team": team,
+			"enabled": 1,
+			"document_type": ("in", ["Site", "Server"]),
+		},
+		fields=["document_type", "document_name", "plan"],
+		order_by="document_name asc",
+	)
+	sites = [{"name": r.document_name, "plan": r.plan} for r in rows if r.document_type == "Site"]
+	servers = [{"name": r.document_name, "plan": r.plan} for r in rows if r.document_type == "Server"]
+
+	app_rows = frappe.get_all(
+		"Marketplace App Subscription",
+		filters={"team": team, "status": "Active"},
+		fields=["app", "plan", "site"],
+		order_by="app asc",
+	)
+	apps_by_name: dict[str, dict] = {}
+	for row in app_rows:
+		app = apps_by_name.setdefault(
+			row.app,
+			{"name": row.app, "title": None, "plan": row.plan, "sites": []},
+		)
+		if row.site:
+			app["sites"].append(row.site)
+
+	for name, app in apps_by_name.items():
+		app["title"] = frappe.db.get_value("Marketplace App", name, "title") or name
+
+	return {
+		"sites": sites,
+		"servers": servers,
+		"marketplace_apps": list(apps_by_name.values()),
+	}
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
 def past_invoices():
 	return get_current_team(True).get_past_invoices()
 
