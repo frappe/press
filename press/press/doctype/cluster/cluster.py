@@ -88,6 +88,7 @@ class Cluster(Document):
 		disable_public_ips_for_servers: DF.Check
 		enable_autoscaling: DF.Check
 		enable_periodic_flush_table: DF.Check
+		flow_log_id: DF.Data | None
 		flush_table_execution_hour: DF.Int
 		frappe_compute_api_key: DF.Data | None
 		frappe_compute_api_secret: DF.Password | None
@@ -118,6 +119,8 @@ class Cluster(Document):
 		subnet_id: DF.Data | None
 		team: DF.Link | None
 		title: DF.Data | None
+		vpc_flow_logs_enabled: DF.Check
+		vpc_flow_logs_s3_bucket: DF.Data | None
 		vpc_id: DF.Data | None
 	# end: auto-generated types
 
