@@ -14,7 +14,7 @@ const selectedRole = ref('Member')
 const team = getTeam()
 
 const roles = createResource({
-	url: 'run_doc_method',
+	url: 'press.api.client.run_doc_method',
 	auto: true,
 	params: {
 		method: 'get_roles',
