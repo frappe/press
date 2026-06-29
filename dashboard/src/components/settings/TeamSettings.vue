@@ -18,7 +18,7 @@ import UserWithAvatarCell from '../UserWithAvatarCell.vue'
 const team = getTeam()
 
 const members = createResource({
-	url: 'run_doc_method',
+	url: 'press.api.client.run_doc_method',
 	auto: true,
 	params: {
 		method: 'members',
