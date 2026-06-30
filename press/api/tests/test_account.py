@@ -82,8 +82,9 @@ class TestAccountApi(TestCase):
 		other_sid = self._create_session(user)
 		another_sid = self._create_session(user)
 
-		with user_context(user), patch(
-			"frappe.sessions.delete_session", side_effect=self._delete_session_without_commit
+		with (
+			user_context(user),
+			patch("frappe.sessions.delete_session", side_effect=self._delete_session_without_commit),
 		):
 			frappe.session.sid = current_sid
 
@@ -99,8 +100,9 @@ class TestAccountApi(TestCase):
 		create_test_user(user)
 		current_sid = self._create_session(user)
 
-		with user_context(user), patch(
-			"frappe.sessions.delete_session", side_effect=self._delete_session_without_commit
+		with (
+			user_context(user),
+			patch("frappe.sessions.delete_session", side_effect=self._delete_session_without_commit),
 		):
 			frappe.session.sid = current_sid
 
