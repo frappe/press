@@ -8,12 +8,14 @@
 import { Badge, createResource } from 'frappe-ui'
 import { defineAsyncComponent, h, ref } from 'vue'
 import { toast } from 'vue-sonner'
+import session from '../../data/session'
 import { getTeam } from '../../data/team'
 import router from '../../router'
 import { confirmDialog, renderDialog } from '../../utils/components'
 import { getToastErrorMessage } from '../../utils/toast'
 import ObjectList from '../ObjectList.vue'
 import UserWithAvatarCell from '../UserWithAvatarCell.vue'
+import TeamSettingsUserType from './TeamSettingsUserType.vue'
 
 const team = getTeam()
 
@@ -42,22 +44,18 @@ const teamMembersListOptions = ref({
 					avatarImage: row.user_image,
 					fullName: row.user_name,
 					email: row.email,
+					isCurrentUser: row.user === session.user,
 				})
 			},
 		},
 		{
-			label: 'Access',
+			label: 'User type',
 			type: 'Component',
 			width: '100px',
 			component: ({ row }) => {
-				return h(
-					Badge,
-					{
-						variant: 'subtle',
-						theme: row.has_admin_access ? 'blue' : 'green',
-					},
-					row.has_admin_access ? 'Admin' : 'Member',
-				)
+				return h(TeamSettingsUserType, {
+					hasAdminAccess: row.has_admin_access,
+				})
 			},
 		},
 		{
@@ -74,7 +72,7 @@ const teamMembersListOptions = ref({
 							{
 								key: role.name,
 								variant: 'subtle',
-								class: 'cursor-pointer',
+								class: 'cursor-pointer max-w-[124px]',
 								style: { marginRight: '4px' },
 								onClick: (e) => {
 									e.preventDefault()
@@ -85,7 +83,10 @@ const teamMembersListOptions = ref({
 									})
 								},
 							},
-							role.title,
+							{
+								default: () =>
+									h('span', { class: 'truncate min-w-0' }, role.title),
+							},
 						),
 					),
 				)
