@@ -1109,6 +1109,33 @@ class Team(Document):
 			m.roles = user_roles.get(m.user, [])
 			m.has_admin_access = any(r.get("admin_access") for r in m.roles)
 			r.append(m)
+
+		for inv in get_invitations(str(self.name)):
+			is_custom_role = bool(inv.press_role_name)
+			if is_custom_role:
+				roles = [
+					{
+						"name": inv.press_role_name,
+						"title": inv.press_role,
+						"admin_access": inv.press_role_admin_access,
+					}
+				]
+				has_admin_access = bool(inv.press_role_admin_access)
+			else:
+				roles = []
+				has_admin_access = inv.press_role == "Admin"
+			r.append(
+				{
+					"user": inv.email,
+					"email": inv.email,
+					"user_name": inv.full_name or inv.email,
+					"user_image": inv.user_image,
+					"roles": roles,
+					"has_admin_access": has_admin_access,
+					"status": "Pending",
+				}
+			)
+
 		return r
 
 	@dashboard_whitelist()
