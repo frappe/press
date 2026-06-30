@@ -105,6 +105,8 @@ class DripEmail(Document):
 			if not self.product_trial:
 				frappe.throw(_("Product Trial is required when Send Raw is disabled"))
 			app = frappe.db.get_value("Product Trial", self.product_trial, ["title", "logo"], as_dict=True)
+			if not app:
+				frappe.throw(_("Product Trial {0} not found").format(self.product_trial))
 			kwargs["template"] = "product_trial_email"
 			kwargs["args"] = {"message": message, "title": app.title, "logo": app.logo}
 			kwargs["unsubscribe_message"] = "Unsubscribe"
