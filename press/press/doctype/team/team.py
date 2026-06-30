@@ -286,7 +286,6 @@ class Team(Document):
 
 	def validate(self):
 		self.validate_duplicate_members()
-		self.validate_member_role()
 		self.set_team_currency()
 		self.set_default_user()
 		self.set_billing_name()
@@ -296,6 +295,7 @@ class Team(Document):
 		self.validate_billing_team()
 		self.reject_reenabling_team_for_banned_team()
 
+<<<<<<< HEAD
 	def validate_member_role(self):
 		"""
 		Validate that the role assigned to each team member is a valid role.
@@ -316,6 +316,8 @@ class Team(Document):
 					)
 				)
 
+=======
+>>>>>>> e5ff838bb (chore(roles): Removed pre-defined roles)
 	def before_insert(self):
 		self.currency = "INR" if self.country == "India" else "USD"
 
@@ -488,7 +490,7 @@ class Team(Document):
 		if not user:
 			user = self.create_user(first_name, last_name, email, password)
 
-		self.append("team_members", {"user": user.name, "role": role or "Member"})
+		self.append("team_members", {"user": user.name, "role": role})
 		self.save(ignore_permissions=True)
 
 		for press_role in press_roles or []:
@@ -1110,8 +1112,7 @@ class Team(Document):
 			r.append(m)
 
 		for inv in get_invitations(str(self.name)):
-			is_custom_role = bool(inv.press_role_name)
-			if is_custom_role:
+			if inv.press_role_name:
 				roles = [
 					{
 						"name": inv.press_role_name,
@@ -1138,10 +1139,14 @@ class Team(Document):
 		return r
 
 	def _validate_role(self, role: str, all_roles=None):
-		from press.press.doctype.team.team_members import get_roles
-
 		all_roles = all_roles or get_roles(str(self.name))
+<<<<<<< HEAD
 		valid_roles = {r["value"] for r in all_roles} | {r["name"] for r in all_roles if r.get("name")}
+=======
+		# Accept both the role title and the Press Role document name, since
+		# the invite dialog sends the document name while other callers may use the title.
+		valid_roles = {r["value"] for r in all_roles} | {r["name"] for r in all_roles}
+>>>>>>> e5ff838bb (chore(roles): Removed pre-defined roles)
 		if role not in valid_roles:
 			frappe.throw(
 				_('Invalid role "{0}". Must be one of: {1}').format(
@@ -1150,6 +1155,16 @@ class Team(Document):
 				frappe.ValidationError,
 			)
 
+<<<<<<< HEAD
+=======
+	def _set_invitation_role(self, account_request: AccountRequest, role: str, all_roles=None):
+		if all_roles is None:
+			all_roles = get_roles(str(self.name))
+		matched = [r for r in all_roles if r["value"] == role or r.get("name") == role]
+		if matched and matched[0].get("name"):
+			account_request.press_role = matched[0]["name"]
+
+>>>>>>> e5ff838bb (chore(roles): Removed pre-defined roles)
 	def _get_invitation_role(self, roles) -> str | None:
 		if isinstance(roles, str):
 			try:

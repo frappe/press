@@ -11,7 +11,6 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.team.team_members import (
 	PERMISSION_FIELDS,
-	PREDEFINED_ROLES,
 	get_invitations,
 	get_roles,
 )
@@ -123,48 +122,10 @@ class TestTeamMembers(FrappeTestCase):
 			invitations = get_invitations(team)
 			self.assertEqual(len(invitations), 0)
 
-	def test_get_roles_returns_all_predefined_roles_when_no_team(self):
-		"""When no team is provided, only predefined roles should be returned."""
+	def test_get_roles_returns_empty_when_no_team(self):
+		"""When no team is provided, an empty list should be returned."""
 		roles = get_roles(None)
-		self.assertEqual(len(roles), len(PREDEFINED_ROLES))
-
-	def test_get_roles_returns_correct_role_labels_and_values(self):
-		"""Predefined roles should have correct label/value and all permission fields."""
-		roles = get_roles(frappe.mock("email"))
-		for role in roles:
-			self.assertIn(role["label"], ["Admin", "Developer", "Member", "Viewer"])
-			self.assertEqual(role["label"], role["value"])
-			self.assertTrue(role["is_predefined"])
-			# Verify all permission fields are present
-			for field in PERMISSION_FIELDS:
-				self.assertIn(field, role)
-				self.assertIsInstance(role[field], bool)
-
-	def test_get_roles_predefined_role_permissions(self):
-		"""Verify specific permission configurations for each predefined role."""
-		roles = get_roles(frappe.mock("email"))
-		roles_by_label = {r["label"]: r for r in roles}
-
-		# Admin should have most permissions enabled
-		admin = roles_by_label["Admin"]
-		self.assertTrue(admin["admin_access"])
-		self.assertTrue(admin["allow_billing"])
-		self.assertTrue(admin["allow_site_creation"])
-		self.assertTrue(admin["allow_bench_creation"])
-		self.assertTrue(admin["allow_server_creation"])
-		self.assertTrue(admin["allow_apps"])
-		self.assertTrue(admin["allow_webhook_configuration"])
-
-		# Member should have very few permissions
-		member = roles_by_label["Member"]
-		self.assertFalse(member["admin_access"])
-		self.assertFalse(member["allow_billing"])
-		self.assertFalse(member["allow_site_creation"])
-
-		# Viewer should have no permissions at all
-		viewer = roles_by_label["Viewer"]
-		for field in PERMISSION_FIELDS:
-			self.assertFalse(viewer[field])
+		self.assertEqual(roles, [])
 
 	def test_get_roles_accepts_team_parameter(self):
 		"""get_roles should accept a team parameter and return a list of roles."""
@@ -175,21 +136,11 @@ class TestTeamMembers(FrappeTestCase):
 			self.assertIsNotNone(roles)
 			self.assertIsInstance(roles, list)
 
-	def test_get_roles_returns_predefined_roles_with_team_param(self):
-		"""When a team is provided, predefined roles should still be included."""
-		team = create_test_team_for_members()
-		team_user = frappe.get_value("Team", team, "user")
-		with user_context(team_user):
-			roles = get_roles(team)
-			predefined = [r for r in roles if r["is_predefined"]]
-			self.assertEqual(len(predefined), len(PREDEFINED_ROLES))
-
 	def test_get_roles_includes_custom_press_roles_for_team(self):
-		"""When a team has custom Press Roles, they should be included in the result."""
+		"""When a team has custom Press Roles, they should be returned."""
 		team = create_test_team_for_members()
 		team_user = frappe.get_value("Team", team, "user")
 		with user_context(team_user):
-			# Create a custom Press Role for this team
 			frappe.get_doc(
 				{
 					"doctype": "Press Role",
@@ -203,17 +154,16 @@ class TestTeamMembers(FrappeTestCase):
 			).insert(ignore_permissions=True)
 
 			roles = get_roles(team)
-			custom_roles = [r for r in roles if not r["is_predefined"]]
-			self.assertEqual(len(custom_roles), 1)
-			self.assertEqual(custom_roles[0]["label"], "Custom Role")
-			self.assertEqual(custom_roles[0]["value"], "Custom Role")
-			self.assertIsNotNone(custom_roles[0]["name"])
-			self.assertFalse(custom_roles[0]["is_predefined"])
-			# Verify permission fields from Press Role are included
-			self.assertTrue(custom_roles[0]["allow_billing"])
-			self.assertTrue(custom_roles[0]["allow_apps"])
-			self.assertFalse(custom_roles[0]["admin_access"])
-			self.assertFalse(custom_roles[0]["allow_site_creation"])
+			self.assertEqual(len(roles), 1)
+			self.assertEqual(roles[0]["label"], "Custom Role")
+			self.assertEqual(roles[0]["value"], "Custom Role")
+			self.assertIsNotNone(roles[0]["name"])
+			for field in PERMISSION_FIELDS:
+				self.assertIn(field, roles[0])
+			self.assertTrue(roles[0]["allow_billing"])
+			self.assertTrue(roles[0]["allow_apps"])
+			self.assertFalse(roles[0]["admin_access"])
+			self.assertFalse(roles[0]["allow_site_creation"])
 
 	def test_get_roles_excludes_custom_roles_from_other_teams(self):
 		"""Custom Press Roles from other teams should not be included."""
@@ -221,7 +171,6 @@ class TestTeamMembers(FrappeTestCase):
 		team2 = create_test_team_for_members()
 		team1_user = frappe.get_value("Team", team1, "user")
 		with user_context(team1_user):
-			# Create a Press Role for team1
 			frappe.get_doc(
 				{
 					"doctype": "Press Role",
@@ -229,7 +178,6 @@ class TestTeamMembers(FrappeTestCase):
 					"team": team1,
 				}
 			).insert(ignore_permissions=True)
-			# Create a Press Role for team2
 			frappe.get_doc(
 				{
 					"doctype": "Press Role",
@@ -239,6 +187,6 @@ class TestTeamMembers(FrappeTestCase):
 			).insert(ignore_permissions=True)
 
 			roles = get_roles(team1)
-			custom_labels = [r["label"] for r in roles if not r["is_predefined"]]
-			self.assertIn("Team1 Role", custom_labels)
-			self.assertNotIn("Team2 Role", custom_labels)
+			labels = [r["label"] for r in roles]
+			self.assertIn("Team1 Role", labels)
+			self.assertNotIn("Team2 Role", labels)
