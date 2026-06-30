@@ -2,16 +2,23 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import boto3
 import frappe
+import requests
 from boto3.session import Session
 from frappe.model.document import Document
 from frappe.utils import get_url, validate_email_address
+from requests.auth import HTTPBasicAuth
 from twilio.rest import Client
 
 from press.api.billing import get_stripe
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.telegram_utils import Telegram
+
+if TYPE_CHECKING:
+	from press.press.doctype.deadman_server.deadman_server import DeadmanServer
 
 
 class PressSettings(Document):
@@ -393,3 +400,26 @@ class PressSettings(Document):
 		):
 			return [app.app for app in self.default_apps]
 		return []
+
+
+def check_twilio_balance():
+	settings: PressSettings = frappe.get_single("Press Settings")
+
+	try:
+		response = requests.get(
+			f"https://api.twilio.com/2010-04-01/Accounts/{settings.twilio_account_sid}/Balance.json",
+			auth=HTTPBasicAuth(
+				settings.twilio_api_key_sid,
+				settings.get_password("twilio_api_key_secret"),
+			),
+			timeout=10,
+		)
+		response.raise_for_status()
+
+		balance = float(response.json()["balance"])
+
+		if balance >= 0 and settings.deadman_server:
+			deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
+			deadman.send_capability_heartbeat("twilio")
+	except requests.RequestException:
+		frappe.log_error("Failed to fetch Twilio balance")

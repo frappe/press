@@ -39,6 +39,7 @@ if TYPE_CHECKING:
 		IncidentInvestigator,
 	)
 	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
+	from press.press.doctype.deadman_server.deadman_server import DeadmanServer
 	from press.press.doctype.incident_settings.incident_settings import IncidentSettings
 	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
 		IncidentSettingsSelfHostedUser,
@@ -973,6 +974,11 @@ def validate_incidents():
 			incident = Incident("Incident", incident_dict.name)
 			incident.confirm()
 
+	settings: PressSettings = frappe.get_single("Press Settings")
+	deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
+
+	deadman.send_capability_heartbeat("validate_incident")
+
 
 def resolve_incidents():
 	ongoing_incidents = frappe.get_all(
@@ -990,6 +996,11 @@ def resolve_incidents():
 		) and incident.waited_enough_for_investigator_reactions:
 			incident.create_log_for_server()
 			incident.call_humans()
+
+	settings: PressSettings = frappe.get_single("Press Settings")
+	deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
+
+	deadman.send_capability_heartbeat("resolve_incident")
 
 
 def notify_ignored_servers():
