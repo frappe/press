@@ -1,7 +1,7 @@
 <template>
 	<div class="flex items-center gap-2">
-		<OwnerIcon v-if="isOwner" class="w-4 h-4 text-yellow-500" />
-		<AdminIcon v-else-if="hasAdminAccess" class="w-4 h-4 text-red-500" />
+		<OwnerIcon v-if="isOwner" class="w-4 h-4 text-green-600" />
+		<AdminIcon v-else-if="hasAdminAccess" class="w-4 h-4 text-amber-600" />
 		<div>{{ isOwner ? 'Owner' : hasAdminAccess ? 'Admin' : 'Member' }}</div>
 		<Badge v-if="isPending" theme="blue">
 			<template #prefix>
