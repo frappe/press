@@ -1306,7 +1306,7 @@ class Cluster(Document):
 			ResourceIds=[self.vpc_id],
 			TrafficType="ALL",
 			LogDestinationType="s3",
-			LogDestination=f"arn:aws:s3:::{self.vpc_flow_logs_s3_bucket}",
+			LogDestination=f"arn:aws:s3:::{self.vpc_flow_logs_s3_bucket}/flow-logs/{self.name.lower()}/",
 			TagSpecifications=[
 				{
 					"ResourceType": "vpc-flow-log",
