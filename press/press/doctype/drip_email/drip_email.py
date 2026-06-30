@@ -44,6 +44,7 @@ class DripEmail(Document):
 		send_after: DF.Int
 		send_after_payment: DF.Check
 		send_by_consultant: DF.Check
+		send_raw: DF.Check
 		sender: DF.Data
 		sender_name: DF.Data
 		skip_sites_with_paid_plan: DF.Check
@@ -87,10 +88,8 @@ class DripEmail(Document):
 		# build the message
 		message = frappe.render_template(self.message, context)
 		account_request = context.get("account_request", "")
-		app = frappe.db.get_value("Product Trial", self.product_trial, ["title", "logo"], as_dict=True)
 
-		# add to queue
-		frappe.sendmail(
+		kwargs = dict(
 			subject=self.subject,
 			recipients=[recipient],
 			sender=f"{self.sender_name} <{self.sender}>",
@@ -101,9 +100,16 @@ class DripEmail(Document):
 			unsubscribe_method="api/method/press.press.doctype.drip_email.drip_email.unsubscribe",
 			unsubscribe_params={"account_request": account_request.name},
 			attachments=self.get_setup_guides(account_request),
-			template="product_trial_email",
-			args={"message": message, "title": app.title, "logo": app.logo},
 		)
+
+		if self.send_raw:
+			kwargs["message"] = message
+		else:
+			app = frappe.db.get_value("Product Trial", self.product_trial, ["title", "logo"], as_dict=True)
+			kwargs["template"] = "product_trial_email"
+			kwargs["args"] = {"message": message, "title": app.title, "logo": app.logo}
+
+		frappe.sendmail(**kwargs)
 
 	@property
 	def message(self):
