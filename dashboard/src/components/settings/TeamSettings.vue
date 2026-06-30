@@ -55,6 +55,7 @@ const teamMembersListOptions = ref({
 			component: ({ row }) => {
 				return h(TeamSettingsUserType, {
 					hasAdminAccess: row.has_admin_access,
+					isOwner: row.user === team.doc.user,
 				})
 			},
 		},
