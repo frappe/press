@@ -121,7 +121,7 @@ class DripEmail(Document):
 			return self.message_rich_text
 		return self.message_html
 
-	def evaluate_condition(self, site_name: str) -> bool:
+	def evaluate_condition(self, site_name: str | None) -> bool:
 		"""
 		Evaluate the condition to check if the email should be sent.
 		"""
