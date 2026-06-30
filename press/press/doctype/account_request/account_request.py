@@ -362,10 +362,9 @@ class AccountRequest(Document):
 	def invite_role_label(self) -> str:
 		"""Resolve the role label from press_role field.
 
-		press_role may contain either a Press Role document name (for custom
-		roles) or a predefined role label stored directly (for Admin, Developer,
-		Member, Viewer). This property resolves both cases to a label suitable
-		for the Team Member's role field.
+		press_role holds a Press Role document name for custom roles. Predefined
+		roles (Admin, Developer, Member, Viewer) are not stored here; those
+		invites fall back to the default "Member" team role.
 		"""
 		if not self.press_role:
 			return "Member"
