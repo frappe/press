@@ -85,6 +85,17 @@
 			</ListItem>
 			<ListItem
 				class="border-t"
+				title="Log out of all active devices"
+				subtitle="Log out of Frappe Cloud on every device except this one"
+			>
+				<template #actions>
+					<Button @click="showLogoutAllDevicesDialog = true">
+						<span class="text-red-600">Log Out</span>
+					</Button>
+				</template>
+			</ListItem>
+			<ListItem
+				class="border-t"
 				:title="teamEnabled ? 'Disable Account' : 'Enable Account'"
 				:subtitle="
 					teamEnabled
@@ -199,6 +210,34 @@
 			</template>
 		</Dialog>
 
+		<Dialog
+			:options="{
+				title: 'Log out of all active devices',
+				actions: [
+					{
+						label: 'Log Out',
+						variant: 'solid',
+						theme: 'red',
+						loading: $resources.logoutAllDevices.loading,
+						onClick: () => $resources.logoutAllDevices.submit(),
+					},
+				],
+			}"
+			v-model="showLogoutAllDevicesDialog"
+		>
+			<template v-slot:body-content>
+				<div class="prose text-base">
+					By confirming this action:
+					<ul>
+						<li>You will stay signed in on this device</li>
+						<li>All other active Frappe Cloud sessions will be logged out</li>
+					</ul>
+					Do you want to continue?
+				</div>
+				<ErrorMessage class="mt-2" :message="$resources.logoutAllDevices.error" />
+			</template>
+		</Dialog>
+
 		<AddPrepaidCreditsDialog
 			:showMessage="showMessage"
 			v-if="showAddPrepaidCreditsDialog"
@@ -245,6 +284,7 @@ export default {
 			showProfileEditDialog: false,
 			showEnableAccountDialog: false,
 			showDisableAccountDialog: false,
+			showLogoutAllDevicesDialog: false,
 			showAddPrepaidCreditsDialog: false,
 			showCommunicationInfoDialog: false,
 			showActiveServersDialog: false,
@@ -304,6 +344,13 @@ export default {
 				toast.success('Your account was enabled successfully');
 				this.reloadAccount();
 				this.showEnableAccountDialog = false;
+			},
+		},
+		logoutAllDevices: {
+			url: 'press.api.account.logout_from_all_devices',
+			onSuccess() {
+				this.showLogoutAllDevicesDialog = false;
+				toast.success('You were logged out of all other devices');
 			},
 		},
 		upcomingInvoice: {
