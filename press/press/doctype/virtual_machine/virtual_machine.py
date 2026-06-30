@@ -44,6 +44,7 @@ from oci.exceptions import TransientServiceError
 from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
+from press.runner import Ansible
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 
@@ -103,6 +104,7 @@ class VirtualMachine(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.cluster.cluster import Cluster
 		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import (
 			VirtualMachineTemporaryVolume,
 		)
@@ -227,8 +229,16 @@ class VirtualMachine(Document):
 
 		self.validate_data_disk_snapshot()
 
-		if self.series == "nat" and self.cloud_provider not in ("AWS EC2", "Frappe Compute"):
-			frappe.throw("NAT Servers are only supported on AWS EC2 and Frappe Compute")
+		if self.series == "nat" and self.cloud_provider not in (
+			"AWS EC2",
+			"Frappe Compute",
+			"Hetzner",
+			"DigitalOcean",
+		):
+			frappe.throw(
+				"NAT Servers are only supported on AWS EC2, Frappe Compute, Hetzner, and DigitalOcean. "
+				f"Change the cloud provider from {self.cloud_provider} to a supported provider."
+			)
 
 	def validate_data_disk_snapshot(self):
 		if not self.is_new() or not self.data_disk_snapshot:
@@ -281,7 +291,9 @@ class VirtualMachine(Document):
 
 	def check_and_attach_data_disk_snapshot_volume(self):
 		if not self.data_disk_snapshot_volume_id:
-			frappe.throw("Data Disk Snapshot Volume ID is not set.")
+			frappe.throw(
+				"This machine has no data disk snapshot volume to attach. Please create the volume from a snapshot first, then retry."
+			)
 
 		volume_state = self.get_state_of_volume(self.data_disk_snapshot_volume_id)
 		if volume_state == "available":
@@ -505,7 +517,10 @@ class VirtualMachine(Document):
 	def _provision_digital_ocean(self):
 		"""Provision a Digital Ocean Droplet"""
 		if not self.machine_image:
-			frappe.throw("Machine Image is required to provision Hetzner Virtual Machine.")
+			frappe.throw(
+				"Machine Image is required to provision a DigitalOcean Virtual Machine. "
+				"Set the Machine Image field and try again."
+			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 
@@ -529,6 +544,7 @@ class VirtualMachine(Document):
 					"vpc_uuid": cluster.vpc_id,
 					"tags": [droplet_tag],
 					"user_data": self.get_cloud_init() if self.virtual_machine_image else "",
+					"public_networking": bool(self.assign_public_ip),
 				}
 			)
 			self.instance_id = droplet["droplet"]["id"]
@@ -554,9 +570,11 @@ class VirtualMachine(Document):
 		from hcloud.ssh_keys.domain import SSHKey
 
 		if not self.machine_image:
-			frappe.throw("Machine Image is required to provision Hetzner Virtual Machine.")
+			frappe.throw(
+				"A machine image is required to provision a Hetzner virtual machine. Please attach a Virtual Machine Image before provisioning."
+			)
 
-		cluster = frappe.get_doc("Cluster", self.cluster)
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 
 		server = (
 			self.client()
@@ -570,16 +588,15 @@ class VirtualMachine(Document):
 				],
 				location=Location(name=cluster.region),
 				public_net=ServerCreatePublicNetwork(
-					enable_ipv4=True,
+					enable_ipv4=bool(self.assign_public_ip),
 					enable_ipv6=False,
 				),
-				ssh_keys=[
-					SSHKey(name=self.ssh_key),
-				],
+				ssh_keys=[SSHKey(name=self.ssh_key)],
 				user_data=self.get_cloud_init() if self.virtual_machine_image else "",
 			)
 			.server
 		)
+
 		self.instance_id = server.id
 		self.save()
 		# To ensure, we don't lose state, because machine has been created at this point
@@ -603,6 +620,20 @@ class VirtualMachine(Document):
 			self.save()
 			frappe.db.commit()
 			raise
+
+		if self.series == "nat":
+			try:
+				cluster.add_hetzner_nat_route(self.private_ip_address)  # Route needed for outbound connection
+			except Exception:
+				# Route attachment failed.
+				# Server is live on Hetzner but unusable — delete it to avoid billing.
+				with suppress(Exception):
+					self.client().servers.delete(server).wait_until_finished(HETZNER_ACTION_RETRIES)
+				self.instance_id = None
+				self.status = "Terminated"
+				self.save()
+				frappe.db.commit()
+				raise
 
 		self.status = self.get_hetzner_status_map()[server.status]
 		self.save()
@@ -821,7 +852,9 @@ class VirtualMachine(Document):
 		if server.doctype == "Database Server" or getattr(server, "is_unified_server", False):
 			memory = frappe.db.get_value("Server Plan", server.plan, "memory") or 1024
 			if memory < 1024:
-				frappe.throw("MariaDB cannot be installed on a server plan with less than 1GB RAM.")
+				frappe.throw(
+					"MariaDB needs at least 1 GB of RAM. Please choose a server plan with 1 GB of memory or more."
+				)
 
 			mariadb_context = self.get_mariadb_context(server, memory)
 
@@ -953,7 +986,9 @@ class VirtualMachine(Document):
 			ubuntu_images = [image for image in images if "22.04" in image["name"]]
 
 			if not ubuntu_images:
-				frappe.throw("No image available for Ubuntu 22.04")
+				frappe.throw(
+					"The cloud provider has no Ubuntu 22.04 image available in this region. Please try a different region, or contact support."
+				)
 
 			return ubuntu_images[0]["id"]
 
@@ -1009,7 +1044,9 @@ class VirtualMachine(Document):
 				)
 		elif self.cloud_provider == "Hetzner":
 			if volume_id == HETZNER_ROOT_DISK_ID:
-				frappe.throw("Cannot increase disk size for hetzner root disk.")
+				frappe.throw(
+					"The Hetzner root disk can't be resized. Please attach a separate data volume to add storage instead."
+				)
 
 			from hcloud.volumes.domain import Volume
 
@@ -1017,7 +1054,9 @@ class VirtualMachine(Document):
 
 		elif self.cloud_provider == "DigitalOcean":
 			if volume_id == DIGITALOCEAN_ROOT_DISK_ID:
-				frappe.throw("Cannot increase disk size for Digital Ocean root disk.")
+				frappe.throw(
+					"The Digital Ocean root disk can't be resized. Please attach a separate data volume to add storage instead."
+				)
 
 			self.client().volumes.resize(
 				volume_id,
@@ -1232,6 +1271,19 @@ class VirtualMachine(Document):
 		self.save()
 		self.update_servers()
 
+	def _get_hetzner_public_ip(self, server_instance):
+		# Always reset and repopulate from Hetzner state
+		public_ip_address = ""
+
+		if server_instance.public_net:
+			try:
+				if server_instance.public_net.primary_ipv4:
+					public_ip_address = server_instance.public_net.primary_ipv4.ip
+			except AttributeError:
+				frappe.log_error("Failed to read Hetzner public IP", self.name)
+
+		return public_ip_address
+
 	def _sync_hetzner(self, server_instance=None):
 		if not server_instance:
 			try:
@@ -1256,7 +1308,7 @@ class VirtualMachine(Document):
 		self.ram = server_instance.server_type.memory * 1024
 
 		self.private_ip_address = server_instance.private_net[0].ip if server_instance.private_net else ""
-		self.public_ip_address = server_instance.public_net.ipv4.ip
+		self.public_ip_address = self._get_hetzner_public_ip(server_instance)
 
 		self.termination_protection = server_instance.protection.get("delete", False)
 
@@ -1548,10 +1600,14 @@ class VirtualMachine(Document):
 
 	def attach_secondary_private_ip(self, secondary_private_ip=None):
 		if self.cloud_provider != "AWS EC2":
-			frappe.throw("Secondary IP assignment is currently only supported for AWS EC2 instances")
+			frappe.throw(
+				"Secondary IP assignment is only supported on AWS EC2 instances. This machine runs on a different provider, so this action isn't available."
+			)
 
 		if self.series != "nat":
-			frappe.throw("Secondary IP assignment is only supported for NAT servers")
+			frappe.throw(
+				"Secondary IP assignment is only supported for NAT servers. This machine isn't a NAT server, so this action isn't available."
+			)
 
 		# this is needed if we do failover and attach the secondary private ip of one instance to another
 		secondary_private_ip = secondary_private_ip or self.get_private_ip()
@@ -1572,13 +1628,17 @@ class VirtualMachine(Document):
 
 	def detach_secondary_private_ip(self):
 		if self.cloud_provider != "AWS EC2":
-			frappe.throw("Secondary IP detachment is currently only supported for AWS EC2 instances")
+			frappe.throw(
+				"Secondary IP detachment is only supported on AWS EC2 instances. This machine runs on a different provider, so this action isn't available."
+			)
 
 		if self.series != "nat":
-			frappe.throw("Secondary IP detachment is only supported for NAT servers")
+			frappe.throw(
+				"Secondary IP detachment is only supported for NAT servers. This machine isn't a NAT server, so this action isn't available."
+			)
 
 		if not self.secondary_private_ip:
-			frappe.throw("No secondary private IP assigned to this instance.")
+			frappe.throw("This instance has no secondary private IP to detach. There's nothing to do here.")
 
 		ec2 = self.client()
 		instance = ec2.describe_instances(InstanceIds=[self.instance_id])
@@ -1614,15 +1674,127 @@ class VirtualMachine(Document):
 			SourceDestCheck={"Value": True},
 		)
 
+	def ping_server(self, server):
+		ping = Ansible(
+			playbook="ping.yml",
+			server=frappe._dict(
+				{
+					"doctype": server.server_doctype,
+					"name": server.server.name,
+					"ssh_user": "root",
+					"ssh_port": 22,
+					"private_ip": server.private_ip,
+					"bastion_host": server.bastion_host,
+				}
+			),
+		)
+
+		result = ping.run()
+		return result.status == "Success"
+
+	def wait_for_ssh(self, timeout=500, interval=2):
+		server_doc = frappe.db.get_value(
+			"Server",
+			{
+				"cluster": self.cluster,
+				"status": "Active",
+				"virtual_machine": self.name,
+			},
+			["name"],
+			as_dict=True,
+		)
+
+		server_doctype = "Server"
+
+		if not server_doc:
+			server_doc = frappe.db.get_value(
+				"Database Server",
+				{
+					"cluster": self.cluster,
+					"status": "Active",
+					"virtual_machine": self.name,
+				},
+				["name"],
+				as_dict=True,
+			)
+			server_doctype = "Database Server"
+
+		server = frappe._dict(
+			private_ip=self.private_ip_address,
+			bastion_host=frappe.db.get_value(
+				"Proxy Server",
+				{"cluster": self.cluster, "status": "Active"},
+				["ssh_user", "ssh_port", "name as ip"],
+				as_dict=True,
+			),
+			server=server_doc,
+			server_doctype=server_doctype,
+		)
+
+		if not server.bastion_host:
+			frappe.throw(
+				f"No active proxy server found for cluster {self.cluster}. "
+				"Provision a proxy server to use as a bastion host for SSH access."
+			)
+
+		deadline = time.monotonic() + timeout
+
+		while time.monotonic() < deadline:
+			if self.ping_server(server):
+				return
+
+			time.sleep(interval)
+
+		frappe.throw(
+			f"Timed out waiting for SSH on {self.name}. "
+			"Please check the server status and network connectivity."
+		)
+
+	def disassociate_hetzner_public_ip(self):
+		client = self.client()
+		server_instance = self.get_hetzner_server_instance(fetch_data=True)
+
+		should_power_on = server_instance.status == "running"
+		powered_off = False
+
+		try:
+			if should_power_on:
+				client.servers.power_off(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
+				powered_off = True
+
+			server_instance = self.get_hetzner_server_instance(fetch_data=True)
+
+			if server_instance.public_net:
+				if server_instance.public_net.primary_ipv4:
+					client.primary_ips.unassign(server_instance.public_net.primary_ipv4).wait_until_finished(
+						HETZNER_ACTION_RETRIES
+					)
+
+				if server_instance.public_net.primary_ipv6:
+					client.primary_ips.unassign(server_instance.public_net.primary_ipv6).wait_until_finished(
+						HETZNER_ACTION_RETRIES
+					)
+
+		finally:
+			if powered_off:
+				server_instance = self.get_hetzner_server_instance(fetch_data=True)
+				client.servers.power_on(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
+
+		self.wait_for_ssh()  # Wait for sshd to come back before using ansible
+
+		frappe.flags.force_update_dns = True
+		self.sync()
+
 	@frappe.whitelist()
 	def disassociate_auto_assigned_public_ip(self):
 		if self.cloud_provider not in ("AWS EC2", "Frappe Compute"):
 			frappe.throw(
-				"Public IP disassociation is currently only supported for AWS EC2 and Frappe Compute instances"
+				"Public IP disassociation is only supported on AWS EC2 and Frappe Compute instances. "
+				"This machine runs on a different provider, so this action isn't available. For Hetzner, use the IP removal log."
 			)
 
 		if not self.public_ip_address:
-			frappe.throw("No public IP associated with this instance.")
+			frappe.throw("This instance has no public IP to disassociate. There's nothing to do here.")
 
 		try:
 			frappe.db.get_value(self.doctype, self.name, "status", for_update=True, wait=False)
@@ -2068,7 +2240,9 @@ class VirtualMachine(Document):
 		"""Virtual machines of series U will create a u series app server and u series database server"""
 
 		if self.series != "u":
-			frappe.throw("Only virtual machines of series 'u' can create unified servers.")
+			frappe.throw(
+				"Only 'u' series virtual machines can create unified servers. Please provision a 'u' series machine for a unified server."
+			)
 
 		server_document = {
 			"doctype": "Server",
@@ -2301,7 +2475,9 @@ class VirtualMachine(Document):
 	@frappe.whitelist()
 	def create_nat_server(self):
 		if self.series != "nat":
-			frappe.throw("Only virtual machines of series 'nat' can create NAT servers")
+			frappe.throw(
+				"Only 'nat' series virtual machines can create NAT servers. Please provision a 'nat' series machine for a NAT server."
+			)
 
 		document = {
 			"doctype": "NAT Server",
@@ -2320,10 +2496,17 @@ class VirtualMachine(Document):
 
 	def get_security_groups(self):
 		groups = [self.security_group_id]
+
 		if self.series == "n":
 			groups.append(frappe.db.get_value("Cluster", self.cluster, "proxy_security_group_id"))
+
 		elif self.series == "nat":
-			groups.append(frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id"))
+			if self.cloud_provider == "Hetzner":
+				cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+				groups.append(cluster.create_nat_security_group_hetzner().id)
+			else:
+				groups.append(frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id"))
+
 		return groups
 
 	@frappe.whitelist()
@@ -2857,7 +3040,9 @@ class VirtualMachine(Document):
 			device_name = f"/dev/sd{chr(ord('a') + i)}"
 			if device_name not in used_devices:
 				return device_name
-		frappe.throw("No device name available for new volume")
+		frappe.throw(
+			"This instance has no free device slots for a new volume. Please detach an unused volume before attaching another."
+		)
 		return None
 
 	@frappe.whitelist()
@@ -2875,7 +3060,9 @@ class VirtualMachine(Document):
 			from hcloud.volumes.domain import Volume
 
 			if volume_id == HETZNER_ROOT_DISK_ID:
-				frappe.throw("Cannot detach hetzner root disk.")
+				frappe.throw(
+					"The Hetzner root disk can't be detached. Please choose a data volume to detach instead."
+				)
 
 			self.client().volumes.detach(Volume(id=volume_id)).wait_until_finished(HETZNER_ACTION_RETRIES)
 		if sync:
@@ -2896,7 +3083,9 @@ class VirtualMachine(Document):
 				raise NotImplementedError
 			if self.cloud_provider == "Hetzner":
 				if volume_id == HETZNER_ROOT_DISK_ID:
-					frappe.throw("Cannot delete hetzner root disk.")
+					frappe.throw(
+						"The Hetzner root disk can't be deleted. Please choose a data volume to delete instead."
+					)
 
 				from hcloud.volumes.domain import Volume
 
@@ -2904,7 +3093,9 @@ class VirtualMachine(Document):
 
 			if self.cloud_provider == "DigitalOcean":
 				if volume_id == DIGITALOCEAN_ROOT_DISK_ID:
-					frappe.throw("Cannot delete digitalocean root disk.")
+					frappe.throw(
+						"The Digital Ocean root disk can't be deleted. Please choose a data volume to delete instead."
+					)
 
 				self.client().volumes.delete(volume_id=volume_id)
 
@@ -2930,14 +3121,18 @@ class VirtualMachine(Document):
 			return
 
 		if self.is_static_ip:
-			frappe.throw("Virtual Machine already has a static IP associated.")
+			frappe.throw(
+				"This virtual machine already has a static IP. Please release the existing static IP before attaching a new one."
+			)
 
 		client = self.client()
 		response = client.describe_addresses(PublicIps=[static_ip])
 
 		address_info = response["Addresses"][0]
 		if "AssociationId" in address_info:
-			frappe.throw("Static IP is already associated with another instance.")
+			frappe.throw(
+				"This static IP is already attached to another instance. Please release it from that instance first, or choose a different static IP."
+			)
 
 		client.associate_address(AllocationId=address_info["AllocationId"], InstanceId=self.instance_id)
 		self.sync()

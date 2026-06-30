@@ -167,6 +167,7 @@
 </template>
 <script>
 import { Checkbox, getCachedDocumentResource, Spinner } from 'frappe-ui'
+import { confirmDialog } from '../../utils/components'
 import ServerPlansCards from './ServerPlansCards.vue'
 
 export default {
@@ -230,6 +231,37 @@ export default {
 		changePlan() {
 			// TODO: Add confirmation dialog for hetzner plan upgrade
 
+			if (this.isDowngrade) {
+				const planLabel = (plan) =>
+					`${this.$format.planTitle(plan)}/mo (${plan.vcpu} vCPU / ${this.$format.bytes(plan.memory, 0, 2)} RAM)`
+				const fromPlan = planLabel(this.$server.doc.current_plan)
+				const toPlan = planLabel(this.plan)
+				// Hide the Change Plan dialog so the confirmation isn't stacked on top of it.
+				this.show = false
+				return confirmDialog({
+					title: 'Downgrade Server Plan',
+					message: `
+						Are you sure you want to downgrade this server's plan from
+						<b>${fromPlan}</b> to <b>${toPlan}</b>?<br><br>
+						The new plan has fewer resources than the current one, so sites and
+						background jobs on this server may run slower or fail under load.
+						If you're not sure the smaller plan can handle this server's
+						workload, reach out at
+						<a href="https://support.frappe.io" target="_blank" class="underline">support.frappe.io</a>
+						before downgrading.
+					`,
+					primaryAction: {
+						label: 'Downgrade Plan',
+						variant: 'solid',
+						theme: 'red',
+						onClick: ({ hide }) => this.submitPlanChange().then(hide),
+					},
+				})
+			}
+
+			return this.submitPlanChange()
+		},
+		submitPlanChange() {
 			return this.$server.changePlan.submit(
 				{
 					plan: this.plan.name,
@@ -282,6 +314,16 @@ export default {
 				plans = this.serverPlans.filter((p) => p.premium === 0)
 			}
 			return plans.filter((plan) => plan.plan_type === this.serverPlanType)
+		},
+		isDowngrade() {
+			const currentPlan = this.$server?.doc?.current_plan
+			if (!this.plan || !currentPlan) return false
+			// A plan with fewer resources than the current one is a downgrade.
+			return (
+				this.plan.vcpu < currentPlan.vcpu ||
+				this.plan.memory < currentPlan.memory ||
+				this.plan.disk < currentPlan.disk
+			)
 		},
 	},
 }

@@ -249,18 +249,3 @@ const formatDate = (dateStr: string) => {
 	});
 };
 </script>
-
-<style scoped>
-.fade-in {
-	animation: fadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes fadeIn {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
-</style>

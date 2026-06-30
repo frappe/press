@@ -74,7 +74,7 @@ class TLSCertificate(Document):
 	def validate(self):
 		if self.provider == "Other":
 			if not self.team:
-				frappe.throw("Team is mandatory for custom TLS certificates.")
+				frappe.throw("Please select the team that owns this custom TLS certificate before saving.")
 
 			self.configure_full_chain()
 			self.validate_key_length()
@@ -117,7 +117,6 @@ class TLSCertificate(Document):
 		frappe.set_user(user)
 		frappe.session.data = session_data
 
-	@frappe.whitelist()
 	def _obtain_certificate(self):
 		if self.provider != "Let's Encrypt":
 			return
@@ -159,7 +158,11 @@ class TLSCertificate(Document):
 			self.retry_count += 1
 			self.status = "Failure"
 			log_error("TLS Certificate Exception", certificate=self.name)
-		self.save()
+		# Runs only from the scheduled renewal job or a background job enqueued by the
+		# already permission-checked `obtain_certificate`. `get_current_team()` can't
+		# reliably resolve the team in that job context, so the team-scoped permission
+		# check in `has_permission` isn't meaningful here.
+		self.save(ignore_permissions=True)
 		self.trigger_site_domain_callback()
 		self.trigger_self_hosted_server_callback()
 		if self.wildcard:
@@ -309,7 +312,9 @@ class TLSCertificate(Document):
 		except OpenSSL.SSL.Error as e:
 			self.error = repr(e)
 			log_error("TLS Key Certificate Association Exception", certificate=self.name)
-			frappe.throw("Private Key and Certificate do not match")
+			frappe.throw(
+				"The private key doesn't match the certificate. Please upload the private key that was used to generate this certificate."
+			)
 		finally:
 			if self.error:
 				self.status = "Failure"

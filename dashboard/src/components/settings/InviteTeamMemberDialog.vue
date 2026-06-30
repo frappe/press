@@ -38,6 +38,7 @@ import { getToastErrorMessage } from '../../utils/toast'
 
 export default {
 	components: { Combobox },
+	emits: ['success'],
 	data() {
 		return {
 			email: '',
@@ -100,7 +101,7 @@ export default {
 				this.$team.inviteTeamMember.submit(
 					{
 						email: this.email,
-						roles: this.selectedRole === 'Admin' ? [] : [this.selectedRole],
+						roles: [this.selectedRole],
 					},
 					{
 						validate: () => {
@@ -114,6 +115,7 @@ export default {
 					loading: 'Sending Invite...',
 					success: () => {
 						this.show = false
+						this.$emit('success')
 						return 'Invite Sent!'
 					},
 					error: (e) => getToastErrorMessage(e),

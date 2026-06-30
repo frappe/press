@@ -20,7 +20,7 @@ import requests
 import tomli
 from frappe.utils.verified_command import get_secret
 
-from press.utils import get_current_team, log_error
+from press.utils import docs, get_current_team, log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.github_webhook_log.github_webhook_log import GitHubWebhookLog
@@ -364,7 +364,9 @@ def app(owner: str, repository: str, branch: str, installation: str | None = Non
 	# Force pyproject.toml as a setup file
 	if "pyproject.toml" not in tree:
 		reason = "pyproject.toml does not exist in app directory."
-		frappe.throw(f"Not a valid Frappe App! {reason}")
+		frappe.throw(
+			f"This repository isn't a valid Frappe app. {reason} Please add a pyproject.toml at the app's root and try again. {docs.doc_link(docs.CUSTOM_APP)}."
+		)
 
 	app_name, title = _get_app_name_and_title_from_hooks(
 		owner,
@@ -440,7 +442,9 @@ def _get_compatible_frappe_version_from_pyproject(
 	).json()
 
 	if "content" not in pyproject:
-		frappe.throw("Could not fetch pyproject.toml file.")
+		frappe.throw(
+			"We couldn't read the pyproject.toml file from this repository. Please make sure it exists at the app's root and that the selected branch is correct."
+		)
 
 	pyproject = b64decode(pyproject["content"]).decode()
 

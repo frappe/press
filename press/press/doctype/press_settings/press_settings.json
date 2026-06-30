@@ -285,7 +285,9 @@
 		"hybrid_domain",
 		"tls_renewal_queue_size",
 		"security_tab",
-		"wazuh_server"
+		"wazuh_server",
+		"dashboard_tab",
+		"latest_blog_url"
 	],
 	"fields": [
 		{
@@ -1594,6 +1596,17 @@
 			"fieldname": "wazuh_server",
 			"fieldtype": "Data",
 			"label": "Wazuh Server"
+		},
+		{
+			"fieldname": "dashboard_tab",
+			"fieldtype": "Tab Break",
+			"label": "Dashboard"
+		},
+		{
+			"description": "URL of the latest blog post shown in the dashboard sidebar widget",
+			"fieldname": "latest_blog_url",
+			"fieldtype": "Data",
+			"label": "Latest Blog URL"
 		},
 		{
 			"fieldname": "autoscale_discount",

@@ -173,15 +173,21 @@ class Agent:
 		)
 
 	def restore_site(self, site: "Site", skip_failing_patches=False):
+		from press.utils import sanitize_config
+
 		site.check_space_on_server_for_restore()
 		apps = [app.app for app in site.apps]
-		public_link, private_link, database_link = None, None, None
+		public_link, private_link, database_link, sanitized_config_content = None, None, None, None
 		if site.remote_database_file:
 			database_link = frappe.get_doc("Remote File", site.remote_database_file).download_link
 		if site.remote_public_file:
 			public_link = frappe.get_doc("Remote File", site.remote_public_file).download_link
 		if site.remote_private_file:
 			private_link = frappe.get_doc("Remote File", site.remote_private_file).download_link
+		if site.remote_config_file:
+			config_content = frappe.get_doc("Remote File", site.remote_config_file).get_content()
+			sanitized_config_content = sanitize_config(config_content) if config_content else None
+			sanitized_config_content.update({"maintenance_mode": 0}) if sanitized_config_content else None
 
 		data = {
 			"apps": apps,
@@ -190,6 +196,7 @@ class Agent:
 			"database": database_link,
 			"public": public_link,
 			"private": private_link,
+			"sanitized_config_content": sanitized_config_content,
 			"skip_failing_patches": skip_failing_patches,
 			"managed_database_config": self._get_managed_db_config(site),
 		}
@@ -580,7 +587,7 @@ class Agent:
 					),
 					# Streaming only applies to offsite backups (agent streams the
 					# artifacts straight to S3), so only send it for offsite jobs.
-					"stream": bool(frappe.get_value("Server", site.server, "stream_backups")),
+					"stream": site.is_streaming_backup_supported(),
 				}
 			)
 
@@ -1819,7 +1826,9 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if offsite_config:
 			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw("Offsite Backups aren't setup yet")
+			frappe.throw(
+				"Offsite Backups aren't set up yet. Please configure offsite backup storage in Press Settings before taking an offsite backup."
+			)
 
 		return self.create_agent_job(
 			"Backup Database From Snapshot",
@@ -1848,7 +1857,9 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if offsite_config:
 			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw("Offsite Backups aren't setup yet")
+			frappe.throw(
+				"Offsite Backups aren't set up yet. Please configure offsite backup storage in Press Settings before taking an offsite backup."
+			)
 
 		return self.create_agent_job(
 			"Backup Files From Snapshot",
