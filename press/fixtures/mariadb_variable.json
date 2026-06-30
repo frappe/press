@@ -656,5 +656,19 @@
   "set_on_new_servers": 0,
   "skippable": 0,
   "title": null
+ },
+ {
+  "configurable_by_user": 0,
+  "datatype": "Str",
+  "default_value": null,
+  "doc_section": "innodb",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2026-06-30 10:00:00.000000",
+  "name": "innodb_snapshot_isolation",
+  "set_on_new_servers": 0,
+  "skippable": 0,
+  "title": null
  }
 ]
