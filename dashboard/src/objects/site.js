@@ -1600,16 +1600,16 @@ export default {
 					orderBy: 'timestamp desc',
 					columns: [
 						{
-							label: 'Changed To',
-							fieldname: 'to_plan',
-						},
-						{
 							label: 'Changed From',
 							fieldname: 'from_plan',
 							class: 'text-ink-gray-6',
 							format(value) {
 								return value || '—'
 							},
+						},
+						{
+							label: 'Changed To',
+							fieldname: 'to_plan',
 						},
 						{
 							label: 'Type',

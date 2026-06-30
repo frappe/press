@@ -995,16 +995,16 @@ export default {
 							},
 						},
 						{
-							label: 'Changed To',
-							fieldname: 'to_plan',
-						},
-						{
 							label: 'Changed From',
 							fieldname: 'from_plan',
 							class: 'text-gray-600',
 							format(value) {
 								return value || '—';
 							},
+						},
+						{
+							label: 'Changed To',
+							fieldname: 'to_plan',
 						},
 						{
 							label: 'Type',
