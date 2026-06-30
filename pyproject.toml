@@ -75,6 +75,7 @@ dev = [
     "types-setuptools~=81.0",
     "types-stripe~=3.5.2",
     "types-oauthlib~=3.3",
+    "types-passlib~=1.7",
 ]
 
 [project.scripts]
