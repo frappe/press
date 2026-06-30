@@ -94,14 +94,13 @@ export default {
 	},
 	methods: {
 		inviteMember() {
-			if (!this.selectedRole) {
-				throw new DashboardError('Role is required')
-			}
 			toast.promise(
 				this.$team.inviteTeamMember.submit(
 					{
 						email: this.email,
-						roles: [this.selectedRole],
+						...(this.selectedRole !== 'Admin' && {
+							roles: [this.selectedRole],
+						}),
 					},
 					{
 						validate: () => {
