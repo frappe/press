@@ -41,8 +41,6 @@ function onToggle(toggle: () => void) {
 	if (!sites.data && props.data.site_count) sites.reload()
 }
 
-const defaultBadge = { theme: 'gray' as const, dot: 'bg-surface-gray-4' }
-
 const siteOptions = (site: any) => [
 	{
 		label: 'Site Actions',
@@ -84,10 +82,7 @@ const groupOptions = [
 							<span class="truncate">{{ data.title }}</span>
 						</router-link>
 					</Tooltip>
-					<Tooltip
-						:text="`${data.site_count || 0} sites`"
-						v-if="data.site_count"
-					>
+					<Tooltip :text="`${data.site_count || 0} sites`">
 						<span
 							class="text-xs bg-surface-gray-2 text-ink-gray-6 rounded px-1.5 py-0.5 font-medium shrink-0"
 						>
