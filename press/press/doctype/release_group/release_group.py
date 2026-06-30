@@ -1921,6 +1921,7 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 			"servers": servers,
 			"team": team,
 			"saas_app": saas_app,
+			"check_dependent_apps": 1,
 		}
 	).insert()
 
