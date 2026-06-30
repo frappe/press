@@ -204,7 +204,9 @@ class ServerSnapshotRecovery(Document):
 	@frappe.whitelist()
 	def archive_servers(self):
 		if not self.app_server or not self.database_server:
-			frappe.throw("Servers are not provisioned yet.")
+			frappe.throw(
+				"The servers are not provisioned yet. Please wait for provisioning to finish before retrying."
+			)
 
 		app_server_doc = frappe.get_doc("Server", self.app_server)
 		if app_server_doc.status != "Archived":
@@ -297,6 +299,7 @@ class ServerSnapshotRecovery(Document):
 
 		if not site_record:
 			frappe.throw(f"Site {site} not found in recovery sites.")
+		assert site_record  # frappe.throw above raises; narrows the type for mypy
 
 		if job.status == "Failure":
 			site_record.status = "Failure"
@@ -332,6 +335,7 @@ class ServerSnapshotRecovery(Document):
 				break
 		if not site_record:
 			frappe.throw(f"Site {site} not found in recovery sites.")
+		assert site_record  # frappe.throw above raises; narrows the type for mypy
 
 		if job.status == "Failure":
 			site_record.status = "Failure"
@@ -382,6 +386,7 @@ class ServerSnapshotRecovery(Document):
 
 		if not site_record:
 			frappe.throw(f"Site {site} not found in recovery sites.")
+		assert site_record  # frappe.throw above raises; narrows the type for mypy
 
 		if (
 			(file_type == "public" and not site_record.public_remote_file)

@@ -388,7 +388,9 @@ class RemoteFrappeSite:
 		res = requests.get(f"{self.user_site}/api/method/frappe.ping", timeout=(5, 10))
 
 		if not res.ok:
-			frappe.throw("Invalid Frappe Site")
+			frappe.throw(
+				"The Frappe site is invalid or unreachable. Please check the site URL and try again."
+			)
 
 		if res.json().get("message") == "pong":
 			# Get final redirect URL
@@ -404,7 +406,9 @@ class RemoteFrappeSite:
 		)
 		if not response.ok:
 			if response.status_code == 401:
-				frappe.throw("Invalid Credentials")
+				frappe.throw(
+					"The credentials are invalid. Please check the username and password and try again."
+				)
 			else:
 				response.raise_for_status()
 
@@ -977,7 +981,7 @@ def timer(f):
 def validate_subdomain(subdomain: str):
 	site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
 	if not subdomain:
-		frappe.throw("Subdomain is required to create a site.")
+		frappe.throw("Please enter a subdomain to create the site.")
 	if not re.match(site_regex, subdomain):
 		frappe.throw("Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens")
 	if len(subdomain) > 32:

@@ -160,7 +160,9 @@ class PhysicalBackupRestoration(Document):
 	def validate_aws_only(self):
 		server_provider = frappe.db.get_value("Database Server", self.destination_server, "provider")
 		if server_provider != "AWS EC2":
-			frappe.throw("Only AWS hosted server is supported currently.")
+			frappe.throw(
+				"Physical backup restoration is currently supported only on AWS-hosted servers. Please use an AWS server."
+			)
 
 	def set_disk_snapshot(self):
 		if not self.disk_snapshot:
@@ -172,21 +174,29 @@ class PhysicalBackupRestoration(Document):
 				frappe.throw("Provided site backup is not available.")
 
 			if not site_backup.database_snapshot:
-				frappe.throw("Disk Snapshot is not available in site backup")
+				frappe.throw(
+					"This site backup does not have a disk snapshot. Please choose a backup that includes a disk snapshot."
+				)
 
 			self.disk_snapshot = site_backup.database_snapshot
 			if not self.disk_snapshot:
-				frappe.throw("Disk Snapshot is not available in site backup")
+				frappe.throw(
+					"This site backup does not have a disk snapshot. Please choose a backup that includes a disk snapshot."
+				)
 
 	def validate_snapshot_region(self):
 		snapshot_region = frappe.db.get_value("Virtual Disk Snapshot", self.disk_snapshot, "region")
 		if snapshot_region != self.virtual_machine.region:
-			frappe.throw("Snapshot and server should be in same region.")
+			frappe.throw(
+				"The snapshot and the server must be in the same region. Please pick a snapshot from the server's region."
+			)
 
 	def validate_snapshot_status(self):
 		snapshot_status = frappe.db.get_value("Virtual Disk Snapshot", self.disk_snapshot, "status")
 		if snapshot_status not in ("Pending", "Completed"):
-			frappe.throw("Snapshot status should be Pending or Completed.")
+			frappe.throw(
+				"The snapshot status must be Pending or Completed to restore from it. Please wait for the snapshot to finish, then retry."
+			)
 
 	def cleanup_restorable_tables(self):
 		if not self.restore_specific_tables:
@@ -490,7 +500,7 @@ class PhysicalBackupRestoration(Document):
 	def delete_mount_point(self) -> StepStatus:
 		"""Delete mount point"""
 		if not self.mount_point or not self.mount_point.startswith("/mnt"):
-			frappe.throw("Mount point is not valid.")
+			frappe.throw("The mount point is not valid. Please verify the device is mounted and try again.")
 		# check if mount point was created
 		if self.get_step_status(self.create_mount_point) != "Success":
 			return StepStatus.Success
@@ -728,7 +738,7 @@ class PhysicalBackupRestoration(Document):
 
 	@frappe.whitelist()
 	def force_continue(self) -> None:
-		first_failed_step: PhysicalBackupRestorationStep = None
+		first_failed_step: PhysicalBackupRestorationStep | None = None
 		# Mark all failed and skipped steps as pending
 		for step in self.steps:
 			if step.status in ("Failure", "Skipped"):
