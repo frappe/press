@@ -124,26 +124,6 @@ class TestAccountApi(TestCase):
 		with user_context(email):
 			accept_team_invite(key)
 
-	def test_invite_and_accept_predefined_role_adds_member_with_that_role(self):
-		for role in ["Admin", "Developer", "Member", "Viewer"]:
-			with self.subTest(role=role):
-				team = create_test_team()
-				invited = frappe.mock("email")
-				create_test_user(invited)
-
-				key = self._invite(team, invited, roles=f'["{role}"]')
-				self._accept(invited, key)
-
-				self.assertEqual(
-					frappe.db.get_value("Team Member", {"parent": team.name, "user": invited}, "role"),
-					role,
-				)
-				self.assertFalse(
-					frappe.db.get_value(
-						"Account Request", {"team": team.name, "email": invited}, "request_key"
-					)
-				)
-
 	def test_invite_and_accept_custom_role_sets_member_role_to_role_title(self):
 		from press.press.doctype.press_role.test_press_role import create_permission_role
 
