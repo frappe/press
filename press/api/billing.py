@@ -112,8 +112,16 @@ def subscriptions():
 		if row.site:
 			app["sites"].append(row.site)
 
+	titles = dict(
+		frappe.get_all(
+			"Marketplace App",
+			filters={"name": ("in", list(apps_by_name))},
+			fields=["name", "title"],
+			as_list=True,
+		)
+	)
 	for name, app in apps_by_name.items():
-		app["title"] = frappe.db.get_value("Marketplace App", name, "title") or name
+		app["title"] = titles.get(name) or name
 
 	return {
 		"sites": sites,
