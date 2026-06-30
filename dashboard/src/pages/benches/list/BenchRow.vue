@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { Badge, Button, Dropdown, Spinner, Tooltip, createListResource } from 'frappe-ui'
+import {
+	Button,
+	Dropdown,
+	Spinner,
+	Tooltip,
+	createListResource,
+} from 'frappe-ui'
 import Collapsable from '@/components/common/Collapsable.vue'
 
 interface Props {
@@ -35,16 +41,6 @@ function onToggle(toggle: () => void) {
 	if (!sites.data && props.data.site_count) sites.reload()
 }
 
-const siteStatusBadges: Record<string, { theme: 'green' | 'red' | 'orange' | 'blue' | 'gray' | null; dot: string }> = {
-	Active: { theme: null, dot: 'bg-surface-green-3' },
-	Inactive: { theme: 'gray', dot: 'bg-surface-gray-4' },
-	Suspended: { theme: 'gray', dot: 'bg-surface-gray-4' },
-	Archived: { theme: 'gray', dot: 'bg-surface-gray-4' },
-	Broken: { theme: 'red', dot: 'bg-surface-red-5' },
-	Draft: { theme: 'orange', dot: 'bg-surface-orange-3' },
-	AwaitingApproval: { theme: 'orange', dot: 'bg-surface-orange-3' },
-	'Update Available': { theme: 'blue', dot: 'bg-surface-blue-3' },
-}
 const defaultBadge = { theme: 'gray' as const, dot: 'bg-surface-gray-4' }
 
 const siteOptions = (site: any) => [
@@ -88,21 +84,22 @@ const groupOptions = [
 							<span class="truncate">{{ data.title }}</span>
 						</router-link>
 					</Tooltip>
-					<Tooltip :text="`${data.site_count || 0} sites`" v-if='data.site_count'>
-						<span class="text-xs bg-surface-gray-2 text-ink-gray-6 rounded px-1.5 py-0.5 font-medium shrink-0">
+					<Tooltip
+						:text="`${data.site_count || 0} sites`"
+						v-if="data.site_count"
+					>
+						<span
+							class="text-xs bg-surface-gray-2 text-ink-gray-6 rounded px-1.5 py-0.5 font-medium shrink-0"
+						>
 							{{ data.site_count || 0 }}
 						</span>
 					</Tooltip>
 				</div>
 
-				<Badge variant="subtle" class="w-fit" :theme='data.active_benches ? null : "orange"'>
-					<span
-						class="size-1.5 rounded-full shrink-0 mr-0.5"
-						:class="data.active_benches ? 'bg-surface-green-3' : 'bg-surface-amber-3'"
-					/>
-					{{ data.active_benches ? 'Active' : 'Awaiting Deploy' }}
-				</Badge>
-
+				<Badge
+					class="w-fit"
+					:label="data.active_benches ? 'Active' : 'Awaiting Deploy' "
+				/>
 				<span class="text-ink-gray-6 text-sm">{{ data.version }}</span>
 
 				<span class="text-ink-gray-5 text-sm truncate">
@@ -129,7 +126,9 @@ const groupOptions = [
 		</div>
 
 		<template v-else-if="sites.data?.length">
-			<div class="bench-grid px-2 py-2 text-xs text-ink-gray-5 border-b dark:border-outline-gray-2 items-center">
+			<div
+				class="bench-grid px-2 py-2 text-xs text-ink-gray-5 border-b dark:border-outline-gray-2 items-center"
+			>
 				<span />
 				<span class="pl-6">Site</span>
 				<span>Status</span>
@@ -164,13 +163,7 @@ const groupOptions = [
 					<LucideExternalLink class="size-3.5" />
 				</router-link>
 
-				<Badge v-else variant="subtle" class="w-fit" :theme="(siteStatusBadges[site.status] || defaultBadge).theme">
-					<span
-						class="size-1.5 rounded-full shrink-0 mr-0.5"
-						:class="(siteStatusBadges[site.status] || defaultBadge).dot"
-					/>
-					{{ site.status }}
-				</Badge>
+				<Badge class="w-fit" :label="site.status" />
 
 				<span class="text-ink-gray-6 text-sm flex gap-1.5 items-center min-w-0">
 					<LucideServer class="size-3.5 shrink-0" />
@@ -178,8 +171,15 @@ const groupOptions = [
 				</span>
 
 				<span class="text-ink-gray-6 text-sm flex gap-1.5 items-center min-w-0">
-					<img v-if="site.cluster_image" :src="site.cluster_image" class="size-3.5 shrink-0" />
-					<span class="truncate">{{ site.cluster_title }}{{ site.cluster_country ? `, ${site.cluster_country}` : '' }}</span>
+					<img
+						v-if="site.cluster_image"
+						:src="site.cluster_image"
+						class="size-3.5 shrink-0"
+					/>
+					<span class="truncate"
+						>{{ site.cluster_title }}
+						{{ site.cluster_country ? `, ${site.cluster_country}` : '' }}</span
+					>
 				</span>
 
 				<Dropdown :options="siteOptions(site)">
@@ -194,7 +194,11 @@ const groupOptions = [
 				class="px-2 py-2"
 				:class="!isLast ? 'border-b dark:border-outline-gray-2' : ''"
 			>
-				<Button variant="ghost" :loading="sites.list?.loading" @click="sites.next()">
+				<Button
+					variant="ghost"
+					:loading="sites.list?.loading"
+					@click="sites.next()"
+				>
 					Load more
 				</Button>
 			</div>
