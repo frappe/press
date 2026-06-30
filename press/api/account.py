@@ -1272,7 +1272,7 @@ def enable_2fa(totp_code):
 	]
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def logout_from_all_devices():
 	"""Log out all other sessions for the current user."""
 
