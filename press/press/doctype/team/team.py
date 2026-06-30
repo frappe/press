@@ -1204,7 +1204,7 @@ class Team(Document):
 			}
 		)
 
-		for role in roles:
+		for role in roles or []:
 			account_request.append("press_roles", {"press_role": role})
 
 		account_request.insert()
