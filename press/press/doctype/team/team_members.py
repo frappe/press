@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import TypedDict, cast
 
 import frappe
 import frappe.utils
@@ -178,6 +178,7 @@ def get_invitations(team: str):
 			AccountRequest.email,
 			AccountRequest.request_key_expiration_time.as_("date"),
 			fn.Coalesce(PressRole.title, AccountRequest.press_role).as_("press_role"),
+			PressRole.name.as_("press_role_name"),
 			ValueWrapper("Pending").as_("status"),
 			User.full_name,
 			User.user_image,
@@ -242,7 +243,7 @@ def get_roles(team: Data | None) -> list[RoleDict]:
 				role_data[field] = role.get(field, False)
 			roles.append(role_data)
 
-	return roles
+	return cast("list[RoleDict]", roles)
 
 
 def remove_member(team: str, member: str):
