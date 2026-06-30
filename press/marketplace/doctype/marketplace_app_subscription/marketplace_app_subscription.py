@@ -1,11 +1,14 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+from typing import TYPE_CHECKING
+
 import frappe
 import requests
 from frappe.model.document import Document
 
-from press.press.doctype.site.site import Site
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 class MarketplaceAppSubscription(Document):
@@ -21,23 +24,19 @@ class MarketplaceAppSubscription(Document):
 
 	def create_site_config_key(self):
 		if not frappe.db.exists("Site Config Key", {"key": f"sk_{self.app}"}):
-			frappe.get_doc(
-				doctype="Site Config Key", internal=True, key=f"sk_{self.app}"
-			).insert(ignore_permissions=True)
+			frappe.get_doc(doctype="Site Config Key", internal=True, key=f"sk_{self.app}").insert(
+				ignore_permissions=True
+			)
 
 	def validate_marketplace_app_plan(self):
 		app = frappe.db.get_value("Marketplace App Plan", self.marketplace_app_plan, "app")
 
 		if app != self.app:
-			frappe.throw(
-				f"Plan {self.marketplace_app_plan} is not for app {frappe.bold(self.app)}!"
-			)
+			frappe.throw(f"Plan {self.marketplace_app_plan} is not for app {frappe.bold(self.app)}!")
 
 	def set_plan(self):
 		if not self.plan or self.has_value_changed("marketplace_app_plan"):
-			self.plan = frappe.db.get_value(
-				"Marketplace App Plan", self.marketplace_app_plan, "plan"
-			)
+			self.plan = frappe.db.get_value("Marketplace App Plan", self.marketplace_app_plan, "plan")
 
 	def validate_duplicate_subscription(self):
 		if not self.site:
@@ -58,9 +57,7 @@ class MarketplaceAppSubscription(Document):
 
 	def on_update(self):
 		if self.has_value_changed("marketplace_app_plan"):
-			self.plan = frappe.db.get_value(
-				"Marketplace App Plan", self.marketplace_app_plan, "plan"
-			)
+			self.plan = frappe.db.get_value("Marketplace App Plan", self.marketplace_app_plan, "plan")
 			frappe.db.set_value("Subscription", self.subscription, "plan", self.plan)
 
 		if self.has_value_changed("team"):
@@ -109,9 +106,9 @@ class MarketplaceAppSubscription(Document):
 				"type": "JSON",
 			},
 		]
-		if "prepaid" == frappe.db.get_value(
+		if frappe.db.get_value(
 			"Saas Settings", self.app, "billing_type"
-		) and frappe.db.get_value("Site", self.site, "trial_end_date"):
+		) == "prepaid" and frappe.db.get_value("Site", self.site, "trial_end_date"):
 			config.append(
 				{
 					"key": "app_include_js",
@@ -131,7 +128,7 @@ class MarketplaceAppSubscription(Document):
 	@frappe.whitelist()
 	def activate(self):
 		if self.status == "Active":
-			frappe.throw("Subscription is already active.")
+			frappe.throw("This subscription is already active. No further action is needed.")
 
 		self.status = "Active"
 		self.save()

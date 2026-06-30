@@ -65,7 +65,9 @@ class ProductTrial(Document):
 
 	def get_doc(self, doc):
 		if not self.published:
-			frappe.throw("Not permitted")
+			frappe.throw(
+				"This product trial isn't available right now. Please try again later, or contact the app's publisher."
+			)
 
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
@@ -78,7 +80,7 @@ class ProductTrial(Document):
 			frappe.throw("Selected plan is not a trial plan")
 
 		if not self.redirect_to_after_login.startswith("/"):
-			frappe.throw("Redirection route after login should start with /")
+			frappe.throw("Please enter a redirection route that starts with '/'.")
 
 		self.validate_hybrid_rules()
 
@@ -101,7 +103,7 @@ class ProductTrial(Document):
 		from press.press.doctype.site.site import Site, get_plan_config
 
 		if Site.exists(subdomain, domain):
-			frappe.throw("Site with this subdomain already exists")
+			frappe.throw("A site with this subdomain already exists. Please choose a different subdomain.")
 
 		site_domain = f"{subdomain}.{domain}"
 
@@ -228,7 +230,7 @@ class ProductTrial(Document):
 		return proxy_servers_for_available_clusters
 
 	def set_site_domain(self, site: Site, site_domain: str):
-		agent_jobs = []
+		agent_jobs: list = []
 		if not site_domain:
 			return agent_jobs
 

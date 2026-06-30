@@ -24,14 +24,16 @@ class PaymentDueExtension(Document):
 
 	def validate(self):
 		if self.extension_date < frappe.utils.today():
-			frappe.throw("Extension date cannot be in the past")
+			frappe.throw("The extension date must be today or later. Please pick a future date.")
 
 	def before_insert(self):
 		if frappe.db.exists(
 			"Payment Due Extension",
 			{"team": self.team, "docstatus": 1, "extension_date": (">=", frappe.utils.today())},
 		):
-			frappe.throw("An active Payment due extension record already exists for this team")
+			frappe.throw(
+				"This team already has an active payment due extension. Please use or update the existing extension instead of creating another."
+			)
 
 	def before_submit(self):
 		if self.status != "Active":
