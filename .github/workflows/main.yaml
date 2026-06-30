@@ -137,7 +137,13 @@ jobs:
         env:
           ALL_CHANGED_FILES: ${{ needs.changes.outputs.changed-python-files }}
         run: |
-          mypy ${ALL_CHANGED_FILES}
+          # Exclude test files, matching the pre-commit mypy hook's exclude pattern.
+          FILES=$(echo ${ALL_CHANGED_FILES} | tr ' ' '\n' | grep -vE '^tests/|test_.*\.py$' || true)
+          if [ -n "$FILES" ]; then
+            mypy $FILES
+          else
+            echo "No non-test Python files changed; skipping mypy."
+          fi
 
   semgrep:
     name: Semgrep Rules

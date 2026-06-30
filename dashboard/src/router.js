@@ -101,6 +101,7 @@ let router = createRouter({
 			component: () => import('./pages/NewSite.vue'),
 			props: true,
 		},
+
 		{
 			name: 'Server New Site',
 			path: '/servers/:server/sites/new',
@@ -224,16 +225,6 @@ let router = createRouter({
 					name: 'SettingsTeam',
 					path: 'team',
 					component: () => import('./components/settings/TeamSettings.vue'),
-				},
-				{
-					name: 'SettingsTeamBeta',
-					path: 'team-beta',
-					component: () => import('./components/settings/Team.vue'),
-				},
-				{
-					name: 'SettingsRolesBeta',
-					path: 'roles-beta',
-					component: () => import('./components/settings/RoleListBeta.vue'),
 				},
 				{
 					name: 'SettingsDeveloper',

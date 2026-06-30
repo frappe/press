@@ -152,5 +152,7 @@ def get_google_credentials():
 
 	config = frappe.conf.get("google_credentials")
 	if not config:
-		frappe.throw("google_credentials not found in site_config.json")
+		frappe.throw(
+			"Google credentials are not configured. Please add 'google_credentials' to site_config.json before using this feature, or contact your administrator."
+		)
 	return config

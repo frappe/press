@@ -331,10 +331,21 @@ def _is_plan_allowed_on_server(server: str, new_site_plan: dict) -> bool:
 		return False
 	if not new_site_plan.get("restrict_based_on_dedicated_server_plan", 0):
 		return True
-	app_server_plan = frappe.db.get_value("Server", server, "plan")
 	min_price = new_site_plan.get("minimum_server_price_usd", 0)
-	app_server_price = frappe.db.get_value("Server Plan", app_server_plan, "price_usd")
-	return app_server_price >= min_price
+	return get_dedicated_server_price(server) >= min_price
+
+
+def get_dedicated_server_price(server: str) -> float:
+	"""Combined monthly USD cost of a dedicated server: app server plan + its database server plan."""
+	app_server_plan, database_server = frappe.db.get_value("Server", server, ["plan", "database_server"])
+	app_server_price = frappe.db.get_value("Server Plan", app_server_plan, "price_usd") or 0
+
+	database_server_price = 0
+	if database_server:
+		database_server_plan = frappe.db.get_value("Database Server", database_server, "plan")
+		database_server_price = frappe.db.get_value("Server Plan", database_server_plan, "price_usd") or 0
+
+	return app_server_price + database_server_price
 
 
 @validate_argument_types
@@ -953,10 +964,14 @@ def _get_team_dedicated_server_info(for_server: str | None = None):
 			"cluster",
 			"provider",
 			"plan",
-			"plan.price_usd as price_usd",
 			"public",
 		],
 	)
+
+	for server in servers:
+		# Combined app server + database server cost, matching the gate in
+		# `_is_plan_allowed_on_server` so the UI and backend agree.
+		server["price_usd"] = get_dedicated_server_price(server["name"])
 
 	if for_server:
 		servers = attach_warranty_info_to_dedicated_servers(servers)

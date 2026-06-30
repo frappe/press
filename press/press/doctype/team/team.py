@@ -18,7 +18,6 @@ from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_for
 
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
-from press.guards import feature_preview, team_guard
 from press.partner.doctype.partner_onboarding.partner_onboarding import has_partner_onboarding
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
@@ -35,7 +34,7 @@ from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture, capture_pulse
 from press.utils.user import is_system_manager
 
-from .team_members import get_invitations, get_members, get_roles, remove_member
+from .team_members import get_invitations, get_roles
 
 if TYPE_CHECKING:
 	from press.press.doctype.account_request.account_request import AccountRequest
@@ -308,6 +307,8 @@ class Team(Document):
 		roles = [role["label"] for role in get_roles(self.name)]
 		# Validate that each team member has a valid role assigned.
 		for member in self.team_members:
+			if not member.role:
+				member.role = "Member"
 			# If the role is not in the list of valid roles, throw an error.
 			if member.role not in roles:
 				frappe.throw(
@@ -1109,18 +1110,45 @@ class Team(Document):
 			m.roles = user_roles.get(m.user, [])
 			m.has_admin_access = any(r.get("admin_access") for r in m.roles)
 			r.append(m)
-		return r
 
-	@dashboard_whitelist()
-	@feature_preview.beta_testing()
-	def get_members(self):
-		return get_invitations(str(self.name)) + get_members(str(self.name))
+		for inv in get_invitations(str(self.name)):
+			is_custom_role = bool(inv.press_role_name)
+			if is_custom_role:
+				roles = [
+					{
+						"name": inv.press_role_name,
+						"title": inv.press_role,
+						"admin_access": inv.press_role_admin_access,
+					}
+				]
+				has_admin_access = bool(inv.press_role_admin_access)
+			else:
+				roles = []
+				has_admin_access = True
+			r.append(
+				{
+					"user": inv.email,
+					"email": inv.email,
+					"user_name": inv.full_name or inv.email,
+					"user_image": inv.user_image,
+					"roles": roles,
+					"has_admin_access": has_admin_access,
+					"status": "Pending",
+				}
+			)
+
+		return r
 
 	def _validate_role(self, role: str, all_roles=None):
 		from press.press.doctype.team.team_members import get_roles
 
 		all_roles = all_roles or get_roles(str(self.name))
-		if not any(r["value"] == role for r in all_roles):
+		# A role is identified either by its label/title (predefined roles and the
+		# update-invitation dialog) or by its Press Role name (the invite dialog
+		# sends the document name for custom roles). Accept both, mirroring
+		# _set_invitation_role which resolves either form to a press_role.
+		valid_roles = {r["value"] for r in all_roles} | {r["name"] for r in all_roles if r.get("name")}
+		if role not in valid_roles:
 			frappe.throw(
 				_('Invalid role "{0}". Must be one of: {1}').format(
 					role, ", ".join(r["value"] for r in all_roles)
@@ -1128,118 +1156,32 @@ class Team(Document):
 				frappe.ValidationError,
 			)
 
-	@dashboard_whitelist()
-	@feature_preview.beta_testing()
-	@team_guard.only_admin()
-	def send_invitation(self, names: str, role: str = "Member"):
-		"""
-		Account request is created when a user is invited or when a user signs
-		up. This is different from a team/organization. Signing up should be
-		handled inside team doctype itself. Account request should focus on
-		handling user management, unrelated to team.
-		"""
-		from press.press.doctype.team.team_members import get_roles
-
-		all_roles = get_roles(str(self.name))
-		self._validate_role(role, all_roles)
-		for n in names.split(","):
-			n = n.strip()
-			if frappe.db.exists("Account Request", n):
-				d: AccountRequest = frappe.get_doc("Account Request", n, check_permission=True)
-				if d.team != self.name:
-					frappe.throw(
-						_("Account Request does not belong to this team."),
-						frappe.PermissionError,
-					)
-				self._set_invitation_role(d, role, all_roles)
-				d.flags.ignore_links = True
-				d.save()
-				d.send_verification_email()
-				continue
-			if account_request := frappe.db.exists(
-				"Account Request",
-				{
-					"email": n,
-					"team": self.name,
-					"invited_by": ("is", "set"),
-					"request_key": ("is", "set"),
-				},
-			):
-				dd: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
-				self._set_invitation_role(dd, role, all_roles)
-				dd.flags.ignore_links = True
-				dd.save()
-				dd.send_verification_email()
-				continue
-			frappe.utils.validate_email_address(n, throw=True)
-			ar: AccountRequest = frappe.new_doc("Account Request")
-			ar.team = self.name
-			ar.email = n
-			self._set_invitation_role(ar, role, all_roles)
-			ar.invited_by = frappe.session.user
-			ar.send_email = True
-			ar.flags.ignore_links = True
-			ar.save()
-		return self.get_members()
-
 	def _set_invitation_role(self, account_request: AccountRequest, role: str, all_roles=None):
 		if all_roles is None:
 			from press.press.doctype.team.team_members import get_roles
 
 			all_roles = get_roles(str(self.name))
-		matched = [r for r in all_roles if r["value"] == role]
+		matched = [r for r in all_roles if r["value"] == role or r.get("name") == role]
 		if matched and matched[0].get("name"):
 			account_request.press_role = matched[0]["name"]
-		else:
-			account_request.press_role = role
 
-	@dashboard_whitelist()
-	@feature_preview.beta_testing()
-	@team_guard.only_admin()
-	def update_invitation_role(self, account_request: str, role: str):
-		self._validate_role(role)
-		d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
-		if d.team != self.name:
-			frappe.throw(
-				_("Account Request does not belong to this team."),
-				frappe.PermissionError,
-			)
-		self._set_invitation_role(d, role)
-		d.flags.ignore_links = True
-		d.save()
-		return self.get_members()
+	def _get_invitation_role(self, roles) -> str | None:
+		if isinstance(roles, str):
+			try:
+				roles = frappe.parse_json(roles)
+			except ValueError:
+				return roles
 
-	@dashboard_whitelist()
-	@feature_preview.beta_testing()
-	@team_guard.only_admin()
-	def cancel_invitation(self, account_request: str):
-		"""
-		Cancel invitation by clearing request key and expiration time so that
-		the link becomes invalid. This is not ideal. We should have a separate
-		doctype to handle invitations instead of overloading Account Request
-		doctype which is also used during signup.
-		"""
-		d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
-		d.request_key = None
-		d.request_key_expiration_time = None
-		d.save()
-		return self.get_members()
+		if isinstance(roles, str):
+			return roles
 
-	@dashboard_whitelist()
-	@feature_preview.beta_testing()
-	@team_guard.only_admin()
-	def remove_member(self, member: str):
-		"""
-		Remove member from the team. This will remove the member from the child
-		table. This does not deal with account request.
-		"""
-		remove_member(str(self.name), member)
-		return self.get_members()
+		if isinstance(roles, (list, tuple)):
+			return roles[0] if roles else None
 
-	@dashboard_whitelist()
-	@feature_preview.beta_testing()
-	def get_roles(self):
-		return get_roles(str(self.name))
+		if not roles:
+			return None
+
+		raise frappe.ValidationError(_("Invalid role"))
 
 	@dashboard_whitelist()
 	@rate_limit(limit=10, seconds=60 * 60)
@@ -1287,9 +1229,11 @@ class Team(Document):
 			}
 		)
 
-		selected_role = roles[0] if roles else None
+		selected_role = self._get_invitation_role(roles)
 		if selected_role:
-			account_request.press_role = selected_role
+			self._validate_role(selected_role)
+			self._set_invitation_role(account_request, selected_role)
+			account_request.flags.ignore_links = True
 
 		account_request.insert()
 

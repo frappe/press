@@ -38,6 +38,7 @@ import { getToastErrorMessage } from '../../utils/toast'
 
 export default {
 	components: { Combobox },
+	emits: ['success'],
 	data() {
 		return {
 			email: '',
@@ -93,14 +94,13 @@ export default {
 	},
 	methods: {
 		inviteMember() {
-			if (!this.selectedRole) {
-				throw new DashboardError('Role is required')
-			}
 			toast.promise(
 				this.$team.inviteTeamMember.submit(
 					{
 						email: this.email,
-						roles: this.selectedRole === 'Admin' ? [] : [this.selectedRole],
+						...(this.selectedRole !== 'Admin' && {
+							roles: [this.selectedRole],
+						}),
 					},
 					{
 						validate: () => {
@@ -114,6 +114,7 @@ export default {
 					loading: 'Sending Invite...',
 					success: () => {
 						this.show = false
+						this.$emit('success')
 						return 'Invite Sent!'
 					},
 					error: (e) => getToastErrorMessage(e),
