@@ -1066,8 +1066,6 @@ class Team(Document):
 		return get_team_members(self.name)
 
 	@dashboard_whitelist()
-<<<<<<< HEAD
-=======
 	def members(self):
 		users = [member.user for member in self.team_members]
 
@@ -1114,7 +1112,6 @@ class Team(Document):
 		return r
 
 	@dashboard_whitelist()
->>>>>>> 7189a22a3 (feat(dashboard): Team: add a column with admin/member info)
 	@feature_preview.beta_testing()
 	def get_members(self):
 		return get_invitations(str(self.name)) + get_members(str(self.name))
