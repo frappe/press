@@ -40,6 +40,7 @@ export default {
 		tabs() {
 			const baseTabs = [
 				{ label: 'Overview', route: { name: 'BillingOverview' } },
+				{ label: 'Subscriptions', route: { name: 'BillingSubscriptions' } },
 				{ label: 'Forecast', route: { name: 'BillingForecast' } },
 				{ label: 'Invoices', route: { name: 'BillingInvoices' } },
 				{ label: 'Balances', route: { name: 'BillingBalances' } },
@@ -48,16 +49,15 @@ export default {
 					label: 'Marketplace Payouts',
 					route: { name: 'BillingMarketplacePayouts' },
 				},
-				{ label: 'Subscriptions', route: { name: 'BillingSubscriptions' } },
 			]
 
 			if (this.$team?.doc?.apply_limits && this.$team?.doc?.tier) {
 				baseTabs.push({ label: 'Limits', route: { name: 'BillingTiers' } })
 			}
 
-			// Add UPI Autopay tab for INR teams
+			// Add UPI Autopay tab for INR teams (before Marketplace Payouts)
 			if (this.$team?.doc?.currency === 'INR') {
-				baseTabs.splice(5, 0, {
+				baseTabs.splice(6, 0, {
 					label: 'UPI Autopay',
 					route: { name: 'BillingUPIAutopay' },
 				})
