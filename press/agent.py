@@ -587,7 +587,7 @@ class Agent:
 					),
 					# Streaming only applies to offsite backups (agent streams the
 					# artifacts straight to S3), so only send it for offsite jobs.
-					"stream": bool(frappe.get_value("Server", site.server, "stream_backups")),
+					"stream": site.is_streaming_backup_supported(),
 				}
 			)
 
@@ -1826,7 +1826,9 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if offsite_config:
 			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw("Offsite Backups aren't setup yet")
+			frappe.throw(
+				"Offsite Backups aren't set up yet. Please configure offsite backup storage in Press Settings before taking an offsite backup."
+			)
 
 		return self.create_agent_job(
 			"Backup Database From Snapshot",
@@ -1855,7 +1857,9 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if offsite_config:
 			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw("Offsite Backups aren't setup yet")
+			frappe.throw(
+				"Offsite Backups aren't set up yet. Please configure offsite backup storage in Press Settings before taking an offsite backup."
+			)
 
 		return self.create_agent_job(
 			"Backup Files From Snapshot",

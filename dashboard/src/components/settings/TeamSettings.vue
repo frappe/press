@@ -8,12 +8,15 @@
 import { Badge, createResource } from 'frappe-ui'
 import { defineAsyncComponent, h, ref } from 'vue'
 import { toast } from 'vue-sonner'
+import ShieldIcon from '~icons/lucide/shield-user'
+import session from '../../data/session'
 import { getTeam } from '../../data/team'
 import router from '../../router'
 import { confirmDialog, renderDialog } from '../../utils/components'
 import { getToastErrorMessage } from '../../utils/toast'
 import ObjectList from '../ObjectList.vue'
 import UserWithAvatarCell from '../UserWithAvatarCell.vue'
+import TeamSettingsUserType from './TeamSettingsUserType.vue'
 
 const team = getTeam()
 
@@ -42,22 +45,20 @@ const teamMembersListOptions = ref({
 					avatarImage: row.user_image,
 					fullName: row.user_name,
 					email: row.email,
+					isCurrentUser: row.user === session.user,
 				})
 			},
 		},
 		{
-			label: 'Access',
+			label: 'User type',
 			type: 'Component',
-			width: '100px',
+			width: '258px',
 			component: ({ row }) => {
-				return h(
-					Badge,
-					{
-						variant: 'subtle',
-						theme: row.has_admin_access ? 'blue' : 'green',
-					},
-					row.has_admin_access ? 'Admin' : 'Member',
-				)
+				return h(TeamSettingsUserType, {
+					hasAdminAccess: row.has_admin_access,
+					isOwner: row.user === team.doc.user,
+					isPending: row.status === 'Pending',
+				})
 			},
 		},
 		{
@@ -74,18 +75,28 @@ const teamMembersListOptions = ref({
 							{
 								key: role.name,
 								variant: 'subtle',
-								class: 'cursor-pointer',
+								class: role.name
+									? 'cursor-pointer max-w-[124px]'
+									: 'max-w-[124px]',
 								style: { marginRight: '4px' },
-								onClick: (e) => {
-									e.preventDefault()
-									e.stopPropagation()
-									router.push({
-										name: 'SettingsPermissionRolePermissions',
-										params: { id: role.name },
-									})
-								},
+								onClick: role.name
+									? (e) => {
+											e.preventDefault()
+											e.stopPropagation()
+											router.push({
+												name: 'SettingsPermissionRolePermissions',
+												params: { id: role.name },
+											})
+										}
+									: undefined,
 							},
-							role.title,
+							{
+								prefix: role.admin_access
+									? () => h(ShieldIcon, { class: 'h-3 w-3 text-red-500' })
+									: undefined,
+								default: () =>
+									h('span', { class: 'truncate min-w-0' }, role.title),
+							},
 						),
 					),
 				)
@@ -94,7 +105,11 @@ const teamMembersListOptions = ref({
 	],
 	rowActions({ row }) {
 		let team = getTeam()
-		if (row.user === team.doc.user || row.user === team.doc.user_info?.name)
+		if (
+			row.status === 'Pending' ||
+			row.user === team.doc.user ||
+			row.user === team.doc.user_info?.name
+		)
 			return []
 		return [
 			{
@@ -145,7 +160,9 @@ const teamMembersListOptions = ref({
 					const InviteTeamMemberDialog = defineAsyncComponent(
 						() => import('./InviteTeamMemberDialog.vue'),
 					)
-					renderDialog(h(InviteTeamMemberDialog))
+					renderDialog(
+						h(InviteTeamMemberDialog, { onSuccess: () => members.reload() }),
+					)
 				},
 			},
 		]

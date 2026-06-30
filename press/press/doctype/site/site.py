@@ -136,6 +136,12 @@ SERVER_SCRIPT_DISABLED_VERSION = (
 )
 TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
 
+# Conditions a site must satisfy for the agent to stream offsite backup
+# artifacts straight to S3 instead of uploading them after the dump finishes.
+STREAMING_BACKUP_REQUIREMENTS = {
+	"minimum_frappe_version": 13,
+}
+
 
 class Site(Document, TagHelpers):
 	# begin: auto-generated types
@@ -174,6 +180,7 @@ class Site(Document, TagHelpers):
 		database_access_connection_limit: DF.Int
 		database_name: DF.Data | None
 		disable_site_usage_exceed_check: DF.Check
+		disable_streaming_backups: DF.Check
 		domain: DF.Link | None
 		erpnext_consultant: DF.Link | None
 		fatal_site_update: DF.Link | None
@@ -530,7 +537,10 @@ class Site(Document, TagHelpers):
 
 		site_apps = [app.app for app in self.apps]
 		if len(site_apps) != len(set(site_apps)):
-			frappe.throw("App {app.app} is already on installed on the bench. Cannot add the same app twice")
+			duplicates = sorted({app for app in site_apps if site_apps.count(app) > 1})
+			frappe.throw(
+				f"These apps are listed more than once: {', '.join(duplicates)}. Each app can only be installed once — please remove the duplicates."
+			)
 
 		# Install apps in the same order as bench
 		if self.is_new():
@@ -1017,6 +1027,18 @@ class Site(Document, TagHelpers):
 	def is_this_version_or_above(self, version: int) -> bool:
 		group: ReleaseGroup = frappe.get_cached_doc("Release Group", self.group)
 		return group.is_this_version_or_above(version)
+
+	def is_streaming_backup_supported(self) -> bool:
+		"""Whether the agent may stream this site's offsite backups straight to S3.
+
+		Requires the server to enable streaming, the site to not have opted
+		out, and the site's frappe version to be recent enough.
+		"""
+		if self.disable_streaming_backups:
+			return False
+		if not frappe.get_cached_value("Server", self.server, "stream_backups"):
+			return False
+		return self.is_this_version_or_above(STREAMING_BACKUP_REQUIREMENTS["minimum_frappe_version"])
 
 	@property
 	def restore_space_required_on_app(self):
@@ -4534,9 +4556,18 @@ def process_new_site_job_update(job):  # noqa: C901
 
 		site.sync_apps()  # Sync apps for this site as well to reflect dependant apps
 		marketplace_app_hook(site=site, op="install")
+		# Status is set via db.set_value below, bypassing on_update ->
+		# update_subscription. Re-enable the subscription explicitly so a site
+		# that recovers from a failed creation (retry / restore) starts billing
+		# again — the counterpart to disabling it on failure (#6110).
+		site.enable_subscription()
 	elif "Failure" in (first, second) or "Delivery Failure" in (first, second):
 		updated_status = "Broken"
 		frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
+		# Status is set via db.set_value below, which bypasses on_update ->
+		# update_subscription. Disable the subscription explicitly so the user
+		# isn't billed for a site that never came up (#6110).
+		Site("Site", job.site).disable_subscription()
 	elif "Running" in (first, second):
 		updated_status = "Installing"
 	else:

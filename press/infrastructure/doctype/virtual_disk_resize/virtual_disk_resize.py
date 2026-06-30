@@ -132,7 +132,9 @@ class VirtualDiskResize(Document):
 
 	def validate_aws_only(self):
 		if self.machine.cloud_provider != "AWS EC2":
-			frappe.throw("This feature is only available for AWS EC2")
+			frappe.throw(
+				"This feature is only available for servers hosted on AWS EC2. Please use an AWS EC2 server to continue."
+			)
 
 	def validate_existing_migration(self):
 		if existing := frappe.get_all(
@@ -279,7 +281,9 @@ class VirtualDiskResize(Document):
 		output = self.ansible_run(f"du -sx --block-size=1024 {mountpoint}")["output"]
 
 		if not output:
-			frappe.throw("Error occurred while fetching filesystem size")
+			frappe.throw(
+				"Could not fetch the filesystem size from the server. Please ensure the server is reachable and try again."
+			)
 
 		size = float(output.split()[0])
 		return size / 1024**2
@@ -442,7 +446,9 @@ class VirtualDiskResize(Document):
 			pluck="name",
 		)
 		if len(snapshots) == 0:
-			frappe.throw("Failed to create a snapshot")
+			frappe.throw(
+				"Failed to create a disk snapshot. Please check the cloud provider status and retry."
+			)
 
 		self.virtual_disk_snapshot = snapshots[0]
 		return StepStatus.Success
