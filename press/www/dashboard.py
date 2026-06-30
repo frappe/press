@@ -10,7 +10,7 @@ from press.utils import (
 	get_default_team_for_user,
 	get_valid_teams_for_user,
 )
-from press.utils.user import is_beta_tester, is_desk_user, is_system_manager
+from press.utils.user import is_desk_user, is_system_manager
 
 base_template_path = "templates/www/dashboard.html"
 no_cache = 1
@@ -80,5 +80,4 @@ def get_user():
 		"email": email,
 		"is_system_manager": is_system_manager(user),
 		"is_desk_user": is_desk_user(user),
-		"is_beta_tester": is_beta_tester(),
 	}
