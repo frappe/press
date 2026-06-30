@@ -156,7 +156,9 @@ const teamMembersListOptions = ref({
 					const InviteTeamMemberDialog = defineAsyncComponent(
 						() => import('./InviteTeamMemberDialog.vue'),
 					)
-					renderDialog(h(InviteTeamMemberDialog))
+					renderDialog(
+						h(InviteTeamMemberDialog, { onSuccess: () => members.reload() }),
+					)
 				},
 			},
 		]
