@@ -1276,9 +1276,10 @@ def enable_2fa(totp_code):
 def logout_from_all_devices():
 	"""Log out all other sessions for the current user."""
 
-	from frappe.sessions import clear_sessions
+	from frappe.sessions import clear_sessions, get_sessions_to_clear
 
-	clear_sessions(user=frappe.session.user, keep_current=True, force=True)
+	while get_sessions_to_clear(user=frappe.session.user, keep_current=True, force=True):
+		clear_sessions(user=frappe.session.user, keep_current=True, force=True)
 
 
 @frappe.whitelist()
