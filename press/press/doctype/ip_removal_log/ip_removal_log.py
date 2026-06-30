@@ -61,9 +61,14 @@ class IPRemovalLog(Document, StepHandler):
 			"ip": ("is", "set"),
 			"nat_server": ("is", "not set"),
 			"is_self_hosted": 0,
+			"is_static_ip": 0,
 		}
 		if self.server_type == "Server":
-			filters |= {"is_static_ip": 0}
+			filters |= {"use_for_build": 0}
+
+		if self.mode == "Update NAT Config":
+			filters["ip"] = ("is", "not set")
+			filters["nat_server"] = ("is", "set")
 
 		servers = frappe.get_all(
 			self.server_type, filters=filters, limit_page_length=self.limit, pluck="name"
@@ -118,8 +123,8 @@ class IPRemovalLog(Document, StepHandler):
 				return
 
 			frappe.db.commit()
+			doc.reload()
 
-		doc.reload()
 		doc.nat_server = self.nat_server
 		doc.save()
 
