@@ -65,7 +65,7 @@
 			"fieldname": "provider",
 			"fieldtype": "Select",
 			"label": "Provider",
-			"options": "AWS EC2\nFrappe Compute\nHetzner\nDigitalOcean",
+			"options": "AWS EC2\nFrappe Compute\nHetzner\nDigitalOcean\nOCI",
 			"set_only_once": 1
 		},
 		{
@@ -172,7 +172,7 @@
 			"link_fieldname": "server"
 		}
 	],
-	"modified": "2026-06-23 20:01:38.633666",
+	"modified": "2026-06-25 13:16:38.558662",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "NAT Server",
