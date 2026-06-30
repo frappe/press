@@ -1141,13 +1141,32 @@ class Team(Document):
 		from press.press.doctype.team.team_members import get_roles
 
 		all_roles = all_roles or get_roles(str(self.name))
-		if not any(r["value"] == role for r in all_roles):
+		valid_roles = {r["value"] for r in all_roles} | {r["name"] for r in all_roles if r.get("name")}
+		if role not in valid_roles:
 			frappe.throw(
 				_('Invalid role "{0}". Must be one of: {1}').format(
 					role, ", ".join(r["value"] for r in all_roles)
 				),
 				frappe.ValidationError,
 			)
+
+	def _get_invitation_role(self, roles) -> str | None:
+		if isinstance(roles, str):
+			try:
+				roles = frappe.parse_json(roles)
+			except ValueError:
+				return roles
+
+		if isinstance(roles, str):
+			return roles
+
+		if isinstance(roles, (list, tuple)):
+			return roles[0] if roles else None
+
+		if not roles:
+			return None
+
+		raise frappe.ValidationError(_("Invalid role"))
 
 	def _set_invitation_role(self, account_request: AccountRequest, role: str, all_roles=None):
 		if all_roles is None:
@@ -1204,8 +1223,11 @@ class Team(Document):
 			}
 		)
 
-		for role in roles:
-			account_request.append("press_roles", {"press_role": role})
+		selected_role = self._get_invitation_role(roles)
+		if selected_role:
+			self._validate_role(selected_role)
+			self._set_invitation_role(account_request, selected_role)
+			account_request.flags.ignore_links = True
 
 		account_request.insert()
 
