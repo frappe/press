@@ -128,7 +128,7 @@ class DripEmail(Document):
 		if not self.condition:
 			return True
 
-		product_trial = frappe.get_doc("Product Trial", self.product_trial)
+		product_trial = frappe.get_doc("Product Trial", self.product_trial) if self.product_trial else None
 		site_account_request = frappe.db.get_value("Site", site_name, "account_request")
 		account_request = frappe.get_doc("Account Request", site_account_request)
 
