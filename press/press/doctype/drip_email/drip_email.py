@@ -96,18 +96,20 @@ class DripEmail(Document):
 			reply_to=self.reply_to,
 			reference_doctype="Drip Email",
 			reference_name=self.name,
-			unsubscribe_message="Unsubscribe",
-			unsubscribe_method="api/method/press.press.doctype.drip_email.drip_email.unsubscribe",
-			unsubscribe_params={"account_request": account_request.name},
 			attachments=self.get_setup_guides(account_request),
 		)
 
 		if self.send_raw:
 			kwargs["message"] = message
 		else:
+			if not self.product_trial:
+				frappe.throw(_("Product Trial is required when Send Raw is disabled"))
 			app = frappe.db.get_value("Product Trial", self.product_trial, ["title", "logo"], as_dict=True)
 			kwargs["template"] = "product_trial_email"
 			kwargs["args"] = {"message": message, "title": app.title, "logo": app.logo}
+			kwargs["unsubscribe_message"] = "Unsubscribe"
+			kwargs["unsubscribe_method"] = "api/method/press.press.doctype.drip_email.drip_email.unsubscribe"
+			kwargs["unsubscribe_params"] = {"account_request": account_request.name}
 
 		frappe.sendmail(**kwargs)
 
