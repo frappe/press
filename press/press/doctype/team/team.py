@@ -1154,7 +1154,7 @@ class Team(Document):
 			from press.press.doctype.team.team_members import get_roles
 
 			all_roles = get_roles(str(self.name))
-		matched = [r for r in all_roles if r["value"] == role]
+		matched = [r for r in all_roles if r["value"] == role or r.get("name") == role]
 		if matched and matched[0].get("name"):
 			account_request.press_role = matched[0]["name"]
 
