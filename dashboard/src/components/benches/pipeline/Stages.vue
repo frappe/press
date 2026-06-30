@@ -42,7 +42,7 @@ const isStageDisabled = (x) => {
 <template>
 	<div
 		v-if="!stages || stages?.length ==0"
-		class="leading-relaxed py-2.5 text-ink-gray-5 flex flex-wrap sk-fade"
+		class="leading-relaxed py-2.5 text-ink-gray-5 flex flex-wrap fade-in"
 	>
 		<div class="flex  items-center gap-2 text-sm pb-3 w-full border-b">
 			<Spinner class="size-4" />
@@ -161,18 +161,5 @@ const isStageDisabled = (x) => {
 	@apply leading-relaxed mb-0.5 p-1 aria-selected:bg-surface-gray-1;
 	@apply rounded flex items-center gap-2 justify-start whitespace-nowrap w-full;
 	@apply disabled:opacity-70 disabled:cursor-not-allowed hover:bg-surface-gray-1;
-}
-
-.sk-fade {
-	animation: sk-fade-in 0.25s ease-out both;
-}
-
-@keyframes sk-fade-in {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
 }
 </style>

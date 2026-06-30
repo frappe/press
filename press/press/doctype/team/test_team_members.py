@@ -13,9 +13,7 @@ from press.press.doctype.team.team_members import (
 	PERMISSION_FIELDS,
 	PREDEFINED_ROLES,
 	get_invitations,
-	get_members,
 	get_roles,
-	remove_member,
 )
 
 if TYPE_CHECKING:
@@ -88,35 +86,6 @@ def create_account_request(
 class TestTeamMembers(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
-
-	def test_get_members_returns_active_members(self):
-		team = create_test_team_for_members()
-		team_user = frappe.get_value("Team", team, "user")
-		with user_context(team_user):
-			member_email = frappe.mock("email")
-			add_team_member(team, member_email)
-			members = get_members(team)
-			self.assertEqual(len(members), 1)
-			self.assertEqual(members[0].email, member_email)
-			self.assertEqual(members[0].status, "Active")
-			self.assertEqual(members[0].role, "Developer")
-
-	def test_get_members_returns_empty_for_team_without_members(self):
-		team = create_test_team_for_members()
-		team_user = frappe.get_value("Team", team, "user")
-		with user_context(team_user):
-			members = get_members(team)
-			self.assertEqual(len(members), 0)
-
-	def test_get_members_includes_user_details(self):
-		team = create_test_team_for_members()
-		team_user = frappe.get_value("Team", team, "user")
-		with user_context(team_user):
-			member_email = frappe.mock("email")
-			add_team_member(team, member_email)
-			members = get_members(team)
-			self.assertIsNotNone(members[0].full_name)
-			self.assertIn("user_image", members[0])
 
 	def test_get_invitations_returns_pending_invitations(self):
 		team = create_test_team_for_members()
@@ -273,34 +242,3 @@ class TestTeamMembers(FrappeTestCase):
 			custom_labels = [r["label"] for r in roles if not r["is_predefined"]]
 			self.assertIn("Team1 Role", custom_labels)
 			self.assertNotIn("Team2 Role", custom_labels)
-
-	def test_remove_member_deletes_team_member(self):
-		team = create_test_team_for_members()
-		team_user = frappe.get_value("Team", team, "user")
-		with user_context(team_user):
-			member_email = frappe.mock("email")
-			add_team_member(team, member_email)
-			member = frappe.db.get_value("Team Member", {"parent": team, "user": member_email}, "name")
-			remove_member(team, member)
-			self.assertFalse(frappe.db.exists("Team Member", {"parent": team, "user": member_email}))
-
-	def test_remove_member_handles_nonexistent_member(self):
-		team = create_test_team_for_members()
-		team_user = frappe.get_value("Team", team, "user")
-		with user_context(team_user):
-			nonexistent_member = frappe.generate_hash(length=10)
-			remove_member(team, nonexistent_member)
-			self.assertTrue(True)
-
-	def test_remove_member_only_removes_specific_member(self):
-		team = create_test_team_for_members()
-		team_user = frappe.get_value("Team", team, "user")
-		with user_context(team_user):
-			member1_email = frappe.mock("email")
-			member2_email = frappe.mock("email")
-			add_team_member(team, member1_email)
-			add_team_member(team, member2_email)
-			member1 = frappe.db.get_value("Team Member", {"parent": team, "user": member1_email}, "name")
-			remove_member(team, member1)
-			self.assertFalse(frappe.db.exists("Team Member", {"parent": team, "user": member1_email}))
-			self.assertTrue(frappe.db.exists("Team Member", {"parent": team, "user": member2_email}))

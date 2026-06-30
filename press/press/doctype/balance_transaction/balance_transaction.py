@@ -47,7 +47,7 @@ class BalanceTransaction(Document):
 
 	def validate(self):
 		if self.amount == 0:
-			frappe.throw("Amount cannot be 0")
+			frappe.throw("Please enter a non-zero amount for the balance transaction.")
 
 	def before_submit(self):
 		if self.type == "Partnership Fee":
@@ -130,7 +130,9 @@ class BalanceTransaction(Document):
 			or []
 		)
 		if not unallocated_amounts:
-			frappe.throw("Cannot create transaction as no unallocated amount found")
+			frappe.throw(
+				"This team has no unallocated credit to draw from, so this transaction can't be created. Please add credits before allocating them."
+			)
 		if sum(unallocated_amounts) < abs(self.amount):
 			frappe.throw(
 				f"Cannot create transaction as unallocated amount {sum(unallocated_amounts)} is less than {self.amount}"

@@ -11,8 +11,8 @@ frappe.ui.form.on('Cluster', {
 					premium: 0,
 					allow_unified_server: frm.doc.by_default_select_unified_mode ? 1 : 0,
 				},
-			};
-		});
+			}
+		})
 		frm.set_query('default_db_server_plan', function () {
 			return {
 				filters: {
@@ -21,11 +21,11 @@ frappe.ui.form.on('Cluster', {
 					premium: 0,
 					allow_unified_server: frm.doc.by_default_select_unified_mode ? 1 : 0,
 				},
-			};
-		});
+			}
+		})
 	},
 	refresh: function (frm) {
-		[
+		;[
 			[__('Create Servers'), 'create_servers', frm.doc.status === 'Active'],
 			[__('Create Proxy'), 'create_proxy', frm.doc.status === 'Active'],
 			[__('Add Images'), 'add_images', frm.doc.status === 'Active'],
@@ -36,28 +36,36 @@ frappe.ui.form.on('Cluster', {
 					frm.doc.status === 'Active' &&
 					!frm.doc.nat_security_group_id,
 			],
+			[
+				__('Setup VPC Flow Logs'),
+				'setup_vpc_flow_logs',
+				frm.doc.cloud_provider === 'AWS EC2' &&
+					frm.doc.status === 'Active' &&
+					frm.doc.vpc_id &&
+					!frm.doc.vpc_flow_logs_enabled,
+			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
 					label,
 					() => {
-						frm.call(method).then((r) => frm.refresh());
+						frm.call(method).then((r) => frm.refresh())
 					},
 					__('Actions'),
-				);
+				)
 			}
-		});
+		})
 		if (frm.doc.vpc_id) {
 			if (frm.doc.cloud_provider === 'AWS EC2') {
 				frm.add_web_link(
 					`https://${frm.doc.region}.console.aws.amazon.com/vpc/home?region=${frm.doc.region}#VpcDetails:VpcId=${frm.doc.vpc_id}`,
 					__('Visit AWS Dashboard'),
-				);
+				)
 			} else if (frm.doc.cloud_provider === 'OCI') {
 				frm.add_web_link(
 					`https://cloud.oracle.com/networking/vcns/${frm.doc.vpc_id}?region=${frm.doc.region}`,
 					__('Visit OCI Dashboard'),
-				);
+				)
 			}
 		}
 		if (
@@ -80,19 +88,19 @@ frappe.ui.form.on('Cluster', {
 								frappe.show_alert({
 									message: __('Machine is available'),
 									indicator: 'green',
-								});
+								})
 							} else {
 								frappe.show_alert({
 									message: __('Machine is not available'),
 									indicator: 'red',
-								});
+								})
 							}
-						});
+						})
 					},
 					__('Check Machine Availability'),
 					__('Check'),
-				);
-			});
+				)
+			})
 		}
 	},
-});
+})

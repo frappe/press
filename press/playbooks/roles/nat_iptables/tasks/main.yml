@@ -1,5 +1,37 @@
 ---
+- name: Determine Hetzner interface
+  set_fact:
+    primary_interface: >-
+      {{
+        ansible_interfaces
+        | reject('equalto', 'lo')
+        | reject('equalto', 'docker0')
+        | first
+      }}
+  when: cloud_provider == "Hetzner"
+
+# AWS / Frappe Compute
 - name: Add NAT gateway
+  copy:
+    dest: /etc/netplan/99-custom-gateway.yaml
+    content: |
+      network:
+        version: 2
+        ethernets:
+          {{ ansible_default_ipv4.interface }}:
+            dhcp4: true
+            dhcp4-overrides:
+              use-routes: false
+            routes:
+              - to: default
+                via: {{ nat_gateway_ip }}
+  when:
+    - nat_gateway_ip is defined
+    - nat_gateway_ip
+    - cloud_provider in ["AWS EC2", "Frappe Compute"]
+
+# DigitalOcean
+- name: Add NAT override routes
   copy:
     dest: /etc/netplan/99-custom-gateway.yaml
     content: |
@@ -7,10 +39,43 @@
         ethernets:
           {{ ansible_default_ipv4.interface }}:
             routes:
-              - to: default
+              - to: 0.0.0.0/1
                 via: {{ nat_gateway_ip }}
-  when: nat_gateway_ip is defined and nat_gateway_ip
+              - to: 128.0.0.0/1
+                via: {{ nat_gateway_ip }}
+  when:
+    - nat_gateway_ip is defined
+    - nat_gateway_ip
+    - cloud_provider == "DigitalOcean"
 
+# Hetzner
+- name: Configure Hetzner private networking
+  copy:
+    dest: /etc/netplan/99-custom-gateway.yaml
+    content: |
+      network:
+        version: 2
+        ethernets:
+          {{ primary_interface }}:
+            dhcp4: true
+            dhcp4-overrides:
+              use-routes: false
+            routes:
+              - to: default
+                via: {{ network_gateway }}
+                on-link: true
+            nameservers:
+              addresses:
+                - 8.8.8.8
+                - 1.1.1.1
+  when:
+    - cloud_provider == "Hetzner"
+    - network_gateway is defined
+    - nat_gateway_ip is defined
+    - nat_gateway_ip
+    - network_gateway
+
+# Frappe Compute specific
 - name: Configure private interface (Frappe Compute specific)
   copy:
     dest: /etc/netplan/51-private-interface.yaml
@@ -23,12 +88,18 @@
               addresses:
                 - 8.8.8.8
                 - 4.4.4.4
-  when: is_frappe_compute is defined and is_frappe_compute
+  when:
+    - is_frappe_compute is defined
+    - is_frappe_compute
 
 - name: Move original netplan (Frappe Compute specific)
   command: mv /etc/netplan/50-cloud-init.yaml /etc/netplan/50-cloud-init.yaml.bkp
-  when: is_frappe_compute is defined and is_frappe_compute
+  when:
+    - is_frappe_compute is defined
+    - is_frappe_compute
 
 - name: Apply Netplan
   command: netplan apply
-  when: nat_gateway_ip is defined and nat_gateway_ip
+  when: >
+    (nat_gateway_ip is defined and nat_gateway_ip)
+    or cloud_provider == "Hetzner"

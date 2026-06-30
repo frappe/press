@@ -15,6 +15,7 @@
 		"status",
 		"account_request",
 		"agent_job",
+		"tracked_agent_jobs",
 		"cluster",
 		"section_break_zlzx",
 		"site_creation_started_on",
@@ -70,6 +71,12 @@
 			"options": "Agent Job",
 			"read_only": 1,
 			"search_index": 1
+		},
+		{
+			"fieldname": "tracked_agent_jobs",
+			"fieldtype": "Code",
+			"label": "Tracked Agent Jobs",
+			"read_only": 1
 		},
 		{
 			"fieldname": "product_trial",
