@@ -8,6 +8,7 @@
 import { Badge, createResource } from 'frappe-ui'
 import { defineAsyncComponent, h, ref } from 'vue'
 import { toast } from 'vue-sonner'
+import ShieldIcon from '~icons/lucide/shield-user'
 import session from '../../data/session'
 import { getTeam } from '../../data/team'
 import router from '../../router'
@@ -90,6 +91,9 @@ const teamMembersListOptions = ref({
 									: undefined,
 							},
 							{
+								prefix: role.admin_access
+									? () => h(ShieldIcon, { class: 'h-3 w-3 text-red-500' })
+									: undefined,
 								default: () =>
 									h('span', { class: 'truncate min-w-0' }, role.title),
 							},
