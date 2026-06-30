@@ -20,7 +20,7 @@ const user = useUserStore()
 const isInviteOpen = ref(false)
 
 const members = createResource({
-	url: 'run_doc_method',
+	url: 'press.api.client.run_doc_method',
 	auto: true,
 	params: {
 		method: 'get_members',
@@ -31,7 +31,7 @@ const members = createResource({
 })
 
 const removeUser = createResource({
-	url: 'run_doc_method',
+	url: 'press.api.client.run_doc_method',
 	makeParams: (args) => ({
 		method: 'remove_user',
 		dt: 'Team',
@@ -42,7 +42,7 @@ const removeUser = createResource({
 })
 
 const roles = createResource({
-	url: 'run_doc_method',
+	url: 'press.api.client.run_doc_method',
 	auto: true,
 	params: {
 		method: 'get_roles',
@@ -53,7 +53,7 @@ const roles = createResource({
 })
 
 const sendInvitation = createResource({
-	url: 'run_doc_method',
+	url: 'press.api.client.run_doc_method',
 	makeParams: (args) => ({
 		method: 'send_invitation',
 		dt: 'Team',
@@ -64,7 +64,7 @@ const sendInvitation = createResource({
 })
 
 const cancelInvitation = createResource({
-	url: 'run_doc_method',
+	url: 'press.api.client.run_doc_method',
 	makeParams: (args) => ({
 		method: 'cancel_invitation',
 		dt: 'Team',
@@ -75,7 +75,7 @@ const cancelInvitation = createResource({
 })
 
 const updateInvitationRole = createResource({
-	url: 'run_doc_method',
+	url: 'press.api.client.run_doc_method',
 	makeParams: (args) => ({
 		method: 'update_invitation_role',
 		dt: 'Team',
