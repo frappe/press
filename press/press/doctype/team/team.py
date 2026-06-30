@@ -1122,7 +1122,7 @@ class Team(Document):
 				has_admin_access = bool(inv.press_role_admin_access)
 			else:
 				roles = []
-				has_admin_access = inv.press_role == "Admin"
+				has_admin_access = True
 			r.append(
 				{
 					"user": inv.email,
@@ -1157,8 +1157,6 @@ class Team(Document):
 		matched = [r for r in all_roles if r["value"] == role]
 		if matched and matched[0].get("name"):
 			account_request.press_role = matched[0]["name"]
-		else:
-			account_request.press_role = role
 
 	@dashboard_whitelist()
 	@rate_limit(limit=10, seconds=60 * 60)
