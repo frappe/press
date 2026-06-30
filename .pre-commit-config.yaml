@@ -81,6 +81,8 @@ repos:
             types-boto3==1.39.14,
             types-jwt==0.1.3,
             types-setuptools~=81.0,
+            types-stripe~=3.5.2,
+            types-oauthlib~=3.3,
           ]
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
