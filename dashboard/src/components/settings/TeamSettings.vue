@@ -92,7 +92,7 @@ const teamMembersListOptions = ref({
 							},
 							{
 								prefix: role.admin_access
-									? () => h(ShieldIcon, { class: 'h-3 w-3 text-red-500' })
+									? () => h(ShieldIcon, { class: 'h-3 w-3 text-amber-600' })
 									: undefined,
 								default: () =>
 									h('span', { class: 'truncate min-w-0' }, role.title),
