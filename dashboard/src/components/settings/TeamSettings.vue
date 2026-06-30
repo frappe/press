@@ -51,11 +51,12 @@ const teamMembersListOptions = ref({
 		{
 			label: 'User type',
 			type: 'Component',
-			width: '100px',
+			width: '258px',
 			component: ({ row }) => {
 				return h(TeamSettingsUserType, {
 					hasAdminAccess: row.has_admin_access,
 					isOwner: row.user === team.doc.user,
+					isPending: row.status === 'Pending',
 				})
 			},
 		},
@@ -73,16 +74,20 @@ const teamMembersListOptions = ref({
 							{
 								key: role.name,
 								variant: 'subtle',
-								class: 'cursor-pointer max-w-[124px]',
+								class: role.name
+									? 'cursor-pointer max-w-[124px]'
+									: 'max-w-[124px]',
 								style: { marginRight: '4px' },
-								onClick: (e) => {
-									e.preventDefault()
-									e.stopPropagation()
-									router.push({
-										name: 'SettingsPermissionRolePermissions',
-										params: { id: role.name },
-									})
-								},
+								onClick: role.name
+									? (e) => {
+											e.preventDefault()
+											e.stopPropagation()
+											router.push({
+												name: 'SettingsPermissionRolePermissions',
+												params: { id: role.name },
+											})
+										}
+									: undefined,
 							},
 							{
 								default: () =>
@@ -96,7 +101,11 @@ const teamMembersListOptions = ref({
 	],
 	rowActions({ row }) {
 		let team = getTeam()
-		if (row.user === team.doc.user || row.user === team.doc.user_info?.name)
+		if (
+			row.status === 'Pending' ||
+			row.user === team.doc.user ||
+			row.user === team.doc.user_info?.name
+		)
 			return []
 		return [
 			{
