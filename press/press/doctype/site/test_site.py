@@ -581,6 +581,31 @@ class TestSite(FrappeTestCase):
 		self.assertIsNotNone(site.site_usage_exceeded_on)
 		self.assertEqual(site.status, "Active")
 
+	def test_sync_info_database_only_refreshes_db_size_and_carries_files_forward(self):
+		site = create_test_site()
+		frappe.get_doc(
+			{
+				"doctype": "Site Usage",
+				"site": site.name,
+				"database": 100,
+				"public": 200,
+				"private": 300,
+				"backups": 400,
+			}
+		).insert()
+
+		# In database_only mode the agent returns only the database size; the
+		# file totals must be carried forward, not recomputed (no file walk).
+		with patch.object(Site, "fetch_info", return_value={"usage": {"database": 150}}) as fetch_info:
+			site.sync_info(database_only=True)
+
+		fetch_info.assert_called_once_with(database_only=True)
+		latest = frappe.get_last_doc("Site Usage", {"site": site.name})
+		self.assertEqual(latest.database, 150)
+		self.assertEqual(latest.public, 200)
+		self.assertEqual(latest.private, 300)
+		self.assertEqual(latest.backups, 400)
+
 	def test_free_sites_ignore_usage_exceed_tracking(self):
 		team = create_test_team(free_account=False)
 		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
