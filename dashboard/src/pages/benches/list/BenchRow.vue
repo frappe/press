@@ -296,7 +296,7 @@ const defaultSiteStatusBadge = { theme: 'gray' as const, dot: 'bg-surface-gray-4
 		</div>
 
 		<template v-else-if="sites.data?.length">
-			<div class="bench-grid px-2 py-2 text-xs text-ink-gray-5 border-b dark:border-outline-gray-2 items-center">
+			<div class="bench-grid px-2 py-2 text-xs text-ink-gray-5 items-center">
 				<span />
 				<span class="pl-6">Site</span>
 				<span>Status</span>
