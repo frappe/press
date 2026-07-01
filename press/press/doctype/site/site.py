@@ -1210,6 +1210,9 @@ class Site(Document, TagHelpers):
 		database_server = frappe.get_doc("Database Server", self.database_server_name)
 		current_timeout = database_server.get_mariadb_variable_value("max_statement_time")
 		current_timeout = int(float(current_timeout)) if current_timeout else DEFAULT_MAX_STATEMENT_TIME
+		if not current_timeout:
+			# 0 means no limit — increasing would impose one. Leave the server unlimited.
+			return current_timeout, current_timeout
 		new_timeout = current_timeout + increment
 		self.set_max_statement_time(new_timeout)
 		return current_timeout, new_timeout

@@ -548,7 +548,16 @@ class SiteUpdate(Document):
 		# and get killed, so bump it by an hour first. Small databases aren't at risk.
 		if self.deploy_type != "Migrate" or site.database_size <= LARGE_DATABASE_SIZE:
 			return
-		old_timeout, new_timeout = site.increase_max_statement_time()
+		# This is a best-effort optimization; a failure here (e.g. Ansible can't reach the
+		# database server) must not abort the recovery, which is the whole point of this flow.
+		try:
+			old_timeout, new_timeout = site.increase_max_statement_time()
+		except Exception:
+			log_error("Failed to bump max_statement_time before recovery", site_update=self.name)
+			return
+		if not old_timeout:
+			# The server had no limit, so nothing was bumped and nothing needs restoring.
+			return
 		# Stash the old value so restore_max_statement_time can put it back once recovery ends.
 		self.db_set("previous_max_statement_time", old_timeout)
 		self.add_comment(

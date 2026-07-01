@@ -759,6 +759,34 @@ class TestSiteUpdate(FrappeTestCase):
 			"The stashed value should be cleared after restoring",
 		)
 
+	@patch.object(DatabaseServer, "_update_mariadb_system_variables", new=Mock())
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_recovery_does_not_bump_unlimited_max_statement_time(self):
+		# max_statement_time = 0 means no limit; bumping it would impose one, so the recovery
+		# leaves it alone and stashes nothing (a stashed 0 could never be told from "not bumped").
+		group = create_test_release_group([create_test_app()])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench.name)
+		site.set_max_statement_time(0)
+		frappe.get_doc(
+			{"doctype": "Site Usage", "site": site.name, "database": LARGE_DATABASE_SIZE + 1}
+		).insert()
+		site_update = create_test_site_update(site.name, bench.group, "Pending", ignore_validate=True)
+		site_update.deploy_type = "Migrate"
+
+		site_update.bump_max_statement_time_before_recovery(site)
+
+		self.assertFalse(
+			site_update.previous_max_statement_time,
+			"An unlimited max_statement_time must not be stashed",
+		)
+		database_server = frappe.get_doc("Database Server", site.database_server_name)
+		self.assertEqual(
+			int(float(database_server.get_mariadb_variable_value("max_statement_time"))),
+			0,
+			"An unlimited max_statement_time must stay unlimited",
+		)
+
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 	def test_successful_migrate_recovery_does_not_restore_site_tables(self):
 		# When the recovery itself succeeds there is nothing left to restore, so the
