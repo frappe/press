@@ -35,6 +35,7 @@ from press.press.doctype.site.site import (
 	Site,
 	archive_suspended_sites,
 	notify_sites_before_archival,
+	process_new_site_job_update,
 	process_rename_site_job_update,
 	suspend_sites_exceeding_disk_usage_for_last_14_days,
 )
@@ -680,6 +681,55 @@ class TestSite(FrappeTestCase):
 		self.assertFalse(site.site_usage_exceeded)
 		self.assertIsNone(site.site_usage_exceeded_on)
 		self.assertEqual(site.status, "Active")
+
+	def test_subscription_is_disabled_when_site_creation_fails(self):
+		"""A failed site creation must disable the subscription so the user isn't billed (#6110)."""
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		plan = create_test_plan("Site", plan_name="USD 10")
+		site: Site = create_test_site(plan=plan.name)
+		site.create_subscription(plan=plan.name)
+
+		subscription = frappe.get_doc("Subscription", {"document_type": "Site", "document_name": site.name})
+		self.assertTrue(subscription.enabled)
+
+		job = create_test_agent_job("New Site", server=site.server, status="Failure")
+		job.db_set("site", site.name)
+
+		process_new_site_job_update(job)
+
+		self.assertEqual(frappe.db.get_value("Site", site.name, "status"), "Broken")
+		self.assertFalse(frappe.db.get_value("Subscription", subscription.name, "enabled"))
+
+	def test_subscription_is_reenabled_when_site_recovers_to_active(self):
+		"""A site recovering from a failed creation (retry/restore success) must re-enable the subscription (#6110)."""
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		plan = create_test_plan("Site", plan_name="USD 10")
+		site: Site = create_test_site(plan=plan.name)
+		site.create_subscription(plan=plan.name)
+		subscription = frappe.get_doc("Subscription", {"document_type": "Site", "document_name": site.name})
+
+		# Reproduce the disabled + Broken state left behind by a failed creation.
+		site.disable_subscription()
+		frappe.db.set_value("Site", site.name, "status", "Broken")
+		self.assertFalse(frappe.db.get_value("Subscription", subscription.name, "enabled"))
+
+		# Both creation jobs now succeed (retry / restore).
+		create_test_agent_job("Add Site to Upstream", server=site.server, status="Success").db_set(
+			"site", site.name
+		)
+		success_job = create_test_agent_job("New Site", server=site.server, status="Success")
+		success_job.db_set("site", site.name)
+
+		with (
+			patch.object(Site, "sync_apps", new=Mock()),
+			patch("press.press.doctype.site.site.marketplace_app_hook", new=Mock()),
+		):
+			process_new_site_job_update(success_job)
+
+		self.assertEqual(frappe.db.get_value("Site", site.name, "status"), "Active")
+		self.assertTrue(frappe.db.get_value("Subscription", subscription.name, "enabled"))
 
 	def test_reset_disk_usage_exceed_alert_on_changing_plan(self):
 		team = create_test_team()

@@ -49,6 +49,7 @@
 		"referral_source",
 		"url_args",
 		"referrer_id",
+		"pulse_anonymous_id",
 		"section_break_31",
 		"geo_location"
 	],
@@ -185,6 +186,14 @@
 			"fieldname": "referrer_id",
 			"fieldtype": "Data",
 			"label": "Referrer ID"
+		},
+		{
+			"fieldname": "pulse_anonymous_id",
+			"fieldtype": "Data",
+			"label": "Pulse Anonymous ID",
+			"read_only": 1,
+			"no_copy": 1,
+			"description": "Pre-signup anonymous (anon_…) id forwarded from the product website as ?aid=… ; aliased to the account user at team creation."
 		},
 		{
 			"default": "0",

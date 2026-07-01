@@ -8,6 +8,7 @@ import typing
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.core.utils import find
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
@@ -384,6 +385,77 @@ class TestServer(FrappeTestCase):
 		)
 		self.assertEqual(len(incidents), 1)
 		self.assertEqual(incidents[0].server, self.high_mem_server.name)
+
+	def test_validate_mounts_seeds_snapshot_volume_not_doomed_default_volume(self):
+		"""A server built from a data disk snapshot first boots with the VMI's default data
+		volume, which is then deleted and replaced by the volume created from the snapshot.
+		validate_mounts must not seed mounts off the doomed default volume — otherwise the
+		mount keeps a deleted volume id and its by-id device path, and the Mount Volumes
+		playbook fails. It should seed only after the snapshot volume is attached."""
+		database_server = create_test_database_server()
+		virtual_machine = database_server.virtual_machine
+		default_volume_id = f"vol-{frappe.generate_hash(11)}"
+		snapshot_volume_id = f"vol-{frappe.generate_hash(11)}"
+
+		# VM has booted with root + the VMI's default data volume, snapshot swap still pending
+		self._set_virtual_machine_volumes(
+			virtual_machine,
+			[
+				{"device": "/dev/sda1", "size": 8, "volume_id": f"vol-{frappe.generate_hash(11)}"},
+				{"device": "/dev/sdf", "size": 600, "volume_id": default_volume_id},
+			],
+		)
+		frappe.db.set_value(
+			"Virtual Machine",
+			virtual_machine,
+			{
+				"has_data_volume": True,
+				"data_disk_snapshot": "dummy-snapshot",
+				"data_disk_snapshot_attached": False,
+			},
+		)
+
+		database_server.validate_mounts()
+		self.assertEqual(
+			len(database_server.mounts),
+			0,
+			"Mounts must not be seeded off the default volume while the snapshot swap is pending",
+		)
+
+		# Default volume deleted, snapshot volume created and attached
+		self._set_virtual_machine_volumes(
+			virtual_machine,
+			[
+				{"device": "/dev/sda1", "size": 8, "volume_id": f"vol-{frappe.generate_hash(11)}"},
+				{"device": "/dev/sdf", "size": 600, "volume_id": snapshot_volume_id},
+			],
+		)
+		frappe.db.set_value("Virtual Machine", virtual_machine, "data_disk_snapshot_attached", True)
+
+		database_server.validate_mounts()
+
+		volume_mount = find(database_server.mounts, lambda m: m.mount_type == "Volume")
+		self.assertIsNotNone(volume_mount, "A volume mount should be seeded after the snapshot is attached")
+		self.assertEqual(volume_mount.volume_id, snapshot_volume_id)
+		self.assertNotEqual(volume_mount.volume_id, default_volume_id)
+		self.assertIn(snapshot_volume_id.replace("-", ""), volume_mount.source)
+
+	def _set_virtual_machine_volumes(self, virtual_machine: str, volumes: list[dict]):
+		frappe.db.delete("Virtual Machine Volume", {"parent": virtual_machine})
+		for volume in volumes:
+			frappe.get_doc(
+				{
+					"doctype": "Virtual Machine Volume",
+					"parenttype": "Virtual Machine",
+					"parent": virtual_machine,
+					"parentfield": "volumes",
+					"volume_type": "gp3",
+					"throughput": 125,
+					"device": volume["device"],
+					"size": volume["size"],
+					"volume_id": volume["volume_id"],
+				}
+			).insert()
 
 	def test_disable_auto_storage_on_database_server_clears_db_flag_not_app_flag(self):
 		database_server = create_test_database_server()

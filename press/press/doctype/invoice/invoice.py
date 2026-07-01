@@ -271,7 +271,9 @@ class Invoice(Document):
 
 	def before_submit(self):
 		if self.total > 0 and self.status != "Paid":
-			frappe.throw("Invoice must be Paid to be submitted")
+			frappe.throw(
+				"An invoice with a balance due can only be submitted once it is Paid. Please collect or record the payment first."
+			)
 
 	def calculate_values(self):
 		if self.status == "Paid" and self.docstatus == 1:

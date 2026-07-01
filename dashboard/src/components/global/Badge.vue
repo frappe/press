@@ -39,6 +39,7 @@ export default {
 				'Update Available': 'blue',
 				Enabled: 'blue',
 				'Awaiting Approval': 'orange',
+				'Deploying': 'blue',
 				'Awaiting Deploy': 'orange',
 				Success: 'green',
 				Completed: 'green',

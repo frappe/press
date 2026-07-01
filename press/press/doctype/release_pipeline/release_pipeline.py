@@ -192,6 +192,7 @@ class ReleasePipeline(WorkflowBuilder):
 			{"doctype": "Release Pipeline", "name": self.name},
 			doctype="Release Pipeline",
 			docname=self.name,
+			after_commit=True,
 		)
 
 		if status == "Failure":

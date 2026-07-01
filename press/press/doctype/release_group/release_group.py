@@ -1038,11 +1038,13 @@ class ReleaseGroup(Document, TagHelpers):
 
 		if self.team != get_current_team():
 			frappe.throw(
-				"You should belong to the team owning the bench to initiate a bench ownership transfer."
+				"Only a member of the team that owns this bench group can transfer it. Please switch to the owning team and try again."
 			)
 
 		if not frappe.db.exists("Team", {"user": team_mail_id, "enabled": 1}):
-			frappe.throw("No Active Team record found.")
+			frappe.throw(
+				"We couldn't find an active team with that email. Please check the address and make sure the recipient has an active Frappe Cloud account."
+			)
 
 		old_team = frappe.db.get_value("Team", self.team, "user")
 
@@ -1170,6 +1172,9 @@ class ReleaseGroup(Document, TagHelpers):
 	def status(self):
 		if not self.enabled:
 			return "Disabled"
+
+		if self.deploy_in_progress or self.has_running_release_pipeline:
+			return "Deploying"
 
 		active_benches = frappe.db.get_all(
 			"Bench", {"group": self.name, "status": "Active"}, limit=1, order_by="creation desc"
@@ -1548,7 +1553,9 @@ class ReleaseGroup(Document, TagHelpers):
 		if source:
 			source = source[0]
 		else:
-			frappe.throw("Release group app does not exist!")
+			frappe.throw(
+				"This app isn't part of the bench group. Please add the app to the bench group before trying this again."
+			)
 
 		return frappe.get_doc("App Source", source)
 
@@ -1707,7 +1714,9 @@ class ReleaseGroup(Document, TagHelpers):
 		path_parts = parsed_url.path.strip("/").split("/")
 
 		if len(path_parts) < 2:
-			frappe.throw("Invalid repository URL for app!")
+			frappe.throw(
+				"This doesn't look like a valid Git repository URL. Please use the full repository URL, for example https://github.com/owner/repo."
+			)
 
 		with suppress(frappe.ValidationError):
 			validate_frappe_version_for_branch(
@@ -1900,7 +1909,9 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 			)
 
 			if not servers:
-				frappe.throw("No servers found for new benches!")
+				frappe.throw(
+					"There are no available servers to place new benches on. Please add a server to this bench group, or contact support if you expected one to be available."
+				)
 			else:
 				server = servers[0]
 

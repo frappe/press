@@ -527,6 +527,7 @@
 		"QTEXT",
 		"Qyzylorda",
 		"rcfile",
+		"rclone",
 		"rdata",
 		"rdatatype",
 		"recognise",
@@ -795,6 +796,7 @@
 		"UDF",
 		"mcp",
 		"hicm",
-		"kcore"
+		"kcore",
+		"MRR"
 	]
 }

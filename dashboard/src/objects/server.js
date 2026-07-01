@@ -14,6 +14,11 @@ import { tagTab } from './common/tags';
 
 export default {
 	doctype: 'Server',
+	list: {
+		title: 'Servers',
+		route: '/servers',
+		component: () => import('../pages/servers/list/Page.vue'),
+	},
 	whitelistedMethods: {
 		increaseDiskSize: 'increase_disk_size_for_server',
 		configureAutoAddStorage: 'configure_auto_add_storage',
@@ -34,102 +39,6 @@ export default {
 		scaleDown: 'scale_down',
 		addAutomatedScalingTriggers: 'add_automated_scaling_triggers',
 		removeAutomatedScalingTriggers: 'remove_automated_scaling_triggers',
-	},
-	list: {
-		route: '/servers',
-		title: 'Servers',
-		fields: [
-			'title',
-			'database_server',
-			'plan.title as plan_title',
-			'plan.price_usd as price_usd',
-			'plan.price_inr as price_inr',
-			'cluster.image as cluster_image',
-			'cluster.title as cluster_title',
-			'is_unified_server',
-		],
-		searchField: 'title',
-		filterControls() {
-			return [
-				{
-					type: 'select',
-					label: 'Status',
-					fieldname: 'status',
-					options: ['', 'Active', 'Pending', 'Archived'],
-				},
-				{
-					type: 'select',
-					label: 'Region',
-					fieldname: 'cluster',
-					options: [
-						'',
-						'Bahrain',
-						'Cape Town',
-						'Frankfurt',
-						'KSA',
-						'London',
-						'Mumbai',
-						'Singapore',
-						'UAE',
-						'Virginia',
-						'Zurich',
-					],
-				},
-			];
-		},
-		orderBy: 'creation desc',
-		columns: [
-			{
-				label: 'Server',
-				fieldname: 'name',
-				width: 1.5,
-				class: 'font-medium',
-				format(value, row) {
-					return row.title || value;
-				},
-			},
-			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.8 },
-			{
-				label: 'App Server Plan',
-				format(value, row) {
-					return planTitle(row);
-				},
-			},
-			{
-				label: 'Database Server Plan',
-				fieldname: 'db_plan',
-				format(value, row) {
-					if (!value || row.is_unified_server) return '';
-					return planTitle(value);
-				},
-			},
-			{
-				label: 'Region',
-				fieldname: 'cluster',
-				format(value, row) {
-					return row.cluster_title || value;
-				},
-				prefix(row) {
-					return h('img', {
-						src: row.cluster_image,
-						class: 'w-4 h-4',
-						alt: row.cluster_title,
-					});
-				},
-			},
-		],
-		primaryAction({ listResource: servers }) {
-			return {
-				label: 'New Server',
-				variant: 'solid',
-				slots: {
-					prefix: icon('plus'),
-				},
-				onClick() {
-					router.push({ name: 'New Server' });
-				},
-			};
-		},
 	},
 	detail: {
 		titleField: 'name',
@@ -316,6 +225,16 @@ export default {
 								label: 'Status',
 								fieldname: 'status',
 								options: ['', 'Active', 'Inactive', 'Suspended', 'Broken'],
+							},
+							{
+								type: 'select',
+								label: 'Plan',
+								fieldname: 'plan.support_included',
+								options: [
+									{ label: 'All', value: null },
+									{ label: 'Supported', value: '1' },
+									{ label: 'Not Supported', value: '0' },
+								],
 							},
 							{
 								type: 'link',

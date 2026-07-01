@@ -50,7 +50,7 @@ def create_self_hosted_server(server_details, team, proxy_server):
 
 def validate_team(team):
 	if not team:
-		frappe.throw("You must be part of a team to create a new server")
+		frappe.throw("You must belong to a team to create a new server. Please create or join a team first.")
 
 	if not team.enabled:
 		frappe.throw("You cannot create a new server because your account is disabled")
