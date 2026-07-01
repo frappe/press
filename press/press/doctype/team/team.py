@@ -295,29 +295,6 @@ class Team(Document):
 		self.validate_billing_team()
 		self.reject_reenabling_team_for_banned_team()
 
-<<<<<<< HEAD
-	def validate_member_role(self):
-		"""
-		Validate that the role assigned to each team member is a valid role.
-		This is to prevent any issues with role-based access control and ensure
-		that team members have the correct permissions based on their assigned
-		roles.
-		"""
-		# Get a list of valid roles for this team.
-		roles = [role["label"] for role in get_roles(self.name)]
-		# Validate that each team member has a valid role assigned.
-		for member in self.team_members:
-			# If the role is not in the list of valid roles, throw an error.
-			if member.role not in roles:
-				frappe.throw(
-					_("{0} is not a valid role. Please select a valid role for {1}").format(
-						member.role,
-						member.user,
-					)
-				)
-
-=======
->>>>>>> e5ff838bb (chore(roles): Removed pre-defined roles)
 	def before_insert(self):
 		self.currency = "INR" if self.country == "India" else "USD"
 
@@ -1140,13 +1117,9 @@ class Team(Document):
 
 	def _validate_role(self, role: str, all_roles=None):
 		all_roles = all_roles or get_roles(str(self.name))
-<<<<<<< HEAD
-		valid_roles = {r["value"] for r in all_roles} | {r["name"] for r in all_roles if r.get("name")}
-=======
 		# Accept both the role title and the Press Role document name, since
 		# the invite dialog sends the document name while other callers may use the title.
 		valid_roles = {r["value"] for r in all_roles} | {r["name"] for r in all_roles}
->>>>>>> e5ff838bb (chore(roles): Removed pre-defined roles)
 		if role not in valid_roles:
 			frappe.throw(
 				_('Invalid role "{0}". Must be one of: {1}').format(
@@ -1155,16 +1128,6 @@ class Team(Document):
 				frappe.ValidationError,
 			)
 
-<<<<<<< HEAD
-=======
-	def _set_invitation_role(self, account_request: AccountRequest, role: str, all_roles=None):
-		if all_roles is None:
-			all_roles = get_roles(str(self.name))
-		matched = [r for r in all_roles if r["value"] == role or r.get("name") == role]
-		if matched and matched[0].get("name"):
-			account_request.press_role = matched[0]["name"]
-
->>>>>>> e5ff838bb (chore(roles): Removed pre-defined roles)
 	def _get_invitation_role(self, roles) -> str | None:
 		if isinstance(roles, str):
 			try:
@@ -1185,8 +1148,6 @@ class Team(Document):
 
 	def _set_invitation_role(self, account_request: AccountRequest, role: str, all_roles=None):
 		if all_roles is None:
-			from press.press.doctype.team.team_members import get_roles
-
 			all_roles = get_roles(str(self.name))
 		matched = [r for r in all_roles if r["value"] == role or r.get("name") == role]
 		if matched and matched[0].get("name"):

@@ -1,10 +1,26 @@
+from contextlib import contextmanager
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests.ui_test_helpers import create_test_user
 
-from press.api.account import signup, validate_pincode
+from press.api.account import accept_team_invite, signup, validate_pincode
 from press.press.doctype.account_request.account_request import AccountRequest
+from press.press.doctype.team.test_team import create_test_team
+
+
+@contextmanager
+def user_context(user: str):
+	"""Run the wrapped block as `user`, restoring the session afterwards."""
+	session_user = frappe.session.user
+	session_data = frappe.session.data.copy()
+	try:
+		frappe.set_user(user)
+		yield
+	finally:
+		frappe.set_user(session_user)
+		frappe.session.data = session_data
 
 
 class TestAccountApi(TestCase):
@@ -12,6 +28,21 @@ class TestAccountApi(TestCase):
 
 	def tearDown(self):
 		frappe.db.rollback()
+
+	def _create_invite(self, team, email):
+		"""Create a pending team invitation (Account Request) and return its key."""
+		key = frappe.generate_hash(length=32)
+		frappe.get_doc(
+			{
+				"doctype": "Account Request",
+				"team": team.name,
+				"email": email,
+				"invited_by": team.user,
+				"request_key": key,
+				"request_key_expiration_time": frappe.utils.add_days(frappe.utils.now_datetime(), 1),
+			}
+		).insert(ignore_permissions=True)
+		return key
 
 	def _fake_signup(self, email: str | None = None) -> Mock:
 		"""Call press.api.account.signup without sending verification mail."""
@@ -26,8 +57,6 @@ class TestAccountApi(TestCase):
 		acc_req_count_after = frappe.db.count("Account Request")
 		self.assertGreater(acc_req_count_after, acc_req_count_before)
 
-<<<<<<< HEAD
-=======
 	def test_invite_team_member_accepts_custom_role_by_press_role_name(self):
 		"""The invite dialog sends the Press Role document name (a hash) for
 		custom roles, not the title. invite_team_member must accept it and store
@@ -142,7 +171,6 @@ class TestAccountApi(TestCase):
 			frappe.db.get_value("Account Request", {"team": team.name, "email": invited}, "request_key")
 		)
 
->>>>>>> e5ff838bb (chore(roles): Removed pre-defined roles)
 	def test_pincode_is_correctly_set(self):
 		"""Test if pincode is correctly set on account creation."""
 		test_billing_details = frappe._dict(
