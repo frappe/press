@@ -243,7 +243,7 @@ onBeforeUnmount(() => {
 		<template #header="{ opened, toggle }">
 			<div
 				:class="[
-					'row-grid pl-6 pr-4 py-2 cursor-pointer items-center',
+					'row-grid px-4 py-2 cursor-pointer items-center',
 					(totalLength - 1 == bench_i && opened) || bench_i != totalLength - 1
 						? 'bordered'
 						: '',
@@ -253,7 +253,7 @@ onBeforeUnmount(() => {
 				}"
 			>
 				<LucideChevronRight
-					class="shrink-0 size-4 transition-transform duration-300"
+					class="shrink-0 size-4 justify-self-end transition-transform duration-300"
 					:class="opened ? 'rotate-90' : ''"
 				/>
 
@@ -337,7 +337,7 @@ onBeforeUnmount(() => {
 
 		<div
 			v-if="sites?.data?.length > 0"
-			class="row-grid px-6 pr-4 py-2 items-center text-sm text-ink-gray-5"
+			class="row-grid px-4 py-2 items-center text-sm text-ink-gray-5"
 		>
 			<span />
 			<span class="ml-6">Site</span>
@@ -348,7 +348,7 @@ onBeforeUnmount(() => {
 
 		<div
 			v-else-if="!sites?.list?.loading"
-			class="row-grid px-6 pr-4 py-2"
+			class="row-grid px-4 py-2"
 			:class="[bench_i != totalLength - 1 ? 'bordered' : '']"
 		>
 			<span />
@@ -368,7 +368,7 @@ onBeforeUnmount(() => {
 			v-for="(site, site_i) in sites?.data"
 			:key="site.name"
 			:class="[
-				'row-grid px-6 pr-4 py-2 items-center',
+				'row-grid px-4 py-2 items-center',
 				site_i != sites?.data?.length - 1 || bench_i != totalLength - 1
 					? 'bordered'
 					: '',
@@ -418,7 +418,7 @@ onBeforeUnmount(() => {
 
 		<div
 			v-if="sites.hasNextPage"
-			class="px-6 py-2 border-t dark:border-outline-gray-2"
+			class="px-4 py-2 border-t dark:border-outline-gray-2"
 		>
 			<Button
 				variant="ghost"
