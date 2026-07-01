@@ -69,6 +69,7 @@ class Cluster(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		auto_cluster_triggered: DF.Check
 		availability_zone: DF.Data | None
 		aws_access_key_id: DF.Data | None
 		aws_secret_access_key: DF.Password | None
@@ -84,6 +85,7 @@ class Cluster(Document):
 		description: DF.Data | None
 		digital_ocean_api_token: DF.Password | None
 		disable_public_ips_for_servers: DF.Check
+		enable_auto_cluster: DF.Check
 		enable_autoscaling: DF.Check
 		enable_periodic_flush_table: DF.Check
 		flow_log_id: DF.Data | None
@@ -97,6 +99,7 @@ class Cluster(Document):
 		hetzner_api_token: DF.Password | None
 		hybrid: DF.Check
 		image: DF.AttachImage | None
+		max_servers: DF.Int
 		monitoring_password: DF.Password | None
 		nat_security_group_id: DF.Data | None
 		network_acl_id: DF.Data | None
@@ -1988,6 +1991,7 @@ class Cluster(Document):
 		kms_key_id: str | None = None,
 		is_secondary: bool = False,
 		primary: str | None = None,
+		public: bool = False,
 	) -> tuple[BaseServer | MonitorServer | LogServer, PressJob]:
 		"""Creates a server for the cluster
 
@@ -2094,6 +2098,12 @@ class Cluster(Document):
 		if create_subscription:
 			server.plan = plan.name
 
+		# Mark the App Server as public when requested (e.g. auto-cluster
+		# creation).  The Server.on_update hook will sync the flag to the
+		# linked Database Server automatically.
+		if public and doctype == "Server":
+			server.public = True
+
 		server.save()
 
 		if create_subscription:
@@ -2176,6 +2186,27 @@ class Cluster(Document):
 
 			return best_plan
 		return None
+
+	def get_running_vm_count(self) -> int:
+		"""Returns count of active (non-terminated, non-stopped) VMs in this cluster."""
+		return frappe.db.count(
+			"Virtual Machine",
+			{
+				"cluster": self.name,
+				"status": ("!=", "Terminated"),
+			},
+		)
+
+	@frappe.whitelist()
+	def create_derived_cluster(self):
+		doc = frappe.get_doc(
+			{
+				"doctype": "Cluster Creation",
+				"source_cluster": self.name,
+				"status": "Pending",
+			}
+		).insert(ignore_permissions=True)
+		return f"Queued {doc.name}"
 
 	def get_nat_server_if_supported(self):
 		if self.disable_public_ips_for_servers and self.cloud_provider in (
