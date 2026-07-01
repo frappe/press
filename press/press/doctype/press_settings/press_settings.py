@@ -421,7 +421,7 @@ def check_twilio_balance():
 
 		balance = float(response.json()["balance"])
 
-		if balance < 0 or not settings.deadman_server:
+		if balance <= 0 or not settings.deadman_server:
 			return
 
 		deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
