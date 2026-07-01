@@ -94,21 +94,7 @@ const pipeline = props.deployview
 				const wiredId = 'release-pipeline' + props.id
 
 				const statuses = data?.steps?.stages?.map((x) => x.status)
-
-				// sometimes when build status fails and socket doesnt emit properly
-				// fallback to reloading pipeline after some interval
-				if (statuses?.includes('Failure')) {
-					fetchSetErrs()
-
-					if (
-						!wired.has('bugged-pipeline') &&
-						pipeline?.doc?.status != 'Failure'
-					) {
-						wired.add('bugged-pipeline')
-
-						setTimeout(() => pipeline.reload(), 1.5 * 60 * 1000)
-					}
-				}
+				if (statuses?.includes('Failure')) fetchSetErrs()
 
 				if (
 					['Pending', 'Running'].includes(data.status) &&
@@ -257,6 +243,13 @@ watch(
 	{ immediate: true },
 )
 
+watch(
+	() => pipeline?.doc?.status,
+	(x) => {
+		if (x == 'Failure') fetchSetErrs()
+	},
+)
+
 const handleAgentJobUpdate = (data) => {
 	const job = agentJobs?.value?.[data.id]
 	if (job?.doc) job.doc = { ...job.doc, ...data }
@@ -265,7 +258,7 @@ const handleAgentJobUpdate = (data) => {
 watch(
 	() => agentJobIds?.value,
 	(ids: string[]) => {
-		if (props.deployview || !ids) {
+		if (props.deployview || !ids || pipeline?.doc?.status !== 'Running') {
 			return
 		}
 
@@ -278,11 +271,7 @@ watch(
 				})
 			}
 
-			if (
-				socket &&
-				!wired.has(`job:${id}`) &&
-				pipeline?.doc?.status === 'Running'
-			) {
+			if (socket && !wired.has(`job:${id}`)) {
 				socket.emit('doc_subscribe', 'Agent Job', id)
 				wired.add(`job:${id}`)
 			}
@@ -557,16 +546,8 @@ const stopBuild = () => {
 
 				<!-- list of errors -->
 				<template v-else>
-<<<<<<< HEAD
 					<div v-for='x in errList' class="flex flex-col gap-1">
 						<Collapsable headerCss="py-3" class="mb-3" opened>
-=======
-					<div
-						v-for='x in [...errors?.data || [], ...warnings?.data || []]?.filter(x => x.document_name == activeBuildId)'
-						class="flex flex-col gap-1"
-					>
-						<Collapsable headerCss="py-3" class="mb-3">
->>>>>>> ddca27fc0 (refactor(Collapsable): ditch extra <details> <summary tags)
 							<template #prefix>
 								<StatusIcon
 									:status="x.class == 'Error' ? 'Failed' : 'Warning'"
