@@ -70,7 +70,7 @@ const serverActions = (server) => [
 			<div class="flex flex-wrap gap-1.5 items-center">
 				<Tooltip text="Go to server dashboard">
 					<router-link :to="`/servers/${data.name}`" class="hover:underline">
-						<span class="font-medium text-lg">{{ data?.title }}</span>
+						<span class="font-medium text-lg">{{ data?.title || data?.name }}</span>
 					</router-link>
 				</Tooltip>
 
@@ -100,7 +100,7 @@ const serverActions = (server) => [
 		</div>
 
 		<!-- benches header -->
-		<div class="row-grid pl-6 pr-4 pt-4 items-center text-ink-gray-5 text-sm">
+		<div class="row-grid px-4 pt-4 items-center text-ink-gray-5 text-sm">
 			<span />
 			<template v-if="benches?.data?.length">
 				<span>Bench</span>
