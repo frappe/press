@@ -405,6 +405,9 @@ class PressSettings(Document):
 def check_twilio_balance():
 	settings: PressSettings = frappe.get_single("Press Settings")
 
+	if not settings.twilio_account_sid or not settings.twilio_api_key_sid:
+		return
+
 	try:
 		response = requests.get(
 			f"https://api.twilio.com/2010-04-01/Accounts/{settings.twilio_account_sid}/Balance.json",
