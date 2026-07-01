@@ -1122,15 +1122,27 @@ class Site(Document, TagHelpers):
 			app, self.backup_space_required_on_app, no_increase=no_increase, purpose="backup site"
 		)
 
+	def db_server_restore_space(
+		self, app: Server, db: DatabaseServer, db_required: int, app_required: int
+	) -> int:
+		"""Disk space the database server needs for a restore.
+
+		On a unified server the app and database share one disk, so the database
+		server's disk must also accommodate the app-side restore files.
+		"""
+		if db.private_ip == app.private_ip:
+			return db_required + app_required
+		return db_required
+
 	def check_space_on_server_for_restore(self):
 		app: Server = frappe.get_doc("Server", self.server)
 		self.check_and_increase_disk(app, self.restore_space_required_on_app)
 
 		if app.database_server:
 			db: DatabaseServer = frappe.get_doc("Database Server", app.database_server)
-			space_required = self.restore_space_required_on_db
-			if db.private_ip == app.private_ip:
-				space_required += self.restore_space_required_on_app
+			space_required = self.db_server_restore_space(
+				app, db, self.restore_space_required_on_db, self.restore_space_required_on_app
+			)
 			self.check_and_increase_disk(db, space_required)
 
 	def create_agent_request(self):
@@ -2121,9 +2133,9 @@ class Site(Document, TagHelpers):
 			frappe.throw(f"Could not login as {user}", frappe.ValidationError)  # nosemgrep
 		return sid
 
-	def fetch_info(self):
+	def fetch_info(self, database_only=False):
 		agent = Agent(self.server)
-		return agent.get_site_info(self)
+		return agent.get_site_info(self, database_only=database_only)
 
 	def fetch_analytics(self):
 		agent = Agent(self.server)
@@ -2162,6 +2174,24 @@ class Site(Document, TagHelpers):
 			self._update_configuration(new_config, save=False)
 			return True
 		return False
+
+	def _sync_database_usage(self, fetched_usage: dict):
+		"""Record a Site Usage row, refreshing only the database size.
+
+		Carries the last-known file sizes forward so a database-usage refresh
+		doesn't trigger the expensive file-tree walk in the agent's get_usage.
+		"""
+		last = self.get_disk_usages()
+		self._insert_site_usage(
+			{
+				"database": fetched_usage["database"],
+				"database_free": fetched_usage.get("database_free", 0),
+				"database_free_tables": fetched_usage.get("database_free_tables", []),
+				"public": last["public"] or 0,
+				"private": last["private"] or 0,
+				"backups": last["backups"] or 0,
+			}
+		)
 
 	def _sync_usage_info(self, fetched_usage: dict):
 		"""Generate a Site Usage doc for the site using the fetched_usage data.
@@ -2240,12 +2270,16 @@ class Site(Document, TagHelpers):
 		return False
 
 	@frappe.whitelist()
-	def sync_info(self, data=None):
+	def sync_info(self, data=None, database_only: bool = False):
 		"""Updates Site Usage, site.config and timezone details for site."""
 		if not data:
-			data = self.fetch_info()
+			data = self.fetch_info(database_only=database_only)
 
 		if not data:
+			return
+
+		if database_only:
+			self._sync_database_usage(data["usage"])
 			return
 
 		fetched_usage = data["usage"]
@@ -3998,7 +4032,7 @@ class Site(Document, TagHelpers):
 	def refresh_database_usage(self):
 		# Check if schema parser enabled on db server
 		if not frappe.db.get_value("Database Server", self.database_server_name, "enable_schema_size_parser"):
-			self.sync_info()
+			self.sync_info(database_only=True)
 			return {
 				"synced": True,
 			}
@@ -4331,6 +4365,7 @@ class Site(Document, TagHelpers):
 		)
 
 		return {
+			"has_recent_failed_migration": self.has_recent_failed_migration(),
 			"In-Place Migrate Site": {
 				"hidden": False,
 				"allow_scheduling": False,
@@ -4357,6 +4392,17 @@ class Site(Document, TagHelpers):
 				},
 			},
 		}
+
+	def has_recent_failed_migration(self) -> bool:
+		# A failed move leaves restore files behind, so a retry hits the space pre-check.
+		return frappe.db.exists(
+			"Site Migration",
+			{
+				"site": self.name,
+				"status": "Failure",
+				"creation": (">", frappe.utils.add_to_date(frappe.utils.now(), days=-1)),
+			},
+		)
 
 	@property
 	def recent_offsite_backups_(self):
@@ -5557,7 +5603,7 @@ def process_refresh_database_usage_job_update(job: AgentJob):
 	site: Site = frappe.get_doc("Site", job.site)
 	with suppress(Exception):
 		# Don't throw error on failure of syncing also
-		site.sync_info()
+		site.sync_info(database_only=True)
 
 
 def on_doctype_update():

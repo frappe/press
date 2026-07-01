@@ -19,10 +19,12 @@ ruff check press/
 ruff format press/
 ```
 
-JavaScript/Vue (via Biome):
+JavaScript/Vue (via Biome). Do NOT use `npx biome` — it resolves to an unrelated
+package (v0.3.3) that silently does nothing. Use the real Biome (v2.x) installed by
+the pre-commit hook, with the repo-root `biome.json` and absolute file paths:
 ```bash
-npx biome check dashboard/
-npx biome format dashboard/
+BIOME=$(ls ~/.cache/pre-commit/*/node_env-default/lib/node_modules/@biomejs/pre-commit/node_modules/@biomejs/cli-linux-x64/biome | head -1)
+"$BIOME" check --write --config-path="$(pwd)/biome.json" <absolute-paths>
 ```
 
 Set up pre-commit hooks once with:

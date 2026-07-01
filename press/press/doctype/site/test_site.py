@@ -39,6 +39,7 @@ from press.press.doctype.site.site import (
 	process_rename_site_job_update,
 	suspend_sites_exceeding_disk_usage_for_last_14_days,
 )
+from press.press.doctype.site_migration.site_migration import SiteMigration
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
@@ -190,6 +191,34 @@ class TestSite(FrappeTestCase):
 		site = create_test_site("testsubdomain")
 		site.host_name = "balu.codes"  # domain that doesn't exist
 		self.assertRaises(frappe.exceptions.ValidationError, site.save)
+
+	def test_db_server_restore_space_includes_app_space_on_unified_server(self):
+		"""On a unified server (shared disk) the db requirement must include app space."""
+		site = frappe.new_doc("Site")
+		app = frappe._dict(private_ip="10.0.0.1")
+		unified_db = frappe._dict(private_ip="10.0.0.1")
+		split_db = frappe._dict(private_ip="10.0.0.2")
+
+		self.assertEqual(site.db_server_restore_space(app, unified_db, db_required=100, app_required=30), 130)
+		self.assertEqual(site.db_server_restore_space(app, split_db, db_required=100, app_required=30), 100)
+
+	def test_has_recent_failed_migration_only_true_for_a_recent_failure(self):
+		site = create_test_site("testsubdomain")
+		self.assertFalse(site.has_recent_failed_migration())
+
+		bench = create_test_bench()
+		with patch.object(SiteMigration, "after_insert"):
+			migration = frappe.get_doc(
+				{"doctype": "Site Migration", "site": site.name, "destination_bench": bench.name}
+			).insert()
+
+		frappe.db.set_value("Site Migration", migration.name, "status", "Failure")
+		self.assertTrue(site.has_recent_failed_migration())
+
+		frappe.db.set_value(
+			"Site Migration", migration.name, "creation", frappe.utils.add_to_date(None, days=-2)
+		)
+		self.assertFalse(site.has_recent_failed_migration())
 
 	def test_site_has_default_site_domain_on_create(self):
 		"""Ensure site has default site domain on create."""
@@ -580,6 +609,31 @@ class TestSite(FrappeTestCase):
 		self.assertTrue(site.site_usage_exceeded)
 		self.assertIsNotNone(site.site_usage_exceeded_on)
 		self.assertEqual(site.status, "Active")
+
+	def test_sync_info_database_only_refreshes_db_size_and_carries_files_forward(self):
+		site = create_test_site()
+		frappe.get_doc(
+			{
+				"doctype": "Site Usage",
+				"site": site.name,
+				"database": 100,
+				"public": 200,
+				"private": 300,
+				"backups": 400,
+			}
+		).insert()
+
+		# In database_only mode the agent returns only the database size; the
+		# file totals must be carried forward, not recomputed (no file walk).
+		with patch.object(Site, "fetch_info", return_value={"usage": {"database": 150}}) as fetch_info:
+			site.sync_info(database_only=True)
+
+		fetch_info.assert_called_once_with(database_only=True)
+		latest = frappe.get_last_doc("Site Usage", {"site": site.name})
+		self.assertEqual(latest.database, 150)
+		self.assertEqual(latest.public, 200)
+		self.assertEqual(latest.private, 300)
+		self.assertEqual(latest.backups, 400)
 
 	def test_free_sites_ignore_usage_exceed_tracking(self):
 		team = create_test_team(free_account=False)

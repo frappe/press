@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import typing
 from unittest.mock import Mock, patch
 
@@ -22,7 +23,7 @@ from press.press.doctype.press_settings.test_press_settings import (
 )
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import create_test_release_group
-from press.press.doctype.server.server import BaseServer
+from press.press.doctype.server.server import BaseServer, process_cleanup_unused_files_job_update
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.site.test_site import create_test_bench
 from press.press.doctype.team.test_team import create_test_team
@@ -506,3 +507,74 @@ class TestServer(FrappeTestCase):
 		self.assertTrue(
 			frappe.db.get_value("Database Server", victim_database_server.name, "auto_increase_storage")
 		)
+
+	@patch.object(BaseServer, "is_build_server", new=Mock(return_value=False))
+	def test_forced_cleanup_breaks_glass_when_agent_disk_is_full(self):
+		server = create_test_server()
+		with (
+			patch.object(BaseServer, "free_space", return_value=0),
+			patch.object(BaseServer, "break_glass") as break_glass,
+			patch.object(Agent, "cleanup_unused_files") as cleanup,
+		):
+			server._cleanup_unused_files(force=True)
+		break_glass.assert_called_once()
+		cleanup.assert_called_once_with(True)
+
+	@patch.object(BaseServer, "is_build_server", new=Mock(return_value=False))
+	def test_forced_cleanup_keeps_glass_when_agent_disk_has_space(self):
+		server = create_test_server()
+		with (
+			patch.object(BaseServer, "free_space", return_value=50 * 1024**3),
+			patch.object(BaseServer, "break_glass") as break_glass,
+			patch.object(Agent, "cleanup_unused_files") as cleanup,
+		):
+			server._cleanup_unused_files(force=True)
+		break_glass.assert_not_called()
+		cleanup.assert_called_once_with(True)
+
+	@patch.object(BaseServer, "is_build_server", new=Mock(return_value=False))
+	def test_forced_cleanup_runs_despite_pending_agent_request_failures(self):
+		server = create_test_server()
+		with (
+			patch.object(Agent, "should_skip_requests", return_value=True),
+			patch.object(BaseServer, "free_space", return_value=50 * 1024**3),
+			patch.object(Agent, "cleanup_unused_files") as cleanup,
+		):
+			server._cleanup_unused_files(force=True)
+		cleanup.assert_called_once_with(True)
+
+	@patch.object(BaseServer, "is_build_server", new=Mock(return_value=False))
+	def test_scheduled_cleanup_skips_when_agent_has_pending_request_failures(self):
+		server = create_test_server()
+		with (
+			patch.object(Agent, "should_skip_requests", return_value=True),
+			patch.object(Agent, "cleanup_unused_files") as cleanup,
+		):
+			server._cleanup_unused_files(force=False)
+		cleanup.assert_not_called()
+
+	def test_user_triggered_cleanup_forces_by_default(self):
+		server = create_test_server()
+		with patch.object(BaseServer, "_cleanup_unused_files") as inner:
+			server.cleanup_unused_files()
+		inner.assert_called_once_with(force=True)
+
+	def test_glass_file_restored_only_after_a_forced_cleanup_completes(self):
+		server = create_test_server()
+
+		def job(status, force):
+			return frappe._dict(
+				status=status,
+				request_data=json.dumps({"force": force}),
+				server_type="Server",
+				server=server.name,
+			)
+
+		with patch.object(BaseServer, "restore_glass_file") as restore:
+			process_cleanup_unused_files_job_update(job("Success", True))
+			restore.assert_called_once()
+			restore.reset_mock()
+
+			process_cleanup_unused_files_job_update(job("Success", False))
+			process_cleanup_unused_files_job_update(job("Running", True))
+			restore.assert_not_called()
