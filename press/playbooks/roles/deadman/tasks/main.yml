@@ -51,7 +51,7 @@
   become_user: frappe
   command: >
     /home/frappe/.local/bin/bench get-app
-    {{ deadman_app_git_url | default('https://github.com/20vikash/deadman') }}
+    {{ deadman_repo | default('https://github.com/20vikash/deadman') }}
   args:
     chdir: /home/frappe/benches/deadman
     creates: /home/frappe/benches/deadman/apps/deadman

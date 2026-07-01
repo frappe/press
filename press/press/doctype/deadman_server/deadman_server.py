@@ -22,6 +22,7 @@ class DeadmanServer(BaseServer):
 
 		admin_password: DF.Password | None
 		deadman_password: DF.Password | None
+		deadman_repo: DF.Data | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
@@ -33,20 +34,11 @@ class DeadmanServer(BaseServer):
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
 		root_public_key: DF.Code | None
 		ssh_port: DF.Int
 		ssh_user: DF.Data | None
-		status: DF.Literal[
-			"Pending",
-			"Installing",
-			"Active",
-			"Broken",
-			"Archived",
-		]
+		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		tls_certificate_renewal_failed: DF.Check
-		virtual_machine: DF.Link | None
-
 	# end: auto-generated types
 
 	def validate(self):
@@ -87,6 +79,7 @@ class DeadmanServer(BaseServer):
 				variables={
 					"server": self.name,
 					"domain": self.domain,
+					"deadman_repo": self.deadman_repo,
 					"admin_password": admin_password,
 					"deadman_password": deadman_password,
 					"mariadb_root_password": mariadb_root_password,
