@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import HetnzerLogo from '@/logo/Hetzner.vue'
-import FrappeLogo from '@/logo/Frappe.vue'
-import AwsLogo from '@/logo/Aws.vue'
-import OracleLogo from '@/logo/Oracle.vue'
-import DigitalOceanLogo from '@/logo/DigitalOcean.vue'
+import Hetnzer from '@/logo/Hetzner.vue'
+import Frappe from '@/logo/Frappe.vue'
+import Aws from '@/logo/Aws.vue'
+import Oracle from '@/logo/Oracle.vue'
+import DigitalOcean from '@/logo/DigitalOcean.vue'
+import Scaleway from '@/logo/Scaleway.vue'
 
 const providerIcons = {
-	'Frappe Compute': FrappeLogo,
-	Generic: FrappeLogo,
-	Hetzner: HetnzerLogo,
-	'AWS EC2': AwsLogo,
-	Oracle: OracleLogo,
-	DigitalOcean: DigitalOceanLogo,
+	'Frappe Compute': Frappe,
+	Generic: Oracle,
+	Hetzner: Hetnzer,
+	'AWS EC2': Aws,
+	Oracle: Oracle,
+	OCI: Oracle,
+	DigitalOcean: DigitalOcean,
+  Scaleway: Scaleway,
 }
 
 interface Props {
