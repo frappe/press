@@ -480,6 +480,7 @@ class Site(Document, TagHelpers):
 				self.set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
+		self.sync_fc_team_config()
 
 		if not self.setup_wizard_status_check_next_retry_on:
 			self.setup_wizard_status_check_next_retry_on = now_datetime()
@@ -707,6 +708,16 @@ class Site(Document, TagHelpers):
 
 		if self.has_value_changed("team"):
 			frappe.db.set_value("Site Domain", {"site": self.name}, "team", self.team)
+			# Enqueued, not inline: sync_fc_team_config saves the site, which from within
+			# on_update would re-enter it and re-run its unguarded effects.
+			frappe.enqueue_doc(
+				"Site",
+				self.name,
+				"sync_fc_team_config",
+				create_agent_job=True,
+				enqueue_after_commit=True,
+				queue="short",
+			)
 
 		if self.status not in [
 			"Pending",
@@ -744,6 +755,26 @@ class Site(Document, TagHelpers):
 			return self.update_site_config(config)
 
 		self._update_configuration(config=config, save=save)
+		return None
+
+	def sync_fc_team_config(self, create_agent_job: bool = False):
+		"""Keep the fc_team site config in step with the owning team.
+
+		Pulse tags every event with `team` from this key, so it must follow the site
+		for its whole life — initial provisioning, a standby site being claimed, and
+		ownership transfers — not just be stamped once. Idempotent (skips when already
+		current) and skipped for Administrator-owned sites, which have no FC team.
+
+		`create_agent_job` pushes the change to a running site; the creation path leaves
+		it False so the key rides along in the new-site payload instead of a second job.
+		"""
+		if not self.team or frappe.get_value("Team", self.team, "user") == "Administrator":
+			return None
+		if self.get_config_value_for_key("fc_team") == self.team:
+			return None
+		if create_agent_job:
+			return self.update_site_config({"fc_team": self.team})
+		self._update_configuration({"fc_team": self.team}, save=False)
 		return None
 
 	def rename_upstream(self, new_name: str):
