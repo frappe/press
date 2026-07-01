@@ -54,7 +54,6 @@ if typing.TYPE_CHECKING:
 	)
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
-	from press.press.doctype.deadman_server.deadman_server import DeadmanServer
 	from press.press.doctype.log_server.log_server import LogServer
 	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.proxy_server.proxy_server import ProxyServer
@@ -2444,24 +2443,6 @@ class VirtualMachine(Document):
 			"domain": self.domain,
 			"cluster": self.cluster,
 			"provider": "AWS EC2",
-			"virtual_machine": self.name,
-			"team": self.team,
-		}
-		if self.virtual_machine_image:
-			document["is_server_setup"] = True
-
-		server = frappe.get_doc(document).insert()
-		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
-		return server
-
-	@frappe.whitelist()
-	def create_deadman_server(self) -> DeadmanServer:
-		document = {
-			"doctype": "Deadman Server",
-			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
-			"domain": self.domain,
-			"cluster": self.cluster,
-			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 			"team": self.team,
 		}
