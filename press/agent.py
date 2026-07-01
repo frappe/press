@@ -568,9 +568,11 @@ class Agent:
 		)
 
 	def backup_site(self, site, site_backup: SiteBackup):
+		from press.press.doctype.site_backup.site_backup import get_dynamic_backup_timeout
+
 		data = {
 			"with_files": site_backup.with_files,
-			"agent_job_timeout": site.backup_timeout,
+			"agent_job_timeout": get_dynamic_backup_timeout(site, site_backup.with_files),
 		}
 		if site_backup.offsite:
 			backups_path = os.path.join(site.name, str(date.today()))

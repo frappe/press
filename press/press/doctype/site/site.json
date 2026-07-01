@@ -19,7 +19,6 @@
 		"cluster",
 		"admin_password",
 		"additional_system_user_created",
-		"backup_timeout",
 		"section_break_aokd",
 		"creation_failed",
 		"column_break_tfvn",
@@ -700,12 +699,6 @@
 			"fieldtype": "Datetime",
 			"label": "Creation Failed",
 			"read_only": 1
-		},
-		{
-			"default": "18000",
-			"fieldname": "backup_timeout",
-			"fieldtype": "Int",
-			"label": "Backup Timeout"
 		},
 		{
 			"fieldname": "fatal_site_update",
