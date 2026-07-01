@@ -7,7 +7,6 @@ from pypika import Not
 from pypika import functions as fn
 from pypika.terms import ValueWrapper
 
-# Permission fields that apply to both predefined and custom roles.
 PERMISSION_FIELDS = [
 	"admin_access",
 	"allow_apps",
@@ -24,95 +23,6 @@ PERMISSION_FIELDS = [
 	"all_release_groups",
 	"all_servers",
 	"all_sites",
-]
-
-# Predefined roles and their default permission configuration.
-# These are built-in roles available to every team.
-PREDEFINED_ROLES: list[dict] = [
-	{
-		"label": "Admin",
-		"value": "Admin",
-		"name": None,
-		"is_predefined": True,
-		"admin_access": True,
-		"allow_apps": True,
-		"allow_bench_creation": True,
-		"allow_billing": True,
-		"allow_contribution": False,
-		"allow_customer": False,
-		"allow_dashboard": False,
-		"allow_leads": False,
-		"allow_partner": False,
-		"allow_server_creation": True,
-		"allow_site_creation": True,
-		"allow_webhook_configuration": True,
-		"all_release_groups": False,
-		"all_servers": False,
-		"all_sites": False,
-	},
-	{
-		"label": "Developer",
-		"value": "Developer",
-		"name": None,
-		"is_predefined": True,
-		"admin_access": False,
-		"allow_apps": True,
-		"allow_bench_creation": True,
-		"allow_billing": False,
-		"allow_contribution": False,
-		"allow_customer": False,
-		"allow_dashboard": False,
-		"allow_leads": False,
-		"allow_partner": False,
-		"allow_server_creation": True,
-		"allow_site_creation": True,
-		"allow_webhook_configuration": True,
-		"all_release_groups": False,
-		"all_servers": False,
-		"all_sites": False,
-	},
-	{
-		"label": "Member",
-		"value": "Member",
-		"name": None,
-		"is_predefined": True,
-		"admin_access": False,
-		"allow_apps": False,
-		"allow_bench_creation": False,
-		"allow_billing": False,
-		"allow_contribution": False,
-		"allow_customer": False,
-		"allow_dashboard": False,
-		"allow_leads": False,
-		"allow_partner": False,
-		"allow_server_creation": False,
-		"allow_site_creation": False,
-		"allow_webhook_configuration": False,
-		"all_release_groups": False,
-		"all_servers": False,
-		"all_sites": False,
-	},
-	{
-		"label": "Viewer",
-		"value": "Viewer",
-		"name": None,
-		"is_predefined": True,
-		"admin_access": False,
-		"allow_apps": False,
-		"allow_bench_creation": False,
-		"allow_billing": False,
-		"allow_contribution": False,
-		"allow_customer": False,
-		"allow_dashboard": False,
-		"allow_leads": False,
-		"allow_partner": False,
-		"allow_server_creation": False,
-		"allow_site_creation": False,
-		"allow_webhook_configuration": False,
-		"all_release_groups": False,
-		"all_servers": False,
-		"all_sites": False,
-	},
 ]
 
 
@@ -147,8 +57,7 @@ def get_invitations(team: str):
 class RoleDict(TypedDict):
 	label: str
 	value: str
-	name: str | None
-	is_predefined: bool
+	name: str
 	admin_access: bool
 	allow_apps: bool
 	allow_bench_creation: bool
@@ -168,36 +77,35 @@ class RoleDict(TypedDict):
 
 def get_roles(team: Data | None) -> list[RoleDict]:
 	"""
-	Get a list of roles that can be assigned to team members. This includes
-	both predefined roles (Admin, Developer, Member, Viewer) and any custom
-	roles defined in the Press Role doctype for the given team.
+	Get the custom Press Roles defined for the given team. Returns an empty list
+	when no team is provided or when the team has no Press Roles.
 
-	Each role includes its full permission configuration so the frontend can
-	display granular permissions for each role.
+	Each role includes its full permission configuration.
 	"""
-	roles = [dict(role) for role in PREDEFINED_ROLES]
+	if not team:
+		return []
 
-	if team:
-		PressRole = frappe.qb.DocType("Press Role")
-		custom_roles = (
-			frappe.qb.from_(PressRole)
-			.where(PressRole.team == team)
-			.select(
-				PressRole.name,
-				PressRole.title,
-				*[getattr(PressRole, field) for field in PERMISSION_FIELDS],
-			)
-			.run(as_dict=True)
+	PressRole = frappe.qb.DocType("Press Role")
+	rows = (
+		frappe.qb.from_(PressRole)
+		.where(PressRole.team == team)
+		.select(
+			PressRole.name,
+			PressRole.title,
+			*[getattr(PressRole, field) for field in PERMISSION_FIELDS],
 		)
-		for role in custom_roles:
-			role_data = {
-				"label": role.title,
-				"value": role.title,
-				"name": role.name,
-				"is_predefined": False,
-			}
-			for field in PERMISSION_FIELDS:
-				role_data[field] = role.get(field, False)
-			roles.append(role_data)
+		.run(as_dict=True)
+	)
+
+	roles = []
+	for role in rows:
+		role_data: dict = {
+			"label": role.title,
+			"value": role.title,
+			"name": role.name,
+		}
+		for field in PERMISSION_FIELDS:
+			role_data[field] = role.get(field, False)
+		roles.append(role_data)
 
 	return cast("list[RoleDict]", roles)
