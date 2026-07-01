@@ -4859,6 +4859,7 @@ def process_restore_job_update(job, force=False):
 			site.set_apps(apps_from_backup)
 			site.db_set("creation_failed", None)
 			site.db_set("fatal_site_update", None)
+			site.db_set("database_name", None)
 
 		elif job.status == "Failure":
 			frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
@@ -5042,7 +5043,6 @@ def process_restore_tables_job_update(job):
 				site_update.set_cause_of_failure_is_resolved()
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
-			frappe.db.set_value("Site", job.site, "database_name", None)
 			create_site_status_update_webhook_event(job.site)
 			# A failed recovery fallback ends here; put back any bumped max_statement_time.
 			if job.status in ("Failure", "Delivery Failure") and (
