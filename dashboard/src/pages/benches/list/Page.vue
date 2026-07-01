@@ -13,7 +13,7 @@ import BenchRow from './BenchRow.vue'
 const groups = createListResource({
 	doctype: 'Release Group',
 	auto: true,
-	pageLength: 10,
+	pageLength: 20,
 	cache: 'bench-list-groups',
 	fields: [
 		'name',
