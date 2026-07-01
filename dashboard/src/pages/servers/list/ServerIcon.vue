@@ -8,7 +8,7 @@ import Scaleway from '@/logo/Scaleway.vue'
 
 const providerIcons = {
 	'Frappe Compute': Frappe,
-	Generic: Oracle,
+	Generic: Frappe,
 	Hetzner: Hetnzer,
 	'AWS EC2': Aws,
 	Oracle: Oracle,
