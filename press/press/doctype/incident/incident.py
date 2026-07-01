@@ -980,8 +980,14 @@ def validate_incidents():
 	if not settings.deadman_server:
 		return
 
-	deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
-	deadman.send_capability_heartbeat("validate_incident")
+	try:
+		deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
+		deadman.send_capability_heartbeat("validate_incident")
+	except Exception:
+		frappe.log_error(
+			title="Failed to send validate_incident heartbeat",
+			message=frappe.get_traceback(),
+		)
 
 
 def resolve_incidents():
@@ -1008,8 +1014,14 @@ def resolve_incidents():
 	if not settings.deadman_server:
 		return
 
-	deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
-	deadman.send_capability_heartbeat("resolve_incident")
+	try:
+		deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
+		deadman.send_capability_heartbeat("resolve_incident")
+	except Exception:
+		frappe.log_error(
+			title="Failed to send resolve_incident heartbeat",
+			message=frappe.get_traceback(),
+		)
 
 
 def notify_ignored_servers():

@@ -114,15 +114,19 @@ class DeadmanServer(BaseServer):
 
 	def send_capability_heartbeat(self, capability_name):
 		url = f"https://{self.hostname}.{self.domain}/api/method/deadman.deadman.api.capability.update_capability_heartbeat"
-		print(url)
 
-		response = requests.post(
-			url,
-			data={
-				"capability_name": capability_name,
-				"password": self.get_password("deadman_password"),
-			},
-			timeout=15,
-		)
-
-		response.raise_for_status()
+		try:
+			response = requests.post(
+				url,
+				data={
+					"capability_name": capability_name,
+					"password": self.get_password("deadman_password"),
+				},
+				timeout=15,
+			)
+			response.raise_for_status()
+		except requests.RequestException:
+			frappe.log_error(
+				title=f"Failed to send {capability_name} heartbeat",
+				message=frappe.get_traceback(),
+			)
