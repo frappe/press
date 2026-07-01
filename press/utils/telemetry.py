@@ -100,7 +100,8 @@ def _pulse_post(method: str, payload: dict, enqueue: bool = False):
 		log_error(f"Failed to call pulse.api.{method}")
 
 
-def capture_pulse(event, data):
+def capture_pulse(event, data, team=None):
+	team = team or (data or {}).get("team")
 	_pulse_post(
 		"bulk_ingest",
 		{
@@ -110,6 +111,7 @@ def capture_pulse(event, data):
 					"captured_at": frappe.utils.now(),
 					"app": "press",
 					"user": anonymize_user(frappe.session.user),
+					"team": team,
 					"site": frappe.local.site,
 					"properties": data,
 				}
@@ -118,40 +120,66 @@ def capture_pulse(event, data):
 	)
 
 
-def pulse_identify(user: str, properties: dict | None = None):
-	"""Attach attributes to a person (upsert their Pulse Person profile)."""
-	if not user:
+
+def _current_team() -> str | None:
+	"""Best-effort current dashboard team for identity calls; never raises.
+
+	`get_current_team()` throws for a guest / a user with no team, which telemetry
+	must never surface. It's the implicit default for dashboard calls; the signup
+	path passes `team` explicitly (the team is just-created, no ambient team yet).
+	"""
+	from press.utils import get_current_team
+
+	try:
+		return get_current_team()
+	except Exception:
+		return None
+
+
+def pulse_identify(team: str | None = None, properties: dict | None = None):
+	"""Attach attributes to a team (upsert its Pulse profile).
+
+	The identity subject is the Frappe Cloud team — stable across the account's
+	sites, apps, and members. `team` defaults to the current dashboard team; the one
+	caller that must pass it is signup, where the team was just created and there is
+	no ambient team yet.
+	"""
+	team = team or _current_team()
+	if not team:
 		return
 	_pulse_post(
 		"identify",
 		{
-			"user": anonymize_user(user),
+			"team": team,
 			"properties": properties or {},
 		},
 		enqueue=True,
 	)
 
 
-def pulse_alias(previous_id: str, user: str):
-	"""Link a pre-signup anonymous browser id to the known account user."""
-	if not previous_id or not user:
+def pulse_alias(previous_id: str, team: str | None = None):
+	"""Link a pre-signup anonymous browser id to the account's team.
+
+	`team` defaults to the current dashboard team; signup passes it explicitly.
+	"""
+	team = team or _current_team()
+	if not previous_id or not team:
 		return
 	_pulse_post(
 		"alias",
 		{
 			"previous_id": previous_id,
-			"user": anonymize_user(user),
+			"team": team,
 		},
 		enqueue=True,
 	)
 
 
 def anonymize_user(user: str | None) -> str | None:
-	"""Per-site-salted anonymized `user_…` id, matching frappe's telemetry client.
+	"""Per-site-salted anonymized `user_…` id — a non-identifying operator dimension.
 
-	Replicated here (not imported) because cloud.frappe.io's framework predates the
-	pulse client. Same email + site always yields the same id, so press can mint the
-	account's `user_…` deterministically as the `alias`/`identify` target.
+	Stamped on events to mark which actor generated them; it is not the identity
+	subject (that's the team). Same email + site always yields the same id.
 	"""
 	if not user or user in frappe.STANDARD_USERS:
 		return user
