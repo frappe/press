@@ -238,6 +238,7 @@
 		"press_monitoring_password",
 		"send_telegram_notifications",
 		"deadman_url",
+		"deadman_password",
 		"column_break_jlzi",
 		"log_server",
 		"anthropic_api_key",
@@ -1818,11 +1819,16 @@
 			"fieldname": "deadman_url",
 			"fieldtype": "Data",
 			"label": "Deadman URL"
+		},
+		{
+			"fieldname": "deadman_password",
+			"fieldtype": "Password",
+			"label": "Deadman Password"
 		}
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-07-01 12:48:24.057552",
+	"modified": "2026-07-01 13:07:43.251209",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",

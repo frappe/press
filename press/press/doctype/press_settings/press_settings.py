@@ -117,6 +117,7 @@ class PressSettings(Document):
 		compress_app_cache: DF.Check
 		cool_off_period: DF.Int
 		data_40: DF.Data | None
+		deadman_password: DF.Password | None
 		deadman_url: DF.Data | None
 		default_apps: DF.Table[AppGroup]
 		default_dedicated_server_site_warranty_change_cooldown: DF.Int
