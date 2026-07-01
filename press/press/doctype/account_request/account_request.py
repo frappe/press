@@ -360,14 +360,9 @@ class AccountRequest(Document):
 
 	@property
 	def invite_role_label(self) -> str:
-		"""Resolve the role label from press_role field.
-
-		press_role holds a Press Role document name for custom roles. Predefined
-		roles (Admin, Developer, Member, Viewer) are not stored here; those
-		invites fall back to the default "Member" team role.
-		"""
+		"""Resolve the Press Role title from the press_role document name."""
 		if not self.press_role:
-			return "Member"
+			return ""
 		title = frappe.get_value("Press Role", self.press_role, "title")
 		return title or self.press_role
 
