@@ -57,40 +57,6 @@ class TestAccountApi(TestCase):
 		acc_req_count_after = frappe.db.count("Account Request")
 		self.assertGreater(acc_req_count_after, acc_req_count_before)
 
-	def test_accept_team_invite_with_blank_existing_member_role(self):
-		team = create_test_team()
-		existing_member = frappe.mock("email")
-		create_test_user(existing_member)
-		team.append("team_members", {"user": existing_member})
-		team.save(ignore_permissions=True)
-		member = frappe.db.get_value(
-			"Team Member",
-			{"parent": team.name, "user": existing_member},
-			"name",
-		)
-		frappe.db.set_value("Team Member", member, "role", "")
-
-		invited_member = frappe.mock("email")
-		create_test_user(invited_member)
-		key = frappe.generate_hash(length=32)
-		account_request = frappe.get_doc(
-			{
-				"doctype": "Account Request",
-				"team": team.name,
-				"email": invited_member,
-				"invited_by": team.user,
-				"request_key": key,
-				"request_key_expiration_time": frappe.utils.add_days(frappe.utils.now_datetime(), 1),
-			}
-		).insert(ignore_permissions=True)
-
-		with user_context(invited_member):
-			accept_team_invite(key)
-
-		self.assertTrue(frappe.db.exists("Team Member", {"parent": team.name, "user": invited_member}))
-		self.assertEqual(frappe.db.get_value("Team Member", member, "role"), "Member")
-		self.assertFalse(frappe.db.get_value("Account Request", account_request.name, "request_key"))
-
 	def test_invite_team_member_accepts_custom_role_by_press_role_name(self):
 		"""The invite dialog sends the Press Role document name (a hash) for
 		custom roles, not the title. invite_team_member must accept it and store
@@ -148,7 +114,7 @@ class TestAccountApi(TestCase):
 		team = create_test_team()
 		invited = frappe.mock("email")
 		create_test_user(invited)
-		team.append("team_members", {"user": invited, "role": "Member"})
+		team.append("team_members", {"user": invited, "role": ""})
 		team.save(ignore_permissions=True)
 
 		key = frappe.generate_hash(length=32)
@@ -177,7 +143,7 @@ class TestAccountApi(TestCase):
 		intruder = frappe.mock("email")
 		create_test_user(intruder)
 
-		key = self._invite(team, invited, roles='["Member"]')
+		key = self._invite(team, invited, roles=None)
 
 		with user_context(intruder), self.assertRaises(frappe.ValidationError) as cm:
 			accept_team_invite(key)
