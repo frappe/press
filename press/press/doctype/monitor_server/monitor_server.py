@@ -17,7 +17,7 @@ from press.runner import Ansible
 from press.utils import log_error
 
 if TYPE_CHECKING:
-	from press.press.doctype.deadman_server.deadman_server import DeadmanServer
+	from press.press.doctype.press_settings.press_settings import PressSettings
 
 
 class SitesDownAlertLabels(TypedDict):
@@ -38,8 +38,6 @@ class SitesDownAlert(TypedDict):
 class MonitorServer(BaseServer):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
-
-	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -386,15 +384,9 @@ def verify_alertmanager_scrape(server, auth):
 
 
 def send_deadman_heartbeat_monitor():
-	deadman_server = frappe.db.get_single_value("Press Settings", "deadman_server")
+	settings: PressSettings = frappe.get_single("Press Settings")
 
-	if not deadman_server:
-		return
-
-	try:
-		deadman: DeadmanServer = frappe.get_doc("Deadman Server", deadman_server)
-	except Exception:
-		log_error("Deadman Server document not found", server=deadman_server)
+	if not settings.deadman_url:
 		return
 
 	for server_name in frappe.get_all("Monitor Server", pluck="name"):
@@ -403,8 +395,8 @@ def send_deadman_heartbeat_monitor():
 
 			verify_monitor_stack(server)
 
-			deadman.send_capability_heartbeat("prometheus")
-			deadman.send_capability_heartbeat("alertmanager")
+			settings.send_capability_heartbeat("prometheus")
+			settings.send_capability_heartbeat("alertmanager")
 
 		except Exception:
 			log_error(

@@ -237,7 +237,7 @@
 		"monitor_token",
 		"press_monitoring_password",
 		"send_telegram_notifications",
-		"deadman_server",
+		"deadman_url",
 		"column_break_jlzi",
 		"log_server",
 		"anthropic_api_key",
@@ -285,9 +285,7 @@
 		"hybrid_domain",
 		"tls_renewal_queue_size",
 		"security_tab",
-		"wazuh_server",
-		"dashboard_tab",
-		"latest_blog_url"
+		"wazuh_server"
 	],
 	"fields": [
 		{
@@ -1598,17 +1596,6 @@
 			"label": "Wazuh Server"
 		},
 		{
-			"fieldname": "dashboard_tab",
-			"fieldtype": "Tab Break",
-			"label": "Dashboard"
-		},
-		{
-			"description": "URL of the latest blog post shown in the dashboard sidebar widget",
-			"fieldname": "latest_blog_url",
-			"fieldtype": "Data",
-			"label": "Latest Blog URL"
-		},
-		{
 			"fieldname": "autoscale_discount",
 			"fieldtype": "Float",
 			"label": "Autoscale Discount"
@@ -1828,15 +1815,14 @@
 			"label": "Allow Patch Builds"
 		},
 		{
-			"fieldname": "deadman_server",
-			"fieldtype": "Link",
-			"label": "Deadman Server",
-			"options": "Deadman Server"
+			"fieldname": "deadman_url",
+			"fieldtype": "Data",
+			"label": "Deadman URL"
 		}
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-06-22 13:52:02.779802",
+	"modified": "2026-07-01 12:48:24.057552",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",

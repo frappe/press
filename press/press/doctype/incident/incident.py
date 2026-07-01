@@ -39,7 +39,6 @@ if TYPE_CHECKING:
 		IncidentInvestigator,
 	)
 	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
-	from press.press.doctype.deadman_server.deadman_server import DeadmanServer
 	from press.press.doctype.incident_settings.incident_settings import IncidentSettings
 	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
 		IncidentSettingsSelfHostedUser,
@@ -977,12 +976,11 @@ def validate_incidents():
 
 	settings: PressSettings = frappe.get_single("Press Settings")
 
-	if not settings.deadman_server:
+	if not settings.deadman_url:
 		return
 
 	try:
-		deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
-		deadman.send_capability_heartbeat("validate_incident")
+		settings.send_capability_heartbeat("validate_incident")
 	except Exception:
 		frappe.log_error(
 			title="Failed to send validate_incident heartbeat",
@@ -1010,13 +1008,11 @@ def resolve_incidents():
 			incident.call_humans()
 
 	settings: PressSettings = frappe.get_single("Press Settings")
-
-	if not settings.deadman_server:
+	if not settings.deadman_url:
 		return
 
 	try:
-		deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
-		deadman.send_capability_heartbeat("resolve_incident")
+		settings.send_capability_heartbeat("resolve_incident")
 	except Exception:
 		frappe.log_error(
 			title="Failed to send resolve_incident heartbeat",
