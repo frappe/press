@@ -2,11 +2,15 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import boto3
 import frappe
+import requests
 from boto3.session import Session
 from frappe.model.document import Document
 from frappe.utils import get_url, validate_email_address
+from requests.auth import HTTPBasicAuth
 from twilio.rest import Client
 
 from press.api.billing import get_stripe
@@ -18,8 +22,6 @@ class PressSettings(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
-	from typing import TYPE_CHECKING
-
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
@@ -30,6 +32,7 @@ class PressSettings(Document):
 		agent_repository_owner: DF.Data | None
 		agent_sentry_dsn: DF.Data | None
 		allow_patch_builds: DF.Check
+		anthropic_api_key: DF.Password | None
 		app_include_script: DF.Data | None
 		asset_store_access_key: DF.Data | None
 		asset_store_bucket_name: DF.Data | None
@@ -114,6 +117,8 @@ class PressSettings(Document):
 		compress_app_cache: DF.Check
 		cool_off_period: DF.Int
 		data_40: DF.Data | None
+		deadman_password: DF.Password | None
+		deadman_url: DF.Data | None
 		default_apps: DF.Table[AppGroup]
 		default_dedicated_server_site_warranty_change_cooldown: DF.Int
 		default_dedicated_server_site_warranty_quota: DF.Int
@@ -169,10 +174,11 @@ class PressSettings(Document):
 		github_pat_token: DF.Data | None
 		github_webhook_secret: DF.Data | None
 		gst_percentage: DF.Float
+		hetzner_server_limit: DF.Int
+		hetzner_vcpu_limit: DF.Int
 		hybrid_cluster: DF.Link | None
 		hybrid_domain: DF.Link | None
 		ic_key: DF.Password | None
-		latest_blog_url: DF.Data | None
 		log_server: DF.Link | None
 		mailgun_api_key: DF.Data | None
 		max_allowed_screenshots: DF.Int
@@ -389,3 +395,50 @@ class PressSettings(Document):
 		):
 			return [app.app for app in self.default_apps]
 		return []
+
+	def send_capability_heartbeat(self, capability_name):
+		url = f"{self.deadman_url}/api/method/deadman.deadman.api.capability.update_capability_heartbeat"
+
+		try:
+			response = requests.post(
+				url,
+				data={
+					"capability_name": capability_name,
+					"password": self.get_password("deadman_password"),
+				},
+				timeout=15,
+			)
+			response.raise_for_status()
+		except requests.RequestException:
+			frappe.log_error(
+				title=f"Failed to send {capability_name} heartbeat",
+				message=frappe.get_traceback(),
+			)
+
+
+def check_twilio_balance():
+	settings: PressSettings = frappe.get_single("Press Settings")
+
+	if not settings.twilio_account_sid or not settings.twilio_api_key_sid or not settings.deadman_url:
+		return
+
+	try:
+		response = requests.get(
+			f"https://api.twilio.com/2010-04-01/Accounts/{settings.twilio_account_sid}/Balance.json",
+			auth=HTTPBasicAuth(
+				settings.twilio_api_key_sid,
+				settings.get_password("twilio_api_key_secret"),
+			),
+			timeout=10,
+		)
+		response.raise_for_status()
+
+		balance = float(response.json()["balance"])
+
+		if balance <= 0 or not settings.deadman_url:
+			return
+
+		settings.send_capability_heartbeat("twilio")
+
+	except Exception:
+		frappe.log_error("Failed to fetch Twilio balance")

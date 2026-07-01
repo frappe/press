@@ -966,12 +966,26 @@ def validate_incidents():
 		},
 		fields=["name", "creation"],
 	)
+
 	for incident_dict in validating_incidents:
 		if frappe.utils.now_datetime() - incident_dict.creation > timedelta(
 			seconds=get_confirmation_threshold_duration()
 		):
 			incident = Incident("Incident", incident_dict.name)
 			incident.confirm()
+
+	settings: PressSettings = frappe.get_single("Press Settings")
+
+	if not settings.deadman_url:
+		return
+
+	try:
+		settings.send_capability_heartbeat("validate_incident")
+	except Exception:
+		frappe.log_error(
+			title="Failed to send validate_incident heartbeat",
+			message=frappe.get_traceback(),
+		)
 
 
 def resolve_incidents():
@@ -982,14 +996,28 @@ def resolve_incidents():
 		},
 		pluck="name",
 	)
+
 	for incident_name in ongoing_incidents:
 		incident = Incident("Incident", incident_name)
 		incident.check_resolved()
+
 		if (
 			incident.time_to_call_for_help or incident.time_to_call_for_help_again
 		) and incident.waited_enough_for_investigator_reactions:
 			incident.create_log_for_server()
 			incident.call_humans()
+
+	settings: PressSettings = frappe.get_single("Press Settings")
+	if not settings.deadman_url:
+		return
+
+	try:
+		settings.send_capability_heartbeat("resolve_incident")
+	except Exception:
+		frappe.log_error(
+			title="Failed to send resolve_incident heartbeat",
+			message=frappe.get_traceback(),
+		)
 
 
 def notify_ignored_servers():

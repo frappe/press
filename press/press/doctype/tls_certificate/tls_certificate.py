@@ -197,6 +197,7 @@ class TLSCertificate(Document):
 			"Analytics Server",
 			"Trace Server",
 			"NAT Server",
+			"Deadman Server",
 		]
 
 		for server_doctype in server_doctypes:
@@ -490,6 +491,7 @@ def retrigger_failed_wildcard_tls_callbacks():
 		"Analytics Server",
 		"Trace Server",
 		"NAT Server",
+		"Deadman Server",
 	]
 	for server_doctype in server_doctypes:
 		servers = frappe.get_all(
