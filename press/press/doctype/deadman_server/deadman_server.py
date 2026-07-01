@@ -65,12 +65,14 @@ class DeadmanServer(BaseServer):
 		deadman_password = self.get_password("deadman_password")
 		mariadb_root_password = self.get_password("mariadb_root_password")
 
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
-		certificate = frappe.get_doc("TLS Certificate", certificate_name)
-
 		try:
+			certificate_name = frappe.db.get_value(
+				"TLS Certificate",
+				{"wildcard": True, "domain": self.domain},
+				"name",
+			)
+			certificate = frappe.get_doc("TLS Certificate", certificate_name)
+
 			ansible = Ansible(
 				playbook="deadman.yml",
 				server=self,
