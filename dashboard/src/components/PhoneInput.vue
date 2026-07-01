@@ -4,7 +4,7 @@
 			{{ label }}
 		</label>
 		<div
-			class="phone-control flex h-7 overflow-hidden rounded border border-outline-gray-1 bg-surface-gray-2 focus-within:border-outline-gray-4 focus-within:bg-surface-white focus-within:ring-2 focus-within:ring-gray-400"
+			class="phone-control flex h-7 overflow-hidden rounded border border-outline-gray-1 focus-within:border-outline-gray-4 focus-within:ring-2 focus-within:ring-gray-400"
 		>
 			<Popover class="relative flex" placement="bottom-start">
 				<template #target="{ togglePopover }">
