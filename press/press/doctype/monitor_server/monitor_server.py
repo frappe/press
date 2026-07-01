@@ -391,7 +391,11 @@ def send_deadman_heartbeat_monitor():
 	if not deadman_server:
 		return
 
-	deadman: DeadmanServer = frappe.get_doc("Deadman Server", deadman_server)
+	try:
+		deadman: DeadmanServer = frappe.get_doc("Deadman Server", deadman_server)
+	except Exception:
+		log_error("Deadman Server document not found", server=deadman_server)
+		return
 
 	for server_name in frappe.get_all("Monitor Server", pluck="name"):
 		try:
