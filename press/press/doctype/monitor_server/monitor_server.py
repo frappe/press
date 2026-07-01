@@ -386,7 +386,12 @@ def verify_alertmanager_scrape(server, auth):
 
 
 def send_deadman_heartbeat_monitor():
-	deadman: DeadmanServer = frappe.db.get_single_value("Press Settings", "deadman_server")
+	deadman_server = frappe.db.get_single_value("Press Settings", "deadman_server")
+
+	if not deadman_server:
+		return
+
+	deadman: DeadmanServer = frappe.get_doc("Deadman Server", deadman_server)
 
 	for server_name in frappe.get_all("Monitor Server", pluck="name"):
 		try:
@@ -395,7 +400,6 @@ def send_deadman_heartbeat_monitor():
 			verify_monitor_stack(server)
 
 			deadman.send_capability_heartbeat("prometheus")
-
 			deadman.send_capability_heartbeat("alertmanager")
 
 		except Exception:

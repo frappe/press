@@ -418,8 +418,11 @@ def check_twilio_balance():
 
 		balance = float(response.json()["balance"])
 
-		if balance >= 0 and settings.deadman_server:
-			deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
-			deadman.send_capability_heartbeat("twilio")
+		if balance < 0 or not settings.deadman_server:
+			return
+
+		deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
+		deadman.send_capability_heartbeat("twilio")
+
 	except requests.RequestException:
 		frappe.log_error("Failed to fetch Twilio balance")

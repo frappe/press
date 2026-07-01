@@ -967,6 +967,7 @@ def validate_incidents():
 		},
 		fields=["name", "creation"],
 	)
+
 	for incident_dict in validating_incidents:
 		if frappe.utils.now_datetime() - incident_dict.creation > timedelta(
 			seconds=get_confirmation_threshold_duration()
@@ -975,8 +976,11 @@ def validate_incidents():
 			incident.confirm()
 
 	settings: PressSettings = frappe.get_single("Press Settings")
-	deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
 
+	if not settings.deadman_server:
+		return
+
+	deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
 	deadman.send_capability_heartbeat("validate_incident")
 
 
@@ -988,9 +992,11 @@ def resolve_incidents():
 		},
 		pluck="name",
 	)
+
 	for incident_name in ongoing_incidents:
 		incident = Incident("Incident", incident_name)
 		incident.check_resolved()
+
 		if (
 			incident.time_to_call_for_help or incident.time_to_call_for_help_again
 		) and incident.waited_enough_for_investigator_reactions:
@@ -998,8 +1004,11 @@ def resolve_incidents():
 			incident.call_humans()
 
 	settings: PressSettings = frappe.get_single("Press Settings")
-	deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
 
+	if not settings.deadman_server:
+		return
+
+	deadman: DeadmanServer = frappe.get_doc("Deadman Server", settings.deadman_server)
 	deadman.send_capability_heartbeat("resolve_incident")
 
 
