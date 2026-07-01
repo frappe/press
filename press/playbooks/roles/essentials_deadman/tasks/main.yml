@@ -25,9 +25,9 @@
   changed_when: false
 
 - name: Add Deadsnakes PPA
-  apt_repository:
-    repo: ppa:deadsnakes/ppa
-    state: present
+  command: add-apt-repository -y ppa:deadsnakes/ppa
+  args:
+    creates: /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-{{ ansible_distribution_release }}.list
   when: python314_exists.rc != 0
 
 - name: Update apt cache after adding PPA

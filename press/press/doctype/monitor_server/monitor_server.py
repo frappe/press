@@ -386,7 +386,7 @@ def verify_alertmanager_scrape(server, auth):
 
 
 def send_deadman_heartbeat_monitor():
-	deadman: DeadmanServer = frappe.db.get_single_value("Press Settings", "Deadman Server")
+	deadman: DeadmanServer = frappe.db.get_single_value("Press Settings", "deadman_server")
 
 	for server_name in frappe.get_all("Monitor Server", pluck="name"):
 		try:

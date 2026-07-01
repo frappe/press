@@ -120,11 +120,14 @@ class DeadmanServer(BaseServer):
 		self.save()
 
 	def send_capability_heartbeat(self, capability_name):
+		url = f"https://{self.hostname}.{self.domain}/api/method/deadman.deadman.api.capability.update_capability_heartbeat"
+		print(url)
+
 		response = requests.post(
-			f"https://{self.hostname}.{self.domain}/api/method/deadman.api.capability.update_capability_heartbeat",
+			url,
 			data={
 				"capability_name": capability_name,
-				"password": self.deadman_password,
+				"password": self.get_password("deadman_password"),
 			},
 			timeout=15,
 		)
