@@ -1,6 +1,9 @@
 <template>
 	<div class="space-y-5 p-5">
-		<div v-if="relaxedPermissions" class="rounded bg-surface-amber-2 px-5 py-4">
+		<div
+			v-if="showRelaxedPermissions"
+			class="rounded bg-surface-amber-2 px-5 py-4"
+		>
 			<Checkbox
 				v-model="relaxedPermissions"
 				label="Enable Relaxed Permissions for Members"
@@ -35,6 +38,10 @@ const relaxedPermissions = computed({
 	get: () => Boolean(team.doc?.relaxed_permissions),
 	set: (value) => team.setValue.submit({ relaxed_permissions: value }),
 })
+
+// Captured once so unchecking doesn't yank the control away mid-interaction;
+// it stays until the next page load.
+const showRelaxedPermissions = ref(Boolean(team.doc?.relaxed_permissions))
 
 const members = createResource({
 	url: 'press.api.client.run_doc_method',
