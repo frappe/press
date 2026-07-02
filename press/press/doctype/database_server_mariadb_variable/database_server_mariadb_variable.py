@@ -43,8 +43,9 @@ class DatabaseServerMariaDBVariable(Document):
 	def value_field(self) -> str:
 		"""Return the first value field that has a value"""
 		for f in self.value_fields:
-			if self.get(f):
+			if self.get(f) is not None:
 				return f
+
 		return None
 
 	@property
@@ -107,7 +108,7 @@ class DatabaseServerMariaDBVariable(Document):
 			self.set(f"value_{self.datatype.lower()}", default_value)
 
 	def validate_empty_only_if_skippable(self):
-		if not self.value and not self.skippable:
+		if self.value is None and not self.skippable:
 			frappe.throw(f"Value for {self.mariadb_variable} cannot be empty")
 
 	def set_persist_and_unset_dynamic_if_skipped(self):
