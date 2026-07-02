@@ -6,7 +6,6 @@ import {
 	Spinner,
 	Tooltip,
 	createListResource,
-	createResource,
 	createDocumentResource,
 } from 'frappe-ui'
 import { h, ref, computed, defineAsyncComponent, onBeforeUnmount, watch, reactive } from 'vue'
@@ -86,19 +85,17 @@ function attachPipeline(id: string) {
 }
 
 if (!props.data.active_benches) {
-	createResource({
-		url: 'frappe.client.get_value',
-		params: {
-			doctype: 'Release Pipeline',
-			filters: {
-				release_group: props.data.name,
-				status: ['in', ['Running', 'Pending']],
-			},
-			fieldname: 'name',
+	createListResource({
+		doctype: 'Release Pipeline',
+		fields: ['name'],
+		filters: {
+			release_group: props.data.name,
+			status: ['in', ['Running', 'Pending']],
 		},
+		pageLength: 1,
 		auto: true,
 		onSuccess(data: any) {
-			if (data?.name) attachPipeline(data.name)
+			if (data?.[0]?.name) attachPipeline(data[0].name)
 		},
 	})
 }
