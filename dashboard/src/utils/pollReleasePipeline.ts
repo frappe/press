@@ -48,7 +48,7 @@ export function pollReleasePipelineValidationStatus(group, stuckRestarts = 0) {
 								}
 								setTimeout(
 									() => pollReleasePipelineValidationStatus(group, stuckRestarts + 1),
-									2000,
+									Math.min(2 ** stuckRestarts * 2000, 30000),
 								)
 							}
 						})
