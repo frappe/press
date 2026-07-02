@@ -294,6 +294,7 @@ scheduler_events = {
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_hourly",
 		"press.press.doctype.database_server.database_server.database_flush_tables_of_public_servers",
 		"press.press.doctype.server_snapshot.server_snapshot.delete_dedicated_snapshots_with_failure_status",
+		"press.saas.doctype.product_trial.product_trial.archive_standby_sites_of_disabled_pooling_products",
 	],
 	"all": [
 		"press.auth.flush",

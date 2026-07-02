@@ -26,6 +26,7 @@
 		"enable_pooling",
 		"standby_pool_size",
 		"standby_queue_size",
+		"cleanup_remaining_pool",
 		"section_break_klpr",
 		"enable_hybrid_pooling",
 		"hybrid_pool_rules",
@@ -104,6 +105,14 @@
 			"fieldname": "standby_queue_size",
 			"fieldtype": "Int",
 			"label": "Standby Queue Size"
+		},
+		{
+			"default": "0",
+			"depends_on": "eval:!doc.enable_pooling",
+			"description": "Archive existing standby sites of this product. Only applies while pooling is disabled.",
+			"fieldname": "cleanup_remaining_pool",
+			"fieldtype": "Check",
+			"label": "Clean Up Remaining Site Pool"
 		},
 		{
 			"fieldname": "pooling_tab",
