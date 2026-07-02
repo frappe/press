@@ -1877,7 +1877,8 @@ def are_builds_suspended() -> bool:
 	return is_suspended()
 
 
-def new_release_group(title, version, apps, team=None, cluster=None, saas_app="", server=None):
+def new_release_group(title, version, apps, team=None, cluster=None, saas_app="", server=None, check_dependent_apps=False
+):
 	if cluster:
 		if not server:
 			restricted_release_group_names = frappe.db.get_all(
@@ -1929,6 +1930,7 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 			"servers": servers,
 			"team": team,
 			"saas_app": saas_app,
+			"check_dependent_apps": check_dependent_apps,
 		}
 	).insert()
 
