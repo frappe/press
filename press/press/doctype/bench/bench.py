@@ -1092,7 +1092,12 @@ class Bench(Document):
 	def check_ongoing_jobs(self):
 		frappe.db.commit()
 		if frappe.db.exists(
-			"Agent Job", {"bench": self.name, "status": ("in", ["Running", "Pending", "Undelivered"])}
+			"Agent Job",
+			{
+				"bench": self.name,
+				"creation": (">", frappe.utils.add_to_date(None, days=-2)),
+				"status": ("in", ["Running", "Pending", "Undelivered"]),
+			},
 		):
 			frappe.throw(
 				"Cannot archive bench because of ongoing jobs. Please retry after the job queue is cleared.",
