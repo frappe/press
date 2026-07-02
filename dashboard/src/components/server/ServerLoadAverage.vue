@@ -4,6 +4,11 @@
 			<h2 class="text-lg font-medium text-ink-gray-9">Load Average</h2>
 			<div class="flex items-center space-x-2">
 				<Button
+					v-if="canChangePlan"
+					label="Change Plan"
+					@click="$emit('change-plan')"
+				/>
+				<Button
 					icon="help-circle"
 					variant="ghost"
 					:link="'https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#load-average'"
@@ -34,18 +39,22 @@
 	</div>
 </template>
 <script>
-import dayjs from '../../utils/dayjs';
-import LineChart from '@/components/charts/LineChart.vue';
+import LineChart from '@/components/charts/LineChart.vue'
+import dayjs from '../../utils/dayjs'
 
 export default {
 	name: 'CPUUsage',
-	props: ['server'],
+	props: {
+		server: { type: String, required: true },
+		canChangePlan: { type: Boolean, default: true },
+	},
+	emits: ['change-plan'],
 	components: { LineChart },
 	resources: {
 		loadavg() {
-			let localTimezone = dayjs.tz.guess();
-			const end = dayjs();
-			const start = end.subtract(6, 'hour');
+			let localTimezone = dayjs.tz.guess()
+			const end = dayjs()
+			const start = end.subtract(6, 'hour')
 			return {
 				url: 'press.api.server.analytics',
 				params: {
@@ -56,47 +65,47 @@ export default {
 					end: end.toISOString(),
 				},
 				auto: true,
-			};
+			}
 		},
 	},
 	computed: {
 		loadAverageData() {
-			let loadavg = this.$resources.loadavg.data;
-			if (!loadavg) return;
+			let loadavg = this.$resources.loadavg.data
+			if (!loadavg) return
 
 			loadavg.datasets.sort(
 				(a, b) => Number(a.name.split(' ')[2]) - Number(b.name.split(' ')[2]),
-			);
+			)
 
-			return this.transformMultiLineChartData(loadavg);
+			return this.transformMultiLineChartData(loadavg)
 		},
 	},
 	methods: {
 		transformMultiLineChartData(data, stack = null, percentage = false) {
-			let total = [];
+			let total = []
 			if (percentage) {
 				// the sum of each cpu values tends to differ by few values
 				// so we need to calculate the total for each timestamp
 				for (let i = 0; i < data.datasets[0].values.length; i++) {
 					for (let j = 0; j < data.datasets.length; j++) {
-						if (!total[i]) total[i] = 0;
-						total[i] += data.datasets[j].values[i];
+						if (!total[i]) total[i] = 0
+						total[i] += data.datasets[j].values[i]
 					}
 				}
 			}
 			const datasets = data.datasets.map(({ name, values }) => {
-				let dataset = [];
+				let dataset = []
 				for (let i = 0; i < values.length; i++) {
 					dataset.push([
 						+new Date(data.labels[i]),
 						percentage ? (values[i] / total[i]) * 100 : values[i],
-					]);
+					])
 				}
-				return { name, dataset, stack };
-			});
+				return { name, dataset, stack }
+			})
 
-			return { datasets, yMax: percentage ? 100 : null };
+			return { datasets, yMax: percentage ? 100 : null }
 		},
 	},
-};
+}
 </script>

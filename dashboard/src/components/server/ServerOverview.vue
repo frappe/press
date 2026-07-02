@@ -172,7 +172,11 @@
 				</div>
 			</div>
 
-			<ServerLoadAverage :server="server" />
+			<ServerLoadAverage
+				:server="server"
+				:can-change-plan="!$appServer.doc.is_self_hosted"
+				@change-plan="showPlanChangeDialog('Server')"
+			/>
 		</div>
 	</div>
 </template>
