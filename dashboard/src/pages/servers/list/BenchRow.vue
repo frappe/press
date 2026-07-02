@@ -142,7 +142,7 @@ const benchOptions = (bench) => [
 	{ label: 'App Marketplace', route: '/apps', icon: LucideStore },
 	{
 		label: 'Bench Actions',
-		route: `/groups/${bench.name}/actions`,
+		route: { name: 'Release Group Detail Actions', params: { name: bench.name } },
 		icon: LucideSlidersVertical,
 	},
 	{
@@ -175,7 +175,7 @@ const dropSite = (site) => {
 const siteOptions = (site) => [
 	{
 		label: 'Site Actions',
-		route: `/sites/${site.name}/actions`,
+		route: { name: 'Site Detail Actions', params: { name: site.name } },
 		icon: LucideSlidersVertical,
 	},
 	{
@@ -261,7 +261,7 @@ onBeforeUnmount(() => {
 					<Tooltip text="Go to bench dashboard">
 						<router-link
 							class="hover:underline flex gap-2"
-							:to="`/groups/${data.name}`"
+							:to="{ name: 'Release Group Detail', params: { name: data.name } }"
 							@click.prevent="(e) => e.stopPropagation()"
 						>
 							<LucideBoxes class="size-4" />
@@ -379,7 +379,7 @@ onBeforeUnmount(() => {
 			<Tooltip text="Go to site dashboard">
 				<router-link
 					class="flex gap-2 w-fit items-center hover:underline text-ink-gray-8 pl-6"
-					:to="`/sites/${site.name}`"
+					:to="{ name: 'Site Detail', params: { name: site.name } }"
 				>
 					<LucideAppWindow class="size-4" /> {{ site.name }}
 				</router-link>
@@ -387,7 +387,7 @@ onBeforeUnmount(() => {
 
 			<router-link
 				v-if="['Pending', 'Installing', 'Updating', 'Recovering'].includes(site.status)"
-				:to="`/sites/${site.name}`"
+				:to="{ name: 'Site Detail', params: { name: site.name } }"
 				class="flex gap-2 items-center text-xs text-ink-gray-8"
 			>
 				<Spinner class="!size-3.5" />
