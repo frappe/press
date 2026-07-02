@@ -6,7 +6,6 @@ import {
 	Spinner,
 	Tooltip,
 	createListResource,
-	createResource,
 	createDocumentResource,
 } from 'frappe-ui'
 import { h, ref, computed, defineAsyncComponent, onBeforeUnmount, watch, reactive } from 'vue'
@@ -86,19 +85,17 @@ function attachPipeline(id: string) {
 }
 
 if (!props.data.active_benches) {
-	createResource({
-		url: 'frappe.client.get_value',
-		params: {
-			doctype: 'Release Pipeline',
-			filters: {
-				release_group: props.data.name,
-				status: ['in', ['Running', 'Pending']],
-			},
-			fieldname: 'name',
+	createListResource({
+		doctype: 'Release Pipeline',
+		fields: ['name'],
+		filters: {
+			release_group: props.data.name,
+			status: ['in', ['Running', 'Pending']],
 		},
+		pageLength: 1,
 		auto: true,
 		onSuccess(data: any) {
-			if (data?.name) attachPipeline(data.name)
+			if (data?.[0]?.name) attachPipeline(data[0].name)
 		},
 	})
 }
@@ -171,7 +168,7 @@ const groupOptions = [
 	{ label: 'App Marketplace', route: '/apps', icon: LucideStore },
 	{
 		label: 'Bench Actions',
-		route: `/groups/${props.data.name}/actions`,
+		route: { name: 'Release Group Detail Actions', params: { name: props.data.name } },
 		icon: LucideSlidersVertical,
 	},
 	{
@@ -186,7 +183,7 @@ const groupOptions = [
 const siteOptions = (site: any) => [
 	{
 		label: 'Site Actions',
-		route: `/sites/${site.name}/actions`,
+		route: { name: 'Site Detail Actions', params: { name: site.name } },
 		icon: LucideSlidersVertical,
 	},
 ]
@@ -221,7 +218,7 @@ const defaultSiteStatusBadge = { theme: 'gray' as const, dot: 'bg-surface-gray-4
 					<Tooltip text="Go to bench dashboard">
 						<router-link
 							class="hover:underline flex gap-2 items-center font-medium min-w-0"
-							:to="`/groups/${data.name}`"
+							:to="{ name: 'Release Group Detail', params: { name: data.name } }"
 							@click.stop
 						>
 							<LucideBoxes class="size-4 shrink-0 text-ink-gray-5" />
@@ -315,7 +312,7 @@ const defaultSiteStatusBadge = { theme: 'gray' as const, dot: 'bg-surface-gray-4
 
 				<router-link
 					class="flex gap-2 items-center hover:underline text-ink-gray-8 pl-6 min-w-0"
-					:to="`/sites/${site.name}`"
+					:to="{ name: 'Site Detail', params: { name: site.name } }"
 				>
 					<LucideAppWindow class="size-4 shrink-0 text-ink-gray-5" />
 					<span class="truncate">{{ site.name }}</span>
@@ -323,7 +320,7 @@ const defaultSiteStatusBadge = { theme: 'gray' as const, dot: 'bg-surface-gray-4
 
 				<router-link
 					v-if="transientStatuses.includes(site.status)"
-					:to="`/sites/${site.name}`"
+					:to="{ name: 'Site Detail', params: { name: site.name } }"
 					class="flex gap-2 items-center text-xs text-ink-gray-8"
 				>
 					<Spinner class="!size-3.5" />
