@@ -670,5 +670,19 @@
   "set_on_new_servers": 1,
   "skippable": 0,
   "title": null
+ },
+ {
+  "configurable_by_user": 0,
+  "datatype": "Int",
+  "default_value": "0",
+  "doc_section": "replication-and-binary-log",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2026-07-02 10:03:58.148822",
+  "name": "slave_connections_needed_for_purge",
+  "set_on_new_servers": 1,
+  "skippable": 0,
+  "title": null
  }
 ]
