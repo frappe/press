@@ -46,7 +46,24 @@ class ClusterCreation(WorkflowBuilder):
 
 	def on_workflow_failure(self, workflow: "PressWorkflow"):
 		self.db_set({"status": "Failure", "end": now_datetime()})
+		self._revert_source_cluster()
 		self._create_cluster_creation_incident(workflow)
+
+	def _revert_source_cluster(self):
+		"""Re-expose the source cluster on workflow failure.
+
+		The threshold trigger marked the source cluster non-public and set
+		``auto_cluster_triggered`` so no new servers land on it while the
+		successor is provisioned.  If provisioning fails the source would be
+		stranded (non-public + triggered = never retried), so re-publish it and
+		clear the flag to allow a retry on the next threshold hit.  The incident
+		raised alongside this keeps a human in the loop.
+		"""
+		frappe.db.set_value(
+			"Cluster",
+			self.source_cluster,
+			{"public": 1, "auto_cluster_triggered": 0},
+		)
 
 	@property
 	def source_cluster_doc(self) -> "Cluster":
@@ -56,12 +73,20 @@ class ClusterCreation(WorkflowBuilder):
 	def execute(self):
 		self.create_cluster_record()
 		self.copy_images_if_needed()
+		self.clone_server_plans()
+		self.reconfigure_monitor_server()
 		self.create_proxy_server()
 		self.wait_for_proxy_server()
+		self.setup_proxy_ssh()
+		self.setup_proxy_proxysql()
 
 		for i in range(1, (self.source_cluster_doc.auto_cluster_app_server_count or 1) + 1):
 			self.create_server_pairs(i)
 			self.wait_for_server_pairs(i)
+
+		self.add_servers_to_public_benches()
+		self.enable_new_servers_for_placement()
+		self.mark_new_cluster_public()
 
 	@task
 	def create_cluster_record(self):
@@ -82,7 +107,9 @@ class ClusterCreation(WorkflowBuilder):
 			"region": source.region,
 			"availability_zone": source.availability_zone,
 			"ssh_key": source.ssh_key,
-			"public": source.public,
+			# Stay non-public throughout provisioning; mark_new_cluster_public
+			# flips this on only once benches are deployed and ready.
+			"public": 0,
 			"hybrid": source.hybrid,
 			"beta": source.beta,
 			"team": source.team,
@@ -164,7 +191,7 @@ class ClusterCreation(WorkflowBuilder):
 			plan=db_plan,
 		)
 		cluster.database_server = db_server.name
-		_, app_job = cluster.create_server(
+		app_server, app_job = cluster.create_server(
 			"Server",
 			f"Public App Server {pair_index}",
 			plan=app_plan,
@@ -172,6 +199,7 @@ class ClusterCreation(WorkflowBuilder):
 		)
 		self.kv.set(f"db_job_name_{pair_index}", db_job.name)
 		self.kv.set(f"app_job_name_{pair_index}", app_job.name)
+		self.kv.set(f"app_server_{pair_index}", app_server.name)
 
 	@task
 	def wait_for_proxy_server(self):
@@ -201,6 +229,101 @@ class ClusterCreation(WorkflowBuilder):
 			failures.append(f"App server job {app_job_name}")
 		if failures:
 			raise RuntimeError(f"Server pair {pair_index} creation failed: {', '.join(failures)}")
+
+	@task
+	def clone_server_plans(self):
+		"""Clone Server Plans to New Cluster"""
+		for plan_name in frappe.get_all("Server Plan", {"cluster": self.source_cluster}, pluck="name"):
+			new_name = f"{plan_name} - {self.new_cluster}"
+			if frappe.db.exists("Server Plan", new_name):
+				continue
+			plan = frappe.copy_doc(frappe.get_doc("Server Plan", plan_name))
+			plan.name = None
+			plan.cluster = self.new_cluster
+			plan.insert(set_name=new_name, ignore_permissions=True, ignore_if_duplicate=True)
+
+	@task(queue="long", timeout=1800)
+	def reconfigure_monitor_server(self):
+		"""Reconfigure Monitor Server"""
+		# Best effort: monitoring is observability, not on the critical path.
+		# _reconfigure_monitor_server swallows its own Ansible errors.
+		monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+		if not monitor_server:
+			return
+		frappe.get_doc("Monitor Server", monitor_server)._reconfigure_monitor_server()
+
+	@task(queue="long", timeout=1800)
+	def setup_proxy_ssh(self):
+		"""Setup SSH Proxy"""
+		# Non-fatal: SSH proxy is convenience tooling, not required for the
+		# cluster to serve traffic. On failure mark the proxy Broken and move on
+		# rather than failing the whole cluster creation.
+		proxy = frappe.get_doc("Proxy Server", self.kv.get("proxy_server"))
+		if proxy.is_ssh_proxy_setup:
+			return
+
+		if not proxy.ssh_certificate_authority:
+			ca = frappe.db.get_single_value("Press Settings", "ssh_certificate_authority")
+			if not ca:
+				log_error("SSH Proxy setup skipped: no SSH Certificate Authority", proxy=proxy.name)
+				proxy.db_set("status", "Broken")
+				return
+			proxy.db_set("ssh_certificate_authority", ca)
+			proxy.reload()
+
+		proxy._setup_ssh_proxy()
+		proxy.reload()
+		if not proxy.is_ssh_proxy_setup:
+			log_error("SSH Proxy setup failed", proxy=proxy.name)
+			proxy.db_set("status", "Broken")
+
+	@task(queue="long", timeout=1800)
+	def setup_proxy_proxysql(self):
+		"""Setup ProxySQL"""
+		# Non-fatal, same as setup_proxy_ssh: flag the proxy Broken and continue
+		# instead of failing the whole cluster creation.
+		proxy = frappe.get_doc("Proxy Server", self.kv.get("proxy_server"))
+		if proxy.is_proxysql_setup:
+			return
+		proxy._setup_proxysql()
+		proxy.reload()
+		if not proxy.is_proxysql_setup:
+			log_error("ProxySQL setup failed", proxy=proxy.name)
+			proxy.db_set("status", "Broken")
+
+	def _new_app_servers(self) -> list[str]:
+		count = self.source_cluster_doc.auto_cluster_app_server_count or 1
+		return [self.kv.get(f"app_server_{i}") for i in range(1, count + 1)]
+
+	def _public_release_groups(self) -> list[str]:
+		return frappe.get_all(
+			"Release Group",
+			{"public": 1, "enabled": 1, "central_bench": 0},
+			pluck="name",
+		)
+
+	@task(queue="long", timeout=3600)
+	def add_servers_to_public_benches(self):
+		"""Add App Servers to Public Benches"""
+		app_servers = self._new_app_servers()
+		for group_name in self._public_release_groups():
+			rg = frappe.get_doc("Release Group", group_name)
+			for server in app_servers:
+				if any(s.server == server for s in rg.servers):
+					continue
+				rg.add_server(server, deploy=True)
+				rg.reload()
+
+	@task
+	def enable_new_servers_for_placement(self):
+		"""Enable New Servers for New Benches and Sites"""
+		for server in self._new_app_servers():
+			frappe.db.set_value("Server", server, {"use_for_new_benches": 1, "use_for_new_sites": 1})
+
+	@task
+	def mark_new_cluster_public(self):
+		"""Mark New Cluster as Public"""
+		frappe.db.set_value("Cluster", self.new_cluster, "public", 1)
 
 	def _create_cluster_creation_incident(self, workflow: "PressWorkflow") -> None:
 		cluster = self.new_cluster or self.source_cluster

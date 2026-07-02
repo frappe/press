@@ -1584,7 +1584,14 @@ class VirtualMachine(Document):
 		if running_count < cluster.max_servers:
 			return
 
+		# Mark the cluster non-public so it drops out of both placement pools
+		# (dedicated server picker `api.server.options` and `get_all_for_new_bench`)
+		# immediately.  `max_servers` is set below the hard capacity so the
+		# remaining headroom absorbs any in-flight server pairs while the
+		# successor cluster is provisioned.  Cluster Creation re-publishes the
+		# source on failure (see ClusterCreation._revert_source_cluster).
 		cluster.db_set("auto_cluster_triggered", 1)
+		cluster.db_set("public", 0)
 
 		cluster.create_derived_cluster()
 

@@ -2191,6 +2191,17 @@ class Cluster(Document):
 
 	@frappe.whitelist()
 	def create_derived_cluster(self):
+		# A derived cluster only needs to be spawned once per threshold breach.
+		# The ``auto_cluster_triggered`` flag dedupes concurrent triggers, but it
+		# can be cleared (on creation failure, or by an admin re-enabling the
+		# cluster) while an earlier Cluster Creation is still in flight. Guard on
+		# the in-progress Cluster Creation directly so we never run two at once.
+		if _cluster := frappe.db.exists(
+			"Cluster Creation",
+			{"source_cluster": self.name, "status": ("in", ("Pending", "Running"))},
+		):
+			frappe.throw(f"Cluster Creation {_cluster} already in progress for {self.name}")
+
 		doc = frappe.get_doc(
 			{
 				"doctype": "Cluster Creation",
@@ -2199,6 +2210,28 @@ class Cluster(Document):
 			}
 		).insert(ignore_permissions=True)
 		return f"Queued {doc.name}"
+
+	@frappe.whitelist()
+	def enable_for_public(self):
+		"""Bring a cluster that was auto-marked non-public back into rotation.
+
+		When a cluster hits its server threshold it is marked non-public and
+		``auto_cluster_triggered`` is set so no new servers land on it while a
+		successor is provisioned. After archiving servers to free capacity, call
+		this to re-publish the cluster and clear the flag so it both accepts new
+		servers again and can trigger a fresh derived cluster if it refills.
+		"""
+		if self.enable_auto_cluster and self.max_servers:
+			running = self.get_running_vm_count()
+			if running >= self.max_servers:
+				frappe.throw(
+					f"Cluster {self.name} is still at its server threshold "
+					f"({running}/{self.max_servers}). Archive servers before re-enabling.",
+					frappe.ValidationError,
+				)
+
+		self.db_set({"public": 1, "auto_cluster_triggered": 0})
+		return f"{self.name} re-enabled for public use"
 
 	def get_nat_server_if_supported(self):
 		if self.disable_public_ips_for_servers and self.cloud_provider in (
