@@ -1,12 +1,26 @@
 <template>
-	<div class="p-5">
+	<div class="space-y-5 p-5">
+		<div
+			v-if="showRelaxedPermissions"
+			class="rounded bg-surface-amber-2 px-5 py-4"
+		>
+			<Checkbox
+				v-model="relaxedPermissions"
+				label="Enable Relaxed Permissions for Members"
+			/>
+			<p class="ml-[1.375rem] mt-1 text-p-sm text-ink-gray-7">
+				When enabled, users with the Member role receive full access by default.
+				We recommend disabling this setting so members are granted access only
+				through their assigned custom roles.
+			</p>
+		</div>
 		<ObjectList :options="teamMembersListOptions"></ObjectList>
 	</div>
 </template>
 
 <script setup>
-import { Badge, createResource } from 'frappe-ui'
-import { defineAsyncComponent, h, ref } from 'vue'
+import { Badge, Checkbox, createResource } from 'frappe-ui'
+import { computed, defineAsyncComponent, h, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import ShieldIcon from '~icons/lucide/shield-user'
 import session from '../../data/session'
@@ -19,6 +33,15 @@ import UserWithAvatarCell from '../UserWithAvatarCell.vue'
 import TeamSettingsUserType from './TeamSettingsUserType.vue'
 
 const team = getTeam()
+
+const relaxedPermissions = computed({
+	get: () => Boolean(team.doc?.relaxed_permissions),
+	set: (value) => team.setValue.submit({ relaxed_permissions: value }),
+})
+
+// Captured once so unchecking doesn't yank the control away mid-interaction;
+// it stays until the next page load.
+const showRelaxedPermissions = ref(Boolean(team.doc?.relaxed_permissions))
 
 const members = createResource({
 	url: 'press.api.client.run_doc_method',

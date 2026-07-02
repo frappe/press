@@ -106,6 +106,30 @@ class TestTeamMembers(FrappeTestCase):
 			invitations = get_invitations(team)
 			self.assertEqual(len(invitations), 0)
 
+	def test_get_invitations_excludes_accepted_invitations_with_cleared_request_key(self):
+		"""Acceptance nulls request_key but leaves the expiration time in the
+		future, so the invite must not keep showing as pending."""
+		team = create_test_team_for_members()
+		team_user = frappe.get_value("Team", team, "user")
+		with user_context(team_user):
+			accepted_email = frappe.mock("email")
+			create_account_request(team, accepted_email, invited_by=team)
+			frappe.db.set_value("Account Request", {"email": accepted_email}, "request_key", None)
+			invitations = get_invitations(team)
+			self.assertEqual(len(invitations), 0)
+
+	def test_get_invitations_excludes_invitations_with_blanked_request_key(self):
+		"""The expire_request_key scheduled job blanks request_key to an empty
+		string; such invites must not show as pending either."""
+		team = create_test_team_for_members()
+		team_user = frappe.get_value("Team", team, "user")
+		with user_context(team_user):
+			invalidated_email = frappe.mock("email")
+			create_account_request(team, invalidated_email, invited_by=team)
+			frappe.db.set_value("Account Request", {"email": invalidated_email}, "request_key", "")
+			invitations = get_invitations(team)
+			self.assertEqual(len(invitations), 0)
+
 	def test_get_invitations_excludes_uninvited_requests(self):
 		team = create_test_team_for_members()
 		team_user = frappe.get_value("Team", team, "user")

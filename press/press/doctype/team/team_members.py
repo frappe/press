@@ -39,6 +39,10 @@ def get_invitations(team: str):
 		.where(AccountRequest.team == team)
 		.where(Not(AccountRequest.invited_by.isnull()))
 		.where(AccountRequest.request_key_expiration_time > frappe.utils.now_datetime())
+		# Acceptance nulls request_key and the expiry scheduler blanks it, both
+		# without touching the expiration time, so the key must be checked too.
+		.where(Not(AccountRequest.request_key.isnull()))
+		.where(AccountRequest.request_key != "")
 		.select(
 			AccountRequest.name,
 			AccountRequest.email,

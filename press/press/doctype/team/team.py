@@ -471,7 +471,7 @@ class Team(Document):
 		self.save(ignore_permissions=True)
 
 		for press_role in press_roles or []:
-			frappe.get_doc("Press Role", press_role.press_role).add_user(
+			frappe.get_doc("Press Role", press_role).add_user(
 				user.name,
 				skip_validations=skip_validations,
 			)

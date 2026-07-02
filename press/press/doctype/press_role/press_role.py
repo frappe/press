@@ -159,6 +159,10 @@ class PressRole(Document):
 
 	def on_trash(self) -> None:
 		frappe.db.delete("Account Request Press Role", {"press_role": self.name})
+		# Invites record the selected role in Account Request.press_role and keep
+		# it after acceptance, so the link must be unset for deletion to pass the
+		# link check.
+		frappe.db.set_value("Account Request", {"press_role": self.name}, "press_role", None)
 
 	def get_doc(self, doc):
 		flat_resources = []
