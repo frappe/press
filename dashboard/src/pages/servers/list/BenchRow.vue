@@ -5,7 +5,6 @@ import {
 	Dropdown,
 	Spinner,
 	Tooltip,
-	createResource,
 	createDocumentResource,
 	createListResource,
 } from 'frappe-ui'
@@ -93,20 +92,18 @@ onBeforeUnmount(() => {
 })
 
 if (!props.data.active_benches) {
-	createResource({
-		url: 'frappe.client.get_value',
-		params: {
-			doctype: 'Release Pipeline',
-			filters: {
-				release_group: props.data.name,
-				status: ['in', ['Running', 'Pending']],
-			},
-			fieldname: 'name',
+	createListResource({
+		doctype: 'Release Pipeline',
+		fields: ['name'],
+		filters: {
+			release_group: props.data.name,
+			status: ['in', ['Running', 'Pending']],
 		},
+		pageLength: 1,
 		auto: true,
 		onSuccess(data) {
-			if (!data?.name) return
-			attachPipeline(data.name)
+			if (!data?.[0]?.name) return
+			attachPipeline(data[0].name)
 		},
 	})
 }
