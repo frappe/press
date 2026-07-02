@@ -680,7 +680,9 @@ class DatabaseServer(BaseServer):
 		update_variables_synchronously: bool = False,  # This will run the job in same thread
 	):
 		"""Add or update MariaDB variable on the server"""
-		if not skip and not value:
+		if not skip and (
+			(value_type == "value_int" and value is None) or (value_type != "value_int" and not value)
+		):
 			frappe.throw("For non-skippable variables, value is mandatory")
 
 		self.flags.update_mariadb_system_variables_synchronously = update_variables_synchronously
