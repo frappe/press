@@ -1,18 +1,22 @@
 <template>
 	<div class="space-y-5 p-5">
-		<Switch
-			v-if="relaxedPermissions"
-			v-model="relaxedPermissions"
-			label="Enable Relaxed Permissions for Members"
-			description="When enabled, users with the Member role receive full access by default. We recommend disabling this setting so members are granted access only through their assigned custom roles."
-			class="rounded bg-surface-amber-2 px-5 py-4"
-		/>
+		<div v-if="relaxedPermissions" class="rounded bg-surface-amber-2 px-5 py-4">
+			<Checkbox
+				v-model="relaxedPermissions"
+				label="Enable Relaxed Permissions for Members"
+			/>
+			<p class="ml-[1.375rem] mt-1 text-p-sm text-ink-gray-7">
+				When enabled, users with the Member role receive full access by default.
+				We recommend disabling this setting so members are granted access only
+				through their assigned custom roles.
+			</p>
+		</div>
 		<ObjectList :options="teamMembersListOptions"></ObjectList>
 	</div>
 </template>
 
 <script setup>
-import { Badge, createResource, Switch } from 'frappe-ui'
+import { Badge, Checkbox, createResource } from 'frappe-ui'
 import { computed, defineAsyncComponent, h, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import ShieldIcon from '~icons/lucide/shield-user'
