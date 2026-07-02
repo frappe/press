@@ -366,6 +366,19 @@ class AccountRequest(Document):
 		title = frappe.get_value("Press Role", self.press_role, "title")
 		return title or self.press_role
 
+	@property
+	def invite_press_roles(self) -> list[str]:
+		"""Press Role names to assign to the member when the invite is accepted.
+
+		New invites store the selected role in the press_role link field;
+		pending invites created before that may still carry rows in the
+		press_roles child table. Honour both.
+		"""
+		roles = [row.press_role for row in self.press_roles]
+		if self.press_role and self.press_role not in roles:
+			roles.append(self.press_role)
+		return roles
+
 	def is_saas_signup(self):
 		return bool(self.saas_app or self.saas or self.erpnext or self.product_trial)
 

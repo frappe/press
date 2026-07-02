@@ -214,7 +214,7 @@ def setup_account(  # noqa: C901
 
 	team = account_request.team
 	email = account_request.email
-	press_roles = account_request.press_roles
+	press_roles = account_request.invite_press_roles
 
 	if is_invitation:
 		# if this is a request from an invitation
@@ -278,7 +278,7 @@ def accept_team_invite(key: str):
 	last_name = account_request.last_name
 	email = account_request.email
 	password = None
-	press_roles = account_request.press_roles
+	press_roles = account_request.invite_press_roles
 
 	team_doc = frappe.get_doc("Team", team, ignore_permissions=True)
 	team_doc.create_user_for_member(

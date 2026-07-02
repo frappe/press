@@ -108,6 +108,55 @@ class TestAccountApi(TestCase):
 			custom_role.title,
 		)
 
+	def test_invite_and_accept_custom_role_adds_member_to_press_role(self):
+		"""The invite stores the selected role in Account Request.press_role.
+		Accepting must assign that Press Role to the member — otherwise they
+		join role-less and lose access to the team's sites."""
+		from press.press.doctype.press_role.test_press_role import create_permission_role
+
+		team = create_test_team()
+		custom_role = create_permission_role(team.name)
+		invited = frappe.mock("email")
+		create_test_user(invited)
+
+		key = self._invite(team, invited, roles=f'["{custom_role.name}"]')
+		self._accept(invited, key)
+
+		self.assertTrue(
+			frappe.db.exists("Press Role User", {"parent": custom_role.name, "user": invited}),
+			"accepted member should be added to the invited Press Role",
+		)
+
+	def test_accept_legacy_invite_with_press_roles_child_table_adds_member_to_press_role(self):
+		"""Pending invites created before the invite rework stored roles in the
+		press_roles child table instead of the press_role field. Accepting those
+		must still assign the Press Role."""
+		from press.press.doctype.press_role.test_press_role import create_permission_role
+
+		team = create_test_team()
+		custom_role = create_permission_role(team.name)
+		invited = frappe.mock("email")
+		create_test_user(invited)
+
+		key = frappe.generate_hash(length=32)
+		frappe.get_doc(
+			{
+				"doctype": "Account Request",
+				"team": team.name,
+				"email": invited,
+				"invited_by": team.user,
+				"request_key": key,
+				"request_key_expiration_time": frappe.utils.add_days(frappe.utils.now_datetime(), 1),
+				"press_roles": [{"press_role": custom_role.name}],
+			}
+		).insert(ignore_permissions=True)
+		self._accept(invited, key)
+
+		self.assertTrue(
+			frappe.db.exists("Press Role User", {"parent": custom_role.name, "user": invited}),
+			"accepted member should be added to the Press Role from the legacy child table",
+		)
+
 	def test_accept_team_invite_is_idempotent_for_existing_member(self):
 		"""If the user is already on the team, accepting the invite clears the
 		key and is a no-op instead of throwing a duplicate-member error."""
