@@ -55,6 +55,25 @@ class TestPressRole(FrappeTestCase):
 		self.assertFalse(perm_role_user_exists)
 		self.assertRaises(frappe.ValidationError, self.perm_role.remove_user, self.team_member.name)
 
+	def test_delete_role_unsets_press_role_on_account_requests(self):
+		"""Invites keep the selected role in Account Request.press_role even
+		after acceptance. Deleting the role must unset those references,
+		otherwise the link check blocks the deletion forever."""
+		account_request = frappe.get_doc(
+			{
+				"doctype": "Account Request",
+				"team": self.team.name,
+				"email": "invitee@example.com",
+				"invited_by": self.team.user,
+				"press_role": self.perm_role.name,
+			}
+		).insert(ignore_permissions=True)
+
+		frappe.delete_doc("Press Role", self.perm_role.name)
+
+		self.assertFalse(frappe.db.exists("Press Role", self.perm_role.name))
+		self.assertFalse(frappe.db.get_value("Account Request", account_request.name, "press_role"))
+
 	def test_add_resource_rejects_cross_team_document(self):
 		other_team = create_test_team()
 		self.addCleanup(frappe.delete_doc, "Team", other_team.name, force=True)
