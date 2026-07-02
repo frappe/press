@@ -86,6 +86,7 @@ class Cluster(Document):
 		disable_public_ips_for_servers: DF.Check
 		enable_autoscaling: DF.Check
 		enable_periodic_flush_table: DF.Check
+		flow_log_id: DF.Data | None
 		flush_table_execution_hour: DF.Int
 		frappe_compute_api_key: DF.Data | None
 		frappe_compute_api_secret: DF.Password | None
@@ -115,6 +116,8 @@ class Cluster(Document):
 		subnet_id: DF.Data | None
 		team: DF.Link | None
 		title: DF.Data | None
+		vpc_flow_logs_enabled: DF.Check
+		vpc_flow_logs_s3_bucket: DF.Data | None
 		vpc_id: DF.Data | None
 	# end: auto-generated types
 
@@ -199,12 +202,16 @@ class Cluster(Document):
 			servers = client.servers.get_all()
 
 			if servers is None:
-				frappe.throw("API token does not have read access to the Hetzner Cloud.")
+				frappe.throw(
+					"This Hetzner Cloud API token doesn't have read access. Please generate a token with read and write permissions and enter it again."
+				)
 
 		except APIException as e:
 			# Handle specific API exceptions like unauthorized access
 			if e.code == "unauthorized":
-				frappe.throw("API token is invalid or does not have the correct permissions.")
+				frappe.throw(
+					"This Hetzner Cloud API token is invalid or lacks the required permissions. Please generate a new token with read and write access and enter it again."
+				)
 			else:
 				frappe.throw(f"An error occurred while validating the API token: {e}")
 
@@ -241,7 +248,9 @@ class Cluster(Document):
 				"Flush Table Execution Hour is required when Enable Periodic Flush Table is checked."
 			)
 		if not (0 <= self.flush_table_execution_hour <= 23):
-			frappe.throw("Flush Table Execution Hour must be between 0 and 23.")
+			frappe.throw(
+				"Please enter the flush table execution hour as a number between 0 and 23 (24-hour clock)."
+			)
 
 	def after_insert(self):
 		if self.cloud_provider == "AWS EC2":
@@ -277,6 +286,8 @@ class Cluster(Document):
 		self._add_digital_ocean_firewall(client=client)
 		# Add proxy firewall to digital ocean, if it doesn't already exist
 		self._add_digital_ocean_proxy_firewall(client=client)
+		# Add NAT firewall to digital ocean, if it doesn't already exist
+		self._add_digital_ocean_nat_security_group(client=client)
 
 		self.save()
 
@@ -341,6 +352,66 @@ class Cluster(Document):
 		except Exception as e:
 			frappe.throw(f"Failed to create Proxy Firewall on Digital Ocean: {e!s}")
 
+	def _add_digital_ocean_nat_security_group(self, client):
+		"""Adds the NAT firewall to Digital Ocean if it doesn't already exist"""
+
+		firewalls = client.firewalls.list()
+		firewalls = firewalls.get("firewalls", [])
+
+		firewall_name = f"Frappe Cloud - {self.name} - NAT - Security Group".replace(" ", "")
+
+		existing_firewalls = [fw for fw in firewalls if fw["name"] == firewall_name]
+
+		if existing_firewalls:
+			self.nat_security_group_id = existing_firewalls[0]["id"]
+			return
+
+		try:
+			firewall = client.firewalls.create(
+				{
+					"name": firewall_name,
+					"inbound_rules": [
+						{
+							"protocol": "tcp",
+							"ports": "1-65535",
+							"sources": {"addresses": [self.subnet_cidr_block]},
+						},
+						{
+							"protocol": "udp",
+							"ports": "1-65535",
+							"sources": {"addresses": [self.subnet_cidr_block]},
+						},
+						{
+							"protocol": "icmp",
+							"ports": "0",
+							"sources": {"addresses": [self.subnet_cidr_block]},
+						},
+					],
+					"outbound_rules": [
+						{
+							"protocol": "tcp",
+							"ports": "0",
+							"destinations": {"addresses": ["0.0.0.0/0"]},
+						},
+						{
+							"protocol": "udp",
+							"ports": "0",
+							"destinations": {"addresses": ["0.0.0.0/0"]},
+						},
+						{
+							"protocol": "icmp",
+							"ports": "0",
+							"destinations": {"addresses": ["0.0.0.0/0"]},
+						},
+					],
+				}
+			)
+
+			self.nat_security_group_id = firewall["firewall"]["id"]
+
+		except Exception as e:
+			frappe.throw(f"Failed to create NAT Firewall on Digital Ocean: {e!s}")
+
 	def _add_digital_ocean_firewall(self, client):
 		"""Adds the firewall to Digital Ocean if it doesn't already exist"""
 		firewalls = client.firewalls.list()
@@ -393,7 +464,9 @@ class Cluster(Document):
 			)
 
 			if "id" not in firewall.get("firewall", {}):
-				frappe.throw("Failed to create Firewall on Digital Ocean.")
+				frappe.throw(
+					"Failed to create the firewall on DigitalOcean. Please check the DigitalOcean API token and retry."
+				)
 
 			self.security_group_id = firewall["firewall"]["id"]
 		except Exception as e:
@@ -402,6 +475,38 @@ class Cluster(Document):
 		frappe.msgprint(
 			"To add this cluster to monitoring, go to the Monitor Server and trigger the 'Reconfigure Monitor Server' action from the Actions menu."
 		)
+
+	def add_hetzner_nat_route(self, nat_ip):
+		from hcloud.networks.domain import NetworkRoute
+
+		client = self.get_hetzner_client()
+
+		network = client.networks.get_by_id(int(self.vpc_id))
+		if not network:
+			frappe.throw(f"Hetzner network {self.vpc_id} not found")
+
+		for route in network.routes:
+			if route.destination == "0.0.0.0/0":
+				if route.gateway == nat_ip:
+					return
+
+				action = client.networks.delete_route(
+					network=network,
+					route=route,
+				)
+				action.wait_until_finished()
+
+				break
+
+		action = client.networks.add_route(
+			network=network,
+			route=NetworkRoute(
+				destination="0.0.0.0/0",
+				gateway=nat_ip,
+			),
+		)
+
+		action.wait_until_finished()
 
 	def provision_on_hetzner(self):
 		try:
@@ -533,6 +638,8 @@ class Cluster(Document):
 			self.save()
 		except APIException as e:
 			frappe.throw(f"Failed to provision proxy server firewall on Hetzner: {e!s}")
+
+		self.create_nat_security_group_hetzner()
 
 	def on_trash(self):
 		machines = frappe.get_all(
@@ -817,6 +924,56 @@ class Cluster(Document):
 				},
 			],
 		)
+
+	def create_nat_security_group_hetzner(self):
+		client = self.get_hetzner_client()
+
+		# Reuse existing firewall if already created
+		if self.nat_security_group_id:
+			try:
+				firewall = client.firewalls.get_by_id(int(self.nat_security_group_id))
+				if firewall:
+					return firewall
+			except APIException:
+				pass
+
+		try:
+			response = client.firewalls.create(
+				name=f"Frappe Cloud - {self.name} - NAT - Security Group",
+				rules=[
+					HetznerFirewallRule(
+						description="Allow TCP from private network",
+						direction="in",
+						protocol="tcp",
+						port="1-65535",
+						source_ips=[self.subnet_cidr_block],
+					),
+					HetznerFirewallRule(
+						description="Allow UDP from private network",
+						direction="in",
+						protocol="udp",
+						port="1-65535",
+						source_ips=[self.subnet_cidr_block],
+					),
+					HetznerFirewallRule(
+						description="Allow ICMP from private network",
+						direction="in",
+						protocol="icmp",
+						source_ips=[self.subnet_cidr_block],
+					),
+				],
+			)
+
+			self.nat_security_group_id = response.firewall.id
+			self.save()
+
+			return response.firewall
+
+		except APIException as e:
+			frappe.throw(
+				f"Failed to provision NAT firewall on Hetzner. "
+				f"Please verify Hetzner API access and firewall configuration. Error: {e!s}"
+			)
 
 	def create_nat_security_group(self):
 		client = self.get_aws_client()
@@ -1128,6 +1285,41 @@ class Cluster(Document):
 	@frappe.whitelist()
 	def assign_nat_security_group(self):
 		self.create_nat_security_group()
+		self.save()
+
+	@frappe.whitelist()
+	def setup_vpc_flow_logs(self):
+		"""Create an S3-delivered, ALL-traffic flow log for this cluster's VPC."""
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw("VPC Flow Logs are only supported on AWS EC2", frappe.ValidationError)
+		if self.status != "Active":
+			frappe.throw("Cluster is not active", frappe.ValidationError)
+		if not self.vpc_id:
+			frappe.throw("Cluster has no VPC", frappe.ValidationError)
+		if self.vpc_flow_logs_enabled:
+			frappe.throw("VPC Flow Logs are already enabled", frappe.ValidationError)
+		if not self.vpc_flow_logs_s3_bucket:
+			frappe.throw("Set the VPC Flow Logs S3 bucket on the cluster first", frappe.ValidationError)
+
+		response = self.get_aws_client().create_flow_logs(
+			ResourceType="VPC",
+			ResourceIds=[self.vpc_id],
+			TrafficType="ALL",
+			LogDestinationType="s3",
+			LogDestination=f"arn:aws:s3:::{self.vpc_flow_logs_s3_bucket}",
+			TagSpecifications=[
+				{
+					"ResourceType": "vpc-flow-log",
+					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Flow Logs"}],
+				},
+			],
+		)
+		# Fail loud at the boundary: CreateFlowLogs returns partial success.
+		if response.get("Unsuccessful"):
+			error = response["Unsuccessful"][0].get("Error", {})
+			frappe.throw(f"Failed to create VPC Flow Logs: {error.get('Message', error)}")
+		self.flow_log_id = response["FlowLogIds"][0]
+		self.vpc_flow_logs_enabled = 1
 		self.save()
 
 	@frappe.whitelist()
@@ -1632,20 +1824,20 @@ class Cluster(Document):
 				port, protocol = rule
 			else:
 				frappe.throw(
-					"Each firewall rule must be [port, protocol], for example: [['22', 'tcp'], ['51820', 'udp']]"
+					"Please provide each firewall rule as [port, protocol], for example: [['22', 'tcp'], ['51820', 'udp']]"
 				)
 
 			normalized_rules.append((port, self._normalize_firewall_protocol(protocol)))
 
 		if not normalized_rules:
-			frappe.throw("At least one firewall rule is required")
+			frappe.throw("Please provide at least one firewall rule.")
 
 		return normalized_rules
 
 	def _normalize_firewall_protocol(self, protocol: str) -> str:
 		protocol = (protocol or "tcp").lower().strip()
 		if protocol not in {"tcp", "udp"}:
-			frappe.throw("Firewall protocol must be one of: tcp, udp")
+			frappe.throw("Please use a supported firewall protocol: tcp or udp.")
 		return protocol
 
 	def _parse_port_range(self, port: str | int) -> tuple[int, int]:
@@ -1986,7 +2178,12 @@ class Cluster(Document):
 		return None
 
 	def get_nat_server_if_supported(self):
-		if self.disable_public_ips_for_servers and self.cloud_provider in ("AWS EC2", "Frappe Compute"):
+		if self.disable_public_ips_for_servers and self.cloud_provider in (
+			"AWS EC2",
+			"Frappe Compute",
+			"Hetzner",
+			"DigitalOcean",
+		):
 			nat_server = frappe.db.get_value(
 				"NAT Server",
 				{"status": "Active", "cluster": self.name, "secondary_private_ip": ("is", "set")},

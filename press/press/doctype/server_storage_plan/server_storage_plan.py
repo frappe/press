@@ -25,4 +25,6 @@ class ServerStoragePlan(Plan):
 		if self.enabled and frappe.db.exists(
 			"Server Storage Plan", {"enabled": 1, "name": ("!=", self.name)}
 		):
-			frappe.throw("Only one storage add-on plan can be enabled at a time")
+			frappe.throw(
+				"Only one storage add-on plan can be enabled at a time. Please disable the current storage add-on plan before enabling another."
+			)

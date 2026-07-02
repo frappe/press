@@ -38,14 +38,21 @@
 			"options": "Pending\nInstalling\nActive\nBroken\nArchived",
 			"read_only": 1
 		},
-		{ "fieldname": "hostname", "fieldtype": "Data", "label": "Hostname" },
+		{
+			"fieldname": "hostname",
+			"fieldtype": "Data",
+			"label": "Hostname"
+		},
 		{
 			"fieldname": "domain",
 			"fieldtype": "Link",
 			"label": "Domain",
 			"options": "Root Domain"
 		},
-		{ "fieldname": "column_break_vpdt", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_vpdt",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "cluster",
 			"fieldtype": "Link",
@@ -58,7 +65,7 @@
 			"fieldname": "provider",
 			"fieldtype": "Select",
 			"label": "Provider",
-			"options": "AWS EC2\nFrappe Compute",
+			"options": "AWS EC2\nFrappe Compute\nHetzner\nDigitalOcean",
 			"set_only_once": 1
 		},
 		{
@@ -86,7 +93,10 @@
 			"fieldtype": "Check",
 			"label": "Is Static Ip"
 		},
-		{ "fieldname": "column_break_oygq", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_oygq",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fetch_from": "virtual_machine.private_ip_address",
 			"fieldname": "private_ip",
@@ -110,7 +120,10 @@
 			"label": "Frappe Public Key",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_cpxp", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_cpxp",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "root_public_key",
 			"fieldtype": "Code",
@@ -159,7 +172,7 @@
 			"link_fieldname": "server"
 		}
 	],
-	"modified": "2026-04-27 11:32:03.470171",
+	"modified": "2026-06-23 20:01:38.633666",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "NAT Server",
@@ -179,7 +192,6 @@
 		}
 	],
 	"row_format": "Dynamic",
-	"rows_threshold_for_grid_search": 20,
 	"sort_field": "creation",
 	"sort_order": "DESC",
 	"states": []

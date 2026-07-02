@@ -153,7 +153,9 @@ def get_list(
 
 	meta = frappe.get_meta(doctype)
 	if meta.istable and not (filters.get("parenttype") and filters.get("parent")):
-		frappe.throw("parenttype and parent are required to get child records")
+		frappe.throw(
+			"To fetch child table records, please provide both 'parenttype' and 'parent' in the filters."
+		)
 
 	apply_team_filter = not (
 		filters.get("skip_team_filter_for_system_user_and_support_agent")

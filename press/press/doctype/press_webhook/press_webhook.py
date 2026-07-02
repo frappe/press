@@ -17,7 +17,7 @@ from frappe.model.document import Document
 from press.api.client import dashboard_whitelist
 from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.utils import is_valid_hostname
+from press.utils import docs, is_valid_hostname
 
 
 class PressWebhook(Document):
@@ -47,7 +47,9 @@ class PressWebhook(Document):
 	def validate(self):
 		# maximum 5 webhooks per team
 		if self.is_new() and frappe.db.count("Press Webhook", {"team": self.team}) > 5:
-			frappe.throw("You have reached the maximum number of webhooks per team")
+			frappe.throw(
+				f"Your team has reached the maximum of 5 webhooks. Please delete an existing webhook before adding a new one. {docs.doc_link(docs.WEBHOOKS)}."
+			)
 
 		if self.has_value_changed("endpoint"):
 			self.enabled = 0
@@ -63,20 +65,28 @@ class PressWebhook(Document):
 			pluck="name",
 		)
 		if len(webhooks) != 0:
-			frappe.throw("You have already added webhook for this endpoint")
+			frappe.throw(
+				"A webhook for this endpoint already exists. Please edit the existing webhook, or use a different endpoint URL."
+			)
 
 	def validate_endpoint_url_format(self):
 		url = urlparse(self.endpoint)
 		if not url.netloc:
-			frappe.throw("Endpoint should be a valid url")
+			frappe.throw(
+				"Please enter a valid URL for the endpoint, for example https://example.com/webhook."
+			)
 
 		# protocol should be http or https
 		if url.scheme not in ["http", "https"]:
-			frappe.throw("Endpoint should start with http:// or https://")
+			frappe.throw(
+				"The endpoint must start with http:// or https://. Please add the scheme to the URL."
+			)
 
 		# dont allow query params
 		if url.query:
-			frappe.throw("Endpoint should not have query params")
+			frappe.throw(
+				"The endpoint URL can't contain query parameters. Please remove everything after the '?' from the URL."
+			)
 
 		isIPAddress = False
 		# If endpoint target is ip address, it should be a public ip address
@@ -84,16 +94,22 @@ class PressWebhook(Document):
 			ip = ipaddress.ip_address(url.hostname)
 			isIPAddress = True
 			if not ip.is_global:
-				frappe.throw("Endpoint address should be a public ip or domain")
+				frappe.throw(
+					"The endpoint must be reachable from the internet. Please use a public IP address or domain, not a private or internal one."
+				)
 
 		if not isIPAddress:
 			# domain should be a fqdn
 			if not is_valid_hostname(url.hostname):
-				frappe.throw("Endpoint address should be a valid domain")
+				frappe.throw(
+					"Please enter a valid domain for the endpoint, for example webhooks.example.com."
+				)
 
 			# Endpoint can't be any local domain
 			if not frappe.conf.developer_mode and ("localhost" in url.hostname or ".local" in url.hostname):
-				frappe.throw("Endpoint can't be localhost or local domain")
+				frappe.throw(
+					"The endpoint can't be localhost or a .local domain. Please use a publicly reachable address."
+				)
 
 	@dashboard_whitelist()
 	def validate_endpoint(self) -> dict:

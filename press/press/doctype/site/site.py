@@ -136,6 +136,12 @@ SERVER_SCRIPT_DISABLED_VERSION = (
 )
 TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
 
+# Conditions a site must satisfy for the agent to stream offsite backup
+# artifacts straight to S3 instead of uploading them after the dump finishes.
+STREAMING_BACKUP_REQUIREMENTS = {
+	"minimum_frappe_version": 13,
+}
+
 
 class Site(Document, TagHelpers):
 	# begin: auto-generated types
@@ -174,6 +180,7 @@ class Site(Document, TagHelpers):
 		database_access_connection_limit: DF.Int
 		database_name: DF.Data | None
 		disable_site_usage_exceed_check: DF.Check
+		disable_streaming_backups: DF.Check
 		domain: DF.Link | None
 		erpnext_consultant: DF.Link | None
 		fatal_site_update: DF.Link | None
@@ -473,6 +480,7 @@ class Site(Document, TagHelpers):
 				self.set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
+		self.sync_fc_team_config()
 
 		if not self.setup_wizard_status_check_next_retry_on:
 			self.setup_wizard_status_check_next_retry_on = now_datetime()
@@ -529,7 +537,10 @@ class Site(Document, TagHelpers):
 
 		site_apps = [app.app for app in self.apps]
 		if len(site_apps) != len(set(site_apps)):
-			frappe.throw("App {app.app} is already on installed on the bench. Cannot add the same app twice")
+			duplicates = sorted({app for app in site_apps if site_apps.count(app) > 1})
+			frappe.throw(
+				f"These apps are listed more than once: {', '.join(duplicates)}. Each app can only be installed once — please remove the duplicates."
+			)
 
 		# Install apps in the same order as bench
 		if self.is_new():
@@ -697,6 +708,16 @@ class Site(Document, TagHelpers):
 
 		if self.has_value_changed("team"):
 			frappe.db.set_value("Site Domain", {"site": self.name}, "team", self.team)
+			# Enqueued, not inline: sync_fc_team_config saves the site, which from within
+			# on_update would re-enter it and re-run its unguarded effects.
+			frappe.enqueue_doc(
+				"Site",
+				self.name,
+				"sync_fc_team_config",
+				create_agent_job=True,
+				enqueue_after_commit=True,
+				queue="short",
+			)
 
 		if self.status not in [
 			"Pending",
@@ -717,23 +738,44 @@ class Site(Document, TagHelpers):
 
 	def generate_saas_communication_secret(self, create_agent_job=False, save=True):
 		if self.saas_communication_secret:
-			return
+			return None
 
 		# Ensure site isn't owned by Administrator
 		if not self.team:
-			return
+			return None
 
 		if frappe.get_value("Team", self.team, "user") == "Administrator":
-			return
+			return None
 
 		self.saas_communication_secret = frappe.generate_hash(length=32)
 		config = {
 			"fc_communication_secret": self.saas_communication_secret,
 		}
 		if create_agent_job:
-			self.update_site_config(config)
-		else:
-			self._update_configuration(config=config, save=save)
+			return self.update_site_config(config)
+
+		self._update_configuration(config=config, save=save)
+		return None
+
+	def sync_fc_team_config(self, create_agent_job: bool = False):
+		"""Keep the fc_team site config in step with the owning team.
+
+		Pulse tags every event with `team` from this key, so it must follow the site
+		for its whole life — initial provisioning, a standby site being claimed, and
+		ownership transfers — not just be stamped once. Idempotent (skips when already
+		current) and skipped for Administrator-owned sites, which have no FC team.
+
+		`create_agent_job` pushes the change to a running site; the creation path leaves
+		it False so the key rides along in the new-site payload instead of a second job.
+		"""
+		if not self.team or frappe.get_value("Team", self.team, "user") == "Administrator":
+			return None
+		if self.get_config_value_for_key("fc_team") == self.team:
+			return None
+		if create_agent_job:
+			return self.update_site_config({"fc_team": self.team})
+		self._update_configuration({"fc_team": self.team}, save=False)
+		return None
 
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
@@ -986,6 +1028,18 @@ class Site(Document, TagHelpers):
 		group: ReleaseGroup = frappe.get_cached_doc("Release Group", self.group)
 		return group.is_this_version_or_above(version)
 
+	def is_streaming_backup_supported(self) -> bool:
+		"""Whether the agent may stream this site's offsite backups straight to S3.
+
+		Requires the server to enable streaming, the site to not have opted
+		out, and the site's frappe version to be recent enough.
+		"""
+		if self.disable_streaming_backups:
+			return False
+		if not frappe.get_cached_value("Server", self.server, "stream_backups"):
+			return False
+		return self.is_this_version_or_above(STREAMING_BACKUP_REQUIREMENTS["minimum_frappe_version"])
+
 	@property
 	def restore_space_required_on_app(self):
 		db_size, public_size, private_size = (
@@ -1233,7 +1287,7 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def restore_site_from_files(self, files, skip_failing_patches=False):
-		for key in ("database", "public", "private"):
+		for key in ("database", "public", "private", "config"):
 			rf_name = files.get(key)
 			if rf_name:
 				rf_team = frappe.db.get_value("Remote File", rf_name, "team")
@@ -1245,6 +1299,7 @@ class Site(Document, TagHelpers):
 		self.remote_database_file = files["database"]
 		self.remote_public_file = files["public"]
 		self.remote_private_file = files["private"]
+		self.remote_config_file = files.get("config", "")
 		self.save()
 		self.reload()
 		return self.restore_site(skip_failing_patches=skip_failing_patches)
@@ -1623,7 +1678,7 @@ class Site(Document, TagHelpers):
 		domain = domain.lower().strip(".")
 		log_site_activity(self.name, "Add Domain")
 		create_dns_record(doc=self, record_name=domain)
-		frappe.get_doc(
+		site_domain = frappe.get_doc(
 			{
 				"doctype": "Site Domain",
 				"status": "Pending",
@@ -1632,6 +1687,7 @@ class Site(Document, TagHelpers):
 				"dns_type": "CNAME",
 			}
 		).insert(ignore_if_duplicate=True)
+		return site_domain.flags.get("add_domain_to_upstream_job")
 
 	@frappe.whitelist()
 	def create_dns_record(self):
@@ -1665,7 +1721,7 @@ class Site(Document, TagHelpers):
 		domains.add(domain)
 		self._update_configuration({"domains": list(domains)})
 		agent = Agent(self.server)
-		agent.add_domain(self, domain)
+		return agent.add_domain(self, domain)
 
 	def remove_domain_from_config(self, domain):
 		domains = set(self.get_config_value_for_key("domains") or [])
@@ -4500,9 +4556,18 @@ def process_new_site_job_update(job):  # noqa: C901
 
 		site.sync_apps()  # Sync apps for this site as well to reflect dependant apps
 		marketplace_app_hook(site=site, op="install")
+		# Status is set via db.set_value below, bypassing on_update ->
+		# update_subscription. Re-enable the subscription explicitly so a site
+		# that recovers from a failed creation (retry / restore) starts billing
+		# again — the counterpart to disabling it on failure (#6110).
+		site.enable_subscription()
 	elif "Failure" in (first, second) or "Delivery Failure" in (first, second):
 		updated_status = "Broken"
 		frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
+		# Status is set via db.set_value below, which bypasses on_update ->
+		# update_subscription. Disable the subscription explicitly so the user
+		# isn't billed for a site that never came up (#6110).
+		Site("Site", job.site).disable_subscription()
 	elif "Running" in (first, second):
 		updated_status = "Installing"
 	else:
@@ -4547,8 +4612,7 @@ def update_product_trial_request_status_based_on_site_status(site, is_site_activ
 	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 	if is_site_active:
 		product_trial_request.prefill_setup_wizard_data()
-		product_trial_request.status = "Site Created"
-		product_trial_request.save(ignore_permissions=True)
+		product_trial_request.update_status_from_agent_jobs()
 	else:
 		product_trial_request.status = "Error"
 		product_trial_request.error = error
@@ -4564,10 +4628,9 @@ def process_complete_setup_wizard_job_update(job):
 		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 		if frappe.get_all("Site Domain", filters={"site": job.site, "status": ["!=", "Active"]}):
 			product_trial_request.status = "Adding Domain"
+			product_trial_request.save(ignore_permissions=True)
 		else:
-			product_trial_request.status = "Site Created"
-			product_trial_request.site_creation_completed_on = now_datetime()
-		product_trial_request.save(ignore_permissions=True)
+			product_trial_request.update_status_from_agent_jobs()
 	elif job.status in ("Failure", "Delivery Failure"):
 		product_trial_request.status = "Error"
 		product_trial_request.save(ignore_permissions=True)
@@ -4583,10 +4646,7 @@ def process_add_domain_job_update(job):
 		if product_trial_request.status == "Site Created":
 			return
 
-		product_trial_request.status = "Site Created"
-		product_trial_request.site_creation_completed_on = now_datetime()
-
-		product_trial_request.save(ignore_permissions=True)
+		product_trial_request.update_status_from_agent_jobs()
 
 		site_domain = json.loads(job.request_data).get("domain")
 		site = Site("Site", job.site)
@@ -4601,8 +4661,7 @@ def process_add_domain_job_update(job):
 			job.db_set("retry_count", job.retry_count + 1)
 			job.retry_in_place()
 		else:
-			product_trial_request.status = "Error"
-			product_trial_request.save(ignore_permissions=True)
+			product_trial_request.update_status_from_agent_jobs(job.data)
 
 
 def get_remove_step_status(job):

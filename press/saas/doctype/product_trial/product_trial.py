@@ -65,7 +65,9 @@ class ProductTrial(Document):
 
 	def get_doc(self, doc):
 		if not self.published:
-			frappe.throw("Not permitted")
+			frappe.throw(
+				"This product trial isn't available right now. Please try again later, or contact the app's publisher."
+			)
 
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
@@ -78,7 +80,7 @@ class ProductTrial(Document):
 			frappe.throw("Selected plan is not a trial plan")
 
 		if not self.redirect_to_after_login.startswith("/"):
-			frappe.throw("Redirection route after login should start with /")
+			frappe.throw("Please enter a redirection route that starts with '/'.")
 
 		self.validate_hybrid_rules()
 
@@ -101,14 +103,14 @@ class ProductTrial(Document):
 		from press.press.doctype.site.site import Site, get_plan_config
 
 		if Site.exists(subdomain, domain):
-			frappe.throw("Site with this subdomain already exists")
+			frappe.throw("A site with this subdomain already exists. Please choose a different subdomain.")
 
 		site_domain = f"{subdomain}.{domain}"
 
 		standby_site = self.get_standby_site(cluster, account_request)
 
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
-		agent_job_name: str | None = None
+		agent_jobs = []
 		plan = self.trial_plan
 
 		if standby_site:
@@ -123,10 +125,20 @@ class ProductTrial(Document):
 				site._update_configuration(apps_site_config, save=False)
 				site._update_configuration(get_plan_config(plan), save=False)
 				site.signup_time = frappe.utils.now()
-				site.generate_saas_communication_secret(create_agent_job=True, save=False)
+				communication_secret_job = site.generate_saas_communication_secret(
+					create_agent_job=True, save=False
+				)
+				if communication_secret_job:
+					agent_jobs.append(
+						{
+							"agent_job": communication_secret_job,
+							"purpose": "Update Site Configuration",
+							"required_for_completion": False,
+						}
+					)
 				site.save()  # Save is needed for create_subscription to work TODO: remove this
 				site.reload()
-				self.set_site_domain(site, site_domain)
+				agent_jobs.extend(self.set_site_domain(site, site_domain))
 			except Exception:
 				frappe.db.rollback()
 				frappe.db.set_value("Site", standby_site, "is_standby", 1)
@@ -159,9 +171,10 @@ class ProductTrial(Document):
 			site._update_configuration(get_plan_config(plan), save=False)
 			site.generate_saas_communication_secret(create_agent_job=False, save=False)
 			site.insert()
-			agent_job_name = site.flags.get("new_site_agent_job_name", None)
+			if agent_job_name := site.flags.get("new_site_agent_job_name", None):
+				agent_jobs.append({"agent_job": agent_job_name, "purpose": "Create Site"})
 
-		return site, agent_job_name, bool(standby_site)
+		return site, agent_jobs, bool(standby_site)
 
 	def get_site_apps(self, account_request: str | None = None):
 		"""Get the list of site apps to include in the site creation
@@ -217,14 +230,24 @@ class ProductTrial(Document):
 		return proxy_servers_for_available_clusters
 
 	def set_site_domain(self, site: Site, site_domain: str):
+		agent_jobs: list = []
 		if not site_domain:
-			return
+			return agent_jobs
 
 		if site.name == site_domain or site.host_name == site_domain:
-			return
+			return agent_jobs
 
-		site.add_domain_for_product_site(site_domain)
-		site.add_domain_to_config(site_domain)
+		if add_domain_to_upstream_job := site.add_domain_for_product_site(site_domain):
+			agent_jobs.append(
+				{
+					"agent_job": add_domain_to_upstream_job,
+					"purpose": "Add Domain to Upstream",
+					"required_for_completion": False,
+				}
+			)
+		if add_domain_job := site.add_domain_to_config(site_domain):
+			agent_jobs.append({"agent_job": add_domain_job, "purpose": "Add Domain"})
+		return agent_jobs
 
 	def get_available_clusters(self):
 		release_group = frappe.get_doc("Release Group", self.release_group)

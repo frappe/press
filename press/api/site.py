@@ -301,19 +301,24 @@ def _check_warranty_restrictions(
 	is_new_plan_supported = is_product_warranty_enabled_for_plan_(new_plan)
 	if is_current_plan_supported == is_new_plan_supported:
 		return
+	if is_new_plan_supported:
+		# Enabling warranty is gated only by the server quota (it consumes a slot).
+		# The cooldown deliberately does not apply: the only enable the cooldown
+		# would block is a site reclaiming the slot it itself just gave up, which
+		# is legitimate as long as a slot is free. Rotating support to a *different*
+		# site is already prevented by the quota plus the cooldown on disabling.
+		quota = get_available_warranty_quota_for_server(server)
+		if quota.get("available") <= 0:
+			frappe.throw(
+				"You have exhausted the site warranty quota for this server. To increase limit, please contact support."
+			)
+		return
+	# Disabling warranty is gated by the cooldown to deter freeing a slot only to
+	# rotate it onto another site.
 	next_warranty_change = get_next_allowed_dedicated_product_warranty_change_date(site)
 	if get_datetime() < next_warranty_change:
 		pretty_date = format_datetime(next_warranty_change, "MMM d, YYYY hh:mm a")
 		frappe.throw(f"Cannot change product warranty for this site before {pretty_date}")  # nosemgrep
-	# The quota check only gates enabling warranty (which consumes a slot);
-	# disabling is always allowed once the cooldown above has passed.
-	if not is_new_plan_supported:
-		return
-	quota = get_available_warranty_quota_for_server(server)
-	if quota.get("available") <= 0:
-		frappe.throw(
-			"You have exhausted the site warranty quota for this server. To increase limit, please contact support."
-		)
 
 
 def _is_plan_allowed_on_server(server: str, new_site_plan: dict) -> bool:
@@ -326,10 +331,21 @@ def _is_plan_allowed_on_server(server: str, new_site_plan: dict) -> bool:
 		return False
 	if not new_site_plan.get("restrict_based_on_dedicated_server_plan", 0):
 		return True
-	app_server_plan = frappe.db.get_value("Server", server, "plan")
 	min_price = new_site_plan.get("minimum_server_price_usd", 0)
-	app_server_price = frappe.db.get_value("Server Plan", app_server_plan, "price_usd")
-	return app_server_price >= min_price
+	return get_dedicated_server_price(server) >= min_price
+
+
+def get_dedicated_server_price(server: str) -> float:
+	"""Combined monthly USD cost of a dedicated server: app server plan + its database server plan."""
+	app_server_plan, database_server = frappe.db.get_value("Server", server, ["plan", "database_server"])
+	app_server_price = frappe.db.get_value("Server Plan", app_server_plan, "price_usd") or 0
+
+	database_server_price = 0
+	if database_server:
+		database_server_plan = frappe.db.get_value("Database Server", database_server, "plan")
+		database_server_price = frappe.db.get_value("Server Plan", database_server_plan, "price_usd") or 0
+
+	return app_server_price + database_server_price
 
 
 @validate_argument_types
@@ -948,10 +964,14 @@ def _get_team_dedicated_server_info(for_server: str | None = None):
 			"cluster",
 			"provider",
 			"plan",
-			"plan.price_usd as price_usd",
 			"public",
 		],
 	)
+
+	for server in servers:
+		# Combined app server + database server cost, matching the gate in
+		# `_is_plan_allowed_on_server` so the UI and backend agree.
+		server["price_usd"] = get_dedicated_server_price(server["name"])
 
 	if for_server:
 		servers = attach_warranty_info_to_dedicated_servers(servers)
