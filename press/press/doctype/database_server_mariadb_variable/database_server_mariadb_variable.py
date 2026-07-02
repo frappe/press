@@ -40,7 +40,7 @@ class DatabaseServerMariaDBVariable(Document):
 		return list(filter(lambda x: x.startswith("value_"), self.as_dict().keys()))
 
 	@property
-	def value_field(self) -> str:
+	def value_field(self) -> str | None:
 		"""Return the first value field that has a value"""
 		for f in self.value_fields:
 			if self.get(f) is not None:
@@ -73,7 +73,7 @@ class DatabaseServerMariaDBVariable(Document):
 	def get_variable_dict_for_play(self) -> dict:
 		var = self.mariadb_variable
 		if self.skip:
-			var = "skip-" + var
+			var = f"skip-{var}"
 		res = {
 			"variable": var,
 			"dynamic": self.dynamic,
@@ -101,7 +101,7 @@ class DatabaseServerMariaDBVariable(Document):
 			frappe.throw(f"Only skippable variables can be skipped. {self.mariadb_variable} is not skippable")
 
 	def set_default_value_if_no_value(self):
-		if self.value:
+		if self.value is not None:
 			return
 		default_value = frappe.db.get_value("MariaDB Variable", self.mariadb_variable, "default_value")
 		if default_value:
@@ -124,7 +124,7 @@ class DatabaseServerMariaDBVariable(Document):
 		self.validate_skipped_should_be_skippable()
 		self.validate_empty_only_if_skippable()
 		self.set_persist_and_unset_dynamic_if_skipped()
-		if self.value:
+		if self.value is not None:
 			self.validate_value_field_set_is_correct()
 			self.validate_datatype_of_field_is_correct()
 
