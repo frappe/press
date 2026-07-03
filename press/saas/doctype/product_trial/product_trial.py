@@ -290,11 +290,35 @@ class ProductTrial(Document):
 		sites_without_incident = [site["name"] for site in sites_without_incident]
 		return sites_without_incident[0] if sites_without_incident else sites[0]
 
+	def get_latest_benches(self) -> list[str]:
+		"""Newest Active bench per server for this product's release group.
+
+		A standby site is only handed out if it sits on one of these benches,
+		so a user never receives a site that predates the latest deploy. Sites
+		still waiting on the async site-update job to migrate them forward are
+		excluded until they land on the current bench.
+		"""
+		benches = frappe.get_all(
+			"Bench",
+			filters={"group": self.release_group, "status": "Active"},
+			fields=["name", "server"],
+			order_by="creation desc",
+		)
+		latest_by_server: dict[str, str] = {}
+		for bench in benches:
+			latest_by_server.setdefault(bench.server, bench.name)
+		return list(latest_by_server.values())
+
 	def get_standby_site(self, cluster: str | None = None, account_request: str | None = None) -> str | None:
+		latest_benches = self.get_latest_benches()
+		if not latest_benches:
+			return None
+
 		filters = {
 			"is_standby": True,
 			"standby_for_product": self.name,
 			"status": "Active",
+			"bench": ("in", latest_benches),
 		}
 		if cluster:
 			filters["cluster"] = cluster
