@@ -114,12 +114,7 @@ class TestAccountApi(TestCase):
 		team = create_test_team()
 		invited = frappe.mock("email")
 		self._create_invite(team, invited)
-		frappe.db.set_value(
-			"Account Request",
-			{"team": team.name, "email": invited},
-			"request_key_expiration_time",
-			frappe.utils.add_days(frappe.utils.now_datetime(), -1),
-		)
+		self._expire_invitations(team, invited)
 
 		self._invite(team, invited, roles=None)
 
@@ -143,6 +138,43 @@ class TestAccountApi(TestCase):
 
 		with user_context(team.user), self.assertRaises(frappe.ValidationError) as cm:
 			team.cancel_invitation(uninvited)
+		self.assertIn("No pending invitation found", str(cm.exception))
+
+	def _expire_invitations(self, team, email):
+		frappe.db.set_value(
+			"Account Request",
+			{"team": team.name, "email": email},
+			"request_key_expiration_time",
+			frappe.utils.add_days(frappe.utils.now_datetime(), -1),
+			update_modified=False,
+		)
+
+	def test_cancel_invitation_cancels_the_active_invitation_when_an_expired_one_coexists(self):
+		"""A re-invite after expiry leaves two Account Requests with request_key
+		set until the expiry scheduler runs; cancelling must invalidate the
+		active one, not just the lapsed one."""
+		team = create_test_team()
+		invited = frappe.mock("email")
+		self._invite(team, invited, roles=None)
+		self._expire_invitations(team, invited)
+		self._invite(team, invited, roles=None)
+
+		with user_context(team.user):
+			team.cancel_invitation(invited)
+
+		self.assertEqual(len(get_invitations(team.name)), 0)
+
+	def test_cancel_invitation_throws_when_only_an_expired_invitation_exists(self):
+		"""An invite past its expiry is no longer pending (it's not listed and
+		doesn't block re-inviting), so there is nothing to cancel — even while
+		its request_key is still set awaiting the expiry scheduler."""
+		team = create_test_team()
+		invited = frappe.mock("email")
+		self._invite(team, invited, roles=None)
+		self._expire_invitations(team, invited)
+
+		with user_context(team.user), self.assertRaises(frappe.ValidationError) as cm:
+			team.cancel_invitation(invited)
 		self.assertIn("No pending invitation found", str(cm.exception))
 
 	def test_cancel_invitation_rejected_for_user_who_is_neither_owner_nor_admin(self):

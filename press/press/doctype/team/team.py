@@ -1226,6 +1226,9 @@ class Team(Document):
 			"team": self.name,
 			"invited_by": ("is", "set"),
 			"request_key": ("is", "set"),
+			# A re-invite after expiry can leave an older, lapsed Account Request
+			# with its key still set; only the active invitation may be targeted.
+			"request_key_expiration_time": (">", frappe.utils.now_datetime()),
 		}
 		if not frappe.db.exists("Account Request", pending_invitation_filters):
 			frappe.throw(_("No pending invitation found for {0}").format(email))
