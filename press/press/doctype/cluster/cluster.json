@@ -22,6 +22,11 @@
 		"has_add_on_storage_support",
 		"enable_autoscaling",
 		"has_unified_server_support",
+		"enable_auto_cluster",
+		"max_servers",
+		"auto_cluster_triggered",
+		"auto_cluster_app_server_count",
+		"derived_cluster_from",
 		"billing_section",
 		"team",
 		"by_default_select_unified_mode",
@@ -329,6 +334,44 @@
 			"fieldname": "has_unified_server_support",
 			"fieldtype": "Check",
 			"label": "Has Unified Server Support"
+		},
+		{
+			"default": "0",
+			"description": "Automatically create a new cluster when the number of running VMs reaches the threshold",
+			"fieldname": "enable_auto_cluster",
+			"fieldtype": "Check",
+			"label": "Enable Auto Cluster Creation"
+		},
+		{
+			"depends_on": "eval:doc.enable_auto_cluster",
+			"description": "Number of running VMs at which a new cluster is automatically provisioned (0 = disabled)",
+			"fieldname": "max_servers",
+			"fieldtype": "Int",
+			"label": "Max Servers (Auto Cluster Threshold)"
+		},
+		{
+			"default": "0",
+			"fieldname": "auto_cluster_triggered",
+			"fieldtype": "Check",
+			"hidden": 1,
+			"label": "Auto Cluster Creation Triggered",
+			"read_only": 1
+		},
+		{
+			"default": "2",
+			"depends_on": "eval:doc.enable_auto_cluster && !doc.derived_cluster_from",
+			"description": "Number of public App Server + Database Server pairs to create in the auto-provisioned cluster",
+			"fieldname": "auto_cluster_app_server_count",
+			"fieldtype": "Int",
+			"label": "Auto Cluster App Server Count"
+		},
+		{
+			"depends_on": "eval:doc.derived_cluster_from",
+			"fieldname": "derived_cluster_from",
+			"fieldtype": "Link",
+			"label": "Derived Cluster From",
+			"options": "Cluster",
+			"read_only": 1
 		},
 		{
 			"collapsible": 1,

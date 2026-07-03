@@ -277,14 +277,15 @@ class VirtualMachine(Document):
 			frappe.delete_doc("Virtual Machine Image", image)
 
 	def on_update(self):
-		server = self.get_server()
-
-		if self.has_value_changed("has_data_volume") and server:
+		if self.has_value_changed("has_data_volume") and (server := self.get_server()):
 			server.has_data_volume = self.has_data_volume
 			server.save()
 
 		if self.has_value_changed("disk_size") and self.should_bill_addon_storage():
 			self.update_subscription_for_addon_storage()
+
+		if self.has_value_changed("status") and self.status == "Running":
+			self._create_derived_cluster_if_hit_threshold()
 
 	def check_and_attach_data_disk_snapshot_volume(self):
 		if not self.data_disk_snapshot_volume_id:
@@ -1581,6 +1582,30 @@ class VirtualMachine(Document):
 					frappe.flags.force_update_dns or self.has_value_changed("private_ip_address")
 				):
 					server.create_dns_record()
+
+	def _create_derived_cluster_if_hit_threshold(self):
+		"""Enqueue auto cluster creation if this cluster has reached its VM threshold."""
+		cluster = frappe.get_doc("Cluster", self.cluster, for_update=True)
+
+		if not cluster.enable_auto_cluster or not cluster.max_servers:
+			return
+		if cluster.auto_cluster_triggered:
+			return  # Job already queued for this cluster
+
+		running_count = cluster.get_running_vm_count()
+		if running_count < cluster.max_servers:
+			return
+
+		# Mark the cluster non-public so it drops out of both placement pools
+		# (dedicated server picker `api.server.options` and `get_all_for_new_bench`)
+		# immediately.  `max_servers` is set below the hard capacity so the
+		# remaining headroom absorbs any in-flight server pairs while the
+		# successor cluster is provisioned.  Cluster Creation re-publishes the
+		# source on failure (see ClusterCreation._revert_source_cluster).
+		cluster.db_set("auto_cluster_triggered", 1)
+		cluster.db_set("public", 0)
+
+		cluster.create_derived_cluster()
 
 	def update_name_tag(self, name):
 		if self.cloud_provider == "AWS EC2" and self.instance_id:

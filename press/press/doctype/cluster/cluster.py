@@ -69,6 +69,7 @@ class Cluster(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		auto_cluster_triggered: DF.Check
 		availability_zone: DF.Data | None
 		aws_access_key_id: DF.Data | None
 		aws_secret_access_key: DF.Password | None
@@ -84,6 +85,7 @@ class Cluster(Document):
 		description: DF.Data | None
 		digital_ocean_api_token: DF.Password | None
 		disable_public_ips_for_servers: DF.Check
+		enable_auto_cluster: DF.Check
 		enable_autoscaling: DF.Check
 		enable_periodic_flush_table: DF.Check
 		flow_log_id: DF.Data | None
@@ -97,6 +99,7 @@ class Cluster(Document):
 		hetzner_api_token: DF.Password | None
 		hybrid: DF.Check
 		image: DF.AttachImage | None
+		max_servers: DF.Int
 		monitoring_password: DF.Password | None
 		nat_security_group_id: DF.Data | None
 		network_acl_id: DF.Data | None
@@ -1988,6 +1991,7 @@ class Cluster(Document):
 		kms_key_id: str | None = None,
 		is_secondary: bool = False,
 		primary: str | None = None,
+		public: bool = False,
 	) -> tuple[BaseServer | MonitorServer | LogServer, PressJob]:
 		"""Creates a server for the cluster
 
@@ -2094,6 +2098,12 @@ class Cluster(Document):
 		if create_subscription:
 			server.plan = plan.name
 
+		# Mark the App Server as public when requested (e.g. auto-cluster
+		# creation).  The Server.on_update hook will sync the flag to the
+		# linked Database Server automatically.
+		if public and doctype == "Server":
+			server.public = True
+
 		server.save()
 
 		if create_subscription:
@@ -2176,6 +2186,60 @@ class Cluster(Document):
 
 			return best_plan
 		return None
+
+	def get_running_vm_count(self) -> int:
+		"""Returns count of active (non-terminated, non-stopped) VMs in this cluster."""
+		return frappe.db.count(
+			"Virtual Machine",
+			{
+				"cluster": self.name,
+				"status": ("!=", "Terminated"),
+			},
+		)
+
+	@frappe.whitelist()
+	def create_derived_cluster(self):
+		# A derived cluster only needs to be spawned once per threshold breach.
+		# The ``auto_cluster_triggered`` flag dedupes concurrent triggers, but it
+		# can be cleared (on creation failure, or by an admin re-enabling the
+		# cluster) while an earlier Cluster Creation is still in flight. Guard on
+		# the in-progress Cluster Creation directly so we never run two at once.
+		if _cluster := frappe.db.exists(
+			"Cluster Creation",
+			{"source_cluster": self.name, "status": ("in", ("Pending", "Running"))},
+		):
+			frappe.throw(f"Cluster Creation {_cluster} already in progress for {self.name}")
+
+		doc = frappe.get_doc(
+			{
+				"doctype": "Cluster Creation",
+				"source_cluster": self.name,
+				"status": "Pending",
+			}
+		).insert(ignore_permissions=True)
+		return f"Queued {doc.name}"
+
+	@frappe.whitelist()
+	def enable_for_public(self):
+		"""Bring a cluster that was auto-marked non-public back into rotation.
+
+		When a cluster hits its server threshold it is marked non-public and
+		``auto_cluster_triggered`` is set so no new servers land on it while a
+		successor is provisioned. After archiving servers to free capacity, call
+		this to re-publish the cluster and clear the flag so it both accepts new
+		servers again and can trigger a fresh derived cluster if it refills.
+		"""
+		if self.enable_auto_cluster and self.max_servers:
+			running = self.get_running_vm_count()
+			if running >= self.max_servers:
+				frappe.throw(
+					f"Cluster {self.name} is still at its server threshold "
+					f"({running}/{self.max_servers}). Archive servers before re-enabling.",
+					frappe.ValidationError,
+				)
+
+		self.db_set({"public": 1, "auto_cluster_triggered": 0})
+		return f"{self.name} re-enabled for public use"
 
 	def get_nat_server_if_supported(self):
 		if self.disable_public_ips_for_servers and self.cloud_provider in (
