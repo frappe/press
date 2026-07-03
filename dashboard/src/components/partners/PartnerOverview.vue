@@ -296,6 +296,9 @@ function openSupport() {
 }
 
 const daysUntilRenewal = computed(() => {
+	if (!partnerDetails.data?.end_date) {
+		return 0
+	}
 	const today = new Date()
 	const renewal = new Date(partnerDetails.data?.end_date)
 	if (renewal > today) {
@@ -307,6 +310,9 @@ const daysUntilRenewal = computed(() => {
 
 function isRenewalPeriod() {
 	// 30 days before and after renewal date
+	if (!partnerDetails.data?.end_date) {
+		return false
+	}
 	const renewal = dayjs(partnerDetails.data?.end_date)
 	const today = dayjs()
 	const daysDifference = renewal.diff(today, 'days')
@@ -398,6 +404,9 @@ watch(
 )
 
 const formatDate = (dateString) => {
+	if (!dateString) {
+		return 'Not set'
+	}
 	return new Date(dateString).toLocaleDateString('en-US', {
 		year: 'numeric',
 		month: 'long',
