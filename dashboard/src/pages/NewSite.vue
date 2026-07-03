@@ -25,7 +25,7 @@
 
 	<div v-else class="mx-auto max-w-2xl px-5">
 		<div
-			v-if="$resources.options.loading"
+			v-if="$resources.options.loading && !$resources.isLimitExceeded.loading"
 			class="py-4 text-base text-ink-gray-6"
 		>
 			Loading...
