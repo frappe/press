@@ -41,16 +41,19 @@ class DatabaseServerMariaDBVariable(Document):
 
 	@property
 	def value_field(self) -> str | None:
-		"""Return the first value field that has a value"""
-		for f in self.value_fields:
-			if self.get(f) is not None:
-				return f
+		"""Return the value field matching this variable's datatype, if it holds a value"""
+		if not self.mariadb_variable:
+			return None
 
-		return None
+		field = f"value_{self.datatype.lower()}"
+		if self.get(field) in (None, ""):
+			return None
+
+		return field
 
 	@property
 	def value(self) -> Any:
-		"""Return the value of the first value field that has a value"""
+		"""Return the value held in the value field matching this variable's datatype"""
 		v = self.get(self.value_field)
 		if self.value_field == "value_int":
 			v = v * 1024 * 1024  # Convert MB to bytes
