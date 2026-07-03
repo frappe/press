@@ -311,9 +311,10 @@ class ReleaseGroup(Document, TagHelpers):
 			for repository_url in sorted(missing_repository_urls):
 				dependent_source = dependent_sources.get(repository_url)
 				if not dependent_source:
-					if self.get_app_name_from_repository_url(repository_url) in selected_app_names:
+					app_name_from_repository_url = self.get_app_name_from_repository_url(repository_url)
+					if app_name_from_repository_url in selected_app_names:
 						continue
-					self.throw_missing_dependent_app_source(repository_url)
+					self.throw_missing_dependent_app_source(app_name_from_repository_url)
 					continue
 
 				apps_added = (
@@ -409,23 +410,26 @@ class ReleaseGroup(Document, TagHelpers):
 		selected_sources_by_app = self._select_one_source_per_app(
 			self._get_dependent_app_source_rows(repository_urls, self.version)
 		)
+		selected_sources_by_repository_url = {
+			source.repository_url: source for source in selected_sources_by_app.values()
+		}
 		missing_repository_urls = {
 			repository_url
 			for repository_url in repository_urls
-			if repository_url not in {source.repository_url for source in selected_sources_by_app.values()}
+			if repository_url not in selected_sources_by_repository_url
 		}
 		if missing_repository_urls:
 			for source in self._select_one_source_per_app(
-				self._get_dependent_app_source_rows(repository_urls, self.version)
+				self._get_dependent_app_source_rows(missing_repository_urls, self.version)
 			).values():
 				if source.repository_url not in missing_repository_urls:
 					continue
-				selected_sources_by_app[source.app] = source
+				selected_sources_by_repository_url[source.repository_url] = source
 
 		return {
-			source.repository_url: source
-			for source in selected_sources_by_app.values()
-			if source.repository_url in repository_urls
+			repository_url: source
+			for repository_url, source in selected_sources_by_repository_url.items()
+			if repository_url in repository_urls
 		}
 
 	def _select_one_source_per_app(self, sources: list[frappe._dict]) -> dict[str, frappe._dict]:
@@ -458,8 +462,7 @@ class ReleaseGroup(Document, TagHelpers):
 			.run(as_dict=True)
 		)
 
-	def throw_missing_dependent_app_source(self, repository_url: str):
-		app_name = self.get_app_name_from_repository_url(repository_url)
+	def throw_missing_dependent_app_source(self, app_name: str):
 		frappe.throw(
 			_(
 				"Site creation will fail because no App Source matching {0} was found for dependent app {1}"
