@@ -11,6 +11,7 @@ import frappe.utils
 from frappe.model.document import Document
 from frappe.utils.data import get_url
 
+from press.agent import PRODUCT_TRIAL_JOB_QUEUE
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.unique_name_generator import generate as generate_random_name
@@ -245,7 +246,7 @@ class ProductTrial(Document):
 					"required_for_completion": False,
 				}
 			)
-		if add_domain_job := site.add_domain_to_config(site_domain):
+		if add_domain_job := site.add_domain_to_config(site_domain, queue=PRODUCT_TRIAL_JOB_QUEUE):
 			agent_jobs.append({"agent_job": add_domain_job, "purpose": "Add Domain"})
 		return agent_jobs
 
