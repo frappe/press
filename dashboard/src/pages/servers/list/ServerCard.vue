@@ -16,7 +16,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const isIndia = computed(() => getTeam().doc?.country === 'India')
+const isIndia = computed(() => getTeam().doc?.currency === 'INR')
 
 const planPrice = (price_usd: number, price_inr: number) => {
 	let price = isIndia.value ? price_inr : price_usd
@@ -35,7 +35,7 @@ const benches = createListResource({
 
 const serverActions = (server) => [
 	{
-		label: 'Add bench',
+		label: 'Add Bench',
 		icon: LucideCirclePlus,
 		onClick: () => {
 			const AddBenchDialog = defineAsyncComponent(
@@ -50,18 +50,18 @@ const serverActions = (server) => [
 		},
 	},
 	{
-		label: 'Visit server',
+		label: 'Visit Server',
 		icon: 'external-link',
 		route: `/servers/${server.name}`,
 	},
-	{ label: 'View backups', icon: 'archive' },
+	{ label: 'View Backups', icon: 'archive' },
 	{
-		label: 'Go to Server Actions',
+		label: 'Server Actions',
 		icon: LucideSlidersVertical,
 		route: `/servers/${server.name}/actions`,
 	},
 	{
-		label: 'Drop server',
+		label: 'Drop Server',
 		theme: 'red',
 		icon: 'trash-2',
 		onClick: () => onDropServer(server),
