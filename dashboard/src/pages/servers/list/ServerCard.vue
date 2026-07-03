@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { h, defineAsyncComponent } from 'vue'
+import { h, defineAsyncComponent, computed } from 'vue'
 import { Button, Tooltip, Dropdown, createListResource } from 'frappe-ui'
 
 import { renderDialog } from '@/utils/components'
+import { getTeam } from '@/data/team'
+import { userCurrency } from '@/utils/format'
 import { onDropServer } from './utils'
 import ServerIcon from './ServerIcon.vue'
 
@@ -13,6 +15,13 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const isIndia = computed(() => getTeam().doc?.currency === 'INR')
+
+const planPrice = (price_usd: number, price_inr: number) => {
+	let price = isIndia.value ? price_inr : price_usd
+	return userCurrency(price, 0)
+}
 
 const benches = createListResource({
 	doctype: 'Release Group',
@@ -26,7 +35,7 @@ const benches = createListResource({
 
 const serverActions = (server) => [
 	{
-		label: 'Add bench',
+		label: 'Add Bench',
 		icon: LucideCirclePlus,
 		onClick: () => {
 			const AddBenchDialog = defineAsyncComponent(
@@ -41,18 +50,18 @@ const serverActions = (server) => [
 		},
 	},
 	{
-		label: 'Visit server',
+		label: 'Visit Server',
 		icon: 'external-link',
 		route: `/servers/${server.name}`,
 	},
-	{ label: 'View backups', icon: 'archive' },
+	{ label: 'View Backups', icon: 'archive' },
 	{
-		label: 'Go to Server Actions',
+		label: 'Server Actions',
 		icon: LucideSlidersVertical,
 		route: `/servers/${server.name}/actions`,
 	},
 	{
-		label: 'Drop server',
+		label: 'Drop Server',
 		theme: 'red',
 		icon: 'trash-2',
 		onClick: () => onDropServer(server),
@@ -79,12 +88,24 @@ const serverActions = (server) => [
 					:class="data.status === 'Active' ? 'bg-surface-green-3' : 'bg-surface-red-5'"
 				/>
 				<span>{{ data.status }}</span>
-				<span class="w-full text-ink-gray-6 text-sm">
-					{{ data.vcpu }}
-					vCPU, {{ Math.round(data.memory / 1024) }} GB RAM,
-					{{ data.disk }}
-					GB Disk
-				</span>
+				<div class="w-full">
+					<Tooltip :hoverDelay="0" placement="bottom">
+						<span class="text-ink-gray-6 text-sm">
+							{{ data.vcpu }}
+							vCPU, {{ Math.round(data.memory / 1024) }} GB RAM,
+							{{ data.disk }}
+							GB Disk
+						</span>
+						<template #content>
+							<div class="flex flex-col gap-0.5">
+								<span>App server: {{ planPrice(data.price_usd, data.price_inr) }}</span>
+								<span v-if="data.db_plan"
+									>DB server: {{ planPrice(data.db_plan.price_usd, data.db_plan.price_inr) }}</span
+								>
+							</div>
+						</template>
+					</Tooltip>
+				</div>
 			</div>
 
 			<div class="flex items-center gap-1 text-ink-gray-6 ml-auto">
