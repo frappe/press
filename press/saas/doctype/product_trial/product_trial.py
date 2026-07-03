@@ -500,6 +500,7 @@ class ProductTrial(Document):
 			.join(Server)
 			.on(Server.name == ReleaseGroupServer.server)
 			.where(Server.cluster == cluster)
+			.where(Server.skip_standby_site_creation == 0)
 			.join(Bench)
 			.on(Bench.server == ReleaseGroupServer.server)
 			.run(pluck="server")
