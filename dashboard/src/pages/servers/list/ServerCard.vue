@@ -88,22 +88,24 @@ const serverActions = (server) => [
 					:class="data.status === 'Active' ? 'bg-surface-green-3' : 'bg-surface-red-5'"
 				/>
 				<span>{{ data.status }}</span>
-				<Tooltip :hoverDelay="0" placement="bottom">
-					<span class="w-full text-ink-gray-6 text-sm">
-						{{ data.vcpu }}
-						vCPU, {{ Math.round(data.memory / 1024) }} GB RAM,
-						{{ data.disk }}
-						GB Disk
-					</span>
-					<template #content>
-						<div class="flex flex-col gap-0.5">
-							<span>App server: {{ planPrice(data.price_usd, data.price_inr) }}</span>
-							<span v-if="data.db_plan"
-								>DB server: {{ planPrice(data.db_plan.price_usd, data.db_plan.price_inr) }}</span
-							>
-						</div>
-					</template>
-				</Tooltip>
+				<div class="w-full">
+					<Tooltip :hoverDelay="0" placement="bottom">
+						<span class="text-ink-gray-6 text-sm">
+							{{ data.vcpu }}
+							vCPU, {{ Math.round(data.memory / 1024) }} GB RAM,
+							{{ data.disk }}
+							GB Disk
+						</span>
+						<template #content>
+							<div class="flex flex-col gap-0.5">
+								<span>App server: {{ planPrice(data.price_usd, data.price_inr) }}</span>
+								<span v-if="data.db_plan"
+									>DB server: {{ planPrice(data.db_plan.price_usd, data.db_plan.price_inr) }}</span
+								>
+							</div>
+						</template>
+					</Tooltip>
+				</div>
 			</div>
 
 			<div class="flex items-center gap-1 text-ink-gray-6 ml-auto">
