@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.tests.ui_test_helpers import create_test_user
 
-from press.api.account import accept_team_invite, signup, validate_pincode
+from press.api.account import accept_team_invite, leave_team, signup, validate_pincode
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.team.team_members import get_invitations
 from press.press.doctype.team.test_team import (
@@ -165,12 +165,7 @@ class TestAccountApi(TestCase):
 		invited = frappe.mock("email")
 		self._invite(team, invited, roles=None)
 
-		admin_member = create_test_press_admin_team().user
-		team.append("team_members", {"user": admin_member, "role": ""})
-		team.save(ignore_permissions=True)
-		# save(ignore_permissions=True) leaves the flag on the doc, which would
-		# bypass the only_admin guard below and mask a broken admin check.
-		team.flags.ignore_permissions = False
+		admin_member = self._add_plain_member(team)
 		admin_role = create_permission_role(team.name)
 		admin_role.admin_access = 1
 		admin_role.append("users", {"user": admin_member})
@@ -179,6 +174,52 @@ class TestAccountApi(TestCase):
 		with user_context(admin_member):
 			team.cancel_invitation(invited)
 		self.assertEqual(len(get_invitations(team.name)), 0)
+
+	def _add_plain_member(self, team, email=None):
+		"""Add a Press User (not a System Manager) as a regular team member."""
+		member = create_test_press_admin_team(email).user
+		team.append("team_members", {"user": member, "role": ""})
+		team.save(ignore_permissions=True)
+		# save(ignore_permissions=True) leaves the flag on the doc, which would
+		# bypass the only_admin guard and mask a broken admin check.
+		team.flags.ignore_permissions = False
+		return member
+
+	def test_remove_team_member_rejected_for_member_without_admin_access(self):
+		team = create_test_team()
+		plain_member = self._add_plain_member(team)
+		other_member = self._add_plain_member(team)
+
+		with user_context(plain_member), self.assertRaises(frappe.PermissionError) as cm:
+			team.remove_team_member(other_member)
+		self.assertIn("Only team admin", str(cm.exception))
+		self.assertTrue(
+			frappe.db.exists("Team Member", {"parent": team.name, "user": other_member}),
+			"membership should remain intact",
+		)
+
+	def test_remove_team_member_allowed_for_team_member_with_admin_access(self):
+		from press.press.doctype.press_role.test_press_role import create_permission_role
+
+		team = create_test_team()
+		admin_member = self._add_plain_member(team)
+		other_member = self._add_plain_member(team)
+		admin_role = create_permission_role(team.name)
+		admin_role.admin_access = 1
+		admin_role.append("users", {"user": admin_member})
+		admin_role.save(ignore_permissions=True)
+
+		with user_context(admin_member):
+			team.remove_team_member(other_member)
+		self.assertFalse(frappe.db.exists("Team Member", {"parent": team.name, "user": other_member}))
+
+	def test_member_without_admin_access_can_still_leave_team(self):
+		team = create_test_team()
+		plain_member = self._add_plain_member(team)
+
+		with user_context(plain_member):
+			leave_team(team.name)
+		self.assertFalse(frappe.db.exists("Team Member", {"parent": team.name, "user": plain_member}))
 
 	def test_invite_and_accept_custom_role_sets_member_role_to_role_title(self):
 		from press.press.doctype.press_role.test_press_role import create_permission_role

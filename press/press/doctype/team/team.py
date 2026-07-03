@@ -480,6 +480,11 @@ class Team(Document):
 			)
 
 	@dashboard_whitelist()
+	@only_admin(
+		team=lambda document, _: str(document.name),
+		# Members may remove themselves (the leave_team flow).
+		skip=lambda _, arguments: arguments["member"] == frappe.session.user,
+	)
 	def remove_team_member(self, member):
 		member_to_remove = find(self.team_members, lambda x: x.user == member)
 		if member_to_remove:
