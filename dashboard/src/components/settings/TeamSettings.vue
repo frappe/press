@@ -128,12 +128,43 @@ const teamMembersListOptions = ref({
 	],
 	rowActions({ row }) {
 		let team = getTeam()
-		if (
-			row.status === 'Pending' ||
-			row.user === team.doc.user ||
-			row.user === team.doc.user_info?.name
-		)
+		if (row.user === team.doc.user || row.user === team.doc.user_info?.name)
 			return []
+		if (row.status === 'Pending') {
+			const currentMember = (members.data || []).find(
+				(member) => member.user === session.user,
+			)
+			const canCancelInvitation =
+				session.user === team.doc.user || currentMember?.has_admin_access
+			if (!canCancelInvitation) return []
+			return [
+				{
+					label: 'Cancel Invitation',
+					onClick() {
+						if (team.cancelInvitation.loading) return
+						confirmDialog({
+							title: 'Cancel Invitation',
+							message: `Are you sure you want to cancel the invitation sent to <b>${row.email}</b>?`,
+							onSuccess({ hide }) {
+								if (team.cancelInvitation.loading) return
+								toast.promise(
+									team.cancelInvitation.submit({ email: row.email }),
+									{
+										loading: 'Cancelling Invitation...',
+										success: () => {
+											members.reload()
+											hide()
+											return 'Invitation Cancelled'
+										},
+										error: (e) => getToastErrorMessage(e),
+									},
+								)
+							},
+						})
+					},
+				},
+			]
+		}
 		return [
 			{
 				label: 'Remove Member',

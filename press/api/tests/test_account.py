@@ -7,7 +7,11 @@ from frappe.tests.ui_test_helpers import create_test_user
 
 from press.api.account import accept_team_invite, signup, validate_pincode
 from press.press.doctype.account_request.account_request import AccountRequest
-from press.press.doctype.team.test_team import create_test_team
+from press.press.doctype.team.team_members import get_invitations
+from press.press.doctype.team.test_team import (
+	create_test_press_admin_team,
+	create_test_team,
+)
 
 
 @contextmanager
@@ -89,6 +93,92 @@ class TestAccountApi(TestCase):
 		"""Accept the invite as the invited user (the existing-user flow)."""
 		with user_context(email):
 			accept_team_invite(key)
+
+	def test_invite_team_member_blocked_while_unexpired_invitation_pending(self):
+		team = create_test_team()
+		invited = frappe.mock("email")
+		self._invite(team, invited, roles=None)
+
+		with (
+			user_context(team.user),
+			patch.object(AccountRequest, "send_verification_email"),
+			self.assertRaises(frappe.ValidationError) as cm,
+		):
+			team.invite_team_member(invited)
+		self.assertIn("already been invited", str(cm.exception))
+
+	def test_invite_team_member_allowed_after_previous_invitation_expired(self):
+		"""The expire_request_key scheduler blanks lapsed keys only after the
+		fact; an invite whose expiration time has passed but whose key is still
+		set must not block re-inviting."""
+		team = create_test_team()
+		invited = frappe.mock("email")
+		self._create_invite(team, invited)
+		frappe.db.set_value(
+			"Account Request",
+			{"team": team.name, "email": invited},
+			"request_key_expiration_time",
+			frappe.utils.add_days(frappe.utils.now_datetime(), -1),
+		)
+
+		self._invite(team, invited, roles=None)
+
+		self.assertEqual(len(get_invitations(team.name)), 1)
+
+	def test_cancel_invitation_removes_pending_invitation_and_allows_reinvite(self):
+		team = create_test_team()
+		invited = frappe.mock("email")
+		self._invite(team, invited, roles=None)
+
+		with user_context(team.user):
+			team.cancel_invitation(invited)
+
+		self.assertEqual(len(get_invitations(team.name)), 0)
+		self._invite(team, invited, roles=None)
+		self.assertEqual(len(get_invitations(team.name)), 1)
+
+	def test_cancel_invitation_without_pending_invitation_throws(self):
+		team = create_test_team()
+		uninvited = frappe.mock("email")
+
+		with user_context(team.user), self.assertRaises(frappe.ValidationError) as cm:
+			team.cancel_invitation(uninvited)
+		self.assertIn("No pending invitation found", str(cm.exception))
+
+	def test_cancel_invitation_rejected_for_user_who_is_neither_owner_nor_admin(self):
+		team = create_test_team()
+		invited = frappe.mock("email")
+		self._invite(team, invited, roles=None)
+		# A Press User (not a System Manager) from another team; create_test_user
+		# grants all roles, which would sneak past the is_system_manager check.
+		outsider = create_test_press_admin_team().user
+
+		with user_context(outsider), self.assertRaises(frappe.PermissionError) as cm:
+			team.cancel_invitation(invited)
+		self.assertIn("Only team admin", str(cm.exception))
+		self.assertEqual(len(get_invitations(team.name)), 1, "invitation should remain pending")
+
+	def test_cancel_invitation_allowed_for_team_member_with_admin_access(self):
+		from press.press.doctype.press_role.test_press_role import create_permission_role
+
+		team = create_test_team()
+		invited = frappe.mock("email")
+		self._invite(team, invited, roles=None)
+
+		admin_member = create_test_press_admin_team().user
+		team.append("team_members", {"user": admin_member, "role": ""})
+		team.save(ignore_permissions=True)
+		# save(ignore_permissions=True) leaves the flag on the doc, which would
+		# bypass the only_admin guard below and mask a broken admin check.
+		team.flags.ignore_permissions = False
+		admin_role = create_permission_role(team.name)
+		admin_role.admin_access = 1
+		admin_role.append("users", {"user": admin_member})
+		admin_role.save(ignore_permissions=True)
+
+		with user_context(admin_member):
+			team.cancel_invitation(invited)
+		self.assertEqual(len(get_invitations(team.name)), 0)
 
 	def test_invite_and_accept_custom_role_sets_member_role_to_role_title(self):
 		from press.press.doctype.press_role.test_press_role import create_permission_role
