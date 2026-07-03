@@ -130,13 +130,13 @@ const teamMembersListOptions = ref({
 		let team = getTeam()
 		if (row.user === team.doc.user || row.user === team.doc.user_info?.name)
 			return []
+		const currentMember = (members.data || []).find(
+			(member) => member.user === session.user,
+		)
+		const canManageMembers =
+			session.user === team.doc.user || currentMember?.has_admin_access
+		if (!canManageMembers) return []
 		if (row.status === 'Pending') {
-			const currentMember = (members.data || []).find(
-				(member) => member.user === session.user,
-			)
-			const canCancelInvitation =
-				session.user === team.doc.user || currentMember?.has_admin_access
-			if (!canCancelInvitation) return []
 			return [
 				{
 					label: 'Cancel Invitation',
