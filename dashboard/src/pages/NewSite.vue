@@ -1,8 +1,6 @@
 <template>
 	<div class="sticky top-0 z-10 shrink-0">
-		<Header>
-			<FBreadcrumbs :items="breadcrumbs" />
-		</Header>
+		<Header> <FBreadcrumbs :items="breadcrumbs" /> </Header>
 	</div>
 
 	<div
@@ -13,8 +11,23 @@
 		<ErrorMessage message="You aren't permitted to create new sites" />
 	</div>
 
+	<div
+		v-else-if="spendingLimitExceeded"
+		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-ink-gray-6"
+	>
+		<LucideAlertTriangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+		<p>
+			Your spending limit has been exceeded. Please
+			<a href="https://support.frappe.io" target="_blank">contact support</a>
+			to increase your limit.
+		</p>
+	</div>
+
 	<div v-else class="mx-auto max-w-2xl px-5">
-		<div v-if="$resources.options.loading" class="py-4 text-base text-ink-gray-6">
+		<div
+			v-if="$resources.options.loading"
+			class="py-4 text-base text-ink-gray-6"
+		>
 			Loading...
 		</div>
 		<div v-if="$route.name === 'NewBenchSite' && !bench">
@@ -73,9 +86,7 @@
 									>
 										<lucide-info class="h-4 w-4 text-ink-gray-5" />
 									</Tooltip>
-									<span class="ml-1 text-ink-gray-6">
-										{{ v.status }}
-									</span>
+									<span class="ml-1 text-ink-gray-6"> {{ v.status }} </span>
 								</div>
 							</button>
 						</component>
@@ -172,9 +183,7 @@
 										:src="p.image"
 										class="h-5 w-5 rounded-sm"
 									/>
-									<span class="text-sm font-medium">
-										{{ p.title }}
-									</span>
+									<span class="text-sm font-medium"> {{ p.title }} </span>
 								</div>
 							</div>
 						</button>
@@ -209,9 +218,7 @@
 							<div class="flex w-full items-center justify-between">
 								<div class="flex w-full items-center space-x-2">
 									<img :src="c.image" class="h-5 w-5" />
-									<span class="text-sm font-medium">
-										{{ c.title }}
-									</span>
+									<span class="text-sm font-medium"> {{ c.title }} </span>
 								</div>
 								<Badge v-if="c.beta" :label="c.beta ? 'Beta' : ''" />
 							</div>
@@ -273,9 +280,9 @@
 					>
 						<lucide-badge-check class="h-4 w-8 text-ink-gray-6" />
 						<span class="ml-4">
-							<strong>Support</strong> covers only issues of Frappe apps and not
-							functional queries. You can raise a support ticket for Frappe
-							Cloud issues for all plans.
+							<strong>Support</strong>
+							covers only issues of Frappe apps and not functional queries. You
+							can raise a support ticket for Frappe Cloud issues for all plans.
 						</span>
 					</div>
 				</div>
@@ -299,7 +306,9 @@
 							placeholder="Subdomain"
 							v-model="subdomain"
 						/>
-						<div class="flex items-center rounded-r bg-surface-gray-2 px-4 text-base">
+						<div
+							class="flex items-center rounded-r bg-surface-gray-2 px-4 text-base"
+						>
 							.{{ domain }}
 						</div>
 					</div>
@@ -321,10 +330,12 @@
 							v-if="$resources.subdomainExists.data"
 							class="text-sm text-green-600"
 						>
-							{{ subdomain }}.{{ domain }} is available
+							{{ subdomain }}.{{ domain }}
+							is available
 						</div>
 						<div v-else class="text-sm text-red-600">
-							{{ subdomain }}.{{ domain }} is not available
+							{{ subdomain }}.{{ domain }}
+							is not available
 						</div>
 					</template>
 					<ErrorMessage :message="$resources.subdomainExists.error" />
@@ -373,25 +384,25 @@
 <script>
 import {
 	Autocomplete,
+	Badge,
+	Breadcrumbs,
+	debounce,
 	ErrorMessage,
 	FeatherIcon,
 	FormControl,
+	getCachedDocumentResource,
 	TextInput,
 	Tooltip,
-	debounce,
-	Breadcrumbs,
-	getCachedDocumentResource,
-	Badge,
-} from 'frappe-ui';
-import SitePlansCards from '../components/SitePlansCards.vue';
-import { validateSubdomain } from '../utils/site';
-import Header from '../components/Header.vue';
-import router from '../router';
-import { plans } from '../data/plans';
-import NewSiteAppSelector from '../components/site/NewSiteAppSelector.vue';
-import Summary from '../components/Summary.vue';
-import { DashboardError } from '../utils/error';
-import { getCountry } from '../utils/country';
+} from 'frappe-ui'
+import Header from '../components/Header.vue'
+import SitePlansCards from '../components/SitePlansCards.vue'
+import Summary from '../components/Summary.vue'
+import NewSiteAppSelector from '../components/site/NewSiteAppSelector.vue'
+import { plans } from '../data/plans'
+import router from '../router'
+import { getCountry } from '../utils/country'
+import { DashboardError } from '../utils/error'
+import { validateSubdomain } from '../utils/site'
 
 export default {
 	name: 'NewSite',
@@ -430,97 +441,98 @@ export default {
 			selectedDedicatedServer: null,
 			serverPriceUsd: null,
 			serverSupportQuotaAvailable: null,
-		};
+			spendingLimitExceeded: false,
+		}
 	},
 	watch: {
 		apps() {
 			if (!this.selectedDedicatedServer) {
-				this.version = this.autoSelectVersion();
-				this.cluster = null;
+				this.version = this.autoSelectVersion()
+				this.cluster = null
 			}
-			this.agreedToRegionConsent = false;
+			this.agreedToRegionConsent = false
 		},
 		showLocalisationOption() {
 			if (this.showLocalisationOption) {
 				const localisationAppCountries = this.localisationAppCountries.map(
 					(c) => c.value,
-				);
+				)
 
 				if (
 					localisationAppCountries.includes(getCountry()) &&
 					!this.selectedLocalisationCountry
 				) {
-					this.selectedLocalisationCountry = { value: getCountry() };
+					this.selectedLocalisationCountry = { value: getCountry() }
 				}
 			} else {
-				this.selectedLocalisationCountry = null;
+				this.selectedLocalisationCountry = null
 			}
 		},
 		version() {
 			if (!this.selectedDedicatedServer) {
-				this.cluster = null;
-				this.provider = null;
+				this.cluster = null
+				this.provider = null
 			}
-			this.agreedToRegionConsent = false;
+			this.agreedToRegionConsent = false
 			// Reset localisation selection when version changes
-			this.selectedLocalisationCountry = null;
-			this.showLocalisationOption = false;
+			this.selectedLocalisationCountry = null
+			this.showLocalisationOption = false
 		},
 		provider() {
 			if (this.bench || this.selectedDedicatedServer) {
 				// provider is inferred from cluster selection, so avoid clearing it
-				return;
+				return
 			}
 
-			this.cluster = null;
-			this.plan = null;
-			this.agreedToRegionConsent = false;
+			this.cluster = null
+			this.plan = null
+			this.agreedToRegionConsent = false
 		},
 		cluster() {
-			this.plan = null;
-			this.agreedToRegionConsent = false;
+			this.plan = null
+			this.agreedToRegionConsent = false
 
 			// For bench flow, set provider based on the selected cluster's cloud_provider
 			if ((this.bench || this.selectedDedicatedServer) && this.cluster) {
 				const selectedCluster = this.selectedVersion?.group?.clusters.find(
 					(c) => c.name === this.cluster,
-				);
+				)
 				if (selectedCluster?.cloud_provider) {
-					this.provider = selectedCluster.cloud_provider;
+					this.provider = selectedCluster.cloud_provider
 				}
 			}
 		},
 		useDedicatedServer(newVal) {
 			if (newVal && this.availableDedicatedServers.length === 1) {
-				const server = this.availableDedicatedServers[0];
-				this.selectedDedicatedServer = server.name;
-				this.cluster = server.cluster;
-				this.provider = server.provider;
+				const server = this.availableDedicatedServers[0]
+				this.selectedDedicatedServer = server.name
+				this.cluster = server.cluster
+				this.provider = server.provider
 			} else {
-				this.selectedDedicatedServer = null;
-				this.cluster = null;
-				this.provider = null;
+				this.selectedDedicatedServer = null
+				this.cluster = null
+				this.provider = null
 			}
 		},
 		selectedDedicatedServer(newServer) {
-			if (!newServer) return;
+			if (!newServer) return
 			const server = this.availableDedicatedServers.find(
 				(s) => s.name === newServer,
-			);
+			)
 			if (server) {
-				this.cluster = server.cluster;
-				this.provider = server.provider;
-				this.serverPriceUsd = server.price_usd;
+				this.cluster = server.cluster
+				this.provider = server.provider
+				this.serverPriceUsd = server.price_usd
 				this.serverSupportQuotaAvailable =
-					server.product_warranty?.total > server.product_warranty?.consumed;
+					server.product_warranty?.total > server.product_warranty?.consumed
 			}
 		},
 		subdomain: {
 			handler: debounce(function (value) {
-				let invalidMessage = validateSubdomain(value);
-				this.$resources.subdomainExists.error = invalidMessage;
+				let invalidMessage = validateSubdomain(value)
+				this.$resources.subdomainExists.error = invalidMessage
 				if (!invalidMessage) {
-					this.$resources.subdomainExists.submit();
+					this.$resources.subdomainExists.submit()
 				}
 			}, 500),
 		},
@@ -530,17 +542,17 @@ export default {
 			return {
 				url: 'press.api.site.options_for_new',
 				makeParams() {
-					return { for_bench: this.bench, for_server: this.server };
+					return { for_bench: this.bench, for_server: this.server }
 				},
 				onSuccess() {
-					this.closestCluster = this.options.closest_cluster;
+					this.closestCluster = this.options.closest_cluster
 					if (this.bench && this.options.versions.length > 0) {
-						this.version = this.options.versions[0].name;
+						this.version = this.options.versions[0].name
 					}
-					this.applyDedicatedServerDefaults();
+					this.applyDedicatedServerDefaults()
 				},
 				auto: true,
-			};
+			}
 		},
 		subdomainExists() {
 			return {
@@ -549,30 +561,30 @@ export default {
 					return {
 						domain: this.domain,
 						subdomain: this.subdomain,
-					};
+					}
 				},
 				validate() {
-					let error = validateSubdomain(this.subdomain);
+					let error = validateSubdomain(this.subdomain)
 					if (error) {
-						return new DashboardError(error);
+						return new DashboardError(error)
 					}
 				},
 				transform(data) {
-					return !Boolean(data);
+					return !Boolean(data)
 				},
-			};
+			}
 		},
 		newSite() {
-			if (!(this.options && this.selectedVersion)) return;
+			if (!(this.options && this.selectedVersion)) return
 
 			if (this.bench) {
 				return {
 					url: 'press.api.client.insert',
 					makeParams() {
-						let appPlans = {};
+						let appPlans = {}
 						for (let app of this.apps) {
 							if (app.plan) {
-								appPlans[app.app] = app.plan;
+								appPlans[app.app] = app.plan
 							}
 						}
 
@@ -595,39 +607,39 @@ export default {
 								share_details_consent: this.shareDetailsConsent,
 								server: this.selectedDedicatedServer || null,
 							},
-						};
+						}
 					},
 					validate() {
 						if (this.useDedicatedServer && !this.selectedDedicatedServer) {
 							throw new DashboardError(
 								'Please select a dedicated server to deploy your site.',
-							);
+							)
 						}
 						if (!this.subdomain) {
-							throw new DashboardError('Please enter a subdomain');
+							throw new DashboardError('Please enter a subdomain')
 						}
 
 						if (!this.agreedToRegionConsent) {
 							throw new DashboardError(
 								'Please agree to the above consent to create site',
-							);
+							)
 						}
 					},
 					onSuccess: (site) => {
 						router.push({
 							name: 'Site Jobs',
 							params: { name: site.name },
-						});
+						})
 					},
-				};
+				}
 			} else {
 				return {
 					url: 'press.api.site.new',
 					makeParams() {
-						let appPlans = {};
+						let appPlans = {}
 						for (let app of this.apps) {
 							if (app.plan) {
-								appPlans[app.app] = app.plan;
+								appPlans[app.app] = app.plan
 							}
 						}
 
@@ -650,17 +662,17 @@ export default {
 								// files: this.selectedFiles,
 								// skip_failing_patches: this.skipFailingPatches,
 							},
-						};
+						}
 					},
 					validate() {
 						if (!this.subdomain) {
-							throw new DashboardError('Please enter a subdomain');
+							throw new DashboardError('Please enter a subdomain')
 						}
 
 						if (!this.agreedToRegionConsent) {
 							throw new DashboardError(
 								'Please agree to the above consent to create site',
-							);
+							)
 						}
 					},
 					onSuccess: (response) => {
@@ -668,163 +680,172 @@ export default {
 							router.push({
 								name: 'NewSiteProgress',
 								params: { siteGroupDeployName: response.site_group_deploy },
-							});
+							})
 						} else {
 							router.push({
 								name: 'Site Job',
 								params: { name: response.site, id: response.job },
-							});
+							})
 						}
 					},
-				};
+				}
+			}
+		},
+		isLimitExceeded() {
+			return {
+				url: 'press.api.account.is_limits_exceeded',
+				auto: true,
+				onSuccess(response) {
+					this.spendingLimitExceeded = response
+				},
 			}
 		},
 	},
 	computed: {
 		options() {
-			return this.$resources.options.data;
+			return this.$resources.options.data
 		},
 		domain() {
 			return (
 				this.options?.cluster_specific_root_domains?.find(
 					(d) => d.cluster === this.cluster,
 				)?.name || this.options?.domain
-			);
+			)
 		},
 		selectedVersion() {
-			return this.options?.versions.find((v) => v.name === this.version);
+			return this.options?.versions.find((v) => v.name === this.version)
 		},
 		dedicatedServerConfig() {
 			if (this.bench) {
-				return this.selectedVersion?.group?.dedicated_server_config || {};
+				return this.selectedVersion?.group?.dedicated_server_config || {}
 			} else {
-				return this.options?.dedicated_server_config || {};
+				return this.options?.dedicated_server_config || {}
 			}
 		},
 		showDedicatedServerOption() {
-			const case_type = this.dedicatedServerConfig?.case || '';
+			const case_type = this.dedicatedServerConfig?.case || ''
 			return (
 				case_type === 'user_choice_single' ||
 				case_type === 'user_choice_multiple'
-			);
+			)
 		},
 		isDedicatedServerSite() {
-			return !!(this.useDedicatedServer && this.selectedDedicatedServer);
+			return !!(this.useDedicatedServer && this.selectedDedicatedServer)
 		},
 		availableDedicatedServers() {
-			return this.dedicatedServerConfig?.dedicated_servers || [];
+			return this.dedicatedServerConfig?.dedicated_servers || []
 		},
 		shouldShowDedicatedServerDropdown() {
-			const case_type = this.dedicatedServerConfig?.case;
-			const hasMultipleServers = this.availableDedicatedServers.length > 1;
+			const case_type = this.dedicatedServerConfig?.case
+			const hasMultipleServers = this.availableDedicatedServers.length > 1
 			// Only show server selection when:
 			// 1. user_choice_multiple - User has enabled dedicated server checkbox AND there are multiple servers
 			// 2. dedicated_only_multiple - release group has multiple dedicated servers linked to it and none public
 			if (!this.useDedicatedServer || !hasMultipleServers) {
-				return false;
+				return false
 			}
 
 			return (
 				case_type === 'user_choice_multiple' ||
 				case_type === 'dedicated_only_multiple'
-			);
+			)
 		},
 		availableVersions() {
 			if (!this.apps.length || this.bench)
 				return (this.options?.versions || []).sort((a, b) =>
 					b.name.localeCompare(a.name),
-				);
+				)
 
 			let commonVersions = this.apps.reduce((acc, app) => {
-				if (!acc) return app.sources.map((s) => s.version);
-				return acc.filter((v) => app.sources.map((s) => s.version).includes(v));
-			}, null);
+				if (!acc) return app.sources.map((s) => s.version)
+				return acc.filter((v) => app.sources.map((s) => s.version).includes(v))
+			}, null)
 
 			return (this.options?.versions || []).map((v) => ({
 				...v,
 				disabled: !commonVersions.includes(v.name),
-			}));
+			}))
 		},
 		selectedClusterTitle() {
 			const allClusters = [
 				...(this.selectedVersion?.group?.clusters || []),
 				...(this.options.additional_clusters || []),
-			];
-			return allClusters.find((c) => c.name === this.cluster)?.title;
+			]
+			return allClusters.find((c) => c.name === this.cluster)?.title
 		},
 		filteredClusters() {
-			if (!this.selectedVersion?.group?.clusters) return [];
+			if (!this.selectedVersion?.group?.clusters) return []
 
-			const versionClusters = this.selectedVersion.group.clusters;
+			const versionClusters = this.selectedVersion.group.clusters
 
-			if (!this.provider) return versionClusters;
+			if (!this.provider) return versionClusters
 
 			// version clusters with additional private bench clusters
 			const allClusters = [
 				...versionClusters,
 				...(this.options?.additional_clusters || []),
-			];
+			]
 
-			return allClusters.filter((c) => c.cloud_provider === this.provider);
+			return allClusters.filter((c) => c.cloud_provider === this.provider)
 		},
 		selectedClusterProvider() {
-			if (!this.cluster) return null;
-			const versionClusters = this.selectedVersion?.group?.clusters || [];
+			if (!this.cluster) return null
+			const versionClusters = this.selectedVersion?.group?.clusters || []
 			const clusterDetails = versionClusters.find(
 				(c) => c.name === this.cluster,
-			);
-			return clusterDetails?.cloud_provider || null;
+			)
+			return clusterDetails?.cloud_provider || null
 		},
 		effectiveProvider() {
-			return this.provider || this.selectedClusterProvider;
+			return this.provider || this.selectedClusterProvider
 		},
 		selectedVersionApps() {
-			let apps = [];
+			let apps = []
 
 			if (!this.bench)
 				apps = (this.options?.app_source_details || []).sort((a, b) =>
 					a.total_installs !== b.total_installs
 						? b.total_installs - a.total_installs
 						: a.app.localeCompare(b.app),
-				);
-			else if (!this.selectedVersion?.group?.bench_app_sources) apps = [];
+				)
+			else if (!this.selectedVersion?.group?.bench_app_sources) apps = []
 			else
 				apps = this.selectedVersion.group.bench_app_sources.map(
 					(app_source) => {
 						let app_source_details =
-							this.options?.app_source_details?.[app_source];
+							this.options?.app_source_details?.[app_source]
 
 						let marketplace_details = app_source_details
 							? this.options?.marketplace_details?.[app_source_details.app] ||
 								{}
-							: {};
+							: {}
 
 						return {
 							app_title: app_source,
 							...app_source_details,
 							...marketplace_details,
-						};
+						}
 					},
-				);
+				)
 
 			// sorted by total installs and then by name
 			return apps.sort((a, b) => {
 				if (a.total_installs > b.total_installs) {
-					return -1;
+					return -1
 				} else if (a.total_installs < b.total_installs) {
-					return 1;
+					return 1
 				} else {
-					return a.app_title.localeCompare(b.app_title);
+					return a.app_title.localeCompare(b.app_title)
 				}
-			});
+			})
 		},
 		selectedVersionAppOptions() {
 			return this.selectedVersionApps.filter(
 				(app) => !this.localisationAppNames.includes(app.app),
-			);
+			)
 		},
 		isPrivateBenchPlan() {
-			return !this.bench && Boolean(this.plan?.private_bench_support);
+			return !this.bench && Boolean(this.plan?.private_bench_support)
 		},
 		showLocalisationSelector() {
 			if (
@@ -833,90 +854,90 @@ export default {
 				!this.apps.length ||
 				!this.version
 			)
-				return false;
+				return false
 
 			// Check if there are any localisation countries available for the selected version
-			if (!this.localisationAppCountries.length) return false;
+			if (!this.localisationAppCountries.length) return false
 
 			const appsThatNeedLocalisation = this.selectedVersionApps.filter(
 				(app) => app.localisation_apps.length,
-			);
+			)
 
 			if (
 				appsThatNeedLocalisation.some((app) =>
 					this.apps.map((a) => a.app).includes(app.app),
 				)
 			)
-				return true;
+				return true
 
-			return false;
+			return false
 		},
 		localisationAppNames() {
-			if (!this.selectedVersionApps) return [];
+			if (!this.selectedVersionApps) return []
 			const localisationAppDetails = this.selectedVersionApps.flatMap(
 				(app) => app.localisation_apps,
-			);
+			)
 
 			return localisationAppDetails
 				.map((app) => app?.marketplace_app)
-				.filter(Boolean);
+				.filter(Boolean)
 		},
 		localisationAppCountries() {
-			if (!this.selectedVersionApps || !this.selectedVersion) return [];
+			if (!this.selectedVersionApps || !this.selectedVersion) return []
 
 			// Get the bench_app_sources for the selected version
 			const versionAppSources =
-				this.selectedVersion?.group?.bench_app_sources || [];
+				this.selectedVersion?.group?.bench_app_sources || []
 
 			// Get all localisation app details from selected apps
 			const localisationAppDetails = this.selectedVersionApps.flatMap(
 				(app) => app.localisation_apps,
-			);
+			)
 
 			// Filter to only include countries whose localisation app is available in the selected version
 			return localisationAppDetails
 				.filter((app) => {
-					if (!app?.marketplace_app) return false;
+					if (!app?.marketplace_app) return false
 					// Check if this localisation app has a source in the selected version's bench_app_sources
 					return versionAppSources.some((source) =>
 						source.toLowerCase().includes(app.marketplace_app.toLowerCase()),
-					);
+					)
 				})
 				.map((app) => ({
 					label: app?.country,
 					value: app?.country,
 				}))
-				.sort((a, b) => a.label.localeCompare(b.label));
+				.sort((a, b) => a.label.localeCompare(b.label))
 		},
 		selectedPlan() {
-			if (!plans?.data?.length) return;
-			return plans.data.find((p) => p.name === this.plan?.name);
+			if (!plans?.data?.length) return
+			return plans.data.find((p) => p.name === this.plan?.name)
 		},
 		selectedPlanHasSupportIncluded() {
-			if (!this.selectedPlan) return;
-			return this.selectedPlan.support_included;
+			if (!this.selectedPlan) return
+			return this.selectedPlan.support_included
 		},
 		versionAppsMap() {
-			const versions = this.availableVersions.map((v) => v.name);
-			let problemAppVersions = {};
+			const versions = this.availableVersions.map((v) => v.name)
+			let problemAppVersions = {}
 			if (!this.bench)
 				for (let app of this.apps) {
-					const appVersions = app.sources.map((s) => s.version);
+					const appVersions = app.sources.map((s) => s.version)
 					const problemVersions = versions.filter(
 						(version) => !appVersions.includes(version),
-					);
+					)
 					for (let version of problemVersions) {
 						if (!problemAppVersions[version]) {
-							problemAppVersions[version] = [];
+							problemAppVersions[version] = []
 						}
-						problemAppVersions[version].push(app.app_title);
+						problemAppVersions[version].push(app.app_title)
 					}
 				}
-			return problemAppVersions;
+			return problemAppVersions
 		},
 		breadcrumbs() {
 			if (this.bench) {
-				let group = getCachedDocumentResource('Release Group', this.bench);
+				let group = getCachedDocumentResource('Release Group', this.bench)
 				return [
 					{ label: 'Benches', route: '/groups' },
 					{
@@ -933,38 +954,38 @@ export default {
 							params: { bench: this.bench },
 						},
 					},
-				];
+				]
 			}
 			return [
 				{ label: 'Sites', route: '/sites' },
 				{ label: 'New Site', route: '/sites/new' },
-			];
+			]
 		},
 		_totalPerMonth() {
 			let total =
 				this.$team.doc.currency == 'INR'
 					? this.selectedPlan.price_inr
-					: this.selectedPlan.price_usd;
+					: this.selectedPlan.price_usd
 
 			for (let app of this.apps.filter((app) => app.plan)) {
 				total +=
 					this.$team.doc.currency == 'INR'
 						? app.plan.price_inr
-						: app.plan.price_usd;
+						: app.plan.price_usd
 			}
 
-			return total;
+			return total
 		},
 		totalPerMonth() {
-			return this.$format.userCurrency(this._totalPerMonth);
+			return this.$format.userCurrency(this._totalPerMonth)
 		},
 		totalPerDay() {
 			return this.$format.userCurrency(
 				this.$format.pricePerDay(this._totalPerMonth),
-			);
+			)
 		},
 		siteSummaryOptions() {
-			let appPlans = [];
+			let appPlans = []
 			for (let app of this.apps) {
 				appPlans.push(
 					`${
@@ -978,7 +999,7 @@ export default {
 								)} per month</span>`
 							: ''
 					}`,
-				);
+				)
 			}
 
 			return [
@@ -1017,34 +1038,34 @@ export default {
 					value: `${this.totalPerMonth} per month <div class="text-ink-gray-6">${this.totalPerDay} per day</div>`,
 					condition: () => this._totalPerMonth,
 				},
-			];
+			]
 		},
 	},
 	methods: {
 		autoSelectVersion() {
-			if (!this.availableVersions) return null;
+			if (!this.availableVersions) return null
 
 			return this.availableVersions
 				.sort((a, b) => b.name.localeCompare(a.name))
-				.find((v) => !v.disabled)?.name;
+				.find((v) => !v.disabled)?.name
 		},
 		applyDedicatedServerDefaults() {
-			const config = this.dedicatedServerConfig;
-			if (!config || !config.dedicated_servers) return;
+			const config = this.dedicatedServerConfig
+			if (!config || !config.dedicated_servers) return
 			if (config.case === 'dedicated_only_single') {
-				this.useDedicatedServer = true;
-				this.selectedDedicatedServer = this.server;
+				this.useDedicatedServer = true
+				this.selectedDedicatedServer = this.server
 			} else if (config.case === 'dedicated_only_multiple') {
 				// Multiple servers, none public - user must choose
-				this.useDedicatedServer = true;
+				this.useDedicatedServer = true
 			}
 		},
 	},
-};
+}
 </script>
 <style scoped>
 .checkbox:deep(label) {
-	color: theme('colors.gray.700') !important;
+	color: theme("colors.gray.700") !important;
 	line-height: 1.5;
 }
 </style>
