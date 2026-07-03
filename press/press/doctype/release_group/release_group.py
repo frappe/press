@@ -27,7 +27,7 @@ from press.api.client import dashboard_whitelist
 from press.exceptions import ImageNotFoundInRegistry, InsufficientSpaceOnServer, VolumeResizeLimitError
 from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.app.app import get_app_source_from_supported_versions, new_app
+from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from press.press.doctype.deploy_candidate.utils import is_suspended
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
@@ -285,6 +285,7 @@ class ReleaseGroup(Document, TagHelpers):
 			}
 			for app in self.apps
 		}
+		app_names_in_group = {app.app for app in self.apps}
 		source_order = list(app_rows_by_source)
 		source_by_name = self.get_app_sources_by_name(source_order)
 		required_apps_by_source = self.get_required_apps_by_source(source_order)
@@ -306,23 +307,27 @@ class ReleaseGroup(Document, TagHelpers):
 				continue
 
 			dependent_sources = self.get_dependent_app_sources(missing_repository_urls)
+			selected_app_names = {source.app for source in dependent_sources.values()}
 			for repository_url in sorted(missing_repository_urls):
 				dependent_source = dependent_sources.get(repository_url)
 				if not dependent_source:
+					if self.get_app_name_from_repository_url(repository_url) in selected_app_names:
+						continue
 					self.throw_missing_dependent_app_source(repository_url)
 					continue
 
-				source_by_name[dependent_source.name] = dependent_source
-				source_by_repository_url[repository_url] = dependent_source
-				source_by_repository_url[dependent_source.repository_url] = dependent_source
-				if dependent_source.name not in app_rows_by_source:
-					app_rows_by_source[dependent_source.name] = {
-						"app": dependent_source.app,
-						"source": dependent_source.name,
-						"title": dependent_source.app_title,
-					}
-					source_order.append(dependent_source.name)
-					apps_added = True
+				apps_added = (
+					self._append_dependent_source(
+						dependent_source,
+						repository_url,
+						app_rows_by_source,
+						source_order,
+						source_by_name,
+						source_by_repository_url,
+						app_names_in_group,
+					)
+					or apps_added
+				)
 
 			new_source_names = [
 				source.name
@@ -364,29 +369,105 @@ class ReleaseGroup(Document, TagHelpers):
 
 		return required_apps_by_source
 
+	def _append_dependent_source(
+		self,
+		dependent_source,
+		repository_url: str,
+		app_rows_by_source: dict[str, dict[str, str | bool]],
+		source_order: list[str],
+		source_by_name,
+		source_by_repository_url,
+		app_names_in_group: set[str],
+	) -> bool:
+		if dependent_source.app in app_names_in_group:
+			return False
+
+		source_by_name[dependent_source.name] = dependent_source
+		source_by_repository_url[repository_url] = dependent_source
+		source_by_repository_url[dependent_source.repository_url] = dependent_source
+		if dependent_source.name not in app_rows_by_source:
+			app_rows_by_source[dependent_source.name] = {
+				"app": dependent_source.app,
+				"source": dependent_source.name,
+				"title": dependent_source.app_title,
+			}
+			source_order.append(dependent_source.name)
+			app_names_in_group.add(dependent_source.app)
+		return True
+
 	def get_dependent_app_sources(self, repository_urls: set[str]) -> dict[str, AppSource]:
 		if not repository_urls:
 			return {}
 
-		sources_by_repository_url = {}
-		for repository_url in sorted(repository_urls):
-			app = self.get_app_name_from_repository_url(repository_url)
-			app_source = get_app_source_from_supported_versions(app, {self.version})
-			if app_source:
-				sources_by_repository_url[repository_url] = app_source
+		selected_sources = self._select_dependent_app_sources(repository_urls)
+		return {
+			repository_url: frappe.get_doc("App Source", source.name)
+			for repository_url, source in selected_sources.items()
+		}
 
-		return sources_by_repository_url
+	def _select_dependent_app_sources(self, repository_urls: set[str]) -> dict[str, frappe._dict]:
+		selected_sources_by_app = self._select_one_source_per_app(
+			self._get_dependent_app_source_rows(repository_urls, self.version)
+		)
+		missing_repository_urls = {
+			repository_url
+			for repository_url in repository_urls
+			if repository_url not in {source.repository_url for source in selected_sources_by_app.values()}
+		}
+		if missing_repository_urls:
+			for source in self._select_one_source_per_app(
+				self._get_dependent_app_source_rows(repository_urls, self.version)
+			).values():
+				if source.repository_url not in missing_repository_urls:
+					continue
+				selected_sources_by_app[source.app] = source
 
-	def get_app_name_from_repository_url(self, repository_url: str) -> str:
-		return repository_url.removesuffix(".git").rsplit("/", 1)[-1]
+		return {
+			source.repository_url: source
+			for source in selected_sources_by_app.values()
+			if source.repository_url in repository_urls
+		}
+
+	def _select_one_source_per_app(self, sources: list[frappe._dict]) -> dict[str, frappe._dict]:
+		selected_sources: dict[str, frappe._dict] = {}
+		for source in sources:
+			if source.app in selected_sources:
+				continue
+			selected_sources[source.app] = source
+		return selected_sources
+
+	def _get_dependent_app_source_rows(
+		self,
+		repository_urls: set[str],
+		version: str,
+	) -> list[frappe._dict]:
+		if not repository_urls or not version:
+			return []
+
+		AppSource = frappe.qb.DocType("App Source")
+		AppSourceVersion = frappe.qb.DocType("App Source Version")
+		return (
+			frappe.qb.from_(AppSource)
+			.join(AppSourceVersion)
+			.on(AppSource.name == AppSourceVersion.parent)
+			.where(AppSource.public == 1)
+			.where(AppSource.enabled == 1)
+			.where(AppSource.repository_url.isin(repository_urls))
+			.where(AppSourceVersion.version == version)
+			.select(AppSource.name, AppSource.app, AppSource.repository_url, AppSource.app_title)
+			.run(as_dict=True)
+		)
 
 	def throw_missing_dependent_app_source(self, repository_url: str):
 		app_name = self.get_app_name_from_repository_url(repository_url)
 		frappe.throw(
-			f"Site creation will fail because no App Source matching version "
-			f"{self.version} was found for required app {app_name}.",
-			frappe.ValidationError,
+			_(
+				"Site creation will fail because no App Source matching {0} was found for dependent app {1}"
+			).format(self.version, app_name)
 		)
+
+	def get_app_name_from_repository_url(self, repository_url: str) -> str:
+		return repository_url.removesuffix(".git").rsplit("/", 1)[-1]
 
 	def before_insert(self):
 		# to avoid adding deps while cloning a release group
