@@ -20,7 +20,8 @@
 					<div class="flex items-center gap-0.5">
 						<FeatherIcon name="award" class="h-5 w-5 text-ink-gray-7" />
 						<h3 class="text-xl font-semibold">
-							{{ partnerDetails.data?.partner_type }} Tier
+							{{ partnerDetails.data?.partner_type }}
+							Tier
 						</h3>
 					</div>
 				</div>
@@ -33,7 +34,8 @@
 					>
 						<template #hint>
 							<span class="text-base font-medium text-ink-gray-5">
-								{{ formatNumber(nextTierTarget) }} to reach {{ nextTier }}
+								{{ formatNumber(nextTierTarget) }}
+								to reach {{ nextTier }}
 							</span>
 						</template>
 					</Progress>
@@ -68,9 +70,7 @@
 						</div>
 						<div class="flex items-center">
 							<div class="text-xl font-semibold py-2">
-								{{
-									partnerDetails.data?.custom_number_of_certified_members || 0
-								}}
+								{{ partnerDetails.data?.custom_number_of_certified_members || 0 }}
 							</div>
 						</div>
 					</div>
@@ -147,14 +147,11 @@
 					>
 						<div class="flex flex-col gap-2">
 							<p>
-								<span class="font-semibold text-3xl">{{
-									formatCurrency(mrr)
-								}}</span
+								<span class="font-semibold text-3xl"
+									>{{ formatCurrency(mrr) }}</span
 								><span class="text-base text-ink-gray-6">
 									/
-									{{
-										formatCurrency(team.doc.currency === 'USD' ? 100 : 10000)
-									}}</span
+									{{ formatCurrency(team.doc.currency === 'USD' ? 100 : 10000) }}</span
 								>
 							</p>
 							<div class="font-normal text-ink-gray-7 tracking-wide">MRR</div>
@@ -165,9 +162,8 @@
 					>
 						<div class="flex flex-col gap-2">
 							<p>
-								<span class="font-semibold text-3xl">{{
-									partnerDetails.data?.custom_number_of_certified_members || 0
-								}}</span
+								<span class="font-semibold text-3xl"
+									>{{ partnerDetails.data?.custom_number_of_certified_members || 0 }}</span
 								><span class="text-base text-ink-gray-6"> / 2</span>
 							</p>
 							<div class="font-normal text-ink-gray-7 tracking-wide">
@@ -224,26 +220,26 @@
 </template>
 
 <script setup>
-import { computed, inject, ref, watch } from 'vue';
-import dayjs from '../../utils/dayjs';
 import {
-	FeatherIcon,
 	Button,
-	createResource,
-	Progress,
 	createListResource,
+	createResource,
 	Dialog,
-} from 'frappe-ui';
-import PartnerContribution from './PartnerContribution.vue';
-import ClickToCopyField from '../ClickToCopyField.vue';
-import { toast } from 'vue-sonner';
-import router from '../../router';
+	FeatherIcon,
+	Progress,
+} from 'frappe-ui'
+import { computed, inject, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
+import router from '../../router'
+import dayjs from '../../utils/dayjs'
+import ClickToCopyField from '../ClickToCopyField.vue'
+import PartnerContribution from './PartnerContribution.vue'
 
-const team = inject('team');
+const team = inject('team')
 
-const showPartnerContributionDialog = ref(false);
-const showRenewalConfirmationDialog = ref(false);
-const showRenewalErrorDialog = ref(false);
+const showPartnerContributionDialog = ref(false)
+const showRenewalConfirmationDialog = ref(false)
+const showRenewalErrorDialog = ref(false)
 
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',
@@ -253,18 +249,18 @@ const partnerDetails = createResource({
 		partner_email: team.doc.partner_email,
 	},
 	onSuccess(data) {
-		calculateNextTier(data.partner_type);
+		calculateNextTier(data.partner_type)
 	},
-});
+})
 
 const partnerConsent = createListResource({
 	doctype: 'Partner Consent',
 	onSuccess() {
-		toast.success('Partner consent recorded successfully');
+		toast.success('Partner consent recorded successfully')
 	},
-});
+})
 
-let mrr = ref(0);
+let mrr = ref(0)
 const partnerMRR = createResource({
 	url: 'press.api.partner.get_partner_mrr',
 	cache: 'partnerContribution',
@@ -273,10 +269,10 @@ const partnerMRR = createResource({
 		prev_month: true,
 	},
 	onSuccess(data) {
-		mrr.value = data[0]?.total_amount;
-		canRenew();
+		mrr.value = data[0]?.total_amount
+		canRenew()
 	},
-});
+})
 
 function canRenew() {
 	// Allow renewal if mrr is greater than $100 or 10000 INR
@@ -285,37 +281,43 @@ function canRenew() {
 			(team.doc.currency === 'INR' && mrr.value >= 10000)) &&
 		partnerDetails.data?.custom_number_of_certified_members >= 2
 	) {
-		showRenewalConfirmationDialog.value = true;
+		showRenewalConfirmationDialog.value = true
 	} else {
-		showRenewalErrorDialog.value = true;
+		showRenewalErrorDialog.value = true
 	}
 }
 
 function routeToCertification() {
-	router.push('/partners/certificates');
+	router.push('/partners/certificates')
 }
 
 function openSupport() {
-	window.open('https://support.frappe.io/', '_blank');
+	window.open('https://support.frappe.io/', '_blank')
 }
 
 const daysUntilRenewal = computed(() => {
-	const today = new Date();
-	const renewal = new Date(partnerDetails.data?.end_date);
-	if (renewal > today) {
-		return Math.ceil((renewal - today) / (1000 * 60 * 60 * 24));
-	} else {
-		return 0;
+	if (!partnerDetails.data?.end_date) {
+		return 0
 	}
-});
+	const today = new Date()
+	const renewal = new Date(partnerDetails.data?.end_date)
+	if (renewal > today) {
+		return Math.ceil((renewal - today) / (1000 * 60 * 60 * 24))
+	} else {
+		return 0
+	}
+})
 
 function isRenewalPeriod() {
 	// 30 days before and after renewal date
-	const renewal = dayjs(partnerDetails.data?.end_date);
-	const today = dayjs();
-	const daysDifference = renewal.diff(today, 'days');
+	if (!partnerDetails.data?.end_date) {
+		return false
+	}
+	const renewal = dayjs(partnerDetails.data?.end_date)
+	const today = dayjs()
+	const daysDifference = renewal.diff(today, 'days')
 
-	return Boolean(daysDifference <= 30);
+	return Boolean(daysDifference <= 30)
 }
 
 const currentMonthContribution = createResource({
@@ -325,7 +327,7 @@ const currentMonthContribution = createResource({
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-});
+})
 
 const prevMonthContribution = createResource({
 	url: 'press.api.partner.get_prev_month_partner_contribution',
@@ -334,96 +336,99 @@ const prevMonthContribution = createResource({
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-});
+})
 
-const tierProgressValue = ref(0);
-const nextTier = ref('');
-const nextTierTarget = ref(0);
+const tierProgressValue = ref(0)
+const nextTier = ref('')
+const nextTierTarget = ref(0)
 
 function calculateTierProgress(next_tier_value) {
-	return Math.ceil((currentMonthContribution.data / next_tier_value) * 100);
+	return Math.ceil((currentMonthContribution.data / next_tier_value) * 100)
 }
 
 function calculateNextTier(tier) {
 	const target_inr = {
-		Gold: 575000,
-		Silver: 230000,
-		Bronze: 57500,
+		Gold: 630000,
+		Silver: 250000,
+		Bronze: 63000,
 		Emerging: 30000,
-	};
+	}
 	const target_usd = {
-		Gold: 6900,
-		Silver: 2875,
-		Bronze: 690,
+		Gold: 7500,
+		Silver: 3150,
+		Bronze: 750,
 		Emerging: 350,
-	};
+	}
 
-	const current_tier = partnerDetails.data?.partner_type;
-	let next_tier = '';
+	const current_tier = partnerDetails.data?.partner_type
+	let next_tier = ''
 	switch (current_tier) {
 		case 'Entry':
-			next_tier = 'Emerging';
+			next_tier = 'Emerging'
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Emerging : target_usd.Emerging;
-			break;
+				team.doc.currency === 'INR' ? target_inr.Emerging : target_usd.Emerging
+			break
 		case 'Emerging':
-			next_tier = 'Bronze';
+			next_tier = 'Bronze'
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Bronze : target_usd.Bronze;
-			break;
+				team.doc.currency === 'INR' ? target_inr.Bronze : target_usd.Bronze
+			break
 		case 'Bronze':
-			next_tier = 'Silver';
+			next_tier = 'Silver'
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Silver : target_usd.Silver;
-			break;
+				team.doc.currency === 'INR' ? target_inr.Silver : target_usd.Silver
+			break
 		case 'Silver':
-			next_tier = 'Gold';
+			next_tier = 'Gold'
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Gold : target_usd.Gold;
-			break;
+				team.doc.currency === 'INR' ? target_inr.Gold : target_usd.Gold
+			break
 		default:
-			next_tier = 'Gold';
+			next_tier = 'Gold'
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Gold : target_usd.Gold;
+				team.doc.currency === 'INR' ? target_inr.Gold : target_usd.Gold
 	}
-	nextTier.value = next_tier;
-	tierProgressValue.value = calculateTierProgress(nextTierTarget.value);
-	nextTierTarget.value = nextTierTarget.value - currentMonthContribution.data;
+	nextTier.value = next_tier
+	tierProgressValue.value = calculateTierProgress(nextTierTarget.value)
+	nextTierTarget.value = nextTierTarget.value - currentMonthContribution.data
 }
 
 watch(
 	() => partnerDetails.data,
 	(newData) => {
 		if (newData) {
-			calculateNextTier(newData.partner_type);
+			calculateNextTier(newData.partner_type)
 		}
 	},
 	{ deep: true },
-);
+)
 
 const formatDate = (dateString) => {
+	if (!dateString) {
+		return 'Not set'
+	}
 	return new Date(dateString).toLocaleDateString('en-US', {
 		year: 'numeric',
 		month: 'long',
 		day: 'numeric',
-	});
-};
+	})
+}
 
 const formatCurrency = (amount) => {
 	if (!amount) {
-		amount = 0;
+		amount = 0
 	}
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: team.doc.currency,
 		maximumFractionDigits: 1,
-	}).format(amount);
-};
+	}).format(amount)
+}
 
 const formatNumber = (value) => {
 	return new Intl.NumberFormat('en-US', {
 		notation: 'compact',
 		compactDisplay: 'short',
-	}).format(value);
-};
+	}).format(value)
+}
 </script>

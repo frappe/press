@@ -18,7 +18,7 @@ from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_for
 
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
-from press.guards import feature_preview, team_guard
+from press.guards.team_guard import only_admin
 from press.partner.doctype.partner_onboarding.partner_onboarding import has_partner_onboarding
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
@@ -35,7 +35,7 @@ from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture, capture_pulse
 from press.utils.user import is_system_manager
 
-from .team_members import get_invitations, get_members, get_roles, remove_member
+from .team_members import get_invitations, get_roles
 
 if TYPE_CHECKING:
 	from press.press.doctype.account_request.account_request import AccountRequest
@@ -287,7 +287,6 @@ class Team(Document):
 
 	def validate(self):
 		self.validate_duplicate_members()
-		self.validate_member_role()
 		self.set_team_currency()
 		self.set_default_user()
 		self.set_billing_name()
@@ -296,28 +295,6 @@ class Team(Document):
 		self.validate_disable()
 		self.validate_billing_team()
 		self.reject_reenabling_team_for_banned_team()
-
-	def validate_member_role(self):
-		"""
-		Validate that the role assigned to each team member is a valid role.
-		This is to prevent any issues with role-based access control and ensure
-		that team members have the correct permissions based on their assigned
-		roles.
-		"""
-		# Get a list of valid roles for this team.
-		roles = [role["label"] for role in get_roles(self.name)]
-		# Validate that each team member has a valid role assigned.
-		for member in self.team_members:
-			if not member.role:
-				member.role = "Member"
-			# If the role is not in the list of valid roles, throw an error.
-			if member.role not in roles:
-				frappe.throw(
-					_("{0} is not a valid role. Please select a valid role for {1}").format(
-						member.role,
-						member.user,
-					)
-				)
 
 	def before_insert(self):
 		self.currency = "INR" if self.country == "India" else "USD"
@@ -460,6 +437,8 @@ class Team(Document):
 
 		if not team.via_erpnext and not account_request.invited_by_parent_team:
 			team.create_upcoming_invoice()
+
+		account_request.stitch_pulse_identity(team.name)
 		return team
 
 	@staticmethod
@@ -491,16 +470,21 @@ class Team(Document):
 		if not user:
 			user = self.create_user(first_name, last_name, email, password)
 
-		self.append("team_members", {"user": user.name, "role": role or "Member"})
+		self.append("team_members", {"user": user.name, "role": role})
 		self.save(ignore_permissions=True)
 
 		for press_role in press_roles or []:
-			frappe.get_doc("Press Role", press_role.press_role).add_user(
+			frappe.get_doc("Press Role", press_role).add_user(
 				user.name,
 				skip_validations=skip_validations,
 			)
 
 	@dashboard_whitelist()
+	@only_admin(
+		team=lambda document, _: str(document.name),
+		# Members may remove themselves (the leave_team flow).
+		skip=lambda _, arguments: arguments["member"] == frappe.session.user,
+	)
 	def remove_team_member(self, member):
 		member_to_remove = find(self.team_members, lambda x: x.user == member)
 		if member_to_remove:
@@ -722,8 +706,8 @@ class Team(Document):
 		self.servers_enabled = 1
 		self.partner_status = "Active"
 		self.save(ignore_permissions=True)
-		frappe.get_doc("User", self.user).add_roles("Partner")
 		self.create_partner_referral_code()
+		frappe.get_doc("User", self.user).add_roles("Partner")
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
@@ -1111,22 +1095,39 @@ class Team(Document):
 			m.roles = user_roles.get(m.user, [])
 			m.has_admin_access = any(r.get("admin_access") for r in m.roles)
 			r.append(m)
+
+		for inv in get_invitations(str(self.name)):
+			if inv.press_role_name:
+				roles = [
+					{
+						"name": inv.press_role_name,
+						"title": inv.press_role,
+						"admin_access": inv.press_role_admin_access,
+					}
+				]
+				has_admin_access = bool(inv.press_role_admin_access)
+			else:
+				roles = []
+				has_admin_access = True
+			r.append(
+				{
+					"user": inv.email,
+					"email": inv.email,
+					"user_name": inv.full_name or inv.email,
+					"user_image": inv.user_image,
+					"roles": roles,
+					"has_admin_access": has_admin_access,
+					"status": "Pending",
+				}
+			)
+
 		return r
 
-	@dashboard_whitelist()
-	@feature_preview.beta_testing()
-	def get_members(self):
-		return get_invitations(str(self.name)) + get_members(str(self.name))
-
 	def _validate_role(self, role: str, all_roles=None):
-		from press.press.doctype.team.team_members import get_roles
-
 		all_roles = all_roles or get_roles(str(self.name))
-		# A role is identified either by its label/title (predefined roles and the
-		# update-invitation dialog) or by its Press Role name (the invite dialog
-		# sends the document name for custom roles). Accept both, mirroring
-		# _set_invitation_role which resolves either form to a press_role.
-		valid_roles = {r["value"] for r in all_roles} | {r["name"] for r in all_roles if r.get("name")}
+		# Accept both the role title and the Press Role document name, since
+		# the invite dialog sends the document name while other callers may use the title.
+		valid_roles = {r["value"] for r in all_roles} | {r["name"] for r in all_roles}
 		if role not in valid_roles:
 			frappe.throw(
 				_('Invalid role "{0}". Must be one of: {1}').format(
@@ -1135,70 +1136,12 @@ class Team(Document):
 				frappe.ValidationError,
 			)
 
-	@dashboard_whitelist()
-	@feature_preview.beta_testing()
-	@team_guard.only_admin()
-	def send_invitation(self, names: str, role: str = "Member"):
-		"""
-		Account request is created when a user is invited or when a user signs
-		up. This is different from a team/organization. Signing up should be
-		handled inside team doctype itself. Account request should focus on
-		handling user management, unrelated to team.
-		"""
-		from press.press.doctype.team.team_members import get_roles
-
-		all_roles = get_roles(str(self.name))
-		self._validate_role(role, all_roles)
-		for n in names.split(","):
-			n = n.strip()
-			if frappe.db.exists("Account Request", n):
-				d: AccountRequest = frappe.get_doc("Account Request", n, check_permission=True)
-				if d.team != self.name:
-					frappe.throw(
-						_("Account Request does not belong to this team."),
-						frappe.PermissionError,
-					)
-				self._set_invitation_role(d, role, all_roles)
-				d.flags.ignore_links = True
-				d.save()
-				d.send_verification_email()
-				continue
-			if account_request := frappe.db.exists(
-				"Account Request",
-				{
-					"email": n,
-					"team": self.name,
-					"invited_by": ("is", "set"),
-					"request_key": ("is", "set"),
-				},
-			):
-				dd: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
-				self._set_invitation_role(dd, role, all_roles)
-				dd.flags.ignore_links = True
-				dd.save()
-				dd.send_verification_email()
-				continue
-			frappe.utils.validate_email_address(n, throw=True)
-			ar: AccountRequest = frappe.new_doc("Account Request")
-			ar.team = self.name
-			ar.email = n
-			self._set_invitation_role(ar, role, all_roles)
-			ar.invited_by = frappe.session.user
-			ar.send_email = True
-			ar.flags.ignore_links = True
-			ar.save()
-		return self.get_members()
-
 	def _set_invitation_role(self, account_request: AccountRequest, role: str, all_roles=None):
 		if all_roles is None:
-			from press.press.doctype.team.team_members import get_roles
-
 			all_roles = get_roles(str(self.name))
-		matched = [r for r in all_roles if r["value"] == role]
+		matched = [r for r in all_roles if r["value"] == role or r.get("name") == role]
 		if matched and matched[0].get("name"):
 			account_request.press_role = matched[0]["name"]
-		else:
-			account_request.press_role = role
 
 	def _get_invitation_role(self, roles) -> str | None:
 		if isinstance(roles, str):
@@ -1217,54 +1160,6 @@ class Team(Document):
 			return None
 
 		raise frappe.ValidationError(_("Invalid role"))
-
-	@dashboard_whitelist()
-	@feature_preview.beta_testing()
-	@team_guard.only_admin()
-	def update_invitation_role(self, account_request: str, role: str):
-		self._validate_role(role)
-		d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
-		if d.team != self.name:
-			frappe.throw(
-				_("Account Request does not belong to this team."),
-				frappe.PermissionError,
-			)
-		self._set_invitation_role(d, role)
-		d.flags.ignore_links = True
-		d.save()
-		return self.get_members()
-
-	@dashboard_whitelist()
-	@feature_preview.beta_testing()
-	@team_guard.only_admin()
-	def cancel_invitation(self, account_request: str):
-		"""
-		Cancel invitation by clearing request key and expiration time so that
-		the link becomes invalid. This is not ideal. We should have a separate
-		doctype to handle invitations instead of overloading Account Request
-		doctype which is also used during signup.
-		"""
-		d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
-		d.request_key = None
-		d.request_key_expiration_time = None
-		d.save()
-		return self.get_members()
-
-	@dashboard_whitelist()
-	@feature_preview.beta_testing()
-	@team_guard.only_admin()
-	def remove_member(self, member: str):
-		"""
-		Remove member from the team. This will remove the member from the child
-		table. This does not deal with account request.
-		"""
-		remove_member(str(self.name), member)
-		return self.get_members()
-
-	@dashboard_whitelist()
-	@feature_preview.beta_testing()
-	def get_roles(self):
-		return get_roles(str(self.name))
 
 	@dashboard_whitelist()
 	@rate_limit(limit=10, seconds=60 * 60)
@@ -1298,6 +1193,9 @@ class Team(Document):
 				"team": self.name,
 				"invited_by": ("is", "set"),
 				"request_key": ("is", "set"),
+				# The expiry scheduler blanks request_key only after the fact; check the
+				# expiration time too so a lapsed invite doesn't block re-inviting.
+				"request_key_expiration_time": (">", frappe.utils.now_datetime()),
 			},
 		):
 			frappe.throw("User has already been invited recently. Please try again later.")
@@ -1319,6 +1217,33 @@ class Team(Document):
 			account_request.flags.ignore_links = True
 
 		account_request.insert()
+
+	@dashboard_whitelist()
+	@only_admin(team=lambda document, _: str(document.name))
+	def cancel_invitation(self, email):
+		pending_invitation_filters = {
+			"email": email,
+			"team": self.name,
+			"invited_by": ("is", "set"),
+			"request_key": ("is", "set"),
+			# A re-invite after expiry can leave an older, lapsed Account Request
+			# with its key still set; only the active invitation may be targeted.
+			"request_key_expiration_time": (">", frappe.utils.now_datetime()),
+		}
+		if not frappe.db.exists("Account Request", pending_invitation_filters):
+			frappe.throw(_("No pending invitation found for {0}").format(email))
+
+		# Expire rather than delete, mirroring expire_request_key: the Account
+		# Request stays for audit and get_invitations already ignores blanked keys.
+		frappe.db.set_value(
+			"Account Request",
+			pending_invitation_filters,
+			{
+				"request_key": "",
+				"request_key_expiration_time": None,
+			},
+			update_modified=False,
+		)
 
 	@frappe.whitelist()
 	def get_balance(self):

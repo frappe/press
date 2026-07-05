@@ -56,6 +56,7 @@ class AccountRequest(Document):
 		press_role: DF.Link | None
 		press_roles: DF.TableMultiSelect[AccountRequestPressRole]
 		product_trial: DF.Link | None
+		pulse_anonymous_id: DF.Data | None
 		referral_source: DF.Data | None
 		referrer_id: DF.Data | None
 		request_key: DF.Data | None
@@ -360,20 +361,47 @@ class AccountRequest(Document):
 
 	@property
 	def invite_role_label(self) -> str:
-		"""Resolve the role label from press_role field.
-
-		press_role may contain either a Press Role document name (for custom
-		roles) or a predefined role label stored directly (for Admin, Developer,
-		Member, Viewer). This property resolves both cases to a label suitable
-		for the Team Member's role field.
-		"""
+		"""Resolve the Press Role title from the press_role document name."""
 		if not self.press_role:
-			return "Member"
+			return ""
 		title = frappe.get_value("Press Role", self.press_role, "title")
 		return title or self.press_role
 
+	@property
+	def invite_press_roles(self) -> list[str]:
+		"""Press Role names to assign to the member when the invite is accepted.
+
+		New invites store the selected role in the press_role link field;
+		pending invites created before that may still carry rows in the
+		press_roles child table. Honour both.
+		"""
+		roles = [row.press_role for row in self.press_roles]
+		if self.press_role and self.press_role not in roles:
+			roles.append(self.press_role)
+		return roles
+
 	def is_saas_signup(self):
 		return bool(self.saas_app or self.saas or self.erpnext or self.product_trial)
+
+	def stitch_pulse_identity(self, team):
+		"""Link pre-signup anonymous browsing to the new account and label it.
+
+		Runs once when the team is created (covers every signup path). `alias` stitches
+		the `?aid=…` forwarded from the product website onto the account's team;
+		`identify` attaches product/plan attributes to the team. Both POST off-request
+		(enqueued, see `_pulse_post`), so a slow Pulse host can't block account creation.
+		"""
+		from press.utils.telemetry import pulse_alias, pulse_identify
+
+		# The team is the identity subject — stable across the account's sites, apps,
+		# and members — so every later identify (setup wizards, dashboard) converges.
+		if self.pulse_anonymous_id:
+			pulse_alias(previous_id=self.pulse_anonymous_id, team=team)
+		pulse_identify(team, self.pulse_person_properties())
+
+	def pulse_person_properties(self):
+		product = self.product_trial or self.saas_app or ("erpnext" if self.erpnext else "fc")
+		return {"product": product, "plan": self.plan, "country": self.country}
 
 
 def expire_request_key():

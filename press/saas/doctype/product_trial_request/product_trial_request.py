@@ -364,7 +364,7 @@ class ProductTrialRequest(Document):
 	def validate_subdomain_and_domain(self, subdomain: str, domain: str):
 		validate_subdomain(subdomain)
 		if domain not in get_domains():
-			frappe.throw("Invalid domain")
+			frappe.throw("The domain is invalid. Please enter a valid domain name.")
 
 	@dashboard_whitelist()
 	def create_site(self, subdomain: str, domain: str):

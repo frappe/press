@@ -290,7 +290,9 @@ class VirtualMachine(Document):
 
 	def check_and_attach_data_disk_snapshot_volume(self):
 		if not self.data_disk_snapshot_volume_id:
-			frappe.throw("Data Disk Snapshot Volume ID is not set.")
+			frappe.throw(
+				"This machine has no data disk snapshot volume to attach. Please create the volume from a snapshot first, then retry."
+			)
 
 		volume_state = self.get_state_of_volume(self.data_disk_snapshot_volume_id)
 		if volume_state == "available":
@@ -567,7 +569,9 @@ class VirtualMachine(Document):
 		from hcloud.ssh_keys.domain import SSHKey
 
 		if not self.machine_image:
-			frappe.throw("Machine Image is required to provision Hetzner Virtual Machine.")
+			frappe.throw(
+				"A machine image is required to provision a Hetzner virtual machine. Please attach a Virtual Machine Image before provisioning."
+			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 
@@ -848,7 +852,9 @@ class VirtualMachine(Document):
 		if server.doctype == "Database Server" or getattr(server, "is_unified_server", False):
 			memory = frappe.db.get_value("Server Plan", server.plan, "memory") or 1024
 			if memory < 1024:
-				frappe.throw("MariaDB cannot be installed on a server plan with less than 1GB RAM.")
+				frappe.throw(
+					"MariaDB needs at least 1 GB of RAM. Please choose a server plan with 1 GB of memory or more."
+				)
 
 			mariadb_context = self.get_mariadb_context(server, memory)
 
@@ -980,7 +986,9 @@ class VirtualMachine(Document):
 			ubuntu_images = [image for image in images if "22.04" in image["name"]]
 
 			if not ubuntu_images:
-				frappe.throw("No image available for Ubuntu 22.04")
+				frappe.throw(
+					"The cloud provider has no Ubuntu 22.04 image available in this region. Please try a different region, or contact support."
+				)
 
 			return ubuntu_images[0]["id"]
 
@@ -1036,7 +1044,9 @@ class VirtualMachine(Document):
 				)
 		elif self.cloud_provider == "Hetzner":
 			if volume_id == HETZNER_ROOT_DISK_ID:
-				frappe.throw("Cannot increase disk size for hetzner root disk.")
+				frappe.throw(
+					"The Hetzner root disk can't be resized. Please attach a separate data volume to add storage instead."
+				)
 
 			from hcloud.volumes.domain import Volume
 
@@ -1044,7 +1054,9 @@ class VirtualMachine(Document):
 
 		elif self.cloud_provider == "DigitalOcean":
 			if volume_id == DIGITALOCEAN_ROOT_DISK_ID:
-				frappe.throw("Cannot increase disk size for Digital Ocean root disk.")
+				frappe.throw(
+					"The Digital Ocean root disk can't be resized. Please attach a separate data volume to add storage instead."
+				)
 
 			self.client().volumes.resize(
 				volume_id,
@@ -1588,10 +1600,14 @@ class VirtualMachine(Document):
 
 	def attach_secondary_private_ip(self, secondary_private_ip=None):
 		if self.cloud_provider != "AWS EC2":
-			frappe.throw("Secondary IP assignment is currently only supported for AWS EC2 instances")
+			frappe.throw(
+				"Secondary IP assignment is only supported on AWS EC2 instances. This machine runs on a different provider, so this action isn't available."
+			)
 
 		if self.series != "nat":
-			frappe.throw("Secondary IP assignment is only supported for NAT servers")
+			frappe.throw(
+				"Secondary IP assignment is only supported for NAT servers. This machine isn't a NAT server, so this action isn't available."
+			)
 
 		# this is needed if we do failover and attach the secondary private ip of one instance to another
 		secondary_private_ip = secondary_private_ip or self.get_private_ip()
@@ -1612,13 +1628,17 @@ class VirtualMachine(Document):
 
 	def detach_secondary_private_ip(self):
 		if self.cloud_provider != "AWS EC2":
-			frappe.throw("Secondary IP detachment is currently only supported for AWS EC2 instances")
+			frappe.throw(
+				"Secondary IP detachment is only supported on AWS EC2 instances. This machine runs on a different provider, so this action isn't available."
+			)
 
 		if self.series != "nat":
-			frappe.throw("Secondary IP detachment is only supported for NAT servers")
+			frappe.throw(
+				"Secondary IP detachment is only supported for NAT servers. This machine isn't a NAT server, so this action isn't available."
+			)
 
 		if not self.secondary_private_ip:
-			frappe.throw("No secondary private IP assigned to this instance.")
+			frappe.throw("This instance has no secondary private IP to detach. There's nothing to do here.")
 
 		ec2 = self.client()
 		instance = ec2.describe_instances(InstanceIds=[self.instance_id])
@@ -2319,7 +2339,9 @@ class VirtualMachine(Document):
 		"""Virtual machines of series U will create a u series app server and u series database server"""
 
 		if self.series != "u":
-			frappe.throw("Only virtual machines of series 'u' can create unified servers.")
+			frappe.throw(
+				"Only 'u' series virtual machines can create unified servers. Please provision a 'u' series machine for a unified server."
+			)
 
 		server_document = {
 			"doctype": "Server",
@@ -2534,7 +2556,9 @@ class VirtualMachine(Document):
 	@frappe.whitelist()
 	def create_nat_server(self):
 		if self.series != "nat":
-			frappe.throw("Only virtual machines of series 'nat' can create NAT servers")
+			frappe.throw(
+				"Only 'nat' series virtual machines can create NAT servers. Please provision a 'nat' series machine for a NAT server."
+			)
 
 		document = {
 			"doctype": "NAT Server",
@@ -3100,7 +3124,9 @@ class VirtualMachine(Document):
 			device_name = f"/dev/sd{chr(ord('a') + i)}"
 			if device_name not in used_devices:
 				return device_name
-		frappe.throw("No device name available for new volume")
+		frappe.throw(
+			"This instance has no free device slots for a new volume. Please detach an unused volume before attaching another."
+		)
 		return None
 
 	@frappe.whitelist()
@@ -3118,7 +3144,9 @@ class VirtualMachine(Document):
 			from hcloud.volumes.domain import Volume
 
 			if volume_id == HETZNER_ROOT_DISK_ID:
-				frappe.throw("Cannot detach hetzner root disk.")
+				frappe.throw(
+					"The Hetzner root disk can't be detached. Please choose a data volume to detach instead."
+				)
 
 			self.client().volumes.detach(Volume(id=volume_id)).wait_until_finished(HETZNER_ACTION_RETRIES)
 		if sync:
@@ -3139,7 +3167,9 @@ class VirtualMachine(Document):
 				raise NotImplementedError
 			if self.cloud_provider == "Hetzner":
 				if volume_id == HETZNER_ROOT_DISK_ID:
-					frappe.throw("Cannot delete hetzner root disk.")
+					frappe.throw(
+						"The Hetzner root disk can't be deleted. Please choose a data volume to delete instead."
+					)
 
 				from hcloud.volumes.domain import Volume
 
@@ -3147,7 +3177,9 @@ class VirtualMachine(Document):
 
 			if self.cloud_provider == "DigitalOcean":
 				if volume_id == DIGITALOCEAN_ROOT_DISK_ID:
-					frappe.throw("Cannot delete digitalocean root disk.")
+					frappe.throw(
+						"The Digital Ocean root disk can't be deleted. Please choose a data volume to delete instead."
+					)
 
 				self.client().volumes.delete(volume_id=volume_id)
 
@@ -3173,14 +3205,18 @@ class VirtualMachine(Document):
 			return
 
 		if self.is_static_ip:
-			frappe.throw("Virtual Machine already has a static IP associated.")
+			frappe.throw(
+				"This virtual machine already has a static IP. Please release the existing static IP before attaching a new one."
+			)
 
 		client = self.client()
 		response = client.describe_addresses(PublicIps=[static_ip])
 
 		address_info = response["Addresses"][0]
 		if "AssociationId" in address_info:
-			frappe.throw("Static IP is already associated with another instance.")
+			frappe.throw(
+				"This static IP is already attached to another instance. Please release it from that instance first, or choose a different static IP."
+			)
 
 		client.associate_address(AllocationId=address_info["AllocationId"], InstanceId=self.instance_id)
 		self.sync()

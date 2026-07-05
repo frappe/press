@@ -106,6 +106,7 @@ class PressSettings(Document):
 			"23",
 		]
 		chat_website_token: DF.Data | None
+		cleanup_standby_site_pool: DF.Check
 		clone_directory: DF.Data | None
 		cluster: DF.Link | None
 		code_server: DF.Data | None
@@ -270,7 +271,7 @@ class PressSettings(Document):
 
 	def validate(self):
 		if self.max_concurrent_physical_restorations > 5:
-			frappe.throw("Max Concurrent Physical Restorations should be less than 5")
+			frappe.throw("Please set Max Concurrent Physical Restorations to less than 5.")
 
 		if self.send_email_notifications:
 			if self.email_recipients:
@@ -280,10 +281,10 @@ class PressSettings(Document):
 					if not validate_email_address(email):
 						frappe.throw(f"Invalid email address: {email}")
 			else:
-				frappe.throw("Email Recipients List can not be empty")
+				frappe.throw("Please add at least one recipient to the Email Recipients List.")
 
 		if self.minimum_rebuild_memory < 2:
-			frappe.throw("Minimum rebuild memory needs to be 2 GB or more.")
+			frappe.throw("Please set the minimum rebuild memory to 2 GB or more.")
 
 	@frappe.whitelist()
 	def create_stripe_webhook(self):

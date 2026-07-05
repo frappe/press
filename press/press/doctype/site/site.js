@@ -166,7 +166,7 @@ frappe.ui.form.on('Site', {
 					label,
 					() => {
 						frappe.confirm(
-							`Are you sure you want to ${label.toLowerCase()} this site?`,
+							`Are you sure you want to <b>${label.toLowerCase()}</b> this site?`,
 							() => frm.call(method).then((r) => frm.refresh()),
 						)
 					},
@@ -186,13 +186,13 @@ frappe.ui.form.on('Site', {
 		frm.add_custom_button(
 			__('Force Archive'),
 			() => {
-				frappe.confirm(`Are you sure you want to force drop this site?`, () =>
-					frm.call('archive', { force: true }).then((r) => frm.refresh()),
+				frappe.confirm(
+					`Are you sure you want to <b>force drop</b> this site?`,
+					() => frm.call('archive', { force: true }).then((r) => frm.refresh()),
 				)
 			},
 			__('Actions'),
 		)
-
 		;[
 			[__('Suspend'), 'suspend'],
 			[__('Unsuspend'), 'unsuspend'],
@@ -460,7 +460,6 @@ ${r.message.error}
 			},
 			__('Dangerous Actions'),
 		)
-
 		;[
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore_site'],
@@ -472,7 +471,7 @@ ${r.message.error}
 				label,
 				() => {
 					frappe.confirm(
-						`Are you sure you want to perform the action on this site ?`,
+						`Are you sure you want to perform <b>${label.toLowerCase()}</b> action on this site ?`,
 						() => frm.call(method).then((r) => frm.refresh()),
 					)
 				},

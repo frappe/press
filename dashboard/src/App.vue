@@ -24,7 +24,7 @@
 	</div>
 
 	<Toaster
-		position="top-right"
+		position="bottom-right"
 		:toastOptions="{ class: 'text-sm prose-sm dark:bg-surface-cards dark:border-outline-gray-2 text-ink-gray-9' }"
 	/>
 	<component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
@@ -46,6 +46,8 @@ import { initTheme } from '@/utils/useTheme'
 import { session } from './data/session.js'
 import { getTeam } from './data/team'
 import { dialogs } from './utils/components'
+
+import "@/styles/global.css"
 
 const AppSidebar = defineAsyncComponent(
 	() => import('./components/navigation/sidebar/Sidebar.vue'),
@@ -109,5 +111,3 @@ watch(
 
 initTheme()
 </script>
-
-<style src="./assets/style.css"></style>

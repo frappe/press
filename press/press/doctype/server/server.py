@@ -49,7 +49,7 @@ from press.press.doctype.server_activity.server_activity import log_server_activ
 from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
-from press.utils import fmt_timedelta, log_error
+from press.utils import docs, fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import (
@@ -250,7 +250,9 @@ class BaseServer(Document, TagHelpers):
 	@dashboard_whitelist()
 	def update_communication_infos(self, values: list[dict]):
 		if self.doctype != "Server":
-			frappe.throw("Setting up communication info is only allowed for App Server")
+			frappe.throw(
+				"Communication info can only be set up on an App Server. Please configure notifications on the app server instead."
+			)
 			return
 
 		from press.press.doctype.communication_info.communication_info import (
@@ -288,7 +290,9 @@ class BaseServer(Document, TagHelpers):
 
 		storage_price = frappe.db.get_value("Server Storage Plan", {"enabled": 1}, "price_usd") or 0
 		if is_limits_exceeded(storage_price * increment):
-			frappe.throw("Cannot increase storage as spending limit has been exceeded.")
+			frappe.throw(
+				f"Increasing storage would exceed your team's spending limit. Please raise your spending limit in billing, then try again. {docs.doc_link(docs.STORAGE_ADDONS)}."
+			)
 
 		storage_parameters.update({"database_server" if server[0] == "m" else "server": server})
 
@@ -632,7 +636,9 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def enable_for_new_benches_and_sites(self):
 		if not self.public:
-			frappe.throw("Action only allowed for public servers")
+			frappe.throw(
+				"This action is only available for public servers. This server is private, so it can't be enabled for new benches and sites."
+			)
 
 		server = self.get_server_enabled_for_new_benches_and_sites()
 		self.add_to_public_groups()
@@ -980,7 +986,9 @@ class BaseServer(Document, TagHelpers):
 				"Agent Job", {"server": self.name, "job_type": "Cleanup Unused Files"}
 			)
 			if cleanup_job.status in ["Running", "Pending"]:
-				frappe.throw("Cleanup job is already running")
+				frappe.throw(
+					"A cleanup job is already running on this server. Please wait for it to finish before starting another."
+				)
 
 		self._cleanup_unused_files(force=force)
 
@@ -1467,7 +1475,9 @@ class BaseServer(Document, TagHelpers):
 			)
 
 		if is_limits_exceeded(new_plan.price_usd):
-			frappe.throw("You cannot change plan as total subscribed plans exceeds your spending limit.")
+			frappe.throw(
+				f"Changing to this plan would push your subscriptions over your team's spending limit. Please raise your spending limit in billing, or choose a cheaper plan. {docs.doc_link(docs.SERVER_PLAN)}."
+			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 		instance_id = frappe.db.get_value("Virtual Machine", self.virtual_machine, "instance_id")
@@ -2052,10 +2062,12 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def install_nat_iptables(self):
 		if self.ip:
-			frappe.throw("NAT Iptables can only be installed on servers without public IP")
+			frappe.throw(
+				"NAT iptables can only be installed on servers without a public IP. This server has a public IP, so it isn't needed."
+			)
 
 		if not getattr(self, "nat_server", None):
-			frappe.throw("NAT Iptables requires a NAT server to be set")
+			frappe.throw("Please set a NAT server on this server before installing NAT iptables.")
 
 		frappe.enqueue_doc(self.doctype, self.name, "_install_nat_iptables")
 
@@ -4330,7 +4342,7 @@ def get_hostname_abbreviation(hostname):
 
 def is_dedicated_server(server_name):
 	if not isinstance(server_name, str):
-		frappe.throw("Invalid argument")
+		frappe.throw("A server name is required and must be text. Please pass a valid server name.")
 	is_public = frappe.db.get_value("Server", server_name, "public")
 	return not is_public
 

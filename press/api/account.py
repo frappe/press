@@ -27,7 +27,7 @@ from press.press.doctype.team.team import (
 	get_child_team_members,
 	get_team_members,
 )
-from press.utils import get_country_info, get_current_team, is_user_part_of_team, log_error
+from press.utils import docs, get_country_info, get_current_team, is_user_part_of_team, log_error
 from press.utils import user as user_utils
 from press.utils.telemetry import capture
 
@@ -38,7 +38,9 @@ if TYPE_CHECKING:
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
-def signup(email: str, product: str | None = None, referrer: str | None = None) -> str:
+def signup(
+	email: str, product: str | None = None, referrer: str | None = None, aid: str | None = None
+) -> str:
 	frappe.utils.validate_email_address(email, True)
 
 	email = email.strip().lower()
@@ -70,9 +72,16 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 				"send_email": True,
 				"product_trial": product,
 				"agreed_to_terms": 1,
+				# Pulse: anonymous browser id forwarded from the product website as
+				# ?aid=…; aliased onto the account user when the team is created.
+				"pulse_anonymous_id": aid,
 			}
 		).insert(ignore_permissions=True)
 		account_request = account_request_doc.name
+	elif aid:
+		# Reusing a prior request (same email/referrer/product) — keep the latest aid
+		# so a returning visitor's pre-signup browsing still stitches.
+		frappe.db.set_value("Account Request", account_request, "pulse_anonymous_id", aid)
 
 	return account_request
 
@@ -214,7 +223,7 @@ def setup_account(  # noqa: C901
 
 	team = account_request.team
 	email = account_request.email
-	press_roles = account_request.press_roles
+	press_roles = account_request.invite_press_roles
 
 	if is_invitation:
 		# if this is a request from an invitation
@@ -278,7 +287,7 @@ def accept_team_invite(key: str):
 	last_name = account_request.last_name
 	email = account_request.email
 	password = None
-	press_roles = account_request.press_roles
+	press_roles = account_request.invite_press_roles
 
 	team_doc = frappe.get_doc("Team", team, ignore_permissions=True)
 	if is_user_part_of_team(email, team):
@@ -358,12 +367,16 @@ def disable_account(totp_code: str | None):
 
 	if is_2fa_enabled(user):
 		if not totp_code:
-			frappe.throw("2FA Code is required")
+			frappe.throw("Please enter the code from your authenticator app to continue.")
 		if not verify_2fa(user, totp_code):
-			frappe.throw("Invalid 2FA Code")
+			frappe.throw(
+				f"The two-factor authentication code is incorrect or has expired. Please enter the current code from your authenticator app. {docs.doc_link(docs.TWO_FACTOR_AUTH)}."
+			)
 
 	if user != team.user:
-		frappe.throw("Only team owner can disable the account")
+		frappe.throw(
+			f"Only the team owner can disable this account. Please ask the team owner to do this. {docs.doc_link(docs.DISABLE_ACCOUNT)}."
+		)
 
 	team.disable_account()
 
@@ -377,7 +390,9 @@ def has_active_servers(team):
 def enable_account():
 	team = get_current_team(get_doc=True)
 	if frappe.session.user != team.user:
-		frappe.throw("Only team owner can enable the account")
+		frappe.throw(
+			f"Only the team owner can enable this account. Please ask the team owner to do this. {docs.doc_link(docs.DISABLE_ACCOUNT)}."
+		)
 	team.enable_account()
 
 
@@ -657,7 +672,9 @@ def create_child_team(title):
 	]:
 		frappe.throw(f"Child Team {title} already exists.")
 	elif title == "Parent Team":
-		frappe.throw("Child team name cannot be same as parent team")
+		frappe.throw(
+			f"Please choose a different name for the child team — it can't be the same as the parent team. {docs.doc_link(docs.CHILD_TEAMS)}."
+		)
 
 	doc = frappe.get_doc(
 		{
@@ -711,7 +728,9 @@ def update_profile(first_name=None, last_name=None, email=None):
 		frappe.utils.validate_email_address(email, True)
 	STR_FORMAT = re.compile("^[a-zA-Z']+$")
 	if (first_name and not STR_FORMAT.match(first_name)) or (last_name and not STR_FORMAT.match(last_name)):
-		frappe.throw("Names cannot contain invalid characters")
+		frappe.throw(
+			"Names can only contain letters and apostrophes. Please remove any numbers or special characters."
+		)
 	user = frappe.session.user
 	doc = frappe.get_doc("User", user)
 	doc.first_name = first_name
@@ -827,7 +846,9 @@ def remove_child_team(child_team):
 	team = frappe.get_doc("Team", child_team)
 	sites = frappe.get_all("Site", {"status": ("!=", "Archived"), "team": team.name}, pluck="name")
 	if sites:
-		frappe.throw("Child team has Active Sites")
+		frappe.throw(
+			f"This child team still has active sites. Please archive or transfer its sites to another team before removing it. {docs.doc_link(docs.CHILD_TEAMS)}."
+		)
 
 	team.enabled = 0
 	team.parent_team = ""
@@ -865,7 +886,9 @@ def leave_team(team):
 	cur_team = frappe.session.user
 
 	if team_to_leave.user == cur_team:
-		frappe.throw("Cannot leave this team as you are the owner.")
+		frappe.throw(
+			"You can't leave a team that you own. Please transfer ownership to another member first, or delete the team."
+		)
 
 	team_to_leave.remove_team_member(cur_team)
 
@@ -905,7 +928,7 @@ def validate_pincode(billing_details):
 		return
 	PINCODE_FORMAT = re.compile(r"^[1-9][0-9]{5}$")
 	if not PINCODE_FORMAT.match(billing_details.postal_code):
-		frappe.throw("Invalid Postal Code")
+		frappe.throw("Please enter a valid 6-digit PIN code (it cannot start with 0).")
 
 	if billing_details.state not in STATE_PINCODE_MAPPING:
 		return
@@ -1223,7 +1246,9 @@ def enable_2fa(totp_code):
 	user_totp_secret = get_decrypted_password("User 2FA", frappe.session.user, "totp_secret")
 
 	if not pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
-		frappe.throw("Invalid TOTP code")
+		frappe.throw(
+			f"The code is incorrect or has expired. Please enter the current 6-digit code from your authenticator app. {docs.doc_link(docs.TWO_FACTOR_AUTH)}."
+		)
 
 	two_fa.enabled = 1
 
@@ -1268,7 +1293,9 @@ def disable_2fa(totp_code):
 	if pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
 		frappe.db.set_value("User 2FA", frappe.session.user, "enabled", 0)
 	else:
-		frappe.throw("Invalid TOTP code")
+		frappe.throw(
+			f"The code is incorrect or has expired. Please enter the current 6-digit code from your authenticator app. {docs.doc_link(docs.TWO_FACTOR_AUTH)}."
+		)
 
 
 @frappe.whitelist(allow_guest=True)

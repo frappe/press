@@ -147,6 +147,7 @@
 		"standby_pool_size",
 		"column_break_95",
 		"standby_queue_size",
+		"cleanup_standby_site_pool",
 		"integrations_tab",
 		"telegram_section",
 		"telegram_chat_id",
@@ -790,6 +791,13 @@
 			"fieldname": "standby_queue_size",
 			"fieldtype": "Int",
 			"label": "Standby Queue Size"
+		},
+		{
+			"default": "0",
+			"description": "Master switch for draining Product Trial standby pools. Each product must also opt in via its own \"Clean Up Pool\" checkbox.",
+			"fieldname": "cleanup_standby_site_pool",
+			"fieldtype": "Check",
+			"label": "Clean Standby Site Pool"
 		},
 		{
 			"fieldname": "integrations_tab",
