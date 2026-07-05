@@ -281,6 +281,17 @@ class VirtualMachine(Document):
 	def on_update(self):
 		server = self.get_server()
 
+		if (
+			self.has_value_changed("status")
+			and self.status == "Running"
+			and self.cloud_provider == "OCI"
+			and self.series == "nat"
+		):
+			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+			self.disable_source_dest_check()
+			cluster.create_nat_route_table_oci(self.private_ip_address)
+
 		if self.has_value_changed("has_data_volume") and server:
 			server.has_data_volume = self.has_data_volume
 			server.save()
