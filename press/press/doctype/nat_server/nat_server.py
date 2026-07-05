@@ -9,16 +9,10 @@ from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
 
-if TYPE_CHECKING:
-	from press.press.doctype.cluster.cluster import Cluster
-	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
-
 
 class NATServer(BaseServer):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
-
-	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -75,12 +69,6 @@ class NATServer(BaseServer):
 
 	def _setup_server(self):
 		if self.provider == "OCI":
-			vm: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
-			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
-
-			vm.disable_source_dest_check()
-			cluster.create_nat_route_table_oci(vm.private_ip_address)
-
 			try:
 				ansible = Ansible(
 					playbook="oci.yml", server=self, user="ubuntu"
