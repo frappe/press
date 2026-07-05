@@ -1402,8 +1402,13 @@ class Cluster(Document):
 
 	@frappe.whitelist()
 	def assign_nat_security_group(self):
-		self.create_nat_security_group()
-		self.save()
+		if self.cloud_provider == "AWS EC2":
+			self.create_nat_security_group()
+			self.save()
+		elif self.cloud_provider == "Hetzner":
+			self.create_nat_security_group_hetzner()
+		elif self.cloud_provider == "OCI":
+			self.create_nat_security_group_oci()
 
 	@frappe.whitelist()
 	def setup_vpc_flow_logs(self):

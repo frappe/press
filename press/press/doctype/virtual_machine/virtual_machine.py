@@ -2558,14 +2558,7 @@ class VirtualMachine(Document):
 			groups.append(frappe.db.get_value("Cluster", self.cluster, "proxy_security_group_id"))
 
 		elif self.series == "nat":
-			if self.cloud_provider == "Hetzner":
-				cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
-				groups.append(cluster.create_nat_security_group_hetzner().id)
-			elif self.cloud_provider == "OCI":
-				cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
-				groups.append(cluster.create_nat_security_group_oci().id)
-			else:
-				groups.append(frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id"))
+			groups.append(frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id"))
 
 		return groups
 
