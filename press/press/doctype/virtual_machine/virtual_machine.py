@@ -292,6 +292,30 @@ class VirtualMachine(Document):
 			self.disable_source_dest_check()
 			cluster.create_nat_route_table_oci(self.private_ip_address)
 
+		if (
+			self.has_value_changed("status")
+			and self.status == "Running"
+			and self.cloud_provider == "OCI"
+			and (self.series in ["m", "f"])
+			and not self.assign_public_ip
+		):
+			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+			nat_server = frappe.db.get_value(
+				"NAT Server",
+				{
+					"cluster": cluster.name,
+					"status": "Active",
+				},
+				"name",
+			)
+			if nat_server:
+				cluster.attach_route_table_to_instance_vnic_oci(self, cluster.oci_nat_route_table_id)
+			else:
+				frappe.throw(
+					"Failed to create a private server. Please create a NAT server in the cluster first"
+				)
+
 		if self.has_value_changed("has_data_volume") and server:
 			server.has_data_volume = self.has_data_volume
 			server.save()
