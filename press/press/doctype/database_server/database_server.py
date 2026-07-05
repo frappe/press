@@ -32,6 +32,7 @@ from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.cluster.cluster import Cluster
 
 
 class DatabaseServer(BaseServer):
@@ -825,7 +826,8 @@ class DatabaseServer(BaseServer):
 
 	def _setup_server(self):
 		config = self._get_config()
-		cluster = frappe.get_doc("Cluster", self.cluster)
+
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 
 		try:
 			ansible = Ansible(

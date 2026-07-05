@@ -100,6 +100,7 @@
 
 - name: Apply Netplan
   command: netplan apply
-  when: >
-    (nat_gateway_ip is defined and nat_gateway_ip)
-    or cloud_provider == "Hetzner"
+  when:
+    - nat_gateway_ip is defined
+    - nat_gateway_ip
+    - cloud_provider != "OCI"
