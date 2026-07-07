@@ -475,6 +475,8 @@ class ReleaseGroup(Document, TagHelpers):
 		return "_".join(repo_slug.replace("-", "_").split())
 
 	def before_insert(self):
+		if self.check_dependent_apps:  # applicable for private bench site creation flow
+			self.validate_dependent_apps()
 		# to avoid adding deps while cloning a release group
 		if len(self.dependencies) == 0:
 			self.fetch_dependencies()
