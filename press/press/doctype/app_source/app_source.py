@@ -13,7 +13,9 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 
 from press.api.github import GithubFetchError, get_access_token, get_auth_headers
+from press.api.github import app as get_repo_app_info
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.app.app import parse_frappe_version
 from press.utils import get_current_team, log_error
 
 REQUIRED_APPS_PATTERN = re.compile(r"^\s*(?!#)\s*required_apps\s*=\s*\[(.*?)\]", re.DOTALL | re.MULTILINE)
@@ -111,6 +113,27 @@ class AppSource(Document):
 
 	def add_version(self, version):
 		self.append("versions", {"version": version})
+		self.save()
+
+	@frappe.whitelist()
+	def sync_versions(self):
+		"""Replace `versions` with the Frappe versions the repo's pyproject.toml currently supports."""
+		app_info = get_repo_app_info(
+			owner=self.repository_owner,
+			repository=self.repository,
+			branch=self.branch,
+			installation=self.github_installation_id,
+		)
+		supported_versions = parse_frappe_version(
+			app_info.get("frappe_version"), app_info.get("title"), ease_versioning_constrains=True
+		)
+		ordered_versions = frappe.get_all(
+			"Frappe Version",
+			{"name": ("in", list(supported_versions))},
+			pluck="name",
+			order_by="number",
+		)
+		self.set("versions", [{"version": version} for version in ordered_versions])
 		self.save()
 
 	def validate_source_signature(self):
