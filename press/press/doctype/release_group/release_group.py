@@ -470,7 +470,9 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 
 	def get_app_name_from_repository_url(self, repository_url: str) -> str:
-		return repository_url.removesuffix(".git").rsplit("/", 1)[-1]
+		# App Source.app stores Frappe app names (underscores), while repository slugs can use hyphens.
+		repo_slug = repository_url.strip().removesuffix(".git").rsplit("/", maxsplit=1)[-1]
+		return "_".join(repo_slug.replace("-", "_").split())
 
 	def before_insert(self):
 		# to avoid adding deps while cloning a release group
