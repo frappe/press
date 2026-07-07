@@ -193,6 +193,11 @@ let router = createRouter({
 					component: () => import('./pages/BillingMarketplacePayouts.vue'),
 				},
 				{
+					name: 'BillingSubscriptions',
+					path: 'subscriptions',
+					component: () => import('./pages/BillingSubscriptions.vue'),
+				},
+				{
 					name: 'BillingTiers',
 					path: 'tiers',
 					component: () => import('./pages/BillingTiers.vue'),
