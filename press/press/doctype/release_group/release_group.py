@@ -257,8 +257,6 @@ class ReleaseGroup(Document, TagHelpers):
 	def validate(self):
 		self.validate_title()
 		self.validate_frappe_app()
-		if self.check_dependent_apps:
-			self.validate_dependent_apps()
 		self.validate_duplicate_app()
 		self.validate_app_versions()
 		self.validate_servers()
