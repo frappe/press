@@ -22,7 +22,7 @@ export default {
 						transform(data) {
 							return data.map((d) => {
 								return {
-									company: d.billing_name,
+									company: d.company_name,
 									email: d.partner_email,
 									country: d.country,
 									tier: d.partner_tier || '',
@@ -41,14 +41,17 @@ export default {
 					{
 						label: 'Partner Email',
 						fieldname: 'email',
+						width: 0.8,
 					},
 					{
 						label: 'Country',
 						fieldname: 'country',
+						width: 0.5,
 					},
 					{
 						label: 'Tier',
 						fieldname: 'tier',
+						width: 0.5,
 					},
 				],
 				onRowClick(row) {
@@ -57,10 +60,30 @@ export default {
 				filterControls() {
 					return [
 						{
+							type: 'data',
+							label: 'Partner',
+							fieldname: 'company',
+						},
+						{
+							type: 'data',
+							label: 'Partner Email',
+							fieldname: 'email',
+						},
+						{
+							type: 'data',
+							label: 'Country',
+							fieldname: 'country',
+						},
+						{
 							type: 'select',
 							label: 'Tier',
 							fieldname: 'tier',
-							options: ['', 'Bronze', 'Silver', 'Gold'],
+							options: ['', 'Entry', 'Emerging', 'Bronze', 'Silver', 'Gold'],
+						},
+						{
+							type: 'checkbox',
+							label: 'Active Partners',
+							fieldname: 'active_only',
 						},
 					];
 				},

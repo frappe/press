@@ -4,9 +4,9 @@
 		v-if="$resources.signupSettings.loading"
 	>
 		<Spinner class="mr-2 w-4" />
-		<p class="text-gray-800">Loading</p>
+		<p class="text-ink-gray-8">Loading</p>
 	</div>
-	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
+	<div class="flex h-screen overflow-hidden sm:bg-surface-gray-1" v-else>
 		<div class="w-full overflow-auto">
 			<LoginBox
 				title="Welcome back"
@@ -99,7 +99,7 @@
 
 					<div class="mt-6 text-center">
 						<router-link
-							class="text-center text-base font-medium text-gray-900 hover:text-gray-700"
+							class="text-center text-base font-medium text-ink-gray-9 hover:text-ink-gray-7"
 							:to="{
 								name: 'SaaSSignup',
 								params: $route.params,

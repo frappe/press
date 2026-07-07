@@ -1,4 +1,0 @@
----
-- name: Sync Bench Data
-  command: >
-    rsync -az --partial --inplace root@{{ nfs_server }}:/home/frappe/nfs/{{ client_server }}/ /home/frappe/benches/

@@ -69,7 +69,7 @@ def get_data(resource_type, action_type):  # noqa: C901
 				)
 			elif resource_type == "Virtual Machine Volume":
 				virtual_machine = frappe.get_all(
-					resource_type, {"volume_id": row["resourceId"]}, pluck="parent"
+					resource_type, {"volume_id": row["resourceId"], "skip_rightsize": False}, pluck="parent"
 				)
 
 			if not virtual_machine:
@@ -79,9 +79,13 @@ def get_data(resource_type, action_type):  # noqa: C901
 
 			server_type = {
 				"f": "Server",
+				"fs": "Server",
+				"u": "Server",
 				"m": "Database Server",
 				"n": "Proxy Server",
-			}[frappe.db.get_value("Virtual Machine", virtual_machine, "series")]
+			}.get(frappe.db.get_value("Virtual Machine", virtual_machine, "series"))
+			if not server_type:
+				continue
 
 			server = frappe.db.get_value(
 				server_type,

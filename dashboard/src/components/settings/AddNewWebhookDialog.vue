@@ -25,7 +25,7 @@
 							/>
 						</template>
 					</FormControl>
-					<p class="mt-2 text-sm text-gray-700">
+					<p class="mt-2 text-sm text-ink-gray-7">
 						<strong>Note:</strong> Secret is optional. Check
 						<a
 							href="https://docs.frappe.io/cloud/webhook-introduction"
@@ -36,11 +36,11 @@
 						to learn more
 					</p>
 				</div>
-				<p class="text-base font-medium text-gray-900">
+				<p class="text-base font-medium text-ink-gray-9">
 					Select the webhook events
 				</p>
 				<div
-					class="text-center text-sm leading-10 text-gray-500"
+					class="text-center text-sm leading-10 text-ink-gray-5"
 					v-if="$resources.events.loading"
 				>
 					Loading...
@@ -63,6 +63,7 @@
 </template>
 
 <script>
+import { Switch } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 
 export default {
@@ -75,6 +76,7 @@ export default {
 			errorMessage: '',
 		};
 	},
+	components: { Switch },
 	mounted() {
 		if (this.selectedEvents.length) {
 			this.selectedEvents = this.selectedEvents.map((event) => event.name);

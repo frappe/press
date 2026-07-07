@@ -17,6 +17,12 @@ frappe.ui.form.on('Agent Update', {
 				frm.doc.status === 'Pending' || frm.doc.status === 'Paused',
 			],
 			[__('Pause'), 'pause', true, frm.doc.status === 'Running'],
+			[
+				__('Force Continue'),
+				'force_continue',
+				true,
+				frm.doc.status == 'Failure' || frm.doc.status == 'Partial Success',
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(label, () => {

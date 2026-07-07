@@ -1,12 +1,12 @@
 ---
-- name: Remove Primary Proxy Server from Known Hosts
+- name: Remove Secondary Proxy Server from Known Hosts
   become: yes
   become_user: frappe
   known_hosts:
     name: "{{ secondary_private_ip }}"
     state: absent
 
-- name: Add Primary Proxy Server to Known Hosts
+- name: Add Secondary Proxy Server to Known Hosts
   become: yes
   become_user: frappe
   shell: ssh-keyscan {{ secondary_private_ip }} >> /home/frappe/.ssh/known_hosts

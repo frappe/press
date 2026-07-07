@@ -15,16 +15,14 @@
 						'bg-green-50 border-green-200 text-green-800':
 							banner.type === 'success',
 						'bg-red-50 border-red-200 text-red-800': banner.type === 'error',
-						'bg-gray-50 border-gray-200 text-gray-800':
+						'bg-surface-gray-1 border-outline-gray-1 text-ink-gray-8':
 							banner.type === 'neutral',
 					}"
 				>
 					{{ banner.message }}
 				</div>
-				<p v-if="isReceived" class="leading-normal">
-					Do you want to accept or reject this access request from
-					<span class="font-medium">{{ request.doc?.requested_by }}</span
-					>?
+				<p v-if="isReceived && isPending" class="leading-normal">
+					Do you want to accept or reject this access request?
 				</p>
 				<div class="rounded-sm border divide-y">
 					<div
@@ -52,9 +50,19 @@
 						</div>
 					</div>
 				</div>
+				<div class="flex items-center gap-2">
+					<div>Valid For</div>
+					<div>
+						<Select
+							v-model="request.doc.allowed_for"
+							:options="validityOptions"
+							:disabled="!isPending"
+						/>
+					</div>
+				</div>
 				<div v-if="request.doc?.reason" class="space-y-2">
 					<p class="font-medium">Reason:</p>
-					<p>{{ request.doc?.reason }}</p>
+					<p class="leading-relaxed">{{ request.doc?.reason }}</p>
 				</div>
 				<div v-if="permissions.length" class="space-y-2">
 					<p class="font-medium">Permissions:</p>
@@ -76,8 +84,13 @@
 
 <script setup lang="ts">
 import Link from './Link.vue';
-import { Badge, createDocumentResource, createResource } from 'frappe-ui';
-import { computed, ref } from 'vue';
+import {
+	Badge,
+	Select,
+	createResource,
+	createDocumentResource,
+} from 'frappe-ui';
+import { computed, ref, watch } from 'vue';
 import { getTeam } from '../data/team';
 import { toast } from 'vue-sonner';
 
@@ -87,14 +100,29 @@ const props = defineProps<{
 
 const open = ref(true);
 const team = getTeam();
+
 const request = createDocumentResource({
 	doctype: 'Support Access',
 	name: props.name,
 	auto: true,
 });
+
 const isReceived = computed(() => {
 	return team.doc?.name === request.doc?.target_team;
 });
+
+const isPending = computed(() => {
+	return request.doc?.status === 'Pending';
+});
+
+const validityOptions = [
+	{ label: '3 Hours', value: '3' },
+	{ label: '6 Hours', value: '6' },
+	{ label: '12 Hours', value: '12' },
+	{ label: '1 Day', value: '24' },
+	{ label: '3 Days', value: '72' },
+	{ label: '7 Days', value: '168' },
+];
 
 const permissions = computed(() =>
 	[
@@ -128,6 +156,7 @@ const update = createResource({
 		name: props.name,
 		fieldname: {
 			status: args.status,
+			allowed_for: args.allowed_for,
 		},
 	}),
 	onSuccess: (data: any) => {
@@ -173,6 +202,7 @@ const actions = computed(() => {
 				onClick: () => {
 					update.submit({
 						status: 'Rejected',
+						allowed_for: request.doc.allowed_for,
 					});
 				},
 			},
@@ -182,6 +212,7 @@ const actions = computed(() => {
 				onClick: () => {
 					update.submit({
 						status: 'Accepted',
+						allowed_for: request.doc.allowed_for,
 					});
 				},
 			},
@@ -196,6 +227,7 @@ const actions = computed(() => {
 			onClick: () => {
 				update.submit({
 					status: 'Revoked',
+					allowed_for: request.doc.allowed_for,
 				});
 			},
 		});
@@ -209,6 +241,7 @@ const actions = computed(() => {
 			onClick: () => {
 				update.submit({
 					status: 'Forfeited',
+					allowed_for: request.doc.allowed_for,
 				});
 			},
 		});

@@ -7,9 +7,16 @@
 			All Updates
 		</Button>
 
+		<AlertBanner
+			v-if="notification"
+			class="mt-3"
+			:title="notification.message"
+			type="warning"
+		/>
+
 		<div class="mt-3">
 			<div class="flex w-full items-center">
-				<h2 class="text-lg font-medium text-gray-900">
+				<h2 class="text-lg font-medium text-ink-gray-9">
 					Update Site {{ siteUpdate.deploy_type }}
 				</h2>
 				<Badge class="ml-2" :label="siteUpdate.status" />
@@ -36,41 +43,37 @@
 			<div>
 				<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
 					<div>
-						<div class="text-sm font-medium text-gray-500">Creation</div>
-						<div class="mt-2 text-sm text-gray-900">
+						<div class="text-sm font-medium text-ink-gray-5">Creation</div>
+						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ $format.date(siteUpdate.creation, 'lll') }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-gray-500">Creator</div>
-						<div class="mt-2 text-sm text-gray-900">
+						<div class="text-sm font-medium text-ink-gray-5">Creator</div>
+						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ siteUpdate.owner }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-gray-500">Duration</div>
-						<div class="mt-2 text-sm text-gray-900">
-							{{
-								siteUpdate.update_duration
+						<div class="text-sm font-medium text-ink-gray-5">Duration</div>
+						<div class="mt-2 text-sm text-ink-gray-9">
+							{{ siteUpdate.update_duration
 									? this.format_seconds(siteUpdate.update_duration)
-									: '-'
-							}}
+									: '-' }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-gray-500">Start</div>
-						<div class="mt-2 text-sm text-gray-900">
+						<div class="text-sm font-medium text-ink-gray-5">Start</div>
+						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ $format.date(siteUpdate.update_start, 'lll') }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-gray-500">End</div>
-						<div class="mt-2 text-sm text-gray-900">
-							{{
-								siteUpdate.update_end
+						<div class="text-sm font-medium text-ink-gray-5">End</div>
+						<div class="mt-2 text-sm text-ink-gray-9">
+							{{ siteUpdate.update_end
 									? $format.date(siteUpdate.update_end, 'lll')
-									: '-'
-							}}
+									: '-' }}
 						</div>
 					</div>
 				</div>
@@ -84,9 +87,9 @@
 	</div>
 </template>
 <script>
-import JobStep from '../components/JobStep.vue';
-import AlertAddressableError from '../components/AlertAddressableError.vue';
-import AlertBanner from '../components/AlertBanner.vue';
+import AlertAddressableError from '../components/AlertAddressableError.vue'
+import AlertBanner from '../components/AlertBanner.vue'
+import JobStep from '../components/JobStep.vue'
 
 export default {
 	name: 'SiteUpdate',
@@ -97,8 +100,23 @@ export default {
 		AlertAddressableError,
 	},
 	resources: {
+		notification() {
+			if (!this.id) return
+			return {
+				type: 'list',
+				doctype: 'Press Notification',
+				auto: true,
+				fields: ['message', 'name'],
+				filters: {
+					document_type: 'Site Update',
+					document_name: this.id,
+				},
+				limit: 1,
+				orderBy: 'creation desc',
+			}
+		},
 		siteUpdate() {
-			if (!this.id) return;
+			if (!this.id) return
 			return {
 				type: 'document',
 				doctype: 'Site Update',
@@ -112,27 +130,32 @@ export default {
 							output: step.output || 'No Output',
 							status: step.status,
 							isOpen: false,
-						};
-					});
+						}
+					})
 				},
 				onSuccess: (data) => {
 					if (
-						!['Success', 'Failure', 'Recovered', 'Fatal'].includes(data.status)
+						!['Success', 'Failure', 'Recovered', 'Fatal', 'Cancelled'].includes(
+							data.status,
+						)
 					) {
 						setTimeout(() => {
-							this.$resources.siteUpdate.reload();
-						}, 5000);
+							this.$resources.siteUpdate.reload()
+						}, 5000)
 					}
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		siteUpdate() {
-			return this.$resources.siteUpdate?.doc ?? {};
+			return this.$resources.siteUpdate?.doc ?? {}
+		},
+		notification() {
+			return this.$resources.notification?.data?.[0] ?? null
 		},
 		steps() {
-			return this.$resources.siteUpdate?.doc?.steps || [];
+			return this.$resources.siteUpdate?.doc?.steps || []
 		},
 		dropdownOptions() {
 			return [
@@ -144,24 +167,24 @@ export default {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/site-update/${this.id}`,
 							'_blank',
-						);
+						)
 					},
 				},
-			].filter((option) => option.condition?.() ?? true);
+			].filter((option) => option.condition?.() ?? true)
 		},
 	},
 	methods: {
 		format_seconds(seconds) {
 			if (seconds === null) {
-				return '-';
+				return '-'
 			}
 			if (seconds < 60) {
-				return `${Math.ceil(seconds)}s`;
+				return `${Math.ceil(seconds)}s`
 			}
-			const minutes = Math.floor(seconds / 60);
-			const remainingSeconds = Math.ceil(seconds % 60);
-			return `${minutes}m ${remainingSeconds}s`;
+			const minutes = Math.floor(seconds / 60)
+			const remainingSeconds = Math.ceil(seconds % 60)
+			return `${minutes}m ${remainingSeconds}s`
 		},
 	},
-};
+}
 </script>

@@ -5,7 +5,7 @@
 		:target="column.link ? '_blank' : undefined"
 		class="flex items-center"
 		:class="{
-			'text-gray-900 outline-gray-400 hover:text-gray-700': column.link,
+			'text-ink-gray-9 outline-gray-400 hover:text-ink-gray-7': column.link,
 			'justify-end': column.align === 'right',
 			'justify-center': column.align === 'center',
 		}"
@@ -30,15 +30,16 @@
 			<img :src="value" :alt="formattedValue" class="h-6 w-6 rounded" />
 		</div>
 		<div v-else-if="column.type == 'Select'">
-			<Dropdown :options="formattedValue" right>
-				<template v-slot="{ open }">
-					<Button variant="outline" icon-right="chevron-down">
-						{{ row.selectedOption || value[0] }}
-					</Button>
-				</template>
-			</Dropdown>
+			<select
+				class="inline-flex items-center justify-center gap-2 transition-colors focus:outline-none shrink-0 text-ink-gray-8 border border-outline-gray-2 hover:border-outline-gray-3 active:border-outline-gray-3 active:bg-surface-gray-4 focus-visible:ring focus-visible:ring-outline-gray-3 h-7 p-0 pl-2 pr-8 w-48 text-base rounded"
+				@change="fireOnClick({ value: $event.target.value })"
+			>
+				<option v-for="opt in formattedValue" :value="opt.value">
+					{{ opt.title ?? opt.value }}
+				</option>
+			</select>
 		</div>
-		<div class="text-base text-gray-600" v-else-if="column.type == 'Timestamp'">
+		<div class="text-base text-ink-gray-6" v-else-if="column.type == 'Timestamp'">
 			<div class="flex">
 				<Tooltip :text="$format.date(value)">
 					{{ value ? $dayjs(value).fromNow() : '' }}
@@ -51,7 +52,7 @@
 		<div v-else-if="column.type == 'Actions'">
 			<Dropdown v-if="showDropdown" :options="actions" @click.stop>
 				<button
-					class="flex items-center rounded bg-gray-100 px-1 py-0.5 hover:bg-gray-200"
+					class="flex items-center rounded bg-surface-gray-2 px-1 py-0.5 hover:bg-surface-gray-3"
 				>
 					<FeatherIcon name="more-horizontal" class="h-4 w-4" />
 				</button>
@@ -139,5 +140,10 @@ export default {
 		},
 	},
 	components: { Tooltip, ActionButton },
+	methods: {
+		fireOnClick({ value }) {
+			this.formattedValue.find((obj) => obj?.value === value)?.onClick?.();
+		},
+	},
 };
 </script>

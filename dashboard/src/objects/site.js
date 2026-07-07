@@ -1,29 +1,25 @@
-import {
-	createListResource,
-	createResource,
-	LoadingIndicator,
-} from 'frappe-ui';
-import LucideVenetianMask from '~icons/lucide/venetian-mask';
-import { defineAsyncComponent, h } from 'vue';
-import { unparse } from 'papaparse';
-import { toast } from 'vue-sonner';
-import AddDomainDialog from '../components/AddDomainDialog.vue';
-import GenericDialog from '../components/GenericDialog.vue';
-import ObjectList from '../components/ObjectList.vue';
-import SiteActions from '../components/SiteActions.vue';
-import { getTeam, switchToTeam } from '../data/team';
-import router from '../router';
-import { getRunningJobs } from '../utils/agentJob';
-import { confirmDialog, icon, renderDialog } from '../utils/components';
-import dayjs from '../utils/dayjs';
-import { bytes, date, userCurrency } from '../utils/format';
-import { getToastErrorMessage } from '../utils/toast';
-import { getDocResource } from '../utils/resource';
-import { trialDays } from '../utils/site';
-import { clusterOptions, getUpsellBanner } from './common';
-import { getAppsTab } from './common/apps';
-import { isMobile } from '../utils/device';
-import { getQueryParam, setQueryParam } from '../utils/index';
+import { createListResource, createResource, LoadingIndicator } from 'frappe-ui'
+import { unparse } from 'papaparse'
+import { defineAsyncComponent, h } from 'vue'
+import { toast } from 'vue-sonner'
+import ArrowLeftRightIcon from '~icons/lucide/arrow-left-right'
+import AddDomainDialog from '../components/AddDomainDialog.vue'
+import GenericDialog from '../components/GenericDialog.vue'
+import ObjectList from '../components/ObjectList.vue'
+import SiteActions from '../components/SiteActions.vue'
+import { getTeam, switchToTeam } from '../data/team'
+import router from '../router'
+import { getRunningJobs } from '../utils/agentJob'
+import { confirmDialog, icon, renderDialog } from '../utils/components'
+import dayjs from '../utils/dayjs'
+import { isMobile } from '../utils/device'
+import { bytes, date, userCurrency } from '../utils/format'
+import { getQueryParam, setQueryParam } from '../utils/index'
+import { getDocResource } from '../utils/resource'
+import { trialDays } from '../utils/site'
+import { getToastErrorMessage } from '../utils/toast'
+import { clusterOptions, getUpsellBanner } from './common'
+import { getAppsTab } from './common/apps'
 
 export default {
 	doctype: 'Site',
@@ -110,7 +106,7 @@ export default {
 				},
 				{
 					type: 'link',
-					label: 'Bench Group',
+					label: 'Benches',
 					fieldname: 'group',
 					options: {
 						doctype: 'Release Group',
@@ -133,7 +129,7 @@ export default {
 						},
 					},
 				},
-			];
+			]
 		},
 		columns: [
 			{
@@ -142,28 +138,28 @@ export default {
 				width: 1.5,
 				class: 'font-medium',
 				format(value, row) {
-					return value || row.name;
+					return value || row.name
 				},
 			},
 			{ label: 'Status', fieldname: 'status', type: 'Badge', width: '140px' },
 			{
 				label: 'Plan',
 				fieldname: 'plan',
-				width: 0.85,
+				width: '15rem',
 				format(value, row) {
 					if (row.trial_end_date) {
-						return trialDays(row.trial_end_date);
+						return trialDays(row.trial_end_date)
 					}
-					const $team = getTeam();
+					const $team = getTeam()
 					if (row.price_usd > 0) {
-						const india = $team.doc?.currency === 'INR';
+						const india = $team.doc?.currency === 'INR'
 						const formattedValue = userCurrency(
 							india ? row.price_inr : row.price_usd,
 							0,
-						);
-						return `${formattedValue}/mo`;
+						)
+						return `${formattedValue}/mo`
 					}
-					return row.plan_title;
+					return row.plan_title
 				},
 			},
 			{
@@ -171,22 +167,22 @@ export default {
 				fieldname: 'cluster',
 				width: 1,
 				format(value, row) {
-					return row.cluster_title || value;
+					return row.cluster_title || value
 				},
 				prefix(row) {
 					return h('img', {
 						src: row.cluster_image,
 						class: 'w-4 h-4',
 						alt: row.cluster_title,
-					});
+					})
 				},
 			},
 			{
-				label: 'Bench Group',
+				label: 'Benches',
 				fieldname: 'group',
 				width: '15rem',
 				format(value, row) {
-					return row.group_public ? 'Shared' : row.group_title || value;
+					return row.group_public ? 'Shared' : row.group_title || value
 				},
 			},
 			{
@@ -203,9 +199,9 @@ export default {
 					prefix: icon('plus'),
 				},
 				onClick() {
-					router.push({ name: 'New Site' });
+					router.push({ name: 'New Site' })
 				},
-			};
+			}
 		},
 		moreActions({ listResource: sites }) {
 			return [
@@ -221,7 +217,7 @@ export default {
 							'tags',
 							'version',
 							'creation',
-						];
+						]
 						createListResource({
 							doctype: 'Site',
 							url: 'press.api.site.fetch_sites_data_for_export',
@@ -230,40 +226,40 @@ export default {
 								let csv = unparse({
 									fields,
 									data,
-								});
-								csv = '\uFEFF' + csv; // for utf-8
+								})
+								csv = '\uFEFF' + csv // for utf-8
 
 								// create a blob and trigger a download
 								const blob = new Blob([csv], {
 									type: 'text/csv;charset=utf-8',
-								});
-								const today = new Date().toISOString().split('T')[0];
-								const filename = `sites-${today}.csv`;
-								const link = document.createElement('a');
-								link.href = URL.createObjectURL(blob);
-								link.download = filename;
-								link.click();
-								URL.revokeObjectURL(link.href);
+								})
+								const today = new Date().toISOString().split('T')[0]
+								const filename = `sites-${today}.csv`
+								const link = document.createElement('a')
+								link.href = URL.createObjectURL(blob)
+								link.download = filename
+								link.click()
+								URL.revokeObjectURL(link.href)
 							},
-						});
+						})
 					},
 				},
-			];
+			]
 		},
 	},
 	detail: {
 		titleField: 'name',
 		route: '/sites/:name',
 		statusBadge({ documentResource: site }) {
-			return { label: site.doc.status };
+			return { label: site.doc.status }
 		},
 		breadcrumbs({ items, documentResource: site }) {
-			let breadcrumbs = [];
-			let $team = getTeam();
+			let breadcrumbs = []
+			let $team = getTeam()
 			let siteCrumb = {
 				label: site.doc.host_name || site.doc?.name,
 				route: `/sites/${site.doc?.name}`,
-			};
+			}
 
 			if (
 				(site.doc.server_team == $team.doc?.name &&
@@ -274,7 +270,7 @@ export default {
 				breadcrumbs.push({
 					label: site.doc?.server_title || site.doc?.server,
 					route: `/servers/${site.doc?.server}`,
-				});
+				})
 			}
 			if (
 				site.doc.group_team == $team.doc?.name ||
@@ -287,11 +283,11 @@ export default {
 						route: `/groups/${site.doc?.group}`,
 					},
 					siteCrumb,
-				);
+				)
 			} else {
-				breadcrumbs.push(...items.slice(0, -1), siteCrumb);
+				breadcrumbs.push(...items.slice(0, -1), siteCrumb)
 			}
-			return breadcrumbs;
+			return breadcrumbs
 		},
 		tabs: [
 			{
@@ -304,7 +300,7 @@ export default {
 					() => import('../components/SiteOverview.vue'),
 				),
 				props: (site) => {
-					return { site: site.doc?.name };
+					return { site: site.doc?.name }
 				},
 			},
 			{
@@ -323,7 +319,6 @@ export default {
 					'Site Performance Reports',
 					'Site Performance Request Logs',
 					'Site Performance Slow Queries',
-					'Site Performance Binary Logs',
 					'Site Performance Process List',
 					'Site Performance Request Log',
 					'Site Performance Deadlock Report',
@@ -367,12 +362,6 @@ export default {
 							import('../components/site/performance/SiteSlowQueries.vue'),
 					},
 					{
-						name: 'Site Performance Binary Logs',
-						path: 'performance/binary-logs',
-						component: () =>
-							import('../components/site/performance/SiteBinaryLogs.vue'),
-					},
-					{
 						name: 'Site Performance Process List',
 						path: 'performance/process-list',
 						component: () =>
@@ -395,7 +384,7 @@ export default {
 					() => import('../components/site/SiteInsights.vue'),
 				),
 				props: (site) => {
-					return { site: site.doc?.name };
+					return { site: site.doc?.name }
 				},
 			},
 			getAppsTab(true),
@@ -405,13 +394,13 @@ export default {
 				route: 'domains',
 				type: 'list',
 				condition: (site) => {
-					return site.doc?.status !== 'Archived';
+					return site.doc?.status !== 'Archived'
 				},
 				list: {
 					doctype: 'Site Domain',
 					fields: ['redirect_to_primary'],
 					filters: (site) => {
-						return { site: site.doc?.name };
+						return { site: site.doc?.name }
 					},
 					columns: [
 						{
@@ -428,7 +417,7 @@ export default {
 							fieldname: 'primary',
 							type: 'Icon',
 							Icon(value) {
-								return value ? 'check' : '';
+								return value ? 'check' : ''
 							},
 						},
 						{
@@ -460,18 +449,18 @@ export default {
 													default: () => {
 														return h('pre', {
 															class:
-																'whitespace-pre-wrap text-sm rounded border-2 p-3 border-gray-200 bg-gray-100',
+																'whitespace-pre-wrap text-sm rounded border-2 p-3 border-outline-gray-1 bg-surface-gray-2',
 															innerHTML: site.doc.broken_domain_error,
-														});
+														})
 													},
 												},
 											),
-										);
+										)
 									},
 								},
-							};
+							}
 						} else {
-							return null;
+							return null
 						}
 					},
 					primaryAction({ listResource: domains, documentResource: site }) {
@@ -485,12 +474,12 @@ export default {
 									h(AddDomainDialog, {
 										site: site.doc,
 										onDomainAdded() {
-											domains.reload();
+											domains.reload()
 										},
 									}),
-								);
+								)
 							},
-						};
+						}
 					},
 					rowActions({ row, listResource: domains, documentResource: site }) {
 						return [
@@ -502,7 +491,7 @@ export default {
 										title: `Remove Domain`,
 										message: `Are you sure you want to remove the domain <b>${row.domain}</b> from the site <b>${site.doc?.name}</b>?`,
 										onSuccess({ hide }) {
-											if (site.removeDomain.loading) return;
+											if (site.removeDomain.loading) return
 											toast.promise(
 												site.removeDomain.submit({
 													domain: row.domain,
@@ -510,14 +499,14 @@ export default {
 												{
 													loading: 'Removing domain...',
 													success: () => {
-														hide();
-														return 'Domain removed';
+														hide()
+														return 'Domain removed'
 													},
 													error: (e) => getToastErrorMessage(e),
 												},
-											);
+											)
 										},
-									});
+									})
 								},
 							},
 							{
@@ -528,7 +517,7 @@ export default {
 										title: `Set Primary Domain`,
 										message: `Are you sure you want to set the domain <b>${row.domain}</b> as the primary domain for the site <b>${site.doc?.name}</b>?`,
 										onSuccess({ hide }) {
-											if (site.setPrimaryDomain.loading) return;
+											if (site.setPrimaryDomain.loading) return
 											toast.promise(
 												site.setPrimaryDomain.submit({
 													domain: row.domain,
@@ -536,14 +525,14 @@ export default {
 												{
 													loading: 'Setting primary domain...',
 													success: () => {
-														hide();
-														return 'Primary domain set';
+														hide()
+														return 'Primary domain set'
 													},
 													error: (e) => getToastErrorMessage(e),
 												},
-											);
+											)
 										},
-									});
+									})
 								},
 							},
 							{
@@ -557,7 +546,7 @@ export default {
 										title: `Redirect Domain`,
 										message: `Are you sure you want to redirect the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc?.host_name}</b>?`,
 										onSuccess({ hide }) {
-											if (site.redirectToPrimary.loading) return;
+											if (site.redirectToPrimary.loading) return
 											toast.promise(
 												site.redirectToPrimary.submit({
 													domain: row.domain,
@@ -565,14 +554,14 @@ export default {
 												{
 													loading: 'Redirecting domain...',
 													success: () => {
-														hide();
-														return 'Domain redirected';
+														hide()
+														return 'Domain redirected'
 													},
 													error: (e) => getToastErrorMessage(e),
 												},
-											);
+											)
 										},
-									});
+									})
 								},
 							},
 							{
@@ -586,7 +575,7 @@ export default {
 										title: `Remove Redirect`,
 										message: `Are you sure you want to remove the redirect from the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc?.host_name}</b>?`,
 										onSuccess({ hide }) {
-											if (site.removeRedirect.loading) return;
+											if (site.removeRedirect.loading) return
 											toast.promise(
 												site.removeRedirect.submit({
 													domain: row.domain,
@@ -594,14 +583,14 @@ export default {
 												{
 													loading: 'Removing redirect...',
 													success: () => {
-														hide();
-														return 'Redirect removed';
+														hide()
+														return 'Redirect removed'
 													},
 													error: (e) => getToastErrorMessage(e),
 												},
-											);
+											)
 										},
-									});
+									})
 								},
 							},
 							{
@@ -616,7 +605,7 @@ export default {
 										message: `Are you sure you want to retry fetching the certificate for the domain <b>${row.domain}</b>?<br><br>
 													<b>Note:</b> This action is rate limited. Please allow some time for dns changes (if any) to propagate before retrying.`,
 										onSuccess({ hide }) {
-											if (site.fetchCertificate.loading) return;
+											if (site.fetchCertificate.loading) return
 											toast.promise(
 												site.fetchCertificate.submit({
 													domain: row.domain,
@@ -624,17 +613,17 @@ export default {
 												{
 													loading: 'Fetching certificate...',
 													success: () => {
-														hide();
-														return 'Certificate fetch scheduled. Please wait a few minutes.';
+														hide()
+														return 'Certificate fetch scheduled. Please wait a few minutes.'
 													},
 													error: (e) => getToastErrorMessage(e),
 												},
-											);
+											)
 										},
-									});
+									})
 								},
 							},
-						];
+						]
 					},
 				},
 			},
@@ -648,12 +637,12 @@ export default {
 					filters: (site) => {
 						let filters = {
 							site: site.doc?.name,
-						};
-						const backup_name = getQueryParam('name');
-						if (backup_name) {
-							filters.name = backup_name;
 						}
-						return filters;
+						const backup_name = getQueryParam('name')
+						if (backup_name) {
+							filters.name = backup_name
+						}
+						return filters
 					},
 					orderBy: 'creation desc',
 					fields: [
@@ -677,7 +666,7 @@ export default {
 							fieldname: 'creation',
 							width: 1,
 							format(value) {
-								return `Backup on ${date(value, 'llll')}`;
+								return `Backup on ${date(value, 'llll')}`
 							},
 						},
 						{
@@ -692,7 +681,7 @@ export default {
 							fieldname: 'database_size',
 							width: 0.5,
 							format(value) {
-								return value ? bytes(value) : '';
+								return value ? bytes(value) : ''
 							},
 						},
 						{
@@ -700,7 +689,7 @@ export default {
 							fieldname: 'public_size',
 							width: 0.5,
 							format(value) {
-								return value ? bytes(value) : '';
+								return value ? bytes(value) : ''
 							},
 						},
 						{
@@ -708,7 +697,7 @@ export default {
 							fieldname: 'private_size',
 							width: 0.5,
 							format(value) {
-								return value ? bytes(value) : '';
+								return value ? bytes(value) : ''
 							},
 						},
 						{
@@ -717,7 +706,7 @@ export default {
 							type: 'Icon',
 							width: 0.25,
 							Icon(value) {
-								return value ? 'check' : '';
+								return value ? 'check' : ''
 							},
 						},
 						{
@@ -726,7 +715,7 @@ export default {
 							width: 0.25,
 							type: 'Icon',
 							Icon(value) {
-								return value ? 'check' : '';
+								return value ? 'check' : ''
 							},
 						},
 						{
@@ -735,17 +724,17 @@ export default {
 							width: 0.25,
 							type: 'Icon',
 							Icon(value) {
-								return value ? 'check' : '';
+								return value ? 'check' : ''
 							},
 						},
 					],
 					searchField: getQueryParam('name') ? null : 'name',
 					updateFilters({ name }) {
-						setQueryParam('name', name);
+						setQueryParam('name', name)
 					},
 					autoReloadAfterUpdateFilterCallback: true,
 					filterControls() {
-						const backup_name = getQueryParam('name');
+						const backup_name = getQueryParam('name')
 						let filters = backup_name
 							? [
 									{
@@ -754,7 +743,7 @@ export default {
 										fieldname: 'name',
 									},
 								]
-							: [];
+							: []
 						filters = filters.concat([
 							{
 								type: 'checkbox',
@@ -766,17 +755,17 @@ export default {
 								label: 'Offsite Backups',
 								fieldname: 'offsite',
 							},
-						]);
-						return filters;
+						])
+						return filters
 					},
 					rowActions({ row, documentResource: site }) {
-						if (row.status != 'Success') return;
+						if (row.status != 'Success') return
 
 						function getFileName(file) {
-							if (file == 'database') return 'database';
-							if (file == 'public') return 'public files';
-							if (file == 'private') return 'private files';
-							if (file == 'config') return 'config file';
+							if (file == 'database') return 'database'
+							if (file == 'public') return 'public files'
+							if (file == 'private') return 'private files'
+							if (file == 'config') return 'config file'
 						}
 
 						function confirmDownload(backup, file) {
@@ -788,41 +777,43 @@ export default {
 									site.doc?.host_name || site.doc?.name
 								}</b> that was created on ${date(backup.creation, 'llll')}.${
 									!backup.offsite
-										? '<br><br><div class="p-2 bg-gray-100 rounded border-gray-200">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
+										? '<br><br><div class="p-2 bg-surface-gray-2 rounded border-outline-gray-1">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
 										: ''
 								}`,
-								onSuccess() {
-									downloadBackup(backup, file);
+								onSuccess({ hide }) {
+									downloadBackup(backup, file, hide)
 								},
-							});
+							})
 						}
 
-						async function downloadBackup(backup, file) {
+						async function downloadBackup(backup, file, hide) {
 							// file: database, public, or private
 							if (backup.offsite) {
 								site.getBackupDownloadLink.submit(
 									{ backup: backup.name, file },
 									{
 										onSuccess(r) {
+											hide()
 											// TODO: fix this in documentResource, it should return message directly
 											if (r.message) {
-												window.open(r.message);
+												window.open(r.message)
 											}
 										},
 									},
-								);
+								)
 							} else {
 								const url =
 									file == 'config'
 										? backup.config_file_url
-										: backup[file + '_url'];
+										: backup[file + '_url']
 
-								const domainRegex = /^(https?:\/\/)?([^/]+)\/?/;
+								const domainRegex = /^(https?:\/\/)?([^/]+)\/?/
 								const newUrl = url.replace(
 									domainRegex,
 									`$1${site.doc.host_name}/`,
-								);
-								window.open(newUrl);
+								)
+								hide()
+								window.open(newUrl)
 							}
 						}
 
@@ -836,7 +827,7 @@ export default {
 											router.push({
 												name: 'Site Job',
 												params: { name: site.name, id: row.job },
-											});
+											})
 										},
 									},
 								],
@@ -848,27 +839,27 @@ export default {
 									{
 										label: 'Download Database',
 										onClick() {
-											return confirmDownload(row, 'database');
+											return confirmDownload(row, 'database')
 										},
 									},
 									{
 										label: 'Download Public',
 										onClick() {
-											return confirmDownload(row, 'public');
+											return confirmDownload(row, 'public')
 										},
 										condition: () => row.public_url,
 									},
 									{
 										label: 'Download Private',
 										onClick() {
-											return confirmDownload(row, 'private');
+											return confirmDownload(row, 'private')
 										},
 										condition: () => row.private_url,
 									},
 									{
 										label: 'Download Config',
 										onClick() {
-											return confirmDownload(row, 'config');
+											return confirmDownload(row, 'config')
 										},
 										condition: () => row.config_file_url,
 									},
@@ -885,8 +876,8 @@ export default {
 											if (row.physical && row.ready_to_restore) {
 												toast.error(
 													'Physical Snapshot is not ready to restore. Try again after 10 minutes.',
-												);
-												return;
+												)
+												return
 											}
 
 											if (row.physical) {
@@ -904,20 +895,20 @@ export default {
 																loading:
 																	'Scheduling physical backup restore...',
 																success: () => {
-																	hide();
+																	hide()
 																	router.push({
 																		name: 'Site Jobs',
 																		params: {
 																			name: site.name,
 																		},
-																	});
-																	return 'Backup restore scheduled successfully.';
+																	})
+																	return 'Backup restore scheduled successfully.'
 																},
 																error: (e) => getToastErrorMessage(e),
 															},
-														);
+														)
 													},
-												});
+												})
 											} else {
 												confirmDialog({
 													title: 'Restore Backup',
@@ -937,21 +928,21 @@ export default {
 															{
 																loading: 'Scheduling backup restore...',
 																success: (jobId) => {
-																	hide();
+																	hide()
 																	router.push({
 																		name: 'Site Job',
 																		params: {
 																			name: site.name,
 																			id: jobId,
 																		},
-																	});
-																	return 'Backup restore scheduled successfully.';
+																	})
+																	return 'Backup restore scheduled successfully.'
 																},
 																error: (e) => getToastErrorMessage(e),
 															},
-														);
+														)
 													},
-												});
+												})
 											}
 										},
 									},
@@ -962,7 +953,7 @@ export default {
 											let SelectSiteForRestore = defineAsyncComponent(
 												() =>
 													import('../components/site/SelectSiteForRestore.vue'),
-											);
+											)
 											renderDialog(
 												h(SelectSiteForRestore, {
 													site: site.name,
@@ -983,31 +974,31 @@ export default {
 													}) {
 														const restoreSite = createResource({
 															url: 'press.api.site.restore',
-														});
+														})
 
 														let payload = {
 															name: selectedSite,
 															files: {},
-														};
+														}
 														if (restoreDatabase) {
-															payload.files.database = row.remote_database_file;
+															payload.files.database = row.remote_database_file
 														}
 														if (restorePublic) {
-															payload.files.public = row.remote_public_file;
+															payload.files.public = row.remote_public_file
 														}
 														if (restorePrivate) {
-															payload.files.private = row.remote_private_file;
+															payload.files.private = row.remote_private_file
 														}
 														if (restoreConfig) {
-															payload.files.config = row.remote_config_file;
+															payload.files.config = row.remote_config_file
 														}
 
 														// check if any file is selected
 														if (Object.keys(payload.files).length === 0) {
 															toast.error(
-																'Please select at least one file to restore.',
-															);
-															return;
+																'No backup files selected. Select at least one file (database, public, private, or config) to restore.',
+															)
+															return
 														}
 
 														return toast.promise(restoreSite.submit(payload), {
@@ -1016,19 +1007,19 @@ export default {
 																router.push({
 																	name: 'Site Job',
 																	params: { name: selectedSite, id: jobId },
-																});
-																return 'Backup restore scheduled successfully.';
+																})
+																return 'Backup restore scheduled successfully.'
 															},
 															error: (e) => getToastErrorMessage(e),
-														});
+														})
 													},
 												}),
-											);
+											)
 										},
 									},
 								],
 							},
-						].filter((d) => (d.condition ? d.condition() : true));
+						].filter((d) => (d.condition ? d.condition() : true))
 					},
 					primaryAction({ listResource: backups, documentResource: site }) {
 						return {
@@ -1048,9 +1039,9 @@ export default {
 											onScheduleBackupSuccess: () => backups.reload(),
 										},
 									),
-								);
+								)
 							},
-						};
+						}
 					},
 					banner({ documentResource: site, listResource: backups }) {
 						if (site.doc?.status === 'Archived') {
@@ -1064,18 +1055,18 @@ export default {
 										label: 'Contact Support',
 										variant: 'outline',
 										onClick() {
-											window.open('https://frappecloud.com/support', '_blank');
+											window.open('https://frappecloud.com/support', '_blank')
 										},
 									},
-								};
+								}
 							}
-							return;
+							return
 						}
 
 						return getUpsellBanner(
 							site,
-							'Your site is currently on a shared bench group. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.',
-						);
+							'Your site is currently on a shared bench. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.',
+						)
 					},
 				},
 			},
@@ -1085,12 +1076,12 @@ export default {
 				route: 'site-config',
 				type: 'list',
 				condition: (site) => {
-					return site.doc?.status !== 'Archived';
+					return site.doc?.status !== 'Archived'
 				},
 				list: {
 					doctype: 'Site Config',
 					filters: (site) => {
-						return { parent: site.doc?.name, parenttype: 'Site' };
+						return { parent: site.doc?.name, parenttype: 'Site' }
 					},
 					fields: ['name'],
 					pageLength: 999,
@@ -1102,9 +1093,9 @@ export default {
 							width: 1,
 							format(value, row) {
 								if (row.title) {
-									return `${row.title} (${row.key})`;
+									return `${row.title} (${row.key})`
 								}
-								return row.key;
+								return row.key
 							},
 						},
 						{
@@ -1129,17 +1120,17 @@ export default {
 							onClick() {
 								let ConfigEditorDialog = defineAsyncComponent(
 									() => import('../components/ConfigEditorDialog.vue'),
-								);
+								)
 								renderDialog(
 									h(ConfigEditorDialog, {
 										site: site.doc?.name,
 										onSuccess() {
-											configs.reload();
+											configs.reload()
 										},
 									}),
-								);
+								)
 							},
-						};
+						}
 					},
 					secondaryAction({ listResource: configs }) {
 						return {
@@ -1150,14 +1141,14 @@ export default {
 							onClick() {
 								let ConfigPreviewDialog = defineAsyncComponent(
 									() => import('../components/ConfigPreviewDialog.vue'),
-								);
+								)
 								renderDialog(
 									h(ConfigPreviewDialog, {
 										configs: configs.data,
 									}),
-								);
+								)
 							},
-						};
+						}
 					},
 					rowActions({ row, listResource: configs, documentResource: site }) {
 						return [
@@ -1166,16 +1157,16 @@ export default {
 								onClick() {
 									let ConfigEditorDialog = defineAsyncComponent(
 										() => import('../components/ConfigEditorDialog.vue'),
-									);
+									)
 									renderDialog(
 										h(ConfigEditorDialog, {
 											site: site.doc?.name,
 											config: row,
 											onSuccess() {
-												configs.reload();
+												configs.reload()
 											},
 										}),
-									);
+									)
 								},
 							},
 							{
@@ -1185,14 +1176,14 @@ export default {
 										title: 'Delete Config',
 										message: `Are you sure you want to delete the config <b>${row.key}</b>?`,
 										onSuccess({ hide }) {
-											if (site.deleteConfig.loading) return;
+											if (site.deleteConfig.loading) return
 											toast.promise(
 												site.deleteConfig.submit(
 													{ key: row.key },
 													{
 														onSuccess: () => {
-															configs.reload();
-															hide();
+															configs.reload()
+															hide()
 														},
 													},
 												),
@@ -1201,26 +1192,91 @@ export default {
 													success: () => `Config ${row.key} removed`,
 													error: (e) => getToastErrorMessage(e),
 												},
-											);
+											)
 										},
-									});
+									})
 								},
 							},
-						];
+						]
 					},
 				},
 			},
 			{
-				label: 'Actions',
-				icon: icon('sliders'),
-				route: 'actions',
-				type: 'Component',
+				label: 'Migrations',
+				icon: icon(ArrowLeftRightIcon),
+				route: 'migrations',
+				type: 'list',
 				condition: (site) => {
-					return site.doc?.status !== 'Archived';
+					return site.doc?.status !== 'Archived'
 				},
-				component: SiteActions,
-				props: (site) => {
-					return { site: site.doc?.name };
+				childrenRoutes: ['Site Migration'],
+				list: {
+					documentation:
+						'https://docs.frappe.io/cloud/site/site-migrations/introduction-to-site-migration',
+					doctype: 'Site Action',
+					filters: (site) => {
+						return { site: site.doc?.name }
+					},
+					orderBy: 'creation',
+					fields: ['action_type', 'status', 'scheduled_time', 'owner'],
+					columns: [
+						{
+							label: 'Migration',
+							fieldname: 'action_type',
+							width: 1,
+						},
+						{
+							label: 'Status',
+							fieldname: 'status',
+							type: 'Badge',
+							width: 0.6,
+						},
+						{
+							label: 'Created By',
+							fieldname: 'owner',
+						},
+						{
+							label: 'Scheduled At',
+							fieldname: 'scheduled_time',
+							format(value) {
+								return date(value, 'lll')
+							},
+						},
+						// {
+						// 	label: 'Updated On',
+						// 	fieldname: 'updated_on',
+						// 	format(value) {
+						// 		return date(value, 'lll');
+						// 	},
+						// },
+					],
+					route(row) {
+						return {
+							name: 'Site Migration',
+							params: { id: row.name },
+						}
+					},
+					primaryAction({ listResource: backups, documentResource: site }) {
+						return {
+							label: 'Trigger Migration',
+							slots: {
+								prefix: icon('upload-cloud'),
+							},
+							loading: site.backup.loading,
+							onClick() {
+								renderDialog(
+									h(
+										defineAsyncComponent(
+											() => import('../components/site/SiteMigration.vue'),
+										),
+										{
+											site: site.name,
+										},
+									),
+								)
+							},
+						}
+					},
 				},
 			},
 			{
@@ -1229,15 +1285,15 @@ export default {
 				route: 'updates',
 				type: 'list',
 				condition: (site) => {
-					return site.doc?.status !== 'Archived';
+					return site.doc?.status !== 'Archived'
 				},
 				childrenRoutes: ['Site Update'],
 				list: {
 					doctype: 'Site Update',
 					filters: (site) => {
-						return { site: site.doc?.name };
+						return { site: site.doc?.name }
 					},
-					orderBy: 'creation',
+					orderBy: 'creation desc',
 					fields: [
 						'difference',
 						'update_job.end as updated_on',
@@ -1281,14 +1337,14 @@ export default {
 							label: 'Scheduled At',
 							fieldname: 'scheduled_time',
 							format(value) {
-								return date(value, 'lll');
+								return date(value, 'lll')
 							},
 						},
 						{
 							label: 'Updated On',
 							fieldname: 'updated_on',
 							format(value) {
-								return date(value, 'lll');
+								return date(value, 'lll')
 							},
 						},
 					],
@@ -1300,13 +1356,13 @@ export default {
 								onClick() {
 									let SiteUpdateDialog = defineAsyncComponent(
 										() => import('../components/SiteUpdateDialog.vue'),
-									);
+									)
 									renderDialog(
 										h(SiteUpdateDialog, {
 											site: site.doc?.name,
 											existingUpdate: row.name,
 										}),
-									);
+									)
 								},
 							},
 							{
@@ -1317,31 +1373,32 @@ export default {
 										title: 'Cancel Update',
 										message: `Are you sure you want to cancel the scheduled update?`,
 										onSuccess({ hide }) {
-											if (site.cancelUpdate.loading) return;
+											if (site.cancelUpdate.loading) return
 											toast.promise(
 												site.cancelUpdate.submit({ site_update: row.name }),
 												{
 													loading: 'Cancelling update...',
 													success: () => {
-														hide();
-														site.reload();
-														return 'Update cancelled';
+														hide()
+														site.reload()
+														return 'Update cancelled'
 													},
 													error: (e) => getToastErrorMessage(e),
 												},
-											);
+											)
 										},
-									});
+									})
 								},
 							},
 							{
 								label: 'View Job',
-								condition: () => row.status !== 'Scheduled',
+								condition: () =>
+									!['Scheduled', 'Cancelled'].includes(row.status),
 								onClick() {
 									router.push({
 										name: 'Site Update',
 										params: { id: row.name },
-									});
+									})
 								},
 							},
 							{
@@ -1354,7 +1411,7 @@ export default {
 										whitelistedMethods: {
 											updateNow: 'start',
 										},
-									});
+									})
 
 									toast.promise(siteUpdate.updateNow.submit(), {
 										loading: 'Updating site...',
@@ -1362,12 +1419,12 @@ export default {
 											router.push({
 												name: 'Site Update',
 												params: { id: row.name },
-											});
+											})
 
-											return 'Site update started';
+											return 'Site update started'
 										},
 										error: 'Failed to update site',
-									});
+									})
 								},
 							},
 							{
@@ -1422,7 +1479,7 @@ export default {
 																						link: `${
 																							row.diff_url.split('/compare')[0]
 																						}/commit/${row.source_hash}`,
-																					};
+																					}
 																				},
 																			},
 																			{
@@ -1439,7 +1496,7 @@ export default {
 																						link: `${
 																							row.diff_url.split('/compare')[0]
 																						}/commit/${row.destination_hash}`,
-																					};
+																					}
 																				},
 																			},
 																			{
@@ -1455,7 +1512,7 @@ export default {
 																							prefix: icon('external-link'),
 																						},
 																						link: row.diff_url,
-																					};
+																					}
 																				},
 																			},
 																		],
@@ -1463,16 +1520,19 @@ export default {
 																}),
 														},
 													),
-												);
-											} else toast.error('No app changes found');
+												)
+											} else
+												toast.error(
+													'No app changes found. The current and target benches run the same app versions, so there is nothing to update.',
+												)
 										},
-									});
+									})
 								},
 							},
-						];
+						]
 					},
 					actions({ documentResource: site }) {
-						if (site.doc.group_public) return [];
+						if (site.doc.group_public) return []
 
 						return [
 							{
@@ -1486,25 +1546,57 @@ export default {
 											import(
 												'../components/site/ConfigureAutoUpdateDialog.vue'
 											),
-									);
+									)
 
 									renderDialog(
 										h(ConfigureAutoUpdateDialog, {
 											site: site.doc?.name,
 										}),
-									);
+									)
 								},
 							},
-						];
+						]
 					},
-					banner({ documentResource: site }) {
+					extraResource({ listResource: updates }) {
+						const latest = updates?.data?.[0]
+						if (latest?.status !== 'Cancelled') return
+						return {
+							type: 'list',
+							doctype: 'Press Notification',
+							fields: ['message'],
+							filters: {
+								document_type: 'Site Update',
+								document_name: latest.name,
+							},
+							limit: 1,
+							auto: true,
+						}
+					},
+					banner({ documentResource: site, extraResource: notification }) {
+						const message = notification?.data?.[0]?.message
+						if (message) {
+							return { title: message, type: 'warning' }
+						}
 						const bannerTitle =
-							'Your site is currently on a shared bench group. Upgrade to a private bench group to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
-
-						return getUpsellBanner(site, bannerTitle);
+							'Your site is currently on a shared bench. Upgrade to a private bench to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.'
+						return getUpsellBanner(site, bannerTitle)
 					},
 				},
 			},
+			{
+				label: 'Actions',
+				icon: icon('sliders'),
+				route: 'actions',
+				type: 'Component',
+				condition: (site) => {
+					return site.doc?.status !== 'Archived'
+				},
+				component: SiteActions,
+				props: (site) => {
+					return { site: site.doc?.name }
+				},
+			},
+
 			{
 				label: 'Activity',
 				icon: icon('activity'),
@@ -1514,34 +1606,34 @@ export default {
 				list: {
 					doctype: 'Site Activity',
 					filters: (site) => {
-						return { site: site.doc?.name };
+						return { site: site.doc?.name }
 					},
 					fields: ['owner', 'job'],
 					orderBy: 'creation desc',
 					route(row) {
-						if (!row.job) return {};
+						if (!row.job) return {}
 
 						return {
 							name: 'Site Job',
 							params: { id: row.job },
-						};
+						}
 					},
 					columns: [
 						{
 							label: 'Action',
 							fieldname: 'action',
 							format(value, row) {
-								let action = row.action;
+								let action = row.action
 								if (action == 'Create') {
-									action = 'Site created';
+									action = 'Site created'
 								}
-								return `${action} by ${row.owner}`;
+								return `${action} by ${row.owner}`
 							},
 						},
 						{
 							label: 'Description',
 							fieldname: 'reason',
-							class: 'text-gray-600',
+							class: 'text-ink-gray-6',
 						},
 						{
 							label: '',
@@ -1581,7 +1673,7 @@ export default {
 									'Update Configuration',
 								],
 							},
-						];
+						]
 					},
 				},
 			},
@@ -1637,9 +1729,9 @@ export default {
 			},
 		],
 		actions(context) {
-			let { documentResource: site } = context;
-			let $team = getTeam();
-			let runningJobs = getRunningJobs({ site: site.doc?.name });
+			let { documentResource: site } = context
+			let $team = getTeam()
+			let runningJobs = getRunningJobs({ site: site.doc?.name })
 
 			return [
 				{
@@ -1652,13 +1744,13 @@ export default {
 							runningJobs.filter((job) =>
 								['Pending', 'Running'].includes(job.status),
 							).length > 0
-						);
+						)
 					},
 					onClick() {
 						router.push({
 							name: 'Site Jobs',
 							params: { name: site.name },
-						});
+						})
 					},
 				},
 				{
@@ -1674,14 +1766,14 @@ export default {
 							['Active', 'Inactive', 'Suspended', 'Broken'].includes(
 								site.doc.status,
 							)
-						);
+						)
 					},
 
 					onClick() {
 						let SiteUpdateDialog = defineAsyncComponent(
 							() => import('../components/SiteUpdateDialog.vue'),
-						);
-						renderDialog(h(SiteUpdateDialog, { site: site.doc?.name }));
+						)
+						renderDialog(h(SiteUpdateDialog, { site: site.doc?.name }))
 					},
 				},
 				{
@@ -1694,7 +1786,7 @@ export default {
 						router.push({
 							name: 'Site Detail Updates',
 							params: { name: site.name },
-						});
+						})
 					},
 				},
 				{
@@ -1706,22 +1798,29 @@ export default {
 					onClick() {
 						let SiteEnableMonitoringDialog = defineAsyncComponent(
 							() => import('../components/site/SiteEnableMonitoringDialog.vue'),
-						);
+						)
 						renderDialog(
 							h(SiteEnableMonitoringDialog, { site: site.doc?.name }),
-						);
+						)
 					},
 				},
 				{
 					label: 'Impersonate Site Owner',
 					title: 'Impersonate Site Owner', // for label to pop-up on hover
 					slots: {
-						icon: icon(LucideVenetianMask),
+						icon: defineAsyncComponent(async () => {
+							const mod = await import('~icons/lucide/venetian-mask')
+							return {
+								render() {
+									return h(mod.default, { class: 'w-5 h-5' })
+								},
+							}
+						}),
 					},
 					condition: () =>
 						$team.doc?.is_desk_user && site.doc.team !== $team.name,
 					onClick() {
-						switchToTeam(site.doc.team);
+						switchToTeam(site.doc.team)
 					},
 				},
 				{
@@ -1732,13 +1831,13 @@ export default {
 					condition: () =>
 						site.doc.status !== 'Archived' && site.doc?.setup_wizard_complete,
 					onClick() {
-						let siteURL = `https://${site.name}`;
+						let siteURL = `https://${site.name}`
 						if (
 							site.doc.version === 'Nightly' ||
 							Number(site.doc.version.split(' ')[1]) >= 15
 						)
-							siteURL += '/apps';
-						window.open(siteURL, '_blank');
+							siteURL += '/apps'
+						window.open(siteURL, '_blank')
 					},
 				},
 				{
@@ -1754,11 +1853,11 @@ export default {
 						if (site.doc.additional_system_user_created) {
 							site.loginAsTeam
 								.submit({ reason: '' })
-								.then((url) => window.open(url, '_blank'));
+								.then((url) => window.open(url, '_blank'))
 						} else {
 							site.loginAsAdmin
 								.submit({ reason: '' })
-								.then((url) => window.open(url, '_blank'));
+								.then((url) => window.open(url, '_blank'))
 						}
 					},
 				},
@@ -1774,7 +1873,7 @@ export default {
 								window.open(
 									`${window.location.protocol}//${window.location.host}/app/site/${site.name}`,
 									'_blank',
-								);
+								)
 							},
 						},
 						{
@@ -1800,22 +1899,24 @@ export default {
 											!values.reason &&
 											($team.name !== site.doc.team || $team.doc.is_desk_user)
 										) {
-											throw new Error('Reason is required');
+											throw new Error(
+												'Reason is required. Enter why you are logging in as Administrator before continuing.',
+											)
 										}
 										return site.loginAsAdmin
 											.submit({ reason: values.reason })
 											.then((result) => {
-												let url = result;
-												window.open(url, '_blank');
-												hide();
-											});
+												let url = result
+												window.open(url, '_blank')
+												hide()
+											})
 									},
-								});
+								})
 							},
 						},
 					],
 				},
-			];
+			]
 		},
 	},
 
@@ -1825,5 +1926,10 @@ export default {
 			path: 'updates/:id',
 			component: () => import('../pages/SiteUpdate.vue'),
 		},
+		{
+			name: 'Site Migration',
+			path: 'migrations/:id',
+			component: () => import('../pages/SiteMigration.vue'),
+		},
 	],
-};
+}

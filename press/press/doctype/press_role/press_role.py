@@ -2,10 +2,21 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import frappe
+from frappe import _
 from frappe.model.document import Document
+from frappe.query_builder.functions import Count
 
 from press.api.client import dashboard_whitelist
+from press.guards import role_guard, team_guard
+from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.team.team_members import PERMISSION_FIELDS
+from press.utils import get_current_team
+
+if TYPE_CHECKING:
+	from press.press.doctype.team.team import Team
 
 
 class PressRole(Document):
@@ -17,9 +28,13 @@ class PressRole(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.press_role_resource.press_role_resource import PressRoleResource
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
 		admin_access: DF.Check
+		all_release_groups: DF.Check
+		all_servers: DF.Check
+		all_sites: DF.Check
 		allow_apps: DF.Check
 		allow_bench_creation: DF.Check
 		allow_billing: DF.Check
@@ -31,315 +46,226 @@ class PressRole(Document):
 		allow_server_creation: DF.Check
 		allow_site_creation: DF.Check
 		allow_webhook_configuration: DF.Check
+		resources: DF.Table[PressRoleResource]
 		team: DF.Link
 		title: DF.Data
 		users: DF.Table[PressRoleUser]
 	# end: auto-generated types
 
 	dashboard_fields = (
+		"admin_access",
+		"all_servers",
+		"all_sites",
+		"all_release_groups",
+		"allow_apps",
+		"allow_bench_creation",
+		"allow_billing",
+		"allow_contribution",
+		"allow_customer",
+		"allow_dashboard",
+		"allow_leads",
+		"allow_partner",
+		"allow_server_creation",
+		"allow_site_creation",
+		"allow_webhook_configuration",
+		"resources",
+		"team",
 		"title",
 		"users",
-		"admin_access",
-		"allow_billing",
-		"allow_apps",
-		"allow_partner",
-		"allow_site_creation",
-		"allow_bench_creation",
-		"allow_server_creation",
-		"allow_webhook_configuration",
-		"team",
-		"allow_customer",
-		"allow_leads",
-		"allow_dashboard",
-		"allow_contribution",
 	)
 
-	def before_insert(self):
-		if frappe.db.exists("Press Role", {"title": self.title, "team": self.team}):
-			frappe.throw(f"Role with title {self.title} already exists", frappe.DuplicateEntryError)
-
-		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
-			"Team", self.team, "user"
-		):
-			frappe.throw("Only the team owner can create roles")
-
+	@team_guard.only_admin()
 	def validate(self):
-		self.set_first_role_as_admin()
-		self.allow_only_one_admin_role()
-		self.set_admin_permissions()
+		self.validate_duplicate_title()
 
-	def set_first_role_as_admin(self):
-		if not frappe.get_all("Press Role", filters={"team": self.team}):
-			self.admin_access = 1
-
-	def allow_only_one_admin_role(self):
-		admin_roles = frappe.get_all(
-			"Press Role",
-			filters={"team": self.team, "admin_access": 1, "name": ("!=", self.name)},
-		)
-		if admin_roles and self.admin_access:
-			frappe.throw("There can only be one admin role per team")
-
-	def set_admin_permissions(self):
-		if self.admin_access:
-			self.allow_apps = 1
-			self.allow_billing = 1
-			self.allow_partner = 1
-			self.allow_site_creation = 1
-			self.allow_bench_creation = 1
-			self.allow_server_creation = 1
-			self.allow_webhook_configuration = 1
-
-	def add_press_admin_role(self, user):
-		user = frappe.get_doc("User", user)
-		user.append_roles("Press Admin")
-		user.save(ignore_permissions=True)
-
-	def remove_press_admin_role(self, user):
-		if frappe.db.exists("Team", {"enabled": 1, "user": user}):
-			return
-		user = frappe.get_doc("User", user)
-		existing_roles = {d.role: d for d in user.get("roles")}
-		if "Press Admin" in existing_roles:
-			user.get("roles").remove(existing_roles["Press Admin"])
-			user.save(ignore_permissions=True)
-
-	def is_team_member(self, user):
-		return bool(frappe.db.exists("Team Member", {"parent": self.team, "user": user}))
+	def validate_duplicate_title(self):
+		exists = frappe.db.exists({"doctype": "Press Role", "title": self.title, "team": self.team})
+		if self.is_new() and exists:
+			message = _("Role with title {0} already exists in this team").format(self.title)
+			frappe.throw(message, frappe.DuplicateEntryError)
 
 	@dashboard_whitelist()
-	def add_user(self, user):
-		user_exists = self.get("users", {"user": user})
-		if user_exists:
-			frappe.throw(f"{user} already belongs to {self.title}")
-
-		if not self.is_team_member(user):
-			frappe.throw(f"{user} is not a member of the team")
-
-		self.append("users", {"user": user})
+	@team_guard.only_admin(skip=lambda _, args: args.get("skip_validations", False))
+	@team_guard.only_member(
+		user=lambda _, args: str(args.get("user")),
+		error_message=_("User is not a member of the team"),
+		skip=lambda _, args: args.get("skip_validations", False),
+	)
+	def add_user(self, user, skip_validations=False):
+		user_dict = {"user": user}
+		if self.get("users", user_dict):
+			message = _("{0} already belongs to {1}").format(user, self.title)
+			frappe.throw(message, frappe.ValidationError)
+		self.append("users", user_dict)
 		self.save()
-		if self.admin_access or self.allow_billing:
-			self.add_press_admin_role(user)
 
 	@dashboard_whitelist()
+	@team_guard.only_admin()
 	def remove_user(self, user):
-		user_exists = self.get("users", {"user": user})
-		if not user_exists:
-			frappe.throw(f"{user} does not belong to {self.title}")
-
-		for row in self.users:
-			if row.user == user:
-				self.remove(row)
-				break
+		users = self.get("users", {"user": user})
+		if not users:
+			message = _("User {0} does not belong to {1}").format(user, self.title)
+			frappe.throw(message, frappe.ValidationError)
+		self.remove(users.pop())
 		self.save()
-		if self.admin_access or self.allow_billing:
-			self.remove_press_admin_role(user)
 
 	@dashboard_whitelist()
-	def delete_permissions(self, permissions: list[str]) -> None:
-		for perm in permissions:
-			perm_doc = frappe.get_doc("Press Role Permission", perm)
-			if perm_doc.role == self.name:
-				perm_doc.delete()
+	@team_guard.only_admin()
+	def add_resource(self, resources: list[dict[str, str]]):
+		for resource in resources:
+			document_type = resource["document_type"]
+			document_name = resource["document_name"]
+			resource_dict = {"document_type": document_type, "document_name": document_name}
+			if self.get("resources", resource_dict):
+				message = _("{0} already belongs to {1}").format(document_name, self.title)
+				frappe.throw(message, frappe.ValidationError)
+
+			document_team = frappe.db.get_value(document_type, document_name, "team")
+			if document_team is None:
+				frappe.throw(
+					_("Document {0} does not exist").format(document_name),
+					frappe.DoesNotExistError,
+				)
+			if document_team != self.team:
+				frappe.throw(
+					_("Document {0} is not associated with this team").format(document_name),
+					frappe.ValidationError,
+				)
+			self.append("resources", resource_dict)
+		self.save()
 
 	@dashboard_whitelist()
-	def delete(self) -> None:
-		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
-			"Team", self.team, "user"
-		):
-			frappe.throw("Only the team owner can delete this role")
+	@team_guard.only_admin()
+	def remove_resource(self, document_type: str, document_name: str):
+		resources = self.get("resources", {"document_type": document_type, "document_name": document_name})
+		if not resources:
+			message = _("Resource {0} does not belong to {1}").format(document_name, self.title)
+			frappe.throw(message, frappe.ValidationError)
+		self.remove(resources.pop())
+		self.save()
 
-		super().delete()
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def set_permission(self, fieldname: str, value: int):
+		if fieldname not in PERMISSION_FIELDS:
+			frappe.throw(_("Invalid permission field: {0}").format(fieldname))
+		setattr(self, fieldname, value)
+		self.save()
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def delete(self, *_args, **_kwargs):
+		return super().delete()
 
 	def on_trash(self) -> None:
-		frappe.db.delete("Press Role Permission", {"role": self.name})
 		frappe.db.delete("Account Request Press Role", {"press_role": self.name})
+		# Invites record the selected role in Account Request.press_role and keep
+		# it after acceptance, so the link must be unset for deletion to pass the
+		# link check.
+		frappe.db.set_value("Account Request", {"press_role": self.name}, "press_role", None)
+
+	def get_doc(self, doc):
+		flat_resources = []
+		for resource in doc["resources"]:
+			dict = resource.as_dict()
+			if dict["document_type"] in ["Release Group", "Server"]:
+				dict["document_title"] = frappe.get_value(
+					dict["document_type"], dict["document_name"], "title"
+				)
+			else:
+				dict["document_title"] = dict["document_name"]
+			flat_resources.append(dict)
+		doc["resources"] = flat_resources
+		flat_users = []
+		for user in doc.get("users", []):
+			u = user.as_dict()
+			u["user_image"] = frappe.get_value("User", u["user"], "user_image")
+			flat_users.append(u)
+		doc["users"] = flat_users
 
 
-"""
-Explanation of LINKED_DOCTYPE_PERMISSIONS:
-
-Example -
-"Site Backup": {
-	"parent_doctype": "Site",
-	"parent_field": "site",
-}
-
-Site Backup doctype has a field named 'site' which is a link to Site doctype.
-
-If Someone doesn't have access to a particular Site through role permissions,
-then they shouldn't be able to access the Site Backup listview either.
-
-"""
-
-LINKED_DOCTYPE_PERMISSIONS = {
-	"Site Backup": {
-		"parent_doctype": "Site",
-		"parent_field": "site",
-	},
-	"Server Snapshot": {
-		"parent_doctype": "Server",
-		"parent_field": "app_server",
-	},
-}
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Press Role")
 
 
-def check_role_permissions(doctype: str, name: str | None = None) -> list[str] | None:  # noqa: C901
+def has_permission(doc, ptype, user):
 	"""
-	Check if the user is permitted to access the document based on the role permissions
-	Expects the function to throw error for `get` if no permission and return a list of permitted roles for `get_list`
-	Note: Empty list means no restrictions
-
-	:param doctype: Document type
-	:param name: Document name
-	:return: List of permitted roles or None
+	Only team owners and admins can modify Press Roles. Other team members
+	can read roles but cannot create, update, or delete them.
 	"""
+	if ptype in ("write", "delete", "create") and role_guard.is_restricted():
+		return False
 
-	if doctype not in [
-		"Site",
-		"Release Group",
-		"Server",
-		"Marketplace App",
-		"Press Webhook",
-		"Press Webhook Log",
-		"Press Webhook Attempt",
-		*LINKED_DOCTYPE_PERMISSIONS.keys(),
-	]:
-		return []
+	return True
 
-	if hasattr(frappe.local, "system_user") and frappe.local.system_user():
-		return []
 
-	PressRoleUser = frappe.qb.DocType("Press Role User")
-	PressRole = frappe.qb.DocType("Press Role")
-	query = (
-		frappe.qb.from_(PressRole)
-		.select(PressRole.name)
-		.join(PressRoleUser)
-		.on(PressRoleUser.parent == PressRole.name)
-		.where(PressRoleUser.user == frappe.session.user)
-		.where(PressRole.team == frappe.local.team().name)
+def create_user_resource(document: Document, _):
+	user = frappe.session.user
+	team: Team = get_current_team(get_doc=True)
+
+	roles_enabled = bool(
+		frappe.db.exists(
+			{
+				"doctype": "Press Role",
+				"team": team.name,
+			}
+		)
 	)
 
 	if (
-		doctype == "Marketplace App"
-		and (roles := query.select(PressRole.allow_apps).run(as_dict=1))
-		and not any(perm.allow_apps for perm in roles)
+		(not user)
+		or (not roles_enabled)
+		or (not user_has_roles())
+		or team.is_team_owner()
+		or team.is_admin_user()
 	):
-		# throw error if any of the roles don't have permission for apps
-		frappe.throw("Not permitted", frappe.PermissionError)
-
-	elif (
-		doctype in ["Press Webhook", "Press Webhook Log", "Press Webhook Attempt"]
-		and (roles := query.select(PressRole.allow_webhook_configuration).run(as_dict=1))
-		and not any(perm.allow_webhook_configuration for perm in roles)
-	):
-		# throw error if any of the roles don't have permission for webhooks
-		frappe.throw("Not permitted", frappe.PermissionError)
-
-	elif doctype in ["Site", "Release Group", "Server"]:
-		field = doctype.lower().replace(" ", "_")
-		roles = query.select(PressRole.admin_access).run(as_dict=1)
-
-		# this is an admin that can access all sites, release groups, and servers
-		if any(perm.admin_access for perm in roles):
-			return []
-
-		if roles:
-			role_names = [perm.name for perm in roles]
-			perms = frappe.db.get_all(
-				"Press Role Permission",
-				filters={"role": ["in", role_names], field: name},
-			)
-			if not perms and name:
-				# throw error if the user is not permitted for the document
-				frappe.throw(
-					f"You don't have permission to this {doctype if doctype != 'Release Group' else 'Bench'}",
-					frappe.PermissionError,
-				)
-			else:
-				return role_names
-
-	elif doctype in LINKED_DOCTYPE_PERMISSIONS:
-		field = LINKED_DOCTYPE_PERMISSIONS[doctype]["parent_doctype"].lower().replace(" ", "_")
-		roles = query.select(PressRole.admin_access).run(as_dict=1)
-
-		# this is an admin that can access all sites, release groups, and servers
-		if any(perm.admin_access for perm in roles):
-			return []
-
-		if roles:
-			role_names = [perm.name for perm in roles]
-			perms = frappe.db.get_all(
-				"Press Role Permission",
-				filters={
-					"role": ["in", role_names],
-					field: frappe.db.get_value(
-						doctype, name, LINKED_DOCTYPE_PERMISSIONS[doctype].get("parent_field")
-					)
-					if name
-					else None,
-				},
-			)
-			if not perms and name:
-				# throw error if the user is not permitted for the document
-				frappe.throw(
-					f"You don't have permission to this {doctype}",
-					frappe.PermissionError,
-				)
-			else:
-				return role_names
-
-	return []
-
-
-def add_permission_for_newly_created_doc(doc: Document) -> None:
-	"""
-	Used to bulk insert permissions right after a site/release group/server is created
-	for users with create permission for respective doctype is enabled
-	"""
-
-	doctype = doc.doctype
-	if doctype not in ["Site", "Release Group", "Server"]:
 		return
 
-	role_fieldname = ""
-	fieldname = doctype.lower().replace(" ", "_")
-	if doctype == "Site":
-		role_fieldname = "allow_site_creation"
-	elif doctype == "Server":
-		role_fieldname = "allow_server_creation"
-	elif doctype == "Release Group":
-		role_fieldname = "allow_bench_creation"
+	title = user + " / " + document.name
 
-	new_perms = []
+	role_exists = bool(
+		frappe.db.exists(
+			{
+				"doctype": "Press Role",
+				"team": team.name,
+				"title": title,
+			}
+		)
+	)
+
+	if role_exists:
+		return
+
+	frappe.get_doc(
+		{
+			"doctype": "Press Role",
+			"title": title,
+			"team": team.name,
+			"users": [
+				{
+					"user": user,
+				}
+			],
+			"resources": [
+				{
+					"document_type": document.doctype,
+					"document_name": document.name,
+				}
+			],
+		}
+	).save(ignore_permissions=True)
+
+
+def user_has_roles() -> bool:
 	PressRole = frappe.qb.DocType("Press Role")
 	PressRoleUser = frappe.qb.DocType("Press Role User")
-	if roles := (
+	return (
 		frappe.qb.from_(PressRole)
-		.select(PressRole.name)
-		.join(PressRoleUser)
-		.on(PressRoleUser.parent == PressRole.name)
+		.inner_join(PressRoleUser)
+		.on(PressRole.name == PressRoleUser.parent)
+		.where(PressRole.team == get_current_team())
 		.where(PressRoleUser.user == frappe.session.user)
-		.where(PressRole.team == doc.team)
-		.where(PressRole[role_fieldname] == 1)
-		.run(as_dict=1, pluck="name")
-	):
-		for role in roles:
-			new_perms.append(
-				(
-					frappe.generate_hash(length=12),
-					role,
-					doc.name,
-					doc.team,
-					frappe.utils.now(),
-					frappe.utils.now(),
-				)
-			)
-
-	if new_perms:
-		frappe.db.bulk_insert(
-			"Press Role Permission",
-			fields=["name", "role", fieldname, "team", "creation", "modified"],
-			values=set(new_perms),
-		)
+		.select(Count(PressRole.name).as_("role_count"))
+		.run(as_dict=True)
+		.pop()
+		.get("role_count", 0)
+	) > 0

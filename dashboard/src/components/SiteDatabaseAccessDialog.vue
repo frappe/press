@@ -2,7 +2,7 @@
 	<Dialog
 		:options="{
 			title: 'Manage Database Users',
-			size: planSupportsDatabaseAccess ? '3xl' : 'xl',
+			size: planSupportsDatabaseAccess ? '4xl' : 'xl',
 		}"
 		v-model="show"
 	>
@@ -159,16 +159,23 @@ export default {
 						type: 'Badge',
 					},
 					{
+						label: 'Server',
+						fieldname: 'use_replica_server',
+						width: 0.5,
+						align: 'center',
+						format: (value) => (value ? 'Replica' : 'Master'),
+					},
+					{
 						label: 'DB Connections',
 						fieldname: 'max_connections',
-						width: 0.5,
+						width: 0.7,
 						align: 'center',
 						format: (value) => `${value} Connection` + (value > 1 ? 's' : ''),
 					},
 					{
 						label: 'Mode',
 						fieldname: 'mode',
-						width: 0.5,
+						width: 0.7,
 						align: 'center',
 						format: (value, row) => {
 							return {
@@ -178,10 +185,10 @@ export default {
 							}[value];
 						},
 					},
+
 					{
 						label: 'Created On',
 						fieldname: 'creation',
-						width: 0.5,
 						align: 'center',
 						format: (value) => date(value, 'll'),
 					},

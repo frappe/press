@@ -9,12 +9,12 @@
 			</div>
 			<div class="mt-4">
 				<router-link
-					class="flex items-center justify-between rounded border-b px-2 py-2 hover:bg-gray-50"
+					class="flex items-center justify-between rounded border-b px-2 py-2 hover:bg-surface-gray-1"
 					v-for="site in sites"
 					:key="site.name"
 					:to="{ name: 'Site Detail', params: { name: site.name } }"
 				>
-					<div class="text-base text-gray-900">
+					<div class="text-base text-ink-gray-9">
 						{{ site.host_name || site.name }}
 					</div>
 					<div>
@@ -24,7 +24,7 @@
 			</div>
 		</div>
 		<div class="rounded-lg border p-4">
-			<div class="text-xl font-semibold">Bench Group</div>
+			<div class="text-xl font-semibold">Bench</div>
 		</div>
 	</div>
 </template>

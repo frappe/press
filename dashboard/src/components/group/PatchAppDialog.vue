@@ -2,7 +2,7 @@
 	<Dialog v-if="show" :options="{ title, position: 'top' }" v-model="show">
 		<template v-slot:body-content>
 			<div class="flex flex-col gap-4">
-				<p class="text-base text-gray-600">
+				<p class="text-base text-ink-gray-6">
 					You can select the app patch by either entering the patch URL, or by
 					selecting a patch file.
 				</p>
@@ -51,12 +51,12 @@
 							@click="$refs.fileSelector.click()"
 							title="Select patch file"
 						>
-							<FeatherIcon name="file-text" class="h-5 w-5 text-gray-600" />
+							<FeatherIcon name="file-text" class="h-5 w-5 text-ink-gray-6" />
 						</Button>
 
 						<!-- Clear Patch File -->
 						<Button @click="clear" v-if="patch" title="Clear patch file">
-							<FeatherIcon name="x" class="h-5 w-5 text-gray-600" />
+							<FeatherIcon name="x" class="h-5 w-5 text-ink-gray-6" />
 						</Button>
 					</div>
 				</div>
@@ -170,7 +170,7 @@ export default {
 		validate() {
 			if (!this.$resources.benches.data.length) {
 				this.error =
-					'This bench group has no benches, patch cannot be applied.';
+					'This group has no benches, patch cannot be applied.';
 				return false;
 			}
 
@@ -299,7 +299,7 @@ export default {
 					}
 
 					this.error =
-						'This bench group has no benches, patch cannot be applied.';
+						'This group has no benches, patch cannot be applied.';
 				},
 				onError(data) {
 					this.error = data;

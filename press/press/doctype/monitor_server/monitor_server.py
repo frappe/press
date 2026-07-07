@@ -53,6 +53,8 @@ class MonitorServer(BaseServer):
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
 		node_exporter_dashboard_path: DF.Data | None
+		only_monitor_uptime_metrics: DF.Check
+		plan: DF.Link | None
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
@@ -154,6 +156,7 @@ class MonitorServer(BaseServer):
 					"clusters_json": json.dumps(clusters),
 					"private_ip": self.private_ip,
 					"grafana_password": self.get_password("grafana_password"),
+					"prometheus_username": self.prometheus_username,
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
@@ -227,6 +230,7 @@ class MonitorServer(BaseServer):
 					"log_servers_json": json.dumps(log_servers),
 					"clusters_json": json.dumps(clusters),
 					"grafana_password": self.get_password("grafana_password"),
+					"prometheus_username": self.prometheus_username,
 				},
 			)
 			ansible.run()
@@ -239,20 +243,34 @@ class MonitorServer(BaseServer):
 
 	@property
 	def alerts(self):
-		print(
-			f"https://{self.name}/prometheus/api/v1/rules",
-		)
 		ret = requests.get(
 			f"https://{self.name}/prometheus/api/v1/rules",
 			auth=HTTPBasicAuth(self.prometheus_username, self.get_password("grafana_password")),
 			params={"type": "alert"},
+			timeout=15,
 		)
 
 		ret.raise_for_status()
+
 		data = ret.json()
-		if data["status"] != "success":
-			frappe.throw("Error fetching sites down")
-		return data["data"]["groups"][0]["rules"]
+
+		if data.get("status") != "success":
+			frappe.throw(
+				"""
+			Failed to fetch alerts from Prometheus.
+
+			Please verify that Prometheus is running and reachable.
+			"""
+			)
+
+		groups = data.get("data", {}).get("groups", [])
+
+		alerts = []
+
+		for group in groups:
+			alerts.extend(group.get("rules", []))
+
+		return alerts
 
 	@property
 	def sites_down_alerts(self) -> list[SitesDownAlert]:

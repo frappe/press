@@ -10,6 +10,7 @@ from frappe.model.document import Document
 
 import press.utils
 from press.api.billing import get_stripe
+from press.utils.telemetry import capture_pulse
 
 
 class InvalidStripeWebhookEvent(Exception):
@@ -43,7 +44,11 @@ class StripeWebhookLog(Document):
 		invoice_id = get_invoice_id(payload)
 		self.stripe_payment_intent_id = ""
 
-		if self.event_type in ["payment_intent.succeeded", "payment_intent.failed", "payment_intent.requires_action"]:
+		if self.event_type in [
+			"payment_intent.succeeded",
+			"payment_intent.failed",
+			"payment_intent.requires_action",
+		]:
 			self.stripe_payment_intent_id = get_intent_id(payload)
 
 		if customer_id:
@@ -67,6 +72,19 @@ class StripeWebhookLog(Document):
 					"name",
 				)
 
+			failure_reason = (
+				payload.get("data", {}).get("object", {}).get("last_payment_error", {}).get("message")
+			)
+			intent_id = payload.get("data", {}).get("object", {}).get("id")
+			capture_pulse(
+				"stripe_payment_failed",
+				{
+					"team": self.team,
+					"intent_id": intent_id,
+					"failure_reason": failure_reason,
+				},
+			)
+
 		if (
 			self.event_type == "invoice.payment_failed"
 			and self.invoice
@@ -82,6 +100,49 @@ class StripeWebhookLog(Document):
 				frappe.utils.getdate(next_payment_attempt_date),
 			)
 
+		if self.event_type == "invoice.payment_failed":
+			intent_id = payload.get("data", {}).get("object", {}).get("payment_intent")
+			capture_pulse(
+				"stripe_invoice_failed",
+				{
+					"team": self.team,
+					"invoice": self.invoice,
+					"intent_id": intent_id,
+				},
+			)
+
+
+def allow_insert_log(event):
+	if isinstance(event, str):
+		event = frappe.parse_json(event)
+	evt_id = event.get("id")
+	invoice_id = get_invoice_id(event)
+	intent_id = get_intent_id(event)
+
+	description = None
+	if event.get("type") == "payment_intent.succeeded":
+		description = event["data"]["object"]["description"]
+
+	if not frappe.db.exists("Stripe Webhook Log", evt_id):
+		return True
+
+	if invoice_id and frappe.db.get_value("Invoice", {"stripe_invoice_id": invoice_id}, "status") == "Paid":
+		# Do not insert duplicate webhook logs for invoices that are already paid
+		return False
+
+	if (
+		description
+		and description == "Prepaid Credits"
+		and intent_id
+		and frappe.db.exists(
+			"Invoice", {"type": "Prepaid Credits", "status": "Paid", "stripe_payment_intent_id": intent_id}
+		)
+	):
+		return False
+
+	frappe.delete_doc("Stripe Webhook Log", evt_id)
+	return True
+
 
 @frappe.whitelist(allow_guest=True)
 def stripe_webhook_handler():
@@ -94,10 +155,13 @@ def stripe_webhook_handler():
 		event = parse_payload(payload, signature)
 		# set user to Administrator, to not have to do ignore_permissions everywhere
 		frappe.set_user("Administrator")
+
+		if not allow_insert_log(event):
+			return
 		frappe.get_doc(
 			doctype="Stripe Webhook Log",
 			payload=frappe.as_json(event),
-		).insert(ignore_if_duplicate=True)
+		).insert()
 	except Exception:
 		frappe.db.rollback()
 		press.utils.log_error(title="Stripe Webhook Handler", stripe_event_id=form_dict.id)
@@ -111,6 +175,8 @@ def get_intent_id(form_dict):
 		intent_id = re.findall(r"pi_\w+", form_dict_str)
 		if intent_id:
 			return intent_id[1]
+		return None
+	except IndexError:
 		return None
 	except Exception:
 		frappe.log_error(title="Failed to capture intent id from stripe webhook log")

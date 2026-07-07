@@ -9,7 +9,7 @@
 		<template #body-content>
 			<div
 				v-if="$resources?.showAppVersions?.loading"
-				class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700"
+				class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 			>
 				<Spinner class="w-4" /> Fetching app versions ...
 			</div>
@@ -57,7 +57,7 @@
 			<Button
 				v-if="
 					!['Draft', 'Preparing', 'Running', 'Pending'].includes(status) &&
-					!$resources?.redeployBuild?.loading
+					!$resources?.redeployBuild?.loading && !isPipeline
 				"
 				variant="solid"
 				iconLeft=""
@@ -83,7 +83,7 @@ import {
 import { toast } from 'vue-sonner';
 export default {
 	name: 'AppVersionsDialog',
-	props: ['group', 'dc_name', 'status'],
+	props: ['group', 'dc_name', 'status', 'isPipeline'],
 	components: {
 		Spinner,
 		ListView,
@@ -163,10 +163,8 @@ export default {
 			await this.$resources.redeployBuild
 				.submit()
 				.then((response) => {
-					this.$router.push({
-						path: response,
-					});
 					this.show = false;
+          window.location.href = response
 				})
 				.catch(() => {
 					toast.error('Failed to redeploy');

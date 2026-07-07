@@ -11,10 +11,10 @@
 		</div>
 		<div v-if="doc" class="overflow-x-auto">
 			<table
-				class="text w-full border-separate border-spacing-y-2 text-base font-normal text-gray-900"
+				class="text w-full border-separate border-spacing-y-2 text-base font-normal text-ink-gray-9"
 			>
-				<thead class="bg-gray-100">
-					<tr class="text-gray-600">
+				<thead class="bg-surface-gray-2">
+					<tr class="text-ink-gray-6">
 						<th class="rounded-l p-2 text-left font-normal">Description</th>
 						<th class="whitespace-nowrap p-2 text-right font-normal">Rate</th>
 						<th class="whitespace-nowrap p-2 text-right font-normal">
@@ -25,16 +25,25 @@
 				</thead>
 				<tbody>
 					<template v-for="(items, type) in groupedLineItems" :key="type">
-						<tr class="mt-1 bg-gray-50">
+						<tr class="mt-1 bg-surface-gray-1">
 							<td colspan="100" class="rounded p-2 text-base font-medium">
 								{{ type }}
 							</td>
 						</tr>
 						<tr v-for="(row, i) in items" :key="row.idx">
 							<td class="py-1 pl-2 pr-2">
-								{{ row.document_name }}
-								<span v-if="row.plan" class="text-gray-700">
-									({{ formatPlan(row.plan) }}/mo)
+								<template v-if="row.document_type === 'Server Snapshot'">
+									{{ serverSnapshotServers[row.document_name] || fetchServer(row.document_name) }}
+								</template>
+								<template v-else>{{ row.document_name }}</template>
+								<span
+									v-if="row.document_type === 'Marketplace App' && row.site"
+									class="text-ink-gray-7"
+								>
+									({{ row.site }})
+								</span>
+								<span v-if="row.plan" class="text-ink-gray-7">
+									({{ formatPlan(row.plan) }})
 								</span>
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right">
@@ -42,16 +51,16 @@
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right">
 								{{ row.quantity }}
-								{{
-									[
+
+								{{ [
 										'Site',
-										'Release Group',
 										'Server',
 										'Database Server',
-									].includes(row.document_type)
+										'Marketplace App',
+										'Cluster',
+									].includes(row.document_type) && !row.plan?.includes('hour')
 										? $format.plural(row.quantity, 'day', 'days')
-										: ''
-								}}
+										: 'hours' }}
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right font-medium">
 								{{ formatCurrency(row.amount) }}
@@ -77,11 +86,9 @@
 							Total Discount Amount
 						</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
-							{{
-								$team.doc.erpnext_partner
+							{{ $team.doc.erpnext_partner
 									? formatCurrency(doc.total_discount_amount)
-									: formatCurrency(0)
-							}}
+									: formatCurrency(0) }}
 						</td>
 					</tr>
 					<tr v-if="doc.gst > 0">
@@ -131,7 +138,7 @@
 							<td></td>
 							<td class="pr-2 text-right font-medium">Amount Due</td>
 							<td class="whitespace-nowrap py-3 pr-2 text-right font-medium">
-								{{ formatCurrency(doc.amount_due) }}
+								{{ formatCurrency(doc.amount_due_with_tax) }}
 							</td>
 						</tr>
 					</template>
@@ -144,18 +151,23 @@
 	</div>
 </template>
 <script>
-import { getPlans } from '../data/plans';
+import { getPlans } from '../data/plans'
 
 export default {
 	name: 'InvoiceTable',
 	props: ['invoiceId'],
+	data() {
+		return {
+			serverSnapshotServers: {},
+		}
+	},
 	resources: {
 		invoice() {
 			return {
 				type: 'document',
 				doctype: 'Invoice',
 				name: this.invoiceId,
-			};
+			}
 		},
 		downloadInvoiceAsCSV() {
 			return {
@@ -163,65 +175,85 @@ export default {
 				makeParams() {
 					return {
 						invoice: this.invoiceId,
-					};
+					}
 				},
 				onSuccess(data) {
-					const filename = `${this.invoiceId}.csv`;
-					this.downloadAsCSV(data, filename);
+					const filename = `${this.invoiceId}.csv`
+					this.downloadAsCSV(data, filename)
 				},
-			};
+			}
+		},
+		fetchServerName() {
+			return {
+				url: 'frappe.client.get_value',
+				makeParams(snapshotName) {
+					return {
+						doctype: 'Server Snapshot',
+						filters: { name: snapshotName },
+						fieldname: 'app_server',
+					}
+				},
+				onSuccess(r) {
+					const snapshotName =
+						this.$resources.fetchServerName.params.filters.name
+					this.serverSnapshotServers[snapshotName] = r.app_server
+				},
+			}
 		},
 	},
 	computed: {
 		groupedLineItems() {
-			if (!this.doc) return {};
-			const groupedLineItems = {};
+			if (!this.doc) return {}
+			const groupedLineItems = {}
 			for (let item of this.doc.items) {
 				groupedLineItems[item.document_type] =
-					groupedLineItems[item.document_type] || [];
-				groupedLineItems[item.document_type].push(item);
+					groupedLineItems[item.document_type] || []
+				groupedLineItems[item.document_type].push(item)
 			}
-			return groupedLineItems;
+			return groupedLineItems
 		},
 		doc() {
-			return this.$resources.invoice.doc;
+			return this.$resources.invoice.doc
 		},
 		gstPercentage() {
-			return this.$team.doc.billing_info.gst_percentage;
+			return this.$team.doc.billing_info.gst_percentage
 		},
 	},
 	methods: {
+		fetchServer(snapshotName) {
+			return this.$resources.fetchServerName.submit(snapshotName)
+		},
 		formatPlan(plan) {
-			let planDoc = getPlans().find((p) => p.name === plan);
+			let planDoc = getPlans().find((p) => p.name === plan)
 			if (planDoc) {
-				let india = this.$team.doc.currency === 'INR';
+				let india = this.$team.doc.currency === 'INR'
 				return this.$format.userCurrency(
 					india ? planDoc.price_inr : planDoc.price_usd,
-				);
+				)
 			}
-			return plan;
+			return plan
 		},
 		formatCurrency(value) {
-			if (!this.doc) return;
-			let currency = this.doc.currency;
-			return this.$format.currency(value, currency);
+			if (!this.doc) return
+			let currency = this.doc.currency
+			return this.$format.currency(value, currency)
 		},
 		downloadAsCSV(data, filename) {
-			if (!data || data.length === 0) return;
-			let result = [];
-			result[0] = Object.keys(data[0]);
+			if (!data || data.length === 0) return
+			let result = []
+			result[0] = Object.keys(data[0])
 			data.forEach((row) => {
-				result.push(Object.values(row));
-			});
-			const csv = result.map((row) => Object.values(row).join(',')).join('\n');
-			const blob = new Blob([csv], { type: 'text/csv' });
-			const url = window.URL.createObjectURL(blob);
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = filename;
-			a.click();
-			window.URL.revokeObjectURL(url);
+				result.push(Object.values(row))
+			})
+			const csv = result.map((row) => Object.values(row).join(',')).join('\n')
+			const blob = new Blob([csv], { type: 'text/csv' })
+			const url = window.URL.createObjectURL(blob)
+			const a = document.createElement('a')
+			a.href = url
+			a.download = filename
+			a.click()
+			window.URL.revokeObjectURL(url)
 		},
 	},
-};
+}
 </script>

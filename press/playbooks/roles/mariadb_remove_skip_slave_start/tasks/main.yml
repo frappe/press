@@ -8,6 +8,9 @@
   ansible.builtin.systemd:
     daemon_reload: true
     name: mariadb
+    # Unmask defensively so this restart is self-sufficient regardless of role
+    # order (mariadb.service may still be masked on snapshot-provisioned servers).
+    masked: false
     state: restarted
     enabled: yes
   when: restart_mariadb | default(true) | bool

@@ -7,8 +7,8 @@ from datetime import datetime
 import frappe
 from frappe.model.document import Document
 
-from press.utils.billing import convert_stripe_money
 from press.api.billing import get_stripe
+from press.utils.billing import convert_stripe_money
 
 
 class StripePaymentEvent(Document):
@@ -47,12 +47,17 @@ class StripePaymentEvent(Document):
 				"amount_paid": convert_stripe_money(stripe_invoice["amount_paid"]),
 				"stripe_invoice_url": stripe_invoice["hosted_invoice_url"],
 				"status": self.payment_status,
+				"stripe_payment_intent_id": stripe_invoice["payment_intent"],
 			}
 		)
 		invoice.save()
 
 	def handle_payment_succeeded(self):
 		invoice = frappe.get_doc("Invoice", self.invoice, for_update=True)
+
+		if invoice.status == "Paid" and invoice.amount_paid > 0 and invoice.docstatus == 1:
+			# Invoice was already fully processed by a previous webhook event (duplicate delivery)
+			return
 
 		if invoice.status == "Paid" and invoice.amount_paid == 0:
 			# check if invoice is already refunded

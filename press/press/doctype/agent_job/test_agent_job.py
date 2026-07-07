@@ -5,16 +5,17 @@ from __future__ import annotations
 import json
 import re
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, TypedDict
 from unittest.mock import Mock, patch
 
 import frappe
 import responses
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import add_days
 
 from press.agent import Agent
-from press.press.doctype.agent_job.agent_job import AgentJob, lock_doc_updated_by_job
+from press.press.doctype.agent_job.agent_job import AgentJob, fail_old_jobs, lock_doc_updated_by_job
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
@@ -35,11 +36,11 @@ def before_insert(self):
 	return None
 
 
-def fake_agent_job_req(  # noqa: C901
+def fake_agent_job_req(
 	job_type: str | list[str] | dict,
 	status: Literal["Success", "Pending", "Running", "Failure"] | None = None,
 	data: dict | None = None,
-	steps: list[dict] | None = None,
+	steps: list[StepDict] | None = None,
 ) -> Callable:
 	"""
 	Fake successful (or custom status) delivery for one or more job types.
@@ -74,7 +75,7 @@ def fake_agent_job_req(  # noqa: C901
 			"Use job_type['job_type'] = {'status': ..., 'data': ..., 'steps': ...} instead."
 		)
 
-	job_polling_response = dict()
+	job_polling_response: dict[int, dict] = dict()
 
 	def _fake_bulk_polling(request):
 		match = re.search(r"/agent/jobs/([\d,]+)", request.url)
@@ -114,12 +115,16 @@ def fake_agent_job_req(  # noqa: C901
 		# Add timestamps and other fields
 		for step in steps_for_job:
 			step["start"] = "2023-08-20 18:24:28.024885"
-			step["data"] = {}
+			step["data"] = step.get("data", {})
 			if step["status"] in ["Success", "Failure"]:
 				step["duration"] = "00:00:13.464445"
 				step["end"] = "2023-08-20 18:24:41.489330"
 			if step["status"] in ["Success", "Failure", "Running"]:
 				step["start"] = "2023-08-20 18:24:28.024885"
+				step["end"] = None
+				step["duration"] = None
+			if step["status"] in ["Skipped", "Pending"]:
+				step["start"] = None
 				step["end"] = None
 				step["duration"] = None
 
@@ -140,6 +145,7 @@ def fake_agent_job_req(  # noqa: C901
 			"data": spec["data"],
 			# TODO: uncomment lines as needed and make new parameters #
 			"duration": "00:00:13.496281",
+			"output": spec["data"].get("output", ""),
 			"end": "2023-08-20 18:24:41.506067",
 			"id": job_id,
 			"start": "2023-08-20 18:24:28.009786",
@@ -169,12 +175,45 @@ def fake_agent_job_req(  # noqa: C901
 	return before_insert
 
 
+def create_test_agent_job(
+	job_type: str = "Force Remove Zombie Benches",
+	server: str | None = None,
+	server_type: str = "Server",
+	status: str = "Undelivered",
+	job_id: int = 0,
+) -> AgentJob:
+	"""Create a test Agent Job doc."""
+	from press.press.doctype.server.test_server import create_test_server
+
+	if not server:
+		server = create_test_server().name
+
+	return frappe.get_doc(
+		{
+			"doctype": "Agent Job",
+			"server": server,
+			"server_type": server_type,
+			"job_type": job_type,
+			"status": status,
+			"job_id": job_id,
+			"request_method": "POST",
+			"request_path": "benches",
+			"request_data": "{}",
+		}
+	).insert(ignore_permissions=True)
+
+
+class StepDict(TypedDict):
+	name: str
+	status: Literal["Success", "Pending", "Running", "Failure", "Skipped"]
+
+
 @contextmanager
 def fake_agent_job(
 	job_type: str,
 	status: Literal["Success", "Pending", "Running", "Failure"] = "Success",
 	data: dict | None = None,
-	steps: list[dict] | None = None,
+	steps: list[StepDict] | None = None,
 ):
 	"""Fakes agent job request and response.
 
@@ -253,6 +292,26 @@ class TestAgentJob(FrappeTestCase):
 		job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site on Upstream"})
 		doc_name = lock_doc_updated_by_job(job.name)
 		self.assertEqual(site.name, doc_name)
+
+	def _make_old(self, job_name: str):
+		# Age the job past the 2-day cutoff that fail_old_jobs uses
+		frappe.db.set_value("Agent Job", job_name, "creation", add_days(None, -3), update_modified=False)
+
+	def test_fail_old_jobs_marks_stuck_running_job_as_failure(self):
+		job = create_test_agent_job(status="Running", job_id=42)
+		self._make_old(job.name)
+
+		fail_old_jobs()
+
+		self.assertEqual(frappe.db.get_value("Agent Job", job.name, "status"), "Failure")
+
+	def test_fail_old_jobs_marks_undelivered_job_as_delivery_failure(self):
+		job = create_test_agent_job(status="Undelivered", job_id=0)
+		self._make_old(job.name)
+
+		fail_old_jobs()
+
+		self.assertEqual(frappe.db.get_value("Agent Job", job.name, "status"), "Delivery Failure")
 
 	def test_no_duplicate_undelivered_job(self):
 		site = create_test_site()

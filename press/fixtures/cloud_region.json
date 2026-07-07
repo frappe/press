@@ -102,5 +102,13 @@
   "name": "nbg1",
   "provider": "Hetzner",
   "region_name": "nbg1"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2026-03-18 00:48:48.686461",
+  "name": "mbm1",
+  "provider": "Frappe Compute",
+  "region_name": "mbm1"
  }
 ]

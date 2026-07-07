@@ -1,0 +1,8 @@
+---
+- name: Enable systemd lingering for frappe user
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  roles:
+    - role: enable_systemd_lingering_for_frappe_user

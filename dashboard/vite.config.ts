@@ -5,7 +5,8 @@ import vueJsx from '@vitejs/plugin-vue-jsx';
 import frappeui from 'frappe-ui/vite';
 import pluginRewriteAll from 'vite-plugin-rewrite-all';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
-import vueDevTools from 'vite-plugin-vue-devtools'
+import dotenv from 'dotenv';
+dotenv.config();
 
 export default defineConfig({
 	plugins: [
@@ -29,11 +30,11 @@ export default defineConfig({
 			project: process.env.SENTRY_PROJECT,
 			applicationKey: 'press-dashboard',
 			authToken: process.env.SENTRY_AUTH_TOKEN,
+			errorHandler: (err) => console.warn(err),
 		}),
-		vueDevTools(),
 	],
 	server: {
-		allowedHosts: true
+		allowedHosts: true,
 	},
 	resolve: {
 		alias: {
@@ -41,6 +42,14 @@ export default defineConfig({
 		},
 	},
 	optimizeDeps: {
-		include: ['feather-icons', 'showdown', 'highlight.js/lib/core', 'interactjs'],
+		include: [
+			'feather-icons',
+			'showdown',
+			'highlight.js/lib/core',
+			'interactjs',
+		],
+	},
+	build: {
+		chunkSizeWarningLimit: 2000,
 	},
 });

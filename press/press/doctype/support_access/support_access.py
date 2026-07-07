@@ -4,6 +4,7 @@
 
 import frappe
 import frappe.utils
+from frappe import _
 from frappe.model.document import Document
 from frappe.query_builder import Criterion, JoinType
 from frappe.query_builder.functions import Count
@@ -23,7 +24,7 @@ class SupportAccess(Document):
 		from press.press.doctype.support_access_resource.support_access_resource import SupportAccessResource
 
 		access_allowed_till: DF.Datetime | None
-		allowed_for: DF.Literal["3", "6", "12", "24", "72"]
+		allowed_for: DF.Literal["3", "6", "12", "24", "72", "168"]
 		bench_ssh: DF.Check
 		login_as_administrator: DF.Check
 		reason: DF.SmallText | None
@@ -62,6 +63,7 @@ class SupportAccess(Document):
 			.select(Count(AccessResource.name).as_("resource_count"))
 			.groupby(Access.name)
 			.select(AccessResource.document_name.as_("resource_name"))
+			.where(Criterion.any([Access.requested_team == team, Access.target_team == team]))
 		)
 		conditions = []
 		match filters.get("source"):
@@ -83,6 +85,7 @@ class SupportAccess(Document):
 		self.requested_by = self.requested_by or frappe.session.user
 		self.requested_team = self.requested_team or get_current_team()
 		self.set_expiry()
+		self.resolve_sites()
 		self.add_release_group()
 
 	def add_release_group(self):
@@ -137,6 +140,18 @@ class SupportAccess(Document):
 		if hours and doc_before and doc_before.status != self.status and self.status == "Accepted":
 			self.access_allowed_till = frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=hours)
 
+	def resolve_sites(self):
+		for resource in self.resources:
+			if resource.document_type == "Site":
+				resource.document_name = self.resolve_site_name(resource.document_name)
+
+	def resolve_site_name(self, site) -> str:
+		try:
+			domain = frappe.get_doc("Site Domain", site)
+			return domain.site
+		except frappe.DoesNotExistError:
+			return site
+
 	def validate(self):
 		self.validate_status_change()
 		self.validate_expiry()
@@ -147,9 +162,12 @@ class SupportAccess(Document):
 		"""
 		Returns the possible target statuses for the current user.
 		"""
-		if self.target_team == get_current_team():
+		current_team = get_current_team()
+		if self.target_team == current_team:
 			return ["Accepted", "Rejected", "Revoked"]
-		return ["Pending", "Forfeited"]
+		if self.requested_team == current_team:
+			return ["Pending", "Forfeited"]
+		return []
 
 	def is_valid_status_transition(self, status_from: str, status_to: str) -> bool:
 		"""
@@ -175,13 +193,17 @@ class SupportAccess(Document):
 		if not self.is_valid_status_transition(status_before, status_after):
 			frappe.throw(f"Cannot change status from {status_before} to {status_after}")
 		if status_after not in self.target_statuses:
-			frappe.throw("You are not allowed to set this status")
+			frappe.throw(
+				"You don't have permission to set this status on the support access request. Please ask a team admin to do this."
+			)
 
 	def validate_expiry(self):
 		if self.access_expired:
-			frappe.throw("Access expiry must be in the future")
+			frappe.throw("The access expiry must be in the future. Please pick a later date and time.")
 		if self.status == "Pending" and self.access_allowed_till:
-			frappe.throw("Pending requests cannot have access expiry")
+			frappe.throw(
+				"A pending request can't have an access expiry yet. Please approve the request first, then set when access should end."
+			)
 
 	def validate_target_team(self):
 		teams = set()
@@ -189,25 +211,42 @@ class SupportAccess(Document):
 			team = frappe.get_value(resource.document_type, resource.document_name, "team")
 			teams.add(team)
 		if len(teams) != 1:
-			frappe.throw("Resources must belong to the same team")
+			frappe.throw(
+				"All resources in a support access request must belong to the same team. Please create separate requests for each team's resources."
+			)
 		self.target_team = teams.pop()
+
+	def validate_validity_change(self):
+		is_target_team = get_current_team() == self.target_team
+		if self.has_value_changed("allowed_for") and not is_target_team:
+			message = _("You are not allowed to change the validity period.")
+			frappe.throw(message, frappe.ValidationError)
+		if self.status != "Pending":
+			message = _("Cannot change validity period of a processed request.")
+			frappe.throw(message, frappe.ValidationError)
 
 	def after_insert(self):
 		self.notify_on_request()
 
 	def on_update(self):
-		doc_before = self.get_doc_before_save()
-		if doc_before and doc_before.status != self.status:
-			self.notify_on_status_change()
+		self.notify_on_status_change()
 
 	def notify_on_status_change(self):
+		if not self.has_value_changed("status"):
+			return
+
 		title = f"Access Request {self.status}"
 		message = f"Your request for support access has been {self.status.lower()}."
+		recipient = self.requested_by
+
+		if self.status == "Forfeited":
+			message = "Support access has been forfieted."
+			recipient = self.target_team
 
 		frappe.sendmail(
 			subject=title,
 			message=message,
-			recipients=self.requested_by,
+			recipients=recipient,
 			template="access_request_update",
 			args={
 				"status": self.status,
@@ -246,7 +285,6 @@ class SupportAccess(Document):
 			recipients=team_email,
 			template="access_request",
 			args={
-				"requested_by": self.requested_by,
 				"reason": self.reason,
 				"resources": self.resources,
 			},
@@ -271,3 +309,11 @@ class SupportAccess(Document):
 				"team": self.target_team,
 			},
 		)
+
+
+def has_permission(doc, user=None, permission_type=None) -> bool:
+	if doc.is_new():
+		return True
+	if get_current_team() in (doc.requested_team, doc.target_team):
+		return True
+	return False

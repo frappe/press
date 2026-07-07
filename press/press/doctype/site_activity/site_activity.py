@@ -44,6 +44,8 @@ class SiteActivity(Document):
 			"Modify Database User Permissions",
 			"Disable Monitoring And Alerts",
 			"Enable Monitoring And Alerts",
+			"Access Offsite Backups",
+			"Archive Notification",
 		]
 		job: DF.Link | None
 		reason: DF.SmallText | None

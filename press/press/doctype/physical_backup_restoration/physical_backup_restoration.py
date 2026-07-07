@@ -160,7 +160,9 @@ class PhysicalBackupRestoration(Document):
 	def validate_aws_only(self):
 		server_provider = frappe.db.get_value("Database Server", self.destination_server, "provider")
 		if server_provider != "AWS EC2":
-			frappe.throw("Only AWS hosted server is supported currently.")
+			frappe.throw(
+				"Physical backup restoration is currently supported only on AWS-hosted servers. Please use an AWS server."
+			)
 
 	def set_disk_snapshot(self):
 		if not self.disk_snapshot:
@@ -172,21 +174,29 @@ class PhysicalBackupRestoration(Document):
 				frappe.throw("Provided site backup is not available.")
 
 			if not site_backup.database_snapshot:
-				frappe.throw("Disk Snapshot is not available in site backup")
+				frappe.throw(
+					"This site backup does not have a disk snapshot. Please choose a backup that includes a disk snapshot."
+				)
 
 			self.disk_snapshot = site_backup.database_snapshot
 			if not self.disk_snapshot:
-				frappe.throw("Disk Snapshot is not available in site backup")
+				frappe.throw(
+					"This site backup does not have a disk snapshot. Please choose a backup that includes a disk snapshot."
+				)
 
 	def validate_snapshot_region(self):
 		snapshot_region = frappe.db.get_value("Virtual Disk Snapshot", self.disk_snapshot, "region")
 		if snapshot_region != self.virtual_machine.region:
-			frappe.throw("Snapshot and server should be in same region.")
+			frappe.throw(
+				"The snapshot and the server must be in the same region. Please pick a snapshot from the server's region."
+			)
 
 	def validate_snapshot_status(self):
 		snapshot_status = frappe.db.get_value("Virtual Disk Snapshot", self.disk_snapshot, "status")
 		if snapshot_status not in ("Pending", "Completed"):
-			frappe.throw("Snapshot status should be Pending or Completed.")
+			frappe.throw(
+				"The snapshot status must be Pending or Completed to restore from it. Please wait for the snapshot to finish, then retry."
+			)
 
 	def cleanup_restorable_tables(self):
 		if not self.restore_specific_tables:
@@ -346,14 +356,17 @@ class PhysicalBackupRestoration(Document):
 		devices_info_str: str = result["output"]
 		devices_info = json.loads(devices_info_str)["blockdevices"]
 
+		assert self.device is not None, "Device is not set"
 		disk_name = self.device.split("/")[-1]  # /dev/sdf -> sdf
 
 		# If disk name is sdf, it might be possible mounted as xvdf
 		# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/device_naming.html#device-name-limits
 		possible_disks = [disk_name, "xvd{}".format(disk_name.lstrip("sd")[-1])]
-		disk_serial = self.volume.replace("-", "").lower()
-		disk_partition_to_mount = None
 
+		assert self.volume is not None, "Volume is not set"
+		disk_serial = self.volume.replace("-", "").lower()
+
+		disk_partition_to_mount = None
 		for device_info in devices_info:
 			if device_info["type"] not in ["disk", "part"]:
 				continue
@@ -431,6 +444,7 @@ class PhysicalBackupRestoration(Document):
 
 	def change_permission_of_backup_directory(self) -> StepStatus:
 		"""Change permission of backup files"""
+		assert self.mount_point is not None, "Mount point is not set"
 		base_path = os.path.join(self.mount_point, "var/lib/mysql")
 		result = self.ansible_run(f"chmod 777 {base_path}")
 		if result["status"] == "Success":
@@ -486,7 +500,7 @@ class PhysicalBackupRestoration(Document):
 	def delete_mount_point(self) -> StepStatus:
 		"""Delete mount point"""
 		if not self.mount_point or not self.mount_point.startswith("/mnt"):
-			frappe.throw("Mount point is not valid.")
+			frappe.throw("The mount point is not valid. Please verify the device is mounted and try again.")
 		# check if mount point was created
 		if self.get_step_status(self.create_mount_point) != "Success":
 			return StepStatus.Success
@@ -724,7 +738,7 @@ class PhysicalBackupRestoration(Document):
 
 	@frappe.whitelist()
 	def force_continue(self) -> None:
-		first_failed_step: PhysicalBackupRestorationStep = None
+		first_failed_step: PhysicalBackupRestorationStep | None = None
 		# Mark all failed and skipped steps as pending
 		for step in self.steps:
 			if step.status in ("Failure", "Skipped"):
@@ -825,7 +839,7 @@ class PhysicalBackupRestoration(Document):
 		return None
 
 	def ansible_run(self, command, raw_params: bool = False):
-		inventory = f"{self.virtual_machine.public_ip_address},"
+		inventory = f"{self.destination_server},"
 		result = AnsibleAdHoc(sources=inventory).run(command, self.name, raw_params=raw_params)[0]
 		self.add_command(command, result)
 		return result

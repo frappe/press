@@ -1,0 +1,20 @@
+rules:
+- id: frappe-security-file-traversal
+  patterns:
+  - pattern-either:
+    - pattern: open(...)
+  message: |
+    Detected the file system access. This code should be manually audited by
+    review/security team to avoid file traversal issues.
+  metadata:
+    marketplace_check_id: security_file_traversal
+    marketplace_check_name: File Traversal
+    marketplace_category: Security
+    remediation: |
+      Detected the file system access. This code should be manually audited by
+      review/security team to avoid file traversal issues.
+  languages: [python]
+  severity: WARNING
+  paths:
+    exclude:
+      - "**/test_*.py"

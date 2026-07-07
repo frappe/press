@@ -2,7 +2,7 @@
 # See license.txt
 
 
-from unittest.mock import Mock, call, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -71,7 +71,7 @@ class TestSiteDomain(FrappeTestCase):
 		default_domain = frappe.get_doc({"doctype": "Site Domain", "site": site.name, "name": site.name})
 		site_domain2 = create_test_site_domain(site.name, "hellohello.com")
 		site.set_host_name(site_domain2.name)
-		self.assertRaises(Exception, site.remove_domain, default_domain.name)
+		self.assertRaises(frappe.ValidationError, site.remove_domain, default_domain.name)
 
 	def test_only_site_domains_can_be_host_names(self):
 		"""Ensure error is thrown if string other than site domain name is passed."""
@@ -230,7 +230,7 @@ class TestSiteDomain(FrappeTestCase):
 		new_name = "new-name.fc.dev"
 		with patch.object(Agent, "rename_upstream_site") as mock_rename_upstream_site:
 			site.rename(new_name)
-		args, kwargs = mock_rename_upstream_site.call_args
+		args, _kwargs = mock_rename_upstream_site.call_args
 		from collections import Counter
 
 		self.assertEqual(Counter(args[-1]), Counter([site_domain1.name, site_domain2.name]))
@@ -244,3 +244,19 @@ class TestSiteDomain(FrappeTestCase):
 
 		self.assertRaises(frappe.exceptions.LinkExistsError, site_domain.delete)
 		self.assertTrue(frappe.db.exists("Site Domain", {"name": site_domain.name}))
+
+	@patch("press.press.doctype.site.site.check_dns_cname_a", MagicMock())
+	def test_addition_of_system_domain_is_blocked(self):
+		"""Ensure addition of system domains is blocked."""
+		site = create_test_site("old-name")
+		self.assertRaisesRegex(
+			frappe.exceptions.ValidationError,
+			".*system reserved domain.",
+			site.add_domain,
+			"abc.fc.dev",
+		)
+		try:
+			site.add_domain("example.com")
+		except frappe.exceptions.ValidationError as e:
+			if "system reserved domain" in str(e):
+				self.fail("example.com should not be considered a system reserved domain")

@@ -12,7 +12,7 @@ class SaasSite(Site):
 		self,
 		site=None,
 		app=None,
-		account_request: AccountRequest = None,
+		account_request: AccountRequest | None = None,
 		hybrid_saas_pool=None,
 		subdomain=None,
 	):
@@ -93,7 +93,7 @@ def get_saas_bench(app):
 	)
 	release_group = get_saas_group(app)
 	cluster = get_saas_cluster(app)
-	bench_servers = frappe.db.sql(
+	bench_servers = frappe.db.sql(  # nosemgrep
 		"""
 		SELECT
 			bench.name, bench.server
@@ -105,6 +105,7 @@ def get_saas_bench(app):
 			bench.server = server.name
 		WHERE
 			server.proxy_server in %s AND server.cluster = %s AND bench.status = "Active" AND bench.group = %s
+			AND server.skip_standby_site_creation = 0
 		ORDER BY
 			server.use_for_new_sites DESC, bench.creation DESC
 	""",
@@ -113,9 +114,7 @@ def get_saas_bench(app):
 	)
 
 	signup_servers = tuple([bs["server"] for bs in bench_servers])
-	signup_server_sub_str = (
-		tuple(signup_servers) if len(signup_servers) > 1 else f"('{signup_servers[0]}')"
-	)
+	signup_server_sub_str = tuple(signup_servers) if len(signup_servers) > 1 else f"('{signup_servers[0]}')"
 	lowest_cpu_server = frappe.db.sql(
 		f"""
 		SELECT
@@ -139,13 +138,12 @@ def get_saas_bench(app):
 		LIMIT 1""",
 		as_dict=True,
 	)
-	lowest_cpu_server = (
-		lowest_cpu_server[0].server if lowest_cpu_server else signup_servers[0]
-	)
+	lowest_cpu_server = lowest_cpu_server[0].server if lowest_cpu_server else signup_servers[0]
 
 	for bs in bench_servers:
 		if bs["server"] == lowest_cpu_server:
 			return bs["name"]
+	return None
 
 
 def get_saas_plan(app):
@@ -190,9 +188,7 @@ def get_default_team_for_app(app):
 
 def create_app_subscriptions(site, app):
 	marketplace_apps = (
-		get_saas_apps(app)
-		if frappe.db.get_value("Saas Settings", app, "multi_subscription")
-		else [app]
+		get_saas_apps(app) if frappe.db.get_value("Saas Settings", app, "multi_subscription") else [app]
 	)
 
 	# create subscriptions
@@ -237,9 +233,7 @@ def get_app_subscriptions(apps=None, standby_for=None):
 					"document_type": "Marketplace App",
 					"document_name": app,
 					"plan_type": "Marketplace App Plan",
-					"plan": get_saas_plan(app)
-					if frappe.db.exists("Saas Settings", app)
-					else free_plan[0],
+					"plan": get_saas_plan(app) if frappe.db.exists("Saas Settings", app) else free_plan[0],
 					"enabled": 0,
 					"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
 				}
@@ -253,15 +247,11 @@ def get_app_subscriptions(apps=None, standby_for=None):
 			if app == standby_for:
 				secret_key = new_subscription.secret_key
 
-	if standby_for in frappe.get_all(
-		"Saas Settings", {"billing_type": "prepaid"}, pluck="name"
-	):
+	if standby_for in frappe.get_all("Saas Settings", {"billing_type": "prepaid"}, pluck="name"):
 		custom_saas_config.update(
 			{
 				"subscription": {"secret_key": secret_key},
-				"app_include_js": [
-					frappe.db.get_single_value("Press Settings", "app_include_script")
-				],
+				"app_include_js": [frappe.db.get_single_value("Press Settings", "app_include_script")],
 			}
 		)
 

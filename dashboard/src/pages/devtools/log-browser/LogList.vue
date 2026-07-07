@@ -6,28 +6,28 @@
 			v-model="searchLogQuery"
 		>
 			<template #prefix>
-				<lucide-search class="h-4 w-4 text-gray-500" />
+				<lucide-search class="h-4 w-4 text-ink-gray-5" />
 			</template>
 		</FormControl>
 		<div class="h-[81.5vh] space-y-2 overflow-auto pr-4">
 			<div
 				v-if="$resources.benchLogs?.loading || $resources.siteLogs?.loading"
-				class="mt-20 flex justify-center space-x-2 text-sm text-gray-700"
+				class="mt-20 flex justify-center space-x-2 text-sm text-ink-gray-7"
 			>
 				<Spinner class="w-4" />
 				<span> Fetching logs... </span>
 			</div>
 			<div
 				v-else-if="logs.length === 0"
-				class="mt-20 flex justify-center text-sm text-gray-700"
+				class="mt-20 flex justify-center text-sm text-ink-gray-7"
 			>
 				No logs found
 			</div>
 			<template v-else v-for="log in logs">
 				<div
-					class="cursor-pointer rounded border border-gray-200 p-3 hover:bg-gray-50"
+					class="cursor-pointer rounded border border-outline-gray-1 p-3 hover:bg-surface-gray-1"
 					:class="{
-						'border-gray-800': logId === log.name,
+						'border-outline-gray-5': logId === log.name,
 					}"
 					@click="
 						() => {
@@ -45,12 +45,12 @@
 				>
 					<div class="flex items-center justify-between">
 						<div class="space-y-1">
-							<p class="text-base text-gray-700">{{ log.name }}</p>
-							<p class="text-xs text-gray-500">
+							<p class="text-base text-ink-gray-7">{{ log.name }}</p>
+							<p class="text-xs text-ink-gray-5">
 								{{ $format.date(log.modified, 'YYYY-MM-DD HH:mm') }}
 							</p>
 						</div>
-						<p class="text-sm text-gray-500">
+						<p class="text-sm text-ink-gray-5">
 							{{ $format.bytes(log.size) }}
 						</p>
 					</div>

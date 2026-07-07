@@ -8,7 +8,7 @@ import os
 import re
 from contextlib import suppress
 from datetime import date
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal
 
 import frappe
 import frappe.utils
@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_backup.site_backup import SiteBackup
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 APPS_LIST_REGEX = re.compile(r"\[.*\]")
@@ -51,7 +52,8 @@ class Agent:
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type
 		self.server = server
-		self.port = 443 if self.server not in servers_using_alternative_port_for_communication() else 8443
+		self.__servers_using_alt_ports = servers_using_alternative_port_for_communication()
+		self.port = 443 if self.server not in self.__servers_using_alt_ports else 8443
 
 	def new_bench(self, bench: "Bench"):
 		settings = frappe.db.get_value(
@@ -65,8 +67,8 @@ class Agent:
 
 		data = {
 			"name": bench.name,
-			"bench_config": json.loads(bench.bench_config),
-			"common_site_config": json.loads(bench.config),
+			"bench_config": json.loads(bench.bench_config) if bench.bench_config else {},
+			"common_site_config": json.loads(bench.config) if bench.config else {},
 			"registry": {
 				"url": registry_url,
 				"username": settings.docker_registry_username,
@@ -86,8 +88,18 @@ class Agent:
 
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
-	def archive_bench(self, bench):
-		return self.create_agent_job("Archive Bench", f"benches/{bench.name}/archive", bench=bench.name)
+	def archive_bench(self, bench, retry_new_bench: bool = False):
+		return self.create_agent_job(
+			"Archive Bench",
+			f"benches/{bench.name}/archive",
+			bench=bench.name,
+			data={"retry_new_bench": retry_new_bench},
+		)
+
+	def force_remove_zombie_benches(self, bench_names: list[str]):
+		return self.create_agent_job(
+			"Force Remove Zombie Benches", "benches/force-remove", data={"benches": bench_names}
+		)
 
 	def restart_bench(self, bench, web_only=False):
 		return self.create_agent_job(
@@ -130,7 +142,7 @@ class Agent:
 		apps = [app.app for app in site.apps]
 
 		data = {
-			"config": json.loads(site.config),
+			"config": json.loads(site.config) if site.config else {},
 			"apps": apps,
 			"name": site.name,
 			"mariadb_root_password": get_mariadb_root_password(site),
@@ -161,15 +173,21 @@ class Agent:
 		)
 
 	def restore_site(self, site: "Site", skip_failing_patches=False):
+		from press.utils import sanitize_config
+
 		site.check_space_on_server_for_restore()
 		apps = [app.app for app in site.apps]
-		public_link, private_link, database_link = None, None, None
+		public_link, private_link, database_link, sanitized_config_content = None, None, None, None
 		if site.remote_database_file:
 			database_link = frappe.get_doc("Remote File", site.remote_database_file).download_link
 		if site.remote_public_file:
 			public_link = frappe.get_doc("Remote File", site.remote_public_file).download_link
 		if site.remote_private_file:
 			private_link = frappe.get_doc("Remote File", site.remote_private_file).download_link
+		if site.remote_config_file:
+			config_content = frappe.get_doc("Remote File", site.remote_config_file).get_content()
+			sanitized_config_content = sanitize_config(config_content) if config_content else None
+			sanitized_config_content.update({"maintenance_mode": 0}) if sanitized_config_content else None
 
 		data = {
 			"apps": apps,
@@ -178,6 +196,7 @@ class Agent:
 			"database": database_link,
 			"public": public_link,
 			"private": private_link,
+			"sanitized_config_content": sanitized_config_content,
 			"skip_failing_patches": skip_failing_patches,
 			"managed_database_config": self._get_managed_db_config(site),
 		}
@@ -191,7 +210,7 @@ class Agent:
 		)
 
 	def rename_site(self, site, new_name: str, create_user: dict | None = None, config: dict | None = None):
-		data = {"new_name": new_name}
+		data: dict[str, Any] = {"new_name": new_name}
 		if create_user:
 			data["create_user"] = create_user
 		if config:
@@ -228,10 +247,11 @@ class Agent:
 			site=site.name,
 		)
 
-	def optimize_tables(self, site):
+	def optimize_tables(self, site, tables):
 		return self.create_agent_job(
 			"Optimize Tables",
 			f"benches/{site.bench}/sites/{site.name}/optimize",
+			data={"tables": tables},
 			bench=site.bench,
 			site=site.name,
 		)
@@ -260,7 +280,7 @@ class Agent:
 				new_config = site_config.get_content()
 				new_config["maintenance_mode"] = 0  # Don't allow deactivated sites to be created
 				sanitized_config = sanitize_config(new_config)
-				existing_config = json.loads(site.config)
+				existing_config = json.loads(site.config) if site.config else {}
 				existing_config.update(sanitized_config)
 				site._update_configuration(existing_config)
 				log_site_activity(site.name, "Update Configuration")
@@ -274,8 +294,10 @@ class Agent:
 		if site.remote_private_file:
 			private_link = frappe.get_doc("Remote File", site.remote_private_file).download_link
 
+		assert site.config is not None, "Site config is required to restore site from backup"
+
 		data = {
-			"config": json.loads(site.config),
+			"config": json.loads(site.config) if site.config else {},
 			"apps": apps,
 			"name": site.name,
 			"mariadb_root_password": get_mariadb_root_password(site),
@@ -306,11 +328,20 @@ class Agent:
 			site=site.name,
 		)
 
-	def uninstall_app_site(self, site, app):
+	def uninstall_app_site(self, site, app, create_offsite_backup=False):
+		data = {}
+		if create_offsite_backup:
+			backups_path = os.path.join(site.name, str(date.today()))
+			offsite_config = self._get_offsite_backup_config(site.cluster, backups_path)
+			if offsite_config:
+				data.update({"offsite": offsite_config})
+			else:
+				log_error("Offsite Backups aren't set yet")
 		return self.create_agent_job(
 			"Uninstall App from Site",
 			f"benches/{site.bench}/sites/{site.name}/apps/{app}",
 			method="DELETE",
+			data=data,
 			bench=site.bench,
 			site=site.name,
 		)
@@ -435,8 +466,10 @@ class Agent:
 
 	def update_site_config(self, site):
 		data = {
-			"config": json.loads(site.config),
-			"remove": json.loads(site._keys_removed_in_last_update),
+			"config": json.loads(site.config) if site.config else {},
+			"remove": json.loads(site._keys_removed_in_last_update)
+			if site._keys_removed_in_last_update
+			else {},
 		}
 		return self.create_agent_job(
 			"Update Site Configuration",
@@ -455,7 +488,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def archive_site(self, site, site_name=None, force=False):
+	def archive_site(self, site, site_name=None, force=False, create_offsite_backup=False):
 		site_name = site_name or site.name
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
@@ -464,6 +497,13 @@ class Agent:
 			),
 			"force": force,
 		}
+		if create_offsite_backup:
+			backups_path = os.path.join(site_name, str(date.today()))
+			offsite_config = self._get_offsite_backup_config(site.cluster, backups_path)
+			if offsite_config:
+				data.update({"offsite": offsite_config})
+			else:
+				log_error("Offsite Backups aren't set yet")
 
 		return self.create_agent_job(
 			"Archive Site",
@@ -513,9 +553,9 @@ class Agent:
 			"private_ip": frappe.get_value(
 				"Database Server", frappe.db.get_value("Server", site.server, "database_server"), "private_ip"
 			),
-			"backup_db_base_directory": os.path.join(backup_restoration.mount_point, "var/lib/mysql"),
+			"backup_db_base_directory": os.path.join(backup_restoration.mount_point, "var/lib/mysql"),  # type: ignore[arg-type]
 			"restore_specific_tables": backup_restoration.restore_specific_tables,
-			"tables_to_restore": json.loads(backup_restoration.tables_to_restore),
+			"tables_to_restore": json.loads(backup_restoration.tables_to_restore),  # type: ignore[arg-type]
 		}
 		return self.create_agent_job(
 			"Physical Restore Database",
@@ -528,22 +568,15 @@ class Agent:
 		)
 
 	def backup_site(self, site, site_backup: SiteBackup):
-		from press.press.doctype.site_backup.site_backup import get_backup_bucket
-
-		data = {"with_files": site_backup.with_files}
-
+		data = {
+			"with_files": site_backup.with_files,
+			"agent_job_timeout": site.backup_timeout,
+		}
 		if site_backup.offsite:
-			settings = frappe.get_single("Press Settings")
 			backups_path = os.path.join(site.name, str(date.today()))
-			backup_bucket = get_backup_bucket(site.cluster, region=True)
-			bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
-			if settings.aws_s3_bucket or bucket_name:
-				auth = {
-					"ACCESS_KEY": settings.offsite_backups_access_key_id,
-					"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
-					"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
-				}
-				data.update({"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}})
+			offsite_config = self._get_offsite_backup_config(site.cluster, backups_path)
+			if offsite_config:
+				data.update({"offsite": offsite_config})
 			else:
 				log_error("Offsite Backups aren't set yet")
 
@@ -551,7 +584,10 @@ class Agent:
 				{
 					"keep_files_locally_after_offsite_backup": bool(
 						frappe.get_value("Server", site.server, "keep_files_on_server_in_offsite_backup")
-					)
+					),
+					# Streaming only applies to offsite backups (agent streams the
+					# artifacts straight to S3), so only send it for offsite jobs.
+					"stream": site.is_streaming_backup_supported(),
 				}
 			)
 
@@ -635,6 +671,21 @@ class Agent:
 		ip, private_ip = frappe.db.get_value("Server", server, ["ip", "private_ip"])
 		data = {"name": private_ip}
 		return self.create_agent_job("Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server)
+
+	def proxy_add_auto_scale_site_to_upstream(
+		self, primary_upstream: str, secondary_upstreams: list[dict[str, int]]
+	) -> "AgentJob":
+		return self.create_agent_job(
+			"Add Auto Scale Site to Upstream",
+			f"proxy/upstreams/{primary_upstream}/auto-scale-site",
+			data={"secondary_upstreams": secondary_upstreams},
+		)
+
+	def proxy_remove_auto_scale_site_to_upstream(self, primary_upstream: str) -> "AgentJob":
+		return self.create_agent_job(
+			"Remove Auto Scale Site from Upstream",
+			f"proxy/upstreams/{primary_upstream}/remove-auto-scale-site",
+		)
 
 	def new_upstream_file(self, server, site=None, code_server=None):
 		_server = frappe.get_doc("Server", server)
@@ -778,10 +829,9 @@ class Agent:
 			reference_name=reference_name,
 		)
 
-	def create_database_access_credentials(self, site, mode):
+	def create_database_access_credentials(self, site: Site):
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
-			"mode": mode,
 			"mariadb_root_password": get_decrypted_password(
 				"Database Server", database_server, "mariadb_root_password"
 			),
@@ -885,15 +935,19 @@ class Agent:
 		return self.request("DELETE", path, data, raises=raises)
 
 	def _make_req(self, method, path, data, files, agent_job_id):
+		url = self._get_request_url(path)
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
-		url = f"https://{self.server}:{self.port}/agent/{path}"
-		intermediate_ca = frappe.db.get_value("Press Settings", "Press Settings", "backbone_intermediate_ca")
-		if frappe.conf.developer_mode and intermediate_ca:
+
+		verify = True
+		if frappe.conf.developer_mode and (
+			intermediate_ca := frappe.db.get_value(
+				"Press Settings", "Press Settings", "backbone_intermediate_ca"
+			)
+		):
 			root_ca = frappe.db.get_value("Certificate Authority", intermediate_ca, "parent_authority")
 			verify = frappe.get_doc("Certificate Authority", root_ca).certificate_file
-		else:
-			verify = True
+
 		if files:
 			file_objects = {
 				key: value
@@ -967,10 +1021,16 @@ class Agent:
 					"failure_count": 1,
 				}
 			)
+			is_primary = frappe.db.get_value(self.server_type, self.server, "is_primary")
+			if self.server_type == "Server" and not is_primary:
+				# Don't create agent request failures for secondary servers
+				# Since we try to connect to them frequently after IP changes
+				return
+
 			frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
 
 	def raw_request(self, method, path, data=None, raises=True, timeout=None):
-		url = f"https://{self.server}:{self.port}/agent/{path}"
+		url = self._get_request_url(path)
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}"}
 		timeout = timeout or (10, 30)
@@ -979,6 +1039,28 @@ class Agent:
 		if raises:
 			response.raise_for_status()
 		return json_response
+
+	def _get_request_url(self, path):
+		if self.server_type in ("Server", "Database Server"):
+			proxy = None
+			server_ip, server_private_ip, server_cluster = frappe.db.get_value(
+				self.server_type, self.server, ("ip", "private_ip", "cluster")
+			)
+			if not server_ip and server_private_ip and not frappe.flags.in_test:
+				proxy = frappe.db.get_value(
+					"Proxy Server",
+					{
+						"status": "Active",
+						"cluster": server_cluster,
+						"use_as_proxy_for_agent_and_metrics": 1,
+					},
+				)
+
+			if proxy:
+				proxy_port = 443 if proxy not in self.__servers_using_alt_ports else 8443
+				return f"https://{proxy}:{proxy_port}/{self.server}:{self.port}/agent/{path}"
+
+		return f"https://{self.server}:{self.port}/agent/{path}"
 
 	def should_skip_requests(self):
 		if self.server_type in ("Server", "Database Server", "Proxy Server") and frappe.db.get_value(
@@ -1017,7 +1099,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		self,
 		job_type,
 		path,
-		data=None,
+		data: dict | None = None,
 		files=None,
 		method="POST",
 		bench=None,
@@ -1038,12 +1120,12 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		)
 
 		if not disable_agent_job_deduplication:
-			job = self.get_similar_in_execution_job(
+			existing_job = self.get_similar_in_execution_job(
 				job_type, path, bench, site, code_server, upstream, host, method
 			)
 
-			if job:
-				return job
+			if existing_job:
+				return existing_job
 
 		job: "AgentJob" = frappe.get_doc(
 			{
@@ -1093,7 +1175,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			filters["bench"] = bench
 
 		if site:
-			filters["site"] = site
+			filters["site"] = site if not isinstance(site, list) else ("IN", site)
 
 		if code_server:
 			filters["code_server"] = code_server
@@ -1104,7 +1186,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if host:
 			filters["host"] = host
 
-		job = frappe.db.get_value("Agent Job", filters, "name")
+		job = frappe.db.get_value("Agent Job", filters, "name", debug=1)
 
 		return frappe.get_doc("Agent Job", job) if job else False
 
@@ -1167,7 +1249,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return status
 
 	def get_jobs_id(self, agent_job_ids):
-		return self.get(f"agent-jobs/{agent_job_ids}")
+		ids = ",".join(agent_job_ids) if isinstance(agent_job_ids, (list, tuple)) else agent_job_ids
+		return self.get(f"agent-jobs/{ids}")
 
 	def get_version(self):
 		return self.raw_request("GET", "version", raises=True, timeout=(2, 10))
@@ -1264,6 +1347,15 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			data=data,
 			reference_doctype="Deploy Candidate Build",
 			reference_name=reference_name,
+		)
+
+	def run_patch_build(self, data: dict):
+		return self.create_agent_job(
+			"Run Patch Build",
+			"builder/patch_build",
+			data=data,
+			reference_doctype="Deploy Candidate Build",
+			reference_name=data.get("deploy_candidate_build"),
 		)
 
 	def call_supervisorctl(self, bench: str, action: str, programs: list[str]):
@@ -1367,11 +1459,108 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			},
 		)
 
+	def fetch_database_locks(self, site):
+		database_server: DatabaseServer = frappe.get_doc("Database Server", self.server)
+		return self.post(
+			"database/locks",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": get_mariadb_root_password(site),
+			},
+		)
+
 	def kill_database_process(self, site, id):
 		return self.post(
 			f"benches/{site.bench}/sites/{site.name}/database/kill-process/{id}",
 			data={
 				"mariadb_root_password": get_mariadb_root_password(site),
+			},
+		)
+
+	def refresh_database_schema_size(self, site: Site):
+		if self.server_type != "Database Server":
+			return NotImplementedError("This method is only supported for Database Server")
+
+		database_server: DatabaseServer = frappe.get_doc("Database Server", self.server)
+		data_disk_volume = None
+		if database_server.virtual_machine:
+			data_disk_volume = database_server.find_mountpoint_volume(
+				database_server.guess_data_disk_mountpoint()
+			)
+
+		iops = None
+
+		if database_server.provider in ["AWS EC2", "OCI"] and data_disk_volume and data_disk_volume.volume_id:
+			vm: VirtualMachine = frappe.get_doc("Virtual Machine", database_server.virtual_machine)
+			for disk in vm.volumes:
+				if disk.volume_id == data_disk_volume.volume_id:
+					iops = disk.iops
+					break
+
+		if not site.database_name:
+			site.sync_info()
+			site.reload()
+			if not site.database_name:
+				return ValueError("Failed to fetch site's database name. Please try again later.")
+
+		return self.create_agent_job(
+			"Refresh Database Usage",
+			"database/refresh-usage",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"io_ops_limit": max(int(iops * 0.2), 300) if iops else 300,
+				"concurrency": 50,
+				"database": site.database_name,
+			},
+			site=site.name,
+		)
+
+	def update_database_schema_sizes(self):
+		if self.server_type != "Database Server":
+			return NotImplementedError("This method is only supported for Database Server")
+
+		database_server: DatabaseServer = frappe.get_doc("Database Server", self.server)
+		data_disk_volume = None
+		if database_server.virtual_machine:
+			data_disk_volume = database_server.find_mountpoint_volume(
+				database_server.guess_data_disk_mountpoint()
+			)
+
+		iops = None
+
+		if database_server.provider in ["AWS EC2", "OCI"] and data_disk_volume and data_disk_volume.volume_id:
+			vm: VirtualMachine = frappe.get_doc("Virtual Machine", database_server.virtual_machine)
+			for disk in vm.volumes:
+				if disk.volume_id == data_disk_volume.volume_id:
+					iops = disk.iops
+					break
+
+		return self.create_agent_job(
+			"Update Database Schema Sizes",
+			"database/update-schema-sizes",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"io_ops_limit": max(int(iops * 0.2), 300) if iops else 300,
+				"concurrency": 50,
+			},
+			reference_doctype=self.server_type,
+			reference_name=self.server,
+		)
+
+	def database_flush_tables(self):
+		if self.server_type != "Database Server":
+			return NotImplementedError("This method is only supported for Database Server")
+
+		return self.create_agent_job(
+			"Flush Tables",
+			"database/flush-tables",
+			data={
+				"private_ip": frappe.get_value("Database Server", self.server, "private_ip"),
+				"mariadb_root_password": get_decrypted_password(
+					"Database Server", self.server, "mariadb_root_password"
+				),
 			},
 		)
 
@@ -1413,30 +1602,41 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			reference_name=reference_name,
 		)
 
-	def upload_binlogs_to_s3(self, binlogs: list[str]):
-		from press.press.doctype.site_backup.site_backup import get_backup_bucket
+	def push_docker_images(
+		self, images: list[str], reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
+			as_dict=True,
+		)
+		return self.create_agent_job(
+			"Push Images to Registry",
+			"/server/push-images",
+			data={
+				"images": images,
+				"registry_settings": {
+					"url": settings.docker_registry_url,
+					"username": settings.docker_registry_username,
+					"password": settings.docker_registry_password,
+				},
+			},
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
 
+	def upload_binlogs_to_s3(self, binlogs: list[str]):
 		if self.server_type != "Database Server":
 			return NotImplementedError("Only Database Server supports this method")
 
-		settings = frappe.get_single("Press Settings")
-		backup_bucket = get_backup_bucket(
-			frappe.get_value("Database Server", self.server, "cluster"), region=True
-		)
-		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
-		if not (settings.aws_s3_bucket or bucket_name):
-			return ValueError("Offsite Backups aren't set yet")
-
-		auth = {
-			"ACCESS_KEY": settings.offsite_backups_access_key_id,
-			"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
-			"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
-		}
+		cluster = frappe.get_value("Database Server", self.server, "cluster")
+		offsite_config = self._get_offsite_backup_config(cluster, backups_path=self.server)
 
 		return self.create_agent_job(
 			"Upload Binlogs To S3",
 			"/database/binlogs/upload",
-			data={"binlogs": binlogs, "offsite": {"bucket": bucket_name, "auth": auth, "path": self.server}},
+			data={"binlogs": binlogs, "offsite": offsite_config},
 		)
 
 	def add_binlogs_to_indexer(self, binlogs):
@@ -1451,10 +1651,27 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Remove Binlogs From Indexer", "/database/binlogs/indexer/remove", data={"binlogs": binlogs}
 		)
 
-	def get_binlogs_timeline(self, start: int, end: int, database: str, type: str | None = None):
+	def get_binlogs_timeline(
+		self,
+		start: int,
+		end: int,
+		database: str,
+		table: str | None = None,
+		type: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
+	):
 		return self.post(
 			"/database/binlogs/indexer/timeline",
-			data={"start_timestamp": start, "end_timestamp": end, "database": database, "type": type},
+			data={
+				"start_timestamp": start,
+				"end_timestamp": end,
+				"database": database,
+				"table": table,
+				"type": type,
+				"event_size_comparator": event_size_comparator,
+				"event_size": event_size,
+			},
 		)
 
 	def search_binlogs(
@@ -1465,6 +1682,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		type: str | None = None,
 		table: str | None = None,
 		search_str: str | None = None,
+		event_size_comparator: Literal["gt", "lt"] | None = None,
+		event_size: int | None = None,
 	):
 		return self.post(
 			"/database/binlogs/indexer/search",
@@ -1475,6 +1694,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 				"type": type,
 				"table": table,
 				"search_str": search_str,
+				"event_size_comparator": event_size_comparator,
+				"event_size": event_size,
 			},
 		)
 
@@ -1589,32 +1810,25 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		reference_doctype=None,
 		reference_name=None,
 	):
-		from press.press.doctype.site_backup.site_backup import get_backup_bucket
-
-		database_server: DatabaseServer = frappe.get_doc("Database Server", database_server)
+		database_server_doc: DatabaseServer = frappe.get_doc("Database Server", database_server)  # type: ignore
 		data = {
 			"site": site,
 			"database_name": database_name,
 			"database_ip": frappe.get_value(
-				"Virtual Machine", database_server.virtual_machine, "private_ip_address"
+				"Virtual Machine", database_server_doc.virtual_machine, "private_ip_address"
 			),
-			"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+			"mariadb_root_password": database_server_doc.get_password("mariadb_root_password"),
 		}
 
 		# offsite config
-		settings = frappe.get_single("Press Settings")
 		backups_path = os.path.join(site, str(date.today()))
-		backup_bucket = get_backup_bucket(cluster, region=True)
-		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
-		if settings.aws_s3_bucket or bucket_name:
-			auth = {
-				"ACCESS_KEY": settings.offsite_backups_access_key_id,
-				"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
-				"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
-			}
-			data.update({"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}})
+		offsite_config = self._get_offsite_backup_config(cluster, backups_path)
+		if offsite_config:
+			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw("Offsite Backups aren't setup yet")
+			frappe.throw(
+				"Offsite Backups aren't set up yet. Please configure offsite backup storage in Press Settings before taking an offsite backup."
+			)
 
 		return self.create_agent_job(
 			"Backup Database From Snapshot",
@@ -1632,27 +1846,20 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		reference_doctype=None,
 		reference_name=None,
 	):
-		from press.press.doctype.site_backup.site_backup import get_backup_bucket
-
-		data = {
+		data: dict[str, Any] = {
 			"site": site,
 			"bench": bench,
 		}
 
 		# offsite config
-		settings = frappe.get_single("Press Settings")
 		backups_path = os.path.join(site, str(date.today()))
-		backup_bucket = get_backup_bucket(cluster, region=True)
-		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
-		if settings.aws_s3_bucket or bucket_name:
-			auth = {
-				"ACCESS_KEY": settings.offsite_backups_access_key_id,
-				"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
-				"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
-			}
-			data.update({"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}})
+		offsite_config = self._get_offsite_backup_config(cluster, backups_path)
+		if offsite_config:
+			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw("Offsite Backups aren't setup yet")
+			frappe.throw(
+				"Offsite Backups aren't set up yet. Please configure offsite backup storage in Press Settings before taking an offsite backup."
+			)
 
 		return self.create_agent_job(
 			"Backup Files From Snapshot",
@@ -1703,9 +1910,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def add_servers_to_acl(
 		self,
-		primary_server_private_ip: str,
 		secondary_server_private_ip: str,
-		shared_directory: str,
 		reference_doctype: str | None = None,
 		reference_name: str | None = None,
 	) -> AgentJob:
@@ -1713,9 +1918,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Add Servers to ACL",
 			"/nfs/add-to-acl",
 			data={
-				"primary_server_private_ip": primary_server_private_ip,
 				"secondary_server_private_ip": secondary_server_private_ip,
-				"shared_directory": shared_directory,
 			},
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
@@ -1723,9 +1926,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def remove_servers_from_acl(
 		self,
-		primary_server_private_ip: str,
 		secondary_server_private_ip: str,
-		shared_directory: str,
 		reference_doctype: str | None = None,
 		reference_name: str | None = None,
 	) -> AgentJob:
@@ -1733,9 +1934,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Remove Servers from ACL",
 			"/nfs/remove-from-acl",
 			data={
-				"primary_server_private_ip": primary_server_private_ip,
 				"secondary_server_private_ip": secondary_server_private_ip,
-				"shared_directory": shared_directory,
 			},
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
@@ -1761,6 +1960,16 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			reference_name=reference_name,
 		)
 
+	def remove_redis_localhost_bind(
+		self, reference_doctype: str | None = None, reference_name: str | None = None
+	) -> AgentJob:
+		return self.create_agent_job(
+			"Remove Redis Localhost Bind",
+			"/server/remove-localhost-redis-bind",
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
 	def force_remove_all_benches(
 		self, reference_doctype: str | None = None, reference_name: str | None = None
 	) -> AgentJob:
@@ -1770,6 +1979,40 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
 		)
+
+	def update_nginx_access(self, ip_accept: list[str], ip_drop: list[str]) -> AgentJob:
+		return self.create_agent_job(
+			"Update Nginx Access",
+			"/server/update-nginx-access",
+			data={
+				"ip_accept": ip_accept,
+				"ip_drop": ip_drop,
+			},
+		)
+
+	def _get_offsite_backup_config(self, cluster: str, backups_path: str) -> dict | None:
+		from press.press.doctype.site_backup.site_backup import get_backup_bucket
+
+		settings = frappe.get_single("Press Settings")
+		backup_bucket_config = get_backup_bucket(cluster, region=True)
+		bucket_name = backup_bucket_config.get("name")
+
+		if not (settings.aws_s3_bucket or bucket_name):
+			return None
+
+		auth = {
+			"ACCESS_KEY": settings.offsite_backups_access_key_id,
+			"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
+			"REGION": backup_bucket_config.get("region"),
+			"PROVIDER": backup_bucket_config.get("provider"),
+			"ENDPOINT_URL": backup_bucket_config.get("endpoint_url"),
+		}
+
+		return {
+			"bucket": bucket_name,
+			"auth": auth,
+			"path": backups_path,
+		}
 
 
 class AgentCallbackException(Exception):

@@ -11,7 +11,7 @@
 				:min="minimumAmount"
 			>
 				<template #prefix>
-					<div class="grid w-4 place-items-center text-sm text-gray-700">
+					<div class="grid w-4 place-items-center text-sm text-ink-gray-7">
 						{{ team.doc.currency === 'INR' ? '₹' : '$' }}
 					</div>
 				</template>
@@ -27,7 +27,7 @@
 				type="number"
 			>
 				<template #prefix>
-					<div class="grid w-4 place-items-center text-sm text-gray-700">
+					<div class="grid w-4 place-items-center text-sm text-ink-gray-7">
 						{{ team.doc.currency === 'INR' ? '₹' : '$' }}
 					</div>
 				</template>
@@ -43,7 +43,7 @@
 				type="number"
 			>
 				<template #prefix>
-					<div class="-ml-1 grid w-4 place-items-center text-sm text-gray-700">
+					<div class="-ml-1 grid w-4 place-items-center text-sm text-ink-gray-7">
 						{{ 'Ksh' }}
 					</div>
 				</template>
@@ -52,7 +52,7 @@
 
 		<!-- Payment Gateway -->
 		<div class="mt-4">
-			<div class="text-xs text-gray-600">Select Payment Gateway</div>
+			<div class="text-xs text-ink-gray-6">Select Payment Gateway</div>
 			<div class="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
 				<Button
 					size="lg"
@@ -109,6 +109,8 @@
 			:amount="creditsToBuy"
 			:minimumAmount="minimumAmount"
 			:paypalEnabled="paypalEnabled.data"
+			:type="props.type"
+			:docName="props.docName"
 			@success="() => emit('success')"
 			@cancel="show = false"
 		/>
@@ -138,7 +140,18 @@ const emit = defineEmits(['success']);
 
 const team = inject('team');
 const props = defineProps({
-	minimumAmount: Number,
+	minimumAmount: {
+		type: Number,
+		default: null,
+	},
+	type: {
+		type: String,
+		default: 'Prepaid Credits',
+	},
+	docName: {
+		type: String,
+		default: null,
+	},
 });
 
 const paypalEnabled = createResource({
@@ -156,8 +169,14 @@ const totalUnpaidAmount = createResource({
 const minimumAmount = computed(() => {
 	if (props.minimumAmount) return props.minimumAmount;
 	if (!team.doc) return 0;
-	const unpaidAmount = totalUnpaidAmount.data || 0;
+	let unpaidAmount = totalUnpaidAmount.data || 0;
 	const minimumDefault = team.doc?.currency == 'INR' ? 410 : 5;
+
+	if (unpaidAmount > 100000 && team.doc?.currency == 'INR') {
+		unpaidAmount = 100000;
+	} else if (unpaidAmount > 1450 && team.doc?.currency == 'USD') {
+		unpaidAmount = 1450;
+	}
 
 	return Math.ceil(
 		unpaidAmount && unpaidAmount > 0 ? unpaidAmount : minimumDefault,
@@ -167,8 +186,9 @@ const minimumAmount = computed(() => {
 const creditsToBuy = ref(minimumAmount.value);
 const paymentGateway = ref('');
 
-watch(minimumAmount, () => {
-	creditsToBuy.value = minimumAmount.value;
+watch(totalUnpaidAmount, () => {
+	creditsToBuy.value =
+		totalUnpaidAmount.data > 0 ? totalUnpaidAmount.data : minimumAmount.value;
 });
 
 const totalAmount = computed(() => {

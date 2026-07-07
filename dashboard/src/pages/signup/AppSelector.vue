@@ -10,7 +10,7 @@
 	>
 		<LoginBox
 			title="Select an app to get started"
-			subtitle="Select the app you need to configure them effortlessly"
+			subtitle="Select the app you want to install on your site."
 		>
 			<div v-if="$resources.availableApps.loading">
 				<div class="flex h-40 justify-center">
@@ -27,10 +27,10 @@
 						class="w-full"
 					>
 						<div
-							class="flex cursor-pointer items-center rounded border border-gray-100 p-2"
+							class="flex cursor-pointer items-center rounded border border-outline-gray-1 p-2"
 							:class="{
-								'bg-gray-100': selectedApp?.name === app.name,
-								'border-gray-100 hover:bg-gray-50':
+								'bg-surface-gray-2': selectedApp?.name === app.name,
+								'border-outline-gray-1 hover:bg-surface-gray-1':
 									selectedApp?.name !== app.name,
 							}"
 							@click="selectedApp = app"
@@ -42,7 +42,7 @@
 							/>
 							<div class="space-y-1">
 								<p class="text-lg font-medium">{{ app.title }}</p>
-								<p class="line-clamp-1 text-sm text-gray-600">
+								<p class="line-clamp-1 text-sm text-ink-gray-6">
 									{{ app.description }}
 								</p>
 							</div>
@@ -58,11 +58,11 @@
 				/>
 			</div>
 			<template #footer>
-				<span class="ml-4 text-base font-normal text-gray-600">
+				<span class="ml-4 text-base font-normal text-ink-gray-6">
 					{{ 'Skip creating a site? ' }}
 				</span>
 				<router-link
-					class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+					class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 					:to="{
 						name: 'Site List',
 					}"

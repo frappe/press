@@ -21,10 +21,10 @@
 						v-model="searchQuery"
 					>
 						<template #prefix>
-							<lucide-search class="h-4 w-4 text-gray-500" />
+							<lucide-search class="h-4 w-4 text-ink-gray-5" />
 						</template>
 						<template #suffix>
-							<span class="text-sm text-gray-500" v-if="searchQuery">
+							<span class="text-sm text-ink-gray-5" v-if="searchQuery">
 								{{ searchQuerySummary }}
 							</span>
 						</template>
@@ -43,12 +43,12 @@
 					v-if="options.experimental"
 					text="This is an experimental feature"
 				>
-					<div class="rounded-md bg-purple-100 p-1.5">
+					<div class="rounded-md  bg-surface-pink-1 p-1.5">
 						<lucide-flask-conical class="h-4 w-4 text-purple-500" />
 					</div>
 				</Tooltip>
 				<Tooltip v-if="options.documentation" text="View documentation">
-					<div class="rounded-md bg-gray-100 p-1.5">
+					<div class="rounded-md bg-surface-gray-2 p-1.5">
 						<a :href="options.documentation" target="_blank">
 							<lucide-help-circle class="h-4 w-4" />
 						</a>
@@ -83,7 +83,7 @@
 				<ActionButton v-bind="primaryAction" :context="context" />
 			</div>
 		</div>
-		<div class="mt-3 min-h-0 flex-1 overflow-y-auto">
+		<div class="mt-3 min-h-0 flex-1">
 			<ListView
 				:columns="columns"
 				:rows="filteredRows"
@@ -108,7 +108,7 @@
 				<template #cell="{ item, row, column }">
 					<ObjectListCell
 						:class="[
-							column == columns[0] ? ' text-gray-900' : ' text-gray-700',
+							column == columns[0] ? ' text-ink-gray-9' : ' text-ink-gray-7',
 						]"
 						:row="row"
 						:column="column"
@@ -118,7 +118,7 @@
 			</ListView>
 			<div class="px-5" v-if="filteredRows.length === 0">
 				<div
-					class="text-center text-sm leading-10 text-gray-500"
+					class="text-center text-sm leading-10 text-ink-gray-5 pb-[1.75rem]"
 					v-if="isLoading"
 				>
 					Loading...
@@ -126,11 +126,20 @@
 				<div v-else-if="$list?.list?.error" class="py-4 text-center">
 					<ErrorMessage :message="$list.list.error" />
 				</div>
-				<div v-else class="text-center text-sm leading-10 text-gray-500">
+				<div
+					v-else
+					class="text-center text-sm leading-10 text-ink-gray-5 pb-[1.75rem]"
+				>
 					{{ emptyStateMessage }}
 				</div>
 			</div>
-			<div class="px-2 py-2 text-right" v-if="$list">
+			<div
+				class="p-2 text-right"
+				:class="{
+					'bg-surface-white bottom-0 sticky': $list?.next && $list?.hasNextPage,
+				}"
+				v-if="$list"
+			>
 				<Button
 					v-if="$list.next && $list.hasNextPage"
 					@click="$list.next()"
@@ -143,28 +152,29 @@
 	</div>
 </template>
 <script>
-import { reactive, ref } from 'vue';
-import { throttle } from '../utils/throttle';
-import DismissableBanner from './DismissableBanner.vue';
-import AlertBanner from './AlertBanner.vue';
-import ActionButton from './ActionButton.vue';
-import ObjectListCell from './ObjectListCell.vue';
-import ObjectListFilters from './ObjectListFilters.vue';
 import {
-	ListView,
+	ErrorMessage,
 	ListHeader,
 	ListRow,
+	ListView,
 	TextInput,
 	Tooltip,
-	ErrorMessage,
-} from 'frappe-ui';
+} from 'frappe-ui'
+import { reactive, ref } from 'vue'
+import { throttle } from '../utils/throttle'
+import ActionButton from './ActionButton.vue'
+import AlertBanner from './AlertBanner.vue'
+import DismissableBanner from './DismissableBanner.vue'
+import ObjectListCell from './ObjectListCell.vue'
+import ObjectListFilters from './ObjectListFilters.vue'
 
-let subscribed = {};
+let subscribed = {}
 
 export default {
 	name: 'ObjectList',
 	props: ['options'],
 	emits: ['update:selections'],
+	expose: ['reloadListView'],
 	components: {
 		AlertBanner,
 		DismissableBanner,
@@ -179,18 +189,18 @@ export default {
 		ErrorMessage,
 	},
 	setup(_, { expose }) {
-		const listView = ref(null);
+		const listView = ref(null)
 		const toggleRowSelection = (row) => {
-			listView.value.toggleRow(row);
-		};
+			listView.value.toggleRow(row)
+		}
 
-		expose({ toggleRowSelection });
-		return { listView };
+		expose({ toggleRowSelection })
+		return { listView }
 	},
 	data() {
 		return {
 			searchQuery: '',
-		};
+		}
 	},
 	watch: {
 		searchQuery(value) {
@@ -203,7 +213,7 @@ export default {
 						},
 						start: 0,
 						pageLength: this.options.pageLength || 20,
-					});
+					})
 				} else {
 					this.$list.update({
 						filters: {
@@ -212,18 +222,18 @@ export default {
 						},
 						start: 0,
 						pageLength: this.options.pageLength || 20,
-					});
+					})
 				}
-				this.$list.reload();
+				this.$list.reload()
 			}
 		},
 	},
 	resources: {
 		list() {
-			if (this.options.data) return;
-			if (this.options.list) return;
+			if (this.options.data) return
+			if (this.options.list) return
 			if (this.options.resource) {
-				return this.options.resource(this.context);
+				return this.options.resource(this.context)
 			}
 			return {
 				type: 'list',
@@ -245,73 +255,81 @@ export default {
 				auto: true,
 				onError: (e) => {
 					if (this.$list.data) {
-						this.$list.data = [];
+						this.$list.data = []
 					}
 				},
-			};
+			}
+		},
+		extraResource() {
+			if (!this.options.extraResource) return
+			// Access list.data to register it as a reactive dep so the watcher
+			// re-fires when the list loads (Vue short-circuits on undefined otherwise).
+			const listRes = this.$resources.list
+			if (listRes) void listRes.data
+			return this.options.extraResource(this.context)
 		},
 	},
 	beforeUpdate() {
 		if (this.$list?.list) {
-			const filters = this.$list.list?.params?.filters || {};
+			const filters = this.$list.list?.params?.filters || {}
 			for (let control of this.filterControls) {
 				if (control.value !== filters[control.fieldname]) {
-					control.value = filters[control.fieldname];
+					control.value = filters[control.fieldname]
 				}
 			}
 		}
 	},
 	mounted() {
-		if (this.options.data) return;
+		if (this.options.data) return
 		if (this.options.list) {
-			const resource = this.$list.list || this.$list;
+			const resource = this.$list.list || this.$list
 			if (!resource.fetched && !resource.loading && this.$list.auto != false) {
-				resource.fetch();
+				resource.fetch()
 			}
 		}
 		if (this.options.doctype) {
-			const doctype = this.options.doctype;
-			if (subscribed[doctype]) return;
-			this.$socket.emit('doctype_subscribe', doctype);
-			subscribed[doctype] = true;
+			const doctype = this.options.doctype
+			if (subscribed[doctype]) return
+			this.$socket.emit('doctype_subscribe', doctype)
+			subscribed[doctype] = true
 
-			const throttledReload = throttle(this.$list.reload, 5000);
+			const throttledReload = throttle(this.$list.reload, 5000)
 			this.$socket.on('list_update', (data) => {
-				const names = (this.$list.data || []).map((d) => d.name);
+				const names = (this.$list.data || []).map((d) => d.name)
 				if (data.doctype === doctype && names.includes(data.name)) {
-					throttledReload();
+					throttledReload()
 				}
-			});
+			})
 		}
 	},
 	beforeUnmount() {
 		if (this.options.doctype) {
-			const doctype = this.options.doctype;
-			this.$socket.emit('doctype_unsubscribe', doctype);
-			subscribed[doctype] = false;
+			const doctype = this.options.doctype
+			this.$socket.emit('doctype_unsubscribe', doctype)
+			subscribed[doctype] = false
 		}
 	},
 	computed: {
 		$list() {
-			if (this.$resources.list) return this.$resources.list;
+			if (this.$resources.list) return this.$resources.list
 
 			if (this.options.list) {
 				if (typeof this.options.list === 'function') {
-					return this.options.list(this.options.context);
+					return this.options.list(this.options.context)
 				}
-				return this.options.list;
+				return this.options.list
 			}
 		},
 		columns() {
-			let columns = [];
+			let columns = []
 			for (let column of this.options.columns || []) {
-				if (column.condition && !column.condition(this.context)) continue;
+				if (column.condition && !column.condition(this.context)) continue
 				columns.push({
 					...column,
 					label: column.label,
 					key: column.fieldname,
 					align: column.align || 'left',
-				});
+				})
 			}
 			if (this.options.rowActions) {
 				columns.push({
@@ -321,19 +339,19 @@ export default {
 					width: '100px',
 					align: 'right',
 					actions: (row) => this.options.rowActions({ ...this.context, row }),
-				});
+				})
 			}
-			return columns;
+			return columns
 		},
 		rows() {
 			if (this.options.data) {
-				return this.options.data(this.context);
+				return this.options.data(this.context)
 			}
-			return this.$list.data || [];
+			return this.$list.data || []
 		},
 		filteredRows() {
-			if (this.options.searchField || !this.searchQuery) return this.rows;
-			let query = this.searchQuery.toLowerCase();
+			if (this.options.searchField || !this.searchQuery) return this.rows
+			let query = this.searchQuery.toLowerCase()
 
 			return this.rows
 				.map((row) => {
@@ -341,93 +359,91 @@ export default {
 						// group
 						let filteredRows = row.rows.filter((row) =>
 							this.filterRow(query, row),
-						);
+						)
 
 						if (filteredRows.length) {
 							return {
 								...row,
 								rows: row.rows.filter((row) => this.filterRow(query, row)),
-							};
+							}
 						}
 					}
 					if (this.filterRow(query, row)) {
-						return row;
+						return row
 					}
-					return false;
+					return false
 				})
-				.filter(Boolean);
+				.filter(Boolean)
 		},
 		searchQuerySummary() {
-			if (this.options.searchField) return;
+			if (this.options.searchField) return
 
-			let summary;
+			let summary
 			if (this.filteredRows.length === 0) {
-				summary = 'No results';
+				summary = 'No results'
 			} else if (this.filteredRows[0].rows) {
-				let total = this.rows.reduce(
-					(acc, group) => acc + group.rows.length,
-					0,
-				);
+				let total = this.rows.reduce((acc, group) => acc + group.rows.length, 0)
 				let filtered = this.filteredRows.reduce(
 					(acc, group) => acc + group.rows.length,
 					0,
-				);
-				summary = `${filtered} of ${total}`;
+				)
+				summary = `${filtered} of ${total}`
 			} else {
-				summary = `${this.filteredRows.length} of ${this.rows.length}`;
+				summary = `${this.filteredRows.length} of ${this.rows.length}`
 			}
-			return summary;
+			return summary
 		},
 		filterControls() {
-			if (!this.options.filterControls) return [];
-			let controls = this.options.filterControls(this.context);
+			if (!this.options.filterControls) return []
+			let controls = this.options.filterControls(this.context)
 			return controls
 				.filter((control) => control.fieldname)
 				.map((control) => {
-					return reactive({ ...control, value: control.default || undefined });
-				});
+					return reactive({ ...control, value: control.default || undefined })
+				})
 		},
 		actions() {
-			if (!this.options.actions) return [];
-			let actions = this.options.actions(this.context);
+			if (!this.options.actions) return []
+			let actions = this.options.actions(this.context)
 			return actions.filter((action) => {
 				if (action.condition) {
-					return action.condition(this.context);
+					return action.condition(this.context)
 				}
-				return true;
-			});
+				return true
+			})
 		},
 		moreActions() {
-			if (!this.options.moreActions) return [];
-			const actions = this.options.moreActions(this.context);
+			if (!this.options.moreActions) return []
+			const actions = this.options.moreActions(this.context)
 			return actions.filter((action) => {
 				if (action.condition) {
-					return action.condition(this.context);
+					return action.condition(this.context)
 				}
-				return true;
-			});
+				return true
+			})
 		},
 		primaryAction() {
-			if (!this.options.primaryAction) return null;
-			let props = this.options.primaryAction(this.context);
-			if (!props) return null;
-			return props;
+			if (!this.options.primaryAction) return null
+			let props = this.options.primaryAction(this.context)
+			if (!props) return null
+			return props
 		},
 		secondaryAction() {
-			if (!this.options.secondaryAction) return null;
-			let props = this.options.secondaryAction(this.context);
-			if (!props) return null;
-			return props;
+			if (!this.options.secondaryAction) return null
+			let props = this.options.secondaryAction(this.context)
+			if (!props) return null
+			return props
 		},
 		context() {
 			return {
 				...this.options.context,
 				listResource: this.$list,
-			};
+				extraResource: this.$resources.extraResource,
+			}
 		},
 		isLoading() {
-			if (this.options.data) return false;
-			return this.$list.list?.loading || this.$list.loading;
+			if (this.options.data) return false
+			return this.$list.list?.loading || this.$list.loading
 		},
 		showControls() {
 			return (
@@ -435,32 +451,35 @@ export default {
 					this.rows.length > 5 ||
 					this.filterControls.length) &&
 				!this.options.hideControls
-			);
+			)
 		},
 		emptyStateMessage() {
-			return this.options.emptyStateMessage || 'No results found';
+			return this.options.emptyStateMessage || 'No results found'
 		},
 		banner() {
 			if (this.options.banner) {
-				return this.options.banner(this.context);
+				return this.options.banner(this.context)
 			}
 		},
 	},
 	methods: {
+		reloadListView() {
+			this.$resources.list.reload()
+		},
 		filterRow(query, row) {
 			let values = this.options.columns.map((column) => {
-				let value = row[column.fieldname];
+				let value = row[column.fieldname]
 				if (column.deploys) {
-					value = column.format(value, row);
+					value = column.format(value, row)
 				}
-				return value;
-			});
+				return value
+			})
 			for (let value of values) {
 				if (value && value.toLowerCase?.().includes(query)) {
-					return true;
+					return true
 				}
 			}
-			return false;
+			return false
 		},
 		onFilterControlChange(control) {
 			// update params directly if resource is provided
@@ -476,31 +495,31 @@ export default {
 				const params = {
 					...this.$list.params,
 					[control.fieldname]: control.value,
-				};
-				this.$list.update({ params });
-				this.$list.reload();
-				return;
+				}
+				this.$list.update({ params })
+				this.$list.reload()
+				return
 			}
 			if (this.options.updateFilters) {
 				this.options.updateFilters({
 					[control.fieldname]: control.value,
-				});
+				})
 				if (!this.options.autoReloadAfterUpdateFilterCallback) {
-					return;
+					return
 				}
 			}
 
-			let filters = { ...this.$list.filters };
+			let filters = { ...this.$list.filters }
 			for (let c of this.filterControls) {
-				filters[c.fieldname] = c.value;
+				filters[c.fieldname] = c.value
 			}
 			this.$list.update({
 				filters,
 				start: 0,
 				pageLength: this.options.pageLength || 20,
-			});
-			this.$list.reload();
+			})
+			this.$list.reload()
 		},
 	},
-};
+}
 </script>

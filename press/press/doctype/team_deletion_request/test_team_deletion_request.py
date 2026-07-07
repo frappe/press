@@ -22,7 +22,7 @@ class TestTeamDeletionRequest(FrappeTestCase):
 		frappe.db.truncate("Team Deletion Request")
 
 	@property
-	def team_deletion_request(self):
+	def team_deletion_request(self) -> TeamDeletionRequest:
 		if not getattr(self, "_tdr", None):
 			try:
 				self._tdr = frappe.get_last_doc("Team Deletion Request", filters={"team": self.team.name})

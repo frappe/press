@@ -14,11 +14,12 @@ class AutoScaleTrigger(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		action: DF.Literal["Scale Up", "Scale Down"]
+		metric: DF.Literal["CPU", "Memory"]
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
 		threshold: DF.Float
-		trigger_metric: DF.Literal["CPU", "Memory"]
 	# end: auto-generated types
 
 	pass

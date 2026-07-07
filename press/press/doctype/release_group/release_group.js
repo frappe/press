@@ -60,6 +60,7 @@ frappe.ui.form.on('Release Group', {
 			},
 			__('Actions'),
 		);
+
 		frm.add_custom_button(
 			'Add Server',
 			() => {
@@ -98,6 +99,43 @@ frappe.ui.form.on('Release Group', {
 					},
 				});
 				d.show();
+			},
+			__('Actions'),
+		);
+		frm.add_custom_button(
+			'Redeploy on Missing Servers',
+			() => {
+				frappe.confirm(
+					'This will trigger a redeploy of the last successful candidate on servers which are missing a bench. Do you want to continue?',
+					() => {
+						frm.call('redeploy_on_missing_servers').then((r) => {
+							if (!r.exc) {
+								frappe.show_alert(`Redeploy triggered on missing servers`);
+							}
+						});
+					},
+				);
+			},
+			__('Actions'),
+		);
+
+		frm.add_custom_button(
+			'Clone Group',
+			() => {
+				frappe.prompt(
+					[
+						{
+							fieldtype: 'Data',
+							fieldname: 'group_title',
+							label: 'New Group Name',
+							reqd: 1,
+						},
+					],
+					({ group_title }) => {
+						frm.call('clone_group', { title: group_title });
+					},
+					'Clone Group',
+				);
 			},
 			__('Actions'),
 		);

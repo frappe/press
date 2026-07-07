@@ -6,10 +6,11 @@ from __future__ import annotations
 import json
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
-from frappe.utils import get_url, random_string
+from frappe.utils import get_url, random_string, validate_email_address
 
-from press.decorators import settings
+from press.guards import settings
 from press.utils import disposable_emails, get_country_info, is_valid_email_address, log_error
 from press.utils.otp import generate_otp
 from press.utils.telemetry import capture
@@ -52,13 +53,14 @@ class AccountRequest(Document):
 		otp_generated_at: DF.Datetime | None
 		phone_number: DF.Data | None
 		plan: DF.Link | None
+		press_role: DF.Link | None
 		press_roles: DF.TableMultiSelect[AccountRequestPressRole]
 		product_trial: DF.Link | None
+		pulse_anonymous_id: DF.Data | None
 		referral_source: DF.Data | None
 		referrer_id: DF.Data | None
 		request_key: DF.Data | None
 		request_key_expiration_time: DF.Datetime | None
-		role: DF.Data | None
 		saas: DF.Check
 		saas_app: DF.Link | None
 		send_email: DF.Check
@@ -86,7 +88,7 @@ class AccountRequest(Document):
 
 		if not self.request_key:
 			self.request_key = random_string(32)
-			self.request_key_expiration_time = frappe.utils.add_to_date(minutes=10)
+			self.request_key_expiration_time = frappe.utils.add_to_date(hours=24)
 
 		if not self.otp:
 			self.otp = generate_otp()
@@ -113,10 +115,17 @@ class AccountRequest(Document):
 			self.is_us_eu = False
 
 	def before_validate(self):
-		self.email = self.email.strip()
+		self.sanitize_email()
+
+	def sanitize_email(self):
+		# Validate and get rid of extra emails.
+		# Example: `a@example.com, b@example.com, foobar` -> `a@example.com`.
+		self.email = validate_email_address(self.email).split(",").pop(0)
 
 	def validate(self):
 		self.disallow_disposable_emails()
+		self.validate_press_role()
+		validate_email_address(self.email, throw=True)
 
 	@settings.enabled("disallow_disposable_emails")
 	def disallow_disposable_emails(self):
@@ -124,11 +133,25 @@ class AccountRequest(Document):
 		Disallow temporary email providers for account requests. Throws
 		validation error if a temporary email provider is detected.
 		"""
+		if frappe.conf.developer_mode and frappe.local.dev_server:
+			return
 		if not self.email:
 			return
 		if disposable_emails.is_disposable(self.email):
 			frappe.throw(
 				"Temporary email providers are not allowed.",
+				frappe.ValidationError,
+			)
+
+	def validate_press_role(self):
+		if not self.press_role:
+			return
+		role_team = frappe.get_value("Press Role", self.press_role, "team")
+		if role_team and role_team != self.team:
+			frappe.throw(
+				_('Press Role "{0}" does not belong to the same team as the account request.').format(
+					self.press_role
+				),
 				frappe.ValidationError,
 			)
 
@@ -174,7 +197,7 @@ class AccountRequest(Document):
 	def reset_otp(self):
 		if not self.request_key:
 			self.request_key = random_string(32)
-			self.request_key_expiration_time = frappe.utils.add_to_date(minutes=10)
+			self.request_key_expiration_time = frappe.utils.add_to_date(hours=24)
 		self.otp = generate_otp()
 		if frappe.conf.developer_mode and frappe.local.dev_server:
 			self.otp = 111111
@@ -238,7 +261,7 @@ class AccountRequest(Document):
 					sender = frappe.get_value("Email Account", email_account, "email_id")
 		else:
 			template = "verify_account"
-			if self.invited_by and self.role != "Press Admin":
+			if self.invited_by:
 				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
 				template = "invite_team_member"
 
@@ -336,13 +359,54 @@ class AccountRequest(Document):
 	def is_using_new_saas_flow(self):
 		return bool(self.product_trial)
 
+	@property
+	def invite_role_label(self) -> str:
+		"""Resolve the Press Role title from the press_role document name."""
+		if not self.press_role:
+			return ""
+		title = frappe.get_value("Press Role", self.press_role, "title")
+		return title or self.press_role
+
+	@property
+	def invite_press_roles(self) -> list[str]:
+		"""Press Role names to assign to the member when the invite is accepted.
+
+		New invites store the selected role in the press_role link field;
+		pending invites created before that may still carry rows in the
+		press_roles child table. Honour both.
+		"""
+		roles = [row.press_role for row in self.press_roles]
+		if self.press_role and self.press_role not in roles:
+			roles.append(self.press_role)
+		return roles
+
 	def is_saas_signup(self):
 		return bool(self.saas_app or self.saas or self.erpnext or self.product_trial)
+
+	def stitch_pulse_identity(self, team):
+		"""Link pre-signup anonymous browsing to the new account and label it.
+
+		Runs once when the team is created (covers every signup path). `alias` stitches
+		the `?aid=…` forwarded from the product website onto the account's team;
+		`identify` attaches product/plan attributes to the team. Both POST off-request
+		(enqueued, see `_pulse_post`), so a slow Pulse host can't block account creation.
+		"""
+		from press.utils.telemetry import pulse_alias, pulse_identify
+
+		# The team is the identity subject — stable across the account's sites, apps,
+		# and members — so every later identify (setup wizards, dashboard) converges.
+		if self.pulse_anonymous_id:
+			pulse_alias(previous_id=self.pulse_anonymous_id, team=team)
+		pulse_identify(team, self.pulse_person_properties())
+
+	def pulse_person_properties(self):
+		product = self.product_trial or self.saas_app or ("erpnext" if self.erpnext else "fc")
+		return {"product": product, "plan": self.plan, "country": self.country}
 
 
 def expire_request_key():
 	"""
-	Expire the request key requested 10 minutes ago.
+	Expire account request keys that have passed their expiration time.
 	"""
 	frappe.db.set_value(
 		"Account Request",
@@ -356,3 +420,15 @@ def expire_request_key():
 		},
 		update_modified=False,
 	)
+
+
+def has_permission(doc, ptype, user):
+	user = user or frappe.session.user
+	if doc.is_new():
+		return True
+	team = doc.team
+	if validate_email_address(team, throw=False) and (
+		team_name := frappe.db.get_value("Team", {"user": team}, "name")
+	):
+		team = team_name
+	return frappe.has_permission(doctype="Team", doc=team, ptype=ptype, user=user)

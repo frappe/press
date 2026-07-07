@@ -6,6 +6,8 @@ frappe.ui.form.on('Virtual Disk Snapshot', {
 		[
 			[__('Sync'), 'sync'],
 			[__('Delete'), 'delete_snapshot'],
+			[__('Lock'), 'lock'],
+			[__('Unlock'), 'unlock'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,

@@ -14,6 +14,7 @@ from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.virtual_machine.virtual_machine import SERIES_TO_SERVER_TYPE
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -92,17 +93,14 @@ class VirtualDiskResize(Document):
 
 	def run_prerequisites(self):
 		try:
-			self.status = Status.Preparing
-			self.save()
 			self.set_filesystem_attributes()
 			self.set_new_volume_attributes()
 			self.create_new_volume()
 			self.status = Status.Ready
-			self.save()
-		except Exception as e:
-			frappe.log_error(message=str(e), title="Virtual Disk Resize Prerequisites Failed")
+		except Exception:
+			self.log_error("Virtual Disk Resize Prerequisites Failed")
 			self.status = Status.Failure
-			self.save()
+		self.save()
 
 	def get_lock(self):
 		try:
@@ -118,8 +116,11 @@ class VirtualDiskResize(Document):
 	def execute(self):
 		if not self.get_lock():
 			return
+
 		self.run_prerequisites()
-		self.status = Status.Running
+		if self.status != Status.Ready:
+			return
+
 		self.start = frappe.utils.now_datetime()
 		self.save()
 		self.next()
@@ -131,7 +132,9 @@ class VirtualDiskResize(Document):
 
 	def validate_aws_only(self):
 		if self.machine.cloud_provider != "AWS EC2":
-			frappe.throw("This feature is only available for AWS EC2")
+			frappe.throw(
+				"This feature is only available for servers hosted on AWS EC2. Please use an AWS EC2 server to continue."
+			)
 
 	def validate_existing_migration(self):
 		if existing := frappe.get_all(
@@ -275,14 +278,15 @@ class VirtualDiskResize(Document):
 
 	def reaffirm_old_filesystem_used(self, mountpoint: str):
 		"""Reaffirm file system usage using du"""
-		output = self.ansible_run(f"du -s {mountpoint}")["output"]
+		output = self.ansible_run(f"du -sx --block-size=1024 {mountpoint}")["output"]
 
 		if not output:
-			frappe.throw("Error occurred while fetching filesystem size")
+			frappe.throw(
+				"Could not fetch the filesystem size from the server. Please ensure the server is reachable and try again."
+			)
 
 		size = float(output.split()[0])
-		size *= 512  # du measures size in units of 512-byte blocks
-		return size / 1024**3
+		return size / 1024**2
 
 	def set_old_filesystem_attributes(self, device, filesystem):
 		self.filesystem_mount_point = device["mountpoint"]
@@ -442,7 +446,9 @@ class VirtualDiskResize(Document):
 			pluck="name",
 		)
 		if len(snapshots) == 0:
-			frappe.throw("Failed to create a snapshot")
+			frappe.throw(
+				"Failed to create a disk snapshot. Please check the cloud provider status and retry."
+			)
 
 		self.virtual_disk_snapshot = snapshots[0]
 		return StepStatus.Success
@@ -453,6 +459,7 @@ class VirtualDiskResize(Document):
 		server.copy_files(
 			source=self.filesystem_mount_point,
 			destination=self.new_filesystem_temporary_mount_point,
+			extra_options="-x",
 		)
 		return StepStatus.Success
 
@@ -690,9 +697,11 @@ class VirtualDiskResize(Document):
 		return None
 
 	def ansible_run(self, command):
-		virtual_machine_ip = frappe.db.get_value("Virtual Machine", self.virtual_machine, "public_ip_address")
-		inventory = f"{virtual_machine_ip},"
-		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+		vm_series = frappe.db.get_value("Virtual Machine", self.virtual_machine, "series")
+		server_type = SERIES_TO_SERVER_TYPE.get(vm_series)
+		server_name = frappe.db.get_value(server_type, {"virtual_machine": self.virtual_machine}, "name")
+		inventory = f"{server_name},"
+		result = AnsibleAdHoc(sources=inventory).run(command, self.name, raw_params=True)[0]
 		self.add_command(command, result)
 		return result
 

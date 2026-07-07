@@ -18,22 +18,26 @@
 				]"
 				v-model="tabIndex"
 			>
-				<TabList v-slot="{ tab, selected }" class="pl-0">
+				<template #tab-item="{ tab }">
 					<div
-						class="flex cursor-pointer items-center gap-1.5 border-b border-transparent py-3 text-base text-gray-600 duration-300 ease-in-out hover:border-gray-400 hover:text-gray-900 focus:outline-none focus:transition-none [&>div]:pl-0"
-						:class="{ 'text-gray-900': selected }"
+						class="flex cursor-pointer items-center gap-1.5 py-3 text-base text-ink-gray-6 duration-300 ease-in-out hover:border-outline-gray-3 hover:text-ink-gray-9 focus:outline-none focus:transition-none [&>div]:pl-0"
 					>
 						<span>{{ tab.label }}</span>
 					</div>
-				</TabList>
-				<TabPanel v-slot="{ tab }">
+				</template>
+				<template #tab-panel="{ tab }">
 					<div v-if="tab.value === 'members'" class="text-base">
 						<div class="my-4 flex gap-2">
 							<div class="flex-1">
 								<FormControl
-									type="autocomplete"
+									type="combobox"
 									:options="autoCompleteList"
-									v-model="member"
+									:modelValue="member?.value"
+									@update:modelValue="
+										member = autoCompleteList.find(
+											(option) => option.value === $event,
+										)
+									"
 									placeholder="Select a member to add"
 								/>
 							</div>
@@ -46,10 +50,10 @@
 							/>
 						</div>
 						<div class="rounded border px-3">
-							<div class="mt-2 text-gray-600">Members</div>
+							<div class="mt-2 text-ink-gray-6">Members</div>
 							<div
 								v-if="roleUsers.length === 0"
-								class="p-6 text-center text-gray-500"
+								class="p-6 text-center text-ink-gray-5"
 							>
 								<span>No members added to this role.</span>
 							</div>
@@ -66,7 +70,7 @@
 									/>
 									<Button variant="ghost" @click="() => removeUser(user.user)">
 										<template #icon>
-											<lucide-x class="h-4 w-4 text-gray-600" />
+											<lucide-x class="h-4 w-4 text-ink-gray-6" />
 										</template>
 									</Button>
 								</div>
@@ -108,7 +112,7 @@
 								/>
 								<Switch
 									v-model="allowBenchCreation"
-									label="Allow Bench Group Creation"
+									label="Allow Bench Creation"
 									:disabled="adminAccess"
 								/>
 								<Switch
@@ -122,29 +126,39 @@
 									:disabled="adminAccess"
 								/>
 							</div>
-							<div class="space-y-1 rounded border p-4">
+							<div v-if="allowPartner" class="space-y-1 rounded border p-4">
 								<h2 class="mb-2 ml-2 font-semibold">Partner Permissions</h2>
 								<Switch
 									v-model="allowDashboard"
 									label="Allow Dashboard Access"
+									:disabled="adminAccess"
 								/>
-								<Switch v-model="allowLeads" label="Allow Leads Access" />
-								<Switch v-model="allowCustomer" label="Allow Customer Access" />
+								<Switch
+									v-model="allowLeads"
+									label="Allow Leads Access"
+									:disabled="adminAccess"
+								/>
+								<Switch
+									v-model="allowCustomer"
+									label="Allow Customer Access"
+									:disabled="adminAccess"
+								/>
 								<Switch
 									v-model="allowContribution"
 									label="Allow Contribution Access"
+									:disabled="adminAccess"
 								/>
 							</div>
 						</div>
 					</div>
-				</TabPanel>
+				</template>
 			</FTabs>
 		</template>
 	</Dialog>
 </template>
 
 <script>
-import { Switch, Tabs, TabList, TabPanel } from 'frappe-ui';
+import { Switch, Tabs } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
 import { getToastErrorMessage } from '../../utils/toast';
@@ -156,8 +170,6 @@ export default {
 	components: {
 		UserWithAvatarCell,
 		FTabs: Tabs,
-		TabPanel,
-		TabList,
 		Switch,
 	},
 	data() {

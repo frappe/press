@@ -13,6 +13,10 @@ if TYPE_CHECKING:
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
+class BuildWarning(Warning):
+	pass
+
+
 class PackageManagers(TypedDict):
 	repo_path: str
 	pyproject: dict[str, Any] | None

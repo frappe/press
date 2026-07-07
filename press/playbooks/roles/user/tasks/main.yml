@@ -2,7 +2,7 @@
 - name: Create Frappe User
   user:
     name: frappe
-    password: "!"
+    password: '!'
     password_lock: yes
     shell: /bin/bash
     append: no
@@ -21,8 +21,8 @@
 
 - name: Change ownership of home directory to frappe user
   file:
-    path: "/home/frappe"
-    owner: "frappe"
-    group: "frappe"
+    path: '/home/frappe'
+    owner: 'frappe'
+    group: 'frappe'
     recurse: yes
     state: directory

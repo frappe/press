@@ -1,5 +1,5 @@
 <template>
-	<div class="p-5">
+	<div>
 		<ObjectList :options="options" />
 	</div>
 </template>
@@ -23,10 +23,22 @@ export default {
 					{
 						label: 'Customer Email',
 						fieldname: 'customer_email',
+						width: 0.8,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 					},
 					{
-						label: 'customer team id',
+						label: 'Customer Team',
 						fieldname: 'requested_by',
+						width: 0.8,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 					},
 					{
 						label: 'Raised On',
@@ -41,7 +53,7 @@ export default {
 						},
 					},
 					{
-						label: 'Approval By Frappe',
+						label: 'Frappe Approval',
 						fieldname: 'approved_by_frappe',
 						type: 'Component',
 						align: 'center',

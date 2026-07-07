@@ -11,7 +11,7 @@ def domains() -> list[str]:
 	:return: A list of disposable email domains.
 	"""
 	# In test mode, return a mock domain.
-	if frappe.in_test:
+	if frappe.flags.in_test:
 		return [frappe.mock("domain_name")]
 	uri = "https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt"
 	domains_response = requests.get(uri)

@@ -28,12 +28,14 @@ ALLOWED_PATHS = [
 	"/api/method/frappe.integrations.oauth2.openid_profile",
 	"/api/method/frappe.integrations.oauth2_logins.login_via_frappe",
 	"/api/method/frappe.website.doctype.web_page_view.web_page_view.make_view_log",
+	"/api/method/frappe.desk.form.utils.add_comment",
 	"/api/method/get-user-sites-list-for-new-ticket",
 	"/api/method/ping",
 	"/api/method/login",
 	"/api/method/logout",
 	"/api/method/press.press.doctype.razorpay_webhook_log.razorpay_webhook_log.razorpay_webhook_handler",
 	"/api/method/press.press.doctype.razorpay_webhook_log.razorpay_webhook_log.razorpay_authorized_payment_handler",
+	"/api/method/press.press.doctype.razorpay_webhook_log.razorpay_webhook_log.razorpay_emandate_webhook_handler",
 	"/api/method/press.press.doctype.stripe_webhook_log.stripe_webhook_log.stripe_webhook_handler",
 	"/api/method/press.press.doctype.drip_email.drip_email.unsubscribe",
 	"/api/method/upload_file",
@@ -43,6 +45,14 @@ ALLOWED_PATHS = [
 	"/api/method/validate_plan_change",
 	"/api/method/marketplace-apps",
 	"/api/method/press.www.dashboard.get_context_for_dev",
+	"/api/method/press.partner.doctype.partner_onboarding.partner_onboarding.get_certificate_link_status",
+	"/api/method/press.partner.doctype.partner_onboarding.partner_onboarding.get_mrr_status",
+	"/api/method/press.partner.doctype.partner_onboarding.partner_onboarding.get_partner_onboarding",
+	"/api/method/press.partner.doctype.partner_onboarding.partner_onboarding.resend_certificate_link_request",
+	"/api/method/press.partner.doctype.partner_onboarding.partner_onboarding.save_partner_onboarding",
+	"/api/method/press.partner.doctype.partner_onboarding.partner_onboarding.send_certificate_link_request",
+	"/api/method/press.partner.doctype.partner_onboarding.partner_onboarding.submit_for_approval",
+	"/api/method/press.partner.doctype.partner_onboarding.partner_onboarding.unregister",
 	"/api/method/frappe.website.doctype.web_form.web_form.accept",
 	"/api/method/frappe.core.doctype.user.user.test_password_strength",
 	"/api/method/frappe.core.doctype.user.user.update_password",
@@ -68,12 +78,21 @@ DENIED_WILDCARD_PATHS = [
 	"/api/",
 ]
 
+ALLOWED_OPTIONS_ENDPOINTS = [
+	"/api/method/press.mcp.handler",
+]
+
 
 def hook():  # noqa: C901
 	if frappe.form_dict.cmd:
 		path = f"/api/method/{frappe.form_dict.cmd}"
 	else:
 		path = frappe.request.path
+
+	# Allow access to whitelisted options endpoint
+	# Because, in OPTIONS request, user auth info doesn't get passed
+	if frappe.request.method == "OPTIONS" and path in ALLOWED_OPTIONS_ENDPOINTS:
+		return
 
 	user_type = frappe.get_cached_value("User", frappe.session.user, "user_type")
 

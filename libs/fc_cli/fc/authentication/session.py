@@ -1,9 +1,17 @@
+import platform
+import sys
 from urllib.parse import urljoin
 
 from requests.sessions import Session
 from rich.console import Console
 
 console = Console()
+
+
+# Default User-Agent to identify CLI-originated traffic server-side
+CLI_USER_AGENT = (
+	f"press-cli/python-{sys.version_info.major}.{sys.version_info.minor}; {platform.system().lower()})"
+)
 
 
 class CloudSession(Session):
@@ -16,6 +24,11 @@ class CloudSession(Session):
 
 	def request(self, method, url, *args, **kwargs) -> dict[str, str]:
 		joined_url = urljoin(self.base_url, url)
+
+		# Inject a default User-Agent header for tracking CLI requests
+		headers = kwargs.pop("headers", None) or {}
+		headers.setdefault("User-Agent", CLI_USER_AGENT)
+		kwargs["headers"] = headers
 
 		if message := kwargs.pop("message", None):
 			with console.status(message, spinner="dots"):

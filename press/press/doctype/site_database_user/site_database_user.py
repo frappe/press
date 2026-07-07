@@ -16,6 +16,7 @@ from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site_activity.site_activity import log_site_activity
+from press.utils import docs
 
 if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
@@ -44,6 +45,7 @@ class SiteDatabaseUser(Document):
 		site: DF.Link
 		status: DF.Literal["Pending", "Active", "Failed", "Archived"]
 		team: DF.Link
+		use_replica_server: DF.Check
 		user_added_in_proxysql: DF.Check
 		user_created_in_database: DF.Check
 		username: DF.Data | None
@@ -60,6 +62,7 @@ class SiteDatabaseUser(Document):
 		"failure_reason",
 		"permissions",
 		"max_connections",
+		"use_replica_server",
 	)
 
 	def validate(self):
@@ -97,6 +100,23 @@ class SiteDatabaseUser(Document):
 				f"Your site has quota of {site.database_access_connection_limit} database connections.\nYou can't allocate more than {allowed_max_connections_for_site} connections for new user. You can drop other database users to allocate more connections."
 			)
 
+		# validate replica server availability
+		if self.use_replica_server:
+			database_server_name = frappe.db.get_value("Server", site.server, "database_server")
+			replica_exists = frappe.db.exists(
+				"Database Server",
+				{
+					"status": ["!=", "Archived"],
+					"is_primary": 0,
+					"primary": database_server_name,
+					"is_replication_setup": 1,
+				},
+			)
+			if not replica_exists:
+				frappe.throw(
+					f"This site doesn't have a read replica, so a read-only database user can't connect to one. Please add a replica to the server, or use the primary database instead. {docs.doc_link(docs.DATABASE_ACCESS)}."
+				)
+
 		self.status = "Pending"
 		if not self.username:
 			self.username = frappe.generate_hash(length=15)
@@ -132,7 +152,9 @@ class SiteDatabaseUser(Document):
 		site = frappe.get_doc("Site", self.site)
 		db_name = site.fetch_info().get("config", {}).get("db_name")
 		if not db_name:
-			frappe.throw("Failed to fetch database name of site")
+			frappe.throw(
+				"We couldn't fetch the database name for this site. Please make sure the site is active and try again."
+			)
 		return db_name
 
 	@dashboard_whitelist()
@@ -215,10 +237,32 @@ class SiteDatabaseUser(Document):
 		database = self._get_database_name()
 		server = frappe.db.get_value("Site", self.site, "server")
 		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
-		database_server_name = frappe.db.get_value(
-			"Bench", frappe.db.get_value("Site", self.site, "bench"), "database_server"
-		)
+		database_server_name = frappe.db.get_value("Server", server, "database_server")
+
+		if self.use_replica_server:
+			# Try to find the replica server
+			replica_server_name = frappe.db.get_value(
+				"Database Server",
+				{
+					"status": ["!=", "Archived"],
+					"is_primary": 0,
+					"primary": database_server_name,
+					"is_replication_setup": 1,
+				},
+			)
+
+			if replica_server_name:
+				database_server_name = replica_server_name
+			else:
+				# We will block creation of database user with use_replica_server flag
+				# If replica server is not found
+				# But, in some edge cases, if replica server is not found
+				# we can still proceed with primary server and turn off use_replica_server flag to avoid blocking user creation
+				self.use_replica_server = False
+				self.save()
+
 		database_server = frappe.get_doc("Database Server", database_server_name)
+
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.add_proxysql_user(
 			frappe.get_doc("Site", self.site),

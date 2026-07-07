@@ -3,7 +3,7 @@
 		<template #body-content>
 			<div
 				v-if="showMessage"
-				class="mb-5 inline-flex gap-1.5 text-base text-gray-700"
+				class="mb-5 inline-flex gap-1.5 text-base text-ink-gray-7"
 			>
 				<FeatherIcon class="h-4" name="info" />
 				<span>
@@ -11,6 +11,9 @@
 				</span>
 			</div>
 			<PrepaidCreditsForm
+				:minimumAmount="minimumAmount"
+				:type="type"
+				:docName="docName"
 				@success="
 					() => {
 						show = false;
@@ -29,6 +32,18 @@ const props = defineProps({
 	showMessage: {
 		type: Boolean,
 		default: false,
+	},
+	minimumAmount: {
+		type: Number,
+		default: null,
+	},
+	docName: {
+		type: String,
+		default: null,
+	},
+	type: {
+		type: String,
+		default: 'Prepaid Credits',
 	},
 });
 

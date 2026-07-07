@@ -3,17 +3,26 @@
 from __future__ import annotations
 
 import math
+import typing
 import zoneinfo
 from contextlib import suppress
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
+import frappe.utils
 from frappe.tests.utils import FrappeTestCase
 from hypothesis import given, settings
 from hypothesis import strategies as st
+from prometheus_api_client import PrometheusConnect
 from twilio.base.exceptions import TwilioRestException
 
+from press.incident_management.doctype.incident_investigator.test_incident_investigator import (
+	get_mock_prometheus_client,
+	make_custom_query_range_side_effect,
+	mock_disk_usage,
+	mock_system_load,
+)
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import (
 	AlertmanagerWebhookLog,
@@ -25,9 +34,11 @@ from press.press.doctype.incident.incident import (
 	CALL_REPEAT_INTERVAL_NIGHT,
 	CALL_THRESHOLD_SECONDS_NIGHT,
 	CONFIRMATION_THRESHOLD_SECONDS_NIGHT,
+	MAX_ASSIGNED_CALLS_BEFORE_DEFAULT_AT_NIGHT,
 	MIN_FIRING_INSTANCES,
 	MIN_FIRING_INSTANCES_FRACTION,
 	Incident,
+	get_wait_time_post_investigator_actions,
 	resolve_incidents,
 	validate_incidents,
 )
@@ -38,6 +49,11 @@ from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils.test import foreground_enqueue_doc
+
+if typing.TYPE_CHECKING:
+	from press.incident_management.doctype.incident_investigator.incident_investigator import (
+		IncidentInvestigator,
+	)
 
 
 class MockTwilioCallInstance:
@@ -131,6 +147,10 @@ def get_total_firing_and_resolved_for_resolved_incident(draw) -> tuple[int, int,
 @patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 @patch("tenacity.nap.time", new=Mock())  # no sleep
 @patch.object(Incident, "sites_down", new=[])
+@patch.object(Incident, "down_bench", new=[])
+@patch.object(
+	Incident, "monitor_server", Mock(get_sites_down_for_server=Mock(return_value=["test-site.frappe.cloud"]))
+)
 class TestIncident(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
@@ -444,6 +464,36 @@ class TestIncident(FrappeTestCase):
 	def test_calls_repeated_for_acknowledged_incidents(self, mock_calls_create):
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
+		investigator = frappe.get_last_doc("Incident Investigator")
+
+		incident.db_set("status", "Acknowledged")
+		resolve_incidents()
+		mock_calls_create.assert_not_called()
+		incident.reload()  # datetime conversion
+		incident.db_set(
+			"modified",
+			incident.modified - timedelta(seconds=CALL_REPEAT_INTERVAL_NIGHT + 10),
+			update_modified=False,
+		)  # assume night interval is longer
+		investigator.db_set(
+			"status", "Completed"
+		)  # Ensure calling only when investigator has completed status
+		resolve_incidents()
+		mock_calls_create.assert_called_once()
+
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("completed").create,
+	)
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		new=Mock(),
+	)
+	def test_no_calls_before_investigator_actions(self, mock_calls_create):
+		create_test_alertmanager_webhook_log()
+		incident = frappe.get_last_doc("Incident")
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
 		incident.db_set("status", "Acknowledged")
 		resolve_incidents()
 		mock_calls_create.assert_not_called()
@@ -454,7 +504,61 @@ class TestIncident(FrappeTestCase):
 			update_modified=False,
 		)  # assume night interval is longer
 		resolve_incidents()
-		mock_calls_create.assert_called_once()
+
+		mock_calls_create.assert_not_called()  # No calls since investigator hasn't completed investigation
+		investigator.db_set("status", "Completed")
+		self.assertEqual(investigator.action_steps, [])  # Ensure the steps are empty
+		resolve_incidents()
+
+		mock_calls_create.assert_called_once()  # Now calls should happen since investigator has completed investigation
+
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=True))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=True))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.get_prometheus_client",
+		get_mock_prometheus_client,
+	)
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("completed").create,
+	)
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	def test_investigation_actions_must_be_completed_before_repeating_calls(self, mock_calls_create):
+		create_test_alertmanager_webhook_log()
+		incident = frappe.get_last_doc("Incident")
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
+		incident.db_set("status", "Acknowledged")
+		resolve_incidents()
+		incident.reload()  # datetime conversion
+		incident.db_set(
+			"modified",
+			incident.modified - timedelta(seconds=CALL_REPEAT_INTERVAL_NIGHT + 10),
+			update_modified=False,
+		)  # assume night interval is longer
+		resolve_incidents()
+
+		investigator.db_set("status", "Completed")
+
+		self.assertEqual(
+			len(investigator.action_steps), 6
+		)  # Since `execute_incident_action` is not enabled we won't add pattern detector step
+		resolve_incidents()
+
+		mock_calls_create.assert_not_called()  # Calls should not happen since we haven't waited enough for the action steps to show results
+		investigator.reload()  # datetime conversion
+		investigator.db_set(
+			"modified",
+			investigator.modified - timedelta(minutes=get_wait_time_post_investigator_actions()),
+			update_modified=False,
+		)
+
+		resolve_incidents()
+		mock_calls_create.assert_called_once()  # Now calls should happen since investigation actions have had enough time to show results
 
 	def test_repeat_call_calls_acknowledging_person_first(self):
 		create_test_alertmanager_webhook_log(
@@ -463,6 +567,9 @@ class TestIncident(FrappeTestCase):
 			)
 		)
 		incident = frappe.get_last_doc("Incident")
+		investigator = frappe.get_last_doc("Incident Investigator")
+		investigator.db_set("status", "Completed")
+
 		incident.db_set("status", "Confirmed")
 		incident.db_set(
 			"creation",
@@ -494,6 +601,131 @@ class TestIncident(FrappeTestCase):
 				to=self.test_phno_2, from_=self.from_, url="http://demo.twilio.com/docs/voice.xml"
 			)
 
+	# --- Night shift ordering tests ---
+
+	def _add_night_shifts(self, entries: list[tuple[str, str]]):
+		"""Add night shift rows to Incident Settings and clear doc cache."""
+		settings = frappe.get_doc("Incident Settings", "Incident Settings")
+		for user, day in entries:
+			settings.append("night_shifts", {"user": user, "day": day})
+		settings.save()
+
+	def _get_humans_at(self, incident: "Incident", mock_dt):
+		with (
+			patch("frappe.utils.now_datetime", return_value=mock_dt),
+			patch(
+				"press.press.doctype.incident.incident.frappe.get_cached_doc",
+				side_effect=frappe.get_doc,
+			),
+		):
+			return incident.get_humans()
+
+	def test_night_shift_users_used_during_night_hours(self):
+		"""Night shift users replace default users when a shift is defined for today."""
+		settings = frappe.get_doc("Incident Settings", "Incident Settings")
+		night_user = settings.users[0].user
+		self._add_night_shifts([(night_user, "Friday")])
+
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test"}).insert()
+
+		friday_2am = datetime(2024, 1, 5, 2, 0)  # Friday, outside DAY_HOURS
+		humans = self._get_humans_at(incident, friday_2am)
+
+		self.assertEqual(len(humans), 1)
+		self.assertEqual(humans[0].user, night_user)
+
+	def test_night_shift_round_robin_puts_next_user_first_on_repeat_call(self):
+		"""On repeat night call, user after acknowledged_by is first (round-robin)."""
+		settings = frappe.get_doc("Incident Settings", "Incident Settings")
+		user1 = settings.users[0].user
+		user2 = settings.users[1].user
+		self._add_night_shifts([(user1, "Friday"), (user2, "Friday")])
+
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test"}).insert()
+		incident.db_set("status", "Acknowledged")
+		incident.db_set("acknowledged_by", user1)
+		incident.reload()
+
+		friday_2am = datetime(2024, 1, 5, 2, 0)
+		humans = self._get_humans_at(incident, friday_2am)
+
+		self.assertEqual(humans[0].user, user2)
+
+	def test_night_shift_round_robin_wraps_around(self):
+		"""Round-robin wraps: last user acknowledged → first user goes to end, second is first."""
+		settings = frappe.get_doc("Incident Settings", "Incident Settings")
+		user1 = settings.users[0].user
+		user2 = settings.users[1].user
+		self._add_night_shifts([(user1, "Friday"), (user2, "Friday")])
+
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test"}).insert()
+		incident.db_set("status", "Acknowledged")
+		incident.db_set("acknowledged_by", user2)
+		incident.reload()
+
+		friday_2am = datetime(2024, 1, 5, 2, 0)
+		humans = self._get_humans_at(incident, friday_2am)
+
+		self.assertEqual(humans[0].user, user1)
+
+	def test_night_shift_falls_back_to_default_when_no_shift_for_today(self):
+		"""Falls back to all default users when no shift defined for current day."""
+		settings = frappe.get_doc("Incident Settings", "Incident Settings")
+		self._add_night_shifts([(settings.users[0].user, "Saturday")])  # Saturday only
+
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test"}).insert()
+
+		friday_2am = datetime(2024, 1, 5, 2, 0)  # Friday — no shift defined
+		humans = self._get_humans_at(incident, friday_2am)
+
+		self.assertEqual(len(humans), 2)
+
+	def test_night_shift_ignored_during_day_hours(self):
+		"""Night shift is not applied during DAY_HOURS even if shift exists for today."""
+		settings = frappe.get_doc("Incident Settings", "Incident Settings")
+		self._add_night_shifts([(settings.users[0].user, "Friday")])
+
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test"}).insert()
+
+		friday_10am = datetime(2024, 1, 5, 10, 0)  # Friday, inside DAY_HOURS
+		humans = self._get_humans_at(incident, friday_10am)
+
+		self.assertEqual(len(humans), 2)
+
+	def test_night_shift_falls_back_when_shift_user_not_in_main_users_list(self):
+		"""Falls back to default users when night shift user has no phone (not in users table)."""
+		orphan_user = create_test_press_admin_team().user
+		self._add_night_shifts([(orphan_user, "Friday")])
+
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test"}).insert()
+
+		friday_2am = datetime(2024, 1, 5, 2, 0)
+		humans = self._get_humans_at(incident, friday_2am)
+
+		self.assertEqual(len(humans), 2)  # both default users
+
+	def test_night_shift_falls_back_to_default_after_call_limit_exceeded(self):
+		"""Falls back to default users once MAX_ASSIGNED_CALLS_BEFORE_DEFAULT_AT_NIGHT attempts are exhausted."""
+		settings = frappe.get_doc("Incident Settings", "Incident Settings")
+		night_user = settings.users[0].user
+		self._add_night_shifts([(night_user, "Friday")])
+
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test"}).insert()
+
+		friday_2am = datetime(2024, 1, 5, 2, 0)
+		fake_updates = [Mock()] * MAX_ASSIGNED_CALLS_BEFORE_DEFAULT_AT_NIGHT
+		with (
+			patch("frappe.utils.now_datetime", return_value=friday_2am),
+			patch(
+				"press.press.doctype.incident.incident.frappe.get_cached_doc",
+				side_effect=frappe.get_doc,
+			),
+			patch.object(incident, "updates", fake_updates),
+		):
+			humans = incident.get_humans()
+
+		self.assertEqual(len(humans), 2)  # fallback to all default users
+
 	@patch.object(TelegramMessage, "enqueue")
 	def test_telegram_message_is_sent_when_unable_to_reach_twilio(self, mock_telegram_send):
 		print(mock_telegram_send)
@@ -505,6 +737,24 @@ class TestIncident(FrappeTestCase):
 		):
 			incident.call_humans()
 		mock_telegram_send.assert_called_once()
+
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("completed").create,
+	)
+	def test_no_calls_when_sites_recover_before_call(self, mock_calls_create):
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test Alert"}).insert()
+		incident.db_set("status", "Confirmed")
+
+		mock_monitor = Mock()
+		mock_monitor.get_sites_down_for_server.return_value = []
+
+		with patch.object(Incident, "monitor_server", mock_monitor):
+			incident.call_humans()
+
+		mock_calls_create.assert_not_called()
+		incident.reload()
+		self.assertEqual(incident.status, "Resolved")
 
 	def get_5_min_load_avg_prometheus_response(self, load_avg: float):
 		return {

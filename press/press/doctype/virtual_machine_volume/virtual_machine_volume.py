@@ -24,6 +24,7 @@ class VirtualMachineVolume(Document):
 		parentfield: DF.Data
 		parenttype: DF.Data
 		size: DF.Int
+		skip_rightsize: DF.Check
 		throughput: DF.Int
 		volume_id: DF.Data | None
 		volume_type: DF.Literal["gp3", "gp2"]

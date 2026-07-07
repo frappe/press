@@ -2,31 +2,47 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
-	"strconv"
+	"runtime"
+	"runtime/pprof"
 )
 
 func main() {
 	if len(os.Args) < 5 {
-		fmt.Println("Usage: mariadb_binlog_indexer <add/remove> <base_path> <binlog_path> <database_name> <batch_size = 10000>")
+		fmt.Println("Usage: mariadb_binlog_indexer <add/remove> <base_path> <binlog_path> <database_name> [compression_mode=balanced]")
+		fmt.Println("")
+		fmt.Println("Compression modes:")
+		fmt.Println("  low-memory:       <150MB, slowest, Snappy, batch=100, minimal memory")
+		fmt.Println("  balanced:         <300MB RSS, good speed, ZSTD default, batch=1000 (default)")
+		fmt.Println("  high-compression: <1GB RSS, fastest, ZSTD max, batch=10000, smallest files")
+		fmt.Println("")
+		fmt.Println("Examples:")
+		fmt.Println("  ./mariadb_binlog_indexer add /data /binlog queries.duckdb low-memory")
+		fmt.Println("  ./mariadb_binlog_indexer add /data /binlog queries.duckdb high-compression")
 		return
 	}
 
 	if os.Args[1] == "add" {
-		batchSize := 10000
-		if len(os.Args) == 6 {
-			batchSizeCmd, err := strconv.Atoi(os.Args[5])
-			if err != nil {
-				fmt.Println("Invalid batch size")
+		compressionMode := "balanced" // default mode
+
+		// Parse optional compression mode (arg 5)
+		if len(os.Args) >= 6 {
+			mode := os.Args[5]
+			if mode != "low-memory" && mode != "balanced" && mode != "high-compression" {
+				fmt.Println("Invalid compression mode. Use 'low-memory', 'balanced', or 'high-compression'")
 				os.Exit(1)
 			}
-			batchSize = batchSizeCmd
+			compressionMode = mode
 		}
+
+		fmt.Printf("Starting indexer with compression mode: %s\n", compressionMode)
+
 		indexer, err := NewBinlogIndexer(
 			os.Args[2],
 			os.Args[3],
 			os.Args[4],
-			batchSize,
+			compressionMode,
 		)
 		if err != nil {
 			fmt.Println(err.Error())
@@ -54,4 +70,24 @@ func main() {
 		fmt.Println("Invalid command")
 		os.Exit(1)
 	}
+
+	isProfilerEnabled := os.Getenv("PPROF_ENABLED")
+	if isProfilerEnabled != "1" {
+		return
+	}
+
+	// Generate memory profile
+	f, err := os.Create("mem.prof")
+	if err != nil {
+		log.Fatal("could not create memory profile: ", err)
+	}
+	defer f.Close()
+
+	runtime.GC() // Force GC for accurate profile
+
+	if err := pprof.WriteHeapProfile(f); err != nil {
+		log.Fatal("could not write memory profile: ", err)
+	}
+
+	log.Println("Memory profile written to mem.prof")
 }

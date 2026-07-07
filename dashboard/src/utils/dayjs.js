@@ -27,4 +27,11 @@ export function dayjsIST(dateTimeString) {
 	return dayjs(dateTimeString).tz('Asia/Calcutta');
 }
 
+export function dayjsFloorToMinutes(d, interval) {
+	const minutes = d.minute();
+	const floored = Math.floor(minutes / interval) * interval;
+
+	return d.minute(floored).second(0).millisecond(0);
+}
+
 export default dayjs;

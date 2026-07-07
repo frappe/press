@@ -5,11 +5,11 @@ import traceback
 
 import frappe
 from frappe.model.document import Document
+from frappe.query_builder import Interval
+from frappe.query_builder.functions import Now
 from telegram.error import NetworkError, RetryAfter
 
 from press.telegram_utils import Telegram
-from frappe.query_builder import Interval
-from frappe.query_builder.functions import Now
 
 
 class TelegramMessage(Document):
@@ -51,13 +51,14 @@ class TelegramMessage(Document):
 				self.status = "Error"
 			raise
 		except Exception:
-			# It's unlinkely that this error will be resolved by retrying
+			# It's unlikely that this error will be resolved by retrying
 			# Fail immediately
 			self.error = traceback.format_exc()
 			self.status = "Error"
 			raise
 		finally:
 			self.save()
+			frappe.db.commit()
 
 	@staticmethod
 	def enqueue(
@@ -88,12 +89,14 @@ class TelegramMessage(Document):
 		)
 		if first:
 			return frappe.get_doc("Telegram Message", first[0])
+		return None
 
 	@staticmethod
 	def send_one() -> None:
 		message = TelegramMessage.get_one()
 		if message:
 			return message.send()
+		return None
 
 	@staticmethod
 	def clear_old_logs(days=30):
@@ -104,6 +107,7 @@ class TelegramMessage(Document):
 
 def send_telegram_message():
 	"""Send one queued telegram message"""
+	from press.utils.jobs import has_job_timeout_exceeded
 
 	# Go through the queue till either of these things happen
 	# 1. There are no more queued messages
@@ -112,6 +116,8 @@ def send_telegram_message():
 	# 4. We encounter an error that is not recoverable by retrying
 	# (attempt 5 retries and remove the message from queue)
 	while message := TelegramMessage.get_one():
+		if has_job_timeout_exceeded():
+			return
 		try:
 			message.send()
 			return

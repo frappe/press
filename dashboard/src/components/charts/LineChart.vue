@@ -24,7 +24,7 @@
 			class="flex h-full items-center justify-center"
 		>
 			<ErrorMessage v-if="error" :message="error" />
-			<span v-else class="text-base text-gray-700">No data</span>
+			<NoDataMsg v-else />
 		</div>
 		<VChart
 			v-else
@@ -52,6 +52,7 @@ import {
 import VChart from 'vue-echarts';
 import { theme } from '../../utils/theme';
 import { bytes, getUnit } from '../../utils/format';
+import NoDataMsg from '@/components/common/NoDataMsg.vue';
 
 const props = defineProps({
 	showCard: {
@@ -164,7 +165,11 @@ const options = ref({
 		max: data.value.yMax,
 		axisLabel: {
 			formatter: (value) => {
-				if (unit.value === 'bytes') {
+				if (unit.value === '%') {
+					return `${value}%`;
+				} else if (unit.value === 'IOps') {
+					return `${value} IOps`;
+				} else if (unit.value === 'bytes') {
 					return bytes(value, 0);
 				} else {
 					if (value >= 1000000000) return `${value / 1000000000}B`;
@@ -193,6 +198,7 @@ const options = ref({
 			showSymbol: false,
 			data: dataset.dataset || dataset,
 			markLine: data.value.markLine,
+			connectNulls: true,
 			emphasis: {
 				itemStyle: {
 					shadowBlur: 10,

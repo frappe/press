@@ -7,10 +7,12 @@ import typing
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.core.utils import find
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
+from press.agent import Agent
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
@@ -73,6 +75,8 @@ def create_test_server(
 			"team": team,
 			"plan": plan,
 			"public": public,
+			"use_for_new_sites": 1 if public else 0,
+			"use_for_new_benches": 1 if public else 0,
 			"virtual_machine": create_test_virtual_machine(
 				platform=plan_doc.platform if plan_doc else "x86_64",
 				disk_size=plan_doc.disk if plan_doc else 25,
@@ -265,3 +269,240 @@ class TestServer(FrappeTestCase):
 		group2.reload()
 		# Assert server removed from group2
 		self.assertFalse(any(s.server == server.name for s in group2.servers))
+
+	@patch.object(BaseServer, "_archive", new=Mock())
+	@patch.object(BaseServer, "disable_subscription", new=Mock())
+	def test_release_group_modifications_on_archival(self):
+		server = create_test_server()
+		other_servers = create_test_server()
+		one_more_server = create_test_server()
+		apps = [create_test_app()]
+		group1 = create_test_release_group(apps, public=True, servers=[server.name])
+		group2 = create_test_release_group(apps, public=True, servers=[server.name, other_servers.name])
+		group3 = create_test_release_group(
+			apps, public=True, servers=[server.name, other_servers.name, one_more_server.name]
+		)
+
+		# Test the archival of this server
+		server.archive()
+
+		# Reload groups
+		group1.reload()
+		group2.reload()
+		group3.reload()
+
+		# Test only group with that one server is disbled, others remain enabled
+		self.assertEqual(group1.enabled, 0)
+		self.assertEqual(group2.enabled, 1)
+		self.assertEqual(group3.enabled, 1)
+
+		# Test the server is removed from all groups that had more than one server
+		self.assertListEqual([s.server for s in group2.servers], [other_servers.name])
+		self.assertListEqual([s.server for s in group3.servers], [other_servers.name, one_more_server.name])
+
+	@patch.object(Agent, "get", return_value={"benches": ["bench1", "bench2"]})
+	def test_process_running_benches_on_server(self, mock_get):
+		from press.press.doctype.server.server import _process_running_benches_on_server
+
+		server = create_test_server()
+		bench_1 = create_test_bench(server=server.name)
+		bench_2 = create_test_bench(server=server.name)
+
+		frappe.db.set_value("Bench", bench_1.name, "name", "bench1")
+		frappe.db.set_value("Bench", bench_2.name, "name", "bench2")
+
+		_process_running_benches_on_server(server.name)
+		mock_get.assert_called_once_with("/server/running-benches")
+
+		agent_job_created = frappe.get_all(
+			"Agent Job", {"server": server.name, "job_type": "Force Remove Zombie Benches"}, pluck="name"
+		)
+		self.assertEqual(
+			len(agent_job_created), 0
+		)  # Benches not marked as archived, so no agent job should be created
+
+		frappe.db.set_value("Bench", "bench1", "status", "Archived")
+		frappe.db.set_value("Bench", "bench2", "status", "Archived")
+
+		_process_running_benches_on_server(server.name)
+		mock_get.assert_called_with("/server/running-benches")
+
+		agent_job_created = frappe.get_all(
+			"Agent Job", {"server": server.name, "job_type": "Force Remove Zombie Benches"}, ["name", "data"]
+		)
+		self.assertEqual(
+			len(agent_job_created), 1
+		)  # Benches marked as archived, so agent job should be created to force remove zombie benches
+
+	def test_server_with_more_memory_is_shortlisted_for_new_benches_and_incident_created_against_shortlisted_server_with_insufficient_memory(
+		self,
+	):
+		"""The server with higher available memory must be selected (use_for_new_benches=1)."""
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.incident.incident import Incident
+		from press.press.doctype.server.server import _refresh_bench_pool_and_raise_capacity_incidents
+
+		self.cluster = create_test_cluster("Default", public=True)
+		# Two servers in the same cluster with different memory levels
+		self.low_mem_server = create_test_server(cluster=self.cluster.name, public=True)
+		self.high_mem_server = create_test_server(cluster=self.cluster.name, public=True)
+
+		memory_map = {
+			self.low_mem_server.name: 200 * 1024 * 1024,  # 200 MiB
+			self.high_mem_server.name: 500 * 1024 * 1024,  # 500 MiB
+		}
+
+		_refresh_bench_pool_and_raise_capacity_incidents(
+			server_names=[self.low_mem_server.name, self.high_mem_server.name],
+			servers_by_cluster={self.cluster.name: [self.low_mem_server.name, self.high_mem_server.name]},
+			memory_map=memory_map,
+		)
+
+		self.assertEqual(frappe.db.get_value("Server", self.high_mem_server.name, "use_for_new_benches"), 1)
+		self.assertEqual(frappe.db.get_value("Server", self.low_mem_server.name, "use_for_new_benches"), 0)
+
+		# Set both servers below threshold; high_mem_server is still the best candidate
+		memory_map = {
+			self.low_mem_server.name: 50 * 1024 * 1024,  # 50 MiB
+			self.high_mem_server.name: 100 * 1024 * 1024,  # 100 MiB — best, but still < 300 MiB
+		}
+
+		with patch.object(Incident, "after_insert", new=Mock()):
+			_refresh_bench_pool_and_raise_capacity_incidents(
+				server_names=[self.low_mem_server.name, self.high_mem_server.name],
+				servers_by_cluster={self.cluster.name: [self.low_mem_server.name, self.high_mem_server.name]},
+				memory_map=memory_map,
+			)
+
+		incidents = frappe.get_all(
+			"Incident",
+			{
+				"cluster": self.cluster.name,
+				"subject": f"Insufficient bench capacity in cluster {self.cluster.name}",
+			},
+			["name", "server"],
+		)
+		self.assertEqual(len(incidents), 1)
+		self.assertEqual(incidents[0].server, self.high_mem_server.name)
+
+	def test_validate_mounts_seeds_snapshot_volume_not_doomed_default_volume(self):
+		"""A server built from a data disk snapshot first boots with the VMI's default data
+		volume, which is then deleted and replaced by the volume created from the snapshot.
+		validate_mounts must not seed mounts off the doomed default volume — otherwise the
+		mount keeps a deleted volume id and its by-id device path, and the Mount Volumes
+		playbook fails. It should seed only after the snapshot volume is attached."""
+		database_server = create_test_database_server()
+		virtual_machine = database_server.virtual_machine
+		default_volume_id = f"vol-{frappe.generate_hash(11)}"
+		snapshot_volume_id = f"vol-{frappe.generate_hash(11)}"
+
+		# VM has booted with root + the VMI's default data volume, snapshot swap still pending
+		self._set_virtual_machine_volumes(
+			virtual_machine,
+			[
+				{"device": "/dev/sda1", "size": 8, "volume_id": f"vol-{frappe.generate_hash(11)}"},
+				{"device": "/dev/sdf", "size": 600, "volume_id": default_volume_id},
+			],
+		)
+		frappe.db.set_value(
+			"Virtual Machine",
+			virtual_machine,
+			{
+				"has_data_volume": True,
+				"data_disk_snapshot": "dummy-snapshot",
+				"data_disk_snapshot_attached": False,
+			},
+		)
+
+		database_server.validate_mounts()
+		self.assertEqual(
+			len(database_server.mounts),
+			0,
+			"Mounts must not be seeded off the default volume while the snapshot swap is pending",
+		)
+
+		# Default volume deleted, snapshot volume created and attached
+		self._set_virtual_machine_volumes(
+			virtual_machine,
+			[
+				{"device": "/dev/sda1", "size": 8, "volume_id": f"vol-{frappe.generate_hash(11)}"},
+				{"device": "/dev/sdf", "size": 600, "volume_id": snapshot_volume_id},
+			],
+		)
+		frappe.db.set_value("Virtual Machine", virtual_machine, "data_disk_snapshot_attached", True)
+
+		database_server.validate_mounts()
+
+		volume_mount = find(database_server.mounts, lambda m: m.mount_type == "Volume")
+		self.assertIsNotNone(volume_mount, "A volume mount should be seeded after the snapshot is attached")
+		self.assertEqual(volume_mount.volume_id, snapshot_volume_id)
+		self.assertNotEqual(volume_mount.volume_id, default_volume_id)
+		self.assertIn(snapshot_volume_id.replace("-", ""), volume_mount.source)
+
+	def _set_virtual_machine_volumes(self, virtual_machine: str, volumes: list[dict]):
+		frappe.db.delete("Virtual Machine Volume", {"parent": virtual_machine})
+		for volume in volumes:
+			frappe.get_doc(
+				{
+					"doctype": "Virtual Machine Volume",
+					"parenttype": "Virtual Machine",
+					"parent": virtual_machine,
+					"parentfield": "volumes",
+					"volume_type": "gp3",
+					"throughput": 125,
+					"device": volume["device"],
+					"size": volume["size"],
+					"volume_id": volume["volume_id"],
+				}
+			).insert()
+
+	def test_disable_auto_storage_on_database_server_clears_db_flag_not_app_flag(self):
+		database_server = create_test_database_server()
+		frappe.db.set_value("Database Server", database_server.name, "auto_increase_storage", True)
+		server = create_test_server(database_server=database_server.name, auto_increase_storage=True)
+
+		# Dashboard always dispatches on the app server, passing the real target as `server`.
+		server.configure_auto_add_storage(server=database_server.name, enabled=False)
+
+		self.assertFalse(
+			frappe.db.get_value("Database Server", database_server.name, "auto_increase_storage")
+		)
+		self.assertTrue(frappe.db.get_value("Server", server.name, "auto_increase_storage"))
+
+	def test_disable_auto_storage_on_app_server_clears_app_flag(self):
+		server = create_test_server(auto_increase_storage=True)
+
+		server.configure_auto_add_storage(server=server.name, enabled=False)
+
+		self.assertFalse(frappe.db.get_value("Server", server.name, "auto_increase_storage"))
+
+	def test_configure_auto_storage_rejects_another_teams_database_server(self):
+		"""The dashboard API only team-checks the app server. A Press User must not be able to
+		flip auto_increase_storage on another team's Database Server by passing its name as the
+		`server` argument — the disable path writes via set_value, which skips permission hooks."""
+		from frappe.tests.ui_test_helpers import create_test_user
+
+		attacker_email = frappe.mock("email")
+		create_test_user(attacker_email)
+		attacker = frappe.get_doc("User", {"email": attacker_email})
+		attacker.remove_roles(*frappe.get_all("Role", pluck="name"))
+		attacker.add_roles("Press User")
+		attacker_team = create_test_team(attacker_email)
+
+		own_database_server = create_test_database_server()
+		frappe.db.set_value("Database Server", own_database_server.name, "team", attacker_team.name)
+		server = create_test_server(database_server=own_database_server.name, team=attacker_team.name)
+
+		victim_database_server = create_test_database_server()
+		frappe.db.set_value(
+			"Database Server",
+			victim_database_server.name,
+			{"team": create_test_team().name, "auto_increase_storage": True},
+		)
+
+		with self.set_user(attacker_team.user), self.assertRaises(frappe.PermissionError):
+			server.configure_auto_add_storage(server=victim_database_server.name, enabled=False)
+
+		self.assertTrue(
+			frappe.db.get_value("Database Server", victim_database_server.name, "auto_increase_storage")
+		)

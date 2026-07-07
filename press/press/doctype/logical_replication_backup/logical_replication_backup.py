@@ -254,7 +254,9 @@ class LogicalReplicationBackup(Document):
 			return self.post_migrate_stage_status
 		if self.execution_stage == "Failover":
 			return self.failover_stage_status
-		frappe.throw("Invalid execution stage for getting stage status")
+		frappe.throw(
+			"Invalid execution stage while getting stage status. Please retry the replication backup from the start."
+		)
 		return None
 
 	@stage_status.setter
@@ -266,7 +268,9 @@ class LogicalReplicationBackup(Document):
 		elif self.execution_stage == "Failover":
 			self.failover_stage_status = value
 		else:
-			frappe.throw("Invalid execution stage for setting stage status.")
+			frappe.throw(
+				"Invalid execution stage while setting stage status. Please retry the replication backup from the start."
+			)
 
 	@property
 	def site_doc(self) -> "Site":
@@ -329,18 +333,22 @@ class LogicalReplicationBackup(Document):
 		return frappe.get_doc("Database Server", hot_standby_server)
 
 	@property
-	def site_replication_config_dict(self) -> dict:
+	def site_replication_config_dict(self) -> dict:  # type: ignore[return-value]
 		try:
 			return json.loads(self.site_replication_config or "{}")
 		except json.JSONDecodeError:
-			frappe.throw("Invalid site replication config JSON format.")
+			frappe.throw(
+				"The site replication config is not valid JSON. Please correct the JSON and try again."
+			)
 
 	@property
-	def bench_replication_config_dict(self) -> dict:
+	def bench_replication_config_dict(self) -> dict:  # type: ignore[return-value]
 		try:
 			return json.loads(self.bench_replication_config or "{}")
 		except json.JSONDecodeError:
-			frappe.throw("Invalid bench replication config JSON format.")
+			frappe.throw(
+				"The bench replication config is not valid JSON. Please correct the JSON and try again."
+			)
 
 	def after_insert(self):
 		self.populate_server_infos()
@@ -700,7 +708,9 @@ class LogicalReplicationBackup(Document):
 			.get("gtid_current_pos", "")
 		)
 		if not self.initial_binlog_position_of_new_primary_db:
-			frappe.throw("Failed to gather initial binlog position from new master database server")
+			frappe.throw(
+				"Could not read the initial binlog position from the new master database server. Please ensure it is running and reachable, then retry."
+			)
 		self.save()
 		return StepStatus.Success
 
@@ -904,7 +914,7 @@ class LogicalReplicationBackup(Document):
 
 	def store_replication_config_of_bench(self, save: bool = True):
 		config = {}
-		common_site_config: dict = json.loads(self.release_group_doc.common_site_config)
+		common_site_config: dict = json.loads(self.release_group_doc.common_site_config)  # type: ignore[arg-type]
 		for key in REPLICATION_CONFIG_KEYS:
 			value = common_site_config.get(key)
 			if value is not None:
@@ -1086,7 +1096,7 @@ class LogicalReplicationBackup(Document):
 			return self.failover_steps
 
 		frappe.throw(f"Invalid execution stage: {self.execution_stage}")
-		return None
+		return None  # type: ignore[return-value]
 
 	@property
 	def current_running_step(self) -> "LogicalReplicationStep | None":
@@ -1159,7 +1169,7 @@ class LogicalReplicationBackup(Document):
 		return None
 
 	def ansible_run(self, command):
-		inventory = f"{self.virtual_machine.public_ip_address},"
+		inventory = f"{self.database_server},"
 		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 		self.add_command(command, result)
 		return result

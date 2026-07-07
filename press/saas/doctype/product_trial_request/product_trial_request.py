@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import urllib
 import urllib.parse
 from contextlib import suppress
@@ -16,6 +17,7 @@ from frappe.utils.telemetry import init_telemetry
 
 from press.api.client import dashboard_whitelist
 from press.press.doctype.root_domain.root_domain import get_domains
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error, validate_subdomain
 
 if TYPE_CHECKING:
@@ -54,28 +56,36 @@ class ProductTrialRequest(Document):
 			"Expired",
 		]
 		team: DF.Link | None
+		tracked_agent_jobs: DF.Code | None
 	# end: auto-generated types
 
 	dashboard_fields = ("site", "status", "product_trial", "domain")
 
 	agent_job_step_to_frontend_step = {  # noqa: RUF012
 		"New Site": {
-			"New Site": "Building Site",
-			"Install Apps": "Installing Apps",
-			"Update Site Configuration": "Updating Configuration",
-			"Enable Scheduler": "Finalizing Site",
-			"Bench Setup Nginx": "Finalizing Site",
-			"Reload Nginx": "Just a moment",
+			"New Site": "Creating your site",
+			"Install Apps": "Installing apps",
+			"Update Site Configuration": "Configuring your site",
+			"Enable Scheduler": "Finalizing your setup",
+			"Bench Setup Nginx": "Finalizing your setup",
+			"Bench Setup NGINX": "Finalizing your setup",
+			"Reload Nginx": "Almost there",
+			"Reload NGINX": "Almost there",
 		},
-		"Rename Site": {
-			"Enable Maintenance Mode": "Starting",
-			"Wait for Enqueued Jobs": "Starting",
-			"Update Site Configuration": "Preparing Site",
-			"Rename Site": "Preparing Site",
-			"Bench Setup NGINX": "Preparing Site",
-			"Reload NGINX": "Finalizing Site",
-			"Disable Maintenance Mode": "Finalizing Site",
-			"Enable Scheduler": "Just a moment",
+		"Update Site Configuration": {
+			"Update Site Configuration": "Configuring your site",
+		},
+		"Add Domain to Upstream": {
+			"Add Site File to Upstream Directory": "Configuring your domain",
+			"Reload Nginx": "Finalizing your setup",
+			"Reload NGINX": "Finalizing your setup",
+		},
+		"Add Domain": {
+			"Update Site Configuration": "Configuring your domain",
+			"Bench Setup Nginx": "Finalizing your setup",
+			"Bench Setup NGINX": "Finalizing your setup",
+			"Reload Nginx": "Almost there",
+			"Reload NGINX": "Almost there",
 		},
 	}
 
@@ -142,6 +152,136 @@ class ProductTrialRequest(Document):
 		except Exception as e:
 			self.db_set({"is_site_accessible": "No", "error": str(e)})
 
+	def add_agent_job(self, agent_job, purpose: str | None = None, required_for_completion: bool = True):
+		if not agent_job:
+			return
+
+		agent_job_name = getattr(agent_job, "name", agent_job)
+		tracked_agent_jobs = self.get_tracked_agent_jobs()
+		if any(row.get("agent_job") == agent_job_name for row in tracked_agent_jobs):
+			return
+
+		job_type = getattr(agent_job, "job_type", None) or frappe.db.get_value(
+			"Agent Job", agent_job_name, "job_type"
+		)
+		tracked_agent_jobs.append(
+			{
+				"agent_job": agent_job_name,
+				"job_type": job_type,
+				"purpose": purpose or job_type,
+				"required_for_completion": required_for_completion,
+				"sequence": len(tracked_agent_jobs) + 1,
+			}
+		)
+		self.tracked_agent_jobs = json.dumps(tracked_agent_jobs, indent=2)
+
+		if required_for_completion and not self.agent_job:
+			self.agent_job = agent_job_name
+
+	def add_agent_jobs(self, agent_jobs):
+		for agent_job in agent_jobs or []:
+			self.add_agent_job(**agent_job)
+
+	def get_tracked_agent_jobs(self) -> list[dict]:
+		if not self.tracked_agent_jobs:
+			return []
+
+		try:
+			tracked_agent_jobs = frappe.parse_json(self.tracked_agent_jobs) or []
+		except Exception:
+			with suppress(Exception):
+				frappe.log_error(
+					title="Product Trial Request Tracked Agent Jobs Parse Error",
+					message=frappe.get_traceback(with_context=True),
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
+			return []
+
+		if not isinstance(tracked_agent_jobs, list):
+			with suppress(Exception):
+				frappe.log_error(
+					title="Product Trial Request Tracked Agent Jobs Invalid Data",
+					message=f"Expected list, got {type(tracked_agent_jobs).__name__}: {self.tracked_agent_jobs}",
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
+			return []
+		return [row for row in tracked_agent_jobs if isinstance(row, dict)]
+
+	def get_required_agent_job_names(self) -> list[str]:
+		tracked_agent_jobs = self.get_tracked_agent_jobs()
+		if tracked_agent_jobs:
+			required_agent_jobs = [
+				row["agent_job"]
+				for row in sorted(tracked_agent_jobs, key=lambda row: row.get("sequence") or 0)
+				if row.get("required_for_completion") and row.get("agent_job")
+			]
+			if required_agent_jobs:
+				return required_agent_jobs
+
+		return [self.agent_job] if self.agent_job else []
+
+	def get_current_agent_job(self) -> str | None:
+		agent_jobs = self.get_required_agent_job_names()
+		if not agent_jobs:
+			return self.agent_job
+
+		for agent_job in agent_jobs:
+			status = frappe.db.get_value("Agent Job", agent_job, "status")
+			if status != "Success":
+				return agent_job
+		return agent_jobs[-1]
+
+	def has_failed_required_agent_job(self) -> bool:
+		agent_jobs = self.get_required_agent_job_names()
+		if not agent_jobs:
+			return False
+		return bool(
+			frappe.db.exists(
+				"Agent Job",
+				{
+					"name": ("in", agent_jobs),
+					"status": ("in", ["Failure", "Delivery Failure"]),
+				},
+			)
+		)
+
+	def required_agent_jobs_complete(self) -> bool:
+		agent_jobs = self.get_required_agent_job_names()
+		if not agent_jobs:
+			return True
+
+		completed_jobs = frappe.db.count(
+			"Agent Job",
+			{
+				"name": ("in", agent_jobs),
+				"status": "Success",
+			},
+		)
+		return completed_jobs == len(agent_jobs)
+
+	def update_status_from_agent_jobs(self, error=None):
+		if error:
+			self.status = "Error"
+			self.error = error
+			self.save(ignore_permissions=True)
+			return False
+
+		if self.has_failed_required_agent_job():
+			self.status = "Error"
+			self.save(ignore_permissions=True)
+			return False
+
+		if not self.required_agent_jobs_complete():
+			return False
+
+		self.status = "Site Created"
+		if not self.site_creation_completed_on:
+			self.site_creation_completed_on = now_datetime()
+		self.save(ignore_permissions=True)
+		return True
+
 	def after_insert(self):
 		self.capture_posthog_event("product_trial_request_created")
 
@@ -163,7 +303,14 @@ class ProductTrialRequest(Document):
 					# this is to create a webhook record in the site
 					# so that the user records can be synced with press
 					site: Site = frappe.get_doc("Site", self.site)
-					site.create_sync_user_webhook()
+					try:
+						site.create_sync_user_webhook()
+					except Exception:
+						log_error(
+							title="Sync User Webhook Creation Failed",
+							reference_doctype=self.doctype,
+							reference_name=self.name,
+						)
 
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):
@@ -217,7 +364,7 @@ class ProductTrialRequest(Document):
 	def validate_subdomain_and_domain(self, subdomain: str, domain: str):
 		validate_subdomain(subdomain)
 		if domain not in get_domains():
-			frappe.throw("Invalid domain")
+			frappe.throw("The domain is invalid. Please enter a valid domain name.")
 
 	@dashboard_whitelist()
 	def create_site(self, subdomain: str, domain: str):
@@ -239,7 +386,7 @@ class ProductTrialRequest(Document):
 			self.domain = f"{subdomain}.{domain}"
 			cluster = frappe.db.get_value("Root Domain", domain, "default_cluster")
 			self.cluster = cluster
-			site, agent_job_name, is_standby_site = product.setup_trial_site(
+			site, agent_jobs, is_standby_site = product.setup_trial_site(
 				subdomain=subdomain,
 				domain=domain,
 				team=self.team,
@@ -247,14 +394,19 @@ class ProductTrialRequest(Document):
 				account_request=self.account_request,
 			)
 			self.is_standby_site = is_standby_site
-			self.agent_job = agent_job_name
 			self.site = site.name
+			self.add_agent_jobs(agent_jobs)
 			if not is_standby_site:
 				self.is_subscription_created = 1
 			self.save()
 
 			if is_standby_site:
 				self.prefill_setup_wizard_data()
+				if self.required_agent_jobs_complete():
+					self.update_status_from_agent_jobs()
+				elif self.site != self.domain:
+					self.status = "Adding Domain"
+					self.save()
 
 			user_mail = frappe.db.get_value("Team", self.team, "user")
 			frappe.get_doc(
@@ -280,22 +432,40 @@ class ProductTrialRequest(Document):
 
 	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):  # noqa: C901
-		current_progress = current_progress or 10
-		if self.agent_job:
-			filters = {"name": self.agent_job, "site": self.site}
+		try:
+			current_progress = float(current_progress or 10)
+		except (TypeError, ValueError):
+			current_progress = 10.0
+		if agent_job := self.get_current_agent_job():
+			agent_job_data = frappe.db.get_value(
+				"Agent Job",
+				{"name": agent_job, "site": self.site},
+				["name", "status", "job_type"],
+				as_dict=True,
+			)
 		else:
-			filters = {"site": self.site, "job_type": ["in", ["New Site", "Rename Site"]]}
-		job_name, status, job_type = frappe.db.get_value(
-			"Agent Job",
-			filters,
-			["name", "status", "job_type"],
-		)
+			agent_job_data = frappe.db.get_value(
+				"Agent Job",
+				{"site": self.site, "job_type": ["in", ["New Site", "Rename Site"]]},
+				["name", "status", "job_type"],
+				as_dict=True,
+			)
+
+		job_name = agent_job_data.name if agent_job_data else None
+		status = agent_job_data.status if agent_job_data else None
+		job_type = agent_job_data.job_type if agent_job_data else None
+
+		if status in ("Failure", "Delivery Failure"):
+			return {"progress": current_progress, "current_step": self.status, "error": True}
+
 		if status == "Success":
 			if self.status == "Site Created":
 				return {"progress": 100, "current_step": self.status}
 			if self.status == "Adding Domain":
 				return {"progress": 90, "current_step": self.status}
-			return {"progress": 80, "current_step": self.status}
+			current_progress = max(current_progress, 30)
+			progress = current_progress + 0.4
+			return {"progress": progress, "current_step": self.status}
 
 		if status == "Running":
 			steps = frappe.db.get_all(
@@ -316,13 +486,13 @@ class ProductTrialRequest(Document):
 						step.step_name, step.step_name
 					)
 					break
-			return {"progress": progress + 0.1, "current_step": current_running_step}
+			return {"progress": progress + 0.1, "current_step": current_running_step or self.status}
 
 		if self.status == "Error":
-			return {"progress": current_progress, "error": True}
+			return {"progress": current_progress, "current_step": self.status, "error": True}
 
 		# If agent job is undelivered, pending
-		return {"progress": current_progress + 0.1}
+		return {"progress": current_progress + 0.1, "current_step": self.status}
 
 	def prefill_setup_wizard_data(self):
 		if self.status == "Prefilling Setup Wizard":
@@ -390,3 +560,97 @@ def expire_long_pending_trial_requests():
 		"Expired",
 		update_modified=False,
 	)
+
+
+def gather_stats(time_ago):
+	stats = {
+		"total_trials": 0,
+		"failed_trials": 0,
+		"succeeded_trials": 0,
+		"expired_trials": 0,
+		"pending_trials": 0,
+		"app_wise_failures": {},
+		"total_creation_time": 0,
+		"valid_trials_with_timing": 0,
+	}
+	try:
+		trial_requests = frappe.db.get_all(
+			"Product Trial Request",
+			{"creation": (">", time_ago), "owner": ("not like", "fc-signup-test_%")},
+			["name", "status", "product_trial", "site_creation_started_on", "site_creation_completed_on"],
+		)
+		stats["total_trials"] = len(trial_requests)
+		for req in trial_requests:
+			if req.status == "Error":
+				stats["failed_trials"] = stats["failed_trials"] + 1
+				stats["app_wise_failures"][req.product_trial] = (
+					stats["app_wise_failures"].get(req.product_trial, 0) + 1
+				)
+			elif req.status == "Site Created":
+				stats["succeeded_trials"] = stats["succeeded_trials"] + 1
+			elif req.status == "Expired":
+				stats["expired_trials"] = stats["expired_trials"] + 1
+			elif req.status == "Pending":
+				stats["pending_trials"] = stats["pending_trials"] + 1
+
+			# avg time taken for the day
+			if req.site_creation_started_on and req.site_creation_completed_on:
+				start_to_end_time = (
+					req.site_creation_completed_on - req.site_creation_started_on
+				).total_seconds()
+				stats["total_creation_time"] += start_to_end_time
+				stats["valid_trials_with_timing"] += 1
+		return stats
+	except Exception as e:
+		log_error(
+			title="Error gathering stats in Product Trial Request",
+			data=e,
+		)
+		return None
+
+
+def push_stats_message(stats, message):
+	if stats:
+		message += f"**Total Trials**: {stats['total_trials']}\n\n"
+		message = (
+			message
+			+ f"[Succeeded trial requests](https://frappecloud.com/app/product-trial-request?status=Site+Created): {stats['succeeded_trials']}\n"
+		)
+		message = (
+			message
+			+ f"[Failed trial requests](https://frappecloud.com/app/product-trial-request?status=Error): {stats['failed_trials']}\n"
+		)
+
+		# add app failure counts to message
+		if stats["app_wise_failures"]:
+			message += "**Application Failure Breakdown:**\n"
+			for app, count in stats["app_wise_failures"].items():
+				message = message + f"{app} failed {count!s} time(s)\n"
+
+		if stats["valid_trials_with_timing"] > 0:
+			avg_time = stats["total_creation_time"] / stats["valid_trials_with_timing"]
+			message += f"**Average Site Creation Time**: {avg_time:.2f}s\n"
+		else:
+			message += "**Average Site Creation Time**: No data available\n"
+		TelegramMessage.enqueue(message=message, topic="Signups")
+
+
+def gather_weekly_stats():
+	one_week_ago = frappe.utils.add_to_date(None, days=-7)
+	message = "*Weekly Signup stats*\n\n"
+	stats = gather_stats(one_week_ago)
+	push_stats_message(stats, message)
+
+
+def gather_daily_stats():
+	one_day_ago = frappe.utils.add_to_date(None, days=-1)
+	message = "*Daily Signup stats*\n\n"
+	stats = gather_stats(one_day_ago)
+	push_stats_message(stats, message)
+
+
+def gather_hourly_stats():
+	one_hour_ago = frappe.utils.add_to_date(None, hours=-1)
+	message = "*Hourly Signup stats*\n\n"
+	stats = gather_stats(one_hour_ago)
+	push_stats_message(stats, message)

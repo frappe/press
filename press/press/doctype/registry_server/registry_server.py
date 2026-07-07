@@ -34,6 +34,7 @@ class RegistryServer(BaseServer):
 		is_mirror: DF.Check
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
+		plan: DF.Link | None
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
@@ -132,8 +133,9 @@ class RegistryServer(BaseServer):
 
 		frappe.enqueue_doc(self.doctype, self.name, "_prune_mirror_registry", queue="long", timeout=3600)
 
-	def _prune_mirror_registry(self):
+	def _prune_mirror_registry(self, throw_on_failure: bool = False):
 		try:
+			assert self.docker_data_mountpoint, "Docker data mountpoint is required to prune mirror registry"
 			ansible = Ansible(
 				playbook="prune_mirror_registry.yml",
 				server=self,
@@ -146,9 +148,15 @@ class RegistryServer(BaseServer):
 					"registry_container": "registry-registry-1",
 				},
 			)
-			ansible.run()
+			play = ansible.run()
+			if play.status != "Success" and throw_on_failure:
+				frappe.throw("Failed to prune mirror registry")  # nosemgrep
+			return play
 		except Exception:
 			log_error("Mirror Registry Prune Failed", server=self.as_dict())
+			if throw_on_failure:
+				frappe.throw("Failed to prune mirror registry")  # nosemgrep
+			return None
 
 	@frappe.whitelist()
 	def show_registry_password(self):

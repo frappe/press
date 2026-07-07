@@ -48,7 +48,7 @@ class TestAPIBench(FrappeTestCase):
 		self.version = "Version 15"
 		self.app = create_test_app()
 		self.app_source = self.app.add_source(
-			self.version,
+			frappe_version=self.version,
 			repository_url="https://github.com/frappe/frappe",
 			branch="version-15",
 			team=get_current_team(),
@@ -121,7 +121,9 @@ class TestAPIBench(FrappeTestCase):
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	@patch.object(DeployCandidate, "schedule_build_and_deploy", new=MagicMock())
+	@patch.object(
+		DeployCandidate, "schedule_build_and_deploy", new=MagicMock(return_value={"name": "mock-deploy"})
+	)
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
 	def test_deploy_and_update_fn_creates_bench_update(self):
 		group = new(
@@ -139,38 +141,13 @@ class TestAPIBench(FrappeTestCase):
 		dc_count_before = frappe.db.count("Deploy Candidate", filters={"group": group})
 
 		release = create_test_app_release(frappe.get_doc("App Source", self.app_source.name))
-		deploy_and_update(group, [{"release": release.name}], [])
+		deploy_and_update(group, [{"release": release.name, "hash": frappe.generate_hash(length=8)}], [])
 
 		bu_count_after = frappe.db.count("Bench Update", filters={"group": group})
 		dc_count_after = frappe.db.count("Deploy Candidate", filters={"group": group})
 
 		self.assertEqual(dc_count_after, dc_count_before + 1)
 		self.assertEqual(bu_count_after, bu_count_before + 1)
-
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
-		new=foreground_enqueue_doc,
-	)
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
-	def test_deploy_and_update_fn_fails_without_release_argument(self):
-		group = new(
-			{
-				"title": "Test Bench",
-				"apps": [{"name": self.app.name, "source": self.app_source.name}],
-				"version": self.version,
-				"cluster": "Default",
-				"saas_app": None,
-				"server": None,
-			}
-		)
-
-		self.assertRaises(
-			frappe.exceptions.MandatoryError,
-			deploy_and_update,
-			group,
-			[{"app": self.app.name}],
-			[],
-		)
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
 	def test_deploy_fn_fails_without_apps(self):
@@ -186,21 +163,6 @@ class TestAPIBench(FrappeTestCase):
 			}
 		)
 		self.assertRaises(TypeError, deploy, group)
-
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
-	def test_deploy_fn_fails_with_empty_apps(self):
-		frappe.set_user(self.team.user)
-		group = new(
-			{
-				"title": "Test Bench",
-				"apps": [{"name": self.app.name, "source": self.app_source.name}],
-				"version": self.version,
-				"cluster": "Default",
-				"saas_app": None,
-				"server": None,
-			}
-		)
-		self.assertRaises(frappe.exceptions.MandatoryError, deploy, group, [])
 
 	@timeout(20)
 	def _check_if_docker_image_was_built(self, group: str):
@@ -280,7 +242,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},  # updated
+					{"key": "NODE_VERSION", "value": "16.11.0"},  # updated
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},  # updated
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -293,7 +255,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 		self.rg.reload()
 		self.assertTrue(self.rg.last_dependency_update)
 		self.assertEqual(
-			find(self.rg.dependencies, lambda d: d.dependency == "NODE_VERSION").version, "16.11"
+			find(self.rg.dependencies, lambda d: d.dependency == "NODE_VERSION").version, "16.11.0"
 		)
 		self.assertEqual(
 			find(self.rg.dependencies, lambda d: d.dependency == "PYTHON_VERSION").version,
@@ -342,12 +304,12 @@ class TestAPIBenchConfig(FrappeTestCase):
 	def test_cannot_remove_dependencies(self):
 		self.assertRaisesRegex(
 			Exception,
-			"Need all required dependencies",
+			"Please provide a value for every dependency",
 			update_dependencies,
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -358,12 +320,12 @@ class TestAPIBenchConfig(FrappeTestCase):
 	def test_cannot_add_additional_invalid_dependencies(self):
 		self.assertRaisesRegex(
 			Exception,
-			"Need all required dependencies",
+			"Please provide a value for every dependency",
 			update_dependencies,
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -388,7 +350,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -410,7 +372,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -434,7 +396,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -448,7 +410,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 
 	def test_dependencies_lists_all_dependencies(self):
 		deps = [
-			{"key": "NODE_VERSION", "value": "16.11"},
+			{"key": "NODE_VERSION", "value": "16.11.0"},
 			{"key": "NVM_VERSION", "value": "0.36.0"},
 			{"key": "PYTHON_VERSION", "value": "3.6"},
 			{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -467,7 +429,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 
 	def test_dependencies_shows_dependency_update_available_on_update_of_the_same(self):
 		deps = [
-			{"key": "NODE_VERSION", "value": "16.11"},
+			{"key": "NODE_VERSION", "value": "16.11.0"},
 			{"key": "NVM_VERSION", "value": "0.36.0"},
 			{"key": "PYTHON_VERSION", "value": "3.6"},
 			{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -476,7 +438,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 		]
 		self.assertFalse(dependencies(self.rg.name)["update_available"])
 		create_test_bench(group=self.rg)  # don't show dependency update available for new deploys
-		deps[0]["value"] = "16.12"
+		deps[0]["value"] = "16.12.0"
 		update_dependencies(
 			self.rg.name,
 			json.dumps(deps),

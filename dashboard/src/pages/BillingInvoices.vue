@@ -9,7 +9,7 @@
 				<template v-if="showInvoice">
 					<div
 						v-if="showInvoice.status === 'Empty'"
-						class="text-base text-gray-600"
+						class="text-base text-ink-gray-6"
 					>
 						Nothing to show
 					</div>
@@ -21,9 +21,12 @@
 			v-if="showBuyPrepaidCreditsDialog"
 			v-model="showBuyPrepaidCreditsDialog"
 			:minimumAmount="minimumAmount"
+			:docName="invoiceForPayment"
+			:type="'Invoice'"
 			@success="
 				() => {
 					showBuyPrepaidCreditsDialog = false;
+					invoiceForPayment = null;
 				}
 			"
 		/>
@@ -70,6 +73,7 @@ export default {
 					'period_end',
 					'mpesa_invoice',
 					'mpesa_invoice_pdf',
+					'amount_due',
 				],
 				filterControls: () => {
 					return [
@@ -153,7 +157,7 @@ export default {
 					},
 					{
 						label: 'Amount Due',
-						fieldname: 'amount_due',
+						fieldname: 'amount_due_with_tax',
 						format: this.formatCurrency,
 						align: 'right',
 						width: 0.6,
@@ -193,6 +197,7 @@ export default {
 										} else {
 											this.showBuyPrepaidCreditsDialog = true;
 											this.minimumAmount = row.amount_due;
+											this.invoiceForPayment = row.name;
 										}
 									},
 								};
@@ -208,7 +213,7 @@ export default {
 										e.stopPropagation();
 										confirmDialog({
 											title: 'Payment Failed',
-											message: `<div class="space-y-4"><p class="text-base">Your payment with the card ending <strong>${row.stripe_payment_failed_card}</strong> failed for this invoice due to the following reason:</p><div class="text-sm font-mono text-gray-600 rounded p-2 bg-gray-100">${row.stripe_payment_error}</div><p class="text-base">Please change your payment method to pay this invoice.</p></div>`,
+											message: `<div class="space-y-4"><p class="text-base">Your payment with the card ending <strong>${row.stripe_payment_failed_card}</strong> failed for this invoice due to the following reason:</p><div class="text-sm font-mono text-ink-gray-6 rounded p-2 bg-surface-gray-2">${row.stripe_payment_error}</div><p class="text-base">Please change your payment method to pay this invoice.</p></div>`,
 											primaryAction: {
 												label: 'Change Payment Method',
 												variant: 'solid',

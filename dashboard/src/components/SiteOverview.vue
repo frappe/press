@@ -7,8 +7,14 @@
 			:disable-last-child-bottom-margin="true"
 			container-class="col-span-1 lg:col-span-2"
 			ctx_type="Site"
-			:ctx_name="$site?.doc?.name"
+			:ctx_name="[$site?.doc?.name, $site?.doc.server, $site?.doc?.cluster]"
 		/>
+		<AlertBanner
+			v-if="$site?.doc?.creation_failed"
+			class="col-span-1 lg:col-span-2"
+			type="error"
+			:title="`Site creation failed. You can restore the site from a backup (from another site) or drop this site to create a new one. The site will be automatically dropped after ${$site?.doc?.creation_failure_retention_days} days if not restored.`"
+		> </AlertBanner>
 
 		<AlertBanner
 			v-if="$site?.doc?.status === 'Suspended' && $site?.doc?.suspension_reason"
@@ -41,39 +47,12 @@
 		</AlertBanner>
 
 		<AlertBanner
-			v-if="!isSetupWizardComplete"
-			class="col-span-1 lg:col-span-2"
-			title="Please login and complete the setup wizard on your site. Analytics will be
-			collected only after setup is complete."
-		>
-			<Button
-				class="ml-auto"
-				variant="outline"
-				@click="loginAsTeam"
-				:loading="$site.loginAsAdmin.loading"
-			>
-				Login
-			</Button>
-		</AlertBanner>
-
-		<AlertBanner
-			v-if="$site.doc.current_plan?.is_trial_plan"
-			class="col-span-1 lg:col-span-2"
-			title="Upgrade to a paid plan to continue using your site after the trial period."
-		>
-			<Button class="ml-auto" variant="outline" @click="showPlanChangeDialog">
-				Upgrade
-			</Button>
-		</AlertBanner>
-
-		<AlertBanner
 			v-if="$site.doc.is_monitoring_disabled && $site.doc.status !== 'Archived'"
 			class="col-span-1 lg:col-span-2"
 			title="Site monitoring is disabled, which means we won’t be able to notify you of any downtime. Please re-enable monitoring at your earliest convenience."
 			:id="$site.name"
 			type="warning"
-		>
-		</AlertBanner>
+		> </AlertBanner>
 		<DismissableBanner
 			v-else-if="$site.doc.eol_versions.includes($site.doc.version)"
 			class="col-span-1 lg:col-span-2"
@@ -97,7 +76,7 @@
 				$site.doc.status !== 'Archived'
 			"
 			class="col-span-1 lg:col-span-2"
-			title="Your site is currently on a shared bench group. Upgrade plan to enjoy <a href='https://frappecloud.com/shared-hosting#benches' class='underline' target='_blank'>more benefits</a>."
+			title="Your site is currently on a shared bench. Upgrade plan to enjoy <a href='https://frappecloud.com/shared-hosting#benches' class='underline' target='_blank'>more benefits</a>."
 			:id="$site.name"
 			type="gray"
 		>
@@ -105,36 +84,63 @@
 				Upgrade Plan
 			</Button>
 		</DismissableBanner>
+
+		<DismissableBanner
+			v-else-if="
+				$site.doc.current_plan &&
+				$site.doc.current_plan?.private_benches &&
+				$site.doc.group_public &&
+				$site.doc.status !== 'Archived'
+			"
+			class="col-span-1 lg:col-span-2"
+			title="Your site is eligible to move to a private bench with server scripts and custom apps support enabled."
+			:id="$site.name"
+		>
+			<Button class="ml-auto" variant="outline" @click="moveToPrivateBench">
+				Move to Private Bench
+			</Button>
+		</DismissableBanner>
+
 		<div class="col-span-1 rounded-md border lg:col-span-2">
-			<div class="grid grid-cols-2 lg:grid-cols-4">
+			<div class="grid grid-cols-2 lg:flex lg:*:flex-grow">
 				<div class="border-b border-r p-5 lg:border-b-0">
 					<div class="flex h-full items-center justify-between">
 						<div>
-							<div class="text-base text-gray-700">Current Plan</div>
+							<div class="text-base text-ink-gray-7">Current Plan</div>
+
 							<div class="mt-2 flex justify-between">
 								<div>
 									<div class="leading-4">
-										<span class="flex items-center text-base text-gray-900">
-											<template v-if="$site.doc.trial_end_date">
+										<span class="flex items-center text-base text-ink-gray-9">
+											<template v-if="$site.doc.is_dedicated_server">
+												Dedicated Server Site
+											</template>
+
+											<template v-else-if="$site.doc.trial_end_date">
 												{{ trialDays($site.doc.trial_end_date) }}
 											</template>
+
 											<template v-else-if="currentPlan">
 												{{ $format.planTitle(currentPlan) }}
+
 												<span v-if="currentPlan.price_inr && $isMobile">
 													/mo
 												</span>
+
 												<span v-if="currentPlan.price_inr && !$isMobile">
 													/month
 												</span>
 											</template>
+
 											<template v-else> No plan set </template>
+
 											<div
-												class="ml-2 text-sm leading-3 text-gray-600"
+												class="ml-2 text-sm leading-3 text-ink-gray-6"
 												v-if="
-													currentPlan &&
-													currentPlan.support_included &&
-													!currentPlan.is_trial_plan
-												"
+											currentPlan &&
+											currentPlan.support_included &&
+											!currentPlan.is_trial_plan
+											"
 											>
 												<Tooltip text="Product support included">
 													<lucide-badge-check class="h-4 w-4" />
@@ -145,14 +151,26 @@
 								</div>
 							</div>
 						</div>
-						<Button @click="showPlanChangeDialog">
-							{{ currentPlan?.is_trial_plan ? 'Upgrade' : 'Change' }}
-						</Button>
+						<template v-if="!$site.doc.is_dedicated_server">
+							<Button @click="showPlanChangeDialog">
+								{{ currentPlan?.is_trial_plan ? 'Upgrade' : 'Change' }}
+							</Button>
+						</template>
+						<template v-else>
+							<Tooltip
+								text="No individual plans needed for sites on dedicated servers"
+							>
+								<LucideHelpCircle class="size-4" />
+							</Tooltip>
+						</template>
 					</div>
 				</div>
-				<div class="border-b p-5 lg:border-b-0 lg:border-r">
+				<div
+					v-if="!$site.doc.is_dedicated_server"
+					class="border-b p-5 lg:border-b-0 lg:border-r"
+				>
 					<div
-						class="flex items-center justify-between text-base text-gray-700"
+						class="flex items-center justify-between text-base text-ink-gray-7"
 					>
 						<span>Compute</span>
 						<div class="h-7"></div>
@@ -168,11 +186,11 @@
 						/>
 						<div>
 							<div class="mt-2 flex justify-between">
-								<div class="text-sm text-gray-600">
-									{{ currentUsage.cpu }}
+								<div class="text-sm text-ink-gray-6">
+									{{ currentUsageLoading ? '—' : currentUsage.cpu }}
 									{{ $format.plural(currentUsage.cpu, 'hour', 'hours') }}
 									<template
-										v-if="currentPlan && !$site.doc.is_dedicated_server"
+										v-if="currentPlan"
 									>
 										of {{ currentPlan?.cpu_time_per_day }} hours
 									</template>
@@ -183,10 +201,19 @@
 				</div>
 				<div class="border-r p-5">
 					<div
-						class="flex items-center justify-between text-base text-gray-700"
+						class="flex items-center justify-between text-base text-ink-gray-7"
 					>
-						<span>Storage</span>
-						<div class="h-7"></div>
+						<div class="flex w-full">
+							<div class="flex-grow">Object Storage</div>
+
+							<Tooltip
+								text="Includes private and public file uploads and backups"
+							>
+								<LucideHelpCircle class="inline size-4 ml-2" />
+							</Tooltip>
+
+							<div class="h-7"></div>
+						</div>
 					</div>
 					<div class="mt-2">
 						<Progress
@@ -199,8 +226,10 @@
 						/>
 						<div>
 							<div class="mt-2 flex justify-between">
-								<div class="text-sm text-gray-600">
-									{{ formatBytes(currentUsage.storage) }}
+								<div class="text-sm text-ink-gray-6">
+									{{ currentUsageLoading
+											? '—'
+											: formatBytes(currentUsage.storage) }}
 									<template
 										v-if="currentPlan && !$site.doc.is_dedicated_server"
 									>
@@ -213,20 +242,28 @@
 				</div>
 				<div class="p-5">
 					<div
-						class="flex min-h-[1.75rem] items-center justify-between text-base text-gray-700"
+						class="min-h-[1.75rem] flex items-center justify-between space-x-2"
 					>
-						<span>Database</span>
-						<Button
-							v-if="
-								(currentPlan
-									? (currentUsage.database / currentPlan.max_database_usage) *
-										100
-									: 0) >= 80
-							"
-							variant="ghost"
-							link="https://docs.frappe.io/cloud/faq/site#what-is-using-up-all-my-database-size"
-							icon="help-circle"
-						/>
+						<span class="text-base text-ink-gray-7 mb-auto">Database</span>
+						<div class="flex items-center space-x-2">
+							<Button
+								v-if="
+									(currentPlan
+										? (currentUsage.database / currentPlan.max_database_usage) *
+											100
+										: 0) >= 80
+								"
+								variant="ghost"
+								link="https://docs.frappe.io/cloud/faq/site#what-is-using-up-all-my-database-size"
+								icon="help-circle"
+							/>
+							<Button
+								variant="ghost"
+								icon="refresh-ccw"
+								@click="refreshDatabaseUsage"
+								:loading="refreshingDatabaseUsage"
+							/>
+						</div>
 					</div>
 					<div class="mt-2">
 						<Progress
@@ -240,8 +277,10 @@
 						/>
 						<div>
 							<div class="mt-2 flex justify-between">
-								<div class="text-sm text-gray-600">
-									{{ formatBytes(currentUsage.database) }}
+								<div class="text-sm text-ink-gray-6">
+									{{ currentUsageLoading
+											? '—'
+											: formatBytes(currentUsage.database) }}
 									<template
 										v-if="currentPlan && !$site.doc.is_dedicated_server"
 									>
@@ -257,24 +296,22 @@
 		</div>
 		<div class="rounded-md border">
 			<div class="h-12 border-b px-5 py-4">
-				<h2 class="text-lg font-medium text-gray-900">Site Information</h2>
+				<h2 class="text-lg font-medium text-ink-gray-9">Site Information</h2>
 			</div>
 			<div>
 				<div
 					v-for="d in siteInformation"
 					:key="d.label"
-					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
+					class="flex items-center px-5 py-3 last:pb-5 even:bg-surface-gray-1"
 				>
-					<div class="w-1/3 text-base text-gray-600">{{ d.label }}</div>
+					<div class="w-1/3 text-base text-ink-gray-6">{{ d.label }}</div>
 					<div
-						class="flex w-2/3 items-center space-x-2 text-base text-gray-900"
+						class="flex w-2/3 items-center space-x-2 text-base text-ink-gray-9"
 					>
 						<div v-if="d.prefix">
 							<component :is="d.prefix" />
 						</div>
-						<span>
-							{{ d.value }}
-						</span>
+						<span> {{ d.value }} </span>
 						<div v-if="d.suffix">
 							<component :is="d.suffix" />
 						</div>
@@ -318,17 +355,17 @@
 	</div>
 </template>
 <script>
-import { getCachedDocumentResource, Progress, Tooltip } from 'frappe-ui';
-import { h, defineAsyncComponent } from 'vue';
-import { toast } from 'vue-sonner';
-import InfoIcon from '~icons/lucide/info';
-import DismissableBanner from './DismissableBanner.vue';
-import { getToastErrorMessage } from '../utils/toast';
-import { renderDialog } from '../utils/components';
-import SiteDailyUsage from './SiteDailyUsage.vue';
-import AlertBanner from './AlertBanner.vue';
-import { trialDays } from '../utils/site';
-import CustomAlerts from './CustomAlerts.vue';
+import { getCachedDocumentResource, Progress, Tooltip } from 'frappe-ui'
+import { defineAsyncComponent, h } from 'vue'
+import { toast } from 'vue-sonner'
+import InfoIcon from '~icons/lucide/info'
+import { renderDialog } from '../utils/components'
+import { trialDays } from '../utils/site'
+import { getToastErrorMessage } from '../utils/toast'
+import AlertBanner from './AlertBanner.vue'
+import CustomAlerts from './CustomAlerts.vue'
+import DismissableBanner from './DismissableBanner.vue'
+import SiteDailyUsage from './SiteDailyUsage.vue'
 
 export default {
 	name: 'SiteOverview',
@@ -343,43 +380,59 @@ export default {
 	data() {
 		return {
 			isSetupWizardComplete: true,
-		};
+			refreshingDatabaseUsage: false,
+		}
 	},
 	mounted() {
 		if (this.$site?.doc?.status === 'Active') {
 			this.$site.isSetupWizardComplete.submit().then((res) => {
-				this.isSetupWizardComplete = res;
-			});
+				this.isSetupWizardComplete = res
+			})
 		}
 	},
 	methods: {
 		showPlanChangeDialog() {
 			let SitePlansDialog = defineAsyncComponent(
 				() => import('../components/ManageSitePlansDialog.vue'),
-			);
-			renderDialog(h(SitePlansDialog, { site: this.site }));
+			)
+			renderDialog(h(SitePlansDialog, { site: this.site }))
+		},
+		moveToPrivateBench() {
+			let SiteMigrationDialog = defineAsyncComponent(
+				() => import('./site/SiteMigration.vue'),
+			)
+			const defaultBenchName = this.$site?.doc?.group_title
+				? `${this.$site.doc.group_title} - Cloned`
+				: null
+			renderDialog(
+				h(SiteMigrationDialog, {
+					site: this.site,
+					defaultAction: 'Move Site To Different Server / Bench',
+					defaultNewBenchName: defaultBenchName,
+				}),
+			)
 		},
 		showEnableMonitoringDialog() {
 			let SiteEnableMonitoringDialog = defineAsyncComponent(
 				() => import('./site/SiteEnableMonitoringDialog.vue'),
-			);
-			renderDialog(h(SiteEnableMonitoringDialog, { site: this.site }));
+			)
+			renderDialog(h(SiteEnableMonitoringDialog, { site: this.site }))
 		},
 		formatBytes(v) {
-			return this.$format.bytes(v, 2, 2);
+			return this.$format.bytes(v, 2, 2)
 		},
 		loginAsAdmin() {
 			this.$site.loginAsAdmin
 				.submit({ reason: '' })
-				.then((url) => window.open(url, '_blank'));
+				.then((url) => window.open(url, '_blank'))
 		},
 		loginAsTeam() {
 			if (this.$site.doc?.additional_system_user_created) {
 				this.$site.loginAsTeam
 					.submit({ reason: '' })
-					.then((url) => window.open(url, '_blank'));
+					.then((url) => window.open(url, '_blank'))
 			} else {
-				this.loginAsAdmin();
+				this.loginAsAdmin()
 			}
 		},
 		removeTag(tag) {
@@ -392,15 +445,64 @@ export default {
 					success: `Tag ${tag.tag_name} removed`,
 					error: (e) => getToastErrorMessage(e),
 				},
-			);
+			)
 		},
 		showAddTagDialog() {
 			const TagsDialog = defineAsyncComponent(
 				() => import('../dialogs/TagsDialog.vue'),
-			);
-			renderDialog(h(TagsDialog, { doctype: 'Site', docname: this.site }));
+			)
+			renderDialog(h(TagsDialog, { doctype: 'Site', docname: this.site }))
 		},
 		trialDays,
+		refreshDatabaseUsage() {
+			this.refreshingDatabaseUsage = true
+			this.$resources.refreshDatabaseUsage.submit()
+		},
+	},
+	resources: {
+		currentUsage() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams() {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'get_current_usage',
+					}
+				},
+				auto: true,
+			}
+		},
+		refreshDatabaseUsage() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams() {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'refresh_database_usage',
+					}
+				},
+				onSuccess: (e) => {
+					let isSynced = e?.message?.synced ?? true
+					let refreshAfterSeconds = e?.message?.refresh_after_seconds ?? 0
+					let refreshAfterMinutes = Math.ceil(refreshAfterSeconds / 60)
+					if (isSynced) {
+						this.refreshingDatabaseUsage = false
+						let message = refreshAfterSeconds
+							? `Database usage refreshed. You can refresh again after ${refreshAfterMinutes} minute(s).`
+							: 'Database usage refreshed.'
+						toast.success(message)
+						this.$resources.currentUsage.reload()
+					} else {
+						setTimeout(() => {
+							this.$resources.refreshDatabaseUsage.reload()
+						}, 3000)
+					}
+				},
+				auto: false,
+			}
+		},
 	},
 	computed: {
 		siteInformation() {
@@ -436,7 +538,7 @@ export default {
 						{
 							text: 'Use this for adding A records for your site',
 						},
-						() => h(InfoIcon, { class: 'h-4 w-4 text-gray-500' }),
+						() => h(InfoIcon, { class: 'h-4 w-4 text-ink-gray-5' }),
 					),
 				},
 				{
@@ -447,15 +549,15 @@ export default {
 						{
 							text: 'Use this for whitelisting our server on a 3rd party service',
 						},
-						() => h(InfoIcon, { class: 'h-4 w-4 text-gray-500' }),
+						() => h(InfoIcon, { class: 'h-4 w-4 text-ink-gray-5' }),
 					),
 				},
-			];
+			]
 		},
 		currentPlan() {
-			if (!this.$site?.doc?.current_plan || !this.$team?.doc) return null;
+			if (!this.$site?.doc?.current_plan || !this.$team?.doc) return null
 
-			const currency = this.$team.doc.currency;
+			const currency = this.$team.doc.currency
 			return {
 				price:
 					currency === 'INR'
@@ -467,14 +569,23 @@ export default {
 						: this.$site.doc.current_plan.price_per_day_usd,
 				currency: currency === 'INR' ? '₹' : '$',
 				...this.$site.doc.current_plan,
-			};
+			}
 		},
 		currentUsage() {
-			return this.$site.doc?.current_usage;
+			return (
+				this.$resources?.currentUsage?.data?.message ?? {
+					cpu: 0,
+					storage: 0,
+					database: 0,
+				}
+			)
+		},
+		currentUsageLoading() {
+			return this.$resources?.currentUsage?.loading ?? true
 		},
 		$site() {
-			return getCachedDocumentResource('Site', this.site);
+			return getCachedDocumentResource('Site', this.site)
 		},
 	},
-};
+}
 </script>

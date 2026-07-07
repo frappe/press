@@ -60,8 +60,8 @@ def create_payment_intent_for_buying_credits(amount):
 
 # Razorpay Payment Gateway Related APIs
 @whitelist_saas_api
-def create_razorpay_order(amount):
-	return billing_api.create_razorpay_order(amount)
+def create_razorpay_order(amount, type, doc_name=None):
+	return billing_api.create_razorpay_order(amount, type, doc_name=doc_name)
 
 
 @whitelist_saas_api
@@ -117,7 +117,8 @@ def total_unpaid_amount():
 @whitelist_saas_api
 def get_invoice(name: str):
 	invoice = frappe.get_doc("Invoice", name)
-	invoice.has_permission("read")
+	if invoice.team != frappe.local.team_name:
+		frappe.throw("Not permitted", frappe.PermissionError)
 	data = invoice.as_dict()
 	invoice.get_doc(data)
 	return data
@@ -125,10 +126,14 @@ def get_invoice(name: str):
 
 @whitelist_saas_api
 def download_invoice(name: str):
-	invoice_pdf = frappe.get_value("Invoice", name, "invoice_pdf")
-	if not invoice_pdf:
-		frappe.throw("Invoice PDF not found")
-	file_name = os.path.basename(invoice_pdf)
+	invoice = frappe.get_doc("Invoice", name)
+	if invoice.team != frappe.local.team_name:
+		frappe.throw("Not permitted", frappe.PermissionError)
+	if not invoice.invoice_pdf:
+		frappe.throw(
+			"We couldn't find the PDF for this invoice. Please try again later, or contact support if it persists."
+		)
+	file_name = os.path.basename(invoice.invoice_pdf)
 	file = frappe.get_doc("File", {"file_name": file_name})
 	frappe.local.response.filename = file.file_name
 	frappe.local.response.filecontent = file.get_content()
@@ -136,14 +141,16 @@ def download_invoice(name: str):
 
 
 @whitelist_saas_api
-def get_stripe_payment_url_for_invoice(name: str) -> str:
+def get_stripe_payment_url_for_invoice(name: str) -> str | None:
 	try:
 		invoice = frappe.get_doc("Invoice", name)
+		if invoice.team != frappe.local.team_name:
+			frappe.throw("Not permitted", frappe.PermissionError)
 		if invoice.stripe_invoice_url:
 			return invoice.stripe_invoice_url
 		return invoice.get_stripe_payment_url()
 	except frappe.DoesNotExistError:
-		frappe.throw("Invoice not found")
+		frappe.throw("We couldn't find this invoice. Please check the invoice and try again.")
 
 
 # Payment Method Related APIs

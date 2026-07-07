@@ -143,6 +143,7 @@
 									I remember my password
 								</router-link>
 								<Button
+									type="submit"
 									class="mt-4"
 									:loading="$resources.resetPassword.loading"
 									variant="solid"
@@ -164,7 +165,7 @@
 								/>
 								<!-- OAuth Authentication -->
 								<template v-if="isOauthLogin && !usePassword">
-									<Button class="mt-4" variant="solid">
+									<Button class="mt-4" variant="solid" type="submit">
 										Log in with {{ oauthProviderName }}
 									</Button>
 								</template>
@@ -197,6 +198,7 @@
 										class="mt-4"
 										variant="solid"
 										:loading="$session.login.loading"
+										type="submit"
 									>
 										Log In
 									</Button>
@@ -281,6 +283,7 @@
 									class="mt-4"
 									:loading="$resources.signup.loading"
 									variant="solid"
+									type="submit"
 								>
 									Sign up with email
 								</Button>
@@ -292,19 +295,19 @@
 							class="mt-4 flex flex-col"
 							v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
 						>
-							<div v-if="$route.name === 'Signup'">
-								<span class="text-base font-normal text-gray-600">
+							<div class="text-p-base" v-if="$route.name === 'Signup'">
+								<span class="text-ink-gray-6">
 									{{ 'By signing up, you agree to our ' }}
 								</span>
 								<a
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-ink-gray-9 underline hover:text-ink-gray-7"
 									href="https://frappecloud.com/policies"
 								>
 									Terms & Policies
 								</a>
 							</div>
-							<div v-if="!(otpRequested || resetPasswordEmailSent)">
-								<span class="text-base font-normal text-gray-600">
+							<div class="mt-2" v-if="!(otpRequested || resetPasswordEmailSent)">
+								<span class="text-p-base text-ink-gray-6">
 									{{
 										$route.name == 'Login'
 											? 'New member? '
@@ -312,7 +315,7 @@
 									}}
 								</span>
 								<router-link
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-p-base text-ink-gray-9 underline hover:text-ink-gray-7"
 									:to="{
 										name: $route.name == 'Login' ? 'Signup' : 'Login',
 										query: { ...$route.query, forgot: undefined },
@@ -351,6 +354,7 @@
 								:message="$resources.verifyOTP.error"
 							/>
 							<Button
+								type="submit"
 								class="mt-4"
 								variant="solid"
 								:loading="$resources.verifyOTP.loading"
@@ -375,18 +379,18 @@
 						</form>
 						<div class="mt-4 space-y-2">
 							<div v-if="$route.name === 'Signup'">
-								<span class="text-base font-normal text-gray-600">
+								<span class="text-base font-normal text-ink-gray-6">
 									{{ 'By signing up, you agree to our ' }}
 								</span>
 								<a
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 									href="https://frappecloud.com/policies"
 								>
 									Terms & Policies
 								</a>
 							</div>
 							<div>
-								<span class="text-base font-normal text-gray-600">
+								<span class="text-base font-normal text-ink-gray-6">
 									{{
 										$route.name == 'Login'
 											? 'New member? '
@@ -394,7 +398,7 @@
 									}}
 								</span>
 								<router-link
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 									:to="{
 										name: $route.name == 'Login' ? 'Signup' : 'Login',
 										query: { ...$route.query, forgot: undefined },
@@ -408,13 +412,15 @@
 						</div>
 					</div>
 					<div
-						class="text-p-base text-gray-700"
+						class="text-p-base text-ink-gray-7"
 						v-else-if="resetPasswordEmailSent"
 					>
 						<p>
-							We have sent an email to
-							<span class="font-semibold">{{ email }}</span
-							>. Please click on the link received to reset your password.
+							You will receive an email with instructions to reset your password
+							if an account with the provided email (<span
+								class="font-medium"
+								>{{ email }}</span
+							>) exists.
 						</p>
 					</div>
 				</template>
@@ -437,12 +443,15 @@ import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
 import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 import { toast } from 'vue-sonner';
 import { getToastErrorMessage } from '../utils/toast';
+import { h } from 'vue';
+import CustomToast from '../components/CustomToast.vue';
 
 export default {
 	name: 'Signup',
 	components: {
 		LoginBox,
 		GoogleIcon,
+		CustomToast,
 	},
 	data() {
 		return {
@@ -461,6 +470,11 @@ export default {
 	},
 	mounted() {
 		this.email = localStorage.getItem('login_email');
+		if (this.$route.name === 'Signup' && this.$route.query.product) {
+			this.$pulse?.capture('signup_viewed', {
+				product: this.$route.query.product,
+			});
+		}
 		if (window.posthog?.__loaded) {
 			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
 				app: 'frappe_cloud',
@@ -474,6 +488,31 @@ export default {
 				this.otpResendCountdown -= 1;
 			}
 		}, 1000);
+
+		if (this.$route.query?.reason) {
+			switch (this.$route.query.reason) {
+				case 'INVALID_TEAM':
+					toast.custom(
+						h(CustomToast, {
+							html: `
+							You are not part of an active team<br/>
+							<span class="text-sm text-ink-gray-8">
+								If the issue persists, please contact
+								<a href="https://support.frappe.io" class="font-medium underline" target="_blank" rel="noopener noreferrer">
+									support.
+								</a>
+							</span>
+						`,
+						}),
+						{ duration: 5000 },
+					);
+					break;
+				default:
+					toast.error(
+						'An unknown error occurred. Please try logging in again.',
+					);
+			}
+		}
 	},
 	watch: {
 		email() {
@@ -488,6 +527,7 @@ export default {
 					email: this.email,
 					referrer: this.getReferrerIfAny(),
 					product: this.$route.query.product,
+					aid: this.getAidIfAny(),
 				},
 				onSuccess(account_request) {
 					this.account_request = account_request;
@@ -640,6 +680,7 @@ export default {
 					} else if (this.hasForgotPassword) {
 						await this.$resources.resetPassword.submit({
 							email: this.email,
+							totp_code: this.twoFactorCode,
 						});
 					}
 				},
@@ -761,6 +802,11 @@ export default {
 			const searchParams = new URLSearchParams(params);
 			return searchParams.get('referrer');
 		},
+		getAidIfAny() {
+			// Pulse anonymous id forwarded from the product website (?aid=…), so
+			// pre-signup browsing stitches to this account at team creation.
+			return new URLSearchParams(location.search).get('aid');
+		},
 		async login() {
 			await this.$session.login.submit(
 				{
@@ -787,9 +833,11 @@ export default {
 		},
 		afterLogin(res) {
 			let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
-			// if query param redirect is present, redirect to that route
-			if (this.$route.query.redirect) {
-				loginRoute = this.$route.query.redirect;
+			// If `redirect` is present in query, redirect to that.
+			// Restrict redirect to relative paths.
+			const redirect = this.$route.query.redirect;
+			if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+				loginRoute = redirect;
 			}
 			localStorage.setItem('login_email', this.email);
 			window.location.href = loginRoute;
@@ -873,7 +921,7 @@ export default {
 				return 'Log in to your account';
 			} else {
 				if (this.saasProduct) {
-					return `Sign up to create your ${this.saasProduct.title} site`;
+					return `Sign up for ${this.saasProduct.title}`;
 				}
 
 				return 'Create your Frappe Cloud account';

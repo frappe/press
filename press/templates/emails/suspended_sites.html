@@ -11,14 +11,13 @@
         <p class="mb-6">
             Unfortunately, we must bring to your attention that your site hosted on Frappe Cloud has been temporarily <strong>suspended</strong> due to an unpaid invoice.<br>
             <br>
-            To continue using your Frappe Cloud site, please settle your invoices by going to your <a href="https://frappecloud.com/dashboard/billing">Frappe Cloud Dashboard.</a><br>
+            To continue using your Frappe Cloud site, please settle your invoices by going to your <a href="https://frappecloud.com/dashboard/billing" style="color: #2563eb; text-decoration: underline;">Frappe Cloud Dashboard.</a><br>
             <br>
             <strong>Once your invoices are settled, your site will be activated immediately.</strong><br>
             <br>
             Please complete the above steps before <strong>20th of this month</strong>, failing which your site will be dropped and if you have subscribed to $10 plan you might lose your data permanently.<br>
             <br>
-            We're sad to see you discontinue usage of Frappe Cloud and value your feedback. Please fill this <a href="frappecloud.com/frappe-cloud-feedback-form">form</a> or <a href="https://calendly.com/neha-frappe/frappe-user-interviews">block 15-min</a> with our team to share your experience.
-            If you have any concerns or questions, contact our support team at support.frappe.io.
+            If you have any concerns or questions, contact our support team at <a href="https://support.frappe.io" style="color: #2563eb; text-decoration: underline;">support.frappe.io</a>.
         </p>
 
         {%- if sites -%}
@@ -26,7 +25,7 @@
 		<p class="mt-0 mb-2">Following sites were suspended:</p>
 		<ul class="list-disc">
 			{%- for site in sites -%}
-			<li class="text-sm font-medium">{{ site }}</li>
+			<li class="text-sm font-medium"><a href="https://cloud.frappe.io/dashboard/sites/{{ site }}/overview" style="color: #2563eb; text-decoration: underline;">{{ site }}</a></li>
 			{%- endfor -%}
 		</ul>
 		{%- endif -%}

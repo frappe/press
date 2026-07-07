@@ -23,8 +23,18 @@
 			<FormControl
 				label="Select the site where you want to restore the backup"
 				class="mt-4"
-				type="autocomplete"
-				v-model="selectedSite"
+				type="combobox"
+				:modelValue="selectedSite?.value"
+				@update:modelValue="
+					selectedSite = ($resources.sites.data || [])
+						.map((site) => {
+							return {
+								label: site.host_name || site.name,
+								value: site.name,
+							};
+						})
+						.find((option) => option.value === $event)
+				"
 				:options="
 					($resources.sites.data || []).map((site) => {
 						return {
@@ -42,7 +52,7 @@
 			/>
 
 			<div v-if="selectedSite" class="mt-4">
-				<p class="text text-base text-gray-800 font-semibold mb-4">
+				<p class="text text-base text-ink-gray-8 font-semibold mb-4">
 					Please select the data you want to restore :
 				</p>
 				<div class="flex flex-col gap-2">

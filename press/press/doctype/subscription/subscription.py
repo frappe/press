@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import datetime
 from typing import TYPE_CHECKING
 
 import frappe
@@ -33,7 +34,7 @@ class Subscription(Document):
 		document_name: DF.DynamicLink
 		document_type: DF.Link
 		enabled: DF.Check
-		interval: DF.Literal["Daily", "Monthly"]
+		interval: DF.Literal["Hourly", "Daily", "Monthly"]
 		marketplace_app_subscription: DF.Link | None
 		plan: DF.DynamicLink
 		plan_type: DF.Link
@@ -99,7 +100,7 @@ class Subscription(Document):
 		self.validate_duplicate()
 
 	def on_update(self):
-		if self.plan_type in ["Server Storage Plan", "Server Snapshot Plan"]:
+		if self.plan_type in ["Server Storage Plan", "Server Snapshot Plan", "Static IP Plan"]:
 			return
 
 		doc = self.get_subscribed_document()
@@ -110,6 +111,11 @@ class Subscription(Document):
 		if self.enabled and doc.plan != self.plan:
 			doc.plan = self.plan
 			doc.save()
+
+			if doc.doctype == "Server" and doc.is_unified_server:
+				# Update database server plan for sanity in case of unified servers
+				frappe.db.set_value("Database Server", doc.database_server, "plan", self.plan)
+
 		if not self.enabled and doc.plan:
 			doc.plan = ""
 			doc.save()
@@ -170,6 +176,7 @@ class Subscription(Document):
 			price = plan.price_inr if team.currency == "INR" else plan.price_usd
 			price_per_day = price / plan.period  # no rounding off to avoid discrepancies
 			amount = flt((price_per_day * cint(self.additional_storage)), 2)
+
 		elif self.plan_type == "Server Snapshot Plan":
 			price = plan.price_inr if team.currency == "INR" else plan.price_usd
 			price_per_day = price / plan.period  # no rounding off to avoid discrepancies
@@ -182,6 +189,11 @@ class Subscription(Document):
 			)
 		else:
 			amount = plan.get_price_for_interval(self.interval, team.currency)
+
+		if self.plan_type == "Server Plan" and self.document_type == "Server":
+			is_primary = frappe.db.get_value("Server", self.document_name, "is_primary")
+			if not is_primary:
+				return None  # If the server is a secondary application server don't create a usage record
 
 		usage_record = frappe.get_doc(
 			doctype="Usage Record",
@@ -229,11 +241,23 @@ class Subscription(Document):
 			date = date or frappe.utils.today()
 			filters.update({"date": date})
 
-		if self.interval == "Monthly":
+		elif self.interval == "Monthly":
 			date = frappe.utils.getdate()
 			first_day = frappe.utils.get_first_day(date)
 			last_day = frappe.utils.get_last_day(date)
 			filters.update({"date": ("between", (first_day, last_day))})
+
+		elif self.interval == "Hourly":
+			last_usage_record = frappe.db.get_value(
+				"Usage Record", filters, ["date", "time"], order_by="creation desc", as_dict=True
+			)
+			if not last_usage_record:
+				return False
+
+			last_datetime = datetime.datetime.combine(
+				last_usage_record.date, frappe.utils.get_time(last_usage_record.time)
+			)
+			return (frappe.utils.now_datetime() - last_datetime).total_seconds() < 3600
 
 		result = frappe.db.get_all("Usage Record", filters=filters, limit=1)
 		return bool(result)
@@ -242,6 +266,7 @@ class Subscription(Document):
 		if not self.is_new():
 			return
 		filters = {
+			"enabled": 1,
 			"team": self.team,
 			"document_type": self.document_type,
 			"document_name": self.document_name,
@@ -332,6 +357,7 @@ def paid_plans():
 		"Server Plan",
 		"Server Storage Plan",
 		"Cluster Plan",
+		"Static IP Plan",
 	]
 
 	for name in doctypes:

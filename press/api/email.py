@@ -6,6 +6,7 @@ import calendar
 import json
 import secrets
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import frappe
 import requests
@@ -16,6 +17,9 @@ from frappe.utils.password import get_decrypted_password
 from press.api.developer.marketplace import get_subscription_info
 from press.api.site import site_config, update_config
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from press.press.doctype.press_settings.press_settings import PressSettings
 
 
 class EmailLimitExceeded(TooManyRequestsError):
@@ -75,20 +79,19 @@ def setup(site):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_analytics(**data):
+def get_analytics(month: int, status: str, site: str, key: str):
 	"""
 	send data for a specific month
 	"""
-	month = data.get("month")
 	year = datetime.now().year
 	last_day = calendar.monthrange(year, int(month))[1]
-	status = data.get("status")
-	site = data.get("site")
-	subscription_key = data.get("key")
+	subscription_key = key
 
 	for value in (site, subscription_key):
 		if not value or not isinstance(value, str):
-			frappe.throw("Invalid Request")
+			frappe.throw(
+				"This request is missing required information. Please use the unsubscribe link from the email you received."
+			)
 
 	return frappe.get_all(
 		"Mail Log",
@@ -152,6 +155,20 @@ def validate_plan(secret_key):
 		)
 
 
+def make_spamd_request(press_settings: PressSettings, message: bytes):
+	headers = {}
+	if press_settings.spamd_api_key:
+		spamd_api_secret = get_decrypted_password("Press Settings", "Press Settings", "spamd_api_secret")
+		headers["Authorization"] = f"token {press_settings.spamd_api_key}:{spamd_api_secret}"
+	r = requests.post(
+		press_settings.spamd_endpoint,  # type: ignore[arg-type]
+		headers=headers,
+		files={"message": message},
+	)
+	r.raise_for_status()
+	return r.json()
+
+
 def check_spam(message: bytes):
 	press_settings = frappe.get_cached_value(
 		"Press Settings",
@@ -162,20 +179,16 @@ def check_spam(message: bytes):
 	if not press_settings.enable_spam_check:
 		return
 	try:
-		headers = {}
-		if press_settings.spamd_api_key:
-			spamd_api_secret = get_decrypted_password("Press Settings", "Press Settings", "spamd_api_secret")
-			headers["Authorization"] = f"token {press_settings.spamd_api_key}:{spamd_api_secret}"
-		resp = requests.post(
-			press_settings.spamd_endpoint,
-			headers=headers,
-			files={"message": message},
-		)
-		resp.raise_for_status()
-		data = resp.json()
-		if data["message"] > 4.0:
+		data = make_spamd_request(press_settings, message)["message"]
+		score = data.get("spam_score", 0)
+		spamd_res = data.get("spamd_response")
+		if score > 4.0:
 			frappe.throw(
-				"This email was blocked as it was flagged as spam by our system. Please review the contents and try again.",
+				f"""This email was blocked as it was flagged as spam. Please review documentation corresponding to the error codes below:
+
+docs: https://spamassassin.apache.org/old/tests_3_3_x.html
+
+{spamd_res}""",
 				SpamDetectionError,
 			)
 	except requests.exceptions.HTTPError as e:
@@ -193,34 +206,34 @@ def check_recipients(recipients: str | list[str]):
 
 
 @frappe.whitelist(allow_guest=True)
-def send_mime_mail(**data):
+def send_mime_mail(data: str):
 	"""
 	send api request to mailgun
 	"""
 	files = frappe._dict(frappe.request.files)
-	data = json.loads(data["data"])
+	data_dict = json.loads(data)
 
-	validate_plan(data["sk_mail"])
+	validate_plan(data_dict["sk_mail"])
 
 	api_key, domain = frappe.db.get_value("Press Settings", None, ["mailgun_api_key", "root_domain"])
 
 	message: bytes = files["mime"].read()
 	check_spam(message)
-	check_recipients(data["recipients"])
+	check_recipients(data_dict["recipients"])
 
 	resp = requests.post(
 		f"https://api.mailgun.net/v3/{domain}/messages.mime",
 		auth=("api", f"{api_key}"),
-		data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
+		data={"to": data_dict["recipients"], "v:sk_mail": data_dict["sk_mail"]},
 		files={"message": message},
 	)
 
 	if resp.status_code == 200:
 		return "Sending"  # Not really required as v14 and up automatically marks the email q as sent
 	if resp.status_code == 400:
-		message = resp.json().get("message", "Invalid request")
-		frappe.throw(f"Something went wrong with sending emails: {message}", InvalidEmail)
-	log_error("Email Delivery Service: Sending error", response=resp.text, data=data, message=message)
+		err_msg: str = resp.json().get("message", "Invalid request")
+		frappe.throw(f"Something went wrong with sending emails: {err_msg}", InvalidEmail)
+	log_error("Email Delivery Service: Sending error", response=resp.text, data=data_dict, message=message)
 	frappe.throw(
 		"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
 		EmailSendError,

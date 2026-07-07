@@ -16,6 +16,19 @@
 				Upgrade Now
 			</Button>
 		</DismissableBanner>
+		<AlertBanner
+			:title="`You have ${$resources.inQueueBenches.data.length} bench(es) in queue. Please wait for them to be provisioned.`"
+			type="info"
+			v-if="$resources.inQueueBenches.data?.length > 0"
+		>
+			<Button
+				class="ml-auto min-w-[7rem]"
+				variant="outline"
+				link="https://docs.frappe.io/cloud/benches/updating_a_bench#bench-provisioning-amp-queueing"
+			>
+				Know More
+			</Button>
+		</AlertBanner>
 		<ObjectList class="mt-3" :options="listOptions" />
 		<Dialog
 			v-model="showAppVersionDialog"
@@ -76,6 +89,21 @@ export default {
 				},
 			};
 		},
+		inQueueBenches() {
+			return {
+				type: 'list',
+				doctype: 'New Bench Queue',
+				filters: {
+					group: this.$releaseGroup.name,
+					status: 'Queued',
+					skip_team_filter_for_system_user_and_support_agent: true,
+				},
+				fields: ['status', 'group'],
+				orderBy: 'creation desc',
+				pageLength: 99999,
+				auto: true,
+			};
+		},
 		sites() {
 			return {
 				type: 'list',
@@ -118,7 +146,7 @@ export default {
 						<div class="flex items-center">
 							<Tooltip text="View bench details">
 								<a
-									class="text-base font-medium leading-6 text-gray-900 cursor-pointer"
+									class="text-base font-medium leading-6 text-ink-gray-9 cursor-pointer"
 									href={`/dashboard/benches/${bench.name}`}
 								>
 									{bench.group}
@@ -130,7 +158,7 @@ export default {
 							{bench.has_app_patch_applied && (
 								<Tooltip text="Apps in this bench may have been patched">
 									<a
-										class="p-1 ml-2 text-gray-700 bg-gray-100 rounded"
+										class="p-1 ml-2 text-ink-gray-7 bg-surface-gray-2 rounded"
 										href="https://docs.frappe.io/cloud/benches/app-patches"
 										target="_blank"
 									>
@@ -141,7 +169,7 @@ export default {
 							{bench.has_updated_inplace && (
 								<Tooltip text="This bench has been updated in place">
 									<a
-										class="p-1 ml-2 text-gray-700 bg-gray-100 rounded"
+										class="p-1 ml-2 text-ink-gray-7 bg-surface-gray-2 rounded"
 										href="https://docs.frappe.io/cloud/in-place-updates"
 										target="_blank"
 									>
@@ -165,7 +193,12 @@ export default {
 						slots: {
 							prefix: icon('plus', 'w-4 h-4'),
 						},
-						disabled: !this.$releaseGroup.doc?.deploy_information?.last_deploy,
+						disabled:
+							!this.$resources.benches.data?.length ||
+							!this.$resources.benches.data?.some(
+								(bench) => bench.status === 'Active',
+							) ||
+							!this.$releaseGroup.doc?.deploy_information?.last_deploy,
 						route: {
 							name: 'Release Group New Site',
 							params: { bench: this.releaseGroup },
@@ -225,9 +258,11 @@ export default {
 			if (!this.$resources.benches.data) return [];
 			return this.$resources.benches.data.map((bench) => {
 				let sites = (data || []).filter((site) => site.bench === bench.name);
+				const isLargeDataset = this.$resources.benches.data?.length >= 1000;
 				return {
 					...bench,
-					collapsed: false,
+					// To prevent rendering delays for large servers with many benches and sites
+					collapsed: isLargeDataset,
 					group: bench.name,
 					rows: sites,
 				};
@@ -248,6 +283,7 @@ export default {
 				},
 				{
 					label: 'Show Apps',
+					condition: () => bench.status === 'Active',
 					onClick: () => {
 						toast.promise(
 							this.$releaseGroup.getAppVersions
@@ -393,6 +429,7 @@ export default {
 				},
 				{
 					label: 'Archive Bench',
+					condition: () => true,
 					onClick: () => {
 						confirmDialog({
 							title: 'Archive Bench',

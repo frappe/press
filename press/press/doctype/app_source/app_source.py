@@ -12,7 +12,7 @@ import requests
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 
-from press.api.github import get_access_token, get_auth_headers
+from press.api.github import GithubFetchError, get_access_token, get_auth_headers
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import get_current_team, log_error
 
@@ -58,6 +58,7 @@ class AppSource(Document):
 	def set_required_apps(self, match: str):
 		# In the format frappe/erpnext
 		apps = match.replace("'", "").replace('"', "").replace(" ", "").split(",")
+		added_required_apps = [app.repository_url for app in self.required_apps]
 
 		for app in apps:
 			try:
@@ -65,7 +66,9 @@ class AppSource(Document):
 			except ValueError:
 				owner, repo = "frappe", app
 
-			self.append("required_apps", {"repository_url": f"https://github.com/{owner}/{repo}"})
+			repository_url = f"https://github.com/{owner}/{repo}"
+			if repository_url not in added_required_apps:
+				self.append("required_apps", {"repository_url": repository_url})
 
 	def validate_dependent_apps(self):
 		hooks_uri = f"{self.repository_owner}/{self.repository}/{self.branch}/{self.app}/hooks.py"
@@ -285,7 +288,7 @@ class AppSource(Document):
 		token = get_access_token(self.github_installation_id)
 		if token is None:
 			# Do not edit without updating deploy_notifications.py
-			raise Exception("App installation token could not be fetched", self.app)
+			raise GithubFetchError("App installation token could not be fetched", self.app)
 
 		return f"https://x-access-token:{token}@github.com/{self.repository_owner}/{self.repository}"
 

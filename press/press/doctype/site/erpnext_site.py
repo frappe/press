@@ -10,7 +10,7 @@ from press.press.doctype.site.site import Site
 
 
 class ERPNextSite(Site):
-	def __init__(self, site=None, account_request: AccountRequest = None):
+	def __init__(self, site=None, account_request: AccountRequest | None = None):
 		if site:
 			super().__init__("Site", site)
 		elif account_request:
@@ -24,9 +24,7 @@ class ERPNextSite(Site):
 					"team": "Administrator",
 					"account_request": account_request.name,
 					"subscription_plan": get_erpnext_plan(),
-					"erpnext_consultant": ERPNextConsultant.get_one_for_country(
-						account_request.country
-					),
+					"erpnext_consultant": ERPNextConsultant.get_one_for_country(account_request.country),
 					"trial_end_date": frappe.utils.add_days(None, 14),
 				}
 			)
@@ -38,9 +36,7 @@ class ERPNextSite(Site):
 		self.trial_end_date = frappe.utils.add_days(None, 14)
 		plan = get_erpnext_plan()
 		self._update_configuration(self.get_plan_config(plan), save=False)
-		self.erpnext_consultant = ERPNextConsultant.get_one_for_country(
-			account_request.country
-		)
+		self.erpnext_consultant = ERPNextConsultant.get_one_for_country(account_request.country)
 		self.save(ignore_permissions=True)
 		self.create_subscription(plan)
 
@@ -76,6 +72,7 @@ def get_erpnext_bench():
 			bench.server = server.name
 		WHERE
 			server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s
+			AND server.skip_standby_site_creation = 0
 		ORDER BY
 			server.use_for_new_sites DESC, bench.creation DESC
 		LIMIT 1

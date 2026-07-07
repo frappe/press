@@ -75,6 +75,12 @@ class UsageRecord(Document):
 			invoice.remove_usage_record(self)
 
 	def validate_duplicate_usage_record(self):
+		# Can skip duplicate usage record check if this is a autoscale usage record
+		if self.document_type == "Server":
+			is_primary = frappe.db.get_value("Server", self.document_name, "is_primary")
+			if not is_primary:
+				return
+
 		usage_record = frappe.get_all(
 			"Usage Record",
 			{

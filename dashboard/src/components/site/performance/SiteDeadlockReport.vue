@@ -34,7 +34,7 @@ export default {
 							if (params) return params;
 
 							return {
-								name: this.name,
+								site: this.name,
 								start_datetime: this.start_datetime,
 								stop_datetime: this.stop_datetime,
 								max_log_size: parseInt(this.max_log_size ?? ''),
@@ -76,7 +76,7 @@ export default {
 					{
 						label: 'Table',
 						fieldname: 'table',
-						class: 'text-gray-600',
+						class: 'text-ink-gray-6',
 						align: 'left',
 						width: '200px',
 					},

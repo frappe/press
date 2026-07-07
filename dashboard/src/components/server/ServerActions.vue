@@ -6,7 +6,7 @@
 		<div
 			v-for="group in actions"
 			:key="group.group"
-			class="divide-y rounded border border-gray-200 p-5"
+			class="divide-y rounded border border-outline-gray-1 p-5"
 		>
 			<div class="pb-3 text-lg font-semibold">{{ group.group }}</div>
 			<div
@@ -75,6 +75,7 @@ export default {
 			return getCachedDocumentResource('Server', this.server);
 		},
 		$dbServer() {
+			// Should mirror the whitelistedMethods in ServerOverview.vue
 			return getDocResource({
 				doctype: 'Database Server',
 				name: this.$appServer.doc.database_server,
@@ -84,12 +85,15 @@ export default {
 					rename: 'rename',
 					enablePerformanceSchema: 'enable_performance_schema',
 					disablePerformanceSchema: 'disable_performance_schema',
+					enableBinlogIndexing: 'enable_binlog_indexing_service',
+					disableBinlogIndexing: 'disable_binlog_indexing_service',
 					getMariadbVariables: 'get_mariadb_variables',
 					updateInnodbBufferPoolSize: 'update_innodb_buffer_pool_size',
 					updateMaxDbConnections: 'update_max_db_connections',
 					updateBinlogRetention: 'update_binlog_retention',
 					updateBinlogSizeLimit: 'update_binlog_size_limit',
 					getBinlogsInfo: 'get_binlogs_info',
+					purgeBinlogsForcefully: 'purge_binlogs_forcefully',
 				},
 			});
 		},

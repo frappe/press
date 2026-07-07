@@ -52,7 +52,6 @@ const table = useVueTable({
 	data: generatedData,
 	manualPagination: true,
 	onPaginationChange: (updater) => {
-		const currentPageSize = paginationInfo.pageSize;
 		const data = updater(paginationInfo);
 		paginationInfo.pageSize = data.pageSize;
 		paginationInfo.pageIndex = data.pageIndex;
@@ -179,7 +178,7 @@ watch(
 	>
 		<template #body-content>
 			<pre
-				class="mt-2 whitespace-pre-wrap rounded-lg border-2 border-gray-200 bg-gray-100 p-3 text-sm text-gray-700"
+				class="mt-2 whitespace-pre-wrap rounded-lg border-2 border-outline-gray-1 bg-surface-gray-2 p-3 text-sm text-ink-gray-7"
 				>{{ fullViewDialogBody }}</pre
 			>
 		</template>
@@ -194,18 +193,26 @@ watch(
 		<div class="relative flex flex-1 flex-col overflow-auto text-base">
 			<div
 				v-if="loadingData"
-				class="absolute bottom-0 left-0 right-0 top-0 flex w-full items-center justify-center gap-2 bg-white-overlay-900 text-base text-gray-800"
+				class="absolute bottom-0 left-0 right-0 top-0 flex w-full items-center justify-center gap-2 bg-surface-white text-base text-ink-gray-8 min-h-80"
 			>
 				<Spinner class="w-4" /> Crunching data...
 			</div>
+			<div
+				v-if="props.data?.length == 0"
+				class="flex flex-col h-80 items-center justify-center text-ink-gray-8 text-base gap-1"
+			>
+				<p>No results to display</p>
+				<br />
+				<p>Try adjusting your search criteria or filters</p>
+			</div>
 			<table
-				v-if="props?.columns?.length"
+				v-else
 				class="border-separate border-spacing-0"
 				:class="{
 					'h-80': !props.data?.length,
 				}"
 			>
-				<thead class="sticky top-0 bg-gray-50">
+				<thead class="sticky top-0 z-10 bg-surface-gray-1">
 					<tr
 						v-for="headerGroup in table.getHeaderGroups()"
 						:key="headerGroup.id"
@@ -214,7 +221,7 @@ watch(
 							v-for="header in headerGroup.headers"
 							:key="header.id"
 							:colSpan="header.colSpan"
-							class="border-b border-r text-gray-800"
+							class="border-b border-r text-ink-gray-8"
 							:width="
 								header.column.columnDef.id === '__index' ? '6rem' : 'auto'
 							"
@@ -228,7 +235,7 @@ watch(
 							</div>
 						</td>
 						<td
-							class="w-[10rem] border-b border-r text-center text-gray-800"
+							class="w-[10rem] border-b border-r text-center text-ink-gray-8"
 							v-if="actionHeaderLabel"
 						>
 							{{ actionHeaderLabel }}
@@ -256,11 +263,11 @@ watch(
 							<MaximizedIcon
 								v-if="isTextTruncated(cell)"
 								@click="handleViewFull(cell)"
-								class="!my-0 ml-2 inline-block !h-4 !w-4 cursor-pointer text-gray-700"
+								class="!my-0 ml-2 inline-block !h-4 !w-4 cursor-pointer text-ink-gray-7"
 							/>
 						</td>
 						<td
-							class="w-[6rem] border-b border-r text-center text-gray-800"
+							class="w-[6rem] border-b border-r text-center text-ink-gray-8"
 							v-if="actionComponent"
 						>
 							<component
@@ -273,12 +280,6 @@ watch(
 					<tr height="99%" class="border-b"></tr>
 				</tbody>
 			</table>
-			<div
-				v-else-if="props.data?.length == 0"
-				class="flex min-h-[20vh] items-center justify-center"
-			>
-				<div>No results to display</div>
-			</div>
 		</div>
 
 		<div
@@ -292,14 +293,14 @@ watch(
 					:disabled="loadingData"
 				>
 					<option value="10">10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+					<option value="25">25&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
 					<option value="50">50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
-					<option value="100">100&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
 				</select>
-				<p class="text-sm text-gray-600">Per Page</p>
+				<p class="text-sm text-ink-gray-6">Per Page</p>
 			</div>
 
 			<div class="flex flex-shrink-0 items-center gap-2">
-				<p class="tnum text-sm text-gray-600">
+				<p class="tnum text-sm text-ink-gray-6">
 					{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
 				</p>
 				<div class="flex gap-2">

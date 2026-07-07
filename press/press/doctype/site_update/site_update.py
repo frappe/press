@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 import random
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar, Literal
+from typing import TYPE_CHECKING, ClassVar
 
 import frappe
 import frappe.utils
@@ -48,6 +48,7 @@ class SiteUpdate(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		name: DF.Data
 		activate_site_job: DF.Link | None
 		backup_type: DF.Literal["Logical", "Physical", "Logical Replication"]
 		cause_of_failure_is_resolved: DF.Check
@@ -71,7 +72,15 @@ class SiteUpdate(Document):
 		source_bench: DF.Link | None
 		source_candidate: DF.Link | None
 		status: DF.Literal[
-			"Pending", "Running", "Success", "Failure", "Recovering", "Recovered", "Fatal", "Scheduled"
+			"Pending",
+			"Running",
+			"Success",
+			"Failure",
+			"Recovering",
+			"Recovered",
+			"Fatal",
+			"Scheduled",
+			"Cancelled",
 		]
 		team: DF.Link | None
 		touched_tables: DF.Code | None
@@ -117,9 +126,6 @@ class SiteUpdate(Document):
 		return doc
 
 	def validate(self):
-		if not self.is_new():
-			return
-
 		# Assume same-group migration if destination_group isn't set
 		if not self.destination_group:
 			self.destination_group = self.group
@@ -222,14 +228,15 @@ class SiteUpdate(Document):
 
 		if diff := set(site_apps) - set(bench_apps):
 			frappe.throw(
-				f"Destination Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
+				f"Destination Bench <b>{self.destination_bench}</b> doesn't have some of the apps installed on the site: {', '.join(diff)}. Please uninstall them from the site or add them back to the bench (and update the same) before proceeding.",
 				frappe.ValidationError,
 			)
 
 	def before_insert(self):
 		self.backup_type = "Logical"
-		site: "Site" = frappe.get_cached_doc("Site", self.site)
+		site: "Site" = frappe.get_doc("Site", self.site)
 		site.check_move_scheduled()
+		site.check_fatal_site_update()
 
 	def after_insert(self):
 		if not self.scheduled_time:
@@ -316,7 +323,7 @@ class SiteUpdate(Document):
 		self.status = "Pending"
 		self.update_start = frappe.utils.now()
 		self.save()
-		site: "Site" = frappe.get_cached_doc("Site", self.site)
+		site: Site = frappe.get_cached_doc("Site", self.site)
 		try:
 			site.ready_for_move()
 		except SiteAlreadyArchived:
@@ -348,6 +355,27 @@ class SiteUpdate(Document):
 		else:
 			self.create_update_site_agent_request()
 
+	def fail_with_notification(self, reason: str):
+		frappe.db.set_value("Site Update", self.name, "status", "Cancelled")
+		site = frappe.get_cached_doc("Site", self.site)
+		message = f"Site Update was cancelled: {reason}"
+		self.create_notification(site.team, message)
+
+	def create_notification(self, team: str, message: str):
+		frappe.get_doc(
+			{
+				"doctype": "Press Notification",
+				"team": team,
+				"type": "Site Update",
+				"document_type": "Site Update",
+				"document_name": self.name,
+				"reference_doctype": "Site",
+				"reference_name": self.site,
+				"message": message,
+			}
+		).insert(ignore_permissions=True)
+		frappe.publish_realtime("press_notification", doctype="Press Notification", message={"team": team})
+
 	def get_before_migrate_scripts(self, rollback=False):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
 
@@ -371,7 +399,7 @@ class SiteUpdate(Document):
 		return frappe.get_cached_value("Frappe Version", version, "number") > 12
 
 	def create_logical_replication_backup_record(self):
-		record: "LogicalReplicationBackup" = frappe.get_doc(
+		record: LogicalReplicationBackup = frappe.get_doc(
 			{"doctype": "Logical Replication Backup", "site": self.site, "execution_stage": "Pre-Migrate"}
 		).insert(ignore_permissions=True)
 		frappe.db.set_value("Site Update", self.name, "logical_replication_backup", record.name)
@@ -380,7 +408,7 @@ class SiteUpdate(Document):
 	def trigger_post_migration_stage_logical_replication_backup(self):
 		if not self.logical_replication_backup:
 			return
-		record: "LogicalReplicationBackup" = frappe.get_doc(
+		record: LogicalReplicationBackup = frappe.get_doc(
 			"Logical Replication Backup", self.logical_replication_backup
 		)
 		record.execution_stage = "Post-Migrate"
@@ -391,7 +419,7 @@ class SiteUpdate(Document):
 	def trigger_failover_stage_logical_replication_backup(self):
 		if not self.logical_replication_backup:
 			return
-		record: "LogicalReplicationBackup" = frappe.get_doc(
+		record: LogicalReplicationBackup = frappe.get_doc(
 			"Logical Replication Backup", self.logical_replication_backup
 		)
 		record.execution_stage = "Failover"
@@ -441,8 +469,7 @@ class SiteUpdate(Document):
 		job = agent.deactivate_site(
 			frappe.get_doc("Site", self.site), reference_doctype="Site Update", reference_name=self.name
 		)
-		frappe.db.set_value("Site Update", self.name, "deactivate_site_job", job.name)
-		frappe.db.set_value("Site Update", self.name, "status", "Running")
+		frappe.db.set_value("Site Update", self.name, {"deactivate_site_job": job.name, "status": "Running"})
 
 	def create_physical_backup(self):
 		site: Site = frappe.get_doc("Site", self.site)
@@ -455,6 +482,7 @@ class SiteUpdate(Document):
 			"Site Update",
 			{
 				"site": self.site,
+				"name": ("!=", self.name),
 				"source_candidate": self.source_candidate,
 				"destination_candidate": self.destination_candidate,
 				"cause_of_failure_is_resolved": False,
@@ -466,6 +494,7 @@ class SiteUpdate(Document):
 			"Site Update",
 			{
 				"site": self.site,
+				"name": ("!=", self.name),
 				"status": ("in", ("Pending", "Running", "Failure", "Scheduled", "Recovering")),
 			},
 		)
@@ -568,10 +597,13 @@ class SiteUpdate(Document):
 					update_status(self.name, "Fatal")
 					# mark site as broken
 					frappe.db.set_value("Site", self.site, "status", "Broken")
+					frappe.db.set_value("Site", self.site, "fatal_site_update", self.name)
 					return
 				if physical_backup_restoration_status != "Success":
 					# just to be safe
-					frappe.throw("Physical Backup Restoration is still in progress")
+					frappe.throw(
+						"The physical backup restoration is still in progress. Please wait for it to finish before retrying the site update."
+					)
 
 			# Attempt to move site to source bench
 
@@ -594,6 +626,7 @@ class SiteUpdate(Document):
 				# Site is already on source bench and maintenance mode is on
 				# No need to do anything
 				site.reset_previous_status()
+				update_status(self.name, "Recovered")
 		if job:
 			frappe.db.set_value("Site Update", self.name, "recover_job", job.name)
 
@@ -687,6 +720,18 @@ class SiteUpdate(Document):
 
 		if self.activate_site_job:
 			steps.extend(self.get_job_steps(self.activate_site_job, "Activate Site"))
+
+		# If there is no steps, add a dummy step to show that the update is scheduled but yet to start
+		if not steps:
+			steps = [
+				{
+					"name": "site_update_scheduled",
+					"title": f"Scheduled at {convert_utc_to_system_timezone(self.scheduled_time).strftime('%Y-%m-%d %H:%M:%S') if self.scheduled_time and self.status == 'Scheduled' else ''}",
+					"status": "Pending",
+					"output": "",
+					"stage": "Site Update",
+				}
+			]
 		return steps
 
 	def get_job_steps(self, job: str, stage: str):
@@ -710,19 +755,44 @@ class SiteUpdate(Document):
 	@frappe.whitelist()
 	def set_cause_of_failure_is_resolved(self):
 		frappe.db.set_value("Site Update", self.name, "cause_of_failure_is_resolved", 1)
+		site: Site = frappe.get_doc("Site", self.site)
+		if site.fatal_site_update == self.name:
+			frappe.db.set_value("Site", self.site, "fatal_site_update", None)
 
 	@frappe.whitelist()
 	def set_status(self, status):
-		frappe.db.set_value("Site Update", self.name, "status", status)
+		return self.update_status(self.name, status)
+
+	@classmethod
+	def update_status(cls, name, status):
+		if status == "Cancelled":
+			try:
+				if (
+					_status := frappe.db.get_value("Site Update", name, "status", for_update=True, wait=False)
+				) != "Scheduled":
+					frappe.throw(f"Cannot cancel a Site Update with status {_status}")
+
+			except (frappe.QueryTimeoutError, frappe.QueryDeadlockError):
+				frappe.throw(
+					"The update is probably underway. Please reload/refresh to get the latest status."
+				)
+
+		frappe.db.set_value("Site Update", name, "status", status)
+
+	@classmethod
+	def get_ongoing_update(cls, job_name: str) -> OngoingUpdate | None:
+		updates: list[OngoingUpdate] = frappe.get_all(
+			"Site Update",
+			fields=["name", "status", "destination_bench", "destination_group", "backup_type"],
+			filters={"update_job": job_name},
+		)
+		if updates:
+			return updates[0]
+		return None
 
 
-def update_status(
-	name: str,
-	status: Literal[
-		"Pending", "Running", "Success", "Failure", "Recovering", "Recovered", "Fatal", "Scheduled"
-	],
-):
-	frappe.db.set_value("Site Update", name, "status", status)
+def update_status(name: str, status: str):
+	SiteUpdate.update_status(name, status)
 	if status in ("Success", "Failure", "Fatal", "Recovered"):
 		frappe.db.set_value("Site Update", name, "update_end", frappe.utils.now())
 		update_start = frappe.db.get_value("Site Update", name, "update_start")
@@ -798,8 +868,9 @@ def sites_with_available_update(server=None):
 			"bench": ("in", benches),
 			"only_update_at_specified_time": False,  # will be taken care of by another scheduled job
 			"skip_auto_updates": False,
+			"fatal_site_update": ("is", "not set"),
 		},
-		fields=["name", "timezone", "bench", "server", "status"],
+		fields=["name", "timezone", "bench", "server", "status", "is_standby"],
 	)
 
 
@@ -865,7 +936,7 @@ def schedule_updates_server(server):
 			frappe.db.rollback()
 
 
-def should_try_update(site):
+def should_try_update(site: Site):
 	source = frappe.db.get_value("Bench", site.bench, "candidate")
 	candidates = frappe.get_all(
 		"Deploy Candidate Difference", filters={"source": source}, pluck="destination"
@@ -895,6 +966,10 @@ def should_try_update(site):
 	if set(source_apps) - set(dest_apps):
 		return False
 
+	# If site has fatal update which is not resolved, then don't trigger update
+	if site.fatal_site_update:
+		return False
+
 	return not frappe.db.exists(
 		"Site Update",
 		{
@@ -906,8 +981,10 @@ def should_try_update(site):
 	)
 
 
-def is_site_in_deploy_hours(site):
+def is_site_in_deploy_hours(site: Site):
 	if site.status in ("Inactive", "Suspended"):
+		return True
+	if site.is_standby:
 		return True
 	server_time = datetime.now()
 	timezone = site.timezone or "Asia/Kolkata"
@@ -937,7 +1014,7 @@ def process_physical_backup_restoration_status_update(name: str):
 
 
 def process_activate_site_job_update(job: AgentJob):
-	if job.reference_doctype != "Site Update":
+	if job.reference_doctype != "Site Update" or not job.reference_name:
 		return
 	if job.status == "Success":
 		# If `Site Update` successful, then mark site as `Active`
@@ -967,18 +1044,86 @@ def process_deactivate_site_job_update(job):
 		site_update.activate_site()
 
 
-def process_update_site_job_update(job: AgentJob):  # noqa: C901
-	site_update = frappe.get_all(
-		"Site Update",
-		fields=["name", "status", "destination_bench", "destination_group", "backup_type"],
-		filters={"update_job": job.name},
+def update_site_bench_group_fields(job: AgentJob, site_update: OngoingUpdate):
+	if not job.site:
+		raise NotImplementedError
+	bench = frappe.db.get_value("Site", job.site, "bench")
+	move_site_step_status = frappe.db.get_value(
+		"Agent Job Step", {"step_name": "Move Site", "agent_job": job.name}, "status"
 	)
+	if bench != site_update.destination_bench and move_site_step_status == "Success":
+		frappe.db.set_value("Site", job.site, "bench", site_update.destination_bench)
+		frappe.db.set_value("Site", job.site, "group", site_update.destination_group)
 
+
+def reallocate_workers_if_moved(job: AgentJob, site_update: OngoingUpdate):
+	site_enable_step_status = frappe.db.get_value(
+		"Agent Job Step",
+		{"step_name": "Disable Maintenance Mode", "agent_job": job.name},
+		"status",
+	)
+	if site_enable_step_status == "Success":
+		SiteUpdate("Site Update", site_update.name).reallocate_workers()
+
+
+def update_touched_tables_step(job: AgentJob, site_update: OngoingUpdate):
+	log_touched_tables_step = frappe.db.get_value(
+		"Agent Job Step",
+		{"step_name": "Log Touched Tables", "agent_job": job.name},
+		["status", "data"],
+		as_dict=True,
+	)
+	if log_touched_tables_step and log_touched_tables_step.status == "Success":
+		frappe.db.set_value("Site Update", site_update.name, "touched_tables", log_touched_tables_step.data)
+
+
+def handle_success(job: AgentJob, site_update: OngoingUpdate):
+	if site_update.backup_type == "Logical Replication":
+		SiteUpdate("Site Update", site_update.name).trigger_post_migration_stage_logical_replication_backup()
+	else:
+		frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
+
+
+def handle_fatal(job: AgentJob, site_update: OngoingUpdate):
+	if site_update.backup_type in ["Physical", "Logical Replication"]:
+		# For Physical restore, just do activate site
+		# Because we have deactivated site first
+		SiteUpdate("Site Update", site_update.name).activate_site()
+	else:
+		# For Logical restore, we need to reset site status just
+		frappe.get_doc("Site", job.site).reset_previous_status()
+
+
+def handle_failure(job: AgentJob, site_update: OngoingUpdate):
+	frappe.db.set_value("Site", job.site, "status", "Broken")
+	frappe.db.set_value(
+		"Site Update",
+		site_update.name,
+		"cause_of_failure_is_resolved",
+		job.failed_because_of_agent_update or job.failed_because_of_incident,
+	)
+	if not frappe.db.get_value("Site Update", site_update.name, "skipped_backups"):
+		doc = SiteUpdate("Site Update", site_update.name)
+		doc.trigger_recovery_job()
+	else:
+		# If user has done Site Update with skipped_backups
+		# We have nothing to do here
+		update_status(site_update.name, "Fatal")
+		SiteUpdate("Site Update", site_update.name).reallocate_workers()
+
+
+class OngoingUpdate(frappe._dict):
+	name: str
+	status: str
+	destination_bench: str
+	destination_group: str
+	backup_type: str
+
+
+def process_update_site_job_update(job: AgentJob):
+	site_update = SiteUpdate.get_ongoing_update(job.name)
 	if not site_update:
 		return
-
-	site_update = site_update[0]
-
 	updated_status = {
 		# For physical backup, we have already deactivated site first
 		# So no point in setting status back to Pending
@@ -990,68 +1135,20 @@ def process_update_site_job_update(job: AgentJob):  # noqa: C901
 	}[job.status]
 
 	if updated_status != site_update.status:
-		site_bench = frappe.db.get_value("Site", job.site, "bench")
-		move_site_step_status = frappe.db.get_value(
-			"Agent Job Step", {"step_name": "Move Site", "agent_job": job.name}, "status"
-		)
-		if site_bench != site_update.destination_bench and move_site_step_status == "Success":
-			frappe.db.set_value("Site", job.site, "bench", site_update.destination_bench)
-			frappe.db.set_value("Site", job.site, "group", site_update.destination_group)
-		site_enable_step_status = frappe.db.get_value(
-			"Agent Job Step",
-			{"step_name": "Disable Maintenance Mode", "agent_job": job.name},
-			"status",
-		)
-		log_touched_tables_step = frappe.db.get_value(
-			"Agent Job Step",
-			{"step_name": "Log Touched Tables", "agent_job": job.name},
-			["status", "data"],
-			as_dict=True,
-		)
-		if site_enable_step_status == "Success":
-			SiteUpdate("Site Update", site_update.name).reallocate_workers()
+		update_site_bench_group_fields(job, site_update)
+		reallocate_workers_if_moved(job, site_update)
+		update_touched_tables_step(job, site_update)
 
 		if not (site_update.backup_type == "Logical Replication" and updated_status == "Success"):
 			update_status(site_update.name, updated_status)
-
-		if log_touched_tables_step and log_touched_tables_step.status == "Success":
-			frappe.db.set_value(
-				"Site Update", site_update.name, "touched_tables", log_touched_tables_step.data
-			)
 		if updated_status == "Running":
 			frappe.db.set_value("Site", job.site, "status", "Updating")
 		elif updated_status == "Success":
-			if site_update.backup_type == "Logical Replication":
-				SiteUpdate(
-					"Site Update", site_update.name
-				).trigger_post_migration_stage_logical_replication_backup()
-			else:
-				frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
-
+			handle_success(job, site_update)
 		elif updated_status == "Fatal":
-			if site_update.backup_type in ["Physical", "Logical Replication"]:
-				# For Physical restore, just do activate site
-				# Because we have deactivated site first
-				frappe.get_doc("Site Update", site_update.name).activate_site()
-			else:
-				# For Logical restore, we need to reset site status just
-				frappe.get_doc("Site", job.site).reset_previous_status()
+			handle_fatal(job, site_update)
 		elif updated_status == "Failure":
-			frappe.db.set_value("Site", job.site, "status", "Broken")
-			frappe.db.set_value(
-				"Site Update",
-				site_update.name,
-				"cause_of_failure_is_resolved",
-				job.failed_because_of_agent_update,
-			)
-			if not frappe.db.get_value("Site Update", site_update.name, "skipped_backups"):
-				doc = frappe.get_doc("Site Update", site_update.name)
-				doc.trigger_recovery_job()
-			else:
-				# If user has did Site Update with skipped_backups
-				# We have nothing to do here
-				update_status(site_update.name, "Fatal")
-				SiteUpdate("Site Update", site_update.name).reallocate_workers()
+			handle_failure(job, site_update)
 
 
 def process_update_site_recover_job_update(job: AgentJob):
@@ -1084,6 +1181,7 @@ def process_update_site_recover_job_update(job: AgentJob):
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Fatal":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
+			frappe.db.set_value("Site", job.site, "fatal_site_update", site_update.name)
 
 
 def mark_stuck_updates_as_fatal():
@@ -1107,9 +1205,15 @@ def run_scheduled_updates():
 
 	for update in updates:
 		try:
-			doc = frappe.get_doc("Site Update", update)
-			doc.validate()
-			doc.start()
+			site_update: SiteUpdate = frappe.get_doc("Site Update", update, for_update=True)
+			if site_update.status != "Scheduled":
+				continue
+
+			site_update.validate()
+			site_update.start()
+			frappe.db.commit()
+		except frappe.ValidationError as e:
+			site_update.fail_with_notification(str(e))
 			frappe.db.commit()
 		except Exception:
 			log_error("Scheduled Site Update Error", update=update)

@@ -7,7 +7,7 @@
 	>
 		<template #body-content>
 			<pre
-				class="overflow-x-scroll rounded bg-gray-100 p-4 text-base"
+				class="overflow-x-scroll rounded bg-surface-gray-2 p-4 text-base"
 				v-html="configPreview"
 			></pre>
 		</template>

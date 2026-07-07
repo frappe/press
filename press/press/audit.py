@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
-from typing import ClassVar, TypedDict
+from typing import TypedDict
 
 import frappe
 from frappe.utils import add_days, rounded, today
 
 from press.agent import Agent
 from press.press.doctype.server.server import Server
+from press.press.doctype.site.site import TRANSITORY_STATES
 from press.press.doctype.subscription.subscription import (
 	created_usage_records,
 	paid_plans,
@@ -41,7 +42,7 @@ class Audit:
 	`audit_type` member variable needs to be set to log
 	"""
 
-	audit_type = None
+	audit_type = ""
 
 	def log(
 		self, log: dict, status: str, telegram_group: str | None = None, telegram_topic: str | None = None
@@ -149,7 +150,7 @@ class BenchFieldCheck(Audit):
 		"""
 		During SiteUpdate or SiteMigration, the status of the site is changed to Updating or Pending
 		"""
-		return frappe.db.get_value("Site", site, "status", for_update=True).endswith("ing")
+		return frappe.db.get_value("Site", site, "status", for_update=True) in TRANSITORY_STATES
 
 	def apply_potential_fixes(self):
 		fixes = self.get_potential_fixes()
@@ -540,9 +541,9 @@ class PartnerBillingAudit(Audit):
 
 
 class PlanAudit(Audit):
-	audit_type: ClassVar = "Server Plan Sanity Check"
+	audit_type = "Server Plan Sanity Check"
 
-	def audit_plan_discrepancies(self, server_plan_info: list[ServerPlanInfo]) -> Discrepancies:
+	def audit_plan_discrepancies(self, server_plan_info: list[ServerPlanInfo]):
 		"""Check for discrepancies between plan details and actual virtual machine details"""
 
 		messages = {
@@ -551,7 +552,7 @@ class PlanAudit(Audit):
 			"disk_size": "Incorrect disk size compared to server plan",
 		}
 
-		discrepancies = {msg: [] for msg in messages.values()}
+		discrepancies = {msg: [] for msg in messages.values()}  # type:ignore
 
 		for info in server_plan_info:
 			expected_machine_type = info["plan"].split("-")[0]

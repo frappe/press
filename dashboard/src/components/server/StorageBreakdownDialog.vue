@@ -12,7 +12,7 @@
 					$resources?.databaseServerStorageBreakdown?.loading ||
 					$resources?.applicationServerStorageBreakdown?.loading
 				"
-				class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700"
+				class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 			>
 				<Spinner class="w-4" /> Analyzing ...
 			</div>
@@ -21,7 +21,7 @@
 					$resources?.databaseServerStorageBreakdown?.error ||
 					$resources?.applicationServerStorageBreakdown?.error
 				"
-				class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700"
+				class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 			>
 				<ErrorMessage
 					:message="
@@ -51,7 +51,7 @@
 						class="my-3 flex flex-row items-center justify-between px-1.5"
 					>
 						<div class="flex flex-row items-center gap-1">
-							<p class="text-base font-semibold text-gray-800">
+							<p class="text-base font-semibold text-ink-gray-8">
 								Usage of
 								{{
 									noOfDatabases > topNDatabases && !showAllDatabases
@@ -268,6 +268,7 @@ export default {
 				error_log: message.database.error_log,
 				db_other: message.database.other,
 				db_core: message.database.core,
+				binlog_indexes: message.binlog_indexes,
 				db_data: Object.values(message.database.schema).reduce(
 					(partialSum, a) => partialSum + a,
 					0,
@@ -325,6 +326,7 @@ export default {
 					db_data: `${this.noOfDatabases} Databases (including mysql, sys, perf_schema)`,
 					db_core: 'MariaDB Core',
 					db_other: 'MariaDB Owned System Files',
+					binlog_indexes: 'MariaDB Binlog Indexes (Binlog Browser)',
 				}[key] || key
 			);
 		},

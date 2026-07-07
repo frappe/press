@@ -33,7 +33,7 @@ export default {
 							if (params) return params;
 
 							return {
-								name: this.name,
+								site: this.name,
 								timezone: dayjs.tz.guess(),
 								sort: 'CPU Time (Descending)',
 								date: this.today,
@@ -68,7 +68,7 @@ export default {
 						label: 'CPU Time (seconds)',
 						fieldname: 'cpu_time',
 						width: 1,
-						class: 'text-gray-600',
+						class: 'text-ink-gray-6',
 						align: 'right',
 						format: (value) => value.toFixed(2),
 					},

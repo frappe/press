@@ -2,7 +2,7 @@
 	<div class="flex h-screen overflow-hidden">
 		<div class="w-full overflow-auto">
 			<LoginBox
-				:title="'Let\'s set up your site'"
+				title="Let's set up your site"
 				subtitle="Enter site name to set up your site"
 			>
 				<template v-slot:logo v-if="saasProduct">
@@ -20,7 +20,7 @@
 							<Tooltip
 								text="You will be able to access your site via your site name"
 							>
-								<lucide-info class="h-4 w-4 text-gray-500" />
+								<lucide-info class="h-4 w-4 text-ink-gray-5" />
 							</Tooltip>
 						</div>
 						<div class="col-span-2 flex w-full">
@@ -32,9 +32,10 @@
 								"
 								v-model="subdomain"
 								data-record="true"
+								ref="subdomainInput"
 							/>
 							<div
-								class="flex cursor-default items-center rounded-r bg-gray-100 px-2 text-base"
+								class="flex cursor-default items-center rounded-r bg-surface-gray-2 px-2 text-base"
 							>
 								.{{ domain }}
 							</div>
@@ -59,6 +60,7 @@
 						label="Create site"
 						:loading="findingClosestServer || $resources.createSite?.loading"
 						:loadingText="'Creating site...'"
+						type="submit"
 					/>
 				</form>
 			</LoginBox>
@@ -103,6 +105,9 @@ export default {
 							},
 						});
 					}
+					if (data.prefilled_subdomain) {
+						this.subdomain = data.prefilled_subdomain;
+					}
 				},
 				onError(error) {
 					toast.error(error.messages.join('\n'));
@@ -115,11 +120,6 @@ export default {
 				doctype: 'Product Trial',
 				name: this.productId,
 				auto: true,
-				onSuccess: (data) => {
-					if (data.prefilled_subdomain) {
-						this.subdomain = data.prefilled_subdomain;
-					}
-				},
 			};
 		},
 		createSite() {
@@ -163,6 +163,12 @@ export default {
 		},
 	},
 	mounted() {
+		this.$nextTick(() => {
+			this.$refs.subdomainInput?.focus();
+		});
+		this.$pulse?.capture('trial_setup_viewed', {
+			product: this.productId,
+		});
 		this.email = localStorage.getItem('login_email');
 		if (window.posthog?.__loaded) {
 			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
@@ -175,6 +181,9 @@ export default {
 	},
 	methods: {
 		async createSite() {
+			this.$pulse?.capture('trial_create_site_clicked', {
+				product: this.productId,
+			});
 			return this.$resources.createSite.submit();
 		},
 		redirectToLogin() {

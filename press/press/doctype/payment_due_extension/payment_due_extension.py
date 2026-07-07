@@ -18,33 +18,40 @@ class PaymentDueExtension(Document):
 		amended_from: DF.Link | None
 		extension_date: DF.Date
 		reason: DF.SmallText
+		status: DF.Literal["Draft", "Active", "Expired"]
 		team: DF.Link
 	# end: auto-generated types
 
 	def validate(self):
 		if self.extension_date < frappe.utils.today():
-			frappe.throw("Extension date cannot be in the past")
+			frappe.throw("The extension date must be today or later. Please pick a future date.")
 
 	def before_insert(self):
 		if frappe.db.exists(
 			"Payment Due Extension",
 			{"team": self.team, "docstatus": 1, "extension_date": (">=", frappe.utils.today())},
 		):
-			frappe.throw("An active Payment due extension record already exists for this team")
+			frappe.throw(
+				"This team already has an active payment due extension. Please use or update the existing extension instead of creating another."
+			)
+
+	def before_submit(self):
+		if self.status != "Active":
+			self.status = "Active"
 
 	def on_submit(self):
 		frappe.db.set_value("Team", self.team, "extend_payment_due_suspension", 1)
-	
-	def on_cancel(self):
+
+	def expire(self):
+		frappe.db.set_value("Payment Due Extension", self.name, "status", "Expired")
 		frappe.db.set_value("Team", self.team, "extend_payment_due_suspension", 0)
 
 
 def remove_payment_due_extension():
 	extensions = frappe.get_all(
 		"Payment Due Extension",
-		{"docstatus": 1, "extension_date": ("<", frappe.utils.today())},
-		pluck="team",
+		{"docstatus": 1, "extension_date": ("<", frappe.utils.today()), "status": "Active"},
+		pluck="name",
 	)
-	for team in extensions:
-		frappe.db.set_value("Team", team, "extend_payment_due_suspension", 0)
-		frappe.db.commit()
+	for name in extensions:
+		frappe.get_doc("Payment Due Extension", name).expire()

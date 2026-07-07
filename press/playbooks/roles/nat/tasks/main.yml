@@ -1,0 +1,22 @@
+---
+- name: Install iptables-persistent
+  package:
+    name: iptables-persistent
+    state: present
+
+- name: Ensure netfilter-persistent service is enabled
+  service:
+    name: netfilter-persistent
+    enabled: yes
+    state: started
+
+- name: Enable IP forwarding
+  shell: |
+    echo "net.ipv4.ip_forward = 1" | tee -a /etc/sysctl.conf
+    sysctl -p
+
+- name: Set up NAT with iptables
+  shell: |
+    iptables -t nat -A POSTROUTING -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
+    iptables -F FORWARD
+    netfilter-persistent save

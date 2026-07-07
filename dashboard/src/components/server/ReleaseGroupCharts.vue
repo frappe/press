@@ -3,7 +3,7 @@
 		<div class="flex space-x-2">
 			<FormControl
 				class="w-40"
-				label="Bench Group"
+				label="Benches"
 				type="select"
 				:options="releaseGroupOptions"
 				v-model="chosenGroup"

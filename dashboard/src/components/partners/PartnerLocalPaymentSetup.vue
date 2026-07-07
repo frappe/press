@@ -6,12 +6,12 @@
 				v-if="$team.doc.country === 'Kenya'"
 				class="flex flex-col gap-2 rounded-md border p-4 shadow"
 			>
-				<div class="flex justify-between items-center text-sm text-gray-700">
+				<div class="flex justify-between items-center text-sm text-ink-gray-7">
 					<div>M-Pesa Express Credentials</div>
 					<Button @click="showAddMpesaDialog = true">Edit</Button>
 				</div>
 				<div class="overflow-hidden text-ellipsis text-base font-medium">
-					<span class="font-normal text-gray-600">{{
+					<span class="font-normal text-ink-gray-6">{{
 						mpesaSetupId || 'Not Set'
 					}}</span>
 				</div>
@@ -25,7 +25,7 @@
 
 			<!-- Add Payment Gateway -->
 			<div class="flex flex-col gap-2 rounded-md border p-4 shadow">
-				<div class="flex justify-between items-center text-sm text-gray-700">
+				<div class="flex justify-between items-center text-sm text-ink-gray-7">
 					<div>Payment Gateway</div>
 					<Button
 						@click="showAddPaymentGatewayDialog = true"
@@ -34,7 +34,7 @@
 					>
 				</div>
 				<div class="overflow-hidden text-ellipsis text-base font-medium">
-					<span class="font-normal text-gray-600">{{
+					<span class="font-normal text-ink-gray-6">{{
 						paymentGatewayID || 'Not set'
 					}}</span>
 				</div>
@@ -48,12 +48,12 @@
 
 			<!--Submit Payment Transaction To Frappe-->
 			<div class="flex flex-col gap-2 rounded-md border p-4 shadow">
-				<div class="flex justify-between items-center text-sm text-gray-700">
+				<div class="flex justify-between items-center text-sm text-ink-gray-7">
 					<div>Partner Payment Payout</div>
 					<Button @click="showPartnerPaymentPayout = true">Edit</Button>
 				</div>
 				<div class="overflow-hidden text-ellipsis text-base font-medium">
-					<span class="font-normal text-gray-600">Not set</span>
+					<span class="font-normal text-ink-gray-6">Not set</span>
 				</div>
 			</div>
 			<!--End of payment transaction-->

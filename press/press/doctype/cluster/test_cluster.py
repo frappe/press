@@ -22,6 +22,7 @@ from press.utils.test import foreground_enqueue_doc
 
 
 @patch("press.press.doctype.cluster.cluster.boto3.client", new=MagicMock())
+@patch.object(Cluster, "check_quota", new=MagicMock(return_value=True))
 def create_test_cluster(
 	name: str = "Mumbai",
 	region: str = "ap-south-1",
@@ -33,7 +34,7 @@ def create_test_cluster(
 
 	if frappe.db.exists("Cluster", name):
 		return frappe.get_doc("Cluster", name)
-	cluster = frappe.get_doc(
+	cluster: Cluster = frappe.get_doc(
 		{
 			"doctype": "Cluster",
 			"name": name,
@@ -57,7 +58,7 @@ def create_test_cluster(
 
 class TestCluster(FrappeTestCase):
 	@mock_aws
-	def _setup_fake_vmis(self, series: list[str], cluster: Cluster = None):
+	def _setup_fake_vmis(self, series: list[str], cluster: Cluster | None = None):
 		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
 			create_test_virtual_machine_image,
 		)
@@ -67,10 +68,11 @@ class TestCluster(FrappeTestCase):
 			create_test_virtual_machine_image(cluster=cluster, series=s)
 
 	@patch.object(ProxyServer, "validate_domains", new=MagicMock())  # avoid TLSCertificate validation
+	@patch.object(Cluster, "check_quota", new=MagicMock(return_value=True))
 	def _create_cluster(
 		self,
-		aws_access_key_id,
-		aws_secret_access_key,
+		aws_access_key_id=None,
+		aws_secret_access_key=None,
 		public=False,
 		add_default_servers=False,
 	) -> Cluster:
@@ -248,3 +250,54 @@ class TestPublicCluster(TestCluster):
 			key_pairs["AccessKey"]["SecretAccessKey"],
 		)
 		self.assertEqual(len(client.list_users()["Users"]), 1)
+
+
+@patch.object(Cluster, "after_insert", new=MagicMock())  # don't provision/copy images on insert
+class TestClusterVPCFlowLogs(TestCluster):
+	def _active_aws_cluster_with_vpc(self, bucket: str | None = "flow-logs-bucket") -> Cluster:
+		"""An Active AWS cluster pointing at a real (moto) VPC."""
+		cluster = create_test_cluster(name="Mumbai", region="ap-south-1")
+		vpc = boto3.client("ec2", region_name=cluster.region).create_vpc(CidrBlock="10.3.0.0/16")
+		cluster.vpc_id = vpc["Vpc"]["VpcId"]
+		cluster.status = "Active"
+		cluster.vpc_flow_logs_s3_bucket = bucket
+		return cluster
+
+	@mock_aws
+	def test_setup_vpc_flow_logs_creates_flow_log_and_enables_flag(self):
+		# Stub the EC2 client and assert we call create_flow_logs correctly.
+		cluster = self._active_aws_cluster_with_vpc()
+		client = MagicMock()
+		client.create_flow_logs.return_value = {"FlowLogIds": ["fl-123"], "Unsuccessful": []}
+		with patch.object(Cluster, "get_aws_client", return_value=client):
+			cluster.setup_vpc_flow_logs()
+
+		self.assertTrue(cluster.vpc_flow_logs_enabled)
+		self.assertEqual(cluster.flow_log_id, "fl-123")
+
+		kwargs = client.create_flow_logs.call_args.kwargs
+		self.assertEqual(kwargs["ResourceIds"], [cluster.vpc_id])
+		self.assertEqual(kwargs["TrafficType"], "ALL")
+		self.assertEqual(kwargs["LogDestinationType"], "s3")
+		self.assertEqual(kwargs["LogDestination"], "arn:aws:s3:::flow-logs-bucket")
+
+	@mock_aws
+	def test_setup_vpc_flow_logs_throws_when_bucket_not_set(self):
+		cluster = self._active_aws_cluster_with_vpc(bucket=None)
+		self.assertRaisesRegex(
+			frappe.ValidationError, "Set the VPC Flow Logs S3 bucket", cluster.setup_vpc_flow_logs
+		)
+
+	@mock_aws
+	def test_setup_vpc_flow_logs_throws_when_already_enabled(self):
+		cluster = self._active_aws_cluster_with_vpc()
+		cluster.vpc_flow_logs_enabled = 1
+		self.assertRaisesRegex(frappe.ValidationError, "already enabled", cluster.setup_vpc_flow_logs)
+
+	@mock_aws
+	def test_setup_vpc_flow_logs_throws_on_non_aws_cluster(self):
+		cluster = self._active_aws_cluster_with_vpc()
+		cluster.cloud_provider = "Generic"
+		self.assertRaisesRegex(
+			frappe.ValidationError, "only supported on AWS EC2", cluster.setup_vpc_flow_logs
+		)

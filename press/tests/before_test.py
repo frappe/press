@@ -25,7 +25,9 @@ def doc_equal(self: Document, other: Document) -> bool:
 
 def FrappeTestCase_setUp(self) -> None:
 	frappe.clear_cache()
+	self.SHOW_TRANSACTION_COMMIT_WARNINGS = False
 	frappe.db.truncate("Agent Request Failure")
+	self.SHOW_TRANSACTION_COMMIT_WARNINGS = True
 	frappe.local.conf.update({"throttle_user_limit": 600})
 
 
@@ -71,7 +73,7 @@ def create_test_stripe_credentials():
 def freeze_time(time_to_freeze: Any, is_utc: bool = False, *args: Any, **kwargs: Any):
 	"""freeze time using freezegun, compatible with Python 3.10 and 3.11+."""
 	try:
-		from datetime import UTC
+		from datetime import UTC  # type: ignore
 	except ImportError:
 		from datetime import timezone
 

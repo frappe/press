@@ -1,0 +1,93 @@
+#!/bin/bash
+set -e
+export DEBIAN_FRONTEND=noninteractive
+
+sync
+
+# 1. Install Docker if not present
+if ! command -v docker &> /dev/null; then
+    curl -fsSL https://get.docker.com | bash -
+fi
+
+# 2. Stop and remove existing container if it exists
+docker rm -f fc-dr-db-replica || true
+
+
+
+# 5. Create secure internal network and run the MariaDB container
+
+docker network create --subnet=172.29.230.0/24 on_prem_replica_net || true
+
+docker run -d \
+    --name fc-dr-db-replica \
+    --restart always \
+    --user root \
+    --network on_prem_replica_net \
+    --ip 172.29.230.22 \
+    -v {{ database_base_directory }}/var/lib/mysql:/var/lib/mysql \
+    mariadb:10.6 \
+    --server-id=9999 \
+    --bind-address=0.0.0.0 \
+    --read-only=1 \
+    --innodb-file-per-table=1
+
+# Wait for MariaDB to start up
+
+echo "Waiting for MariaDB container to initialize..."
+for i in {1..100}; do
+    if docker exec fc-dr-db-replica mysqladmin ping -uroot -p'{{ mariadb_root_password }}' --silent; then
+        echo "MariaDB is ready!"
+        break
+    fi
+    echo "Waiting... ($i/100)"
+    sleep 2
+done
+
+# 7. Setup Replication
+
+# Read GTID captured from master snapshot (file copied from master)
+if [ ! -f {{ database_base_directory }}/master_gtid.txt ]; then
+    echo "Error: master GTID file not found!"
+    exit 1
+fi
+
+MASTER_GTID=$(cat {{ database_base_directory }}/master_gtid.txt)
+echo "Using master GTID: $MASTER_GTID"
+
+# Stop and reset slave
+docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "STOP SLAVE;" || true
+docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "RESET SLAVE ALL;" || true
+
+# Apply the GTID position back to the replica
+if [ ! -z "$MASTER_GTID" ]; then
+    docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "SET GLOBAL gtid_slave_pos = '$MASTER_GTID';"
+fi
+
+docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "CHANGE MASTER TO MASTER_HOST='{{ primary_private_ip }}', MASTER_USER='root', MASTER_PASSWORD='{{ mariadb_root_password }}', MASTER_PORT={{ primary_db_port }}, MASTER_USE_GTID=slave_pos;"
+docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "START SLAVE;"
+
+
+# Wait and check slave status
+echo "Checking replication status..."
+for i in {1..30}; do  # max 30 attempts
+    STATUS=$(docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -N -B -e "SHOW SLAVE STATUS\G" | grep -E 'Last_IO_Error|Last_SQL_Error' | awk '{print $2}')
+
+    IO_ERROR=$(echo "$STATUS" | sed -n '1p')
+    SQL_ERROR=$(echo "$STATUS" | sed -n '2p')
+
+    if [ -z "$IO_ERROR" ] && [ -z "$SQL_ERROR" ]; then
+        echo "Replication is running fine!"
+        break
+    else
+        echo "Replication not ready yet. Last_IO_Error='$IO_ERROR', Last_SQL_Error='$SQL_ERROR'. Waiting..."
+        sleep 2
+    fi
+done
+
+# Final check
+if [ -n "$IO_ERROR" ] || [ -n "$SQL_ERROR" ]; then
+    echo "Warning: Replication has errors!"
+    echo "Last_IO_Error: $IO_ERROR"
+    echo "Last_SQL_Error: $SQL_ERROR"
+    exit 1
+fi

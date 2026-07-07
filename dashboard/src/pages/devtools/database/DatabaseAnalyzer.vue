@@ -1,5 +1,5 @@
 <template>
-	<Header class="sticky top-0 z-10 bg-white">
+	<Header class="sticky top-0 z-10 bg-surface-white">
 		<div
 			class="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between"
 		>
@@ -25,20 +25,15 @@
 					v-model="site"
 				/>
 				<Button
-					iconLeft="refresh-ccw"
-					variant="subtle"
-					:loading="site && !isRequiredInformationReceived"
 					:disabled="!site"
-					@click="
-						() =>
-							fetchTableSchemas({
-								reload: true,
-							})
+					variant="subtle"
+					iconLeft="refresh-ccw"
+					@click="refreshDatabaseUsage"
+					:loading="
+						site && (refreshingDatabaseUsage || !isRequiredInformationReceived)
 					"
+					>Refresh</Button
 				>
-					<span class="md:hidden">Schema</span>
-					<span class="hidden md:inline">Refresh Schema</span>
-				</Button>
 			</div>
 		</div>
 	</Header>
@@ -48,7 +43,7 @@
 			<!-- Database Size Analyzer -->
 			<div>
 				<div class="flex flex-row items-center justify-between">
-					<p class="text-base font-medium text-gray-800">
+					<p class="text-base font-medium text-ink-gray-8">
 						Database Size Breakup
 					</p>
 					<div class="flex flex-row gap-2">
@@ -56,17 +51,17 @@
 							View Details
 						</Button>
 						<Button
-							@click="optimizeTable"
+							@click="(_) => optimizeTable()"
 							:loading="this.$resources.optimizeTable.loading"
 						>
-							Optimize Table
+							Optimize Tables
 						</Button>
 					</div>
 				</div>
 
 				<!-- Slider -->
 				<div
-					class="mb-4 mt-4 flex h-7 w-full cursor-pointer items-start justify-start overflow-clip rounded border bg-gray-50 pl-0"
+					class="mb-4 mt-4 flex h-7 w-full cursor-pointer items-start justify-start overflow-clip rounded border bg-surface-gray-1 pl-0"
 					@click="showTableSchemaSizeDetailsDialog = true"
 				>
 					<div
@@ -83,6 +78,13 @@
 							width: `${databaseSizeBreakup.index_size_percentage}%`,
 						}"
 					></div>
+					<div
+						class="h-7"
+						:style="{
+							backgroundColor: '#FFBF00',
+							width: `${databaseSizeBreakup.claimable_size_percentage}%`,
+						}"
+					></div>
 				</div>
 				<!-- Table -->
 				<div
@@ -93,8 +95,8 @@
 							class="h-2 w-2 rounded-full"
 							style="background-color: #e86c13"
 						></div>
-						<span class="text-sm text-gray-800">Data Size</span
-						><span class="ml-auto text-sm text-gray-800">{{
+						<span class="text-sm text-ink-gray-8">Data Size</span
+						><span class="ml-auto text-sm text-ink-gray-8">{{
 							formatSizeInMB(this.databaseSizeBreakup.data_size)
 						}}</span>
 					</div>
@@ -105,9 +107,21 @@
 							class="h-2 w-2 rounded-full"
 							style="background-color: #34bae3"
 						></div>
-						<span class="text-sm text-gray-800">Index Size</span
-						><span class="ml-auto text-sm text-gray-800"
+						<span class="text-sm text-ink-gray-8">Index Size</span
+						><span class="ml-auto text-sm text-ink-gray-8"
 							>{{ formatSizeInMB(this.databaseSizeBreakup.index_size) }}
+						</span>
+					</div>
+					<div
+						class="flex w-full items-center justify-start gap-x-2 border-t py-3"
+					>
+						<div
+							class="h-2 w-2 rounded-full"
+							style="background-color: #ffbf00"
+						></div>
+						<span class="text-sm text-ink-gray-8">Claimable Space</span
+						><span class="ml-auto text-sm text-ink-gray-8"
+							>{{ formatSizeInMB(this.databaseSizeBreakup.claimable_size) }}
 						</span>
 					</div>
 					<div
@@ -117,12 +131,27 @@
 							class="h-2 w-2 rounded-full"
 							style="background-color: #e2e2e2"
 						></div>
-						<span class="text-sm text-gray-800">Free Space</span
-						><span class="ml-auto text-sm text-gray-800"
+						<span class="text-sm text-ink-gray-8">Free Space</span
+						><span class="ml-auto text-sm text-ink-gray-8"
 							>{{ formatSizeInMB(this.databaseSizeBreakup.free_size) }}
 						</span>
 					</div>
 				</div>
+				<!-- Message -->
+				<AlertBanner
+					title="Do you want to cleanup the reclaimable space ?"
+					type="info"
+					:showIcon="false"
+					class="my-3"
+				>
+					<Button
+						class="ml-auto"
+						variant="outline"
+						link="https://docs.frappe.io/cloud/sites/monitoring#how-to-check-for-reclaimable-space"
+					>
+						Documentation
+					</Button>
+				</AlertBanner>
 			</div>
 
 			<!-- Database Processes -->
@@ -145,7 +174,7 @@
 				<template #default>
 					<div
 						v-if="this.$resources.databaseProcesses.loading"
-						class="flex h-60 w-full items-center justify-center gap-2 text-base text-gray-700"
+						class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 					>
 						<Spinner class="w-4" /> Loading Database Processes
 					</div>
@@ -162,6 +191,54 @@
 						:actionComponentProps="{
 							site: this.site,
 						}"
+						:enableCSVExport="false"
+						:borderLess="true"
+					/>
+				</template>
+			</ToggleContent>
+
+			<!-- Database Locks -->
+			<ToggleContent
+				class="mt-3"
+				label="Database Locks"
+				subLabel="Analyze the lock waits of the database"
+			>
+				<template #actions>
+					<div class="flex flex-row items-center gap-4">
+						<div
+							class="flex flex-row items-center gap-2"
+							@click.stop="() => {}"
+						>
+							<Switch v-model="autoRefreshDatabaseLocks" />
+							<p class="text-base text-ink-gray-7">Auto Refresh</p>
+						</div>
+						<Button
+							:loading="this.$resources.databaseLocks.loading"
+							loading-text="Refreshing"
+							icon-left="rotate-ccw"
+							@click.stop="this.$resources.databaseLocks.submit()"
+							>Refresh</Button
+						>
+					</div>
+				</template>
+				<template #default>
+					<div
+						v-if="
+							this.$resources.databaseLocks.loading &&
+							!databaseLocks?.data?.length
+						"
+						class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
+					>
+						<Spinner class="w-4" /> Loading Database Locks
+					</div>
+					<ResultTable
+						v-else
+						class="mt-2"
+						:columns="databaseLocks.columns"
+						:data="databaseLocks.data"
+						:alignColumns="alignColumns"
+						:cellFormatters="cellFormatters"
+						:fullViewFormatters="fullViewFormatters"
 						:enableCSVExport="false"
 						:borderLess="true"
 					/>
@@ -247,7 +324,7 @@
 										"
 										>Suggest Indexes</Button
 									>
-									<p class="text-base text-gray-700">
+									<p class="text-base text-ink-gray-7">
 										This may take a while to analyze
 									</p>
 								</div>
@@ -290,6 +367,7 @@
 				:tableSchemas="tableSchemas"
 				v-model="showTableSchemaSizeDetailsDialog"
 				:viewSchemaDetails="viewTableSchemaDetails"
+				:optimizeTable="optimizeTable"
 			/>
 
 			<DatabaseTableSchemaDialog
@@ -302,12 +380,12 @@
 		</div>
 		<div
 			v-else-if="!site"
-			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 		>
 			Select a site to get started
 		</div>
 		<div
-			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 			v-else
 		>
 			<Spinner class="w-4" /> Loading Table Schemas
@@ -316,7 +394,7 @@
 </template>
 <script>
 import Header from '../../../components/Header.vue';
-import { Tabs, Breadcrumbs } from 'frappe-ui';
+import { Tabs, Breadcrumbs, Switch } from 'frappe-ui';
 import LinkControl from '../../../components/LinkControl.vue';
 import ObjectList from '../../../components/ObjectList.vue';
 import { h, markRaw } from 'vue';
@@ -329,6 +407,8 @@ import DatabaseTableSchemaDialog from '../../../components/devtools/database/Dat
 import DatabaseTableSchemaSizeDetailsDialog from '../../../components/devtools/database/DatabaseTableSchemaSizeDetailsDialog.vue';
 import DatabaseAddIndexButton from '../../../components/devtools/database/DatabaseAddIndexButton.vue';
 import DatabasePerformanceSchemaDisabledNotice from '../../../components/devtools/database/DatabasePerformanceSchemaDisabledNotice.vue';
+import { confirmDialog } from '../../../utils/components';
+import { set } from '@vueuse/core';
 
 export default {
 	name: 'DatabaseAnalyzer',
@@ -344,6 +424,7 @@ export default {
 		DatabaseTableSchemaSizeDetailsDialog,
 		DatabaseProcessKillButton,
 		DatabasePerformanceSchemaDisabledNotice,
+		Switch,
 	},
 	data() {
 		return {
@@ -352,12 +433,15 @@ export default {
 			isIndexSuggestionTriggered: false,
 			queryTabIndex: 0,
 			dbIndexTabIndex: 0,
+			autoRefreshDatabaseLocks: false,
 			showTableSchemaSizeDetailsDialog: false,
 			preSelectedSchemaForSchemaDialog: null,
 			showTableSchemasDialog: false,
 			fetchingDatabaseIndex: false,
+			forceSchemaRefresh: false,
 			DatabaseProcessKillButton: markRaw(DatabaseProcessKillButton),
 			DatabaseAddIndexButton: markRaw(DatabaseAddIndexButton),
+			refreshingDatabaseUsage: false,
 		};
 	},
 	mounted() {
@@ -366,6 +450,7 @@ export default {
 		if (site_name) {
 			this.site = site_name;
 		}
+		this.autoRefreshDatabaseLocksInBackground();
 	},
 	watch: {
 		site(site_name) {
@@ -392,6 +477,11 @@ export default {
 				dn: site_name,
 				method: 'fetch_database_processes',
 			});
+			this.$resources.databaseLocks.submit({
+				dt: 'Site',
+				dn: site_name,
+				method: 'fetch_database_locks',
+			});
 		},
 	},
 	resources: {
@@ -415,9 +505,13 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'fetch_database_table_schema',
+						args: {
+							reload: this.forceSchemaRefresh,
+						},
 					};
 				},
 				onSuccess: (data) => {
+					this.forceSchemaRefresh = false;
 					if (data?.message?.loading) {
 						setTimeout(this.fetchTableSchemas, 5000);
 					}
@@ -430,9 +524,13 @@ export default {
 				initialData: {},
 				auto: false,
 				onSuccess: (data) => {
+					console.log(data);
 					if (data?.message) {
 						if (data?.message?.success) {
 							toast.success(data?.message?.message);
+							console.log(
+								`/sites/${this.site}/insights/jobs/${data?.message?.job_name}`,
+							);
 							this.$router.push(
 								`/sites/${this.site}/insights/jobs/${data?.message?.job_name}`,
 							);
@@ -497,6 +595,52 @@ export default {
 				auto: false,
 			};
 		},
+		databaseLocks() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				initialData: {},
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'fetch_database_locks',
+					};
+				},
+				auto: false,
+			};
+		},
+		refreshDatabaseUsage() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams() {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'refresh_database_usage',
+					};
+				},
+				onSuccess: (e) => {
+					let isSynced = e?.message?.synced ?? true;
+					let refreshAfterSeconds = e?.message?.refresh_after_seconds ?? 0;
+					let refreshAfterMinutes = Math.ceil(refreshAfterSeconds / 60);
+					if (isSynced) {
+						this.refreshingDatabaseUsage = false;
+						let message = refreshAfterSeconds
+							? `Database usage refreshed. You can refresh again after ${refreshAfterMinutes} minute(s).`
+							: 'Database usage refreshed.';
+						toast.success(message);
+						this.fetchTableSchemas({
+							reload: true,
+						});
+					} else {
+						setTimeout(() => {
+							this.$resources.refreshDatabaseUsage.reload();
+						}, 3000);
+					}
+				},
+				auto: false,
+			};
+		},
 	},
 	computed: {
 		site_info() {
@@ -526,6 +670,7 @@ export default {
 					table_name: tableName,
 					data_size_mb: (table.size.data_length / (1024 * 1024)).toFixed(3),
 					index_size_mb: (table.size.index_length / (1024 * 1024)).toFixed(3),
+					data_free_mb: (table.size.data_free / (1024 * 1024)).toFixed(3),
 					total_size_mb: (table.size.total_size / (1024 * 1024)).toFixed(3),
 					no_of_columns: table.columns.length,
 				});
@@ -586,17 +731,31 @@ export default {
 			);
 			index_size = index_size.toFixed(2);
 
+			let claimable_size = this.tableSizeInfo.reduce(
+				(a, b) => a + parseFloat(b.data_free_mb),
+				0,
+			);
+
 			let database_size_limit =
 				this.site_info.current_plan.max_database_usage.toFixed(2);
 
 			return {
 				data_size,
 				index_size,
+				claimable_size,
 				database_size_limit,
-				free_size: (database_size_limit - data_size - index_size).toFixed(2),
+				free_size: (
+					database_size_limit -
+					data_size -
+					index_size -
+					claimable_size
+				).toFixed(2),
 				data_size_percentage: parseInt((data_size / database_size_limit) * 100),
 				index_size_percentage: parseInt(
 					(index_size / database_size_limit) * 100,
+				),
+				claimable_size_percentage: parseInt(
+					(claimable_size / database_size_limit) * 100,
 				),
 			};
 		},
@@ -711,6 +870,40 @@ export default {
 				}),
 			};
 		},
+		databaseLocks() {
+			if (!this.isRequiredInformationReceived) return null;
+			// 		fields = ["lock_id", "trx_id", "trx_query", "lock_mode", "lock_type", "lock_table", "lock_index", "trx_state", "trx_operation_state", "trx_started", "trx_rows_locked", "trx_rows_modified"]
+
+			const result = this.$resources.databaseLocks.data?.message ?? [];
+			return {
+				columns: [
+					'ID',
+					'Type',
+					'Mode',
+					'Table',
+					'Index',
+					'State',
+					'Started',
+					'Query',
+					'Rows Locked',
+					'Rows Modified',
+				],
+				data: result.map((e) => {
+					return [
+						e['trx_id'],
+						e['lock_type'],
+						e['lock_mode'],
+						e['lock_table'],
+						e['lock_index'],
+						e['trx_state'],
+						this.formatTrxStarted(e['trx_started']),
+						e['trx_query'],
+						e['trx_rows_locked'],
+						e['trx_rows_modified'],
+					];
+				}),
+			};
+		},
 		cellFormatters() {
 			return {
 				'Rows Examined': (v) => formatValue(v, 'commaSeperatedNumber'),
@@ -742,20 +935,32 @@ export default {
 		fetchTableSchemas({ site_name = null, reload = false } = {}) {
 			if (!site_name) site_name = this.site;
 			if (!site_name) return;
-			this.$resources.tableSchemas.submit({
-				dt: 'Site',
-				dn: site_name,
-				method: 'fetch_database_table_schema',
-				args: {
-					reload,
-				},
-			});
+			this.forceSchemaRefresh = reload;
+			this.$resources.tableSchemas.submit();
 		},
-		optimizeTable() {
-			this.$resources.optimizeTable.submit({
-				dt: 'Site',
-				dn: this.site,
-				method: 'optimize_tables',
+		optimizeTable(tableName = null) {
+			this.showTableSchemaSizeDetailsDialog = false;
+
+			confirmDialog({
+				title: 'Optimize Database Tables',
+				message: tableName
+					? `Do you want to optimize the table <strong>${tableName}</strong> to reclaim space ?<br>`
+					: `Frappe Cloud will find tables where reclaimable space exceeds 100 MB or 20% of the table size.<br>Are you sure you want to optimize the database tables ?<br>`,
+				primaryAction: {
+					label: 'Optimize',
+					variant: 'solid',
+					onClick: ({ hide }) => {
+						hide();
+						this.$resources.optimizeTable.submit({
+							dt: 'Site',
+							dn: this.site,
+							method: 'optimize_tables',
+							args: {
+								tables: tableName ? [tableName] : [],
+							},
+						});
+					},
+				},
 			});
 		},
 		viewTableSchemaDetails(tableName) {
@@ -764,6 +969,8 @@ export default {
 			this.showTableSchemasDialog = true;
 		},
 		formatSizeInMB(mb) {
+			if (!mb) return '0 MB';
+			if (isNaN(mb)) return '0 MB';
 			try {
 				let floatMB = parseFloat(mb);
 				if (floatMB < 1) {
@@ -777,6 +984,26 @@ export default {
 				}
 			} catch (error) {
 				return `${mb} MB`; // Return MB without decimal
+			}
+		},
+		refreshDatabaseUsage() {
+			this.refreshingDatabaseUsage = true;
+			this.$resources.refreshDatabaseUsage.submit();
+		},
+		autoRefreshDatabaseLocksInBackground() {
+			setInterval(() => {
+				if (this.autoRefreshDatabaseLocks && this.site) {
+					this.$resources.databaseLocks.submit();
+				}
+			}, 5000);
+		},
+		formatTrxStarted(value) {
+			if (!value) return '';
+			try {
+				const diff = parseInt((new Date() - new Date(value)) / 1000);
+				return this.$format.formatSeconds(diff) + ' ago';
+			} catch (error) {
+				return value;
 			}
 		},
 	},

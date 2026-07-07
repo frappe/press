@@ -1,251 +1,250 @@
 {
- "actions": [],
- "allow_rename": 1,
- "creation": "2023-10-16 18:45:05.744563",
- "default_view": "List",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "alerts_tab",
-  "phone_call",
-  "alert",
-  "status",
-  "type",
-  "subtype",
-  "acknowledged_by",
-  "column_break_smnd",
-  "server",
-  "resource_type",
-  "resource",
-  "cluster",
-  "resolved_by",
-  "investigation",
-  "section_break_kjey",
-  "subject",
-  "description",
-  "preliminary_investigation_section",
-  "likely_cause",
-  "column_break_jrzi",
-  "corrective_suggestions",
-  "preventive_suggestions",
-  "section_break_bjjy",
-  "updates",
-  "called_customer",
-  "updates_tab",
-  "alerts",
-  "section_break_aevb",
-  "column_break_rbwa",
-  "route",
-  "sms_sent",
-  "show_in_website"
- ],
- "fields": [
-  {
-   "fieldname": "server",
-   "fieldtype": "Link",
-   "label": "Server",
-   "options": "Server"
-  },
-  {
-   "fieldname": "cluster",
-   "fieldtype": "Link",
-   "label": "Cluster",
-   "options": "Cluster"
-  },
-  {
-   "fieldname": "column_break_smnd",
-   "fieldtype": "Column Break",
-   "read_only": 1
-  },
-  {
-   "default": "Validating",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "label": "Status",
-   "options": "Validating\nConfirmed\nAcknowledged\nInvestigating\nResolved\nAuto-Resolved\nPress-Resolved"
-  },
-  {
-   "default": "Database Down",
-   "fieldname": "type",
-   "fieldtype": "Select",
-   "label": "Type",
-   "options": "Database Down\nServer Down\nProxy Down"
-  },
-  {
-   "fieldname": "section_break_bjjy",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "alerts",
-   "fieldtype": "Table",
-   "label": "Alerts",
-   "options": "Incident Alerts"
-  },
-  {
-   "default": "0",
-   "fieldname": "sms_sent",
-   "fieldtype": "Check",
-   "label": "SMS Sent"
-  },
-  {
-   "fieldname": "alerts_tab",
-   "fieldtype": "Tab Break",
-   "label": "Overview"
-  },
-  {
-   "fieldname": "updates_tab",
-   "fieldtype": "Tab Break",
-   "label": "Alerts"
-  },
-  {
-   "fieldname": "acknowledged_by",
-   "fieldtype": "Link",
-   "label": "Acknowledged By",
-   "mandatory_depends_on": "eval: doc.status==\"Acknowledged\";",
-   "options": "User"
-  },
-  {
-   "fieldname": "column_break_rbwa",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_aevb",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "updates",
-   "fieldtype": "Table",
-   "label": "Updates",
-   "options": "Incident Updates"
-  },
-  {
-   "fieldname": "route",
-   "fieldtype": "Data",
-   "label": "Route"
-  },
-  {
-   "default": "0",
-   "fieldname": "show_in_website",
-   "fieldtype": "Check",
-   "label": "Show in Website"
-  },
-  {
-   "fieldname": "section_break_kjey",
-   "fieldtype": "Section Break",
-   "label": "Details"
-  },
-  {
-   "fieldname": "subject",
-   "fieldtype": "Data",
-   "label": "Subject"
-  },
-  {
-   "fieldname": "description",
-   "fieldtype": "Text Editor",
-   "label": "Description"
-  },
-  {
-   "fieldname": "resolved_by",
-   "fieldtype": "Link",
-   "label": "Resolved By",
-   "options": "User"
-  },
-  {
-   "default": "1",
-   "fieldname": "phone_call",
-   "fieldtype": "Check",
-   "label": "Phone Call"
-  },
-  {
-   "fieldname": "alert",
-   "fieldtype": "Link",
-   "label": "Alert",
-   "options": "Prometheus Alert Rule"
-  },
-  {
-   "fieldname": "resource_type",
-   "fieldtype": "Link",
-   "label": "Resource Type",
-   "options": "DocType"
-  },
-  {
-   "fieldname": "resource",
-   "fieldtype": "Dynamic Link",
-   "label": "Resource",
-   "options": "resource_type"
-  },
-  {
-   "fieldname": "subtype",
-   "fieldtype": "Select",
-   "label": "Subtype",
-   "options": "High CPU: user\nHigh CPU: iowait\nDisk full"
-  },
-  {
-   "fieldname": "preliminary_investigation_section",
-   "fieldtype": "Section Break",
-   "label": "Preliminary Investigation"
-  },
-  {
-   "fieldname": "likely_cause",
-   "fieldtype": "Text",
-   "label": "Likely Causes"
-  },
-  {
-   "fieldname": "column_break_jrzi",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "preventive_suggestions",
-   "fieldtype": "Table",
-   "label": "Preventive Suggestions",
-   "options": "Incident Suggestion"
-  },
-  {
-   "fieldname": "corrective_suggestions",
-   "fieldtype": "Table",
-   "label": "Corrective Suggestions",
-   "options": "Incident Suggestion"
-  },
-  {
-   "fieldname": "investigation",
-   "fieldtype": "Link",
-   "label": "Investigation",
-   "options": "Incident Investigator"
-  },
-  {
-   "default": "0",
-   "fieldname": "called_customer",
-   "fieldtype": "Check",
-   "label": "Called Customer"
-  }
- ],
- "has_web_view": 1,
- "index_web_pages_for_search": 1,
- "is_published_field": "show_in_website",
- "links": [],
- "modified": "2025-09-30 17:33:41.729833",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Incident",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "route": "incidents",
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+	"actions": [],
+	"allow_rename": 1,
+	"creation": "2023-10-16 18:45:05.744563",
+	"default_view": "List",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"alerts_tab",
+		"phone_call",
+		"alert",
+		"status",
+		"type",
+		"subtype",
+		"acknowledged_by",
+		"column_break_smnd",
+		"server",
+		"resource_type",
+		"resource",
+		"cluster",
+		"resolved_by",
+		"investigation",
+		"resolved_at",
+		"confirmed_at",
+		"section_break_kjey",
+		"subject",
+		"description",
+		"preliminary_investigation_section",
+		"likely_cause",
+		"column_break_jrzi",
+		"corrective_suggestions",
+		"preventive_suggestions",
+		"section_break_bjjy",
+		"updates",
+		"called_customer",
+		"updates_tab",
+		"alerts",
+		"section_break_aevb",
+		"column_break_rbwa",
+		"route",
+		"sms_sent",
+		"show_in_website"
+	],
+	"fields": [
+		{
+			"fieldname": "server",
+			"fieldtype": "Link",
+			"label": "Server",
+			"options": "Server"
+		},
+		{
+			"fieldname": "cluster",
+			"fieldtype": "Link",
+			"label": "Cluster",
+			"options": "Cluster"
+		},
+		{
+			"fieldname": "column_break_smnd",
+			"fieldtype": "Column Break",
+			"read_only": 1
+		},
+		{
+			"default": "Validating",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"label": "Status",
+			"options": "Validating\nConfirmed\nAcknowledged\nInvestigating\nResolved\nAuto-Resolved\nPress-Resolved"
+		},
+		{
+			"default": "Database Down",
+			"fieldname": "type",
+			"fieldtype": "Select",
+			"label": "Type",
+			"options": "Database Down\nServer Down\nProxy Down"
+		},
+		{ "fieldname": "section_break_bjjy", "fieldtype": "Section Break" },
+		{
+			"fieldname": "alerts",
+			"fieldtype": "Table",
+			"label": "Alerts",
+			"options": "Incident Alerts"
+		},
+		{
+			"default": "0",
+			"fieldname": "sms_sent",
+			"fieldtype": "Check",
+			"label": "SMS Sent"
+		},
+		{
+			"fieldname": "alerts_tab",
+			"fieldtype": "Tab Break",
+			"label": "Overview"
+		},
+		{ "fieldname": "updates_tab", "fieldtype": "Tab Break", "label": "Alerts" },
+		{
+			"fieldname": "acknowledged_by",
+			"fieldtype": "Link",
+			"label": "Acknowledged By",
+			"mandatory_depends_on": "eval: doc.status==\"Acknowledged\";",
+			"options": "User"
+		},
+		{ "fieldname": "column_break_rbwa", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_aevb", "fieldtype": "Section Break" },
+		{
+			"fieldname": "updates",
+			"fieldtype": "Table",
+			"label": "Updates",
+			"options": "Incident Updates"
+		},
+		{ "fieldname": "route", "fieldtype": "Data", "label": "Route" },
+		{
+			"default": "0",
+			"fieldname": "show_in_website",
+			"fieldtype": "Check",
+			"label": "Show in Website"
+		},
+		{
+			"fieldname": "section_break_kjey",
+			"fieldtype": "Section Break",
+			"label": "Details"
+		},
+		{ "fieldname": "subject", "fieldtype": "Data", "label": "Subject" },
+		{
+			"fieldname": "description",
+			"fieldtype": "Text Editor",
+			"label": "Description"
+		},
+		{
+			"fieldname": "resolved_by",
+			"fieldtype": "Link",
+			"label": "Resolved By",
+			"options": "User"
+		},
+		{
+			"default": "1",
+			"fieldname": "phone_call",
+			"fieldtype": "Check",
+			"label": "Phone Call"
+		},
+		{
+			"fieldname": "alert",
+			"fieldtype": "Link",
+			"label": "Alert",
+			"options": "Prometheus Alert Rule"
+		},
+		{
+			"fieldname": "resource_type",
+			"fieldtype": "Link",
+			"label": "Resource Type",
+			"options": "DocType"
+		},
+		{
+			"fieldname": "resource",
+			"fieldtype": "Dynamic Link",
+			"label": "Resource",
+			"options": "resource_type"
+		},
+		{
+			"fieldname": "subtype",
+			"fieldtype": "Select",
+			"label": "Subtype",
+			"options": "High CPU: user\nHigh CPU: iowait\nDisk full"
+		},
+		{
+			"fieldname": "preliminary_investigation_section",
+			"fieldtype": "Section Break",
+			"label": "Preliminary Investigation"
+		},
+		{
+			"fieldname": "likely_cause",
+			"fieldtype": "Text",
+			"label": "Likely Causes"
+		},
+		{ "fieldname": "column_break_jrzi", "fieldtype": "Column Break" },
+		{
+			"fieldname": "preventive_suggestions",
+			"fieldtype": "Table",
+			"label": "Preventive Suggestions",
+			"options": "Incident Suggestion"
+		},
+		{
+			"fieldname": "corrective_suggestions",
+			"fieldtype": "Table",
+			"label": "Corrective Suggestions",
+			"options": "Incident Suggestion"
+		},
+		{
+			"fieldname": "investigation",
+			"fieldtype": "Link",
+			"label": "Investigation",
+			"options": "Incident Investigator",
+			"search_index": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "called_customer",
+			"fieldtype": "Check",
+			"label": "Called Customer"
+		},
+		{
+			"fieldname": "resolved_at",
+			"fieldtype": "Datetime",
+			"label": "Resolved At"
+		},
+		{
+			"fieldname": "confirmed_at",
+			"fieldtype": "Datetime",
+			"label": "Confirmed At"
+		}
+	],
+	"has_web_view": 1,
+	"index_web_pages_for_search": 1,
+	"is_published_field": "show_in_website",
+	"links": [],
+	"modified": "2026-03-13 13:38:20.041662",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Incident",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press User",
+			"share": 1
+		}
+	],
+	"route": "incidents",
+	"row_format": "Dynamic",
+	"rows_threshold_for_grid_search": 20,
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
 }

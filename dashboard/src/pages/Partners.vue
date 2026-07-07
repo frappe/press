@@ -15,7 +15,7 @@
 		/>
 		<div
 			v-else
-			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
+			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-ink-gray-6"
 		>
 			<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 			<ErrorMessage
@@ -48,13 +48,18 @@ export default {
 					condition: () => Boolean(this.$team.doc.erpnext_partner),
 				},
 				{
+					label: 'Website Details',
+					route: { name: 'PartnerWebsiteDetails' },
+					condition: () => Boolean(this.$team.doc.erpnext_partner),
+				},
+				{
 					label: 'Dashboard',
 					route: { name: 'PartnerDashboard' },
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active' &&
-								this.$session.hasPartnerDashboardAccess,
+							this.$team.doc.partner_status === 'Active' &&
+							this.$session.hasPartnerDashboardAccess,
 						),
 				},
 				{
@@ -63,17 +68,8 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active' &&
-								this.$session.hasPartnerCustomerAccess,
-						),
-				},
-				{
-					label: 'Customer Approval Requests',
-					route: { name: 'PartnerApprovalRequests' },
-					condition: () =>
-						Boolean(
-							this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active',
+							this.$team.doc.partner_status === 'Active' &&
+							this.$session.hasPartnerCustomerAccess,
 						),
 				},
 				{
@@ -82,17 +78,17 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active' &&
-								this.$session.hasPartnerLeadsAccess,
+							this.$team.doc.partner_status === 'Active' &&
+							this.$session.hasPartnerLeadsAccess,
 						),
 				},
 				{
-					label: 'Certificates',
+					label: 'Certifications',
 					route: { name: 'PartnerCertificates' },
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active',
+							this.$team.doc.partner_status === 'Active',
 						),
 				},
 				{
@@ -101,7 +97,7 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active',
+							this.$team.doc.partner_status === 'Active',
 						),
 				},
 				{
@@ -110,8 +106,17 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active' &&
-								this.$session.hasPartnerContributionAccess,
+							this.$team.doc.partner_status === 'Active' &&
+							this.$session.hasPartnerContributionAccess,
+						),
+				},
+				{
+					label: 'Audits',
+					route: { name: 'PartnerAudits' },
+					condition: () =>
+						Boolean(
+							this.$team.doc.erpnext_partner &&
+							this.$team.doc.partner_status === 'Active',
 						),
 				},
 				{
@@ -120,9 +125,9 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.country === 'Kenya' &&
-								this.$team.doc.mpesa_enabled &&
-								this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active',
+							this.$team.doc.mpesa_enabled &&
+							this.$team.doc.erpnext_partner &&
+							this.$team.doc.partner_status === 'Active',
 						),
 				},
 				{
@@ -131,7 +136,7 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.country === 'Kenya' &&
-								this.$team.doc.mpesa_enabled,
+							this.$team.doc.mpesa_enabled,
 						),
 				},
 			],

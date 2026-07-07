@@ -1,0 +1,15 @@
+---
+- name: Allow Docker Loopback Access for Redis
+  command: >
+    iptables -I DOCKER-USER 1 -i docker0 -o docker0 -p tcp
+    --dport 11000:20000 -j ACCEPT
+
+- name: Ensure iptables-persistent installed
+  apt:
+    name: iptables-persistent
+    state: present
+    update_cache: no
+
+- name: Save IP Table Change
+  shell: iptables-save -t filter > /etc/iptables/rules.v4
+

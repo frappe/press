@@ -12,7 +12,7 @@
 				<template v-if="showInvoice">
 					<div
 						v-if="showInvoice.status === 'Empty'"
-						class="text-base text-gray-600"
+						class="text-base text-ink-gray-6"
 					>
 						Nothing to show
 					</div>
@@ -48,7 +48,6 @@
 						$resources.transferCredits.submit({
 							amount: amount,
 							customer: customerTeam.name,
-							partner: $team.doc.name,
 						})
 					"
 				>
@@ -65,9 +64,20 @@
 					{{ formatCurrency(amount) }} credits have been transferred to
 					<strong>{{ customerTeam.billing_name }}</strong>
 				</p>
-				<span class="text-base font-medium text-gray-700"
+				<span class="text-base font-medium text-ink-gray-7"
 					>Credits available: {{ creditBalance() }}</span
 				>
+			</template>
+		</Dialog>
+		<Dialog
+			v-model="showApprovalRequestsDialog"
+			:options="{
+				title: 'Customer Approval Requests',
+				size: '6xl',
+			}"
+		>
+			<template #body-content>
+				<PartnerApprovalRequests />
 			</template>
 		</Dialog>
 	</div>
@@ -78,6 +88,7 @@ import ObjectList from '../ObjectList.vue';
 import { Dialog, ErrorMessage } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { userCurrency } from '../../utils/format';
+import PartnerApprovalRequests from './PartnerApprovalRequests.vue';
 
 export default {
 	name: 'PartnerCustomers',
@@ -86,6 +97,7 @@ export default {
 		Dialog,
 		ErrorMessage,
 		ObjectList,
+		PartnerApprovalRequests,
 	},
 	data() {
 		return {
@@ -95,6 +107,7 @@ export default {
 			customerTeam: null,
 			amount: 0.0,
 			showConfirmationDialog: false,
+			showApprovalRequestsDialog: false,
 		};
 	},
 	resources: {
@@ -185,6 +198,16 @@ export default {
 						},
 					},
 				],
+				actions: () => {
+					return [
+						{
+							label: 'Customer Approval Requests',
+							onClick: () => {
+								this.showApprovalRequestsDialog = true;
+							},
+						},
+					];
+				},
 			};
 		},
 	},

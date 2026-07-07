@@ -1,0 +1,24 @@
+[project]
+name = "mariadb_table_usage"
+version = "0.0.1"
+description = "InnoDB & MyISAM Table Parser & Usage Estimator"
+readme = "README.md"
+requires-python = ">=3.7"
+license = { text = "MIT" }
+authors = [{ name = "Frappe Cloud", email = "cloud@frappe.io" }]
+dependencies = []
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+]
+
+[tool.setuptools]
+packages = ["mariadb_table_usage"]
+
+[tool.setuptools.package-data]
+"mariadb_table_usage" = ["lib/mariadb_table_usage*"]
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"

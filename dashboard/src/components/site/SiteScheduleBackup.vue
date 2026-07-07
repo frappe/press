@@ -17,7 +17,7 @@
 		<template #body-content>
 			<div class="flex flex-col gap-3">
 				<p
-					class="text-md text-base text-gray-800"
+					class="text-md text-base text-ink-gray-8"
 					v-if="!this.$site?.doc?.allow_physical_backup_by_user"
 				>
 					Are you sure you want to backup your site ?

@@ -38,7 +38,7 @@
 							v-model="searchLogQuery"
 						>
 							<template #prefix>
-								<lucide-search class="h-4 w-4 text-gray-500" />
+								<lucide-search class="h-4 w-4 text-ink-gray-5" />
 							</template>
 						</FormControl>
 					</div>
@@ -51,7 +51,7 @@
 							v-if="columns?.length || props.log?.length"
 							class="w-full border-separate border-spacing-0"
 						>
-							<thead class="z-5 sticky top-0 w-full rounded bg-gray-100">
+							<thead class="z-5 sticky top-0 z-10 w-full rounded bg-surface-gray-2">
 								<tr
 									v-for="headerGroup in table.getHeaderGroups()"
 									:key="headerGroup.id"
@@ -60,7 +60,7 @@
 										v-for="header in headerGroup.headers"
 										:key="header.id"
 										:colSpan="header.colSpan"
-										class="text-gray-800"
+										class="text-ink-gray-8"
 										:class="{
 											'w-2/12': header.column.columnDef.id === 'level',
 											'w-3/12': header.column.columnDef.id === 'time',
@@ -83,7 +83,7 @@
 									v-for="(row, index) in table.getRowModel().rows"
 									:key="row.id"
 								>
-									<tr class="hover:bg-gray-50">
+									<tr class="hover:bg-surface-gray-1">
 										<td
 											v-for="cell in row.getVisibleCells()"
 											:key="cell.id"
@@ -130,7 +130,7 @@
 												class="truncate font-mono text-sm"
 												:class="{
 													'font-mono ': cell.column.columnDef.id === 'time',
-													'font-mono text-gray-600':
+													'font-mono text-ink-gray-6':
 														cell.column.columnDef.id === 'description',
 												}"
 											>
@@ -145,7 +145,7 @@
 										<td
 											v-if="row.getIsExpanded()"
 											:colspan="row.getAllCells().length"
-											class="max-w-[39.75rem] whitespace-pre-wrap break-words border-b bg-gray-900 px-3 py-4 font-mono text-sm text-gray-200"
+											class="max-w-[39.75rem] whitespace-pre-wrap break-words border-b bg-gray-900 px-3 py-4 font-mono text-sm text-ink-gray-2"
 										>
 											{{ row.original.description }}
 										</td>
@@ -156,7 +156,7 @@
 						</table>
 
 						<div v-if="table.getRowModel().rows.length === 0" class="p-8">
-							<p class="text-center text-sm text-gray-500">
+							<p class="text-center text-sm text-ink-gray-5">
 								No log entries found
 							</p>
 						</div>
@@ -165,7 +165,7 @@
 					<div class="flex justify-between rounded rounded-t-none border-t p-1">
 						<div></div>
 						<div class="flex flex-shrink-0 items-center justify-end gap-3">
-							<p class="tnum text-sm text-gray-600">
+							<p class="tnum text-sm text-ink-gray-6">
 								{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
 							</p>
 							<div class="flex gap-2">

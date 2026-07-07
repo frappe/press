@@ -1,346 +1,353 @@
 {
- "actions": [],
- "creation": "2022-03-06 20:52:32.662775",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "request_key",
-  "request_key_expiration_time",
-  "team",
-  "email",
-  "oauth_signup",
-  "send_email",
-  "otp",
-  "otp_generated_at",
-  "column_break_4",
-  "role",
-  "invited_by",
-  "ip_address",
-  "invited_by_parent_team",
-  "press_roles",
-  "agreed_to_terms",
-  "saas_sign_up_section",
-  "saas",
-  "saas_app",
-  "product_trial",
-  "unsubscribed_from_drip_emails",
-  "column_break_eaxp",
-  "first_name",
-  "last_name",
-  "country",
-  "continent",
-  "is_mobile",
-  "section_break_8",
-  "erpnext",
-  "subdomain",
-  "plan",
-  "phone_number",
-  "company",
-  "designation",
-  "column_break_14",
-  "no_of_users",
-  "no_of_employees",
-  "industry",
-  "state",
-  "is_us_eu",
-  "agreed_to_partner_consent",
-  "referrer_data",
-  "referral_source",
-  "url_args",
-  "referrer_id",
-  "section_break_31",
-  "geo_location"
- ],
- "fields": [
-  {
-   "fieldname": "email",
-   "fieldtype": "Data",
-   "label": "Email",
-   "search_index": 1
-  },
-  {
-   "fieldname": "request_key",
-   "fieldtype": "Data",
-   "label": "Request Key"
-  },
-  {
-   "fieldname": "team",
-   "fieldtype": "Data",
-   "label": "Team"
-  },
-  {
-   "fieldname": "role",
-   "fieldtype": "Data",
-   "label": "Role"
-  },
-  {
-   "fieldname": "invited_by",
-   "fieldtype": "Data",
-   "label": "Invited By"
-  },
-  {
-   "fieldname": "ip_address",
-   "fieldtype": "Data",
-   "label": "IP Address"
-  },
-  {
-   "fieldname": "country",
-   "fieldtype": "Data",
-   "label": "Country"
-  },
-  {
-   "fieldname": "first_name",
-   "fieldtype": "Data",
-   "label": "First Name"
-  },
-  {
-   "fieldname": "last_name",
-   "fieldtype": "Data",
-   "label": "Last Name"
-  },
-  {
-   "fieldname": "phone_number",
-   "fieldtype": "Data",
-   "label": "Phone Number"
-  },
-  {
-   "fieldname": "subdomain",
-   "fieldtype": "Data",
-   "label": "Subdomain"
-  },
-  {
-   "default": "0",
-   "fieldname": "erpnext",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "ERPNext"
-  },
-  {
-   "fieldname": "company",
-   "fieldtype": "Data",
-   "label": "Company"
-  },
-  {
-   "fieldname": "designation",
-   "fieldtype": "Data",
-   "label": "Designation"
-  },
-  {
-   "fieldname": "referral_source",
-   "fieldtype": "Data",
-   "label": "Referral Source"
-  },
-  {
-   "fieldname": "no_of_employees",
-   "fieldtype": "Data",
-   "label": "Number of employees"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "section_break_8",
-   "fieldtype": "Section Break",
-   "label": "ERPNext Sign Up"
-  },
-  {
-   "fieldname": "column_break_14",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_4",
-   "fieldtype": "Column Break"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "referrer_data",
-   "fieldtype": "Section Break",
-   "label": "Referrer Data"
-  },
-  {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "label": "Plan",
-   "options": "Site Plan"
-  },
-  {
-   "fieldname": "industry",
-   "fieldtype": "Data",
-   "label": "Industry"
-  },
-  {
-   "fieldname": "no_of_users",
-   "fieldtype": "Int",
-   "label": "Number of Users"
-  },
-  {
-   "fieldname": "url_args",
-   "fieldtype": "Code",
-   "label": "URL Args",
-   "options": "JSON",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "agreed_to_partner_consent",
-   "fieldtype": "Check",
-   "label": "Agreed to Partner Consent",
-   "read_only": 1
-  },
-  {
-   "fieldname": "referrer_id",
-   "fieldtype": "Data",
-   "label": "Referrer ID"
-  },
-  {
-   "default": "0",
-   "fieldname": "saas",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Saas"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "saas_sign_up_section",
-   "fieldtype": "Section Break",
-   "label": "Sign Up"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "section_break_31",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "geo_location",
-   "fieldtype": "Code",
-   "label": "Geo Location",
-   "read_only": 1
-  },
-  {
-   "fieldname": "state",
-   "fieldtype": "Data",
-   "label": "State"
-  },
-  {
-   "default": "0",
-   "fieldname": "send_email",
-   "fieldtype": "Check",
-   "label": "Send Email"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_us_eu",
-   "fieldtype": "Check",
-   "label": "Is State or Europe"
-  },
-  {
-   "default": "0",
-   "fieldname": "invited_by_parent_team",
-   "fieldtype": "Check",
-   "label": "Invited By Parent Team"
-  },
-  {
-   "default": "0",
-   "fieldname": "oauth_signup",
-   "fieldtype": "Check",
-   "label": "Oauth Signup"
-  },
-  {
-   "fieldname": "saas_app",
-   "fieldtype": "Link",
-   "label": "Saas App",
-   "options": "Marketplace App"
-  },
-  {
-   "fieldname": "product_trial",
-   "fieldtype": "Link",
-   "label": "Product Trial (New)",
-   "options": "Product Trial"
-  },
-  {
-   "fieldname": "press_roles",
-   "fieldtype": "Table MultiSelect",
-   "label": "Press Roles",
-   "options": "Account Request Press Role"
-  },
-  {
-   "fieldname": "otp",
-   "fieldtype": "Data",
-   "label": "OTP"
-  },
-  {
-   "fieldname": "column_break_eaxp",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "otp_generated_at",
-   "fieldtype": "Datetime",
-   "label": "OTP Generated at"
-  },
-  {
-   "default": "0",
-   "fieldname": "unsubscribed_from_drip_emails",
-   "fieldtype": "Check",
-   "label": "Unsubscribed from Drip Emails"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_mobile",
-   "fieldtype": "Check",
-   "label": "Is Mobile"
-  },
-  {
-   "fieldname": "continent",
-   "fieldtype": "Data",
-   "label": "Continent"
-  },
-  {
-   "depends_on": "eval: doc.request_key",
-   "fieldname": "request_key_expiration_time",
-   "fieldtype": "Datetime",
-   "label": "Request Key Expiration Time",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "agreed_to_terms",
-   "fieldtype": "Check",
-   "label": "Agreed to Terms and Conditions"
-  }
- ],
- "grid_page_length": 50,
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-10-29 07:26:37.983114",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Account Request",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "role": "Press Admin"
-  },
-  {
-   "create": 1,
-   "role": "Press Member"
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "title_field": "email",
- "track_changes": 1
+	"actions": [],
+	"creation": "2022-03-06 20:52:32.662775",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"request_key",
+		"request_key_expiration_time",
+		"team",
+		"email",
+		"oauth_signup",
+		"send_email",
+		"otp",
+		"otp_generated_at",
+		"column_break_4",
+		"invited_by",
+		"ip_address",
+		"invited_by_parent_team",
+		"press_roles",
+		"agreed_to_terms",
+		"press_role",
+		"saas_sign_up_section",
+		"saas",
+		"saas_app",
+		"product_trial",
+		"unsubscribed_from_drip_emails",
+		"column_break_eaxp",
+		"first_name",
+		"last_name",
+		"country",
+		"continent",
+		"is_mobile",
+		"section_break_8",
+		"erpnext",
+		"subdomain",
+		"plan",
+		"phone_number",
+		"company",
+		"designation",
+		"column_break_14",
+		"no_of_users",
+		"no_of_employees",
+		"industry",
+		"state",
+		"is_us_eu",
+		"agreed_to_partner_consent",
+		"referrer_data",
+		"referral_source",
+		"url_args",
+		"referrer_id",
+		"pulse_anonymous_id",
+		"section_break_31",
+		"geo_location"
+	],
+	"fields": [
+		{
+			"fieldname": "email",
+			"fieldtype": "Data",
+			"label": "Email",
+			"search_index": 1
+		},
+		{
+			"fieldname": "request_key",
+			"fieldtype": "Data",
+			"label": "Request Key"
+		},
+		{
+			"fieldname": "team",
+			"fieldtype": "Data",
+			"label": "Team"
+		},
+		{
+			"fieldname": "invited_by",
+			"fieldtype": "Data",
+			"label": "Invited By"
+		},
+		{
+			"fieldname": "ip_address",
+			"fieldtype": "Data",
+			"label": "IP Address"
+		},
+		{
+			"fieldname": "country",
+			"fieldtype": "Data",
+			"label": "Country"
+		},
+		{
+			"fieldname": "first_name",
+			"fieldtype": "Data",
+			"label": "First Name"
+		},
+		{
+			"fieldname": "last_name",
+			"fieldtype": "Data",
+			"label": "Last Name"
+		},
+		{
+			"fieldname": "phone_number",
+			"fieldtype": "Data",
+			"label": "Phone Number"
+		},
+		{
+			"fieldname": "subdomain",
+			"fieldtype": "Data",
+			"label": "Subdomain"
+		},
+		{
+			"default": "0",
+			"fieldname": "erpnext",
+			"fieldtype": "Check",
+			"hidden": 1,
+			"label": "ERPNext"
+		},
+		{
+			"fieldname": "company",
+			"fieldtype": "Data",
+			"label": "Company"
+		},
+		{
+			"fieldname": "designation",
+			"fieldtype": "Data",
+			"label": "Designation"
+		},
+		{
+			"fieldname": "referral_source",
+			"fieldtype": "Data",
+			"label": "Referral Source"
+		},
+		{
+			"fieldname": "no_of_employees",
+			"fieldtype": "Data",
+			"label": "Number of employees"
+		},
+		{
+			"collapsible": 1,
+			"fieldname": "section_break_8",
+			"fieldtype": "Section Break",
+			"label": "ERPNext Sign Up"
+		},
+		{
+			"fieldname": "column_break_14",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_4",
+			"fieldtype": "Column Break"
+		},
+		{
+			"collapsible": 1,
+			"fieldname": "referrer_data",
+			"fieldtype": "Section Break",
+			"label": "Referrer Data"
+		},
+		{
+			"fieldname": "plan",
+			"fieldtype": "Link",
+			"label": "Plan",
+			"options": "Site Plan"
+		},
+		{
+			"fieldname": "industry",
+			"fieldtype": "Data",
+			"label": "Industry"
+		},
+		{
+			"fieldname": "no_of_users",
+			"fieldtype": "Int",
+			"label": "Number of Users"
+		},
+		{
+			"fieldname": "url_args",
+			"fieldtype": "Code",
+			"label": "URL Args",
+			"options": "JSON",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "agreed_to_partner_consent",
+			"fieldtype": "Check",
+			"label": "Agreed to Partner Consent",
+			"read_only": 1
+		},
+		{
+			"fieldname": "referrer_id",
+			"fieldtype": "Data",
+			"label": "Referrer ID"
+		},
+		{
+			"fieldname": "pulse_anonymous_id",
+			"fieldtype": "Data",
+			"label": "Pulse Anonymous ID",
+			"read_only": 1,
+			"no_copy": 1,
+			"description": "Pre-signup anonymous (anon_…) id forwarded from the product website as ?aid=… ; aliased to the account user at team creation."
+		},
+		{
+			"default": "0",
+			"fieldname": "saas",
+			"fieldtype": "Check",
+			"hidden": 1,
+			"label": "Saas"
+		},
+		{
+			"collapsible": 1,
+			"fieldname": "saas_sign_up_section",
+			"fieldtype": "Section Break",
+			"label": "Sign Up"
+		},
+		{
+			"collapsible": 1,
+			"fieldname": "section_break_31",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "geo_location",
+			"fieldtype": "Code",
+			"label": "Geo Location",
+			"read_only": 1
+		},
+		{
+			"fieldname": "state",
+			"fieldtype": "Data",
+			"label": "State"
+		},
+		{
+			"default": "0",
+			"fieldname": "send_email",
+			"fieldtype": "Check",
+			"label": "Send Email"
+		},
+		{
+			"default": "0",
+			"fieldname": "is_us_eu",
+			"fieldtype": "Check",
+			"label": "Is State or Europe"
+		},
+		{
+			"default": "0",
+			"fieldname": "invited_by_parent_team",
+			"fieldtype": "Check",
+			"label": "Invited By Parent Team"
+		},
+		{
+			"default": "0",
+			"fieldname": "oauth_signup",
+			"fieldtype": "Check",
+			"label": "Oauth Signup"
+		},
+		{
+			"fieldname": "saas_app",
+			"fieldtype": "Link",
+			"label": "Saas App",
+			"options": "Marketplace App"
+		},
+		{
+			"fieldname": "product_trial",
+			"fieldtype": "Link",
+			"label": "Product Trial (New)",
+			"options": "Product Trial"
+		},
+		{
+			"fieldname": "press_roles",
+			"fieldtype": "Table MultiSelect",
+			"label": "Press Roles",
+			"options": "Account Request Press Role"
+		},
+		{
+			"fieldname": "otp",
+			"fieldtype": "Data",
+			"label": "OTP"
+		},
+		{
+			"fieldname": "column_break_eaxp",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "otp_generated_at",
+			"fieldtype": "Datetime",
+			"label": "OTP Generated at"
+		},
+		{
+			"default": "0",
+			"fieldname": "unsubscribed_from_drip_emails",
+			"fieldtype": "Check",
+			"label": "Unsubscribed from Drip Emails"
+		},
+		{
+			"default": "0",
+			"fieldname": "is_mobile",
+			"fieldtype": "Check",
+			"label": "Is Mobile"
+		},
+		{
+			"fieldname": "continent",
+			"fieldtype": "Data",
+			"label": "Continent"
+		},
+		{
+			"depends_on": "eval: doc.request_key",
+			"fieldname": "request_key_expiration_time",
+			"fieldtype": "Datetime",
+			"label": "Request Key Expiration Time",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "agreed_to_terms",
+			"fieldtype": "Check",
+			"label": "Agreed to Terms and Conditions"
+		},
+		{
+			"description": "Role which should be granted to a user upon accepting this account request.",
+			"fieldname": "press_role",
+			"fieldtype": "Link",
+			"label": "Press Role",
+			"options": "Press Role"
+		}
+	],
+	"grid_page_length": 50,
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-06-04 10:58:33.441832",
+	"modified_by": "hello@ssiyad.com",
+	"module": "Press",
+	"name": "Account Request",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"role": "Press User"
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "email",
+	"track_changes": 1
 }

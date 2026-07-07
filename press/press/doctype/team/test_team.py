@@ -23,7 +23,7 @@ def create_test_press_admin_team(
 	create_test_user(email)
 	user = frappe.get_doc("User", {"email": email})
 	user.remove_roles(*frappe.get_all("Role", pluck="name"))
-	user.add_roles("Press Admin")
+	user.add_roles("Press User")
 	return create_test_team(email, skip_onboarding=skip_onboarding, free_account=free_account)
 
 
@@ -77,9 +77,7 @@ class TestTeam(FrappeTestCase):
 		self.assertEqual(team.billing_name, "first name last name")
 
 	def test_create_user_for_member_adds_team_member(self):
-		# create system manager to pass mandatory site requirement
-		Team.create_user("sys_mgr", email="testuser1@gmail.com", role="System Manager")
-
+		Team.create_user("sys_mgr", email="testuser1@gmail.com")
 		team = create_test_team()
 		email = "testuser@frappe.cloud"
 		team.create_user_for_member("test", "user", "testuser@frappe.cloud")
@@ -97,3 +95,41 @@ class TestTeam(FrappeTestCase):
 				account_request2, "John", "Meyer", "jonmeyer@gmail.com", country="Pakistan"
 			)
 		self.assertEqual(team2.currency, "USD")
+
+	def test_total_subscribed_amount_skips_legacy_subscriptions_with_null_plan_fields(self):
+		team = create_test_team()
+		plan = frappe.get_doc(
+			{
+				"doctype": "Site Plan",
+				"name": "Test-Plan-USD-50",
+				"document_type": "Site",
+				"interval": "Daily",
+				"price_usd": 50,
+				"price_inr": 3000,
+			}
+		).insert()
+
+		def make_sub(todo_desc):
+			todo = frappe.get_doc(doctype="ToDo", description=todo_desc).insert()
+			return frappe.get_doc(
+				{
+					"doctype": "Subscription",
+					"document_type": "ToDo",
+					"document_name": todo.name,
+					"team": team.name,
+					"plan_type": "Site Plan",
+					"plan": plan.name,
+					"enabled": 1,
+				}
+			).insert()
+
+		make_sub("valid")
+
+		null_plan_type_sub = make_sub("null plan_type")
+		frappe.db.set_value("Subscription", null_plan_type_sub.name, "plan_type", None)
+
+		null_plan_sub = make_sub("null plan")
+		frappe.db.set_value("Subscription", null_plan_sub.name, "plan", None)
+
+		total = team.total_subscribed_amount()
+		self.assertEqual(total, 50)

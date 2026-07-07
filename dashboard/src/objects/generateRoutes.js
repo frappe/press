@@ -10,7 +10,7 @@ export default function generateRoutes() {
 			routes.push({
 				name: routeName,
 				path: object.list.route,
-				component: () => import('../pages/ListPage.vue'),
+				component: object.list.component || (() => import('../pages/ListPage.vue')),
 				props: (route) => {
 					return { objectType, ...route.params };
 				},
@@ -45,10 +45,12 @@ export default function generateRoutes() {
 			});
 			if (object.routes) {
 				for (let route of object.routes) {
+          const staticProps = typeof route.props === 'object' ? route.props : {};
+
 					children.push({
 						...route,
 						props: (route) => {
-							return { objectType, ...route.params };
+     				return { objectType, ...route.params, ...staticProps };
 						},
 					});
 				}
