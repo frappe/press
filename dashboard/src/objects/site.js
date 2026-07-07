@@ -81,6 +81,10 @@ export default {
 		],
 		orderBy: 'creation desc',
 		searchField: 'host_name',
+		count: {
+			url: 'press.api.account.get_site_count',
+			auto: true,
+		},
 		filterControls() {
 			return [
 				{
