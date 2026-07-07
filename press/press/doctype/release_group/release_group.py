@@ -1718,6 +1718,11 @@ class ReleaseGroup(Document, TagHelpers):
 			required_app_source.github_installation_id = current_app_source.github_installation_id
 			required_app_source.save()
 
+		# Skip public sources — they may be shared by other teams and shouldn't be
+		# mutated on behalf of this one.
+		if not required_app_source.public:
+			frappe.get_doc("App Source", required_app_source.name).sync_versions()
+
 		self.set_app_source(app, required_app_source.name)
 
 	def get_app_source(self, app: str) -> AppSource:

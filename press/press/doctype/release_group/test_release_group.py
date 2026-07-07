@@ -217,6 +217,7 @@ class TestReleaseGroup(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			rg.change_app_branch("frappe", "master")
 
+	@patch.object(AppSource, "sync_versions", new=Mock())
 	def test_branch_change_app_source_exists(self):
 		app = create_test_app()
 		rg = create_test_release_group([app])
@@ -235,6 +236,7 @@ class TestReleaseGroup(FrappeTestCase):
 		# Source must be set to the available `app_source` for `app`
 		self.assertEqual(rg.apps[0].source, app_source.name)
 
+	@patch.object(AppSource, "sync_versions", new=Mock())
 	def test_branch_change_app_source_does_not_exist(self):
 		app = create_test_app()
 		rg = create_test_release_group([app])
@@ -248,6 +250,43 @@ class TestReleaseGroup(FrappeTestCase):
 		self.assertEqual(new_app_source.versions[0].version, previous_app_source.versions[0].version)
 		self.assertEqual(new_app_source.repository_url, previous_app_source.repository_url)
 		self.assertEqual(new_app_source.app, app.name)
+
+	@patch.object(AppSource, "sync_versions", autospec=True)
+	def test_branch_change_syncs_versions_for_non_public_source(self, mock_sync_versions):
+		app = create_test_app()
+		rg = create_test_release_group([app])
+
+		current_app_source = frappe.get_doc("App Source", rg.apps[0].source)
+		app_source = create_test_app_source(
+			current_app_source.versions[0].version,
+			app,
+			current_app_source.repository_url,
+			"develop",
+		)
+
+		rg.change_app_branch(app.name, "develop")
+
+		self.assertEqual(mock_sync_versions.call_count, 1)
+		self.assertEqual(mock_sync_versions.call_args.args[0].name, app_source.name)
+
+	@patch.object(AppSource, "sync_versions", autospec=True)
+	def test_branch_change_does_not_sync_versions_for_public_source(self, mock_sync_versions):
+		app = create_test_app()
+		rg = create_test_release_group([app])
+
+		current_app_source = frappe.get_doc("App Source", rg.apps[0].source)
+		public_app_source = create_test_app_source(
+			current_app_source.versions[0].version,
+			app,
+			current_app_source.repository_url,
+			"develop",
+		)
+		public_app_source.public = 1
+		public_app_source.save()
+
+		rg.change_app_branch(app.name, "develop")
+
+		mock_sync_versions.assert_not_called()
 
 	def test_new_release_group_loaded_with_correct_dependencies(self):
 		app = create_test_app("frappe", "Frappe Framework")
