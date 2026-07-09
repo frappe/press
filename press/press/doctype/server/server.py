@@ -1161,7 +1161,8 @@ class BaseServer(Document, TagHelpers):
 			return 0
 
 		diff = frappe.utils.now_datetime() - last_updated_at
-		return diff if diff < timedelta(hours=6) else 0
+		remaining = timedelta(hours=6) - diff
+		return remaining if remaining > timedelta(0) else 0
 
 	@frappe.whitelist()
 	def increase_disk_size(self, increment=50, mountpoint=None, log: str | None = None):
