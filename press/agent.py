@@ -707,12 +707,10 @@ class Agent:
 			upstream=server,
 		)
 
-	def add_domain_to_upstream(self, server, site=None, domain=None, queue=None):
+	def add_domain_to_upstream(self, server, site=None, domain=None):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		data = {"domain": domain}
-		if queue:
-			data["agent_job_queue"] = queue
 		return self.create_agent_job(
 			"Add Domain to Upstream",
 			f"proxy/upstreams/{ip}/domains",

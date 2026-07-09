@@ -91,7 +91,6 @@ class SiteDomain(Document):
 				server=server,
 				site=self.site,
 				domain=self.domain,
-				queue=self.flags.get("agent_job_queue"),
 			)
 			return
 

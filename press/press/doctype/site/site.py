@@ -73,7 +73,7 @@ from typing import TYPE_CHECKING
 from frappe.permissions import is_system_user
 from frappe.utils.password import get_decrypted_password
 
-from press.agent import PRODUCT_TRIAL_JOB_QUEUE, Agent, AgentRequestSkippedException
+from press.agent import Agent, AgentRequestSkippedException
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.marketplace_app.marketplace_app import (
@@ -1687,7 +1687,6 @@ class Site(Document, TagHelpers):
 				"dns_type": "CNAME",
 			}
 		)
-		site_domain.flags.agent_job_queue = PRODUCT_TRIAL_JOB_QUEUE
 		site_domain.insert(ignore_if_duplicate=True)
 		return site_domain.flags.get("add_domain_to_upstream_job")
 
