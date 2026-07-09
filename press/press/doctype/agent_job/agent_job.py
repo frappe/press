@@ -23,7 +23,7 @@ from frappe.utils import (
 
 from press.access.support_access import has_support_access
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
-from press.api.client import is_owned_by_team
+from press.api.client import dashboard_whitelist, is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
 )
@@ -312,7 +312,7 @@ class AgentJob(Document):
 	def process_job_updates(self):
 		process_job_updates(self.name)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def cancel_job(self):
 		agent = Agent(self.server, server_type=self.server_type)
 		agent.cancel_job(self.job_id)
