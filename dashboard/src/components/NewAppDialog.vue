@@ -217,11 +217,7 @@ export default {
 			return {
 				url: 'press.api.github.branches',
 				validate() {
-					const githubUrlRegex =
-						/^(https?:\/\/)?(www\.)?github\.com\/([a-zA-Z0-9_.\-]+)\/([a-zA-Z0-9_.\-]+)(\/)?$/;
-					const isValidUrl = githubUrlRegex.test(this.githubAppLink);
-
-					if (!isValidUrl) {
+					if (!this.githubUrlMatch) {
 						throw new DashboardError('Please enter a valid github link');
 					}
 				},
@@ -236,20 +232,19 @@ export default {
 		},
 	},
 	computed: {
+		githubUrlMatch() {
+			const githubUrlRegex =
+				/^(https?:\/\/)?(www\.)?github\.com\/([a-zA-Z0-9_.\-]+)\/([a-zA-Z0-9_.\-]+)(\/)?$/;
+			return this.githubAppLink.match(githubUrlRegex);
+		},
 		appOwner() {
 			if (this.tabIndex === 0) {
-				const urlParts = this.githubAppLink.split('/');
-				if (urlParts.length < 4) return;
-
-				return urlParts[3];
+				return this.githubUrlMatch?.[3];
 			}
 		},
 		appName() {
 			if (this.tabIndex === 0) {
-				const urlParts = this.githubAppLink.split('/');
-				if (urlParts.length < 5) return;
-
-				return urlParts[4].replace('.git', '');
+				return this.githubUrlMatch?.[4]?.replace('.git', '');
 			}
 		},
 		branchOptions() {
