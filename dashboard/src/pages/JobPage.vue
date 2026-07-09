@@ -91,10 +91,12 @@
 	</div>
 </template>
 <script>
-import { FeatherIcon, Tooltip } from 'frappe-ui';
+import { createResource, FeatherIcon, Tooltip } from 'frappe-ui';
+import { toast } from 'vue-sonner';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
 import { duration } from '../utils/format';
 import { getObject } from '../objects';
+import { getToastErrorMessage } from '../utils/toast';
 import JobStep from '../components/JobStep.vue';
 
 export default {
@@ -159,6 +161,29 @@ export default {
 		},
 		dropdownOptions() {
 			return [
+				{
+					label: 'Cancel Job',
+					icon: 'x',
+					condition: () => ['Pending', 'Running'].includes(this.job.status),
+					onClick: () => {
+						let cancelJob = createResource({
+							url: 'press.api.client.run_doc_method',
+							makeParams: () => ({
+								dt: 'Agent Job',
+								dn: this.id,
+								method: 'cancel_job',
+							}),
+						});
+						toast.promise(cancelJob.submit(), {
+							loading: 'Cancelling job...',
+							success: () => {
+								this.$resources.job.reload();
+								return 'Job cancelled';
+							},
+							error: (e) => getToastErrorMessage(e),
+						});
+					},
+				},
 				{
 					label: 'View in Desk',
 					icon: 'external-link',
