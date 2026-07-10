@@ -115,6 +115,7 @@
 		:allow_customer="role.doc?.allow_customer"
 		:allow_leads="role.doc?.allow_leads"
 		:allow_contribution="role.doc?.allow_contribution"
+		:allow_local_payment="role.doc?.allow_local_payment"
 		:disabled="user != team.doc?.user"
 		@update="
 			(key: string, value: boolean) => {
