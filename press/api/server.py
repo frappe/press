@@ -781,10 +781,17 @@ def secondary_server_plans(
 	return filter_by_roles(plans)
 
 
-def has_similar_enabled_plans(platform: str, cluster: str) -> bool:
-	"""Check if non-legacy enabled plans exist for the given platform and cluster"""
+def has_similar_enabled_plans(server_type: str, platform: str, cluster: str) -> bool:
+	"""Check if non-legacy enabled plans exist for the given server type, platform and cluster"""
 	return frappe.db.exists(
-		"Server Plan", {"enabled": 1, "platform": platform, "cluster": cluster, "legacy_plan": False}
+		"Server Plan",
+		{
+			"enabled": 1,
+			"server_type": server_type,
+			"platform": platform,
+			"cluster": cluster,
+			"legacy_plan": False,
+		},
 	)
 
 
@@ -810,16 +817,14 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 			if legacy_plan:
 				effective_cluster = cluster or plan_cluster
 				effective_platform = platform or plan_platform
-				# Restrict to same cluster/platform only if similar non-legacy plans exist there;
-				# otherwise fall back to showing all non-legacy plans across clusters.
-				# legacy_plan: False stays in filters regardless so the current legacy plan is never shown.
-				if has_similar_enabled_plans(effective_platform, effective_cluster):
-					if effective_cluster:
-						filters.update({"cluster": effective_cluster})
+				# Cluster is never dropped: a plan from another region can't be resized to.
+				# Only platform falls back, e.g. to offer arm64 when no x86_64 upgrade exists.
+				if effective_cluster:
+					filters.update({"cluster": effective_cluster})
+				if has_similar_enabled_plans(name, effective_platform, effective_cluster):
 					if effective_platform:
 						filters.update({"platform": effective_platform})
 				else:
-					filters.pop("cluster", None)
 					filters.pop("platform", None)
 			else:
 				filters.update({"legacy_plan": False})
