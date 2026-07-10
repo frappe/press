@@ -1117,13 +1117,17 @@ class Bench(Document):
 				ArchiveBenchError,
 			)
 
+		sites = frappe.qb.DocType("Site")
 		fatal_site_updates = (
 			frappe.qb.from_(site_updates)
+			.join(sites)
+			.on(site_updates.site == sites.name)
 			.select(site_updates.name)
 			.where((site_updates.source_bench == self.name) | (site_updates.destination_bench == self.name))
 			.where(
 				(site_updates.status == "Fatal")
 				& (site_updates.creation > frappe.utils.add_to_date(None, days=-EMPTY_BENCH_COURTESY_DAYS))
+				& (sites.status != "Archived")
 			)
 			.limit(1)
 		).run()
