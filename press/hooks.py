@@ -306,6 +306,7 @@ scheduler_events = {
 			"press.press.doctype.incident.incident.validate_incidents",
 		],
 		"*/2 * * * *": [
+			"press.press.doctype.press_settings.press_settings.check_twilio_balance",
 			"press.press.doctype.incident.incident.resolve_incidents",
 		],
 		"0 4 * * *": [
@@ -371,6 +372,7 @@ scheduler_events = {
 			"press.workflow_engine.doctype.press_workflow.press_workflow.retry_workflow_callbacks",
 		],
 		"* * * * *": [
+			"press.press.doctype.monitor_server.monitor_server.send_deadman_heartbeat_monitor",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
 			"press.workflow_engine.doctype.press_workflow_task.press_workflow_task.retry_tasks",
 			"press.press.doctype.deploy_candidate_build.deploy_candidate_build.run_scheduled_builds",

@@ -71,6 +71,7 @@ server_doctypes = [
 	"Log Server",
 	"NFS Server",
 	"NAT Server",
+	"Deadman Server",
 ]
 
 SERIES_TO_SERVER_TYPE = {
@@ -84,6 +85,7 @@ SERIES_TO_SERVER_TYPE = {
 	"p": "Monitor Server",
 	"r": "Registry Server",
 	"e": "Log Server",
+	"d": "Deadman Server",
 }
 
 HETZNER_ROOT_DISK_ID = "hetzner-root-disk"

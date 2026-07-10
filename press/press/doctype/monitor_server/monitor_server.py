@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import json
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 import frappe
 import requests
@@ -15,6 +15,9 @@ from requests.auth import HTTPBasicAuth
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from press.press.doctype.press_settings.press_settings import PressSettings
 
 
 class SitesDownAlertLabels(TypedDict):
@@ -35,8 +38,6 @@ class SitesDownAlert(TypedDict):
 class MonitorServer(BaseServer):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
-
-	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -321,6 +322,87 @@ def get_monitor_server_ips():
 		if server.private_ip:
 			ips.append(server.private_ip)
 	return ips
+
+
+def get_monitor_auth(server):
+	return HTTPBasicAuth(
+		server.prometheus_username,
+		server.get_password("grafana_password"),
+	)
+
+
+def verify_monitor_stack(server):
+	auth = get_monitor_auth(server)
+
+	verify_prometheus(server, auth)
+	verify_alertmanager(server, auth)
+	verify_alertmanager_scrape(server, auth)
+
+
+def verify_prometheus(server, auth):
+	response = requests.get(
+		f"https://{server.name}/prometheus/-/healthy",
+		auth=auth,
+		timeout=15,
+	)
+
+	response.raise_for_status()
+
+
+def verify_alertmanager(server, auth):
+	response = requests.get(
+		f"https://{server.name}/alertmanager/-/healthy",
+		auth=auth,
+		timeout=15,
+	)
+
+	response.raise_for_status()
+
+
+def verify_alertmanager_scrape(server, auth):
+	response = requests.get(
+		f"https://{server.name}/prometheus/api/v1/query",
+		auth=auth,
+		params={"query": 'up{job="alertmanager"}'},
+		timeout=15,
+	)
+
+	response.raise_for_status()
+
+	data = response.json()
+
+	if data.get("status") != "success":
+		raise Exception("Alertmanager scrape check failed")
+
+	results = data.get("data", {}).get("result", [])
+
+	if not results:
+		raise Exception("Alertmanager target not found")
+
+	if any(metric["value"][1] != "1" for metric in results):
+		raise Exception("Alertmanager target is down")
+
+
+def send_deadman_heartbeat_monitor():
+	settings: PressSettings = frappe.get_single("Press Settings")
+
+	if not settings.deadman_url:
+		return
+
+	for server_name in frappe.get_all("Monitor Server", pluck="name"):
+		try:
+			server = frappe.get_doc("Monitor Server", server_name)
+
+			verify_monitor_stack(server)
+
+			settings.send_capability_heartbeat("prometheus")
+			settings.send_capability_heartbeat("alertmanager")
+
+		except Exception:
+			log_error(
+				"Deadman monitor heartbeat failed",
+				server=server_name,
+			)
 
 
 def check_monitoring_servers_rate_limit_key():
