@@ -50,8 +50,11 @@ class WazuhManager:
 		return response.json()["data"]
 
 	def get_agent(self, name):
+		# Wazuh's `q` filter is a query language (`;`, `=`, `!=`, `>` are operators),
+		# and the name comes from a Server docname. Match the returned name exactly so a
+		# crafted name that broadens the filter can never resolve to a different agent.
 		items = self.request("GET", "/agents", {"q": f"name={name}"}).get("affected_items", [])
-		return items[0] if items else None
+		return next((item for item in items if item.get("name") == name), None)
 
 	def delete_agent(self, name):
 		agent = self.get_agent(name)
