@@ -1669,7 +1669,7 @@ class VirtualMachine(Document):
 		result = ping.run()
 		return result.status == "Success"
 
-	def wait_for_ssh(self, timeout=120, interval=2):
+	def wait_for_ssh(self, timeout=500, interval=2):
 		server_doc = frappe.db.get_value(
 			"Server",
 			{
