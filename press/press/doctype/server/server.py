@@ -2574,6 +2574,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		# Server specific config
 		self.setup_mysqldump()
 		self.install_earlyoom()
+		self.install_wazuh_agent_if_configured()
 		self.setup_ncdu()
 		self.setup_iptables()
 		self.install_cadvisor()
@@ -2622,6 +2623,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			self.install_nfs_common()
 			self.setup_mysqldump()
 			self.install_earlyoom()
+			self.install_wazuh_agent_if_configured()
 			self.setup_ncdu()
 			self.setup_iptables()
 
@@ -3909,6 +3911,10 @@ class Server(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Earlyoom Install Exception", server=self.as_dict())
+
+	def install_wazuh_agent_if_configured(self):
+		if frappe.db.get_single_value("Press Settings", "wazuh_server"):
+			self.install_wazuh_agent()
 
 	@frappe.whitelist()
 	def install_wazuh_agent(self):
