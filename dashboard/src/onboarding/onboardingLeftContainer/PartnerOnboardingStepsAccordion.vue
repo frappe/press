@@ -70,6 +70,7 @@ const steps = computed(() => [
 		required: true,
 		status: onboarding.isRegistered.value ? 'completed' : 'pending',
 		description: null,
+		link: null,
 		summaryRight: null,
 		actionLabel: onboarding.isRegistered.value
 			? 'Registered'
@@ -86,6 +87,7 @@ const steps = computed(() => [
 		status: onboarding.isProfileComplete.value ? 'completed' : 'pending',
 		description:
 			'Before you continue, we need to know more about your company to understand how your company can benefit from becoming a Frappe Partner.',
+		link: null,
 		summaryRight: null,
 		actionLabel:
 			onboarding.isRegistered.value && canEditDraft.value
@@ -103,7 +105,12 @@ const steps = computed(() => [
 			? 'completed'
 			: 'pending',
 		description:
-			'Link two Framework or ERPNext certificates from Frappe School. We will send verification email to each certificate holder to link the certificate.',
+			'Link two Framework or ERPNext certificates from Frappe School. We will send a verification email to each certificate holder to confirm the link.',
+		linkPrefix: "Don't have certification?",
+		link: {
+			text: 'Browse upcoming batches',
+			url: 'https://school.frappe.io/lms/batches',
+		},
 		summaryRight: onboarding.isCertificateRequirementComplete.value
 			? null
 			: `${onboarding.linkedCertificateCount.value} / 2 linked`,
@@ -130,6 +137,7 @@ const steps = computed(() => [
 		status: onboarding.isMRRRequirementComplete.value ? 'completed' : 'pending',
 		description:
 			'We track this automatically from customer subscription invoices linked to your partner account. No manual update is needed.',
+		link: null,
 		summaryRight: onboarding.isMRRRequirementComplete.value
 			? null
 			: `${mrrCurrentLabel.value} / ${mrrTargetLabel.value}`,
@@ -289,15 +297,29 @@ async function submitForApproval() {
 
 				<FAccordionContent
 					v-if="
-						step.description || step.actionLabel || step.secondaryActionLabel
+	step.description ||
+	step.link ||
+	step.actionLabel ||
+	step.secondaryActionLabel
 					"
 				>
-					<p
+					<div
 						v-if="step.description"
 						class="mb-2 max-w-prose self-stretch text-p-base font-normal leading-5 text-ink-gray-6"
 					>
-						{{ step.description }}
-					</p>
+						<p>{{ step.description }}</p>
+						<p v-if="step.link" class="mt-2">
+							{{ step.linkPrefix }}
+							<a
+								:href="step.link.url"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="underline"
+							>
+								{{ step.link.text }}
+							</a>
+						</p>
+					</div>
 					<div
 						v-if="step.value === 'step-mrr'"
 						class="mb-4 flex max-w-prose flex-col gap-2"
