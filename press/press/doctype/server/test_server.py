@@ -22,7 +22,7 @@ from press.press.doctype.press_settings.test_press_settings import (
 )
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import create_test_release_group
-from press.press.doctype.server.server import BaseServer
+from press.press.doctype.server.server import BaseServer, sync_wazuh_agent_status
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.site.test_site import create_test_bench
 from press.press.doctype.team.test_team import create_test_team
@@ -588,3 +588,68 @@ class TestServer(FrappeTestCase):
 		with patch.object(BaseServer, "uninstall_wazuh_agent") as uninstall_wazuh_agent:
 			server.archive()
 		uninstall_wazuh_agent.assert_not_called()
+
+	@patch.object(BaseServer, "_archive", new=Mock())
+	@patch.object(BaseServer, "disable_subscription", new=Mock())
+	def test_archival_deregisters_wazuh_agent_when_api_configured(self):
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_api_url", "https://wazuh.example.com:55000")
+		server = create_test_server()
+		with patch.object(BaseServer, "deregister_wazuh_agent") as deregister_wazuh_agent:
+			server.archive()
+		deregister_wazuh_agent.assert_called_once()
+
+	@patch.object(BaseServer, "_archive", new=Mock())
+	@patch.object(BaseServer, "disable_subscription", new=Mock())
+	def test_archival_skips_wazuh_deregister_when_api_unconfigured(self):
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_api_url", "")
+		server = create_test_server()
+		with patch.object(BaseServer, "deregister_wazuh_agent") as deregister_wazuh_agent:
+			server.archive()
+		deregister_wazuh_agent.assert_not_called()
+
+	def test_sync_wazuh_agent_status_updates_installed_servers_from_manager(self):
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_api_url", "https://wazuh.example.com:55000")
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", True)
+
+		with patch("press.press.doctype.server.server.WazuhManager") as WazuhManager:
+			WazuhManager.return_value.agent_statuses.return_value = {server.name: "active"}
+			sync_wazuh_agent_status()
+
+		self.assertEqual(frappe.db.get_value("Server", server.name, "wazuh_agent_status"), "active")
+
+	def test_sync_wazuh_agent_status_marks_missing_agents_unknown(self):
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_api_url", "https://wazuh.example.com:55000")
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", True)
+
+		with patch("press.press.doctype.server.server.WazuhManager") as WazuhManager:
+			WazuhManager.return_value.agent_statuses.return_value = {}
+			sync_wazuh_agent_status()
+
+		self.assertEqual(frappe.db.get_value("Server", server.name, "wazuh_agent_status"), "unknown")
+
+	def test_wazuh_manager_delete_agent_deletes_looked_up_agent_by_id(self):
+		from press.wazuh import WazuhManager
+
+		settings = create_test_press_settings()
+		settings.wazuh_api_url = "https://wazuh.example.com:55000"
+		settings.wazuh_api_username = "user"
+		settings.wazuh_api_password = "pass"
+		settings.wazuh_api_verify_tls = 0
+		settings.save()
+
+		with patch("press.wazuh.requests") as requests:
+			requests.post.return_value.json.return_value = {"data": {"token": "t"}}
+			requests.request.return_value.json.return_value = {
+				"data": {"affected_items": [{"id": "003", "name": "wazuh-target"}]}
+			}
+			WazuhManager().delete_agent("wazuh-target")
+
+		delete_call = requests.request.call_args_list[-1]
+		self.assertEqual(delete_call.args[0], "DELETE")
+		self.assertEqual(delete_call.kwargs["params"]["agents_list"], "003")

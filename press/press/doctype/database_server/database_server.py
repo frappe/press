@@ -98,6 +98,7 @@ class DatabaseServer(BaseServer):
 		is_static_ip: DF.Check
 		is_unified_server: DF.Check
 		is_wazuh_agent_installed: DF.Check
+		wazuh_agent_status: DF.Data | None
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
 		memory_allocator: DF.Literal["System", "jemalloc", "TCMalloc"]

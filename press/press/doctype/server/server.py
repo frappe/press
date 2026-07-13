@@ -50,6 +50,7 @@ from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
 from press.utils import docs, fmt_timedelta, log_error
+from press.wazuh import WazuhManager
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import (
@@ -967,6 +968,17 @@ class BaseServer(Document, TagHelpers):
 			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def deregister_wazuh_agent(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_deregister_wazuh_agent")
+
+	def _deregister_wazuh_agent(self):
+		try:
+			WazuhManager().delete_agent(self.name)
+			frappe.db.set_value(self.doctype, self.name, "wazuh_agent_status", None)
+		except Exception:
+			log_error("Wazuh Agent Deregister Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def install_exporters(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_install_exporters", queue="long", timeout=1200)
 
@@ -1481,6 +1493,9 @@ class BaseServer(Document, TagHelpers):
 
 		if self.is_wazuh_agent_installed:
 			self.uninstall_wazuh_agent()
+
+		if frappe.db.get_single_value("Press Settings", "wazuh_api_url"):
+			self.deregister_wazuh_agent()
 
 		self.status = "Pending"
 		self.save()
@@ -2970,6 +2985,7 @@ class Server(BaseServer):
 		is_unified_server: DF.Check
 		is_upstream_setup: DF.Check
 		is_wazuh_agent_installed: DF.Check
+		wazuh_agent_status: DF.Data | None
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]
@@ -4327,6 +4343,20 @@ def cleanup_unused_files():
 			frappe.get_doc("Server", server.name).cleanup_unused_files()
 		except Exception:
 			log_error("Server File Cleanup Error", server=server)
+
+
+def sync_wazuh_agent_status():
+	"""Reconcile each server's Wazuh agent connection status from the manager."""
+	if not frappe.db.get_single_value("Press Settings", "wazuh_api_url"):
+		return
+	try:
+		statuses = WazuhManager().agent_statuses()
+	except Exception:
+		log_error("Wazuh Agent Status Sync Exception")
+		return
+	for server_type in ("Server", "Database Server", "Proxy Server"):
+		for name in frappe.get_all(server_type, {"is_wazuh_agent_installed": 1}, pluck="name"):
+			frappe.db.set_value(server_type, name, "wazuh_agent_status", statuses.get(name, "unknown"))
 
 
 def process_running_benches_on_server():

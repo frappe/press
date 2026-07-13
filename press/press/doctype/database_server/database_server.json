@@ -123,6 +123,7 @@
 		"monitor_tab",
 		"is_mariadb_monitor_installed",
 		"is_wazuh_agent_installed",
+		"wazuh_agent_status",
 		"is_auditd_setup",
 		"section_break_uzkb",
 		"is_external_healthcheck_enabled",
@@ -823,6 +824,12 @@
 			"fieldname": "is_wazuh_agent_installed",
 			"fieldtype": "Check",
 			"label": "Is Wazuh Agent Installed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "wazuh_agent_status",
+			"fieldtype": "Data",
+			"label": "Wazuh Agent Status",
 			"read_only": 1
 		},
 		{
