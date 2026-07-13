@@ -508,6 +508,7 @@ class TestServer(FrappeTestCase):
 			frappe.db.get_value("Database Server", victim_database_server.name, "auto_increase_storage")
 		)
 
+<<<<<<< HEAD
 	@patch.object(BaseServer, "is_build_server", new=Mock(return_value=False))
 	def test_forced_cleanup_breaks_glass_when_agent_disk_is_full(self):
 		server = create_test_server()
@@ -596,3 +597,24 @@ class TestServer(FrappeTestCase):
 		):
 			server._restore_glass_file()
 		send_raven_message.assert_not_called()
+=======
+	def test_wazuh_agent_installed_during_setup_when_manager_configured(self):
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_server", "wazuh.example.com")
+		server = create_test_server()
+
+		with patch.object(type(server), "install_wazuh_agent") as install_wazuh_agent:
+			server.install_wazuh_agent_if_configured()
+
+		install_wazuh_agent.assert_called_once()
+
+	def test_wazuh_agent_not_installed_during_setup_when_manager_unconfigured(self):
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_server", "")
+		server = create_test_server()
+
+		with patch.object(type(server), "install_wazuh_agent") as install_wazuh_agent:
+			server.install_wazuh_agent_if_configured()
+
+		install_wazuh_agent.assert_not_called()
+>>>>>>> 812d7117b (feat(wazuh): Automatically install in new servers)
