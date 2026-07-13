@@ -1077,6 +1077,11 @@ def handle_success(job: AgentJob, site_update: OngoingUpdate):
 	else:
 		frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
 
+	try:
+		frappe.get_doc("Site", job.site).sync_apps()
+	except Exception:
+		log_error("Site App Sync Failed After Site Update", job=job.as_dict())
+
 
 def handle_fatal(job: AgentJob, site_update: OngoingUpdate):
 	if site_update.backup_type in ["Physical", "Logical Replication"]:
