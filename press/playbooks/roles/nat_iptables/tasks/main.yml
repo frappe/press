@@ -1,7 +1,13 @@
 ---
 - name: Determine Hetzner interface
   set_fact:
-    primary_interface: "{{ ansible_interfaces | difference(['lo']) | first }}"
+    primary_interface: >-
+      {{
+        ansible_interfaces
+        | reject('equalto', 'lo')
+        | reject('equalto', 'docker0')
+        | first
+      }}
   when: cloud_provider == "Hetzner"
 
 # AWS / Frappe Compute
@@ -57,6 +63,8 @@
   when:
     - cloud_provider == "Hetzner"
     - network_gateway is defined
+    - nat_gateway_ip is defined
+    - nat_gateway_ip
     - network_gateway
 
 # Frappe Compute specific
