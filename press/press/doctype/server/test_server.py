@@ -588,6 +588,20 @@ class TestServer(FrappeTestCase):
 				server.reload()
 				self.assertTrue(server.is_auditd_setup)
 
+	def test_base_playbook_marks_auditd_setup_except_for_self_hosted(self):
+		"""The base setup playbooks bundle auditd; their self-hosted variants do not."""
+		for server in self._one_server_of_each_type():
+			with self.subTest(server_type=server.doctype):
+				server.is_self_hosted = 0
+				server.is_auditd_setup = False
+				server.set_auditd_setup_from_base_playbook()
+				self.assertTrue(server.is_auditd_setup)
+
+				server.is_self_hosted = 1
+				server.is_auditd_setup = False
+				server.set_auditd_setup_from_base_playbook()
+				self.assertFalse(server.is_auditd_setup)
+
 	@patch.object(BaseServer, "_archive", new=Mock())
 	@patch.object(BaseServer, "disable_subscription", new=Mock())
 	def test_archival_uninstalls_wazuh_agent_when_installed(self):

@@ -155,6 +155,7 @@ class ProxyServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				self.set_auditd_setup_from_base_playbook()
 				self.install_wazuh_agent_if_configured()
 			else:
 				self.status = "Broken"

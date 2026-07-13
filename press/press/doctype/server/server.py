@@ -836,7 +836,9 @@ class BaseServer(Document, TagHelpers):
 
 			if play.status == "Success":
 				self.status = "Active"
+				self.set_auditd_setup_from_base_playbook()
 				database_server.status = "Active"
+				database_server.set_auditd_setup_from_base_playbook()
 			else:
 				self.status = "Broken"
 				database_server.status = "Broken"
@@ -1901,6 +1903,12 @@ class BaseServer(Document, TagHelpers):
 				self.save()
 		except Exception:
 			log_error("Auditd Setup Exception", server=self.as_dict())
+
+	def set_auditd_setup_from_base_playbook(self):
+		"""The base setup playbooks (server/database/proxy/unified) bundle the auditd
+		role; their self-hosted variants do not. Call after a successful base setup."""
+		if not getattr(self, "is_self_hosted", False):
+			self.is_auditd_setup = True
 
 	@property
 	def real_ram(self):
@@ -3468,6 +3476,7 @@ class Server(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				self.set_auditd_setup_from_base_playbook()
 				if self.provider == "DigitalOcean":
 					# To adjust docker permissions
 					self.reboot()
