@@ -906,6 +906,58 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Filebeat Install Exception", server=self.as_dict())
 
+	def install_wazuh_agent_if_configured(self):
+		if frappe.db.get_single_value("Press Settings", "wazuh_server"):
+			self.install_wazuh_agent()
+
+	@frappe.whitelist()
+	def install_wazuh_agent(self):
+		wazuh_server = frappe.get_value("Press Settings", "Press Settings", "wazuh_server")
+		if not wazuh_server:
+			frappe.throw("Please configure Wazuh Server in Press Settings")
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_install_wazuh_agent",
+			wazuh_server=wazuh_server,
+		)
+
+	def _install_wazuh_agent(self, wazuh_server: str):
+		try:
+			ansible = Ansible(
+				playbook="wazuh_agent_install.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"wazuh_manager": wazuh_server,
+					"wazuh_agent_name": self.name,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Wazuh Agent Install Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def uninstall_wazuh_agent(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_uninstall_wazuh_agent",
+		)
+
+	def _uninstall_wazuh_agent(self):
+		try:
+			ansible = Ansible(
+				playbook="wazuh_agent_uninstall.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())
+
 	@frappe.whitelist()
 	def install_exporters(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_install_exporters", queue="long", timeout=1200)
@@ -2617,13 +2669,13 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		self.set_swappiness()
 		self.add_glass_file()
 		self.install_filebeat()
+		self.install_wazuh_agent_if_configured()
 		self.setup_logrotate()
 
 		if self.doctype == "Server":
 			self.install_nfs_common()
 			self.setup_mysqldump()
 			self.install_earlyoom()
-			self.install_wazuh_agent_if_configured()
 			self.setup_ncdu()
 			self.setup_iptables()
 
@@ -3911,58 +3963,6 @@ class Server(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Earlyoom Install Exception", server=self.as_dict())
-
-	def install_wazuh_agent_if_configured(self):
-		if frappe.db.get_single_value("Press Settings", "wazuh_server"):
-			self.install_wazuh_agent()
-
-	@frappe.whitelist()
-	def install_wazuh_agent(self):
-		wazuh_server = frappe.get_value("Press Settings", "Press Settings", "wazuh_server")
-		if not wazuh_server:
-			frappe.throw("Please configure Wazuh Server in Press Settings")
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_install_wazuh_agent",
-			wazuh_server=wazuh_server,
-		)
-
-	def _install_wazuh_agent(self, wazuh_server: str):
-		try:
-			ansible = Ansible(
-				playbook="wazuh_agent_install.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-				variables={
-					"wazuh_manager": wazuh_server,
-					"wazuh_agent_name": self.name,
-				},
-			)
-			ansible.run()
-		except Exception:
-			log_error("Wazuh Agent Install Exception", server=self.as_dict())
-
-	@frappe.whitelist()
-	def uninstall_wazuh_agent(self):
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_uninstall_wazuh_agent",
-		)
-
-	def _uninstall_wazuh_agent(self):
-		try:
-			ansible = Ansible(
-				playbook="wazuh_agent_uninstall.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-			)
-			ansible.run()
-		except Exception:
-			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())
 
 	@property
 	def docker_depends_on_mounts(self):

@@ -152,6 +152,7 @@ class ProxyServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				self.install_wazuh_agent_if_configured()
 			else:
 				self.status = "Broken"
 		except Exception:

@@ -507,22 +507,30 @@ class TestServer(FrappeTestCase):
 			frappe.db.get_value("Database Server", victim_database_server.name, "auto_increase_storage")
 		)
 
+	def _one_server_of_each_type(self):
+		"""App, database and proxy servers all inherit the Wazuh methods from BaseServer."""
+		return [
+			create_test_server(),
+			create_test_database_server(),
+			create_test_proxy_server(),
+		]
+
 	def test_wazuh_agent_installed_during_setup_when_manager_configured(self):
 		create_test_press_settings()
 		frappe.db.set_single_value("Press Settings", "wazuh_server", "wazuh.example.com")
-		server = create_test_server()
 
-		with patch.object(type(server), "install_wazuh_agent") as install_wazuh_agent:
-			server.install_wazuh_agent_if_configured()
-
-		install_wazuh_agent.assert_called_once()
+		for server in self._one_server_of_each_type():
+			with self.subTest(server_type=server.doctype):
+				with patch.object(BaseServer, "install_wazuh_agent") as install_wazuh_agent:
+					server.install_wazuh_agent_if_configured()
+				install_wazuh_agent.assert_called_once()
 
 	def test_wazuh_agent_not_installed_during_setup_when_manager_unconfigured(self):
 		create_test_press_settings()
 		frappe.db.set_single_value("Press Settings", "wazuh_server", "")
-		server = create_test_server()
 
-		with patch.object(type(server), "install_wazuh_agent") as install_wazuh_agent:
-			server.install_wazuh_agent_if_configured()
-
-		install_wazuh_agent.assert_not_called()
+		for server in self._one_server_of_each_type():
+			with self.subTest(server_type=server.doctype):
+				with patch.object(BaseServer, "install_wazuh_agent") as install_wazuh_agent:
+					server.install_wazuh_agent_if_configured()
+				install_wazuh_agent.assert_not_called()
