@@ -556,6 +556,21 @@ class TestServer(FrappeTestCase):
 				self.assertFalse(server.is_wazuh_agent_installed)
 				self.assertIsNone(server.wazuh_agent_status)
 
+	def test_uninstall_reloads_before_save_to_preserve_concurrent_writes(self):
+		"""The long play window must not clobber edits made concurrently (e.g. archival)."""
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", True)
+		# A concurrent edit lands in the DB while the (mocked) play is "running".
+		frappe.db.set_value("Server", server.name, "status", "Broken")
+
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._uninstall_wazuh_agent()
+
+		server.reload()
+		self.assertFalse(server.is_wazuh_agent_installed)
+		self.assertEqual(server.status, "Broken")
+
 	def test_uninstall_is_noop_when_wazuh_agent_not_installed(self):
 		for server in self._one_server_of_each_type():
 			with self.subTest(server_type=server.doctype):
