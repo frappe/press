@@ -1479,6 +1479,9 @@ class BaseServer(Document, TagHelpers):
 				)
 			)
 
+		if self.is_wazuh_agent_installed:
+			self.uninstall_wazuh_agent()
+
 		self.status = "Pending"
 		self.save()
 		if self.is_self_hosted:

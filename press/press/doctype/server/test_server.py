@@ -570,3 +570,21 @@ class TestServer(FrappeTestCase):
 					server._setup_auditd()
 				server.reload()
 				self.assertTrue(server.is_auditd_setup)
+
+	@patch.object(BaseServer, "_archive", new=Mock())
+	@patch.object(BaseServer, "disable_subscription", new=Mock())
+	def test_archival_uninstalls_wazuh_agent_when_installed(self):
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", True)
+		with patch.object(BaseServer, "uninstall_wazuh_agent") as uninstall_wazuh_agent:
+			server.archive()
+		uninstall_wazuh_agent.assert_called_once()
+
+	@patch.object(BaseServer, "_archive", new=Mock())
+	@patch.object(BaseServer, "disable_subscription", new=Mock())
+	def test_archival_skips_wazuh_uninstall_when_not_installed(self):
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", False)
+		with patch.object(BaseServer, "uninstall_wazuh_agent") as uninstall_wazuh_agent:
+			server.archive()
+		uninstall_wazuh_agent.assert_not_called()
