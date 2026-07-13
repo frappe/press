@@ -35,7 +35,7 @@
 								</Button>
 								<Button
 									:loading="$resources.googleLogin.loading"
-									@click="$resources.googleLogin.submit()"
+									@click="continueWithGoogle"
 								>
 									<div class="flex items-center">
 										<GoogleIcon class="w-4" />
@@ -729,7 +729,19 @@ export default {
 			} else if (this.hasForgotPassword) {
 				await this.checkTwoFactorAndResetPassword();
 			} else {
+				this.capturePulseSignupMethod('email');
 				this.$resources.signup.submit();
+			}
+		},
+		continueWithGoogle() {
+			this.capturePulseSignupMethod('google');
+			this.$resources.googleLogin.submit();
+		},
+		capturePulseSignupMethod(method) {
+			if (this.$route.name === 'Signup' && this.$route.query.product) {
+				this.$pulse?.capture(`signup_via_${method}`, {
+					product: this.$route.query.product,
+				});
 			}
 		},
 
