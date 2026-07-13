@@ -1,6 +1,8 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
+from typing import TYPE_CHECKING
+
 import frappe
 
 from press.press.doctype.server.server import BaseServer
@@ -11,8 +13,6 @@ from press.utils import log_error
 class NATServer(BaseServer):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
-
-	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -26,7 +26,7 @@ class NATServer(BaseServer):
 		is_server_setup: DF.Check
 		is_static_ip: DF.Check
 		private_ip: DF.Data | None
-		provider: DF.Literal["AWS EC2", "Frappe Compute", "Hetzner", "DigitalOcean"]
+		provider: DF.Literal["AWS EC2", "Frappe Compute", "Hetzner", "DigitalOcean", "OCI"]
 		root_public_key: DF.Code | None
 		secondary_private_ip: DF.Data | None
 		ssh_port: DF.Data | None
@@ -68,6 +68,19 @@ class NATServer(BaseServer):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_server", queue="long", timeout=2400)
 
 	def _setup_server(self):
+		if self.provider == "OCI":
+			try:
+				ansible = Ansible(
+					playbook="oci.yml", server=self, user="ubuntu"
+				)  # Prepare server for OCI first.
+				play = ansible.run()
+				self.reload()
+			except Exception:
+				self.status = "Broken"
+				log_error("OCI Server Setup Exception", server=self.as_dict())
+				self.save()
+				return
+
 		try:
 			config = self.get_config() | {
 				"primary_ip": self.private_ip,
