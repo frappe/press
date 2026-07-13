@@ -146,6 +146,12 @@ export default {
 						},
 					});
 				},
+				onError: (error) => {
+					this.$pulse?.capture('trial_create_site_failed', {
+						product: this.productId,
+						error: error?.messages?.join('\n') || error?.message,
+					});
+				},
 			};
 		},
 	},
