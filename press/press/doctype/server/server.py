@@ -2733,7 +2733,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		import oci
 
 		vm_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
-		cluster_doc = frappe.get_doc("Cluster", self.cluster)
+		cluster_doc: Cluster = frappe.get_doc("Cluster", self.cluster)
 		config = cluster_doc.get_oci_config()
 
 		compute_client = oci.core.ComputeClient(config)
@@ -2775,6 +2775,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		)
 
 		reserved_ip_response = network_client.create_public_ip(reserved_ip_details).data
+
+		# 5. Update VNIC route table to the default one (if its a private VM) - this call is idempotent
+		cluster_doc.attach_route_table_to_instance_vnic_oci(vm_doc, cluster_doc.route_table_id)
 
 		vm_doc.sync()
 		return f"Static IP {reserved_ip_response.ip_address} allotted to the VM (OCID: {reserved_ip_response.id})"
