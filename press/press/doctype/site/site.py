@@ -1686,7 +1686,8 @@ class Site(Document, TagHelpers):
 				"domain": domain,
 				"dns_type": "CNAME",
 			}
-		).insert(ignore_if_duplicate=True)
+		)
+		site_domain.insert(ignore_if_duplicate=True)
 		return site_domain.flags.get("add_domain_to_upstream_job")
 
 	@frappe.whitelist()
@@ -1716,12 +1717,12 @@ class Site(Document, TagHelpers):
 			return json.loads(key_obj.get("value"))
 		return None
 
-	def add_domain_to_config(self, domain: str):
+	def add_domain_to_config(self, domain: str, queue: str | None = None):
 		domains = set(self.get_config_value_for_key("domains") or [])
 		domains.add(domain)
 		self._update_configuration({"domains": list(domains)})
 		agent = Agent(self.server)
-		return agent.add_domain(self, domain)
+		return agent.add_domain(self, domain, queue=queue)
 
 	def remove_domain_from_config(self, domain):
 		domains = set(self.get_config_value_for_key("domains") or [])
