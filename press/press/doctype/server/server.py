@@ -4360,7 +4360,8 @@ def sync_wazuh_agent_status():
 		log_error("Wazuh Agent Status Sync Exception")
 		return
 	for server_type in ("Server", "Database Server", "Proxy Server"):
-		for name in frappe.get_all(server_type, {"is_wazuh_agent_installed": 1}, pluck="name"):
+		filters = {"is_wazuh_agent_installed": 1, "status": ("!=", "Archived")}
+		for name in frappe.get_all(server_type, filters, pluck="name"):
 			frappe.db.set_value(server_type, name, "wazuh_agent_status", statuses.get(name, "unknown"))
 
 

@@ -635,6 +635,21 @@ class TestServer(FrappeTestCase):
 
 		self.assertEqual(frappe.db.get_value("Server", server.name, "wazuh_agent_status"), "unknown")
 
+	def test_sync_wazuh_agent_status_skips_archived_servers(self):
+		"""An archived server must not be re-stamped every run once the agent is gone."""
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_api_url", "https://wazuh.example.com:55000")
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", True)
+		server.db_set("wazuh_agent_status", "active")
+		server.db_set("status", "Archived")
+
+		with patch("press.press.doctype.server.server.WazuhManager") as WazuhManager:
+			WazuhManager.return_value.agent_statuses.return_value = {}
+			sync_wazuh_agent_status()
+
+		self.assertEqual(frappe.db.get_value("Server", server.name, "wazuh_agent_status"), "active")
+
 	def test_wazuh_manager_delete_agent_deletes_looked_up_agent_by_id(self):
 		from press.wazuh import WazuhManager
 
