@@ -263,6 +263,7 @@ frappe.ui.form.on('Server', {
 				true,
 				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
 			],
+			[__('Setup Auditd'), 'setup_auditd', true, frm.doc.is_server_setup],
 			[
 				__('Setup Wildcard Hosts'),
 				'setup_wildcard_hosts',

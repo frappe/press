@@ -1857,6 +1857,25 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Set SSH Session Logging Exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def setup_auditd(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_auditd", queue="long", timeout=1200)
+
+	def _setup_auditd(self):
+		try:
+			ansible = Ansible(
+				playbook="auditd.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			play = ansible.run()
+			if play.status == "Success":
+				self.is_auditd_setup = True
+				self.save()
+		except Exception:
+			log_error("Auditd Setup Exception", server=self.as_dict())
+
 	@property
 	def real_ram(self):
 		"""Ram detected by OS after h/w reservation"""
@@ -2929,6 +2948,7 @@ class Server(BaseServer):
 		ignore_incidents_till: DF.Datetime | None
 		ip: DF.Data | None
 		ipv6: DF.Data | None
+		is_auditd_setup: DF.Check
 		is_for_recovery: DF.Check
 		is_managed_database: DF.Check
 		is_monitoring_disabled: DF.Check

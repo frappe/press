@@ -561,3 +561,12 @@ class TestServer(FrappeTestCase):
 				with patch("press.press.doctype.server.server.Ansible") as Ansible:
 					server._uninstall_wazuh_agent()
 				Ansible.return_value.run.assert_not_called()
+
+	def test_setup_auditd_marks_auditd_setup_on_successful_play(self):
+		for server in self._one_server_of_each_type():
+			with self.subTest(server_type=server.doctype):
+				with patch("press.press.doctype.server.server.Ansible") as Ansible:
+					Ansible.return_value.run.return_value = Mock(status="Success")
+					server._setup_auditd()
+				server.reload()
+				self.assertTrue(server.is_auditd_setup)
