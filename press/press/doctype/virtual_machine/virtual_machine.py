@@ -225,22 +225,11 @@ class VirtualMachine(Document):
 
 		self.validate_data_disk_snapshot()
 
-<<<<<<< HEAD
-		if self.series == "nat" and self.cloud_provider not in ("AWS EC2", "Frappe Compute"):
-			frappe.throw(
-				"NAT Servers are only supported on AWS EC2 and Frappe Compute. Please try another provider."
-			)
-=======
 		if self.series == "nat" and self.cloud_provider not in ("AWS EC2", "Frappe Compute", "Hetzner"):
-<<<<<<< HEAD
-			frappe.throw("NAT Servers are only supported on AWS EC2, Frappe Compute, and Hetzner")
->>>>>>> b19622c34 (feat(cluster): Add NAT security group to hetzner)
-=======
 			frappe.throw(
 				"NAT Servers are only supported on AWS EC2, Frappe Compute, and Hetzner. "
 				f"Change the cloud provider from {self.cloud_provider} to a supported provider."
 			)
->>>>>>> 1cf19dfee (fix(virtual-machine): Fix semgrep issues)
 
 	def validate_data_disk_snapshot(self):
 		if not self.is_new() or not self.data_disk_snapshot:
