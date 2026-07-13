@@ -921,6 +921,8 @@ class BaseServer(Document, TagHelpers):
 			self.name,
 			"_install_wazuh_agent",
 			wazuh_server=wazuh_server,
+			queue="long",
+			timeout=1200,
 		)
 
 	def _install_wazuh_agent(self, wazuh_server: str):
@@ -948,6 +950,8 @@ class BaseServer(Document, TagHelpers):
 			self.doctype,
 			self.name,
 			"_uninstall_wazuh_agent",
+			queue="long",
+			timeout=1200,
 		)
 
 	def _uninstall_wazuh_agent(self):
@@ -963,6 +967,7 @@ class BaseServer(Document, TagHelpers):
 			play = ansible.run()
 			if play.status == "Success":
 				self.is_wazuh_agent_installed = False
+				self.wazuh_agent_status = None
 				self.save()
 		except Exception:
 			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())

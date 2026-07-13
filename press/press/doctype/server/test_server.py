@@ -544,15 +544,17 @@ class TestServer(FrappeTestCase):
 				server.reload()
 				self.assertTrue(server.is_wazuh_agent_installed)
 
-	def test_uninstall_clears_wazuh_agent_installed_flag(self):
+	def test_uninstall_clears_wazuh_agent_installed_flag_and_status(self):
 		for server in self._one_server_of_each_type():
 			with self.subTest(server_type=server.doctype):
 				server.db_set("is_wazuh_agent_installed", True)
+				server.db_set("wazuh_agent_status", "active")
 				with patch("press.press.doctype.server.server.Ansible") as Ansible:
 					Ansible.return_value.run.return_value = Mock(status="Success")
 					server._uninstall_wazuh_agent()
 				server.reload()
 				self.assertFalse(server.is_wazuh_agent_installed)
+				self.assertIsNone(server.wazuh_agent_status)
 
 	def test_uninstall_is_noop_when_wazuh_agent_not_installed(self):
 		for server in self._one_server_of_each_type():
