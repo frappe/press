@@ -248,22 +248,77 @@
 					<DateTimeControl v-model="scheduledTime" :hideLabel="true" />
 				</div>
 
-				<!-- Error Message -->
-				<ErrorMessage :message="errorMessage" />
+				<!-- Error Message (the space banner below replaces it with a friendlier one) -->
+				<ErrorMessage v-if="!showSpaceCleanupHelp" :message="errorMessage" />
+
+				<!-- Previous attempt ran out of disk space: explain and offer the cleanup actions -->
+				<div
+					v-if="showSpaceCleanupHelp"
+					class="flex flex-col gap-3 rounded-md bg-surface-amber-2 p-3"
+				>
+					<div class="flex gap-2">
+						<lucide-alert-triangle
+							class="mt-0.5 size-4 shrink-0 text-ink-amber-3"
+						/>
+						<p class="text-p-base text-ink-gray-8">
+							The previous migration used up some storage.
+							<a
+								:href="storageAddonsDocUrl"
+								target="_blank"
+								rel="noopener"
+								class="underline"
+								>Add more storage</a
+							>
+							or use the actions below, then try again.
+						</p>
+					</div>
+					<div class="flex flex-wrap items-center gap-x-4 gap-y-2 pl-6">
+						<div class="flex items-center gap-1.5">
+							<Button @click="openServerActions('Cleanup Server')">
+								Cleanup Server
+							</Button>
+							<a
+								:href="cleanupServerDocUrl"
+								target="_blank"
+								rel="noopener"
+								title="Learn about Cleanup Server"
+								aria-label="Learn about Cleanup Server"
+								class="text-ink-gray-5 hover:text-ink-gray-8"
+							>
+								<lucide-info class="size-4" />
+							</a>
+						</div>
+						<div class="flex items-center gap-1.5">
+							<Button @click="openServerActions('Forcefully Purge Binlogs')">
+								Forcefully Purge Binlogs
+							</Button>
+							<a
+								:href="purgeBinlogsDocUrl"
+								target="_blank"
+								rel="noopener"
+								title="Learn about Forcefully Purge Binlogs"
+								aria-label="Learn about Forcefully Purge Binlogs"
+								class="text-ink-gray-5 hover:text-ink-gray-8"
+							>
+								<lucide-info class="size-4" />
+							</a>
+						</div>
+					</div>
+				</div>
 			</div>
 		</template>
 	</Dialog>
 </template>
 <script>
 import {
-	getCachedDocumentResource,
-	Select,
 	Checkbox,
 	FormControl,
-} from 'frappe-ui';
-import AlertBanner from '../AlertBanner.vue';
-import GenericList from '../GenericList.vue';
-import { dayjsIST } from '../../utils/dayjs';
+	getCachedDocumentResource,
+	Select,
+} from 'frappe-ui'
+import { dayjsIST } from '../../utils/dayjs'
+import AlertBanner from '../AlertBanner.vue'
+import GenericList from '../GenericList.vue'
 
 export default {
 	props: ['site', 'defaultAction', 'defaultNewBenchName'],
@@ -288,11 +343,11 @@ export default {
 
 			newBenchGroupName: '',
 			selectedRegion: '',
-		};
+		}
 	},
 	watch: {
 		selectedMigrationMode() {
-			this.resetValues(true);
+			this.resetValues(true)
 		},
 	},
 	resources: {
@@ -304,14 +359,14 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'get_migration_options',
-					};
+					}
 				},
 				initialData: {},
 				auto: true,
 				onSuccess: () => {
-					this.autoSelectMigrationOption();
+					this.autoSelectMigrationOption()
 				},
-			};
+			}
 		},
 		createMigrationPlan() {
 			return {
@@ -332,19 +387,19 @@ export default {
 							scheduled_time: this.scheduledTimeInIST,
 							cluster: this.selectedRegion,
 						},
-					};
+					}
 				},
 				onSuccess: (result) => {
 					if (result?.message) {
-						console.log(result.message);
+						console.log(result.message)
 						this.$router.push({
 							name: 'Site Migration',
 							params: { id: result.message },
-						});
+						})
 					}
-					this.hide();
+					this.hide()
 				},
-			};
+			}
 		},
 		migrateSite() {
 			return {
@@ -357,96 +412,134 @@ export default {
 						args: {
 							skip_failing_patches: this.skipFailingPatches,
 						},
-					};
+					}
 				},
 				onSuccess: (result) => {
 					if (result?.message) {
 						this.$router.push({
 							name: 'Site Job',
 							params: { id: result.message },
-						});
+						})
 					}
-					this.hide();
+					this.hide()
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		$site() {
-			return getCachedDocumentResource('Site', this.site);
+			return getCachedDocumentResource('Site', this.site)
 		},
 		errorMessage() {
 			return (
 				this.$resources?.createMigrationPlan?.error ??
 				this.$resources?.migrateSite?.error ??
 				''
-			);
+			)
+		},
+		isInsufficientSpaceError() {
+			// ponytail: string-match the backend message; tighten if a typed error code is exposed
+			const error = this.errorMessage
+			const text = [error?.message, ...(error?.messages || []), error]
+				.filter((part) => typeof part === 'string')
+				.join(' ')
+			return /Insufficient estimated space/i.test(text)
+		},
+		showSpaceCleanupHelp() {
+			// Only after a prior migration actually left files behind, and only for
+			// dedicated servers — shared servers auto-extend and lack these actions.
+			return (
+				this.isInsufficientSpaceError &&
+				this.isDedicatedServerMove &&
+				this.hasRecentFailedMigration
+			)
+		},
+		isDedicatedServerMove() {
+			return (
+				this.selectedMigrationMode ===
+					'Move Site To Different Server / Bench' &&
+				this.selectedServerType === 'Dedicated Server'
+			)
+		},
+		cleanupTargetServer() {
+			return this.selectedServerToMoveTo || this.$site?.doc?.server
+		},
+		storageAddonsDocUrl() {
+			return 'https://docs.frappe.io/cloud/storage-addons'
+		},
+		cleanupServerDocUrl() {
+			return 'https://docs.frappe.io/cloud/storage-addons#how-to-force-cleanup-unused-files'
+		},
+		purgeBinlogsDocUrl() {
+			return 'https://docs.frappe.io/cloud/database-server-actions#view-purge-binlogs'
 		},
 		migrationRequestLoading() {
 			return (
 				this.$resources?.createMigrationPlan?.loading ||
 				this.$resources?.migrateSite?.loading ||
 				false
-			);
+			)
 		},
 		migrationOptions() {
-			return this.$resources?.migrationOptions?.data?.message ?? {};
+			return this.$resources?.migrationOptions?.data?.message ?? {}
 		},
 		migrationChoices() {
 			return Object.keys(this.migrationOptions)
+				.filter((e) => typeof this.migrationOptions[e] === 'object')
 				.map((e) => ({
 					label: e,
 					value: e,
 				}))
-				.filter((e) => !this.migrationOptions[e.value].hidden);
+				.filter((e) => !this.migrationOptions[e.value].hidden)
+		},
+		hasRecentFailedMigration() {
+			return this.migrationOptions?.has_recent_failed_migration ?? false
 		},
 		selectedMigrationChoiceDetails() {
-			return this.migrationOptions[this.selectedMigrationMode];
+			return this.migrationOptions[this.selectedMigrationMode]
 		},
 		showSchedulingOption() {
-			return this.selectedMigrationChoiceDetails?.allow_scheduling;
+			return this.selectedMigrationChoiceDetails?.allow_scheduling
 		},
 		selectedMigrationChoiceOptions() {
-			return this.selectedMigrationChoiceDetails?.options || {};
+			return this.selectedMigrationChoiceDetails?.options || {}
 		},
 		// Move Site To Different Server / Bench
 		availableReleaseGroups() {
 			if (
 				this.selectedMigrationMode !== 'Move Site To Different Server / Bench'
 			)
-				return [];
-			return (
-				this.selectedMigrationChoiceOptions?.available_release_groups ?? []
-			);
+				return []
+			return this.selectedMigrationChoiceOptions?.available_release_groups ?? []
 		},
 		availableServersForSelectedReleaseGroup() {
 			if (
 				this.selectedMigrationMode !== 'Move Site To Different Server / Bench'
 			)
-				return [];
-			if (this.benchMovementType !== 'Move To Existing Bench') return [];
+				return []
+			if (this.benchMovementType !== 'Move To Existing Bench') return []
 			return (
 				this.availableReleaseGroups.find(
 					(e) => e.name === this.selectedReleaseGroupToMoveTo,
 				)?.servers ?? []
-			);
+			)
 		},
 		dedicatedServersForNewReleaseGroup() {
 			if (
 				this.selectedMigrationMode !== 'Move Site To Different Server / Bench'
 			)
-				return [];
-			if (this.benchMovementType !== 'Create A New Bench') return [];
-			if (this.selectedServerType !== 'Dedicated Server') return [];
+				return []
+			if (this.benchMovementType !== 'Create A New Bench') return []
+			if (this.selectedServerType !== 'Dedicated Server') return []
 			return (
 				this.selectedMigrationChoiceOptions
 					?.dedicated_servers_for_new_release_group ?? []
-			);
+			)
 		},
 		availableRegionsToMoveSiteTo() {
 			if (this.selectedMigrationMode !== 'Move Site To Different Region')
-				return [];
-			return this.selectedMigrationChoiceOptions?.available_regions ?? [];
+				return []
+			return this.selectedMigrationChoiceOptions?.available_regions ?? []
 		},
 		warningMessage() {
 			return {
@@ -456,73 +549,85 @@ export default {
 					'Site will be unavailable during this process.',
 				'Move Site To Different Region':
 					'Site will be unavailable during this process.',
-			}[this.selectedMigrationMode];
+			}[this.selectedMigrationMode]
 		},
 		scheduledTimeInIST() {
-			if (!this.scheduledTime) return;
-			return dayjsIST(this.scheduledTime).format('YYYY-MM-DDTHH:mm');
+			if (!this.scheduledTime) return
+			return dayjsIST(this.scheduledTime).format('YYYY-MM-DDTHH:mm')
 		},
 	},
 	methods: {
 		autoSelectMigrationOption() {
 			// Check if 'action' is passed via prop or URL params
-			const actionFromProp = this.defaultAction;
-			const actionFromUrl = this.$route?.query?.action;
-			const actionToSelect = actionFromProp || actionFromUrl;
+			const actionFromProp = this.defaultAction
+			const actionFromUrl = this.$route?.query?.action
+			const actionToSelect = actionFromProp || actionFromUrl
 
-			if (!actionToSelect) return;
+			if (!actionToSelect) return
 
 			// Check if the action exists in migration choices and is not hidden
 			const matchingChoice = this.migrationChoices.find(
 				(choice) => choice.value === actionToSelect,
-			);
+			)
 
 			if (matchingChoice) {
 				// Auto-select the option
-				this.selectedMigrationMode = actionToSelect;
+				this.selectedMigrationMode = actionToSelect
 
 				// Set default new bench name if provided and not already set
 				if (this.defaultNewBenchName && !this.newBenchGroupName) {
-					this.newBenchGroupName = this.defaultNewBenchName;
+					this.newBenchGroupName = this.defaultNewBenchName
 				}
 			}
 		},
 		resetValues(skip_migration_mode_set = false) {
 			if (!skip_migration_mode_set) {
-				this.selectedMigrationMode = '';
+				this.selectedMigrationMode = ''
 			}
-			this.skipFailingPatches = false;
-			this.scheduledTime = '';
+			this.skipFailingPatches = false
+			this.scheduledTime = ''
 
 			// For migration
-			this.benchMovementType = 'Create A New Bench';
-			this.selectedReleaseGroupToMoveTo = '';
-			this.selectedServerToMoveTo = '';
-			this.selectedServerType = 'Shared Server';
+			this.benchMovementType = 'Create A New Bench'
+			this.selectedReleaseGroupToMoveTo = ''
+			this.selectedServerToMoveTo = ''
+			this.selectedServerType = 'Shared Server'
 
 			// Reset to default bench name if provided, otherwise empty
-			this.newBenchGroupName = this.defaultNewBenchName || '';
+			this.newBenchGroupName = this.defaultNewBenchName || ''
 
 			// Reset the errors
 			if (this.$resources?.createMigrationPlan) {
-				this.$resources.createMigrationPlan.error = null;
+				this.$resources.createMigrationPlan.error = null
 			}
 			if (this.$resources?.migrateSite) {
-				this.$resources.migrateSite.error = null;
+				this.$resources.migrateSite.error = null
 			}
+		},
+		openServerActions(action) {
+			// Both actions live on the server's Actions tab. The `action` query param
+			// makes ServerActionCell auto-open that action's dialog on mount.
+			// Open in a new tab so this dialog stays open for the retry.
+			const server = this.cleanupTargetServer
+			if (!server) return
+			const { href } = this.$router.resolve({
+				path: `/servers/${server}/actions`,
+				query: { action },
+			})
+			window.open(href, '_blank')
 		},
 		triggerMigration() {
 			if (this.selectedMigrationMode === 'In-Place Migrate Site') {
-				this.$resources?.migrateSite?.submit();
+				this.$resources?.migrateSite?.submit()
 			} else {
-				this.$resources?.createMigrationPlan?.submit();
+				this.$resources?.createMigrationPlan?.submit()
 			}
 		},
 		hide() {
-			this.show = false;
-			this.$emit('update:modelValue', false);
-			this.$emit('close');
+			this.show = false
+			this.$emit('update:modelValue', false)
+			this.$emit('close')
 		},
 	},
-};
+}
 </script>
