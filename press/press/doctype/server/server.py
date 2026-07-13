@@ -947,6 +947,7 @@ class BaseServer(Document, TagHelpers):
 				},
 			)
 			play = ansible.run()
+			self.reload()
 			if play.status == "Success":
 				self.is_wazuh_agent_installed = True
 				self.save()
@@ -974,6 +975,7 @@ class BaseServer(Document, TagHelpers):
 				port=self._ssh_port(),
 			)
 			play = ansible.run()
+			self.reload()
 			if play.status == "Success":
 				self.is_wazuh_agent_installed = False
 				self.wazuh_agent_status = None
@@ -1924,6 +1926,7 @@ class BaseServer(Document, TagHelpers):
 				port=self._ssh_port(),
 			)
 			play = ansible.run()
+			self.reload()
 			if play.status == "Success":
 				self.is_auditd_setup = True
 				self.save()
