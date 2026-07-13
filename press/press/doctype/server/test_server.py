@@ -655,3 +655,25 @@ class TestServer(FrappeTestCase):
 		delete_call = requests.request.call_args_list[-1]
 		self.assertEqual(delete_call.args[0], "DELETE")
 		self.assertEqual(delete_call.kwargs["params"]["agents_list"], "003")
+
+	def test_wazuh_manager_delete_agent_ignores_non_exact_name_match(self):
+		"""A crafted name that broadens the `q` filter must not delete a different agent."""
+		from press.wazuh import WazuhManager
+
+		settings = create_test_press_settings()
+		settings.wazuh_api_url = "https://wazuh.example.com:55000"
+		settings.wazuh_api_username = "user"
+		settings.wazuh_api_password = "pass"
+		settings.wazuh_api_verify_tls = 0
+		settings.save()
+
+		with patch("press.wazuh.requests") as requests:
+			requests.post.return_value.json.return_value = {"data": {"token": "t"}}
+			# The filter resolved to a different agent ("victim") than the requested name.
+			requests.request.return_value.json.return_value = {
+				"data": {"affected_items": [{"id": "003", "name": "victim"}]}
+			}
+			WazuhManager().delete_agent("victim;status=active")
+
+		methods = [call.args[0] for call in requests.request.call_args_list]
+		self.assertNotIn("DELETE", methods)
