@@ -31,6 +31,7 @@ class PartnerOnboarding(Document):
 		agreed_to_partnership_agreement: DF.Check
 		amended_from: DF.Link | None
 		annual_revenue: DF.Currency
+		approved_on: DF.Datetime | None
 		certified_employees_range: DF.Data | None
 		company_email: DF.Data
 		company_name: DF.Data
@@ -93,6 +94,26 @@ class PartnerOnboarding(Document):
 		self.status = "Pending Review"
 		self.submitted_on = now_datetime()
 
+	def before_save(self):
+		if not self.has_value_changed("status"):
+			return
+
+		if self.status in ("Approved", "Rejected"):
+			self.reviewed_by = frappe.session.user
+			self.reviewed_on = now_datetime()
+			if self.status == "Approved":
+				self.approved_on = now_datetime()
+
+	def on_update(self):
+		if not self.has_value_changed("status"):
+			return
+
+		if self.status == "Approved":
+			frappe.get_doc("Team", self.team).enable_erpnext_partner_privileges()
+			notify_partner_team(self.team, "partner_onboarding_status_updated")
+		elif self.status == "Rejected":
+			notify_partner_team(self.team, "partner_onboarding_status_updated")
+
 	@frappe.whitelist()
 	def approve(self):
 		frappe.only_for("Partner Manager")
@@ -106,15 +127,9 @@ class PartnerOnboarding(Document):
 				"Only pending submissions can be approved. Refresh the page and open a pending review request."
 			)
 
-		team = frappe.get_doc("Team", self.team)
-		team.enable_erpnext_partner_privileges()
-
 		self.status = "Approved"
-		self.reviewed_by = frappe.session.user
-		self.reviewed_on = now_datetime()
 		self.reviewer_comments = None
 		self.save()
-		notify_partner_team(self.team, "partner_onboarding_status_updated")
 
 	@frappe.whitelist()
 	def reject(self, reason: str | None = None):
@@ -130,11 +145,8 @@ class PartnerOnboarding(Document):
 			)
 
 		self.status = "Rejected"
-		self.reviewed_by = frappe.session.user
-		self.reviewed_on = now_datetime()
 		self.reviewer_comments = reason
 		self.save()
-		notify_partner_team(self.team, "partner_onboarding_status_updated")
 
 
 def _active_onboarding_filters(team: str) -> dict:
