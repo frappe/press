@@ -534,3 +534,30 @@ class TestServer(FrappeTestCase):
 				with patch.object(BaseServer, "install_wazuh_agent") as install_wazuh_agent:
 					server.install_wazuh_agent_if_configured()
 				install_wazuh_agent.assert_not_called()
+
+	def test_install_marks_wazuh_agent_installed_on_successful_play(self):
+		for server in self._one_server_of_each_type():
+			with self.subTest(server_type=server.doctype):
+				with patch("press.press.doctype.server.server.Ansible") as Ansible:
+					Ansible.return_value.run.return_value = Mock(status="Success")
+					server._install_wazuh_agent("wazuh.example.com")
+				server.reload()
+				self.assertTrue(server.is_wazuh_agent_installed)
+
+	def test_uninstall_clears_wazuh_agent_installed_flag(self):
+		for server in self._one_server_of_each_type():
+			with self.subTest(server_type=server.doctype):
+				server.db_set("is_wazuh_agent_installed", True)
+				with patch("press.press.doctype.server.server.Ansible") as Ansible:
+					Ansible.return_value.run.return_value = Mock(status="Success")
+					server._uninstall_wazuh_agent()
+				server.reload()
+				self.assertFalse(server.is_wazuh_agent_installed)
+
+	def test_uninstall_is_noop_when_wazuh_agent_not_installed(self):
+		for server in self._one_server_of_each_type():
+			with self.subTest(server_type=server.doctype):
+				server.db_set("is_wazuh_agent_installed", False)
+				with patch("press.press.doctype.server.server.Ansible") as Ansible:
+					server._uninstall_wazuh_agent()
+				Ansible.return_value.run.assert_not_called()

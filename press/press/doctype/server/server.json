@@ -20,6 +20,7 @@
 		"ignore_incidents_till",
 		"section_break_mequ",
 		"is_server_setup",
+		"is_wazuh_agent_installed",
 		"is_server_prepared",
 		"is_server_renamed",
 		"is_provisioning_press_job_completed",
@@ -153,6 +154,13 @@
 			"fieldname": "is_server_setup",
 			"fieldtype": "Check",
 			"label": "Is Server Setup",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_wazuh_agent_installed",
+			"fieldtype": "Check",
+			"label": "Is Wazuh Agent Installed",
 			"read_only": 1
 		},
 		{

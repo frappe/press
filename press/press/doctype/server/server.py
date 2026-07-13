@@ -934,7 +934,10 @@ class BaseServer(Document, TagHelpers):
 					"wazuh_agent_name": self.name,
 				},
 			)
-			ansible.run()
+			play = ansible.run()
+			if play.status == "Success":
+				self.is_wazuh_agent_installed = True
+				self.save()
 		except Exception:
 			log_error("Wazuh Agent Install Exception", server=self.as_dict())
 
@@ -947,6 +950,8 @@ class BaseServer(Document, TagHelpers):
 		)
 
 	def _uninstall_wazuh_agent(self):
+		if not self.is_wazuh_agent_installed:
+			return
 		try:
 			ansible = Ansible(
 				playbook="wazuh_agent_uninstall.yml",
@@ -954,7 +959,10 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			ansible.run()
+			play = ansible.run()
+			if play.status == "Success":
+				self.is_wazuh_agent_installed = False
+				self.save()
 		except Exception:
 			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())
 
@@ -2938,6 +2946,7 @@ class Server(BaseServer):
 		is_static_ip: DF.Check
 		is_unified_server: DF.Check
 		is_upstream_setup: DF.Check
+		is_wazuh_agent_installed: DF.Check
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]

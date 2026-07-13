@@ -48,6 +48,7 @@ class ProxyServer(BaseServer):
 		is_server_setup: DF.Check
 		is_ssh_proxy_setup: DF.Check
 		is_static_ip: DF.Check
+		is_wazuh_agent_installed: DF.Check
 		is_wireguard_setup: DF.Check
 		mem_limits: DF.Code | None
 		plan: DF.Link | None
