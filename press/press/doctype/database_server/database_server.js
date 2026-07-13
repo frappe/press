@@ -40,7 +40,7 @@ frappe.ui.form.on('Database Server', {
 				__('Uninstall Wazuh Agent'),
 				'uninstall_wazuh_agent',
 				true,
-				frm.doc.is_server_setup,
+				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
 			],
 			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
 			[

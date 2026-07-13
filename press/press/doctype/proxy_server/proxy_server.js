@@ -30,7 +30,7 @@ frappe.ui.form.on('Proxy Server', {
 				__('Uninstall Wazuh Agent'),
 				'uninstall_wazuh_agent',
 				true,
-				frm.doc.is_server_setup,
+				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
 			],
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
