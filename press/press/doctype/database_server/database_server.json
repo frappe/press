@@ -123,6 +123,7 @@
 		"monitor_tab",
 		"is_mariadb_monitor_installed",
 		"is_wazuh_agent_installed",
+		"is_auditd_setup",
 		"section_break_uzkb",
 		"is_external_healthcheck_enabled",
 		"column_break_umtu",
@@ -822,6 +823,13 @@
 			"fieldname": "is_wazuh_agent_installed",
 			"fieldtype": "Check",
 			"label": "Is Wazuh Agent Installed",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_auditd_setup",
+			"fieldtype": "Check",
+			"label": "Is Auditd Setup",
 			"read_only": 1
 		},
 		{

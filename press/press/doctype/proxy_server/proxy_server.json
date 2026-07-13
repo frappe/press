@@ -18,6 +18,7 @@
 		"virtual_machine",
 		"is_server_setup",
 		"is_wazuh_agent_installed",
+		"is_auditd_setup",
 		"is_self_hosted",
 		"team",
 		"public",
@@ -118,6 +119,13 @@
 			"fieldname": "is_wazuh_agent_installed",
 			"fieldtype": "Check",
 			"label": "Is Wazuh Agent Installed",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_auditd_setup",
+			"fieldtype": "Check",
+			"label": "Is Auditd Setup",
 			"read_only": 1
 		},
 		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },

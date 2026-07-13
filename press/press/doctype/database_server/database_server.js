@@ -42,6 +42,7 @@ frappe.ui.form.on('Database Server', {
 				true,
 				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
 			],
+			[__('Setup Auditd'), 'setup_auditd', true, frm.doc.is_server_setup],
 			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
 			[
 				__('Fetch Keys'),

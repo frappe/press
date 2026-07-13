@@ -32,6 +32,7 @@ frappe.ui.form.on('Proxy Server', {
 				true,
 				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
 			],
+			[__('Setup Auditd'), 'setup_auditd', true, frm.doc.is_server_setup],
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
 			[__('Get Static IP'), 'get_static_ip', false],

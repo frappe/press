@@ -36,3 +36,16 @@
     name: wazuh-agent
     enabled: yes
     state: started
+
+- name: Ship Audit Logs to Wazuh
+  blockinfile:
+    path: /var/ossec/etc/ossec.conf
+    marker: "<!-- {mark} ANSIBLE MANAGED BLOCK: auditd -->"
+    block: |
+      <ossec_config>
+        <localfile>
+          <log_format>audit</log_format>
+          <location>/var/log/audit/audit.log</location>
+        </localfile>
+      </ossec_config>
+  notify: restart wazuh-agent
