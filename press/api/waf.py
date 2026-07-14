@@ -60,11 +60,6 @@ def _ingest_rate_limit() -> int:
 
 
 @frappe.whitelist(allow_guest=True)
-def test():
-	print("Hello world")
-
-
-@frappe.whitelist(allow_guest=True)
 def ingest_logs():
 	"""Receive a batch of WAF audit events from an Agent.
 
