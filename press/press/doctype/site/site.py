@@ -1851,6 +1851,11 @@ class Site(Document, TagHelpers):
 		self.disable_marketplace_subscriptions()
 
 		self.archive_site_database_users()
+		# Best-effort WAF teardown: rotate the per-site log token so any
+		# in-flight audit batch from the soon-to-be-archived site is
+		# rejected, and drop the Agent-side ModSecurity config. Failures
+		# here must not abort archival (the site is already going away).
+		self.archive_waf()
 
 	@frappe.whitelist()
 	def cleanup_after_archive(self):
@@ -2844,6 +2849,31 @@ class Site(Document, TagHelpers):
 			frappe.get_doc("Site Database User", db_user).archive(
 				raise_error=False, skip_remove_db_user_step=True
 			)
+
+	def archive_waf(self):
+		"""Tear down the per-site WAF if one exists.
+
+		Best-effort: a Site can be archived while the underlying bench /
+		server is already gone, so all Agent calls are swallowed. The
+		corresponding `WAF` doctype row is deleted so the unique site
+		constraint frees up; logs are retained for forensics via the
+		`WAF Log` doctype's own retention job.
+		"""
+		from press.agent import Agent
+
+		waf_name = frappe.db.get_value("WAF", {"site": self.name}, "name")
+		if not waf_name:
+			return
+		waf = frappe.get_doc("WAF", waf_name)
+		with suppress(Exception):
+			if self.server:
+				Agent(self.server).disable_waf(waf)
+		# Drop the WAF DocType row; the `disable_waf` AgentJob will still
+		# run to completion against the Agent (job references bench/site
+		# directly via the AgentJob request_data), but the row going away
+		# prevents the user re-editing a stale config.
+		with suppress(Exception):
+			frappe.delete_doc("WAF", waf_name, ignore_permissions=True)
 
 	def revoke_database_access_on_plan_change(self):
 		# If the new plan doesn't have database access, disable it

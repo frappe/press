@@ -922,6 +922,90 @@ class Agent:
 	def reload_nginx(self):
 		return self.create_agent_job("Reload NGINX Job", "proxy/reload")
 
+	def _waf_config_payload(self, waf) -> dict:
+		"""Serialise a WAF DocType into the dict expected by the Agent.
+
+		The Agent renders the ModSecurity main config from this payload — it
+		does not query Press back, so renames/server moves remain self-contained
+		in the AgentJob's `request_data` (same property every other site-level
+		job relies on, e.g. `new_site` at agent.py:141).
+		"""
+		return {
+			"enabled": bool(waf.enabled),
+			"mode": waf.mode,
+			"rate_limits": [
+				{
+					"rate": r.rate,
+					"window": r.window,
+					"burst": r.burst,
+					"key": r.key,
+					"endpoint": r.endpoint or "",
+				}
+				for r in waf.rate_limits
+			],
+			"blocked_endpoints": [
+				{"endpoint": e.endpoint, "methods": e.methods} for e in waf.blocked_endpoints
+			],
+			"blocked_parameters": [
+				{
+					"endpoint": p.endpoint or "",
+					"location": p.location,
+					"parameter": p.parameter or "",
+					"match_type": p.match_type,
+					"value": p.value or "",
+				}
+				for p in waf.blocked_parameters
+			],
+			"request_limits": [
+				{"limit_type": limit.limit_type, "value": limit.value, "endpoint": limit.endpoint or ""}
+				for limit in waf.request_limits
+			],
+			"ip_rules": [{"ip": i.ip, "rule_type": i.rule_type} for i in waf.ip_rules],
+			"custom_rules": [
+				{"rule_id": c.rule_id, "rule_name": c.rule_name, "rule_text": c.rule_text}
+				for c in waf.custom_rules
+			],
+			# Per-site bearer token used by the Agent's audit-log watcher to
+			# authenticate itself when pushing WAF Log events to
+			# `press.api.waf.ingest_logs`. Mirrors `Monitor Server.webhook_token`.
+			"waf_log_token": waf.get_log_token(),
+		}
+
+	def update_waf_config(self, waf):
+		"""Push a WAF configuration to the Agent owning the site's bench.
+
+		Generates `/benches/<bench>/sites/<site>/modsec/main.conf` on the
+		Agent, then reloads the bench nginx via the same `setup_nginx` path
+		CORS/domain changes use.
+		"""
+		return self.create_agent_job(
+			"Update WAF Configuration",
+			f"benches/{waf.site_bench}/sites/{waf.site_name}/waf",
+			self._waf_config_payload(waf),
+			bench=waf.site_bench,
+			site=waf.site_name,
+		)
+
+	def disable_waf(self, waf):
+		"""Remove the per-site ModSecurity config and reload bench nginx."""
+		return self.create_agent_job(
+			"Disable WAF",
+			f"benches/{waf.site_bench}/sites/{waf.site_name}/waf",
+			bench=waf.site_bench,
+			site=waf.site_name,
+			method="DELETE",
+		)
+
+	def rotate_waf_log_token(self, waf):
+		"""Tell the Agent to replace the locally-stored bearer token."""
+		return self.create_agent_job(
+			"Rotate WAF Log Token",
+			f"benches/{waf.site_bench}/sites/{waf.site_name}/waf/rotate-token",
+			{"waf_log_token": waf.get_log_token()},
+			bench=waf.site_bench,
+			site=waf.site_name,
+		)
+
 	def cleanup_unused_files(self, force: bool = False):
 		return self.create_agent_job("Cleanup Unused Files", "server/cleanup", {"force": force})
 

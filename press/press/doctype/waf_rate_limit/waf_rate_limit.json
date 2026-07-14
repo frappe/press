@@ -1,0 +1,59 @@
+{
+	"actions": [],
+	"creation": "2026-07-06 00:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": ["rate", "window", "burst", "key", "endpoint"],
+	"fields": [
+		{
+			"fieldname": "rate",
+			"fieldtype": "Int",
+			"label": "Rate (requests)",
+			"in_list_view": 1,
+			"reqd": 1,
+			"default": "100"
+		},
+		{
+			"fieldname": "window",
+			"fieldtype": "Int",
+			"label": "Window (seconds)",
+			"in_list_view": 1,
+			"reqd": 1,
+			"default": "60"
+		},
+		{
+			"fieldname": "burst",
+			"fieldtype": "Int",
+			"label": "Burst",
+			"in_list_view": 1,
+			"default": "0",
+			"description": "Extra requests allowed to exceed the rate over the window before being blocked."
+		},
+		{
+			"fieldname": "key",
+			"fieldtype": "Select",
+			"label": "Key",
+			"in_list_view": 1,
+			"default": "IP",
+			"options": "\nIP\nURI\nIP+URI"
+		},
+		{
+			"fieldname": "endpoint",
+			"fieldtype": "Data",
+			"label": "Endpoint",
+			"description": "Optional regular expression matched against REQUEST_URI. Leave empty to apply the rate limit to all endpoints."
+		}
+	],
+	"istable": 1,
+	"links": [],
+	"modified": "2026-07-06 00:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "WAF Rate Limit",
+	"owner": "Administrator",
+	"permissions": [],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
+}

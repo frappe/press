@@ -3220,5 +3220,50 @@
 				"step_name": "Pull Docker Images"
 			}
 		]
+	},
+	{
+		"disabled_auto_retry": 1,
+		"docstatus": 0,
+		"doctype": "Agent Job Type",
+		"max_retry_count": 3,
+		"modified": "2026-07-08 00:00:00.000000",
+		"name": "Update WAF Configuration",
+		"request_method": "POST",
+		"request_path": "/benches/{bench}/sites/{site}/waf",
+		"steps": [
+			{
+				"step_name": "Bench Setup NGINX"
+			}
+		]
+	},
+	{
+		"disabled_auto_retry": 1,
+		"docstatus": 0,
+		"doctype": "Agent Job Type",
+		"max_retry_count": 3,
+		"modified": "2026-07-08 00:00:00.000000",
+		"name": "Disable WAF",
+		"request_method": "DELETE",
+		"request_path": "/benches/{bench}/sites/{site}/waf",
+		"steps": [
+			{
+				"step_name": "Bench Setup NGINX"
+			}
+		]
+	},
+	{
+		"disabled_auto_retry": 1,
+		"docstatus": 0,
+		"doctype": "Agent Job Type",
+		"max_retry_count": 3,
+		"modified": "2026-07-08 00:00:00.000000",
+		"name": "Rotate WAF Log Token",
+		"request_method": "POST",
+		"request_path": "/benches/{bench}/sites/{site}/waf/rotate-token",
+		"steps": [
+			{
+				"step_name": "Rotate WAF Log Token"
+			}
+		]
 	}
 ]

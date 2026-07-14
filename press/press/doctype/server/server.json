@@ -26,6 +26,7 @@
 		"is_self_hosted",
 		"keep_files_on_server_in_offsite_backup",
 		"public",
+		"is_waf_setup",
 		"column_break_laiq",
 		"use_agent_job_callbacks",
 		"is_pyspy_setup",
@@ -114,7 +115,8 @@
 		"has_data_volume",
 		"mounts",
 		"notifications_section",
-		"communication_infos"
+		"communication_infos",
+		"skip_standby_site_creation"
 	],
 	"fields": [
 		{
@@ -809,6 +811,13 @@
 			"fieldname": "exclude_for_scheduling",
 			"fieldtype": "Check",
 			"label": "Exclude being considered for new benches/sites"
+		},
+		{
+			"default": "0",
+			"fieldname": "is_waf_setup",
+			"fieldtype": "Check",
+			"label": "Is WAF Setup",
+			"read_only": 1
 		}
 	],
 	"links": [
@@ -821,7 +830,7 @@
 			"link_fieldname": "app_server"
 		}
 	],
-	"modified": "2026-06-18 10:49:09.702133",
+	"modified": "2026-07-11 17:02:08.149044",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Server",
@@ -847,7 +856,6 @@
 		}
 	],
 	"row_format": "Dynamic",
-	"rows_threshold_for_grid_search": 20,
 	"sort_field": "modified",
 	"sort_order": "DESC",
 	"states": [],
