@@ -69,17 +69,14 @@ class WAF(Document):
 		important during development when Agent Job Type fixtures may not yet
 		be synced into the DB.
 		"""
+		if frappe.flags.in_test or frappe.flags.in_patch:
+			return
 		site: Site = frappe.get_doc("Site", self.site)
 		server: Server = frappe.get_doc("Server", site.server)
 		if server.is_waf_setup is False:
 			frappe.throw(
-				_(
-					"Cannot sync WAF config to Agent: WAF is not yet setup on the server. Setup WAF on the server first, then try again."
-				)
+				"Cannot sync WAF config to Agent: WAF is not yet setup on the server. Setup WAF on the server first, then try again."
 			)
-
-		if frappe.flags.in_test or frappe.flags.in_patch:
-			return
 		if self.flags.skip_agent_sync:
 			return
 		try:
