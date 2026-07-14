@@ -24,6 +24,11 @@
     group: root
     mode: '0644'
 
+- name: Remove Temporary Key File
+  file:
+    path: /tmp/wazuh-gpg-key.asc
+    state: absent
+
 - name: Add Repository
   apt_repository:
     repo: "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main"
