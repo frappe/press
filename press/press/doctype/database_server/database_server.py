@@ -79,6 +79,7 @@ class DatabaseServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_auditd_setup: DF.Check
 		is_auto_coredump_enabled: DF.Check
 		is_binlog_indexer_running: DF.Check
 		is_external_healthcheck_enabled: DF.Check
@@ -96,6 +97,8 @@ class DatabaseServer(BaseServer):
 		is_stalk_setup: DF.Check
 		is_static_ip: DF.Check
 		is_unified_server: DF.Check
+		is_wazuh_agent_installed: DF.Check
+		wazuh_agent_status: DF.Data | None
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
 		memory_allocator: DF.Literal["System", "jemalloc", "TCMalloc"]
@@ -870,6 +873,7 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				self.set_auditd_setup_from_base_playbook()
 				self.process_hybrid_server_setup()
 				if self.provider == "DigitalOcean":
 					# Adjusting docker permissions

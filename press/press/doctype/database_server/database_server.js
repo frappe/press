@@ -6,9 +6,9 @@ frappe.ui.form.on('Database Server', {
 		frm.add_web_link(
 			`/dashboard/servers/${frm.doc.name}`,
 			__('Visit Dashboard'),
-		);
+		)
 
-		[
+		;[
 			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
 			[__('Ping Ansible'), 'ping_ansible', true, frm.doc.is_server_prepared],
 			[
@@ -30,6 +30,19 @@ frappe.ui.form.on('Database Server', {
 				true,
 				frm.doc.is_server_setup,
 			],
+			[
+				__('Install Wazuh Agent'),
+				'install_wazuh_agent',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Uninstall Wazuh Agent'),
+				'uninstall_wazuh_agent',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
+			],
+			[__('Setup Auditd'), 'setup_auditd', true, frm.doc.is_server_setup],
 			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
 			[
 				__('Fetch Keys'),
@@ -247,26 +260,26 @@ frappe.ui.form.on('Database Server', {
 								() =>
 									frm.call(method).then((r) => {
 										if (r.message) {
-											frappe.msgprint(r.message);
+											frappe.msgprint(r.message)
 										} else {
-											frm.refresh();
+											frm.refresh()
 										}
 									}),
-							);
+							)
 						} else {
 							frm.call(method).then((r) => {
 								if (r.message) {
-									frappe.msgprint(r.message);
+									frappe.msgprint(r.message)
 								} else {
-									frm.refresh();
+									frm.refresh()
 								}
-							});
+							})
 						}
 					},
 					__('Actions'),
-				);
+				)
 			}
-		});
+		})
 		if (frm.doc.is_server_setup) {
 			frm.add_custom_button(
 				__('Increase Swap'),
@@ -282,18 +295,18 @@ frappe.ui.form.on('Database Server', {
 								default: 4,
 							},
 						],
-					});
+					})
 
 					dialog.set_primary_action(__('Increase Swap'), (args) => {
 						frm.call('increase_swap', args).then(() => {
-							dialog.hide();
-							frm.refresh();
-						});
-					});
-					dialog.show();
+							dialog.hide()
+							frm.refresh()
+						})
+					})
+					dialog.show()
 				},
 				__('Actions'),
-			);
+			)
 			frm.add_custom_button(
 				__('Perform Physical Backup'),
 				() => {
@@ -309,18 +322,18 @@ frappe.ui.form.on('Database Server', {
 								reqd: 1,
 							},
 						],
-					});
+					})
 
 					dialog.set_primary_action(__('Backup'), (args) => {
 						frm.call('perform_physical_backup', args).then(() => {
-							dialog.hide();
-							frm.refresh();
-						});
-					});
-					dialog.show();
+							dialog.hide()
+							frm.refresh()
+						})
+					})
+					dialog.show()
 				},
 				__('Actions'),
-			);
+			)
 			frm.add_custom_button(
 				__('Update Memory Allocator Settings'),
 				() => {
@@ -345,7 +358,7 @@ frappe.ui.form.on('Database Server', {
 								fieldname: 'tcmalloc_release_rate',
 							},
 						],
-					});
+					})
 
 					dialog.set_primary_action(__('Update'), (args) => {
 						frm.call({
@@ -354,15 +367,15 @@ frappe.ui.form.on('Database Server', {
 							args: args,
 							freeze: true,
 							callback: () => {
-								dialog.hide();
-								frm.refresh();
+								dialog.hide()
+								frm.refresh()
 							},
-						});
-					});
-					dialog.show();
+						})
+					})
+					dialog.show()
 				},
 				__('Dangerous Actions'),
-			);
+			)
 
 			frm.add_custom_button(
 				__('Purge Binlogs'),
@@ -377,7 +390,7 @@ frappe.ui.form.on('Database Server', {
 								reqd: 1,
 							},
 						],
-					});
+					})
 
 					dialog.set_primary_action(__('Purge'), (args) => {
 						frm.call({
@@ -386,19 +399,19 @@ frappe.ui.form.on('Database Server', {
 							args: args,
 							freeze: true,
 							callback: () => {
-								dialog.hide();
-								frm.refresh();
+								dialog.hide()
+								frm.refresh()
 							},
-						});
-					});
-					dialog.show();
+						})
+					})
+					dialog.show()
 				},
 				__('Dangerous Actions'),
-			);
+			)
 		}
 	},
 
 	hostname: function (frm) {
-		press.set_hostname_abbreviation(frm);
+		press.set_hostname_abbreviation(frm)
 	},
-});
+})

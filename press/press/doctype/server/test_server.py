@@ -22,7 +22,7 @@ from press.press.doctype.press_settings.test_press_settings import (
 )
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import create_test_release_group
-from press.press.doctype.server.server import BaseServer
+from press.press.doctype.server.server import BaseServer, sync_wazuh_agent_status
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.site.test_site import create_test_bench
 from press.press.doctype.team.test_team import create_test_team
@@ -506,3 +506,218 @@ class TestServer(FrappeTestCase):
 		self.assertTrue(
 			frappe.db.get_value("Database Server", victim_database_server.name, "auto_increase_storage")
 		)
+
+	def _one_server_of_each_type(self):
+		"""App, database and proxy servers all inherit the Wazuh methods from BaseServer."""
+		return [
+			create_test_server(),
+			create_test_database_server(),
+			create_test_proxy_server(),
+		]
+
+	def test_wazuh_agent_installed_during_setup_when_manager_configured(self):
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_server", "wazuh.example.com")
+
+		for server in self._one_server_of_each_type():
+			with self.subTest(server_type=server.doctype):
+				with patch.object(BaseServer, "install_wazuh_agent") as install_wazuh_agent:
+					server.install_wazuh_agent_if_configured()
+				install_wazuh_agent.assert_called_once()
+
+	def test_wazuh_agent_not_installed_during_setup_when_manager_unconfigured(self):
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_server", "")
+
+		for server in self._one_server_of_each_type():
+			with self.subTest(server_type=server.doctype):
+				with patch.object(BaseServer, "install_wazuh_agent") as install_wazuh_agent:
+					server.install_wazuh_agent_if_configured()
+				install_wazuh_agent.assert_not_called()
+
+	def test_install_marks_wazuh_agent_installed_on_successful_play(self):
+		for server in self._one_server_of_each_type():
+			with self.subTest(server_type=server.doctype):
+				with patch("press.press.doctype.server.server.Ansible") as Ansible:
+					Ansible.return_value.run.return_value = Mock(status="Success")
+					server._install_wazuh_agent("wazuh.example.com")
+				server.reload()
+				self.assertTrue(server.is_wazuh_agent_installed)
+
+	def test_uninstall_clears_wazuh_agent_installed_flag_and_status(self):
+		for server in self._one_server_of_each_type():
+			with self.subTest(server_type=server.doctype):
+				server.db_set("is_wazuh_agent_installed", True)
+				server.db_set("wazuh_agent_status", "active")
+				with patch("press.press.doctype.server.server.Ansible") as Ansible:
+					Ansible.return_value.run.return_value = Mock(status="Success")
+					server._uninstall_wazuh_agent()
+				server.reload()
+				self.assertFalse(server.is_wazuh_agent_installed)
+				self.assertIsNone(server.wazuh_agent_status)
+
+	def test_uninstall_reloads_before_save_to_preserve_concurrent_writes(self):
+		"""The long play window must not clobber edits made concurrently (e.g. archival)."""
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", True)
+		# A concurrent edit lands in the DB while the (mocked) play is "running".
+		frappe.db.set_value("Server", server.name, "status", "Broken")
+
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._uninstall_wazuh_agent()
+
+		server.reload()
+		self.assertFalse(server.is_wazuh_agent_installed)
+		self.assertEqual(server.status, "Broken")
+
+	def test_uninstall_is_noop_when_wazuh_agent_not_installed(self):
+		for server in self._one_server_of_each_type():
+			with self.subTest(server_type=server.doctype):
+				server.db_set("is_wazuh_agent_installed", False)
+				with patch("press.press.doctype.server.server.Ansible") as Ansible:
+					server._uninstall_wazuh_agent()
+				Ansible.return_value.run.assert_not_called()
+
+	def test_setup_auditd_marks_auditd_setup_on_successful_play(self):
+		for server in self._one_server_of_each_type():
+			with self.subTest(server_type=server.doctype):
+				with patch("press.press.doctype.server.server.Ansible") as Ansible:
+					Ansible.return_value.run.return_value = Mock(status="Success")
+					server._setup_auditd()
+				server.reload()
+				self.assertTrue(server.is_auditd_setup)
+
+	def test_base_playbook_marks_auditd_setup_except_for_self_hosted(self):
+		"""The base setup playbooks bundle auditd; their self-hosted variants do not."""
+		for server in self._one_server_of_each_type():
+			with self.subTest(server_type=server.doctype):
+				server.is_self_hosted = 0
+				server.is_auditd_setup = False
+				server.set_auditd_setup_from_base_playbook()
+				self.assertTrue(server.is_auditd_setup)
+
+				server.is_self_hosted = 1
+				server.is_auditd_setup = False
+				server.set_auditd_setup_from_base_playbook()
+				self.assertFalse(server.is_auditd_setup)
+
+	@patch.object(BaseServer, "_archive", new=Mock())
+	@patch.object(BaseServer, "disable_subscription", new=Mock())
+	def test_archival_uninstalls_wazuh_agent_when_installed(self):
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", True)
+		with patch.object(BaseServer, "uninstall_wazuh_agent") as uninstall_wazuh_agent:
+			server.archive()
+		uninstall_wazuh_agent.assert_called_once()
+
+	@patch.object(BaseServer, "_archive", new=Mock())
+	@patch.object(BaseServer, "disable_subscription", new=Mock())
+	def test_archival_skips_wazuh_uninstall_when_not_installed(self):
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", False)
+		with patch.object(BaseServer, "uninstall_wazuh_agent") as uninstall_wazuh_agent:
+			server.archive()
+		uninstall_wazuh_agent.assert_not_called()
+
+	@patch.object(BaseServer, "_archive", new=Mock())
+	@patch.object(BaseServer, "disable_subscription", new=Mock())
+	def test_archival_deregisters_wazuh_agent_when_api_configured(self):
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_api_url", "https://wazuh.example.com:55000")
+		server = create_test_server()
+		with patch.object(BaseServer, "deregister_wazuh_agent") as deregister_wazuh_agent:
+			server.archive()
+		deregister_wazuh_agent.assert_called_once()
+
+	@patch.object(BaseServer, "_archive", new=Mock())
+	@patch.object(BaseServer, "disable_subscription", new=Mock())
+	def test_archival_skips_wazuh_deregister_when_api_unconfigured(self):
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_api_url", "")
+		server = create_test_server()
+		with patch.object(BaseServer, "deregister_wazuh_agent") as deregister_wazuh_agent:
+			server.archive()
+		deregister_wazuh_agent.assert_not_called()
+
+	def test_sync_wazuh_agent_status_updates_installed_servers_from_manager(self):
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_api_url", "https://wazuh.example.com:55000")
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", True)
+
+		with patch("press.press.doctype.server.server.WazuhManager") as WazuhManager:
+			WazuhManager.return_value.agent_statuses.return_value = {server.name: "active"}
+			sync_wazuh_agent_status()
+
+		self.assertEqual(frappe.db.get_value("Server", server.name, "wazuh_agent_status"), "active")
+
+	def test_sync_wazuh_agent_status_marks_missing_agents_unknown(self):
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_api_url", "https://wazuh.example.com:55000")
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", True)
+
+		with patch("press.press.doctype.server.server.WazuhManager") as WazuhManager:
+			WazuhManager.return_value.agent_statuses.return_value = {}
+			sync_wazuh_agent_status()
+
+		self.assertEqual(frappe.db.get_value("Server", server.name, "wazuh_agent_status"), "unknown")
+
+	def test_sync_wazuh_agent_status_skips_archived_servers(self):
+		"""An archived server must not be re-stamped every run once the agent is gone."""
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_api_url", "https://wazuh.example.com:55000")
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", True)
+		server.db_set("wazuh_agent_status", "active")
+		server.db_set("status", "Archived")
+
+		with patch("press.press.doctype.server.server.WazuhManager") as WazuhManager:
+			WazuhManager.return_value.agent_statuses.return_value = {}
+			sync_wazuh_agent_status()
+
+		self.assertEqual(frappe.db.get_value("Server", server.name, "wazuh_agent_status"), "active")
+
+	def test_wazuh_manager_delete_agent_deletes_looked_up_agent_by_id(self):
+		from press.wazuh import WazuhManager
+
+		settings = create_test_press_settings()
+		settings.wazuh_api_url = "https://wazuh.example.com:55000"
+		settings.wazuh_api_username = "user"
+		settings.wazuh_api_password = "pass"
+		settings.wazuh_api_verify_tls = 0
+		settings.save()
+
+		with patch("press.wazuh.requests") as requests:
+			requests.post.return_value.json.return_value = {"data": {"token": "t"}}
+			requests.request.return_value.json.return_value = {
+				"data": {"affected_items": [{"id": "003", "name": "wazuh-target"}]}
+			}
+			WazuhManager().delete_agent("wazuh-target")
+
+		delete_call = requests.request.call_args_list[-1]
+		self.assertEqual(delete_call.args[0], "DELETE")
+		self.assertEqual(delete_call.kwargs["params"]["agents_list"], "003")
+
+	def test_wazuh_manager_delete_agent_ignores_non_exact_name_match(self):
+		"""A crafted name that broadens the `q` filter must not delete a different agent."""
+		from press.wazuh import WazuhManager
+
+		settings = create_test_press_settings()
+		settings.wazuh_api_url = "https://wazuh.example.com:55000"
+		settings.wazuh_api_username = "user"
+		settings.wazuh_api_password = "pass"
+		settings.wazuh_api_verify_tls = 0
+		settings.save()
+
+		with patch("press.wazuh.requests") as requests:
+			requests.post.return_value.json.return_value = {"data": {"token": "t"}}
+			# The filter resolved to a different agent ("victim") than the requested name.
+			requests.request.return_value.json.return_value = {
+				"data": {"affected_items": [{"id": "003", "name": "victim"}]}
+			}
+			WazuhManager().delete_agent("victim;status=active")
+
+		methods = [call.args[0] for call in requests.request.call_args_list]
+		self.assertNotIn("DELETE", methods)

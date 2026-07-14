@@ -5344,22 +5344,22 @@ def notify_sites_before_archival():
 			& (SiteTable.suspended_at <= notify_threshold)
 			& (SiteTable.suspended_at > archive_threshold)
 		)
-		.select(SiteTable.name, SiteTable.bench)
+		.select(SiteTable.name, SiteTable.bench, SiteTable.host_name)
 		.run(as_dict=True)
 	)
 
 	for site_dict in sites_to_notify:
 		if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
 			continue
-		notify_site_scheduled_for_archival(site_dict.name)
+		notify_site_scheduled_for_archival(site_dict)
 
 
-def notify_site_scheduled_for_archival(site_name: str):
+def notify_site_scheduled_for_archival(site: frappe._dict):
 	try:
 		if frappe.db.exists(
 			"Site Activity",
 			{
-				"site": site_name,
+				"site": site.name,
 				"action": "Archive Notification",
 				"creation": [">=", frappe.utils.add_to_date(frappe.utils.now(), days=-7)],
 			},
@@ -5367,18 +5367,18 @@ def notify_site_scheduled_for_archival(site_name: str):
 			return
 
 		frappe.sendmail(
-			recipients=get_communication_info("Email", "Site Activity", "Site", site_name),
-			subject=f"Alert: Your site {site_name} will be archived in {NOTIFY_BEFORE_ARCHIVAL_DAYS} days",
+			recipients=get_communication_info("Email", "Site Activity", "Site", site.name),
+			subject=f"Alert: Your site {site.host_name or site.name} will be archived in {NOTIFY_BEFORE_ARCHIVAL_DAYS} days",
 			template="notify_before_site_archival",
 			args={
-				"site_name": site_name,
+				"site_name": site.host_name or site.name,
 				"site_archive_notification_days": NOTIFY_BEFORE_ARCHIVAL_DAYS,
 			},
 			reference_doctype="Site",
-			reference_name=site_name,
+			reference_name=site.name,
 		)
 		log_site_activity(
-			site_name,
+			site.name,
 			"Archive Notification",
 			f"Notified user about pending archival in {NOTIFY_BEFORE_ARCHIVAL_DAYS} days",
 		)

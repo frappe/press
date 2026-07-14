@@ -50,6 +50,7 @@ from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
 from press.utils import docs, fmt_timedelta, log_error
+from press.wazuh import WazuhManager
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import (
@@ -835,7 +836,9 @@ class BaseServer(Document, TagHelpers):
 
 			if play.status == "Success":
 				self.status = "Active"
+				self.set_auditd_setup_from_base_playbook()
 				database_server.status = "Active"
+				database_server.set_auditd_setup_from_base_playbook()
 			else:
 				self.status = "Broken"
 				database_server.status = "Broken"
@@ -905,6 +908,84 @@ class BaseServer(Document, TagHelpers):
 			ansible.run()
 		except Exception:
 			log_error("Filebeat Install Exception", server=self.as_dict())
+
+	def install_wazuh_agent_if_configured(self):
+		if frappe.db.get_single_value("Press Settings", "wazuh_server"):
+			self.install_wazuh_agent()
+
+	@frappe.whitelist()
+	def install_wazuh_agent(self):
+		wazuh_server = frappe.get_value("Press Settings", "Press Settings", "wazuh_server")
+		if not wazuh_server:
+			frappe.throw("Please configure Wazuh Server in Press Settings")
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_install_wazuh_agent",
+			wazuh_server=wazuh_server,
+			queue="long",
+			timeout=1200,
+		)
+
+	def _install_wazuh_agent(self, wazuh_server: str):
+		try:
+			ansible = Ansible(
+				playbook="wazuh_agent_install.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"wazuh_manager": wazuh_server,
+					"wazuh_agent_name": self.name,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.is_wazuh_agent_installed = True
+				self.save()
+		except Exception:
+			log_error("Wazuh Agent Install Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def uninstall_wazuh_agent(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_uninstall_wazuh_agent",
+			queue="long",
+			timeout=1200,
+		)
+
+	def _uninstall_wazuh_agent(self):
+		if not self.is_wazuh_agent_installed:
+			return
+		try:
+			ansible = Ansible(
+				playbook="wazuh_agent_uninstall.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.is_wazuh_agent_installed = False
+				self.wazuh_agent_status = None
+				self.save()
+		except Exception:
+			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def deregister_wazuh_agent(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_deregister_wazuh_agent")
+
+	def _deregister_wazuh_agent(self):
+		try:
+			WazuhManager().delete_agent(self.name)
+			frappe.db.set_value(self.doctype, self.name, "wazuh_agent_status", None)
+		except Exception:
+			log_error("Wazuh Agent Deregister Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def install_exporters(self):
@@ -1161,7 +1242,8 @@ class BaseServer(Document, TagHelpers):
 			return 0
 
 		diff = frappe.utils.now_datetime() - last_updated_at
-		return diff if diff < timedelta(hours=6) else 0
+		remaining = timedelta(hours=6) - diff
+		return remaining if remaining > timedelta(0) else 0
 
 	@frappe.whitelist()
 	def increase_disk_size(self, increment=50, mountpoint=None, log: str | None = None):
@@ -1417,6 +1499,12 @@ class BaseServer(Document, TagHelpers):
 					"The server has a few benches on it. Please archive them from their respective dashboards before attempting a drop."
 				)
 			)
+
+		if self.is_wazuh_agent_installed:
+			self.uninstall_wazuh_agent()
+
+		if frappe.db.get_single_value("Press Settings", "wazuh_api_url"):
+			self.deregister_wazuh_agent()
 
 		self.status = "Pending"
 		self.save()
@@ -1795,6 +1883,32 @@ class BaseServer(Document, TagHelpers):
 			ansible.run()
 		except Exception:
 			log_error("Set SSH Session Logging Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def setup_auditd(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_auditd", queue="long", timeout=1200)
+
+	def _setup_auditd(self):
+		try:
+			ansible = Ansible(
+				playbook="auditd.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.is_auditd_setup = True
+				self.save()
+		except Exception:
+			log_error("Auditd Setup Exception", server=self.as_dict())
+
+	def set_auditd_setup_from_base_playbook(self):
+		"""The base setup playbooks (server/database/proxy/unified) bundle the auditd
+		role; their self-hosted variants do not. Call after a successful base setup."""
+		if not getattr(self, "is_self_hosted", False):
+			self.is_auditd_setup = True
 
 	@property
 	def real_ram(self):
@@ -2573,6 +2687,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		# Server specific config
 		self.setup_mysqldump()
 		self.install_earlyoom()
+		self.install_wazuh_agent_if_configured()
 		self.setup_ncdu()
 		self.setup_iptables()
 		self.install_cadvisor()
@@ -2615,6 +2730,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		self.set_swappiness()
 		self.add_glass_file()
 		self.install_filebeat()
+		self.install_wazuh_agent_if_configured()
 		self.setup_logrotate()
 
 		if self.doctype == "Server":
@@ -2866,6 +2982,7 @@ class Server(BaseServer):
 		ignore_incidents_till: DF.Datetime | None
 		ip: DF.Data | None
 		ipv6: DF.Data | None
+		is_auditd_setup: DF.Check
 		is_for_recovery: DF.Check
 		is_managed_database: DF.Check
 		is_monitoring_disabled: DF.Check
@@ -2884,6 +3001,8 @@ class Server(BaseServer):
 		is_unified_server: DF.Check
 		is_upstream_setup: DF.Check
 		is_waf_setup: DF.Check
+		is_wazuh_agent_installed: DF.Check
+		wazuh_agent_status: DF.Data | None
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]
@@ -3378,6 +3497,7 @@ class Server(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				self.set_auditd_setup_from_base_playbook()
 				if self.provider == "DigitalOcean":
 					# To adjust docker permissions
 					self.reboot()
@@ -3930,54 +4050,6 @@ class Server(BaseServer):
 		except Exception:
 			log_error("Earlyoom Install Exception", server=self.as_dict())
 
-	@frappe.whitelist()
-	def install_wazuh_agent(self):
-		wazuh_server = frappe.get_value("Press Settings", "Press Settings", "wazuh_server")
-		if not wazuh_server:
-			frappe.throw("Please configure Wazuh Server in Press Settings")
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_install_wazuh_agent",
-			wazuh_server=wazuh_server,
-		)
-
-	def _install_wazuh_agent(self, wazuh_server: str):
-		try:
-			ansible = Ansible(
-				playbook="wazuh_agent_install.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-				variables={
-					"wazuh_manager": wazuh_server,
-					"wazuh_agent_name": self.name,
-				},
-			)
-			ansible.run()
-		except Exception:
-			log_error("Wazuh Agent Install Exception", server=self.as_dict())
-
-	@frappe.whitelist()
-	def uninstall_wazuh_agent(self):
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_uninstall_wazuh_agent",
-		)
-
-	def _uninstall_wazuh_agent(self):
-		try:
-			ansible = Ansible(
-				playbook="wazuh_agent_uninstall.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-			)
-			ansible.run()
-		except Exception:
-			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())
-
 	@property
 	def docker_depends_on_mounts(self):
 		mount_points = set(mount.mount_point for mount in self.mounts)
@@ -4309,6 +4381,21 @@ def cleanup_unused_files():
 			frappe.get_doc("Server", server.name).cleanup_unused_files()
 		except Exception:
 			log_error("Server File Cleanup Error", server=server)
+
+
+def sync_wazuh_agent_status():
+	"""Reconcile each server's Wazuh agent connection status from the manager."""
+	if not frappe.db.get_single_value("Press Settings", "wazuh_api_url"):
+		return
+	try:
+		statuses = WazuhManager().agent_statuses()
+	except Exception:
+		log_error("Wazuh Agent Status Sync Exception")
+		return
+	for server_type in ("Server", "Database Server", "Proxy Server"):
+		filters = {"is_wazuh_agent_installed": 1, "status": ("!=", "Archived")}
+		for name in frappe.get_all(server_type, filters, pluck="name"):
+			frappe.db.set_value(server_type, name, "wazuh_agent_status", statuses.get(name, "unknown"))
 
 
 def process_running_benches_on_server():
