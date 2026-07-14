@@ -28739,11 +28739,7 @@
 		"private_benches": 0,
 		"release_groups": [],
 		"restrict_based_on_dedicated_server_plan": 0,
-		"roles": [
-			{
-				"role": "Press User"
-			}
-		],
+		"roles": [],
 		"support_included": 0,
 		"vcpu": 0
 	}
