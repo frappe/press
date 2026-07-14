@@ -28703,5 +28703,48 @@
 		"roles": [],
 		"support_included": 0,
 		"vcpu": 0
+	},
+	{
+		"allow_downgrading_from_other_plan": 1,
+		"allowed_apps": [],
+		"cloud_providers": [],
+		"cluster": null,
+		"cpu_time_per_day": 0.5,
+		"custom_hide_from_pricing_page": 0,
+		"database_access": 0,
+		"dedicated_server_plan": 0,
+		"disk": 0,
+		"docstatus": 0,
+		"doctype": "Site Plan",
+		"document_type": "Site",
+		"enabled": 1,
+		"instance_type": null,
+		"interval": "Daily",
+		"is_frappe_plan": 0,
+		"is_trial_plan": 1,
+		"legacy_plan": 0,
+		"max_database_usage": 125,
+		"max_storage_usage": 640,
+		"memory": 0,
+		"minimum_server_price_usd": 0.0,
+		"modified": "2026-07-14 10:54:20.884852",
+		"monitor_access": 0,
+		"name": "CRM Freemium",
+		"offsite_backups": 0,
+		"plan_description": null,
+		"plan_title": "CRM Freemium",
+		"price_inr": 0.0,
+		"price_usd": 0.0,
+		"private_bench_support": 0,
+		"private_benches": 0,
+		"release_groups": [],
+		"restrict_based_on_dedicated_server_plan": 0,
+		"roles": [
+			{
+				"role": "Press User"
+			}
+		],
+		"support_included": 0,
+		"vcpu": 0
 	}
 ]
