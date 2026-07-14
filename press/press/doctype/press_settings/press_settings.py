@@ -106,6 +106,7 @@ class PressSettings(Document):
 			"23",
 		]
 		chat_website_token: DF.Data | None
+		cleanup_standby_site_pool: DF.Check
 		clone_directory: DF.Data | None
 		cluster: DF.Link | None
 		code_server: DF.Data | None

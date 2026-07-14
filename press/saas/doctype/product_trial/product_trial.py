@@ -33,6 +33,7 @@ class ProductTrial(Document):
 		from press.saas.doctype.product_trial_help_text.product_trial_help_text import ProductTrialHelpText
 
 		apps: DF.Table[ProductTrialApp]
+		cleanup_remaining_pool: DF.Check
 		domain: DF.Link
 		email_account: DF.Link | None
 		email_full_logo: DF.AttachImage | None
@@ -81,6 +82,9 @@ class ProductTrial(Document):
 
 		if not self.redirect_to_after_login.startswith("/"):
 			frappe.throw("Redirection route after login should start with /")
+
+		if self.enable_pooling:
+			self.cleanup_remaining_pool = 0
 
 		self.validate_hybrid_rules()
 
@@ -605,6 +609,50 @@ def replenish_standby_sites():
 				reference_name=product.name,
 			)
 			frappe.db.rollback()
+
+
+def archive_standby_sites_of_disabled_pooling_products():
+	"""Archive standby sites of products that have pooling disabled and cleanup requested."""
+	if not frappe.db.get_single_value("Press Settings", "cleanup_standby_site_pool"):
+		return
+
+	products = frappe.get_all(
+		"Product Trial", {"enable_pooling": 0, "cleanup_remaining_pool": 1}, pluck="name"
+	)
+	if not products:
+		return
+
+	sites = frappe.get_all(
+		"Site",
+		filters={
+			"is_standby": True,
+			"standby_for_product": ("in", products),
+			"status": ("!=", "Archived"),
+		},
+		pluck="name",
+		order_by="creation asc",
+		limit=20,
+	)
+	for site in sites:
+		try:
+			archive_standby_site(site)
+			frappe.db.commit()
+		except Exception as e:
+			log_error(
+				"Archive Standby Site Error",
+				data=e,
+				reference_doctype="Site",
+				reference_name=site,
+			)
+			frappe.db.rollback()
+
+
+def archive_standby_site(site: str):
+	site_doc = frappe.get_doc("Site", site, for_update=True)
+	if not site_doc.is_standby or site_doc.status == "Archived":
+		return
+
+	site_doc.archive(reason="Product Trial pooling disabled", create_offsite_backup=False)
 
 
 def send_verification_mail_for_login(email: str, product: str, code: str):

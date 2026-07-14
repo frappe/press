@@ -235,7 +235,6 @@ scheduler_events = {
 		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
-		"press.press.doctype.server.server.archive_servers_with_unpaid_invoices",
 		"press.press.doctype.site_domain.site_domain.update_dns_type",
 		"press.press.doctype.press_webhook_log.press_webhook_log.clean_logs_older_than_24_hours",
 		"press.press.doctype.payment_due_extension.payment_due_extension.remove_payment_due_extension",
@@ -294,6 +293,7 @@ scheduler_events = {
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_hourly",
 		"press.press.doctype.database_server.database_server.database_flush_tables_of_public_servers",
 		"press.press.doctype.server_snapshot.server_snapshot.delete_dedicated_snapshots_with_failure_status",
+		"press.saas.doctype.product_trial.product_trial.archive_standby_sites_of_disabled_pooling_products",
 	],
 	"all": [
 		"press.auth.flush",
@@ -342,6 +342,7 @@ scheduler_events = {
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
 			"press.press.doctype.razorpay_payment_record.razorpay_payment_record.fetch_pending_payment_orders",
+			"press.press.doctype.server.server.archive_servers_with_unpaid_invoices",
 		],
 		"*/15 * * * *": [
 			"press.press.doctype.site_update.site_update.schedule_updates",
