@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 
+from press.press.doctype.agent_job.agent_job import Agent, handle_polled_jobs, poll_random_jobs
 from press.press.doctype.press_job.press_job import PressJob
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 
@@ -20,6 +21,8 @@ class ResizeServerJob(PressJob):
 	@flow
 	def execute(self):
 		self.remove_nat_config_if_applicable()
+		self.halt_agent_jobs()
+		self.wait_for_recent_pending_agent_jobs_to_complete()
 		self.stop_virtual_machine()
 		self.wait_for_virtual_machine_to_stop()
 
@@ -30,6 +33,7 @@ class ResizeServerJob(PressJob):
 
 		self.wait_for_server_to_be_accessible()
 		self.add_nat_config_if_applicable()
+		self.start_agent_jobs()
 		self.set_additional_config()
 		self.increase_disk_size()
 
@@ -43,6 +47,41 @@ class ResizeServerJob(PressJob):
 		play = self.server_doc._remove_nat_iptables()
 		if not play or play.status != "Success":
 			raise Exception("Failed to remove NAT configuration")
+
+	@task
+	def halt_agent_jobs(self):
+		frappe.db.set_value(self.server_type, self.server_doc.name, "halt_agent_jobs", True)
+
+	@task
+	def wait_for_recent_pending_agent_jobs_to_complete(self):
+		pending_jobs = frappe.get_all(
+			"Agent Job",
+			fields=["name", "job_id", "status", "callback_failure_count"],
+			filters={
+				"status": ("in", ["Pending", "Running"]),
+				"job_id": ("!=", 0),
+				"server": self.server_doc.name,
+				"creation": (">", frappe.utils.add_to_date(None, days=-2)),
+				"job_type": ("not in", ("Backup Site", "Fetch Database Table Schema")),
+			},
+			order_by="job_id",
+			ignore_ifnull=True,
+		)
+
+		if not pending_jobs:
+			return
+
+		agent = Agent(self.server_doc.name, server_type=self.server_type)
+		pending_ids = [j.job_id for j in pending_jobs]
+		if not (polled_jobs := poll_random_jobs(agent, pending_ids)):
+			self.defer_current_task()
+
+		handle_polled_jobs(polled_jobs, pending_jobs)
+		self.defer_current_task()
+
+	@task
+	def start_agent_jobs(self):
+		frappe.db.set_value(self.server_type, self.server_doc.name, "halt_agent_jobs", False)
 
 	@task
 	def stop_virtual_machine(self):
@@ -151,6 +190,7 @@ class ResizeServerJob(PressJob):
 		self.start_virtual_machine()
 		# TODO: fix this; this won't really do much as the vm might've just been brought up but it's better than nothing
 		self.add_nat_config_if_applicable()
+		self.start_agent_jobs()
 
 		# Find out the last plan change of the server
 		self.server_doc.reload()
