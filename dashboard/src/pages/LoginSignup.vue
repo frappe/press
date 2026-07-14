@@ -7,7 +7,9 @@
 				:class="{ 'pointer-events-none': $resources.signup.loading }"
 			>
 				<template v-slot:default>
-					<div v-if="!(resetPasswordEmailSent || otpRequested)">
+					<div
+						v-if="!(resetPasswordEmailSent || otpRequested || noAccountFound)"
+					>
 						<div
 							class="mb-4 flex flex-col"
 							v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
@@ -423,6 +425,33 @@
 							>) exists.
 						</p>
 					</div>
+
+					<div class="flex flex-col" v-else-if="noAccountFound">
+						<p class="mb-3 text-base font-normal leading-[21px] text-ink-gray-7">
+							Looks like this email isn't associated with a Frappe Cloud
+							account.
+						</p>
+						<p class="mb-6 text-base font-normal leading-[21px] text-ink-gray-7">
+							If you're trying to access your company's ERP, enter your site
+							URL below.
+						</p>
+						<FormControl
+							label="Site URL"
+							type="text"
+							placeholder="e.g. acme.frappe.cloud or erp.acme.com"
+							v-model="siteUrl"
+							variant="outline"
+							required
+						/>
+						<Button
+							class="mt-4"
+							variant="solid"
+							:disabled="!siteUrl"
+							@click="continueToSite"
+						>
+							Continue
+						</Button>
+					</div>
 				</template>
 				<template v-slot:logo v-if="saasProduct">
 					<div class="flex space-x-2">
@@ -466,6 +495,8 @@ export default {
 			otpResendCountdown: 0,
 			resetPasswordEmailSent: false,
 			on2FARecovery: false,
+			noAccountFound: false,
+			siteUrl: '',
 		};
 	},
 	mounted() {
@@ -604,7 +635,11 @@ export default {
 					this.otpResendCountdown = 30;
 					toast.success('Verification code sent to your email');
 				},
-				onError(err) {
+				onError: (err) => {
+					if (err?.messages?.[0] === 'Please sign up first') {
+						this.noAccountFound = true;
+						return;
+					}
 					toast.error(
 						getToastErrorMessage(err, 'Failed to send verification code'),
 					);
@@ -842,6 +877,13 @@ export default {
 			localStorage.setItem('login_email', this.email);
 			window.location.href = loginRoute;
 		},
+		continueToSite() {
+			let url = this.siteUrl.trim().replace(/\/+$/, '');
+			if (!/^https?:\/\//i.test(url)) {
+				url = `https://${url}`;
+			}
+			window.location.href = `${url}/login`;
+		},
 	},
 	computed: {
 		error() {
@@ -912,6 +954,8 @@ export default {
 		title() {
 			if (this.hasForgotPassword) {
 				return 'Reset password';
+			} else if (this.noAccountFound) {
+				return 'No Frappe Cloud account found';
 			} else if (this.otpRequested) {
 				return 'Verify your email address';
 			} else if (this.isLogin) {
@@ -930,6 +974,8 @@ export default {
 		subtitle() {
 			if (this.hasForgotPassword) {
 				return 'Enter your email address to reset your password';
+			} else if (this.noAccountFound) {
+				return '';
 			} else {
 				if (this.saasProduct) {
 					return `Get started and explore the easiest way to use ${this.saasProduct.title}`;
