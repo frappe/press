@@ -286,6 +286,10 @@
 		"tls_renewal_queue_size",
 		"security_tab",
 		"wazuh_server",
+		"wazuh_api_url",
+		"wazuh_api_username",
+		"wazuh_api_password",
+		"wazuh_api_verify_tls",
 		"dashboard_tab",
 		"latest_blog_url"
 	],
@@ -1603,6 +1607,27 @@
 			"fieldname": "wazuh_server",
 			"fieldtype": "Data",
 			"label": "Wazuh Server"
+		},
+		{
+			"fieldname": "wazuh_api_url",
+			"fieldtype": "Data",
+			"label": "Wazuh API URL"
+		},
+		{
+			"fieldname": "wazuh_api_username",
+			"fieldtype": "Data",
+			"label": "Wazuh API Username"
+		},
+		{
+			"fieldname": "wazuh_api_password",
+			"fieldtype": "Password",
+			"label": "Wazuh API Password"
+		},
+		{
+			"default": "1",
+			"fieldname": "wazuh_api_verify_tls",
+			"fieldtype": "Check",
+			"label": "Wazuh API Verify TLS"
 		},
 		{
 			"fieldname": "dashboard_tab",

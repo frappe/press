@@ -10,14 +10,14 @@ frappe.ui.form.on('Server', {
 					is_server_setup: 1,
 					exclude_from_auto_selection: 0,
 				},
-			};
-		});
+			}
+		})
 	},
 	refresh: function (frm) {
 		frm.add_web_link(
 			`/dashboard/servers/${frm.doc.name}`,
 			__('Visit Dashboard'),
-		);
+		)
 
 		const ping_actions = [
 			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
@@ -34,34 +34,34 @@ frappe.ui.form.on('Server', {
 				true,
 				!frm.doc.is_server_prepared,
 			],
-		];
+		]
 
 		for (const [label, method, confirm, condition] of ping_actions) {
 			if (!condition || typeof condition === 'undefined') {
-				continue;
+				continue
 			}
 
 			async function callback() {
 				if (confirm && !(await frappe_confirm(label))) {
-					return;
+					return
 				}
 
-				const res = await frm.call(method);
+				const res = await frm.call(method)
 				if (res.message && method == 'ping_agent_job') {
 					frappe.msgprint(
 						`Agent Job <a href="/app/agent-job/${res?.message}">${res?.message}</a> created.`,
 					)
 				} else if (res.message) {
-					frappe.msgprint(res.message);
+					frappe.msgprint(res.message)
 				} else {
-					frm.refresh();
+					frm.refresh()
 				}
 			}
 
-			frm.add_custom_button(label, callback, __('Ping'));
+			frm.add_custom_button(label, callback, __('Ping'))
 		}
 
-		[
+		;[
 			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
 			[
 				__('Install Filebeat'),
@@ -261,8 +261,9 @@ frappe.ui.form.on('Server', {
 				__('Uninstall Wazuh Agent'),
 				'uninstall_wazuh_agent',
 				true,
-				frm.doc.is_server_setup,
+				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
 			],
+			[__('Setup Auditd'), 'setup_auditd', true, frm.doc.is_server_setup],
 			[
 				__('Setup Wildcard Hosts'),
 				'setup_wildcard_hosts',
@@ -298,26 +299,26 @@ frappe.ui.form.on('Server', {
 								() =>
 									frm.call(method).then((r) => {
 										if (r.message) {
-											frappe.msgprint(r.message);
+											frappe.msgprint(r.message)
 										} else {
-											frm.refresh();
+											frm.refresh()
 										}
 									}),
-							);
+							)
 						} else {
 							frm.call(method).then((r) => {
 								if (r.message) {
-									frappe.msgprint(r.message);
+									frappe.msgprint(r.message)
 								} else {
-									frm.refresh();
+									frm.refresh()
 								}
-							});
+							})
 						}
 					},
 					__('Actions'),
-				);
+				)
 			}
-		});
+		})
 
 		if (frm.doc.is_server_setup) {
 			if (frm.doc.is_primary) {
@@ -340,13 +341,13 @@ frappe.ui.form.on('Server', {
 										server_plan: server_plan,
 									})
 									.then((r) => {
-										frm.refresh();
-									});
+										frm.refresh()
+									})
 							},
-						);
+						)
 					},
 					__('Actions'),
-				);
+				)
 			}
 
 			frm.add_custom_button(
@@ -363,18 +364,18 @@ frappe.ui.form.on('Server', {
 								default: 4,
 							},
 						],
-					});
+					})
 
 					dialog.set_primary_action(__('Increase Swap'), (args) => {
 						frm.call('increase_swap', args).then(() => {
-							dialog.hide();
-							frm.refresh();
-						});
-					});
-					dialog.show();
+							dialog.hide()
+							frm.refresh()
+						})
+					})
+					dialog.show()
 				},
 				__('Actions'),
-			);
+			)
 			frm.add_custom_button(
 				__('Reset Swap'),
 				() => {
@@ -391,18 +392,18 @@ frappe.ui.form.on('Server', {
 								default: 1,
 							},
 						],
-					});
+					})
 
 					dialog.set_primary_action(__('Reset Swap'), (args) => {
 						frm.call('reset_swap', args).then(() => {
-							dialog.hide();
-							frm.refresh();
-						});
-					});
-					dialog.show();
+							dialog.hide()
+							frm.refresh()
+						})
+					})
+					dialog.show()
 				},
 				__('Actions'),
-			);
+			)
 
 			frm.add_custom_button(
 				__('Snapshot Both Servers'),
@@ -419,25 +420,25 @@ frappe.ui.form.on('Server', {
 								default: 1,
 							},
 						],
-					});
+					})
 
 					dialog.set_primary_action(__('Submit'), (args) => {
 						frm.call('create_snapshot', args).then(() => {
-							dialog.hide();
-							frm.refresh();
-						});
-					});
-					dialog.show();
+							dialog.hide()
+							frm.refresh()
+						})
+					})
+					dialog.show()
 				},
 				__('Actions'),
-			);
+			)
 		}
 	},
 
 	hostname: function (frm) {
-		press.set_hostname_abbreviation(frm);
+		press.set_hostname_abbreviation(frm)
 	},
-});
+})
 
 async function frappe_confirm(label) {
 	return new Promise((r) => {
@@ -445,6 +446,6 @@ async function frappe_confirm(label) {
 			`Are you sure you want to ${label.toLowerCase()}?`,
 			() => r(true),
 			() => r(false),
-		);
-	});
+		)
+	})
 }
