@@ -9,7 +9,19 @@
 - name: Download Key
   get_url:
     url: https://packages.wazuh.com/key/GPG-KEY-WAZUH
-    dest: /usr/share/keyrings/wazuh.gpg
+    dest: /tmp/wazuh-gpg-key.asc
+    mode: '0644'
+
+# The key is ASCII-armored; apt's signed-by needs a dearmored (binary) keyring.
+# --yes overwrites so a re-run repairs servers left with a broken key.
+- name: Install Key
+  command: gpg --batch --yes --dearmor -o /usr/share/keyrings/wazuh.gpg /tmp/wazuh-gpg-key.asc
+
+- name: Ensure Key Is Readable
+  file:
+    path: /usr/share/keyrings/wazuh.gpg
+    owner: root
+    group: root
     mode: '0644'
 
 - name: Add Repository
