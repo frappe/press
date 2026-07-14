@@ -24,13 +24,14 @@
 		"max_storage_usage",
 		"column_break_13",
 		"is_trial_plan",
+		"is_frappe_plan",
+		"dedicated_server_plan",
+		"support_included",
+		"column_break_xgjo",
 		"offsite_backups",
-		"private_benches",
 		"database_access",
 		"monitor_access",
-		"support_included",
-		"dedicated_server_plan",
-		"is_frappe_plan",
+		"private_benches",
 		"private_bench_support",
 		"app_server_plan_validation",
 		"restrict_based_on_dedicated_server_plan",
@@ -57,7 +58,10 @@
 			"fieldtype": "Check",
 			"label": "Enabled"
 		},
-		{ "fieldname": "section_break_2", "fieldtype": "Section Break" },
+		{
+			"fieldname": "section_break_2",
+			"fieldtype": "Section Break"
+		},
 		{
 			"fieldname": "document_type",
 			"fieldtype": "Link",
@@ -65,14 +69,21 @@
 			"options": "DocType",
 			"reqd": 1
 		},
-		{ "fieldname": "plan_title", "fieldtype": "Data", "label": "Plan Title" },
+		{
+			"fieldname": "plan_title",
+			"fieldtype": "Data",
+			"label": "Plan Title"
+		},
 		{
 			"fieldname": "interval",
 			"fieldtype": "Select",
 			"label": "Interval",
 			"options": "Daily\nMonthly\nAnnually"
 		},
-		{ "fieldname": "column_break_5", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_5",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "price_inr",
 			"fieldtype": "Currency",
@@ -111,7 +122,10 @@
 			"fieldtype": "Int",
 			"label": "Max Storage Usage (MiB)"
 		},
-		{ "fieldname": "column_break_13", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_13",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "0",
 			"fieldname": "is_trial_plan",
@@ -178,10 +192,25 @@
 			"fieldtype": "Data",
 			"label": "Instance Type"
 		},
-		{ "fieldname": "column_break_21", "fieldtype": "Column Break" },
-		{ "fieldname": "vcpu", "fieldtype": "Int", "label": "vCPU" },
-		{ "fieldname": "memory", "fieldtype": "Int", "label": "Memory" },
-		{ "fieldname": "disk", "fieldtype": "Int", "label": "Disk" },
+		{
+			"fieldname": "column_break_21",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "vcpu",
+			"fieldtype": "Int",
+			"label": "vCPU"
+		},
+		{
+			"fieldname": "memory",
+			"fieldtype": "Int",
+			"label": "Memory"
+		},
+		{
+			"fieldname": "disk",
+			"fieldtype": "Int",
+			"label": "Disk"
+		},
 		{
 			"fieldname": "roles_section",
 			"fieldtype": "Section Break",
@@ -267,12 +296,16 @@
 			"fieldname": "app_server_plan_validation",
 			"fieldtype": "Section Break",
 			"label": "App Server Plan validation"
+		},
+		{
+			"fieldname": "column_break_xgjo",
+			"fieldtype": "Column Break"
 		}
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-04-05 17:52:09.248191",
+	"modified": "2026-07-14 10:29:13.886035",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Site Plan",

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import frappe
 import frappe.utils
@@ -14,6 +14,9 @@ from frappe.utils.data import get_url
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.unique_name_generator import generate as generate_random_name
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 class ProductTrial(Document):
@@ -25,7 +28,6 @@ class ProductTrial(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.site.site import Site
 		from press.saas.doctype.hybrid_pool_item.hybrid_pool_item import HybridPoolItem
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
 		from press.saas.doctype.product_trial_help_text.product_trial_help_text import ProductTrialHelpText
@@ -111,7 +113,7 @@ class ProductTrial(Document):
 
 		standby_site = self.get_standby_site(cluster, account_request)
 
-		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
+		trial_end_date = None if self.trial_days == -1 else frappe.utils.add_days(None, self.trial_days or 14)
 		agent_jobs = []
 		plan = self.trial_plan
 
