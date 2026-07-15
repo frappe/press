@@ -79,7 +79,7 @@
 				<Dropdown v-if="moreActions.length" :options="moreActions">
 					<Button label="Actions">
 						<template #suffix>
-              <LucideChevronsUpDown  class='size-3.5'/>
+							<LucideChevronsUpDown class="size-3.5" />
 						</template>
 					</Button>
 				</Dropdown>
@@ -350,7 +350,7 @@ export default {
 		rows() {
 			let rows = this.options.data
 				? this.options.data(this.context)
-				: this.$list.data || []
+				: this.$list?.data || []
 			if (this.selectionMode && this.options.rowDisabled) {
 				rows = rows.map((row) =>
 					this.options.rowDisabled(row, this.context)
@@ -461,7 +461,7 @@ export default {
 		},
 		isLoading() {
 			if (this.options.data) return false
-			return this.$list.list?.loading || this.$list.loading
+			return this.$list?.list?.loading || this.$list?.loading
 		},
 		showControls() {
 			return (
