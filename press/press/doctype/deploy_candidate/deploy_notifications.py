@@ -347,7 +347,7 @@ def get_details(
 			strs = [strs]
 
 		if not (is_match := all(s in tb for s in strs)):
-			is_match = all(s in deploy_candidate_build.build_output for s in strs)
+			is_match = all(s in (deploy_candidate_build.build_output or "") for s in strs)
 
 		if not is_match:
 			continue
@@ -461,7 +461,9 @@ def update_with_import_error(
 
 	details["title"] = "App installation failed due to invalid import"
 
-	lines = [line for line in dcb.build_output.split("\n") if "ImportError: cannot import name" in line]
+	lines = [
+		line for line in (dcb.build_output or "").split("\n") if "ImportError: cannot import name" in line
+	]
 	invalid_import = None
 	if len(lines) > 1 and len(parts := lines[0].split("From")) > 1:
 		imported = parts[0].strip().split(" ")[-1][1:-1]
@@ -504,7 +506,11 @@ def update_with_module_not_found(
 
 	details["title"] = "App installation failed due to missing module"
 
-	lines = [line for line in dcb.build_output.split("\n") if "ModuleNotFoundError: No module named" in line]
+	lines = [
+		line
+		for line in (dcb.build_output or "").split("\n")
+		if "ModuleNotFoundError: No module named" in line
+	]
 	missing_module = None
 	if len(lines) > 1:
 		missing_module = lines[0].split(" ")[-1][1:-1]
@@ -544,7 +550,9 @@ def update_with_dependency_not_found(
 
 	details["title"] = "App installation failed due to dependency not being found"
 
-	lines = [line for line in dcb.build_output.split("\n") if "No matching distribution found for" in line]
+	lines = [
+		line for line in (dcb.build_output or "").split("\n") if "No matching distribution found for" in line
+	]
 	missing_dep = None
 	if len(lines) > 1:
 		missing_dep = lines[0].split(" ")[-1]
@@ -1116,7 +1124,7 @@ def update_with_file_not_found(
 	# Non exact check for whether file not found originates in the
 	# app being installed. If file not found is not in the app then
 	# this is an unknown and not a user error.
-	for line in dcb.build_output.split("\n"):
+	for line in (dcb.build_output or "").split("\n"):
 		if "FileNotFoundError: [Errno 2] No such file or directory" not in line:
 			continue
 		if app_name in line:
@@ -1198,7 +1206,7 @@ def fmt(message: str) -> str:
 
 
 def get_build_output_line(dc: "DeployCandidateBuild", needle: str):
-	for line in dc.build_output.split("\n"):
+	for line in (dc.build_output or "").split("\n"):
 		if needle in line:
 			return line.strip()
 	return ""

@@ -49,8 +49,9 @@ def identify(site, **kwargs):
 def capture_read_event(email: str | None = None):
 	try:
 		capture("read_email", "fc_signup", email)
-	except Exception as e:
-		log_error("Failed to capture read_email event", e)
+	except Exception:
+		# log_error takes only kwargs and appends the active traceback itself.
+		log_error("Failed to capture read_email event")
 	finally:
 		frappe.response.update(frappe.utils.get_imaginary_pixel_response())
 

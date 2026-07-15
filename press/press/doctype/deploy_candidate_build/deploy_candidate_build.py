@@ -526,7 +526,7 @@ class DeployCandidateBuild(Document):
 			dc=self.candidate,
 			dcb=self,
 			title=title,
-			message=warning.message,
+			message=str(warning.message),
 		)
 
 	def handle_build_failure(

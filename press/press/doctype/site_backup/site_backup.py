@@ -677,7 +677,7 @@ def _create_site_backup_from_agent_job(job: "AgentJob"):
 	try:
 		from press.press.doctype.site_backup.site_backup import track_offsite_backups
 
-		if (job.job_type not in ["Archive Site", "Uninstall App from Site"]) or not job.data:
+		if (job.job_type not in ["Archive Site", "Uninstall App from Site"]) or not job.data or not job.site:
 			return
 
 		job_data = json.loads(job.data)
