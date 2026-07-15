@@ -493,6 +493,7 @@ export default {
 		},
 		exitSelectionMode() {
 			this.selectionMode = false
+			this.selectedNames = []
 			this.listView?.toggleAllRows(false)
 		},
 		filterRow(query, row) {
