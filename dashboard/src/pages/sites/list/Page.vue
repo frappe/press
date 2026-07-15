@@ -1,0 +1,360 @@
+<script setup lang="ts">
+import {
+	Badge,
+	Button,
+	Combobox,
+	Dropdown,
+	MultiSelect,
+	Spinner,
+	TextInput,
+	Tooltip,
+	createDocumentResource,
+	createListResource,
+} from 'frappe-ui'
+import { unparse } from 'papaparse'
+import { defineAsyncComponent, h, ref } from 'vue'
+import BillingAlerts from '@/components/BillingAlerts.vue'
+import LinkControl from '@/components/LinkControl.vue'
+import Scrollbar from '@/components/common/Scrollbar.vue'
+import Header from '@/components/Header.vue'
+import { getTeam } from '@/data/team'
+import { clusterOptions } from '@/objects/common'
+import { renderDialog } from '@/utils/components'
+import { userCurrency } from '@/utils/format'
+import { getSiteStatusBadge, trialDays } from '@/utils/site'
+
+const sites = createListResource({
+	doctype: 'Site',
+	fields: [
+		'name',
+		'host_name',
+		'status',
+		'creation',
+		'trial_end_date',
+		'plan.plan_title as plan_title',
+		'plan.price_usd as price_usd',
+		'plan.price_inr as price_inr',
+		'group.title as group_title',
+		'group.public as group_public',
+		'group.version as version',
+		'cluster.image as cluster_image',
+		'cluster.title as cluster_title',
+	],
+	orderBy: 'creation desc',
+	pageLength: 20,
+	auto: true,
+})
+
+const statusOptions = ['Active', 'Inactive', 'Suspended', 'Broken', 'Archived'].map((label) => ({
+	label,
+	value: label,
+}))
+const regionOptions = clusterOptions.filter(Boolean)
+
+const selectedStatuses = ref<string[]>(
+	statusOptions.filter((o) => o.value !== 'Archived').map((o) => o.value),
+)
+
+function applyStatusFilter(value: string[]) {
+	selectedStatuses.value = value
+	applyFilter('status', value.length ? ['in', value] : undefined)
+}
+
+const moreActions = [{ label: 'Export as CSV', icon: 'download', onClick: () => exportCSV() }]
+
+function applyFilter(key: string, value: any) {
+	sites.update({ filters: { ...sites.filters, [key]: value || undefined }, start: 0 })
+	sites.reload()
+}
+
+function sitePlan(row: any) {
+	if (row.trial_end_date) return trialDays(row.trial_end_date)
+	const $team = getTeam()
+	if (row.price_usd > 0) {
+		const india = $team.doc?.currency === 'INR'
+		const formattedValue = userCurrency(india ? row.price_inr : row.price_usd, 0)
+		return `${formattedValue}/mo`
+	}
+	return row.plan_title
+}
+
+function dropSite(site: any) {
+	const ArchiveSiteDialog = defineAsyncComponent(
+		() => import('@/components/site/ArchiveSiteDialog.vue'),
+	)
+	const siteResource = createDocumentResource({
+		doctype: 'Site',
+		name: site.name,
+		auto: true,
+	})
+	renderDialog(
+		h(ArchiveSiteDialog, {
+			site: siteResource,
+			modelValue: true,
+			onArchived: () => sites.reload(),
+		}),
+	)
+}
+
+function siteOptions(site: any) {
+	return [
+		{
+			label: 'Site Actions',
+			route: { name: 'Site Detail Actions', params: { name: site.name } },
+			icon: LucideSlidersVertical,
+		},
+		{
+			label: 'Drop site',
+			theme: 'red',
+			variant: 'subtle',
+			icon: 'trash-2',
+			onClick: () => dropSite(site),
+		},
+	]
+}
+
+function exportCSV() {
+	const fields = [
+		'host_name',
+		'plan_title',
+		'cluster_title',
+		'group_title',
+		'tags',
+		'version',
+		'creation',
+	]
+	createListResource({
+		doctype: 'Site',
+		url: 'press.api.site.fetch_sites_data_for_export',
+		auto: true,
+		onSuccess(data: any) {
+			let csv = unparse({ fields, data })
+			csv = '﻿' + csv // for utf-8
+
+			const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+			const today = new Date().toISOString().split('T')[0]
+			const filename = `sites-${today}.csv`
+			const link = document.createElement('a')
+			link.href = URL.createObjectURL(blob)
+			link.download = filename
+			link.click()
+			URL.revokeObjectURL(link.href)
+		},
+	})
+}
+</script>
+
+<template>
+	<div class="flex flex-col h-full">
+		<Header class="bg-surface-white shrink-0">
+			<Breadcrumbs :items="[{ label: 'Sites', route: '/sites' }]" />
+			<Button class="ml-auto mr-2" :loading="sites.list?.loading" @click="sites.reload()">
+				<template #icon><lucide-refresh-ccw class="size-4" /></template>
+			</Button>
+			<Button class="mr-2" :route="{ name: 'New Site' }" variant="solid">
+				<template #prefix><lucide-plus class="size-4" /></template>
+				New Site
+			</Button>
+			<Dropdown :options="moreActions">
+				<Button>
+					Actions
+					<template #suffix><LucideChevronsUpDown class="size-4" /></template>
+				</Button>
+			</Dropdown>
+		</Header>
+
+		<div class="px-5 pt-4">
+			<BillingAlerts ctx-type="List Page" />
+		</div>
+
+		<div class="flex items-center gap-3 px-5 py-3 shrink-0">
+			<div class="flex items-center gap-2 flex-wrap">
+				<TextInput
+					placeholder="Search sites"
+					class="w-56 shrink-0"
+					:debounce="500"
+					@update:modelValue="v => applyFilter('host_name', v ? ['like', `%${v}%`] : undefined)"
+				>
+					<template #prefix>
+						<lucide-search class="size-4 text-ink-gray-5" />
+					</template>
+				</TextInput>
+
+				<MultiSelect
+					placeholder="Status"
+					class="!w-36 shrink-0"
+					:options="statusOptions"
+					:modelValue="selectedStatuses"
+					@update:modelValue="applyStatusFilter"
+				>
+					<template #option="{ item }">
+						<span class="site-status-option flex items-center gap-1.5 flex-1">
+							<span
+								class="size-3.5 rounded-sm border shrink-0 flex items-center justify-center"
+								:class="selectedStatuses.includes(item.value)
+									? 'bg-surface-gray-7 border-outline-gray-5'
+									: 'border-outline-gray-3'"
+							>
+								<lucide-check
+									v-if="selectedStatuses.includes(item.value)"
+									class="size-2 text-ink-white"
+									stroke-width="3"
+								/>
+							</span>
+							<span
+								class="size-2 rounded-full shrink-0 ml-1"
+								:class="getSiteStatusBadge(item.value).dot"
+							/>
+							{{ item.label }}
+						</span>
+					</template>
+				</MultiSelect>
+
+				<LinkControl
+					placeholder="Version"
+					class="!w-36 shrink-0"
+					:options="{ doctype: 'Frappe Version' }"
+					:modelValue="sites.filters?.['group.version']"
+					@update:modelValue="v => applyFilter('group.version', v)"
+				/>
+
+				<LinkControl
+					placeholder="Benches"
+					class="!w-36 shrink-0"
+					:options="{ doctype: 'Release Group' }"
+					:modelValue="sites.filters?.group"
+					@update:modelValue="v => applyFilter('group', v)"
+				/>
+
+				<Combobox
+					placeholder="Region"
+					class="!w-36 shrink-0"
+					:openOnFocus="true"
+					:options="regionOptions"
+					@update:modelValue="v => applyFilter('cluster', v)"
+				>
+					<template #prefix>
+						<LucideGlobe class="size-4 text-ink-gray-5" />
+					</template>
+				</Combobox>
+
+				<LinkControl
+					placeholder="Tag"
+					class="!w-32 shrink-0"
+					:options="{ doctype: 'Press Tag', filters: { doctype_name: 'Site' } }"
+					:modelValue="sites.filters?.['tags.tag']"
+					@update:modelValue="v => applyFilter('tags.tag', v)"
+				/>
+			</div>
+		</div>
+
+		<div
+			v-if="sites.list?.loading && !sites.data?.length"
+			class="flex justify-center py-10"
+		>
+			<Spinner class="size-5" />
+		</div>
+
+		<template v-else>
+			<Scrollbar class="h-[calc(100dvh-300px)] md:h-[calc(100dvh-230px)] px-5">
+				<div class="table w-full [&_.table-cell]:p-2">
+					<div class="text-ink-gray-5 text-xs sticky top-0 z-10 table-header-group [&_.table-cell]:bg-surface-gray-1">
+						<div class="table-row" role="row">
+							<div class="table-cell rounded-l">Site</div>
+							<div class="table-cell">Status</div>
+							<div class="table-cell">Plan</div>
+							<div class="table-cell">Region</div>
+							<div class="table-cell">Benches</div>
+							<div class="table-cell">Version</div>
+							<div class="table-cell rounded-r"></div>
+						</div>
+					</div>
+
+					<div class="h-3 invisible">a</div>
+
+					<div class="table-row-group text-ink-gray-8">
+						<div
+							v-for="site in sites.data"
+							:key="site.name"
+							class="table-row *:border-b"
+							role="row"
+						>
+							<div class="table-cell font-medium" role="cell">
+								<Tooltip text="Go to site dashboard">
+									<router-link
+										class="flex gap-2 w-fit items-center hover:underline"
+										:to="{ name: 'Site Detail', params: { name: site.name } }"
+									>
+										<LucideAppWindow class="size-4" />
+										{{ site.host_name || site.name }}
+									</router-link>
+								</Tooltip>
+							</div>
+
+							<div class="table-cell" role="cell">
+								<Badge
+									variant="subtle"
+									class="w-fit"
+									:theme="getSiteStatusBadge(site.status).theme"
+								>
+									<span
+										class="size-1.5 rounded-full shrink-0 mr-0.5"
+										:class="getSiteStatusBadge(site.status).dot"
+									/>
+									{{ site.status }}
+								</Badge>
+							</div>
+
+							<div class="table-cell whitespace-nowrap" role="cell">
+								{{ sitePlan(site) }}
+							</div>
+
+							<div class="table-cell" role="cell">
+								<span class="flex gap-1.5 items-center">
+									<img v-if="site.cluster_image" :src="site.cluster_image" class="size-3.5" />
+									{{ site.cluster_title }}
+								</span>
+							</div>
+
+							<div class="table-cell" role="cell">
+								{{ site.group_public ? 'Shared' : site.group_title }}
+							</div>
+
+							<div class="table-cell" role="cell">
+								{{ site.version }}
+							</div>
+
+							<div class="table-cell w-px" role="cell">
+								<div class="flex justify-end">
+									<Dropdown :options="siteOptions(site)">
+										<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
+									</Dropdown>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div
+					v-if="!sites.list?.loading && !sites.data?.length"
+					class="py-10 text-center text-sm text-ink-gray-5"
+				>
+					No sites
+				</div>
+			</Scrollbar>
+
+			<div v-if="sites.hasNextPage" class="shrink-0 px-5 py-2 flex justify-end">
+				<Button :loading="sites.list?.loading" @click="sites.next()">Load more</Button>
+			</div>
+		</template>
+	</div>
+</template>
+
+<style>
+/* Hide MultiSelect's built-in checkmark for rows rendering our own checkbox
+   (site-status-option). Unscoped because MultiSelect's dropdown is teleported
+   outside this component's DOM subtree, so scoped/:deep() styles can't reach it. */
+.site-status-option ~ .absolute.right-2 {
+	display: none;
+}
+</style>
