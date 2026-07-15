@@ -1,9 +1,13 @@
 ---
+# Tolerate a missing unit: the agent may be absent or already purged (e.g. a
+# prior partial uninstall), and `service: stopped` errors when the unit is gone,
+# which would fail the whole play and leave is_wazuh_agent_installed stuck True.
 - name: Disable Wazuh Agent Service
   service:
     name: wazuh-agent
     state: stopped
     enabled: no
+  failed_when: false
 
 - name: Uninstall Wazuh Agent
   apt:
