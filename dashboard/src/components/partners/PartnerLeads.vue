@@ -43,11 +43,11 @@
 	</div>
 </template>
 <script>
-import ObjectList from '../ObjectList.vue';
-import { icon, renderDialog } from '../../utils/components';
-import NewPartnerLead from './NewPartnerLead.vue';
-import { NumberChart } from 'frappe-ui';
-import { h } from 'vue';
+import { NumberChart } from 'frappe-ui'
+import { h } from 'vue'
+import { icon, renderDialog } from '../../utils/components'
+import ObjectList from '../ObjectList.vue'
+import NewPartnerLead from './NewPartnerLead.vue'
 export default {
 	name: 'PartnerLeads',
 	components: {
@@ -59,19 +59,18 @@ export default {
 			return {
 				url: 'press.api.partner.get_lead_stats',
 				auto: true,
-			};
+			}
 		},
 		leadOwners() {
 			return {
 				url: 'press.api.partner.get_lead_owners',
 				auto: true,
 				initialData: [],
-			};
+			}
 		},
 	},
 	computed: {
 		partnerLeadsList() {
-			let leadOwners = this.$resources.leadOwners.data || [];
 			return {
 				resource() {
 					return {
@@ -87,10 +86,10 @@ export default {
 									lead_source: d.lead_source || '',
 									status: d.status || '',
 									partner_team: d.partner_team || '',
-								};
-							});
+								}
+							})
 						},
-					};
+					}
 				},
 				columns: [
 					{
@@ -99,8 +98,8 @@ export default {
 						width: 0.6,
 						class: 'truncate',
 						format: (value) => {
-							if (!value) return '';
-							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+							if (!value) return ''
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value
 						},
 					},
 					{
@@ -109,8 +108,8 @@ export default {
 						width: 0.6,
 						class: 'truncate',
 						format: (value) => {
-							if (!value) return '';
-							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+							if (!value) return ''
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value
 						},
 					},
 					{
@@ -136,13 +135,14 @@ export default {
 						width: 0.6,
 						class: 'truncate',
 						format: (value) => {
-							if (!value) return '';
-							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+							if (!value) return ''
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value
 						},
 						condition: () => Boolean(this.$team.doc.is_desk_user),
 					},
 				],
-				filterControls() {
+				filterControls: () => {
+					const leadOwners = this.$resources.leadOwners.data || []
 					return [
 						{
 							type: 'data',
@@ -196,13 +196,13 @@ export default {
 							fieldname: 'is_starter_pack',
 							label: 'Starter Pack',
 						},
-					];
+					]
 				},
 				onRowClick: (row) => {
 					this.$router.push({
 						name: 'LeadOverview',
 						params: { leadId: row.name },
-					});
+					})
 				},
 				primaryAction: () => {
 					return {
@@ -216,12 +216,12 @@ export default {
 								h(NewPartnerLead, {
 									modelValue: true,
 								}),
-							);
+							)
 						},
-					};
+					}
 				},
 				orderBy: 'modified desc',
-			};
+			}
 		},
 		statusTheme() {
 			return {
@@ -237,8 +237,8 @@ export default {
 				Lost: 'red',
 				Junk: 'gray',
 				Closed: 'gray',
-			};
+			}
 		},
 	},
-};
+}
 </script>
