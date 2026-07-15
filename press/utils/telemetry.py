@@ -62,7 +62,7 @@ def _pulse_credentials():
 	)
 
 
-def _pulse_post(method: str, payload: dict, enqueue: bool = False):
+def _pulse_post(api_method: str, payload: dict, enqueue: bool = False):
 	"""POST to a Pulse API method server-to-server (key in the X-Pulse-API-Key header).
 
 	Best-effort, never raises. With `enqueue`, the POST runs in a background job after
@@ -71,6 +71,9 @@ def _pulse_post(method: str, payload: dict, enqueue: bool = False):
 	nothing. capture stays synchronous (one job per event would flood the queue). We
 	post directly (no framework client) because cloud.frappe.io's framework predates
 	`frappe.utils.telemetry.pulse`.
+
+	Named `api_method` (not `method`) because it is forwarded through `frappe.enqueue`,
+	whose own first parameter is `method` — a `method` kwarg would collide with it.
 	"""
 	pulse_site, pulse_api_key = _pulse_credentials()
 	if not pulse_site or not pulse_api_key:
@@ -81,14 +84,14 @@ def _pulse_post(method: str, payload: dict, enqueue: bool = False):
 			"press.utils.telemetry._pulse_post",
 			queue="short",
 			enqueue_after_commit=True,
-			method=method,
+			api_method=api_method,
 			payload=payload,
 		)
 		return
 
 	try:
 		requests.post(
-			f"https://{pulse_site}/api/method/pulse.api.{method}",
+			f"https://{pulse_site}/api/method/pulse.api.{api_method}",
 			headers={
 				"Content-Type": "application/json",
 				"X-Pulse-API-Key": pulse_api_key,
@@ -97,7 +100,7 @@ def _pulse_post(method: str, payload: dict, enqueue: bool = False):
 			timeout=10,
 		)
 	except Exception:
-		log_error(f"Failed to call pulse.api.{method}")
+		log_error(f"Failed to call pulse.api.{api_method}")
 
 
 def capture_pulse(event, data, team=None):
