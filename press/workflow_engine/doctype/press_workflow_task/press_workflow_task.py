@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import io
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, suppress
 from typing import TYPE_CHECKING
 
 import frappe
@@ -96,6 +96,13 @@ class PressWorkflowTask(Document):
 
 		if step_name:
 			frappe.db.set_value("Press Workflow Step", step_name, "status", new_status)
+
+	def _mark_reference_doc_as_failed(self, reference_doc: WorkflowBuilder):
+		"""In case the link document has a status field try and mark it as failure to reflect the workflow failure."""
+		with suppress(Exception):  # Try your best but don't fail
+			if hasattr(reference_doc, "status"):
+				reference_doc.status = "Failure"
+				reference_doc.save(ignore_permissions=True)
 
 	def run(self):  # noqa: C901 - Best to keep workflow execution logic in one place
 		assert self.name, "Task must be saved before it can be run"

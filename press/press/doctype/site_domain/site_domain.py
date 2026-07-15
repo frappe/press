@@ -252,10 +252,30 @@ def process_add_domain_to_upstream_job_update(job):
 		# `frappe.conf.domains` and reports opened on them fail PDF generation.
 		if updated_status == "Active":
 			frappe.get_doc("Site", job.site).add_domain_to_config(domain)
-	if job.status in ["Failure", "Delivery Failure"] and (
-		request := frappe.db.get_value("Product Trial Request", {"domain": domain})
-	):
-		frappe.get_doc("Product Trial Request", request).update_status_from_agent_jobs(job.data)
+
+	if updated_status == "Active" and job.site:
+		_set_product_trial_site_host_name(job.site, domain)
+
+	if request := frappe.db.get_value("Product Trial Request", {"domain": domain}):
+		product_trial_request = frappe.get_doc("Product Trial Request", request)
+		if job.status == "Success":
+			product_trial_request.update_status_from_agent_jobs()
+		elif job.status in ["Failure", "Delivery Failure"]:
+			product_trial_request.update_status_from_agent_jobs(job.data)
+
+
+def _set_product_trial_site_host_name(site_name: str, domain: str):
+	if not frappe.db.exists("Product Trial Request", {"site": site_name}):
+		return
+	from press.press.doctype.site.site import Site
+
+	site = Site("Site", site_name)
+	if site.host_name == domain:
+		return  # already set by process_add_domain_job_update
+	auto_generated_domain = site.host_name
+	site.host_name = domain
+	site.save()
+	site.set_redirect(auto_generated_domain)
 
 
 def update_dns_type():

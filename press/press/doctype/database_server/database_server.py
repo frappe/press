@@ -338,6 +338,10 @@ class DatabaseServer(BaseServer):
 				self.get_mariadb_variable_value("max_connections", return_default_if_not_found=True)
 			),
 			"expire_logs_days": frappe.utils.cint(
+				self.get_mariadb_variable_value("binlog_expire_logs_seconds")
+			)
+			// (24 * 60 * 60)
+			or frappe.utils.cint(
 				self.get_mariadb_variable_value("expire_logs_days", return_default_if_not_found=True)
 			),
 		}
@@ -680,7 +684,9 @@ class DatabaseServer(BaseServer):
 		update_variables_synchronously: bool = False,  # This will run the job in same thread
 	):
 		"""Add or update MariaDB variable on the server"""
-		if not skip and not value:
+		if not skip and (
+			(value_type == "value_int" and value is None) or (value_type != "value_int" and not value)
+		):
 			frappe.throw("Please provide a value for this MariaDB variable, or mark it as skippable.")
 
 		self.flags.update_mariadb_system_variables_synchronously = update_variables_synchronously
@@ -750,6 +756,8 @@ class DatabaseServer(BaseServer):
 					return 200
 				case "expire_logs_days":
 					return 14
+				case "binlog_expire_logs_seconds":
+					return 14 * 24 * 60 * 60
 		return None
 
 	@dashboard_whitelist()
@@ -777,7 +785,14 @@ class DatabaseServer(BaseServer):
 		self.binlog_retention_days = days
 		# From MariaDB 10.6.1, expire_logs_days is alias of binlog_expire_logs_seconds
 		# https://mariadb.com/docs/server/ha-and-performance/standard-replication/replication-and-binary-log-system-variables#expire_logs_days
-		self.add_or_update_mariadb_variable("expire_logs_days", "value_str", str(days), save=True)
+		# Remove expire_logs_days from child table
+		if expire_logs_days := find(
+			self.mariadb_system_variables, lambda x: x.mariadb_variable == "expire_logs_days"
+		):
+			self.remove(expire_logs_days)
+		self.add_or_update_mariadb_variable(
+			"binlog_expire_logs_seconds", "value_str", str(days * 24 * 60 * 60), save=True
+		)
 
 	@dashboard_whitelist()
 	def update_binlog_size_limit(self, enabled: bool, percent_of_disk_size: int):

@@ -54,14 +54,20 @@
 			"label": "Title",
 			"reqd": 1
 		},
-		{ "fieldname": "column_break_bqrh", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_bqrh",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "0",
 			"fieldname": "published",
 			"fieldtype": "Check",
 			"label": "Published"
 		},
-		{ "fieldname": "section_break_ipmu", "fieldtype": "Section Break" },
+		{
+			"fieldname": "section_break_ipmu",
+			"fieldtype": "Section Break"
+		},
 		{
 			"fieldname": "apps",
 			"fieldtype": "Table",
@@ -69,8 +75,15 @@
 			"options": "Product Trial App",
 			"reqd": 1
 		},
-		{ "fieldname": "logo", "fieldtype": "Attach Image", "label": "Logo" },
-		{ "fieldname": "section_break_rvnt", "fieldtype": "Section Break" },
+		{
+			"fieldname": "logo",
+			"fieldtype": "Attach Image",
+			"label": "Logo"
+		},
+		{
+			"fieldname": "section_break_rvnt",
+			"fieldtype": "Section Break"
+		},
 		{
 			"fieldname": "domain",
 			"fieldtype": "Link",
@@ -79,7 +92,10 @@
 			"options": "Root Domain",
 			"reqd": 1
 		},
-		{ "fieldname": "column_break_cpkv", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_cpkv",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "release_group",
 			"fieldtype": "Link",
@@ -87,7 +103,10 @@
 			"options": "Release Group",
 			"reqd": 1
 		},
-		{ "fieldname": "site_pool_section", "fieldtype": "Section Break" },
+		{
+			"fieldname": "site_pool_section",
+			"fieldtype": "Section Break"
+		},
 		{
 			"default": "0",
 			"fieldname": "enable_pooling",
@@ -137,6 +156,7 @@
 		},
 		{
 			"default": "14",
+			"description": "Put -1 to set no trial end date",
 			"fieldname": "trial_days",
 			"fieldtype": "Int",
 			"label": "Trial Duration (Days)"
@@ -164,7 +184,10 @@
 			"label": "Account",
 			"options": "Email Account"
 		},
-		{ "fieldname": "column_break_gokr", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_gokr",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "email_subject",
 			"fieldtype": "Data",
@@ -230,20 +253,26 @@
 			"fieldtype": "Check",
 			"label": "Enable Hybrid Pooling"
 		},
-		{ "fieldname": "section_break_cszv", "fieldtype": "Section Break" }
+		{
+			"fieldname": "section_break_cszv",
+			"fieldtype": "Section Break"
+		}
 	],
 	"grid_page_length": 50,
 	"image_field": "logo",
 	"index_web_pages_for_search": 1,
 	"links": [
-		{ "link_doctype": "Site", "link_fieldname": "standby_for_product" },
+		{
+			"link_doctype": "Site",
+			"link_fieldname": "standby_for_product"
+		},
 		{
 			"link_doctype": "Product Trial Request",
 			"link_fieldname": "product_trial"
 		}
 	],
+	"modified": "2026-07-14 10:38:02.060593",
 	"modified_by": "Administrator",
-	"modified": "2026-06-10 13:12:45.263617",
 	"module": "SaaS",
 	"name": "Product Trial",
 	"naming_rule": "Set by user",

@@ -41,15 +41,19 @@ class DatabaseServerMariaDBVariable(Document):
 
 	@property
 	def value_field(self) -> str | None:
-		"""Return the first value field that has a value"""
-		for f in self.value_fields:
-			if self.get(f):
-				return f
-		return None
+		"""Return the value field matching this variable's datatype, if it holds a value"""
+		if not self.mariadb_variable:
+			return None
+
+		field = f"value_{self.datatype.lower()}"
+		if self.get(field) in (None, ""):
+			return None
+
+		return field
 
 	@property
 	def value(self) -> Any:
-		"""Return the value of the first value field that has a value"""
+		"""Return the value held in the value field matching this variable's datatype"""
 		v = self.get(self.value_field)
 		if self.value_field == "value_int":
 			v = v * 1024 * 1024  # Convert MB to bytes
@@ -85,9 +89,7 @@ class DatabaseServerMariaDBVariable(Document):
 
 	def validate_only_one_value_is_set(self):
 		if sum([bool(self.get(f)) for f in self.value_fields]) > 1:
-			frappe.throw(
-				"A MariaDB variable can only have one value. Please fill in just one of the value fields and clear the others."
-			)
+			frappe.throw("Only one value can be set for MariaDB system variable")
 
 	def validate_datatype_of_field_is_correct(self):
 		if type(self.value).__name__ != self.datatype.lower():
@@ -102,14 +104,14 @@ class DatabaseServerMariaDBVariable(Document):
 			frappe.throw(f"Only skippable variables can be skipped. {self.mariadb_variable} is not skippable")
 
 	def set_default_value_if_no_value(self):
-		if self.value:
+		if self.value is not None:
 			return
 		default_value = frappe.db.get_value("MariaDB Variable", self.mariadb_variable, "default_value")
 		if default_value:
 			self.set(f"value_{self.datatype.lower()}", default_value)
 
 	def validate_empty_only_if_skippable(self):
-		if not self.value and not self.skippable:
+		if self.value is None and not self.skippable:
 			frappe.throw(f"Value for {self.mariadb_variable} cannot be empty")
 
 	def set_persist_and_unset_dynamic_if_skipped(self):
@@ -125,7 +127,7 @@ class DatabaseServerMariaDBVariable(Document):
 		self.validate_skipped_should_be_skippable()
 		self.validate_empty_only_if_skippable()
 		self.set_persist_and_unset_dynamic_if_skipped()
-		if self.value:
+		if self.value is not None:
 			self.validate_value_field_set_is_correct()
 			self.validate_datatype_of_field_is_correct()
 

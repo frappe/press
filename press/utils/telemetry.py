@@ -120,7 +120,6 @@ def capture_pulse(event, data, team=None):
 	)
 
 
-
 def _current_team() -> str | None:
 	"""Best-effort current dashboard team for identity calls; never raises.
 

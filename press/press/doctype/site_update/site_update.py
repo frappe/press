@@ -907,11 +907,8 @@ def schedule_updates_server(server):
 	# Shuffle sites list, to achieve this
 	random.shuffle(sites)
 
-	benches = {}
 	update_triggered_count = 0
 	for site in sites:
-		if site.bench in benches:
-			continue
 		if update_triggered_count > queue_size:
 			break
 		if not should_try_update(site) or frappe.db.exists(
@@ -930,7 +927,6 @@ def schedule_updates_server(server):
 			site.schedule_update()
 			update_triggered_count += 1
 			frappe.db.commit()
-			benches[site.bench] = True
 		except Exception:
 			log_error("Site Update Exception", site=site)
 			frappe.db.rollback()
@@ -1082,6 +1078,12 @@ def handle_success(job: AgentJob, site_update: OngoingUpdate):
 		SiteUpdate("Site Update", site_update.name).trigger_post_migration_stage_logical_replication_backup()
 	else:
 		frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
+
+	if job.site:
+		try:
+			frappe.get_doc("Site", job.site).sync_apps()
+		except Exception:
+			log_error("Site App Sync Failed After Site Update", job=job.as_dict())
 
 
 def handle_fatal(job: AgentJob, site_update: OngoingUpdate):

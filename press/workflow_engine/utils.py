@@ -223,6 +223,8 @@ def serialize_and_store_value(
 
 	try:
 		serialized_value = json.dumps(value, sort_keys=True, separators=(",", ":"))
+		if len(serialized_value) > 900:  # Actual limit is 1k, but keeping some buffer
+			raise ValueError("Serialized value exceeds maximum length of 900 characters")
 		return value_type, serialized_value
 	except (TypeError, ValueError):
 		# Fallback to pickling for non-JSON-serializable objects

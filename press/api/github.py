@@ -341,7 +341,9 @@ def repository(owner: str, name: str, installation: str | None = None):
 
 
 @frappe.whitelist()
-def app(owner: str, repository: str, branch: str, installation: str | None = None):
+def app(
+	owner: str, repository: str, branch: str, installation: str | None = None, app_name: str | None = None
+):
 	headers = get_auth_headers(installation)
 	response = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/branches/{branch}",
@@ -364,8 +366,11 @@ def app(owner: str, repository: str, branch: str, installation: str | None = Non
 	# Force pyproject.toml as a setup file
 	if "pyproject.toml" not in tree:
 		reason = "pyproject.toml does not exist in app directory."
+		subject = (
+			f"{app_name} isn't a valid Frappe app" if app_name else "This repository isn't a valid Frappe app"
+		)
 		frappe.throw(
-			f"This repository isn't a valid Frappe app. {reason} Please add a pyproject.toml at the app's root and try again. {docs.doc_link(docs.CUSTOM_APP)}."
+			f"{subject}. {reason} Please add a pyproject.toml at the app's root and try again. {docs.doc_link(docs.CUSTOM_APP)}."
 		)
 
 	app_name, title = _get_app_name_and_title_from_hooks(
