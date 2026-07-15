@@ -1,4 +1,4 @@
-import { createListResource, createResource, LoadingIndicator } from 'frappe-ui'
+import { Badge, createListResource, createResource, LoadingIndicator } from 'frappe-ui'
 import { unparse } from 'papaparse'
 import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
@@ -16,7 +16,7 @@ import { isMobile } from '../utils/device'
 import { bytes, date, userCurrency } from '../utils/format'
 import { getQueryParam, setQueryParam } from '../utils/index'
 import { getDocResource } from '../utils/resource'
-import { trialDays } from '../utils/site'
+import { getSiteStatusBadge, trialDays } from '../utils/site'
 import { getToastErrorMessage } from '../utils/toast'
 import { clusterOptions, getUpsellBanner } from './common'
 import { getAppsTab } from './common/apps'
@@ -145,7 +145,25 @@ export default {
 					return value || row.name
 				},
 			},
-			{ label: 'Status', fieldname: 'status', type: 'Badge', width: '140px' },
+			{
+				label: 'Status',
+				fieldname: 'status',
+				type: 'Component',
+				width: '140px',
+				component({ row }) {
+					const badge = getSiteStatusBadge(row.status)
+					return h(
+						Badge,
+						{ variant: 'subtle', class: 'w-fit', theme: badge.theme },
+						() => [
+							h('span', {
+								class: `size-1.5 rounded-full shrink-0 mr-0.5 ${badge.dot}`,
+							}),
+							row.status,
+						],
+					)
+				},
+			},
 			{
 				label: 'Plan',
 				fieldname: 'plan',

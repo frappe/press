@@ -35,6 +35,26 @@ export function isTrialEnded(_trialEndDate) {
 	return trialEndDate.isBefore(today, 'day');
 }
 
+export const siteStatusBadges = {
+	Active: { theme: null, dot: 'bg-surface-green-3' },
+	Inactive: { theme: 'gray', dot: 'bg-surface-gray-4' },
+	Suspended: { theme: 'gray', dot: 'bg-surface-gray-4' },
+	Archived: { theme: 'gray', dot: 'bg-surface-gray-4' },
+	Broken: { theme: 'red', dot: 'bg-surface-red-5' },
+	Draft: { theme: 'orange', dot: 'bg-surface-orange-3' },
+	AwaitingApproval: { theme: 'orange', dot: 'bg-surface-orange-3' },
+	'Update Available': { theme: 'blue', dot: 'bg-surface-blue-3' },
+};
+
+export const defaultSiteStatusBadge = {
+	theme: 'gray',
+	dot: 'bg-surface-gray-4',
+};
+
+export function getSiteStatusBadge(status) {
+	return siteStatusBadges[status] || defaultSiteStatusBadge;
+}
+
 export function validateSubdomain(subdomain) {
 	if (!subdomain) {
 		return 'Subdomain cannot be empty';
