@@ -474,7 +474,7 @@ def _get_compatible_frappe_version_from_pyproject(
 		frappe.throw(out_s)
 
 	with contextlib.suppress(Exception):
-		compatible_frappe_version = str(
+		compatible_frappe_version = (
 			pyproject.get("tool", {})
 			.get("bench", {})
 			.get("frappe-dependencies", {})
@@ -491,7 +491,7 @@ def _get_compatible_frappe_version_from_pyproject(
 		)
 		raise  # for mypy: NoReturn
 
-	return compatible_frappe_version
+	return str(compatible_frappe_version)
 
 
 def _get_app_name_and_title_from_hooks(
