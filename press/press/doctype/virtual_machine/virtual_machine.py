@@ -297,7 +297,7 @@ class VirtualMachine(Document):
 			and self.status == "Running"
 			and self.cloud_provider == "OCI"
 			and (self.series in ["m", "f"])
-			and not self.assign_public_ip
+			and not self.public_ip_address
 		):
 			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 
