@@ -67,12 +67,6 @@
 					</template>
 				</Button>
 
-				<Dropdown v-if="moreActions.length" :options="moreActions">
-					<Button>
-						<FeatherIcon name="more-horizontal" class="h-4 w-4" />
-					</Button>
-				</Dropdown>
-
 				<ActionButton
 					v-for="button in actions"
 					v-bind="button"
@@ -81,6 +75,14 @@
 				/>
 				<ActionButton v-bind="secondaryAction" :context="context" />
 				<ActionButton v-bind="primaryAction" :context="context" />
+
+				<Dropdown v-if="moreActions.length" :options="moreActions">
+					<Button label="Actions">
+						<template #suffix>
+              <LucideChevronsUpDown  class='size-3.5'/>
+						</template>
+					</Button>
+				</Dropdown>
 			</div>
 		</div>
 		<div class="mt-3 min-h-0 flex-1">
@@ -89,7 +91,7 @@
 				:rows="filteredRows"
 				ref="listView"
 				:options="{
-					selectable: this.options.selectable || false,
+					selectable: this.options.selectable || this.selectionMode,
 					onRowClick: this.options.onRowClick
 						? (row) => this.options.onRowClick(row, context)
 						: null,
@@ -100,7 +102,7 @@
 					emptyState: {},
 				}"
 				row-key="name"
-				@update:selections="(e) => this.$emit('update:selections', e)"
+				@update:selections="onSelectionsUpdate"
 			>
 				<template v-if="options.groupHeader" #group-header="{ group }">
 					<component :is="options.groupHeader({ ...context, group })" />
@@ -200,6 +202,8 @@ export default {
 	data() {
 		return {
 			searchQuery: '',
+			selectionMode: false,
+			selectedNames: [],
 		}
 	},
 	watch: {
@@ -344,10 +348,20 @@ export default {
 			return columns
 		},
 		rows() {
-			if (this.options.data) {
-				return this.options.data(this.context)
+			let rows = this.options.data
+				? this.options.data(this.context)
+				: this.$list.data || []
+			if (this.selectionMode && this.options.rowDisabled) {
+				rows = rows.map((row) =>
+					this.options.rowDisabled(row, this.context)
+						? { ...row, disabled: true }
+						: row,
+				)
 			}
-			return this.$list.data || []
+			return rows
+		},
+		selectedRows() {
+			return this.rows.filter((row) => this.selectedNames.includes(row.name))
 		},
 		filteredRows() {
 			if (this.options.searchField || !this.searchQuery) return this.rows
@@ -439,6 +453,10 @@ export default {
 				...this.options.context,
 				listResource: this.$list,
 				extraResource: this.$resources.extraResource,
+				selectionMode: this.selectionMode,
+				selectedRows: this.selectedRows,
+				enterSelectionMode: this.enterSelectionMode,
+				exitSelectionMode: this.exitSelectionMode,
 			}
 		},
 		isLoading() {
@@ -465,6 +483,17 @@ export default {
 	methods: {
 		reloadListView() {
 			this.$resources.list.reload()
+		},
+		onSelectionsUpdate(selections) {
+			this.selectedNames = Array.from(selections)
+			this.$emit('update:selections', selections)
+		},
+		enterSelectionMode() {
+			this.selectionMode = true
+		},
+		exitSelectionMode() {
+			this.selectionMode = false
+			this.listView?.toggleAllRows(false)
 		},
 		filterRow(query, row) {
 			let values = this.options.columns.map((column) => {

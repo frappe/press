@@ -17,6 +17,12 @@ import { tagTab } from './common/tags';
 
 import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline';
 
+const removeApps = async (releaseGroup, rows) => {
+	for (const row of rows) {
+		await releaseGroup.removeApp.submit({ app: row.name });
+	}
+}
+
 export default {
 	doctype: 'Release Group',
 	whitelistedMethods: {
@@ -177,6 +183,7 @@ export default {
 							width: 0.5,
 						},
 					],
+					rowDisabled: (row) => row.name === 'frappe',
 					rowActions({
 						row,
 						listResource: apps,
@@ -275,10 +282,57 @@ export default {
 							},
 						];
 					},
+					moreActions({ selectionMode, enterSelectionMode }) {
+						if (selectionMode) return [];
+						return [
+							{
+								label: 'Uninstall Multiple',
+								icon: 'trash-2',
+								onClick: () => enterSelectionMode(),
+							},
+						];
+					},
+					secondaryAction({ selectionMode, exitSelectionMode }) {
+						if (!selectionMode) return null;
+						return {
+							label: 'Cancel',
+							onClick: () => exitSelectionMode(),
+						};
+					},
 					primaryAction({
 						listResource: apps,
 						documentResource: releaseGroup,
+						selectionMode,
+						selectedRows,
+						exitSelectionMode,
 					}) {
+						if (selectionMode) {
+							return {
+								label: selectedRows.length
+									? `Remove ${selectedRows.length} App${selectedRows.length === 1 ? '' : 's'}`
+									: 'Remove Apps',
+								theme: 'red',
+								disabled: selectedRows.length === 0,
+								onClick() {
+									confirmDialog({
+										title: 'Remove Apps',
+										message: `Are you sure you want to remove <b>${selectedRows.length}</b> app${selectedRows.length === 1 ? '' : 's'}: ${selectedRows.map((row) => row.title).join(', ')}?`,
+										onSuccess: ({ hide }) => {
+											toast.promise(removeApps(releaseGroup, selectedRows), {
+												loading: 'Removing Apps...',
+												success: () => {
+													hide();
+													exitSelectionMode();
+													apps.reload();
+													return 'Apps Removed';
+												},
+												error: (e) => getToastErrorMessage(e),
+											});
+										},
+									});
+								},
+							};
+						}
 						return {
 							label: 'Add App',
 							slots: {
