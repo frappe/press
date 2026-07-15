@@ -89,7 +89,7 @@ include-package-data = true
 version = {attr = "press.__version__"}
 
 [tool.bench.frappe-dependencies]
-frappe = ">=16.0.0-dev,<17.0.0"
+frappe = ">=15.0.0,<17.0.0"
 
 [tool.bench.dev-dependencies]
 cryptography = "~=45.0" # cap below 46 which drops the GEN_EMAIL binding pyOpenSSL reads at import
