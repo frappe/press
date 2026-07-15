@@ -289,8 +289,16 @@ class Site(Document, TagHelpers):
 		Site = frappe.qb.DocType("Site")
 
 		status = filters.get("status")
-		if status == "Archived":
-			sites = query.where(Site.status == status).run(as_dict=1)
+		if isinstance(status, (list, tuple)) and len(status) == 2 and str(status[0]).lower() == "in":
+			statuses = list(status[1])
+		elif status:
+			statuses = [status]
+		else:
+			statuses = []
+
+		if statuses:
+			# explicit status filter: respect it as-is, don't force-hide archived
+			sites = query.where(Site.status.isin(statuses)).run(as_dict=1)
 		else:
 			benches_with_available_update = benches_with_available_update()
 			sites = query.where(Site.status != "Archived").select(Site.bench).run(as_dict=1)
