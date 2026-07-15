@@ -336,6 +336,8 @@ export default {
 													return 'Apps Removed';
 												},
 												error: (e) => {
+													hide();
+													exitSelectionMode();
 													apps.reload();
 													return getToastErrorMessage(e);
 												},
