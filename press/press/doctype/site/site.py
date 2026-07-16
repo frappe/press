@@ -779,7 +779,10 @@ class Site(Document, TagHelpers):
 
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
-		agent = Agent(proxy_server, server_type="Proxy Server")
+		if self.is_on_standalone:
+			agent = Agent(self.server)
+		else:
+			agent = Agent(proxy_server, server_type="Proxy Server")
 		site_domains = frappe.get_all(
 			"Site Domain", {"site": self.name, "name": ("!=", self.name)}, pluck="name"
 		)
@@ -1154,7 +1157,10 @@ class Site(Document, TagHelpers):
 
 		server = frappe.get_all("Server", filters={"name": self.server}, fields=["proxy_server"], limit=1)[0]
 
-		agent = Agent(server.proxy_server, server_type="Proxy Server")
+		if self.is_on_standalone:
+			agent = Agent(self.server)
+		else:
+			agent = Agent(server.proxy_server, server_type="Proxy Server")
 		agent.new_upstream_file(server=self.server, site=self.name)
 
 	@dashboard_whitelist()
@@ -1839,7 +1845,10 @@ class Site(Document, TagHelpers):
 
 		server = frappe.get_all("Server", filters={"name": self.server}, fields=["proxy_server"], limit=1)[0]
 
-		agent = Agent(server.proxy_server, server_type="Proxy Server")
+		if self.is_on_standalone:
+			agent = Agent(self.server)
+		else:
+			agent = Agent(server.proxy_server, server_type="Proxy Server")
 		agent.remove_upstream_file(
 			server=self.server,
 			site=self.name,

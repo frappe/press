@@ -651,6 +651,9 @@ class Bench(Document):
 	@frappe.whitelist()
 	def add_ssh_user(self):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+		if not proxy_server:
+			# Standalone server is its own proxy; no separate Proxy Server doc to target.
+			return
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.add_ssh_user(self)
 
