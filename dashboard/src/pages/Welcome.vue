@@ -45,8 +45,13 @@ export default {
 		}
 
 		let sites = getActiveSites();
-		if (!sites.data) await sites.list.fetch();
-		next({ name: sites.data.length < 3 ? 'Quickstart' : 'Site List' });
+		try {
+			if (!sites.data) await sites.list.fetch();
+		} catch (e) {
+			next({ name: 'Site List' });
+			return;
+		}
+		next({ name: sites.data.length <= 3 ? 'Quickstart' : 'Site List' });
 	},
 	methods: {
 		routeToSourcePage() {
