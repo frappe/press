@@ -282,11 +282,22 @@ class Site(Document, TagHelpers):
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
+		from frappe.query_builder.functions import Coalesce
+
 		from press.press.doctype.site_update.site_update import (
 			benches_with_available_update,
 		)
 
 		Site = frappe.qb.DocType("Site")
+
+		# not a real field, so validate_filters strips it before it reaches the
+		# base query; host_name is only set once a site first reaches Active, so
+		# sites that broke or are still pending before that never get one — search
+		# against whichever one the UI actually displays (host_name || name)
+		search_term = filters.get("_search")
+		if search_term:
+			like_term = f"%{search_term}%"
+			query = query.where(Coalesce(Site.host_name, Site.name).like(like_term))
 
 		status = filters.get("status")
 		if isinstance(status, (list, tuple)) and len(status) == 2 and str(status[0]).lower() == "in":

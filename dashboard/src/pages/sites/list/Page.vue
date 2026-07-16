@@ -199,7 +199,7 @@ function exportCSV() {
 					placeholder="Search sites"
 					class="w-56 shrink-0"
 					:debounce="500"
-					@update:modelValue="v => applyFilter('host_name', v ? ['like', `%${v}%`] : undefined)"
+					@update:modelValue="v => applyFilter('_search', v || undefined)"
 				>
 					<template #prefix>
 						<lucide-search class="size-4 text-ink-gray-5" />
@@ -307,7 +307,6 @@ function exportCSV() {
 										class="flex gap-2 w-fit items-center hover:underline"
 										:to="{ name: 'Site Detail', params: { name: site.name } }"
 									>
-										<LucideAppWindow class="size-4" />
 										{{ site.host_name || site.name }}
 									</router-link>
 								</Tooltip>
