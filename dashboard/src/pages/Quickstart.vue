@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { Spinner } from 'frappe-ui'
+import { toast } from 'vue-sonner'
 import FCLogo from '../components/icons/FCLogo.vue'
 import { getActiveSites } from '../data/sites'
 import { getTeam } from '../data/team'
@@ -8,6 +9,7 @@ import { session } from '../data/session'
 import { trialDays } from '../utils/site'
 import { planTitle } from '../utils/format'
 import { getDocResource } from '../utils/resource'
+import { getToastErrorMessage } from '../utils/toast'
 
 defineOptions({ name: 'Quickstart' })
 
@@ -49,10 +51,16 @@ const openSite = (site) => {
 		login
 			.submit({ reason: '' })
 			.then((url) => window.open(url, '_blank'))
+			.catch((e) => {
+				toast.error(getToastErrorMessage(e, 'Failed to set up site'))
+			})
 			.finally(() => {
 				loadingSite.value = null
 			})
+		return
 	}
+
+	toast.error(`${site.host_name || site.name} isn't ready yet`)
 }
 
 onMounted(() => {
