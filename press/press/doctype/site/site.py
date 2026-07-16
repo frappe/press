@@ -5457,8 +5457,13 @@ def create_subscription_for_trial_sites():
 		SELECT trial.site, producttrial.trial_plan
 		FROM `tabProduct Trial Request` trial
 		LEFT JOIN `tabSite Plan Change` siteplanchange
-		ON trial.site = siteplanchange.name
-		LEFT JOIN `tabProduct Trial`  producttrial ON trial.product_trial = producttrial.name WHERE trial.is_subscription_created = 0 AND siteplanchange.name is NULL AND trial.status='Site Created' LIMIT 25;
+		ON trial.site = siteplanchange.site
+		LEFT JOIN `tabProduct Trial` producttrial
+		ON trial.product_trial = producttrial.name
+		WHERE trial.is_subscription_created = 0
+			AND siteplanchange.name IS NULL
+			AND trial.status = 'Site Created'
+		LIMIT 25;
 		""",
 		as_dict=True,
 	)
