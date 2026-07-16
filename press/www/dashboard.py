@@ -10,6 +10,7 @@ from press.utils import (
 	get_default_team_for_user,
 	get_valid_teams_for_user,
 )
+from press.utils.telemetry import pulse_boot_config
 from press.utils.user import is_desk_user, is_system_manager
 
 base_template_path = "templates/www/dashboard.html"
@@ -37,14 +38,16 @@ def get_context_for_dev():
 
 
 def get_boot():
+	default_team = get_default_team_for_user(frappe.session.user)
 	return frappe._dict(
 		frappe_version=frappe.__version__,
 		press_dashboard_sentry_dsn=frappe.conf.press_dashboard_sentry_dsn or "",
 		press_frontend_posthog_host=frappe.conf.posthog_host or "",
 		press_frontend_posthog_project_id=frappe.conf.posthog_project_id or "",
+		pulse_telemetry=pulse_boot_config(team=default_team),
 		press_site_name=frappe.conf.site,
 		site_name=frappe.local.site,
-		default_team=get_default_team_for_user(frappe.session.user),
+		default_team=default_team,
 		valid_teams=get_valid_teams_for_user(frappe.session.user),
 		chat_enabled=chat_enabled(),
 		is_system_user=frappe.session.data.user_type == "System User",

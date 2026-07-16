@@ -182,11 +182,11 @@ class ServerSnapshot(Document):
 		db_server_vm = frappe.db.get_value("Database Server", self.database_server, "virtual_machine")
 		if frappe.db.get_value("Virtual Machine", app_server_vm, "status") not in allowed_statuses:
 			frappe.throw(
-				"App Server should be in a valid state [Pending, Running, Stopped] to create a snapshot"
+				"The App Server must be in a valid state (Pending, Running, or Stopped) to create a snapshot. Please wait for it to reach one of these states."
 			)
 		if frappe.db.get_value("Virtual Machine", db_server_vm, "status") not in allowed_statuses:
 			frappe.throw(
-				"Database Server should be in a valid state [Pending, Running, Stopped] to create a snapshot"
+				"The Database Server must be in a valid state (Pending, Running, or Stopped) to create a snapshot. Please wait for it to reach one of these states."
 			)
 
 		sites = (
@@ -422,7 +422,7 @@ class ServerSnapshot(Document):
 			return
 
 		if self.free:
-			frappe.throw("Non-chargeable snapshots cannot be locked")
+			frappe.throw("Non-chargeable snapshots can't be locked. Please lock only chargeable snapshots.")
 
 		if now is None:
 			now = False
@@ -511,10 +511,12 @@ class ServerSnapshot(Document):
 			press_job_arguments = {}
 
 		if server_type != "Database Server" and provision_db_replica:
-			frappe.throw("Provisioning a database replica is only applicable for Database Servers.")
+			frappe.throw(
+				"A database replica can only be provisioned from a Database Server snapshot. Please select a Database Server snapshot."
+			)
 
 		if provision_db_replica and not master_db_server:
-			frappe.throw("Master Database Server is required for provisioning a database replica.")
+			frappe.throw("Please select a master Database Server to provision a database replica.")
 
 		if temporary_server and provision_db_replica:
 			frappe.throw("Temporary server cannot be used for provisioning a database replica.")
@@ -579,14 +581,18 @@ class ServerSnapshot(Document):
 		use `create_server` method instead.
 		"""
 		if not self.database_server:
-			frappe.throw("Snapshot does not have a database server.")
+			frappe.throw(
+				"This snapshot is not linked to a database server. Please choose a database server snapshot."
+			)
 
 		if self.status != "Completed":
 			frappe.throw("Please wait for the snapshot to be completed.")
 
 		database_server = frappe.get_doc("Database Server", self.database_server)
 		if database_server.status != "Active":
-			frappe.throw("Master Database Server must be active to create a replica.")
+			frappe.throw(
+				"The master Database Server must be active to create a replica. Please start it and try again."
+			)
 
 		return self.create_server(
 			server_type="Database Server",

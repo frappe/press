@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, Spinner, TextInput, createListResource } from 'frappe-ui'
+import { Button, createListResource, Spinner, TextInput } from 'frappe-ui'
 import Header from '@/components/Header.vue'
 import LinkControl from '@/components/LinkControl.vue'
 import BenchRow from './BenchRow.vue'
@@ -22,7 +22,6 @@ const groups = createListResource({
 	],
 	orderBy: 'creation desc',
 })
-
 
 const applyFilter = (key: string, val: any) => {
 	groups.update({

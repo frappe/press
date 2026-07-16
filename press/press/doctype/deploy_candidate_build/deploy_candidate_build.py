@@ -142,10 +142,10 @@ def get_asset_store_credentials() -> AssetStoreCredentials:
 
 	return {
 		"secret_access_key": settings.get_password("asset_store_secret_access_key"),
-		"access_key": settings.asset_store_access_key,
-		"region_name": settings.asset_store_region,
-		"endpoint_url": settings.asset_store_endpoint,
-		"bucket_name": settings.asset_store_bucket_name,
+		"access_key": settings.asset_store_access_key,  # type: ignore[typeddict-item]
+		"region_name": settings.asset_store_region,  # type: ignore[typeddict-item]
+		"endpoint_url": settings.asset_store_endpoint,  # type: ignore[typeddict-item]
+		"bucket_name": settings.asset_store_bucket_name,  # type: ignore[typeddict-item]
 	}
 
 
@@ -526,7 +526,7 @@ class DeployCandidateBuild(Document):
 			dc=self.candidate,
 			dcb=self,
 			title=title,
-			message=warning.message,
+			message=str(warning.message),
 		)
 
 	def handle_build_failure(
@@ -1150,9 +1150,7 @@ class DeployCandidateBuild(Document):
 		)
 
 		if not can_run_patch_build(self.group):
-			frappe.throw(
-				"Patch build cannot be run for this bench group. Use a regular deploy instead."
-			)
+			frappe.throw("This patch build can't be run. Please trigger a regular build instead.")
 
 		previous_candidate = _get_previous_candidate(self.group)
 		self.set_status(Status.PREPARING, timestamp_field="build_start", commit=True)

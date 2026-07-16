@@ -59,6 +59,25 @@ dependencies = [
     "frappe-mcp @ git+https://github.com/frappe/mcp",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "ruff==0.14.2",
+    "mypy==1.18.2",
+    "ipdb==0.13.13",
+    "setuptools~=81.0",
+    # typechecking
+    "types-requests<2.32",
+    "types-pytz~=2025.2",
+    "types-python-dateutil~=2.9.0",
+    "types-boto3==1.39.14",
+    "types-jwt==0.1.3",
+    "types-setuptools~=81.0",
+    "types-stripe~=3.5.2",
+    "types-oauthlib~=3.3",
+    "types-passlib~=1.7",
+]
+
 [project.scripts]
 backbone = "backbone.cli:cli"
 
@@ -68,3 +87,13 @@ include-package-data = true
 
 [tool.setuptools.dynamic]
 version = {attr = "press.__version__"}
+
+[tool.bench.frappe-dependencies]
+frappe = ">=15.0.0,<17.0.0"
+
+[tool.bench.dev-dependencies]
+cryptography = "~=45.0" # cap below 46 which drops the GEN_EMAIL binding pyOpenSSL reads at import
+"moto[all]" = "~=5.0"
+Werkzeug = "==3.1.3" # has to be manually kept same as framework since moto has a loose dependency
+Faker = "==23.2.0"
+freezegun = "==1.2.2"

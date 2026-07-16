@@ -21,8 +21,8 @@ from press.tests.before_test import freeze_time
 EXTRA_TEST_RECORD_DEPENDENCIES: list[str] = []  # eg. ["User"]
 IGNORE_TEST_RECORD_DEPENDENCIES: list[str] = []  # eg. ["User"]
 
-# A day past the 15th and a day on/before the 15th, used to drive the
-# month-position branching in _get_mrr_status deterministically.
+# Fixed dates drive month-position branching in _get_mrr_subscription_invoices
+# deterministically once a team has more than one subscription invoice.
 AFTER_MID_MONTH = "2026-01-20"
 BEFORE_MID_MONTH = "2026-01-10"
 
@@ -71,12 +71,17 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 		).insert()
 		if submitted:
 			# Paid Subscription invoices are submitted in production, but the
-			# "Invoice must be Paid to be submitted" guard makes a normal submit
-			# awkward in tests — force the persisted state the query reads.
+			# balance-due submit guard makes a normal submit awkward in tests —
+			# force the persisted state the query reads.
 			frappe.db.set_value(
 				"Invoice", invoice.name, {"status": status, "docstatus": 1}, update_modified=False
 			)
 		return invoice
+
+	def _seed_prior_subscription_invoice(self, team: str):
+		"""Add a second Subscription invoice so MRR uses last-month cycle logic."""
+		prior_due = get_last_day(add_months(today(), -2))
+		self._create_subscription_invoice(team, prior_due, 1000, status="Paid", submitted=True)
 
 	def test_has_partner_onboarding_is_false_without_a_record(self):
 		team = create_test_team()
@@ -93,11 +98,10 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 		onboarding.db_set("status", "Cancelled")
 		self.assertFalse(has_partner_onboarding(team.name))
 
-	def test_mrr_after_mid_month_counts_unpaid_current_invoice(self):
-		"""Past the 15th, an Unpaid current-month invoice over the threshold
-		is enough — we assume the partner will pay."""
+	def test_mrr_first_billing_month_counts_current_month_invoice(self):
+		"""With only one subscription invoice, the current month cycle is used."""
 		team = create_test_team()
-		with freeze_time(AFTER_MID_MONTH):
+		with freeze_time(BEFORE_MID_MONTH):
 			self._create_subscription_invoice(team.name, get_last_day(today()), 12000, status="Unpaid")
 			status = _get_mrr_status(team)
 
@@ -106,7 +110,7 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 		self.assertEqual(status["current_amount"], 12000)
 		self.assertTrue(status["requirement_complete"])
 
-	def test_mrr_after_mid_month_below_threshold_is_incomplete(self):
+	def test_mrr_first_billing_month_below_threshold(self):
 		team = create_test_team()
 		with freeze_time(AFTER_MID_MONTH):
 			self._create_subscription_invoice(team.name, get_last_day(today()), 5000, status="Unpaid")
@@ -115,8 +119,7 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 		self.assertEqual(status["current_amount"], 5000)
 		self.assertFalse(status["requirement_complete"])
 
-	def test_mrr_after_mid_month_ignores_other_months(self):
-		"""Only the current cycle counts after the 15th."""
+	def test_mrr_first_billing_month_ignores_prior_month_only_invoice(self):
 		team = create_test_team()
 		with freeze_time(AFTER_MID_MONTH):
 			last_month_due = get_last_day(add_months(today(), -1))
@@ -126,10 +129,10 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 		self.assertEqual(status["current_amount"], 0)
 		self.assertFalse(status["requirement_complete"])
 
-	def test_mrr_before_mid_month_uses_last_month_paid_invoice(self):
-		"""On/before the 15th, last month's settled invoice is used."""
+	def test_mrr_after_mid_month_uses_last_month_paid_invoice(self):
 		team = create_test_team()
-		with freeze_time(BEFORE_MID_MONTH):
+		with freeze_time(AFTER_MID_MONTH):
+			self._seed_prior_subscription_invoice(team.name)
 			last_month_due = get_last_day(add_months(today(), -1))
 			self._create_subscription_invoice(team.name, last_month_due, 12000, status="Paid", submitted=True)
 			status = _get_mrr_status(team)
@@ -137,11 +140,10 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 		self.assertEqual(status["current_amount"], 12000)
 		self.assertTrue(status["requirement_complete"])
 
-	def test_mrr_before_mid_month_ignores_unpaid_last_month_invoice(self):
-		"""An unpaid (unsubmitted) last-month invoice does not count early in
-		the cycle."""
+	def test_mrr_after_mid_month_ignores_last_month_unpaid_invoice(self):
 		team = create_test_team()
-		with freeze_time(BEFORE_MID_MONTH):
+		with freeze_time(AFTER_MID_MONTH):
+			self._seed_prior_subscription_invoice(team.name)
 			last_month_due = get_last_day(add_months(today(), -1))
 			self._create_subscription_invoice(team.name, last_month_due, 12000, status="Unpaid")
 			status = _get_mrr_status(team)
@@ -149,10 +151,42 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 		self.assertEqual(status["current_amount"], 0)
 		self.assertFalse(status["requirement_complete"])
 
-	def test_mrr_before_mid_month_ignores_current_month_invoice(self):
-		"""The young current-month invoice is not used before the 15th."""
+	def test_mrr_after_mid_month_ignores_current_month_invoice(self):
+		team = create_test_team()
+		with freeze_time(AFTER_MID_MONTH):
+			self._seed_prior_subscription_invoice(team.name)
+			self._create_subscription_invoice(team.name, get_last_day(today()), 12000, status="Unpaid")
+			status = _get_mrr_status(team)
+
+		self.assertEqual(status["current_amount"], 0)
+		self.assertFalse(status["requirement_complete"])
+
+	def test_mrr_before_mid_month_uses_last_month_paid_invoice(self):
 		team = create_test_team()
 		with freeze_time(BEFORE_MID_MONTH):
+			self._seed_prior_subscription_invoice(team.name)
+			last_month_due = get_last_day(add_months(today(), -1))
+			self._create_subscription_invoice(team.name, last_month_due, 12000, status="Paid", submitted=True)
+			status = _get_mrr_status(team)
+
+		self.assertEqual(status["current_amount"], 12000)
+		self.assertTrue(status["requirement_complete"])
+
+	def test_mrr_before_mid_month_counts_unpaid_last_month_invoice(self):
+		team = create_test_team()
+		with freeze_time(BEFORE_MID_MONTH):
+			self._seed_prior_subscription_invoice(team.name)
+			last_month_due = get_last_day(add_months(today(), -1))
+			self._create_subscription_invoice(team.name, last_month_due, 12000, status="Unpaid")
+			status = _get_mrr_status(team)
+
+		self.assertEqual(status["current_amount"], 12000)
+		self.assertTrue(status["requirement_complete"])
+
+	def test_mrr_before_mid_month_ignores_current_month_invoice(self):
+		team = create_test_team()
+		with freeze_time(BEFORE_MID_MONTH):
+			self._seed_prior_subscription_invoice(team.name)
 			self._create_subscription_invoice(team.name, get_last_day(today()), 12000, status="Unpaid")
 			status = _get_mrr_status(team)
 

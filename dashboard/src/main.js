@@ -19,6 +19,7 @@ import {
 } from './data/notifications.js';
 import registerGlobalComponents from './components/global/register';
 import './vendor/posthog.js';
+import { pulse } from './telemetry/pulse.js';
 
 const request = (options) => {
 	const _options = options || {};
@@ -56,6 +57,10 @@ getInitialData().then(() => {
 	app.config.globalProperties.$socket = socket;
 	window.$socket = socket;
 	subscribeToJobUpdates(socket);
+
+	// Pulse analytics — config served in dashboard boot
+	pulse.init(window.pulse_telemetry);
+	app.config.globalProperties.$pulse = pulse;
 	if (session.isLoggedIn) {
 		fetchPlans();
 		session.userPermissions.fetch();

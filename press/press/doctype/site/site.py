@@ -480,6 +480,7 @@ class Site(Document, TagHelpers):
 				self.set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
+		self.sync_fc_team_config()
 
 		if not self.setup_wizard_status_check_next_retry_on:
 			self.setup_wizard_status_check_next_retry_on = now_datetime()
@@ -536,7 +537,10 @@ class Site(Document, TagHelpers):
 
 		site_apps = [app.app for app in self.apps]
 		if len(site_apps) != len(set(site_apps)):
-			frappe.throw("App {app.app} is already on installed on the bench. Cannot add the same app twice")
+			duplicates = sorted({app for app in site_apps if site_apps.count(app) > 1})
+			frappe.throw(
+				f"These apps are listed more than once: {', '.join(duplicates)}. Each app can only be installed once — please remove the duplicates."
+			)
 
 		# Install apps in the same order as bench
 		if self.is_new():
@@ -704,6 +708,16 @@ class Site(Document, TagHelpers):
 
 		if self.has_value_changed("team"):
 			frappe.db.set_value("Site Domain", {"site": self.name}, "team", self.team)
+			# Enqueued, not inline: sync_fc_team_config saves the site, which from within
+			# on_update would re-enter it and re-run its unguarded effects.
+			frappe.enqueue_doc(
+				"Site",
+				self.name,
+				"sync_fc_team_config",
+				create_agent_job=True,
+				enqueue_after_commit=True,
+				queue="short",
+			)
 
 		if self.status not in [
 			"Pending",
@@ -741,6 +755,26 @@ class Site(Document, TagHelpers):
 			return self.update_site_config(config)
 
 		self._update_configuration(config=config, save=save)
+		return None
+
+	def sync_fc_team_config(self, create_agent_job: bool = False):
+		"""Keep the fc_team site config in step with the owning team.
+
+		Pulse tags every event with `team` from this key, so it must follow the site
+		for its whole life — initial provisioning, a standby site being claimed, and
+		ownership transfers — not just be stamped once. Idempotent (skips when already
+		current) and skipped for Administrator-owned sites, which have no FC team.
+
+		`create_agent_job` pushes the change to a running site; the creation path leaves
+		it False so the key rides along in the new-site payload instead of a second job.
+		"""
+		if not self.team or frappe.get_value("Team", self.team, "user") == "Administrator":
+			return None
+		if self.get_config_value_for_key("fc_team") == self.team:
+			return None
+		if create_agent_job:
+			return self.update_site_config({"fc_team": self.team})
+		self._update_configuration({"fc_team": self.team}, save=False)
 		return None
 
 	def rename_upstream(self, new_name: str):
@@ -846,9 +880,21 @@ class Site(Document, TagHelpers):
 
 	def install_marketplace_conf(self, app: str, plan: str | None = None):
 		if plan:
-			MarketplaceAppPlan.create_marketplace_app_subscription(self.name, app, plan, self.team)
+			subscription = MarketplaceAppPlan.create_marketplace_app_subscription(
+				self.name, app, plan, self.team
+			)
 		else:
-			create_free_app_subscription(app, self.name)
+			subscription = create_free_app_subscription(app, self.name)
+
+		# Marketplace apps authenticate to the Marketplace Developer API with a per-site
+		# secret read from their own site_config as `sk_<app>`. The secret lives on the
+		# Subscription doc; push it to the running site so the key reaches the bench.
+		# `update_site_config` (not `_update_configuration`) is required because the site
+		# is already live and arbitrary config changes are not propagated on save.
+		# A free app without a free plan yields no subscription, so there's nothing to push.
+		if subscription:
+			self.update_site_config({f"sk_{subscription.document_name}": subscription.secret_key})
+
 		marketplace_app_hook(app=app, site=self, op="install")
 
 	def uninstall_marketplace_conf(self, app: str):
@@ -4510,9 +4556,18 @@ def process_new_site_job_update(job):  # noqa: C901
 
 		site.sync_apps()  # Sync apps for this site as well to reflect dependant apps
 		marketplace_app_hook(site=site, op="install")
+		# Status is set via db.set_value below, bypassing on_update ->
+		# update_subscription. Re-enable the subscription explicitly so a site
+		# that recovers from a failed creation (retry / restore) starts billing
+		# again — the counterpart to disabling it on failure (#6110).
+		site.enable_subscription()
 	elif "Failure" in (first, second) or "Delivery Failure" in (first, second):
 		updated_status = "Broken"
 		frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
+		# Status is set via db.set_value below, which bypasses on_update ->
+		# update_subscription. Disable the subscription explicitly so the user
+		# isn't billed for a site that never came up (#6110).
+		Site("Site", job.site).disable_subscription()
 	elif "Running" in (first, second):
 		updated_status = "Installing"
 	else:

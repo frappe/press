@@ -205,12 +205,16 @@ class Cluster(Document):
 			servers = client.servers.get_all()
 
 			if servers is None:
-				frappe.throw("API token does not have read access to the Hetzner Cloud.")
+				frappe.throw(
+					"This Hetzner Cloud API token doesn't have read access. Please generate a token with read and write permissions and enter it again."
+				)
 
 		except APIException as e:
 			# Handle specific API exceptions like unauthorized access
 			if e.code == "unauthorized":
-				frappe.throw("API token is invalid or does not have the correct permissions.")
+				frappe.throw(
+					"This Hetzner Cloud API token is invalid or lacks the required permissions. Please generate a new token with read and write access and enter it again."
+				)
 			else:
 				frappe.throw(f"An error occurred while validating the API token: {e}")
 
@@ -247,7 +251,9 @@ class Cluster(Document):
 				"Flush Table Execution Hour is required when Enable Periodic Flush Table is checked."
 			)
 		if not (0 <= self.flush_table_execution_hour <= 23):
-			frappe.throw("Flush Table Execution Hour must be between 0 and 23.")
+			frappe.throw(
+				"Please enter the flush table execution hour as a number between 0 and 23 (24-hour clock)."
+			)
 
 	def after_insert(self):
 		if self.cloud_provider == "AWS EC2":
@@ -461,7 +467,9 @@ class Cluster(Document):
 			)
 
 			if "id" not in firewall.get("firewall", {}):
-				frappe.throw("Failed to create Firewall on Digital Ocean.")
+				frappe.throw(
+					"Failed to create the firewall on DigitalOcean. Please check the DigitalOcean API token and retry."
+				)
 
 			self.security_group_id = firewall["firewall"]["id"]
 		except Exception as e:
@@ -1947,20 +1955,20 @@ class Cluster(Document):
 				port, protocol = rule
 			else:
 				frappe.throw(
-					"Each firewall rule must be [port, protocol], for example: [['22', 'tcp'], ['51820', 'udp']]"
+					"Please provide each firewall rule as [port, protocol], for example: [['22', 'tcp'], ['51820', 'udp']]"
 				)
 
 			normalized_rules.append((port, self._normalize_firewall_protocol(protocol)))
 
 		if not normalized_rules:
-			frappe.throw("At least one firewall rule is required")
+			frappe.throw("Please provide at least one firewall rule.")
 
 		return normalized_rules
 
 	def _normalize_firewall_protocol(self, protocol: str) -> str:
 		protocol = (protocol or "tcp").lower().strip()
 		if protocol not in {"tcp", "udp"}:
-			frappe.throw("Firewall protocol must be one of: tcp, udp")
+			frappe.throw("Please use a supported firewall protocol: tcp or udp.")
 		return protocol
 
 	def _parse_port_range(self, port: str | int) -> tuple[int, int]:

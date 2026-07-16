@@ -68,7 +68,9 @@ class ProductTrial(Document):
 
 	def get_doc(self, doc):
 		if not self.published:
-			frappe.throw("Not permitted")
+			frappe.throw(
+				"This product trial isn't available right now. Please try again later, or contact the app's publisher."
+			)
 
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
@@ -81,7 +83,7 @@ class ProductTrial(Document):
 			frappe.throw("Selected plan is not a trial plan")
 
 		if not self.redirect_to_after_login.startswith("/"):
-			frappe.throw("Redirection route after login should start with /")
+			frappe.throw("Please enter a redirection route that starts with '/'.")
 
 		if self.enable_pooling:
 			self.cleanup_remaining_pool = 0
@@ -107,7 +109,7 @@ class ProductTrial(Document):
 		from press.press.doctype.site.site import Site, get_plan_config
 
 		if Site.exists(subdomain, domain):
-			frappe.throw("Site with this subdomain already exists")
+			frappe.throw("A site with this subdomain already exists. Please choose a different subdomain.")
 
 		site_domain = f"{subdomain}.{domain}"
 

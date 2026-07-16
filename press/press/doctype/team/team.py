@@ -437,6 +437,8 @@ class Team(Document):
 
 		if not team.via_erpnext and not account_request.invited_by_parent_team:
 			team.create_upcoming_invoice()
+
+		account_request.stitch_pulse_identity(team.name)
 		return team
 
 	@staticmethod
@@ -1134,6 +1136,13 @@ class Team(Document):
 				frappe.ValidationError,
 			)
 
+	def _set_invitation_role(self, account_request: AccountRequest, role: str, all_roles=None):
+		if all_roles is None:
+			all_roles = get_roles(str(self.name))
+		matched = [r for r in all_roles if r["value"] == role or r.get("name") == role]
+		if matched and matched[0].get("name"):
+			account_request.press_role = matched[0]["name"]
+
 	def _get_invitation_role(self, roles) -> str | None:
 		if isinstance(roles, str):
 			try:
@@ -1151,13 +1160,6 @@ class Team(Document):
 			return None
 
 		raise frappe.ValidationError(_("Invalid role"))
-
-	def _set_invitation_role(self, account_request: AccountRequest, role: str, all_roles=None):
-		if all_roles is None:
-			all_roles = get_roles(str(self.name))
-		matched = [r for r in all_roles if r["value"] == role or r.get("name") == role]
-		if matched and matched[0].get("name"):
-			account_request.press_role = matched[0]["name"]
 
 	@dashboard_whitelist()
 	@rate_limit(limit=10, seconds=60 * 60)

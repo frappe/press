@@ -320,9 +320,10 @@ def _validate_warranty_change(
 	"""Throw if a warranty-affecting plan change is not allowed at this time."""
 	if is_new or is_system_user or not is_current_dedicated_server_plan:
 		return
-	if is_current_plan_supported == is_product_warranty_enabled_for_plan_(new_plan):
+	is_new_plan_supported = is_product_warranty_enabled_for_plan_(new_plan)
+	if is_current_plan_supported == is_new_plan_supported:
 		return
-	if is_product_warranty_enabled_for_plan_(new_plan):
+	if is_new_plan_supported:
 		# Enabling warranty is gated only by the server quota (it consumes a slot).
 		# The cooldown deliberately does not apply: the only enable the cooldown
 		# would block is a site reclaiming the slot it itself just gave up, which

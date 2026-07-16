@@ -341,7 +341,9 @@ class SelfHostedServer(Document):
 	def create_database_server(self):
 		try:
 			if not self.mariadb_ip:
-				frappe.throw("Public IP for MariaDB not found")
+				frappe.throw(
+					"Could not find the public IP for the MariaDB server. Please ensure the database server has a public IP and try again."
+				)
 
 			db_server = frappe.new_doc(
 				"Database Server",
@@ -377,7 +379,9 @@ class SelfHostedServer(Document):
 
 			frappe.msgprint(f"Database server record {db_server.name} created")
 		except Exception:
-			frappe.throw("Adding Server to Database Server Doctype failed")
+			frappe.throw(
+				"Failed to register the server as a Database Server. Please check the server details and retry."
+			)
 			self.status = "Broken"
 			self.save()
 			log_error("Inserting a new DB server failed")

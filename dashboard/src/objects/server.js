@@ -227,6 +227,16 @@ export default {
 								options: ['', 'Active', 'Inactive', 'Suspended', 'Broken'],
 							},
 							{
+								type: 'select',
+								label: 'Plan',
+								fieldname: 'plan.support_included',
+								options: [
+									{ label: 'All', value: null },
+									{ label: 'Supported', value: '1' },
+									{ label: 'Not Supported', value: '0' },
+								],
+							},
+							{
 								type: 'link',
 								label: 'Version',
 								fieldname: 'group.version',
@@ -928,6 +938,84 @@ export default {
 									'Terminated',
 									'Incident',
 									'Disk Size Change',
+								],
+							},
+						];
+					},
+				},
+			},
+
+			{
+				label: 'Plan History',
+				icon: icon('credit-card'),
+				route: 'plan-history',
+				type: 'list',
+				list: {
+					doctype: 'Plan Change',
+					filters: (server) => {
+						return {
+							document_name: [
+								'in',
+								[server.doc?.name, server.doc?.database_server].filter(Boolean),
+							],
+						};
+					},
+					fields: ['from_plan', 'to_plan', 'type', 'timestamp', 'owner', 'document_type'],
+					orderBy: 'timestamp desc',
+					columns: [
+						{
+							label: 'Server Type',
+							fieldname: 'document_type',
+							format(value) {
+								if (value === 'Server') return 'Application Server';
+								if (value === 'Database Server') return 'Database Server';
+								return value || '—';
+							},
+						},
+						{
+							label: 'Changed From',
+							fieldname: 'from_plan',
+							class: 'text-gray-600',
+							format(value) {
+								return value || '—';
+							},
+						},
+						{
+							label: 'Changed To',
+							fieldname: 'to_plan',
+						},
+						{
+							label: 'Type',
+							fieldname: 'type',
+							type: 'Badge',
+							theme(value) {
+								if (value === 'Upgrade') return 'green';
+								if (value === 'Downgrade') return 'red';
+								return 'gray';
+							},
+						},
+						{
+							label: 'Changed By',
+							fieldname: 'owner',
+							class: 'text-gray-600',
+						},
+						{
+							label: 'Date',
+							fieldname: 'timestamp',
+							type: 'Timestamp',
+							align: 'right',
+						},
+					],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Server Type',
+								fieldname: 'document_type',
+								options: [
+									{ label: 'All', value: null },
+									{ label: 'Application Server', value: 'Server' },
+									{ label: 'Database Server', value: 'Database Server' },
 								],
 							},
 						];

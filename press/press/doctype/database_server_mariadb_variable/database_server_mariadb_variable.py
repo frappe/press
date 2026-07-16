@@ -89,7 +89,9 @@ class DatabaseServerMariaDBVariable(Document):
 
 	def validate_only_one_value_is_set(self):
 		if sum([bool(self.get(f)) for f in self.value_fields]) > 1:
-			frappe.throw("Only one value can be set for MariaDB system variable")
+			frappe.throw(
+				"A MariaDB variable can only have one value. Please fill in just one of the value fields and clear the others."
+			)
 
 	def validate_datatype_of_field_is_correct(self):
 		if type(self.value).__name__ != self.datatype.lower():

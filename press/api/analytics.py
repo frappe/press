@@ -234,7 +234,9 @@ class StackedGroupByChart:
 
 	def setup_search_aggs(self):
 		if not self.group_by_field:
-			frappe.throw("Group by field not set")
+			frappe.throw(
+				"No group-by field was set for this aggregation. Please choose a field to group by before running the query."
+			)
 		if AggType(self.agg_type) is AggType.COUNT:
 			self.search.aggs.bucket(
 				"method_path",
@@ -465,7 +467,9 @@ class NginxRequestGroupByChart(StackedGroupByChart):
 				)
 			)
 		):
-			frappe.throw("Monitor server not set in Press Settings")
+			frappe.throw(
+				"The monitor server isn't configured in Press Settings. Please set it under Press Settings before viewing analytics, or contact your administrator."
+			)
 		self.search = self.search.exclude("match_phrase", source__ip=monitor_ip)
 		if ResourceType(self.resource_type) is ResourceType.SITE:
 			server = frappe.db.get_value("Site", self.name, "server")
@@ -600,12 +604,16 @@ def get_metrics(
 	duration: str = "24h",
 ):
 	if not name:
-		frappe.throw("No release group found!")
+		frappe.throw(
+			"We couldn't find a bench group to load metrics for. Please open this page from a valid bench group."
+		)
 
 	benches = frappe.get_all("Bench", {"status": "Active", "group": name}, pluck="name")
 
 	if not benches:
-		frappe.throw("No active benches found!")
+		frappe.throw(
+			"This bench group has no active benches, so there are no metrics to show yet. Metrics appear once a bench is deployed and running."
+		)
 
 	benches = "|".join(benches)
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
@@ -615,7 +623,9 @@ def get_metrics(
 		datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
 		return {response_key: {"datasets": datasets, "labels": labels}}
 	except (ValueError, TypeError):
-		frappe.throw("Unable to fetch metrics")
+		frappe.throw(
+			"We couldn't fetch metrics right now. Please refresh the page in a few moments, and contact support if the problem persists."
+		)
 
 
 @frappe.whitelist()
