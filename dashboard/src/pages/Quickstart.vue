@@ -30,22 +30,24 @@ onMounted(() => {
 				<div class="text-sm text-ink-gray-5">Account</div>
 			</div>
 
-			<Dropdown :options="accountDropdownOptions">
-				<Button class="text-sm !text-ink-gray-6">
-					<template #prefix>
-						<Avatar
-							:label="team.doc.user_info.first_name"
-							:image="team.doc.user_info.user_image"
-							size="sm"
-							class="[&>*]:bg-surface-gray-4"
-						/>
-					</template>
-					{{ team.doc.user_info.email }}
-					<template #suffix>
-						<LucideChevronDown class="size-4 shrink-0 text-ink-gray-6" />
-					</template>
-				</Button>
-			</Dropdown>
+			<Button class='!text-ink-gray-7'>
+				<template #prefix>
+					<Avatar
+						:label="team.doc.user_info.first_name"
+						:image="team.doc.user_info.user_image"
+						size="sm"
+						class="[&>*]:bg-surface-gray-4"
+					/>
+				</template>
+				{{ team.doc.user_info.email }}
+			</Button>
+
+			<Button>
+				<template #prefix>
+					<LucideLogOut class="size-4" />
+				</template>
+				Sign out</Button
+			>
 		</div>
 
 		<div class="flex items-start justify-between mt-10">
@@ -73,10 +75,10 @@ onMounted(() => {
 
 		<template v-if="sites.length">
 			<a
-				class="flex items-center justify-between py-3 border-b" 
+				class="flex items-center justify-between py-3 border-b"
 				v-for="site in sites"
 				:key="site.name"
-        :href="'https://' + site.name"
+				:href="'https://' + site.name"
 			>
 				<div class="flex items-center gap-3">
 					<Avatar
@@ -95,20 +97,17 @@ onMounted(() => {
 			</a>
 		</template>
 
-		<p
-			class="mt-2 flex flex-col items-center gap-3 py-8 text-center"
-			v-else
-		>
+		<p class="mt-2 flex flex-col items-center gap-3 py-8 text-center" v-else>
 			You don't have any sites yet.
 		</p>
 
 		<div
 			class="flex justify-center gap-2 pt-4 text-sm text-ink-gray-6"
-      :class="sites.length ? '' : 'border-t'"
+			:class="sites.length ? '' : 'border-t'"
 		>
 			<a
 				class="hover:text-ink-gray-8"
-				href="https://frappecloud.com/contact"
+				href="https://frappe.io/contact-us"
 				target="_blank"
 			>
 				Contact us
