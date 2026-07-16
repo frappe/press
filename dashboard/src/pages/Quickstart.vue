@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { Spinner } from 'frappe-ui'
 import FCLogo from '../components/icons/FCLogo.vue'
 import { getActiveSites } from '../data/sites'
 import { getTeam } from '../data/team'
@@ -22,6 +23,8 @@ const siteLoginMethods = {
 	loginAsTeam: 'login_as_team',
 }
 
+const loadingSite = ref(null)
+
 const openSite = (site) => {
 	if (site.status !== 'Archived' && site.setup_wizard_complete) {
 		let siteURL = `https://${site.name}`
@@ -42,7 +45,13 @@ const openSite = (site) => {
 			? doc.loginAsTeam
 			: doc.loginAsAdmin
 
-		login.submit({ reason: '' }).then((url) => window.open(url, '_blank'))
+		loadingSite.value = site.name
+		login
+			.submit({ reason: '' })
+			.then((url) => window.open(url, '_blank'))
+			.finally(() => {
+				loadingSite.value = null
+			})
 	}
 }
 
@@ -136,7 +145,11 @@ onMounted(() => {
 					<td class="py-3">
 						<div class="flex items-center gap-2 justify-end">
 							<Badge :label="site.status" />
-							<LucideChevronRight class="size-4 text-ink-gray-4" />
+							<Spinner
+								v-if="loadingSite === site.name"
+								class="size-4 text-ink-gray-4"
+							/>
+							<LucideChevronRight v-else class="size-4 text-ink-gray-4" />
 						</div>
 					</td>
 				</tr>
