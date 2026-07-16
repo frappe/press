@@ -282,7 +282,7 @@ function exportCSV() {
 		</div>
 
 		<template v-else>
-			<Scrollbar class="h-[calc(100dvh-300px)] md:h-[calc(100dvh-230px)] px-5">
+			<Scrollbar class="flex-1 min-h-0 px-5">
 				<table class="sites-table w-full border-separate border-spacing-0">
 					<thead class="text-ink-gray-5 text-xs">
 						<tr>
