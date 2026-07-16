@@ -4,6 +4,9 @@ import FCLogo from '../components/icons/FCLogo.vue'
 import { getActiveSites } from '../data/sites'
 import { getTeam } from '../data/team'
 import { session } from '../data/session'
+import { trialDays } from '../utils/site'
+import { planTitle } from '../utils/format'
+import { getDocResource } from '../utils/resource'
 
 defineOptions({ name: 'Quickstart' })
 
@@ -11,9 +14,37 @@ const team = getTeam()
 const sitesResource = getActiveSites()
 const sites = computed(() => sitesResource.data || [])
 
-const accountDropdownOptions = [
-	{ label: 'Logout', icon: 'log-out', onClick: session.logout.submit },
-]
+const sitePlan = (site) =>
+	site.trial_end_date ? trialDays(site.trial_end_date) : planTitle(site)
+
+const siteLoginMethods = {
+	loginAsAdmin: 'login_as_admin',
+	loginAsTeam: 'login_as_team',
+}
+
+const openSite = (site) => {
+	if (site.status !== 'Archived' && site.setup_wizard_complete) {
+		let siteURL = `https://${site.name}`
+		if (site.version === 'Nightly' || Number(site.version?.split(' ')[1]) >= 15)
+			siteURL += '/apps'
+		window.open(siteURL, '_blank')
+		return
+	}
+
+	if (site.status === 'Active' && !site.setup_wizard_complete) {
+		const doc = getDocResource({
+			doctype: 'Site',
+			name: site.name,
+			whitelistedMethods: siteLoginMethods,
+		})
+
+		const login = site.additional_system_user_created
+			? doc.loginAsTeam
+			: doc.loginAsAdmin
+
+		login.submit({ reason: '' }).then((url) => window.open(url, '_blank'))
+	}
+}
 
 onMounted(() => {
 	if (!sitesResource.data) sitesResource.list.fetch()
@@ -30,7 +61,7 @@ onMounted(() => {
 				<div class="text-sm text-ink-gray-5">Account</div>
 			</div>
 
-			<Button class='!text-ink-gray-7'>
+			<Button class="!text-ink-gray-7">
 				<template #prefix>
 					<Avatar
 						:label="team.doc.user_info.first_name"
@@ -42,7 +73,7 @@ onMounted(() => {
 				{{ team.doc.user_info.email }}
 			</Button>
 
-			<Button>
+			<Button @click="session.logout.submit">
 				<template #prefix>
 					<LucideLogOut class="size-4" />
 				</template>
@@ -68,34 +99,49 @@ onMounted(() => {
 			</Button>
 		</div>
 
-		<div class="mt-8 flex items-center justify-between text-sm border-b pb-3">
-			<span class="font-medium text-ink-gray-9">Your sites</span>
-			<span class="text-ink-gray-5">{{ sites.length }} sites</span>
-		</div>
+		<table class="mt-8 w-full text-sm" v-if="sites.length">
+			<thead>
+				<tr class="border-b">
+					<th class="pb-3 text-left font-medium text-ink-gray-9">Your sites</th>
+					<th class="pb-3 text-right font-normal text-ink-gray-5">Plan</th>
+					<th class="pb-3 text-right font-normal text-ink-gray-5">
+						{{ sites.length }}
+						sites
+					</th>
+				</tr>
+			</thead>
 
-		<template v-if="sites.length">
-			<a
-				class="flex items-center justify-between py-3 border-b"
-				v-for="site in sites"
-				:key="site.name"
-				:href="'https://' + site.name"
-			>
-				<div class="flex items-center gap-3">
-					<Avatar
-						:label="site.host_name || site.name"
-						shape="square"
-						size="lg"
-					/>
-					<span class="text-base text-ink-gray-9">
-						{{ site.host_name || site.name }}
-					</span>
-				</div>
-				<div class="flex items-center gap-2">
-					<Badge :label="site.status" />
-					<LucideChevronRight class="size-4 text-ink-gray-4" />
-				</div>
-			</a>
-		</template>
+			<tbody>
+				<tr
+					class="border-b cursor-pointer"
+					v-for="site in sites"
+					:key="site.name"
+					@click="openSite(site)"
+				>
+					<td class="py-3">
+						<div class="flex items-center gap-3">
+							<Avatar
+								:label="site.host_name || site.name"
+								shape="square"
+								size="lg"
+							/>
+							<span class="text-base text-ink-gray-9">
+								{{ site.host_name || site.name }}
+							</span>
+						</div>
+					</td>
+					<td class="py-3 text-right text-ink-gray-5">
+						{{ sitePlan(site) }}
+					</td>
+					<td class="py-3">
+						<div class="flex items-center gap-2 justify-end">
+							<Badge :label="site.status" />
+							<LucideChevronRight class="size-4 text-ink-gray-4" />
+						</div>
+					</td>
+				</tr>
+			</tbody>
+		</table>
 
 		<p class="mt-2 flex flex-col items-center gap-3 py-8 text-center" v-else>
 			You don't have any sites yet.
