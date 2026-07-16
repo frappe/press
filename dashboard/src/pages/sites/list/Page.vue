@@ -45,6 +45,14 @@ const sites = createListResource({
 	auto: true,
 })
 
+const sitesCount = createListResource({
+	doctype: 'Site',
+	fields: ['name'],
+	orderBy: 'creation desc',
+	pageLength: 100000,
+	auto: true,
+})
+
 const statusOptions = ['Active', 'Inactive', 'Suspended', 'Broken', 'Archived'].map((label) => ({
 	label,
 	value: label,
@@ -63,8 +71,11 @@ function applyStatusFilter(value: string[]) {
 const moreActions = [{ label: 'Export as CSV', icon: 'download', onClick: () => exportCSV() }]
 
 function applyFilter(key: string, value: any) {
-	sites.update({ filters: { ...sites.filters, [key]: value || undefined }, start: 0 })
+	const filters = { ...sites.filters, [key]: value || undefined }
+	sites.update({ filters, start: 0 })
 	sites.reload()
+	sitesCount.update({ filters })
+	sitesCount.reload()
 }
 
 function sitePlan(row: any) {
@@ -182,7 +193,7 @@ function exportCSV() {
 
 				<MultiSelect
 					placeholder="Status"
-					class="!w-36 shrink-0"
+					class="!w-36 shrink-0 status-multiselect"
 					:options="statusOptions"
 					:modelValue="selectedStatuses"
 					@update:modelValue="applyStatusFilter"
@@ -343,17 +354,25 @@ function exportCSV() {
 				</div>
 			</Scrollbar>
 
-			<div v-if="sites.hasNextPage" class="shrink-0 px-5 py-2 flex justify-end">
-				<Button :loading="sites.list?.loading" @click="sites.next()">Load more</Button>
+			<div class="shrink-0 px-5 py-2 flex justify-end items-center gap-3">
+				<span class="text-sm text-ink-gray-5">
+					Total {{ sitesCount.data?.length ?? 0 }} {{ sitesCount.data?.length === 1 ? 'site' : 'sites' }}
+				</span>
+				<Button v-if="sites.hasNextPage" :loading="sites.list?.loading" @click="sites.next()">
+					Load more
+				</Button>
 			</div>
 		</template>
 	</div>
 </template>
 
 <style>
-/* Hide MultiSelect's built-in checkmark for rows rendering our own checkbox
-   (site-status-option). Unscoped because MultiSelect's dropdown is teleported
-   outside this component's DOM subtree, so scoped/:deep() styles can't reach it. */
+/* add shrink-0 to multiselect chevron */
+.status-multiselect svg {
+	flex-shrink: 0;
+}
+
+/* Hide MultiSelect's built-in checkmark*/
 .site-status-option ~ .absolute.right-2 {
 	display: none;
 }
