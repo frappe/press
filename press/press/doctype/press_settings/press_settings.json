@@ -197,9 +197,14 @@
 		"enable_chat",
 		"chat_base_url",
 		"chat_website_token",
-		"column_break_srse",
+		"column_break_wqtc",
 		"chat_support_start_time",
 		"chat_support_end_time",
+		"raven_section",
+		"raven_access_key_id",
+		"raven_url",
+		"column_break_pqic",
+		"raven_secret_access_key",
 		"marketplace_tab",
 		"marketplace_settings_section",
 		"max_allowed_screenshots",
@@ -1727,33 +1732,6 @@
 			"label": "Chat Support"
 		},
 		{
-			"fieldname": "column_break_srse",
-			"fieldtype": "Column Break"
-		},
-		{
-			"default": "30",
-			"description": "Default number of days before the site warranty setting can be changed for newly created dedicated servers",
-			"fieldname": "default_dedicated_server_site_warranty_change_cooldown",
-			"fieldtype": "Int",
-			"label": "Default Dedicated Server Site Warranty change Cooldown"
-		},
-		{
-			"default": "5",
-			"description": "Default max number of sites with product warranty for newly created dedicated servers\n",
-			"fieldname": "default_dedicated_server_site_warranty_quota",
-			"fieldtype": "Int",
-			"label": "Default Dedicated Server Supported Site Quota"
-		},
-		{
-			"fieldname": "chatwoot_section",
-			"fieldtype": "Section Break",
-			"label": "Chat Support"
-		},
-		{
-			"fieldname": "column_break_srse",
-			"fieldtype": "Column Break"
-		},
-		{
 			"default": "0",
 			"fieldname": "enable_chat",
 			"fieldtype": "Check",
@@ -1843,14 +1821,43 @@
 			"label": "Default Dedicated Server Supported Site Quota"
 		},
 		{
+			"default": "0",
 			"fieldname": "allow_patch_builds",
 			"fieldtype": "Check",
 			"label": "Allow Patch Builds"
+		},
+		{
+			"fieldname": "column_break_wqtc",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "raven_section",
+			"fieldtype": "Section Break",
+			"label": "Raven"
+		},
+		{
+			"fieldname": "raven_access_key_id",
+			"fieldtype": "Data",
+			"label": "Raven Access Key ID"
+		},
+		{
+			"fieldname": "raven_url",
+			"fieldtype": "Data",
+			"label": "Raven URL"
+		},
+		{
+			"fieldname": "column_break_pqic",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "raven_secret_access_key",
+			"fieldtype": "Password",
+			"label": "Raven Secret Access Key"
 		}
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-06-02 22:46:34.584687",
+	"modified": "2026-07-16 16:22:28.209775",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",

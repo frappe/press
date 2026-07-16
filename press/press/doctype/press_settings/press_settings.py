@@ -30,6 +30,7 @@ class PressSettings(Document):
 		agent_repository_owner: DF.Data | None
 		agent_sentry_dsn: DF.Data | None
 		allow_patch_builds: DF.Check
+		anthropic_api_key: DF.Password | None
 		app_include_script: DF.Data | None
 		asset_store_access_key: DF.Data | None
 		asset_store_bucket_name: DF.Data | None
@@ -170,6 +171,8 @@ class PressSettings(Document):
 		github_pat_token: DF.Data | None
 		github_webhook_secret: DF.Data | None
 		gst_percentage: DF.Float
+		hetzner_server_limit: DF.Int
+		hetzner_vcpu_limit: DF.Int
 		hybrid_cluster: DF.Link | None
 		hybrid_domain: DF.Link | None
 		ic_key: DF.Password | None
@@ -204,6 +207,9 @@ class PressSettings(Document):
 		publish_docs: DF.Check
 		pulse_api_key: DF.Data | None
 		pulse_site: DF.Data | None
+		raven_access_key_id: DF.Data | None
+		raven_secret_access_key: DF.Password | None
+		raven_url: DF.Data | None
 		razorpay_key_id: DF.Data | None
 		razorpay_key_secret: DF.Password | None
 		razorpay_webhook_secret: DF.Data | None
