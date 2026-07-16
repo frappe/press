@@ -5404,15 +5404,21 @@ def suspend_sites_exceeding_disk_usage_for_last_14_days():
 def create_subscription_for_trial_sites():
 	# Get sites that are in "Site Created" status and has no entry in "Site Plan Change"
 	# For those sites, invoke "Create Subscription" that puts entry into "Site Plan Change" and "Subscription"
-	active_sites = frappe.db.sql(
-		"""
-		SELECT trial.site, producttrial.trial_plan
-		FROM `tabProduct Trial Request` trial
-		LEFT JOIN `tabSite Plan Change` siteplanchange
-		ON trial.site = siteplanchange.name
-		LEFT JOIN `tabProduct Trial`  producttrial ON trial.product_trial = producttrial.name WHERE trial.is_subscription_created = 0 AND siteplanchange.name is NULL AND trial.status='Site Created' LIMIT 25;
-		""",
-		as_dict=True,
+	ProductTrialRequest = frappe.qb.DocType("Product Trial Request")
+	SitePlanChange = frappe.qb.DocType("Site Plan Change")
+	ProductTrial = frappe.qb.DocType("Product Trial")
+	active_sites = (
+		frappe.qb.from_(ProductTrialRequest)
+		.select(ProductTrialRequest.site, ProductTrial.trial_plan)
+		.left_join(SitePlanChange)
+		.on(ProductTrialRequest.site == SitePlanChange.site)
+		.left_join(ProductTrial)
+		.on(ProductTrialRequest.product_trial == ProductTrial.name)
+		.where(ProductTrialRequest.is_subscription_created == 0)
+		.where(SitePlanChange.name.isnull())
+		.where(ProductTrialRequest.status == "Site Created")
+		.limit(25)
+		.run(as_dict=True)
 	)
 	for trial_site in active_sites:
 		if has_job_timeout_exceeded():
