@@ -53,7 +53,13 @@ const sitesCount = createListResource({
 	auto: true,
 })
 
-const statusOptions = ['Active', 'Inactive', 'Suspended', 'Broken', 'Archived'].map((label) => ({
+const statusOptions = [
+	'Active',
+	'Inactive',
+	'Suspended',
+	'Broken',
+	'Archived',
+].map((label) => ({
 	label,
 	value: label,
 }))
@@ -68,7 +74,9 @@ function applyStatusFilter(value: string[]) {
 	applyFilter('status', value.length ? ['in', value] : undefined)
 }
 
-const moreActions = [{ label: 'Export as CSV', icon: 'download', onClick: () => exportCSV() }]
+const moreActions = [
+	{ label: 'Export as CSV', icon: 'download', onClick: () => exportCSV() },
+]
 
 function applyFilter(key: string, value: any) {
 	const filters = { ...sites.filters, [key]: value || undefined }
@@ -83,7 +91,10 @@ function sitePlan(row: any) {
 	const $team = getTeam()
 	if (row.price_usd > 0) {
 		const india = $team.doc?.currency === 'INR'
-		const formattedValue = userCurrency(india ? row.price_inr : row.price_usd, 0)
+		const formattedValue = userCurrency(
+			india ? row.price_inr : row.price_usd,
+			0,
+		)
 		return `${formattedValue}/mo`
 	}
 	return row.plan_title
@@ -140,7 +151,7 @@ function exportCSV() {
 		auto: true,
 		onSuccess(data: any) {
 			let csv = unparse({ fields, data })
-			csv = '﻿' + csv // for utf-8
+			csv = '�' + csv // for utf-8
 
 			const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
 			const today = new Date().toISOString().split('T')[0]
@@ -159,7 +170,11 @@ function exportCSV() {
 	<div class="flex flex-col h-full">
 		<Header class="bg-surface-white shrink-0">
 			<Breadcrumbs :items="[{ label: 'Sites', route: '/sites' }]" />
-			<Button class="ml-auto mr-2" :loading="sites.list?.loading" @click="sites.reload()">
+			<Button
+				class="ml-auto mr-2"
+				:loading="sites.list?.loading"
+				@click="sites.reload()"
+			>
 				<template #icon><lucide-refresh-ccw class="size-4" /></template>
 			</Button>
 			<Button class="mr-2" :route="{ name: 'New Site' }" variant="solid">
@@ -268,29 +283,25 @@ function exportCSV() {
 
 		<template v-else>
 			<Scrollbar class="h-[calc(100dvh-300px)] md:h-[calc(100dvh-230px)] px-5">
-				<div class="table w-full [&_.table-cell]:p-2">
-					<div class="text-ink-gray-5 text-xs sticky top-0 z-10 table-header-group [&_.table-cell]:bg-surface-gray-1">
-						<div class="table-row" role="row">
-							<div class="table-cell rounded-l">Site</div>
-							<div class="table-cell">Status</div>
-							<div class="table-cell">Plan</div>
-							<div class="table-cell">Region</div>
-							<div class="table-cell">Benches</div>
-							<div class="table-cell">Version</div>
-							<div class="table-cell rounded-r"></div>
-						</div>
-					</div>
+				<table class="sites-table w-full border-separate border-spacing-0">
+					<thead class="text-ink-gray-5 text-xs">
+						<tr>
+							<th class="rounded-l">Site</th>
+							<th>Status</th>
+							<th>Plan</th>
+							<th>Region</th>
+							<th>Benches</th>
+							<th>Version</th>
+							<th class="rounded-r"></th>
+						</tr>
+						<tr aria-hidden="true">
+							<td colspan="7" class="h-3 p-0"></td>
+						</tr>
+					</thead>
 
-					<div class="h-3 invisible">a</div>
-
-					<div class="table-row-group text-ink-gray-8">
-						<div
-							v-for="site in sites.data"
-							:key="site.name"
-							class="table-row *:border-b"
-							role="row"
-						>
-							<div class="table-cell font-medium" role="cell">
+					<tbody class="text-ink-gray-8">
+						<tr v-for="site in sites.data" :key="site.name" class="*:border-b">
+							<td class="font-medium">
 								<Tooltip text="Go to site dashboard">
 									<router-link
 										class="flex gap-2 w-fit items-center hover:underline"
@@ -300,9 +311,9 @@ function exportCSV() {
 										{{ site.host_name || site.name }}
 									</router-link>
 								</Tooltip>
-							</div>
+							</td>
 
-							<div class="table-cell" role="cell">
+							<td>
 								<Badge
 									variant="subtle"
 									class="w-fit"
@@ -314,37 +325,38 @@ function exportCSV() {
 									/>
 									{{ site.status }}
 								</Badge>
-							</div>
+							</td>
 
-							<div class="table-cell whitespace-nowrap" role="cell">
-								{{ sitePlan(site) }}
-							</div>
+							<td class="whitespace-nowrap"> {{ sitePlan(site) }} </td>
 
-							<div class="table-cell" role="cell">
+							<td class="whitespace-nowrap">
 								<span class="flex gap-1.5 items-center">
-									<img v-if="site.cluster_image" :src="site.cluster_image" class="size-3.5" />
+									<img
+										v-if="site.cluster_image"
+										:src="site.cluster_image"
+										class="size-3.5"
+									/>
 									{{ site.cluster_title }}
 								</span>
-							</div>
+							</td>
 
-							<div class="table-cell" role="cell">
+							<td class="whitespace-nowrap">
 								{{ site.group_public ? 'Shared' : site.group_title }}
-							</div>
+							</td>
+							<td class="whitespace-nowrap"> {{ site.version }}</td>
 
-							<div class="table-cell" role="cell">
-								{{ site.version }}
-							</div>
-
-							<div class="table-cell w-px" role="cell">
+							<td class="w-px">
 								<div class="flex justify-end">
 									<Dropdown :options="siteOptions(site)">
-										<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
+										<Button variant="ghost"
+											><LucideEllipsis class="size-4" /></Button
+										>
 									</Dropdown>
 								</div>
-							</div>
-						</div>
-					</div>
-				</div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
 
 				<div
 					v-if="!sites.list?.loading && !sites.data?.length"
@@ -356,15 +368,30 @@ function exportCSV() {
 
 			<div class="shrink-0 px-5 py-2 flex justify-end items-center gap-3">
 				<span class="text-sm text-ink-gray-5">
-					Total {{ sitesCount.data?.length ?? 0 }} {{ sitesCount.data?.length === 1 ? 'site' : 'sites' }}
+					Total {{ sitesCount.data?.length ?? 0 }}
+					{{ sitesCount.data?.length === 1 ? 'site' : 'sites' }}
 				</span>
-				<Button v-if="sites.hasNextPage" :loading="sites.list?.loading" @click="sites.next()">
+				<Button
+					v-if="sites.hasNextPage"
+					:loading="sites.list?.loading"
+					@click="sites.next()"
+				>
 					Load more
 				</Button>
 			</div>
 		</template>
 	</div>
 </template>
+
+<style scoped>
+.sites-table th {
+	@apply p-2 sticky top-0 z-10 bg-surface-gray-1 text-left font-normal;
+}
+
+.sites-table td {
+	@apply p-2;
+}
+</style>
 
 <style>
 /* add shrink-0 to multiselect chevron */
