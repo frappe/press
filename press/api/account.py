@@ -282,29 +282,36 @@ def accept_team_invite(key: str):
 			"This invite can't be accepted with the current account. Please sign in with the invited account or request a new invite."
 		)
 
-	team = account_request.team
-	first_name = account_request.first_name
-	last_name = account_request.last_name
-	email = account_request.email
-	password = None
-	press_roles = account_request.invite_press_roles
+	# Adding the member triggers side effects the invited user can't perform
+	# themselves (e.g. an Email Group Member subscription), which raise a
+	# PermissionError for a plain Press User. Run as Administrator, mirroring
+	# setup_account. This elevation was dropped in f1a0e80ba in favour of
+	# ignore_permissions, but that only covers the Team and User saves, not
+	# those side effects.
+	current_user = frappe.session.user
+	try:
+		frappe.set_user("Administrator")
+		add_invited_member_to_team(account_request)
+	finally:
+		frappe.set_user(current_user)
 
-	team_doc = frappe.get_doc("Team", team, ignore_permissions=True)
-	if is_user_part_of_team(email, team):
-		account_request.db_set("request_key", None)
+	account_request.db_set("request_key", None)
+
+
+def add_invited_member_to_team(account_request):
+	if is_user_part_of_team(account_request.email, account_request.team):
 		return
 
+	team_doc = frappe.get_doc("Team", account_request.team, ignore_permissions=True)
 	team_doc.create_user_for_member(
-		first_name,
-		last_name,
-		email,
-		password,
-		press_roles,
+		account_request.first_name,
+		account_request.last_name,
+		account_request.email,
+		None,
+		account_request.invite_press_roles,
 		skip_validations=True,
 		role=account_request.invite_role_label,
 	)
-
-	account_request.db_set("request_key", None)
 
 
 @frappe.whitelist(allow_guest=True)
