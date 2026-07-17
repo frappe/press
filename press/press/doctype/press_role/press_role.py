@@ -176,12 +176,13 @@ class PressRole(Document):
 			rows = frappe.get_all(
 				document_type, filters={"name": ("in", list(names))}, fields=["name", "title"]
 			)
-			titles.update({row.name: row.title for row in rows})
+			titles.update({(document_type, row.name): row.title for row in rows})
 
 		flat_resources = []
 		for resource in resources:
 			row = resource.as_dict()
-			row["document_title"] = titles.get(row["document_name"], row["document_name"])
+			key = (row["document_type"], row["document_name"])
+			row["document_title"] = titles.get(key, row["document_name"])
 			flat_resources.append(row)
 		return flat_resources
 
