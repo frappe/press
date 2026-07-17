@@ -51,7 +51,8 @@ export default {
 			next({ name: 'Site List' });
 			return;
 		}
-		next({ name: sites.data.length <= 3 ? 'Quickstart' : 'Site List' });
+
+		next({ name: sites.data.length > 0 && sites.data.length <= 3 ? 'Quickstart' : 'Site List' });
 	},
 	methods: {
 		routeToSourcePage() {
