@@ -6,7 +6,6 @@ import FCLogo from '@/components/icons/FCLogo.vue'
 import { getActiveSites } from '@/data/sites'
 import { getTeam } from '@/data/team'
 import { trialDays } from '@/utils/site'
-import { planTitle, userCurrency } from '@/utils/format'
 import { getDocResource } from '@/utils/resource'
 import { getToastErrorMessage } from '@/utils/toast'
 
@@ -16,22 +15,8 @@ const team = getTeam()
 const sitesResource = getActiveSites()
 const sites = computed(() => sitesResource.data || [])
 
-const sitePlan = (site) => {
-	if (site.trial_end_date) return trialDays(site.trial_end_date)
-
-	let plan = planTitle(site)
-
-	if (site.price_usd > 0) {
-		const india = team.doc?.currency === 'INR'
-		const formattedValue = userCurrency(
-			india ? site.price_inr : site.price_usd,
-			0,
-		)
-		plan = `${formattedValue}/mo`
-	}
-
-	return `You're on ${plan} plan`
-}
+const sitePlan = (site) =>
+	site.trial_end_date ? trialDays(site.trial_end_date) : null
 
 const siteLoginMethods = {
 	loginAsAdmin: 'login_as_admin',
@@ -120,8 +105,10 @@ onMounted(() => {
 					class="flex gap-2 items-center col-span-2 pb-3"
 					:class="i == sites.slice(0,3).length - 1 ? '' : 'border-b'"
 				>
-					<span class="text-ink-gray-5"> {{ sitePlan(site) }}</span>
-					<Badge :label="site.status" />
+					<span class="text-ink-gray-5" v-if="sitePlan(site)">
+						{{ sitePlan(site) }}</span
+					>
+					<Badge :label="site.status" variant='outline' />
 				</div>
 			</a>
 		</template>
