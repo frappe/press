@@ -7,6 +7,7 @@ import {
 	MultiSelect,
 	TextInput,
 	Tooltip,
+  Spinner,
 	createDocumentResource,
 	createListResource,
 } from 'frappe-ui'
@@ -83,7 +84,11 @@ const moreActions = [
 ]
 
 const applyFilter = (key: string, value: any) => {
-	const filters = { ...sites.filters, [key]: value || undefined }
+	const filters = Object.fromEntries(
+		Object.entries({ ...sites.filters, [key]: value || undefined }).filter(
+			([, v]) => v !== undefined,
+		),
+	)
 	sites.update({ filters, start: 0 })
 	sites.reload()
 	sitesCount.update({ filters })
