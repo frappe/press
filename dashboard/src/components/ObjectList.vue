@@ -136,12 +136,15 @@
 				</div>
 			</div>
 			<div
-				class="p-2 text-right"
+				class="flex items-center justify-end gap-3 p-2"
 				:class="{
 					'bg-surface-white bottom-0 sticky': $list?.next && $list?.hasNextPage,
 				}"
 				v-if="$list"
 			>
+				<span class="text-sm text-ink-gray-5" v-if="totalCount != null">
+					{{ totalCount }} {{ countLabel }}
+				</span>
 				<Button
 					v-if="$list.next && $list.hasNextPage"
 					@click="$list.next()"
@@ -271,6 +274,13 @@ export default {
 			const listRes = this.$resources.list
 			if (listRes) void listRes.data
 			return this.options.extraResource(this.context)
+		},
+		count() {
+			if (!this.options.count) return
+			if (typeof this.options.count === 'function') {
+				return this.options.count(this.context)
+			}
+			return this.options.count
 		},
 	},
 	beforeUpdate() {
@@ -462,6 +472,12 @@ export default {
 		isLoading() {
 			if (this.options.data) return false
 			return this.$list?.list?.loading || this.$list?.loading
+		},
+		totalCount() {
+			return this.$resources.count?.data
+		},
+		countLabel() {
+			return (this.options.title || 'items').toLowerCase()
 		},
 		showControls() {
 			return (
