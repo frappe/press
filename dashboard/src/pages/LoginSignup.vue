@@ -840,7 +840,8 @@ export default {
 				loginRoute = redirect;
 			}
 			localStorage.setItem('login_email', this.email);
-			window.location.href = loginRoute;
+			let separator = loginRoute.includes('?') ? '&' : '?';
+			window.location.href = `${loginRoute}${separator}post_login=1`;
 		},
 	},
 	computed: {

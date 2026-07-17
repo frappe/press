@@ -14,6 +14,7 @@ let router = createRouter({
 				next({
 					name: 'Welcome',
 					query: {
+						...to.query,
 						is_redirect: true,
 					},
 				})
@@ -23,6 +24,12 @@ let router = createRouter({
 			path: '/welcome',
 			name: 'Welcome',
 			component: () => import('./pages/Welcome.vue'),
+			meta: { hideSidebar: true },
+		},
+		{
+			path: '/quickstart',
+			name: 'Quickstart',
+			component: () => import('./pages/Quickstart.vue'),
 			meta: { hideSidebar: true },
 		},
 		{
