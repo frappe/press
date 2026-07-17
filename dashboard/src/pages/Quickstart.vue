@@ -26,9 +26,9 @@ const siteLoginMethods = {
 const loadingSite = ref(null)
 
 const openSite = (site) => {
-	if (site.status !== 'Archived' && site.setup_wizard_complete) {
+	if (site.status === 'Active' && site.setup_wizard_complete) {
 		let siteURL = `https://${site.name}`
-		if (site.version === 'Nightly' || Number(site.version?.split(' ')[1]) >= 15)
+		if (site.version === 'Nightly' || Number(site.version?.split(' ')?.[1]) >= 15)
 			siteURL += '/apps'
 		window.open(siteURL, '_blank')
 		return
