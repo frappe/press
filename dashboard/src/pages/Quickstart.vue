@@ -116,7 +116,7 @@ onMounted(() => {
 		</p>
 
 		<Button variant="solid" :route="{ name: 'Site List' }" class="w-full mt-2">
-			Go to Dashboard
+			Go to Cloud Dashboard
 		</Button>
 
 		<div
