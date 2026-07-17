@@ -5,15 +5,12 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 import frappe
-from frappe import TYPE_CHECKING, _
+from frappe import _
 from frappe.model.document import Document
 from frappe.query_builder.functions import Count
 from frappe.query_builder.terms import QueryBuilder
 
-if TYPE_CHECKING:
-	from press.press.doctype.team.team import Team
-
-from press.utils import get_current_team
+from press.utils import get_current_team, is_admin_user, is_team_owner
 from press.utils import user as utils_user
 
 from .action import action_key
@@ -34,8 +31,8 @@ def api(scope: Literal["billing", "partner"]):
 			key = api_key(scope)
 			if not key:
 				return fn(*args, **kwargs)
-			team: Team = get_current_team(get_doc=True)
-			if team.is_team_owner() or team.is_admin_user():
+			team = get_current_team()
+			if is_team_owner(team) or is_admin_user(team):
 				return fn(*args, **kwargs)
 			PressRole = frappe.qb.DocType("Press Role")
 			PressRoleUser = frappe.qb.DocType("Press Role User")
@@ -44,7 +41,7 @@ def api(scope: Literal["billing", "partner"]):
 				.inner_join(PressRoleUser)
 				.on(PressRoleUser.parent == PressRole.name)
 				.select(Count(PressRole.name).as_("count"))
-				.where(PressRole.team == team.name)
+				.where(PressRole.team == team)
 				.where(PressRole[key] == 1)
 				.where(PressRoleUser.user == frappe.session.user)
 				.run(as_dict=True)
@@ -71,8 +68,8 @@ def action():
 			key = action_key(self)
 			if not key:
 				return fn(self, *args, **kwargs)
-			team: Team = get_current_team(get_doc=True)
-			if team.is_team_owner() or team.is_admin_user():
+			team = get_current_team()
+			if is_team_owner(team) or is_admin_user(team):
 				return fn(self, *args, **kwargs)
 			PressRole = frappe.qb.DocType("Press Role")
 			PressRoleUser = frappe.qb.DocType("Press Role User")
@@ -81,7 +78,7 @@ def action():
 				.inner_join(PressRoleUser)
 				.on(PressRoleUser.parent == PressRole.name)
 				.select(Count(PressRole.name).as_("count"))
-				.where(PressRole.team == team.name)
+				.where(PressRole.team == team)
 				.where(PressRole[key] == 1)
 				.where(PressRoleUser.user == frappe.session.user)
 				.run(as_dict=True)
@@ -154,8 +151,8 @@ def check(document_type: str, document_name: str) -> bool | list[str]:  # noqa: 
 	"""
 	Check if the user has permission to access a specific document type and name.
 	"""
-	team: Team = get_current_team(get_doc=True)
-	if team.is_team_owner() or team.is_admin_user():
+	team = get_current_team()
+	if is_team_owner(team) or is_admin_user(team):
 		return True
 	query = base_query()
 	match document_type:
@@ -182,12 +179,12 @@ def check(document_type: str, document_name: str) -> bool | list[str]:  # noqa: 
 
 
 def is_restricted() -> bool:
-	team = get_current_team(get_doc=True)
+	team = get_current_team()
 	return (
 		roles_enabled()
 		and not utils_user.is_system_manager()
-		and not team.is_team_owner()
-		and not team.is_admin_user()
+		and not is_team_owner(team)
+		and not is_admin_user(team)
 	)
 
 
