@@ -852,8 +852,11 @@ export default {
 				loginRoute = redirect;
 			}
 			localStorage.setItem('login_email', this.email);
-			let separator = loginRoute.includes('?') ? '&' : '?';
-			window.location.href = `${loginRoute}${separator}post_login=1`;
+			if (loginRoute.includes('/welcome')) {
+				let separator = loginRoute.includes('?') ? '&' : '?';
+				loginRoute = `${loginRoute}${separator}post_login=1`;
+			}
+			window.location.href = loginRoute;
 		},
 	},
 	computed: {
