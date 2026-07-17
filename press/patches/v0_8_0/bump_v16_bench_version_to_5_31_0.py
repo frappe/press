@@ -1,4 +1,5 @@
 import frappe
+from frappe.utils import update_progress_bar
 
 
 def execute():
@@ -19,7 +20,8 @@ def execute():
 	)
 
 	now = frappe.utils.now_datetime()
-	for row in rows:
+	for i, row in enumerate(rows):
+		update_progress_bar("Bumping bench version on Version 16 groups", i, len(rows))
 		frappe.db.set_value("Release Group Dependency", row.name, "version", "5.31.0", update_modified=False)
 		# Set what ReleaseGroup.on_update would have set. Saving each group instead would run every
 		# Release Group validation during migrate, where one bad group aborts the whole patch.
