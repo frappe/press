@@ -85,11 +85,11 @@ onMounted(() => {
 			<a
 				v-for="(site, i) in sites.slice(0,3)"
 				:key="site.name"
-				class="grid grid-cols-[auto_1fr_auto] items-center gap-1.5 mb-3 cursor-pointer"
+				class="grid grid-cols-[1fr_auto] items-center gap-1.5 mb-3 cursor-pointer"
 				@click="openSite(site)"
 			>
-				<LucideGlobe class="size-4 text-ink-gray-6 mt-1 mr-1" />
-				<span class="text-base text-ink-gray-9">
+				<span class="relative text-base text-ink-gray-8">
+					<LucideGlobe class="absolute -left-6 size-4 text-ink-gray-6 mt-0.5" />
 					{{ site.host_name || site.name }}
 				</span>
 
@@ -98,8 +98,6 @@ onMounted(() => {
 					class="size-4 text-ink-gray-4"
 				/>
 				<LucideArrowRight v-else class="size-4 text-ink-gray-6" />
-
-				<span />
 
 				<div
 					class="flex gap-2 items-center col-span-2 pb-3"
