@@ -282,15 +282,34 @@ class Site(Document, TagHelpers):
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
+		from frappe.query_builder.functions import Coalesce
+
 		from press.press.doctype.site_update.site_update import (
 			benches_with_available_update,
 		)
 
 		Site = frappe.qb.DocType("Site")
 
+		# not a real field, so validate_filters strips it before it reaches the
+		# base query; host_name is only set once a site first reaches Active, so
+		# sites that broke or are still pending before that never get one — search
+		# against whichever one the UI actually displays (host_name || name)
+		search_term = filters.get("_search")
+		if search_term:
+			like_term = f"%{search_term}%"
+			query = query.where(Coalesce(Site.host_name, Site.name).like(like_term))
+
 		status = filters.get("status")
-		if status == "Archived":
-			sites = query.where(Site.status == status).run(as_dict=1)
+		if isinstance(status, (list, tuple)) and len(status) == 2 and str(status[0]).lower() == "in":
+			statuses = list(status[1])
+		elif status:
+			statuses = [status]
+		else:
+			statuses = []
+
+		if statuses:
+			# explicit status filter: respect it as-is, don't force-hide archived
+			sites = query.where(Site.status.isin(statuses)).run(as_dict=1)
 		else:
 			benches_with_available_update = benches_with_available_update()
 			sites = query.where(Site.status != "Archived").select(Site.bench).run(as_dict=1)
