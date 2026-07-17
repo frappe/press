@@ -38,7 +38,7 @@ const getUnpaidInvoices = createResource({
 		order_by: 'creation desc',
 		limit: 1,
 	},
-	auto: team.doc?.payment_mode === 'Card' && isAfterFirstWeek,
+	auto: () => team.doc?.payment_mode === 'Card' && isAfterFirstWeek,
 })
 const cardPaymentFailure = computed(() => {
 	const invoices = getUnpaidInvoices.data
