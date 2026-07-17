@@ -118,11 +118,11 @@ def _get_public_server_pool_decision(
 		decision["selected_site_servers"].add(selected_server)
 		decision["fallback_servers_by_cluster"][cluster] = selected_server
 
-	for server, swap_used in swap_used_bytes.items():
-		if swap_used > SWAP_USAGE_ALERT_THRESHOLD_BYTES:
-			decision["server_issues"].setdefault(server, []).append(
-				f"Swap usage: {_format_bytes(swap_used)} > {_format_bytes(SWAP_USAGE_ALERT_THRESHOLD_BYTES)}"
-			)
+		for server, swap_used in swap_used_bytes.items():
+			if swap_used > SWAP_USAGE_ALERT_THRESHOLD_BYTES:
+				decision["server_issues"].setdefault(server, []).append(
+					f"Swap usage: {_format_bytes(swap_used)}"
+				)
 
 	return decision
 
@@ -133,9 +133,9 @@ def _get_public_server_health_issues(server: str, metrics: PublicServerHealthMet
 	cpu_utilization = 1 - metrics["cpu_idle_ratio"][server]
 
 	if ram_utilization > 0.8:
-		issues.append(f"RAM utilization: {ram_utilization * 100:.2f}% > 80%")
+		issues.append(f"RAM utilization: {ram_utilization * 100:.2f}%")
 	if cpu_utilization > 0.5:
-		issues.append(f"CPU utilization: {cpu_utilization * 100:.2f}% > 50%")
+		issues.append(f"CPU utilization: {cpu_utilization * 100:.2f}%")
 
 	return issues
 
