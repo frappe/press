@@ -2,14 +2,13 @@
 import { computed, onMounted, ref } from 'vue'
 import { Spinner } from 'frappe-ui'
 import { toast } from 'vue-sonner'
-import FCLogo from '../components/icons/FCLogo.vue'
-import { getActiveSites } from '../data/sites'
-import { getTeam } from '../data/team'
-import { session } from '../data/session'
-import { trialDays } from '../utils/site'
-import { planTitle } from '../utils/format'
-import { getDocResource } from '../utils/resource'
-import { getToastErrorMessage } from '../utils/toast'
+import FCLogo from '@/components/icons/FCLogo.vue'
+import { getActiveSites } from '@/data/sites'
+import { getTeam } from '@/data/team'
+import { trialDays } from '@/utils/site'
+import { planTitle, userCurrency } from '@/utils/format'
+import { getDocResource } from '@/utils/resource'
+import { getToastErrorMessage } from '@/utils/toast'
 
 defineOptions({ name: 'Quickstart' })
 
@@ -17,8 +16,22 @@ const team = getTeam()
 const sitesResource = getActiveSites()
 const sites = computed(() => sitesResource.data || [])
 
-const sitePlan = (site) =>
-	site.trial_end_date ? trialDays(site.trial_end_date) : planTitle(site)
+const sitePlan = (site) => {
+	if (site.trial_end_date) return trialDays(site.trial_end_date)
+
+	let plan = planTitle(site)
+
+	if (site.price_usd > 0) {
+		const india = team.doc?.currency === 'INR'
+		const formattedValue = userCurrency(
+			india ? site.price_inr : site.price_usd,
+			0,
+		)
+		plan = `${formattedValue}/mo`
+	}
+
+	return `You're on ${plan} plan`
+}
 
 const siteLoginMethods = {
 	loginAsAdmin: 'login_as_admin',
@@ -69,107 +82,60 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="mx-auto max-w-2xl px-5 py-10 min-h-screen" v-if="team?.doc">
+	<div class="mx-auto max-w-sm px-5 py-20 min-h-screen" v-if="team?.doc">
 		<!-- header -->
-		<div class="flex items-center gap-2">
-			<FCLogo class="size-8 rounded" />
-			<div class="flex flex-col gap-0.5 mr-auto">
-				<div class="text-base font-medium text-ink-gray-9">Frappe Cloud</div>
-				<div class="text-sm text-ink-gray-5">Account</div>
-			</div>
+		<div class="flex items-center gap-2"></div>
 
-			<Button class="!text-ink-gray-7">
-				<template #prefix>
-					<Avatar
-						:label="team.doc.user_info.first_name"
-						:image="team.doc.user_info.user_image"
-						size="sm"
-						class="[&>*]:bg-surface-gray-4"
-					/>
-				</template>
-				{{ team.doc.user_info.email }}
-			</Button>
+		<FCLogo class="size-10 rounded mb-6" />
 
-			<Button @click="session.logout.submit">
-				<template #prefix>
-					<LucideLogOut class="size-4" />
-				</template>
-				Sign out</Button
+		<h2 class="text-2xl font-semibold text-ink-gray-9">
+			Where do you want to go?
+		</h2>
+
+		<p class="mt-1 text-p-base text-ink-gray-5 mb-8">
+			Select a site or continue to Frappe Cloud.
+		</p>
+
+		<template v-if="sites.length">
+			<a
+				v-for="(site, i) in sites.slice(0,3)"
+				:key="site.name"
+				class="grid grid-cols-[auto_1fr_auto] items-center gap-1.5 mb-3 cursor-pointer"
+				@click="openSite(site)"
 			>
-		</div>
+				<LucideGlobe class="size-4 text-ink-gray-6 mt-1 mr-1" />
+				<span class="text-base text-ink-gray-9">
+					{{ site.host_name || site.name }}
+				</span>
 
-		<div class="flex items-start justify-between mt-10">
-			<div>
-				<h2 class="text-2xl font-semibold text-ink-gray-9">
-					Where do you want to go?
-				</h2>
-				<p class="mt-1 text-p-base text-ink-gray-5">
-					Select a site or continue to Frappe Cloud.
-				</p>
-			</div>
+				<Spinner
+					v-if="loadingSite === site.name"
+					class="size-4 text-ink-gray-4"
+				/>
+				<LucideArrowRight v-else class="size-4 text-ink-gray-6" />
 
-			<Button variant="solid" :route="{ name: 'Site List' }">
-				Go to Dashboard
-				<template #suffix>
-					<lucide-arrow-right class="size-4" />
-				</template>
-			</Button>
-		</div>
+				<span />
 
-		<table class="mt-8 w-full text-sm" v-if="sites.length">
-			<thead>
-				<tr class="border-b">
-					<th class="pb-3 text-left font-medium text-ink-gray-9">Your sites</th>
-					<th class="pb-3 text-right font-normal text-ink-gray-5">Plan</th>
-					<th class="pb-3 text-right font-normal text-ink-gray-5">
-						{{ sites.length }}
-						sites
-					</th>
-				</tr>
-			</thead>
-
-			<tbody>
-				<tr
-					class="border-b cursor-pointer"
-					v-for="site in sites"
-					:key="site.name"
-					@click="openSite(site)"
+				<div
+					class="flex gap-2 items-center col-span-2 pb-3"
+					:class="i == sites.slice(0,3).length - 1 ? '' : 'border-b'"
 				>
-					<td class="py-3">
-						<div class="flex items-center gap-3">
-							<Avatar
-								:label="site.host_name || site.name"
-								shape="square"
-								size="lg"
-							/>
-							<span class="text-base text-ink-gray-9">
-								{{ site.host_name || site.name }}
-							</span>
-						</div>
-					</td>
-					<td class="py-3 text-right text-ink-gray-5">
-						{{ sitePlan(site) }}
-					</td>
-					<td class="py-3">
-						<div class="flex items-center gap-2 justify-end">
-							<Badge :label="site.status" />
-							<Spinner
-								v-if="loadingSite === site.name"
-								class="size-4 text-ink-gray-4"
-							/>
-							<LucideChevronRight v-else class="size-4 text-ink-gray-4" />
-						</div>
-					</td>
-				</tr>
-			</tbody>
-		</table>
+					<span class="text-ink-gray-5"> {{ sitePlan(site) }}</span>
+					<Badge :label="site.status" />
+				</div>
+			</a>
+		</template>
 
 		<p class="mt-2 flex flex-col items-center gap-3 py-8 text-center" v-else>
 			You don't have any sites yet.
 		</p>
 
+		<Button variant="solid" :route="{ name: 'Site List' }" class="w-full mt-2">
+			Go to Dashboard
+		</Button>
+
 		<div
-			class="flex justify-center gap-2 pt-4 text-sm text-ink-gray-6"
+			class="flex justify-center gap-2 pt-4  text-ink-gray-6"
 			:class="sites.length ? '' : 'border-t'"
 		>
 			<a
@@ -186,14 +152,6 @@ onMounted(() => {
 				target="_blank"
 			>
 				Support
-			</a>
-			<span>·</span>
-			<a
-				class="hover:text-ink-gray-8"
-				href="https://frappecloud.com/policies"
-				target="_blank"
-			>
-				Terms
 			</a>
 		</div>
 	</div>
