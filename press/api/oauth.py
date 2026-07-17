@@ -118,7 +118,7 @@ def callback(code=None, state=None):
 		else:
 			frappe.local.login_manager.login_as(email)
 			frappe.local.response.type = "redirect"
-			frappe.response.location = "/dashboard"
+			frappe.response.location = "/dashboard?post_login=1"
 
 	return None
 
