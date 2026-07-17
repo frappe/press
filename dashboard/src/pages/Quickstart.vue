@@ -28,7 +28,10 @@ const loadingSite = ref(null)
 const openSite = (site) => {
 	if (site.status === 'Active' && site.setup_wizard_complete) {
 		let siteURL = `https://${site.name}`
-		if (site.version === 'Nightly' || Number(site.version?.split(' ')?.[1]) >= 15)
+		if (
+			site.version === 'Nightly' ||
+			Number(site.version?.split(' ')?.[1]) >= 15
+		)
 			siteURL += '/apps'
 		window.open(siteURL, '_blank')
 		return
@@ -81,39 +84,33 @@ onMounted(() => {
 			Select a site or continue to Frappe Cloud.
 		</p>
 
-		<template v-if="sites.length">
-			<a
-				v-for="(site, i) in sites.slice(0,3)"
-				:key="site.name"
-				class="grid grid-cols-[1fr_auto] items-center gap-1.5 mb-3 cursor-pointer"
-				@click="openSite(site)"
+		<a
+			v-for="(site, i) in sites.slice(0,3)"
+			:key="site.name"
+			class="grid grid-cols-[1fr_auto] items-center gap-1.5 mb-3 cursor-pointer"
+			@click="openSite(site)"
+		>
+			<span class="relative text-base text-ink-gray-8">
+				<LucideGlobe class="absolute -left-6 size-4 text-ink-gray-6 mt-0.5" />
+				{{ site.host_name || site.name }}
+			</span>
+
+			<Spinner
+				v-if="loadingSite === site.name"
+				class="size-4 text-ink-gray-4"
+			/>
+			<LucideArrowRight v-else class="size-4 text-ink-gray-6" />
+
+			<div
+				class="flex gap-2 items-center col-span-2 pb-3"
+				:class="i == sites.slice(0,3).length - 1 ? '' : 'border-b'"
 			>
-				<span class="relative text-base text-ink-gray-8">
-					<LucideGlobe class="absolute -left-6 size-4 text-ink-gray-6 mt-0.5" />
-					{{ site.host_name || site.name }}
-				</span>
-
-				<Spinner
-					v-if="loadingSite === site.name"
-					class="size-4 text-ink-gray-4"
-				/>
-				<LucideArrowRight v-else class="size-4 text-ink-gray-6" />
-
-				<div
-					class="flex gap-2 items-center col-span-2 pb-3"
-					:class="i == sites.slice(0,3).length - 1 ? '' : 'border-b'"
+				<span class="text-ink-gray-5" v-if="sitePlan(site)">
+					{{ sitePlan(site) }}</span
 				>
-					<span class="text-ink-gray-5" v-if="sitePlan(site)">
-						{{ sitePlan(site) }}</span
-					>
-					<Badge :label="site.status" variant='outline' />
-				</div>
-			</a>
-		</template>
-
-		<p class="mt-2 flex flex-col items-center gap-3 py-8 text-center" v-else>
-			You don't have any sites yet.
-		</p>
+				<Badge :label="site.status" variant="outline" />
+			</div>
+		</a>
 
 		<Button variant="solid" :route="{ name: 'Site List' }" class="w-full mt-2">
 			Go to Cloud Dashboard
