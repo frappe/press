@@ -22,6 +22,24 @@ import { renderDialog } from '@/utils/components'
 import { userCurrency } from '@/utils/format'
 import { getSiteStatusBadge, trialDays } from '@/utils/site'
 
+const statusOptions = [
+	'Active',
+	'Inactive',
+	'Suspended',
+	'Broken',
+	'Archived',
+].map((label) => ({
+	label,
+	value: label,
+}))
+const regionOptions = clusterOptions.filter(Boolean)
+
+const selectedStatuses = ref<string[]>(
+	statusOptions.filter((o) => o.value !== 'Archived').map((o) => o.value),
+)
+
+const initialFilters = { status: ['in', selectedStatuses.value] }
+
 const sites = createListResource({
 	doctype: 'Site',
 	fields: [
@@ -39,6 +57,7 @@ const sites = createListResource({
 		'cluster.image as cluster_image',
 		'cluster.title as cluster_title',
 	],
+	filters: initialFilters,
 	orderBy: 'creation desc',
 	pageLength: 20,
 	auto: true,
@@ -48,26 +67,11 @@ const sites = createListResource({
 const sitesCount = createListResource({
 	doctype: 'Site',
 	fields: ['name'],
+	filters: initialFilters,
 	orderBy: 'creation desc',
 	pageLength: 100000,
 	auto: true,
 })
-
-const statusOptions = [
-	'Active',
-	'Inactive',
-	'Suspended',
-	'Broken',
-	'Archived',
-].map((label) => ({
-	label,
-	value: label,
-}))
-const regionOptions = clusterOptions.filter(Boolean)
-
-const selectedStatuses = ref<string[]>(
-	statusOptions.filter((o) => o.value !== 'Archived').map((o) => o.value),
-)
 
 const applyStatusFilter = (value: string[]) => {
 	selectedStatuses.value = value
@@ -151,7 +155,7 @@ const exportCSV = () => {
 		auto: true,
 		onSuccess(data: any) {
 			let csv = unparse({ fields, data })
-			csv = '�' + csv // for utf-8
+			csv = '﻿' + csv // for utf-8
 
 			const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
 			const today = new Date().toISOString().split('T')[0]
