@@ -5,7 +5,6 @@ import {
 	Combobox,
 	Dropdown,
 	MultiSelect,
-	Spinner,
 	TextInput,
 	Tooltip,
 	createDocumentResource,
@@ -43,6 +42,7 @@ const sites = createListResource({
 	orderBy: 'creation desc',
 	pageLength: 20,
 	auto: true,
+	cache: ['Site', 'list'],
 })
 
 const sitesCount = createListResource({
@@ -69,7 +69,7 @@ const selectedStatuses = ref<string[]>(
 	statusOptions.filter((o) => o.value !== 'Archived').map((o) => o.value),
 )
 
-function applyStatusFilter(value: string[]) {
+const applyStatusFilter = (value: string[]) => {
 	selectedStatuses.value = value
 	applyFilter('status', value.length ? ['in', value] : undefined)
 }
@@ -78,7 +78,7 @@ const moreActions = [
 	{ label: 'Export as CSV', icon: 'download', onClick: () => exportCSV() },
 ]
 
-function applyFilter(key: string, value: any) {
+const applyFilter = (key: string, value: any) => {
 	const filters = { ...sites.filters, [key]: value || undefined }
 	sites.update({ filters, start: 0 })
 	sites.reload()
@@ -86,7 +86,7 @@ function applyFilter(key: string, value: any) {
 	sitesCount.reload()
 }
 
-function sitePlan(row: any) {
+const sitePlan = (row: any) => {
 	if (row.trial_end_date) return trialDays(row.trial_end_date)
 	const $team = getTeam()
 	if (row.price_usd > 0) {
@@ -100,7 +100,7 @@ function sitePlan(row: any) {
 	return row.plan_title
 }
 
-function dropSite(site: any) {
+const dropSite = (site: any) => {
 	const ArchiveSiteDialog = defineAsyncComponent(
 		() => import('@/components/site/ArchiveSiteDialog.vue'),
 	)
@@ -118,7 +118,7 @@ function dropSite(site: any) {
 	)
 }
 
-function siteOptions(site: any) {
+const siteOptions = (site: any) => {
 	return [
 		{
 			label: 'Site Actions',
@@ -135,7 +135,7 @@ function siteOptions(site: any) {
 	]
 }
 
-function exportCSV() {
+const exportCSV = () => {
 	const fields = [
 		'host_name',
 		'plan_title',
@@ -167,7 +167,7 @@ function exportCSV() {
 </script>
 
 <template>
-	<div class="flex flex-col h-full">
+	<div class="flex flex-col h-dvh">
 		<Header class="bg-surface-white shrink-0">
 			<Breadcrumbs :items="[{ label: 'Sites', route: '/sites' }]" />
 			<Button
@@ -193,192 +193,186 @@ function exportCSV() {
 			<BillingAlerts ctx-type="List Page" />
 		</div>
 
-		<div class="flex items-center gap-3 px-5 py-3 shrink-0">
-			<div class="flex items-center gap-2 flex-wrap">
-				<TextInput
-					placeholder="Search sites"
-					class="w-56 shrink-0"
-					:debounce="500"
-					@update:modelValue="v => applyFilter('_search', v || undefined)"
-				>
-					<template #prefix>
-						<lucide-search class="size-4 text-ink-gray-5" />
-					</template>
-				</TextInput>
+		<div class="flex items-center gap-2 px-5 pb-3 overflow-auto">
+			<TextInput
+				placeholder="Search sites"
+				class="w-56 shrink-0"
+				:debounce="500"
+				@update:modelValue="v => applyFilter('_search', v || undefined)"
+			>
+				<template #prefix>
+					<lucide-search class="size-4 text-ink-gray-5" />
+				</template>
+			</TextInput>
 
-				<MultiSelect
-					placeholder="Status"
-					class="!w-36 shrink-0 status-multiselect"
-					:options="statusOptions"
-					:modelValue="selectedStatuses"
-					@update:modelValue="applyStatusFilter"
-				>
-					<template #option="{ item }">
-						<span class="site-status-option flex items-center gap-1.5 flex-1">
-							<span
-								class="size-3.5 rounded-sm border shrink-0 flex items-center justify-center"
-								:class="selectedStatuses.includes(item.value)
+			<MultiSelect
+				placeholder="Status"
+				class="!w-36 shrink-0 status-multiselect *:text-ink-gray-5"
+				:options="statusOptions"
+				:modelValue="selectedStatuses"
+				@update:modelValue="applyStatusFilter"
+			>
+				<template #option="{ item }">
+					<span class="site-status-option flex items-center gap-1.5 flex-1">
+						<span
+							class="size-3.5 rounded-sm border shrink-0 flex items-center justify-center"
+							:class="selectedStatuses.includes(item.value)
 									? 'bg-surface-gray-7 border-outline-gray-5'
 									: 'border-outline-gray-3'"
-							>
-								<lucide-check
-									v-if="selectedStatuses.includes(item.value)"
-									class="size-2 text-ink-white"
-									stroke-width="3"
-								/>
-							</span>
-							<span
-								class="size-2 rounded-full shrink-0 ml-1"
-								:class="getSiteStatusBadge(item.value).dot"
+						>
+							<lucide-check
+								v-if="selectedStatuses.includes(item.value)"
+								class="size-2 text-ink-white"
+								stroke-width="3"
 							/>
-							{{ item.label }}
 						</span>
-					</template>
-				</MultiSelect>
+						<span
+							class="size-2 rounded-full shrink-0 ml-1"
+							:class="getSiteStatusBadge(item.value).dot"
+						/>
+						{{ item.label }}
+					</span>
+				</template>
+			</MultiSelect>
 
-				<LinkControl
-					placeholder="Version"
-					class="!w-36 shrink-0"
-					:options="{ doctype: 'Frappe Version' }"
-					:modelValue="sites.filters?.['group.version']"
-					@update:modelValue="v => applyFilter('group.version', v)"
-				/>
+			<LinkControl
+				placeholder="Version"
+				class="!w-36 shrink-0"
+				:options="{ doctype: 'Frappe Version' }"
+				:modelValue="sites.filters?.['group.version']"
+				@update:modelValue="v => applyFilter('group.version', v)"
+			/>
 
-				<LinkControl
-					placeholder="Benches"
-					class="!w-36 shrink-0"
-					:options="{ doctype: 'Release Group' }"
-					:modelValue="sites.filters?.group"
-					@update:modelValue="v => applyFilter('group', v)"
-				/>
+			<LinkControl
+				placeholder="Benches"
+				class="!w-36 shrink-0"
+				:options="{ doctype: 'Release Group' }"
+				:modelValue="sites.filters?.group"
+				@update:modelValue="v => applyFilter('group', v)"
+			/>
 
-				<Combobox
-					placeholder="Region"
-					class="!w-36 shrink-0"
-					:openOnFocus="true"
-					:options="regionOptions"
-					@update:modelValue="v => applyFilter('cluster', v)"
-				>
-					<template #prefix>
-						<LucideGlobe class="size-4 text-ink-gray-5" />
-					</template>
-				</Combobox>
+			<Combobox
+				placeholder="Region"
+				class="!w-36 shrink-0"
+				:openOnFocus="true"
+				:options="regionOptions"
+				@update:modelValue="v => applyFilter('cluster', v)"
+			>
+				<template #prefix>
+					<LucideGlobe class="size-4 text-ink-gray-5" />
+				</template>
+			</Combobox>
 
-				<LinkControl
-					placeholder="Tag"
-					class="!w-32 shrink-0"
-					:options="{ doctype: 'Press Tag', filters: { doctype_name: 'Site' } }"
-					:modelValue="sites.filters?.['tags.tag']"
-					@update:modelValue="v => applyFilter('tags.tag', v)"
-				/>
-			</div>
+			<LinkControl
+				placeholder="Tag"
+				class="!w-32 shrink-0"
+				:options="{ doctype: 'Press Tag', filters: { doctype_name: 'Site' } }"
+				:modelValue="sites.filters?.['tags.tag']"
+				@update:modelValue="v => applyFilter('tags.tag', v)"
+			/>
 		</div>
 
-		<div
-			v-if="sites.list?.loading && !sites.data?.length"
-			class="flex justify-center py-10"
-		>
-			<Spinner class="size-5" />
-		</div>
+		<Scrollbar class="flex-1 min-h-0 px-5">
+			<table class="sites-table w-full">
+				<thead class="text-ink-gray-5 text-sm">
+					<tr>
+						<th class="rounded-l">Site</th>
+						<th>Status</th>
+						<th>Plan</th>
+						<th>Region</th>
+						<th>Benches</th>
+						<th>Version</th>
+						<th class="rounded-r"></th>
+					</tr>
+				</thead>
 
-		<template v-else>
-			<Scrollbar class="flex-1 min-h-0 px-5">
-				<table class="sites-table w-full border-separate border-spacing-0">
-					<thead class="text-ink-gray-5 text-xs">
-						<tr>
-							<th class="rounded-l">Site</th>
-							<th>Status</th>
-							<th>Plan</th>
-							<th>Region</th>
-							<th>Benches</th>
-							<th>Version</th>
-							<th class="rounded-r"></th>
-						</tr>
-						<tr aria-hidden="true">
-							<td colspan="7" class="h-3 p-0"></td>
-						</tr>
-					</thead>
+				<tbody class="text-ink-gray-8">
+					<tr v-if="sites.list?.loading && !sites.data?.length">
+						<td colspan="7">
+							<div class="flex items-center justify-center py-20">
+								<Spinner class="size-5" />
+							</div>
+						</td>
+					</tr>
 
-					<tbody class="text-ink-gray-8">
-						<tr v-for="site in sites.data" :key="site.name" class="*:border-b">
-							<td class="font-medium">
-								<Tooltip text="Go to site dashboard">
-									<router-link
-										class="flex gap-2 w-fit items-center hover:underline"
-										:to="{ name: 'Site Detail', params: { name: site.name } }"
-									>
-										{{ site.host_name || site.name }}
-									</router-link>
-								</Tooltip>
-							</td>
-
-							<td>
-								<Badge
-									variant="subtle"
-									class="w-fit"
-									:theme="getSiteStatusBadge(site.status).theme"
+					<tr v-for="site in sites.data" :key="site.name" class="*:border-b">
+						<td class="font-medium">
+							<Tooltip text="Go to site dashboard">
+								<router-link
+									class="flex gap-2 w-fit items-center hover:underline"
+									:to="{ name: 'Site Detail', params: { name: site.name } }"
 								>
-									<span
-										class="size-1.5 rounded-full shrink-0 mr-0.5"
-										:class="getSiteStatusBadge(site.status).dot"
-									/>
-									{{ site.status }}
-								</Badge>
-							</td>
+									{{ site.host_name || site.name }}
+								</router-link>
+							</Tooltip>
+						</td>
 
-							<td class="whitespace-nowrap"> {{ sitePlan(site) }} </td>
+						<td>
+							<Badge
+								variant="subtle"
+								class="w-fit"
+								:theme="getSiteStatusBadge(site.status).theme"
+							>
+								<span
+									class="size-1.5 rounded-full shrink-0 mr-0.5"
+									:class="getSiteStatusBadge(site.status).dot"
+								/>
+								{{ site.status }}
+							</Badge>
+						</td>
 
-							<td class="whitespace-nowrap">
-								<span class="flex gap-1.5 items-center">
-									<img
-										v-if="site.cluster_image"
-										:src="site.cluster_image"
-										class="size-3.5"
-									/>
-									{{ site.cluster_title }}
-								</span>
-							</td>
+						<td> {{ sitePlan(site) }} </td>
 
-							<td class="whitespace-nowrap">
-								{{ site.group_public ? 'Shared' : site.group_title }}
-							</td>
-							<td class="whitespace-nowrap"> {{ site.version }}</td>
+						<td>
+							<span class="flex gap-1.5 items-center">
+								<img
+									v-if="site.cluster_image"
+									:src="site.cluster_image"
+									class="size-3.5"
+								/>
+								{{ site.cluster_title }}
+							</span>
+						</td>
 
-							<td class="w-px">
-								<div class="flex justify-end">
-									<Dropdown :options="siteOptions(site)">
-										<Button variant="ghost"
-											><LucideEllipsis class="size-4" /></Button
-										>
-									</Dropdown>
-								</div>
-							</td>
-						</tr>
-					</tbody>
-				</table>
+						<td>
+							{{ site.group_public ? 'Shared' : site.group_title }}
+						</td>
+						<td> {{ site.version }}</td>
 
-				<div
-					v-if="!sites.list?.loading && !sites.data?.length"
-					class="py-10 text-center text-sm text-ink-gray-5"
-				>
-					No sites
-				</div>
-			</Scrollbar>
+						<td class="w-px">
+							<div class="flex justify-end">
+								<Dropdown :options="siteOptions(site)">
+									<Button variant="ghost"
+										><LucideEllipsis class="size-4" /></Button
+									>
+								</Dropdown>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
 
-			<div class="shrink-0 px-5 py-2 flex justify-end items-center gap-3">
-				<span class="text-sm text-ink-gray-5">
-					Total {{ sitesCount.data?.length ?? 0 }}
-					{{ sitesCount.data?.length === 1 ? 'site' : 'sites' }}
-				</span>
-				<Button
-					v-if="sites.hasNextPage"
-					:loading="sites.list?.loading"
-					@click="sites.next()"
-				>
-					Load more
-				</Button>
+			<div
+				v-if="!sites.list?.loading && !sites.data?.length"
+				class="py-10 text-center text-sm text-ink-gray-5"
+			>
+				No sites
 			</div>
-		</template>
+		</Scrollbar>
+
+		<div class="shrink-0 px-5 py-2 flex justify-end items-center gap-3">
+			<span class="text-sm text-ink-gray-5">
+				Total {{ sitesCount.data?.length ?? 0 }}
+				{{ sitesCount.data?.length === 1 ? 'site' : 'sites' }}
+			</span>
+			<Button
+				v-if="sites.hasNextPage"
+				:loading="sites.list?.loading"
+				@click="sites.next()"
+			>
+				Load more
+			</Button>
+		</div>
 	</div>
 </template>
 
@@ -388,7 +382,7 @@ function exportCSV() {
 }
 
 .sites-table td {
-	@apply p-2;
+	@apply p-2 whitespace-nowrap;
 }
 </style>
 
