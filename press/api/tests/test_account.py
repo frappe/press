@@ -7,6 +7,7 @@ from frappe.tests.ui_test_helpers import create_test_user
 
 from press.api.account import accept_team_invite, leave_team, signup, validate_pincode
 from press.press.doctype.account_request.account_request import AccountRequest
+from press.press.doctype.team.team import Team
 from press.press.doctype.team.team_members import get_invitations
 from press.press.doctype.team.test_team import (
 	create_test_press_admin_team,
@@ -361,6 +362,33 @@ class TestAccountApi(TestCase):
 			accept_team_invite(key)
 		self.assertIn("can't be accepted with the current account", str(cm.exception))
 		self.assertFalse(frappe.db.exists("Team Member", {"parent": team.name, "user": intruder}))
+
+	def test_accept_team_invite_adds_member_as_administrator(self):
+		"""Adding the member triggers side effects a plain Press User invitee can't
+		perform (e.g. an Email Group Member subscription), so acceptance must run
+		as Administrator and restore the session afterwards. Regression for the
+		elevation removed in f1a0e80ba."""
+		team = create_test_team()
+		invited = frappe.mock("email")
+		create_test_user(invited)
+		key = self._invite(team, invited, roles=None)
+
+		session_user_while_creating = {}
+		create_member = Team.create_user_for_member
+
+		def record_session_user(self, *args, **kwargs):
+			session_user_while_creating["user"] = frappe.session.user
+			return create_member(self, *args, **kwargs)
+
+		with (
+			user_context(invited),
+			patch.object(Team, "create_user_for_member", record_session_user),
+		):
+			accept_team_invite(key)
+			self.assertEqual(frappe.session.user, invited)
+
+		self.assertEqual(session_user_while_creating["user"], "Administrator")
+		self.assertTrue(frappe.db.exists("Team Member", {"parent": team.name, "user": invited}))
 
 	def test_accept_team_invite_recovers_from_quoted_printable_break_in_key(self):
 		"""The invite URL is long enough that email transport wraps it with a
