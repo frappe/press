@@ -444,6 +444,7 @@ import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 import { toast } from 'vue-sonner';
 import { getToastErrorMessage } from '../utils/toast';
 import { h } from 'vue';
+import { call } from 'frappe-ui';
 import CustomToast from '../components/CustomToast.vue';
 
 export default {
@@ -831,17 +832,24 @@ export default {
 				},
 			);
 		},
-		afterLogin(res) {
-			let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
-			// If `redirect` is present in query, redirect to that.
+		async afterLogin() {
+			localStorage.setItem('login_email', this.email);
+
 			// Restrict redirect to relative paths.
 			const redirect = this.$route.query.redirect;
 			if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
-				loginRoute = redirect;
+				window.location.href = redirect;
+				return;
 			}
+<<<<<<< HEAD
 			localStorage.setItem('login_email', this.email);
 			let separator = loginRoute.includes('?') ? '&' : '?';
 			window.location.href = `${loginRoute}${separator}post_login=1`;
+=======
+
+			const route = await call('press.api.account.get_route_on_login');
+			window.location.href = `/dashboard${route || '/'}`;
+>>>>>>> 47f0db5dc (fix(login): Determine post-login redirect route entirely in backend)
 		},
 	},
 	computed: {

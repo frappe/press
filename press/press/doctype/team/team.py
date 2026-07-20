@@ -1423,6 +1423,9 @@ class Team(Document):
 
 	def get_route_on_login(self):
 		if self.payment_mode or self.skip_onboarding:
+			site_count = frappe.db.count("Site", {"team": self.name, "status": ("!=", "Archived")})
+			if 0 < site_count <= 3:
+				return "/quickstart"
 			return "/sites"
 
 		if self.is_saas_user:
