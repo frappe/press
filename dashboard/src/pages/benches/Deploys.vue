@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import {
-	createListResource,
-	createDocumentResource,
 	Badge,
-	Select,
 	Button,
+	createDocumentResource,
+	createListResource,
+	Select,
 	Tooltip,
 } from 'frappe-ui'
-import { date, duration } from '@/utils/format'
 import { defineAsyncComponent, h, ref, watch } from 'vue'
-import { toast } from 'vue-sonner'
-import { confirmDialog, renderDialog } from '@/utils/components'
 import { useRoute } from 'vue-router'
-import { getToastErrorMessage } from '@/utils/toast'
-import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline';
+import { toast } from 'vue-sonner'
 import Scrollbar from '@/components/common/Scrollbar.vue'
+import { confirmDialog, renderDialog } from '@/utils/components'
+import { date, duration } from '@/utils/format'
+import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline'
+import { getToastErrorMessage } from '@/utils/toast'
 
 interface Props {
 	name?: string
@@ -39,7 +39,7 @@ const deployBuilds = createListResource({
 
 const pipelines = createListResource({
 	doctype: 'Release Pipeline',
-	fields: ['name', 'status', 'creation', 'team.user as team'],
+	fields: ['name', 'status', 'creation', 'owner'],
 	filters: {
 		release_group: props.name,
 	},
@@ -179,7 +179,7 @@ function handleDeploy() {
 						<div class="table-cell rounded-r">Deployed By</div>
 					</template>
 
-					<div class="table-cell rounded-r" v-else>Team</div>
+					<div class="table-cell rounded-r" v-else>Deployed By</div>
 				</div>
 			</div>
 
@@ -216,7 +216,7 @@ function handleDeploy() {
 						</div>
 					</template>
 
-					<div role="cell" class="table-cell" v-else>{{ item.team }}</div>
+					<div role="cell" class="table-cell" v-else>{{ item.owner }}</div>
 				</router-link>
 			</div>
 		</div>
