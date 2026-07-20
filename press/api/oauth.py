@@ -117,8 +117,9 @@ def callback(code=None, state=None):
 		# login
 		else:
 			frappe.local.login_manager.login_as(email)
+			team = frappe.get_doc("Team", {"user": email})
 			frappe.local.response.type = "redirect"
-			frappe.response.location = "/dashboard?post_login=1"
+			frappe.response.location = f"/dashboard{team.get_route_on_login()}"
 
 	return None
 

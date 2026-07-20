@@ -444,6 +444,7 @@ import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 import { toast } from 'vue-sonner';
 import { getToastErrorMessage } from '../utils/toast';
 import { h } from 'vue';
+import { call } from 'frappe-ui';
 import CustomToast from '../components/CustomToast.vue';
 
 export default {
@@ -843,20 +844,18 @@ export default {
 				},
 			);
 		},
-		afterLogin(res) {
-			let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
-			// If `redirect` is present in query, redirect to that.
+		async afterLogin() {
+			localStorage.setItem('login_email', this.email);
+
 			// Restrict redirect to relative paths.
 			const redirect = this.$route.query.redirect;
 			if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
-				loginRoute = redirect;
+				window.location.href = redirect;
+				return;
 			}
-			localStorage.setItem('login_email', this.email);
-			if (loginRoute.includes('/welcome')) {
-				let separator = loginRoute.includes('?') ? '&' : '?';
-				loginRoute = `${loginRoute}${separator}post_login=1`;
-			}
-			window.location.href = loginRoute;
+
+			const route = await call('press.api.account.get_route_on_login');
+			window.location.href = `/dashboard${route || '/'}`;
 		},
 	},
 	computed: {
