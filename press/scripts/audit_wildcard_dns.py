@@ -59,7 +59,7 @@ failed = []
 for domain in frappe.get_all("Root Domain", {"enabled": 1}, pluck="name"):
 	try:
 		_, ip = expected_proxy_ip(domain)
-		if resolved_wildcard(domain) != [ip]:
+		if ip not in resolved_wildcard(domain):
 			failed.append(domain)
 	except Exception as e:
 		print(f"# {domain}: {e}")
