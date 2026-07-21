@@ -16,8 +16,8 @@
   # need a task each for events/audit and still shell out for the wildcard.
   shell: >
     mkdir -p /home/frappe/proxysql-old-logs &&
-    mv /home/frappe/proxysql/events.log.000000* /home/frappe/proxysql-old-logs/ 2>/dev/null;
-    mv /home/frappe/proxysql/audit.log.0000000* /home/frappe/proxysql-old-logs/ 2>/dev/null;
+    mv /home/frappe/proxysql/events.log.* /home/frappe/proxysql-old-logs/ 2>/dev/null;
+    mv /home/frappe/proxysql/audit.log.* /home/frappe/proxysql-old-logs/ 2>/dev/null;
     true
 
 - name: Back up ProxySQL data directory
