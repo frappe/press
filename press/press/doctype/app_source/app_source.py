@@ -118,6 +118,8 @@ class AppSource(Document):
 	@frappe.whitelist()
 	def sync_versions(self):
 		"""Replace `versions` with the Frappe versions the repo's pyproject.toml currently supports."""
+		if self.app == "frappe":
+			return
 		app_info = get_repo_app_info(
 			owner=self.repository_owner,
 			repository=self.repository,
