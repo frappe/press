@@ -222,6 +222,12 @@ export default {
 						this.oauthDomain = res.oauth_domain;
 						this.countries = res.countries;
 						this.saasProduct = res.product_trial;
+						if (!res.is_invitation) {
+							this.$pulse?.capture('signup_verified', {
+								method: res.oauth_signup ? 'oauth' : 'email',
+								product: res.product_trial?.name,
+							});
+						}
 					}
 				},
 			};
