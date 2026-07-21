@@ -854,8 +854,12 @@ export default {
 				return;
 			}
 
-			const route = await call('press.api.account.get_route_on_login');
-			window.location.href = `/dashboard${route || '/'}`;
+			try {
+				const route = await call('press.api.account.get_route_on_login');
+				window.location.href = `/dashboard${route || '/'}`;
+			} catch (e) {
+				window.location.href = '/dashboard/';
+			}
 		},
 	},
 	computed: {
