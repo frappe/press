@@ -105,10 +105,26 @@ onMounted(() => {
 			}}
 		</p>
 
+		<div
+			v-if="sitesResource.list.loading"
+			v-for="_ in 3"
+			class="grid grid-cols-[1fr_auto] items-center gap-1.5 mb-3 fade-in"
+		>
+			<span class="relative flex items-center">
+				<div class="sk h-4 w-2/3" />
+			</span>
+			<div class="sk size-4" />
+			<div class="flex gap-2 items-center col-span-2 pb-3 border-b">
+				<div class="sk h-4 w-20" />
+				<div class="sk h-4 w-14 !rounded-full" />
+			</div>
+		</div>
+
 		<a
+			v-else
 			v-for="(site, i) in sites"
 			:key="site.name"
-			class="grid grid-cols-[1fr_auto] items-center gap-1.5 mb-3 cursor-pointer"
+			class="grid grid-cols-[1fr_auto] items-center gap-1.5 mb-3 cursor-pointer fade-in"
 			@click="openSite(site)"
 		>
 			<span class="relative text-base text-ink-gray-8">
@@ -171,3 +187,9 @@ onMounted(() => {
 		</div>
 	</div>
 </template>
+
+<style scoped>
+.sk {
+	@apply rounded-sm animate-pulse bg-surface-gray-3 dark:bg-surface-gray-2;
+}
+</style>
