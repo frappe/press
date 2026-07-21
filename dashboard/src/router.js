@@ -649,12 +649,14 @@ router.beforeEach(async (to, from, next) => {
 		if (goingToLoginPage) {
 			if (to.name == 'Signup' && to.query?.product) {
 				next({
-					name: 'SignupSetup',
-					params: { productId: to.query.product },
+					name: 'Quickstart',
+					query: { product: to.query.product },
 				})
+				return
 			}
 			if (to.name == 'Setup Account') {
 				next({ name: 'Team Invite', params: to.params })
+				return
 			}
 			next({ name: defaultRoute })
 		} else {
