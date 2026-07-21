@@ -39,3 +39,18 @@ npx playwright test tests-e2e/tests/dashboard/site-update-banner.test.ts --heade
 ```
 
 Requires a running bench (`bench start`) and `dashboard/tests-e2e/.env` with credentials.
+
+## Finding docs.frappe.io/cloud URLs
+
+Error messages and dialogs often link to Frappe Cloud docs. Don't guess slugs —
+they 404 (the uninstall page is `how-to-uninstall-an-app-from-the-site`, not
+`sites/uninstall-an-app`). Search the wiki API instead:
+
+```bash
+curl -s "https://docs.frappe.io/api/method/wiki.frappe_wiki.doctype.wiki_document.search.search?query=<TERM>&space=0uh9cfn2fk"
+```
+
+Returns `{message:{results:[{title, route, content, score}], total}}`. Take the
+top result's `route` and prepend `https://docs.frappe.io/`. `space=0uh9cfn2fk`
+scopes results to the **Cloud** space (all routes start with `cloud/`); omit
+`space` to search all of docs.frappe.io (framework, etc.).
