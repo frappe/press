@@ -1740,6 +1740,8 @@ class ReleaseGroup(Document, TagHelpers):
 			current_app_source.github_installation_id,
 		)
 		bench_major_version = frappe.get_cached_value("Frappe Version", self.version, "number")
+		if bench_major_version is None:
+			frappe.throw(f"Could not determine major version for bench version {self.version!r}.")
 		if target_major_version != bench_major_version:
 			frappe.throw(
 				f"Branch {to_branch} is Frappe version {target_major_version}, which doesn't "
