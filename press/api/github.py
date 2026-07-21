@@ -17,6 +17,7 @@ from urllib.parse import urlencode, urlparse
 import frappe
 import jwt
 import requests
+import semantic_version as sv
 import tomli
 from frappe.utils.verified_command import get_secret
 
@@ -376,11 +377,15 @@ def app(owner: str, repository: str, branch: str, installation: str | None = Non
 		tree,
 	)
 
-	frappe_version = _get_compatible_frappe_version_from_pyproject(
-		owner,
-		repository,
-		branch_info,
-		headers,
+	frappe_version = (
+		None
+		if app_name == "frappe"
+		else _get_compatible_frappe_version_from_pyproject(
+			owner,
+			repository,
+			branch_info,
+			headers,
+		)
 	)
 
 	return {"name": app_name, "title": title, "frappe_version": frappe_version}
@@ -487,6 +492,33 @@ def _get_compatible_frappe_version_from_pyproject(
 		raise  # for mypy: NoReturn
 
 	return compatible_frappe_version
+
+
+@frappe.whitelist()
+def get_frappe_branch_major_version(
+	owner: str, repository: str, branch: str, installation: str | None = None
+) -> int:
+	"""Get the major Frappe version declared in `frappe/__init__.py` of the given branch."""
+	headers = get_auth_headers(installation)
+	init_file = requests.get(
+		f"https://api.github.com/repos/{owner}/{repository}/contents/frappe/__init__.py",
+		params={"ref": branch},
+		headers=headers,
+	).json()
+
+	if "content" not in init_file:
+		frappe.throw(
+			f"We couldn't read frappe/__init__.py from branch {branch}. "
+			"Please make sure the selected branch is correct."
+		)
+
+	content = b64decode(init_file["content"]).decode()
+	match = re.search(r"""__version__\s*=\s*["']([\d.]+)""", content)
+	if not match:
+		frappe.throw(f"Could not find __version__ in frappe/__init__.py on branch {branch}.")
+		raise  # for mypy: NoReturn
+
+	return sv.Version.coerce(match.group(1)).major
 
 
 def _get_app_name_and_title_from_hooks(

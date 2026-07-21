@@ -1177,7 +1177,7 @@ class Site(Document, TagHelpers):
 		agent.new_upstream_file(server=self.server, site=self.name)
 
 	@dashboard_whitelist()
-	@site_action(["Active", "Broken"])
+	@site_action(["Active", "Broken", "Inactive"])
 	def reinstall(self):
 		agent = Agent(self.server)
 		job = agent.reinstall_site(self)
@@ -1187,7 +1187,7 @@ class Site(Document, TagHelpers):
 		return job.name
 
 	@dashboard_whitelist()
-	@site_action(["Active", "Broken"])
+	@site_action(["Active", "Broken", "Inactive"])
 	def migrate(self, skip_failing_patches: bool = False):
 		self.check_fatal_site_update()
 		agent = Agent(self.server)
@@ -1254,7 +1254,7 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Clear Cache", job=job.name)
 
 	@dashboard_whitelist()
-	@site_action(["Active", "Broken"])
+	@site_action(["Active", "Broken", "Inactive"])
 	def restore_site(self, skip_failing_patches=False):
 		if (
 			self.remote_database_file
@@ -1273,7 +1273,7 @@ class Site(Document, TagHelpers):
 		return job.name
 
 	@dashboard_whitelist()
-	@site_action(["Active", "Broken"])
+	@site_action(["Active", "Broken", "Inactive"])
 	def restore_site_from_physical_backup(self, backup: str):
 		if frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
 			frappe.throw(
@@ -1304,7 +1304,7 @@ class Site(Document, TagHelpers):
 		doc.execute()
 
 	@dashboard_whitelist()
-	@site_action(["Active", "Broken"])
+	@site_action(["Active", "Broken", "Inactive"])
 	def restore_site_from_files(self, files, skip_failing_patches=False):
 		for key in ("database", "public", "private", "config"):
 			rf_name = files.get(key)
@@ -1654,7 +1654,7 @@ class Site(Document, TagHelpers):
 		self.save()
 
 	@frappe.whitelist()
-	@site_action(["Active"])
+	@site_action(["Active", "Inactive", "Suspended", "Broken"])
 	def update_without_backup(self):
 		log_site_activity(self.name, "Update")
 
@@ -2570,7 +2570,7 @@ class Site(Document, TagHelpers):
 		return "String"
 
 	@dashboard_whitelist()
-	@site_action(["Active"])
+	@site_action(["Active", "Broken"])
 	def delete_config(self, key):
 		"""Deletes a key from site configuration, meant for dashboard and API users"""
 		if key in get_client_blacklisted_keys():
