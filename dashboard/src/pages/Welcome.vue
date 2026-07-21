@@ -5,7 +5,6 @@
 </template>
 <script>
 import { getTeam } from '../data/team';
-import { getActiveSites } from '../data/sites';
 import Onboarding from '../components/Onboarding.vue';
 import OnboardingWithoutPayment from '../components/OnboardingWithoutPayment.vue';
 export default {
@@ -22,7 +21,7 @@ export default {
 	mounted() {
 		this.from = window.from;
 	},
-	beforeRouteEnter: async (to, from, next) => {
+	beforeRouteEnter: (to, from, next) => {
 		// adding to window object so that it can be accessed in mounted
 		// since beforeRouteEnter is called before mounted
 		window.from = from;
@@ -33,26 +32,12 @@ export default {
 			($team?.doc.onboarding.complete && $team?.doc.onboarding.site_created) ||
 			(to.query.is_redirect && $team?.doc.onboarding.site_created);
 
-		if (!onboarded) {
-			next();
-			return;
-		}
-
-		// only run the <3-sites quickstart check right after login only!!
-		if (!to.query.post_login) {
+		if (onboarded) {
 			next({ name: 'Site List' });
 			return;
 		}
 
-		let sites = getActiveSites();
-		try {
-			if (!sites.data) await sites.list.fetch();
-		} catch (e) {
-			next({ name: 'Site List' });
-			return;
-		}
-
-		next({ name: sites.data.length > 0 && sites.data.length <= 3 ? 'Quickstart' : 'Site List' });
+		next();
 	},
 	methods: {
 		routeToSourcePage() {
