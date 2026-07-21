@@ -25,6 +25,11 @@ const team = getTeam()
 const sitesResource = getActiveSites()
 const sites = computed(() => sitesResource.data || [])
 
+// Only one trial site is allowed per product!
+const canCreateProductTrial = computed(
+	() => product && !sites.value.some((site) => site.standby_for_product === product),
+)
+
 const sitePlan = (site) =>
 	site.trial_end_date ? trialDays(site.trial_end_date) : null
 
@@ -94,7 +99,7 @@ onMounted(() => {
 			{{
 				sites.length
 					? 'Select a site or continue to Frappe Cloud.'
-					: product
+					: canCreateProductTrial
 						? 'Continue to Frappe Cloud or create a new trial site.'
 						: 'Continue to Frappe Cloud.'
 			}}
@@ -133,7 +138,7 @@ onMounted(() => {
 		</Button>
 
 		<Button
-			v-if="product"
+			v-if="canCreateProductTrial"
 			variant="solid"
 			class="w-full mt-3"
 			:route="{ name: 'SignupSetup', params: { productId: product } }"
