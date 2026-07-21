@@ -15,13 +15,17 @@ from press.utils.telemetry import capture
 
 
 @frappe.whitelist(allow_guest=True)
-def login(product: str | None = None):
+def login(product: str | None = None, aid: str | None = None):
 	flow = google_oauth_flow()
 	authorization_url, state = flow.authorization_url()
 	minutes = 5
 	payload = {"state": state}
 	if product:
 		payload["product"] = product
+	if aid:
+		# The Pulse anonymous id can't ride the round trip through Google, so park it
+		# on the flow's own state until the callback creates the account request.
+		payload["aid"] = aid
 	frappe.cache().set_value(f"google_oauth_flow:{state}", payload, expires_in_sec=minutes * 60)
 	return authorization_url
 
@@ -103,6 +107,7 @@ def callback(code: str | None = None, state: str | None = None):  # noqa: C901
 		last_name=id_info.get("family_name"),
 		role="Press User",
 		oauth_signup=True,
+		pulse_anonymous_id=payload.get("aid"),
 		product_trial=product_trial.name if product_trial else None,
 	)
 	account_request.insert(ignore_permissions=True)
