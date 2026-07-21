@@ -12,6 +12,10 @@ from press.runner import Ansible
 from press.security import fail2ban
 from press.utils import log_error
 
+# ProxySQL image version rolled out to all proxies. Bumped from 2.3.2 to fix
+# ProxySQL failing to serve newly issued Let's Encrypt certificates.
+PROXYSQL_VERSION = "3.0.9"
+
 
 class ProxyServer(BaseServer):
 	# begin: auto-generated types
@@ -318,6 +322,23 @@ class ProxyServer(BaseServer):
 					self.reboot()
 		except Exception:
 			log_error("ProxySQL Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def update_proxysql(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_update_proxysql", queue="long", timeout=1200)
+
+	def _update_proxysql(self):
+		try:
+			ansible = Ansible(
+				playbook="update_proxysql.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={"proxysql_version": PROXYSQL_VERSION},
+			)
+			ansible.run()
+		except Exception:
+			log_error("ProxySQL Update Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def setup_replication(self):
