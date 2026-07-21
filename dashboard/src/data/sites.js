@@ -19,7 +19,7 @@ export function getActiveSites() {
 				'plan.price_usd as price_usd',
 				'plan.price_inr as price_inr',
 			],
-			pageLength: 50,
+			pageLength: 3,
 			auto: false,
 			cache: 'active-sites',
 		})
