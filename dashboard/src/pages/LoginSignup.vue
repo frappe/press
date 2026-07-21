@@ -548,18 +548,12 @@ export default {
 					if (errorMessage.includes('is already registered')) {
 						localStorage.setItem('login_email', this.email);
 
-						if (this.$route.query?.product) {
-							this.$router.push({
-								name: 'Login',
-								query: {
-									redirect: `/dashboard/create-site/${this.$route.query.product}/setup`,
-								},
-							});
-						} else {
-							this.$router.push({
-								name: 'Login',
-							});
-						}
+						this.$router.push({
+							name: 'Login',
+							query: {
+								product: this.$route.query?.product,
+							},
+						});
 					}
 				},
 			};
@@ -854,7 +848,12 @@ export default {
 =======
 			try {
 				const route = await call('press.api.account.get_route_on_login');
-				window.location.href = `/dashboard${route || '/'}`;
+				const product = this.$route.query.product;
+				if (route === '/quickstart' && product) {
+					window.location.href = `/dashboard/quickstart?product=${product}`;
+				} else {
+					window.location.href = `/dashboard${route || '/'}`;
+				}
 			} catch (e) {
 				window.location.href = '/dashboard/';
 			}

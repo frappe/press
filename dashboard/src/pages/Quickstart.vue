@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { Spinner } from 'frappe-ui'
+import { useRoute } from 'vue-router'
+import { createResource, Spinner } from 'frappe-ui'
 import { toast } from 'vue-sonner'
 import FCLogo from '@/components/icons/FCLogo.vue'
 import { getActiveSites } from '@/data/sites'
@@ -10,6 +11,15 @@ import { getDocResource } from '@/utils/resource'
 import { getToastErrorMessage } from '@/utils/toast'
 
 defineOptions({ name: 'Quickstart' })
+
+const route = useRoute()
+const product = route.query.product
+
+const productTrial = createResource({
+	url: 'press.api.account.signup_settings',
+	params: { product },
+	auto: !!product,
+})
 
 const team = getTeam()
 const sitesResource = getActiveSites()
@@ -81,7 +91,13 @@ onMounted(() => {
 		</h2>
 
 		<p class="mt-1 text-p-base text-ink-gray-5 mb-8">
-			Select a site or continue to Frappe Cloud.
+			{{
+				sites.length
+					? 'Select a site or continue to Frappe Cloud.'
+					: product
+						? 'Continue to Frappe Cloud or create a new trial site.'
+						: 'Continue to Frappe Cloud.'
+			}}
 		</p>
 
 		<a
@@ -112,12 +128,24 @@ onMounted(() => {
 			</div>
 		</a>
 
-		<Button variant="solid" :route="{ name: 'Site List' }" class="w-full mt-2">
+		<Button :route="{ name: 'Site List' }" class="w-full mt-2">
 			Go to Cloud Dashboard
 		</Button>
 
+		<Button
+			v-if="product"
+			variant="solid"
+			class="w-full mt-3"
+			:route="{ name: 'SignupSetup', params: { productId: product } }"
+		>
+			Create a new trial site for
+			<span class="capitalize">
+				{{ productTrial.data?.product_trial?.title || product }}
+			</span>
+		</Button>
+
 		<div
-			class="flex justify-center gap-2 pt-4  text-ink-gray-6"
+			class="flex justify-center gap-2 pt-4  text-ink-gray-5"
 			:class="sites.length ? '' : 'border-t'"
 		>
 			<a
