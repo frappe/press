@@ -13,6 +13,7 @@ export function getActiveSites() {
 				'trial_end_date',
 				'setup_wizard_complete',
 				'additional_system_user_created',
+				'standby_for_product',
 				'group.version as version',
 				'plan.plan_title as plan_title',
 				'plan.price_usd as price_usd',
