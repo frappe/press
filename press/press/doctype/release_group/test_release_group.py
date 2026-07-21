@@ -171,7 +171,9 @@ class TestReleaseGroup(FrappeTestCase):
 			team=self.team,
 		)
 
-	def test_create_release_group_fail_when_version_mismatch(self):
+	def test_create_release_group_allows_version_mismatch(self):
+		# Compatibility is enforced on deploy, not on save — see
+		# test_deploy_fails_when_app_incompatible_with_bench_version.
 		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
 			frappe_version="Version 12",
@@ -179,14 +181,42 @@ class TestReleaseGroup(FrappeTestCase):
 			branch="version-12",
 			team=self.team,
 		)
-		self.assertRaises(
-			frappe.ValidationError,
-			new_release_group,
+		group = new_release_group(
 			"Test Group",
 			"Version 13",
 			[{"app": source.app, "source": source.name}],
 			team=self.team,
 		)
+		self.assertEqual(group.version, "Version 13")
+
+	def test_editing_group_with_incompatible_app_is_allowed(self):
+		"""Compatibility is checked on deploy, not on save.
+
+		Blocking saves meant two incompatible apps deadlocked editing (the UI
+		changes one app at a time), so the group must save even with an
+		incompatible app present.
+		"""
+		frappe_app = create_test_app("frappe", "Frappe Framework")
+		erpnext_app = create_test_app("erpnext", "ERPNext")
+		group = create_test_release_group([frappe_app, erpnext_app], frappe_version="Version 14")
+
+		frappe.db.delete("App Source Version", {"parent": group.apps[1].source, "version": group.version})
+
+		group.reload()
+		group.title = "Renamed Group"
+		group.save()  # must not raise despite erpnext being incompatible
+
+	def test_deploy_fails_when_app_incompatible_with_bench_version(self):
+		"""An app whose source is no longer compatible with the bench version must
+		block deploy."""
+		frappe_app = create_test_app("frappe", "Frappe Framework")
+		group = create_test_release_group([frappe_app], frappe_version="Version 14")
+
+		frappe.db.delete("App Source Version", {"parent": group.apps[0].source, "version": group.version})
+
+		group.reload()
+		with self.assertRaises(frappe.ValidationError):
+			group.create_deploy_candidate()
 
 	def test_create_release_group_fail_with_duplicate_titles(self):
 		app = create_test_app("frappe", "Frappe Framework")

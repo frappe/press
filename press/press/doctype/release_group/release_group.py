@@ -258,7 +258,6 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_title()
 		self.validate_frappe_app()
 		self.validate_duplicate_app()
-		self.validate_app_versions()
 		self.validate_servers()
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
@@ -681,21 +680,16 @@ class ReleaseGroup(Document, TagHelpers):
 				frappe.throw(f"App {app.app} can be added only once", frappe.ValidationError)
 			apps.add(app_name)
 
-	def validate_app_versions(self):
-		# App Source should be compatible with Release Group's version
-		with suppress(AttributeError, RuntimeError):
-			if (
-				not frappe.flags.in_test
-				and frappe.request.path == "/api/method/press.api.bench.change_branch"
-			):
-				return  # Separate validation exists in set_app_source
-		for app in self.apps:
-			self.validate_app_version(app)
+	def validate_app_version(self, source: str):
+		"""App Source must be compatible with the release group's bench version.
 
-	def validate_app_version(self, app: "ReleaseGroupApp"):
-		source = frappe.get_doc("App Source", app.source)
-		if all(row.version != self.version for row in source.versions):
-			branch, repo = frappe.db.get_values("App Source", app.source, ("branch", "repository"))[0]
+		Checked on deploy (and on an explicit branch change), not on every save:
+		blocking saves meant two incompatible apps deadlocked editing, since the
+		UI changes one app at a time and could never fix or remove either.
+		"""
+		app_source = frappe.get_doc("App Source", source)
+		if all(row.version != self.version for row in app_source.versions):
+			branch, repo = frappe.db.get_values("App Source", source, ("branch", "repository"))[0]
 			msg = f"{repo.rsplit('/')[-1] or repo.rsplit('/')[-2]}:{branch} branch is no longer compatible with bench of {self.version}"
 			frappe.throw(msg, frappe.ValidationError)
 
@@ -923,6 +917,8 @@ class ReleaseGroup(Document, TagHelpers):
 			self.check_auto_scales()
 
 		apps = self.get_apps_to_update(apps_to_update)
+		for app in apps:
+			self.validate_app_version(app["source"])
 		if apps_to_update is None:
 			self.validate_dc_apps_against_rg(apps)
 
@@ -1747,7 +1743,7 @@ class ReleaseGroup(Document, TagHelpers):
 				app.source = source
 				app.save()
 				break
-		self.validate_app_version(app)
+		self.validate_app_version(source)
 		self.save()
 
 	def get_marketplace_app_sources(self) -> list[str]:
