@@ -827,8 +827,11 @@ class SiteAction(Document):
 		rg_apps.discard("frappe")
 		site_apps.discard("frappe")
 		if diff := site_apps - rg_apps:
+			apps = ", ".join(frappe.bold(app) for app in diff)
+			install = "<a class='underline' href='https://docs.frappe.io/cloud/installing-an-app#bench-group'>install</a>"
+			remove = "<a class='underline' href='https://docs.frappe.io/cloud/how-to-uninstall-an-app-from-the-site'>remove</a>"
 			frappe.throw(
-				f"Site has following apps {', '.join(diff)} which are not present in the destination release group. Please install those apps in the destination release group or remove them from the site before moving.",
+				f"Site has following apps: {apps} which are not present in the destination release group. Please {install} those apps in the destination release group or {remove} them from the site before moving.",
 				frappe.ValidationError,
 			)
 
