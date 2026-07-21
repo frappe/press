@@ -24,6 +24,7 @@ from press.access.actions import ReleaseGroupActions
 from press.access.decorators import action_guard
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.api.github import get_frappe_branch_major_version
 from press.exceptions import ImageNotFoundInRegistry, InsufficientSpaceOnServer, VolumeResizeLimitError
 from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -1718,13 +1719,32 @@ class ReleaseGroup(Document, TagHelpers):
 			required_app_source.github_installation_id = current_app_source.github_installation_id
 			required_app_source.save()
 
+		if app == "frappe":
+			# Framework is a special case we must just compare the major versions
+			self._validate_frappe_branch_matches_bench_version(current_app_source, to_branch)
 		# Skip public sources, and sources owned by other teams — the same repository
 		# and branch can have a separate App Source per team, and neither should be
 		# mutated on behalf of a different team's branch change.
-		if not required_app_source.public and required_app_source.team == get_current_team():
+		elif not required_app_source.public and required_app_source.team == get_current_team():
 			frappe.get_doc("App Source", required_app_source.name).sync_versions()
 
 		self.set_app_source(app, required_app_source.name)
+
+	def _validate_frappe_branch_matches_bench_version(
+		self, current_app_source: AppSource, to_branch: str
+	) -> None:
+		target_major_version = get_frappe_branch_major_version(
+			current_app_source.repository_owner,
+			current_app_source.repository,
+			to_branch,
+			current_app_source.github_installation_id,
+		)
+		bench_major_version = frappe.get_cached_value("Frappe Version", self.version, "number")
+		if target_major_version != bench_major_version:
+			frappe.throw(
+				f"Branch {to_branch} is Frappe version {target_major_version}, which doesn't "
+				f"match this bench's version {self.version}."
+			)
 
 	def get_app_source(self, app: str) -> AppSource:
 		source = frappe.get_all(
