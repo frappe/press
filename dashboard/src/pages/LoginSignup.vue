@@ -424,14 +424,7 @@
 						</p>
 					</div>
 				</template>
-				<template v-slot:logo v-if="saasProduct">
-					<div class="flex space-x-2">
-						<img
-							class="inline-block h-[38px] w-[38px] rounded-sm"
-							:src="saasProduct?.logo"
-						/>
-					</div>
-				</template>
+
 			</LoginBox>
 		</div>
 	</div>
@@ -870,9 +863,6 @@ export default {
 				return this.$resources.resetPassword.error;
 			}
 		},
-		saasProduct() {
-			return this.$resources.signupSettings.data?.product_trial;
-		},
 		isLogin() {
 			return this.$route.name == 'Login' && !this.$route.query.forgot;
 		},
@@ -932,27 +922,18 @@ export default {
 			} else if (this.otpRequested) {
 				return 'Verify your email address';
 			} else if (this.isLogin) {
-				if (this.saasProduct) {
-					return `Log in to your account to start using ${this.saasProduct.title}`;
-				}
-				return 'Log in to your account';
-			} else {
-				if (this.saasProduct) {
-					return `Sign up for ${this.saasProduct.title}`;
-				}
-
-				return 'Create your Frappe Cloud account';
+				return 'Log in to your Frappe Cloud account';
 			}
+			return 'Signup to your Frappe Cloud account';
 		},
 		subtitle() {
 			if (this.hasForgotPassword) {
 				return 'Enter your email address to reset your password';
-			} else {
-				if (this.saasProduct) {
-					return `Get started and explore the easiest way to use ${this.saasProduct.title}`;
-				}
+			} else if (this.isLogin) {
 				return 'Get started and explore the easiest way to use all Frappe apps';
 			}
+
+			return 'Hosting platform for Frappe apps';
 		},
 	},
 };
