@@ -106,7 +106,7 @@ onMounted(() => {
 		</p>
 
 		<a
-			v-for="(site, i) in sites.slice(0,3)"
+			v-for="(site, i) in sites"
 			:key="site.name"
 			class="grid grid-cols-[1fr_auto] items-center gap-1.5 mb-3 cursor-pointer"
 			@click="openSite(site)"
@@ -124,7 +124,7 @@ onMounted(() => {
 
 			<div
 				class="flex gap-2 items-center col-span-2 pb-3"
-				:class="i == sites.slice(0,3).length - 1 ? '' : 'border-b'"
+				:class="i == sites.length - 1 ? '' : 'border-b'"
 			>
 				<span class="text-ink-gray-5" v-if="sitePlan(site)">
 					{{ sitePlan(site) }}</span

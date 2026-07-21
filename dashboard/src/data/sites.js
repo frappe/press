@@ -19,8 +19,7 @@ export function getActiveSites() {
 				'plan.price_usd as price_usd',
 				'plan.price_inr as price_inr',
 			],
-			// filters: { status: ['not in', ['Archived', 'Inactive']] },
-			pageLength: 5,
+			pageLength: 50,
 			auto: false,
 			cache: 'active-sites',
 		})
