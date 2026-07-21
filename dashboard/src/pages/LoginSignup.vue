@@ -828,17 +828,6 @@ export default {
 				window.location.href = redirect;
 				return;
 			}
-<<<<<<< HEAD
-			localStorage.setItem('login_email', this.email);
-			let separator = loginRoute.includes('?') ? '&' : '?';
-			window.location.href = `${loginRoute}${separator}post_login=1`;
-=======
-
-<<<<<<< HEAD
-			const route = await call('press.api.account.get_route_on_login');
-			window.location.href = `/dashboard${route || '/'}`;
->>>>>>> 47f0db5dc (fix(login): Determine post-login redirect route entirely in backend)
-=======
 			try {
 				const route = await call('press.api.account.get_route_on_login');
 				const product = this.$route.query.product;
@@ -850,7 +839,6 @@ export default {
 			} catch (e) {
 				window.location.href = '/dashboard/';
 			}
->>>>>>> e9fe267d2 (fix(login): Fall back to /dashboard if route lookup fails after login)
 		},
 	},
 	computed: {
