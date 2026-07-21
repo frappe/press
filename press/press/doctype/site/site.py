@@ -278,6 +278,7 @@ class Site(Document, TagHelpers):
 		"reason_for_disabling_monitoring",
 		"creation_failed",
 		"fatal_site_update",
+		"standby_for_product",
 	)
 
 	@staticmethod

@@ -25,10 +25,11 @@ const team = getTeam()
 const sitesResource = getActiveSites()
 const sites = computed(() => sitesResource.data || [])
 
-// Only one trial site is allowed per product!
-const canCreateProductTrial = computed(
-	() => product && !sites.value.some((site) => site.standby_for_product === product),
+// Only one trial site is allowed per product! If the team already has one, link to it instead.
+const existingProductSite = computed(() =>
+	product ? sites.value.find((site) => site.standby_for_product === product) : null,
 )
+const canCreateProductTrial = computed(() => product && !existingProductSite.value)
 
 const sitePlan = (site) =>
 	site.trial_end_date ? trialDays(site.trial_end_date) : null
@@ -105,20 +106,21 @@ onMounted(() => {
 			}}
 		</p>
 
-		<div
-			v-if="sitesResource.list.loading"
-			v-for="_ in 3"
-			class="grid grid-cols-[1fr_auto] items-center gap-1.5 mb-3 fade-in"
-		>
-			<span class="relative flex items-center">
-				<div class="sk h-4 w-2/3" />
-			</span>
-			<div class="sk size-4" />
-			<div class="flex gap-2 items-center col-span-2 pb-3 border-b">
-				<div class="sk h-4 w-20" />
-				<div class="sk h-4 w-14 !rounded-full" />
+		<template v-if="sitesResource.list.loading">
+			<div
+				v-for="_ in 3"
+				class="grid grid-cols-[1fr_auto] items-center gap-1.5 mb-3 fade-in"
+			>
+				<span class="relative flex items-center">
+					<div class="sk h-4 w-2/3" />
+				</span>
+				<div class="sk size-4" />
+				<div class="flex gap-2 items-center col-span-2 pb-3 border-b">
+					<div class="sk h-4 w-20" />
+					<div class="sk h-4 w-14 !rounded-full" />
+				</div>
 			</div>
-		</div>
+		</template>
 
 		<a
 			v-else
@@ -154,7 +156,15 @@ onMounted(() => {
 		</Button>
 
 		<Button
-			v-if="canCreateProductTrial"
+			v-if="existingProductSite"
+			variant="solid"
+			class="w-full mt-3"
+			@click="openSite(existingProductSite)"
+		>
+			Continue to {{ existingProductSite.host_name || existingProductSite.name }}
+		</Button>
+		<Button
+			v-else-if="canCreateProductTrial"
 			variant="solid"
 			class="w-full mt-3"
 			:route="{ name: 'SignupSetup', params: { productId: product } }"
