@@ -1,0 +1,37 @@
+---
+# Updates the ProxySQL container to a new image version. Mirrors the manual
+# procedure: stop container, archive rotated logs, back up the data dir, then
+# recreate the container from the new image reusing the same volume and config.
+
+- name: Stop ProxySQL
+  become: yes
+  become_user: frappe
+  command: docker stop proxysql
+
+- name: Archive old rotated logs
+  become: yes
+  become_user: frappe
+  # ponytail: shell glob + mv is what was done by hand; find/copy modules would
+  # need a task each for events/audit and still shell out for the wildcard.
+  shell: >
+    mkdir -p /home/frappe/proxysql-old-logs &&
+    mv /home/frappe/proxysql/events.log.000000* /home/frappe/proxysql-old-logs/ 2>/dev/null;
+    mv /home/frappe/proxysql/audit.log.0000000* /home/frappe/proxysql-old-logs/ 2>/dev/null;
+    true
+
+- name: Back up ProxySQL data directory
+  become: yes
+  become_user: frappe
+  command: cp -R /home/frappe/proxysql /home/frappe/proxysql-old
+  args:
+    creates: /home/frappe/proxysql-old
+
+- name: Remove old ProxySQL container
+  become: yes
+  become_user: frappe
+  command: docker rm proxysql
+
+- name: Start ProxySQL
+  become: yes
+  become_user: frappe
+  command: "docker run -d --name proxysql --hostname proxysql --restart always -p 3306:6033 -p 127.0.0.1:6032:6032 -p 127.0.0.1:6070:6070 -v /home/frappe/proxysql:/var/lib/proxysql -v /home/frappe/proxysql/proxysql.cnf:/etc/proxysql.cnf proxysql/proxysql:{{ proxysql_version }}"
