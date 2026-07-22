@@ -95,8 +95,9 @@ def callback(code: str | None = None, state: str | None = None):  # noqa: C901
 
 		# login to existing account
 		frappe.local.login_manager.login_as(email)
+		team = frappe.get_doc("Team", team_name)
 		frappe.local.response.type = "redirect"
-		frappe.local.response.location = "/dashboard?post_login=1"
+		frappe.local.response.location = f"/dashboard{team.get_route_on_login()}"
 		return None
 
 	# create account request

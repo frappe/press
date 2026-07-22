@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { Spinner } from 'frappe-ui'
+import { useRoute } from 'vue-router'
+import { createResource, Spinner } from 'frappe-ui'
 import { toast } from 'vue-sonner'
 import FCLogo from '@/components/icons/FCLogo.vue'
 import { getActiveSites } from '@/data/sites'
@@ -11,9 +12,24 @@ import { getToastErrorMessage } from '@/utils/toast'
 
 defineOptions({ name: 'Quickstart' })
 
+const route = useRoute()
+const product = route.query.product
+
+const productTrial = createResource({
+	url: 'press.api.account.signup_settings',
+	params: { product },
+	auto: !!product,
+})
+
 const team = getTeam()
 const sitesResource = getActiveSites()
 const sites = computed(() => sitesResource.data || [])
+
+// Only one trial site is allowed per product! If the team already has one, link to it instead.
+const existingProductSite = computed(() =>
+	product ? sites.value.find((site) => site.standby_for_product === product) : null,
+)
+const canCreateProductTrial = computed(() => product && !existingProductSite.value)
 
 const sitePlan = (site) =>
 	site.trial_end_date ? trialDays(site.trial_end_date) : null
@@ -81,13 +97,36 @@ onMounted(() => {
 		</h2>
 
 		<p class="mt-1 text-p-base text-ink-gray-5 mb-8">
-			Select a site or continue to Frappe Cloud.
+			{{
+				sites.length
+					? 'Select a site or continue to Frappe Cloud.'
+					: canCreateProductTrial
+						? 'Continue to Frappe Cloud or create a new trial site.'
+						: 'Continue to Frappe Cloud.'
+			}}
 		</p>
 
+		<template v-if="sitesResource.list.loading">
+			<div
+				v-for="_ in 3"
+				class="grid grid-cols-[1fr_auto] items-center gap-1.5 mb-3 fade-in"
+			>
+				<span class="relative flex items-center">
+					<div class="sk h-4 w-2/3" />
+				</span>
+				<div class="sk size-4" />
+				<div class="flex gap-2 items-center col-span-2 pb-3 border-b">
+					<div class="sk h-4 w-20" />
+					<div class="sk h-4 w-14 !rounded-full" />
+				</div>
+			</div>
+		</template>
+
 		<a
-			v-for="(site, i) in sites.slice(0,3)"
+			v-else
+			v-for="(site, i) in sites"
 			:key="site.name"
-			class="grid grid-cols-[1fr_auto] items-center gap-1.5 mb-3 cursor-pointer"
+			class="grid grid-cols-[1fr_auto] items-center gap-1.5 mb-3 cursor-pointer fade-in"
 			@click="openSite(site)"
 		>
 			<span class="relative text-base text-ink-gray-8">
@@ -103,7 +142,7 @@ onMounted(() => {
 
 			<div
 				class="flex gap-2 items-center col-span-2 pb-3"
-				:class="i == sites.slice(0,3).length - 1 ? '' : 'border-b'"
+				:class="i == sites.length - 1 ? '' : 'border-b'"
 			>
 				<span class="text-ink-gray-5" v-if="sitePlan(site)">
 					{{ sitePlan(site) }}</span
@@ -112,12 +151,32 @@ onMounted(() => {
 			</div>
 		</a>
 
-		<Button variant="solid" :route="{ name: 'Site List' }" class="w-full mt-2">
+		<Button :route="{ name: 'Site List' }" class="w-full mt-2">
 			Go to Cloud Dashboard
 		</Button>
 
+		<Button
+			v-if="existingProductSite"
+			variant="solid"
+			class="w-full mt-3"
+			@click="openSite(existingProductSite)"
+		>
+			Continue to {{ existingProductSite.host_name || existingProductSite.name }}
+		</Button>
+		<Button
+			v-else-if="canCreateProductTrial"
+			variant="solid"
+			class="w-full mt-3"
+			:route="{ name: 'SignupSetup', params: { productId: product } }"
+		>
+			Create a new trial site for
+			<span class="capitalize">
+				{{ productTrial.data?.product_trial?.title || product }}
+			</span>
+		</Button>
+
 		<div
-			class="flex justify-center gap-2 pt-4  text-ink-gray-6"
+			class="flex justify-center gap-2 pt-4  text-ink-gray-5"
 			:class="sites.length ? '' : 'border-t'"
 		>
 			<a
@@ -138,3 +197,9 @@ onMounted(() => {
 		</div>
 	</div>
 </template>
+
+<style scoped>
+.sk {
+	@apply rounded-sm animate-pulse bg-surface-gray-3 dark:bg-surface-gray-2;
+}
+</style>

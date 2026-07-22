@@ -424,14 +424,7 @@
 						</p>
 					</div>
 				</template>
-				<template v-slot:logo v-if="saasProduct">
-					<div class="flex space-x-2">
-						<img
-							class="inline-block h-[38px] w-[38px] rounded-sm"
-							:src="saasProduct?.logo"
-						/>
-					</div>
-				</template>
+
 			</LoginBox>
 		</div>
 	</div>
@@ -445,6 +438,7 @@ import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 import { toast } from 'vue-sonner';
 import { getToastErrorMessage } from '../utils/toast';
 import { h } from 'vue';
+import { call } from 'frappe-ui';
 import CustomToast from '../components/CustomToast.vue';
 
 export default {
@@ -548,18 +542,12 @@ export default {
 					if (errorMessage.includes('is already registered')) {
 						localStorage.setItem('login_email', this.email);
 
-						if (this.$route.query?.product) {
-							this.$router.push({
-								name: 'Login',
-								query: {
-									redirect: `/dashboard/create-site/${this.$route.query.product}/setup`,
-								},
-							});
-						} else {
-							this.$router.push({
-								name: 'Login',
-							});
-						}
+						this.$router.push({
+							name: 'Login',
+							query: {
+								product: this.$route.query?.product,
+							},
+						});
 					}
 				},
 			};
@@ -831,20 +819,27 @@ export default {
 				},
 			);
 		},
-		afterLogin(res) {
-			let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
-			// If `redirect` is present in query, redirect to that.
+		async afterLogin() {
+			localStorage.setItem('login_email', this.email);
+
 			// Restrict redirect to relative paths.
 			const redirect = this.$route.query.redirect;
 			if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
-				loginRoute = redirect;
+				window.location.href = redirect;
+				return;
 			}
-			localStorage.setItem('login_email', this.email);
-			if (loginRoute.includes('/welcome')) {
-				let separator = loginRoute.includes('?') ? '&' : '?';
-				loginRoute = `${loginRoute}${separator}post_login=1`;
+
+			try {
+				const route = await call('press.api.account.get_route_on_login');
+				const product = this.$route.query.product;
+				if (route === '/quickstart' && product) {
+					window.location.href = `/dashboard/quickstart?product=${product}`;
+				} else {
+					window.location.href = `/dashboard${route || '/'}`;
+				}
+			} catch (e) {
+				window.location.href = '/dashboard/';
 			}
-			window.location.href = loginRoute;
 		},
 	},
 	computed: {
@@ -856,9 +851,6 @@ export default {
 			if (this.$resources.resetPassword.error) {
 				return this.$resources.resetPassword.error;
 			}
-		},
-		saasProduct() {
-			return this.$resources.signupSettings.data?.product_trial;
 		},
 		isLogin() {
 			return this.$route.name == 'Login' && !this.$route.query.forgot;
@@ -919,27 +911,18 @@ export default {
 			} else if (this.otpRequested) {
 				return 'Verify your email address';
 			} else if (this.isLogin) {
-				if (this.saasProduct) {
-					return `Log in to your account to start using ${this.saasProduct.title}`;
-				}
-				return 'Log in to your account';
-			} else {
-				if (this.saasProduct) {
-					return `Sign up for ${this.saasProduct.title}`;
-				}
-
-				return 'Create your Frappe Cloud account';
+				return 'Log in to your Frappe Cloud account';
 			}
+			return 'Signup to your Frappe Cloud account';
 		},
 		subtitle() {
 			if (this.hasForgotPassword) {
 				return 'Enter your email address to reset your password';
-			} else {
-				if (this.saasProduct) {
-					return `Get started and explore the easiest way to use ${this.saasProduct.title}`;
-				}
+			} else if (this.isLogin) {
 				return 'Get started and explore the easiest way to use all Frappe apps';
 			}
+
+			return 'Hosting platform for Frappe apps';
 		},
 	},
 };
