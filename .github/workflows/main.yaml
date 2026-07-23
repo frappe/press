@@ -390,7 +390,7 @@ jobs:
           path: /home/runner/frappe-bench/apps/press/dashboard/playwright-report
 
       - name: Upload coverage data
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac  # v5
         with:
           disable_search: true
           files: /home/runner/frappe-bench/apps/press/dashboard/coverage/cobertura-coverage.xml
@@ -478,7 +478,7 @@ jobs:
         uses: crazy-max/ghaction-github-runtime@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
         with:
           install: true
 
@@ -518,7 +518,7 @@ jobs:
         uses: actions/download-artifact@v4
 
       - name: Upload coverage data
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238  # v4
         with:
           fail_ci_if_error: false
           verbose: true
