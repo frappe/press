@@ -37,4 +37,17 @@ def create_test_remote_file(
 
 
 class TestRemoteFile(FrappeTestCase):
-	pass
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_remote_file_of_site_belongs_to_sites_team_and_not_session_users_team(self):
+		"""Backup remote files are created in agent job callbacks, as Administrator."""
+		from press.press.doctype.site.test_site import create_test_site
+		from press.press.doctype.team.test_team import create_test_team
+
+		team = create_test_team()
+		site = create_test_site(team=team.name)
+
+		remote_file = create_test_remote_file(site=site.name)
+
+		self.assertEqual(remote_file.team, team.name)
