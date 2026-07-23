@@ -15,7 +15,6 @@ from press.utils import log_error
 
 RAVEN_SERVER_ALERTS_CHANNEL = "Frappe Cloud-server-alerts"
 RAVEN_BOT_ID = "Frappe Notifications"
-SWAP_USAGE_ALERT_THRESHOLD_BYTES = 8 * 1024 * 1024 * 1024
 PROMETHEUS_REGEX_META_CHAR_PATTERN = re.compile(r"([\\.^$*+?()[\]{}|])")
 
 
@@ -23,7 +22,7 @@ class PublicServerHealthMetrics(TypedDict):
 	available_memory_bytes: dict[str, float]
 	available_memory_ratio: dict[str, float]
 	cpu_idle_ratio: dict[str, float]
-	swap_used_bytes: dict[str, float]
+	oom_kills: dict[str, float]
 
 
 class PublicServerPoolDecision(TypedDict):
@@ -37,7 +36,7 @@ class PublicServerPoolDecision(TypedDict):
 def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
 	"""Refresh `use_for_new_benches` and `use_for_new_sites` flags for public clusters
 	1. Consider active, public primary servers for each cluster
-	2. Fetch memory, CPU and swap health for all servers in bulk from Prometheus
+	2. Fetch memory, CPU and OOM-kill health for all servers in bulk from Prometheus
 	3. Prefer healthy servers, and fall back to the least-bad server when a cluster has no healthy candidates
 	"""
 	server_names, servers_by_cluster = _get_public_primary_servers_by_cluster()
@@ -73,7 +72,6 @@ def _get_public_server_pool_decision(
 ) -> PublicServerPoolDecision:
 	ram_available_ratio = metrics["available_memory_ratio"]
 	cpu_idle_ratio = metrics["cpu_idle_ratio"]
-	swap_used_bytes = metrics["swap_used_bytes"]
 
 	decision: PublicServerPoolDecision = {
 		"selected_bench_servers": set(),
@@ -118,11 +116,11 @@ def _get_public_server_pool_decision(
 		decision["selected_site_servers"].add(selected_server)
 		decision["fallback_servers_by_cluster"][cluster] = selected_server
 
-		for server, swap_used in swap_used_bytes.items():
-			if swap_used > SWAP_USAGE_ALERT_THRESHOLD_BYTES:
-				decision["server_issues"].setdefault(server, []).append(
-					f"Swap usage: {_format_bytes(swap_used)}"
-				)
+	for server, oom_kills in metrics["oom_kills"].items():
+		if oom_kills > 4:
+			decision["server_issues"].setdefault(server, []).append(
+				f"OOM kills in the last 60 minutes: {max(1, round(oom_kills))}"
+			)
 
 	return decision
 
@@ -142,7 +140,7 @@ def _get_public_server_health_issues(server: str, metrics: PublicServerHealthMet
 
 def _get_bench_pool_score(
 	server: str, metrics: PublicServerHealthMetrics
-) -> tuple[float, float, float, float, float]:
+) -> tuple[float, float, float, float]:
 	ram_available_ratio = metrics["available_memory_ratio"].get(server, 0.0)
 	cpu_idle_ratio = metrics["cpu_idle_ratio"].get(server, 0.0)
 	return (
@@ -150,13 +148,12 @@ def _get_bench_pool_score(
 		ram_available_ratio,
 		cpu_idle_ratio,
 		metrics["available_memory_bytes"].get(server, 0.0),
-		-metrics["swap_used_bytes"].get(server, 0.0),
 	)
 
 
 def _get_site_pool_score(
 	server: str, metrics: PublicServerHealthMetrics
-) -> tuple[float, float, float, float, float]:
+) -> tuple[float, float, float, float]:
 	ram_available_ratio = metrics["available_memory_ratio"].get(server, 0.0)
 	cpu_idle_ratio = metrics["cpu_idle_ratio"].get(server, 0.0)
 	return (
@@ -164,20 +161,18 @@ def _get_site_pool_score(
 		cpu_idle_ratio,
 		ram_available_ratio,
 		metrics["available_memory_bytes"].get(server, 0.0),
-		-metrics["swap_used_bytes"].get(server, 0.0),
 	)
 
 
 def _get_least_bad_pool_score(
 	server: str, metrics: PublicServerHealthMetrics
-) -> tuple[int, float, float, float, float]:
+) -> tuple[int, float, float, float]:
 	failed_check_count = len(_get_public_server_health_issues(server, metrics))
 	return (
 		-failed_check_count,
 		metrics["cpu_idle_ratio"].get(server, 0.0),
 		metrics["available_memory_ratio"].get(server, 0.0),
 		metrics["available_memory_bytes"].get(server, 0.0),
-		-metrics["swap_used_bytes"].get(server, 0.0),
 	)
 
 
@@ -225,7 +220,7 @@ def _apply_public_server_pool_decision(
 
 
 def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHealthMetrics | None:
-	"""Fetch memory, CPU and swap metrics for public servers from Prometheus."""
+	"""Fetch memory, CPU and kernel OOM-kill metrics for public servers from Prometheus."""
 	if not server_names:
 		return None
 
@@ -245,15 +240,15 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 		f'avg by (instance) (rate(node_cpu_seconds_total{{instance=~"^({instance_matcher})$", '
 		f'job="node", mode="idle"}}[60m]))'
 	)
-	swap_used_bytes_query = (
-		f'node_memory_SwapTotal_bytes{{instance=~"^({instance_matcher})$", job="node"}}'
-		f' - node_memory_SwapFree_bytes{{instance=~"^({instance_matcher})$", job="node"}}'
+	oom_kills_query = (
+		f'sum by (instance) (increase(node_vmstat_oom_kill{{instance=~"^({instance_matcher})$", '
+		f'job="node"}}[60m])) > 4'
 	)
 
 	available_memory_bytes_results = _query_prometheus_vector(available_memory_bytes_query, url, auth)
 	available_memory_ratio_results = _query_prometheus_vector(available_memory_ratio_query, url, auth)
 	cpu_idle_ratio_results = _query_prometheus_vector(cpu_idle_ratio_query, url, auth)
-	swap_used_bytes_results = _query_prometheus_vector(swap_used_bytes_query, url, auth)
+	oom_kills_results = _query_prometheus_vector(oom_kills_query, url, auth)
 
 	if (
 		available_memory_bytes_results is None
@@ -270,9 +265,7 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 			server_names, available_memory_ratio_results
 		),
 		"cpu_idle_ratio": _build_public_server_metric_map(server_names, cpu_idle_ratio_results),
-		"swap_used_bytes": _build_public_server_metric_map(
-			server_names, swap_used_bytes_results, default=0.0
-		),
+		"oom_kills": _build_public_server_metric_map(server_names, oom_kills_results, default=0.0),
 	}
 
 
@@ -344,7 +337,7 @@ def _send_public_server_pool_health_alert(server_issues: dict[str, list[str]]) -
 	header_lines = [
 		f"**Public Server Pool Health Alerts** - {len(affected_servers)}",
 		"",
-		"Thresholds: RAM utilization > 80%, CPU utilization > 50%, Swap usage > 5 GiB",
+		"Thresholds: RAM utilization > 80%, CPU utilization > 50%, OOM kills in the last hour > 4",
 		"",
 	]
 	table_header = [
@@ -482,9 +475,3 @@ def _open_public_server_pool_incident_exists(subject: str, cluster: str | None =
 	if cluster:
 		filters["cluster"] = cluster
 	return bool(frappe.db.exists("Incident", filters))
-
-
-def _format_bytes(value: float) -> str:
-	if value >= 1024 * 1024 * 1024:
-		return f"{value / 1024 / 1024 / 1024:.2f} GiB"
-	return f"{value / 1024 / 1024:.2f} MiB"
