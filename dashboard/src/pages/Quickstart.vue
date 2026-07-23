@@ -156,15 +156,7 @@ onMounted(() => {
 		</Button>
 
 		<Button
-			v-if="existingProductSite"
-			variant="solid"
-			class="w-full mt-3"
-			@click="openSite(existingProductSite)"
-		>
-			Continue to {{ existingProductSite.host_name || existingProductSite.name }}
-		</Button>
-		<Button
-			v-else-if="canCreateProductTrial"
+			v-if="canCreateProductTrial"
 			variant="solid"
 			class="w-full mt-3"
 			:route="{ name: 'SignupSetup', params: { productId: product } }"
