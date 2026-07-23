@@ -167,3 +167,4 @@ press.patches.v0_8_0.team_member_default_role
 press.patches.v0_8_0.decouple_press_role_resources
 press.patches.v0_8_0.add_app_source_to_app_audit
 press.patches.v0_8_0.bump_v16_bench_version_to_5_31_0
+press.patches.v0_8_0.bump_v15_bench_version_to_5_31_0
