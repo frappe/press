@@ -432,6 +432,7 @@
 
 <script>
 import LoginBox from '../components/auth/LoginBox.vue';
+import { getAnonymousId } from '@/telemetry/pulse.js';
 import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
 import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 import { toast } from 'vue-sonner';
@@ -521,7 +522,7 @@ export default {
 					email: this.email,
 					referrer: this.getReferrerIfAny(),
 					product: this.$route.query.product,
-					aid: this.getAidIfAny(),
+					aid: getAnonymousId(),
 				},
 				onSuccess(account_request) {
 					this.account_request = account_request;
@@ -626,6 +627,7 @@ export default {
 				makeParams() {
 					return {
 						product: this.$route.query.product,
+						aid: getAnonymousId(),
 					};
 				},
 				onSuccess(url) {
@@ -717,20 +719,11 @@ export default {
 			} else if (this.hasForgotPassword) {
 				await this.checkTwoFactorAndResetPassword();
 			} else {
-				this.capturePulseSignupMethod('email');
 				this.$resources.signup.submit();
 			}
 		},
 		continueWithGoogle() {
-			this.capturePulseSignupMethod('google');
 			this.$resources.googleLogin.submit();
-		},
-		capturePulseSignupMethod(method) {
-			if (this.$route.name === 'Signup' && this.$route.query.product) {
-				this.$pulse?.capture(`signup_via_${method}`, {
-					product: this.$route.query.product,
-				});
-			}
 		},
 
 		async checkTwoFactorAndLogin() {
@@ -801,11 +794,6 @@ export default {
 			const params = location.search;
 			const searchParams = new URLSearchParams(params);
 			return searchParams.get('referrer');
-		},
-		getAidIfAny() {
-			// Pulse anonymous id forwarded from the product website (?aid=…), so
-			// pre-signup browsing stitches to this account at team creation.
-			return new URLSearchParams(location.search).get('aid');
 		},
 		async login() {
 			await this.$session.login.submit(

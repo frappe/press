@@ -106,6 +106,13 @@ export default {
 			isRedirecting: false,
 		};
 	},
+	mounted() {
+		// Google has already verified the address by the time this page loads.
+		this.$pulse?.capture('signup_verified', {
+			method: 'oauth',
+			product: this.productId,
+		});
+	},
 	resources: {
 		setupAccount() {
 			return {
