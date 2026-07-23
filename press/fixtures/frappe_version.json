@@ -251,7 +251,7 @@
 				"parent": "Version 15",
 				"parentfield": "dependencies",
 				"parenttype": "Frappe Version",
-				"version": "5.27.0"
+				"version": "5.31.0"
 			},
 			{
 				"dependency": "PIP_VERSION",
@@ -263,7 +263,7 @@
 		],
 		"docstatus": 0,
 		"doctype": "Frappe Version",
-		"modified": "2025-05-23 11:09:57.983138",
+		"modified": "2026-07-22 12:00:00.000000",
 		"name": "Version 15",
 		"number": 15,
 		"public": 1,
