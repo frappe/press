@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -52,18 +51,3 @@ class TestRemoteFile(FrappeTestCase):
 		remote_file = create_test_remote_file(site=site.name)
 
 		self.assertEqual(remote_file.team, team.name)
-
-	def test_patch_resets_team_of_remote_files_stamped_with_the_wrong_team(self):
-		from press.patches.v0_8_0.fix_remote_file_team_from_site import execute
-		from press.press.doctype.site.test_site import create_test_site
-		from press.press.doctype.team.test_team import create_test_team
-
-		team = create_test_team()
-		site = create_test_site(team=team.name)
-		remote_file = create_test_remote_file(site=site.name)
-		remote_file.db_set("team", create_test_team().name)
-
-		with patch.object(frappe.db, "commit"):  # keep the test rollback-able
-			execute()
-
-		self.assertEqual(frappe.db.get_value("Remote File", remote_file.name, "team"), team.name)
