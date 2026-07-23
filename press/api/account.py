@@ -195,6 +195,8 @@ def setup_account(  # noqa: C901
 	oauth_domain=False,
 	site_domain=None,
 	share_details_consent=False,
+	domain=None,
+	reseller=False,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -219,6 +221,8 @@ def setup_account(  # noqa: C901
 	# pass lead to local partner if consent given
 	account_request.agreed_to_partner_consent = share_details_consent
 	account_request.country = country
+	account_request.industry = domain
+	account_request.reseller = reseller
 	account_request.save()
 
 	team = account_request.team

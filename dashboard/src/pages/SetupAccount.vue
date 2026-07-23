@@ -46,6 +46,7 @@
 									<FormControl
 										label="First name"
 										type="text"
+										placeholder="Enter First Name"
 										v-model="firstName"
 										name="fname"
 										autocomplete="given-name"
@@ -56,6 +57,7 @@
 									<FormControl
 										label="Last name"
 										type="text"
+										placeholder="Enter Last Name"
 										v-model="lastName"
 										name="lname"
 										autocomplete="family-name"
@@ -65,22 +67,7 @@
 									/>
 								</div>
 							</template>
-							<FormControl
-								label="Email"
-								type="text"
-								:modelValue="email"
-								variant="outline"
-								disabled
-							/>
-							<FormControl
-								type="select"
-								:options="countryOptions"
-								v-if="!isInvitation"
-								label="Country"
-								v-model="country"
-								variant="outline"
-								required
-							/>
+
 							<PhoneInput
 								v-if="!isInvitation"
 								label="Phone"
@@ -88,6 +75,35 @@
 								:countries="countries"
 								:country="country"
 								placeholder="9876543210"
+							/>
+
+							<div class="grid grid-cols-2 gap-2">
+								<FormControl
+									type="select"
+									:options="countryOptions"
+									v-if="!isInvitation"
+									label="Country"
+									v-model="country"
+									variant="outline"
+									required
+								/>
+
+								<FormControl
+									v-if="!isInvitation"
+									type="select"
+									:options="['Manufacturing', 'Trading / Distribution / E-Commerce', 'Services', 'Other']"
+									v-model="domain"
+									label="Domain"
+									variant="outline"
+								/>
+							</div>
+
+							<FormControl
+								v-if="!isInvitation"
+								type="checkbox"
+								v-model="reseller"
+								label="I'm evaluating Frappe Products for a client"
+								class="[&_label]:font-normal"
 							/>
 						</div>
 						<ErrorMessage
@@ -117,9 +133,7 @@
 							"
 							type="submit"
 						>
-							{{
-								is2FA ? 'Verify' : isInvitation ? 'Accept' : 'Create account'
-							}}
+							{{ is2FA ? 'Verify' : isInvitation ? 'Accept' : 'Create account' }}
 						</Button>
 					</template>
 				</form>
@@ -131,7 +145,7 @@
 						class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 						href="https://frappecloud.com/policies"
 					>
-						Terms & Policies
+						Terms
 					</a>
 				</div>
 			</LoginBox>
@@ -149,10 +163,10 @@
 </template>
 
 <script>
-import LoginBox from '../components/auth/LoginBox.vue';
-import Link from '@/components/Link.vue';
-import Form from '@/components/Form.vue';
-import PhoneInput from '@/components/PhoneInput.vue';
+import Form from '@/components/Form.vue'
+import Link from '@/components/Link.vue'
+import PhoneInput from '@/components/PhoneInput.vue'
+import LoginBox from '../components/auth/LoginBox.vue'
 
 const detailsSharedProducts = [
 	'erpnext',
@@ -162,7 +176,7 @@ const detailsSharedProducts = [
 	'hrms',
 	'hrmsv15',
 	'lending',
-];
+]
 
 export default {
 	name: 'SetupAccount',
@@ -194,7 +208,9 @@ export default {
 			detailsSharedProducts,
 			shareDetailsConsent: false,
 			phoneNumber: '',
-		};
+			domain: '',
+			reseller: false,
+		}
 	},
 	resources: {
 		validateRequestKey() {
@@ -209,22 +225,22 @@ export default {
 				auto: true,
 				onSuccess(res) {
 					if (res && res.email) {
-						this.email = res.email;
-						this.firstName = res.first_name;
-						this.lastName = res.last_name;
-						this.country = res.country;
-						this.userExists = res.user_exists;
-						this.invitationToTeam = res.team;
-						this.invitedBy = res.invited_by;
-						this.isInvitation = res.is_invitation;
-						this.invitedByParentTeam = res.invited_by_parent_team;
-						this.oauthSignup = res.oauth_signup;
-						this.oauthDomain = res.oauth_domain;
-						this.countries = res.countries;
-						this.saasProduct = res.product_trial;
+						this.email = res.email
+						this.firstName = res.first_name
+						this.lastName = res.last_name
+						this.country = res.country
+						this.userExists = res.user_exists
+						this.invitationToTeam = res.team
+						this.invitedBy = res.invited_by
+						this.isInvitation = res.is_invitation
+						this.invitedByParentTeam = res.invited_by_parent_team
+						this.oauthSignup = res.oauth_signup
+						this.oauthDomain = res.oauth_domain
+						this.countries = res.countries
+						this.saasProduct = res.product_trial
 					}
 				},
-			};
+			}
 		},
 		setupAccount() {
 			return {
@@ -242,23 +258,25 @@ export default {
 					oauth_domain: this.oauthDomain,
 					share_details_consent:
 						this.showLeadsConsentCheckbox && this.shareDetailsConsent,
+					domain: this.domain,
+					reseller: this.reseller,
 				},
 				onSuccess() {
-					let path = '/dashboard/create-site/app-selector';
+					let path = '/dashboard/create-site/app-selector'
 					if (this.saasProduct) {
-						path = `/dashboard/create-site/${this.saasProduct.name}/setup`;
+						path = `/dashboard/create-site/${this.saasProduct.name}/setup`
 					}
 					if (this.isInvitation) {
-						path = '/dashboard/sites';
+						path = '/dashboard/sites'
 					}
-					window.location.href = path;
+					window.location.href = path
 				},
-			};
+			}
 		},
 		is2FAEnabled() {
 			return {
 				url: 'press.api.account.is_2fa_enabled',
-			};
+			}
 		},
 		acceptInvite() {
 			return {
@@ -269,40 +287,40 @@ export default {
 				onSuccess() {
 					this.$router.push({
 						name: 'Site List',
-					});
+					})
 				},
-			};
+			}
 		},
 		verify2FA() {
 			return {
 				url: 'press.api.account.verify_2fa',
 				onSuccess() {
-					this.$resources.setupAccount.submit();
+					this.$resources.setupAccount.submit()
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		is2FA() {
 			return (
 				this.$route.name === 'Setup Account' && this.$route.query.two_factor
-			);
+			)
 		},
 		showLeadsConsentCheckbox() {
 			return (
 				this.saasProduct &&
 				this.detailsSharedProducts.includes(this.saasProduct.name.toLowerCase())
-			);
+			)
 		},
 		countryOptions() {
-			return this.countries.map((c) => c.name);
+			return this.countries.map((c) => c.name)
 		},
 	},
 	methods: {
 		submitForm() {
 			if (this.invitedBy) {
 				if (this.$session.isLoggedIn) {
-					this.$resources.acceptInvite.submit();
+					this.$resources.acceptInvite.submit()
 				} else {
 					this.$resources.is2FAEnabled.submit(
 						{
@@ -317,18 +335,18 @@ export default {
 											...this.$route.query,
 											two_factor: 1,
 										},
-									});
+									})
 								} else {
-									this.$resources.setupAccount.submit();
+									this.$resources.setupAccount.submit()
 								}
 							},
 						},
-					);
+					)
 				}
 			} else {
-				this.$resources.setupAccount.submit();
+				this.$resources.setupAccount.submit()
 			}
 		},
 	},
-};
+}
 </script>
