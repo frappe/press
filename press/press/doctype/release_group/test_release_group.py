@@ -29,6 +29,16 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.app.app import App
 
 
+# change_app_branch() reads frappe/__init__.py off GitHub to compare major versions.
+# Test sources point at frappe/erpnext, which has no such file, so the call 404s — and
+# tests shouldn't reach the network anyway. 14 matches create_test_release_group's
+# default frappe_version.
+mock_frappe_branch_major_version = patch(
+	"press.press.doctype.release_group.release_group.get_frappe_branch_major_version",
+	new=Mock(return_value=14),
+)
+
+
 def mock_free_space(space_required: int):
 	def wrapper(*args, **kwargs):
 		return space_required
@@ -217,6 +227,7 @@ class TestReleaseGroup(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			rg.change_app_branch("frappe", "master")
 
+	@mock_frappe_branch_major_version
 	@patch.object(AppSource, "sync_versions", new=Mock())
 	def test_branch_change_app_source_exists(self):
 		app = create_test_app()
@@ -236,6 +247,7 @@ class TestReleaseGroup(FrappeTestCase):
 		# Source must be set to the available `app_source` for `app`
 		self.assertEqual(rg.apps[0].source, app_source.name)
 
+	@mock_frappe_branch_major_version
 	@patch.object(AppSource, "sync_versions", new=Mock())
 	def test_branch_change_app_source_does_not_exist(self):
 		app = create_test_app()
@@ -253,10 +265,10 @@ class TestReleaseGroup(FrappeTestCase):
 
 	@patch.object(AppSource, "sync_versions", autospec=True)
 	def test_branch_change_syncs_versions_for_non_public_source(self, mock_sync_versions):
-		app = create_test_app()
-		rg = create_test_release_group([app])
+		app = create_test_app("erpnext", "ERPNext")
+		rg = create_test_release_group([create_test_app(), app])
 
-		current_app_source = frappe.get_doc("App Source", rg.apps[0].source)
+		current_app_source = frappe.get_doc("App Source", rg.apps[1].source)
 		app_source = create_test_app_source(
 			current_app_source.versions[0].version,
 			app,
@@ -271,10 +283,10 @@ class TestReleaseGroup(FrappeTestCase):
 
 	@patch.object(AppSource, "sync_versions", autospec=True)
 	def test_branch_change_does_not_sync_versions_for_public_source(self, mock_sync_versions):
-		app = create_test_app()
-		rg = create_test_release_group([app])
+		app = create_test_app("erpnext", "ERPNext")
+		rg = create_test_release_group([create_test_app(), app])
 
-		current_app_source = frappe.get_doc("App Source", rg.apps[0].source)
+		current_app_source = frappe.get_doc("App Source", rg.apps[1].source)
 		public_app_source = create_test_app_source(
 			current_app_source.versions[0].version,
 			app,
