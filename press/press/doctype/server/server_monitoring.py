@@ -13,7 +13,7 @@ from frappe.utils.password import get_decrypted_password
 
 from press.utils import log_error
 
-RAVEN_SERVER_ALERTS_CHANNEL = "Frappe Cloud-server-alerts"
+RAVEN_SERVER_ALERTS_CHANNEL = "frappe-cloud-server-alerts"
 RAVEN_BOT_ID = "Frappe Notifications"
 PROMETHEUS_REGEX_META_CHAR_PATTERN = re.compile(r"([\\.^$*+?()[\]{}|])")
 
