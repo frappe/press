@@ -27,9 +27,13 @@ const sites = computed(() => sitesResource.data || [])
 
 // Only one trial site is allowed per product! If the team already has one, link to it instead.
 const existingProductSite = computed(() =>
-	product ? sites.value.find((site) => site.standby_for_product === product) : null,
+	product
+		? sites.value.find((site) => site.standby_for_product === product)
+		: null,
 )
-const canCreateProductTrial = computed(() => product && !existingProductSite.value)
+const canCreateProductTrial = computed(
+	() => product && !existingProductSite.value,
+)
 
 const sitePlan = (site) =>
 	site.trial_end_date ? trialDays(site.trial_end_date) : null
@@ -97,13 +101,11 @@ onMounted(() => {
 		</h2>
 
 		<p class="mt-1 text-p-base text-ink-gray-5 mb-8">
-			{{
-				sites.length
+			{{ sites.length
 					? 'Select a site or continue to Frappe Cloud.'
 					: canCreateProductTrial
 						? 'Continue to Frappe Cloud or create a new trial site.'
-						: 'Continue to Frappe Cloud.'
-			}}
+						: 'Continue to Frappe Cloud.' }}
 		</p>
 
 		<template v-if="sitesResource.list.loading">
@@ -130,7 +132,6 @@ onMounted(() => {
 			@click="openSite(site)"
 		>
 			<span class="relative text-base text-ink-gray-8">
-				<LucideGlobe class="absolute -left-6 size-4 text-ink-gray-6 mt-0.5" />
 				{{ site.host_name || site.name }}
 			</span>
 
@@ -151,20 +152,19 @@ onMounted(() => {
 			</div>
 		</a>
 
-		<Button :route="{ name: 'Site List' }" class="w-full mt-2">
-			Go to Cloud Dashboard
-		</Button>
-
 		<Button
 			v-if="canCreateProductTrial"
 			variant="solid"
-			class="w-full mt-3"
+			class="w-full mt-3 capitalize"
 			:route="{ name: 'SignupSetup', params: { productId: product } }"
 		>
-			Create a new trial site for
-			<span class="capitalize">
-				{{ productTrial.data?.product_trial?.title || product }}
-			</span>
+			Start Frappe
+			{{ productTrial.data?.product_trial?.title || product }}
+			Trial
+		</Button>
+
+		<Button :route="{ name: 'Site List' }" class="w-full mt-2">
+			Go to Cloud Dashboard
 		</Button>
 
 		<div
