@@ -222,6 +222,7 @@ scheduler_events = {
 		"press.press.doctype.team.team.check_budget_alerts",
 		"press.press.doctype.site.site.archive_creation_failed_sites",
 		"press.press.doctype.server.server.process_running_benches_on_server",
+		"press.press.doctype.waf_log.waf_log.clear_old_logs",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",

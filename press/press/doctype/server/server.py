@@ -3000,6 +3000,7 @@ class Server(BaseServer):
 		is_static_ip: DF.Check
 		is_unified_server: DF.Check
 		is_upstream_setup: DF.Check
+		is_waf_setup: DF.Check
 		is_wazuh_agent_installed: DF.Check
 		wazuh_agent_status: DF.Data | None
 		keep_files_on_server_in_offsite_backup: DF.Check
@@ -3028,6 +3029,7 @@ class Server(BaseServer):
 		set_bench_memory_limits: DF.Check
 		site_warranty_change_cooldown: DF.Int
 		skip_scheduled_backups: DF.Check
+		skip_standby_site_creation: DF.Check
 		ssh_port: DF.Int
 		ssh_user: DF.Data | None
 		staging: DF.Check
@@ -3044,7 +3046,6 @@ class Server(BaseServer):
 		use_for_build: DF.Check
 		use_for_new_benches: DF.Check
 		use_for_new_sites: DF.Check
-		skip_standby_site_creation: DF.Check
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
@@ -3301,6 +3302,26 @@ class Server(BaseServer):
 				" ".join(messages)
 				+ " Enable these flags to allow site creation and bench deployment on shared servers in this cluster."
 			)
+
+	@frappe.whitelist()
+	def setup_waf(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_waf", queue="long", timeout=1200)
+
+	def _setup_waf(self):
+		try:
+			ansible = Ansible(
+				playbook="waf.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			result = ansible.run()
+
+			if result.status == "Success":
+				self.is_waf_setup = True
+				self.save()
+		except Exception:
+			log_error("WAF Setup Exception", server=self.as_dict())
 
 	@dashboard_whitelist()
 	@frappe.whitelist()

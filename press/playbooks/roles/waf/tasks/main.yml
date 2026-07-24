@@ -1,0 +1,126 @@
+---
+- name: Install compilation and ModSecurity prerequisites
+  ansible.builtin.apt:
+    name:
+      - git
+      - build-essential
+      - autoconf
+      - automake
+      - libtool
+      - pkg-config
+      - libpcre3-dev
+      - libxml2-dev
+      - libyajl-dev
+      - libcurl4-openssl-dev
+      - libgeoip-dev
+      - liblmdb-dev
+      - zlib1g-dev
+      - bison
+      - flex
+    state: present
+    update_cache: yes
+
+- name: Create build workspace directory
+  ansible.builtin.file:
+    path: /usr/local/src/modsec_build
+    state: directory
+    mode: '0755'
+
+- name: Clone ModSecurity v3 core repository (with submodules)
+  ansible.builtin.git:
+    repo: 'https://github.com/SpiderLabs/ModSecurity.git'
+    dest: /usr/local/src/modsec_build/ModSecurity
+    version: v3/master
+    depth: 1
+    force: yes
+    recursive: yes
+  register: modsec_git
+
+- name: Build and install libmodsecurity core engine
+  ansible.builtin.shell:
+    cmd: |
+      ./build.sh
+      ./configure --with-lmdb
+      make -j$(nproc)
+      make install
+    chdir: /usr/local/src/modsec_build/ModSecurity
+    creates: /usr/local/lib/libmodsecurity.so
+  register: modsec_build
+
+- name: Update shared library linker cache
+  ansible.builtin.command:
+    cmd: ldconfig
+  when: modsec_build.changed
+
+- name: Instantiate hardcoded root LMDB collection data tracking endpoints
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: touch
+    owner: www-data
+    group: www-data
+    mode: '0664'
+    modification_time: preserve
+    access_time: preserve
+  loop:
+    - /modsec-shared-collections
+    - /modsec-shared-collections-lock
+
+- name: Create dedicated directory for ModSecurity audit logs
+  ansible.builtin.file:
+    path: /var/log/nginx/modsec
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
+- name: Clone ModSecurity Nginx connector module repository
+  ansible.builtin.git:
+    repo: 'https://github.com/SpiderLabs/ModSecurity-nginx.git'
+    dest: /usr/local/src/modsec_build/ModSecurity-nginx
+    version: master
+    depth: 1
+    force: yes
+
+- name: Inspect running Nginx active version string
+  ansible.builtin.command:
+    cmd: nginx -v
+  register: nginx_raw_version
+  changed_when: false
+  failed_when: false
+
+- name: Extract clean Nginx version string
+  ansible.builtin.set_fact:
+    nginx_version: "{{ nginx_raw_version.stderr | regex_replace('^.*nginx/([0-9.]+).*$', '\\1') }}"
+
+- name: Downlink identical matching Nginx base core source distribution package
+  ansible.builtin.unarchive:
+    src: "https://nginx.org/download/nginx-{{ nginx_version }}.tar.gz"
+    dest: /usr/local/src/modsec_build
+    remote_src: yes
+    creates: "/usr/local/src/modsec_build/nginx-{{ nginx_version }}"
+
+- name: Compile the Nginx ModSecurity dynamic binary interface module (.so)
+  ansible.builtin.shell:
+    cmd: |
+      ./configure --with-compat --add-dynamic-module=/usr/local/src/modsec_build/ModSecurity-nginx
+      make modules
+    chdir: "/usr/local/src/modsec_build/nginx-{{ nginx_version }}"
+    creates: "/usr/local/src/modsec_build/nginx-{{ nginx_version }}/objs/ngx_http_modsecurity_module.so"
+
+- name: Ensure Nginx dynamic modules directory exists
+  ansible.builtin.file:
+    path: /usr/lib/nginx/modules
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Install ModSecurity Nginx dynamic module
+  ansible.builtin.copy:
+    src: "/usr/local/src/modsec_build/nginx-{{ nginx_version }}/objs/ngx_http_modsecurity_module.so"
+    dest: /usr/lib/nginx/modules/ngx_http_modsecurity_module.so
+    remote_src: yes
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload Nginx Server Architecture

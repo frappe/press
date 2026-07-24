@@ -98,6 +98,12 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_unified_server,
 			],
 			[
+				__('Setup WAF'),
+				'setup_waf',
+				true,
+				frm.doc.is_server_setup && !frm.doc.is_waf_setup,
+			],
+			[
 				__('Add to Proxy'),
 				'add_upstream_to_proxy',
 				true,
