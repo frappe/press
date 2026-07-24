@@ -167,6 +167,15 @@ class TestApp(FrappeTestCase):
 			with self.assertRaises(frappe.ValidationError):
 				parse_frappe_version(invalid_custom_version_string, app_title="test-app")
 
+	def test_prerelease_upper_bound_is_rejected_with_a_message_naming_the_range(self):
+		with self.assertRaises(frappe.ValidationError) as context:
+			parse_frappe_version(
+				">=16.0.0-dev,<=17.0.0-dev", app_title="test-app", ease_versioning_constrains=True
+			)
+
+		self.assertIn(">=16.0.0-dev <=17.0.0-dev", str(context.exception))
+		self.assertIn(">=16.0.0-dev <17.0.0", str(context.exception))
+
 	def test_version_parsing_with_ease_versioning_constrains(self):
 		"""Test version parsing with ease_versioning_constrains=True basically only lower bound major version compatibility check"""
 		accepted_custom_version_strings = [
