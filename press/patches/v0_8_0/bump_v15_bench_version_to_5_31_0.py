@@ -3,7 +3,7 @@ from frappe.utils import update_progress_bar
 
 
 def execute():
-	groups = frappe.get_all("Release Group", filters={"version": "Version 15", "enabled": 1}, pluck="name")
+	groups = frappe.get_all("Release Group", filters={"version": "Version 15"}, pluck="name")
 
 	if not groups:
 		return
