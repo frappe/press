@@ -1,0 +1,11 @@
+---
+- name: Prune Clones Directory
+  command: rm -rf /home/frappe/agent/.clones/*
+
+- name: Set permissions back to frappe:frappe recursively
+  file:
+    path: /home/frappe/agent/.clones
+    state: directory
+    owner: frappe
+    group: frappe
+    recurse: yes
