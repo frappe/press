@@ -226,14 +226,11 @@ watch(
 
 				socket.on(`bench_deploy:${id}:finished`, () => {
 					builds.value[id]?.reload()
-
-					const rgDoc = getCachedDocumentResource(
-						'Release Group',
-						builds.value[id]?.doc?.group,
-					)
-					if (rgDoc) rgDoc.reload()
-
 					fetchSetErrs()
+
+					const group = builds.value[id]?.doc?.group
+					const rgDoc = getCachedDocumentResource('Release Group', group)
+					if (rgDoc) rgDoc.reload()
 				})
 			}
 
