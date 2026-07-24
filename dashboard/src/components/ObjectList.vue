@@ -210,7 +210,7 @@ export default {
 		}
 	},
 	watch: {
-		documentModified(newValue, oldValue) {
+		documentStatus(newValue, oldValue) {
 			if (oldValue && newValue !== oldValue) {
 				this.$list?.reload()
 			}
@@ -329,9 +329,11 @@ export default {
 		}
 	},
 	computed: {
-		documentModified() {
-			if (!this.options.reloadOnDocumentUpdate) return
-			return this.options.context?.documentResource?.doc?.modified
+		documentStatus() {
+			if (!this.options.reloadOnDocField) return
+			return this.options.context?.documentResource?.doc?.[
+				this.options.reloadOnDocField
+			]
 		},
 		$list() {
 			if (this.$resources.list) return this.$resources.list
