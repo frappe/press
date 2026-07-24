@@ -111,7 +111,7 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Release Group App',
-					reloadOnDocumentUpdate: true,
+					reloadOnDocField: 'status',
 					filters: (releaseGroup) => {
 						return {
 							parenttype: 'Release Group',
