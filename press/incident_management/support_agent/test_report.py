@@ -841,3 +841,47 @@ class TestSupportAgentReport(FrappeTestCase):
 
 		self.assertTrue(any("it had headroom" in e for e in report["evidence"]))
 		self.assertFalse(any("move the heavy tenant" in step for step in report["recommended_next_steps"]))
+
+	def test_live_and_past_noisy_neighbor_signals_do_not_double_report(self):
+		"""Both database collectors run during a live spike and share their wording."""
+		report = generate_report(
+			{
+				"site": {"name": "test.frappe.cloud", "status": "Active", "usage_percent": {}},
+				"bench": {"status": "Active"},
+				"deployments": [],
+				"background_jobs": {},
+				"backups": {},
+				"domains": {},
+				"incidents": [],
+				"errors": {},
+				"database_processes": {
+					"available": True,
+					"count": 50,
+					"target_site_connections": 2,
+					"busiest_site_connections": 44,
+					"busiest_site_is_target": False,
+					"processes": [
+						{
+							"site": "noisy.frappe.cloud",
+							"is_target_site": False,
+							"command": "Query",
+							"seconds": 500,
+							"state": "Sending data",
+							"query": "SELECT 1",
+						}
+					],
+				},
+				"database_slow_query_share": {
+					"available": True,
+					"window_hours": 24,
+					"target_site_share_percent": 4.0,
+					"busiest_site": "noisy.frappe.cloud",
+					"busiest_site_share_percent": 81.0,
+					"busiest_site_is_target": False,
+				},
+			}
+		)
+
+		steps = report["recommended_next_steps"]
+		self.assertEqual(len(steps), len(set(steps)), steps)
+		self.assertIn("Another tenant", report["likely_cause"])
