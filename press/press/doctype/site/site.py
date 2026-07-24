@@ -2815,6 +2815,17 @@ class Site(Document, TagHelpers):
 		validate_plan(self.server, self.name, plan)
 		self.change_plan(plan)
 
+	@dashboard_whitelist()
+	def last_plan_change(self):
+		"""Most recent plan change for this site, for showing 'last changed on' in the dashboard."""
+		return frappe.db.get_value(
+			"Site Plan Change",
+			{"site": self.name},
+			["from_plan", "to_plan", "type", "creation"],
+			order_by="creation desc",
+			as_dict=True,
+		)
+
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
 		self.reset_disk_usage_exceeded_status(save=False)

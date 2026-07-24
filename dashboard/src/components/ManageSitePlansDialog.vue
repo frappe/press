@@ -11,6 +11,13 @@
 		 otherwise user will only go through just the initial step to change plan  -->
 
 			<div v-if="step === 'site-plans'">
+				<div
+					v-if="lastPlanChangedOn"
+					class="mb-4 flex items-center gap-2 rounded bg-surface-gray-1 p-2 text-p-base text-ink-gray-7"
+				>
+					<lucide-history class="h-4 w-4 text-ink-gray-6" />
+					<span>Plan last changed on {{ lastPlanChangedOn }}</span>
+				</div>
 				<!-- doing this weird thing because progress with intervals doesn't rerender on moving to new step for some reason -->
 				<!-- TODO: fix it in frappe-ui -->
 				<Progress
@@ -150,6 +157,7 @@
 import { getCachedDocumentResource, createResource, Progress } from 'frappe-ui';
 import SitePlansCards from './SitePlansCards.vue';
 import { getPlans, getPlan } from '../data/plans';
+import { date } from '../utils/format';
 import CardForm from './billing/CardForm.vue';
 import BillingDetails from './billing/BillingDetails.vue';
 import PrepaidCreditsForm from './billing/PrepaidCreditsForm.vue';
@@ -181,6 +189,19 @@ export default {
 				url: 'press.api.billing.change_payment_mode',
 			}),
 		};
+	},
+	resources: {
+		planChange() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams: () => ({
+					dt: 'Site',
+					dn: this.site,
+					method: 'last_plan_change',
+				}),
+				auto: true,
+			};
+		},
 	},
 	watch: {
 		site: {
@@ -275,6 +296,14 @@ export default {
 	computed: {
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
+		},
+		lastPlanChange() {
+			return this.$resources.planChange?.data?.message || null;
+		},
+		lastPlanChangedOn() {
+			return this.lastPlanChange
+				? date(this.lastPlanChange.creation, 'lll')
+				: null;
 		},
 		showSetupSubscription() {
 			return (
