@@ -125,6 +125,16 @@ class Agent:
 			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name
 		)
 
+	def setup_bench_command_guard(self, bench: str):
+		from press.press.doctype.bench.bench import BLOCKED_BENCH_COMMANDS
+
+		return self.create_agent_job(
+			"Setup Bench Command Guard",
+			f"benches/{bench}/command-guard",
+			data={"blocked_commands": BLOCKED_BENCH_COMMANDS},
+			bench=bench,
+		)
+
 	def _get_managed_db_config(self, site):
 		managed_database_service = frappe.get_cached_value("Bench", site.bench, "managed_database_service")
 
