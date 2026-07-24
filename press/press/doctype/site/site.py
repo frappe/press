@@ -2141,9 +2141,9 @@ class Site(Document, TagHelpers):
 			frappe.throw(f"Could not login as {user}", frappe.ValidationError)  # nosemgrep
 		return sid
 
-	def fetch_info(self):
+	def fetch_info(self, database_only=False):
 		agent = Agent(self.server)
-		return agent.get_site_info(self)
+		return agent.get_site_info(self, database_only=database_only)
 
 	def fetch_analytics(self):
 		agent = Agent(self.server)
@@ -2182,6 +2182,24 @@ class Site(Document, TagHelpers):
 			self._update_configuration(new_config, save=False)
 			return True
 		return False
+
+	def _sync_database_usage(self, fetched_usage: dict):
+		"""Record a Site Usage row, refreshing only the database size.
+
+		Carries the last-known file sizes forward so a database-usage refresh
+		doesn't trigger the expensive file-tree walk in the agent's get_usage.
+		"""
+		last = self.get_disk_usages()
+		self._insert_site_usage(
+			{
+				"database": fetched_usage["database"],
+				"database_free": fetched_usage.get("database_free", 0),
+				"database_free_tables": fetched_usage.get("database_free_tables", []),
+				"public": last["public"] or 0,
+				"private": last["private"] or 0,
+				"backups": last["backups"] or 0,
+			}
+		)
 
 	def _sync_usage_info(self, fetched_usage: dict):
 		"""Generate a Site Usage doc for the site using the fetched_usage data.
@@ -2260,12 +2278,16 @@ class Site(Document, TagHelpers):
 		return False
 
 	@frappe.whitelist()
-	def sync_info(self, data=None):
+	def sync_info(self, data=None, database_only: bool = False):
 		"""Updates Site Usage, site.config and timezone details for site."""
 		if not data:
-			data = self.fetch_info()
+			data = self.fetch_info(database_only=database_only)
 
 		if not data:
+			return
+
+		if database_only:
+			self._sync_database_usage(data["usage"])
 			return
 
 		fetched_usage = data["usage"]
@@ -4018,7 +4040,7 @@ class Site(Document, TagHelpers):
 	def refresh_database_usage(self):
 		# Check if schema parser enabled on db server
 		if not frappe.db.get_value("Database Server", self.database_server_name, "enable_schema_size_parser"):
-			self.sync_info()
+			self.sync_info(database_only=True)
 			return {
 				"synced": True,
 			}
@@ -5583,7 +5605,7 @@ def process_refresh_database_usage_job_update(job: AgentJob):
 	site: Site = frappe.get_doc("Site", job.site)
 	with suppress(Exception):
 		# Don't throw error on failure of syncing also
-		site.sync_info()
+		site.sync_info(database_only=True)
 
 
 def on_doctype_update():
