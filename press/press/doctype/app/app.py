@@ -197,14 +197,15 @@ def get_lower_bound_major(spec: sv.NpmSpec) -> int | None:
 	# `<=17.0.0-dev` yields `>=17.0.0`, `>=16.0.0-dev` yields `<16.0.1` — which is why a
 	# range that reads fine can still trip this. See NpmSpec.parse in semantic_version/base.py
 	# and https://github.com/npm/node-semver#prerelease-tags for the rule it implements.
+	lowest = min(lowers)
 	if any(upper.major < lower.major for upper in uppers for lower in lowers):
 		frappe.throw(
 			f"Invalid version range '{spec}': the upper bound's major version is below the lower bound's. "
-			"Prerelease bounds cause this too — '<=17.0.0-dev' also implies '>=17.0.0'. "
-			f"Use stable versions for the bounds, e.g. '>=16.0.0-dev <17.0.0'. {VERSIONING_DOCS}"
+			"A prerelease upper bound does this on its own — '<=X.0.0-dev' also implies '>=X.0.0'. "
+			f"Use a stable upper bound, e.g. '>={lowest} <{lowest.major + 1}.0.0'. {VERSIONING_DOCS}"
 		)
 
-	return min(lowers).major
+	return lowest.major
 
 
 def map_frappe_version(
