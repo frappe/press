@@ -210,6 +210,11 @@ export default {
 		}
 	},
 	watch: {
+		documentModified(newValue, oldValue) {
+			if (oldValue && newValue !== oldValue) {
+				this.$list?.reload()
+			}
+		},
 		searchQuery(value) {
 			if (this.options.searchField && this.$list?.list) {
 				if (value) {
@@ -324,6 +329,10 @@ export default {
 		}
 	},
 	computed: {
+		documentModified() {
+			if (!this.options.reloadOnDocumentUpdate) return
+			return this.options.context?.documentResource?.doc?.modified
+		},
 		$list() {
 			if (this.$resources.list) return this.$resources.list
 
