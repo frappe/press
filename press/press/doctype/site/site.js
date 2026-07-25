@@ -223,15 +223,31 @@ frappe.ui.form.on('Site', {
 		frm.add_custom_button(
 			__('Investigate'),
 			() => {
-				frappe
-					.call({
-						method:
-							'press.incident_management.doctype.support_agent_investigation.support_agent_investigation.create_investigation',
-						args: { site: frm.doc.name },
-					})
-					.then((r) => {
-						frappe.set_route('Form', 'Support Agent Investigation', r.message)
-					})
+				frappe.prompt(
+					{
+						fieldname: 'incident_time',
+						fieldtype: 'Datetime',
+						label: __('Incident Time'),
+						description: __('Optional'),
+					},
+					({ incident_time }) => {
+						frappe
+							.call({
+								method:
+									'press.incident_management.doctype.support_agent_investigation.support_agent_investigation.create_investigation',
+								args: { site: frm.doc.name, incident_time },
+							})
+							.then((r) => {
+								frappe.set_route(
+									'Form',
+									'Support Agent Investigation',
+									r.message,
+								)
+							})
+					},
+					__('Investigate Site'),
+					__('Investigate'),
+				)
 			},
 			__('Actions'),
 		)
