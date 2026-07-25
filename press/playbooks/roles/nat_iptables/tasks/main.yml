@@ -6,6 +6,7 @@
         ansible_interfaces
         | reject('equalto', 'lo')
         | reject('equalto', 'docker0')
+        | reject('equalto', 'wg0')
         | first
       }}
   when: cloud_provider == "Hetzner"
