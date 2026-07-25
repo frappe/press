@@ -355,6 +355,11 @@ def login_using_key(key):
 
 
 @frappe.whitelist()
+def get_route_on_login():
+	return get_current_team(get_doc=True).get_route_on_login()
+
+
+@frappe.whitelist()
 def active_servers():
 	team = get_current_team()
 	return frappe.get_all("Server", {"team": team, "status": "Active"}, ["title", "name"])

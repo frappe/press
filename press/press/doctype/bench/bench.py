@@ -1126,13 +1126,20 @@ class Bench(Document):
 		fatal_site_updates = (
 			frappe.qb.from_(site_updates)
 			.join(sites)
-			.on(site_updates.site == sites.name)
+			.on(
+				(site_updates.site == sites.name)
+				& (
+					(sites.bench == site_updates.source_bench)
+					| (sites.bench == site_updates.destination_bench)
+				)
+			)
 			.select(site_updates.name)
 			.where((site_updates.source_bench == self.name) | (site_updates.destination_bench == self.name))
 			.where(
 				(site_updates.status == "Fatal")
 				& (site_updates.creation > frappe.utils.add_to_date(None, days=-EMPTY_BENCH_COURTESY_DAYS))
 				& (sites.status != "Archived")
+				& (site_updates.cause_of_failure_is_resolved == 0)
 			)
 			.limit(1)
 		).run()

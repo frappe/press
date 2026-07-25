@@ -272,7 +272,7 @@ scheduler_events = {
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
-		"press.press.doctype.server.server.refresh_new_bench_and_site_server_pool",
+		"press.press.doctype.server.server_monitoring.monitor_server_and_refresh_new_bench_and_site_server_pool",
 		"press.press.doctype.release_group.release_group.add_public_servers_to_public_groups",
 		"press.press.doctype.server.server.scale_workers",
 		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
@@ -464,7 +464,6 @@ override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
 
 override_doctype_class = {"User": "press.overrides.CustomUser"}
 
-on_session_creation = "press.overrides.on_session_creation"
 # on_logout = "press.overrides.on_logout"
 on_login = "press.overrides.on_login"
 

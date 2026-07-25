@@ -11,7 +11,11 @@ sys.modules.setdefault("frappe_mcp", MagicMock())
 import frappe  # noqa: E402
 from frappe.tests.utils import FrappeTestCase  # noqa: E402
 
-from press.incident_management.support_agent.collectors import collect_site_context  # noqa: E402
+from press.incident_management.support_agent.collectors import (  # noqa: E402
+	TimeWindow,
+	_tenant_share,
+	collect_site_context,
+)
 from press.incident_management.support_agent.report import generate_report  # noqa: E402
 
 _SITE_NAME = "test.frappe.cloud"
@@ -109,15 +113,26 @@ class TestSupportAgentInvestigation(FrappeTestCase):
 		elasticsearch=None,
 		processes=None,
 		web_log="",
+		centre=None,
+		processlist=None,
+		sites=None,
 	) -> dict:
 		bench_doc = MagicMock()
 		bench_doc.supervisorctl_status.return_value = processes if processes is not None else []
 		bench_doc.get_server_log.return_value = {"web.error.log": web_log}
 
+		agent = MagicMock()
+		agent.return_value.fetch_database_processes.return_value = processlist or []
+
 		def _mock_get_doc(doctype, name):
 			if doctype == "Bench":
 				return bench_doc
 			return MagicMock()
+
+		def _mock_get_all(doctype, *args, **kwargs):
+			if doctype == "Site" and sites:
+				return [frappe._dict(site) for site in sites]
+			return []
 
 		def _gsv(doctype, fieldname, *args, **kwargs):
 			if doctype == "Press Settings" and fieldname == "monitor_server":
@@ -139,8 +154,9 @@ class TestSupportAgentInvestigation(FrappeTestCase):
 					return_value=_BENCH_DATA,
 				)
 			)
-			stack.enter_context(patch("frappe.get_all", return_value=[]))
+			stack.enter_context(patch("frappe.get_all", side_effect=_mock_get_all))
 			stack.enter_context(patch("frappe.get_doc", side_effect=_mock_get_doc))
+			stack.enter_context(patch("press.agent.Agent", agent))
 			stack.enter_context(patch.object(frappe.db, "get_single_value", side_effect=_gsv))
 			stack.enter_context(
 				patch(
@@ -160,9 +176,68 @@ class TestSupportAgentInvestigation(FrappeTestCase):
 					return_value={},
 				)
 			)
-			payload = collect_site_context(_SITE_NAME)
+			self.payload = collect_site_context(_SITE_NAME, centre)
 
-		return generate_report(payload)
+		return generate_report(self.payload)
+
+	def test_window_is_centred_on_the_given_incident_time(self):
+		self._run(centre="2026-06-08 12:00:00")
+
+		window = self.payload["window"]
+		self.assertEqual(str(window["centre"]), "2026-06-08 12:00:00")
+		self.assertEqual(str(window["start"]), "2026-06-08 00:00:00")
+		self.assertEqual(str(window["end"]), "2026-06-09 00:00:00")
+
+	def test_processlist_maps_databases_to_sites_and_flags_the_target(self):
+		self._run(
+			prometheus=_prometheus_series([40.0] * 40 + [95.0]),
+			processlist=[
+				{
+					"db": "_noisy",
+					"command": "Query",
+					"time": 300,
+					"state": "sending data",
+					"query": "SELECT 1",
+				},
+				{
+					"db": "_target",
+					"command": "Query",
+					"time": 2,
+					"state": "sending data",
+					"query": "SELECT 2",
+				},
+			],
+			sites=[
+				{"name": "noisy.frappe.cloud", "database_name": "_noisy"},
+				{"name": _SITE_NAME, "database_name": "_target"},
+			],
+		)
+
+		processes = self.payload["database_processes"]
+		self.assertEqual(processes["count"], 2)
+		self.assertEqual(processes["target_site_connections"], 1)
+		self.assertFalse(processes["busiest_site_is_target"])
+		# Sorted longest-first, so the noisy site's 300s connection leads.
+		self.assertEqual(processes["processes"][0]["site"], "noisy.frappe.cloud")
+		self.assertFalse(processes["processes"][0]["is_target_site"])
+		self.assertTrue(processes["processes"][1]["is_target_site"])
+
+	def test_processlist_is_skipped_when_the_incident_has_already_passed(self):
+		self._run(
+			prometheus=_prometheus_series([40.0] * 40 + [95.0]),
+			centre="2020-01-01 12:00:00",
+			processlist=[{"db": "_target", "command": "Query", "time": 9, "state": "", "query": "SELECT 1"}],
+		)
+
+		self.assertFalse(self.payload["database_processes"]["available"])
+
+	def test_processlist_is_skipped_when_database_cpu_is_not_busy(self):
+		self._run(
+			prometheus=_prometheus_series([30.0] * 48),
+			processlist=[{"db": "_target", "command": "Query", "time": 9, "state": "", "query": "SELECT 1"}],
+		)
+
+		self.assertFalse(self.payload["database_processes"]["available"])
 
 	def test_prometheus_cpu_spike_surfaces_app_server_cpu_cause(self):
 		# Mean ~41%, peak 95% — ratio 2.3x > 1.5x threshold; peak > 70% threshold
@@ -247,3 +322,37 @@ class TestSupportAgentInvestigation(FrappeTestCase):
 			any("database server" in step for step in report["recommended_next_steps"]),
 			report["recommended_next_steps"],
 		)
+
+
+class TestSlowQueryShare(FrappeTestCase):
+	"""Slow-query time per tenant, as charted by the server analytics page."""
+
+	def _share(self, datasets):
+		return _tenant_share(datasets, _SITE_NAME, TimeWindow())
+
+	def test_neighbor_with_most_slow_query_time_is_reported_as_busiest(self):
+		share = self._share(
+			[
+				{"path": "noisy.frappe.cloud", "values": [10.0, None, 70.0]},
+				{"path": _SITE_NAME, "values": [None, 20.0, None]},
+			]
+		)
+
+		self.assertEqual(share["busiest_site"], "noisy.frappe.cloud")
+		self.assertFalse(share["busiest_site_is_target"])
+		self.assertEqual(share["busiest_site_share_percent"], 80.0)
+		self.assertEqual(share["target_site_share_percent"], 20.0)
+
+	def test_catch_all_other_bucket_is_not_treated_as_a_tenant(self):
+		share = self._share(
+			[
+				{"path": "Other", "values": [900.0]},
+				{"path": _SITE_NAME, "values": [100.0]},
+			]
+		)
+
+		self.assertTrue(share["busiest_site_is_target"])
+		self.assertEqual(share["target_site_share_percent"], 100.0)
+
+	def test_no_slow_query_time_makes_the_share_unavailable(self):
+		self.assertFalse(self._share([{"path": _SITE_NAME, "values": [None, 0]}])["available"])
