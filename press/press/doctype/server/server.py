@@ -2205,7 +2205,7 @@ class BaseServer(Document, TagHelpers):
 					),
 				},
 			)
-			return ansible.run()
+			ansible.run()
 		except Exception:
 			log_error("NAT Iptables Setup Exception", server=self.as_dict())
 
@@ -2221,7 +2221,7 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			return ansible.run()
+			ansible.run()
 		except Exception:
 			log_error("NAT Iptables Removal Exception", server=self.as_dict())
 
