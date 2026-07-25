@@ -1,12 +1,16 @@
 ---
-- name: Determine Hetzner interface
+- name: Determine primary network interface
   set_fact:
     primary_interface: >-
       {{
         ansible_interfaces
+<<<<<<< HEAD
         | reject('equalto', 'lo')
         | reject('equalto', 'docker0')
         | reject('equalto', 'wg0')
+=======
+        | select('match', '^(en|eth)')
+>>>>>>> 76450264c (fix: Determine correct hetzner interface name)
         | first
       }}
   when: cloud_provider == "Hetzner"
