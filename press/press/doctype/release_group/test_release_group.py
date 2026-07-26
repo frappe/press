@@ -228,6 +228,29 @@ class TestReleaseGroup(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			group.create_deploy_candidate()
 
+	def test_deploy_ignores_incompatible_source_carried_over_from_bench(self):
+		"""A stale source on the deployed bench must not block deploy when the
+		group has already moved the app to a compatible source."""
+		from press.press.doctype.site.test_site import create_test_bench
+
+		frappe_app = create_test_app("frappe", "Frappe Framework")
+		payments_app = create_test_app("payments", "Payments")
+		group = create_test_release_group([frappe_app, payments_app], frappe_version="Version 14")
+		bench = create_test_bench(group=group)
+
+		bench_app = find(bench.apps, lambda x: x.app == "payments")
+		stale_source = frappe.copy_doc(frappe.get_doc("App Source", bench_app.source))
+		stale_source.branch = "develop"
+		stale_source.versions = []
+		stale_source.append("versions", {"version": "Version 13"})
+		with patch.object(AppSource, "after_insert", new=Mock()):
+			stale_source.insert()
+		frappe.db.set_value("Bench App", bench_app.name, "source", stale_source.name)
+
+		group.reload()
+		# Only frappe is being updated, so payments carries its source over from the bench
+		group.create_deploy_candidate([{"app": "frappe"}])  # must not raise
+
 	def test_create_release_group_fail_with_duplicate_titles(self):
 		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
