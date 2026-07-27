@@ -3406,6 +3406,7 @@ class Server(BaseServer):
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
+				variables={"cloud_provider": self.provider},
 			)
 			ansible.run()
 		except Exception:
