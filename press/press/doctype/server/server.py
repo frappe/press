@@ -827,7 +827,6 @@ class BaseServer(Document, TagHelpers):
 					"mariadb_root_password": database_server_config.mariadb_root_password,
 					"mariadb_depends_on_mounts": database_server_config.mariadb_depends_on_mounts,
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
-					"cloud_provider": self.provider,
 					**self.get_mount_variables(),  # Currently same as database server since no volumes
 				},
 			)
@@ -3293,7 +3292,6 @@ class Server(BaseServer):
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={"cloud_provider": self.provider},
 			)
 			ansible.run()
 		except Exception:
