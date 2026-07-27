@@ -24,6 +24,8 @@ from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import get_valid_teams_for_user, has_role, log_error
+from press.utils import is_admin_user as check_is_admin_user
+from press.utils import is_team_owner as check_is_team_owner
 from press.utils.billing import (
 	get_frappe_io_connection,
 	get_razorpay_client,
@@ -1025,27 +1027,13 @@ class Team(Document):
 		"""
 		Checks if the current user is the owner of the team.
 		"""
-		return bool(frappe.db.get_value("Team", self.name, "user") == frappe.session.user)
+		return check_is_team_owner(self.name)
 
 	def is_admin_user(self) -> bool:
 		"""
 		Checks if the current user has admin access in the team via roles.
 		"""
-		PressRole = frappe.qb.DocType("Press Role")
-		PressRoleUser = frappe.qb.DocType("Press Role User")
-		return (
-			frappe.qb.from_(PressRoleUser)
-			.left_join(PressRole)
-			.on(PressRole.name == PressRoleUser.parent)
-			.select(Count(PressRoleUser.name).as_("count"))
-			.where(PressRole.team == self.name)
-			.where(PressRoleUser.user == frappe.session.user)
-			.where(PressRole.admin_access == 1)
-			.run(as_dict=1)
-			.pop()
-			.get("count", 0)
-			> 0
-		)
+		return check_is_admin_user(self.name)
 
 	@dashboard_whitelist()
 	def get_team_members(self):
