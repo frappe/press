@@ -179,3 +179,28 @@ class TestDocumentAccess(FrappeTestCase):
 
 		sign_in_as(self.other_team)
 		self.assertTrue(ownership.has_document_access("Site Config", row.name))
+
+	def test_child_rows_are_bound_to_the_parent_doctype_the_caller_named(self):
+		"""A caller naming a parent doctype it owns must not reach other children.
+
+		The team check runs against whichever parent table `parenttype` picks, so
+		the query also has to require that the rows really hang off that doctype.
+		"""
+		site = create_test_site(team=self.team.name)
+		site.append("configuration", {"key": "test_key", "value": "test_value", "type": "String"})
+		site.save(ignore_permissions=True)
+
+		sign_in_as(self.team)
+		mine = get_list(
+			"Site Config",
+			fields=["name", "key"],
+			filters={"parenttype": "Site", "parent": site.name},
+		)
+		self.assertIn("test_key", [row.key for row in mine])
+
+		lying = get_list(
+			"Lead Followup",
+			fields=["name"],
+			filters={"parenttype": "Site", "parent": site.name},
+		)
+		self.assertEqual(lying, [])
