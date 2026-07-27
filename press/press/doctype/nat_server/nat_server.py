@@ -50,7 +50,7 @@ class NATServer(BaseServer):
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
 
 		return {
-			"certificate_private_key": certificate.private_key,
+			"certificate_private_key": certificate.get_private_key(),
 			"certificate_full_chain": certificate.full_chain,
 			"certificate_intermediate_chain": certificate.intermediate_chain,
 			"monitoring_password": monitoring_password,

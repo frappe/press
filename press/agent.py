@@ -626,7 +626,7 @@ class Agent:
 			"name": domain.domain,
 			"target": domain.site,
 			"certificate": {
-				"privkey.pem": certificate.private_key,
+				"privkey.pem": certificate.get_private_key(),
 				"fullchain.pem": certificate.full_chain,
 				"chain.pem": certificate.intermediate_chain,
 			},
