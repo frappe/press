@@ -2763,6 +2763,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 	@frappe.whitelist()
 	def add_hetzner_public_ip(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_add_hetzner_public_ip", queue="long", timeout=3600)
+
+	def _add_hetzner_public_ip(self):
 		vm_doc: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		vm_doc.associate_hetzner_public_ip()
 
