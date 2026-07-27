@@ -76,7 +76,7 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[__('Get Static IP'), 'get_static_ip', false],
-			[__('Update DNS Record', 'create_dns_record', true)],
+			[__('Update DNS Record'), 'create_dns_record', true],
 			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
 			[
 				__('Setup PySpy'),

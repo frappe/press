@@ -400,8 +400,17 @@ class AccountRequest(Document):
 		pulse_identify(team, self.pulse_person_properties())
 
 	def pulse_person_properties(self):
-		product = self.product_trial or self.saas_app or ("erpnext" if self.erpnext else "fc")
-		return {"product": product, "plan": self.plan, "country": self.country}
+		properties = {
+			"plan": self.plan,
+			"country": self.country,
+			"signup_method": "oauth" if self.oauth_signup else "email",
+		}
+		# Only when the signup actually named one — a plain Frappe Cloud signup has no
+		# product, and labelling it "fc" invents a cohort that isn't there.
+		product = self.product_trial or self.saas_app or ("erpnext" if self.erpnext else None)
+		if product:
+			properties["product"] = product
+		return properties
 
 
 def expire_request_key():
