@@ -180,6 +180,13 @@ def refuse_to_list(doctype: str):
 
 
 def scope_by_parent(doctype: str, filters: dict, query):
+	"""Join the parent the caller named and keep only the rows its team owns.
+
+	The caller picks `parenttype`, so the join is only sound as long as the rows
+	it authorizes actually hang off that doctype. `get_list` already filters on
+	the stored `parenttype`, but the join repeats it rather than trusting a
+	filter built three functions away.
+	"""
 	parenttype = str((filters or {}).get("parenttype") or "")
 	if not parenttype:
 		refuse_to_list(doctype)
@@ -191,7 +198,12 @@ def scope_by_parent(doctype: str, filters: dict, query):
 	if condition is None:
 		refuse_to_list(doctype)
 
-	return query.join(ParentDocType).on(ParentDocType.name == ChildDocType.parent).where(condition)
+	return (
+		query.join(ParentDocType)
+		.on(ParentDocType.name == ChildDocType.parent)
+		.where(ChildDocType.parenttype == parenttype)
+		.where(condition)
+	)
 
 
 def scope_by_link(doctype: str, query):
