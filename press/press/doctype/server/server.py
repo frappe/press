@@ -2781,13 +2781,19 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			)
 			play = ansible.run()
 			self.reload()
+
 			if play.status == "Success":
 				self.save()
 			else:
+				log_error(
+					"Hetzner Public IP Ansible Playbook Failed",
+					server=self.as_dict(),
+				)
 				frappe.throw("Failed to add Hetzner public IP")  # nosemgrep
-				log_error("Hetzner Public IP Ansible Playbook Failed", server=self.as_dict())
+
 		except Exception:
 			log_error("Hetzner Public IP Exception", server=self.as_dict())
+			raise
 
 	def get_oci_static_ip(self):
 		import oci
