@@ -2899,11 +2899,19 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			frappe.throw("Primary Private IP not found.")  # nosemgrep
 
 		# 3. Check for existing Public IP and remove it if it exists
-		existing_public_ip = network_client.get_public_ip_by_private_ip_id(
-			get_public_ip_by_private_ip_id_details=oci.core.models.GetPublicIpByPrivateIpIdDetails(
-				private_ip_id=primary_private_ip.id
-			)
-		).data
+		from oci.exceptions import ServiceError
+
+		try:
+			existing_public_ip = network_client.get_public_ip_by_private_ip_id(
+				get_public_ip_by_private_ip_id_details=oci.core.models.GetPublicIpByPrivateIpIdDetails(
+					private_ip_id=primary_private_ip.id
+				)
+			).data
+		except ServiceError as e:
+			if e.status == 404:
+				existing_public_ip = None
+			else:
+				raise
 
 		if existing_public_ip:
 			# If it's ephemeral, we can just delete/detach it
