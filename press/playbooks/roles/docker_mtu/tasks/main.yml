@@ -1,0 +1,24 @@
+---
+- name: Read Docker Daemon Config
+  slurp:
+    src: /etc/docker/daemon.json
+  register: daemon_json
+
+- name: Set MTU in Docker Daemon Config
+  copy:
+    content: "{{ daemon_json.content | b64decode | from_json | combine({'mtu': 1450}) | to_nice_json }}"
+    dest: /etc/docker/daemon.json
+  register: config
+
+- name: Enable Docker Service
+  systemd:
+    name: docker
+    enabled: true
+
+- name: Reboot Server
+  reboot:
+    reboot_timeout: 600
+  when: config.changed
+
+- name: Get Docker Info
+  command: docker info
