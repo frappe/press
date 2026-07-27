@@ -2606,7 +2606,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			user=self._ssh_user(),
 			port=self._ssh_port(),
 		)
-		ansible.run()
+		return ansible.run()
 
 	@frappe.whitelist()
 	def reload_nginx(self):
