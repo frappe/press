@@ -2484,6 +2484,19 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return None
 
 	@frappe.whitelist()
+	def set_docker_mtu(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_set_docker_mtu", queue="long", timeout=1200)
+
+	def _set_docker_mtu(self):
+		ansible = Ansible(
+			playbook="docker_mtu.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+		)
+		ansible.run()
+
+	@frappe.whitelist()
 	def reload_nginx(self):
 		agent = Agent(self.name, server_type=self.doctype)
 		agent.reload_nginx()
