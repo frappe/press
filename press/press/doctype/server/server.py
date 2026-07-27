@@ -2761,6 +2761,28 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
 
+	@frappe.whitelist()
+	def add_hetzner_public_ip(self):
+		vm_doc: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		vm_doc.associate_hetzner_public_ip()
+
+		try:
+			ansible = Ansible(
+				playbook="hetzner_public_ip.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"cloud_provider": vm_doc.cloud_provider,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.save()
+		except Exception:
+			log_error("Hetzner Public IP Exception", server=self.as_dict())
+
 	def get_oci_static_ip(self):
 		import oci
 

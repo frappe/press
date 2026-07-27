@@ -76,6 +76,14 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[__('Get Static IP'), 'get_static_ip', false],
+			[
+				__('Add public IP'),
+				'add_hetzner_public_ip',
+				false,
+				frm.doc.is_server_setup &&
+					frm.doc.provider === 'Hetzner' &&
+					!frm.doc.ip,
+			],
 			[__('Update DNS Record'), 'create_dns_record', true],
 			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
 			[
