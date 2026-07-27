@@ -1827,6 +1827,40 @@ class VirtualMachine(Document):
 			"Please check the server status and network connectivity."
 		)
 
+	def associate_hetzner_public_ip(self):
+		client = self.client()
+		server_instance = self.get_hetzner_server_instance(fetch_data=True)
+
+		should_power_on = server_instance.status == "running"
+		powered_off = False
+
+		try:
+			if should_power_on:
+				client.servers.power_off(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
+				powered_off = True
+
+			server_instance = self.get_hetzner_server_instance(fetch_data=True)
+
+			if not server_instance.public_net.primary_ipv4:
+				response = client.primary_ips.create(
+					type="ipv4",
+					name=f"{self.name}-ipv4",
+					datacenter=server_instance.datacenter,
+					assignee_id=server_instance.id,
+					auto_delete=True,
+				)
+				response.action.wait_until_finished(HETZNER_ACTION_RETRIES)
+
+		finally:
+			if powered_off:
+				server_instance = self.get_hetzner_server_instance(fetch_data=True)
+				client.servers.power_on(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
+
+		self.wait_for_ssh()
+
+		frappe.flags.force_update_dns = True
+		self.sync()
+
 	def disassociate_hetzner_public_ip(self):
 		client = self.client()
 		server_instance = self.get_hetzner_server_instance(fetch_data=True)
