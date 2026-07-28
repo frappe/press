@@ -168,9 +168,8 @@ def send_otp(email: str, for_2fa_keys: bool = False):
 
 
 def throttle_otp(code: OneTimePassword):
-	issued_ago = code.seconds_since_generated
-	if issued_ago is not None and issued_ago < 30:
-		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
+	if code.issued_recently:
+		frappe.throw(f"Please wait for {otp_purpose.RESEND_AFTER} seconds before requesting a new OTP")
 
 
 def send_otp_mail(email: str, otp: str, for_login: bool = True):
