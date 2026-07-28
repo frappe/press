@@ -16,7 +16,12 @@ from frappe.utils import add_days
 
 from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob, fail_old_jobs, lock_doc_updated_by_job
-from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.agent_job.agent_job_notifications import DOC_URLS, JobErr, get_details
+from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.app_release.test_app_release import create_test_app_release
+from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.release_group.test_release_group import create_test_release_group
+from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
@@ -344,3 +349,131 @@ class TestAgentJob(FrappeTestCase):
 		self.assertEqual(in_execution_job.name, job.name)
 
 		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", True)
+
+
+class TestAgentJobNotifications(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_missing_pkg_resources_is_actionable_and_asks_to_update_frappe(self):
+		job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Update Site Migrate",
+				"site": "test.frappe.cloud",
+				"traceback": "ImportError: Module import failed for Dropbox Settings, the DocType you're trying to open might be deleted.\nError: No module named 'pkg_resources'",
+			}
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Update required for the frappe app")
+		self.assertIn("update", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_UPDATE])
+
+	def test_missing_pkg_resources_names_the_app_that_imported_it(self):
+		job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Update Site Migrate",
+				"site": "test.frappe.cloud",
+				"output": (
+					'  File "/home/frappe/frappe-bench/apps/frappe/frappe/__init__.py", line 1461, in get_module\n'
+					'  File "/home/frappe/frappe-bench/apps/lms/lms/lms/utils.py", line 6, in <module>\n'
+					"    import razorpay\n"
+					'  File "/home/frappe/frappe-bench/env/lib/python3.11/site-packages/razorpay/client.py", line 4, in <module>\n'
+					"    import pkg_resources\n"
+					"ModuleNotFoundError: No module named 'pkg_resources'"
+				),
+			}
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Update required for the lms app")
+		self.assertIn("<b>lms</b> app on your bench group", details["message"])
+
+	def site_with_app(
+		self, app_name: str, app_team: str | None = None, newer_release: bool = False
+	) -> tuple[str, str]:
+		"""Site on a bench that has app_name installed, owned by app_team"""
+		frappe_app = create_test_app()
+		other_app = create_test_app(app_name, app_name.title())
+		app_source = create_test_app_source(
+			"Version 14", other_app, repository_url=f"https://github.com/acme/{app_name}", team=app_team
+		)
+		group = create_test_release_group(
+			[frappe_app, other_app],
+			app_sources=[create_test_app_source("Version 14", frappe_app).name, app_source.name],
+		)
+		bench = create_test_bench(group=group)
+
+		if newer_release:
+			create_test_app_release(app_source)
+
+		return create_test_site(bench=bench.name).name, bench.name
+
+	def update_job(self, site: str, bench: str, traceback: str) -> AgentJob:
+		return frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Update Site Migrate",
+				"site": site,
+				"bench": bench,
+				"traceback": traceback,
+			}
+		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_update_failing_inside_teams_own_app_asks_them_to_debug_it(self):
+		site, bench = self.site_with_app("acme_billing")
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/modules/patch_handler.py", line 90, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/acme_billing/acme_billing/patches/fix_rates.py", line 12, in execute\n'
+			"KeyError: 'rate'",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Update failed because of the acme_billing app")
+		self.assertIn("failed inside your app <b>acme_billing</b>", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_DEBUG])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_update_failing_inside_someone_elses_app_suggests_updating_it(self):
+		other_team = create_test_press_admin_team().name
+		site, bench = self.site_with_app("acme_billing", app_team=other_team, newer_release=True)
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/acme_billing/acme_billing/patches/fix_rates.py", line 12, in execute\n'
+			"KeyError: 'rate'",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Update failed because of the acme_billing app")
+		self.assertIn("newer release of <b>acme_billing</b> is available", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_UPDATE])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_someone_elses_app_already_on_latest_release_gets_no_banner(self):
+		other_team = create_test_press_admin_team().name
+		site, bench = self.site_with_app("acme_billing", app_team=other_team)
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/acme_billing/acme_billing/patches/fix_rates.py", line 12, in execute\n'
+			"KeyError: 'rate'",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertFalse(details["is_actionable"])
+		self.assertIsNone(details["assistance_url"])
