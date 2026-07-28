@@ -355,45 +355,41 @@ class TestAgentJobNotifications(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_missing_pkg_resources_is_actionable_and_asks_to_update_frappe(self):
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_missing_pkg_resources_asks_to_update_the_app_that_imported_it(self):
+		site, bench = self.site_with_app("acme_billing", newer_release=True)
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/__init__.py", line 1461, in get_module\n'
+			'  File "/home/frappe/frappe-bench/apps/acme_billing/acme_billing/utils.py", line 6, in <module>\n'
+			"    import razorpay\n"
+			'  File "/home/frappe/frappe-bench/env/lib/python3.11/site-packages/razorpay/client.py", line 4, in <module>\n'
+			"    import pkg_resources\n"
+			"ModuleNotFoundError: No module named 'pkg_resources'",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Update required for the acme_billing app")
+		self.assertIn("<b>acme_billing</b> app on your bench group", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_UPDATE])
+
+	def test_missing_pkg_resources_on_a_job_without_bench_is_not_actionable(self):
 		job = frappe.get_doc(
 			{
 				"doctype": "Agent Job",
-				"job_type": "Update Site Migrate",
-				"site": "test.frappe.cloud",
+				"job_type": "Update Agent",
+				"server": "test.frappe.cloud",
 				"traceback": "ImportError: Module import failed for Dropbox Settings, the DocType you're trying to open might be deleted.\nError: No module named 'pkg_resources'",
 			}
 		)
 
 		details = get_details(job, "", "")
 
-		self.assertTrue(details["is_actionable"])
-		self.assertEqual(details["title"], "Update required for the frappe app")
-		self.assertIn("update", details["message"])
-		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_UPDATE])
-
-	def test_missing_pkg_resources_names_the_app_that_imported_it(self):
-		job = frappe.get_doc(
-			{
-				"doctype": "Agent Job",
-				"job_type": "Update Site Migrate",
-				"site": "test.frappe.cloud",
-				"output": (
-					'  File "/home/frappe/frappe-bench/apps/frappe/frappe/__init__.py", line 1461, in get_module\n'
-					'  File "/home/frappe/frappe-bench/apps/lms/lms/lms/utils.py", line 6, in <module>\n'
-					"    import razorpay\n"
-					'  File "/home/frappe/frappe-bench/env/lib/python3.11/site-packages/razorpay/client.py", line 4, in <module>\n'
-					"    import pkg_resources\n"
-					"ModuleNotFoundError: No module named 'pkg_resources'"
-				),
-			}
-		)
-
-		details = get_details(job, "", "")
-
-		self.assertTrue(details["is_actionable"])
-		self.assertEqual(details["title"], "Update required for the lms app")
-		self.assertIn("<b>lms</b> app on your bench group", details["message"])
+		self.assertFalse(details["is_actionable"])
+		self.assertIsNone(details["assistance_url"])
 
 	def site_with_app(
 		self, app_name: str, app_team: str | None = None, newer_release: bool = False
@@ -461,6 +457,22 @@ class TestAgentJobNotifications(FrappeTestCase):
 		self.assertEqual(details["title"], "Update failed because of the acme_billing app")
 		self.assertIn("newer release of <b>acme_billing</b> is available", details["message"])
 		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_UPDATE])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_app_name_with_digits_is_not_skipped(self):
+		site, bench = self.site_with_app("acme_v2")
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/modules/patch_handler.py", line 90, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/acme_v2/acme_v2/patches/fix_rates.py", line 12, in execute\n'
+			"KeyError: 'rate'",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertEqual(details["title"], "Update failed because of the acme_v2 app")
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_DEBUG])
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_someone_elses_app_already_on_latest_release_gets_no_banner(self):
