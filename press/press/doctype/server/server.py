@@ -2797,7 +2797,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 					"Hetzner Public IP Ansible Playbook Failed",
 					server=self.as_dict(),
 				)
-				frappe.throw("Failed to add Hetzner public IP")
+				frappe.throw("Failed to add Hetzner public IP. Please check the logs.")
 
 		except Exception:
 			log_error(
