@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import re
 import typing
 from enum import Enum, auto
 from typing import Protocol, TypedDict
@@ -62,6 +63,8 @@ class JobErr(Enum):
 	GZIP_TAR_ERR = auto()
 	UNKNOWN_COMMAND_HYPHEN = auto()
 	RQ_JOBS_IN_QUEUE = auto()
+	APP_UPDATE = auto()
+	APP_DEBUG = auto()
 
 
 DOC_URLS = {
@@ -74,6 +77,8 @@ DOC_URLS = {
 	JobErr.GZIP_TAR_ERR: "https://docs.frappe.io/cloud/sites/migrate-an-existing-site#targzip-command-fails-with-unexpected-eof",
 	JobErr.UNKNOWN_COMMAND_HYPHEN: "https://docs.frappe.io/cloud/unknown-command-",
 	JobErr.RQ_JOBS_IN_QUEUE: "https://docs.frappe.io/cloud/faq/site#how-do-i-deactivate-my-site",
+	JobErr.APP_UPDATE: "https://docs.frappe.io/cloud/benches/updating_a_bench",
+	JobErr.APP_DEBUG: "https://frappecloud.com/docs/benches/debugging",
 }
 
 
@@ -112,6 +117,9 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("Unknown command '\\-'.", update_with_unknown_command_hyphen_err),
 		('redis_host, redis_port = redis_url.split(":")', update_with_redis_unpack_error),
 		("Site might have lot of jobs in queue.", update_with_rq_jobs_in_queue_err),
+		("No module named 'pkg_resources'", update_with_pkg_resources_missing_err),
+		# Keep last: matches any traceback, only actionable if the failing app is identifiable
+		("/apps/", update_with_app_failure_err),
 	]
 
 
@@ -342,6 +350,111 @@ def update_with_rq_jobs_in_queue_err(details: Details, job: AgentJob):
 	details["assistance_url"] = DOC_URLS[JobErr.RQ_JOBS_IN_QUEUE]
 
 	return True
+
+
+def update_with_pkg_resources_missing_err(details: Details, job: AgentJob):
+	app = get_app_that_imported_pkg_resources(job)
+
+	# Asking to update an app that is already on its latest release helps no one
+	if not has_newer_release(job.bench, app):
+		return False
+
+	details["title"] = f"Update required for the {app} app"
+
+	details[
+		"message"
+	] = f"""<p>The job failed because <code>pkg_resources</code> is no longer available in the bench's Python environment. Newer versions of <b>setuptools</b> have removed it, and the <b>{app}</b> app (or one of its dependencies) still imports it.</p>
+	<p>To fix this, update the <b>{app}</b> app on your bench group to the latest version and deploy.</p>
+	<p>Click <i>Help</i> for instructions on how to update a bench.</p>
+	"""
+
+	details["assistance_url"] = DOC_URLS[JobErr.APP_UPDATE]
+
+	return True
+
+
+def get_app_that_imported_pkg_resources(job: AgentJob) -> str:
+	"""Last bench app in the traceback is the one that pulled in pkg_resources"""
+	text = next((t for t in [job.traceback, job.output] if t and "pkg_resources" in t), "")
+	apps = re.findall(r"/apps/([a-z_]+)/", text)
+	return apps[-1] if apps else "frappe"
+
+
+def has_newer_release(bench: str, app: str) -> bool:
+	"""False only if we know the bench is on the newest release of the app"""
+	deployed = frappe.db.get_value(
+		"Bench App", {"parent": bench, "app": app}, ["source", "release"], as_dict=True
+	)
+	if not deployed:
+		return True
+
+	latest = frappe.db.get_value(
+		"App Release", {"source": deployed.source, "status": "Approved"}, "name", order_by="creation desc"
+	)
+	return latest != deployed.release
+
+
+def update_with_app_failure_err(details: Details, job: AgentJob):
+	if job.job_type not in ["Update Site Migrate", "Update Site Pull"]:
+		return False
+
+	app_and_source = get_failing_app_and_source(job)
+	if not app_and_source:
+		return False
+
+	app, source = app_and_source
+	details["title"] = f"Update failed because of the {app} app"
+
+	if is_owned_by_site_team(source, job):
+		return update_with_debug_your_app_message(details, job, app)
+	return update_with_check_for_update_message(details, job, app)
+
+
+def update_with_debug_your_app_message(details: Details, job: AgentJob, app: str) -> bool:
+	details[
+		"message"
+	] = f"""<p>The update of site <b>{job.site}</b> failed inside your app <b>{app}</b>, so it can't be fixed from our end.</p>
+	<p>Please go through the traceback, fix the app and deploy again.</p>
+	<p>Click <i>Help</i> for instructions on how to debug a bench.</p>
+	"""
+
+	details["assistance_url"] = DOC_URLS[JobErr.APP_DEBUG]
+
+	return True
+
+
+def update_with_check_for_update_message(details: Details, job: AgentJob, app: str) -> bool:
+	if not has_newer_release(job.bench, app):
+		return False
+
+	details["message"] = f"""<p>The update of site <b>{job.site}</b> failed inside the <b>{app}</b> app.</p>
+	<p>A newer release of <b>{app}</b> is available. Update it on your bench group and deploy — the fix may already be in.</p>
+	<p>Click <i>Help</i> for instructions on how to update a bench.</p>
+	"""
+
+	details["assistance_url"] = DOC_URLS[JobErr.APP_UPDATE]
+
+	return True
+
+
+def get_failing_app_and_source(job: AgentJob) -> tuple[str, str] | None:
+	"""Innermost app in the traceback that is installed on the bench, with its app source"""
+	text = f"{job.traceback or ''}\n{job.output or ''}"
+	group = frappe.db.get_value("Bench", job.bench, "group")
+	if not group:
+		return None
+
+	for app in reversed(re.findall(r"/apps/([a-z_]+)/", text)):
+		source = frappe.db.get_value("Release Group App", {"parent": group, "app": app}, "source")
+		if source:
+			return app, source
+
+	return None
+
+
+def is_owned_by_site_team(source: str, job: AgentJob) -> bool:
+	"""Only the team that owns the app can fix it"""
+	return frappe.db.get_value("App Source", source, "team") == frappe.db.get_value("Site", job.site, "team")
 
 
 def get_default_title(job: AgentJob) -> str:
