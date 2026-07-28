@@ -281,6 +281,11 @@ class Site(Document, TagHelpers):
 		"standby_for_product",
 	)
 
+	# A site shows its plan, bench, server and team so the dashboard can render
+	# them. Every one of those moves through a flow that bills, schedules or
+	# migrates something — none of them through `set_value`.
+	dashboard_editable_fields = ("skip_auto_updates",)
+
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		from frappe.query_builder.functions import Coalesce

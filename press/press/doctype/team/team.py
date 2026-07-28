@@ -176,6 +176,18 @@ class Team(Document):
 		"tier",
 	)
 
+	# Everything else about a team moves through billing, onboarding or an
+	# explicit action, not through `set_value`.
+	dashboard_editable_fields = (
+		"benches_enabled",
+		"enforce_2fa",
+		"is_developer",
+		"monthly_alert_threshold",
+		"receive_budget_alerts",
+		"relaxed_permissions",
+		"servers_enabled",
+	)
+
 	def get_doc(self, doc):
 		if (
 			not frappe.local.system_user()
