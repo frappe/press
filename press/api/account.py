@@ -103,12 +103,11 @@ def verify_otp(account_request: str, otp: str) -> str:
 	):
 		ip_tracker and ip_tracker.add_failure_attempt()
 		frappe.throw("Invalid OTP. Please try again.")
-	if not account_request_doc.signup_otp.verify(otp):
+	if not account_request_doc.signup_otp.consume(otp):
 		ip_tracker and ip_tracker.add_failure_attempt()
 		frappe.throw("Invalid OTP. Please try again.")
 
 	ip_tracker and ip_tracker.add_success_attempt()
-	account_request_doc.signup_otp.clear()
 
 	if account_request_doc.product_trial:
 		capture("otp_verified", "fc_product_trial", account_request_doc.name)
@@ -127,12 +126,11 @@ def verify_otp_and_login(email: str, otp: str):
 	# An address nobody asked for a code for has no code to match, so this also
 	# covers the caller who never signed up. Saying so would tell them which
 	# addresses have accounts.
-	if not code.verify(otp):
+	if not code.consume(otp):
 		ip_tracker and ip_tracker.add_failure_attempt()
 		frappe.throw("Invalid OTP. Please try again.")
 
 	ip_tracker and ip_tracker.add_success_attempt()
-	code.clear()
 
 	return frappe.local.login_manager.login_as(email)
 
@@ -1370,10 +1368,8 @@ def get_2fa_recovery_codes(verification_code: int):
 		frappe.throw("2FA is not enabled for this user")
 
 	code = OneTimePassword(otp_purpose.TWO_FACTOR_RECOVERY, frappe.session.user)
-	if not code.verify(verification_code):
+	if not code.consume(verification_code):
 		frappe.throw("Invalid OTP. Please try again.")
-
-	code.clear()
 
 	# Get the User 2FA document.
 	two_fa = frappe.get_doc("User 2FA", frappe.session.user)

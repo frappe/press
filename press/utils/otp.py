@@ -67,8 +67,25 @@ class OneTimePassword:
 
 		return issued["hash"] == frappe.utils.sha256_hash(str(code))
 
-	def clear(self):
-		frappe.cache.delete_value(self.key)
+	def consume(self, code: str | int) -> bool:
+		"""Check the code and spend it, so that only one caller can use it.
+
+		Requests arriving together can all read the same code before any of them
+		removes it, so reading cannot decide who wins. Removing can: Redis says
+		how many keys it actually deleted, and only the caller that deleted this
+		one gets to go on.
+		"""
+		if not self.verify(code):
+			return False
+
+		return self.clear()
+
+	def clear(self) -> bool:
+		"""Whether this call was the one that removed the code."""
+		key = frappe.cache.make_key(self.key)
+		frappe.local.cache.pop(key, None)
+
+		return bool(frappe.cache.delete(key))
 
 	@property
 	def seconds_since_generated(self) -> int | None:

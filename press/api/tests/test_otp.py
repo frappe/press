@@ -42,6 +42,24 @@ class TestOneTimePassword(FrappeTestCase):
 
 		self.assertFalse(self.code.verify(issued))
 
+	def test_only_one_caller_can_consume_a_code(self):
+		issued = self.code.generate()
+
+		self.assertTrue(self.code.consume(issued))
+		self.assertFalse(self.code.consume(issued))
+
+	def test_the_loser_of_a_race_is_refused_even_though_the_code_read_back_fine(self):
+		"""Both racers read the same code; the one that did not remove it loses.
+
+		Redis reports how many keys a delete actually removed, so the loser gets
+		0 back and must be refused despite having verified the code.
+		"""
+		issued = self.code.generate()
+
+		with patch.object(frappe.cache, "delete", return_value=0):
+			self.assertTrue(self.code.verify(issued))
+			self.assertFalse(self.code.consume(issued))
+
 	def test_nothing_matches_when_no_code_was_issued(self):
 		self.assertFalse(OneTimePassword(otp_purpose.LOGIN, "nobody@example.com").verify("111111"))
 
