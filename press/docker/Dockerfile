@@ -234,6 +234,8 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTH
 RUN git config --global advice.detachedHead false
 
 ENV PYTHONUNBUFFERED 1
+# Must be set before any bench get-app, which builds assets
+ENV FRAPPE_HARD_LINK_ASSETS True
 
 # For the sake of completing the step
 RUN `#stage-bench-env`
@@ -311,7 +313,6 @@ RUN mkdir -p {{ m.destination }} && \
 {% endfor %}
 
 ENV FRAPPE_DOCKER_BUILD=
-ENV FRAPPE_HARD_LINK_ASSETS True
 ENV HISTTIMEFORMAT "%Y-%m-%d %T "
 
 EXPOSE 8000 9000 2200 8088

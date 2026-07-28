@@ -150,6 +150,8 @@ COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sit
 RUN git config --global advice.detachedHead false
 
 ENV PYTHONUNBUFFERED 1
+# Must be set before any bench get-app, which builds assets
+ENV FRAPPE_HARD_LINK_ASSETS True
 
 # Install Frappe app
 RUN echo '["build"]' > .bench.cmd
@@ -169,8 +171,6 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type
 
 COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 COPY --chown=frappe:frappe apps.txt /home/frappe/frappe-bench/sites/apps.txt
-
-ENV FRAPPE_HARD_LINK_ASSETS True
 
 EXPOSE 8000 8088 9000 2200
 CMD ["supervisord"]
