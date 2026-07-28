@@ -355,26 +355,52 @@ class TestAgentJobNotifications(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
+	PKG_RESOURCES_TRACEBACK = (
+		'  File "/home/frappe/frappe-bench/apps/frappe/frappe/__init__.py", line 1461, in get_module\n'
+		'  File "/home/frappe/frappe-bench/apps/acme_billing/acme_billing/utils.py", line 6, in <module>\n'
+		"    import razorpay\n"
+		'  File "/home/frappe/frappe-bench/env/lib/python3.11/site-packages/razorpay/client.py", line 4, in <module>\n'
+		"    import pkg_resources\n"
+		"ModuleNotFoundError: No module named 'pkg_resources'"
+	)
+
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_missing_pkg_resources_asks_to_update_the_app_that_imported_it(self):
-		site, bench = self.site_with_app("acme_billing", newer_release=True)
-		job = self.update_job(
-			site,
-			bench,
-			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/__init__.py", line 1461, in get_module\n'
-			'  File "/home/frappe/frappe-bench/apps/acme_billing/acme_billing/utils.py", line 6, in <module>\n'
-			"    import razorpay\n"
-			'  File "/home/frappe/frappe-bench/env/lib/python3.11/site-packages/razorpay/client.py", line 4, in <module>\n'
-			"    import pkg_resources\n"
-			"ModuleNotFoundError: No module named 'pkg_resources'",
-		)
+		site, bench = self.site_with_app("acme_billing", owned_by_site_team=False, newer_release=True)
+		job = self.update_job(site, bench, self.PKG_RESOURCES_TRACEBACK)
 
 		details = get_details(job, "", "")
 
 		self.assertTrue(details["is_actionable"])
-		self.assertEqual(details["title"], "Update required for the acme_billing app")
-		self.assertIn("<b>acme_billing</b> app on your bench group", details["message"])
+		self.assertEqual(details["title"], "Update failed because of the acme_billing app")
+		self.assertIn("<code>pkg_resources</code>", details["message"])
+		self.assertIn("newer release of <b>acme_billing</b> is available", details["message"])
 		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_UPDATE])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_missing_pkg_resources_in_teams_own_app_explains_cause_and_asks_to_debug(self):
+		site, bench = self.site_with_app("acme_billing", newer_release=True)
+		job = self.update_job(site, bench, self.PKG_RESOURCES_TRACEBACK)
+
+		details = get_details(job, "", "")
+
+		self.assertIn("<code>pkg_resources</code>", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_DEBUG])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_known_traceback_wins_over_the_app_update_suggestion(self):
+		site, bench = self.site_with_app("acme_billing", owned_by_site_team=False, newer_release=True)
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/acme_billing/acme_billing/patches/fix_rates.py", line 12, in execute\n'
+			"pymysql.err.OperationalError: (1118, 'Row size too large')",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertEqual(details["title"], "Row size too large error")
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.ROW_SIZE_TOO_LARGE])
 
 	def test_missing_pkg_resources_on_a_job_without_bench_is_not_actionable(self):
 		job = frappe.get_doc(
@@ -392,13 +418,13 @@ class TestAgentJobNotifications(FrappeTestCase):
 		self.assertIsNone(details["assistance_url"])
 
 	def site_with_app(
-		self, app_name: str, app_team: str | None = None, newer_release: bool = False
+		self, app_name: str, owned_by_site_team: bool = True, newer_release: bool = False
 	) -> tuple[str, str]:
-		"""Site on a bench that has app_name installed, owned by app_team"""
+		"""Site on a bench that has app_name installed"""
 		frappe_app = create_test_app()
 		other_app = create_test_app(app_name, app_name.title())
 		app_source = create_test_app_source(
-			"Version 14", other_app, repository_url=f"https://github.com/acme/{app_name}", team=app_team
+			"Version 14", other_app, repository_url=f"https://github.com/acme/{app_name}"
 		)
 		group = create_test_release_group(
 			[frappe_app, other_app],
@@ -409,7 +435,15 @@ class TestAgentJobNotifications(FrappeTestCase):
 		if newer_release:
 			create_test_app_release(app_source)
 
-		return create_test_site(bench=bench.name).name, bench.name
+		site = create_test_site(bench=bench.name)
+		if not owned_by_site_team:
+			app_source.db_set("team", self.team_other_than(site.team))
+
+		return site.name, bench.name
+
+	def team_other_than(self, team: str) -> str:
+		"""Reuse an existing team, creating one per test gets rate limited"""
+		return frappe.db.get_value("Team", {"name": ("!=", team), "enabled": 1}, "name")
 
 	def update_job(self, site: str, bench: str, traceback: str) -> AgentJob:
 		return frappe.get_doc(
@@ -442,8 +476,7 @@ class TestAgentJobNotifications(FrappeTestCase):
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_update_failing_inside_someone_elses_app_suggests_updating_it(self):
-		other_team = create_test_press_admin_team().name
-		site, bench = self.site_with_app("acme_billing", app_team=other_team, newer_release=True)
+		site, bench = self.site_with_app("acme_billing", owned_by_site_team=False, newer_release=True)
 		job = self.update_job(
 			site,
 			bench,
@@ -476,8 +509,7 @@ class TestAgentJobNotifications(FrappeTestCase):
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_someone_elses_app_already_on_latest_release_gets_no_banner(self):
-		other_team = create_test_press_admin_team().name
-		site, bench = self.site_with_app("acme_billing", app_team=other_team)
+		site, bench = self.site_with_app("acme_billing", owned_by_site_team=False)
 		job = self.update_job(
 			site,
 			bench,

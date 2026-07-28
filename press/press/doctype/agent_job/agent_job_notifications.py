@@ -120,7 +120,6 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("Unknown command '\\-'.", update_with_unknown_command_hyphen_err),
 		('redis_host, redis_port = redis_url.split(":")', update_with_redis_unpack_error),
 		("Site might have lot of jobs in queue.", update_with_rq_jobs_in_queue_err),
-		("No module named 'pkg_resources'", update_with_pkg_resources_missing_err),
 		# Keep last: matches any traceback, only actionable if the failing app is identifiable
 		("/apps/", update_with_app_failure_err),
 	]
@@ -355,38 +354,6 @@ def update_with_rq_jobs_in_queue_err(details: Details, job: AgentJob):
 	return True
 
 
-def update_with_pkg_resources_missing_err(details: Details, job: AgentJob):
-	# Without a bench there is no bench group for the user to update
-	if not job.bench:
-		return False
-
-	app = get_app_that_imported_pkg_resources(job)
-
-	# Asking to update an app that is already on its latest release helps no one
-	if not has_newer_release(job.bench, app):
-		return False
-
-	details["title"] = f"Update required for the {app} app"
-
-	details[
-		"message"
-	] = f"""<p>The job failed because <code>pkg_resources</code> is no longer available in the bench's Python environment. Newer versions of <b>setuptools</b> have removed it, and the <b>{app}</b> app (or one of its dependencies) still imports it.</p>
-	<p>To fix this, update the <b>{app}</b> app on your bench group to the latest version and deploy.</p>
-	<p>Click <i>Help</i> for instructions on how to update a bench.</p>
-	"""
-
-	details["assistance_url"] = DOC_URLS[JobErr.APP_UPDATE]
-
-	return True
-
-
-def get_app_that_imported_pkg_resources(job: AgentJob) -> str:
-	"""Last bench app in the traceback is the one that pulled in pkg_resources"""
-	text = next((t for t in [job.traceback, job.output] if t and "pkg_resources" in t), "")
-	apps = APP_FRAME.findall(text)
-	return apps[-1] if apps else "frappe"
-
-
 def has_newer_release(bench: str, app: str) -> bool:
 	"""False only if we know the bench is on the newest release of the app"""
 	deployed = frappe.db.get_value(
@@ -417,10 +384,19 @@ def update_with_app_failure_err(details: Details, job: AgentJob):
 	return update_with_check_for_update_message(details, job, app)
 
 
+def get_known_cause(job: AgentJob, app: str) -> str:
+	"""Explain the failure when we recognise it, whoever ends up fixing the app"""
+	text = f"{job.traceback or ''}\n{job.output or ''}"
+	if "No module named 'pkg_resources'" in text:
+		return f"<p><b>{app}</b> (or one of its dependencies) imports <code>pkg_resources</code>, which newer versions of <b>setuptools</b> no longer ship.</p>"
+	return ""
+
+
 def update_with_debug_your_app_message(details: Details, job: AgentJob, app: str) -> bool:
 	details[
 		"message"
 	] = f"""<p>The update of site <b>{job.site}</b> failed inside your app <b>{app}</b>, so it can't be fixed from our end.</p>
+	{get_known_cause(job, app)}
 	<p>Please go through the traceback, fix the app and deploy again.</p>
 	<p>Click <i>Help</i> for instructions on how to debug a bench.</p>
 	"""
@@ -435,6 +411,7 @@ def update_with_check_for_update_message(details: Details, job: AgentJob, app: s
 		return False
 
 	details["message"] = f"""<p>The update of site <b>{job.site}</b> failed inside the <b>{app}</b> app.</p>
+	{get_known_cause(job, app)}
 	<p>A newer release of <b>{app}</b> is available. Update it on your bench group and deploy — the fix may already be in.</p>
 	<p>Click <i>Help</i> for instructions on how to update a bench.</p>
 	"""
