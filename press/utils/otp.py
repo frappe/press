@@ -10,7 +10,15 @@ SIGNUP = "signup"
 LOGIN = "login"
 TWO_FACTOR_RECOVERY = "2fa-recovery"
 
-EXPIRES_IN = 10 * 60
+# How long a code stays good for. A signup code is mailed alongside the
+# setup-account link, so it lasts as long as that link does — see
+# `request_key_expiration_time`. Codes that open an account that already exists
+# get minutes, not a day.
+EXPIRES_IN = {
+	SIGNUP: 24 * 60 * 60,
+	LOGIN: 10 * 60,
+	TWO_FACTOR_RECOVERY: 10 * 60,
+}
 
 
 def generate_otp():
@@ -30,10 +38,10 @@ class OneTimePassword:
 	Account Request for verifying a signup.
 	"""
 
-	def __init__(self, purpose: str, identifier: str, expires_in: int = EXPIRES_IN):
+	def __init__(self, purpose: str, identifier: str):
 		self.purpose = purpose
 		self.identifier = identifier
-		self.expires_in = expires_in
+		self.expires_in = EXPIRES_IN[purpose]
 
 	@property
 	def key(self) -> str:

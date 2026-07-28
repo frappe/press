@@ -50,6 +50,16 @@ class TestOneTimePassword(FrappeTestCase):
 
 		self.assertNotIn(issued, str(frappe.cache.get_value(self.code.key)))
 
+	def test_a_signup_code_lasts_as_long_as_the_link_it_is_mailed_with(self):
+		signup = OneTimePassword(otp_purpose.SIGNUP, "some-account-request")
+
+		self.assertEqual(signup.expires_in, 24 * 60 * 60)
+		self.assertEqual(self.code.expires_in, 10 * 60)
+
+	def test_a_purpose_with_no_declared_life_is_refused(self):
+		with self.assertRaises(KeyError):
+			OneTimePassword("something-new", "someone@example.com")
+
 
 @patch("press.api.account.send_otp_mail")
 class TestLoginOtp(FrappeTestCase):
