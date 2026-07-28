@@ -33,6 +33,9 @@ class Details(TypedDict):
 # These strings are checked against the traceback or output of the job
 MatchStrings = str | list[str]
 
+# Bench app directory in a traceback frame, app names are python module names
+APP_FRAME = re.compile(r"/apps/([a-z_][a-z0-9_]*)/")
+
 if typing.TYPE_CHECKING:
 	# TYPE_CHECKING guard for code below cause DeployCandidate
 	# might cause circular import.
@@ -353,6 +356,10 @@ def update_with_rq_jobs_in_queue_err(details: Details, job: AgentJob):
 
 
 def update_with_pkg_resources_missing_err(details: Details, job: AgentJob):
+	# Without a bench there is no bench group for the user to update
+	if not job.bench:
+		return False
+
 	app = get_app_that_imported_pkg_resources(job)
 
 	# Asking to update an app that is already on its latest release helps no one
@@ -376,7 +383,7 @@ def update_with_pkg_resources_missing_err(details: Details, job: AgentJob):
 def get_app_that_imported_pkg_resources(job: AgentJob) -> str:
 	"""Last bench app in the traceback is the one that pulled in pkg_resources"""
 	text = next((t for t in [job.traceback, job.output] if t and "pkg_resources" in t), "")
-	apps = re.findall(r"/apps/([a-z_]+)/", text)
+	apps = APP_FRAME.findall(text)
 	return apps[-1] if apps else "frappe"
 
 
@@ -444,7 +451,7 @@ def get_failing_app_and_source(job: AgentJob) -> tuple[str, str] | None:
 	if not group:
 		return None
 
-	for app in reversed(re.findall(r"/apps/([a-z_]+)/", text)):
+	for app in reversed(APP_FRAME.findall(text)):
 		source = frappe.db.get_value("Release Group App", {"parent": group, "app": app}, "source")
 		if source:
 			return app, source
