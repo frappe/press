@@ -2872,12 +2872,19 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
 
 	@frappe.whitelist()
-	def add_hetzner_public_ip(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_add_hetzner_public_ip", queue="long", timeout=3600)
+	def add_hetzner_public_ip(self, primary_ip=None):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_add_hetzner_public_ip",
+			queue="long",
+			timeout=3600,
+			primary_ip=primary_ip,
+		)
 
-	def _add_hetzner_public_ip(self):
+	def _add_hetzner_public_ip(self, primary_ip=None):
 		vm_doc: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
-		vm_doc.associate_hetzner_public_ip()
+		vm_doc.associate_hetzner_public_ip(primary_ip)
 
 		try:
 			ansible = Ansible(
@@ -2893,16 +2900,20 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			self.reload()
 
 			if play.status == "Success":
+				self.nat_server = None
 				self.save()
 			else:
 				log_error(
 					"Hetzner Public IP Ansible Playbook Failed",
 					server=self.as_dict(),
 				)
-				frappe.throw("Failed to add Hetzner public IP")  # nosemgrep
+				frappe.throw("Failed to add Hetzner public IP")
 
 		except Exception:
-			log_error("Hetzner Public IP Exception", server=self.as_dict())
+			log_error(
+				"Hetzner Public IP Exception",
+				server=self.as_dict(),
+			)
 			raise
 
 	def get_oci_static_ip(self):
