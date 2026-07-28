@@ -1827,7 +1827,7 @@ class VirtualMachine(Document):
 			"Please check the server status and network connectivity."
 		)
 
-	def associate_hetzner_public_ip(self):
+	def associate_hetzner_public_ip(self, primary_ip: str | None = None):
 		client = self.client()
 		server_instance = self.get_hetzner_server_instance(fetch_data=True)
 
@@ -1842,14 +1842,27 @@ class VirtualMachine(Document):
 			server_instance = self.get_hetzner_server_instance(fetch_data=True)
 
 			if not server_instance.public_net.primary_ipv4:
-				response = client.primary_ips.create(
-					type="ipv4",
-					name=f"{self.name}-ipv4",
-					datacenter=server_instance.datacenter,
-					assignee_id=server_instance.id,
-					auto_delete=True,
-				)
-				response.action.wait_until_finished(HETZNER_ACTION_RETRIES)
+				available_ip = None
+
+				if primary_ip:
+					response = client.primary_ips.get_list(ip=primary_ip)
+					if response.primary_ips:
+						available_ip = response.primary_ips[0]
+
+				if available_ip and available_ip.assignee_id is None:
+					client.primary_ips.assign(
+						available_ip,
+						assignee_id=server_instance.id,
+					).wait_until_finished(HETZNER_ACTION_RETRIES)
+				else:
+					response = client.primary_ips.create(
+						type="ipv4",
+						name=f"{self.name}-ipv4",
+						datacenter=server_instance.datacenter,
+						assignee_id=server_instance.id,
+						auto_delete=False,
+					)
+					response.action.wait_until_finished(HETZNER_ACTION_RETRIES)
 
 		finally:
 			if powered_off:
