@@ -930,6 +930,15 @@ class DatabaseServer(BaseServer):
 	@frappe.whitelist()
 	def setup_essentials(self):
 		"""Setup missing essentials after server setup"""
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_setup_essentials",
+			queue="long",
+			timeout=1200,
+		)
+
+	def _setup_essentials(self):
 		config = self._get_config()
 
 		try:
