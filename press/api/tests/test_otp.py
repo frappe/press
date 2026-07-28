@@ -48,17 +48,20 @@ class TestOneTimePassword(FrappeTestCase):
 		self.assertTrue(self.code.consume(issued))
 		self.assertFalse(self.code.consume(issued))
 
-	def test_the_loser_of_a_race_is_refused_even_though_the_code_read_back_fine(self):
-		"""Both racers read the same code; the one that did not remove it loses.
+	def test_a_superseded_code_is_refused(self):
+		superseded = self.code.generate()
+		self.code.generate()
 
-		Redis reports how many keys a delete actually removed, so the loser gets
-		0 back and must be refused despite having verified the code.
-		"""
-		issued = self.code.generate()
+		self.assertFalse(self.code.consume(superseded))
 
-		with patch.object(frappe.cache, "delete", return_value=0):
-			self.assertTrue(self.code.verify(issued))
-			self.assertFalse(self.code.consume(issued))
+	def test_a_superseded_code_does_not_take_its_replacement_with_it(self):
+		"""A stale request must not spend the code the user was just sent."""
+		superseded = self.code.generate()
+		replacement = self.code.generate()
+
+		self.code.consume(superseded)
+
+		self.assertTrue(self.code.consume(replacement))
 
 	def test_nothing_matches_when_no_code_was_issued(self):
 		self.assertFalse(OneTimePassword(otp_purpose.LOGIN, "nobody@example.com").verify("111111"))
@@ -66,7 +69,7 @@ class TestOneTimePassword(FrappeTestCase):
 	def test_the_code_itself_is_never_stored(self):
 		issued = self.code.generate()
 
-		self.assertNotIn(issued, str(frappe.cache.get_value(self.code.key)))
+		self.assertNotIn(issued, str(frappe.cache.get(self.code.key)))
 
 	def test_a_signup_code_lasts_as_long_as_the_link_it_is_mailed_with(self):
 		signup = OneTimePassword(otp_purpose.SIGNUP, "some-account-request")
