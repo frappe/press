@@ -134,7 +134,6 @@
 			"fieldname": "private_key",
 			"fieldtype": "Password",
 			"label": "Private Key",
-			"length": 4096,
 			"read_only": 1,
 			"read_only_depends_on": "eval: doc.provider === \"Let's Encrypt\""
 		},
