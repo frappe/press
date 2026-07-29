@@ -51,7 +51,7 @@ class TLSCertificate(Document):
 		full_chain: DF.Code | None
 		intermediate_chain: DF.Code | None
 		issued_on: DF.Datetime | None
-		private_key: DF.Code | None
+		private_key: DF.Password | None
 		provider: DF.Literal["Let's Encrypt", "Other"]
 		retry_count: DF.Int
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
@@ -276,9 +276,13 @@ class TLSCertificate(Document):
 		if not self.full_chain:
 			self.full_chain = f"{self.certificate}\n{self.intermediate_chain}"
 
+	def get_private_key(self) -> str | None:
+		"""Return the decrypted private key."""
+		return self.get_password("private_key", raise_exception=False)
+
 	def _get_private_key_object(self):
 		try:
-			return OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, self.private_key)
+			return OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, self.get_private_key())
 		except OpenSSL.crypto.Error as e:
 			log_error("TLS Private Key Exception", certificate=self.name)
 			raise e
@@ -457,7 +461,7 @@ def update_server_tls_certifcate(server, certificate, throw_on_failure: bool = F
 			port=server.get("ssh_port") or 22,
 			server=server,
 			variables={
-				"certificate_private_key": certificate.private_key,
+				"certificate_private_key": certificate.get_private_key(),
 				"certificate_full_chain": certificate.full_chain,
 				"certificate_intermediate_chain": certificate.intermediate_chain,
 				"is_proxy_server": bool(proxysql_admin_password),
