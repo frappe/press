@@ -12,6 +12,7 @@ import responses
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
+from press.agent import PRODUCT_TRIAL_JOB_QUEUE
 from press.exceptions import InsufficientSpaceOnServer
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.app.test_app import create_test_app
@@ -365,6 +366,31 @@ class TestSite(FrappeTestCase):
 		domains = site.get_config_value_for_key("domains")
 		self.assertIn(domain, domains)
 		self.assertIn(domain_2, domains)
+
+	def _get_add_domain_job_request_data(self, site_name: str) -> dict:
+		request_data = frappe.db.get_value(
+			"Agent Job",
+			{"job_type": "Add Domain", "site": site_name},
+			"request_data",
+			order_by="creation desc",
+		)
+		return json.loads(request_data)
+
+	def test_add_domain_to_config_routes_product_trial_job_to_dedicated_queue(self):
+		site = create_test_site("testsubdomain")
+
+		site.add_domain_to_config("prod.frappe.dev", queue=PRODUCT_TRIAL_JOB_QUEUE)
+
+		request_data = self._get_add_domain_job_request_data(site.name)
+		self.assertEqual(request_data.get("agent_job_queue"), PRODUCT_TRIAL_JOB_QUEUE)
+
+	def test_add_domain_to_config_leaves_regular_domain_job_on_default_queue(self):
+		site = create_test_site("testsubdomain")
+
+		site.add_domain_to_config("prod.frappe.dev")
+
+		request_data = self._get_add_domain_job_request_data(site.name)
+		self.assertNotIn("agent_job_queue", request_data)
 
 	def test_add_remove_domain_from_config_updates_domains_key(self):
 		site = create_test_site("testsubdomain")

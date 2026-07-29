@@ -88,7 +88,9 @@ class SiteDomain(Document):
 		if self.has_root_tls_certificate:
 			server = frappe.db.get_value("Site", self.site, "server")
 			self.flags.add_domain_to_upstream_job = self.agent.add_domain_to_upstream(
-				server=server, site=self.site, domain=self.domain
+				server=server,
+				site=self.site,
+				domain=self.domain,
 			)
 			return
 

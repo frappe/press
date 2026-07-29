@@ -40,6 +40,10 @@ if TYPE_CHECKING:
 
 APPS_LIST_REGEX = re.compile(r"\[.*\]")
 
+# Dedicated agent RQ queue for product trial domain jobs, kept separate so
+# these quick jobs don't wait behind long-running ones.
+PRODUCT_TRIAL_JOB_QUEUE = "signup"
+
 
 class Agent:
 	if TYPE_CHECKING:
@@ -599,10 +603,12 @@ class Agent:
 			site=site.name,
 		)
 
-	def add_domain(self, site, domain):
+	def add_domain(self, site, domain, queue=None):
 		data = {
 			"domain": domain,
 		}
+		if queue:
+			data["agent_job_queue"] = queue
 		return self.create_agent_job(
 			"Add Domain",
 			f"benches/{site.bench}/sites/{site.name}/domains",
