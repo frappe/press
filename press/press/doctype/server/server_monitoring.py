@@ -350,7 +350,9 @@ def _send_public_server_pool_health_alert(server_issues: dict[str, list[str]]) -
 		issues = "<br>".join(_escape_markdown_table_cell(issue) for issue in server_issues[server])
 		table_rows.append(f"| {_escape_markdown_table_cell(server)} | {issues} |")
 
-	send_raven_message("\n".join(header_lines + table_header + table_rows).strip(), RAVEN_SERVER_ALERTS_CHANNEL)
+	send_raven_message(
+		"\n".join(header_lines + table_header + table_rows).strip(), RAVEN_SERVER_ALERTS_CHANNEL
+	)
 
 
 def _escape_markdown_table_cell(value: str) -> str:
