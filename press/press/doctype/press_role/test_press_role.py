@@ -74,13 +74,31 @@ class TestPressRole(FrappeTestCase):
 		self.assertFalse(frappe.db.exists("Press Role", self.perm_role.name))
 		self.assertFalse(frappe.db.get_value("Account Request", account_request.name, "press_role"))
 
+	def create_site_for(self, team):
+		subdomain = frappe.generate_hash(length=8)
+		site_name = f"{subdomain}.frappe.cloud"
+		create_test_site_record(site_name, subdomain, team)
+		self.addCleanup(lambda: frappe.db.sql("DELETE FROM `tabSite` WHERE name = %s", (site_name,)))
+		return site_name
+
+	def test_add_resource_applies_on_top_of_a_concurrent_edit(self):
+		"""Two role edits in flight at once used to make the later one fail
+		with TimestampMismatchError, because it saved a row that had been
+		committed since it was read."""
+		site_name = self.create_site_for(self.team.name)
+		role = frappe.get_doc("Press Role", self.perm_role.name)
+		# Stands in for another request committing an edit to the same role.
+		frappe.db.set_value("Press Role", self.perm_role.name, "title", role.title)
+
+		role.add_resource([{"document_type": "Site", "document_name": site_name}])
+
+		self.perm_role.reload()
+		self.assertTrue(any(r.document_name == site_name for r in self.perm_role.resources))
+
 	def test_add_resource_rejects_cross_team_document(self):
 		other_team = create_test_team()
 		self.addCleanup(frappe.delete_doc, "Team", other_team.name, force=True)
-		subdomain = frappe.generate_hash(length=8)
-		site_name = f"{subdomain}.frappe.cloud"
-		create_test_site_record(site_name, subdomain, other_team.name)
-		self.addCleanup(lambda: frappe.db.sql("DELETE FROM `tabSite` WHERE name = %s", (site_name,)))
+		site_name = self.create_site_for(other_team.name)
 
 		with self.assertRaises(frappe.ValidationError):
 			self.perm_role.add_resource([{"document_type": "Site", "document_name": site_name}])
