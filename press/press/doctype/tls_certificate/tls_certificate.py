@@ -276,8 +276,15 @@ class TLSCertificate(Document):
 		if not self.full_chain:
 			self.full_chain = f"{self.certificate}\n{self.intermediate_chain}"
 
+	@frappe.whitelist()
 	def get_private_key(self) -> str | None:
-		"""Return the decrypted private key."""
+		"""Return the decrypted private key.
+
+		Whitelisted so the desk "Copy Private Key" button can fetch the real key:
+		`private_key` is a Password field, so the client only ever holds the mask.
+		Exposure is unchanged from when this was a Code field the button read
+		directly — both require read permission on the certificate.
+		"""
 		return self.get_password("private_key", raise_exception=False)
 
 	def _get_private_key_object(self):
