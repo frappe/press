@@ -11,8 +11,6 @@
 		"email",
 		"oauth_signup",
 		"send_email",
-		"otp",
-		"otp_generated_at",
 		"column_break_4",
 		"invited_by",
 		"ip_address",
@@ -267,18 +265,8 @@
 			"options": "Account Request Press Role"
 		},
 		{
-			"fieldname": "otp",
-			"fieldtype": "Data",
-			"label": "OTP"
-		},
-		{
 			"fieldname": "column_break_eaxp",
 			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "otp_generated_at",
-			"fieldtype": "Datetime",
-			"label": "OTP Generated at"
 		},
 		{
 			"default": "0",

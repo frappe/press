@@ -28,7 +28,9 @@ from press.press.doctype.team.team import (
 	get_team_members,
 )
 from press.utils import docs, get_country_info, get_current_team, is_user_part_of_team, log_error
+from press.utils import otp as otp_purpose
 from press.utils import user as user_utils
+from press.utils.otp import OneTimePassword
 from press.utils.telemetry import capture
 
 if TYPE_CHECKING:
@@ -101,17 +103,16 @@ def verify_otp(account_request: str, otp: str) -> str:
 	):
 		ip_tracker and ip_tracker.add_failure_attempt()
 		frappe.throw("Invalid OTP. Please try again.")
-	if account_request_doc.otp != otp:
+	if not account_request_doc.signup_otp.consume(otp):
 		ip_tracker and ip_tracker.add_failure_attempt()
 		frappe.throw("Invalid OTP. Please try again.")
 
 	ip_tracker and ip_tracker.add_success_attempt()
-	account_request_doc.reset_otp()
 
 	if account_request_doc.product_trial:
 		capture("otp_verified", "fc_product_trial", account_request_doc.name)
 
-	return str(account_request_doc.request_key)
+	return account_request_doc.ensure_request_key()
 
 
 @frappe.whitelist(allow_guest=True)
@@ -119,35 +120,26 @@ def verify_otp(account_request: str, otp: str) -> str:
 def verify_otp_and_login(email: str, otp: str):
 	from frappe.auth import get_login_attempt_tracker
 
-	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
-
-	if not account_request:
-		frappe.throw("Please sign up first")
-
-	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	ip_tracker = get_login_attempt_tracker(frappe.local.request_ip)
+	code = OneTimePassword(otp_purpose.LOGIN, email)
 
-	if account_request_doc.otp != otp:
+	# An address nobody asked for a code for has no code to match, so this also
+	# covers the caller who never signed up. Saying so would tell them which
+	# addresses have accounts.
+	if not code.consume(otp):
 		ip_tracker and ip_tracker.add_failure_attempt()
 		frappe.throw("Invalid OTP. Please try again.")
 
 	ip_tracker and ip_tracker.add_success_attempt()
-	account_request_doc.reset_otp()
 
 	return frappe.local.login_manager.login_as(email)
 
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60)
-def resend_otp(account_request: str, for_2fa_keys: bool = False):
+def resend_otp(account_request: str):
 	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
-
-	# if last OTP was sent less than 30 seconds ago, throw an error
-	if (
-		account_request_doc.otp_generated_at
-		and (frappe.utils.now_datetime() - account_request_doc.otp_generated_at).seconds < 30
-	):
-		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
+	throttle_otp(account_request_doc.signup_otp)
 
 	# ensure no team has been created with this email
 	if (
@@ -155,29 +147,55 @@ def resend_otp(account_request: str, for_2fa_keys: bool = False):
 		and not account_request_doc.product_trial
 	):
 		frappe.throw("Invalid Email")
-	account_request_doc.reset_otp()
-	account_request_doc.send_otp_mail(for_login=not for_2fa_keys)
+
+	send_otp_mail(str(account_request_doc.email), account_request_doc.signup_otp.generate())
 
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60)
 def send_otp(email: str, for_2fa_keys: bool = False):
-	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
-
-	if not account_request or (account_request and not frappe.db.exists("User", email)):
+	# Logging in asks whether the account exists, not how it came to. Requiring an
+	# Account Request locked out everyone whose signup record was never written or
+	# had since been cleaned up.
+	if not frappe.db.exists("User", email):
 		frappe.throw("Please sign up first")
 
-	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
+	purpose = otp_purpose.TWO_FACTOR_RECOVERY if for_2fa_keys else otp_purpose.LOGIN
+	code = OneTimePassword(purpose, email)
+	throttle_otp(code)
 
-	# if last OTP was sent less than 30 seconds ago, throw an error
-	if (
-		account_request_doc.otp_generated_at
-		and (frappe.utils.now_datetime() - account_request_doc.otp_generated_at).seconds < 30
-	):
-		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
+	send_otp_mail(email, code.generate(), for_login=not for_2fa_keys)
 
-	account_request_doc.reset_otp()
-	account_request_doc.send_otp_mail(for_login=not for_2fa_keys)
+
+def throttle_otp(code: OneTimePassword):
+	if code.issued_recently:
+		frappe.throw(f"Please wait for {otp_purpose.RESEND_AFTER} seconds before requesting a new OTP")
+
+
+def send_otp_mail(email: str, otp: str, for_login: bool = True):
+	if frappe.conf.developer_mode and frappe.local.dev_server:
+		print(f"Login OTP for {email}:" if for_login else f"OTP to view 2FA recovery codes for {email}:")
+		print(otp)
+		print()
+		return
+
+	if frappe.flags.in_test:
+		return
+
+	if for_login:
+		template = "login_otp"
+		subject = f"{otp} - OTP for Frappe Cloud Login"
+	else:
+		template = "2fa_recovery_codes_otp"
+		subject = f"{otp} - OTP to view 2FA recovery codes for Frappe Cloud"
+
+	frappe.sendmail(
+		recipients=email,
+		subject=subject,
+		template=template,
+		args={"otp": otp},
+		now=True,
+	)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1350,12 +1368,9 @@ def get_2fa_recovery_codes(verification_code: int):
 	if not frappe.db.exists("User 2FA", {"user": frappe.session.user, "enabled": 1}):
 		frappe.throw("2FA is not enabled for this user")
 
-	account_request: "AccountRequest" = frappe.get_doc("Account Request", {"email": frappe.session.user})
-
-	if account_request.otp != verification_code:
+	code = OneTimePassword(otp_purpose.TWO_FACTOR_RECOVERY, frappe.session.user)
+	if not code.consume(verification_code):
 		frappe.throw("Invalid OTP. Please try again.")
-
-	account_request.reset_otp()
 
 	# Get the User 2FA document.
 	two_fa = frappe.get_doc("User 2FA", frappe.session.user)

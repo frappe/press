@@ -57,6 +57,7 @@ dependencies = [
     "pydo==0.24.0",
     "semgrep==1.159.0",
     "frappe-mcp @ git+https://github.com/frappe/mcp",
+    "setuptools==80.9.0",
 ]
 
 [project.optional-dependencies]
@@ -65,7 +66,6 @@ dev = [
     "ruff==0.14.2",
     "mypy==1.18.2",
     "ipdb==0.13.13",
-    "setuptools~=81.0",
     # typechecking
     "types-requests<2.32",
     "types-pytz~=2025.2",
