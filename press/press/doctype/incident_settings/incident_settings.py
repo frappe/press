@@ -8,7 +8,7 @@ from frappe.model.document import Document
 
 from press.utils.raven import send_raven_message
 
-RAVEN_INCIDENTS_CHANNEL = "incidents"
+RAVEN_INCIDENTS_CHANNEL = "frappe-cloud-incidents"
 
 
 class IncidentSettings(Document):
