@@ -8,8 +8,6 @@ from frappe.model.document import Document
 
 from press.utils.raven import send_raven_message
 
-RAVEN_INCIDENTS_CHANNEL = "frappe-cloud-incidents"
-
 
 class IncidentSettings(Document):
 	# begin: auto-generated types
@@ -57,5 +55,5 @@ def alert_if_phone_call_alerts_disabled():
 		"⚠️ **Phone call alerts are disabled** in "
 		f"[Incident Settings]({frappe.utils.get_url('/app/incident-settings')}). "
 		"Incidents won't call anyone.",
-		RAVEN_INCIDENTS_CHANNEL,
+		frappe.db.get_single_value("Press Settings", "raven_incidents_channel"),
 	)
