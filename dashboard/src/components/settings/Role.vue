@@ -85,17 +85,14 @@
 	/>
 	<RoleResources
 		v-else-if="tab === 'resources'"
-		:key="role.doc?.resources"
 		:resources="role.doc?.resources"
-		@include="role.add_resource.submit($event)"
-		@remove="
-			(document_type, document_name) => {
+		:include="(resources) => role.add_resource.submit(resources)"
+		:remove="
+			(document_type, document_name) =>
 				role.remove_resource.submit({
 					document_type,
 					document_name,
-				});
-				role.reload();
-			}
+				})
 		"
 	/>
 	<RolePermissions
