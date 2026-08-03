@@ -251,6 +251,37 @@ class TestReleaseGroup(FrappeTestCase):
 		# Only frappe is being updated, so payments carries its source over from the bench
 		group.create_deploy_candidate([{"app": "frappe"}])  # must not raise
 
+	def test_deploy_fails_when_app_lists_frappe_as_a_python_dependency(self):
+		group = self._create_group_of_frappe_and_erpnext()
+
+		with (
+			patch(
+				"press.api.github._get_pyproject_from_commit",
+				return_value={"project": {"dependencies": ["requests", "frappe>=15.0.0"]}},
+			),
+			self.assertRaises(frappe.ValidationError) as context,
+		):
+			group.create_deploy_candidate()
+
+		self.assertIn(
+			"ERPNext lists <code>frappe</code> under <code>[project]</code> <code>dependencies</code>",
+			str(context.exception),
+		)
+
+	def test_deploy_works_when_app_has_no_frappe_python_dependency(self):
+		group = self._create_group_of_frappe_and_erpnext()
+
+		with patch(
+			"press.api.github._get_pyproject_from_commit",
+			# frappe-types is a PyPI package, not the frappe app
+			return_value={"project": {"dependencies": ["frappe-types", "requests"]}},
+		):
+			self.assertIsNotNone(group.create_deploy_candidate())
+
+	def _create_group_of_frappe_and_erpnext(self) -> ReleaseGroup:
+		apps = [create_test_app("frappe", "Frappe Framework"), create_test_app("erpnext", "ERPNext")]
+		return create_test_release_group(apps, frappe_version="Version 14")
+
 	def test_create_release_group_fail_with_duplicate_titles(self):
 		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
