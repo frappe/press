@@ -664,10 +664,18 @@ def is_frappe_a_python_dependency(app_source: str, commit: str) -> bool:
 	Bench installs frappe from its git repository. Listing it as a Python
 	dependency instead sends pip to PyPI, where frappe is only a 0.0.1
 	placeholder — so the install either fails to resolve or pulls the stub.
+
+	Anything that goes wrong while reading the pyproject skips the check.
+	`raises=False` only covers a missing or invalid file; a GitHub timeout
+	must not block every deploy on the platform either.
 	"""
-	dependencies = get_dependant_apps_with_versions(app_source, commit, raises=False).get(
-		"python_dependencies", []
-	)
+	try:
+		dependencies = get_dependant_apps_with_versions(app_source, commit, raises=False).get(
+			"python_dependencies", []
+		)
+	except Exception:
+		return False
+
 	return any(_get_dependency_name(dependency) == "frappe" for dependency in dependencies)
 
 

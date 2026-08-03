@@ -7,6 +7,7 @@ import typing
 from unittest.mock import Mock, patch
 
 import frappe
+import requests
 from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 
@@ -275,6 +276,16 @@ class TestReleaseGroup(FrappeTestCase):
 			"press.api.github._get_pyproject_from_commit",
 			# frappe-types is a PyPI package, not the frappe app
 			return_value={"project": {"dependencies": ["frappe-types", "requests"]}},
+		):
+			self.assertIsNotNone(group.create_deploy_candidate())
+
+	def test_deploy_works_when_pyproject_cannot_be_fetched(self):
+		"""A GitHub outage must not block every deploy on the platform."""
+		group = self._create_group_of_frappe_and_erpnext()
+
+		with patch(
+			"press.api.github._get_pyproject_from_commit",
+			side_effect=requests.ConnectionError("GitHub is down"),
 		):
 			self.assertIsNotNone(group.create_deploy_candidate())
 
