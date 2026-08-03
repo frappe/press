@@ -2822,7 +2822,7 @@ class Site(Document, TagHelpers):
 
 	# TODO: rename to change_plan and remove the need for ignore_card_setup param
 	@dashboard_whitelist()
-	def set_plan(self, plan: None | str = None):
+	def set_plan(self, plan: str | None = None):
 		from press.api.site import validate_plan
 
 		validate_plan(self.server, self.name, plan)
