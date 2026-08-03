@@ -415,6 +415,8 @@ def branches(owner: str, name: str, installation: str | None = None, app_source:
 			headers=headers,
 			timeout=20,
 		)
+		if resp.status_code == 404:
+			frappe.throw(f"Repository {owner}/{name} not found on GitHub")
 		if not resp.ok:
 			frappe.throw("Error fetching branch list from GitHub: " + resp.text)
 
