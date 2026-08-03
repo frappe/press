@@ -65,6 +65,13 @@
 									@update:modelValue="onChangeBranchDebounce"
 								/>
 							</div>
+							<p v-if="repositoryNotFound" class="text-base text-ink-gray-7">
+								Repository not found. If it is private, add it from the
+								<span class="cursor-pointer underline" @click="tabIndex = 1"
+									>Private Repository</span
+								>
+								tab.
+							</p>
 						</div>
 						<div v-else-if="tab.value === 'your-github-app'" class="pt-4">
 							<GitHubAppSelector
@@ -103,6 +110,7 @@
 			/>
 
 			<ErrorMessage
+				v-if="!repositoryNotFound"
 				:message="$resources.validateApp.error || $resources.branches.error"
 			/>
 		</template>
@@ -148,11 +156,11 @@ export default {
 			selectedGithubRepository: null,
 			tabs: [
 				{
-					label: 'Public GitHub App',
+					label: 'Public Repository',
 					value: 'public-github-app',
 				},
 				{
-					label: 'Your GitHub App',
+					label: 'Private Repository',
 					value: 'your-github-app',
 				},
 			],
@@ -246,6 +254,12 @@ export default {
 			if (this.tabIndex === 0) {
 				return this.githubUrlMatch?.[4]?.replace('.git', '')
 			}
+		},
+		repositoryNotFound() {
+			const error = this.$resources.branches.error
+			return /not found/i.test(
+				error?.messages?.join(' ') || error?.message || '',
+			)
 		},
 		branchOptions() {
 			return (this.$resources.branches.data || []).map((branch) => ({
