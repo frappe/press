@@ -261,11 +261,7 @@ scheduler_events = {
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
 		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
-<<<<<<< HEAD
-=======
-		"press.press.doctype.server.server.sync_wazuh_agent_status",
 		"press.press.doctype.incident_settings.incident_settings.alert_if_phone_call_alerts_disabled",
->>>>>>> a91454343 (feat(incident): Alert on Raven when phone call alerts are disabled)
 		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",
 	],
 	"hourly_long": [
