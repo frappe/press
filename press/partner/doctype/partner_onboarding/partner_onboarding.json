@@ -12,11 +12,13 @@
 		"submitted_on",
 		"reviewed_on",
 		"reviewed_by",
+		"approved_on",
 		"reviewer_comments",
 		"registration_section",
 		"company_name",
-		"registered_country",
 		"company_email",
+		"column_break_ksbd",
+		"registered_country",
 		"contact",
 		"company_profile_section",
 		"address",
@@ -34,6 +36,7 @@
 		"existing_partnerships",
 		"erp_implementations_range",
 		"incorporation_certificate",
+		"company_logo",
 		"agreement_section",
 		"agreed_to_due_diligence",
 		"agreed_to_partnership_agreement",
@@ -44,6 +47,7 @@
 			"fieldname": "team",
 			"fieldtype": "Link",
 			"in_list_view": 1,
+			"in_standard_filter": 1,
 			"label": "Team",
 			"options": "Team",
 			"reqd": 1
@@ -54,8 +58,10 @@
 			"fieldname": "status",
 			"fieldtype": "Select",
 			"in_list_view": 1,
+			"in_standard_filter": 1,
 			"label": "Status",
-			"options": "Draft\nPending Review\nApproved\nRejected\nCancelled"
+			"options": "Draft\nPending Review\nApproved\nRejected\nCancelled",
+			"read_only": 1
 		},
 		{
 			"fieldname": "registration_section",
@@ -67,12 +73,15 @@
 			"fieldtype": "Data",
 			"in_global_search": 1,
 			"in_list_view": 1,
+			"in_standard_filter": 1,
 			"label": "Company Name",
 			"reqd": 1
 		},
 		{
 			"fieldname": "registered_country",
 			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
 			"label": "Registered Country",
 			"options": "Country",
 			"reqd": 1
@@ -80,7 +89,6 @@
 		{
 			"fieldname": "company_email",
 			"fieldtype": "Data",
-			"in_list_view": 1,
 			"label": "Company Email",
 			"options": "Email",
 			"reqd": 1
@@ -192,6 +200,7 @@
 		{
 			"fieldname": "submitted_on",
 			"fieldtype": "Datetime",
+			"in_list_view": 1,
 			"label": "Submitted On",
 			"read_only": 1
 		},
@@ -211,6 +220,13 @@
 			"read_only": 1
 		},
 		{
+			"allow_on_submit": 1,
+			"fieldname": "approved_on",
+			"fieldtype": "Datetime",
+			"label": "Approved On",
+			"read_only": 1
+		},
+		{
 			"fieldname": "amended_from",
 			"fieldtype": "Link",
 			"label": "Amended From",
@@ -226,12 +242,21 @@
 			"fieldtype": "Small Text",
 			"label": "Reviewer Comments",
 			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_ksbd",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "company_logo",
+			"fieldtype": "Attach",
+			"label": "Company Logo"
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"is_submittable": 1,
 	"links": [],
-	"modified": "2026-06-02 11:46:36.460385",
+	"modified": "2026-07-13 10:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Partner",
 	"name": "Partner Onboarding",
@@ -286,6 +311,27 @@
 	"row_format": "Dynamic",
 	"sort_field": "modified",
 	"sort_order": "DESC",
-	"states": [],
+	"states": [
+		{
+			"color": "Gray",
+			"title": "Draft"
+		},
+		{
+			"color": "Orange",
+			"title": "Pending Review"
+		},
+		{
+			"color": "Green",
+			"title": "Approved"
+		},
+		{
+			"color": "Red",
+			"title": "Rejected"
+		},
+		{
+			"color": "Gray",
+			"title": "Cancelled"
+		}
+	],
 	"track_changes": 1
 }
