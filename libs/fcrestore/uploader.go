@@ -17,9 +17,10 @@ import (
 )
 
 var (
-	PART_SIZE       int64 = 1 * 1024 * 1024 * 1024 // 1GB per part
-	MAX_CONCURRENCY       = 10                     // Limit concurrent uploads
-	HTTP_TIMEOUT          = 30 * time.Minute       // Request timeout
+	PART_SIZE       int64 = 200 * 1024 * 1024 // 200MB per part
+	MAX_CONCURRENCY       = 5
+	HTTP_TIMEOUT          = 3 * time.Hour
+	MAX_RETRIES           = 3
 )
 
 type MultipartUpload struct {
@@ -132,8 +133,8 @@ func (s *Session) GenerateMultipartUploadLink(filePath string) (*MultipartUpload
 			},
 		},
 		bufferPool: sync.Pool{
-			New: func() interface{} {
-				buf := make([]byte, 32*1024) // 32KB buffer
+			New: func() any {
+				buf := make([]byte, 32*1024)
 				return &buf
 			},
 		},
@@ -144,22 +145,20 @@ func (s *Session) GenerateMultipartUploadLink(filePath string) (*MultipartUpload
 
 func (m *MultipartUpload) UploadParts(s *Session) error {
 	if m.IsUploaded() {
-		// If it's already uploaded, silently ignore
 		return nil
 	}
 
-	// Check if the file already uploaded previously
-	if remote_file, ok := s.UploadedFiles[m.CacheKey()]; ok && remote_file != "" {
-		m.RemoteFile = remote_file
+	if remoteFile, ok := s.UploadedFiles[m.CacheKey()]; ok && remoteFile != "" {
+		m.RemoteFile = remoteFile
 		m.UploadedSize = m.TotalSize
-		// This will clear the pre-signed URLs which isn't going to be used
 		m.abortPresignedURLs(s)
 		return nil
 	}
+
 	m.mu.Lock()
 	m.ctx, m.cancelFn = context.WithCancel(context.Background())
 	m.errors = make([]error, 0)
-	m.UploadedSize = 0 // Reset progress
+	m.UploadedSize = 0
 	m.mu.Unlock()
 
 	partRanges := m.calculatePartRanges()
@@ -171,7 +170,6 @@ func (m *MultipartUpload) UploadParts(s *Session) error {
 			continue
 		}
 
-		// Check if context is already cancelled before starting new upload
 		if m.ctx.Err() != nil {
 			break
 		}
@@ -185,10 +183,9 @@ func (m *MultipartUpload) UploadParts(s *Session) error {
 				m.wg.Done()
 			}()
 
-			etag, err := m.uploadPart(partNum, start, end)
+			etag, err := m.uploadPartWithRetry(partNum, start, end)
 			if err != nil {
 				errorChan <- fmt.Errorf("part %d: %w", partNum, err)
-				// Cancel context on first error to stop other uploads
 				if m.cancelFn != nil {
 					m.cancelFn()
 				}
@@ -213,13 +210,64 @@ func (m *MultipartUpload) UploadParts(s *Session) error {
 	}
 
 	if len(m.errors) > 0 {
-		errorString := ""
+		var sb strings.Builder
 		for _, err := range m.errors {
-			errorString += fmt.Sprintf("- %v\n", err)
+			fmt.Fprintf(&sb, "  - %v\n", err)
 		}
-		return fmt.Errorf("%d parts failed:\n%s", len(m.errors), errorString)
+		lines := sb.String()
+		return fmt.Errorf(
+			"upload failed: %d part(s) could not be uploaded after %d retries each.\n\n"+
+				"This usually happens when your network is too slow or unstable to sustain\n"+
+				"the upload. Each 200 MB part must finish within the timeout window.\n\n"+
+				"What you can try:\n"+
+				"  - Check your internet connection and try again\n"+
+				"  - Move closer to your router or switch to a wired connection\n"+
+				"  - Avoid running large downloads while uploading\n"+
+				"  - Try again at a time when your network is less congested\n\n"+
+				"Part errors:\n%s",
+			len(m.errors), MAX_RETRIES, lines,
+		)
 	}
 	return nil
+}
+
+func (m *MultipartUpload) uploadPartWithRetry(partNumber int, start, end int64) (string, error) {
+	var lastErr error
+
+	for attempt := range MAX_RETRIES {
+		if m.ctx.Err() != nil {
+			if lastErr != nil {
+				return "", lastErr
+			}
+			return "", fmt.Errorf("upload cancelled: %w", m.ctx.Err())
+		}
+
+		if attempt > 0 {
+			backoff := time.Duration(attempt) * 5 * time.Second
+			select {
+			case <-time.After(backoff):
+			case <-m.ctx.Done():
+				return "", lastErr
+			}
+		}
+
+		sizeBefore := atomic.LoadInt64(&m.UploadedSize)
+		etag, err := m.uploadPart(partNumber, start, end)
+		if err == nil {
+			return etag, nil
+		}
+
+		lastErr = err
+
+		// Undo progress counted during the failed attempt so the
+		// progress bar stays accurate across retries.
+		sizeAfter := atomic.LoadInt64(&m.UploadedSize)
+		if delta := sizeAfter - sizeBefore; delta > 0 {
+			atomic.AddInt64(&m.UploadedSize, -delta)
+		}
+	}
+
+	return "", lastErr
 }
 
 func (m *MultipartUpload) uploadPart(partNumber int, start, end int64) (string, error) {
