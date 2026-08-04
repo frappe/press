@@ -337,6 +337,10 @@ const paymentMode = computed(() => {
 	return paymentModeOptions.find((o) => o.value === team.doc.payment_mode);
 });
 
+function paymentModeLabel(mode) {
+	return paymentModeOptions.find((o) => o.value === mode)?.label || mode;
+}
+
 function payUnpaidInvoices() {
 	let _unpaidInvoices = unpaidInvoices.data;
 	if (_unpaidInvoices.length > 1) {
@@ -402,13 +406,52 @@ function updatePaymentMode(mode) {
 	}
 	if (mode === 'UPI Autopay') {
 		if (team.doc.default_razorpay_mandate) {
-			if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
+			submitPaymentModeChange(mode);
 		} else {
 			router.push({ name: 'BillingUPIAutopay' });
 		}
 		return;
 	}
-	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
+	submitPaymentModeChange(mode);
+}
+
+function submitPaymentModeChange(mode) {
+	if (changePaymentMode.loading) return;
+	if (hasUnbilledAmountOnCurrentMode(mode)) {
+		confirmDraftInvoiceMovesToNewMode(mode);
+		return;
+	}
+	changePaymentMode.submit({ mode });
+}
+
+// The draft invoice for the running period is reassigned to whichever mode the
+// team ends up on (Team.update_draft_invoice_payment_mode), so usage already
+// accrued on the old mode gets billed through the new one.
+function hasUnbilledAmountOnCurrentMode(mode) {
+	return (
+		Boolean(team.doc.payment_mode) &&
+		mode !== team.doc.payment_mode &&
+		Number(currentBillingAmount.value) > 0
+	);
+}
+
+function confirmDraftInvoiceMovesToNewMode(mode) {
+	const currentMode = paymentModeLabel(team.doc.payment_mode);
+	const newMode = paymentModeLabel(mode);
+	const amount = `${currency.value} ${Number(currentBillingAmount.value).toFixed(2)}`;
+
+	confirmDialog({
+		title: 'Unbilled amount for this period',
+		message: `This period's invoice of <strong>${amount}</strong> is still a draft. Switching will bill it through <strong>${newMode}</strong>, including the usage you have already accrued on ${currentMode}.<br><br>To have it billed to ${currentMode} instead, settle the draft invoice from the invoices page before switching.`,
+		primaryAction: {
+			label: 'Switch anyway',
+			variant: 'solid',
+			onClick: ({ hide }) => {
+				changePaymentMode.submit({ mode });
+				hide();
+			},
+		},
+	});
 }
 
 function changeMethod() {
