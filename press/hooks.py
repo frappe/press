@@ -175,11 +175,6 @@ has_permission = {
 # Hook on document methods and events
 
 doc_events = {
-	"Press Role": {
-		"after_insert": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
-		"on_update": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
-		"after_delete": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
-	},
 	"Stripe Webhook Log": {
 		"after_insert": [
 			"press.press.doctype.invoice.stripe_webhook_handler.handle_stripe_webhook_events",
@@ -266,6 +261,7 @@ scheduler_events = {
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
 		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
+		"press.press.doctype.incident_settings.incident_settings.alert_if_phone_call_alerts_disabled",
 		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",
 	],
 	"hourly_long": [

@@ -108,6 +108,10 @@
 								>Allow my details to be shared with a local partner</label
 							>
 						</div>
+						<ErrorMessage
+							class="mt-4"
+							:message="$resources.acceptInvite.error"
+						/>
 						<Button
 							class="mt-4"
 							variant="solid"
