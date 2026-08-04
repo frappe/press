@@ -172,6 +172,35 @@ class TestDatabaseServer(FrappeTestCase):
 		mock_restart.assert_called_once()
 		self.assertEqual(call_order, ["restart", "agent"])
 
+	def test_replica_is_offered_only_the_actions_the_dashboard_supports(self):
+		"""A replica used to be offered every database action, grouped as "Database Server
+		Actions" so they merged into the primary's card. The dashboard doesn't whitelist
+		the methods behind them for a replica, so those buttons did nothing when clicked."""
+		primary = create_test_database_server()
+		replica = create_test_database_server()
+		replica.is_primary = False
+		replica.primary = primary.name
+		replica.is_replication_setup = True
+		replica.save()
+
+		actions = replica.get_actions()
+
+		self.assertEqual({action["action"] for action in actions}, {"Rename server", "Reboot server"})
+		self.assertEqual({action["group"] for action in actions}, {"Replication Server Actions"})
+
+	def test_primary_of_a_replica_is_still_offered_its_database_actions(self):
+		primary = create_test_database_server()
+		replica = create_test_database_server()
+		replica.is_primary = False
+		replica.primary = primary.name
+		replica.is_replication_setup = True
+		replica.save()
+
+		actions = primary.get_actions()
+
+		self.assertIn("Update Max DB Connections", {action["action"] for action in actions})
+		self.assertEqual({action["group"] for action in actions}, {"Database Server Actions"})
+
 	@patch("press.press.doctype.database_server.database_server.Ansible", new=Mock())
 	@patch(
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",

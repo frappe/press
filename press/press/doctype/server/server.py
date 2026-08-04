@@ -406,17 +406,19 @@ class BaseServer(Document, TagHelpers):
 		"""Get clusters which have autoscaling enabled"""
 		return frappe.db.get_all("Cluster", {"enable_autoscaling": 1}, pluck="name")
 
-	def get_actions(self):
-		server_type = ""
+	@property
+	def server_type_for_actions(self) -> str:
+		"""What to call this server in action descriptions and action group titles."""
 		if self.doctype == "Server":
-			server_type = "application server" if not getattr(self, "is_unified_server", False) else "server"
-		elif self.doctype == "Database Server":
+			return "server" if getattr(self, "is_unified_server", False) else "application server"
+		if self.doctype == "Database Server":
 			if self.is_replication_setup:
-				server_type = "replication server"
-			else:
-				server_type = (
-					"database server" if not getattr(self, "is_unified_server", False) else "database"
-				)
+				return "replication server"
+			return "database" if getattr(self, "is_unified_server", False) else "database server"
+		return ""
+
+	def get_actions(self):
+		server_type = self.server_type_for_actions
 
 		actions = [
 			{
