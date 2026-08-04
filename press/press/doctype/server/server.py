@@ -1007,7 +1007,8 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def update_agent_ansible(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_update_agent_ansible")
+		# ponytail: 1h, not the long queue's 1500s — a busy rq worker's warm shutdown alone is 1500s
+		frappe.enqueue_doc(self.doctype, self.name, "_update_agent_ansible", queue="long", timeout=3600)
 
 	def _update_agent_ansible(self, throw_on_failure: bool = False):
 		try:
