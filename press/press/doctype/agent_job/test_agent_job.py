@@ -365,7 +365,7 @@ class TestAgentJobNotifications(FrappeTestCase):
 	)
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
-	def test_missing_pkg_resources_asks_to_update_the_app_that_imported_it(self):
+	def test_missing_pkg_resources_points_at_the_app_and_the_doc(self):
 		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False, newer_release=True)
 		job = self.update_job(site, bench, self.PKG_RESOURCES_TRACEBACK)
 
@@ -374,18 +374,27 @@ class TestAgentJobNotifications(FrappeTestCase):
 		self.assertTrue(details["is_actionable"])
 		self.assertEqual(details["title"], "Update failed because of the dummy_app app")
 		self.assertIn("<code>pkg_resources</code>", details["message"])
-		self.assertIn("newer release of <b>dummy_app</b> is available", details["message"])
-		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_UPDATE])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.PKG_RESOURCES])
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
-	def test_missing_pkg_resources_in_teams_own_app_explains_cause_and_asks_to_debug(self):
+	def test_missing_pkg_resources_in_teams_own_app_points_at_the_same_doc(self):
 		site, bench = self.site_with_app("dummy_app", newer_release=True)
 		job = self.update_job(site, bench, self.PKG_RESOURCES_TRACEBACK)
 
 		details = get_details(job, "", "")
 
 		self.assertIn("<code>pkg_resources</code>", details["message"])
-		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_DEBUG])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.PKG_RESOURCES])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_missing_pkg_resources_gets_a_banner_even_when_the_app_is_on_its_latest_release(self):
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False)
+		job = self.update_job(site, bench, self.PKG_RESOURCES_TRACEBACK)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.PKG_RESOURCES])
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_known_traceback_wins_over_the_app_update_suggestion(self):

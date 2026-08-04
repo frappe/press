@@ -68,6 +68,7 @@ class JobErr(Enum):
 	RQ_JOBS_IN_QUEUE = auto()
 	APP_UPDATE = auto()
 	APP_DEBUG = auto()
+	PKG_RESOURCES = auto()
 
 
 DOC_URLS = {
@@ -82,6 +83,7 @@ DOC_URLS = {
 	JobErr.RQ_JOBS_IN_QUEUE: "https://docs.frappe.io/cloud/faq/site#how-do-i-deactivate-my-site",
 	JobErr.APP_UPDATE: "https://docs.frappe.io/cloud/benches/updating_a_bench",
 	JobErr.APP_DEBUG: "https://frappecloud.com/docs/benches/debugging",
+	JobErr.PKG_RESOURCES: "https://docs.frappe.io/cloud/private-benches/common-issues/pkg-resources-error-when-updating-site",
 }
 
 
@@ -379,24 +381,35 @@ def update_with_app_failure_err(details: Details, job: AgentJob):
 	app, source = app_and_source
 	details["title"] = f"Update failed because of the {app} app"
 
+	if is_missing_pkg_resources(job):
+		return update_with_missing_pkg_resources_message(details, job, app)
 	if is_owned_by_site_team(source, job):
 		return update_with_debug_your_app_message(details, job, app)
 	return update_with_check_for_update_message(details, job, app)
 
 
-def get_known_cause(job: AgentJob, app: str) -> str:
-	"""Explain the failure when we recognise it, whoever ends up fixing the app"""
-	text = f"{job.traceback or ''}\n{job.output or ''}"
-	if "No module named 'pkg_resources'" in text:
-		return f"<p><b>{app}</b> (or one of its dependencies) imports <code>pkg_resources</code>, which newer versions of <b>setuptools</b> no longer ship.</p>"
-	return ""
+def is_missing_pkg_resources(job: AgentJob) -> bool:
+	return "No module named 'pkg_resources'" in f"{job.traceback or ''}\n{job.output or ''}"
+
+
+def update_with_missing_pkg_resources_message(details: Details, job: AgentJob, app: str) -> bool:
+	"""Documented cause with documented workarounds, so it beats the generic advice"""
+	details[
+		"message"
+	] = f"""<p>The update of site <b>{job.site}</b> failed because <b>{app}</b> (or one of its dependencies) imports <code>pkg_resources</code>, which newer versions of <b>setuptools</b> no longer ship.</p>
+	<p>Updating <b>{app}</b> on your bench group usually fixes this. If you can't update it, there are two other ways out.</p>
+	<p>Click <i>Help</i> for all three.</p>
+	"""
+
+	details["assistance_url"] = DOC_URLS[JobErr.PKG_RESOURCES]
+
+	return True
 
 
 def update_with_debug_your_app_message(details: Details, job: AgentJob, app: str) -> bool:
 	details[
 		"message"
 	] = f"""<p>The update of site <b>{job.site}</b> failed inside your app <b>{app}</b>, so it can't be fixed from our end.</p>
-	{get_known_cause(job, app)}
 	<p>Please go through the traceback, fix the app and deploy again.</p>
 	<p>Click <i>Help</i> for instructions on how to debug a bench.</p>
 	"""
@@ -411,7 +424,6 @@ def update_with_check_for_update_message(details: Details, job: AgentJob, app: s
 		return False
 
 	details["message"] = f"""<p>The update of site <b>{job.site}</b> failed inside the <b>{app}</b> app.</p>
-	{get_known_cause(job, app)}
 	<p>A newer release of <b>{app}</b> is available. Update it on your bench group and deploy — the fix may already be in.</p>
 	<p>Click <i>Help</i> for instructions on how to update a bench.</p>
 	"""
