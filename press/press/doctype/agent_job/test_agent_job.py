@@ -357,7 +357,7 @@ class TestAgentJobNotifications(FrappeTestCase):
 
 	PKG_RESOURCES_TRACEBACK = (
 		'  File "/home/frappe/frappe-bench/apps/frappe/frappe/__init__.py", line 1461, in get_module\n'
-		'  File "/home/frappe/frappe-bench/apps/acme_billing/acme_billing/utils.py", line 6, in <module>\n'
+		'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/utils.py", line 6, in <module>\n'
 		"    import razorpay\n"
 		'  File "/home/frappe/frappe-bench/env/lib/python3.11/site-packages/razorpay/client.py", line 4, in <module>\n'
 		"    import pkg_resources\n"
@@ -366,20 +366,20 @@ class TestAgentJobNotifications(FrappeTestCase):
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_missing_pkg_resources_asks_to_update_the_app_that_imported_it(self):
-		site, bench = self.site_with_app("acme_billing", owned_by_site_team=False, newer_release=True)
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False, newer_release=True)
 		job = self.update_job(site, bench, self.PKG_RESOURCES_TRACEBACK)
 
 		details = get_details(job, "", "")
 
 		self.assertTrue(details["is_actionable"])
-		self.assertEqual(details["title"], "Update failed because of the acme_billing app")
+		self.assertEqual(details["title"], "Update failed because of the dummy_app app")
 		self.assertIn("<code>pkg_resources</code>", details["message"])
-		self.assertIn("newer release of <b>acme_billing</b> is available", details["message"])
+		self.assertIn("newer release of <b>dummy_app</b> is available", details["message"])
 		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_UPDATE])
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_missing_pkg_resources_in_teams_own_app_explains_cause_and_asks_to_debug(self):
-		site, bench = self.site_with_app("acme_billing", newer_release=True)
+		site, bench = self.site_with_app("dummy_app", newer_release=True)
 		job = self.update_job(site, bench, self.PKG_RESOURCES_TRACEBACK)
 
 		details = get_details(job, "", "")
@@ -389,11 +389,11 @@ class TestAgentJobNotifications(FrappeTestCase):
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_known_traceback_wins_over_the_app_update_suggestion(self):
-		site, bench = self.site_with_app("acme_billing", owned_by_site_team=False, newer_release=True)
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False, newer_release=True)
 		job = self.update_job(
 			site,
 			bench,
-			'  File "/home/frappe/frappe-bench/apps/acme_billing/acme_billing/patches/fix_rates.py", line 12, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
 			"pymysql.err.OperationalError: (1118, 'Row size too large')",
 		)
 
@@ -424,7 +424,7 @@ class TestAgentJobNotifications(FrappeTestCase):
 		frappe_app = create_test_app()
 		other_app = create_test_app(app_name, app_name.title())
 		app_source = create_test_app_source(
-			"Version 14", other_app, repository_url=f"https://github.com/acme/{app_name}"
+			"Version 14", other_app, repository_url=f"https://github.com/dummy/{app_name}"
 		)
 		group = create_test_release_group(
 			[frappe_app, other_app],
@@ -458,62 +458,62 @@ class TestAgentJobNotifications(FrappeTestCase):
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_update_failing_inside_teams_own_app_asks_them_to_debug_it(self):
-		site, bench = self.site_with_app("acme_billing")
+		site, bench = self.site_with_app("dummy_app")
 		job = self.update_job(
 			site,
 			bench,
 			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/modules/patch_handler.py", line 90, in execute\n'
-			'  File "/home/frappe/frappe-bench/apps/acme_billing/acme_billing/patches/fix_rates.py", line 12, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
 			"KeyError: 'rate'",
 		)
 
 		details = get_details(job, "", "")
 
 		self.assertTrue(details["is_actionable"])
-		self.assertEqual(details["title"], "Update failed because of the acme_billing app")
-		self.assertIn("failed inside your app <b>acme_billing</b>", details["message"])
+		self.assertEqual(details["title"], "Update failed because of the dummy_app app")
+		self.assertIn("failed inside your app <b>dummy_app</b>", details["message"])
 		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_DEBUG])
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_update_failing_inside_someone_elses_app_suggests_updating_it(self):
-		site, bench = self.site_with_app("acme_billing", owned_by_site_team=False, newer_release=True)
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False, newer_release=True)
 		job = self.update_job(
 			site,
 			bench,
-			'  File "/home/frappe/frappe-bench/apps/acme_billing/acme_billing/patches/fix_rates.py", line 12, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
 			"KeyError: 'rate'",
 		)
 
 		details = get_details(job, "", "")
 
 		self.assertTrue(details["is_actionable"])
-		self.assertEqual(details["title"], "Update failed because of the acme_billing app")
-		self.assertIn("newer release of <b>acme_billing</b> is available", details["message"])
+		self.assertEqual(details["title"], "Update failed because of the dummy_app app")
+		self.assertIn("newer release of <b>dummy_app</b> is available", details["message"])
 		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_UPDATE])
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_app_name_with_digits_is_not_skipped(self):
-		site, bench = self.site_with_app("acme_v2")
+		site, bench = self.site_with_app("dummy_app2")
 		job = self.update_job(
 			site,
 			bench,
 			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/modules/patch_handler.py", line 90, in execute\n'
-			'  File "/home/frappe/frappe-bench/apps/acme_v2/acme_v2/patches/fix_rates.py", line 12, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/dummy_app2/dummy_app2/patches/fix_rates.py", line 12, in execute\n'
 			"KeyError: 'rate'",
 		)
 
 		details = get_details(job, "", "")
 
-		self.assertEqual(details["title"], "Update failed because of the acme_v2 app")
+		self.assertEqual(details["title"], "Update failed because of the dummy_app2 app")
 		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_DEBUG])
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_someone_elses_app_already_on_latest_release_gets_no_banner(self):
-		site, bench = self.site_with_app("acme_billing", owned_by_site_team=False)
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False)
 		job = self.update_job(
 			site,
 			bench,
-			'  File "/home/frappe/frappe-bench/apps/acme_billing/acme_billing/patches/fix_rates.py", line 12, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
 			"KeyError: 'rate'",
 		)
 
