@@ -375,6 +375,14 @@ function payUnpaidInvoices() {
 
 const showMessage = ref(false);
 function updatePaymentMode(mode) {
+	if (hasUnbilledAmountOnCurrentMode(mode)) {
+		confirmDraftInvoiceMovesToNewMode(mode);
+		return;
+	}
+	proceedWithPaymentModeChange(mode);
+}
+
+function proceedWithPaymentModeChange(mode) {
 	showMessage.value = false;
 	if (!billingDetailsSummary.value) {
 		showMessage.value = true;
@@ -388,6 +396,7 @@ function updatePaymentMode(mode) {
 	} else if (mode === 'Card' && !team.doc.payment_method) {
 		showMessage.value = true;
 		showAddCardDialog.value = true;
+		return;
 	} else if (
 		mode === 'Paid By Partner' &&
 		Boolean(unpaidInvoices.data.length > 0)
@@ -416,19 +425,19 @@ function updatePaymentMode(mode) {
 }
 
 function submitPaymentModeChange(mode) {
-	if (changePaymentMode.loading) return;
-	if (hasUnbilledAmountOnCurrentMode(mode)) {
-		confirmDraftInvoiceMovesToNewMode(mode);
-		return;
-	}
-	changePaymentMode.submit({ mode });
+	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
 }
 
 // The draft invoice for the running period is reassigned to whichever mode the
 // team ends up on (Team.update_draft_invoice_payment_mode), so usage already
 // accrued on the old mode gets billed through the new one.
+//
+// Paid By Partner is left out because the server rejects it outright while the
+// team has draft or unpaid invoices (Team.validate_billing_team), so there is
+// nothing to confirm — that mode has to finalize them first.
 function hasUnbilledAmountOnCurrentMode(mode) {
 	return (
+		mode !== 'Paid By Partner' &&
 		Boolean(team.doc.payment_mode) &&
 		mode !== team.doc.payment_mode &&
 		Number(currentBillingAmount.value) > 0
@@ -447,8 +456,8 @@ function confirmDraftInvoiceMovesToNewMode(mode) {
 			label: 'Switch anyway',
 			variant: 'solid',
 			onClick: ({ hide }) => {
-				changePaymentMode.submit({ mode });
 				hide();
+				proceedWithPaymentModeChange(mode);
 			},
 		},
 	});
