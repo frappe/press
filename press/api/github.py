@@ -17,6 +17,7 @@ from urllib.parse import urlencode, urlparse
 import frappe
 import jwt
 import requests
+import semantic_version as sv
 import tomli
 from frappe.utils.verified_command import get_secret
 
@@ -341,7 +342,9 @@ def repository(owner: str, name: str, installation: str | None = None):
 
 
 @frappe.whitelist()
-def app(owner: str, repository: str, branch: str, installation: str | None = None):
+def app(
+	owner: str, repository: str, branch: str, installation: str | None = None, app_name: str | None = None
+):
 	headers = get_auth_headers(installation)
 	response = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/branches/{branch}",
@@ -364,8 +367,11 @@ def app(owner: str, repository: str, branch: str, installation: str | None = Non
 	# Force pyproject.toml as a setup file
 	if "pyproject.toml" not in tree:
 		reason = "pyproject.toml does not exist in app directory."
+		subject = (
+			f"{app_name} isn't a valid Frappe app" if app_name else "This repository isn't a valid Frappe app"
+		)
 		frappe.throw(
-			f"This repository isn't a valid Frappe app. {reason} Please add a pyproject.toml at the app's root and try again. {docs.doc_link(docs.CUSTOM_APP)}."
+			f"{subject}. {reason} Please add a pyproject.toml at the app's root and try again. {docs.doc_link(docs.CUSTOM_APP)}."
 		)
 
 	app_name, title = _get_app_name_and_title_from_hooks(
@@ -376,11 +382,15 @@ def app(owner: str, repository: str, branch: str, installation: str | None = Non
 		tree,
 	)
 
-	frappe_version = _get_compatible_frappe_version_from_pyproject(
-		owner,
-		repository,
-		branch_info,
-		headers,
+	frappe_version = (
+		None
+		if app_name == "frappe"
+		else _get_compatible_frappe_version_from_pyproject(
+			owner,
+			repository,
+			branch_info,
+			headers,
+		)
 	)
 
 	return {"name": app_name, "title": title, "frappe_version": frappe_version}
@@ -405,6 +415,8 @@ def branches(owner: str, name: str, installation: str | None = None, app_source:
 			headers=headers,
 			timeout=20,
 		)
+		if resp.status_code == 404:
+			frappe.throw(f"Repository {owner}/{name} not found on GitHub")
 		if not resp.ok:
 			frappe.throw("Error fetching branch list from GitHub: " + resp.text)
 
@@ -469,7 +481,7 @@ def _get_compatible_frappe_version_from_pyproject(
 		frappe.throw(out_s)
 
 	with contextlib.suppress(Exception):
-		compatible_frappe_version = str(
+		compatible_frappe_version = (
 			pyproject.get("tool", {})
 			.get("bench", {})
 			.get("frappe-dependencies", {})
@@ -486,7 +498,34 @@ def _get_compatible_frappe_version_from_pyproject(
 		)
 		raise  # for mypy: NoReturn
 
-	return compatible_frappe_version
+	return str(compatible_frappe_version)
+
+
+@frappe.whitelist()
+def get_frappe_branch_major_version(
+	owner: str, repository: str, branch: str, installation: str | None = None
+) -> int:
+	"""Get the major Frappe version declared in `frappe/__init__.py` of the given branch."""
+	headers = get_auth_headers(installation)
+	init_file = requests.get(
+		f"https://api.github.com/repos/{owner}/{repository}/contents/frappe/__init__.py",
+		params={"ref": branch},
+		headers=headers,
+	).json()
+
+	if "content" not in init_file:
+		frappe.throw(
+			f"We couldn't read frappe/__init__.py from branch {branch}. "
+			"Please make sure the selected branch is correct."
+		)
+
+	content = b64decode(init_file["content"]).decode()
+	match = re.search(r"""__version__\s*=\s*["']([\d.]+)""", content)
+	if not match:
+		frappe.throw(f"Could not find __version__ in frappe/__init__.py on branch {branch}.")
+		raise  # for mypy: NoReturn
+
+	return sv.Version.coerce(match.group(1)).major
 
 
 def _get_app_name_and_title_from_hooks(

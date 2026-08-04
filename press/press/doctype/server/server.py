@@ -70,6 +70,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.server_plan.server_plan import ServerPlan
+	from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 	from press.press.doctype.virtual_machine_volume.virtual_machine_volume import (
 		VirtualMachineVolume,
@@ -405,17 +406,19 @@ class BaseServer(Document, TagHelpers):
 		"""Get clusters which have autoscaling enabled"""
 		return frappe.db.get_all("Cluster", {"enable_autoscaling": 1}, pluck="name")
 
-	def get_actions(self):
-		server_type = ""
+	@property
+	def server_type_for_actions(self) -> str:
+		"""What to call this server in action descriptions and action group titles."""
 		if self.doctype == "Server":
-			server_type = "application server" if not getattr(self, "is_unified_server", False) else "server"
-		elif self.doctype == "Database Server":
+			return "server" if getattr(self, "is_unified_server", False) else "application server"
+		if self.doctype == "Database Server":
 			if self.is_replication_setup:
-				server_type = "replication server"
-			else:
-				server_type = (
-					"database server" if not getattr(self, "is_unified_server", False) else "database"
-				)
+				return "replication server"
+			return "database" if getattr(self, "is_unified_server", False) else "database server"
+		return ""
+
+	def get_actions(self):
+		server_type = self.server_type_for_actions
 
 		actions = [
 			{
@@ -814,7 +817,7 @@ class BaseServer(Document, TagHelpers):
 					"monitoring_password": self.get_monitoring_password(),
 					"log_server": log_server,
 					"kibana_password": kibana_password,
-					"certificate_private_key": certificate.private_key,
+					"certificate_private_key": certificate.get_private_key(),
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"docker_depends_on_mounts": self.docker_depends_on_mounts,
@@ -926,7 +929,8 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def update_agent_ansible(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_update_agent_ansible")
+		# ponytail: 1h, not the long queue's 1500s — a busy rq worker's warm shutdown alone is 1500s
+		frappe.enqueue_doc(self.doctype, self.name, "_update_agent_ansible", queue="long", timeout=3600)
 
 	def _update_agent_ansible(self, throw_on_failure: bool = False):
 		try:
@@ -2092,7 +2096,7 @@ class BaseServer(Document, TagHelpers):
 					),
 				},
 			)
-			return ansible.run()
+			ansible.run()
 		except Exception:
 			log_error("NAT Iptables Setup Exception", server=self.as_dict())
 
@@ -2108,7 +2112,7 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			return ansible.run()
+			ansible.run()
 		except Exception:
 			log_error("NAT Iptables Removal Exception", server=self.as_dict())
 
@@ -2483,6 +2487,19 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return None
 
 	@frappe.whitelist()
+	def set_docker_mtu(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_set_docker_mtu", queue="long", timeout=1200)
+
+	def _set_docker_mtu(self):
+		ansible = Ansible(
+			playbook="docker_mtu.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+		)
+		ansible.run()
+
+	@frappe.whitelist()
 	def reload_nginx(self):
 		agent = Agent(self.name, server_type=self.doctype)
 		agent.reload_nginx()
@@ -2660,12 +2677,16 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			certificate_name = frappe.db.get_value(
 				"TLS Certificate", {"wildcard": True, "domain": domain.domain}, "name"
 			)
-			certificate = frappe.get_doc("TLS Certificate", certificate_name)
+
+			certificate: TLSCertificate = frappe.get_doc("TLS Certificate", certificate_name)
+			if not (certificate.private_key and certificate.full_chain and certificate.intermediate_chain):
+				continue
+
 			wildcard_domains.append(
 				{
 					"domain": domain.domain,
 					"certificate": {
-						"privkey.pem": certificate.private_key,
+						"privkey.pem": certificate.get_private_key(),
 						"fullchain.pem": certificate.full_chain,
 						"chain.pem": certificate.intermediate_chain,
 					},
@@ -2743,6 +2764,51 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
 
+	@frappe.whitelist()
+	def add_hetzner_public_ip(self, primary_ip=None):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_add_hetzner_public_ip",
+			queue="long",
+			timeout=3600,
+			primary_ip=primary_ip,
+		)
+
+	def _add_hetzner_public_ip(self, primary_ip=None):
+		vm_doc: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		vm_doc.associate_hetzner_public_ip(primary_ip)
+
+		try:
+			ansible = Ansible(
+				playbook="hetzner_public_ip.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"cloud_provider": vm_doc.cloud_provider,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+
+			if play.status == "Success":
+				self.nat_server = None
+				self.save()
+			else:
+				log_error(
+					"Hetzner Public IP Ansible Playbook Failed",
+					server=self.as_dict(),
+				)
+				frappe.throw("Failed to add Hetzner public IP. Please check the logs.")
+
+		except Exception:
+			log_error(
+				"Hetzner Public IP Exception",
+				server=self.as_dict(),
+			)
+			raise
+
 	def get_oci_static_ip(self):
 		import oci
 
@@ -2771,11 +2837,19 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			frappe.throw("Primary Private IP not found.")  # nosemgrep
 
 		# 3. Check for existing Public IP and remove it if it exists
-		existing_public_ip = network_client.get_public_ip_by_private_ip_id(
-			get_public_ip_by_private_ip_id_details=oci.core.models.GetPublicIpByPrivateIpIdDetails(
-				private_ip_id=primary_private_ip.id
-			)
-		).data
+		from oci.exceptions import ServiceError
+
+		try:
+			existing_public_ip = network_client.get_public_ip_by_private_ip_id(
+				get_public_ip_by_private_ip_id_details=oci.core.models.GetPublicIpByPrivateIpIdDetails(
+					private_ip_id=primary_private_ip.id
+				)
+			).data
+		except ServiceError as e:
+			if e.status == 404:
+				existing_public_ip = None
+			else:
+				raise
 
 		if existing_public_ip:
 			# If it's ephemeral, we can just delete/detach it
@@ -3335,7 +3409,7 @@ class Server(BaseServer):
 					"monitoring_password": self.get_monitoring_password(),
 					"log_server": log_server,
 					"kibana_password": kibana_password,
-					"certificate_private_key": certificate.private_key,
+					"certificate_private_key": certificate.get_private_key(),
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"docker_depends_on_mounts": self.docker_depends_on_mounts,
@@ -3638,7 +3712,7 @@ class Server(BaseServer):
 					"monitoring_password": monitoring_password,
 					"log_server": log_server,
 					"kibana_password": kibana_password,
-					"certificate_private_key": certificate.private_key,
+					"certificate_private_key": certificate.get_private_key(),
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 				},

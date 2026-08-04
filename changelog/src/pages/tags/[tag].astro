@@ -1,0 +1,39 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "@/layouts/IndexLayout.astro";
+import PostList from "@/components/PostList.astro";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("releases");
+
+  const tags = [...new Set(
+    posts.flatMap((post) => post.data.tags || [])
+  )];
+
+  return tags.map((tag) => ({
+    params: { tag },
+    props: { tag },
+  }));
+}
+
+const { tag } = Astro.props;
+
+let posts = await getCollection("releases");
+
+posts = posts
+  .filter((post) => post.data.tags?.includes(tag))
+  .sort((a, b) => +b.data.date - +a.data.date);
+---
+
+<Layout>
+  <div class="mx-auto max-w-page mb-8">
+    <h2 class='bg-surface-gray-2 p-2 px-3 text-sm rounded w-fit'>#{tag}</h1>
+  </div>
+
+  <PostList
+    posts={posts}
+    currentPage={1}
+    totalPages={1}
+    tags={false}
+  />
+</Layout>

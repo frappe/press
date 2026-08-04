@@ -11,5 +11,5 @@ const pagePosts = posts.slice(0, pagelimit);
 const totalPages = Math.ceil(posts.length / pagelimit);
 ---
 <Layout>
-  <PostList posts={pagePosts} currentPage={1} totalPages={totalPages} />
+  <PostList posts={pagePosts} currentPage={1} totalPages={totalPages}     tags={true}  />
 </Layout>

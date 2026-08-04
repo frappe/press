@@ -118,14 +118,14 @@ class CreateServerJob(PressJob):
 			return
 
 		max_retries = self.arguments_dict.get("max_volume_creation_retries", 6)
-		if self.kv.get("volume_creation_attempts", 0) >= max_retries:
+		if (self.kv.get("volume_creation_attempts") or 0) >= max_retries:
 			raise Exception(f"Failed to create volume from snapshot after {max_retries} retries")
 
 		is_created = self.virtual_machine_doc.create_data_disk_volume_from_snapshot()
 		if is_created:
 			return
 
-		self.kv.set("volume_creation_attempts", self.kv.get("volume_creation_attempts", 0) + 1)
+		self.kv.set("volume_creation_attempts", self.kv.get("volume_creation_attempts") or 0 + 1)
 		self.defer_current_task()
 
 	@task

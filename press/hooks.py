@@ -175,11 +175,6 @@ has_permission = {
 # Hook on document methods and events
 
 doc_events = {
-	"Press Role": {
-		"after_insert": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
-		"on_update": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
-		"after_delete": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
-	},
 	"Stripe Webhook Log": {
 		"after_insert": [
 			"press.press.doctype.invoice.stripe_webhook_handler.handle_stripe_webhook_events",
@@ -259,7 +254,6 @@ scheduler_events = {
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.saas.doctype.product_trial_request.product_trial_request.expire_long_pending_trial_requests",
 		"press.overrides.cleanup_ansible_tmp_files",
-		"press.press.doctype.site.site.archive_suspended_sites",
 		"press.press.doctype.site.site.send_warning_mail_regarding_sites_exceeding_disk_usage",
 		"press.press.doctype.add_on_storage_log.add_on_storage_log.send_disk_extention_notification",
 		"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.expire_backups",
@@ -267,11 +261,12 @@ scheduler_events = {
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
 		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
+		"press.press.doctype.incident_settings.incident_settings.alert_if_phone_call_alerts_disabled",
 		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
-		"press.press.doctype.server.server.refresh_new_bench_and_site_server_pool",
+		"press.press.doctype.server.server_monitoring.monitor_server_and_refresh_new_bench_and_site_server_pool",
 		"press.press.doctype.release_group.release_group.add_public_servers_to_public_groups",
 		"press.press.doctype.server.server.scale_workers",
 		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
@@ -356,6 +351,7 @@ scheduler_events = {
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_stalks",
 			"press.press.doctype.virtual_machine.virtual_machine.rolling_snapshot_database_server_virtual_machines",
 			"press.infrastructure.doctype.virtual_disk_resize.virtual_disk_resize.run_scheduled_resizes",
+			"press.press.doctype.site.site.archive_suspended_sites",
 		],
 		"*/5 * * * *": [
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
@@ -463,7 +459,6 @@ override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
 
 override_doctype_class = {"User": "press.overrides.CustomUser"}
 
-on_session_creation = "press.overrides.on_session_creation"
 # on_logout = "press.overrides.on_logout"
 on_login = "press.overrides.on_login"
 

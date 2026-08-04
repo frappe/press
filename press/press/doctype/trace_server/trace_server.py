@@ -93,7 +93,7 @@ class TraceServer(BaseServer):
 					"sentry_oauth_client_secret": self.get_password("sentry_oauth_client_secret"),
 					"monitoring_password": self.get_password("monitoring_password"),
 					"private_ip": self.private_ip,
-					"certificate_private_key": certificate.private_key,
+					"certificate_private_key": certificate.get_private_key(),
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 				},

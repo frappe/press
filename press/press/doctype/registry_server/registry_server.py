@@ -91,7 +91,7 @@ class RegistryServer(BaseServer):
 			"private_ip": self.private_ip,
 			"registry_username": self.registry_username,
 			"registry_password": self.get_password("registry_password"),
-			"certificate_private_key": certificate.private_key,
+			"certificate_private_key": certificate.get_private_key(),
 			"certificate_full_chain": certificate.full_chain,
 			"is_mirror": self.is_mirror,
 			"docker_data_mountpoint": self.docker_data_mountpoint,

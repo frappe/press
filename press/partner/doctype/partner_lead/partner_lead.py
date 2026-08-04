@@ -5,6 +5,8 @@ from __future__ import annotations
 import frappe
 from frappe.model.document import Document
 
+from press.utils import get_current_team
+
 
 class PartnerLead(Document):
 	# begin: auto-generated types
@@ -156,6 +158,11 @@ class PartnerLead(Document):
 			.offset(list_args["start"])
 			.orderby(PartnerLead.modified, order=frappe.qb.desc)
 		)
+
+		# This query is built from scratch, so the scoping `press.api.client`
+		# applied to the query it handed over is gone. Reapply it.
+		if not frappe.local.system_user():
+			query = query.where(PartnerLead.partner_team == get_current_team())
 
 		if filters:
 			if filters.get("source") and filters.get("source") != "All":

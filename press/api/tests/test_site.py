@@ -743,7 +743,7 @@ erpnext 0.8.3	    HEAD
 		self.assertEqual(site.status, "Active")
 
 	def test_version_upgrade_api_upgrades_site(self):
-		from press.api.site import get_private_groups_for_upgrade, version_upgrade
+		from press.api.version_upgrade import version_upgrade
 		from press.press.doctype.site_update.site_update import process_update_site_job_update
 
 		app = create_test_app()
@@ -770,13 +770,6 @@ erpnext 0.8.3	    HEAD
 		v14_bench = create_test_bench(group=v14_group, server=server.name)
 		create_test_bench(group=v15_group, server=server.name)
 		site = create_test_site(bench=v14_bench.name)
-
-		self.assertEqual(
-			get_private_groups_for_upgrade(site.name, v14_group.version),
-			[
-				{"name": v15_group.name, "title": v15_group.title},
-			],
-		)
 
 		with fake_agent_job(
 			"Update Site Migrate",
@@ -1115,8 +1108,8 @@ class TestAPISiteDomain(FrappeTestCase):
 		self.assertTrue(frappe.db.exists("Site Domain", {"site": site.name, "domain": "example.com"}))
 
 
-class TestCheckWarrantyRestrictions(FrappeTestCase):
-	"""Tests for _check_warranty_restrictions.
+class TestValidateWarrantyChange(FrappeTestCase):
+	"""Tests for _validate_warranty_change.
 
 	Enabling support is gated only by the server quota (it consumes a slot) and is
 	allowed irrespective of the cooldown, so a site can reclaim a free slot any
@@ -1125,7 +1118,7 @@ class TestCheckWarrantyRestrictions(FrappeTestCase):
 	"""
 
 	def _check(self, *, current_supported, new_supported, quota_available=0, cooldown_active=False):
-		from press.api.site import _check_warranty_restrictions
+		from press.api.site import _validate_warranty_change
 
 		now = datetime.datetime.now()
 		next_change = now + datetime.timedelta(days=1) if cooldown_active else now
@@ -1143,7 +1136,7 @@ class TestCheckWarrantyRestrictions(FrappeTestCase):
 				return_value={"available": quota_available},
 			),
 		):
-			_check_warranty_restrictions(
+			_validate_warranty_change(
 				site="test-site.frappe.cloud",
 				server="test-server",
 				new_plan="test-plan",

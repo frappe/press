@@ -783,9 +783,18 @@ def secondary_server_plans(
 	return filter_by_roles(plans)
 
 
-def has_similar_enabled_plans(platform: str, cluster: bool) -> bool:
-	"""Check if enabled plans exist for the given platform with the same cluster"""
-	return frappe.db.exists("Server Plan", {"enabled": 1, platform: platform, "cluster": cluster})
+def has_similar_enabled_plans(server_type: str, platform: str, cluster: str) -> bool:
+	"""Check if non-legacy enabled plans exist for the given server type, platform and cluster"""
+	return frappe.db.exists(
+		"Server Plan",
+		{
+			"enabled": 1,
+			"server_type": server_type,
+			"platform": platform,
+			"cluster": cluster,
+			"legacy_plan": False,
+		},
+	)
 
 
 @frappe.whitelist()
@@ -804,12 +813,21 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 	if resource_name:
 		current_plan = frappe.db.get_value(name, resource_name, "plan")
 		if current_plan:
-			legacy_plan, cluster = frappe.db.get_value(
-				"Server Plan", current_plan, ["legacy_plan", "cluster"]
+			legacy_plan, plan_cluster, plan_platform = frappe.db.get_value(
+				"Server Plan", current_plan, ["legacy_plan", "cluster", "platform"]
 			)
 			if legacy_plan:
-				has_enabled_plans = has_similar_enabled_plans(platform, cluster)
-				filters.update({"legacy_plan": not has_enabled_plans})
+				effective_cluster = cluster or plan_cluster
+				effective_platform = platform or plan_platform
+				# Cluster is never dropped: a plan from another region can't be resized to.
+				# Only platform falls back, e.g. to offer arm64 when no x86_64 upgrade exists.
+				if effective_cluster:
+					filters.update({"cluster": effective_cluster})
+				if has_similar_enabled_plans(name, effective_platform, effective_cluster):
+					if effective_platform:
+						filters.update({"platform": effective_platform})
+				else:
+					filters.pop("platform", None)
 			else:
 				filters.update({"legacy_plan": False})
 

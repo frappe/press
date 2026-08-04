@@ -217,6 +217,13 @@
 							required
 						/>
 
+						<AlertBanner
+							v-if="customDomainWarning"
+							:type="'warning'"
+							:title="customDomainWarning"
+							:show-icon="false"
+						/>
+
 						<p
 							v-if="!$site.doc.group_public"
 							class="mt-1 text-sm text-ink-gray-6"
@@ -447,6 +454,15 @@ export default {
 			if (this.selectedMigrationMode !== 'Move Site To Different Region')
 				return [];
 			return this.selectedMigrationChoiceOptions?.available_regions ?? [];
+		},
+		customDomainWarning() {
+			if (!this.selectedMigrationChoiceOptions?.has_domain_with_a_record)
+				return '';
+			const region = this.availableRegionsToMoveSiteTo.find(
+				(e) => e.name === this.selectedRegion,
+			);
+			if (!region?.inbound_ip) return '';
+			return `This site has custom domains pointing to an A record. After the migration, update them to <strong>${region.inbound_ip}</strong>, or switch them to a CNAME record pointing to <strong>${this.site}</strong>. Until then those domains will not resolve. <a href="https://docs.frappe.io/cloud/sites/custom-domains" target="_blank" class="underline">Read more</a>`;
 		},
 		warningMessage() {
 			return {

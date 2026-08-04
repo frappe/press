@@ -1,0 +1,79 @@
+---
+title: 'New Deployment Experience and more'
+date: '2026-05-31'
+major: true
+description: Build and deployment steps now progress in real time, with retries, logs, and failed steps visible in a single screen.
+tags:
+  - deployments
+  - ui
+---
+
+### New Deploy Experience
+
+Let's start with deploys. Frappe Cloud processes over ten thousand deploys every week. Until now, tracking a single deploy meant jumping between the Deploys page and the Jobs page just to understand what was going on.
+
+With the new deploy experience, every stage is visible in a single screen. Build and deployment steps now progress in real time, so you'll never again see a build marked successful while the actual deployment is silently failing in the background.
+
+Failed steps, retries, and logs are all in one place. And for existing users, your full deploy history remains visible in the deploy history section.
+
+
+https://github.com/user-attachments/assets/1e841401-01a6-43d7-ad5d-c10bbc63bf4d
+
+
+
+### Site Plans
+
+Next, site-level support and resource settings. Plan names like Unlimited, Unlimited-supported, and Unlimited-low made it genuinely hard to know what you were signing up for. We've fixed that.
+
+You'll no longer choose a confusing site plan at creation time. Support coverage and resource allocation have moved into dedicated server and site settings, where they're easier to understand and configure. Product warranty is now a toggle directly in your site settings.
+
+
+https://github.com/user-attachments/assets/4d441e7f-d41d-4782-8684-c5bf74aefad9
+
+
+
+### Spend limits
+
+We're introducing Spend Limits. Every account is assigned a usage tier based on account activity and payment history. As your billing history grows, your account automatically becomes eligible for higher infrastructure limits. Tiers run from Tier Zero up to Tier Five, with spend limits scaling from a single trial site up to ten thousand dollars. You can view your current tier under Billing, then Tiers.
+
+
+<img width="1470" height="831" alt="limits_image" src="https://github.com/user-attachments/assets/3cc06d5f-227d-44ff-933f-da1b715e0ec1" />
+
+
+### Product warranty on Hetzner plans
+
+Hetzner servers launched in February and already have over three hundred active servers. Product warranty is now enabled on all Hetzner plans at one hundred dollars and above, covering reproducible product bugs, security vulnerabilities, and defects on standard installations, all within our SLAs.
+
+
+
+### Partner Onboarding
+
+Becoming a Frappe partner is now entirely self-serve. The partnership fee has been waived. You no longer need to speak with a sales agent, just register your company directly inside Frappe Cloud and follow the onboarding steps.
+
+Link your Frappe School certifications, track your MRR milestone, and submit for approval, all from a single guided journey inside the platform.
+
+
+
+https://github.com/user-attachments/assets/86ea3c7c-5344-4ee1-a4da-04e970ec3ce1
+
+
+
+### Marketplace App Auditor
+
+For app developers on the marketplace: no more waiting days for a manual review. We've launched an automated App Auditor that kicks off the moment you publish a new release, automatically, in the background.
+
+Every release is scanned across six areas: Each finding tells you what failed and exactly what to change. Results come back as Pass, Warn, Needs Improvement, or Fail. Depending on severity, a release may be blocked or flagged for review. Better for developers, and more secure apps for everyone on the marketplace.
+
+
+
+https://github.com/user-attachments/assets/582f8b8e-7450-49d4-a3f9-f94504abeef5
+
+
+
+### Coming soon
+
+And finally, what's ahead. The most common feedback we hear is that Frappe Cloud feels too complex. New users get lost between sites, benches, servers, public benches, and multiple site creation flows.
+
+We're working on a major simplification. The sidebar will reduce to just Sites and Servers. Benches will no longer appear as a top-level concept. Most site actions: marketplace apps, SSH access, custom apps, and updates, will live directly on the site. This is rolling out gradually over the coming months.
+
+That's the Frappe Cloud May 2026 release: seven improvements aimed at giving you more visibility, more control, and a simpler path to getting things done. Thanks for watching.

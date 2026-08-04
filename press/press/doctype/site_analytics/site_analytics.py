@@ -60,40 +60,43 @@ class SiteAnalytics(Document):
 			frappe.db.commit()
 
 
-def create_site_analytics(site, data):
-	def get_last_logins(analytics):
-		last_logins = []
-		for login in analytics.get("last_logins", []):
-			last_logins.append(
+def get_last_logins(analytics):
+	last_logins = []
+	for login in analytics.get("last_logins", []):
+		last_logins.append(
+			{
+				"user": login["user"],
+				"full_name": login["full_name"],
+				"timestamp": login["creation"],
+			}
+		)
+	return last_logins
+
+
+def get_sales_data(analytics):
+	sales_data = []
+	for row in analytics.get("activation", {}).get("sales_data", []):
+		doctype, count = next(iter(row.items()))
+		if count:
+			sales_data.append(
 				{
-					"user": login["user"],
-					"full_name": login["full_name"],
-					"timestamp": login["creation"],
+					"document_type": doctype,
+					"count": count,
 				}
 			)
-		return last_logins
+	return sales_data
 
-	def get_sales_data(analytics):
-		sales_data = []
-		for row in analytics.get("activation", {}).get("sales_data", []):
-			doctype, count = tuple(row.items())[0]
-			if count:
-				sales_data.append(
-					{
-						"document_type": doctype,
-						"count": count,
-					}
-				)
-		return sales_data
 
-	def get_last_active(analytics):
-		last_active = []
-		for user in analytics.get("users", []):
-			if user and user.get("enabled") == 1:
-				last_active.append(user)
+def get_last_active(analytics):
+	last_active = []
+	for user in analytics.get("users", []):
+		if user and user.get("enabled") == 1:
+			last_active.append(user)
 
-		return last_active
+	return last_active
 
+
+def create_site_analytics(site, data):
 	timestamp = data["timestamp"]
 	analytics = data["analytics"]
 	if not frappe.db.exists("Site Analytics", {"site": site, "timestamp": timestamp}):

@@ -38,6 +38,9 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.site.site import Site
 
+# Site Usage stores sizes in MB
+LARGE_DATABASE_SIZE_MB = 100 * 1024
+
 
 class SiteUpdate(Document):
 	# begin: auto-generated types
@@ -151,6 +154,7 @@ class SiteUpdate(Document):
 		self.validate_past_failed_updates()
 		self.set_physical_backup_mode_if_eligible()
 		self.set_logical_replication_backup_mode_if_eligible()
+		self.validate_backup_type_for_large_database()
 
 	def validate_destination_bench(self, differences):
 		if not self.destination_bench:
@@ -241,6 +245,29 @@ class SiteUpdate(Document):
 	def after_insert(self):
 		if not self.scheduled_time:
 			self.start()
+
+	@property
+	def database_size(self):
+		"""Database size in MB, as last reported by the site's server."""
+		site: "Site" = frappe.get_doc("Site", self.site)
+		return cint(site.get_disk_usages()["database"])
+
+	def validate_backup_type_for_large_database(self):
+		"""A logical backup of a huge database takes too long and often fails mid-update.
+
+		Physical and Logical Replication backups don't take a full dump, so they're fine.
+		"""
+		if self.skipped_backups or self.backup_type in ("Physical", "Logical Replication"):
+			return
+
+		if self.database_size <= LARGE_DATABASE_SIZE_MB:
+			return
+
+		frappe.throw(
+			f"Database of site {self.site} is too large to update without a physical backup. "
+			"Please <a href='/support'>contact support</a> to get this update done.",
+			frappe.ValidationError,
+		)
 
 	def set_physical_backup_mode_if_eligible(self):  # noqa: C901
 		if self.skipped_backups:
@@ -907,11 +934,8 @@ def schedule_updates_server(server):
 	# Shuffle sites list, to achieve this
 	random.shuffle(sites)
 
-	benches = {}
 	update_triggered_count = 0
 	for site in sites:
-		if site.bench in benches:
-			continue
 		if update_triggered_count > queue_size:
 			break
 		if not should_try_update(site) or frappe.db.exists(
@@ -930,7 +954,6 @@ def schedule_updates_server(server):
 			site.schedule_update()
 			update_triggered_count += 1
 			frappe.db.commit()
-			benches[site.bench] = True
 		except Exception:
 			log_error("Site Update Exception", site=site)
 			frappe.db.rollback()
@@ -1082,6 +1105,12 @@ def handle_success(job: AgentJob, site_update: OngoingUpdate):
 		SiteUpdate("Site Update", site_update.name).trigger_post_migration_stage_logical_replication_backup()
 	else:
 		frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
+
+	if job.site:
+		try:
+			frappe.get_doc("Site", job.site).sync_apps()
+		except Exception:
+			log_error("Site App Sync Failed After Site Update", job=job.as_dict())
 
 
 def handle_fatal(job: AgentJob, site_update: OngoingUpdate):

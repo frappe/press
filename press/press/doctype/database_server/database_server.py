@@ -338,6 +338,10 @@ class DatabaseServer(BaseServer):
 				self.get_mariadb_variable_value("max_connections", return_default_if_not_found=True)
 			),
 			"expire_logs_days": frappe.utils.cint(
+				self.get_mariadb_variable_value("binlog_expire_logs_seconds")
+			)
+			// (24 * 60 * 60)
+			or frappe.utils.cint(
 				self.get_mariadb_variable_value("expire_logs_days", return_default_if_not_found=True)
 			),
 		}
@@ -359,7 +363,12 @@ class DatabaseServer(BaseServer):
 				filter(lambda action: action.get("action") != "Rename server", server_actions)
 			)
 
-		server_type = "database server" if not self.is_unified_server else "database"
+		if self.is_replication_setup:
+			# A replica is managed through its primary. The dashboard offers nothing
+			# beyond rename, reboot and change plan for it.
+			return server_actions
+
+		server_type = self.server_type_for_actions
 		actions = [
 			{
 				"action": "View Database Configuration",
@@ -680,7 +689,9 @@ class DatabaseServer(BaseServer):
 		update_variables_synchronously: bool = False,  # This will run the job in same thread
 	):
 		"""Add or update MariaDB variable on the server"""
-		if not skip and not value:
+		if not skip and (
+			(value_type == "value_int" and value is None) or (value_type != "value_int" and not value)
+		):
 			frappe.throw("Please provide a value for this MariaDB variable, or mark it as skippable.")
 
 		self.flags.update_mariadb_system_variables_synchronously = update_variables_synchronously
@@ -750,6 +761,8 @@ class DatabaseServer(BaseServer):
 					return 200
 				case "expire_logs_days":
 					return 14
+				case "binlog_expire_logs_seconds":
+					return 14 * 24 * 60 * 60
 		return None
 
 	@dashboard_whitelist()
@@ -777,7 +790,14 @@ class DatabaseServer(BaseServer):
 		self.binlog_retention_days = days
 		# From MariaDB 10.6.1, expire_logs_days is alias of binlog_expire_logs_seconds
 		# https://mariadb.com/docs/server/ha-and-performance/standard-replication/replication-and-binary-log-system-variables#expire_logs_days
-		self.add_or_update_mariadb_variable("expire_logs_days", "value_str", str(days), save=True)
+		# Remove expire_logs_days from child table
+		if expire_logs_days := find(
+			self.mariadb_system_variables, lambda x: x.mariadb_variable == "expire_logs_days"
+		):
+			self.remove(expire_logs_days)
+		self.add_or_update_mariadb_variable(
+			"binlog_expire_logs_seconds", "value_str", str(days * 24 * 60 * 60), save=True
+		)
 
 	@dashboard_whitelist()
 	def update_binlog_size_limit(self, enabled: bool, percent_of_disk_size: int):
@@ -850,7 +870,7 @@ class DatabaseServer(BaseServer):
 					"allocator": self.memory_allocator.lower(),
 					"db_port": self.db_port or 3306,
 					"mariadb_root_password": config.mariadb_root_password,
-					"certificate_private_key": config.certificate.private_key,
+					"certificate_private_key": config.certificate.get_private_key(),
 					"certificate_full_chain": config.certificate.full_chain,
 					"certificate_intermediate_chain": config.certificate.intermediate_chain,
 					"mariadb_depends_on_mounts": self.mariadb_depends_on_mounts,
@@ -915,6 +935,15 @@ class DatabaseServer(BaseServer):
 	@frappe.whitelist()
 	def setup_essentials(self):
 		"""Setup missing essentials after server setup"""
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_setup_essentials",
+			queue="long",
+			timeout=1200,
+		)
+
+	def _setup_essentials(self):
 		config = self._get_config()
 
 		try:
@@ -933,7 +962,7 @@ class DatabaseServer(BaseServer):
 					"kibana_password": config.kibana_password,
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
-					"certificate_private_key": config.certificate.private_key,
+					"certificate_private_key": config.certificate.get_private_key(),
 					"certificate_full_chain": config.certificate.full_chain,
 					"certificate_intermediate_chain": config.certificate.intermediate_chain,
 				},
@@ -1578,7 +1607,7 @@ class DatabaseServer(BaseServer):
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
 					"mariadb_root_password": mariadb_root_password,
-					"certificate_private_key": certificate.private_key,
+					"certificate_private_key": certificate.get_private_key(),
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 				},
@@ -2730,7 +2759,7 @@ def process_add_binlogs_to_indexer_agent_job_update(job: AgentJob):
 	if job.status != "Success":
 		return
 
-	json_data = json.loads(job.data)
+	json_data = json.loads(job.data or "{}")
 	indexed_binlogs = json_data.get("indexed_binlogs", [])
 	frappe.db.set_value(
 		"MariaDB Binlog",
@@ -2766,7 +2795,7 @@ def process_remove_binlogs_from_indexer_agent_job_update(job: AgentJob):
 	if job.status != "Success":
 		return
 
-	json_data = json.loads(job.data)
+	json_data = json.loads(job.data or "{}")
 	binlogs_in_disk = json_data.get("unindexed_binlogs", [])
 	frappe.db.set_value(
 		"MariaDB Binlog",

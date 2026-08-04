@@ -385,3 +385,47 @@ class TestSiteUpdate(FrappeTestCase):
 
 		self.assertEqual(frappe.get_value("Site Update", site_update_name, "status"), "Cancelled")
 		self.assertTrue(frappe.db.exists("Press Notification", {"type": "Site Update", "team": site.team}))
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_site_update_is_blocked_on_site_with_database_larger_than_100_gb(self):
+		group = create_test_release_group([create_test_app()])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+
+		site = create_test_site(bench=bench1.name)
+		# Site Usage sizes are in MB
+		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"too large to update without a physical backup",
+			site.schedule_update,
+		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_site_update_is_allowed_on_site_with_database_smaller_than_100_gb(self):
+		group = create_test_release_group([create_test_app()])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+
+		site = create_test_site(bench=bench1.name)
+		frappe.get_doc(doctype="Site Usage", site=site.name, database=99 * 1024).insert()
+
+		self.assertTrue(site.schedule_update())
+
+	def test_site_update_with_logical_replication_backup_is_allowed_on_large_site(self):
+		"""Logical Replication doesn't take a full dump, so the size limit shouldn't apply."""
+		site = create_test_site()
+		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
+
+		site_update = frappe.new_doc("Site Update", site=site.name, backup_type="Logical Replication")
+		site_update.validate_backup_type_for_large_database()  # shouldn't raise
+
+		site_update.backup_type = "Logical"
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"too large to update without a physical backup",
+			site_update.validate_backup_type_for_large_database,
+		)

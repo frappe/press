@@ -24,6 +24,7 @@ from press.access.actions import ReleaseGroupActions
 from press.access.decorators import action_guard
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.api.github import get_frappe_branch_major_version
 from press.exceptions import ImageNotFoundInRegistry, InsufficientSpaceOnServer, VolumeResizeLimitError
 from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -258,7 +259,6 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_title()
 		self.validate_frappe_app()
 		self.validate_duplicate_app()
-		self.validate_app_versions()
 		self.validate_servers()
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
@@ -681,21 +681,20 @@ class ReleaseGroup(Document, TagHelpers):
 				frappe.throw(f"App {app.app} can be added only once", frappe.ValidationError)
 			apps.add(app_name)
 
-	def validate_app_versions(self):
-		# App Source should be compatible with Release Group's version
-		with suppress(AttributeError, RuntimeError):
-			if (
-				not frappe.flags.in_test
-				and frappe.request.path == "/api/method/press.api.bench.change_branch"
-			):
-				return  # Separate validation exists in set_app_source
-		for app in self.apps:
-			self.validate_app_version(app)
+	def validate_app_version(self, source: str):
+		"""App Source must be compatible with the release group's bench version.
 
-	def validate_app_version(self, app: "ReleaseGroupApp"):
-		source = frappe.get_doc("App Source", app.source)
-		if all(row.version != self.version for row in source.versions):
-			branch, repo = frappe.db.get_values("App Source", app.source, ("branch", "repository"))[0]
+		Checked on deploy (and on an explicit branch change), not on every save:
+		blocking saves meant two incompatible apps deadlocked editing, since the
+		UI changes one app at a time and could never fix or remove either.
+
+		Only the group's own sources are checked. Apps not being updated carry
+		their source over from the last deployed bench, which can be a source
+		the group has since moved off — blocking on that leaves no way out.
+		"""
+		app_source = frappe.get_doc("App Source", source)
+		if all(row.version != self.version for row in app_source.versions):
+			branch, repo = frappe.db.get_values("App Source", source, ("branch", "repository"))[0]
 			msg = f"{repo.rsplit('/')[-1] or repo.rsplit('/')[-2]}:{branch} branch is no longer compatible with bench of {self.version}"
 			frappe.throw(msg, frappe.ValidationError)
 
@@ -923,6 +922,8 @@ class ReleaseGroup(Document, TagHelpers):
 			self.check_auto_scales()
 
 		apps = self.get_apps_to_update(apps_to_update)
+		for app in self.apps:
+			self.validate_app_version(app.source)
 		if apps_to_update is None:
 			self.validate_dc_apps_against_rg(apps)
 
@@ -1718,13 +1719,34 @@ class ReleaseGroup(Document, TagHelpers):
 			required_app_source.github_installation_id = current_app_source.github_installation_id
 			required_app_source.save()
 
+		if app == "frappe":
+			# Framework is a special case we must just compare the major versions
+			self._validate_frappe_branch_matches_bench_version(current_app_source, to_branch)
 		# Skip public sources, and sources owned by other teams — the same repository
 		# and branch can have a separate App Source per team, and neither should be
 		# mutated on behalf of a different team's branch change.
-		if not required_app_source.public and required_app_source.team == get_current_team():
+		elif not required_app_source.public and required_app_source.team == get_current_team():
 			frappe.get_doc("App Source", required_app_source.name).sync_versions()
 
 		self.set_app_source(app, required_app_source.name)
+
+	def _validate_frappe_branch_matches_bench_version(
+		self, current_app_source: AppSource, to_branch: str
+	) -> None:
+		target_major_version = get_frappe_branch_major_version(
+			current_app_source.repository_owner,
+			current_app_source.repository,
+			to_branch,
+			current_app_source.github_installation_id,
+		)
+		bench_major_version = frappe.get_cached_value("Frappe Version", self.version, "number")
+		if bench_major_version is None:
+			frappe.throw(f"Could not determine major version for bench version {self.version!r}.")
+		if target_major_version != bench_major_version:
+			frappe.throw(
+				f"Branch {to_branch} is Frappe version {target_major_version}, which doesn't "
+				f"match this bench's version {self.version}."
+			)
 
 	def get_app_source(self, app: str) -> AppSource:
 		source = frappe.get_all(
@@ -1747,7 +1769,7 @@ class ReleaseGroup(Document, TagHelpers):
 				app.source = source
 				app.save()
 				break
-		self.validate_app_version(app)
+		self.validate_app_version(source)
 		self.save()
 
 	def get_marketplace_app_sources(self) -> list[str]:
