@@ -50,6 +50,9 @@ class CreateServerJob(PressJob):
 		if self.is_fs_server:
 			self.share_benches_over_nfs()
 
+		# Last, because it reboots the server
+		self.set_docker_mtu_hetzner()
+
 	@property
 	def is_setup_db_replication(self):
 		return self.server_type == "Database Server" and self.arguments_dict.get(
@@ -237,6 +240,15 @@ class CreateServerJob(PressJob):
 			server.setup_docker(now=True)
 		elif server.doctype == "Database Server":
 			server.set_mariadb_mount_dependency(now=True)
+
+	@task(queue="long", timeout=1200)
+	def set_docker_mtu_hetzner(self):
+		# The image ships docker on MTU 1500, which breaks traffic over Hetzner's 1450 private network
+		server = self.server_doc
+		if server.provider != "Hetzner" or server.doctype != "Server":
+			return
+
+		server._set_docker_mtu(throw_on_failure=True)
 
 	@task
 	def update_tls_certificate(self):
