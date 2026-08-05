@@ -1609,6 +1609,19 @@ class Site(Document, TagHelpers):
 
 		return job
 
+	@property
+	def has_domain_with_a_record(self) -> bool:
+		return bool(
+			frappe.db.exists("Site Domain", {"site": self.name, "dns_type": "A", "domain": ("!=", self.name)})
+		)
+
+	def inbound_ip_in_cluster(self, cluster: str) -> str | None:
+		"""IP the site's custom domains must point to once it moves to this cluster"""
+		server = frappe.db.get_value(
+			"Bench", {"group": self.group, "cluster": cluster, "status": "Active"}, "server"
+		)
+		return get_inbound_ip(server) if server else None
+
 	def change_region(
 		self, cluster: str, scheduled_time: str | None = None, skip_failing_patches: bool = False
 	):
@@ -2809,7 +2822,7 @@ class Site(Document, TagHelpers):
 
 	# TODO: rename to change_plan and remove the need for ignore_card_setup param
 	@dashboard_whitelist()
-	def set_plan(self, plan: None | str = None):
+	def set_plan(self, plan: str | None = None):
 		from press.api.site import validate_plan
 
 		validate_plan(self.server, self.name, plan)
@@ -3426,17 +3439,7 @@ class Site(Document, TagHelpers):
 
 	@property
 	def inbound_ip(self):
-		server = frappe.db.get_value(
-			"Server",
-			self.server,
-			["ip", "is_standalone", "proxy_server", "team"],
-			as_dict=True,
-		)
-		if server.is_standalone:
-			ip = server.ip
-		else:
-			ip = frappe.db.get_value("Proxy Server", server.proxy_server, "ip")
-		return ip
+		return get_inbound_ip(self.server)
 
 	@property
 	def current_usage(self):
@@ -4349,6 +4352,9 @@ class Site(Document, TagHelpers):
 		group_regions = frappe.get_all(
 			"Cluster", filters={"name": ("in", cluster_names)}, fields=["name", "title", "image"]
 		)
+		regions_to_move_to = [region for region in group_regions if region.name != self.cluster]
+		for region in regions_to_move_to:
+			region.inbound_ip = self.inbound_ip_in_cluster(region.name)
 
 		return {
 			"In-Place Migrate Site": {
@@ -4373,7 +4379,8 @@ class Site(Document, TagHelpers):
 				"allow_scheduling": True,
 				"button_label": "Move Site",
 				"options": {
-					"available_regions": [region for region in group_regions if region.name != self.cluster],
+					"available_regions": regions_to_move_to,
+					"has_domain_with_a_record": self.has_domain_with_a_record,
 				},
 			},
 		}
@@ -4430,6 +4437,14 @@ class Site(Document, TagHelpers):
 		if not d:
 			return None
 		return str(timedelta(seconds=round(d.total_seconds() * 2)))
+
+
+def get_inbound_ip(server: str) -> str | None:
+	"""IP that custom domain A records for sites on this server must point to"""
+	values = frappe.db.get_value("Server", server, ["ip", "is_standalone", "proxy_server"], as_dict=True)
+	if values.is_standalone:
+		return values.ip
+	return frappe.db.get_value("Proxy Server", values.proxy_server, "ip")
 
 
 def check_allowed_actions(creation_failed, function_name, action_name_refined):

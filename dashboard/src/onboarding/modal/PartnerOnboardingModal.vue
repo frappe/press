@@ -161,7 +161,7 @@ const onContinue = () => {
 								form="registration-form"
 								:loading="onboarding.saving.value"
 							>
-								Register as a partner
+								Proceed
 							</Button>
 						</div>
 					</div>
