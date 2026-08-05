@@ -86,9 +86,20 @@ test('login as admin dialog submits on ctrl+enter from the reason field', async 
 		},
 	)
 
+	await reason.pressSequentially('12345')
 	await reason.press('Control+Enter')
 
 	const body = (await loginRequest).postDataJSON()
 	expect(body.method).toBe('login_as_admin')
-	expect(body.args.reason).toBe('Investigating ')
+	expect(body.args.reason).toBe('Investigating 12345')
+})
+
+test('login as admin dialog rejects the untouched default as a reason', async ({
+	page,
+}) => {
+	const reason = await openLoginAsAdminDialog(page)
+
+	await reason.press('Control+Enter')
+
+	await expect(page.getByText('Reason is required.')).toBeVisible()
 })
