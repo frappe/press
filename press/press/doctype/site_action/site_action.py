@@ -657,6 +657,10 @@ class SiteAction(Document):
 
 	@frappe.whitelist()
 	def execute(self):
+		if not frappe.db.exists("Site", self.site):
+			self.fail_because_site_is_gone()
+			return
+
 		if (
 			self.status == "Scheduled"
 			and self.scheduled_time_formatted
@@ -710,6 +714,21 @@ class SiteAction(Document):
 			return
 
 		self.next()
+
+	def fail_because_site_is_gone(self) -> None:
+		"""Fail an action whose site has been deleted under it.
+
+		The dangling link makes every `save()` throw link validation, so the action
+		can't record its own failure and `process_site_actions` picks it up again
+		every 30 seconds. `ignore_links` is the way out of that loop.
+		"""
+		step = self.current_running_step or self.next_step
+		if step:
+			step.status = "Failure"
+			step.error_message = f"Site {self.site} no longer exists, so the action can't continue."
+
+		self.flags.ignore_links = True
+		self.fail()
 
 	def fail(self, save: bool = True) -> None:
 		self.status = "Failure"

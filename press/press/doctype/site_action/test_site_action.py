@@ -382,3 +382,21 @@ class TestSiteAction(FrappeTestCase):
 
 		with self.assertRaises(frappe.ValidationError):
 			action.cancel_action()
+
+	def test_action_fails_instead_of_retrying_forever_when_site_is_gone(self):
+		"""An action whose site no longer exists can't be saved, it must stop being retried"""
+		source_bench: Bench = create_test_bench(public_server=True)
+		source_site: Site = create_test_site(bench=source_bench.name)
+
+		action_name = source_site.create_migration_plan(
+			type="Move Site To Different Server / Bench",
+			new_group_name="Test Group",
+		)
+		frappe.db.set_value("Site Action", action_name, "status", "Running")
+		frappe.db.set_value("Site Action", action_name, "site", "deleted.frappe.cloud")
+
+		process_site_actions()
+
+		action: SiteAction = frappe.get_doc("Site Action", action_name)
+		self.assertEqual(action.status, "Failure")
+		self.assertIn("deleted.frappe.cloud no longer exists", action.steps[0].error_message)
