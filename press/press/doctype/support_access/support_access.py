@@ -163,6 +163,8 @@ class SupportAccess(Document):
 		Returns the possible target statuses for the current user.
 		"""
 		current_team = get_current_team()
+		if self.flags.ignore_permissions:
+			return ["Pending", "Accepted", "Rejected", "Forfeited", "Revoked"]
 		if self.target_team == current_team:
 			return ["Accepted", "Rejected", "Revoked"]
 		if self.requested_team == current_team:
