@@ -16,11 +16,6 @@ from frappe.utils.data import add_to_date
 from frappe.utils.synchronization import filelock
 
 from press.exceptions import AlertRuleNotEnabled
-from press.press.doctype.dashboard_banner.dashboard_banner import (
-	DISK_FULL_ALERT,
-	app_servers_of,
-	set_disk_full_banner,
-)
 from press.press.doctype.incident.incident import (
 	INCIDENT_ALERT,
 	INCIDENT_SCOPE,
@@ -35,6 +30,11 @@ if TYPE_CHECKING:
 	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
 		PrometheusAlertRule,
 	)
+
+DISK_FULL_ALERT = "Disk Full"
+# Alertmanager re-sends a firing alert every repeat interval (1h for this rule), so an
+# alert we haven't heard about in this long has either resolved or stopped being reported.
+DISK_FULL_ALERT_WINDOW_HOURS = 6
 
 TELEGRAM_NOTIFICATION_TEMPLATE = """
 *{{ status }}* - *{{ severity }}*: {{ rule.name }} on {{ combined_alerts }} instances
@@ -113,8 +113,6 @@ class AlertmanagerWebhookLog(Document):
 		return self.parsed_group_labels.get(INCIDENT_SCOPE)
 
 	def after_insert(self):
-		if self.alert == DISK_FULL_ALERT:
-			self.update_disk_full_banner()
 		if self.alert == INCIDENT_ALERT:
 			enqueue_doc(
 				self.doctype,
@@ -143,10 +141,6 @@ class AlertmanagerWebhookLog(Document):
 				deduplicate=True,
 			)
 
-	def update_disk_full_banner(self):
-		instances = self.get_instances_from_alerts_payload(self.payload)
-		set_disk_full_banner(app_servers_of(instances), self.status == "Firing")
-
 	def react_for_instance(self, instance) -> dict:
 		instance_type = self.guess_doctype(instance)
 		if not instance_type:
@@ -160,17 +154,11 @@ class AlertmanagerWebhookLog(Document):
 		return {}
 
 	def react(self):
-		for instance in self.get_instances_from_alerts_payload(self.payload):
+		for instance in instances_in_payload(self.payload):
 			reaction_job = self.react_for_instance(instance)
 			if reaction_job:
 				self.append("reaction_jobs", reaction_job)
 		self.save()
-
-	def get_instances_from_alerts_payload(self, payload: str) -> set[str]:
-		instances = []
-		payload = json.loads(payload)
-		instances.extend([alert["labels"]["instance"] for alert in payload["alerts"]])  # sites
-		return set(instances)
 
 	def get_labels_for_instance(self, instance: str) -> dict:
 		# Find first alert that matches the instance
@@ -200,7 +188,7 @@ class AlertmanagerWebhookLog(Document):
 
 		instances = []
 		for alert in past_alerts:
-			instances.extend(self.get_instances_from_alerts_payload(alert["payload"]))
+			instances.extend(instances_in_payload(alert["payload"]))
 		return set(instances)
 
 	@property
@@ -340,3 +328,49 @@ class AlertmanagerWebhookLog(Document):
 				frappe.db.commit()  # commit inside filelock to avoid deadlock when inserting in gap
 		except Exception:
 			log_error("Incident creation failed")
+
+
+def instances_in_payload(payload: str) -> set[str]:
+	return {alert["labels"]["instance"] for alert in json.loads(payload)["alerts"]}
+
+
+def disk_full_servers() -> set[str]:
+	"""App servers whose disk is currently full, as of the alerts we've been sent.
+
+	Derived from the webhook log on every read instead of kept as state, so a
+	dropped resolved alert can't leave a server marked full forever.
+	"""
+	logs = frappe.get_all(
+		"Alertmanager Webhook Log",
+		filters={
+			"alert": DISK_FULL_ALERT,
+			"creation": (">", add_to_date(frappe.utils.now(), hours=-DISK_FULL_ALERT_WINDOW_HOURS)),
+		},
+		fields=["status", "payload"],
+		order_by="creation asc",
+	)
+
+	instances = set()
+	for log in logs:
+		alerted = instances_in_payload(log.payload)
+		instances = instances | alerted if log.status == "Firing" else instances - alerted
+	return app_servers_of(instances)
+
+
+def app_servers_of(instances: set[str]) -> set[str]:
+	"""Sites live on app servers, so map database servers to the servers they serve.
+
+	A unified server is its own database server, so both matches are made in one
+	query to return it only once.
+	"""
+	if not instances:
+		return set()
+
+	instances = list(instances)
+	return set(
+		frappe.get_all(
+			"Server",
+			or_filters={"name": ("in", instances), "database_server": ("in", instances)},
+			pluck="name",
+		)
+	)

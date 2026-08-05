@@ -1,6 +1,6 @@
 import frappe
 
-from press.press.doctype.dashboard_banner.dashboard_banner import DISK_FULL_ALERT
+from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import DISK_FULL_ALERT
 from press.press.doctype.server.server import BENCH_DATA_MNT_POINT, MARIADB_DATA_MNT_POINT
 
 MOUNTPOINTS = f"/|{BENCH_DATA_MNT_POINT}|{MARIADB_DATA_MNT_POINT}"

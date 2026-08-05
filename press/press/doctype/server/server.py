@@ -172,6 +172,7 @@ class BaseServer(Document, TagHelpers):
 	def get_doc(self, doc):  # noqa: C901
 		from press.api.client import get
 		from press.api.server import usage
+		from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import disk_full_servers
 
 		warn_at_storage_percentage = 0.8
 
@@ -215,6 +216,7 @@ class BaseServer(Document, TagHelpers):
 		)
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
+		doc.is_server_disk_full = self.name in disk_full_servers()
 
 		if not self.is_self_hosted:
 			doc.disk_size = self.get_data_disk_size()
