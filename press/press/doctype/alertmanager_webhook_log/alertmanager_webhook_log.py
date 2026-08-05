@@ -16,6 +16,11 @@ from frappe.utils.data import add_to_date
 from frappe.utils.synchronization import filelock
 
 from press.exceptions import AlertRuleNotEnabled
+from press.press.doctype.dashboard_banner.dashboard_banner import (
+	DISK_FULL_ALERT,
+	app_servers_of,
+	set_disk_full_banner,
+)
 from press.press.doctype.incident.incident import (
 	INCIDENT_ALERT,
 	INCIDENT_SCOPE,
@@ -108,6 +113,8 @@ class AlertmanagerWebhookLog(Document):
 		return self.parsed_group_labels.get(INCIDENT_SCOPE)
 
 	def after_insert(self):
+		if self.alert == DISK_FULL_ALERT:
+			self.update_disk_full_banner()
 		if self.alert == INCIDENT_ALERT:
 			enqueue_doc(
 				self.doctype,
@@ -135,6 +142,10 @@ class AlertmanagerWebhookLog(Document):
 				job_id=f"react:{self.alert}:{self.server}",
 				deduplicate=True,
 			)
+
+	def update_disk_full_banner(self):
+		instances = self.get_instances_from_alerts_payload(self.payload)
+		set_disk_full_banner(app_servers_of(instances), self.status == "Firing")
 
 	def react_for_instance(self, instance) -> dict:
 		instance_type = self.guess_doctype(instance)
