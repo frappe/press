@@ -375,8 +375,8 @@ function payUnpaidInvoices() {
 
 const showMessage = ref(false);
 function updatePaymentMode(mode) {
-	if (hasUnbilledAmountOnCurrentMode(mode)) {
-		confirmDraftInvoiceMovesToNewMode(mode);
+	if (hasUnsettledInvoices(mode)) {
+		confirmSwitchWithUnsettledInvoices(mode);
 		return;
 	}
 	proceedWithPaymentModeChange(mode);
@@ -428,30 +428,62 @@ function submitPaymentModeChange(mode) {
 	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
 }
 
-// The draft invoice for the running period is reassigned to whichever mode the
-// team ends up on (Team.update_draft_invoice_payment_mode), so usage already
-// accrued on the old mode gets billed through the new one.
-//
+const draftInvoiceAmount = computed(
+	() => Number(currentBillingAmount.value) || 0,
+);
+
+const unpaidInvoiceAmount = computed(() =>
+	(unpaidInvoices.data || []).reduce(
+		(total, invoice) => total + Number(invoice.amount_due || 0),
+		0,
+	),
+);
+
 // Paid By Partner is left out because the server rejects it outright while the
 // team has draft or unpaid invoices (Team.validate_billing_team), so there is
-// nothing to confirm — that mode has to finalize them first.
-function hasUnbilledAmountOnCurrentMode(mode) {
+// nothing to confirm — that mode has to finalize them first, which
+// proceedWithPaymentModeChange already routes it to.
+function hasUnsettledInvoices(mode) {
 	return (
 		mode !== 'Paid By Partner' &&
 		Boolean(team.doc.payment_mode) &&
 		mode !== team.doc.payment_mode &&
-		Number(currentBillingAmount.value) > 0
+		(draftInvoiceAmount.value > 0 || unpaidInvoiceAmount.value > 0)
 	);
 }
 
-function confirmDraftInvoiceMovesToNewMode(mode) {
+function formatAmount(amount) {
+	return `${currency.value} ${amount.toFixed(2)}`;
+}
+
+function unsettledInvoiceLines() {
+	const lines = [];
+	if (draftInvoiceAmount.value > 0) {
+		lines.push(
+			`<li>Draft invoice for this period — <strong>${formatAmount(draftInvoiceAmount.value)}</strong></li>`,
+		);
+	}
+	if (unpaidInvoiceAmount.value > 0) {
+		const count = unpaidInvoices.data.length;
+		lines.push(
+			`<li>${count} unpaid ${count === 1 ? 'invoice' : 'invoices'} — <strong>${formatAmount(unpaidInvoiceAmount.value)}</strong></li>`,
+		);
+	}
+	return lines.join('');
+}
+
+// The draft invoice for the running period is reassigned to whichever mode the
+// team ends up on (Team.update_draft_invoice_payment_mode), so usage already
+// accrued on the old mode gets billed through the new one. Unpaid invoices are
+// submitted and keep the old mode, so they stop lining up with how the
+// dashboard offers to pay them.
+function confirmSwitchWithUnsettledInvoices(mode) {
 	const currentMode = paymentModeLabel(team.doc.payment_mode);
 	const newMode = paymentModeLabel(mode);
-	const amount = `${currency.value} ${Number(currentBillingAmount.value).toFixed(2)}`;
 
 	confirmDialog({
-		title: 'Unbilled amount for this period',
-		message: `This period's invoice of <strong>${amount}</strong> is still a draft. Switching will bill it through <strong>${newMode}</strong>, including the usage you have already accrued on ${currentMode}.<br><br>To have it billed to ${currentMode} instead, settle the draft invoice from the invoices page before switching.`,
+		title: 'Settle pending invoices first',
+		message: `You still have amounts outstanding on ${currentMode}:<br><ul class="list-disc pl-4 my-2">${unsettledInvoiceLines()}</ul>Switching bills the draft invoice through <strong>${newMode}</strong>, including the usage already accrued on ${currentMode}, and leaves the unpaid invoices behind on ${currentMode}.<br><br>Clear them from the invoices page before switching.`,
 		primaryAction: {
 			label: 'Switch anyway',
 			variant: 'solid',
