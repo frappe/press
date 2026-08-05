@@ -62,7 +62,9 @@ export type PartnerOnboardingDoc = {
 	agreed_to_partnership_agreement?: boolean | 0 | 1
 	reviewed_on?: string
 	reviewed_by?: string
+	approved_on?: string
 	reviewer_comments?: string
+	company_logo?: string
 }
 
 export function getPartnerMRRCurrency(country?: string) {
@@ -128,6 +130,7 @@ const form = reactive<PartnerOnboardingDoc>({
 	existing_partnerships: '',
 	erp_implementations_range: '',
 	incorporation_certificate: '',
+	company_logo: '',
 	agreed_to_due_diligence: false,
 	agreed_to_partnership_agreement: false,
 })
@@ -177,6 +180,7 @@ function applyDoc(nextDoc: PartnerOnboardingDoc | null, team?: TeamResource) {
 		existing_partnerships: nextDoc?.existing_partnerships || '',
 		erp_implementations_range: nextDoc?.erp_implementations_range || '',
 		incorporation_certificate: nextDoc?.incorporation_certificate || '',
+		company_logo: nextDoc?.company_logo || teamDoc.company_logo || '',
 		agreed_to_due_diligence: Boolean(nextDoc?.agreed_to_due_diligence),
 		agreed_to_partnership_agreement: Boolean(
 			nextDoc?.agreed_to_partnership_agreement,
@@ -306,6 +310,7 @@ export function usePartnerOnboarding(team?: TeamResource) {
 				form.address &&
 				form.headquarter_city &&
 				form.incorporation_certificate &&
+				form.company_logo &&
 				form.agreed_to_due_diligence &&
 				form.agreed_to_partnership_agreement,
 		),

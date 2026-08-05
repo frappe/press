@@ -687,6 +687,10 @@ class ReleaseGroup(Document, TagHelpers):
 		Checked on deploy (and on an explicit branch change), not on every save:
 		blocking saves meant two incompatible apps deadlocked editing, since the
 		UI changes one app at a time and could never fix or remove either.
+
+		Only the group's own sources are checked. Apps not being updated carry
+		their source over from the last deployed bench, which can be a source
+		the group has since moved off — blocking on that leaves no way out.
 		"""
 		app_source = frappe.get_doc("App Source", source)
 		if all(row.version != self.version for row in app_source.versions):
@@ -918,8 +922,8 @@ class ReleaseGroup(Document, TagHelpers):
 			self.check_auto_scales()
 
 		apps = self.get_apps_to_update(apps_to_update)
-		for app in apps:
-			self.validate_app_version(app["source"])
+		for app in self.apps:
+			self.validate_app_version(app.source)
 		if apps_to_update is None:
 			self.validate_dc_apps_against_rg(apps)
 

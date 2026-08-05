@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
+from frappe.query_builder.functions import Sum
 
 from press.overrides import get_permission_query_conditions_for_doctype
 
@@ -54,14 +55,16 @@ class BalanceTransaction(Document):
 			# don't update ending balance or unallocated amount for partnership fee
 			return
 
-		last_balance = frappe.db.get_all(
-			"Balance Transaction",
-			filters={"team": self.team, "docstatus": 1, "type": ("!=", "Partnership Fee")},
-			fields=["sum(amount) as ending_balance"],
-			group_by="team",
-			pluck="ending_balance",
-		)
-		last_balance = last_balance[0] if last_balance else 0
+		BalanceTransaction = frappe.qb.DocType("Balance Transaction")
+		balances = (
+			frappe.qb.from_(BalanceTransaction)
+			.select(Sum(BalanceTransaction.amount))
+			.where(BalanceTransaction.team == self.team)
+			.where(BalanceTransaction.docstatus == 1)
+			.where(BalanceTransaction.type != "Partnership Fee")
+			.groupby(BalanceTransaction.team)
+		).run(pluck=True)
+		last_balance = balances[0] if balances else 0
 		if last_balance:
 			self.ending_balance = (last_balance or 0) + self.amount
 		else:

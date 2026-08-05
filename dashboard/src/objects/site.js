@@ -19,6 +19,9 @@ import { getToastErrorMessage } from '../utils/toast'
 import { getUpsellBanner } from './common'
 import { getAppsTab } from './common/apps'
 
+// prefilled so only the ticket id has to be typed; on its own it is not a reason
+const LOGIN_REASON_PREFIX = 'Investigating '
+
 export default {
 	doctype: 'Site',
 	whitelistedMethods: {
@@ -841,7 +844,7 @@ export default {
 					},
 					primaryAction({ listResource: backups, documentResource: site }) {
 						return {
-							label: 'Schedule Backup',
+							label: 'Take Backup',
 							slots: {
 								prefix: icon('upload-cloud'),
 							},
@@ -1709,12 +1712,14 @@ export default {
 														label: 'Reason',
 														type: 'textarea',
 														fieldname: 'reason',
+														default: LOGIN_REASON_PREFIX,
 													},
 												]
 											: [],
 									onSuccess: ({ hide, values }) => {
+										const reason = values.reason?.trim()
 										if (
-											!values.reason &&
+											(!reason || reason === LOGIN_REASON_PREFIX.trim()) &&
 											($team.name !== site.doc.team || $team.doc.is_desk_user)
 										) {
 											throw new Error(

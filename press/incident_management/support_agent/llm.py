@@ -35,7 +35,25 @@ def _anonymise(payload: dict[str, Any]) -> dict[str, Any]:
 	if isinstance(p.get("bench"), dict):
 		for field in _BENCH_IDENTITY_FIELDS:
 			p["bench"].pop(field, None)
+	_anonymise_database_processes(p.get("database_processes"))
+	_anonymise_tenant_share(p.get("database_slow_query_share"))
+	_anonymise_tenant_share(p.get("app_server_request_share"))
 	return p
+
+
+def _anonymise_tenant_share(share: Any) -> None:
+	"""The busiest tenant on the database server is named only if it is this site."""
+	if isinstance(share, dict) and not share.get("busiest_site_is_target"):
+		share["busiest_site"] = None
+
+
+def _anonymise_database_processes(database_processes: Any) -> None:
+	"""Processlist rows name the site behind each connection; other tenants stay unnamed."""
+	if not isinstance(database_processes, dict):
+		return
+	for process in database_processes.get("processes") or []:
+		if not process.get("is_target_site"):
+			process["site"] = None
 
 
 def _build_prompt(payload: dict[str, Any], report: dict[str, Any]) -> str:
@@ -61,6 +79,10 @@ Review the payload and findings. Respond with:
 1. Whether you agree with the likely cause, or a refined diagnosis if you see something different.
 2. Any additional signals the deterministic analysis may have missed.
 3. Your recommended next steps for the support agent.
+
+Failing agent jobs are almost always a symptom, not the cause — a job fails because the bench
+is down, the disk is full, or a deploy went bad. Use them to narrow down when and where to look,
+but do not present them as the diagnosis.
 
 Be concise and actionable. Cite only evidence present in the payload. Do not invent information."""
 
