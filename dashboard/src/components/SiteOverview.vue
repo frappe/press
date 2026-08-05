@@ -20,7 +20,7 @@
 			v-if="$site?.doc?.status === 'Suspended' && $site?.doc?.suspension_reason"
 			class="col-span-1 lg:col-span-2"
 			type="error"
-			:title="`Suspension Reason : ${$site?.doc?.suspension_reason || 'Not Specified'}`"
+			:title="`Suspension Reason: ${$site?.doc?.suspension_reason || 'Not Specified'}`"
 		>
 			<Button
 				class="ml-auto min-w-[7rem]"
