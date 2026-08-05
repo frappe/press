@@ -1709,6 +1709,7 @@ export default {
 														label: 'Reason',
 														type: 'textarea',
 														fieldname: 'reason',
+														default: 'Investigating ',
 													},
 												]
 											: [],
