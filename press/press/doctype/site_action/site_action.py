@@ -526,6 +526,9 @@ class SiteAction(Document):
 				f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists, retry once it is completed"
 			)
 
+		# Catches a scheduled Site Update too, which the check above doesn't cover
+		self.site_doc.check_move_scheduled()
+
 		# If any key is blank string or None, remove it from arguments
 		args = self.arguments_dict
 		cleaned_args = {k: v for k, v in args.items() if v not in ("", None)}
@@ -657,8 +660,8 @@ class SiteAction(Document):
 
 	@frappe.whitelist()
 	def execute(self):
-		if not frappe.db.exists("Site", self.site):
-			self.fail_because_site_is_gone()
+		if frappe.db.get_value("Site", self.site, "status") in (None, "Archived"):
+			self.fail_because_site_is_dropped()
 			return
 
 		if (
@@ -715,17 +718,18 @@ class SiteAction(Document):
 
 		self.next()
 
-	def fail_because_site_is_gone(self) -> None:
-		"""Fail an action whose site has been deleted under it.
+	def fail_because_site_is_dropped(self) -> None:
+		"""Fail an action whose site was dropped under it.
 
-		The dangling link makes every `save()` throw link validation, so the action
-		can't record its own failure and `process_site_actions` picks it up again
-		every 30 seconds. `ignore_links` is the way out of that loop.
+		Dropping renames the site to `<name>.archived`, and an in-flight step that
+		saves afterwards writes the old name back. The link is then dangling, so
+		every `save()` throws and `process_site_actions` retries the action every 30
+		seconds forever. `ignore_links` is the way out of that loop.
 		"""
 		step = self.current_running_step or self.next_step
 		if step:
 			step.status = "Failure"
-			step.error_message = f"Site {self.site} no longer exists, so the action can't continue."
+			step.error_message = f"Site {self.site} has been dropped, so the action can't continue."
 
 		self.flags.ignore_links = True
 		self.fail()
