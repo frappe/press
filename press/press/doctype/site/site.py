@@ -381,6 +381,7 @@ class Site(Document, TagHelpers):
 
 	def get_doc(self, doc):
 		from press.api.client import get
+		from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import disk_full_servers
 
 		group = frappe.db.get_value(
 			"Release Group",
@@ -430,6 +431,7 @@ class Site(Document, TagHelpers):
 		doc.server_title = server.title
 		doc.server_provider = server.provider
 		doc.inbound_ip = self.inbound_ip
+		doc.is_server_disk_full = self.server in disk_full_servers()
 		doc.is_dedicated_server = is_dedicated_server(self.server)
 
 		if doc.is_dedicated_server:
