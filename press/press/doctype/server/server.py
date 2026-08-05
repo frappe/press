@@ -2490,14 +2490,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 	def set_docker_mtu(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_set_docker_mtu", queue="long", timeout=1200)
 
-	def _set_docker_mtu(self):
+	def _set_docker_mtu(self, throw_on_failure: bool = False):
 		ansible = Ansible(
 			playbook="docker_mtu.yml",
 			server=self,
 			user=self._ssh_user(),
 			port=self._ssh_port(),
 		)
-		ansible.run()
+		play = ansible.run()
+		if play.status != "Success" and throw_on_failure:
+			frappe.throw("Failed to set docker MTU")  # nosemgrep
+		return play
 
 	@frappe.whitelist()
 	def reload_nginx(self):
