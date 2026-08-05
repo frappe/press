@@ -301,8 +301,20 @@ export function usePartnerOnboarding(team?: TeamResource) {
 	const mrrStatusResource = getMRRStatusResource(team)
 
 	const isRegistered = computed(() => Boolean(doc.value?.name))
-	const isProfileComplete = computed(() =>
-		Boolean(
+	const isProfileComplete = computed(() => {
+		// Submitted/decided applications are past profile editing. Older approved
+		// docs predate required fields like company_logo — don't reopen the
+		// checklist for them.
+		if (
+			doc.value?.docstatus === 1 ||
+			doc.value?.status === 'Approved' ||
+			doc.value?.status === 'Pending Review' ||
+			doc.value?.status === 'Rejected'
+		) {
+			return true
+		}
+
+		return Boolean(
 			form.company_name &&
 				form.registered_country &&
 				form.company_email &&
@@ -313,8 +325,8 @@ export function usePartnerOnboarding(team?: TeamResource) {
 				form.company_logo &&
 				form.agreed_to_due_diligence &&
 				form.agreed_to_partnership_agreement,
-		),
-	)
+		)
+	})
 	const loading = computed(() => getPartnerOnboarding.loading)
 	const saving = computed(() => savePartnerOnboarding.loading)
 	const submittingForApproval = computed(() => submitPartnerOnboarding.loading)
