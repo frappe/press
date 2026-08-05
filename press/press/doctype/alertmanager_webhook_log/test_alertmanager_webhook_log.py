@@ -28,9 +28,11 @@ def create_test_alertmanager_webhook_log(
 	creation: datetime | None = None,
 	site: Site | None = None,
 	status: str = "firing",
+	instance: str | None = None,
 ) -> AlertmanagerWebhookLog:
 	alert = alert or create_test_prometheus_alert_rule()
 	site = site or create_test_site()
+	instance = instance or site.name
 	return frappe.get_doc(  # type: ignore
 		{
 			"doctype": "Alertmanager Webhook Log",
@@ -50,7 +52,7 @@ def create_test_alertmanager_webhook_log(
 								"bench": site.bench,
 								"cluster": site.cluster,
 								"group": "bench-0001",
-								"instance": site.name,
+								"instance": instance,
 								"job": "site",
 								"server": site.server,
 								"severity": alert.severity.lower(),
