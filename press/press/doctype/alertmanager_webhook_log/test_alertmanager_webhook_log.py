@@ -158,10 +158,19 @@ class TestDiskFullServers(FrappeTestCase):
 		self.disk_full_alert("some-server-we-do-not-own.frappe.cloud", "firing")
 		self.assertEqual(disk_full_servers(), set())
 
-	def test_site_dashboard_is_told_its_server_is_out_of_space(self):
+	def test_site_dashboard_on_a_dedicated_server_is_told_the_disk_is_full(self):
 		site = create_test_site(server=self.server.name)
 		self.disk_full_alert(self.server.name, "firing")
 
 		frappe.set_user(frappe.db.get_value("Team", site.team, "user"))
 
 		self.assertTrue(get("Site", site.name).is_server_disk_full)
+
+	def test_site_dashboard_on_shared_hosting_is_not_told_the_disk_is_full(self):
+		shared_server = create_test_server(public=True)
+		site = create_test_site(server=shared_server.name)
+		self.disk_full_alert(shared_server.name, "firing")
+
+		frappe.set_user(frappe.db.get_value("Team", site.team, "user"))
+
+		self.assertFalse(get("Site", site.name).is_server_disk_full)
