@@ -540,6 +540,17 @@ class Invoice(Document):
 			frappe.db.set_value("Invoice", self.name, "payment_mode", "Prepaid Credits")
 			self.reload()
 			return None
+
+		payment_method_id = self.get_default_payment_method_id()
+		if not payment_method_id:
+			frappe.throw(
+				f"Cannot create Stripe invoice for {self.name}: team {self.team} has no default payment method"
+			)
+
+		payment_settings = {"default_payment_method": payment_method_id}
+		if mandate_id:
+			payment_settings["default_mandate"] = mandate_id
+
 		try:
 			stripe = get_stripe()
 			invoice = stripe.Invoice.create(
@@ -548,7 +559,7 @@ class Invoice(Document):
 				collection_method="charge_automatically",
 				auto_advance=True,
 				currency=self.currency.lower(),
-				payment_settings={"default_mandate": mandate_id},
+				payment_settings=payment_settings,
 				idempotency_key=f"invoice:{self.name}:amount:{amount}",
 			)
 			stripe.InvoiceItem.create(
@@ -588,6 +599,11 @@ class Invoice(Document):
 		if not mandate_id:
 			return ""
 		return mandate_id
+
+	def get_default_payment_method_id(self):
+		return frappe.get_value(
+			"Stripe Payment Method", {"team": self.team, "is_default": 1}, "stripe_payment_method_id"
+		)
 
 	def create_razorpay_payment(self):
 		"""Create a recurring payment via Razorpay mandate"""
