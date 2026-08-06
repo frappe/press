@@ -320,6 +320,9 @@ class Team(Document):
 			)
 
 	def validate_billing_team(self):
+		if self.billing_team and self.payment_mode != "Paid By Partner":
+			self.billing_team = ""
+
 		if not (self.billing_team and self.payment_mode == "Paid By Partner"):
 			return
 
