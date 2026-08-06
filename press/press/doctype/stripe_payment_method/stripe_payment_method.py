@@ -136,6 +136,7 @@ class StripePaymentMethod(Document):
 			stripe.PaymentMethod.detach(self.stripe_payment_method_id)
 		except Exception as e:
 			log_error("Failed to detach payment method from stripe", doc=self, data=e)
+			frappe.throw("Could not remove this card. Please try again or contact support.")
 
 	def remove_address_links(self):
 		address_links = frappe.db.get_all(
