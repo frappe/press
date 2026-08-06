@@ -469,8 +469,6 @@ def change_payment_mode(mode):
 			{"enabled": 1, "erpnext_partner": 1, "partner_email": team.partner_email},
 			"name",
 		)
-	if team.billing_team and mode != "Paid By Partner":
-		team.billing_team = ""
 	team.save()
 	return
 
