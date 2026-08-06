@@ -87,10 +87,15 @@ class StripePaymentMethod(Document):
 	def set_default(self):
 		stripe = get_stripe()
 		# set default payment method on stripe
-		stripe.Customer.modify(
-			self.stripe_customer_id,
-			invoice_settings={"default_payment_method": self.stripe_payment_method_id},
-		)
+		try:
+			stripe.Customer.modify(
+				self.stripe_customer_id,
+				invoice_settings={"default_payment_method": self.stripe_payment_method_id},
+			)
+		except Exception as e:
+			log_error("Failed to set default payment method on Stripe", doc=self, data=e)
+			frappe.throw("Could not set this card as default. Please try again or contact support.")
+
 		frappe.db.set_value(
 			"Stripe Payment Method",
 			{"team": self.team, "name": ("!=", self.name)},
