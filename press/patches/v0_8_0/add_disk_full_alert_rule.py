@@ -16,6 +16,7 @@ def execute():
 
 	if not frappe.db.get_single_value("Press Settings", "monitor_server"):
 		# saving the rule pushes it to the monitor server. Nothing to push to.
+		print(f"No monitor server set. Skipping {DISK_FULL_ALERT}. Create it by hand once one is set up.")
 		return
 
 	frappe.get_doc(
