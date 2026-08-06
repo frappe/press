@@ -1135,4 +1135,7 @@ def delete_followup(id: str, lead: str) -> None:
 			"You don't have permission to delete this follow-up. Only the team that owns the lead can make changes."
 		)
 
+	if not frappe.db.exists("Lead Followup", {"name": id, "parent": lead, "parenttype": "Partner Lead"}):
+		frappe.throw("This follow-up does not belong to the given lead.")
+
 	frappe.delete_doc("Lead Followup", id, ignore_permissions=True)
