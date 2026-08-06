@@ -114,6 +114,7 @@ class StripePaymentMethod(Document):
 					capture("added_card_or_prepaid_credits", "fc_signup", account_request.email)
 
 	def on_trash(self):
+		self.detach_from_stripe()
 		self.remove_address_links()
 		self.remove_micro_charge_links()
 
@@ -121,6 +122,17 @@ class StripePaymentMethod(Document):
 			team = frappe.get_doc("Team", self.team)
 			team.default_payment_method = None
 			team.save()
+
+	def detach_from_stripe(self):
+		if not self.stripe_payment_method_id:
+			return
+
+		stripe = get_stripe()
+		try:
+			stripe.PaymentMethod.detach(self.stripe_payment_method_id)
+		except Exception as e:
+			log_error("Failed to detach payment method from stripe", doc=self, data=e)
+			frappe.throw("Could not remove this card. Please try again or contact support.")
 
 	def remove_address_links(self):
 		address_links = frappe.db.get_all(
@@ -148,13 +160,6 @@ class StripePaymentMethod(Document):
 			"stripe_payment_method",
 			None,
 		)
-
-	def after_delete(self):
-		try:
-			stripe = get_stripe()
-			stripe.PaymentMethod.detach(self.stripe_payment_method_id)
-		except Exception as e:
-			log_error("Failed to detach payment method from stripe", data=e)
 
 	@frappe.whitelist()
 	def check_mandate_status(self):

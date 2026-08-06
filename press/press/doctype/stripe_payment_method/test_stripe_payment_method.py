@@ -35,3 +35,35 @@ class TestStripePaymentMethod(FrappeTestCase):
 		payment_method.reload()
 		self.assertEqual(payment_method.is_default, 0)
 		self.assertEqual(frappe.db.get_value("Team", self.team.name, "default_payment_method"), None)
+
+	@patch("press.press.doctype.stripe_payment_method.stripe_payment_method.get_stripe")
+	def test_deleting_payment_method_detaches_it_from_stripe(self, mock_stripe):
+		payment_method = frappe.get_doc(
+			{
+				"doctype": "Stripe Payment Method",
+				"team": self.team.name,
+				"stripe_customer_id": "cus_test123",
+				"stripe_payment_method_id": "pm_test123",
+			}
+		).insert(ignore_permissions=True)
+
+		payment_method.delete()
+
+		mock_stripe.return_value.PaymentMethod.detach.assert_called_once_with("pm_test123")
+		self.assertFalse(frappe.db.exists("Stripe Payment Method", payment_method.name))
+
+	@patch("press.press.doctype.stripe_payment_method.stripe_payment_method.get_stripe")
+	def test_deleting_payment_method_is_aborted_when_stripe_detach_fails(self, mock_stripe):
+		mock_stripe.return_value.PaymentMethod.detach.side_effect = Exception("stripe unavailable")
+
+		payment_method = frappe.get_doc(
+			{
+				"doctype": "Stripe Payment Method",
+				"team": self.team.name,
+				"stripe_customer_id": "cus_test123",
+				"stripe_payment_method_id": "pm_test123",
+			}
+		).insert(ignore_permissions=True)
+
+		self.assertRaises(frappe.ValidationError, payment_method.delete)
+		self.assertTrue(frappe.db.exists("Stripe Payment Method", payment_method.name))
