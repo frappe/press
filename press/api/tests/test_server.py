@@ -395,3 +395,11 @@ class TestAPIServerList(FrappeTestCase):
 			all(server_filter={"server_type": "", "tag": "test_tag"}),
 			[self.app_server_dict],
 		)
+
+	def test_tag_ending_in_backslash_is_treated_as_a_value(self):
+		"""A trailing backslash used to escape the closing quote and made the rest of the query run as SQL."""
+		self.assertEqual(all(server_filter={"server_type": "", "tag": "test_tag\\"}), [])
+
+	def test_tag_carrying_a_union_payload_returns_no_servers(self):
+		payload = "test_tag\\' UNION SELECT name, name, name, creation, name FROM `tabTeam` -- "
+		self.assertEqual(all(server_filter={"server_type": "", "tag": payload}), [])
