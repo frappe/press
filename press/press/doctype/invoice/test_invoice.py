@@ -402,8 +402,8 @@ class TestInvoice(FrappeTestCase):
 
 		invoice._make_stripe_invoice("cus_test123", 10000)
 
-		payment_settings = mock_stripe.return_value.Invoice.create.call_args.kwargs["payment_settings"]
-		self.assertEqual(payment_settings["default_payment_method"], "pm_test123")
+		kwargs = mock_stripe.return_value.Invoice.create.call_args.kwargs
+		self.assertEqual(kwargs["default_payment_method"], "pm_test123")
 
 	@patch("press.press.doctype.invoice.invoice.get_stripe")
 	def test_make_stripe_invoice_adds_comment_when_mandate_check_fails(self, mock_stripe):
