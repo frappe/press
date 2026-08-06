@@ -30,7 +30,7 @@ class TestStripePaymentMethod(FrappeTestCase):
 			}
 		).insert(ignore_permissions=True)
 
-		self.assertRaises(frappe.ValidationError, payment_method.set_default)
+		self.assertRaisesRegex(Exception, "stripe unavailable", payment_method.set_default)
 
 		payment_method.reload()
 		self.assertEqual(payment_method.is_default, 0)
@@ -65,5 +65,5 @@ class TestStripePaymentMethod(FrappeTestCase):
 			}
 		).insert(ignore_permissions=True)
 
-		self.assertRaises(frappe.ValidationError, payment_method.delete)
+		self.assertRaisesRegex(Exception, "stripe unavailable", payment_method.delete)
 		self.assertTrue(frappe.db.exists("Stripe Payment Method", payment_method.name))
