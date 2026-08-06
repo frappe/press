@@ -549,18 +549,15 @@ class Invoice(Document):
 				self.reload()
 				return None
 
-			payment_settings = {"default_payment_method": payment_method_id}
-			if mandate_id:
-				payment_settings["default_mandate"] = mandate_id
-
 			stripe = get_stripe()
 			invoice = stripe.Invoice.create(
 				customer=customer_id,
 				pending_invoice_items_behavior="exclude",
 				collection_method="charge_automatically",
+				default_payment_method=payment_method_id,
 				auto_advance=True,
 				currency=self.currency.lower(),
-				payment_settings=payment_settings,
+				payment_settings={"default_mandate": mandate_id},
 				idempotency_key=f"invoice:{self.name}:amount:{amount}",
 			)
 			stripe.InvoiceItem.create(
