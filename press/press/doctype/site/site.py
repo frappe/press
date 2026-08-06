@@ -81,6 +81,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	marketplace_app_hook,
 )
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
+from press.press.doctype.site_action.duration_estimate import estimate_duration
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
 from press.press.doctype.site_plan.site_plan import UNLIMITED_PLANS, get_plan_config
@@ -4366,6 +4367,7 @@ class Site(Document, TagHelpers):
 			"Move Site To Different Server / Bench": {
 				"hidden": False,
 				"allow_scheduling": True,
+				"estimated_duration": estimate_duration(self.name, "Move Site To Different Server / Bench"),
 				"button_label": "Move Site To Private Bench"
 				if release_group.public
 				else "Move Site To Bench",
@@ -4377,6 +4379,7 @@ class Site(Document, TagHelpers):
 			"Move Site To Different Region": {
 				"hidden": False,
 				"allow_scheduling": True,
+				"estimated_duration": estimate_duration(self.name, "Move Site To Different Region"),
 				"button_label": "Move Site",
 				"options": {
 					"available_regions": regions_to_move_to,

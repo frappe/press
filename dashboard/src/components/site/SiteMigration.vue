@@ -241,6 +241,14 @@
 					</div>
 				</div>
 
+				<!-- Estimated Time -->
+				<p v-if="estimatedDuration" class="text-sm text-ink-gray-6">
+					Based on this site's recent backups and past migrations of similar
+					sites, this should take around
+					<strong>{{ estimatedDuration }}</strong
+					>.
+				</p>
+
 				<!-- Checkbox  -->
 				<Checkbox
 					v-if="selectedMigrationMode"
@@ -271,6 +279,7 @@ import {
 import AlertBanner from '../AlertBanner.vue';
 import GenericList from '../GenericList.vue';
 import { dayjsIST } from '../../utils/dayjs';
+import { secsToDuration } from '../../utils/format';
 
 export default {
 	props: ['site', 'defaultAction', 'defaultNewBenchName'],
@@ -409,6 +418,11 @@ export default {
 		},
 		selectedMigrationChoiceDetails() {
 			return this.migrationOptions[this.selectedMigrationMode];
+		},
+		estimatedDuration() {
+			return secsToDuration(
+				this.selectedMigrationChoiceDetails?.estimated_duration,
+			);
 		},
 		showSchedulingOption() {
 			return this.selectedMigrationChoiceDetails?.allow_scheduling;
