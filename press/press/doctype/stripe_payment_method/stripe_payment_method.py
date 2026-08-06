@@ -114,9 +114,9 @@ class StripePaymentMethod(Document):
 					capture("added_card_or_prepaid_credits", "fc_signup", account_request.email)
 
 	def on_trash(self):
-		self.detach_from_stripe()
 		self.remove_address_links()
 		self.remove_micro_charge_links()
+		self.detach_from_stripe()
 
 		if self.is_default:
 			team = frappe.get_doc("Team", self.team)
