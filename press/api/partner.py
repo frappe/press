@@ -1129,5 +1129,10 @@ def can_apply_for_certificate() -> dict | None:
 
 @frappe.whitelist()
 @role_guard.api("partner")
-def delete_followup(id: str) -> None:
-	frappe.delete_doc("Lead Followup", id)
+def delete_followup(id: str, lead: str) -> None:
+	if not is_lead_team(lead):
+		frappe.throw(
+			"You don't have permission to delete this follow-up. Only the team that owns the lead can make changes."
+		)
+
+	frappe.delete_doc("Lead Followup", id, ignore_permissions=True)
