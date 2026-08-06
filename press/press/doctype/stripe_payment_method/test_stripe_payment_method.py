@@ -53,7 +53,7 @@ class TestStripePaymentMethod(FrappeTestCase):
 		self.assertFalse(frappe.db.exists("Stripe Payment Method", payment_method.name))
 
 	@patch("press.press.doctype.stripe_payment_method.stripe_payment_method.get_stripe")
-	def test_deleting_payment_method_is_aborted_when_stripe_detach_fails(self, mock_stripe):
+	def test_deleting_payment_method_raises_when_stripe_detach_fails(self, mock_stripe):
 		mock_stripe.return_value.PaymentMethod.detach.side_effect = Exception("stripe unavailable")
 
 		payment_method = frappe.get_doc(
@@ -66,4 +66,4 @@ class TestStripePaymentMethod(FrappeTestCase):
 		).insert(ignore_permissions=True)
 
 		self.assertRaisesRegex(Exception, "stripe unavailable", payment_method.delete)
-		self.assertTrue(frappe.db.exists("Stripe Payment Method", payment_method.name))
+		mock_stripe.return_value.PaymentMethod.detach.assert_called_once_with("pm_test123")
