@@ -1387,12 +1387,15 @@ def finalize_draft_invoices():
 	"""
 	- Runs every hour
 	- Processes 500 invoices at a time
-	- Finalizes invoices whose period has fully ended, i.e. the previous month's
-		invoice, once the new month has started. This keeps the current month's
-		invoice untouched while usage records for it can still be created.
+	- Finalizes only the previous month's Draft invoices, starting 6 AM on the
+		1st of the new month. This keeps the current month's invoice untouched
+		while usage records for it can still be created.
 	"""
 
-	today = frappe.utils.today()
+	if frappe.utils.get_datetime().hour < 6:
+		return
+
+	previous_month_end = frappe.utils.get_last_day(frappe.utils.add_months(frappe.utils.today(), -1))
 	# only finalize for enabled teams
 	# since 'limit' returns the same set of invoices for disabled teams which are ignored
 	enabled_teams = frappe.get_all("Team", {"enabled": 1}, pluck="name")
@@ -1402,7 +1405,7 @@ def finalize_draft_invoices():
 		filters={
 			"status": "Draft",
 			"type": "Subscription",
-			"period_end": ("<", today),
+			"period_end": previous_month_end,
 			"team": ("in", enabled_teams),
 		},
 		pluck="name",
