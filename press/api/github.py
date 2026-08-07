@@ -43,6 +43,7 @@ class InvalidGitHubOAuthState(frappe.ValidationError):
 class AppDependencyFetch(TypedDict):
 	frappe_dependencies: dict[str, str]
 	python_version: str | None
+	python_dependencies: list[str]
 
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
@@ -643,14 +644,47 @@ def get_dependant_apps_with_versions(
 		if raises:
 			raise exc
 
-		dependency_data = AppDependencyFetch(frappe_dependencies={}, python_version=None)
+		dependency_data = AppDependencyFetch(
+			frappe_dependencies={}, python_version=None, python_dependencies=[]
+		)
 	else:
 		frappe_dependencies = pyproject.get("tool", {}).get("bench", {}).get("frappe-dependencies", {}).copy()
 		dependency_data = AppDependencyFetch(
 			frappe_dependencies=frappe_dependencies,
 			python_version=pyproject.get("project", {}).get("requires-python"),
+			python_dependencies=pyproject.get("project", {}).get("dependencies", []),
 		)
 
 	# In case of failures as well we want to cache the result to avoid hitting GitHub
 	frappe.cache().set_value(cache_key, dependency_data, expires_in_sec=60 * 60)
 	return dependency_data
+
+
+def is_frappe_a_python_dependency(app_source: str, commit: str) -> bool:
+	"""Whether the app lists frappe under [project] dependencies of its pyproject.toml.
+
+	Bench installs frappe from its git repository. Listing it as a Python
+	dependency instead sends pip to PyPI, where frappe is only a 0.0.1
+	placeholder — so the install either fails to resolve or pulls the stub.
+
+	Anything that goes wrong while reading the pyproject skips the check.
+	`raises=False` only covers a missing or invalid file; a GitHub timeout
+	must not block every deploy on the platform either.
+	"""
+	try:
+		dependencies = get_dependant_apps_with_versions(app_source, commit, raises=False).get(
+			"python_dependencies", []
+		)
+	except Exception:
+		return False
+
+	return any(_get_dependency_name(dependency) == "frappe" for dependency in dependencies)
+
+
+def _get_dependency_name(dependency: str) -> str:
+	from packaging.requirements import InvalidRequirement, Requirement
+	from packaging.utils import canonicalize_name
+
+	with contextlib.suppress(InvalidRequirement):
+		return canonicalize_name(Requirement(dependency).name)
+	return ""
