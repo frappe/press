@@ -192,6 +192,13 @@ class PressWorkflowTask(Document):
 			# a task running under REPEATABLE READ could keep seeing the snapshot
 			# from before its transaction started, missing a force-fail requested
 			# after the task began but before this check.
+			#
+			# This still can't catch a force-fail requested in the instant between
+			# this read and this task's own commit below — closing that fully would
+			# mean force_fail() blocking until any in-flight task finishes, which
+			# defeats the point of an instant stop. Accepted trade-off: at worst one
+			# already-executing task resumes one extra step; the next task starts a
+			# fresh transaction and halts immediately on the same check.
 			force_failure_requested = frappe.db.get_value(
 				"Press Workflow",
 				self.workflow,
