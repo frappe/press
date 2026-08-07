@@ -90,6 +90,26 @@ class PressWorkflow(Document):
 			return
 
 		frappe.db.set_value(self.doctype, self.name, "is_force_failure_requested", True)
+		self.fail_active_tasks()
+
+	def fail_active_tasks(self):
+		"""Flip any task (and its tracked step) that's still mid-execution to Failure.
+
+		`is_force_failure_requested` is only checked before the *next* task starts,
+		so without this a task that's already Running/Queued (e.g. deferred, waiting
+		on a remote job) would stay stuck in that state forever, even though the
+		workflow itself has been failed.
+		"""
+		active_tasks = frappe.get_all(
+			"Press Workflow Task",
+			{"workflow": self.name, "status": ("in", ["Queued", "Running"])},
+			pluck="name",
+		)
+		for task_name in active_tasks:
+			frappe.db.set_value("Press Workflow Task", task_name, "status", "Failure")
+			step_name = frappe.db.get_value("Press Workflow Step", {"task": task_name}, "name")
+			if step_name:
+				frappe.db.set_value("Press Workflow Step", step_name, "status", "Failure")
 
 	def run(self):  # noqa: C901 - best to keep it in one place
 		if not self.linked_doctype or not self.linked_docname:
