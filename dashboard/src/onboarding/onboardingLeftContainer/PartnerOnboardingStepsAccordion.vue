@@ -63,19 +63,49 @@ const canEditDraft = computed(
 		onboarding.doc.value?.status === 'Draft',
 )
 
+const isRegistrationComplete = computed(() => {
+	if (!onboarding.isRegistered.value) return false
+
+	// Submitted/decided applications are past registration editing — don't
+	// reopen the checklist for India rows that predate registered_state.
+	if (
+		onboarding.doc.value?.docstatus === 1 ||
+		onboarding.doc.value?.status === 'Approved' ||
+		onboarding.doc.value?.status === 'Pending Review' ||
+		onboarding.doc.value?.status === 'Rejected'
+	) {
+		return true
+	}
+
+	if (
+		onboarding.form.registered_country === 'India' &&
+		!onboarding.form.registered_state
+	) {
+		return false
+	}
+	return Boolean(
+		onboarding.form.company_name &&
+			onboarding.form.registered_country &&
+			onboarding.form.company_email &&
+			onboarding.form.contact,
+	)
+})
+
 const steps = computed(() => [
 	{
 		value: 'step-register',
 		title: 'Register as a Frappe Partner',
 		required: true,
-		status: onboarding.isRegistered.value ? 'completed' : 'pending',
+		status: isRegistrationComplete.value ? 'completed' : 'pending',
 		description: null,
 		link: null,
 		summaryRight: null,
-		actionLabel: onboarding.isRegistered.value
-			? 'Registered'
-			: 'Register as a partner',
-		actionDisabled: onboarding.isRegistered.value,
+		actionLabel: !onboarding.isRegistered.value
+			? 'Register as a partner'
+			: canEditDraft.value
+				? 'Edit registration'
+				: 'Registered',
+		actionDisabled: onboarding.isRegistered.value && !canEditDraft.value,
 		onClick: () => {
 			registrationModalOpen.value = true
 		},
