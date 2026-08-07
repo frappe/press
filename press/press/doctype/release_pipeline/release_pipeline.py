@@ -184,6 +184,10 @@ class ReleasePipeline(WorkflowBuilder):
 			"Retrying",
 		],
 	):
+		if status != "Failure" and frappe.db.get_value(self.doctype, self.name, "status") == "Failure":
+			# Nothing should move the pipeline away from Failure once stopped.
+			return
+
 		# If the workflow doc touches this for any reason
 		# Document native methods would raise a `TimeStampMismatch` error
 		self.db_set("status", status)
