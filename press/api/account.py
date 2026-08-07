@@ -872,20 +872,6 @@ def remove_team_member(user_email):
 
 
 @frappe.whitelist()
-def remove_child_team(child_team):
-	team = frappe.get_doc("Team", child_team)
-	sites = frappe.get_all("Site", {"status": ("!=", "Archived"), "team": team.name}, pluck="name")
-	if sites:
-		frappe.throw(
-			f"This child team still has active sites. Please archive or transfer its sites to another team before removing it. {docs.doc_link(docs.CHILD_TEAMS)}."
-		)
-
-	team.enabled = 0
-	team.parent_team = ""
-	team.save(ignore_permissions=True)
-
-
-@frappe.whitelist()
 def can_switch_to_team(team):
 	if not frappe.db.exists("Team", team):
 		return False
