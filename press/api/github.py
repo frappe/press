@@ -96,7 +96,7 @@ def encode_github_oauth_state(team: str, redirect_url: str | None = None) -> str
 	return f"{encoded_payload}.{_sign_github_oauth_state(encoded_payload)}"
 
 
-def decode_github_oauth_state(state: str) -> dict[str, str]:
+def decode_github_oauth_state(state: str, check_expiry: bool = True) -> dict[str, str]:
 	try:
 		encoded_payload, signature = state.rsplit(".", 1)
 	except ValueError as exc:
@@ -125,7 +125,7 @@ def decode_github_oauth_state(state: str) -> dict[str, str]:
 	):
 		raise InvalidGitHubOAuthState("Invalid GitHub authorization state")
 
-	if datetime.now().timestamp() - issued_at > GITHUB_OAUTH_STATE_MAX_AGE.total_seconds():
+	if check_expiry and datetime.now().timestamp() - issued_at > GITHUB_OAUTH_STATE_MAX_AGE.total_seconds():
 		raise InvalidGitHubOAuthState("Invalid GitHub authorization state")
 
 	if user != frappe.session.user:

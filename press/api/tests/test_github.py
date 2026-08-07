@@ -151,6 +151,37 @@ class TestGitHubAuthorization(FrappeTestCase):
 		self.assertEqual(reissued_payload["redirect_url"], "/dashboard/sites")
 		self.assertGreater(reissued_payload["issued_at"], aged_payload["issued_at"])
 
+	def test_get_context_starts_user_authorization_when_state_aged_out_during_install(self):
+		from press.api.github import GITHUB_OAUTH_AUTHORIZE_URL
+
+		# The state is minted when the bench page loads, so picking repositories
+		# on GitHub can easily put the install callback past its expiry.
+		aged_state, _ = self._make_aged_state(
+			self.team.name, "/dashboard/groups/bench-1/apps", age_seconds=3600
+		)
+		self._set_form_dict(state=aged_state, installation_id="123", setup_action="install")
+
+		with (
+			self.assertRaises(frappe.Redirect),
+			patch("press.api.github.frappe.db.get_single_value", return_value="client-id"),
+		):
+			self._get_context()(None)
+
+		self.assertTrue(frappe.flags.redirect_location.startswith(GITHUB_OAUTH_AUTHORIZE_URL))
+		reissued_payload = self._decode_state_payload(
+			parse_qs(urlparse(frappe.flags.redirect_location).query)["state"][0]
+		)
+		self.assertEqual(reissued_payload["team"], self.team.name)
+		self.assertEqual(reissued_payload["redirect_url"], "/dashboard/groups/bench-1/apps")
+
+	def test_decode_github_oauth_state_still_rejects_aged_state_on_the_code_leg(self):
+		from press.api.github import InvalidGitHubOAuthState
+
+		aged_state, _ = self._make_aged_state(self.team.name, "/dashboard/sites", age_seconds=3600)
+
+		with self.assertRaises(InvalidGitHubOAuthState):
+			self._decode_github_oauth_state(aged_state)
+
 	def test_get_context_does_not_start_authorization_when_user_denied_install(self):
 		state = self._encode_github_oauth_state(self.team.name, "/dashboard/sites")
 		self._set_form_dict(state=state, error="access_denied")
