@@ -200,8 +200,8 @@ class ReleasePipeline(WorkflowBuilder):
 
 	@frappe.whitelist()
 	def force_fail(self):
-		if self.status not in ["Pending", "Running", "Retrying"]:
-			frappe.throw("This deploy has already completed and cannot be stopped.")
+		if self.status == "Failure":
+			return
 
 		self.update_pipeline_status("Failure")
 		if self.workflow:
