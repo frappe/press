@@ -38,7 +38,7 @@
 					image: i.image,
 				}))
 			"
-			:modelValue="selectedGithubUser?.value"
+			:modelValue="selectedGithubUser && String(selectedGithubUser.id)"
 			@update:modelValue="
 				(optionValue) => {
 					selectedGithubUser = options.installations.find(
@@ -80,7 +80,7 @@
 					value: r.name,
 				}))
 			"
-			:modelValue="selectedGithubRepository?.value"
+			:modelValue="selectedGithubRepository?.name"
 			@update:modelValue="
 				(optionValue) => {
 					selectedGithubRepository = (selectedGithubUserData.repos || []).find(
@@ -184,6 +184,13 @@ export default {
 					}
 				},
 				auto: true,
+				onSuccess(options) {
+					// Most teams have a single GitHub account connected, so there is
+					// nothing to choose. Repository is left alone, picking one of many
+					// would be a guess.
+					if (options?.installations?.length === 1)
+						this.selectedGithubUser = options.installations[0]
+				},
 			}
 		},
 		branches() {
