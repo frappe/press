@@ -2,7 +2,7 @@
 # See license.txt
 
 
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -10,7 +10,7 @@ from frappe.utils.data import add_days, today
 
 from press.press.doctype.team.test_team import create_test_team
 
-from .invoice import Invoice
+from .invoice import Invoice, create_invoices_for_next_month, finalize_draft_invoice, finalize_draft_invoices
 
 
 @patch.object(Invoice, "create_invoice_on_frappeio", new=Mock())
@@ -693,3 +693,253 @@ class TestInvoice(FrappeTestCase):
 		self.assertEqual(invoice.total_before_discount, 100)
 		self.assertEqual(invoice.total_discount_amount, 10)
 		self.assertEqual(invoice.amount_due, 90)
+
+	def test_finalize_draft_invoices_does_not_finalize_invoice_for_ongoing_period(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=add_days(today(), -10),
+			period_end=add_days(today(), 10),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		finalize_draft_invoices()
+		invoice.reload()
+
+		self.assertEqual(invoice.status, "Draft")
+
+	def test_finalize_draft_invoices_does_not_finalize_invoice_on_its_last_day(self):
+		"""Finalization now waits for the day after period_end, not a time-of-day cutoff on the last day."""
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=add_days(today(), -29),
+			period_end=today(),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		finalize_draft_invoices()
+		invoice.reload()
+
+		self.assertEqual(invoice.status, "Draft")
+
+	@patch("press.press.doctype.invoice.invoice.frappe.db.commit", new=MagicMock())
+	def test_finalize_draft_invoices_finalizes_invoice_once_period_has_fully_ended(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=add_days(today(), -31),
+			period_end=add_days(today(), -1),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		finalize_draft_invoices()
+		invoice.reload()
+
+		self.assertNotEqual(invoice.status, "Draft")
+
+	@patch("press.press.doctype.invoice.invoice.frappe.db.commit", new=MagicMock())
+	def test_finalize_draft_invoices_skips_invoice_of_disabled_team(self):
+		self.team.enabled = 0
+		self.team.save()
+
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=add_days(today(), -31),
+			period_end=add_days(today(), -1),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		finalize_draft_invoices()
+		invoice.reload()
+
+		self.assertEqual(invoice.status, "Draft")
+
+	@patch("press.press.doctype.invoice.invoice.frappe.db.commit", new=MagicMock())
+	def test_finalize_draft_invoice_does_not_create_next_months_invoice(self):
+		"""Creating next month's invoice is now a separate, last-day-of-month scheduled step."""
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=add_days(today(), -31),
+			period_end=add_days(today(), -1),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		finalize_draft_invoice(invoice.name)
+
+		next_period_start = add_days(invoice.period_end, 1)
+		self.assertFalse(
+			frappe.db.exists(
+				"Invoice",
+				{"team": self.team.name, "period_start": next_period_start, "type": "Subscription"},
+			)
+		)
+
+	def test_create_next_does_not_raise_on_race_with_concurrent_invoice_creation(self):
+		"""If another process creates next month's invoice between create_next()'s existence
+		check and its insert, create_next() must not blow up with a DuplicateEntryError."""
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=add_days(today(), -31),
+			period_end=add_days(today(), -1),
+		).insert()
+
+		next_period_start = add_days(invoice.period_end, 1)
+		frappe.get_doc(
+			doctype="Invoice", team=self.team.name, period_start=next_period_start, type="Subscription"
+		).insert()
+
+		with patch("press.press.doctype.invoice.invoice.frappe.db.exists", return_value=False):
+			result = invoice.create_next()
+
+		self.assertIsNone(result)
+		self.assertEqual(
+			frappe.db.count(
+				"Invoice",
+				{"team": self.team.name, "period_start": next_period_start, "type": "Subscription"},
+			),
+			1,
+		)
+
+	@patch("press.press.doctype.invoice.invoice.frappe.db.commit", new=MagicMock())
+	def test_create_invoices_for_next_month_noop_when_not_last_day_of_month(self):
+		last_day = frappe.utils.get_last_day(frappe.utils.getdate())
+		not_last_day = add_days(last_day, -5)
+
+		frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=add_days(not_last_day, -25),
+			period_end=not_last_day,
+		).insert()
+
+		with patch.object(frappe.utils, "today", return_value=not_last_day):
+			create_invoices_for_next_month()
+
+		next_period_start = add_days(not_last_day, 1)
+		self.assertFalse(
+			frappe.db.exists(
+				"Invoice",
+				{"team": self.team.name, "period_start": next_period_start, "type": "Subscription"},
+			)
+		)
+
+	@patch("press.press.doctype.invoice.invoice.frappe.db.commit", new=MagicMock())
+	def test_create_invoices_for_next_month_creates_draft_invoice_on_last_day(self):
+		last_day = frappe.utils.get_last_day(frappe.utils.getdate())
+		period_start = frappe.utils.get_first_day(last_day)
+
+		frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=period_start,
+			period_end=last_day,
+		).insert()
+
+		with patch.object(frappe.utils, "today", return_value=last_day):
+			create_invoices_for_next_month()
+
+		next_period_start = add_days(last_day, 1)
+		next_invoice = frappe.get_doc(
+			"Invoice", {"team": self.team.name, "period_start": next_period_start, "type": "Subscription"}
+		)
+		self.assertEqual(next_invoice.status, "Draft")
+		self.assertEqual(next_invoice.period_end, frappe.utils.get_last_day(next_period_start))
+
+	@patch("press.press.doctype.invoice.invoice.frappe.db.commit", new=MagicMock())
+	def test_create_invoices_for_next_month_skips_disabled_team(self):
+		self.team.enabled = 0
+		self.team.save()
+
+		last_day = frappe.utils.get_last_day(frappe.utils.getdate())
+		period_start = frappe.utils.get_first_day(last_day)
+
+		frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=period_start,
+			period_end=last_day,
+		).insert()
+
+		with patch.object(frappe.utils, "today", return_value=last_day):
+			create_invoices_for_next_month()
+
+		next_period_start = add_days(last_day, 1)
+		self.assertFalse(
+			frappe.db.exists(
+				"Invoice",
+				{"team": self.team.name, "period_start": next_period_start, "type": "Subscription"},
+			)
+		)
+
+	@patch("press.press.doctype.invoice.invoice.frappe.db.commit", new=MagicMock())
+	def test_create_invoices_for_next_month_is_idempotent(self):
+		last_day = frappe.utils.get_last_day(frappe.utils.getdate())
+		period_start = frappe.utils.get_first_day(last_day)
+
+		frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=period_start,
+			period_end=last_day,
+		).insert()
+
+		with patch.object(frappe.utils, "today", return_value=last_day):
+			create_invoices_for_next_month()
+			create_invoices_for_next_month()
+
+		next_period_start = add_days(last_day, 1)
+		self.assertEqual(
+			frappe.db.count(
+				"Invoice",
+				{"team": self.team.name, "period_start": next_period_start, "type": "Subscription"},
+			),
+			1,
+		)
+
+	def test_validate_duplicate_blocks_new_invoice_intersecting_a_finalized_invoice(self):
+		"""A finalized (non-Draft) invoice must still block a duplicate for the same period -
+		this is the exact gap that let a late usage record spawn a second invoice."""
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+		invoice.db_set("status", "Unpaid")
+
+		duplicate = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		)
+
+		self.assertRaises(frappe.DuplicateEntryError, duplicate.insert)
+
+	def test_validate_duplicate_allows_new_invoice_after_previous_one_is_cancelled(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+		frappe.db.set_value("Invoice", invoice.name, "docstatus", 2)
+
+		new_invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		)
+		new_invoice.insert()
+
+		self.assertTrue(frappe.db.exists("Invoice", new_invoice.name))
