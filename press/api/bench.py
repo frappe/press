@@ -1165,12 +1165,6 @@ def fail_and_redeploy(name: str, dc_name: str):
 
 
 @frappe.whitelist()
-@protected("Release Pipeline")
-def stop_release_pipeline(name: str):
-	frappe.get_doc("Release Pipeline", name).force_fail()
-
-
-@frappe.whitelist()
 @protected("Release Group")
 def show_app_versions(name: str, dc_name: str) -> list[dict[str, Any]]:
 	"""Get app versions from the deploy candidate"""
