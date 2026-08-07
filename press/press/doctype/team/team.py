@@ -332,6 +332,9 @@ class Team(Document):
 			)
 
 	def validate_billing_team(self):
+		if self.billing_team and self.payment_mode != "Paid By Partner":
+			self.billing_team = ""
+
 		if not (self.billing_team and self.payment_mode == "Paid By Partner"):
 			return
 
@@ -899,16 +902,19 @@ class Team(Document):
 			address = frappe.get_doc("Address", self.billing_address)
 
 		country_code = frappe.db.get_value("Country", address.country, "code")
-		stripe.Customer.modify(
-			self.stripe_customer_id,
-			address={
-				"line1": address.address_line1,
-				"postal_code": address.pincode,
-				"city": address.city,
-				"state": address.state,
-				"country": country_code.upper(),
-			},
-		)
+		try:
+			stripe.Customer.modify(
+				self.stripe_customer_id,
+				address={
+					"line1": address.address_line1,
+					"postal_code": address.pincode,
+					"city": address.city,
+					"state": address.state,
+					"country": country_code.upper(),
+				},
+			)
+		except Exception:
+			log_error("Failed to update billing details on Stripe")
 
 	def create_payment_method(
 		self,
@@ -920,7 +926,11 @@ class Team(Document):
 		verified_with_micro_charge=False,
 	):
 		stripe = get_stripe()
-		payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+		try:
+			payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+		except Exception:
+			log_error("Failed to retrieve Stripe payment method", traceback=frappe.get_traceback())
+			frappe.throw("Could not add this card. Please try again or contact support.")
 
 		try:
 			doc = frappe.get_doc(
@@ -1424,7 +1434,7 @@ class Team(Document):
 	def get_route_on_login(self):
 		if self.payment_mode or self.skip_onboarding:
 			site_count = frappe.db.count("Site", {"team": self.name, "status": ("!=", "Archived")})
-			if site_count <= 3:
+			if 0 < site_count <= 3:
 				return "/quickstart"
 			return "/sites"
 

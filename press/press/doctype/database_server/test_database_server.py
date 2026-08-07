@@ -41,6 +41,19 @@ def create_test_database_server(ip=None, cluster="Default") -> DatabaseServer:
 	return server
 
 
+def create_test_database_replica(primary: DatabaseServer) -> DatabaseServer:
+	"""Create a Database Server already set up as a replica of primary"""
+	replica = create_test_database_server()
+	replica.is_primary = False
+	replica.primary = primary.name
+	# on_update forbids binlog auto purge once replication is set up, and new servers
+	# default it on
+	replica.auto_purge_binlog_based_on_size = False
+	replica.is_replication_setup = True
+	replica.save()
+	return replica
+
+
 @patch.object(Ansible, "run", new=Mock())
 class TestDatabaseServer(FrappeTestCase):
 	def tearDown(self):
@@ -171,6 +184,26 @@ class TestDatabaseServer(FrappeTestCase):
 
 		mock_restart.assert_called_once()
 		self.assertEqual(call_order, ["restart", "agent"])
+
+	def test_replica_is_offered_only_the_actions_the_dashboard_supports(self):
+		"""A replica used to be offered every database action, grouped as "Database Server
+		Actions" so they merged into the primary's card. The dashboard doesn't whitelist
+		the methods behind them for a replica, so those buttons did nothing when clicked."""
+		replica = create_test_database_replica(create_test_database_server())
+
+		actions = replica.get_actions()
+
+		self.assertEqual({action["action"] for action in actions}, {"Rename server", "Reboot server"})
+		self.assertEqual({action["group"] for action in actions}, {"Replication Server Actions"})
+
+	def test_primary_of_a_replica_is_still_offered_its_database_actions(self):
+		primary = create_test_database_server()
+		create_test_database_replica(primary)
+
+		actions = primary.get_actions()
+
+		self.assertIn("Update Max DB Connections", {action["action"] for action in actions})
+		self.assertEqual({action["group"] for action in actions}, {"Database Server Actions"})
 
 	@patch("press.press.doctype.database_server.database_server.Ansible", new=Mock())
 	@patch(

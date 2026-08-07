@@ -76,6 +76,59 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[__('Get Static IP'), 'get_static_ip', false],
+			[
+				__('Add public IP'),
+				() => {
+					const dialog = new frappe.ui.Dialog({
+						title: __('Add Public IP'),
+						fields: [
+							{
+								fieldtype: 'Check',
+								fieldname: 'auto_assign',
+								label: __('Assign New Primary IP'),
+								default: 1,
+								onchange() {
+									const auto_assign = dialog.get_value('auto_assign')
+									dialog.set_df_property('primary_ip', 'hidden', auto_assign)
+									dialog.set_df_property('primary_ip', 'reqd', !auto_assign)
+									dialog.refresh()
+								},
+							},
+							{
+								fieldtype: 'Data',
+								fieldname: 'primary_ip',
+								label: __('Primary IP'),
+								description: __('Existing detached Hetzner Primary IP'),
+								hidden: 1,
+							},
+						],
+					})
+
+					dialog.set_primary_action(__('Add Public IP'), (values) => {
+						if (!values.auto_assign && !values.primary_ip) {
+							frappe.msgprint(__('Please enter a Primary IP.'))
+							return
+						}
+
+						frm.call(
+							'add_hetzner_public_ip',
+							{
+								primary_ip: values.auto_assign ? null : values.primary_ip,
+							},
+							() => {
+								dialog.hide()
+								frm.reload_doc()
+							},
+						)
+					})
+
+					dialog.show()
+				},
+				false,
+				frm.doc.is_server_setup &&
+					frm.doc.provider === 'Hetzner' &&
+					!frm.doc.ip,
+			],
 			[__('Update DNS Record'), 'create_dns_record', true],
 			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
 			[
@@ -293,6 +346,10 @@ frappe.ui.form.on('Server', {
 				frm.add_custom_button(
 					label,
 					() => {
+						if (typeof method === 'function') {
+							method()
+							return
+						}
 						if (confirm) {
 							frappe.confirm(
 								`Are you sure you want to ${label.toLowerCase()}?`,

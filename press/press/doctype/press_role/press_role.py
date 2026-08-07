@@ -95,6 +95,21 @@ class PressRole(Document):
 	def validate(self):
 		self.validate_duplicate_title()
 
+	def reload_for_update(self):
+		"""
+		Re-read the role under a row lock.
+
+		Every dashboard edit rewrites the whole role document. Two of them in
+		flight at once — two admins, or a second click while the first request
+		is still running — make the later save fail with
+		`TimestampMismatchError`, because the row was committed after this
+		request read it. `FOR UPDATE` waits for the earlier write and returns
+		the committed row, so the second edit applies on top of the first
+		instead of erroring out.
+		"""
+		self.flags.for_update = True
+		self.reload()
+
 	def validate_duplicate_title(self):
 		exists = frappe.db.exists({"doctype": "Press Role", "title": self.title, "team": self.team})
 		if self.is_new() and exists:
@@ -109,6 +124,7 @@ class PressRole(Document):
 		skip=lambda _, args: args.get("skip_validations", False),
 	)
 	def add_user(self, user, skip_validations=False):
+		self.reload_for_update()
 		user_dict = {"user": user}
 		if self.get("users", user_dict):
 			message = _("{0} already belongs to {1}").format(user, self.title)
@@ -119,6 +135,7 @@ class PressRole(Document):
 	@dashboard_whitelist()
 	@team_guard.only_admin()
 	def remove_user(self, user):
+		self.reload_for_update()
 		users = self.get("users", {"user": user})
 		if not users:
 			message = _("User {0} does not belong to {1}").format(user, self.title)
@@ -129,6 +146,7 @@ class PressRole(Document):
 	@dashboard_whitelist()
 	@team_guard.only_admin()
 	def add_resource(self, resources: list[dict[str, str]]):
+		self.reload_for_update()
 		existing = {(row.document_type, row.document_name) for row in self.get("resources")}
 		for resource in resources:
 			document_type = resource["document_type"]
@@ -155,6 +173,7 @@ class PressRole(Document):
 	@dashboard_whitelist()
 	@team_guard.only_admin()
 	def remove_resource(self, document_type: str, document_name: str):
+		self.reload_for_update()
 		resources = self.get("resources", {"document_type": document_type, "document_name": document_name})
 		if not resources:
 			message = _("Resource {0} does not belong to {1}").format(document_name, self.title)
@@ -165,6 +184,7 @@ class PressRole(Document):
 	@dashboard_whitelist()
 	@team_guard.only_admin()
 	def set_permission(self, fieldname: str, value: int):
+		self.reload_for_update()
 		if fieldname not in PERMISSION_FIELDS:
 			frappe.throw(_("Invalid permission field: {0}").format(fieldname))
 		setattr(self, fieldname, value)
