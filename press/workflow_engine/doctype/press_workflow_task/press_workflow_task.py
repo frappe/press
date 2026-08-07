@@ -190,6 +190,22 @@ class PressWorkflowTask(Document):
 			reference_doc.current_task_signature = existing_task_signature
 			self.reload()
 
+			# `workflow_info.is_force_failure_requested` above was read before this
+			# task's body ran — a force-fail requested while this task was already
+			# executing wouldn't be reflected in it. Re-check the live flag here so
+			# a stale "Success" from a task that should've been stopped doesn't
+			# overwrite the forced failure and resume the workflow.
+			force_failure_requested = frappe.db.get_value(
+				"Press Workflow", self.workflow, "is_force_failure_requested"
+			)
+			if force_failure_requested and status != "Failure":
+				status = "Failure"
+				if not exception:
+					exception = PressWorkflowObject.store(
+						Exception("Workflow was forcefully failed based on user request."),
+						throw_on_error=False,
+					)
+
 			if status in ["Success", "Failure"] and not self.end:
 				self.end = now_datetime()
 
@@ -209,8 +225,9 @@ class PressWorkflowTask(Document):
 			self.save()
 
 			if self.status in ["Success", "Failure"]:
-				# On termination, resume the parent task or workflow.
-				self._resume_workflow()
+				if not force_failure_requested:
+					# On termination, resume the parent task or workflow.
+					self._resume_workflow()
 			else:
 				# A nested task was enqueued; re-enqueue ourselves for retry.
 				enqueue_task(self.name)

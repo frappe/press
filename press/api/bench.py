@@ -1207,6 +1207,20 @@ def stop_release_pipeline(name: str):
 				reference_name=build,
 			)
 
+	# fail_remote_job isn't atomic — a step inside it (e.g. process_job_updates)
+	# may commit before a later step fails, so the rollback above can't guarantee
+	# every build ended up terminal. Reconcile directly so this call never leaves
+	# the pipeline "stopped" while one of its builds is still stuck in progress.
+	stuck_builds = frappe.db.get_all(
+		"Deploy Candidate Build",
+		{"name": ("in", active_builds), "status": ("in", DeployCandidateBuildStatus.intermediate())},
+		pluck="name",
+	)
+	for build in stuck_builds:
+		frappe.db.set_value("Deploy Candidate Build", build, "status", "Failure")
+	if stuck_builds:
+		frappe.db.commit()
+
 
 @frappe.whitelist()
 @protected("Release Group")
