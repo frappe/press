@@ -21,9 +21,6 @@ from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.deploy_candidate.deploy_candidate import RESTING_STATES, TRANSITORY_STATES
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
-	Status as DeployCandidateBuildStatus,
-)
-from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
 	fail_and_redeploy as fail_and_redeploy_build,
 )
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import fail_remote_job
@@ -1170,56 +1167,7 @@ def fail_and_redeploy(name: str, dc_name: str):
 @frappe.whitelist()
 @protected("Release Pipeline")
 def stop_release_pipeline(name: str):
-	pipeline: ReleasePipeline = frappe.get_doc("Release Pipeline", name)
-
-	if pipeline.status not in ["Pending", "Running", "Retrying"]:
-		frappe.throw(
-			"This deploy has already completed and cannot be stopped. Please refresh and check the current status."
-		)
-
-	active_builds = frappe.db.get_all(
-		"Deploy Candidate Build",
-		{
-			"name": ("in", [build.build for build in pipeline.pipeline_builds]),
-			"status": ("in", DeployCandidateBuildStatus.intermediate()),
-		},
-		pluck="name",
-	)
-
-	# Commit the authoritative "stopped" state before touching the remote
-	# builder below — cancelling a live Agent Job makes a real HTTP call to
-	# the server, and if that fails/times out we don't want it to roll back
-	# the pipeline having been stopped.
-	if pipeline.workflow:
-		frappe.get_doc("Press Workflow", pipeline.workflow).force_fail()
-	pipeline.update_pipeline_status("Failure")
-	frappe.db.commit()
-
-	for build in active_builds:
-		try:
-			fail_remote_job(build)
-			frappe.db.commit()
-		except Exception:
-			frappe.db.rollback()
-			frappe.log_error(
-				"Failed to cancel remote build job while stopping Release Pipeline",
-				reference_doctype="Deploy Candidate Build",
-				reference_name=build,
-			)
-
-	# fail_remote_job isn't atomic — a step inside it (e.g. process_job_updates)
-	# may commit before a later step fails, so the rollback above can't guarantee
-	# every build ended up terminal. Reconcile directly so this call never leaves
-	# the pipeline "stopped" while one of its builds is still stuck in progress.
-	stuck_builds = frappe.db.get_all(
-		"Deploy Candidate Build",
-		{"name": ("in", active_builds), "status": ("in", DeployCandidateBuildStatus.intermediate())},
-		pluck="name",
-	)
-	for build in stuck_builds:
-		frappe.db.set_value("Deploy Candidate Build", build, "status", "Failure")
-	if stuck_builds:
-		frappe.db.commit()
+	frappe.get_doc("Release Pipeline", name).force_fail()
 
 
 @frappe.whitelist()
