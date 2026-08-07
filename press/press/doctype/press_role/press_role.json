@@ -22,6 +22,7 @@
 		"allow_bench_creation",
 		"allow_server_creation",
 		"allow_webhook_configuration",
+		"allow_local_payment",
 		"partner_permissions_section",
 		"allow_dashboard",
 		"allow_leads",
@@ -116,6 +117,13 @@
 			"fieldname": "allow_webhook_configuration",
 			"fieldtype": "Check",
 			"label": "Allow Webhook Configuration",
+			"search_index": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "allow_local_payment",
+			"fieldtype": "Check",
+			"label": "Allow Local Payment",
 			"search_index": 1
 		},
 		{
