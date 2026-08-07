@@ -1,0 +1,43 @@
+{
+	"actions": [],
+	"creation": "2026-07-06 00:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": ["rule_id", "rule_name", "rule_text"],
+	"fields": [
+		{
+			"fieldname": "rule_id",
+			"fieldtype": "Int",
+			"label": "Rule ID",
+			"in_list_view": 1,
+			"reqd": 1,
+			"default": "100000",
+			"description": "ModSecurity rule id. Must be unique. Use 100000+."
+		},
+		{
+			"fieldname": "rule_name",
+			"fieldtype": "Data",
+			"label": "Rule Name",
+			"in_list_view": 1
+		},
+		{
+			"fieldname": "rule_text",
+			"fieldtype": "Code",
+			"label": "ModSecurity Directive(s)",
+			"reqd": 1,
+			"options": "ModSecurity"
+		}
+	],
+	"istable": 1,
+	"links": [],
+	"modified": "2026-07-06 00:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "WAF Custom Rule",
+	"owner": "Administrator",
+	"permissions": [],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
+}

@@ -1,0 +1,141 @@
+{
+	"actions": [],
+	"creation": "2026-07-06 00:00:00.000000",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"transaction_id",
+		"timestamp",
+		"site",
+		"server",
+		"client_ip",
+		"request_method",
+		"request_uri",
+		"rule_id",
+		"rule_msg",
+		"severity",
+		"action",
+		"matched_data",
+		"raw_log"
+	],
+	"fields": [
+		{
+			"fieldname": "transaction_id",
+			"fieldtype": "Data",
+			"label": "Transaction ID",
+			"in_list_view": 1,
+			"reqd": 1,
+			"unique": 1
+		},
+		{
+			"fieldname": "timestamp",
+			"fieldtype": "Datetime",
+			"label": "Timestamp",
+			"in_list_view": 1,
+			"reqd": 1
+		},
+		{
+			"fieldname": "site",
+			"fieldtype": "Link",
+			"label": "Site",
+			"in_list_view": 1,
+			"reqd": 1,
+			"options": "Site"
+		},
+		{
+			"fieldname": "server",
+			"fieldtype": "Link",
+			"label": "Server",
+			"in_list_view": 1,
+			"options": "Server"
+		},
+		{
+			"fieldname": "client_ip",
+			"fieldtype": "Data",
+			"label": "Client IP",
+			"in_list_view": 1
+		},
+		{
+			"fieldname": "request_method",
+			"fieldtype": "Data",
+			"label": "Method"
+		},
+		{
+			"fieldname": "request_uri",
+			"fieldtype": "Small Text",
+			"label": "Request URI"
+		},
+		{
+			"fieldname": "rule_id",
+			"fieldtype": "Data",
+			"label": "Rule ID"
+		},
+		{
+			"fieldname": "rule_msg",
+			"fieldtype": "Small Text",
+			"label": "Rule Message"
+		},
+		{
+			"fieldname": "severity",
+			"fieldtype": "Select",
+			"label": "Severity",
+			"options": "\nCRITICAL\nERROR\nWARNING\nNOTICE\nINFO\nDEBUG"
+		},
+		{
+			"fieldname": "action",
+			"fieldtype": "Select",
+			"label": "Action",
+			"options": "\nIntercepted\nPassed"
+		},
+		{
+			"fieldname": "matched_data",
+			"fieldtype": "Small Text",
+			"label": "Matched Data"
+		},
+		{
+			"fieldname": "raw_log",
+			"fieldtype": "Code",
+			"label": "Raw Audit Log",
+			"options": "JSON"
+		}
+	],
+	"links": [],
+	"modified": "2026-07-06 00:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "WAF Log",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"role": "System Manager",
+			"read": 1,
+			"write": 1,
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"report": 1,
+			"share": 1,
+			"import": 1
+		},
+		{
+			"role": "All",
+			"read": 0,
+			"write": 0,
+			"create": 0,
+			"delete": 0,
+			"email": 0,
+			"export": 0,
+			"print": 0,
+			"report": 0,
+			"share": 0
+		}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 0,
+	"issingle": 0,
+	"default_view": "List"
+}

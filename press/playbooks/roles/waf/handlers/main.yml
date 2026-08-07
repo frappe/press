@@ -1,0 +1,3 @@
+---
+- name: Reload Nginx Server Architecture
+  ansible.builtin.shell: nginx -t && systemctl reload nginx
