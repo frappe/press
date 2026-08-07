@@ -133,3 +133,62 @@ class TestTeam(FrappeTestCase):
 
 		total = team.total_subscribed_amount()
 		self.assertEqual(total, 50)
+
+	def test_get_upcoming_invoice_returns_unpaid_invoice_for_current_period(self):
+		"""An invoice that has already been finalized to Unpaid (but not yet submitted) still
+		owns its period - get_upcoming_invoice must not overlook it and cause a duplicate."""
+		team = create_test_team()
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=team.name,
+			period_start=frappe.utils.add_days(frappe.utils.today(), -10),
+			period_end=frappe.utils.add_days(frappe.utils.today(), 10),
+		).insert()
+		invoice.db_set("status", "Unpaid")
+
+		self.assertEqual(team.get_upcoming_invoice().name, invoice.name)
+
+	def test_get_upcoming_invoice_ignores_cancelled_invoice(self):
+		team = create_test_team()
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=team.name,
+			period_start=frappe.utils.add_days(frappe.utils.today(), -10),
+			period_end=frappe.utils.add_days(frappe.utils.today(), 10),
+		).insert()
+		frappe.db.set_value("Invoice", invoice.name, "docstatus", 2)
+
+		self.assertIsNone(team.get_upcoming_invoice())
+
+	def test_get_upcoming_invoice_matches_invoice_for_given_date_not_only_today(self):
+		team = create_test_team()
+		last_months_invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=team.name,
+			period_start=frappe.utils.add_days(frappe.utils.today(), -40),
+			period_end=frappe.utils.add_days(frappe.utils.today(), -10),
+		).insert()
+
+		backfilled_date = frappe.utils.add_days(frappe.utils.today(), -20)
+
+		self.assertEqual(team.get_upcoming_invoice(backfilled_date).name, last_months_invoice.name)
+		self.assertIsNone(team.get_upcoming_invoice())
+
+	def test_create_upcoming_invoice_uses_given_date_as_period_start(self):
+		team = create_test_team()
+		backfilled_date = frappe.utils.add_days(frappe.utils.today(), -20)
+
+		invoice = team.create_upcoming_invoice(backfilled_date)
+
+		self.assertEqual(frappe.utils.getdate(invoice.period_start), frappe.utils.getdate(backfilled_date))
+
+	def test_create_upcoming_invoice_returns_existing_invoice_on_race_duplicate(self):
+		"""If two callers race to create the invoice for the same date, the loser must get
+		back the winner's invoice instead of raising a DuplicateEntryError."""
+		team = create_test_team()
+		date = frappe.utils.today()
+		first = team.create_upcoming_invoice(date)
+
+		second = team.create_upcoming_invoice(date)
+
+		self.assertEqual(second.name, first.name)

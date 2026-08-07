@@ -167,8 +167,8 @@ class Subscription(Document):
 		if team.billing_team and team.payment_mode == "Paid By Partner":
 			team = frappe.get_cached_doc("Team", team.billing_team)
 
-		if not team.get_upcoming_invoice():
-			team.create_upcoming_invoice()
+		if not team.get_upcoming_invoice(date):
+			team.create_upcoming_invoice(date)
 
 		plan = frappe.get_cached_doc(self.plan_type, self.plan)
 
