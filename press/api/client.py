@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import inspect
+import json
 import typing
 
 import frappe
@@ -327,9 +328,7 @@ def set_value(doctype: str, name: str, fieldname: dict | str, value: str | None 
 	if not has_support_access(doctype, name):
 		check_document_write_access(doctype, name)
 
-	for field in fieldname:
-		# fields mentioned in dashboard_fields are allowed to be set via set_value
-		is_allowed_field(doctype, field)
+	check_editable_fields(doctype, fields_being_set(fieldname, value))
 
 	_set_value(doctype, name, fieldname, value)
 
@@ -512,6 +511,39 @@ def is_allowed_field(doctype, field):
 		return True
 
 	return False
+
+
+def fields_being_set(fieldname: dict | str, value: str | None) -> list[str]:
+	"""The fields `frappe.client.set_value` will write, however it was called.
+
+	It takes either a mapping or a single fieldname with its value, and a
+	fieldname that parses as JSON is treated as the mapping.
+	"""
+	if isinstance(fieldname, dict):
+		return list(fieldname)
+
+	if value:
+		return [fieldname]
+
+	try:
+		return list(json.loads(fieldname))
+	except (TypeError, ValueError):
+		return [fieldname]
+
+
+def check_editable_fields(doctype: str, fields: list[str]):
+	"""Refuse to write a field the doctype hasn't offered up for editing.
+
+	`dashboard_fields` says what the dashboard may read, which is a much longer
+	list than what it may write — a site shows its plan, server and team without
+	anyone being allowed to set them from here. Doctypes name the writable ones
+	in `dashboard_editable_fields`, and everything else is refused.
+	"""
+	editable = getattr(get_controller(doctype), "dashboard_editable_fields", ())
+
+	for field in fields:
+		if field not in editable:
+			frappe.throw(f"{doctype}.{field} cannot be edited from the dashboard", frappe.PermissionError)
 
 
 def is_allowed_linked_field(doctype, field):
