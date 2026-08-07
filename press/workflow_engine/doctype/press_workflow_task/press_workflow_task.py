@@ -188,8 +188,15 @@ class PressWorkflowTask(Document):
 			# executing wouldn't be reflected in it. Re-check the live flag here so
 			# a stale "Success" from a task that should've been stopped doesn't
 			# overwrite the forced failure and resume the workflow.
+			# `for_update` forces a fresh read of the committed value — without it,
+			# a task running under REPEATABLE READ could keep seeing the snapshot
+			# from before its transaction started, missing a force-fail requested
+			# after the task began but before this check.
 			force_failure_requested = frappe.db.get_value(
-				"Press Workflow", self.workflow, "is_force_failure_requested"
+				"Press Workflow",
+				self.workflow,
+				"is_force_failure_requested",
+				for_update=(not frappe.flags.in_test),
 			)
 			if force_failure_requested and status != "Failure":
 				status = "Failure"
