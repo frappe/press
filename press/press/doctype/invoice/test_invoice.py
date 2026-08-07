@@ -2,6 +2,7 @@
 # See license.txt
 
 
+import datetime
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
@@ -694,49 +695,77 @@ class TestInvoice(FrappeTestCase):
 		self.assertEqual(invoice.total_discount_amount, 10)
 		self.assertEqual(invoice.amount_due, 90)
 
-	def test_finalize_draft_invoices_does_not_finalize_invoice_for_ongoing_period(self):
+	@staticmethod
+	def _at_hour(hour):
+		return datetime.datetime.combine(frappe.utils.getdate(), datetime.time(hour, 0))
+
+	def test_finalize_draft_invoices_does_not_finalize_current_months_invoice(self):
+		today_date = frappe.utils.getdate()
 		invoice = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
-			period_start=add_days(today(), -10),
-			period_end=add_days(today(), 10),
+			period_start=frappe.utils.get_first_day(today_date),
+			period_end=frappe.utils.get_last_day(today_date),
 		).insert()
 		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
 		invoice.save()
 
-		finalize_draft_invoices()
+		with patch.object(frappe.utils, "get_datetime", return_value=self._at_hour(9)):
+			finalize_draft_invoices()
 		invoice.reload()
 
 		self.assertEqual(invoice.status, "Draft")
 
-	def test_finalize_draft_invoices_does_not_finalize_invoice_on_its_last_day(self):
-		"""Finalization now waits for the day after period_end, not a time-of-day cutoff on the last day."""
+	def test_finalize_draft_invoices_does_not_finalize_invoice_older_than_previous_month(self):
+		"""Only the previous month's invoice is finalized automatically - an older invoice
+		that's still stuck in Draft (e.g. a past finalize failure) is left alone."""
+		two_months_ago_start = frappe.utils.get_first_day(frappe.utils.add_months(frappe.utils.today(), -2))
 		invoice = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
-			period_start=add_days(today(), -29),
-			period_end=today(),
+			period_start=two_months_ago_start,
+			period_end=frappe.utils.get_last_day(two_months_ago_start),
 		).insert()
 		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
 		invoice.save()
 
-		finalize_draft_invoices()
+		with patch.object(frappe.utils, "get_datetime", return_value=self._at_hour(9)):
+			finalize_draft_invoices()
+		invoice.reload()
+
+		self.assertEqual(invoice.status, "Draft")
+
+	def test_finalize_draft_invoices_does_not_finalize_before_6am(self):
+		previous_month_start = frappe.utils.get_first_day(frappe.utils.add_months(frappe.utils.today(), -1))
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=previous_month_start,
+			period_end=frappe.utils.get_last_day(previous_month_start),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		with patch.object(frappe.utils, "get_datetime", return_value=self._at_hour(3)):
+			finalize_draft_invoices()
 		invoice.reload()
 
 		self.assertEqual(invoice.status, "Draft")
 
 	@patch("press.press.doctype.invoice.invoice.frappe.db.commit", new=MagicMock())
-	def test_finalize_draft_invoices_finalizes_invoice_once_period_has_fully_ended(self):
+	def test_finalize_draft_invoices_finalizes_previous_months_invoice_from_6am(self):
+		previous_month_start = frappe.utils.get_first_day(frappe.utils.add_months(frappe.utils.today(), -1))
 		invoice = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
-			period_start=add_days(today(), -31),
-			period_end=add_days(today(), -1),
+			period_start=previous_month_start,
+			period_end=frappe.utils.get_last_day(previous_month_start),
 		).insert()
 		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
 		invoice.save()
 
-		finalize_draft_invoices()
+		with patch.object(frappe.utils, "get_datetime", return_value=self._at_hour(6)):
+			finalize_draft_invoices()
 		invoice.reload()
 
 		self.assertNotEqual(invoice.status, "Draft")
@@ -746,16 +775,18 @@ class TestInvoice(FrappeTestCase):
 		self.team.enabled = 0
 		self.team.save()
 
+		previous_month_start = frappe.utils.get_first_day(frappe.utils.add_months(frappe.utils.today(), -1))
 		invoice = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
-			period_start=add_days(today(), -31),
-			period_end=add_days(today(), -1),
+			period_start=previous_month_start,
+			period_end=frappe.utils.get_last_day(previous_month_start),
 		).insert()
 		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
 		invoice.save()
 
-		finalize_draft_invoices()
+		with patch.object(frappe.utils, "get_datetime", return_value=self._at_hour(9)):
+			finalize_draft_invoices()
 		invoice.reload()
 
 		self.assertEqual(invoice.status, "Draft")
