@@ -416,8 +416,12 @@ const stopPipeline = () => {
 			theme: 'red',
 			onClick({ hide }) {
 				return createResource({
-					url: 'press.api.bench.stop_release_pipeline',
-					params: { name: pipeline.doc.name },
+					url: 'press.api.client.run_doc_method',
+					params: {
+						dt: 'Release Pipeline',
+						dn: pipeline.doc.name,
+						method: 'force_fail',
+					},
 				})
 					.fetch()
 					.then(() => hide())

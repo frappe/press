@@ -11,6 +11,7 @@ import frappe
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import Version
 
+from press.api.client import dashboard_whitelist
 from press.api.github import GithubFetchError, get_dependant_apps_with_versions
 from press.exceptions import InsufficientSpaceOnServer, ReleasePipelineFailure
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -198,7 +199,7 @@ class ReleasePipeline(WorkflowBuilder):
 		if status == "Failure":
 			self.send_failure_notification()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def force_fail(self):
 		if self.status == "Failure":
 			return
