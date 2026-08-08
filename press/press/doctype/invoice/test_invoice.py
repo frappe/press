@@ -168,6 +168,11 @@ class TestInvoice(FrappeTestCase):
 			{"amount": 500, "source": "Prepaid Credits"}, invoice.credit_allocations[1].as_dict()
 		)
 
+		# finalizing the invoice above also auto-creates a follow-up Draft invoice for the
+		# rest of its (now-truncated) period - drop it so it doesn't collide with the
+		# explicitly-dated second invoice this test constructs below
+		frappe.db.delete("Invoice", {"team": self.team.name, "name": ("!=", invoice.name)})
+
 		# Second Invoice
 		# Total: 700
 		# Team has 500 Credits left after the first invoice
@@ -736,8 +741,12 @@ class TestInvoice(FrappeTestCase):
 		self.assertEqual(invoice.status, "Draft")
 
 	@patch("press.press.doctype.invoice.invoice.frappe.db.commit", new=MagicMock())
-	def test_finalize_draft_invoice_does_not_create_next_months_invoice(self):
-		"""Creating next month's invoice is now a separate, last-day-of-month scheduled step."""
+	@patch("press.press.doctype.invoice.invoice.frappe.db.commit", new=MagicMock())
+	def test_finalize_draft_invoice_ensures_next_invoice_exists_as_a_safety_net(self):
+		"""create_invoices_for_next_month proactively creates next month's invoice on the
+		last day of the month, but finalize_invoice() also ensures one exists as a redundant
+		safety net - so usage always has a Draft invoice to attach to even if that proactive
+		step failed, was skipped, or this invoice was finalized early (account closure, etc)."""
 		invoice = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
@@ -750,12 +759,34 @@ class TestInvoice(FrappeTestCase):
 		finalize_draft_invoice(invoice.name)
 
 		next_period_start = add_days(invoice.period_end, 1)
-		self.assertFalse(
-			frappe.db.exists(
-				"Invoice",
-				{"team": self.team.name, "period_start": next_period_start, "type": "Subscription"},
-			)
+		next_invoice = frappe.get_doc(
+			"Invoice", {"team": self.team.name, "period_start": next_period_start, "type": "Subscription"}
 		)
+		self.assertEqual(next_invoice.status, "Draft")
+
+	@patch("press.press.doctype.invoice.invoice.frappe.db.commit", new=MagicMock())
+	def test_finalize_invoice_finalized_early_leaves_a_draft_invoice_for_rest_of_period(self):
+		"""An invoice finalized before its period has ended (e.g. account closure/deletion,
+		manual 'finalize now') must leave a Draft invoice covering the remaining days of the
+		current period, starting tomorrow - not next calendar month."""
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		invoice.finalize_invoice()
+
+		self.assertEqual(frappe.utils.getdate(invoice.period_end), frappe.utils.getdate(today()))
+
+		tomorrow = add_days(today(), 1)
+		continuation_invoice = frappe.get_doc(
+			"Invoice", {"team": self.team.name, "period_start": tomorrow, "type": "Subscription"}
+		)
+		self.assertEqual(continuation_invoice.status, "Draft")
 
 	def test_create_next_does_not_raise_on_race_with_concurrent_invoice_creation(self):
 		"""If another process creates next month's invoice between create_next()'s existence
@@ -878,6 +909,31 @@ class TestInvoice(FrappeTestCase):
 				{"team": self.team.name, "period_start": next_period_start, "type": "Subscription"},
 			),
 			1,
+		)
+
+	@patch("press.press.doctype.invoice.invoice.frappe.db.commit", new=MagicMock())
+	@patch("press.press.doctype.invoice.invoice.has_job_timeout_exceeded", return_value=True)
+	def test_create_invoices_for_next_month_stops_when_job_timeout_exceeded(self, mock_timeout):
+		"""A long batch must bail out cleanly instead of risking a hard kill mid-iteration."""
+		last_day = frappe.utils.get_last_day(frappe.utils.getdate())
+		period_start = frappe.utils.get_first_day(last_day)
+
+		frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=period_start,
+			period_end=last_day,
+		).insert()
+
+		with patch.object(frappe.utils, "today", return_value=last_day):
+			create_invoices_for_next_month()
+
+		next_period_start = add_days(last_day, 1)
+		self.assertFalse(
+			frappe.db.exists(
+				"Invoice",
+				{"team": self.team.name, "period_start": next_period_start, "type": "Subscription"},
+			)
 		)
 
 	def test_validate_duplicate_blocks_new_invoice_intersecting_a_finalized_invoice(self):

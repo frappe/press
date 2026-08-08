@@ -42,6 +42,49 @@ class TestUsageRecord(FrappeTestCase):
 			)
 		)
 
+	def test_late_usage_record_against_submitted_invoice_fails_loudly_instead_of_crashing(self):
+		"""Once an invoice is submitted (Paid/Empty) it can no longer be mutated. A usage
+		record whose date falls in that period must fail with our own clear error, not
+		leak frappe's opaque UpdateAfterSubmitError from an attempted item append."""
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=frappe.utils.today(),
+			period_end=frappe.utils.add_days(frappe.utils.today(), 10),
+		).insert()
+		invoice.finalize_invoice()  # total is 0 -> status Empty, submitted (docstatus=1)
+		self.assertEqual(invoice.docstatus, 1)
+
+		usage_record = frappe.get_doc(doctype="Usage Record", team=self.team.name, amount=42)
+		usage_record.insert()
+
+		with self.assertRaises(frappe.ValidationError) as context:
+			usage_record.submit()
+		self.assertIn("already covers this period", str(context.exception))
+
+	def test_late_usage_record_against_unpaid_invoice_fails_loudly_instead_of_mutating_it(self):
+		"""An invoice finalized to Unpaid (docstatus still 0, not yet submitted) may already
+		have a Stripe/Razorpay invoice created against it. A usage record whose date falls
+		in that period must fail loudly, not silently append to and re-save it."""
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=frappe.utils.today(),
+			period_end=frappe.utils.add_days(frappe.utils.today(), 10),
+		).insert()
+		invoice.db_set("status", "Unpaid")
+		self.assertEqual(invoice.docstatus, 0)
+
+		usage_record = frappe.get_doc(doctype="Usage Record", team=self.team.name, amount=42)
+		usage_record.insert()
+
+		with self.assertRaises(frappe.ValidationError) as context:
+			usage_record.submit()
+		self.assertIn("already covers this period", str(context.exception))
+
+		invoice.reload()
+		self.assertEqual(len(invoice.items), 0)
+
 	def test_usage_record_creates_invoice_for_its_own_date_when_none_exists(self):
 		backfilled_date = frappe.utils.add_days(frappe.utils.today(), -20)
 		usage_record = frappe.get_doc(

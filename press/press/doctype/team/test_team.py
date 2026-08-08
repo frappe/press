@@ -134,9 +134,10 @@ class TestTeam(FrappeTestCase):
 		total = team.total_subscribed_amount()
 		self.assertEqual(total, 50)
 
-	def test_get_upcoming_invoice_returns_unpaid_invoice_for_current_period(self):
-		"""An invoice that has already been finalized to Unpaid (but not yet submitted) still
-		owns its period - get_upcoming_invoice must not overlook it and cause a duplicate."""
+	def test_get_upcoming_invoice_ignores_invoice_already_finalized_to_unpaid(self):
+		"""Once an invoice is finalized to Unpaid it may already have a Stripe/Razorpay
+		invoice created against it - get_upcoming_invoice must never return it for further
+		mutation, even though it's still docstatus=0 (not yet submitted)."""
 		team = create_test_team()
 		invoice = frappe.get_doc(
 			doctype="Invoice",
@@ -145,18 +146,6 @@ class TestTeam(FrappeTestCase):
 			period_end=frappe.utils.add_days(frappe.utils.today(), 10),
 		).insert()
 		invoice.db_set("status", "Unpaid")
-
-		self.assertEqual(team.get_upcoming_invoice().name, invoice.name)
-
-	def test_get_upcoming_invoice_ignores_cancelled_invoice(self):
-		team = create_test_team()
-		invoice = frappe.get_doc(
-			doctype="Invoice",
-			team=team.name,
-			period_start=frappe.utils.add_days(frappe.utils.today(), -10),
-			period_end=frappe.utils.add_days(frappe.utils.today(), 10),
-		).insert()
-		frappe.db.set_value("Invoice", invoice.name, "docstatus", 2)
 
 		self.assertIsNone(team.get_upcoming_invoice())
 

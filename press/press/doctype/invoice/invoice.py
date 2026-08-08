@@ -293,7 +293,9 @@ class Invoice(Document):
 
 		if self.total == 0:
 			self.status = "Empty"
+			self.truncate_period_end_if_finalized_early()
 			self.submit()
+			self.ensure_next_invoice_exists()
 			return
 
 		team = frappe.get_doc("Team", self.team)
@@ -310,8 +312,10 @@ class Invoice(Document):
 			if invoice.status == "paid":
 				self.status = "Paid"
 				self.update_transaction_details(invoice.charge)
+				self.truncate_period_end_if_finalized_early()
 				self.submit()
 				self.unsuspend_sites_if_applicable()
+				self.ensure_next_invoice_exists()
 				return
 
 		if self.razorpay_payment_id and self.status == "Invoice Created":
@@ -321,6 +325,7 @@ class Invoice(Document):
 
 		# set as unpaid by default
 		self.status = "Unpaid"
+		self.truncate_period_end_if_finalized_early()
 		self.update_item_descriptions()
 
 		if self.amount_due > 0:
@@ -367,6 +372,8 @@ class Invoice(Document):
 		if self.status == "Paid":
 			self.submit()
 			self.unsuspend_sites_if_applicable()
+
+		self.ensure_next_invoice_exists()
 
 	def unsuspend_sites_if_applicable(self):
 		if (
@@ -1105,6 +1112,25 @@ class Invoice(Document):
 			# another process created it between the exists check above and this insert
 			return None
 
+	def truncate_period_end_if_finalized_early(self):
+		# shrink period_end to today if finalized before the period ended (e.g. account
+		# closure), so a follow-up invoice can cover the rest without a period overlap
+		if self.type != "Subscription":
+			return
+		today = frappe.utils.getdate()
+		if getdate(self.period_end) > today:
+			self.period_end = today
+
+	def ensure_next_invoice_exists(self):
+		# guarantees a Draft invoice for any not-yet-billed date, whether this invoice
+		# finalized on time or early (account closure, deletion, manual finalize)
+		if self.type != "Subscription":
+			return
+		try:
+			self.create_next()
+		except Exception:
+			log_error("Failed to create follow-up invoice after finalize", invoice=self.name)
+
 	def get_pdf(self):
 		print_format = self.meta.default_print_format
 		return frappe.utils.get_url(
@@ -1384,13 +1410,8 @@ class Invoice(Document):
 
 
 def finalize_draft_invoices():
-	"""
-	- Runs every hour
-	- Processes 500 invoices at a time
-	- Finalizes only the previous month's Draft invoices, starting 6 AM on the
-		1st of the new month. This keeps the current month's invoice untouched
-		while usage records for it can still be created.
-	"""
+	"""Runs hourly, 500 at a time. Finalizes only the previous month's Draft invoices,
+	starting 6 AM on the 1st - keeps the current month's invoice open for new usage."""
 
 	if frappe.utils.get_datetime().hour < 6:
 		return
@@ -1418,12 +1439,8 @@ def finalize_draft_invoices():
 
 
 def create_invoices_for_next_month():
-	"""
-	- Runs every hour
-	- On the last day of the month, creates next month's Subscription invoice
-		for every enabled team so it already exists before usage records for the
-		new period start coming in
-	"""
+	"""Runs hourly, 500 at a time. On the last day of the month, creates next month's
+	Draft invoice for every enabled team before usage records for it start coming in."""
 
 	today = frappe.utils.getdate(frappe.utils.today())
 	if today != frappe.utils.get_last_day(today):
@@ -1439,9 +1456,12 @@ def create_invoices_for_next_month():
 			"team": ("in", enabled_teams),
 		},
 		pluck="name",
+		limit=500,
 	)
 
 	for name in invoices:
+		if has_job_timeout_exceeded():
+			return
 		invoice = frappe.get_doc("Invoice", name)
 		try:
 			invoice.create_next()
