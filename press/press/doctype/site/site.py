@@ -364,6 +364,7 @@ class Site(Document, TagHelpers):
 
 	def get_doc(self, doc):
 		from press.api.client import get
+		from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import disk_full_servers
 
 		group = frappe.db.get_value(
 			"Release Group",
@@ -414,6 +415,8 @@ class Site(Document, TagHelpers):
 		doc.server_provider = server.provider
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
+		# on shared hosting the disk is ours to free up, not the site owner's
+		doc.is_server_disk_full = doc.is_dedicated_server and self.server in disk_full_servers()
 
 		if doc.is_dedicated_server:
 			doc.next_allowed_dedicated_product_warranty_change_date = (
