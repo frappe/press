@@ -10,6 +10,7 @@ Guidelines for writing good code in this project.
 - Keep files between 100 and 300 lines. A file that keeps growing is a sign that it is doing too many things.
 - Avoid abbreviations. Spell names out. Short names are fine only for loop variables or genuinely obvious abbreviations (`doc`, `e`).
 - Reuse. Write as little code as possible. If you are about to write something that sounds general, check whether it already exists.
+- Match the file you are in. If it does something one way everywhere, do it that way.
 - Build the minimum that works, then iterate. Do not add structure for hypothetical future requirements.
 - Fail loud at the boundary. If an external call fails, raise — don't swallow and fall back. The operator retries by clicking the button.
 
