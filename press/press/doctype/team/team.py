@@ -1605,16 +1605,15 @@ class Team(Document):
 				log_error("Failed to remove subscription config in trial sites")
 
 	def get_upcoming_invoice(self, date=None, for_update=False):
-		# get the invoice covering the given date's period (defaults to today).
-		# any non-cancelled invoice counts, not just a Draft one, so a usage record
-		# doesn't spawn a duplicate once the owning invoice has been finalized
+		# only Draft counts - a finalized invoice may already have a Stripe/Razorpay
+		# invoice created against it and must never be mutated further
 		date = date or frappe.utils.today()
 		result = frappe.db.get_all(
 			"Invoice",
 			filters={
+				"status": "Draft",
 				"team": self.name,
 				"type": "Subscription",
-				"docstatus": ("<", 2),
 				"period_start": ("<=", date),
 				"period_end": (">=", date),
 			},
@@ -1634,7 +1633,15 @@ class Team(Document):
 			).insert()
 		except frappe.DuplicateEntryError:
 			# another process created the invoice for this period first
-			return self.get_upcoming_invoice(date)
+			invoice = self.get_upcoming_invoice(date)
+			if not invoice:
+				# the period is already owned by a finalized (no longer Draft) invoice
+				frappe.throw(
+					f"Cannot create an invoice for {self.name} on {date}: a finalized invoice "
+					"already covers this period",
+					frappe.ValidationError,
+				)
+			return invoice
 
 	@frappe.whitelist()
 	def send_telegram_alert_for_failed_payment(self, invoice):
