@@ -52,6 +52,15 @@ class SupportAccess(Document):
 		"bench_ssh",
 	)
 
+	dashboard_insert_fields = (
+		"reason",
+		"resources",
+		"login_as_administrator",
+		"site_domains",
+		"site_release_group",
+		"bench_ssh",
+	)
+
 	def get_list_query(query, filters: dict | None, **args):
 		filters = filters or {}
 		team = get_current_team()
