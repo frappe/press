@@ -281,10 +281,24 @@ class Site(Document, TagHelpers):
 		"standby_for_product",
 	)
 
+<<<<<<< HEAD
 	# A site shows its plan, bench, server and team so the dashboard can render
 	# them. Every one of those moves through a flow that bills, schedules or
 	# migrates something — none of them through `set_value`.
 	dashboard_editable_fields = ("skip_auto_updates",)
+=======
+	dashboard_insert_fields = (
+		"subdomain",
+		"apps",
+		"app_plans",
+		"cluster",
+		"group",
+		"domain",
+		"subscription_plan",
+		"share_details_consent",
+		"server",
+	)
+>>>>>>> 881e00cac (refactor(client): Insert for selective doctypes)
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
