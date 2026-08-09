@@ -1241,10 +1241,18 @@ def restore_tables_after_failed_recovery(failed_job: "AgentJob", site_update_nam
 	# safely retryable; other failures need manual attention, so leave the site Fatal.
 	if not failed_due_to_transient_db_error(failed_job):
 		return False
+	site_update = frappe.get_doc("Site Update", site_update_name)
+	site = frappe.get_doc("Site", site_update.site)
+	# The restore only has one shot, so don't spend it on a database that is still down.
+	# ponytail: no wait-and-retry — if this proves too eager, poll before giving up.
+	if not site.database_is_reachable():
+		site_update.add_comment(
+			text="Database unreachable after the failed recovery; skipped the automatic table restore."
+		)
+		return False
 	# The failed recovery already moved the site back, so re-running it would fail at the
 	# non-idempotent "Move Site"; just re-issue the leftover table restore (linked below).
-	site_update = frappe.get_doc("Site Update", site_update_name)
-	restore_job = frappe.get_doc("Site", site_update.site).restore_tables()
+	restore_job = site.restore_tables()
 	site_update.add_comment(
 		text=(
 			f"Recover job <a href='/app/agent-job/{failed_job.name}'>{failed_job.name}</a> failed; "

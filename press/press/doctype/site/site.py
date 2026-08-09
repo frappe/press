@@ -3900,6 +3900,14 @@ class Site(Document, TagHelpers):
 			return None
 		return agent.fetch_database_processes(self)
 
+	def database_is_reachable(self) -> bool:
+		"""Whether the site's database answers a query right now."""
+		try:
+			return self.fetch_database_processes() is not None
+		except Exception:
+			log_error("Database Reachability Check Failed", site=self.name)
+			return False
+
 	@dashboard_whitelist()
 	def fetch_database_locks(self):
 		agent = Agent(self.database_server_name, "Database Server")
