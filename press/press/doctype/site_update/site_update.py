@@ -1245,9 +1245,10 @@ def restore_tables_after_failed_recovery(failed_job: "AgentJob", site_update_nam
 	site = frappe.get_doc("Site", site_update.site)
 	# The restore only has one shot, so don't spend it on a database that is still down.
 	# ponytail: no wait-and-retry — if this proves too eager, poll before giving up.
-	if not site.database_is_reachable():
+	database_server = frappe.get_doc("Database Server", site.database_server_name)
+	if not database_server.is_mariadb_up():
 		site_update.add_comment(
-			text="Database unreachable after the failed recovery; skipped the automatic table restore."
+			text="MariaDB was down after the failed recovery; skipped the automatic table restore."
 		)
 		return False
 	# The failed recovery already moved the site back, so re-running it would fail at the

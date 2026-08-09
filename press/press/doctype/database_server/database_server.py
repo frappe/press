@@ -1552,6 +1552,29 @@ class DatabaseServer(BaseServer):
 			queue="long",
 		)
 
+	def is_mariadb_up(self) -> bool:
+		"""Whether mysqld_exporter last scraped MariaDB as up.
+
+		Unknown counts as up — a server without monitoring shouldn't look down.
+		"""
+		from press.api.server import prometheus_query
+
+		try:
+			response = prometheus_query(
+				f"""mysql_up{{instance="{self.name}",job="mariadb"}}""",
+				lambda x: "Up",
+				"Asia/Kolkata",
+				120,
+				120,
+			)["datasets"]
+		except Exception:
+			log_error("MariaDB Uptime Query Failed", server=self.name)
+			return True
+		if not response:
+			return True
+		scraped_values = [value for value in response[0]["values"] if value is not None]
+		return scraped_values[-1] == 1 if scraped_values else True
+
 	def get_stalks(self):
 		if self.agent.should_skip_requests():
 			return []

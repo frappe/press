@@ -226,3 +226,25 @@ class TestDatabaseServer(FrappeTestCase):
 			).value_int,
 			int(15007.248 * 0.65),
 		)
+
+	@patch("press.api.server.prometheus_query")
+	def test_is_mariadb_up_reads_the_last_scraped_mysql_up_value(self, prometheus_query: Mock):
+		server = create_test_database_server()
+
+		prometheus_query.return_value = {"datasets": [{"name": "Up", "values": [1.0, 0.0, None]}]}
+		self.assertFalse(server.is_mariadb_up(), "A last scrape of mysql_up=0 means MariaDB is down")
+
+		prometheus_query.return_value = {"datasets": [{"name": "Up", "values": [0.0, 1.0, None]}]}
+		self.assertTrue(server.is_mariadb_up(), "A last scrape of mysql_up=1 means MariaDB is up")
+
+	@patch("press.api.server.prometheus_query")
+	def test_is_mariadb_up_treats_missing_monitoring_data_as_up(self, prometheus_query: Mock):
+		# A server without monitoring, or one Prometheus can't be reached for, must not look
+		# down — that would block actions that depend on the check.
+		server = create_test_database_server()
+
+		prometheus_query.return_value = {"datasets": []}
+		self.assertTrue(server.is_mariadb_up(), "No monitoring data should count as up")
+
+		prometheus_query.side_effect = frappe.ValidationError("Unable to connect to monitor server")
+		self.assertTrue(server.is_mariadb_up(), "An unreachable monitor server should count as up")

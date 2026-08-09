@@ -421,7 +421,7 @@ class TestSiteUpdate(FrappeTestCase):
 		difference.save()
 		return create_test_site(bench=bench1.name)
 
-	@patch.object(Site, "database_is_reachable", new=Mock(return_value=True))
+	@patch.object(DatabaseServer, "is_mariadb_up", new=Mock(return_value=True))
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 	def test_failed_migrate_recovery_restores_site_tables_and_resolves_fatal_update(self):
 		site = self._migrate_site_with_difference()
@@ -488,7 +488,7 @@ class TestSiteUpdate(FrappeTestCase):
 			"The fallback table restore job should be referenced in a comment on the Site Update",
 		)
 
-	@patch.object(Site, "database_is_reachable", new=Mock(return_value=True))
+	@patch.object(DatabaseServer, "is_mariadb_up", new=Mock(return_value=True))
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 	def test_failed_migrate_recovery_then_failed_table_restore_goes_fatal(self):
 		site = self._migrate_site_with_difference()
@@ -590,10 +590,10 @@ class TestSiteUpdate(FrappeTestCase):
 			"Restore Site Tables must not run for a non-transient recovery failure",
 		)
 
-	@patch.object(Site, "database_is_reachable", new=Mock(return_value=False))
+	@patch.object(DatabaseServer, "is_mariadb_up", new=Mock(return_value=False))
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_failed_migrate_recovery_does_not_restore_tables_when_database_is_unreachable(self):
-		# The fallback restore only gets one shot, so it must not be spent on a database
+	def test_failed_migrate_recovery_does_not_restore_tables_when_mariadb_is_down(self):
+		# The fallback restore only gets one shot, so it must not be spent on a MariaDB
 		# that hasn't come back up yet.
 		site = self._migrate_site_with_difference()
 
@@ -616,7 +616,7 @@ class TestSiteUpdate(FrappeTestCase):
 
 		self.assertFalse(
 			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
-			"Restore Site Tables must not run while the database is unreachable",
+			"Restore Site Tables must not run while MariaDB is down",
 		)
 		self.assertEqual(
 			frappe.get_value("Site Update", site_update, "status"),
@@ -629,7 +629,7 @@ class TestSiteUpdate(FrappeTestCase):
 				{
 					"reference_doctype": "Site Update",
 					"reference_name": site_update,
-					"content": ("like", "%Database unreachable%"),
+					"content": ("like", "%MariaDB was down%"),
 				},
 			),
 			"Skipping the fallback restore should be recorded on the Site Update",
