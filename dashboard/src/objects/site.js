@@ -1,5 +1,4 @@
-import { createListResource, createResource, LoadingIndicator } from 'frappe-ui'
-import { unparse } from 'papaparse'
+import { Badge, createListResource, createResource, LoadingIndicator } from 'frappe-ui'
 import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
 import ArrowLeftRightIcon from '~icons/lucide/arrow-left-right'
@@ -13,13 +12,15 @@ import { getRunningJobs } from '../utils/agentJob'
 import { confirmDialog, icon, renderDialog } from '../utils/components'
 import dayjs from '../utils/dayjs'
 import { isMobile } from '../utils/device'
-import { bytes, date, userCurrency } from '../utils/format'
+import { bytes, date } from '../utils/format'
 import { getQueryParam, setQueryParam } from '../utils/index'
 import { getDocResource } from '../utils/resource'
-import { trialDays } from '../utils/site'
 import { getToastErrorMessage } from '../utils/toast'
-import { clusterOptions, getUpsellBanner } from './common'
+import { getUpsellBanner } from './common'
 import { getAppsTab } from './common/apps'
+
+// prefilled so only the ticket id has to be typed; on its own it is not a reason
+const LOGIN_REASON_PREFIX = 'Investigating '
 
 export default {
 	doctype: 'Site',
@@ -65,187 +66,7 @@ export default {
 	list: {
 		route: '/sites',
 		title: 'Sites',
-		fields: [
-			'plan.plan_title as plan_title',
-			'plan.price_usd as price_usd',
-			'plan.price_inr as price_inr',
-			'group.title as group_title',
-			'group.public as group_public',
-			'group.team as group_team',
-			'group.version as version',
-			'cluster.image as cluster_image',
-			'cluster.title as cluster_title',
-			'trial_end_date',
-			'creation',
-			'is_monitoring_disabled',
-		],
-		orderBy: 'creation desc',
-		searchField: 'host_name',
-		filterControls() {
-			return [
-				{
-					type: 'select',
-					label: 'Status',
-					fieldname: 'status',
-					options: [
-						'',
-						'Active',
-						'Inactive',
-						'Suspended',
-						'Broken',
-						'Archived',
-					],
-				},
-				{
-					type: 'link',
-					label: 'Version',
-					fieldname: 'group.version',
-					options: {
-						doctype: 'Frappe Version',
-					},
-				},
-				{
-					type: 'link',
-					label: 'Benches',
-					fieldname: 'group',
-					options: {
-						doctype: 'Release Group',
-					},
-				},
-				{
-					type: 'select',
-					label: 'Region',
-					fieldname: 'cluster',
-					options: clusterOptions,
-				},
-				{
-					type: 'link',
-					label: 'Tag',
-					fieldname: 'tags.tag',
-					options: {
-						doctype: 'Press Tag',
-						filters: {
-							doctype_name: 'Site',
-						},
-					},
-				},
-			]
-		},
-		columns: [
-			{
-				label: 'Site',
-				fieldname: 'host_name',
-				width: 1.5,
-				class: 'font-medium',
-				format(value, row) {
-					return value || row.name
-				},
-			},
-			{ label: 'Status', fieldname: 'status', type: 'Badge', width: '140px' },
-			{
-				label: 'Plan',
-				fieldname: 'plan',
-				width: '15rem',
-				format(value, row) {
-					if (row.trial_end_date) {
-						return trialDays(row.trial_end_date)
-					}
-					const $team = getTeam()
-					if (row.price_usd > 0) {
-						const india = $team.doc?.currency === 'INR'
-						const formattedValue = userCurrency(
-							india ? row.price_inr : row.price_usd,
-							0,
-						)
-						return `${formattedValue}/mo`
-					}
-					return row.plan_title
-				},
-			},
-			{
-				label: 'Region',
-				fieldname: 'cluster',
-				width: 1,
-				format(value, row) {
-					return row.cluster_title || value
-				},
-				prefix(row) {
-					return h('img', {
-						src: row.cluster_image,
-						class: 'w-4 h-4',
-						alt: row.cluster_title,
-					})
-				},
-			},
-			{
-				label: 'Benches',
-				fieldname: 'group',
-				width: '15rem',
-				format(value, row) {
-					return row.group_public ? 'Shared' : row.group_title || value
-				},
-			},
-			{
-				label: 'Version',
-				fieldname: 'version',
-				width: 0.5,
-			},
-		],
-		primaryAction({ listResource: sites }) {
-			return {
-				label: 'New Site',
-				variant: 'solid',
-				slots: {
-					prefix: icon('plus'),
-				},
-				onClick() {
-					router.push({ name: 'New Site' })
-				},
-			}
-		},
-		moreActions({ listResource: sites }) {
-			return [
-				{
-					label: 'Export as CSV',
-					icon: 'download',
-					onClick() {
-						const fields = [
-							'host_name',
-							'plan_title',
-							'cluster_title',
-							'group_title',
-							'tags',
-							'version',
-							'creation',
-						]
-						createListResource({
-							doctype: 'Site',
-							url: 'press.api.site.fetch_sites_data_for_export',
-							auto: true,
-							onSuccess(data) {
-								let csv = unparse({
-									fields,
-									data,
-								})
-								csv = '\uFEFF' + csv // for utf-8
-
-								// create a blob and trigger a download
-								const blob = new Blob([csv], {
-									type: 'text/csv;charset=utf-8',
-								})
-								const today = new Date().toISOString().split('T')[0]
-								const filename = `sites-${today}.csv`
-								const link = document.createElement('a')
-								link.href = URL.createObjectURL(blob)
-								link.download = filename
-								link.click()
-								URL.revokeObjectURL(link.href)
-							},
-						})
-					},
-				},
-			]
-		},
+		component: () => import('../pages/sites/list/Page.vue'),
 	},
 	detail: {
 		titleField: 'name',
@@ -1023,7 +844,7 @@ export default {
 					},
 					primaryAction({ listResource: backups, documentResource: site }) {
 						return {
-							label: 'Schedule Backup',
+							label: 'Take Backup',
 							slots: {
 								prefix: icon('upload-cloud'),
 							},
@@ -1677,6 +1498,56 @@ export default {
 					},
 				},
 			},
+
+			{
+				label: 'Plan History',
+				icon: icon('credit-card'),
+				route: 'plan-history',
+				type: 'list',
+				list: {
+					doctype: 'Site Plan Change',
+					filters: (site) => {
+						return { site: site.doc?.name }
+					},
+					fields: ['from_plan', 'to_plan', 'type', 'timestamp', 'owner'],
+					orderBy: 'timestamp desc',
+					columns: [
+						{
+							label: 'Changed From',
+							fieldname: 'from_plan',
+							class: 'text-ink-gray-6',
+							format(value) {
+								return value || '—'
+							},
+						},
+						{
+							label: 'Changed To',
+							fieldname: 'to_plan',
+						},
+						{
+							label: 'Type',
+							fieldname: 'type',
+							type: 'Badge',
+							theme(value) {
+								if (value === 'Upgrade') return 'green'
+								if (value === 'Downgrade') return 'red'
+								return 'gray'
+							},
+						},
+						{
+							label: 'Changed By',
+							fieldname: 'owner',
+							class: 'text-ink-gray-6',
+						},
+						{
+							label: 'Date',
+							fieldname: 'timestamp',
+							type: 'Timestamp',
+							align: 'right',
+						},
+					],
+				},
+			},
 		],
 		actions(context) {
 			let { documentResource: site } = context
@@ -1841,12 +1712,14 @@ export default {
 														label: 'Reason',
 														type: 'textarea',
 														fieldname: 'reason',
+														default: LOGIN_REASON_PREFIX,
 													},
 												]
 											: [],
 									onSuccess: ({ hide, values }) => {
+										const reason = values.reason?.trim()
 										if (
-											!values.reason &&
+											(!reason || reason === LOGIN_REASON_PREFIX.trim()) &&
 											($team.name !== site.doc.team || $team.doc.is_desk_user)
 										) {
 											throw new Error(

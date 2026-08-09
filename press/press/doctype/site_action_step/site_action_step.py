@@ -33,7 +33,9 @@ class SiteActionStep(Document):
 
 	def validate(self):
 		if self.is_async_step and self.wait_for_completion:
-			frappe.throw("Cannot wait for completion on async kind of step")
+			frappe.throw(
+				"This step runs asynchronously and can't be waited on for completion. Please poll its status instead."
+			)
 
 	def get_steps(self):
 		if self.reference_doctype and self.reference_name:

@@ -42,7 +42,7 @@ const isStageDisabled = (x) => {
 <template>
 	<div
 		v-if="!stages || stages?.length ==0"
-		class="leading-relaxed py-2.5 text-ink-gray-5 flex flex-wrap sk-fade"
+		class="leading-relaxed py-2.5 text-ink-gray-5 flex flex-wrap fade-in"
 	>
 		<div class="flex  items-center gap-2 text-sm pb-3 w-full border-b">
 			<Spinner class="size-4" />
@@ -94,7 +94,7 @@ const isStageDisabled = (x) => {
 					:disabled="build_step.status =='Pending'"
 				>
 					<StatusIcon :status="build_step.status" />
-					<span class="mr-3 truncate">
+					<span class="mr-3">
 						{{ build_step.stage }}
 						- {{ build_step.step }}
 					</span>
@@ -111,7 +111,6 @@ const isStageDisabled = (x) => {
 					headerCss="ml-6 py-2 pr-2 -mt-1"
 					:key="bench.name"
 					:opened="true"
-					:disabled="!bench?.jobs || bench?.jobs?.length == 0"
 				>
 					<template #prefix>
 						<LucideBoxes class="size-4 shrink-0" />
@@ -162,18 +161,5 @@ const isStageDisabled = (x) => {
 	@apply leading-relaxed mb-0.5 p-1 aria-selected:bg-surface-gray-1;
 	@apply rounded flex items-center gap-2 justify-start whitespace-nowrap w-full;
 	@apply disabled:opacity-70 disabled:cursor-not-allowed hover:bg-surface-gray-1;
-}
-
-.sk-fade {
-	animation: sk-fade-in 0.25s ease-out both;
-}
-
-@keyframes sk-fade-in {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
 }
 </style>

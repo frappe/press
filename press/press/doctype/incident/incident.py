@@ -411,7 +411,9 @@ class Incident(WebsiteGenerator):
 	def monitor_server(self) -> MonitorServer:
 		press_settings: PressSettings = frappe.get_cached_doc("Press Settings")
 		if not (monitor_url := press_settings.monitor_server):
-			frappe.throw("Monitor Server not set in Press Settings")
+			frappe.throw(
+				"Monitor Server is not set. Please configure the Monitor Server in Press Settings before continuing."
+			)
 		return frappe.get_cached_doc("Monitor Server", monitor_url)
 
 	def get_grafana_auth_header(self):
@@ -438,7 +440,9 @@ class Incident(WebsiteGenerator):
 	def reboot_database_server(self):
 		db_server_name = frappe.db.get_value("Server", self.server, "database_server")
 		if not db_server_name:
-			frappe.throw("No database server found for this server")
+			frappe.throw(
+				"No database server is linked to this server. Please ensure the server has an associated database server."
+			)
 		db_server = DatabaseServer("Database Server", db_server_name)
 		try:
 			db_server.reboot_with_serial_console()
@@ -486,7 +490,7 @@ class Incident(WebsiteGenerator):
 		"""
 		down_benches = self.monitor_server.get_benches_down_for_server(str(self.server))
 		if not down_benches:
-			frappe.throw("No down benches found for this server")
+			frappe.throw("No down benches were found for this server. There may be nothing to act on.")
 			return
 		for bench_name in down_benches:
 			bench: Bench = Bench("Bench", bench_name)

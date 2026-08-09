@@ -30,6 +30,7 @@ class PressSettings(Document):
 		agent_repository_owner: DF.Data | None
 		agent_sentry_dsn: DF.Data | None
 		allow_patch_builds: DF.Check
+		anthropic_api_key: DF.Password | None
 		app_include_script: DF.Data | None
 		asset_store_access_key: DF.Data | None
 		asset_store_bucket_name: DF.Data | None
@@ -106,6 +107,7 @@ class PressSettings(Document):
 			"23",
 		]
 		chat_website_token: DF.Data | None
+		cleanup_standby_site_pool: DF.Check
 		clone_directory: DF.Data | None
 		cluster: DF.Link | None
 		code_server: DF.Data | None
@@ -169,9 +171,12 @@ class PressSettings(Document):
 		github_pat_token: DF.Data | None
 		github_webhook_secret: DF.Data | None
 		gst_percentage: DF.Float
+		hetzner_server_limit: DF.Int
+		hetzner_vcpu_limit: DF.Int
 		hybrid_cluster: DF.Link | None
 		hybrid_domain: DF.Link | None
 		ic_key: DF.Password | None
+		latest_blog_url: DF.Data | None
 		log_server: DF.Link | None
 		mailgun_api_key: DF.Data | None
 		max_allowed_screenshots: DF.Int
@@ -202,6 +207,10 @@ class PressSettings(Document):
 		publish_docs: DF.Check
 		pulse_api_key: DF.Data | None
 		pulse_site: DF.Data | None
+		raven_access_key_id: DF.Data | None
+		raven_incidents_channel: DF.Data | None
+		raven_secret_access_key: DF.Password | None
+		raven_url: DF.Data | None
 		razorpay_key_id: DF.Data | None
 		razorpay_key_secret: DF.Password | None
 		razorpay_webhook_secret: DF.Data | None
@@ -258,6 +267,10 @@ class PressSettings(Document):
 		use_new_deploy_flow: DF.Check
 		use_staging_ca: DF.Check
 		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]
+		wazuh_api_password: DF.Password | None
+		wazuh_api_url: DF.Data | None
+		wazuh_api_username: DF.Data | None
+		wazuh_api_verify_tls: DF.Check
 		wazuh_server: DF.Data | None
 		webroot_directory: DF.Data | None
 	# end: auto-generated types
@@ -269,7 +282,7 @@ class PressSettings(Document):
 
 	def validate(self):
 		if self.max_concurrent_physical_restorations > 5:
-			frappe.throw("Max Concurrent Physical Restorations should be less than 5")
+			frappe.throw("Please set Max Concurrent Physical Restorations to less than 5.")
 
 		if self.send_email_notifications:
 			if self.email_recipients:
@@ -279,10 +292,10 @@ class PressSettings(Document):
 					if not validate_email_address(email):
 						frappe.throw(f"Invalid email address: {email}")
 			else:
-				frappe.throw("Email Recipients List can not be empty")
+				frappe.throw("Please add at least one recipient to the Email Recipients List.")
 
 		if self.minimum_rebuild_memory < 2:
-			frappe.throw("Minimum rebuild memory needs to be 2 GB or more.")
+			frappe.throw("Please set the minimum rebuild memory to 2 GB or more.")
 
 	@frappe.whitelist()
 	def create_stripe_webhook(self):

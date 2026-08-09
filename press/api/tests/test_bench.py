@@ -304,7 +304,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 	def test_cannot_remove_dependencies(self):
 		self.assertRaisesRegex(
 			Exception,
-			"Need all required dependencies",
+			"Please provide a value for every dependency",
 			update_dependencies,
 			self.rg.name,
 			json.dumps(
@@ -320,7 +320,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 	def test_cannot_add_additional_invalid_dependencies(self):
 		self.assertRaisesRegex(
 			Exception,
-			"Need all required dependencies",
+			"Please provide a value for every dependency",
 			update_dependencies,
 			self.rg.name,
 			json.dumps(

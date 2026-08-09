@@ -257,13 +257,18 @@ const emits = defineEmits(['datazoom']);
 
 onMounted(() => {
 	const chart = chartRef.value?.chart;
-	chart?.on('finished', () => {
+	// Detach before dispatching: takeGlobalCursor triggers a re-render, which
+	// fires `finished` again. Left attached, that is an endless render loop that
+	// pegs the main thread for as long as the page is open.
+	const activateDataZoomCursor = () => {
+		chart?.off('finished', activateDataZoomCursor);
 		chart?.dispatchAction({
 			type: 'takeGlobalCursor',
 			key: 'dataZoomSelect',
 			dataZoomSelectActive: true,
 		});
-	});
+	};
+	chart?.on('finished', activateDataZoomCursor);
 
 	chart?.on('datazoom', (evt) => {
 		const timezone = dayjs.tz.guess();

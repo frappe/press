@@ -11,6 +11,7 @@
 		"column_break_nwvz",
 		"limit",
 		"nat_server",
+		"mode",
 		"section_break_ndsx",
 		"removal_steps",
 		"section_break_oiwu",
@@ -71,12 +72,21 @@
 			"options": "NAT Server",
 			"reqd": 1,
 			"set_only_once": 1
+		},
+		{
+			"fieldname": "mode",
+			"fieldtype": "Select",
+			"label": "Mode",
+			"options": "Remove IP and Add NAT Config\nUpdate NAT Config",
+			"reqd": 1,
+			"set_only_once": 1,
+			"default": "Remove IP and Add NAT Config"
 		}
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-03-19 01:54:10.242334",
+	"modified": "2026-06-30 01:54:10.242334",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "IP Removal Log",

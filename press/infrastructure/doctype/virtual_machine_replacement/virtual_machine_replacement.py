@@ -67,7 +67,9 @@ class VirtualMachineReplacement(Document):
 
 	def validate_aws_only(self):
 		if self.machine.cloud_provider != "AWS EC2":
-			frappe.throw("This feature is only available for AWS EC2")
+			frappe.throw(
+				"This feature is only available for servers hosted on AWS EC2. Please use an AWS EC2 server to continue."
+			)
 
 	def validate_existing_replacement(self):
 		if existing := frappe.get_all(

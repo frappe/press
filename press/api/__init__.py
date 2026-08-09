@@ -30,7 +30,9 @@ def download_ssl_cert(domain: str):
 		not (domain.endswith("frappe.cloud") or domain.endswith("frappecloud.com"))
 		and not frappe.conf.developer_mode
 	):
-		frappe.throw("Invalid domain provided")
+		frappe.throw(
+			"SSL certificates can only be downloaded for *.frappe.cloud and *.frappecloud.com domains. Please check the domain and try again."
+		)
 
 	try:
 		return get_full_chain_cert_of_domain(domain)

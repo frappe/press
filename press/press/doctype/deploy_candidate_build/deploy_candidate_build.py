@@ -142,10 +142,10 @@ def get_asset_store_credentials() -> AssetStoreCredentials:
 
 	return {
 		"secret_access_key": settings.get_password("asset_store_secret_access_key"),
-		"access_key": settings.asset_store_access_key,
-		"region_name": settings.asset_store_region,
-		"endpoint_url": settings.asset_store_endpoint,
-		"bucket_name": settings.asset_store_bucket_name,
+		"access_key": settings.asset_store_access_key,  # type: ignore[typeddict-item]
+		"region_name": settings.asset_store_region,  # type: ignore[typeddict-item]
+		"endpoint_url": settings.asset_store_endpoint,  # type: ignore[typeddict-item]
+		"bucket_name": settings.asset_store_bucket_name,  # type: ignore[typeddict-item]
 	}
 
 
@@ -1150,7 +1150,7 @@ class DeployCandidateBuild(Document):
 		)
 
 		if not can_run_patch_build(self.group):
-			frappe.throw("Patch build cannot be run.")
+			frappe.throw("This patch build can't be run. Please trigger a regular build instead.")
 
 		previous_candidate = _get_previous_candidate(self.group)
 		self.set_status(Status.PREPARING, timestamp_field="build_start", commit=True)
@@ -1320,7 +1320,12 @@ def fail_remote_job(dn: str) -> bool:
 	agent_job_doc = agent_job_doc.reload()
 
 	if agent_job_doc.status in ["Success", "Failure"]:
-		# Job is already in a terminal state, nothing we can do here
+		# Job reached a terminal state right as we were trying to stop it — there's
+		# no job left to cancel, but the build itself may not have been reconciled
+		# yet (that normally happens via the job update poller). Reconcile it here
+		# so it doesn't stay stuck as "in progress" forever.
+		if frappe.db.get_value("Deploy Candidate Build", dn, "status") in Status.intermediate():
+			return _mark_build_as_failed(dn)
 		return False
 
 	if agent_job_doc.status in ["Pending", "Undelivered"]:

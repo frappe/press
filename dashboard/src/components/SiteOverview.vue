@@ -244,7 +244,7 @@
 					<div
 						class="min-h-[1.75rem] flex items-center justify-between space-x-2"
 					>
-						<span class="text-base text-ink-gray-7">Database</span>
+						<span class="text-base text-ink-gray-7 mb-auto">Database</span>
 						<div class="flex items-center space-x-2">
 							<Button
 								v-if="

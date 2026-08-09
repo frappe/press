@@ -55,6 +55,9 @@
   ansible.builtin.systemd:
     daemon_reload: true
     name: mariadb
+    # Unmask defensively in case this role runs before the unit is unmasked
+    # (e.g. on a server provisioned from an already-current data disk snapshot).
+    masked: false
     state: restarted
     enabled: yes
 

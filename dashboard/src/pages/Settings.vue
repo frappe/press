@@ -29,10 +29,8 @@ import Header from '../components/Header.vue'
 import TabsWithRouter from '../components/TabsWithRouter.vue'
 import { session } from '../data/session'
 import { getTeam } from '../data/team'
-import { useUserStore } from '../stores/user'
 import { icon } from '../utils/components'
 
-const user = useUserStore()
 let $team = getTeam()
 let $session = session || {}
 
@@ -52,12 +50,6 @@ const tabs = [
 			$session.isSystemUser,
 	},
 	{
-		label: 'Team (Beta)',
-		icon: LucideUsers,
-		routeName: 'SettingsTeamBeta',
-		condition: () => user.isBetaTester,
-	},
-	{
 		label: 'Roles',
 		icon: LucideLock,
 		routeName: 'SettingsPermission',
@@ -69,12 +61,6 @@ const tabs = [
 			$team.doc?.user === $session.user ||
 			$session.isTeamAdmin ||
 			$session.isSystemUser,
-	},
-	{
-		label: 'Roles (Beta)',
-		icon: LucideLock,
-		routeName: 'SettingsRolesBeta',
-		condition: () => user.isBetaTester,
 	},
 	{
 		label: 'Developer',

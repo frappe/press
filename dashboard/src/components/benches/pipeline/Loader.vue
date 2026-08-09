@@ -1,5 +1,5 @@
 <template>
-	<div class="sk-fade flex flex-col gap-4 p-3 md:px-5 w-full md:mt-1.5">
+	<div class="fade-in flex flex-col gap-4 p-3 md:px-5 w-full md:mt-1.5">
 		<div class="flex gap-2 items-center">
 			<div class="sk size-7" />
 			<div class="sk h-7 w-44" />
@@ -67,18 +67,5 @@
 <style scoped>
 .sk {
 	@apply rounded animate-pulse bg-surface-gray-3 dark:bg-surface-gray-2;
-}
-
-.sk-fade {
-	animation: sk-fade-in 0.25s ease-out both;
-}
-
-@keyframes sk-fade-in {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
 }
 </style>

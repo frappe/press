@@ -10,7 +10,7 @@ export default function generateRoutes() {
 			routes.push({
 				name: routeName,
 				path: object.list.route,
-				component: () => import('../pages/ListPage.vue'),
+				component: object.list.component || (() => import('../pages/ListPage.vue')),
 				props: (route) => {
 					return { objectType, ...route.params };
 				},

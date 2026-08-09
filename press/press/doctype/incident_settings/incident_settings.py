@@ -1,10 +1,12 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
 from __future__ import annotations
 
+import frappe
 from frappe.model.document import Document
+
+from press.utils.raven import send_raven_message
 
 
 class IncidentSettings(Document):
@@ -42,3 +44,16 @@ class IncidentSettings(Document):
 	# end: auto-generated types
 
 	pass
+
+
+def alert_if_phone_call_alerts_disabled():
+	"""Nobody gets paged when phone call alerts are off. Nag hourly until it's turned back on."""
+	if frappe.db.get_single_value("Incident Settings", "phone_call_alerts"):
+		return
+
+	send_raven_message(
+		"⚠️ **Phone call alerts are disabled** in "
+		f"[Incident Settings]({frappe.utils.get_url('/app/incident-settings')}). "
+		"Incidents won't call anyone.",
+		frappe.db.get_single_value("Press Settings", "raven_incidents_channel"),
+	)

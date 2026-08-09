@@ -587,7 +587,7 @@ class Agent:
 					),
 					# Streaming only applies to offsite backups (agent streams the
 					# artifacts straight to S3), so only send it for offsite jobs.
-					"stream": bool(frappe.get_value("Server", site.server, "stream_backups")),
+					"stream": site.is_streaming_backup_supported(),
 				}
 			)
 
@@ -626,7 +626,7 @@ class Agent:
 			"name": domain.domain,
 			"target": domain.site,
 			"certificate": {
-				"privkey.pem": certificate.private_key,
+				"privkey.pem": certificate.get_private_key(),
 				"fullchain.pem": certificate.full_chain,
 				"chain.pem": certificate.intermediate_chain,
 			},
@@ -975,19 +975,27 @@ class Agent:
 					response=response,
 				)
 			return json_response
+		except requests.JSONDecodeError as exc:
+			# Non-JSON body, e.g. nginx's 502 page when agent is down. Must come before
+			# the ValueError clause below, which would otherwise swallow it.
+			if response.status_code in (502, 503, 504):
+				# nginx couldn't reach agent at all. Record the failure so we stop hitting it.
+				self.log_request_failure(exc)
+				self.handle_exception(agent_job, exc)
+			else:
+				# One endpoint misbehaved (e.g. Flask's HTML 500 page). The server is still
+				# up, so don't block every other job on it.
+				self.handle_request_failure(agent_job, response)
+			log_error(
+				title="Agent Request Exception",
+				result=getattr(response, "text", None),
+			)
 		except (HTTPError, TypeError, ValueError):
 			self.handle_request_failure(agent_job, response)
 			log_error(
 				title="Agent Request Result Exception",
 				result=json_response or getattr(response, "text", None),
 			)
-		except requests.JSONDecodeError as exc:
-			if response and response.status_code >= 500:
-				self.log_request_failure(exc)
-				self.handle_exception(agent_job, exc)
-				log_error(
-					title="Agent Request Exception",
-				)
 		except Exception as exc:
 			self.log_request_failure(exc)
 			self.handle_exception(agent_job, exc)
@@ -1826,7 +1834,9 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if offsite_config:
 			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw("Offsite Backups aren't setup yet")
+			frappe.throw(
+				"Offsite Backups aren't set up yet. Please configure offsite backup storage in Press Settings before taking an offsite backup."
+			)
 
 		return self.create_agent_job(
 			"Backup Database From Snapshot",
@@ -1855,7 +1865,9 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if offsite_config:
 			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw("Offsite Backups aren't setup yet")
+			frappe.throw(
+				"Offsite Backups aren't set up yet. Please configure offsite backup storage in Press Settings before taking an offsite backup."
+			)
 
 		return self.create_agent_job(
 			"Backup Files From Snapshot",

@@ -142,6 +142,12 @@ DEFAULT_MAX_STATEMENT_TIME = 3600
 # How much to bump max_statement_time by (in seconds) each time — one hour.
 STATEMENT_TIME_INCREMENT = 3600
 
+# Conditions a site must satisfy for the agent to stream offsite backup
+# artifacts straight to S3 instead of uploading them after the dump finishes.
+STREAMING_BACKUP_REQUIREMENTS = {
+	"minimum_frappe_version": 13,
+}
+
 
 class Site(Document, TagHelpers):
 	# begin: auto-generated types
@@ -180,6 +186,7 @@ class Site(Document, TagHelpers):
 		database_access_connection_limit: DF.Int
 		database_name: DF.Data | None
 		disable_site_usage_exceed_check: DF.Check
+		disable_streaming_backups: DF.Check
 		domain: DF.Link | None
 		erpnext_consultant: DF.Link | None
 		fatal_site_update: DF.Link | None
@@ -277,19 +284,44 @@ class Site(Document, TagHelpers):
 		"reason_for_disabling_monitoring",
 		"creation_failed",
 		"fatal_site_update",
+		"standby_for_product",
 	)
+
+	# A site shows its plan, bench, server and team so the dashboard can render
+	# them. Every one of those moves through a flow that bills, schedules or
+	# migrates something — none of them through `set_value`.
+	dashboard_editable_fields = ("skip_auto_updates",)
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
+		from frappe.query_builder.functions import Coalesce
+
 		from press.press.doctype.site_update.site_update import (
 			benches_with_available_update,
 		)
 
 		Site = frappe.qb.DocType("Site")
 
+		# not a real field, so validate_filters strips it before it reaches the
+		# base query; host_name is only set once a site first reaches Active, so
+		# sites that broke or are still pending before that never get one — search
+		# against whichever one the UI actually displays (host_name || name)
+		search_term = filters.get("_search")
+		if search_term:
+			like_term = f"%{search_term}%"
+			query = query.where(Coalesce(Site.host_name, Site.name).like(like_term))
+
 		status = filters.get("status")
-		if status == "Archived":
-			sites = query.where(Site.status == status).run(as_dict=1)
+		if isinstance(status, (list, tuple)) and len(status) == 2 and str(status[0]).lower() == "in":
+			statuses = list(status[1])
+		elif status:
+			statuses = [status]
+		else:
+			statuses = []
+
+		if statuses:
+			# explicit status filter: respect it as-is, don't force-hide archived
+			sites = query.where(Site.status.isin(statuses)).run(as_dict=1)
 		else:
 			benches_with_available_update = benches_with_available_update()
 			sites = query.where(Site.status != "Archived").select(Site.bench).run(as_dict=1)
@@ -479,6 +511,7 @@ class Site(Document, TagHelpers):
 				self.set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
+		self.sync_fc_team_config()
 
 		if not self.setup_wizard_status_check_next_retry_on:
 			self.setup_wizard_status_check_next_retry_on = now_datetime()
@@ -535,7 +568,10 @@ class Site(Document, TagHelpers):
 
 		site_apps = [app.app for app in self.apps]
 		if len(site_apps) != len(set(site_apps)):
-			frappe.throw("App {app.app} is already on installed on the bench. Cannot add the same app twice")
+			duplicates = sorted({app for app in site_apps if site_apps.count(app) > 1})
+			frappe.throw(
+				f"These apps are listed more than once: {', '.join(duplicates)}. Each app can only be installed once — please remove the duplicates."
+			)
 
 		# Install apps in the same order as bench
 		if self.is_new():
@@ -703,6 +739,16 @@ class Site(Document, TagHelpers):
 
 		if self.has_value_changed("team"):
 			frappe.db.set_value("Site Domain", {"site": self.name}, "team", self.team)
+			# Enqueued, not inline: sync_fc_team_config saves the site, which from within
+			# on_update would re-enter it and re-run its unguarded effects.
+			frappe.enqueue_doc(
+				"Site",
+				self.name,
+				"sync_fc_team_config",
+				create_agent_job=True,
+				enqueue_after_commit=True,
+				queue="short",
+			)
 
 		if self.status not in [
 			"Pending",
@@ -723,23 +769,44 @@ class Site(Document, TagHelpers):
 
 	def generate_saas_communication_secret(self, create_agent_job=False, save=True):
 		if self.saas_communication_secret:
-			return
+			return None
 
 		# Ensure site isn't owned by Administrator
 		if not self.team:
-			return
+			return None
 
 		if frappe.get_value("Team", self.team, "user") == "Administrator":
-			return
+			return None
 
 		self.saas_communication_secret = frappe.generate_hash(length=32)
 		config = {
 			"fc_communication_secret": self.saas_communication_secret,
 		}
 		if create_agent_job:
-			self.update_site_config(config)
-		else:
-			self._update_configuration(config=config, save=save)
+			return self.update_site_config(config)
+
+		self._update_configuration(config=config, save=save)
+		return None
+
+	def sync_fc_team_config(self, create_agent_job: bool = False):
+		"""Keep the fc_team site config in step with the owning team.
+
+		Pulse tags every event with `team` from this key, so it must follow the site
+		for its whole life — initial provisioning, a standby site being claimed, and
+		ownership transfers — not just be stamped once. Idempotent (skips when already
+		current) and skipped for Administrator-owned sites, which have no FC team.
+
+		`create_agent_job` pushes the change to a running site; the creation path leaves
+		it False so the key rides along in the new-site payload instead of a second job.
+		"""
+		if not self.team or frappe.get_value("Team", self.team, "user") == "Administrator":
+			return None
+		if self.get_config_value_for_key("fc_team") == self.team:
+			return None
+		if create_agent_job:
+			return self.update_site_config({"fc_team": self.team})
+		self._update_configuration({"fc_team": self.team}, save=False)
+		return None
 
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
@@ -992,6 +1059,18 @@ class Site(Document, TagHelpers):
 		group: ReleaseGroup = frappe.get_cached_doc("Release Group", self.group)
 		return group.is_this_version_or_above(version)
 
+	def is_streaming_backup_supported(self) -> bool:
+		"""Whether the agent may stream this site's offsite backups straight to S3.
+
+		Requires the server to enable streaming, the site to not have opted
+		out, and the site's frappe version to be recent enough.
+		"""
+		if self.disable_streaming_backups:
+			return False
+		if not frappe.get_cached_value("Server", self.server, "stream_backups"):
+			return False
+		return self.is_this_version_or_above(STREAMING_BACKUP_REQUIREMENTS["minimum_frappe_version"])
+
 	@property
 	def restore_space_required_on_app(self):
 		db_size, public_size, private_size = (
@@ -1110,7 +1189,7 @@ class Site(Document, TagHelpers):
 		agent.new_upstream_file(server=self.server, site=self.name)
 
 	@dashboard_whitelist()
-	@site_action(["Active", "Broken"])
+	@site_action(["Active", "Broken", "Inactive"])
 	def reinstall(self):
 		agent = Agent(self.server)
 		job = agent.reinstall_site(self)
@@ -1120,7 +1199,7 @@ class Site(Document, TagHelpers):
 		return job.name
 
 	@dashboard_whitelist()
-	@site_action(["Active", "Broken"])
+	@site_action(["Active", "Broken", "Inactive"])
 	def migrate(self, skip_failing_patches: bool = False):
 		self.check_fatal_site_update()
 		agent = Agent(self.server)
@@ -1225,7 +1304,7 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Clear Cache", job=job.name)
 
 	@dashboard_whitelist()
-	@site_action(["Active", "Broken"])
+	@site_action(["Active", "Broken", "Inactive"])
 	def restore_site(self, skip_failing_patches=False):
 		if (
 			self.remote_database_file
@@ -1244,7 +1323,7 @@ class Site(Document, TagHelpers):
 		return job.name
 
 	@dashboard_whitelist()
-	@site_action(["Active", "Broken"])
+	@site_action(["Active", "Broken", "Inactive"])
 	def restore_site_from_physical_backup(self, backup: str):
 		if frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
 			frappe.throw(
@@ -1275,9 +1354,9 @@ class Site(Document, TagHelpers):
 		doc.execute()
 
 	@dashboard_whitelist()
-	@site_action(["Active", "Broken"])
+	@site_action(["Active", "Broken", "Inactive"])
 	def restore_site_from_files(self, files, skip_failing_patches=False):
-		for key in ("database", "public", "private"):
+		for key in ("database", "public", "private", "config"):
 			rf_name = files.get(key)
 			if rf_name:
 				rf_team = frappe.db.get_value("Remote File", rf_name, "team")
@@ -1289,6 +1368,7 @@ class Site(Document, TagHelpers):
 		self.remote_database_file = files["database"]
 		self.remote_public_file = files["public"]
 		self.remote_private_file = files["private"]
+		self.remote_config_file = files.get("config", "")
 		self.save()
 		self.reload()
 		return self.restore_site(skip_failing_patches=skip_failing_patches)
@@ -1578,6 +1658,19 @@ class Site(Document, TagHelpers):
 
 		return job
 
+	@property
+	def has_domain_with_a_record(self) -> bool:
+		return bool(
+			frappe.db.exists("Site Domain", {"site": self.name, "dns_type": "A", "domain": ("!=", self.name)})
+		)
+
+	def inbound_ip_in_cluster(self, cluster: str) -> str | None:
+		"""IP the site's custom domains must point to once it moves to this cluster"""
+		server = frappe.db.get_value(
+			"Bench", {"group": self.group, "cluster": cluster, "status": "Active"}, "server"
+		)
+		return get_inbound_ip(server) if server else None
+
 	def change_region(
 		self, cluster: str, scheduled_time: str | None = None, skip_failing_patches: bool = False
 	):
@@ -1624,7 +1717,7 @@ class Site(Document, TagHelpers):
 		self.save()
 
 	@frappe.whitelist()
-	@site_action(["Active"])
+	@site_action(["Active", "Inactive", "Suspended", "Broken"])
 	def update_without_backup(self):
 		log_site_activity(self.name, "Update")
 
@@ -1667,7 +1760,7 @@ class Site(Document, TagHelpers):
 		domain = domain.lower().strip(".")
 		log_site_activity(self.name, "Add Domain")
 		create_dns_record(doc=self, record_name=domain)
-		frappe.get_doc(
+		site_domain = frappe.get_doc(
 			{
 				"doctype": "Site Domain",
 				"status": "Pending",
@@ -1676,6 +1769,7 @@ class Site(Document, TagHelpers):
 				"dns_type": "CNAME",
 			}
 		).insert(ignore_if_duplicate=True)
+		return site_domain.flags.get("add_domain_to_upstream_job")
 
 	@frappe.whitelist()
 	def create_dns_record(self):
@@ -1709,7 +1803,7 @@ class Site(Document, TagHelpers):
 		domains.add(domain)
 		self._update_configuration({"domains": list(domains)})
 		agent = Agent(self.server)
-		agent.add_domain(self, domain)
+		return agent.add_domain(self, domain)
 
 	def remove_domain_from_config(self, domain):
 		domains = set(self.get_config_value_for_key("domains") or [])
@@ -2539,7 +2633,7 @@ class Site(Document, TagHelpers):
 		return "String"
 
 	@dashboard_whitelist()
-	@site_action(["Active"])
+	@site_action(["Active", "Broken"])
 	def delete_config(self, key):
 		"""Deletes a key from site configuration, meant for dashboard and API users"""
 		if key in get_client_blacklisted_keys():
@@ -2777,7 +2871,7 @@ class Site(Document, TagHelpers):
 
 	# TODO: rename to change_plan and remove the need for ignore_card_setup param
 	@dashboard_whitelist()
-	def set_plan(self, plan: None | str = None):
+	def set_plan(self, plan: str | None = None):
 		from press.api.site import validate_plan
 
 		validate_plan(self.server, self.name, plan)
@@ -3394,17 +3488,7 @@ class Site(Document, TagHelpers):
 
 	@property
 	def inbound_ip(self):
-		server = frappe.db.get_value(
-			"Server",
-			self.server,
-			["ip", "is_standalone", "proxy_server", "team"],
-			as_dict=True,
-		)
-		if server.is_standalone:
-			ip = server.ip
-		else:
-			ip = frappe.db.get_value("Proxy Server", server.proxy_server, "ip")
-		return ip
+		return get_inbound_ip(self.server)
 
 	@property
 	def current_usage(self):
@@ -4317,6 +4401,9 @@ class Site(Document, TagHelpers):
 		group_regions = frappe.get_all(
 			"Cluster", filters={"name": ("in", cluster_names)}, fields=["name", "title", "image"]
 		)
+		regions_to_move_to = [region for region in group_regions if region.name != self.cluster]
+		for region in regions_to_move_to:
+			region.inbound_ip = self.inbound_ip_in_cluster(region.name)
 
 		return {
 			"In-Place Migrate Site": {
@@ -4341,7 +4428,8 @@ class Site(Document, TagHelpers):
 				"allow_scheduling": True,
 				"button_label": "Move Site",
 				"options": {
-					"available_regions": [region for region in group_regions if region.name != self.cluster],
+					"available_regions": regions_to_move_to,
+					"has_domain_with_a_record": self.has_domain_with_a_record,
 				},
 			},
 		}
@@ -4398,6 +4486,14 @@ class Site(Document, TagHelpers):
 		if not d:
 			return None
 		return str(timedelta(seconds=round(d.total_seconds() * 2)))
+
+
+def get_inbound_ip(server: str) -> str | None:
+	"""IP that custom domain A records for sites on this server must point to"""
+	values = frappe.db.get_value("Server", server, ["ip", "is_standalone", "proxy_server"], as_dict=True)
+	if values.is_standalone:
+		return values.ip
+	return frappe.db.get_value("Proxy Server", values.proxy_server, "ip")
 
 
 def check_allowed_actions(creation_failed, function_name, action_name_refined):
@@ -4544,9 +4640,18 @@ def process_new_site_job_update(job):  # noqa: C901
 
 		site.sync_apps()  # Sync apps for this site as well to reflect dependant apps
 		marketplace_app_hook(site=site, op="install")
+		# Status is set via db.set_value below, bypassing on_update ->
+		# update_subscription. Re-enable the subscription explicitly so a site
+		# that recovers from a failed creation (retry / restore) starts billing
+		# again — the counterpart to disabling it on failure (#6110).
+		site.enable_subscription()
 	elif "Failure" in (first, second) or "Delivery Failure" in (first, second):
 		updated_status = "Broken"
 		frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
+		# Status is set via db.set_value below, which bypasses on_update ->
+		# update_subscription. Disable the subscription explicitly so the user
+		# isn't billed for a site that never came up (#6110).
+		Site("Site", job.site).disable_subscription()
 	elif "Running" in (first, second):
 		updated_status = "Installing"
 	else:
@@ -4591,8 +4696,7 @@ def update_product_trial_request_status_based_on_site_status(site, is_site_activ
 	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 	if is_site_active:
 		product_trial_request.prefill_setup_wizard_data()
-		product_trial_request.status = "Site Created"
-		product_trial_request.save(ignore_permissions=True)
+		product_trial_request.update_status_from_agent_jobs()
 	else:
 		product_trial_request.status = "Error"
 		product_trial_request.error = error
@@ -4608,10 +4712,9 @@ def process_complete_setup_wizard_job_update(job):
 		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 		if frappe.get_all("Site Domain", filters={"site": job.site, "status": ["!=", "Active"]}):
 			product_trial_request.status = "Adding Domain"
+			product_trial_request.save(ignore_permissions=True)
 		else:
-			product_trial_request.status = "Site Created"
-			product_trial_request.site_creation_completed_on = now_datetime()
-		product_trial_request.save(ignore_permissions=True)
+			product_trial_request.update_status_from_agent_jobs()
 	elif job.status in ("Failure", "Delivery Failure"):
 		product_trial_request.status = "Error"
 		product_trial_request.save(ignore_permissions=True)
@@ -4627,10 +4730,7 @@ def process_add_domain_job_update(job):
 		if product_trial_request.status == "Site Created":
 			return
 
-		product_trial_request.status = "Site Created"
-		product_trial_request.site_creation_completed_on = now_datetime()
-
-		product_trial_request.save(ignore_permissions=True)
+		product_trial_request.update_status_from_agent_jobs()
 
 		site_domain = json.loads(job.request_data).get("domain")
 		site = Site("Site", job.site)
@@ -4645,8 +4745,7 @@ def process_add_domain_job_update(job):
 			job.db_set("retry_count", job.retry_count + 1)
 			job.retry_in_place()
 		else:
-			product_trial_request.status = "Error"
-			product_trial_request.save(ignore_permissions=True)
+			product_trial_request.update_status_from_agent_jobs(job.data)
 
 
 def get_remove_step_status(job):
@@ -5312,22 +5411,22 @@ def notify_sites_before_archival():
 			& (SiteTable.suspended_at <= notify_threshold)
 			& (SiteTable.suspended_at > archive_threshold)
 		)
-		.select(SiteTable.name, SiteTable.bench)
+		.select(SiteTable.name, SiteTable.bench, SiteTable.host_name)
 		.run(as_dict=True)
 	)
 
 	for site_dict in sites_to_notify:
 		if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
 			continue
-		notify_site_scheduled_for_archival(site_dict.name)
+		notify_site_scheduled_for_archival(site_dict)
 
 
-def notify_site_scheduled_for_archival(site_name: str):
+def notify_site_scheduled_for_archival(site: frappe._dict):
 	try:
 		if frappe.db.exists(
 			"Site Activity",
 			{
-				"site": site_name,
+				"site": site.name,
 				"action": "Archive Notification",
 				"creation": [">=", frappe.utils.add_to_date(frappe.utils.now(), days=-7)],
 			},
@@ -5335,18 +5434,18 @@ def notify_site_scheduled_for_archival(site_name: str):
 			return
 
 		frappe.sendmail(
-			recipients=get_communication_info("Email", "Site Activity", "Site", site_name),
-			subject=f"Alert: Your site {site_name} will be archived in {NOTIFY_BEFORE_ARCHIVAL_DAYS} days",
+			recipients=get_communication_info("Email", "Site Activity", "Site", site.name),
+			subject=f"Alert: Your site {site.host_name or site.name} will be archived in {NOTIFY_BEFORE_ARCHIVAL_DAYS} days",
 			template="notify_before_site_archival",
 			args={
-				"site_name": site_name,
+				"site_name": site.host_name or site.name,
 				"site_archive_notification_days": NOTIFY_BEFORE_ARCHIVAL_DAYS,
 			},
 			reference_doctype="Site",
-			reference_name=site_name,
+			reference_name=site.name,
 		)
 		log_site_activity(
-			site_name,
+			site.name,
 			"Archive Notification",
 			f"Notified user about pending archival in {NOTIFY_BEFORE_ARCHIVAL_DAYS} days",
 		)
@@ -5450,15 +5549,21 @@ def suspend_sites_exceeding_disk_usage_for_last_14_days():
 def create_subscription_for_trial_sites():
 	# Get sites that are in "Site Created" status and has no entry in "Site Plan Change"
 	# For those sites, invoke "Create Subscription" that puts entry into "Site Plan Change" and "Subscription"
-	active_sites = frappe.db.sql(
-		"""
-		SELECT trial.site, producttrial.trial_plan
-		FROM `tabProduct Trial Request` trial
-		LEFT JOIN `tabSite Plan Change` siteplanchange
-		ON trial.site = siteplanchange.name
-		LEFT JOIN `tabProduct Trial`  producttrial ON trial.product_trial = producttrial.name WHERE trial.is_subscription_created = 0 AND siteplanchange.name is NULL AND trial.status='Site Created' LIMIT 25;
-		""",
-		as_dict=True,
+	ProductTrialRequest = frappe.qb.DocType("Product Trial Request")
+	SitePlanChange = frappe.qb.DocType("Site Plan Change")
+	ProductTrial = frappe.qb.DocType("Product Trial")
+	active_sites = (
+		frappe.qb.from_(ProductTrialRequest)
+		.select(ProductTrialRequest.site, ProductTrial.trial_plan)
+		.left_join(SitePlanChange)
+		.on(ProductTrialRequest.site == SitePlanChange.site)
+		.left_join(ProductTrial)
+		.on(ProductTrialRequest.product_trial == ProductTrial.name)
+		.where(ProductTrialRequest.is_subscription_created == 0)
+		.where(SitePlanChange.name.isnull())
+		.where(ProductTrialRequest.status == "Site Created")
+		.limit(25)
+		.run(as_dict=True)
 	)
 	for trial_site in active_sites:
 		if has_job_timeout_exceeded():

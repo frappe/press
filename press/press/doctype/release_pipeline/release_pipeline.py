@@ -11,6 +11,7 @@ import frappe
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import Version
 
+from press.api.client import dashboard_whitelist
 from press.api.github import GithubFetchError, get_dependant_apps_with_versions
 from press.exceptions import InsufficientSpaceOnServer, ReleasePipelineFailure
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -183,6 +184,10 @@ class ReleasePipeline(WorkflowBuilder):
 			"Retrying",
 		],
 	):
+		if status != "Failure" and frappe.db.get_value(self.doctype, self.name, "status") == "Failure":
+			# Nothing should move the pipeline away from Failure once stopped.
+			return
+
 		# If the workflow doc touches this for any reason
 		# Document native methods would raise a `TimeStampMismatch` error
 		self.db_set("status", status)
@@ -197,6 +202,15 @@ class ReleasePipeline(WorkflowBuilder):
 
 		if status == "Failure":
 			self.send_failure_notification()
+
+	@dashboard_whitelist()
+	def force_fail(self):
+		if self.status == "Failure":
+			return
+
+		self.update_pipeline_status("Failure")
+		if self.workflow:
+			frappe.get_doc("Press Workflow", self.workflow).force_fail()
 
 	def add_build_to_pipeline(self, build: str):
 		"""Attach a build to the pipeline if not present"""

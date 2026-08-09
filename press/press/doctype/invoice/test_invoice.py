@@ -378,6 +378,83 @@ class TestInvoice(FrappeTestCase):
 		invoice.finalize_invoice()
 		self.assertEqual(invoice.stripe_invoice_id, None)
 
+	@patch("press.press.doctype.invoice.invoice.get_stripe")
+	def test_make_stripe_invoice_passes_default_payment_method(self, mock_stripe):
+		frappe.get_doc(
+			{
+				"doctype": "Stripe Payment Method",
+				"team": self.team.name,
+				"stripe_customer_id": "cus_test123",
+				"stripe_payment_method_id": "pm_test123",
+				"is_default": 1,
+			}
+		).insert(ignore_permissions=True)
+		mock_stripe.return_value.Invoice.create.return_value = {"id": "in_test123"}
+
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		invoice._make_stripe_invoice("cus_test123", 10000)
+
+		kwargs = mock_stripe.return_value.Invoice.create.call_args.kwargs
+		self.assertEqual(kwargs["default_payment_method"], "pm_test123")
+
+	@patch("press.press.doctype.invoice.invoice.get_stripe")
+	def test_make_stripe_invoice_adds_comment_when_mandate_check_fails(self, mock_stripe):
+		frappe.get_doc(
+			{
+				"doctype": "Stripe Payment Method",
+				"team": self.team.name,
+				"stripe_customer_id": "cus_test123",
+				"stripe_payment_method_id": "pm_test123",
+				"stripe_mandate_id": "mandate_test123",
+				"is_default": 1,
+			}
+		).insert(ignore_permissions=True)
+		mock_stripe.return_value.Mandate.retrieve.side_effect = Exception("stripe unavailable")
+
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		# _make_stripe_invoice commits/rolls back the real transaction on failure;
+		# stub those out so the test's own uncommitted fixtures survive.
+		with patch("frappe.db.rollback"), patch("frappe.db.commit"):
+			invoice._make_stripe_invoice("cus_test123", 10000)
+
+		mock_stripe.return_value.Invoice.create.assert_not_called()
+		comments = frappe.get_all(
+			"Comment",
+			filters={"reference_doctype": "Invoice", "reference_name": invoice.name},
+			pluck="content",
+		)
+		self.assertTrue(any("Stripe Invoice Creation Failed" in comment for comment in comments))
+
+	@patch("press.api.billing.get_stripe")
+	def test_make_stripe_invoice_without_default_payment_method_raises(self, mock_stripe):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		self.assertRaises(frappe.ValidationError, invoice._make_stripe_invoice, "cus_test123", 10000)
+		mock_stripe.return_value.Invoice.create.assert_not_called()
+
 	def test_negative_balance_case(self):
 		team = create_test_team("test22@example.com")
 

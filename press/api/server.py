@@ -23,7 +23,7 @@ from press.press.doctype.cloud_provider.cloud_provider import get_cloud_provider
 from press.press.doctype.server_plan_type.server_plan_type import get_server_plan_types
 from press.press.doctype.site_plan.plan import Plan, filter_by_roles
 from press.press.doctype.team.team import get_child_team_members
-from press.utils import get_current_team
+from press.utils import docs, get_current_team
 
 if TYPE_CHECKING:
 	from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleRecord
@@ -121,9 +121,7 @@ def all(server_filter=None):  # noqa: C901
 	else:
 		query = app_server_query + database_server_query
 
-	# union isn't supported in qb for run method
-	# https://github.com/frappe/frappe/issues/15609
-	servers = frappe.db.sql(query.get_sql(), as_dict=True)
+	servers = query.run(as_dict=True)
 	for server in servers:
 		server_plan_name = frappe.get_value("Server", server.name, "plan")
 		server["plan"] = frappe.get_doc("Server Plan", server_plan_name) if server_plan_name else None
@@ -640,7 +638,9 @@ def prometheus_query(
 @frappe.whitelist()
 def options():
 	if not get_current_team(get_doc=True).servers_enabled:
-		frappe.throw("Servers feature is not yet enabled on your account")
+		frappe.throw(
+			f"The dedicated servers feature isn't enabled on your account yet. Please contact support to enable it. {docs.doc_link(docs.SERVERS)}."
+		)
 
 	regions_filter = {"cloud_provider": ("!=", "Generic"), "public": True, "status": "Active"}
 

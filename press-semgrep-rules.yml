@@ -162,8 +162,9 @@ rules:
       - metavariable-regex:
           metavariable: $MSG
           # Matches strings that do NOT have a second sentence (no period + space)
-          # and do NOT contain common instructional keywords.
-          regex: '^(?![^.]*\. [A-Z])(?!.*(try|please|check|contact|ensure|use|click|refer)).*$'
+          # and do NOT contain common instructional keywords (case-insensitive, so a
+          # capitalized "Please ..." counts as actionable just like lowercase "please").
+          regex: '^(?![^.]*\. [A-Z])(?!.*(?i:try|please|check|contact|ensure|use|click|refer|provide|choose|select|enter|make sure)).*$'
     message: 'This error message is a single sentence and lacks user instructions. High-quality errors should explain what happened and how to fix it.'
     languages: [javascript, typescript, python]
     severity: WARNING

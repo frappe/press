@@ -35,7 +35,9 @@ def create_snapshot(name: str, key: str):
 		if e.response["Error"]["Code"] == "SnapshotCreationPerVolumeRateExceeded":
 			# Agent will wait atleast 15s and then will retry
 			# https://docs.aws.amazon.com/AWSEC2/latest/APIReference/errors-overview.html#:~:text=SnapshotCreationPerVolumeRateExceeded
-			frappe.throw("Snapshot creation per volume rate exceeded")
+			frappe.throw(
+				"Too many snapshots were requested for this volume in a short time. Please wait a minute and start the backup again."
+			)
 		else:
 			raise e
 	except OngoingSnapshotError:

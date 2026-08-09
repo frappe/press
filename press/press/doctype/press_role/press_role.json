@@ -28,6 +28,7 @@
 		"column_break_hocg",
 		"allow_customer",
 		"allow_contribution",
+		"allow_local_payment",
 		"section_break_zdiv",
 		"users",
 		"section_break_wcgd",
@@ -148,6 +149,12 @@
 			"fieldname": "allow_contribution",
 			"fieldtype": "Check",
 			"label": "Allow Contribution"
+		},
+		{
+			"default": "0",
+			"fieldname": "allow_local_payment",
+			"fieldtype": "Check",
+			"label": "Allow Local Payment"
 		},
 		{ "fieldname": "section_break_wcgd", "fieldtype": "Section Break" },
 		{
