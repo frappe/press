@@ -583,6 +583,24 @@ class TestServer(FrappeTestCase):
 			process_cleanup_unused_files_job_update(job("Running", True))
 			restore.assert_not_called()
 
+	def test_failure_to_restore_glass_file_alerts_on_raven(self):
+		server = create_test_server()
+		with (
+			patch.object(BaseServer, "_add_glass_file", return_value=Mock(status="Failure")),
+			patch("press.press.doctype.server.server.send_raven_message") as send_raven_message,
+		):
+			server._restore_glass_file()
+		self.assertIn("no emergency disk buffer", send_raven_message.call_args[0][0])
+
+	def test_successful_glass_file_restore_does_not_alert(self):
+		server = create_test_server()
+		with (
+			patch.object(BaseServer, "_add_glass_file", return_value=Mock(status="Success")),
+			patch("press.press.doctype.server.server.send_raven_message") as send_raven_message,
+		):
+			server._restore_glass_file()
+		send_raven_message.assert_not_called()
+
 	def _one_server_of_each_type(self):
 		"""App, database and proxy servers all inherit the Wazuh methods from BaseServer."""
 		return [
