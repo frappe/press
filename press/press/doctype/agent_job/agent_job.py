@@ -23,7 +23,7 @@ from frappe.utils import (
 
 from press.access.support_access import has_support_access
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
-from press.api.client import is_owned_by_team
+from press.api.client import dashboard_whitelist, is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
 )
@@ -40,6 +40,18 @@ AGENT_JOB_TIMEOUT_HOURS = 4
 CALLBACK_FAILURE_LIMIT = 5000
 
 BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
+
+# Jobs a team can cancel from the dashboard. Restricted to long running jobs whose
+# failure path Press already handles — Broken site, failed backup, or (for site
+# updates) an automatic recovery job that rolls the site back to the old bench.
+# App installs and standalone Migrate Site jobs are left out: they have no rollback,
+# so cancelling midway leaves a half migrated database.
+DASHBOARD_CANCELLABLE_JOB_TYPES = [
+	"Restore Site",
+	"New Site from Backup",
+	"Backup Site",
+	"Update Site Migrate",
+]
 
 
 class AgentJob(Document):
@@ -318,10 +330,26 @@ class AgentJob(Document):
 	def process_job_updates(self):
 		process_job_updates(self.name)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def cancel_job(self):
+		if self.status not in ("Pending", "Running"):
+			frappe.throw(f"Can't cancel a job that is {self.status}")
+		if not frappe.local.system_user():
+			self.validate_dashboard_cancellation()
+
 		agent = Agent(self.server, server_type=self.server_type)
 		agent.cancel_job(self.job_id)
+
+	def validate_dashboard_cancellation(self):
+		if self.job_type not in DASHBOARD_CANCELLABLE_JOB_TYPES:
+			frappe.throw(f"{self.job_type} jobs can't be cancelled")
+
+		# Without a backup the failed update has nothing to recover from, so
+		# cancelling would leave the site broken on the destination bench.
+		if self.job_type == "Update Site Migrate" and frappe.db.exists(
+			"Site Update", {"update_job": self.name, "skipped_backups": 1}
+		):
+			frappe.throw("Can't cancel a site update that was started with backups skipped")
 
 	def on_trash(self):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
