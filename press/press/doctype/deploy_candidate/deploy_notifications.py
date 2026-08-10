@@ -793,9 +793,9 @@ def check_incompatible_node(old_dcb: "DeployCandidateBuild", new_dc: "DeployCand
 		return
 
 	frappe.throw(
-		f"The previous build failed because of an incompatible Node version, and the Node version is"
-		f" still <b>{new_node}</b>. <b>Set a compatible Node version</b> under Bench Group &gt; Config"
-		' &gt; Dependencies, or tick <b>"I understand, run deploy anyway"</b> to build regardless. '
+		f"The previous build failed because of an incompatible Node version. The Node version is still"
+		f" <b>{new_node}</b>. <b>Set a compatible Node version</b> in Bench Group &gt; Config &gt;"
+		' Dependencies. To build without a change, select <b>"I understand, run deploy anyway"</b>. '
 		+ doc_link(DOC_URLS["incompatible-node-version"]),
 		BuildValidationError,
 	)
@@ -831,9 +831,9 @@ def check_incompatible_python(old_dcb: "DeployCandidateBuild", new_dc: "DeployCa
 		return
 
 	frappe.throw(
-		f"The previous build failed because of an incompatible Python version, and the Python version"
-		f" is still <b>{new_python}</b>. <b>Set a compatible Python version</b> under Bench Group &gt;"
-		' Config &gt; Dependencies, or tick <b>"I understand, run deploy anyway"</b> to build regardless. '
+		f"The previous build failed because of an incompatible Python version. The Python version is"
+		f" still <b>{new_python}</b>. <b>Set a compatible Python version</b> in Bench Group &gt; Config"
+		' &gt; Dependencies. To build without a change, select <b>"I understand, run deploy anyway"</b>. '
 		+ doc_link(DOC_URLS["incompatible-dependency-version"]),
 		BuildValidationError,
 	)
@@ -1181,9 +1181,9 @@ def check_if_app_updated(old_dcb: "DeployCandidateBuild", new_dc: "DeployCandida
 
 	title = new_app.title or old_app.title
 	frappe.throw(
-		f"App <b>{title}</b> failed in the previous build and is still on the same release"
-		f" <b>{new_hash[:10]}</b>. <b>Push a fix to the app and fetch the new release</b> before"
-		' deploying, or tick <b>"I understand, run deploy anyway"</b> to build regardless. '
+		f"App <b>{title}</b> failed in the previous build. The app is still on release"
+		f" <b>{new_hash[:10]}</b>. <b>Push a fix to the app, then fetch the new release.</b>"
+		' To build without a change, select <b>"I understand, run deploy anyway"</b>. '
 		+ doc_link(DOC_URLS["build-might-fail"]),
 		BuildValidationError,
 	)
