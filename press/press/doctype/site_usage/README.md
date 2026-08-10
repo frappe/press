@@ -16,5 +16,5 @@ renders these with `$format.bytes(value, 2, 2)`, where the third argument
 stored value of `1024` displays as "1 GB".
 
 When comparing against a threshold in bytes, convert — e.g. 1 GB is `1024`
-here, not `1024**3`. See `LARGE_DATABASE_SIZE` in `site_update.py` and
+here, not `1024**3`. See `STATEMENT_TIME_BUMP_SIZE_MB` in `site_update.py` and
 `Site.database_size`.

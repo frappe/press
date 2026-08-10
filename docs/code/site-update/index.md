@@ -36,7 +36,7 @@ can exceed the database server's `max_statement_time` and get killed mid-query,
 turning a recoverable failure into a fatal one.
 
 To avoid that, before triggering a recovery **migrate** job for a large database
-(over `LARGE_DATABASE_SIZE`, 2 GB), Press proactively increases
+(over `STATEMENT_TIME_BUMP_SIZE_MB`, 2 GB), Press proactively increases
 `max_statement_time` on the database server by one hour
 (`SiteUpdate.bump_max_statement_time_before_recovery` →
 `Site.increase_max_statement_time`). `max_statement_time` is a dynamic MariaDB
@@ -155,5 +155,5 @@ restored to its pre-bump value.)
 | Constant | Value | Meaning |
 |----------|-------|---------|
 | `STATEMENT_TIME_INCREMENT` | 3600 | Seconds (one hour) `max_statement_time` is bumped by before a recovery migrate on large sites. |
-| `LARGE_DATABASE_SIZE` | 2048 | DB size (MB) above which the `max_statement_time` bump is applied. |
+| `STATEMENT_TIME_BUMP_SIZE_MB` | 2048 | DB size (MB) above which the `max_statement_time` bump is applied. Not to be confused with `LARGE_DATABASE_SIZE_MB` (102400), which blocks a logical-backup update outright. |
 | `DEFAULT_MAX_STATEMENT_TIME` | 3600 | Assumed `max_statement_time` when it isn't set on the database server. |

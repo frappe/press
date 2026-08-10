@@ -30,7 +30,7 @@ from press.press.doctype.site.site import (
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.site_update.site_update import (
-	LARGE_DATABASE_SIZE,
+	STATEMENT_TIME_BUMP_SIZE_MB,
 	SiteUpdate,
 	is_site_in_deploy_hours,
 	run_scheduled_updates,
@@ -774,7 +774,7 @@ class TestSiteUpdate(FrappeTestCase):
 		site = create_test_site(bench=bench.name)
 		# A database over the threshold qualifies for the recovery-migrate bump.
 		frappe.get_doc(
-			{"doctype": "Site Usage", "site": site.name, "database": LARGE_DATABASE_SIZE + 1}
+			{"doctype": "Site Usage", "site": site.name, "database": STATEMENT_TIME_BUMP_SIZE_MB + 1}
 		).insert()
 		site_update = create_test_site_update(site.name, bench.group, "Pending", ignore_validate=True)
 		site_update.deploy_type = "Migrate"
@@ -816,7 +816,7 @@ class TestSiteUpdate(FrappeTestCase):
 		site = create_test_site(bench=bench.name)
 		site.set_max_statement_time(0)
 		frappe.get_doc(
-			{"doctype": "Site Usage", "site": site.name, "database": LARGE_DATABASE_SIZE + 1}
+			{"doctype": "Site Usage", "site": site.name, "database": STATEMENT_TIME_BUMP_SIZE_MB + 1}
 		).insert()
 		site_update = create_test_site_update(site.name, bench.group, "Pending", ignore_validate=True)
 		site_update.deploy_type = "Migrate"

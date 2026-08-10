@@ -40,6 +40,9 @@ if TYPE_CHECKING:
 
 # Site Usage stores sizes in MB
 LARGE_DATABASE_SIZE_MB = 100 * 1024
+# Above this a recovery migrate risks the statement timeout, so the bump is worthwhile.
+# Well below LARGE_DATABASE_SIZE_MB above, which gates a different thing — read both.
+STATEMENT_TIME_BUMP_SIZE_MB = 2 * 1024
 
 
 class SiteUpdate(Document):
@@ -248,10 +251,9 @@ class SiteUpdate(Document):
 			self.start()
 
 	@property
-	def database_size(self):
+	def database_size(self) -> int:
 		"""Database size in MB, as last reported by the site's server."""
-		site: "Site" = frappe.get_doc("Site", self.site)
-		return cint(site.get_disk_usages()["database"])
+		return frappe.get_doc("Site", self.site).database_size
 
 	def validate_backup_type_for_large_database(self):
 		"""A logical backup of a huge database takes too long and often fails mid-update.
@@ -573,7 +575,7 @@ class SiteUpdate(Document):
 	def bump_max_statement_time_before_recovery(self, site: "Site") -> None:
 		# A migrate recovery's heavy queries can exceed max_statement_time on large sites
 		# and get killed, so bump it by an hour first. Small databases aren't at risk.
-		if self.deploy_type != "Migrate" or site.database_size <= LARGE_DATABASE_SIZE:
+		if self.deploy_type != "Migrate" or site.database_size <= STATEMENT_TIME_BUMP_SIZE_MB:
 			return
 		# This is a best-effort optimization; a failure here (e.g. Ansible can't reach the
 		# database server) must not abort the recovery, which is the whole point of this flow.
@@ -1217,10 +1219,6 @@ def process_update_site_job_update(job: AgentJob):
 		elif updated_status == "Failure":
 			handle_failure(job, site_update)
 
-
-# Above this DB size (Site Usage records it in MB) a recovery migrate risks the
-# statement timeout, so only then is the max_statement_time bump worthwhile.
-LARGE_DATABASE_SIZE = 2048  # 2 GB in MB
 
 # Database errors a retry can recover from — the server dropping the connection, not a
 # genuine data/migration problem.
