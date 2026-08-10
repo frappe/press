@@ -14,6 +14,7 @@ let router = createRouter({
 				next({
 					name: 'Welcome',
 					query: {
+						...to.query,
 						is_redirect: true,
 					},
 				})
@@ -23,6 +24,12 @@ let router = createRouter({
 			path: '/welcome',
 			name: 'Welcome',
 			component: () => import('./pages/Welcome.vue'),
+			meta: { hideSidebar: true },
+		},
+		{
+			path: '/quickstart',
+			name: 'Quickstart',
+			component: () => import('./pages/Quickstart.vue'),
 			meta: { hideSidebar: true },
 		},
 		{
@@ -191,6 +198,11 @@ let router = createRouter({
 					name: 'BillingMarketplacePayouts',
 					path: 'payouts',
 					component: () => import('./pages/BillingMarketplacePayouts.vue'),
+				},
+				{
+					name: 'BillingSubscriptions',
+					path: 'subscriptions',
+					component: () => import('./pages/BillingSubscriptions.vue'),
 				},
 				{
 					name: 'BillingTiers',
@@ -637,12 +649,14 @@ router.beforeEach(async (to, from, next) => {
 		if (goingToLoginPage) {
 			if (to.name == 'Signup' && to.query?.product) {
 				next({
-					name: 'SignupSetup',
-					params: { productId: to.query.product },
+					name: 'Quickstart',
+					query: { product: to.query.product },
 				})
+				return
 			}
 			if (to.name == 'Setup Account') {
 				next({ name: 'Team Invite', params: to.params })
+				return
 			}
 			next({ name: defaultRoute })
 		} else {

@@ -207,6 +207,14 @@
 			{
 				"supported_frappe_version": "Version 12",
 				"version": "5.18.0"
+			},
+			{
+				"supported_frappe_version": "Version 15",
+				"version": "5.31.0"
+			},
+			{
+				"supported_frappe_version": "Version 16",
+				"version": "5.31.0"
 			}
 		],
 		"title": "Bench Version"

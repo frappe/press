@@ -18,11 +18,14 @@ from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_for
 
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
+from press.guards.team_guard import only_admin
 from press.partner.doctype.partner_onboarding.partner_onboarding import has_partner_onboarding
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import get_valid_teams_for_user, has_role, log_error
+from press.utils import is_admin_user as check_is_admin_user
+from press.utils import is_team_owner as check_is_team_owner
 from press.utils.billing import (
 	get_frappe_io_connection,
 	get_razorpay_client,
@@ -173,6 +176,18 @@ class Team(Document):
 		"tier",
 	)
 
+	# Everything else about a team moves through billing, onboarding or an
+	# explicit action, not through `set_value`.
+	dashboard_editable_fields = (
+		"benches_enabled",
+		"enforce_2fa",
+		"is_developer",
+		"monthly_alert_threshold",
+		"receive_budget_alerts",
+		"relaxed_permissions",
+		"servers_enabled",
+	)
+
 	def get_doc(self, doc):
 		if (
 			not frappe.local.system_user()
@@ -317,6 +332,9 @@ class Team(Document):
 			)
 
 	def validate_billing_team(self):
+		if self.billing_team and self.payment_mode != "Paid By Partner":
+			self.billing_team = ""
+
 		if not (self.billing_team and self.payment_mode == "Paid By Partner"):
 			return
 
@@ -437,7 +455,7 @@ class Team(Document):
 		if not team.via_erpnext and not account_request.invited_by_parent_team:
 			team.create_upcoming_invoice()
 
-		account_request.stitch_pulse_identity()
+		account_request.stitch_pulse_identity(team.name)
 		return team
 
 	@staticmethod
@@ -473,12 +491,17 @@ class Team(Document):
 		self.save(ignore_permissions=True)
 
 		for press_role in press_roles or []:
-			frappe.get_doc("Press Role", press_role.press_role).add_user(
+			frappe.get_doc("Press Role", press_role).add_user(
 				user.name,
 				skip_validations=skip_validations,
 			)
 
 	@dashboard_whitelist()
+	@only_admin(
+		team=lambda document, _: str(document.name),
+		# Members may remove themselves (the leave_team flow).
+		skip=lambda _, arguments: arguments["member"] == frappe.session.user,
+	)
 	def remove_team_member(self, member):
 		member_to_remove = find(self.team_members, lambda x: x.user == member)
 		if member_to_remove:
@@ -700,8 +723,8 @@ class Team(Document):
 		self.servers_enabled = 1
 		self.partner_status = "Active"
 		self.save(ignore_permissions=True)
-		frappe.get_doc("User", self.user).add_roles("Partner")
 		self.create_partner_referral_code()
+		frappe.get_doc("User", self.user).add_roles("Partner")
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
@@ -879,16 +902,19 @@ class Team(Document):
 			address = frappe.get_doc("Address", self.billing_address)
 
 		country_code = frappe.db.get_value("Country", address.country, "code")
-		stripe.Customer.modify(
-			self.stripe_customer_id,
-			address={
-				"line1": address.address_line1,
-				"postal_code": address.pincode,
-				"city": address.city,
-				"state": address.state,
-				"country": country_code.upper(),
-			},
-		)
+		try:
+			stripe.Customer.modify(
+				self.stripe_customer_id,
+				address={
+					"line1": address.address_line1,
+					"postal_code": address.pincode,
+					"city": address.city,
+					"state": address.state,
+					"country": country_code.upper(),
+				},
+			)
+		except Exception:
+			log_error("Failed to update billing details on Stripe")
 
 	def create_payment_method(
 		self,
@@ -900,7 +926,11 @@ class Team(Document):
 		verified_with_micro_charge=False,
 	):
 		stripe = get_stripe()
-		payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+		try:
+			payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+		except Exception:
+			log_error("Failed to retrieve Stripe payment method", traceback=frappe.get_traceback())
+			frappe.throw("Could not add this card. Please try again or contact support.")
 
 		try:
 			doc = frappe.get_doc(
@@ -1019,27 +1049,13 @@ class Team(Document):
 		"""
 		Checks if the current user is the owner of the team.
 		"""
-		return bool(frappe.db.get_value("Team", self.name, "user") == frappe.session.user)
+		return check_is_team_owner(self.name)
 
 	def is_admin_user(self) -> bool:
 		"""
 		Checks if the current user has admin access in the team via roles.
 		"""
-		PressRole = frappe.qb.DocType("Press Role")
-		PressRoleUser = frappe.qb.DocType("Press Role User")
-		return (
-			frappe.qb.from_(PressRoleUser)
-			.left_join(PressRole)
-			.on(PressRole.name == PressRoleUser.parent)
-			.select(Count(PressRoleUser.name).as_("count"))
-			.where(PressRole.team == self.name)
-			.where(PressRoleUser.user == frappe.session.user)
-			.where(PressRole.admin_access == 1)
-			.run(as_dict=1)
-			.pop()
-			.get("count", 0)
-			> 0
-		)
+		return check_is_admin_user(self.name)
 
 	@dashboard_whitelist()
 	def get_team_members(self):
@@ -1187,6 +1203,9 @@ class Team(Document):
 				"team": self.name,
 				"invited_by": ("is", "set"),
 				"request_key": ("is", "set"),
+				# The expiry scheduler blanks request_key only after the fact; check the
+				# expiration time too so a lapsed invite doesn't block re-inviting.
+				"request_key_expiration_time": (">", frappe.utils.now_datetime()),
 			},
 		):
 			frappe.throw("User has already been invited recently. Please try again later.")
@@ -1208,6 +1227,33 @@ class Team(Document):
 			account_request.flags.ignore_links = True
 
 		account_request.insert()
+
+	@dashboard_whitelist()
+	@only_admin(team=lambda document, _: str(document.name))
+	def cancel_invitation(self, email):
+		pending_invitation_filters = {
+			"email": email,
+			"team": self.name,
+			"invited_by": ("is", "set"),
+			"request_key": ("is", "set"),
+			# A re-invite after expiry can leave an older, lapsed Account Request
+			# with its key still set; only the active invitation may be targeted.
+			"request_key_expiration_time": (">", frappe.utils.now_datetime()),
+		}
+		if not frappe.db.exists("Account Request", pending_invitation_filters):
+			frappe.throw(_("No pending invitation found for {0}").format(email))
+
+		# Expire rather than delete, mirroring expire_request_key: the Account
+		# Request stays for audit and get_invitations already ignores blanked keys.
+		frappe.db.set_value(
+			"Account Request",
+			pending_invitation_filters,
+			{
+				"request_key": "",
+				"request_key_expiration_time": None,
+			},
+			update_modified=False,
+		)
 
 	@frappe.whitelist()
 	def get_balance(self):
@@ -1387,6 +1433,9 @@ class Team(Document):
 
 	def get_route_on_login(self):
 		if self.payment_mode or self.skip_onboarding:
+			site_count = frappe.db.count("Site", {"team": self.name, "status": ("!=", "Archived")})
+			if 0 < site_count <= 3:
+				return "/quickstart"
 			return "/sites"
 
 		if self.is_saas_user:

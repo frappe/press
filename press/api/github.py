@@ -17,6 +17,7 @@ from urllib.parse import urlencode, urlparse
 import frappe
 import jwt
 import requests
+import semantic_version as sv
 import tomli
 from frappe.utils.verified_command import get_secret
 
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
 
 
 DEFAULT_GITHUB_REDIRECT_PATH = "/dashboard"
+GITHUB_OAUTH_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
 GITHUB_OAUTH_STATE_MAX_AGE = timedelta(minutes=10)
 
 
@@ -212,12 +214,26 @@ def get_safe_github_redirect_url(redirect_url: str | None = None) -> str:
 	return redirect_path
 
 
+def get_github_authorize_url(state: str) -> str:
+	"""User-authorization URL used to obtain a fresh OAuth code (and token).
+
+	GitHub redirects back to the app's registered callback (/github/authorize),
+	so we don't pass a redirect_uri and avoid a callback URL mismatch.
+	"""
+	client_id = frappe.db.get_single_value("Press Settings", "github_app_client_id")
+	return f"{GITHUB_OAUTH_AUTHORIZE_URL}?{urlencode({'client_id': client_id, 'state': state})}"
+
+
 def get_github_callback_login_redirect(code: str | None, state: str | None) -> str:
 	login_url = "/dashboard/login"
-	if not (code and state):
+	if not state:
 		return frappe.utils.get_url(login_url)
 
-	callback_url = f"/github/authorize?{urlencode({'code': code, 'state': state})}"
+	params = {}
+	if code:
+		params["code"] = code
+	params["state"] = state
+	callback_url = f"/github/authorize?{urlencode(params)}"
 	return frappe.utils.get_url(f"{login_url}?{urlencode({'redirect': callback_url})}")
 
 
@@ -376,11 +392,15 @@ def app(owner: str, repository: str, branch: str, installation: str | None = Non
 		tree,
 	)
 
-	frappe_version = _get_compatible_frappe_version_from_pyproject(
-		owner,
-		repository,
-		branch_info,
-		headers,
+	frappe_version = (
+		None
+		if app_name == "frappe"
+		else _get_compatible_frappe_version_from_pyproject(
+			owner,
+			repository,
+			branch_info,
+			headers,
+		)
 	)
 
 	return {"name": app_name, "title": title, "frappe_version": frappe_version}
@@ -405,6 +425,8 @@ def branches(owner: str, name: str, installation: str | None = None, app_source:
 			headers=headers,
 			timeout=20,
 		)
+		if resp.status_code == 404:
+			frappe.throw(f"Repository {owner}/{name} not found on GitHub")
 		if not resp.ok:
 			frappe.throw("Error fetching branch list from GitHub: " + resp.text)
 
@@ -487,6 +509,33 @@ def _get_compatible_frappe_version_from_pyproject(
 		raise  # for mypy: NoReturn
 
 	return compatible_frappe_version
+
+
+@frappe.whitelist()
+def get_frappe_branch_major_version(
+	owner: str, repository: str, branch: str, installation: str | None = None
+) -> int:
+	"""Get the major Frappe version declared in `frappe/__init__.py` of the given branch."""
+	headers = get_auth_headers(installation)
+	init_file = requests.get(
+		f"https://api.github.com/repos/{owner}/{repository}/contents/frappe/__init__.py",
+		params={"ref": branch},
+		headers=headers,
+	).json()
+
+	if "content" not in init_file:
+		frappe.throw(
+			f"We couldn't read frappe/__init__.py from branch {branch}. "
+			"Please make sure the selected branch is correct."
+		)
+
+	content = b64decode(init_file["content"]).decode()
+	match = re.search(r"""__version__\s*=\s*["']([\d.]+)""", content)
+	if not match:
+		frappe.throw(f"Could not find __version__ in frappe/__init__.py on branch {branch}.")
+		raise  # for mypy: NoReturn
+
+	return sv.Version.coerce(match.group(1)).major
 
 
 def _get_app_name_and_title_from_hooks(

@@ -5,7 +5,6 @@ import {
 	Dropdown,
 	Spinner,
 	Tooltip,
-	createResource,
 	createDocumentResource,
 	createListResource,
 } from 'frappe-ui'
@@ -23,6 +22,7 @@ import {
 import { dropBench } from './utils'
 
 import { dayjsLocal } from '@/utils/dayjs'
+import { getSiteStatusBadge } from '@/utils/site'
 import Collapsable from '@/components/common/Collapsable.vue'
 
 interface Props {
@@ -93,20 +93,18 @@ onBeforeUnmount(() => {
 })
 
 if (!props.data.active_benches) {
-	createResource({
-		url: 'frappe.client.get_value',
-		params: {
-			doctype: 'Release Pipeline',
-			filters: {
-				release_group: props.data.name,
-				status: ['in', ['Running', 'Pending']],
-			},
-			fieldname: 'name',
+	createListResource({
+		doctype: 'Release Pipeline',
+		fields: ['name'],
+		filters: {
+			release_group: props.data.name,
+			status: ['in', ['Running', 'Pending']],
 		},
+		pageLength: 1,
 		auto: true,
 		onSuccess(data) {
-			if (!data?.name) return
-			attachPipeline(data.name)
+			if (!data?.[0]?.name) return
+			attachPipeline(data[0].name)
 		},
 	})
 }
@@ -142,7 +140,7 @@ const benchOptions = (bench) => [
 	{ label: 'App Marketplace', route: '/apps', icon: LucideStore },
 	{
 		label: 'Bench Actions',
-		route: `/groups/${bench.name}/actions`,
+		route: { name: 'Release Group Detail Actions', params: { name: bench.name } },
 		icon: LucideSlidersVertical,
 	},
 	{
@@ -175,7 +173,7 @@ const dropSite = (site) => {
 const siteOptions = (site) => [
 	{
 		label: 'Site Actions',
-		route: `/sites/${site.name}/actions`,
+		route: { name: 'Site Detail Actions', params: { name: site.name } },
 		icon: LucideSlidersVertical,
 	},
 	{
@@ -186,24 +184,6 @@ const siteOptions = (site) => [
 		onClick: () => dropSite(site),
 	},
 ]
-
-const siteStatusBadges: Record<
-	string,
-	{ theme: 'green' | 'red' | 'orange' | 'blue' | 'gray' | null; dot: string }
-> = {
-	Active: { theme: null, dot: 'bg-surface-green-3' },
-	Inactive: { theme: 'gray', dot: 'bg-surface-gray-4' },
-	Suspended: { theme: 'gray', dot: 'bg-surface-gray-4' },
-	Archived: { theme: 'gray', dot: 'bg-surface-gray-4' },
-	Broken: { theme: 'red', dot: 'bg-surface-red-5' },
-	Draft: { theme: 'orange', dot: 'bg-surface-orange-3' },
-	AwaitingApproval: { theme: 'orange', dot: 'bg-surface-orange-3' },
-	'Update Available': { theme: 'blue', dot: 'bg-surface-blue-3' },
-}
-const defaultSiteStatusBadge = {
-	theme: 'gray' as const,
-	dot: 'bg-surface-gray-4',
-}
 
 const transientStatuses = ['Pending', 'Installing', 'Updating', 'Recovering']
 const wiredSites = reactive(new Set<string>())
@@ -243,7 +223,7 @@ onBeforeUnmount(() => {
 		<template #header="{ opened, toggle }">
 			<div
 				:class="[
-					'row-grid pl-6 pr-4 py-2 cursor-pointer items-center',
+					'row-grid px-4 py-2 cursor-pointer items-center',
 					(totalLength - 1 == bench_i && opened) || bench_i != totalLength - 1
 						? 'bordered'
 						: '',
@@ -253,7 +233,7 @@ onBeforeUnmount(() => {
 				}"
 			>
 				<LucideChevronRight
-					class="shrink-0 size-4 transition-transform duration-300"
+					class="shrink-0 size-4 justify-self-end transition-transform duration-300"
 					:class="opened ? 'rotate-90' : ''"
 				/>
 
@@ -261,7 +241,7 @@ onBeforeUnmount(() => {
 					<Tooltip text="Go to bench dashboard">
 						<router-link
 							class="hover:underline flex gap-2"
-							:to="`/groups/${data.name}`"
+							:to="{ name: 'Release Group Detail', params: { name: data.name } }"
 							@click.prevent="(e) => e.stopPropagation()"
 						>
 							<LucideBoxes class="size-4" />
@@ -337,7 +317,7 @@ onBeforeUnmount(() => {
 
 		<div
 			v-if="sites?.data?.length > 0"
-			class="row-grid px-6 pr-4 py-2 items-center text-sm text-ink-gray-5"
+			class="row-grid px-4 py-2 items-center text-sm text-ink-gray-5"
 		>
 			<span />
 			<span class="ml-6">Site</span>
@@ -348,7 +328,7 @@ onBeforeUnmount(() => {
 
 		<div
 			v-else-if="!sites?.list?.loading"
-			class="row-grid px-6 pr-4 py-2"
+			class="row-grid px-4 py-2"
 			:class="[bench_i != totalLength - 1 ? 'bordered' : '']"
 		>
 			<span />
@@ -368,7 +348,7 @@ onBeforeUnmount(() => {
 			v-for="(site, site_i) in sites?.data"
 			:key="site.name"
 			:class="[
-				'row-grid px-6 pr-4 py-2 items-center',
+				'row-grid px-4 py-2 items-center',
 				site_i != sites?.data?.length - 1 || bench_i != totalLength - 1
 					? 'bordered'
 					: '',
@@ -379,7 +359,7 @@ onBeforeUnmount(() => {
 			<Tooltip text="Go to site dashboard">
 				<router-link
 					class="flex gap-2 w-fit items-center hover:underline text-ink-gray-8 pl-6"
-					:to="`/sites/${site.name}`"
+					:to="{ name: 'Site Detail', params: { name: site.name } }"
 				>
 					<LucideAppWindow class="size-4" /> {{ site.name }}
 				</router-link>
@@ -387,7 +367,7 @@ onBeforeUnmount(() => {
 
 			<router-link
 				v-if="['Pending', 'Installing', 'Updating', 'Recovering'].includes(site.status)"
-				:to="`/sites/${site.name}`"
+				:to="{ name: 'Site Detail', params: { name: site.name } }"
 				class="flex gap-2 items-center text-xs text-ink-gray-8"
 			>
 				<Spinner class="!size-3.5" />
@@ -399,11 +379,11 @@ onBeforeUnmount(() => {
 				v-else
 				variant="subtle"
 				class="w-fit"
-				:theme="siteStatusBadges[site.status]?.theme"
+				:theme="getSiteStatusBadge(site.status).theme"
 			>
 				<span
 					class="size-1.5 rounded-full shrink-0 mr-0.5"
-					:class="(siteStatusBadges[site.status] || defaultSiteStatusBadge).dot"
+					:class="getSiteStatusBadge(site.status).dot"
 				/>
 				{{ site.status }}
 			</Badge>
@@ -418,7 +398,7 @@ onBeforeUnmount(() => {
 
 		<div
 			v-if="sites.hasNextPage"
-			class="px-6 py-2 border-t dark:border-outline-gray-2"
+			class="px-4 py-2 border-t dark:border-outline-gray-2"
 		>
 			<Button
 				variant="ghost"

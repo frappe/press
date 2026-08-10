@@ -259,6 +259,17 @@ COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
 COPY --chown=frappe:frappe .vimrc /home/frappe/.vimrc
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
+# Prebundle headless Chromium for the Chrome-based PDF generator (frappe.utils.chromium)
+RUN --mount=type=cache,sharing=locked,id=chromium-{% if is_arm_build %}arm64{% else %}x86_64{% endif %},target=/home/frappe/chromium-cache,uid=1000,gid=1000 \
+  if [ -n "$(ls -A /home/frappe/chromium-cache 2>/dev/null)" ]; then \
+  mkdir -p /home/frappe/frappe-bench/chromium \
+  && cp -a /home/frappe/chromium-cache/. /home/frappe/frappe-bench/chromium/; \
+  elif bench setup-chrome --help > /dev/null 2>&1; then \
+  bench setup-chrome \
+  && cp -a /home/frappe/frappe-bench/chromium/. /home/frappe/chromium-cache/; \
+  else echo "bench setup-chrome unavailable on this Frappe version; skipping Chromium prebundle"; fi \
+  `#stage-setup-chromium`
+
 # Install other apps
 {% for app in doc.apps %}
 {% if app.app != "frappe"%}

@@ -32,10 +32,21 @@ A body is always better.
 
 Most changes aren't trivial. Try to explain why you're making the change.
 
+## Keep it short
+
+A body is a few lines, not a page. Two to five lines is usually enough.
+
+Say why the change is being made, and stop. Don't recap what the diff
+already shows, don't describe how the tests are set up, and don't narrate
+what you tried and reverted along the way.
+
 ## Explain choices
 
 You are making choices all the time. Explain why that choice. Why not an
 alternative?
+
+One line for the alternative is enough. `Kept it inline because an
+enqueued job leaves no record if it fails` says as much as a paragraph.
 
 ## Link references
 

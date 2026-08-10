@@ -425,6 +425,40 @@ class TestSite(FrappeTestCase):
 			config_host = site.configuration[0].value
 		self.assertEqual(config_host, f"https://{site_domain1.name}")
 
+	def test_site_without_custom_domain_has_no_domain_with_a_record(self):
+		"""The default domain is a CNAME of the site itself, so it must not count."""
+		site = create_test_site("testsubdomain")
+		self.assertFalse(site.has_domain_with_a_record)
+
+	def test_custom_domain_with_a_record_is_detected(self):
+		from press.press.doctype.site_domain.test_site_domain import create_test_site_domain
+
+		site = create_test_site("testsubdomain")
+		create_test_site_domain(site.name, "sitedomain1.com")
+		self.assertTrue(site.has_domain_with_a_record)
+
+	def test_custom_domain_with_cname_is_not_detected_as_a_record(self):
+		from press.press.doctype.site_domain.test_site_domain import create_test_site_domain
+
+		site = create_test_site("testsubdomain")
+		domain = create_test_site_domain(site.name, "sitedomain1.com")
+		frappe.db.set_value("Site Domain", domain.name, "dns_type", "CNAME")
+		self.assertFalse(site.has_domain_with_a_record)
+
+	def test_inbound_ip_in_cluster_is_of_proxy_of_destination_bench(self):
+		"""The warning shown before a region move must name the destination cluster's proxy IP."""
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
+		from press.press.doctype.server.test_server import create_test_server
+
+		site = create_test_site("testsubdomain")
+		cluster = create_test_cluster("Mumbai")
+		proxy_server = create_test_proxy_server(cluster=cluster.name)
+		server = create_test_server(proxy_server.name, cluster=cluster.name)
+		create_test_bench(group=frappe.get_doc("Release Group", site.group), server=server.name)
+
+		self.assertEqual(site.inbound_ip_in_cluster(cluster.name), proxy_server.ip)
+
 	@patch.object(RemoteFile, "download_link", new="http://test.com")
 	@patch.object(RemoteFile, "get_content", new=lambda x: {"a": "test"})  # type: ignore
 	def test_new_site_with_backup_files(self):

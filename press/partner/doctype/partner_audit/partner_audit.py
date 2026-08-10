@@ -5,6 +5,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.query_builder.functions import Count
 
+from press.utils import get_current_team
+
 
 class PartnerAudit(Document):
 	# begin: auto-generated types
@@ -73,7 +75,13 @@ class PartnerAudit(Document):
 			.offset(list_args["start"])
 			.orderby(PartnerAudit.modified, order=frappe.qb.desc)
 		)
-		if filters.get("team"):
+
+		# This query is built from scratch, so the scoping `press.api.client`
+		# applied to the query it handed over is gone. Reapply it. A partner
+		# picking their own team in `filters` is redundant but harmless.
+		if not frappe.local.system_user():
+			query = query.where(PartnerAudit.partner_team == get_current_team())
+		elif filters.get("team"):
 			query = query.where(PartnerAudit.partner_team == filters["team"])
 		if filters.get("status") and filters["status"] != "All":
 			query = query.where(PartnerAudit.status == filters["status"])

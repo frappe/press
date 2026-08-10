@@ -29,6 +29,7 @@ from oci.core.models import (
 	CreateVnicDetails,
 	CreateVolumeBackupDetails,
 	GetPublicIpByIpAddressDetails,
+	GetPublicIpByPrivateIpIdDetails,
 	InstanceOptions,
 	InstanceSourceViaImageDetails,
 	LaunchInstanceDetails,
@@ -231,9 +232,10 @@ class VirtualMachine(Document):
 			"Frappe Compute",
 			"Hetzner",
 			"DigitalOcean",
+			"OCI",
 		):
 			frappe.throw(
-				"NAT Servers are only supported on AWS EC2, Frappe Compute, Hetzner, and DigitalOcean. "
+				"NAT Servers are only supported on AWS EC2, Frappe Compute, Hetzner, DigitalOcean, and OCI. "
 				f"Change the cloud provider from {self.cloud_provider} to a supported provider."
 			)
 
@@ -278,6 +280,41 @@ class VirtualMachine(Document):
 
 	def on_update(self):
 		server = self.get_server()
+
+		if (
+			self.has_value_changed("status")
+			and self.status == "Running"
+			and self.cloud_provider == "OCI"
+			and self.series == "nat"
+		):
+			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+			self.disable_source_dest_check()
+			cluster.create_nat_route_table_oci(self.private_ip_address)
+
+		if (
+			self.has_value_changed("status")
+			and self.status == "Running"
+			and self.cloud_provider == "OCI"
+			and (self.series in ["m", "f"])
+			and not self.public_ip_address
+		):
+			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+			nat_server = frappe.db.get_value(
+				"NAT Server",
+				{
+					"cluster": cluster.name,
+					"status": "Active",
+				},
+				"name",
+			)
+			if nat_server:
+				cluster.attach_route_table_to_instance_vnic_oci(self, cluster.oci_nat_route_table_id)
+			else:
+				frappe.throw(
+					"Failed to create a private server. Please create a NAT server in the cluster first"
+				)
 
 		if self.has_value_changed("has_data_volume") and server:
 			server.has_data_volume = self.has_data_volume
@@ -758,6 +795,7 @@ class VirtualMachine(Document):
 					create_vnic_details=CreateVnicDetails(
 						private_ip=self.private_ip_address,
 						assign_private_dns_record=True,
+						assign_public_ip=bool(self.assign_public_ip),
 						nsg_ids=self.get_security_groups(),
 					),
 					subnet_id=self.subnet_id,
@@ -1648,28 +1686,70 @@ class VirtualMachine(Document):
 		self.sync()
 
 	def disable_source_dest_check(self):
-		if self.cloud_provider != "AWS EC2":
-			frappe.throw(
-				"Source/Destination check modification is currently only supported for AWS EC2 instances"
+		if self.cloud_provider == "AWS EC2":
+			ec2 = self.client()
+			ec2.modify_instance_attribute(
+				InstanceId=self.instance_id,
+				SourceDestCheck={"Value": False},
 			)
 
-		ec2 = self.client()
-		ec2.modify_instance_attribute(
-			InstanceId=self.instance_id,
-			SourceDestCheck={"Value": False},
-		)
+		elif self.cloud_provider == "OCI":
+			from oci.core import ComputeClient, VirtualNetworkClient
+			from oci.core.models import UpdateVnicDetails
+
+			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+			compute_client: ComputeClient = self.client(ComputeClient)
+			network_client: VirtualNetworkClient = self.client(VirtualNetworkClient)
+
+			vnic_attachments = compute_client.list_vnic_attachments(
+				compartment_id=cluster.oci_tenancy,
+				instance_id=self.instance_id,
+			).data
+
+			network_client.update_vnic(
+				vnic_attachments[0].vnic_id,
+				UpdateVnicDetails(skip_source_dest_check=True),
+			)
+
+		else:
+			frappe.throw(
+				f"Source/Destination check modification is not supported for {self.cloud_provider}. "
+				"Please use AWS EC2 or OCI for this operation."
+			)
 
 	def enable_source_dest_check(self):
-		if self.cloud_provider != "AWS EC2":
-			frappe.throw(
-				"Source/Destination check modification is currently only supported for AWS EC2 instances"
+		if self.cloud_provider == "AWS EC2":
+			ec2 = self.client()
+			ec2.modify_instance_attribute(
+				InstanceId=self.instance_id,
+				SourceDestCheck={"Value": True},
 			)
 
-		ec2 = self.client()
-		ec2.modify_instance_attribute(
-			InstanceId=self.instance_id,
-			SourceDestCheck={"Value": True},
-		)
+		elif self.cloud_provider == "OCI":
+			from oci.core import ComputeClient, VirtualNetworkClient
+			from oci.core.models import UpdateVnicDetails
+
+			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+			compute_client: ComputeClient = self.client(ComputeClient)
+			network_client: VirtualNetworkClient = self.client(VirtualNetworkClient)
+
+			vnic_attachments = compute_client.list_vnic_attachments(
+				compartment_id=cluster.oci_tenancy,
+				instance_id=self.instance_id,
+			).data
+
+			network_client.update_vnic(
+				vnic_attachments[0].vnic_id,
+				UpdateVnicDetails(skip_source_dest_check=False),
+			)
+
+		else:
+			frappe.throw(
+				f"Source/Destination check modification is not supported for {self.cloud_provider}. "
+				"Please use AWS EC2 or OCI for this operation."
+			)
 
 	def ping_server(self, server):
 		ping = Ansible(
@@ -1747,6 +1827,53 @@ class VirtualMachine(Document):
 			"Please check the server status and network connectivity."
 		)
 
+	def associate_hetzner_public_ip(self, primary_ip: str | None = None):
+		client = self.client()
+		server_instance = self.get_hetzner_server_instance(fetch_data=True)
+
+		should_power_on = server_instance.status == "running"
+		powered_off = False
+
+		try:
+			if should_power_on:
+				client.servers.power_off(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
+				powered_off = True
+
+			server_instance = self.get_hetzner_server_instance(fetch_data=True)
+
+			if not server_instance.public_net.primary_ipv4:
+				available_ip = None
+
+				if primary_ip:
+					response = client.primary_ips.get_list(ip=primary_ip)
+					if response.primary_ips:
+						available_ip = response.primary_ips[0]
+
+				if available_ip and available_ip.assignee_id is None:
+					client.primary_ips.assign(
+						available_ip,
+						assignee_id=server_instance.id,
+					).wait_until_finished(HETZNER_ACTION_RETRIES)
+				else:
+					response = client.primary_ips.create(
+						type="ipv4",
+						name=f"{self.name}-ipv4",
+						datacenter=server_instance.datacenter,
+						assignee_id=server_instance.id,
+						auto_delete=False,
+					)
+					response.action.wait_until_finished(HETZNER_ACTION_RETRIES)
+
+		finally:
+			if powered_off:
+				server_instance = self.get_hetzner_server_instance(fetch_data=True)
+				client.servers.power_on(server_instance).wait_until_finished(HETZNER_ACTION_RETRIES)
+
+		self.wait_for_ssh()
+
+		frappe.flags.force_update_dns = True
+		self.sync()
+
 	def disassociate_hetzner_public_ip(self):
 		client = self.client()
 		server_instance = self.get_hetzner_server_instance(fetch_data=True)
@@ -1782,22 +1909,77 @@ class VirtualMachine(Document):
 		frappe.flags.force_update_dns = True
 		self.sync()
 
+	def disassociate_oci_public_ip(self):
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+		compute_client = ComputeClient(cluster.get_oci_config())
+		network_client = VirtualNetworkClient(cluster.get_oci_config())
+
+		vnic_attachments = compute_client.list_vnic_attachments(
+			compartment_id=cluster.oci_tenancy,
+			instance_id=self.instance_id,
+		).data
+
+		if not vnic_attachments:
+			frappe.throw(
+				f"No VNIC attached to instance {self.instance_id}. "
+				"Cannot disassociate public IP without a VNIC."
+			)
+
+		private_ips = network_client.list_private_ips(
+			vnic_id=vnic_attachments[0].vnic_id,
+		).data
+
+		if not private_ips:
+			frappe.throw(
+				f"No private IP found for instance {self.instance_id}. "
+				"Cannot disassociate public IP without a private IP."
+			)
+
+		public_ip = network_client.get_public_ip_by_private_ip_id(
+			GetPublicIpByPrivateIpIdDetails(
+				private_ip_id=private_ips[0].id,
+			)
+		).data
+
+		nat_server = frappe.db.get_value(
+			"NAT Server",
+			{
+				"cluster": self.cluster,
+				"status": "Active",
+			},
+			"name",
+		)
+
+		if not nat_server:
+			frappe.throw(
+				"No active NAT servers found in the cluster. "
+				"Please create a NAT server before removing public IP"
+			)
+
+		cluster.attach_route_table_to_instance_vnic_oci(self, cluster.oci_nat_route_table_id)
+		network_client.delete_public_ip(public_ip.id)
+
 	@frappe.whitelist()
 	def disassociate_auto_assigned_public_ip(self):
-		if self.cloud_provider not in ("AWS EC2", "Frappe Compute"):
+		if self.cloud_provider not in ("AWS EC2", "Frappe Compute", "OCI"):
 			frappe.throw(
-				"Public IP disassociation is only supported on AWS EC2 and Frappe Compute instances. "
-				"This machine runs on a different provider, so this action isn't available. For Hetzner, use the IP removal log."
+				"Public IP disassociation is currently only supported for AWS EC2, Frappe Compute, and OCI instances. "
+				"Please choose a different cloud provider that is supported for this operation. For hetzner, use ip removal log"
 			)
 
 		if not self.public_ip_address:
-			frappe.throw("This instance has no public IP to disassociate. There's nothing to do here.")
+			frappe.throw(
+				"No public IP associated with this instance. "
+				"Please ensure that the instance has a public IP before attempting to disassociate it."
+			)
 
 		try:
 			frappe.db.get_value(self.doctype, self.name, "status", for_update=True, wait=False)
 		except frappe.QueryTimeoutError:
 			frappe.throw(
-				"Unable to get a lock on the vm at this time. Some other process is probably underway"
+				"Unable to get a lock on the vm at this time. Some other process is probably underway. "
+				"Please try again after a few seconds."
 			)
 
 		if self.cloud_provider == "AWS EC2":
@@ -1812,6 +1994,8 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "Frappe Compute":
 			client = self.client()
 			client.remove_public_ip_from_virtual_machine(self.instance_id)
+		elif self.cloud_provider == "OCI":
+			self.disassociate_oci_public_ip()
 
 		frappe.flags.force_update_dns = True
 		self.sync()
@@ -2480,11 +2664,7 @@ class VirtualMachine(Document):
 			groups.append(frappe.db.get_value("Cluster", self.cluster, "proxy_security_group_id"))
 
 		elif self.series == "nat":
-			if self.cloud_provider == "Hetzner":
-				cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
-				groups.append(cluster.create_nat_security_group_hetzner().id)
-			else:
-				groups.append(frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id"))
+			groups.append(frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id"))
 
 		return groups
 

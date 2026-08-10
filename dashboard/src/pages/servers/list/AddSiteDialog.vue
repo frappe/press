@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { Dialog, TextInput, Button, Checkbox, createResource } from 'frappe-ui'
+import router from '@/router'
 
 interface Props {
 	bench: any
@@ -63,16 +64,12 @@ const filteredApps = computed(() => {
 	)
 })
 
-const err = ref<string | null>(null)
-
 const newSite = createResource({
 	url: 'press.api.client.insert',
-	onSuccess() {
+	onSuccess(site: any) {
 		emit('siteCreated')
 		show.value = false
-	},
-	onError(e) {
-		err.value = e.messages?.join(', ') ?? 'Failed to create site'
+		router.push({ name: 'Site Jobs', params: { name: site.name } })
 	},
 })
 
@@ -162,7 +159,7 @@ const submitForm = () => {
 					</template>
 				</TextInput>
 
-				<p v-if="err" class="text-ink-red-4 text-sm mt-2">{{ err }}</p>
+				<ErrorMessage :message="newSite.error" class="mt-2" />
 
 				<div class="leading-relaxed mt-5">
 					<span class="font-medium"

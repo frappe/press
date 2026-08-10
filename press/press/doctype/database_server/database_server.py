@@ -32,6 +32,7 @@ from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.cluster.cluster import Cluster
 
 
 class DatabaseServer(BaseServer):
@@ -78,6 +79,7 @@ class DatabaseServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_auditd_setup: DF.Check
 		is_auto_coredump_enabled: DF.Check
 		is_binlog_indexer_running: DF.Check
 		is_external_healthcheck_enabled: DF.Check
@@ -95,6 +97,8 @@ class DatabaseServer(BaseServer):
 		is_stalk_setup: DF.Check
 		is_static_ip: DF.Check
 		is_unified_server: DF.Check
+		is_wazuh_agent_installed: DF.Check
+		wazuh_agent_status: DF.Data | None
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
 		memory_allocator: DF.Literal["System", "jemalloc", "TCMalloc"]
@@ -358,7 +362,12 @@ class DatabaseServer(BaseServer):
 				filter(lambda action: action.get("action") != "Rename server", server_actions)
 			)
 
-		server_type = "database server" if not self.is_unified_server else "database"
+		if self.is_replication_setup:
+			# A replica is managed through its primary. The dashboard offers nothing
+			# beyond rename, reboot and change plan for it.
+			return server_actions
+
+		server_type = self.server_type_for_actions
 		actions = [
 			{
 				"action": "View Database Configuration",
@@ -825,7 +834,8 @@ class DatabaseServer(BaseServer):
 
 	def _setup_server(self):
 		config = self._get_config()
-		cluster = frappe.get_doc("Cluster", self.cluster)
+
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 
 		try:
 			ansible = Ansible(
@@ -848,7 +858,7 @@ class DatabaseServer(BaseServer):
 					"allocator": self.memory_allocator.lower(),
 					"db_port": self.db_port or 3306,
 					"mariadb_root_password": config.mariadb_root_password,
-					"certificate_private_key": config.certificate.private_key,
+					"certificate_private_key": config.certificate.get_private_key(),
 					"certificate_full_chain": config.certificate.full_chain,
 					"certificate_intermediate_chain": config.certificate.intermediate_chain,
 					"mariadb_depends_on_mounts": self.mariadb_depends_on_mounts,
@@ -868,6 +878,7 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				self.set_auditd_setup_from_base_playbook()
 				self.process_hybrid_server_setup()
 				if self.provider == "DigitalOcean":
 					# Adjusting docker permissions
@@ -913,6 +924,15 @@ class DatabaseServer(BaseServer):
 	@frappe.whitelist()
 	def setup_essentials(self):
 		"""Setup missing essentials after server setup"""
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_setup_essentials",
+			queue="long",
+			timeout=1200,
+		)
+
+	def _setup_essentials(self):
 		config = self._get_config()
 
 		try:
@@ -931,7 +951,7 @@ class DatabaseServer(BaseServer):
 					"kibana_password": config.kibana_password,
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
-					"certificate_private_key": config.certificate.private_key,
+					"certificate_private_key": config.certificate.get_private_key(),
 					"certificate_full_chain": config.certificate.full_chain,
 					"certificate_intermediate_chain": config.certificate.intermediate_chain,
 				},
@@ -1576,7 +1596,7 @@ class DatabaseServer(BaseServer):
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
 					"mariadb_root_password": mariadb_root_password,
-					"certificate_private_key": certificate.private_key,
+					"certificate_private_key": certificate.get_private_key(),
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 				},

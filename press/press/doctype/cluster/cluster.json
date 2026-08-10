@@ -67,6 +67,7 @@
 		"network_acl_id",
 		"route_table_id",
 		"nat_security_group_id",
+		"oci_nat_route_table_id",
 		"vpc_flow_logs_s3_bucket",
 		"vpc_flow_logs_enabled",
 		"flow_log_id",
@@ -121,7 +122,10 @@
 			"fieldtype": "Section Break",
 			"label": "Provisioning"
 		},
-		{ "fieldname": "column_break_5", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_5",
+			"fieldtype": "Column Break"
+		},
 		{
 			"depends_on": "eval:doc.cloud_provider !== \"Generic\"",
 			"fieldname": "region",
@@ -137,7 +141,10 @@
 			"label": "Country",
 			"options": "Country"
 		},
-		{ "fieldname": "column_break_2", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_2",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "cidr_block",
 			"fieldtype": "Data",
@@ -149,7 +156,10 @@
 			"fieldtype": "Section Break",
 			"label": "Networking"
 		},
-		{ "fieldname": "column_break_12", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_12",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "subnet_cidr_block",
 			"fieldtype": "Data",
@@ -180,8 +190,16 @@
 			"fieldtype": "Check",
 			"label": "Public"
 		},
-		{ "fieldname": "title", "fieldtype": "Data", "label": "Title" },
-		{ "fieldname": "image", "fieldtype": "Attach Image", "label": "Image" },
+		{
+			"fieldname": "title",
+			"fieldtype": "Data",
+			"label": "Title"
+		},
+		{
+			"fieldname": "image",
+			"fieldtype": "Attach Image",
+			"label": "Image"
+		},
 		{
 			"default": "Active",
 			"fieldname": "status",
@@ -197,14 +215,20 @@
 			"fieldtype": "Section Break",
 			"label": "OCI"
 		},
-		{ "fieldname": "column_break_bpar", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_bpar",
+			"fieldtype": "Column Break"
+		},
 		{
 			"collapsible": 1,
 			"fieldname": "aws_section",
 			"fieldtype": "Section Break",
 			"label": "AWS"
 		},
-		{ "fieldname": "column_break_qpia", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_qpia",
+			"fieldtype": "Column Break"
+		},
 		{
 			"depends_on": "eval:doc.cloud_provider === \"OCI\"",
 			"fieldname": "oci_user",
@@ -308,9 +332,19 @@
 			"fieldtype": "Section Break",
 			"label": "Docker"
 		},
-		{ "fieldname": "repository", "fieldtype": "Data", "label": "Repository" },
-		{ "fieldname": "section_break_ymkq", "fieldtype": "Section Break" },
-		{ "fieldname": "column_break_ynby", "fieldtype": "Column Break" },
+		{
+			"fieldname": "repository",
+			"fieldtype": "Data",
+			"label": "Repository"
+		},
+		{
+			"fieldname": "section_break_ymkq",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "column_break_ynby",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "0",
 			"fieldname": "has_add_on_storage_support",
@@ -343,8 +377,14 @@
 			"fieldtype": "Password",
 			"label": "Hetzner API Token"
 		},
-		{ "fieldname": "column_break_fsqb", "fieldtype": "Column Break" },
-		{ "fieldname": "column_break_lktr", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_fsqb",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_lktr",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "default_app_server_plan",
 			"fieldtype": "Link",
@@ -399,7 +439,10 @@
 			"fieldtype": "Int",
 			"label": "Flush Table Execution Hour (in IST)"
 		},
-		{ "fieldname": "column_break_vgmf", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_vgmf",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "0",
 			"description": "Applicable only for public database servers",
@@ -456,7 +499,10 @@
 			"fieldtype": "Data",
 			"label": "Frappe Compute Base URL"
 		},
-		{ "fieldname": "column_break_nwos", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_nwos",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "frappe_compute_api_key",
 			"fieldtype": "Data",
@@ -466,6 +512,13 @@
 			"fieldname": "frappe_compute_api_secret",
 			"fieldtype": "Password",
 			"label": "Frappe Compute API Secret"
+		},
+		{
+			"fieldname": "oci_nat_route_table_id",
+			"fieldtype": "Data",
+			"hidden": 1,
+			"label": "OCI NAT Route Table ID",
+			"read_only": 1
 		}
 	],
 	"image_field": "image",
@@ -502,7 +555,7 @@
 			"link_fieldname": "document_name"
 		}
 	],
-	"modified": "2026-04-29 03:03:43.401941",
+	"modified": "2026-06-27 16:31:41.451282",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Cluster",

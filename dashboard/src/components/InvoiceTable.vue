@@ -185,18 +185,17 @@ export default {
 		},
 		fetchServerName() {
 			return {
-				url: 'frappe.client.get_value',
+				url: 'press.api.client.get',
 				makeParams(snapshotName) {
 					return {
 						doctype: 'Server Snapshot',
-						filters: { name: snapshotName },
-						fieldname: 'app_server',
+						name: snapshotName,
 					}
 				},
 				onSuccess(r) {
-					const snapshotName =
-						this.$resources.fetchServerName.params.filters.name
-					this.serverSnapshotServers[snapshotName] = r.app_server
+					this.serverSnapshotServers[
+						this.$resources.fetchServerName.params.name
+					] = r?.app_server
 				},
 			}
 		},

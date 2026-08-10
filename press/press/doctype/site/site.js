@@ -166,7 +166,7 @@ frappe.ui.form.on('Site', {
 					label,
 					() => {
 						frappe.confirm(
-							`Are you sure you want to ${label.toLowerCase()} this site?`,
+							`Are you sure you want to <b>${label.toLowerCase()}</b> this site?`,
 							() => frm.call(method).then((r) => frm.refresh()),
 						)
 					},
@@ -186,13 +186,13 @@ frappe.ui.form.on('Site', {
 		frm.add_custom_button(
 			__('Force Archive'),
 			() => {
-				frappe.confirm(`Are you sure you want to force drop this site?`, () =>
-					frm.call('archive', { force: true }).then((r) => frm.refresh()),
+				frappe.confirm(
+					`Are you sure you want to <b>force drop</b> this site?`,
+					() => frm.call('archive', { force: true }).then((r) => frm.refresh()),
 				)
 			},
 			__('Actions'),
 		)
-
 		;[
 			[__('Suspend'), 'suspend'],
 			[__('Unsuspend'), 'unsuspend'],
@@ -223,15 +223,31 @@ frappe.ui.form.on('Site', {
 		frm.add_custom_button(
 			__('Investigate'),
 			() => {
-				frappe
-					.call({
-						method:
-							'press.incident_management.doctype.support_agent_investigation.support_agent_investigation.create_investigation',
-						args: { site: frm.doc.name },
-					})
-					.then((r) => {
-						frappe.set_route('Form', 'Support Agent Investigation', r.message)
-					})
+				frappe.prompt(
+					{
+						fieldname: 'incident_time',
+						fieldtype: 'Datetime',
+						label: __('Incident Time'),
+						description: __('Optional'),
+					},
+					({ incident_time }) => {
+						frappe
+							.call({
+								method:
+									'press.incident_management.doctype.support_agent_investigation.support_agent_investigation.create_investigation',
+								args: { site: frm.doc.name, incident_time },
+							})
+							.then((r) => {
+								frappe.set_route(
+									'Form',
+									'Support Agent Investigation',
+									r.message,
+								)
+							})
+					},
+					__('Investigate Site'),
+					__('Investigate'),
+				)
 			},
 			__('Actions'),
 		)
@@ -460,7 +476,6 @@ ${r.message.error}
 			},
 			__('Dangerous Actions'),
 		)
-
 		;[
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore_site'],
@@ -472,7 +487,7 @@ ${r.message.error}
 				label,
 				() => {
 					frappe.confirm(
-						`Are you sure you want to perform the action on this site ?`,
+						`Are you sure you want to perform <b>${label.toLowerCase()}</b> action on this site ?`,
 						() => frm.call(method).then((r) => frm.refresh()),
 					)
 				},

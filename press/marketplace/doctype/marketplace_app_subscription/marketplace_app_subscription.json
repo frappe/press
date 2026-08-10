@@ -92,7 +92,8 @@
 			"fieldname": "team",
 			"fieldtype": "Link",
 			"label": "Team",
-			"options": "Team"
+			"options": "Team",
+			"search_index": 1
 		},
 		{
 			"fieldname": "subscription",

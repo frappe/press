@@ -31,6 +31,7 @@ class ProductTrial(Document):
 		from press.saas.doctype.product_trial_help_text.product_trial_help_text import ProductTrialHelpText
 
 		apps: DF.Table[ProductTrialApp]
+		cleanup_remaining_pool: DF.Check
 		domain: DF.Link
 		email_account: DF.Link | None
 		email_full_logo: DF.AttachImage | None
@@ -81,6 +82,9 @@ class ProductTrial(Document):
 
 		if not self.redirect_to_after_login.startswith("/"):
 			frappe.throw("Please enter a redirection route that starts with '/'.")
+
+		if self.enable_pooling:
+			self.cleanup_remaining_pool = 0
 
 		self.validate_hybrid_rules()
 
@@ -293,11 +297,35 @@ class ProductTrial(Document):
 		sites_without_incident = [site["name"] for site in sites_without_incident]
 		return sites_without_incident[0] if sites_without_incident else sites[0]
 
+	def get_latest_benches(self) -> list[str]:
+		"""Newest Active bench per server for this product's release group.
+
+		A standby site is only handed out if it sits on one of these benches,
+		so a user never receives a site that predates the latest deploy. Sites
+		still waiting on the async site-update job to migrate them forward are
+		excluded until they land on the current bench.
+		"""
+		benches = frappe.get_all(
+			"Bench",
+			filters={"group": self.release_group, "status": "Active"},
+			fields=["name", "server"],
+			order_by="creation desc",
+		)
+		latest_by_server: dict[str, str] = {}
+		for bench in benches:
+			latest_by_server.setdefault(bench.server, bench.name)
+		return list(latest_by_server.values())
+
 	def get_standby_site(self, cluster: str | None = None, account_request: str | None = None) -> str | None:
+		latest_benches = self.get_latest_benches()
+		if not latest_benches:
+			return None
+
 		filters = {
 			"is_standby": True,
 			"standby_for_product": self.name,
 			"status": "Active",
+			"bench": ("in", latest_benches),
 		}
 		if cluster:
 			filters["cluster"] = cluster
@@ -582,6 +610,50 @@ def replenish_standby_sites():
 				reference_name=product.name,
 			)
 			frappe.db.rollback()
+
+
+def archive_standby_sites_of_disabled_pooling_products():
+	"""Archive standby sites of products that have pooling disabled and cleanup requested."""
+	if not frappe.db.get_single_value("Press Settings", "cleanup_standby_site_pool"):
+		return
+
+	products = frappe.get_all(
+		"Product Trial", {"enable_pooling": 0, "cleanup_remaining_pool": 1}, pluck="name"
+	)
+	if not products:
+		return
+
+	sites = frappe.get_all(
+		"Site",
+		filters={
+			"is_standby": True,
+			"standby_for_product": ("in", products),
+			"status": ("!=", "Archived"),
+		},
+		pluck="name",
+		order_by="creation asc",
+		limit=20,
+	)
+	for site in sites:
+		try:
+			archive_standby_site(site)
+			frappe.db.commit()
+		except Exception as e:
+			log_error(
+				"Archive Standby Site Error",
+				data=e,
+				reference_doctype="Site",
+				reference_name=site,
+			)
+			frappe.db.rollback()
+
+
+def archive_standby_site(site: str):
+	site_doc = frappe.get_doc("Site", site, for_update=True)
+	if not site_doc.is_standby or site_doc.status == "Archived":
+		return
+
+	site_doc.archive(reason="Product Trial pooling disabled", create_offsite_backup=False)
 
 
 def send_verification_mail_for_login(email: str, product: str, code: str):
