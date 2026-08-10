@@ -201,8 +201,7 @@ def get_reclaimable_size(name):
 @frappe.whitelist()
 def new_unified(server: UnifiedServerDetails):
 	team = get_current_team(get_doc=True)
-	if not team.enabled:
-		frappe.throw("You cannot create a new server because your account is disabled")
+	team.validate_can_create_server()
 
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
@@ -246,8 +245,7 @@ def new(server):
 		frappe.throw(f"ARM Instances are currently unavailable in the {server['cluster']} region")
 
 	team = get_current_team(get_doc=True)
-	if not team.enabled:
-		frappe.throw("You cannot create a new server because your account is disabled")
+	team.validate_can_create_server()
 
 	server_plan_price = frappe.get_value("Server Plan", server["app_plan"], "price_usd") + frappe.get_value(
 		"Server Plan", server["db_plan"], "price_usd"
