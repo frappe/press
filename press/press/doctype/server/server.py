@@ -51,11 +51,7 @@ from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
 from press.utils import docs, fmt_timedelta, log_error
-<<<<<<< HEAD
-=======
 from press.utils.raven import send_raven_message
-from press.wazuh import WazuhManager
->>>>>>> e29f8b377 (fix(server): Alert on Raven instead of Telegram when glass file can't be restored)
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import (
