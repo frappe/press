@@ -8,6 +8,14 @@
 
 @commit-guidelines.md
 
+## Pull requests
+
+Never hard-wrap the PR description at 80 characters (or any width). GitHub
+renders it as markdown and wraps it for the reader; hand-wrapped lines break
+when the box is resized and are painful to edit. Let paragraphs run on one
+line. The 72-character limit applies to the commit header only, not the PR
+body.
+
 ## Running Tests
 
 Before running tests, always ask the user which site to use.
