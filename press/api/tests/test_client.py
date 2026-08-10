@@ -20,7 +20,10 @@ from press.api.client import (
 	set_value,
 )
 from press.overrides import before_request
-from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
+from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 from press.press.doctype.team.test_team import create_test_press_admin_team
@@ -208,6 +211,79 @@ class TestDocumentAccess(FrappeTestCase):
 			filters={"parenttype": "Site", "parent": site.name},
 		)
 		self.assertEqual(lying, [])
+
+
+@patch("frappe.sendmail", new=Mock())
+class TestJobAndPlayAccess(FrappeTestCase):
+	"""Jobs and plays name no team of their own, and used to be readable by anyone.
+
+	A pen test read another team's Agent Job and Ansible Play straight off
+	`press.api.client.get`, which handed back the `owner` of each — the email
+	address of whoever on that team ran it.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_press_admin_team()
+		self.other_team = create_test_press_admin_team()
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def create_job_on_bench_of(self, team):
+		bench = create_test_bench()
+		frappe.db.set_value("Bench", bench.name, "team", team.name)
+		job = create_test_agent_job(server=bench.server)
+		job.db_set("bench", bench.name)
+		return bench, job
+
+	def test_agent_job_belongs_to_whoever_owns_its_bench(self):
+		_, job = self.create_job_on_bench_of(self.other_team)
+
+		sign_in_as(self.team)
+		self.assertFalse(ownership.has_document_access("Agent Job", job.name))
+
+		sign_in_as(self.other_team)
+		self.assertTrue(ownership.has_document_access("Agent Job", job.name))
+
+	def test_get_denies_an_agent_job_belonging_to_another_team(self):
+		_, job = self.create_job_on_bench_of(self.other_team)
+
+		sign_in_as(self.team)
+		with self.assertRaises(frappe.PermissionError):
+			get("Agent Job", job.name)
+
+	def test_ansible_play_belongs_to_whoever_owns_the_server_it_ran_on(self):
+		server = create_test_server(team=self.other_team.name)
+		play = create_test_ansible_play("Set mysqld variable", "mysqld.yml", "Server", server.name)
+
+		sign_in_as(self.team)
+		self.assertFalse(ownership.has_document_access("Ansible Play", play.name))
+
+		sign_in_as(self.other_team)
+		self.assertTrue(ownership.has_document_access("Ansible Play", play.name))
+
+	def test_get_denies_an_ansible_play_on_another_teams_server(self):
+		server = create_test_server(team=self.other_team.name)
+		play = create_test_ansible_play("Set mysqld variable", "mysqld.yml", "Server", server.name)
+
+		sign_in_as(self.team)
+		with self.assertRaises(frappe.PermissionError):
+			get("Ansible Play", play.name)
+
+	def test_get_list_denies_agent_jobs_filtered_by_another_teams_bench(self):
+		"""`bench` alone satisfied the "name something" check but had no owner check."""
+		bench, _ = self.create_job_on_bench_of(self.other_team)
+
+		sign_in_as(self.team)
+		with self.assertRaises(frappe.PermissionError):
+			get_list("Agent Job", fields=["name"], filters={"bench": bench.name})
+
+	def test_get_list_refuses_agent_jobs_when_the_caller_names_nothing(self):
+		sign_in_as(self.team)
+		with self.assertRaises(frappe.PermissionError):
+			get_list("Agent Job", fields=["name"])
 
 
 class TestEditableFields(FrappeTestCase):
