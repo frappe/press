@@ -600,8 +600,8 @@ def prometheus_query(
 	timespan: int,
 	timegrain: int,
 	use_timestamps: bool = False,
-	start: None | datetime = None,
-	end: None | datetime = None,
+	start: datetime | None = None,
+	end: datetime | None = None,
 ):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
