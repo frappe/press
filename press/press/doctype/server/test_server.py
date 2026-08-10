@@ -23,7 +23,11 @@ from press.press.doctype.press_settings.test_press_settings import (
 )
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import create_test_release_group
-from press.press.doctype.server.server import BaseServer, process_cleanup_unused_files_job_update, sync_wazuh_agent_status
+from press.press.doctype.server.server import (
+	BaseServer,
+	process_cleanup_unused_files_job_update,
+	sync_wazuh_agent_status,
+)
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.site.test_site import create_test_bench
 from press.press.doctype.team.test_team import create_test_team
