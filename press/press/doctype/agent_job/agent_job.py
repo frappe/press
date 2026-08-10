@@ -991,7 +991,10 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		from press.press.doctype.proxy_server.proxy_server import (
 			process_update_nginx_job_update,
 		)
-		from press.press.doctype.server.server import process_new_server_job_update
+		from press.press.doctype.server.server import (
+			process_cleanup_unused_files_job_update,
+			process_new_server_job_update,
+		)
 		from press.press.doctype.server_snapshot_recovery.server_snapshot_recovery import (
 			process_backup_database_from_snapshot_job_callback,
 			process_backup_files_from_snapshot_job_callback,
@@ -1041,6 +1044,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			return
 		elif job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
+		elif job.job_type == "Cleanup Unused Files":
+			process_cleanup_unused_files_job_update(job)
 		elif job.job_type == "New Bench":
 			process_new_bench_job_update(job)
 		elif job.job_type == "Archive Bench":
