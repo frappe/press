@@ -600,7 +600,11 @@ class SiteUpdate(Document):
 		# No-op unless a recovery migrate bumped it (see bump_max_statement_time_before_recovery).
 		if not self.previous_max_statement_time:
 			return
-		frappe.get_doc("Site", self.site).set_max_statement_time(self.previous_max_statement_time)
+		# In the background: this runs from agent job callbacks, and an inline Ansible play
+		# commits mid-callback and can raise into it. Nothing waits on the new value.
+		frappe.get_doc("Site", self.site).set_max_statement_time(
+			self.previous_max_statement_time, synchronously=False
+		)
 		self.db_set("previous_max_statement_time", 0)
 
 	@frappe.whitelist()

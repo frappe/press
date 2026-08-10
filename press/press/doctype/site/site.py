@@ -1267,14 +1267,17 @@ class Site(Document, TagHelpers):
 			frappe.db.get_value("Site Usage", {"site": self.name}, "database", order_by="creation desc") or 0
 		)
 
-	def set_max_statement_time(self, seconds: int) -> None:
-		"""Set ``max_statement_time`` — a dynamic MariaDB variable, so no restart."""
+	def set_max_statement_time(self, seconds: int, synchronously: bool = True) -> None:
+		"""Set ``max_statement_time`` — a dynamic MariaDB variable, so no restart.
+
+		Set ``synchronously`` when the next step depends on the new value being live.
+		"""
 		database_server = frappe.get_doc("Database Server", self.database_server_name)
 		database_server.add_or_update_mariadb_variable(
 			"max_statement_time",
 			"value_str",
 			str(seconds),
-			update_variables_synchronously=True,
+			update_variables_synchronously=synchronously,
 		)
 
 	def increase_max_statement_time(self, increment: int = STATEMENT_TIME_INCREMENT) -> tuple[int, int]:
@@ -5134,8 +5137,8 @@ def process_restore_tables_job_update(job):
 				# The site is back up, but the update itself failed for good. Keep it Fatal and
 				# just mark the cause resolved (this also clears the site's fatal_site_update).
 				site_update = frappe.get_doc("Site Update", fatal_update)
-				site_update.restore_max_statement_time()
 				site_update.set_cause_of_failure_is_resolved()
+				site_update.restore_max_statement_time()
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
 			create_site_status_update_webhook_event(job.site)
