@@ -67,7 +67,16 @@ these hold:
   connection (`MySQL server has gone away`, `Lost connection to MySQL server`),
   detected from the job's output/traceback and step output by
   `failed_due_to_transient_db_error`. Other failures are genuine problems that
-  need manual attention, so the site is left `Fatal`.
+  need manual attention, so the site is left `Fatal`; and
+- **MariaDB is up again** (`DatabaseServer.is_mariadb_up`, reading mysqld_exporter's
+  `mysql_up` metric). The restore gets one attempt, so it isn't spent on a database
+  that hasn't come back. A server without monitoring — or an unreachable monitor
+  server — counts as up, so a monitoring outage never blocks recovery. When MariaDB
+  is down, the skip is recorded as a comment on the Site Update and it stays `Fatal`.
+
+The metric is read with `prometheus_instant_value` (`/api/v1/query`), not
+`prometheus_query`, whose range samples can be a timegrain (120s) stale — too old to
+decide whether a server is up right now.
 
 When those hold, only the table restore is left undone — re-running the whole
 recovery would fail at "Move Site" because the agent's `move_site` is not
@@ -123,15 +132,19 @@ Update fails
                               │                              │
                              no                            yes
                               │                              │
-                       stays Fatal                  one-shot restore_tables
-                   (manual intervention)                    │
-                                                     ┌───────┴───────┐
-                                                  failure         success
-                                                     │               │
-                                                     ▼               ▼
-                                                  Broken      Fatal, cause resolved
-                                             (fatal_site_update  (site Active again,
-                                                  remains set)    fatal_site_update cleared)
+                       stays Fatal                  MariaDB up? (mysql_up)
+                   (manual intervention)              │              │
+                                                     no             yes
+                                                      │              │
+                                               stays Fatal    one-shot restore_tables
+                                          (skip recorded as          │
+                                           a comment)         ┌──────┴──────┐
+                                                           failure       success
+                                                              │             │
+                                                              ▼             ▼
+                                                           Broken    Fatal, cause resolved
+                                                      (fatal_site_update (site Active again,
+                                                           remains set)  fatal_site_update cleared)
 ```
 
 (In all terminal cases the recovery-migrate `max_statement_time` bump is
