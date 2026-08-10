@@ -6,6 +6,7 @@ import socket
 from unittest.mock import patch
 
 import frappe
+import requests
 from frappe.tests.utils import FrappeTestCase
 
 from press.utils.external_url import UnreachableURLError, fetch_public_url, validate_public_url
@@ -77,20 +78,33 @@ class TestValidatePublicURL(FrappeTestCase):
 		self.assertIn("could not be resolved", str(caught.exception))
 
 
+def body(text: str):
+	return frappe._dict(
+		is_redirect=False,
+		encoding="utf-8",
+		raise_for_status=lambda: None,
+		iter_content=lambda chunk_size: [text.encode()],
+	)
+
+
+def redirect_to(location: str):
+	return frappe._dict(is_redirect=True, headers={"Location": location})
+
+
+def responding_with(*responses):
+	"""Stand in for the network. Session.get answers with these, in order."""
+	return patch.object(requests.Session, "get", side_effect=list(responses))
+
+
 class TestFetchPublicURL(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
 	def test_redirect_to_an_internal_address_is_refused(self):
 		"""A public host is free to redirect at the metadata service."""
-		redirect = frappe._dict(
-			is_redirect=True,
-			headers={"Location": "http://169.254.169.254/metadata/v1.json"},
-		)
-
 		with (
 			resolving_in_turn(answer("93.184.216.34"), answer("169.254.169.254")),
-			patch("press.utils.external_url.requests.get", return_value=redirect),
+			responding_with(redirect_to("http://169.254.169.254/metadata/v1.json")),
 			self.assertRaises(UnreachableURLError) as caught,
 		):
 			fetch_public_url("https://example.com/redirects.patch")
@@ -98,15 +112,46 @@ class TestFetchPublicURL(FrappeTestCase):
 		self.assertIn("169.254.169.254", str(caught.exception))
 
 	def test_body_is_returned_when_every_hop_is_public(self):
-		response = frappe._dict(
-			is_redirect=False,
-			encoding="utf-8",
-			raise_for_status=lambda: None,
-			iter_content=lambda chunk_size: [b"diff --git a/x b/x"],
-		)
+		with resolving_to("93.184.216.34"), responding_with(body("diff --git a/x b/x")):
+			self.assertEqual(fetch_public_url("https://example.com/x.patch"), "diff --git a/x b/x")
 
+	def test_the_checked_address_is_the_one_dialled(self):
+		"""The hostname is left behind so nothing gets to resolve it a second time."""
 		with (
 			resolving_to("93.184.216.34"),
-			patch("press.utils.external_url.requests.get", return_value=response),
+			responding_with(body("diff --git a/x b/x")) as get,
 		):
-			self.assertEqual(fetch_public_url("https://example.com/x.patch"), "diff --git a/x b/x")
+			fetch_public_url("https://example.com/x.patch")
+
+		self.assertEqual(get.call_args.args[0], "https://93.184.216.34/x.patch")
+		self.assertEqual(get.call_args.kwargs["headers"]["Host"], "example.com")
+
+	def test_a_named_port_survives_pinning(self):
+		with resolving_to("93.184.216.34"), responding_with(body("diff --git a/x b/x")) as get:
+			fetch_public_url("https://example.com:8443/x.patch")
+
+		self.assertEqual(get.call_args.args[0], "https://93.184.216.34:8443/x.patch")
+		self.assertEqual(get.call_args.kwargs["headers"]["Host"], "example.com:8443")
+
+	def test_credentials_in_the_url_are_not_dialled_or_sent_as_host(self):
+		with resolving_to("93.184.216.34"), responding_with(body("diff --git a/x b/x")) as get:
+			fetch_public_url("https://user:secret@example.com/x.patch")
+
+		self.assertEqual(get.call_args.args[0], "https://93.184.216.34/x.patch")
+		self.assertEqual(get.call_args.kwargs["headers"]["Host"], "example.com")
+
+	def test_the_host_is_resolved_once_per_hop(self):
+		"""Resolving twice is what a rebinding host attacks: it answers differently the second time."""
+		with (
+			resolving_in_turn(answer("93.184.216.34")) as getaddrinfo,
+			responding_with(body("diff --git a/x b/x")),
+		):
+			fetch_public_url("https://example.com/x.patch")
+
+		self.assertEqual(getaddrinfo.call_count, 1)
+
+	def test_an_ipv6_address_is_dialled_in_brackets(self):
+		with resolving_to("2606:2800:220:1:248:1893:25c8:1946"), responding_with(body("diff --git")) as get:
+			fetch_public_url("https://example.com/x.patch")
+
+		self.assertEqual(get.call_args.args[0], "https://[2606:2800:220:1:248:1893:25c8:1946]/x.patch")
