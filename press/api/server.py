@@ -572,11 +572,9 @@ def get_slow_logs_by_site(name, query, timezone, start, end, normalize=False):
 
 
 def prometheus_instant_value(query: str) -> float | None:
-	"""Latest scraped value for a query, or None when there is no monitoring data.
+	"""Latest scraped value, or None when there is no monitoring data.
 
-	Unlike ``prometheus_query``, this reads the current sample instead of a range,
-	so callers deciding on the state of a server right now aren't given a value
-	that is up to a timegrain stale.
+	Instant, unlike ``prometheus_query``, whose range samples can be a timegrain stale.
 	"""
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:

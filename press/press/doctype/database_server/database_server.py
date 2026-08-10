@@ -1554,11 +1554,7 @@ class DatabaseServer(BaseServer):
 		)
 
 	def is_mariadb_up(self) -> bool:
-		"""Whether mysqld_exporter last scraped MariaDB as up.
-
-		Unknown counts as up — neither a server without monitoring nor a monitor
-		server that's down should make MariaDB look down.
-		"""
+		"""Whether mysqld_exporter last scraped MariaDB as up; unknown counts as up."""
 		from press.api.server import prometheus_instant_value
 
 		try:

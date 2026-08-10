@@ -1262,17 +1262,13 @@ class Site(Document, TagHelpers):
 
 	@property
 	def database_size(self) -> int:
-		"""Latest known database size in MB, or 0 if we have no usage data yet.
-
-		Site Usage stores sizes in MB, not bytes — see Site Usage's README.
-		"""
+		"""Latest known database size in MB (not bytes — see Site Usage's README), or 0."""
 		return (
 			frappe.db.get_value("Site Usage", {"site": self.name}, "database", order_by="creation desc") or 0
 		)
 
 	def set_max_statement_time(self, seconds: int) -> None:
-		"""Set the database server's ``max_statement_time`` (a dynamic MariaDB variable, so
-		the change applies without a restart)."""
+		"""Set ``max_statement_time`` — a dynamic MariaDB variable, so no restart."""
 		database_server = frappe.get_doc("Database Server", self.database_server_name)
 		database_server.add_or_update_mariadb_variable(
 			"max_statement_time",
@@ -1282,10 +1278,7 @@ class Site(Document, TagHelpers):
 		)
 
 	def increase_max_statement_time(self, increment: int = STATEMENT_TIME_INCREMENT) -> tuple[int, int]:
-		"""Increase the database server's ``max_statement_time`` by ``increment`` seconds.
-
-		Returns ``(old_value, new_value)`` in seconds.
-		"""
+		"""Increase ``max_statement_time`` by ``increment``; returns ``(old, new)`` seconds."""
 		database_server = frappe.get_doc("Database Server", self.database_server_name)
 		current_timeout = database_server.get_mariadb_variable_value("max_statement_time")
 		current_timeout = int(float(current_timeout)) if current_timeout else DEFAULT_MAX_STATEMENT_TIME
