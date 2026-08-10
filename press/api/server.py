@@ -571,6 +571,28 @@ def get_slow_logs_by_site(name, query, timezone, start, end, normalize=False):
 	)
 
 
+def prometheus_instant_value(query: str) -> float | None:
+	"""Latest scraped value for a query, or None when there is no monitoring data.
+
+	Unlike ``prometheus_query``, this reads the current sample instead of a range,
+	so callers deciding on the state of a server right now aren't given a value
+	that is up to a timegrain stale.
+	"""
+	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+	if not monitor_server:
+		return None
+
+	url = f"https://{monitor_server}/prometheus/api/v1/query"
+	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
+	try:
+		response = requests.get(url, params={"query": query}, auth=("frappe", str(password))).json()
+	except requests.exceptions.RequestException:
+		frappe.throw("Unable to connect to monitor server", MonitorServerDown)
+
+	result = response["data"]["result"]
+	return flt(result[0]["value"][1]) if result else None
+
+
 def prometheus_query(
 	query,
 	function,

@@ -10,6 +10,7 @@ from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent
+from press.exceptions import MonitorServerDown
 from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
@@ -227,24 +228,30 @@ class TestDatabaseServer(FrappeTestCase):
 			int(15007.248 * 0.65),
 		)
 
-	@patch("press.api.server.prometheus_query")
-	def test_is_mariadb_up_reads_the_last_scraped_mysql_up_value(self, prometheus_query: Mock):
+	@patch("press.api.server.prometheus_instant_value")
+	def test_is_mariadb_up_reads_the_currently_scraped_mysql_up_value(self, mysql_up: Mock):
 		server = create_test_database_server()
 
-		prometheus_query.return_value = {"datasets": [{"name": "Up", "values": [1.0, 0.0, None]}]}
-		self.assertFalse(server.is_mariadb_up(), "A last scrape of mysql_up=0 means MariaDB is down")
+		mysql_up.return_value = 0.0
+		self.assertFalse(server.is_mariadb_up(), "mysql_up=0 means MariaDB is down")
 
-		prometheus_query.return_value = {"datasets": [{"name": "Up", "values": [0.0, 1.0, None]}]}
-		self.assertTrue(server.is_mariadb_up(), "A last scrape of mysql_up=1 means MariaDB is up")
+		mysql_up.return_value = 1.0
+		self.assertTrue(server.is_mariadb_up(), "mysql_up=1 means MariaDB is up")
 
-	@patch("press.api.server.prometheus_query")
-	def test_is_mariadb_up_treats_missing_monitoring_data_as_up(self, prometheus_query: Mock):
+		self.assertEqual(
+			mysql_up.call_args[0][0],
+			f'mysql_up{{instance="{server.name}",job="mariadb"}}',
+			"The scrape must be read for this database server's own instance",
+		)
+
+	@patch("press.api.server.prometheus_instant_value")
+	def test_is_mariadb_up_treats_missing_monitoring_data_as_up(self, mysql_up: Mock):
 		# A server without monitoring, or one Prometheus can't be reached for, must not look
 		# down — that would block actions that depend on the check.
 		server = create_test_database_server()
 
-		prometheus_query.return_value = {"datasets": []}
+		mysql_up.return_value = None
 		self.assertTrue(server.is_mariadb_up(), "No monitoring data should count as up")
 
-		prometheus_query.side_effect = frappe.ValidationError("Unable to connect to monitor server")
+		mysql_up.side_effect = MonitorServerDown("Unable to connect to monitor server")
 		self.assertTrue(server.is_mariadb_up(), "An unreachable monitor server should count as up")
