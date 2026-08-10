@@ -14,6 +14,25 @@ from press.press.doctype.account_request.test_account_request import (
 from press.press.doctype.team.team import Team
 
 
+def allow_server_creation(team: Team):
+	"""Give a team the billing address and entitlement a server purchase needs."""
+	address = frappe.get_doc(
+		{
+			"doctype": "Address",
+			"address_title": team.name,
+			"address_type": "Billing",
+			"address_line1": "1 Test Street",
+			"city": "Mumbai",
+			"state": "Maharashtra",
+			"gstin": "Not Applicable",
+			"country": team.country,
+		}
+	).insert(ignore_permissions=True)
+
+	team.db_set({"billing_address": address.name, "servers_enabled": 1})
+	team.reload()
+
+
 def create_test_press_admin_team(
 	email: str | None = None, skip_onboarding: bool | None = 0, free_account: bool | None = None
 ) -> Team:
