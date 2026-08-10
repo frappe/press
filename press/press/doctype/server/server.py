@@ -45,11 +45,17 @@ from press.press.doctype.communication_info.communication_info import (
 	get_communication_info,
 )
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
+from press.press.doctype.server.server_monitoring import RAVEN_SERVER_ALERTS_CHANNEL
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
 from press.utils import docs, fmt_timedelta, log_error
+<<<<<<< HEAD
+=======
+from press.utils.raven import send_raven_message
+from press.wazuh import WazuhManager
+>>>>>>> e29f8b377 (fix(server): Alert on Raven instead of Telegram when glass file can't be restored)
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import (
@@ -1715,12 +1721,11 @@ class BaseServer(Document, TagHelpers):
 		play = self._add_glass_file()
 		if play and play.status == "Success":
 			return
-		TelegramMessage.enqueue(
-			f"Could not restore break-glass file on "
+		send_raven_message(
+			f"⚠️ Could not restore break-glass file on "
 			f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
 			f"after cleanup — server has no emergency disk buffer.",
-			"Information",
-			priority="High",
+			RAVEN_SERVER_ALERTS_CHANNEL,
 		)
 
 	@frappe.whitelist()
