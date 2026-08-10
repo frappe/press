@@ -256,7 +256,8 @@ class DatabaseServer(BaseServer):
 			# this will be handled via the server doc for unified server
 			self._create_static_ip_log()
 
-		if self.has_value_changed("team"):
+		if self.has_value_changed("team") and not self.is_unified_server:
+			# subscription for unified server is handled via the server doc
 			self.update_subscription()
 
 		if self.public:
