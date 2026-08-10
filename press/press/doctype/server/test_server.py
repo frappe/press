@@ -608,6 +608,7 @@ class TestServer(FrappeTestCase):
 			create_test_database_server(),
 			create_test_proxy_server(),
 		]
+
 	def test_wazuh_agent_installed_during_setup_when_manager_configured(self):
 		create_test_press_settings()
 		frappe.db.set_single_value("Press Settings", "wazuh_server", "wazuh.example.com")
@@ -681,7 +682,6 @@ class TestServer(FrappeTestCase):
 				server.reload()
 				self.assertTrue(server.is_auditd_setup)
 
-
 	def test_base_playbook_marks_auditd_setup_except_for_self_hosted(self):
 		"""The base setup playbooks bundle auditd; their self-hosted variants do not."""
 		for server in self._one_server_of_each_type():
@@ -713,7 +713,6 @@ class TestServer(FrappeTestCase):
 		with patch.object(BaseServer, "uninstall_wazuh_agent") as uninstall_wazuh_agent:
 			server.archive()
 		uninstall_wazuh_agent.assert_not_called()
-
 
 	@patch.object(BaseServer, "_archive", new=Mock())
 	@patch.object(BaseServer, "disable_subscription", new=Mock())
@@ -794,7 +793,6 @@ class TestServer(FrappeTestCase):
 		delete_call = requests.request.call_args_list[-1]
 		self.assertEqual(delete_call.args[0], "DELETE")
 		self.assertEqual(delete_call.kwargs["params"]["agents_list"], "003")
-
 
 	def test_wazuh_manager_delete_agent_ignores_non_exact_name_match(self):
 		"""A crafted name that broadens the `q` filter must not delete a different agent."""
