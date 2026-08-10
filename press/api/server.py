@@ -587,7 +587,8 @@ def prometheus_instant_value(query: str) -> float | None:
 	except requests.exceptions.RequestException:
 		frappe.throw("Unable to connect to monitor server", MonitorServerDown)
 
-	result = response["data"]["result"]
+	# An error payload ({"status": "error", ...}) carries no data — treat it as no data.
+	result = response.get("data", {}).get("result", [])
 	return flt(result[0]["value"][1]) if result else None
 
 

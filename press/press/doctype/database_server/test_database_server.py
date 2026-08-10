@@ -255,3 +255,15 @@ class TestDatabaseServer(FrappeTestCase):
 
 		mysql_up.side_effect = MonitorServerDown("Unable to connect to monitor server")
 		self.assertTrue(server.is_mariadb_up(), "An unreachable monitor server should count as up")
+
+	@patch("press.api.server.get_decrypted_password", new=Mock(return_value="password"))
+	@patch("press.api.server.requests.get")
+	def test_prometheus_instant_value_treats_an_error_response_as_no_data(self, get: Mock):
+		# Prometheus answers a bad or overloaded query with {"status": "error", ...} and no
+		# "data" key. Reading it must not raise into the caller.
+		frappe.db.set_single_value("Press Settings", "monitor_server", "monitor.example.com")
+		get.return_value.json.return_value = {"status": "error", "errorType": "bad_data"}
+
+		from press.api.server import prometheus_instant_value
+
+		self.assertIsNone(prometheus_instant_value('mysql_up{instance="m1",job="mariadb"}'))
