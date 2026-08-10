@@ -23,11 +23,7 @@ from press.press.doctype.press_settings.test_press_settings import (
 )
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import create_test_release_group
-<<<<<<< HEAD
-from press.press.doctype.server.server import BaseServer, process_cleanup_unused_files_job_update
-=======
-from press.press.doctype.server.server import BaseServer, sync_wazuh_agent_status
->>>>>>> cbacb4e89 (feat(server): Wazuh manager)
+from press.press.doctype.server.server import BaseServer, process_cleanup_unused_files_job_update, sync_wazuh_agent_status
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.site.test_site import create_test_bench
 from press.press.doctype.team.test_team import create_test_team
@@ -512,8 +508,6 @@ class TestServer(FrappeTestCase):
 			frappe.db.get_value("Database Server", victim_database_server.name, "auto_increase_storage")
 		)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 	@patch.object(BaseServer, "is_build_server", new=Mock(return_value=False))
 	def test_forced_cleanup_breaks_glass_when_agent_disk_is_full(self):
 		server = create_test_server()
@@ -602,8 +596,7 @@ class TestServer(FrappeTestCase):
 		):
 			server._restore_glass_file()
 		send_raven_message.assert_not_called()
-=======
-=======
+
 	def _one_server_of_each_type(self):
 		"""App, database and proxy servers all inherit the Wazuh methods from BaseServer."""
 		return [
@@ -611,8 +604,6 @@ class TestServer(FrappeTestCase):
 			create_test_database_server(),
 			create_test_proxy_server(),
 		]
-
->>>>>>> 054959eff (feat(wazuh): Extend Wazuh to database and proxy servers)
 	def test_wazuh_agent_installed_during_setup_when_manager_configured(self):
 		create_test_press_settings()
 		frappe.db.set_single_value("Press Settings", "wazuh_server", "wazuh.example.com")
@@ -627,21 +618,11 @@ class TestServer(FrappeTestCase):
 		create_test_press_settings()
 		frappe.db.set_single_value("Press Settings", "wazuh_server", "")
 
-<<<<<<< HEAD
-		with patch.object(type(server), "install_wazuh_agent") as install_wazuh_agent:
-			server.install_wazuh_agent_if_configured()
-
-		install_wazuh_agent.assert_not_called()
->>>>>>> 812d7117b (feat(wazuh): Automatically install in new servers)
-=======
 		for server in self._one_server_of_each_type():
 			with self.subTest(server_type=server.doctype):
 				with patch.object(BaseServer, "install_wazuh_agent") as install_wazuh_agent:
 					server.install_wazuh_agent_if_configured()
 				install_wazuh_agent.assert_not_called()
-<<<<<<< HEAD
->>>>>>> 054959eff (feat(wazuh): Extend Wazuh to database and proxy servers)
-=======
 
 	def test_install_marks_wazuh_agent_installed_on_successful_play(self):
 		for server in self._one_server_of_each_type():
@@ -686,9 +667,6 @@ class TestServer(FrappeTestCase):
 				with patch("press.press.doctype.server.server.Ansible") as Ansible:
 					server._uninstall_wazuh_agent()
 				Ansible.return_value.run.assert_not_called()
-<<<<<<< HEAD
->>>>>>> 0c1775dd1 (feat(wazuh): Track installed status)
-=======
 
 	def test_setup_auditd_marks_auditd_setup_on_successful_play(self):
 		for server in self._one_server_of_each_type():
@@ -698,9 +676,7 @@ class TestServer(FrappeTestCase):
 					server._setup_auditd()
 				server.reload()
 				self.assertTrue(server.is_auditd_setup)
-<<<<<<< HEAD
->>>>>>> 98b3fd473 (feat(server): Plug `auditd` into `Wazuh`)
-=======
+
 
 	def test_base_playbook_marks_auditd_setup_except_for_self_hosted(self):
 		"""The base setup playbooks bundle auditd; their self-hosted variants do not."""
@@ -733,9 +709,7 @@ class TestServer(FrappeTestCase):
 		with patch.object(BaseServer, "uninstall_wazuh_agent") as uninstall_wazuh_agent:
 			server.archive()
 		uninstall_wazuh_agent.assert_not_called()
-<<<<<<< HEAD
->>>>>>> fe14eddc3 (feat(server): Uninstall Wazuh agent when dropping server)
-=======
+
 
 	@patch.object(BaseServer, "_archive", new=Mock())
 	@patch.object(BaseServer, "disable_subscription", new=Mock())
@@ -816,9 +790,7 @@ class TestServer(FrappeTestCase):
 		delete_call = requests.request.call_args_list[-1]
 		self.assertEqual(delete_call.args[0], "DELETE")
 		self.assertEqual(delete_call.kwargs["params"]["agents_list"], "003")
-<<<<<<< HEAD
->>>>>>> cbacb4e89 (feat(server): Wazuh manager)
-=======
+
 
 	def test_wazuh_manager_delete_agent_ignores_non_exact_name_match(self):
 		"""A crafted name that broadens the `q` filter must not delete a different agent."""
@@ -841,4 +813,3 @@ class TestServer(FrappeTestCase):
 
 		methods = [call.args[0] for call in requests.request.call_args_list]
 		self.assertNotIn("DELETE", methods)
->>>>>>> c71691d72 (fix(server): Prevent injection on Wazuh's `q` param)
