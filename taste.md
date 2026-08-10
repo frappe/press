@@ -7,6 +7,7 @@ Guidelines for writing good code in this project.
 - Choose clean code over clever code.
 - Write object-oriented code. Behaviour belongs on the object it describes.
 - Keep functions small — 10 lines is a good target. If a function needs a comment to explain what a block does, that block should be its own function.
+- Keep comments short — one line is best, two lines at most. A comment that needs more is a sign the code should be clearer or the explanation belongs in a doc.
 - Keep files between 100 and 300 lines. A file that keeps growing is a sign that it is doing too many things.
 - Avoid abbreviations. Spell names out. Short names are fine only for loop variables or genuinely obvious abbreviations (`doc`, `e`).
 - Reuse. Write as little code as possible. If you are about to write something that sounds general, check whether it already exists.
@@ -31,6 +32,7 @@ Guidelines for writing good code in this project.
 ## Frappe-specific
 
 - Use `frappe.db.set_value` for single-field updates on existing records; use `doc.save()` when multiple fields change together.
+- Prefer the controller class directly — `Site("Site", name)` over `frappe.get_doc("Site", name)` — especially when that controller is defined in the same file. It's shorter, and it gives the type checker and the reader the concrete type.
 - Use `frappe.get_cached_doc` for documents that are read frequently and not mutated.
 - Prefer `frappe.db.exists` for existence checks over `frappe.get_value` with a null check.
 - `ignore_permissions=True` is acceptable inside scheduled jobs and background hooks that run as Administrator, where the permission model does not apply.

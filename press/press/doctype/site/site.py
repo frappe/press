@@ -136,6 +136,12 @@ SERVER_SCRIPT_DISABLED_VERSION = (
 )
 TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
 
+# Fallback when max_statement_time isn't explicitly set on the database server.
+# Ref: press/fixtures/mariadb_variable.json
+DEFAULT_MAX_STATEMENT_TIME = 3600
+# How much to bump max_statement_time by (in seconds) each time — one hour.
+STATEMENT_TIME_INCREMENT = 3600
+
 # Conditions a site must satisfy for the agent to stream offsite backup
 # artifacts straight to S3 instead of uploading them after the dump finishes.
 STREAMING_BACKUP_REQUIREMENTS = {
@@ -281,6 +287,17 @@ class Site(Document, TagHelpers):
 		"standby_for_product",
 	)
 
+	dashboard_insert_fields = (
+		"subdomain",
+		"apps",
+		"app_plans",
+		"cluster",
+		"group",
+		"domain",
+		"subscription_plan",
+		"share_details_consent",
+		"server",
+	)
 	# A site shows its plan, bench, server and team so the dashboard can render
 	# them. Every one of those moves through a flow that bills, schedules or
 	# migrates something — none of them through `set_value`.
@@ -1258,11 +1275,45 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def restore_tables(self):
-		self.status_before_update = self.status
+		if not self.status_before_update:
+			self.status_before_update = self.status
 		agent = Agent(self.server)
-		agent.restore_site_tables(self)
+		job = agent.restore_site_tables(self)
 		self.status = "Pending"
 		self.save()
+		return job.name
+
+	@property
+	def database_size(self) -> int:
+		"""Latest known database size in MB (not bytes — see Site Usage's README), or 0."""
+		return (
+			frappe.db.get_value("Site Usage", {"site": self.name}, "database", order_by="creation desc") or 0
+		)
+
+	def set_max_statement_time(self, seconds: int, synchronously: bool = True) -> None:
+		"""Set ``max_statement_time`` — a dynamic MariaDB variable, so no restart.
+
+		Set ``synchronously`` when the next step depends on the new value being live.
+		"""
+		database_server = frappe.get_doc("Database Server", self.database_server_name)
+		database_server.add_or_update_mariadb_variable(
+			"max_statement_time",
+			"value_str",
+			str(seconds),
+			update_variables_synchronously=synchronously,
+		)
+
+	def increase_max_statement_time(self, increment: int = STATEMENT_TIME_INCREMENT) -> tuple[int, int]:
+		"""Increase ``max_statement_time`` by ``increment``; returns ``(old, new)`` seconds."""
+		database_server = frappe.get_doc("Database Server", self.database_server_name)
+		current_timeout = database_server.get_mariadb_variable_value("max_statement_time")
+		current_timeout = int(float(current_timeout)) if current_timeout else DEFAULT_MAX_STATEMENT_TIME
+		if not current_timeout:
+			# 0 means no limit — increasing would impose one. Leave the server unlimited.
+			return current_timeout, current_timeout
+		new_timeout = current_timeout + increment
+		self.set_max_statement_time(new_timeout)
+		return current_timeout, new_timeout
 
 	@dashboard_whitelist()
 	def clear_site_cache(self):
@@ -4632,7 +4683,7 @@ def process_new_site_job_update(job):  # noqa: C901
 
 	if "Success" == first == second:
 		updated_status = "Active"
-		site: Site = Site("Site", job.site)
+		site = Site("Site", job.site)
 		is_unified_server = frappe.db.get_value("Server", site.server, "is_unified_server")
 		# Only noticed this on unified servers
 		if is_unified_server:
@@ -4890,7 +4941,7 @@ def process_install_app_site_job_update(job):
 		"Delivery Failure": "Active",
 	}[job.status]
 
-	site: Site = frappe.get_doc("Site", job.site)
+	site = Site("Site", job.site)
 
 	if job.status == "Success":
 		# Always sync apps on success to ensure installed app is shown
@@ -4915,7 +4966,7 @@ def process_uninstall_app_site_job_update(job):
 	site_status = frappe.get_value("Site", job.site, "status")
 	_create_site_backup_from_agent_job(job)
 	if updated_status != site_status:
-		site: Site = frappe.get_doc("Site", job.site)
+		site = Site("Site", job.site)
 		site.sync_apps()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
@@ -4963,6 +5014,7 @@ def process_restore_job_update(job, force=False):
 			site.set_apps(apps_from_backup)
 			site.db_set("creation_failed", None)
 			site.db_set("fatal_site_update", None)
+			site.db_set("database_name", None)
 
 		elif job.status == "Failure":
 			frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
@@ -4984,7 +5036,7 @@ def process_reinstall_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
 	if job.status == "Success":
-		site: Site = Site("Site", job.site)
+		site = Site("Site", job.site)
 		frappe.db.set_value("Site", site.name, "setup_wizard_complete", 0)
 		frappe.db.set_value("Site", site.name, "database_name", None)
 		frappe.db.set_value("Site", site.name, "additional_system_user_created", False)
@@ -5006,7 +5058,7 @@ def process_migrate_site_job_update(job):
 	}[job.status]
 
 	if updated_status == "Active":
-		site: Site = frappe.get_doc("Site", job.site)
+		site = Site("Site", job.site)
 		if site.status_before_update:
 			site.reset_previous_status(fix_broken=True)
 			return
@@ -5102,7 +5154,7 @@ def process_move_site_to_bench_job_update(job):
 		create_site_status_update_webhook_event(job.site)
 		return
 	if job.status == "Success":
-		site = frappe.get_doc("Site", job.site)
+		site = Site("Site", job.site)
 		site.reset_previous_status(fix_broken=True)
 
 
@@ -5129,17 +5181,29 @@ def process_restore_tables_job_update(job):
 		"Running": "Updating",
 		"Success": "Active",
 		"Failure": "Broken",
+		"Delivery Failure": "Broken",
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
 		if updated_status == "Active":
-			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
-			frappe.db.set_value("Site", job.site, "fatal_site_update", None)
+			site = Site("Site", job.site)
+			fatal_update = site.fatal_site_update
+			site.reset_previous_status(fix_broken=True)
+			if fatal_update:
+				# The site is back up, but the update itself failed for good. Keep it Fatal and
+				# just mark the cause resolved (this also clears the site's fatal_site_update).
+				site_update = frappe.get_doc("Site Update", fatal_update)
+				site_update.set_cause_of_failure_is_resolved()
+				site_update.restore_max_statement_time()
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
-			frappe.db.set_value("Site", job.site, "database_name", None)
 			create_site_status_update_webhook_event(job.site)
+			# A failed recovery fallback ends here; put back any bumped max_statement_time.
+			if job.status in ("Failure", "Delivery Failure") and (
+				fatal_update := frappe.db.get_value("Site", job.site, "fatal_site_update")
+			):
+				frappe.get_doc("Site Update", fatal_update).restore_max_statement_time()
 
 
 def process_create_user_job_update(job):
@@ -5646,7 +5710,7 @@ def process_refresh_database_usage_job_update(job: AgentJob):
 	if not job.site:
 		return
 
-	site: Site = frappe.get_doc("Site", job.site)
+	site = Site("Site", job.site)
 	with suppress(Exception):
 		# Don't throw error on failure of syncing also
 		site.sync_info(database_only=True)
