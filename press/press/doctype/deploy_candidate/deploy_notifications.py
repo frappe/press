@@ -9,6 +9,7 @@ from textwrap import dedent
 from typing import Protocol, TypedDict
 
 import frappe
+from frappe.utils import escape_html
 
 from press.press.doctype.deploy_candidate.utils import (
 	BuildValidationError,
@@ -794,7 +795,7 @@ def check_incompatible_node(old_dcb: "DeployCandidateBuild", new_dc: "DeployCand
 
 	frappe.throw(
 		f"The previous build failed because of an incompatible Node version. The Node version is still"
-		f" <b>{new_node}</b>. <b>Set a compatible Node version</b> in Bench Group &gt; Config &gt;"
+		f" <b>{escape_html(new_node)}</b>. <b>Set a compatible Node version</b> in Bench Group &gt; Config &gt;"
 		' Dependencies. To build without a change, select <b>"I understand, run deploy anyway"</b>. '
 		+ doc_link(DOC_URLS["incompatible-node-version"]),
 		BuildValidationError,
@@ -832,9 +833,9 @@ def check_incompatible_python(old_dcb: "DeployCandidateBuild", new_dc: "DeployCa
 
 	frappe.throw(
 		f"The previous build failed because of an incompatible Python version. The Python version is"
-		f" still <b>{new_python}</b>. <b>Set a compatible Python version</b> in Bench Group &gt; Config"
-		' &gt; Dependencies. To build without a change, select <b>"I understand, run deploy anyway"</b>. '
-		+ doc_link(DOC_URLS["incompatible-dependency-version"]),
+		f" still <b>{escape_html(new_python)}</b>. <b>Set a compatible Python version</b> in Bench Group"
+		" &gt; Config &gt; Dependencies. To build without a change, select"
+		' <b>"I understand, run deploy anyway"</b>. ' + doc_link(DOC_URLS["incompatible-dependency-version"]),
 		BuildValidationError,
 	)
 
@@ -1181,8 +1182,8 @@ def check_if_app_updated(old_dcb: "DeployCandidateBuild", new_dc: "DeployCandida
 
 	title = new_app.title or old_app.title
 	frappe.throw(
-		f"App <b>{title}</b> failed in the previous build. The app is still on release"
-		f" <b>{new_hash[:10]}</b>. <b>Push a fix to the app, then fetch the new release.</b>"
+		f"App <b>{escape_html(title)}</b> failed in the previous build. The app is still on release"
+		f" <b>{escape_html(new_hash[:10])}</b>. <b>Push a fix to the app, then fetch the new release.</b>"
 		' To build without a change, select <b>"I understand, run deploy anyway"</b>. '
 		+ doc_link(DOC_URLS["build-might-fail"]),
 		BuildValidationError,
