@@ -115,6 +115,11 @@ class AgentJob(Document):
 		if server:
 			is_owned_by_team("Server", server, raise_exception=True)
 
+		# `bench` on its own gets the caller past the check above, so it needs an
+		# owner of its own — otherwise naming someone else's bench lists their jobs.
+		if bench and not has_support_access("Bench", bench):
+			is_owned_by_team("Bench", bench, raise_exception=True)
+
 		results = query.run(as_dict=1)
 		update_query_result_status_timestamps(results)
 		return results
