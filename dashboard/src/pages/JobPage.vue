@@ -35,6 +35,14 @@
 								<lucide-refresh-ccw class="h-4 w-4" />
 							</template>
 						</Button>
+						<Button
+							v-if="canCancel"
+							@click="confirmCancel"
+							:loading="$resources.job.cancelJob.loading"
+							theme="red"
+						>
+							Cancel Job
+						</Button>
 						<Dropdown v-if="dropdownOptions.length" :options="dropdownOptions">
 							<template v-slot="{ open }">
 								<Button>
@@ -92,10 +100,21 @@
 </template>
 <script>
 import { FeatherIcon, Tooltip } from 'frappe-ui';
+import { toast } from 'vue-sonner';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
 import { duration } from '../utils/format';
 import { getObject } from '../objects';
 import JobStep from '../components/JobStep.vue';
+import { confirmDialog } from '../utils/components';
+import { getToastErrorMessage } from '../utils/toast';
+
+// Keep in sync with DASHBOARD_CANCELLABLE_JOB_TYPES in agent_job.py
+const cancellableJobTypes = [
+	'Restore Site',
+	'New Site from Backup',
+	'Backup Site',
+	'Update Site Migrate',
+];
 
 export default {
 	name: 'JobPage',
@@ -107,6 +126,7 @@ export default {
 				type: 'document',
 				doctype: 'Agent Job',
 				name: this.id,
+				whitelistedMethods: { cancelJob: 'cancel_job' },
 				transform(job) {
 					for (let step of job.steps) {
 						step.title = step.step_name;
@@ -127,6 +147,18 @@ export default {
 				onSuccess() {
 					this.lastLoaded = Date.now();
 				},
+			};
+		},
+		// a site update that skipped backups has nothing to recover from,
+		// so its migrate job can't be cancelled
+		siteUpdate() {
+			return {
+				type: 'list',
+				doctype: 'Site Update',
+				auto: this.job?.job_type === 'Update Site Migrate',
+				fields: ['skipped_backups'],
+				filters: { update_job: this.id },
+				limit: 1,
 			};
 		},
 		errors() {
@@ -156,6 +188,16 @@ export default {
 		},
 		error() {
 			return this.$resources.errors?.data?.[0] ?? null;
+		},
+		canCancel() {
+			if (!['Pending', 'Running'].includes(this.job.status)) return false;
+			if (!cancellableJobTypes.includes(this.job.job_type)) return false;
+			if (this.job.job_type !== 'Update Site Migrate') return true;
+
+			// wait for the site update, so the button doesn't flash for an
+			// update that turns out to have skipped its backups
+			const siteUpdate = this.$resources.siteUpdate.data?.[0];
+			return Boolean(siteUpdate) && !siteUpdate.skipped_backups;
 		},
 		dropdownOptions() {
 			return [
@@ -202,6 +244,32 @@ export default {
 		clearInterval(this.reloadInterval);
 	},
 	methods: {
+		confirmCancel() {
+			const warning =
+				this.job.job_type === 'Update Site Migrate'
+					? '<br><br>The update will be marked as failed and a recovery job will restore the backup and roll the site back to the previous bench.'
+					: '';
+
+			confirmDialog({
+				title: 'Cancel Job',
+				message: `Are you sure you want to cancel this <b>${this.job.job_type}</b> job?<br><br>It will stop midway and <b>can't be resumed</b>.${warning}`,
+				primaryAction: {
+					label: 'Cancel Job',
+					variant: 'solid',
+					theme: 'red',
+					onClick: ({ hide }) => {
+						toast.promise(this.$resources.job.cancelJob.submit(), {
+							loading: 'Cancelling job...',
+							success: () => {
+								hide();
+								return 'Job will be cancelled shortly';
+							},
+							error: (e) => getToastErrorMessage(e, 'Failed to cancel job'),
+						});
+					},
+				},
+			});
+		},
 		reload() {
 			if (
 				!this.$resources.job.loading &&
