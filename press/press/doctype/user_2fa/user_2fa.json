@@ -11,7 +11,9 @@
 		"enabled",
 		"last_verified_at",
 		"recovery_codes",
-		"recovery_codes_last_viewed_at"
+		"recovery_codes_last_viewed_at",
+		"recovery_codes_last_reminded_at",
+		"unsubscribed_from_recovery_code_reminders"
 	],
 	"fields": [
 		{
@@ -47,6 +49,19 @@
 			"fieldname": "recovery_codes_last_viewed_at",
 			"fieldtype": "Datetime",
 			"label": "Recovery Codes Last Viewed At"
+		},
+		{
+			"fieldname": "recovery_codes_last_reminded_at",
+			"fieldtype": "Datetime",
+			"label": "Recovery Codes Last Reminded At",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"description": "Stop the reminders to review recovery codes",
+			"fieldname": "unsubscribed_from_recovery_code_reminders",
+			"fieldtype": "Check",
+			"label": "Unsubscribed From Recovery Code Reminders"
 		}
 	],
 	"grid_page_length": 50,

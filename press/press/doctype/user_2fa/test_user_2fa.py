@@ -11,8 +11,9 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.user_2fa.user_2fa import (
 	User2FA,
+	send_2fa_recovery_code_reminders,
+	unsubscribe_from_recovery_code_reminders,
 	users_due_for_recovery_code_reminder,
-	yearly_2fa_recovery_code_reminder,
 )
 
 
@@ -36,7 +37,7 @@ class TestUser2FA(FrappeTestCase):
 		self.assertTrue(all(code.isupper() for code in recovery_codes))
 
 
-class TestYearly2FARecoveryCodeReminder(FrappeTestCase):
+class Test2FARecoveryCodeReminders(FrappeTestCase):
 	def setUp(self):
 		self.team = create_test_team()
 		self.user = self.team.user
@@ -106,5 +107,42 @@ class TestYearly2FARecoveryCodeReminder(FrappeTestCase):
 
 	def recipients_of_reminder_mails(self) -> list[list[str]]:
 		with patch.object(frappe, "sendmail") as sendmail:
-			yearly_2fa_recovery_code_reminder()
+			send_2fa_recovery_code_reminders()
 		return [call.kwargs["recipients"] for call in sendmail.call_args_list]
+
+	def test_reminder_is_not_due_within_a_month_of_the_last_one(self):
+		self.mark_reminded_at(frappe.utils.add_to_date(frappe.utils.now_datetime(), days=-29))
+		self.assertNotIn(self.user, users_due_for_recovery_code_reminder())
+
+	def test_reminder_is_due_again_a_month_after_the_last_one(self):
+		self.mark_reminded_at(frappe.utils.add_to_date(frappe.utils.now_datetime(), months=-1, days=-1))
+		self.assertIn(self.user, users_due_for_recovery_code_reminder())
+
+	def mark_reminded_at(self, reminded_at):
+		frappe.db.set_value("User 2FA", self.user, "recovery_codes_last_reminded_at", reminded_at)
+
+	def test_sending_a_reminder_records_when_it_went_out(self):
+		self.recipients_of_reminder_mails()
+		self.assertIsNotNone(frappe.db.get_value("User 2FA", self.user, "recovery_codes_last_reminded_at"))
+
+	def test_a_second_run_on_the_same_day_sends_no_mail(self):
+		self.recipients_of_reminder_mails()
+		self.assertEqual(self.recipients_of_reminder_mails(), [])
+
+	def test_reminder_is_not_due_for_an_unsubscribed_user(self):
+		self.unsubscribe()
+		self.assertNotIn(self.user, users_due_for_recovery_code_reminder())
+
+	def test_no_mail_is_sent_to_an_unsubscribed_user(self):
+		self.unsubscribe()
+		self.assertNotIn([self.user], self.recipients_of_reminder_mails())
+
+	def unsubscribe(self):
+		with patch.object(frappe.db, "commit"):
+			unsubscribe_from_recovery_code_reminders(self.user)
+
+	def test_unsubscribing_marks_the_user_as_unsubscribed(self):
+		self.unsubscribe()
+		self.assertTrue(
+			frappe.db.get_value("User 2FA", self.user, "unsubscribed_from_recovery_code_reminders")
+		)

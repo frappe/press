@@ -1314,6 +1314,25 @@ def disable_2fa(totp_code):
 		)
 
 
+@frappe.whitelist()
+def set_2fa_recovery_code_reminders(enabled: bool | str):
+	"""Turn the reminders to review 2FA recovery codes on or off.
+
+	The switch sends "true" / "false" as strings. This module postpones
+	annotations, so frappe skips its own type casting and we cast here.
+	"""
+
+	if not frappe.db.exists("User 2FA", frappe.session.user):
+		frappe.throw(f"2FA is not enabled for {frappe.session.user}")
+
+	frappe.db.set_value(
+		"User 2FA",
+		frappe.session.user,
+		"unsubscribed_from_recovery_code_reminders",
+		not frappe.utils.sbool(enabled),
+	)
+
+
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
 def recover_2fa(user: str, recovery_code: str):

@@ -206,7 +206,17 @@ class Team(Document):
 			["name", "first_name", "last_name", "user_image", "user_type", "email", "api_key"],
 			as_dict=True,
 		)
-		user.is_2fa_enabled = frappe.db.get_value("User 2FA", {"user": user.name}, "enabled")
+		two_fa = (
+			frappe.db.get_value(
+				"User 2FA",
+				{"user": user.name},
+				["enabled", "unsubscribed_from_recovery_code_reminders"],
+				as_dict=True,
+			)
+			or frappe._dict()
+		)
+		user.is_2fa_enabled = two_fa.enabled
+		user.unsubscribed_from_recovery_code_reminders = two_fa.unsubscribed_from_recovery_code_reminders
 		doc.user_info = user
 		doc.balance = self.get_balance()
 		doc.is_desk_user = user.user_type == "System User"
