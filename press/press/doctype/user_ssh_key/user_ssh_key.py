@@ -39,6 +39,8 @@ class UserSSHKey(Document):
 
 	dashboard_fields: ClassVar = ["ssh_fingerprint", "is_default", "user", "is_removed"]
 
+	dashboard_insert_fields: ClassVar = ["ssh_public_key"]
+
 	valid_key_types: ClassVar = [
 		"ssh-rsa",
 		"ssh-ed25519",
@@ -56,12 +58,17 @@ class UserSSHKey(Document):
 		if embedded_type.decode("utf-8") != key_type:
 			raise SSHKeyValueError(f"Key type {key_type} does not match key")
 
+	def before_insert(self):
+		if not frappe.local.system_user():
+			# never trust a dashboard user to add a key for anyone but themselves
+			self.user = frappe.session.user
+
 	def validate(self):
 		if self.is_removed:  # to allow removing invalid keys
 			return
 		msg = "You must supply a key in OpenSSH public key format. Please try copy/pasting the key using one of the commands in documentation."
 		try:
-			key_type, key, *comment = self.ssh_public_key.strip().split()
+			key_type, key, *comment = self.ssh_public_key.strip().split()  # noqa: RUF059
 			if key_type not in self.valid_key_types:
 				raise SSHKeyValueError(f"Key type has to be one of {', '.join(self.valid_key_types)}")
 			key_bytes = base64.b64decode(key)

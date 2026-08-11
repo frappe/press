@@ -351,6 +351,48 @@ class TestAgentJob(FrappeTestCase):
 		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", True)
 
 
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestCancelJob(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_cancelling_a_finished_job_is_rejected(self):
+		job = create_test_agent_job(job_type="Restore Site", status="Success", job_id=42)
+
+		self.assertRaisesRegex(frappe.ValidationError, "job that is Success", job.cancel_job)
+
+	def test_dashboard_cant_cancel_a_job_type_without_a_failure_path(self):
+		job = create_test_agent_job(job_type="Migrate Site", status="Running", job_id=42)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Migrate Site jobs can't be cancelled",
+			job.validate_dashboard_cancellation,
+		)
+
+	def test_dashboard_can_cancel_a_running_restore(self):
+		job = create_test_agent_job(job_type="Restore Site", status="Running", job_id=42)
+
+		job.validate_dashboard_cancellation()  # doesn't raise
+
+	def test_dashboard_cant_cancel_a_site_update_that_skipped_backups(self):
+		job = create_test_agent_job(job_type="Update Site Migrate", status="Running", job_id=42)
+		site_update = frappe.get_doc(
+			doctype="Site Update",
+			name="test-site-update-cancel",
+			status="Running",
+			update_job=job.name,
+			skipped_backups=1,
+		)
+		site_update.db_insert()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"backups skipped",
+			job.validate_dashboard_cancellation,
+		)
+
+
 class TestAgentJobNotifications(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()

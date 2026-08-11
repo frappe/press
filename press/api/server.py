@@ -201,8 +201,7 @@ def get_reclaimable_size(name):
 @frappe.whitelist()
 def new_unified(server: UnifiedServerDetails):
 	team = get_current_team(get_doc=True)
-	if not team.enabled:
-		frappe.throw("You cannot create a new server because your account is disabled")
+	team.validate_can_create_server()
 
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
@@ -246,8 +245,7 @@ def new(server):
 		frappe.throw(f"ARM Instances are currently unavailable in the {server['cluster']} region")
 
 	team = get_current_team(get_doc=True)
-	if not team.enabled:
-		frappe.throw("You cannot create a new server because your account is disabled")
+	team.validate_can_create_server()
 
 	server_plan_price = frappe.get_value("Server Plan", server["app_plan"], "price_usd") + frappe.get_value(
 		"Server Plan", server["db_plan"], "price_usd"
@@ -571,6 +569,27 @@ def get_slow_logs_by_site(name, query, timezone, start, end, normalize=False):
 	)
 
 
+def prometheus_instant_value(query: str) -> float | None:
+	"""Latest scraped value, or None when there is no monitoring data.
+
+	Instant, unlike ``prometheus_query``, whose range samples can be a timegrain stale.
+	"""
+	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+	if not monitor_server:
+		return None
+
+	url = f"https://{monitor_server}/prometheus/api/v1/query"
+	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
+	try:
+		response = requests.get(url, params={"query": query}, auth=("frappe", str(password))).json()
+	except requests.exceptions.RequestException:
+		frappe.throw("Unable to connect to monitor server", MonitorServerDown)
+
+	# An error payload ({"status": "error", ...}) carries no data — treat it as no data.
+	result = response.get("data", {}).get("result", [])
+	return flt(result[0]["value"][1]) if result else None
+
+
 def prometheus_query(
 	query,
 	function,
@@ -578,8 +597,8 @@ def prometheus_query(
 	timespan: int,
 	timegrain: int,
 	use_timestamps: bool = False,
-	start: None | datetime = None,
-	end: None | datetime = None,
+	start: datetime | None = None,
+	end: datetime | None = None,
 ):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
