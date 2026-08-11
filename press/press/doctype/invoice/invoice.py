@@ -988,6 +988,12 @@ class Invoice(Document):
 			if item.discount_percentage:
 				item.discount = flt(item.amount * (item.discount_percentage / 100), 2)
 
+		self.total_before_discount = self.total
+
+		for discount in self.discounts:
+			if discount.based_on == "Percent":
+				discount.amount = flt(self.total_before_discount * (discount.percent / 100), 2)
+
 		self.total_discount_amount = sum([item.discount for item in self.items]) + sum(
 			[d.amount for d in self.discounts]
 		)
@@ -998,7 +1004,6 @@ class Invoice(Document):
 			if npo_discount:
 				self.total_discount_amount += flt(self.total * (npo_discount / 100), 2)
 
-		self.total_before_discount = self.total
 		self.total = flt(self.total_before_discount - self.total_discount_amount, 2)
 
 	def on_cancel(self):
