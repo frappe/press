@@ -308,6 +308,21 @@ class TestSiteUpdate(FrappeTestCase):
 			"Success",
 		)
 
+	def test_drop_cancels_a_scheduled_update(self):
+		"""An update that hasn't started must not keep a drop waiting"""
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		site = create_test_site(bench=bench1.name)
+
+		site_update_name = site.schedule_update(scheduled_time=frappe.utils.add_to_date(None, hours=1))
+
+		site.archive()
+
+		self.assertEqual(frappe.db.get_value("Site Update", site_update_name, "status"), "Cancelled")
+
 	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
 	def test_run_scheduled_updates_fails_if_destination_bench_missing_app(self):
 		"""Validation at scheduled run time should catch apps removed from the destination bench after scheduling."""

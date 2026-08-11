@@ -1406,11 +1406,11 @@ class Site(Document, TagHelpers):
 			"Site Update", {"site": self.name, "status": "Scheduled"}, "scheduled_time"
 		)
 
-	def site_action_ongoing(self):
-		return frappe.db.exists(
-			"Site Action",
-			{"site": self.name, "status": ("not in", ["Success", "Failure", "Cancelled"])},
-		)
+	def site_action_scheduled(self):
+		return frappe.db.exists("Site Action", {"site": self.name, "status": "Scheduled"})
+
+	def site_action_running(self):
+		return frappe.db.exists("Site Action", {"site": self.name, "status": "Running"})
 
 	def check_move_scheduled(self):
 		if time := self.site_migration_scheduled():
@@ -1872,11 +1872,12 @@ class Site(Document, TagHelpers):
 	@site_action(["Active", "Broken", "Inactive", "Suspended"])
 	def archive(self, site_name=None, reason=None, force=False, create_offsite_backup=True):
 		agent = Agent(self.server)
-		if action := self.site_action_ongoing():
+		if action := self.site_action_running():
 			frappe.throw(  # nosemgrep
-				f"Site Action {action} is scheduled or running for this site. "
+				f"Site Action {action} is running for this site. "
 				"Wait for it to finish, or cancel it, then drop the site."
 			)
+		self.cancel_scheduled_moves()
 		self.ready_for_move()
 		job = agent.archive_site(self, site_name, force, create_offsite_backup)
 		log_site_activity(self.name, "Archive", reason, job.name)
@@ -1895,6 +1896,19 @@ class Site(Document, TagHelpers):
 		self.disable_marketplace_subscriptions()
 
 		self.archive_site_database_users()
+
+	def cancel_scheduled_moves(self):
+		"""A drop wins over a move that hasn't started yet."""
+		for action in frappe.get_all("Site Action", {"site": self.name, "status": "Scheduled"}, pluck="name"):
+			frappe.get_doc("Site Action", action).cancel_action()
+
+		for update in frappe.get_all("Site Update", {"site": self.name, "status": "Scheduled"}, pluck="name"):
+			frappe.get_doc("Site Update", update).fail_with_notification("the site was dropped")
+
+		for migration in frappe.get_all(
+			"Site Migration", {"site": self.name, "status": "Scheduled"}, pluck="name"
+		):
+			frappe.db.set_value("Site Migration", migration, "status", "Cancelled")
 
 	@frappe.whitelist()
 	def cleanup_after_archive(self):
@@ -5336,6 +5350,9 @@ def archive_suspended_sites():
 				continue
 
 			site = Site("Site", site_dict.name)
+			if site.site_action_running():
+				continue
+
 			site.archive(reason="Archive suspended site")
 			frappe.db.commit()
 		except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):

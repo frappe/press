@@ -510,7 +510,7 @@ class SiteAction(Document):
 
 	def before_insert(self):
 		# Check if no other site action/migration is running for the same site
-		if self.site_doc.site_action_ongoing():
+		if self.site_doc.site_action_scheduled() or self.site_doc.site_action_running():
 			frappe.throw(
 				"Another site action is already scheduled / running for this site. Please wait for it to complete before starting a new one."
 			)

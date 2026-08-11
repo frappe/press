@@ -561,6 +561,24 @@ class TestSite(FrappeTestCase):
 		self.assertEqual(site.apps[1].app, "erpnext")
 		self.assertEqual(site.apps[2].app, "crm")
 
+	def test_drop_cancels_a_scheduled_migration(self):
+		"""A move that hasn't started must not keep a drop waiting"""
+		site = create_test_site()
+		destination_bench = create_test_bench()
+
+		migration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": site.name,
+				"destination_bench": destination_bench.name,
+				"scheduled_time": frappe.utils.add_days(None, 1),
+			}
+		).insert()
+
+		site.archive()
+
+		self.assertEqual(frappe.db.get_value("Site Migration", migration.name, "status"), "Cancelled")
+
 	@patch("press.press.doctype.site.site.frappe.db.commit", new=Mock())
 	@patch("press.press.doctype.site.site.frappe.db.rollback", new=Mock())
 	@patch("frappe.sendmail", new=Mock())
