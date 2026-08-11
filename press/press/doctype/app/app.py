@@ -219,7 +219,7 @@ def map_frappe_version(
 	try:
 		version_string = version_string.replace(" ", "").replace(",", " ")
 		spec = sv.NpmSpec(version_string)
-	except ValueError:
+	except (AttributeError, TypeError, ValueError):
 		frappe.throw(
 			f"Invalid version format for app '{app_title}'. Please use NPM-style semver ranges "
 			f"(e.g. '>=15.0.0 <16.0.0'). {VERSIONING_DOCS}"
