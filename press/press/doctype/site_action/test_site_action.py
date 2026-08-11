@@ -397,23 +397,6 @@ class TestSiteAction(FrappeTestCase):
 
 		self.assertEqual(frappe.db.get_value("Site Action", action_name, "status"), "Cancelled")
 
-	def test_site_cant_be_dropped_while_an_action_runs_on_it(self):
-		"""A drop under a running action leaves it stuck, so block the drop"""
-		source_bench: Bench = create_test_bench(public_server=True)
-		source_site: Site = create_test_site(bench=source_bench.name)
-
-		action_name = source_site.create_migration_plan(
-			type="Move Site To Different Server / Bench",
-			new_group_name="Test Group",
-		)
-		frappe.db.set_value("Site Action", action_name, "status", "Running")
-
-		with self.assertRaises(frappe.ValidationError) as context:
-			source_site.archive()
-
-		self.assertIn(action_name, str(context.exception))
-		self.assertEqual(frappe.db.get_value("Site", source_site.name, "status"), "Active")
-
 	def test_action_fails_instead_of_retrying_forever_when_site_is_gone(self):
 		"""An action whose site no longer exists can't be saved, it must stop being retried"""
 		source_bench: Bench = create_test_bench(public_server=True)

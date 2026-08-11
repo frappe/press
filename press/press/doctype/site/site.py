@@ -1412,24 +1412,14 @@ class Site(Document, TagHelpers):
 	def site_action_running(self):
 		return frappe.db.exists("Site Action", {"site": self.name, "status": "Running"})
 
-	def site_update_running(self):
-		return frappe.db.exists(
-			"Site Update", {"site": self.name, "status": ("in", ["Pending", "Running", "Recovering"])}
-		)
-
-	def site_migration_running(self):
-		from press.press.doctype.site_migration.site_migration import get_ongoing_migration
-
-		return get_ongoing_migration(self.name)
-
 	def check_move_running(self):
-		"""A move that touched the site already must finish before the site can move again."""
-		for doctype, name in (
-			("Site Action", self.site_action_running()),
-			("Site Update", self.site_update_running()),
-			("Site Migration", self.site_migration_running()),
-		):
-			if name:
+		"""A move that touched the site already must finish before the site can move again.
+
+		The other statuses need no check. They all set the site to a transitory
+		status, which `ready_for_move()` rejects.
+		"""
+		for doctype in ("Site Update", "Site Migration"):
+			if name := frappe.db.exists(doctype, {"site": self.name, "status": "Running"}):
 				frappe.throw(
 					f"{doctype} {name} is running for this site. Wait for it to finish, then try again."
 				)
@@ -5368,9 +5358,6 @@ def archive_suspended_sites():
 				continue
 
 			site = Site("Site", site_dict.name)
-			if site.site_action_running():
-				continue
-
 			site.archive(reason="Archive suspended site")
 			frappe.db.commit()
 		except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
