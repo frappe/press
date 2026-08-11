@@ -9,11 +9,13 @@ from textwrap import dedent
 from typing import Protocol, TypedDict
 
 import frappe
+from frappe.utils import escape_html
 
 from press.press.doctype.deploy_candidate.utils import (
 	BuildValidationError,
 	get_error_key,
 )
+from press.utils.docs import doc_link
 
 """
 Used to create notifications if the Deploy error is something that can
@@ -85,6 +87,7 @@ DOC_URLS = {
 	"invalid-project-structure": "https://docs.frappe.io/framework/user/en/tutorial/create-an-app#app-directory-structure",
 	"frappe-not-found": "https://pip.pypa.io/en/stable/news/#v25-3",
 	"no-python-dependency-file-found": "https://packaging.python.org/en/latest/guides/writing-pyproject-toml/",
+	"build-might-fail": "https://docs.frappe.io/cloud/common-issues/build-might-fail",
 }
 
 
@@ -791,7 +794,10 @@ def check_incompatible_node(old_dcb: "DeployCandidateBuild", new_dc: "DeployCand
 		return
 
 	frappe.throw(
-		"Node version not updated since previous failing build.",
+		f"The previous build failed because of an incompatible Node version. The Node version is still"
+		f" <b>{escape_html(new_node)}</b>. <b>Set a compatible Node version</b> in Bench Group &gt; Config &gt;"
+		' Dependencies. To build without a change, select <b>"I understand, run deploy anyway"</b>. '
+		+ doc_link(DOC_URLS["incompatible-node-version"]),
 		BuildValidationError,
 	)
 
@@ -819,14 +825,17 @@ def update_with_incompatible_python(
 
 
 def check_incompatible_python(old_dcb: "DeployCandidateBuild", new_dc: "DeployCandidate") -> None:
-	old_node = old_dcb.candidate.get_dependency_version("python")
-	new_node = new_dc.get_dependency_version("python")
+	old_python = old_dcb.candidate.get_dependency_version("python")
+	new_python = new_dc.get_dependency_version("python")
 
-	if old_node != new_node:
+	if old_python != new_python:
 		return
 
 	frappe.throw(
-		"Python version not updated since previous failing build.",
+		f"The previous build failed because of an incompatible Python version. The Python version is"
+		f" still <b>{escape_html(new_python)}</b>. <b>Set a compatible Python version</b> in Bench Group"
+		" &gt; Config &gt; Dependencies. To build without a change, select"
+		' <b>"I understand, run deploy anyway"</b>. ' + doc_link(DOC_URLS["incompatible-dependency-version"]),
 		BuildValidationError,
 	)
 
@@ -1173,7 +1182,10 @@ def check_if_app_updated(old_dcb: "DeployCandidateBuild", new_dc: "DeployCandida
 
 	title = new_app.title or old_app.title
 	frappe.throw(
-		f"App <b>{title}</b> has not been updated since previous failing build. Release hash is <b>{new_hash[:10]}</b>.",
+		f"App <b>{escape_html(title)}</b> failed in the previous build. The app is still on release"
+		f" <b>{escape_html(new_hash[:10])}</b>. <b>Push a fix to the app, then fetch the new release.</b>"
+		' To build without a change, select <b>"I understand, run deploy anyway"</b>. '
+		+ doc_link(DOC_URLS["build-might-fail"]),
 		BuildValidationError,
 	)
 
