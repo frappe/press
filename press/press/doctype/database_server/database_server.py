@@ -1337,26 +1337,24 @@ class DatabaseServer(BaseServer):
 		if cint(retention_days) < 1:
 			frappe.throw("Please enter the audit log retention as a whole number of days (for example 365).")
 
-		# Before the flag is set, so a server with nothing to bill against stays untouched
+		# Fail here rather than in the background, where the operator wouldn't see it
 		self.create_audit_log_subscription()
-		self.is_database_audit_log_enabled = True
+		# The plugin is configured from these two, so they're saved before it is. The flag
+		# isn't: reconcile_audit_log_state sets it once the server confirms it's logging.
 		self.database_audit_log_capture_reads = cint(capture_reads)
 		self.audit_log_retention_days = cint(retention_days)
 		self.save(ignore_permissions=True)
 		frappe.enqueue_doc(self.doctype, self.name, "_enable_database_audit_log", queue="long", timeout=1800)
 
 	def _enable_database_audit_log(self):
-		try:
-			self.setup_mysql_log_directory()
-			self.load_server_audit_plugin()
-			self.configure_server_audit_plugin()
-		except Exception:
-			# Nothing is logging, so leaving the flag on would bill for an empty bucket and
-			# make enable_database_audit_log return early instead of retrying
-			self.db_set("is_database_audit_log_enabled", False)
-			self.sync_audit_log_subscription()
-			frappe.db.commit()
-			raise
+		self.setup_mysql_log_directory()
+		self.load_server_audit_plugin()
+		self.configure_server_audit_plugin()
+		if not self.reconcile_audit_log_state():
+			frappe.throw(
+				f"MariaDB on {self.name} is not logging after being configured. "
+				"Check the MariaDB System Variable Update errors for this server, then enable it again."
+			)
 
 	def setup_mysql_log_directory(self):
 		ansible = Ansible(
@@ -1426,9 +1424,8 @@ class DatabaseServer(BaseServer):
 		if not self.is_database_audit_log_enabled:
 			return
 
-		self.is_database_audit_log_enabled = False
-		self.save(ignore_permissions=True)
-		self.sync_audit_log_subscription()
+		# The flag stays until the server stops logging, so uploads keep draining the disk
+		# if this fails. reconcile_audit_log_state clears it once MariaDB confirms.
 		frappe.enqueue_doc(self.doctype, self.name, "_disable_database_audit_log", queue="long", timeout=600)
 
 	def _disable_database_audit_log(self):
@@ -1442,6 +1439,28 @@ class DatabaseServer(BaseServer):
 			save=True,
 			update_variables_synchronously=True,
 		)
+		if self.reconcile_audit_log_state():
+			frappe.throw(
+				f"MariaDB on {self.name} is still logging. "
+				"Check the MariaDB System Variable Update errors for this server, then disable it again."
+			)
+
+	def reconcile_audit_log_state(self) -> bool:
+		"""Point the flag and the subscription at what the server actually reports.
+
+		A failed variable update only logs an error — update_on_server doesn't raise — so
+		asking MariaDB is the only way to know whether the change landed.
+		"""
+		enabled = self.is_audit_logging_on_server()
+		self.db_set("is_database_audit_log_enabled", enabled)
+		self.sync_audit_log_subscription()
+		frappe.db.commit()
+		return enabled
+
+	def is_audit_logging_on_server(self) -> bool:
+		variables = self.agent.fetch_database_variables() or []
+		logging = find(variables, lambda v: v.get("Variable_name") == "server_audit_logging")
+		return bool(logging) and logging["Value"] == "ON"
 
 	@property
 	def audit_log_subscription(self) -> str | None:
