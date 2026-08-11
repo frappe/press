@@ -11,6 +11,7 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
 from frappe.utils import add_days
 
+from press.press.doctype.database_server.database_server import DatabaseServer
 from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:
@@ -116,6 +117,13 @@ def delete_expired_audit_logs_of_server(database_server: str, retention_days: in
 		},
 		pluck="name",
 	)
+	if not expired:
+		return
+
 	for name in expired:
 		frappe.delete_doc("MariaDB Audit Log", name)
-	frappe.db.commit()
+		# The S3 object goes with it, so a rollback would leave a row pointing at nothing
+		frappe.db.commit()
+
+	# Billing outlives disabling, so it ends here — once the last stored log is gone
+	DatabaseServer("Database Server", database_server).sync_audit_log_subscription()
