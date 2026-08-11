@@ -261,6 +261,12 @@ class DeployCandidateBuild(Document):
 		"deploy_candidate",
 	)
 
+	def get_doc(self, doc):
+		doc.is_cache_failure = self.status == Status.FAILURE.value and is_cache_related_failure(
+			self.build_output or ""
+		)
+		return doc
+
 	@cached_property
 	def candidate(self) -> DeployCandidate:
 		return frappe.get_doc("Deploy Candidate", self.deploy_candidate)
@@ -1273,7 +1279,7 @@ def fail_and_redeploy(dn: str):
 
 
 @frappe.whitelist()
-def redeploy(dn: str) -> dict[str, str | bool]:
+def redeploy(dn: str, no_cache: bool = False) -> dict[str, str | bool]:
 	"""Allow redeploy preserving app sources if the deploy is in terminal stage"""
 	deploy_candidate_build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn)
 
@@ -1283,7 +1289,7 @@ def redeploy(dn: str) -> dict[str, str | bool]:
 			frappe.ValidationError,
 		)
 
-	return deploy_candidate_build.redeploy()
+	return deploy_candidate_build.redeploy(no_cache=no_cache)
 
 
 def _mark_build_as_failed(dn: str) -> bool:
@@ -1335,6 +1341,19 @@ def fail_remote_job(dn: str) -> bool:
 		agent_job_doc.cancel_job()
 
 	return _mark_build_as_failed(dn)
+
+
+# Substrings that identify a failure as caused by Docker's build cache (BuildKit
+# layer cache or a `--mount=type=cache` step), as opposed to other transient
+# failures (network timeouts, apt lock contention, etc.).
+CACHE_FAILURE_MARKERS = (
+	"failed to compute cache key",
+	"--mount=type=cache",
+)
+
+
+def is_cache_related_failure(build_output: str) -> bool:
+	return any(marker in build_output for marker in CACHE_FAILURE_MARKERS)
 
 
 def should_build_retry_build_output(build_output: str):
