@@ -1412,6 +1412,28 @@ class Site(Document, TagHelpers):
 	def site_action_running(self):
 		return frappe.db.exists("Site Action", {"site": self.name, "status": "Running"})
 
+	def site_update_running(self):
+		return frappe.db.exists(
+			"Site Update", {"site": self.name, "status": ("in", ["Pending", "Running", "Recovering"])}
+		)
+
+	def site_migration_running(self):
+		from press.press.doctype.site_migration.site_migration import get_ongoing_migration
+
+		return get_ongoing_migration(self.name)
+
+	def check_move_running(self):
+		"""A move that touched the site already must finish before the site can move again."""
+		for doctype, name in (
+			("Site Action", self.site_action_running()),
+			("Site Update", self.site_update_running()),
+			("Site Migration", self.site_migration_running()),
+		):
+			if name:
+				frappe.throw(
+					f"{doctype} {name} is running for this site. Wait for it to finish, then try again."
+				)
+
 	def check_move_scheduled(self):
 		if time := self.site_migration_scheduled():
 			frappe.throw(f"Site Migration is scheduled for {self.name} at {time}")  # nosemgrep
@@ -1872,11 +1894,7 @@ class Site(Document, TagHelpers):
 	@site_action(["Active", "Broken", "Inactive", "Suspended"])
 	def archive(self, site_name=None, reason=None, force=False, create_offsite_backup=True):
 		agent = Agent(self.server)
-		if action := self.site_action_running():
-			frappe.throw(  # nosemgrep
-				f"Site Action {action} is running for this site. "
-				"Wait for it to finish, or cancel it, then drop the site."
-			)
+		self.check_move_running()
 		self.cancel_scheduled_moves()
 		self.ready_for_move()
 		job = agent.archive_site(self, site_name, force, create_offsite_backup)

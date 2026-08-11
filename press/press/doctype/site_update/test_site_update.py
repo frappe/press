@@ -323,6 +323,24 @@ class TestSiteUpdate(FrappeTestCase):
 
 		self.assertEqual(frappe.db.get_value("Site Update", site_update_name, "status"), "Cancelled")
 
+	def test_site_cant_be_dropped_while_an_update_runs_on_it(self):
+		"""A drop under a running update leaves the update without its site"""
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		site = create_test_site(bench=bench1.name)
+
+		site_update_name = site.schedule_update(scheduled_time=frappe.utils.add_to_date(None, hours=1))
+		frappe.db.set_value("Site Update", site_update_name, "status", "Running")
+
+		with self.assertRaises(frappe.ValidationError) as context:
+			site.archive()
+
+		self.assertIn(site_update_name, str(context.exception))
+		self.assertEqual(frappe.db.get_value("Site", site.name, "status"), "Active")
+
 	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
 	def test_run_scheduled_updates_fails_if_destination_bench_missing_app(self):
 		"""Validation at scheduled run time should catch apps removed from the destination bench after scheduling."""

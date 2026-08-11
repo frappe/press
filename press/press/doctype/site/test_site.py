@@ -579,6 +579,27 @@ class TestSite(FrappeTestCase):
 
 		self.assertEqual(frappe.db.get_value("Site Migration", migration.name, "status"), "Cancelled")
 
+	def test_site_cant_be_dropped_while_a_migration_runs_on_it(self):
+		"""A drop under a running migration leaves a copy of the site behind"""
+		site = create_test_site()
+		destination_bench = create_test_bench()
+
+		migration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": site.name,
+				"destination_bench": destination_bench.name,
+				"scheduled_time": frappe.utils.add_days(None, 1),
+			}
+		).insert()
+		frappe.db.set_value("Site Migration", migration.name, "status", "Running")
+
+		with self.assertRaises(frappe.ValidationError) as context:
+			site.archive()
+
+		self.assertIn(migration.name, str(context.exception))
+		self.assertEqual(frappe.db.get_value("Site", site.name, "status"), "Active")
+
 	@patch("press.press.doctype.site.site.frappe.db.commit", new=Mock())
 	@patch("press.press.doctype.site.site.frappe.db.rollback", new=Mock())
 	@patch("frappe.sendmail", new=Mock())
