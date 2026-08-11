@@ -30,8 +30,10 @@ import { confirmDialog, renderDialog } from '../../utils/components'
 import { getToastErrorMessage } from '../../utils/toast'
 import CommunicationInfoDialog from '../CommunicationInfoDialog.vue'
 import CleanupDialog from './CleanupDialog.vue'
+import DatabaseAuditLogsDialog from './DatabaseAuditLogsDialog.vue'
 import DatabaseBinlogsDialog from './DatabaseBinlogsDialog.vue'
 import DatabaseConfigurationDialog from './DatabaseConfigurationDialog.vue'
+import EnableDatabaseAuditLogDialog from './EnableDatabaseAuditLogDialog.vue'
 import OnPremFailoverDialog from './OnPremFailoverDialog.vue'
 import SecondaryServerPlanDialog from './SecondaryServerPlanDialog.vue'
 
@@ -75,6 +77,9 @@ function getServerActionHandler(action) {
 		'Forcefully Purge Binlogs': onPurgeBinlogsForcefully,
 		'Update Binlog Size Limit': onUpdateBinlogSizeLimit,
 		'Manage Database Binlogs': onViewMariaDBBinlogs,
+		'Enable Database Audit Log': onEnableDatabaseAuditLog,
+		'Disable Database Audit Log': onDisableDatabaseAuditLog,
+		'Manage Database Audit Logs': onViewDatabaseAuditLogs,
 		'Manage On-Prem Replication': onManageOnPremFailover,
 	}
 	if (actionHandlers[action]) {
@@ -688,6 +693,50 @@ function onViewMariaDBBinlogs() {
 	if (!server.getBinlogsInfo) return
 	renderDialog(
 		h(DatabaseBinlogsDialog, {
+			databaseServer: server.doc.name,
+		}),
+	)
+}
+
+function onEnableDatabaseAuditLog() {
+	if (!server.enableDatabaseAuditLog) return
+	renderDialog(
+		h(EnableDatabaseAuditLogDialog, {
+			server: server,
+		}),
+	)
+}
+
+function onDisableDatabaseAuditLog() {
+	if (!server.disableDatabaseAuditLog) return
+	confirmDialog({
+		title: 'Disable Database Audit Log',
+		message: `Are you sure you want to stop audit logging on the database server <b>${server.doc.name}</b> ?<br><br>Recording stops immediately. Logs already archived stay downloadable and remain billable until they pass their retention period.`,
+		primaryAction: {
+			label: 'Disable Audit Log',
+		},
+		onSuccess({ hide }) {
+			if (server.disableDatabaseAuditLog.loading) return
+			toast.promise(
+				server.disableDatabaseAuditLog.submit(null, {
+					onSuccess() {
+						hide()
+					},
+				}),
+				{
+					loading: 'Disabling audit logging...',
+					success: 'Audit logging disabled',
+					error: (e) => getToastErrorMessage(e),
+				},
+			)
+		},
+	})
+}
+
+function onViewDatabaseAuditLogs() {
+	if (!server.getAuditLogs) return
+	renderDialog(
+		h(DatabaseAuditLogsDialog, {
 			databaseServer: server.doc.name,
 		}),
 	)

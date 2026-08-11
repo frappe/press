@@ -213,6 +213,7 @@ scheduler_events = {
 		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_disk",
 		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_s3",
 		"press.press.doctype.mariadb_binlog.mariadb_binlog.cleanup_old_records",
+		"press.press.doctype.mariadb_audit_log.mariadb_audit_log.delete_expired_audit_logs",
 		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
 		"press.press.doctype.team.team.check_budget_alerts",
 		"press.press.doctype.site.site.archive_creation_failed_sites",
@@ -335,6 +336,7 @@ scheduler_events = {
 		],
 		"0 */2 * * *": [
 			"press.signup_e2e.run_signup_e2e",
+			"press.press.doctype.database_server.database_server.upload_audit_logs_to_s3",
 		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
@@ -436,6 +438,7 @@ fixtures = [
 	"Bench Dependency",
 	"Server Storage Plan",
 	"Server Snapshot Plan",
+	"S3 Storage Plan",
 	"Press Webhook Event",
 	"Site Plan",
 	"Server Plan",
