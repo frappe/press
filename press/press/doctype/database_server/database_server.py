@@ -1332,9 +1332,17 @@ class DatabaseServer(BaseServer):
 		frappe.enqueue_doc(self.doctype, self.name, "_enable_database_audit_log", queue="long", timeout=1800)
 
 	def _enable_database_audit_log(self):
-		self.setup_mysql_log_directory()
-		self.load_server_audit_plugin()
-		self.configure_server_audit_plugin()
+		try:
+			self.setup_mysql_log_directory()
+			self.load_server_audit_plugin()
+			self.configure_server_audit_plugin()
+		except Exception:
+			# Nothing is logging, so leaving the flag on would bill for an empty bucket and
+			# make enable_database_audit_log return early instead of retrying
+			self.db_set("is_database_audit_log_enabled", False)
+			self.sync_audit_log_subscription()
+			frappe.db.commit()
+			raise
 
 	def setup_mysql_log_directory(self):
 		ansible = Ansible(
@@ -1406,7 +1414,7 @@ class DatabaseServer(BaseServer):
 
 		self.is_database_audit_log_enabled = False
 		self.save(ignore_permissions=True)
-		self.disable_audit_log_subscription()
+		self.sync_audit_log_subscription()
 		frappe.enqueue_doc(self.doctype, self.name, "_disable_database_audit_log", queue="long", timeout=600)
 
 	def _disable_database_audit_log(self):
@@ -1450,9 +1458,14 @@ class DatabaseServer(BaseServer):
 			}
 		).insert(ignore_permissions=True)
 
-	def disable_audit_log_subscription(self):
-		if self.audit_log_subscription:
-			frappe.db.set_value("Subscription", self.audit_log_subscription, "enabled", 0)
+	def sync_audit_log_subscription(self):
+		"""Keep billing while logging is on or logs are stored: S3 charges us until retention expires."""
+		if not self.audit_log_subscription:
+			return
+		billable = self.is_database_audit_log_enabled or frappe.db.exists(
+			"MariaDB Audit Log", {"database_server": self.name}
+		)
+		frappe.db.set_value("Subscription", self.audit_log_subscription, "enabled", cint(bool(billable)))
 
 	@dashboard_whitelist()
 	def get_audit_logs(self, start: int = 0, limit: int = 10):
@@ -1475,7 +1488,11 @@ class DatabaseServer(BaseServer):
 			"MariaDB Audit Log", {"name": audit_log, "database_server": self.name}, "remote_file"
 		)
 		if not remote_file:
-			frappe.throw("This audit log is no longer available for download.")
+			frappe.throw(
+				"This audit log has been deleted from storage and can't be downloaded. "
+				"Logs are removed once they pass this server's audit log retention period. "
+				"Refresh the list to see the logs that are still available."
+			)
 		return frappe.get_doc("Remote File", remote_file).get_download_link()
 
 	def get_audit_log_storage_gb(self) -> float:
