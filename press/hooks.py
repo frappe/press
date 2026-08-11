@@ -264,6 +264,7 @@ scheduler_events = {
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 		"press.press.doctype.server.server.sync_wazuh_agent_status",
 		"press.press.doctype.incident_settings.incident_settings.alert_if_phone_call_alerts_disabled",
+		"press.press.doctype.server.server_monitoring.alert_on_failing_signups",
 		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",
 	],
 	"hourly_long": [
