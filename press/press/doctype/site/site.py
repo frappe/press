@@ -1406,6 +1406,12 @@ class Site(Document, TagHelpers):
 			"Site Update", {"site": self.name, "status": "Scheduled"}, "scheduled_time"
 		)
 
+	def site_action_ongoing(self):
+		return frappe.db.exists(
+			"Site Action",
+			{"site": self.name, "status": ("not in", ["Success", "Failure", "Cancelled"])},
+		)
+
 	def check_move_scheduled(self):
 		if time := self.site_migration_scheduled():
 			frappe.throw(f"Site Migration is scheduled for {self.name} at {time}")  # nosemgrep
@@ -1866,6 +1872,11 @@ class Site(Document, TagHelpers):
 	@site_action(["Active", "Broken", "Inactive", "Suspended"])
 	def archive(self, site_name=None, reason=None, force=False, create_offsite_backup=True):
 		agent = Agent(self.server)
+		if action := self.site_action_ongoing():
+			frappe.throw(  # nosemgrep
+				f"Site Action {action} is scheduled or running for this site. "
+				"Wait for it to finish, or cancel it, then drop the site."
+			)
 		self.ready_for_move()
 		job = agent.archive_site(self, site_name, force, create_offsite_backup)
 		log_site_activity(self.name, "Archive", reason, job.name)
