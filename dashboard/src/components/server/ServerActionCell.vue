@@ -711,7 +711,7 @@ function onDisableDatabaseAuditLog() {
 	if (!server.disableDatabaseAuditLog) return
 	confirmDialog({
 		title: 'Disable Database Audit Log',
-		message: `Are you sure you want to stop audit logging on the database server <b>${server.doc.name}</b> ?<br><br>Recording stops immediately. Logs already archived stay downloadable and remain billable until they pass their retention period.`,
+		message: `Are you sure you want to stop audit logging on the database server <b>${server.doc.name}</b> ?<br><br>Recording stops once MariaDB has been updated. Logs already archived stay downloadable and remain billable until they pass their retention period.`,
 		primaryAction: {
 			label: 'Disable Audit Log',
 		},
@@ -725,7 +725,7 @@ function onDisableDatabaseAuditLog() {
 				}),
 				{
 					loading: 'Disabling audit logging...',
-					success: 'Audit logging disabled',
+					success: 'Audit logging is being disabled',
 					error: (e) => getToastErrorMessage(e),
 				},
 			)
