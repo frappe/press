@@ -59,6 +59,7 @@ class PressRole(Document):
 		"allow_customer",
 		"allow_dashboard",
 		"allow_leads",
+		"allow_local_payment",
 		"allow_partner",
 		"allow_server_creation",
 		"allow_site_creation",
@@ -89,6 +90,12 @@ class PressRole(Document):
 		"allow_server_creation",
 		"allow_site_creation",
 		"allow_webhook_configuration",
+	)
+
+	dashboard_insert_fields = (
+		"title",
+		"users",
+		"resources",
 	)
 
 	@team_guard.only_admin()
