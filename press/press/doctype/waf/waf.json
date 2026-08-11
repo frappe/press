@@ -1,0 +1,171 @@
+{
+	"actions": [],
+	"autoname": "format:WAF-{site}",
+	"creation": "2026-07-06 00:00:00",
+	"default_view": "List",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"enabled",
+		"site",
+		"mode",
+		"waf_settings_section",
+		"rate_limits",
+		"blocked_endpoints",
+		"column_break_1",
+		"blocked_parameters",
+		"request_limits",
+		"ip_rules_section",
+		"ip_rules",
+		"custom_rules_section",
+		"custom_rules",
+		"credentials_section",
+		"waf_log_token",
+		"last_synced"
+	],
+	"fields": [
+		{
+			"default": "0",
+			"fieldname": "enabled",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"label": "Enabled"
+		},
+		{
+			"fieldname": "site",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Site",
+			"options": "Site",
+			"reqd": 1,
+			"unique": 1
+		},
+		{
+			"default": "Detection",
+			"fieldname": "mode",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Mode",
+			"options": "\nDetection\nPrevention",
+			"reqd": 1
+		},
+		{
+			"fieldname": "waf_settings_section",
+			"fieldtype": "Section Break",
+			"label": "Rate Limits & Endpoints"
+		},
+		{
+			"fieldname": "rate_limits",
+			"fieldtype": "Table",
+			"label": "Rate Limits",
+			"options": "WAF Rate Limit"
+		},
+		{
+			"fieldname": "blocked_endpoints",
+			"fieldtype": "Table",
+			"label": "Blocked Endpoints",
+			"options": "WAF Blocked Endpoint"
+		},
+		{
+			"fieldname": "column_break_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "blocked_parameters",
+			"fieldtype": "Table",
+			"label": "Blocked Parameters",
+			"options": "WAF Blocked Parameter"
+		},
+		{
+			"fieldname": "request_limits",
+			"fieldtype": "Table",
+			"label": "Request Limits",
+			"options": "WAF Request Limit"
+		},
+		{
+			"fieldname": "ip_rules_section",
+			"fieldtype": "Section Break",
+			"label": "IP Rules"
+		},
+		{
+			"fieldname": "ip_rules",
+			"fieldtype": "Table",
+			"label": "IP Rules",
+			"options": "WAF IP Rule"
+		},
+		{
+			"fieldname": "custom_rules_section",
+			"fieldtype": "Section Break",
+			"label": "Custom Rules"
+		},
+		{
+			"fieldname": "custom_rules",
+			"fieldtype": "Table",
+			"label": "Custom ModSecurity Rules",
+			"options": "WAF Custom Rule"
+		},
+		{
+			"fieldname": "credentials_section",
+			"fieldtype": "Section Break",
+			"label": "Credentials"
+		},
+		{
+			"description": "Per-site bearer token the Agent uses to push audit log events back to Press.",
+			"fieldname": "waf_log_token",
+			"fieldtype": "Password",
+			"label": "WAF Log Token",
+			"reqd": 1
+		},
+		{
+			"fieldname": "last_synced",
+			"fieldtype": "Datetime",
+			"label": "Last Synced At",
+			"read_only": 1
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-07-13 14:07:49.788059",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "WAF",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Admin",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"export": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Member"
+		}
+	],
+	"row_format": "Dynamic",
+	"search_fields": "site",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
+}

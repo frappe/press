@@ -1039,6 +1039,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
 		)
+		from press.press.doctype.waf.waf import process_waf_job_update
 
 		site_migration = get_ongoing_migration(job.site)
 		if site_migration:
@@ -1167,6 +1168,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_backup_files_from_snapshot_job_callback(job)
 		elif job.job_type == "Refresh Database Usage":
 			process_refresh_database_usage_job_update(job)
+		elif job.job_type in ("Update WAF Configuration", "Disable WAF", "Rotate WAF Log Token"):
+			process_waf_job_update(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":
