@@ -1347,9 +1347,13 @@ class DatabaseServer(BaseServer):
 		frappe.enqueue_doc(self.doctype, self.name, "_enable_database_audit_log", queue="long", timeout=1800)
 
 	def _enable_database_audit_log(self):
-		self.setup_mysql_log_directory()
-		self.load_server_audit_plugin()
-		self.configure_server_audit_plugin()
+		try:
+			self.setup_mysql_log_directory()
+			self.load_server_audit_plugin()
+			self.configure_server_audit_plugin()
+		except Exception:
+			self.stop_billing_unless_logging()
+			raise
 		if not self.reconcile_audit_log_state():
 			frappe.throw(
 				f"MariaDB on {self.name} is not logging after being configured. "
@@ -1444,6 +1448,17 @@ class DatabaseServer(BaseServer):
 				f"MariaDB on {self.name} is still logging. "
 				"Check the MariaDB System Variable Update errors for this server, then disable it again."
 			)
+
+	def stop_billing_unless_logging(self):
+		"""Enable failed, so drop the subscription created for it unless logs are stored.
+
+		The server is asked first in case logging did start, but an unreachable agent must
+		not mask the failure that got us here — the flag was never set, so silence is safe.
+		"""
+		with contextlib.suppress(Exception):
+			self.db_set("is_database_audit_log_enabled", self.is_audit_logging_on_server())
+		self.sync_audit_log_subscription()
+		frappe.db.commit()
 
 	def reconcile_audit_log_state(self) -> bool:
 		"""Point the flag and the subscription at what the server actually reports.
