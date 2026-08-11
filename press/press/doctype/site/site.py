@@ -1412,18 +1412,16 @@ class Site(Document, TagHelpers):
 	def site_action_running(self):
 		return frappe.db.exists("Site Action", {"site": self.name, "status": "Running"})
 
-	def check_move_started(self):
-		"""A move that started must finish before the site can be dropped.
+	def check_move_running(self):
+		"""A move that is on the site right now must finish first.
 
-		Not called from `ready_for_move()`. A move sets its own record to
-		`Pending` before it calls that method, so it would block itself.
+		Only `Running` is checked here. A move sets its own record to `Pending`
+		before it calls this method, so it would block itself.
 		"""
 		for doctype in ("Site Update", "Site Migration"):
-			if name := frappe.db.exists(
-				doctype, {"site": self.name, "status": ("in", ["Pending", "Running"])}
-			):
+			if name := frappe.db.exists(doctype, {"site": self.name, "status": "Running"}):
 				frappe.throw(
-					f"{doctype} {name} has started for this site. Wait for it to finish, then try again."
+					f"{doctype} {name} is running for this site. Wait for it to finish, then try again."
 				)
 
 	def check_move_scheduled(self):
@@ -1441,6 +1439,7 @@ class Site(Document, TagHelpers):
 		elif self.status == "Archived":
 			frappe.throw("The site has already been archived. Cannot move this site.", SiteAlreadyArchived)
 		self.check_move_scheduled()
+		self.check_move_running()
 
 		self.status_before_update = self.status
 		self.status = "Pending"
@@ -1886,8 +1885,7 @@ class Site(Document, TagHelpers):
 	@site_action(["Active", "Broken", "Inactive", "Suspended"])
 	def archive(self, site_name=None, reason=None, force=False, create_offsite_backup=True):
 		agent = Agent(self.server)
-		self.check_move_started()
-		self.cancel_scheduled_moves()
+		self.cancel_moves_that_didnt_reach_the_site()
 		self.ready_for_move()
 		job = agent.archive_site(self, site_name, force, create_offsite_backup)
 		log_site_activity(self.name, "Archive", reason, job.name)
@@ -1907,18 +1905,24 @@ class Site(Document, TagHelpers):
 
 		self.archive_site_database_users()
 
-	def cancel_scheduled_moves(self):
-		"""A drop wins over a move that hasn't started yet."""
+	def cancel_moves_that_didnt_reach_the_site(self):
+		"""A drop wins over a move that is still waiting. `Pending` waits for a job slot."""
+		waiting = {"site": self.name, "status": ("in", ["Scheduled", "Pending"])}
+
 		for action in frappe.get_all("Site Action", {"site": self.name, "status": "Scheduled"}, pluck="name"):
 			frappe.get_doc("Site Action", action).cancel_action()
 
-		for update in frappe.get_all("Site Update", {"site": self.name, "status": "Scheduled"}, pluck="name"):
+		updates = frappe.get_all("Site Update", waiting, pluck="name")
+		for update in updates:
 			frappe.get_doc("Site Update", update).fail_with_notification("the site was dropped")
 
-		for migration in frappe.get_all(
-			"Site Migration", {"site": self.name, "status": "Scheduled"}, pluck="name"
-		):
+		migrations = frappe.get_all("Site Migration", waiting, pluck="name")
+		for migration in migrations:
 			frappe.db.set_value("Site Migration", migration, "status", "Cancelled")
+
+		if (updates or migrations) and self.status_before_update:
+			# A pending move left the site in `Pending`, which `ready_for_move()` rejects
+			self.reset_previous_status()
 
 	@frappe.whitelist()
 	def cleanup_after_archive(self):

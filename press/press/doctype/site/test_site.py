@@ -579,8 +579,8 @@ class TestSite(FrappeTestCase):
 
 		self.assertEqual(frappe.db.get_value("Site Migration", migration.name, "status"), "Cancelled")
 
-	def test_site_cant_be_dropped_while_a_migration_is_pending(self):
-		"""A migration that started is already in the queue, so it must finish first"""
+	def test_drop_cancels_a_pending_migration_and_frees_the_site(self):
+		"""A pending migration only waits for a job slot, and it holds the site in Pending"""
 		site = create_test_site()
 		destination_bench = create_test_bench()
 
@@ -593,6 +593,28 @@ class TestSite(FrappeTestCase):
 			}
 		).insert()
 		frappe.db.set_value("Site Migration", migration.name, "status", "Pending")
+		site.db_set("status_before_update", "Active")
+		site.db_set("status", "Pending")
+		site.reload()
+
+		site.archive()
+
+		self.assertEqual(frappe.db.get_value("Site Migration", migration.name, "status"), "Cancelled")
+
+	def test_site_cant_be_dropped_while_a_migration_runs_on_it(self):
+		"""A running migration is on the site already, so it must finish first"""
+		site = create_test_site()
+		destination_bench = create_test_bench()
+
+		migration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": site.name,
+				"destination_bench": destination_bench.name,
+				"scheduled_time": frappe.utils.add_days(None, 1),
+			}
+		).insert()
+		frappe.db.set_value("Site Migration", migration.name, "status", "Running")
 
 		with self.assertRaises(frappe.ValidationError) as context:
 			site.archive()
