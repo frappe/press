@@ -492,7 +492,7 @@ export default {
 		},
 		migrationChoices() {
 			return Object.keys(this.migrationOptions)
-				.filter((e) => typeof this.migrationOptions[e] === 'object')
+				.filter((e) => typeof this.migrationOptions[e] === 'object' && this.migrationOptions[e]  != null)
 				.map((e) => ({
 					label: e,
 					value: e,
