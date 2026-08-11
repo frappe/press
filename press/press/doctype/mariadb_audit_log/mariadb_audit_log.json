@@ -1,0 +1,108 @@
+{
+	"actions": [],
+	"allow_rename": 1,
+	"creation": "2026-08-11 00:00:00.000000",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"file_name",
+		"database_server",
+		"column_break_kqvd",
+		"start_time",
+		"end_time",
+		"section_break_rmzt",
+		"size_mb",
+		"column_break_hswb",
+		"uncompressed_size_mb",
+		"section_break_ytpc",
+		"remote_file"
+	],
+	"fields": [
+		{
+			"fieldname": "file_name",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "File Name",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "database_server",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Database Server",
+			"options": "Database Server",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{ "fieldname": "column_break_kqvd", "fieldtype": "Column Break" },
+		{
+			"description": "Timestamp of the first record in the file",
+			"fieldname": "start_time",
+			"fieldtype": "Datetime",
+			"in_list_view": 1,
+			"label": "Start Time",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"description": "Timestamp of the last record in the file",
+			"fieldname": "end_time",
+			"fieldtype": "Datetime",
+			"in_list_view": 1,
+			"label": "End Time",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{ "fieldname": "section_break_rmzt", "fieldtype": "Section Break" },
+		{
+			"description": "Compressed size stored in S3. Billing is based on this.",
+			"fieldname": "size_mb",
+			"fieldtype": "Float",
+			"label": "Size (MB)",
+			"reqd": 1
+		},
+		{ "fieldname": "column_break_hswb", "fieldtype": "Column Break" },
+		{
+			"fieldname": "uncompressed_size_mb",
+			"fieldtype": "Float",
+			"label": "Uncompressed Size (MB)"
+		},
+		{ "fieldname": "section_break_ytpc", "fieldtype": "Section Break" },
+		{
+			"fieldname": "remote_file",
+			"fieldtype": "Link",
+			"label": "Remote File",
+			"options": "Remote File",
+			"read_only": 1
+		}
+	],
+	"grid_page_length": 50,
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-08-11 00:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "MariaDB Audit Log",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": []
+}

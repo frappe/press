@@ -785,6 +785,10 @@ export default {
 					updateBinlogRetention: 'update_binlog_retention',
 					updateBinlogSizeLimit: 'update_binlog_size_limit',
 					getBinlogsInfo: 'get_binlogs_info',
+					enableDatabaseAuditLog: 'enable_database_audit_log',
+					disableDatabaseAuditLog: 'disable_database_audit_log',
+					getAuditLogs: 'get_audit_logs',
+					getAuditLogDownloadLink: 'get_audit_log_download_link',
 				},
 			})
 		},

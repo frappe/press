@@ -670,6 +670,10 @@ class Team(Document):
 		for sub in subscriptions:
 			if not sub.plan_type or not sub.plan:
 				continue
+			if sub.plan_type == "S3 Storage Plan":
+				# Metered per GB stored, so there is no fixed amount subscribed to. Adding
+				# the per-GB price here would read as a monthly commitment.
+				continue
 			if sub.plan_type == "Server Storage Plan":
 				total += (frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") or 0) * flt(
 					sub.additional_storage
