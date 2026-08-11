@@ -348,7 +348,11 @@ class AgentJob(Document):
 		if self.job_type == "Update Site Migrate" and frappe.db.exists(
 			"Site Update", {"update_job": self.name, "skipped_backups": 1}
 		):
-			frappe.throw("Can't cancel a site update that was started with backups skipped")
+			frappe.throw(
+				"This site update started with backups skipped. "
+				"Without a backup the site cannot be rolled back to the old bench. "
+				"Wait for the update to finish."
+			)
 
 	def on_trash(self):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
