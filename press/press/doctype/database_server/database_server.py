@@ -19,6 +19,7 @@ from frappe.utils import now_datetime
 from frappe.utils.password import get_decrypted_password
 
 from press.api.client import dashboard_whitelist
+from press.exceptions import MonitorServerDown
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
@@ -256,7 +257,8 @@ class DatabaseServer(BaseServer):
 			# this will be handled via the server doc for unified server
 			self._create_static_ip_log()
 
-		if self.has_value_changed("team"):
+		if self.has_value_changed("team") and not self.is_unified_server:
+			# subscription for unified server is handled via the server doc
 			self.update_subscription()
 
 		if self.public:
@@ -1551,6 +1553,15 @@ class DatabaseServer(BaseServer):
 			deduplicate=True,
 			queue="long",
 		)
+
+	def is_mariadb_up(self) -> bool:
+		"""Whether mysqld_exporter last scraped MariaDB as up; unknown counts as up."""
+		from press.api.server import prometheus_instant_value
+
+		try:
+			return prometheus_instant_value(f"""mysql_up{{instance="{self.name}",job="mariadb"}}""") != 0
+		except MonitorServerDown:
+			return True
 
 	def get_stalks(self):
 		if self.agent.should_skip_requests():
