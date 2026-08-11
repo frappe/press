@@ -1412,16 +1412,18 @@ class Site(Document, TagHelpers):
 	def site_action_running(self):
 		return frappe.db.exists("Site Action", {"site": self.name, "status": "Running"})
 
-	def check_move_running(self):
-		"""A move that touched the site already must finish before the site can move again.
+	def check_move_started(self):
+		"""A move that started must finish before the site can be dropped.
 
-		The other statuses need no check. They all set the site to a transitory
-		status, which `ready_for_move()` rejects.
+		Not called from `ready_for_move()`. A move sets its own record to
+		`Pending` before it calls that method, so it would block itself.
 		"""
 		for doctype in ("Site Update", "Site Migration"):
-			if name := frappe.db.exists(doctype, {"site": self.name, "status": "Running"}):
+			if name := frappe.db.exists(
+				doctype, {"site": self.name, "status": ("in", ["Pending", "Running"])}
+			):
 				frappe.throw(
-					f"{doctype} {name} is running for this site. Wait for it to finish, then try again."
+					f"{doctype} {name} has started for this site. Wait for it to finish, then try again."
 				)
 
 	def check_move_scheduled(self):
@@ -1884,7 +1886,7 @@ class Site(Document, TagHelpers):
 	@site_action(["Active", "Broken", "Inactive", "Suspended"])
 	def archive(self, site_name=None, reason=None, force=False, create_offsite_backup=True):
 		agent = Agent(self.server)
-		self.check_move_running()
+		self.check_move_started()
 		self.cancel_scheduled_moves()
 		self.ready_for_move()
 		job = agent.archive_site(self, site_name, force, create_offsite_backup)
