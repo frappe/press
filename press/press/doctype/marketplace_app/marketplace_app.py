@@ -104,6 +104,16 @@ class MarketplaceApp(WebsiteGenerator):
 		"description",
 	]
 
+	dashboard_insert_fields: ClassVar = [
+		"name",
+		"title",
+		"repository_url",
+		"github_installation_id",
+		"branch",
+		"is_public",
+		"frappe_version",
+	]
+
 	def autoname(self):
 		self.name = self.app
 

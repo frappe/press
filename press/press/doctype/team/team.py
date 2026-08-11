@@ -42,6 +42,10 @@ from .team_members import get_invitations, get_roles
 if TYPE_CHECKING:
 	from press.press.doctype.account_request.account_request import AccountRequest
 
+# Credits a team has to hold before it may buy a server, unless servers have
+# been enabled for it outright. Currencies not listed here are not held to it.
+SERVER_CREDIT_THRESHOLD = {"USD": 200, "INR": 16000}
+
 
 class Team(Document):
 	# begin: auto-generated types
@@ -1323,6 +1327,30 @@ class Team(Document):
 			why = "Cannot create site without an active UPI Autopay mandate"
 
 		return (False, why)
+
+	def validate_can_create_server(self):
+		"""Refuse a server the team is not entitled to buy.
+
+		These are the rules the New Server form checks before it submits, and
+		the form was the only thing checking them — a request sent past it
+		provisioned real machines for a team with no billing address and no
+		credits. Kept identical to the form so nobody who can create a server
+		today is turned away.
+		"""
+		if not self.enabled:
+			frappe.throw("You cannot create a new server because your account is disabled")
+
+		if not self.billing_address:
+			frappe.throw(
+				"You don't have billing details added. Please add billing details from settings to continue."
+			)
+
+		if self.servers_enabled:
+			return
+
+		threshold = SERVER_CREDIT_THRESHOLD.get(self.currency)
+		if threshold and self.get_balance() < threshold:
+			frappe.throw(f"You need to have {threshold} {self.currency} worth of credits to create a server.")
 
 	def can_install_paid_apps(self):
 		if self.free_account or self.billing_team or self.payment_mode:

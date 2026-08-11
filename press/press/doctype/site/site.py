@@ -286,6 +286,18 @@ class Site(Document, TagHelpers):
 	# migrates something — none of them through `set_value`.
 	dashboard_editable_fields = ("skip_auto_updates",)
 
+	dashboard_insert_fields = (
+		"subdomain",
+		"apps",
+		"app_plans",
+		"cluster",
+		"group",
+		"domain",
+		"subscription_plan",
+		"share_details_consent",
+		"server",
+	)
+
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		from frappe.query_builder.functions import Coalesce
