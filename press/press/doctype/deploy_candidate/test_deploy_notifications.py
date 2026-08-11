@@ -61,3 +61,15 @@ class TestCheckIfAppUpdated(FrappeTestCase):
 
 		with self.assertRaises(BuildValidationError):
 			check_if_app_updated(old_build, new_dc)
+
+	def test_escapes_app_title_in_blocked_retry_message(self):
+		deps = {"python": "3.11"}
+		env = {"FOO": "bar"}
+		old_build = make_old_build(make_dc("abc123", deps, env))
+		new_dc = make_dc("abc123", deps, env)
+		new_dc.apps[0].title = "<img src=x onerror=alert(1)>"
+
+		with self.assertRaises(BuildValidationError) as raised:
+			check_if_app_updated(old_build, new_dc)
+
+		self.assertNotIn("<img", str(raised.exception))
