@@ -1402,6 +1402,8 @@ class DatabaseServer(BaseServer):
 		alone because a combined save can order a server_audit_* line above plugin-load-add,
 		which also stops it booting. Restarts MariaDB unless the line is already there.
 		"""
+		# The log directory play took minutes, so this row has moved on
+		self.reload()
 		self.add_or_update_mariadb_variable(
 			"plugin_load_add",
 			"value_str",
@@ -1413,6 +1415,8 @@ class DatabaseServer(BaseServer):
 		)
 
 	def configure_server_audit_plugin(self):
+		# Loading the plugin restarted MariaDB, so this row has moved on
+		self.reload()
 		for variable, value_type, value in self.server_audit_variables:
 			self.add_or_update_mariadb_variable(variable, value_type, value, persist=True, save=False)
 		self.flags.update_mariadb_system_variables_synchronously = True
