@@ -1349,6 +1349,8 @@ class DatabaseServer(BaseServer):
 	def _enable_database_audit_log(self):
 		"""Reconciling inside the try keeps a failure from leaving billing on."""
 		try:
+			# Don't let two transitions drive MariaDB at once
+			frappe.get_value(self.doctype, self.name, "status", for_update=True)
 			self.setup_mysql_log_directory()
 			self.load_server_audit_plugin()
 			self.configure_server_audit_plugin()
@@ -1374,6 +1376,8 @@ class DatabaseServer(BaseServer):
 
 	def _update_database_audit_log(self):
 		"""server_audit_events is dynamic, so the new mode applies without a restart."""
+		# Don't let two transitions drive MariaDB at once
+		frappe.get_value(self.doctype, self.name, "status", for_update=True)
 		self.configure_server_audit_plugin()
 		if not self.reconcile_audit_log_state():
 			frappe.throw(f"MariaDB on {self.name} stopped logging while its capture mode was changed.")
@@ -1459,6 +1463,8 @@ class DatabaseServer(BaseServer):
 		# plugin_load_add is left alone: add_or_update_mariadb_variable has no removal path,
 		# and a loaded plugin with logging off writes nothing.
 		try:
+			# Don't let two transitions drive MariaDB at once
+			frappe.get_value(self.doctype, self.name, "status", for_update=True)
 			self.add_or_update_mariadb_variable(
 				"server_audit_logging",
 				"value_str",
