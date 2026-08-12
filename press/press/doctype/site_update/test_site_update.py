@@ -940,3 +940,58 @@ class TestSiteUpdate(FrappeTestCase):
 			"too large to update without a physical backup",
 			site_update.validate_backup_type_for_large_database,
 		)
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestSkipBackupsPermission(FrappeTestCase):
+	"""Only teams allowed to skip backups may do so for sites on a public bench."""
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _create_updatable_site(self, public_group: bool) -> Site:
+		group = create_test_release_group([create_test_app()], public=public_group)
+		bench = create_test_bench(group=group)
+		destination_bench = create_test_bench(group=group, server=bench.server)
+		create_test_deploy_candidate_differences(destination_bench.candidate)
+		return create_test_site(bench=bench.name)
+
+	def test_site_on_private_bench_can_skip_backups(self):
+		site = self._create_updatable_site(public_group=False)
+
+		self.assertTrue(site.can_skip_backups)
+		self.assertTrue(site.schedule_update(skip_backups=True))
+
+	def test_site_on_public_bench_cannot_skip_backups_by_default(self):
+		site = self._create_updatable_site(public_group=True)
+
+		self.assertFalse(site.can_skip_backups)
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Backups can't be skipped for sites on a public bench",
+			site.schedule_update,
+			skip_backups=True,
+		)
+		self.assertFalse(frappe.db.exists("Site Update", {"site": site.name}))
+
+	def test_site_on_public_bench_can_skip_backups_when_team_is_allowed(self):
+		site = self._create_updatable_site(public_group=True)
+		frappe.db.set_value("Team", site.team, "skip_backups", 1)
+
+		self.assertTrue(site.can_skip_backups)
+		site_update = site.schedule_update(skip_backups=True)
+
+		self.assertTrue(frappe.db.get_value("Site Update", site_update, "skipped_backups"))
+
+	def test_scheduled_update_on_public_bench_cannot_be_edited_to_skip_backups(self):
+		site = self._create_updatable_site(public_group=True)
+		site_update = site.schedule_update()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Backups can't be skipped for sites on a public bench",
+			site.edit_scheduled_update,
+			name=site_update,
+			skip_backups=True,
+		)
+		self.assertFalse(frappe.db.get_value("Site Update", site_update, "skipped_backups"))

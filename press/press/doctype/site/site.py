@@ -392,6 +392,7 @@ class Site(Document, TagHelpers):
 		doc.version = group.version
 		doc.group_team = group.team
 		doc.group_public = group.public or group.central_bench
+		doc.can_skip_backups = self.can_skip_backups
 		doc.latest_frappe_version = frappe.db.get_value(
 			"Frappe Version", {"status": "Stable", "public": True}, order_by="name desc"
 		)
@@ -1510,6 +1511,7 @@ class Site(Document, TagHelpers):
 		scheduled_time: str | None = None,
 	):
 		log_site_activity(self.name, "Update")
+		self.validate_skipping_backups(skip_backups)
 
 		doc = frappe.get_doc(
 			{
@@ -1532,12 +1534,21 @@ class Site(Document, TagHelpers):
 		skip_backups: bool = False,
 		scheduled_time: str | None = None,
 	):
+		self.validate_skipping_backups(skip_backups)
+
 		doc = frappe.get_doc("Site Update", name)
 		doc.skipped_failing_patches = skip_failing_patches
 		doc.skipped_backups = skip_backups
 		doc.scheduled_time = scheduled_time
 		doc.save()
 		return doc.name
+
+	def validate_skipping_backups(self, skip_backups: bool):
+		if not skip_backups or self.can_skip_backups:
+			return
+		frappe.throw(
+			"Backups can't be skipped for sites on a public bench. Please contact support to allow your team to skip them."
+		)
 
 	@dashboard_whitelist()
 	def cancel_scheduled_update(self, site_update: str):
@@ -3728,6 +3739,16 @@ class Site(Document, TagHelpers):
 	@cached_property
 	def is_group_public(self):
 		return bool(frappe.get_cached_value("Release Group", self.group, "public"))
+
+	@property
+	def can_skip_backups(self) -> bool:
+		"""Sites on a public bench can skip backups only if their team is allowed to."""
+		group = frappe.get_cached_value(
+			"Release Group", self.group, ["public", "central_bench"], as_dict=True
+		)
+		if not (group.public or group.central_bench):
+			return True
+		return bool(frappe.db.get_value("Team", self.team, "skip_backups"))
 
 	@dashboard_whitelist()
 	@redis_cache(ttl=60)

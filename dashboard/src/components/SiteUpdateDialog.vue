@@ -24,7 +24,7 @@
 							label="Skip taking backup for this update"
 							type="checkbox"
 							v-model="skipBackups"
-							v-if="!$site.doc.group_public"
+							v-if="$site.doc.can_skip_backups"
 						/>
 						<div
 							class="flex items-center rounded border border-outline-gray-1 bg-surface-gray-2 p-4 text-sm text-ink-gray-6"
