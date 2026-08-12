@@ -628,6 +628,10 @@ class LetsEncrypt(BaseCA):
 				}
 			)
 
+		if domain.aws_region:
+			environment["AWS_DEFAULT_REGION"] = domain.aws_region
+
+		self.run(self._certbot_command(), environment=environment)
 
 	def _obtain_naked(self):
 		if not os.path.exists(self.webroot_directory):
