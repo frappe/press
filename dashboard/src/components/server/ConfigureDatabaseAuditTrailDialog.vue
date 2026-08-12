@@ -22,8 +22,8 @@
 					description="Log every connection and query of this database"
 				/>
 
-				<p v-if="isPending" class="text-ink-gray-6 text-p-sm">
-					MariaDB is still catching up with your last change.
+				<p v-if="pendingMessage" class="text-ink-gray-6 text-p-sm">
+					{{ pendingMessage }}
 				</p>
 
 				<template v-if="enabled">
@@ -118,10 +118,13 @@ export default {
 				this.server.doc?.database_audit_log_status,
 			)
 		},
-		isPending() {
-			return ['Enabling', 'Disabling'].includes(
-				this.server.doc?.database_audit_log_status,
-			)
+		pendingMessage() {
+			const status = this.server.doc?.database_audit_log_status
+			if (status === 'Enabling')
+				return 'Audit logging is being set up on MariaDB. This takes a few minutes.'
+			if (status === 'Disabling')
+				return 'Audit logging is being stopped on MariaDB. This takes a few minutes.'
+			return null
 		},
 		captureReads() {
 			return this.captureMode === 'read-write'
