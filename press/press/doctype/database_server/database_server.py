@@ -447,7 +447,7 @@ class DatabaseServer(BaseServer):
 			{
 				"action": "Configure Database Audit Trail",
 				"description": "Record connections and queries for compliance",
-				"button_label": "Configure",
+				"button_label": "Update",
 				"condition": self.status == "Active",
 				"doc_method": "configure_database_audit_log",
 				"group": f"{server_type.title()} Actions",
@@ -3017,14 +3017,19 @@ def upload_audit_logs_to_s3():
 		pluck="name",
 	)
 	for database in databases:
-		frappe.enqueue_doc(
-			"Database Server",
-			database,
-			"_upload_audit_logs_to_s3",
-			job_id=f"upload_audit_logs_to_s3:{database}",
-			deduplicate=True,
-			queue="sync",
-		)
+		if has_job_timeout_exceeded():
+			return
+
+		try:
+			doc = frappe.get_doc("Database Server", database)
+			doc._upload_audit_logs_to_s3()
+		except rq.timeouts.JobTimeoutException:
+			frappe.db.rollback()
+			return
+		except Exception:
+			frappe.db.rollback()
+			log_error("Failed to upload audit logs to s3", server=database)
+			continue
 
 
 def delete_mariadb_binlog_for_archived_servers():

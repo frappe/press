@@ -265,6 +265,7 @@ scheduler_events = {
 		"press.press.doctype.incident_settings.incident_settings.alert_if_phone_call_alerts_disabled",
 		"press.press.doctype.server.server.sync_wazuh_agent_status",
 		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",
+		"press.press.doctype.database_server.database_server.upload_audit_logs_to_s3",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -336,7 +337,6 @@ scheduler_events = {
 		],
 		"0 */2 * * *": [
 			"press.signup_e2e.run_signup_e2e",
-			"press.press.doctype.database_server.database_server.upload_audit_logs_to_s3",
 		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
