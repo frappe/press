@@ -33,10 +33,10 @@ class RootDomain(Document):
 		aws_access_key_id: DF.Data | None
 		aws_region: DF.Data | None
 		aws_secret_access_key: DF.Password | None
-		cloud_flare_api_key: DF.Password | None
+		cloudflare_api_key: DF.Password | None
 		default_cluster: DF.Link
 		default_proxy_server: DF.Link | None
-		dns_provider: DF.Literal["AWS Route 53", "Cloud Flare", "Generic"]
+		dns_provider: DF.Literal["AWS Route 53", "Cloudflare", "Generic"]
 		enabled: DF.Check
 		team: DF.Link | None
 	# end: auto-generated types
@@ -89,7 +89,7 @@ class RootDomain(Document):
 	def cloudflare_client(self):
 		if not hasattr(self, "_cloudflare_client"):
 			self._cloudflare_client = Cloudflare(
-				token=self.get_password("cloud_flare_api_key")
+				token=self.get_password("cloudflare_api_key")
 			)
 
 		return self._cloudflare_client

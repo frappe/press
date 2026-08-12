@@ -597,10 +597,10 @@ class LetsEncrypt(BaseCA):
 			if(domain.dns_provider == 'AWS Route 53'):
 				plugin = "--dns-route53"
 
-			if(domain.dns_provider == 'Cloud Flare'):
+			if(domain.dns_provider == 'Cloudflare'):
 				cloudflare_creds = os.path.join(self.directory, "cloudflare.ini")
 				with open(cloudflare_creds, "w") as f:
-					f.write(f"dns_cloudflare_api_token = {domain.get_password('cloud_flare_api_key')}")
+					f.write(f"dns_cloudflare_api_token = {domain.get_password('cloudflare_api_key')}")
 				os.chmod(cloudflare_creds, 0o600)
 				plugin = f"--dns-cloudflare --dns-cloudflare-credentials {cloudflare_creds}"
 		else:
