@@ -128,7 +128,7 @@ export default {
 			)
 		},
 		successMessage() {
-			// Only retention skips MariaDB, so only retention takes effect right away
+			// Only retention skips MariaDB, so only retention is immediate
 			if (!this.enabled)
 				return 'Audit logging will stop once MariaDB is updated, in a few minutes'
 			if (!this.isEnabled)
@@ -176,8 +176,7 @@ export default {
 			)
 		},
 		showRequestedState() {
-			// Reopening the dialog shows what was asked for. The flag itself only flips
-			// when MariaDB confirms, so a reload here would put the old switch back.
+			// The flag only flips when MariaDB confirms, so a reload would show the old state
 			const doc = this.server.doc
 			doc.is_database_audit_log_enabled = Number(this.enabled)
 			doc.database_audit_log_capture_reads = Number(this.captureReads)
