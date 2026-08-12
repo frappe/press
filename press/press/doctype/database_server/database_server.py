@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 # Not the datadir: the agent runs as frappe and has to unlink these, and a directory
 # under /var/lib/mysql would show up as a database. Kept in sync with the agent.
 AUDIT_LOG_PATH = "/var/log/mysql/server_audit.log"
-# Smaller files rotate and upload sooner, so less of the trail sits only on the server
+# Smaller files reach S3 sooner
 AUDIT_LOG_ROTATE_SIZE_MB = 100
 
 
@@ -1335,15 +1335,14 @@ class DatabaseServer(BaseServer):
 	def enable_database_audit_log(self, capture_reads: bool, retention_days: int):
 		# Fail here rather than in the background, where the operator wouldn't see it
 		self.create_audit_log_subscription()
-		# The plugin is configured from these two, so they're saved before it is. The flag
-		# isn't: reconcile_audit_log_state sets it once the server confirms it's logging.
+		# The plugin is configured from these two, so they're saved first
 		self.database_audit_log_capture_reads = cint(capture_reads)
 		self.audit_log_retention_days = cint(retention_days)
 		self.save(ignore_permissions=True)
 		frappe.enqueue_doc(self.doctype, self.name, "_enable_database_audit_log", queue="long", timeout=1800)
 
 	def _enable_database_audit_log(self):
-		"""Reconciliation is inside the try: an unreachable agent must not leave billing on."""
+		"""Reconciling inside the try keeps a failure from leaving billing on."""
 		try:
 			self.setup_mysql_log_directory()
 			self.load_server_audit_plugin()
@@ -1369,12 +1368,15 @@ class DatabaseServer(BaseServer):
 			)
 
 	def _update_database_audit_log(self):
-		"""Every server_audit_* option is dynamic, so the new mode applies without a restart."""
+		"""server_audit_events is dynamic, so the new mode applies without a restart."""
+		requested = self.database_audit_log_capture_reads
 		self.configure_server_audit_plugin()
 		if not self.reconcile_audit_log_state():
+			frappe.throw(f"MariaDB on {self.name} stopped logging while its capture mode was changed.")
+		if self.database_audit_log_capture_reads != requested:
 			frappe.throw(
-				f"MariaDB on {self.name} stopped logging while its capture mode was changed. "
-				"Check the MariaDB System Variable Update errors for this server, then enable it again."
+				f"MariaDB on {self.name} kept its old capture mode. "
+				"Check the MariaDB System Variable Update errors for this server."
 			)
 
 	def setup_mysql_log_directory(self):
@@ -1389,17 +1391,12 @@ class DatabaseServer(BaseServer):
 			frappe.throw("Couldn't set up /var/log/mysql. Audit logging is not configured on this server.")
 
 	def load_server_audit_plugin(self):
-		"""Load the audit plugin from frappe.cnf.
+		"""Load the plugin from frappe.cnf, in its own save.
 
-		It has to be loaded from the config file rather than with INSTALL SONAME: MariaDB
-		reads mysql.plugin only after parsing the config, so the server_audit_* options
-		would be unknown at startup and the server would refuse to boot.
-
-		Set in its own save, before configure_server_audit_plugin, because
-		get_variables_to_update returns changed rows ahead of added ones — in a single save
-		a server_audit_* line could be written above plugin-load-add in frappe.cnf, and
-		MariaDB would then fail to start. plugin_load_add isn't dynamic, so this restarts
-		MariaDB; skipped when already present.
+		INSTALL SONAME won't do: mysql.plugin is read after the config, so the
+		server_audit_* options would be unknown at startup and MariaDB wouldn't boot. Saved
+		alone because a combined save can order a server_audit_* line above plugin-load-add,
+		which also stops it booting. Restarts MariaDB unless the line is already there.
 		"""
 		self.add_or_update_mariadb_variable(
 			"plugin_load_add",
@@ -1437,10 +1434,7 @@ class DatabaseServer(BaseServer):
 
 	@property
 	def audit_log_max_rotations(self) -> int:
-		"""The plugin keeps the live log plus this many rotations, each AUDIT_LOG_ROTATE_SIZE_MB.
-
-		Capped at 999, which is all the plugin accepts.
-		"""
+		"""Enough rotations to fill the disk allowance. 999 is the plugin's limit."""
 		files = (self.database_audit_log_max_disk_gb or 25) * 1024 // AUDIT_LOG_ROTATE_SIZE_MB
 		return min(max(1, files - 1), 999)
 
@@ -1470,36 +1464,36 @@ class DatabaseServer(BaseServer):
 			)
 
 	def stop_billing_unless_logging(self):
-		"""Enable failed, so drop the subscription created for it unless logs are stored.
-
-		The server is asked first in case logging did start, but an unreachable agent must
-		not mask the failure that got us here — the flag was never set, so silence is safe.
-		"""
+		"""Enable failed, so drop the subscription it created unless logs are stored."""
 		try:
 			self.db_set("is_database_audit_log_enabled", self.is_audit_logging_on_server())
 		except Exception:
-			# MariaDB may have started logging just before the agent went away. Billing
-			# stops either way and the next enable reconciles it, so this is only recorded.
+			# Logging may have started before the agent went away. The next enable reconciles it
 			log_error("Audit log state unknown after a failed enable", server=self.name)
 		self.sync_audit_log_subscription()
 		frappe.db.commit()
 
 	def reconcile_audit_log_state(self) -> bool:
-		"""Point the flag and the subscription at what the server actually reports.
+		"""Point the flag, the mode and the subscription at what the server reports.
 
-		A failed variable update only logs an error — update_on_server doesn't raise — so
-		asking MariaDB is the only way to know whether the change landed.
+		A failed variable update only logs an error, so asking MariaDB is the only way to
+		know whether the change landed.
 		"""
-		enabled = self.is_audit_logging_on_server()
+		variables = self.audit_variables_on_server()
+		enabled = variables.get("server_audit_logging") == "ON"
 		self.db_set("is_database_audit_log_enabled", enabled)
+		if events := variables.get("server_audit_events"):
+			self.db_set("database_audit_log_capture_reads", cint("QUERY_DML" in events.split(",")))
 		self.sync_audit_log_subscription()
 		frappe.db.commit()
 		return enabled
 
 	def is_audit_logging_on_server(self) -> bool:
+		return self.audit_variables_on_server().get("server_audit_logging") == "ON"
+
+	def audit_variables_on_server(self) -> dict[str, str]:
 		variables = self.agent.fetch_database_variables() or []
-		logging = find(variables, lambda v: v.get("Variable_name") == "server_audit_logging")
-		return bool(logging) and logging["Value"] == "ON"
+		return {variable["Variable_name"]: variable["Value"] for variable in variables}
 
 	@property
 	def audit_log_subscription(self) -> str | None:
@@ -1518,7 +1512,7 @@ class DatabaseServer(BaseServer):
 			frappe.db.set_value("Subscription", self.audit_log_subscription, "enabled", 1)
 			return
 
-		# Named, not just any enabled S3 plan: Subscription bills this one per GB of stored log
+		# Named, not any enabled S3 plan: Subscription bills this one per GB stored
 		if not frappe.db.exists("S3 Storage Plan", {"name": AUDIT_LOG_STORAGE_PLAN, "enabled": 1}):
 			frappe.throw(f"{AUDIT_LOG_STORAGE_PLAN} is not enabled. Audit log storage can't be billed.")
 
