@@ -1348,7 +1348,6 @@ def fail_remote_job(dn: str) -> bool:
 # failures (network timeouts, apt lock contention, etc.).
 CACHE_FAILURE_MARKERS = (
 	"failed to compute cache key",
-	"--mount=type=cache",
 )
 
 
