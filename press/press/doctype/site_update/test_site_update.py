@@ -179,7 +179,7 @@ class TestSiteUpdate(FrappeTestCase):
 		self.assertGreater(bench2.background_workers, 1)
 
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_failed_pull_recovery_marks_update_fatal_but_not_the_site(self):
+	def test_failed_pull_before_move_site_marks_update_fatal_but_not_the_site(self):
 		app1 = create_test_app()  # frappe
 		app2 = create_test_app("app2", "App 2")
 		app3 = create_test_app("app3", "App 3")
@@ -199,7 +199,15 @@ class TestSiteUpdate(FrappeTestCase):
 
 		with fake_agent_job(
 			{
-				"Update Site Pull": {"status": "Failure"},
+				"Update Site Pull": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Enable Maintenance Mode", "status": "Success"},
+						{"name": "Wait for Enqueued Jobs", "status": "Failure"},
+						{"name": "Move Site", "status": "Pending"},
+						{"name": "Disable Maintenance Mode", "status": "Pending"},
+					],
+				},
 				"Recover Failed Site Update": {"status": "Failure"},
 			}
 		):
@@ -214,7 +222,35 @@ class TestSiteUpdate(FrappeTestCase):
 		)
 		self.assertIsNone(
 			frappe.get_value("Site", site.name, "fatal_site_update"),
-			"A Pull update never touches site data, so the site should not be marked fatal",
+			"The site never moved, so it should not be marked fatal",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_failed_pull_at_move_site_marks_site_fatal(self):
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		site = create_test_site(bench=bench1.name)
+
+		with fake_agent_job(
+			{
+				"Update Site Pull": {
+					"status": "Failure",
+					"steps": [{"name": "Move Site", "status": "Failure"}],
+				},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		self.assertEqual(
+			frappe.get_value("Site", site.name, "fatal_site_update"),
+			site_update,
+			"A failed move leaves the site half-moved, so it should be marked fatal",
 		)
 
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)

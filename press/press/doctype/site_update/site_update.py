@@ -44,8 +44,9 @@ LARGE_DATABASE_SIZE_MB = 100 * 1024
 # Well below LARGE_DATABASE_SIZE_MB above, which gates a different thing — read both.
 STATEMENT_TIME_BUMP_SIZE_MB = 2 * 1024
 
-# The step in "Update Site Migrate" after which the site's data can change.
-BACKUP_STEP = "Backup Site Tables"
+# Once an update job reaches one of these, it can leave the site changed: the backup opens
+# the database, and the move puts the site on the destination bench.
+POINT_OF_NO_RETURN_STEPS = ("Backup Site Tables", "Move Site")
 
 
 class SiteUpdate(Document):
@@ -220,25 +221,21 @@ class SiteUpdate(Document):
 		return self.backup_type == "Logical Replication" and not self.skipped_backups
 
 	def should_mark_site_fatal(self) -> bool:
-		"""Only a migration that got past the backup can leave the site's data inconsistent.
+		"""An update that failed before it backed up or moved the site left nothing to resolve.
 
-		A Pull update never touches data, and a Migrate that failed before the backup step
-		never ran the migration, so there is nothing for an operator to resolve. Go by the
-		position of the failed step: a failure marks every later step Skipped, which is also
-		what a physical backup does to the backup step, so the status can't tell them apart.
+		Go by the position of the failed step, not its status: a failed job marks every later
+		step Skipped, which is also what a physical backup does to the backup step.
 		"""
-		if self.deploy_type != "Migrate":
-			return False
 		steps = frappe.get_all(
 			"Agent Job Step",
 			filters={"agent_job": self.update_job},
 			fields=["step_name", "status"],
 			order_by="creation asc",
 		)
-		if not any(step.step_name == BACKUP_STEP for step in steps):
-			return True  # Backup step gone or renamed — assume the migration ran
+		if not any(step.step_name in POINT_OF_NO_RETURN_STEPS for step in steps):
+			return True  # Steps gone or renamed — assume the update got far enough
 		for step in steps:
-			if step.step_name == BACKUP_STEP:
+			if step.step_name in POINT_OF_NO_RETURN_STEPS:
 				return True
 			if step.status == "Failure":
 				return False
