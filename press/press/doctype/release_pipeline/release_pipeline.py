@@ -53,24 +53,30 @@ class BenchInfo(TypedDict):
 	status: str
 
 
-def _resolve_dependent_app(app: str, supported_frappe_version: set[str]) -> tuple[AppSource, AppRelease]:
-	"""Resolve app source and latest release for a dependent app."""
-	if not frappe.db.exists("App", app):
-		raise ReleasePipelineFailure(
-			f"Dependent app {app} does not exist in the system. "
-			"Please add this app to your bench group first."
+def _get_trusted_app_source(app: str, supported_frappe_version: set[str], team: str) -> AppSource | None:
+	"""Any other app source just happens to share the name of the dependency."""
+	for filters in ({"repository_owner": "frappe"}, {"team": team}):
+		app_source = get_app_source_from_supported_versions(
+			app=app,
+			supported_versions=supported_frappe_version,
+			filters=filters,
 		)
+		if app_source:
+			return app_source
 
-	app_source = get_app_source_from_supported_versions(
-		app=app,
-		supported_versions=supported_frappe_version,
-	)
+	return None
+
+
+def _resolve_dependent_app(
+	app: str, supported_frappe_version: set[str], team: str
+) -> tuple[AppSource, AppRelease] | None:
+	"""Returns None when no trusted app source exists, the dependency is then left out of the deploy."""
+	if not frappe.db.exists("App", app):
+		return None
+
+	app_source = _get_trusted_app_source(app, supported_frappe_version, team)
 	if not app_source:
-		raise ReleasePipelineFailure(
-			f"Unable to find an app source for dependent app {app} "
-			f"with supported versions {supported_frappe_version}. "
-			"Please add this app to your bench group."
-		)
+		return None
 
 	app_release = get_latest_release_of_app_from_source(app_source)
 	if not app_release:
@@ -545,10 +551,15 @@ class ReleasePipeline(WorkflowBuilder):
 			if app in release_group_apps:
 				continue
 
-			app_source, app_release = _resolve_dependent_app(
+			resolved_app = _resolve_dependent_app(
 				app,
 				parsed_supported_frappe_version,
+				self.team,
 			)
+			if not resolved_app:
+				continue
+
+			app_source, app_release = resolved_app
 			deploy_candidate.append(
 				"apps",
 				{

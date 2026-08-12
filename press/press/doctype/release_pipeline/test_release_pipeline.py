@@ -25,6 +25,7 @@ from press.press.doctype.release_pipeline.release_pipeline import (
 	_resolve_python_version_conflicts_and_update_group,
 )
 from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.team.test_team import create_test_team
 from press.utils import get_current_team
 
 
@@ -293,18 +294,17 @@ class TestReleasePipeline(FrappeTestCase):
 			ease_versioning_constrains=False,
 		)
 		app, _ = next(iter(app_dependencies.items()))
+		team = get_current_team()
 
 		# No App doc yet
-		with self.assertRaises(ReleasePipelineFailure):
-			_resolve_dependent_app(app, parsed_frappe_version)
+		self.assertIsNone(_resolve_dependent_app(app, parsed_frappe_version, team))
 
 		dependency_app = frappe.get_doc(
 			{"doctype": "App", "title": "Telephony", "frappe": 1, "name": "telephony"}
 		).insert()
 
 		# App exists, but no matching app source yet
-		with self.assertRaises(ReleasePipelineFailure):
-			_resolve_dependent_app(app, parsed_frappe_version)
+		self.assertIsNone(_resolve_dependent_app(app, parsed_frappe_version, team))
 
 		create_test_app_source(
 			app=dependency_app,
@@ -326,12 +326,69 @@ class TestReleasePipeline(FrappeTestCase):
 			hash=correct_hash,
 		)
 
-		resolved_source, resolved_release = _resolve_dependent_app(app, parsed_frappe_version)
+		resolved_source, resolved_release = _resolve_dependent_app(app, parsed_frappe_version, team)
 
 		self.assertEqual(resolved_source.name, correct_source.name)
 		self.assertEqual(resolved_source.app, "telephony")
 		self.assertEqual(resolved_release.name, correct_release.name)
 		self.assertEqual(resolved_release.hash, correct_hash)
+
+	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
+	def test_implicit_dependency_is_skipped_when_no_frappe_or_same_team_source_exists(self):
+		parsed_frappe_version = parse_frappe_version(
+			version_string=">=14.0.0,<17.0.0",
+			app_title="frappe",
+			ease_versioning_constrains=False,
+		)
+		dependency_app = frappe.get_doc(
+			{"doctype": "App", "title": "Telephony", "frappe": 1, "name": "telephony"}
+		).insert()
+
+		other_team = create_test_team().name
+		create_test_app_source(
+			app=dependency_app,
+			version="Version 16",
+			repository_url="https://github.com/someone-else/telephony",
+			branch="main",
+			team=other_team,
+		)
+
+		self.assertIsNone(_resolve_dependent_app("telephony", parsed_frappe_version, get_current_team()))
+
+	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
+	def test_implicit_dependency_falls_back_to_same_team_source(self):
+		parsed_frappe_version = parse_frappe_version(
+			version_string=">=14.0.0,<17.0.0",
+			app_title="frappe",
+			ease_versioning_constrains=False,
+		)
+		dependency_app = frappe.get_doc(
+			{"doctype": "App", "title": "Telephony", "frappe": 1, "name": "telephony"}
+		).insert()
+
+		other_team = create_test_team().name
+		create_test_app_source(
+			app=dependency_app,
+			version="Version 16",
+			repository_url="https://github.com/someone-else/telephony",
+			branch="main",
+			team=other_team,
+		)
+
+		team = get_current_team()
+		own_source = create_test_app_source(
+			app=dependency_app,
+			version="Version 16",
+			repository_url="https://github.com/my-org/telephony",
+			branch="main",
+			team=team,
+		)
+		own_release = create_test_app_release(app_source=own_source, hash=frappe.mock("sha1"))
+
+		resolved_source, resolved_release = _resolve_dependent_app("telephony", parsed_frappe_version, team)
+
+		self.assertEqual(resolved_source.name, own_source.name)
+		self.assertEqual(resolved_release.name, own_release.name)
 
 	@classmethod
 	def tearDownClass(cls):
