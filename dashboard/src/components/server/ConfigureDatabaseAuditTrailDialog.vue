@@ -22,6 +22,10 @@
 					description="Log every connection and query of this database"
 				/>
 
+				<p v-if="isPending" class="text-ink-gray-6 text-p-sm">
+					MariaDB is still catching up with your last change.
+				</p>
+
 				<template v-if="enabled">
 					<FormControl
 						v-model="captureMode"
@@ -78,7 +82,9 @@ export default {
 	data() {
 		return {
 			show: true,
-			enabled: Boolean(this.server.doc?.is_database_audit_log_enabled),
+			enabled: ['Enabled', 'Enabling'].includes(
+				this.server.doc?.database_audit_log_status,
+			),
 			captureMode: this.server.doc?.database_audit_log_capture_reads
 				? 'read-write'
 				: 'write',
@@ -108,7 +114,14 @@ export default {
 	},
 	computed: {
 		isEnabled() {
-			return Boolean(this.server.doc?.is_database_audit_log_enabled)
+			return ['Enabled', 'Enabling'].includes(
+				this.server.doc?.database_audit_log_status,
+			)
+		},
+		isPending() {
+			return ['Enabling', 'Disabling'].includes(
+				this.server.doc?.database_audit_log_status,
+			)
 		},
 		captureReads() {
 			return this.captureMode === 'read-write'
@@ -164,7 +177,7 @@ export default {
 					{
 						onSuccess: () => {
 							this.show = false
-							this.showRequestedState()
+							this.server.reload()
 						},
 					},
 				),
@@ -174,13 +187,6 @@ export default {
 					error: (e) => getToastErrorMessage(e),
 				},
 			)
-		},
-		showRequestedState() {
-			// The flag only flips when MariaDB confirms, so a reload would show the old state
-			const doc = this.server.doc
-			doc.is_database_audit_log_enabled = Number(this.enabled)
-			doc.database_audit_log_capture_reads = Number(this.captureReads)
-			doc.audit_log_retention_days = this.retentionDays
 		},
 	},
 }

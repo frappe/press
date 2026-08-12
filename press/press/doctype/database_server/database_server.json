@@ -122,6 +122,7 @@
 		"uploaded_binlogs_retention_days",
 		"database_audit_log_tab",
 		"is_database_audit_log_enabled",
+		"database_audit_log_status",
 		"database_audit_log_capture_reads",
 		"column_break_wxts",
 		"database_audit_log_max_disk_gb",
@@ -798,6 +799,15 @@
 			"fieldname": "is_database_audit_log_enabled",
 			"fieldtype": "Check",
 			"label": "Is Database Audit Log Enabled"
+		},
+		{
+			"default": "Disabled",
+			"description": "What was asked for. The check above is what MariaDB reports, and is what bills.",
+			"fieldname": "database_audit_log_status",
+			"fieldtype": "Select",
+			"label": "Database Audit Log Status",
+			"options": "Disabled\nEnabling\nEnabled\nDisabling",
+			"read_only": 1
 		},
 		{
 			"default": "0",
