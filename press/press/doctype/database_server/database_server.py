@@ -1357,18 +1357,19 @@ class DatabaseServer(BaseServer):
 		frappe.enqueue_doc(self.doctype, self.name, "_enable_database_audit_log", queue="long", timeout=1800)
 
 	def _enable_database_audit_log(self):
+		"""Reconciliation is inside the try: an unreachable agent must not leave billing on."""
 		try:
 			self.setup_mysql_log_directory()
 			self.load_server_audit_plugin()
 			self.configure_server_audit_plugin()
+			if not self.reconcile_audit_log_state():
+				frappe.throw(
+					f"MariaDB on {self.name} is not logging after being configured. "
+					"Check the MariaDB System Variable Update errors for this server, then enable it again."
+				)
 		except Exception:
 			self.stop_billing_unless_logging()
 			raise
-		if not self.reconcile_audit_log_state():
-			frappe.throw(
-				f"MariaDB on {self.name} is not logging after being configured. "
-				"Check the MariaDB System Variable Update errors for this server, then enable it again."
-			)
 
 	def update_database_audit_log(self, capture_reads: bool, retention_days: int):
 		"""Retention is only read by the cleanup job, so only a mode change reaches MariaDB."""
