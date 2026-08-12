@@ -90,7 +90,6 @@ jinja = {
 
 # before_install = "press.install.before_install"
 after_install = "press.install.after_install"
-after_migrate = ["press.api.account.clear_country_list_cache", "press.sanity.checks"]
 
 # Desk Notifications
 # ------------------
@@ -182,6 +181,10 @@ doc_events = {
 		],
 	},
 	"Address": {"validate": "press.api.billing.validate_gst"},
+	"Country": {
+		"on_update": "press.api.account.clear_country_list_cache",
+		"on_trash": "press.api.account.clear_country_list_cache",
+	},
 	"Site": {
 		"before_insert": "press.press.doctype.team.team.validate_site_creation",
 		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
@@ -548,4 +551,8 @@ persistent_cache_keys = [
 ]
 
 before_migrate = ["press.overrides.before_after_migrate"]
-after_migrate = ["press.overrides.before_after_migrate"]
+after_migrate = [
+	"press.overrides.before_after_migrate",
+	"press.api.account.clear_country_list_cache",
+	"press.sanity.checks",
+]

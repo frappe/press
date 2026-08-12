@@ -513,30 +513,38 @@ def validate_request_key(key, timezone=None):
 
 @frappe.whitelist()
 def get_countries_with_isd_codes():
-	"""Get list of countries with their ISD codes from Frappe's country_info."""
-	import phonenumbers
-	from frappe.geo.country_info import get_all as get_country_data
+	return frappe.cache().get_value("countries_with_isd_codes", generator=build_countries_with_isd_codes)
 
-	country_data = get_country_data()
-	countries = []
-	for name, info in country_data.items():
-		code = info.get("code", "")
-		example = ""
-		if code:
-			try:
-				num = phonenumbers.example_number_for_type(code.upper(), phonenumbers.PhoneNumberType.MOBILE)
-				example = phonenumbers.national_significant_number(num)
-			except Exception:
-				pass
-		countries.append(
-			{
-				"name": name,
-				"code": code,
-				"isd": info.get("isd", ""),
-				"example": example,
-			}
+
+def build_countries_with_isd_codes():
+	from press.utils.country import get_isd_code
+
+	countries = frappe.db.get_all("Country", fields=["name", "code"], order_by="name")
+	return [
+		{
+			"name": country.name,
+			"code": country.code or "",
+			"isd": get_isd_code(country.code),
+			"example": get_example_phone_number(country.code),
+		}
+		for country in countries
+	]
+
+
+def get_example_phone_number(country_code: str | None) -> str:
+	"""An example mobile number for a country, shown as the phone input's placeholder."""
+	import phonenumbers
+
+	if not country_code:
+		return ""
+
+	try:
+		number = phonenumbers.example_number_for_type(
+			country_code.upper(), phonenumbers.PhoneNumberType.MOBILE
 		)
-	return sorted(countries, key=lambda x: x["name"])
+		return phonenumbers.national_significant_number(number)
+	except Exception:
+		return ""
 
 
 @frappe.whitelist(allow_guest=True)
@@ -547,8 +555,10 @@ def country_list():
 	return frappe.cache().get_value("country_list", generator=get_country_list)
 
 
-def clear_country_list_cache():
+def clear_country_list_cache(doc=None, method=None):
+	"""Also runs as a `Country` doc event, hence the unused arguments."""
 	frappe.cache().delete_value("country_list")
+	frappe.cache().delete_value("countries_with_isd_codes")
 
 
 @frappe.whitelist()
