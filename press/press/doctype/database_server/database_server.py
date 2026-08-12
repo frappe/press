@@ -1454,19 +1454,23 @@ class DatabaseServer(BaseServer):
 	def _disable_database_audit_log(self):
 		# plugin_load_add is left alone: add_or_update_mariadb_variable has no removal path,
 		# and a loaded plugin with logging off writes nothing.
-		self.add_or_update_mariadb_variable(
-			"server_audit_logging",
-			"value_str",
-			"OFF",
-			persist=True,
-			save=True,
-			update_variables_synchronously=True,
-		)
-		if self.reconcile_audit_log_state():
-			frappe.throw(
-				f"MariaDB on {self.name} is still logging. "
-				"Check the MariaDB System Variable Update errors for this server, then disable it again."
+		try:
+			self.add_or_update_mariadb_variable(
+				"server_audit_logging",
+				"value_str",
+				"OFF",
+				persist=True,
+				save=True,
+				update_variables_synchronously=True,
 			)
+			if self.reconcile_audit_log_state():
+				frappe.throw(
+					f"MariaDB on {self.name} is still logging. "
+					"Check the MariaDB System Variable Update errors for this server, then disable it again."
+				)
+		except Exception:
+			self.settle_audit_log_status()
+			raise
 
 	def stop_billing_unless_logging(self):
 		"""Enable failed, so drop the subscription it created unless logs are stored."""
@@ -1475,10 +1479,15 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			# Logging may have started before the agent went away. The next enable reconciles it
 			log_error("Audit log state unknown after a failed enable", server=self.name)
+		self.settle_audit_log_status()
+		self.sync_audit_log_subscription()
+		frappe.db.commit()
+
+	def settle_audit_log_status(self):
+		"""Leave nothing pending, or the dashboard keeps its fields locked."""
 		self.db_set(
 			"database_audit_log_status", "Enabled" if self.is_database_audit_log_enabled else "Disabled"
 		)
-		self.sync_audit_log_subscription()
 		frappe.db.commit()
 
 	def reconcile_audit_log_state(self) -> bool:

@@ -7,7 +7,7 @@
 				label: 'Save',
 				variant: 'solid',
 				loading: $resources.configureAuditTrail.loading,
-				disabled: !hasChanges,
+				disabled: !hasChanges || isPending,
 				onClick: configureAuditTrail,
 			},
 		],
@@ -16,16 +16,17 @@
 	>
 		<template #body-content>
 			<div class="space-y-4">
-				<Switch
-					v-model="enabled"
-					label="Record an audit trail"
-					description="Log every connection and query of this database"
-				/>
-
 				<AlertBanner
 					v-if="pendingMessage"
 					type="info"
 					:title="pendingMessage"
+				/>
+
+				<Switch
+					v-model="enabled"
+					label="Record an audit trail"
+					description="Log every connection and query of this database"
+					:disabled="isPending"
 				/>
 
 				<AlertBanner
@@ -45,6 +46,7 @@
 					]"
 						size="sm"
 						variant="subtle"
+						:disabled="isPending"
 					/>
 
 					<FormControl
@@ -54,6 +56,7 @@
 						min="1"
 						size="sm"
 						variant="subtle"
+						:disabled="isPending"
 					/>
 
 					<p v-if="!isEnabled" class="text-ink-gray-6 text-p-sm">
@@ -142,6 +145,9 @@ export default {
 			return doc.is_database_audit_log_capturing_reads
 				? 'MariaDB is still auditing read and write queries.'
 				: 'MariaDB is still auditing write queries only.'
+		},
+		isPending() {
+			return Boolean(this.pendingMessage)
 		},
 		pendingMessage() {
 			const status = this.server.doc?.database_audit_log_status
