@@ -1384,8 +1384,15 @@ class DatabaseServer(BaseServer):
 	def _update_database_audit_log(self):
 		"""server_audit_events is dynamic, so the new mode applies without a restart."""
 		requested = self.database_audit_log_capture_reads
-		self.configure_server_audit_plugin()
-		if not self.reconcile_audit_log_state():
+		try:
+			self.configure_server_audit_plugin()
+			logging = self.reconcile_audit_log_state()
+		except Exception:
+			# The save above already stored the requested mode, so put MariaDB's back
+			with contextlib.suppress(Exception):
+				self.reconcile_audit_log_state()
+			raise
+		if not logging:
 			frappe.throw(f"MariaDB on {self.name} stopped logging while its capture mode was changed.")
 		if self.database_audit_log_capture_reads != requested:
 			frappe.throw(
@@ -1506,7 +1513,10 @@ class DatabaseServer(BaseServer):
 		return self.audit_variables_on_server().get("server_audit_logging") == "ON"
 
 	def audit_variables_on_server(self) -> dict[str, str]:
-		variables = self.agent.fetch_database_variables() or []
+		# Nothing back means the agent couldn't answer, which is not the same as logging off
+		variables = self.agent.fetch_database_variables()
+		if not variables:
+			frappe.throw(f"Couldn't read the MariaDB variables of {self.name}.")
 		return {variable["Variable_name"]: variable["Value"] for variable in variables}
 
 	@property
