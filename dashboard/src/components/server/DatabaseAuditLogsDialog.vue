@@ -50,7 +50,6 @@
 </template>
 <script>
 import { toast } from 'vue-sonner'
-import { icon } from '../../utils/components'
 import { bytes, date } from '../../utils/format'
 import { getToastErrorMessage } from '../../utils/toast'
 import GenericList from '../GenericList.vue'
@@ -135,18 +134,19 @@ export default {
 					{
 						label: 'From',
 						fieldname: 'start_time',
-						format: (value) => (value ? date(value, 'lll') : ''),
+						format: (value) => (value ? date(value, 'lll') : '—'),
 					},
 					{
 						label: 'To',
 						fieldname: 'end_time',
-						format: (value) => (value ? date(value, 'lll') : ''),
+						format: (value) => (value ? date(value, 'lll') : '—'),
 					},
 					{
 						label: 'Size',
 						fieldname: 'size_mb',
 						align: 'right',
 						width: 0.5,
+						class: 'text-ink-gray-6',
 						format: (value) => bytes(value * 1024 * 1024),
 					},
 					{
@@ -154,9 +154,11 @@ export default {
 						type: 'Button',
 						align: 'right',
 						width: 0.5,
+						// label is the accessible name of this icon-only button
 						Button: ({ row }) => ({
 							label: 'Download',
-							slots: { prefix: icon('download') },
+							icon: 'download',
+							tooltip: 'Download',
 							onClick: (e) => {
 								e.stopPropagation()
 								this.downloadAuditLog(row.name)
