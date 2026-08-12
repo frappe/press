@@ -440,26 +440,23 @@ class DatabaseServer(BaseServer):
 				"group": f"{server_type.title()} Actions",
 			},
 			{
-				"action": "Enable Database Audit Log",
+				"action": "Configure Database Audit Trail",
 				"description": "Record connections and queries for compliance",
-				"button_label": "Enable",
-				"condition": self.status == "Active" and not self.is_database_audit_log_enabled,
-				"doc_method": "enable_database_audit_log",
-				"group": f"{server_type.title()} Actions",
-			},
-			{
-				"action": "Disable Database Audit Log",
-				"description": "Stop recording connections and queries",
-				"button_label": "Disable",
-				"condition": self.status == "Active" and self.is_database_audit_log_enabled,
-				"doc_method": "disable_database_audit_log",
+				"button_label": "Configure",
+				"condition": self.status == "Active",
+				"doc_method": "configure_database_audit_log",
 				"group": f"{server_type.title()} Actions",
 			},
 			{
 				"action": "Manage Database Audit Logs",
 				"description": "Browse and download archived audit logs",
 				"button_label": "View",
-				"condition": self.status == "Active" and self.is_database_audit_log_enabled,
+				# Archived logs outlive disabling, and stay billable, so they stay browsable too
+				"condition": self.status == "Active"
+				and (
+					self.is_database_audit_log_enabled
+					or frappe.db.exists("MariaDB Audit Log", {"database_server": self.name})
+				),
 				"doc_method": "get_audit_logs",
 				"group": f"{server_type.title()} Actions",
 			},
@@ -1316,13 +1313,23 @@ class DatabaseServer(BaseServer):
 		)
 
 	@dashboard_whitelist()
-	def enable_database_audit_log(self, capture_reads: bool = False, retention_days: int = 365):
-		if self.is_database_audit_log_enabled:
+	def configure_database_audit_log(
+		self, enabled: bool = False, capture_reads: bool = False, retention_days: int = 365
+	):
+		"""The dashboard sends the whole configuration, so the mode can change while logging is on."""
+		if not cint(enabled):
+			self.disable_database_audit_log()
 			return
 
 		if cint(retention_days) < 1:
 			frappe.throw("Please enter the audit log retention as a whole number of days (for example 365).")
 
+		if self.is_database_audit_log_enabled:
+			self.update_database_audit_log(capture_reads, retention_days)
+		else:
+			self.enable_database_audit_log(capture_reads, retention_days)
+
+	def enable_database_audit_log(self, capture_reads: bool, retention_days: int):
 		# Fail here rather than in the background, where the operator wouldn't see it
 		self.create_audit_log_subscription()
 		# The plugin is configured from these two, so they're saved before it is. The flag
@@ -1343,6 +1350,26 @@ class DatabaseServer(BaseServer):
 		if not self.reconcile_audit_log_state():
 			frappe.throw(
 				f"MariaDB on {self.name} is not logging after being configured. "
+				"Check the MariaDB System Variable Update errors for this server, then enable it again."
+			)
+
+	def update_database_audit_log(self, capture_reads: bool, retention_days: int):
+		"""Retention is only read by the cleanup job, so only a mode change reaches MariaDB."""
+		mode_changed = cint(capture_reads) != cint(self.database_audit_log_capture_reads)
+		self.database_audit_log_capture_reads = cint(capture_reads)
+		self.audit_log_retention_days = cint(retention_days)
+		self.save(ignore_permissions=True)
+		if mode_changed:
+			frappe.enqueue_doc(
+				self.doctype, self.name, "_update_database_audit_log", queue="long", timeout=600
+			)
+
+	def _update_database_audit_log(self):
+		"""Every server_audit_* option is dynamic, so the new mode applies without a restart."""
+		self.configure_server_audit_plugin()
+		if not self.reconcile_audit_log_state():
+			frappe.throw(
+				f"MariaDB on {self.name} stopped logging while its capture mode was changed. "
 				"Check the MariaDB System Variable Update errors for this server, then enable it again."
 			)
 
@@ -1409,7 +1436,6 @@ class DatabaseServer(BaseServer):
 		"""The plugin keeps the live log plus this many rotations, each 1 GiB."""
 		return max(1, (self.database_audit_log_max_disk_gb or 25) - 1)
 
-	@dashboard_whitelist()
 	def disable_database_audit_log(self):
 		if not self.is_database_audit_log_enabled:
 			return
