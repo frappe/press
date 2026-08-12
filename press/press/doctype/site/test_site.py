@@ -578,6 +578,24 @@ class TestSite(FrappeTestCase):
 			["key1", "key2"],
 		)
 
+	def test_invalid_encryption_key_is_rejected(self):
+		site = create_test_site()
+		self.assertRaisesRegex(
+			frappe.exceptions.ValidationError,
+			"not a valid encryption key",
+			site._update_configuration,
+			{"encryption_key": "not-a-key"},
+		)
+
+	def test_masked_encryption_key_is_rejected(self):
+		site = create_test_site()
+		self.assertRaisesRegex(
+			frappe.exceptions.ValidationError,
+			"not a valid encryption key",
+			site._update_configuration,
+			{"backup_encryption_key": "*******"},
+		)
+
 	def test_apps_are_reordered_to_follow_bench_order(self):
 		app1 = create_test_app()
 		app2 = create_test_app("erpnext", "ERPNext")
