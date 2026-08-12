@@ -7,6 +7,7 @@
 				{
 					label: 'Save',
 					variant: 'solid',
+					disabled: !loaded,
 					loading: $site?.updateBackupSchedule?.loading,
 					onClick: save,
 				},
@@ -14,7 +15,15 @@
 		}"
 	>
 		<template #body-content>
-			<div class="flex flex-col gap-5">
+			<div v-if="!loaded" class="flex justify-center py-8">
+				<ErrorMessage
+					v-if="$site.getBackupSchedule.error"
+					:message="$site.getBackupSchedule.error"
+				/>
+				<LoadingIndicator v-else class="h-5 w-5 text-ink-gray-5" />
+			</div>
+
+			<div v-else class="flex flex-col gap-5">
 				<Switch
 					v-model="custom"
 					label="Choose when backups run"
@@ -100,6 +109,9 @@ export default {
 			custom: false,
 			hours: ['02'],
 			maximumTimes: 4,
+			// Saving before this is true would submit the defaults over whatever
+			// the site already has
+			loaded: false,
 		};
 	},
 	mounted() {
@@ -108,6 +120,7 @@ export default {
 			if (schedule.times.length) {
 				this.hours = schedule.times.map((time) => timeLocal(time).slice(0, 2));
 			}
+			this.loaded = true;
 		});
 	},
 	computed: {
