@@ -1343,11 +1343,17 @@ def fail_remote_job(dn: str) -> bool:
 	return _mark_build_as_failed(dn)
 
 
-# Substrings that identify a failure as caused by Docker's build cache (BuildKit
-# layer cache or a `--mount=type=cache` step), as opposed to other transient
-# failures (network timeouts, apt lock contention, etc.).
+# Substrings that identify a failure as actually caused by a build cache being
+# stale or corrupt, as opposed to a failure that merely happened inside a
+# `--mount=type=cache` step (nearly every "apps" stage RUN uses that mount, so
+# its mere presence in the output says nothing about the cause of the failure).
 CACHE_FAILURE_MARKERS = (
+	# BuildKit couldn't resolve a cache key (e.g. a file a cache layer expects is missing).
 	"failed to compute cache key",
+	# yarn's local package cache has a corrupt/mismatched entry.
+	"Incorrect integrity when fetching from the cache",
+	# apt's package cache directory is locked by a concurrent process.
+	"Could not get lock /var/cache/apt/archives/lock",
 )
 
 
