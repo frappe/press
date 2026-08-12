@@ -14,18 +14,16 @@
 		}"
 	>
 		<template #body-content>
-			<div class="flex flex-col gap-4">
-				<div class="rounded-md bg-surface-gray-1 p-3">
-					<Switch
-						v-model="custom"
-						label="Choose when backups run"
-						:description="
-							custom
-								? 'Backups run only at the times below'
-								: 'Backups run every 6 hours, whenever that falls'
-						"
-					/>
-				</div>
+			<div class="flex flex-col gap-5">
+				<Switch
+					v-model="custom"
+					label="Choose when backups run"
+					:description="
+						custom
+							? 'Backups run only at the hours below'
+							: 'Backups run every 6 hours, whenever that falls'
+					"
+				/>
 
 				<div v-if="custom" class="flex flex-col gap-3">
 					<div class="flex items-baseline justify-between">
@@ -33,48 +31,48 @@
 							Backup times
 						</span>
 						<span class="text-p-sm text-ink-gray-5">
-							{{ times.length }} of {{ maximumTimes }}
+							{{ hours.length }} of {{ maximumTimes }}
 						</span>
 					</div>
 
-					<div class="grid grid-cols-2 gap-x-3 gap-y-2">
+					<div class="flex flex-col gap-2">
 						<div
-							v-for="(time, index) in times"
+							v-for="(hour, index) in hours"
 							:key="index"
-							class="flex items-center gap-1"
+							class="flex items-center gap-2"
 						>
 							<FormControl
-								class="flex-1"
-								type="time"
-								v-model="times[index]"
+								class="w-36"
+								type="select"
+								variant="outline"
+								:options="optionsFor(index)"
+								v-model="hours[index]"
 							/>
 							<Button
-								v-if="times.length > 1"
+								v-if="hours.length > 1"
 								variant="ghost"
 								icon="x"
-								:label="`Remove ${time}`"
-								@click="times.splice(index, 1)"
+								:label="`Remove ${labelFor(hour)}`"
+								@click="hours.splice(index, 1)"
 							/>
 						</div>
 					</div>
 
 					<Button
-						v-if="times.length < maximumTimes"
+						v-if="hours.length < maximumTimes"
 						class="w-fit"
 						variant="subtle"
 						icon-left="plus"
-						@click="addTime"
+						@click="addHour"
 					>
 						Add time
 					</Button>
 
 					<p class="text-p-sm leading-5 text-ink-gray-5">
-						Times are in your timezone ({{ timezone }}). A backup starts
-						within the hour you pick.
+						A backup starts within the hour you pick. Times are in your
+						timezone ({{ timezone }}).
 					</p>
 				</div>
-
-				<ErrorMessage :message="errorMessage" />
 			</div>
 		</template>
 	</Dialog>
@@ -86,6 +84,13 @@ import { toast } from 'vue-sonner';
 import dayjs, { timeLocal, timeServer } from '../../utils/dayjs';
 import { getToastErrorMessage } from '../../utils/toast';
 
+// Backups fire on the hour, so offering minutes would promise precision the
+// scheduler doesn't have.
+const HOURS = Array.from({ length: 24 }, (_, hour) => ({
+	label: dayjs().hour(hour).minute(0).format('h:mm A'),
+	value: String(hour).padStart(2, '0'),
+}));
+
 export default {
 	props: ['site'],
 	components: { Switch },
@@ -93,16 +98,15 @@ export default {
 		return {
 			show: true,
 			custom: false,
-			times: ['02:00'],
+			hours: ['02'],
 			maximumTimes: 4,
-			errorMessage: null,
 		};
 	},
 	mounted() {
 		this.$site.getBackupSchedule.submit().then((schedule) => {
 			this.custom = schedule.custom;
 			if (schedule.times.length) {
-				this.times = schedule.times.map(timeLocal);
+				this.hours = schedule.times.map((time) => timeLocal(time).slice(0, 2));
 			}
 		});
 	},
@@ -115,17 +119,26 @@ export default {
 		},
 	},
 	methods: {
-		addTime() {
-			// An hour after the last one, so a fresh row doesn't land in a taken hour
-			let last = this.times[this.times.length - 1] || '01:00';
-			this.times.push(dayjs(`2000-01-01 ${last}`).add(1, 'hour').format('HH:mm'));
+		// Hiding the hours already taken is what keeps two backups out of the same
+		// hour, where the scheduler would run only one of them
+		optionsFor(index) {
+			let taken = this.hours.filter((_, i) => i !== index);
+			return HOURS.filter((option) => !taken.includes(option.value));
+		},
+		labelFor(hour) {
+			return HOURS.find((option) => option.value === hour)?.label;
+		},
+		// Carry on from the last hour picked rather than filling up from midnight
+		addHour() {
+			let start = Number(this.hours[this.hours.length - 1] ?? -1) + 1;
+			let order = HOURS.slice(start).concat(HOURS.slice(0, start));
+			this.hours.push(order.find((option) => !this.hours.includes(option.value)).value);
 		},
 		save() {
-			this.errorMessage = this.validate();
-			if (this.errorMessage) return;
-
 			let promise = this.$site.updateBackupSchedule.submit({
-				times: this.custom ? this.times.map(timeServer) : [],
+				times: this.custom
+					? this.hours.map((hour) => timeServer(`${hour}:00`))
+					: [],
 			});
 			toast.promise(promise, {
 				loading: 'Saving backup schedule...',
@@ -135,17 +148,6 @@ export default {
 				},
 				error: (e) => getToastErrorMessage(e),
 			});
-		},
-		validate() {
-			if (!this.custom) return null;
-			if (this.times.some((time) => !time))
-				return 'Pick a time for every backup.';
-			// The scheduler runs once an hour, so two backups in the same hour
-			// would silently collapse into one.
-			let hours = this.times.map((time) => timeServer(time).split(':')[0]);
-			if (new Set(hours).size !== hours.length)
-				return 'Backups have to be at least an hour apart.';
-			return null;
 		},
 	},
 };
