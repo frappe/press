@@ -44,6 +44,9 @@ LARGE_DATABASE_SIZE_MB = 100 * 1024
 # Well below LARGE_DATABASE_SIZE_MB above, which gates a different thing — read both.
 STATEMENT_TIME_BUMP_SIZE_MB = 2 * 1024
 
+# The step in "Update Site Migrate" after which the site's data can change.
+BACKUP_STEP = "Backup Site Tables"
+
 
 class SiteUpdate(Document):
 	# begin: auto-generated types
@@ -215,6 +218,31 @@ class SiteUpdate(Document):
 	@property
 	def use_logical_replication_backup(self):
 		return self.backup_type == "Logical Replication" and not self.skipped_backups
+
+	def should_mark_site_fatal(self) -> bool:
+		"""Only a migration that got past the backup can leave the site's data inconsistent.
+
+		A Pull update never touches data, and a Migrate that failed before the backup step
+		never ran the migration, so there is nothing for an operator to resolve. Go by the
+		position of the failed step: a failure marks every later step Skipped, which is also
+		what a physical backup does to the backup step, so the status can't tell them apart.
+		"""
+		if self.deploy_type != "Migrate":
+			return False
+		steps = frappe.get_all(
+			"Agent Job Step",
+			filters={"agent_job": self.update_job},
+			fields=["step_name", "status"],
+			order_by="creation asc",
+		)
+		if not any(step.step_name == BACKUP_STEP for step in steps):
+			return True  # Backup step gone or renamed — assume the migration ran
+		for step in steps:
+			if step.step_name == BACKUP_STEP:
+				return True
+			if step.status == "Failure":
+				return False
+		return True
 
 	def validate_past_failed_updates(self):
 		if getattr(self, "ignore_past_failures", False):
@@ -1302,14 +1330,16 @@ def process_update_site_recover_job_update(job: AgentJob):
 			site_update.restore_max_statement_time()
 		elif updated_status == "Fatal":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
-			frappe.db.set_value("Site", job.site, "fatal_site_update", site_update.name)
-			# Site is back on the source bench but its table restore failed; re-issue just that
-			# (it stays Fatal, cause resolved on success).
-			fallback_triggered = (
-				job.job_type == "Recover Failed Site Migrate"
-				and move_site_step_status == "Success"
-				and restore_tables_after_failed_recovery(job, site_update.name)
-			)
+			fallback_triggered = False
+			if site_update.should_mark_site_fatal():
+				frappe.db.set_value("Site", job.site, "fatal_site_update", site_update.name)
+				# Site is back on the source bench but its table restore failed; re-issue just that
+				# (it stays Fatal, cause resolved on success).
+				fallback_triggered = (
+					job.job_type == "Recover Failed Site Migrate"
+					and move_site_step_status == "Success"
+					and restore_tables_after_failed_recovery(job, site_update.name)
+				)
 			# The fallback restore needs the bumped timeout, so leave the revert to its callback.
 			if not fallback_triggered:
 				site_update.restore_max_statement_time()
