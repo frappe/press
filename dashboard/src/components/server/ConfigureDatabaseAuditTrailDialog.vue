@@ -113,20 +113,29 @@ export default {
 		captureReads() {
 			return this.captureMode === 'read-write'
 		},
+		captureModeChanged() {
+			return (
+				this.captureReads !==
+				Boolean(this.server.doc?.database_audit_log_capture_reads)
+			)
+		},
 		hasChanges() {
 			if (this.enabled !== this.isEnabled) return true
 			if (!this.enabled) return false
 			return (
-				this.captureReads !==
-					Boolean(this.server.doc?.database_audit_log_capture_reads) ||
+				this.captureModeChanged ||
 				this.retentionDays !== this.server.doc?.audit_log_retention_days
 			)
 		},
 		successMessage() {
-			if (!this.enabled) return 'Audit logging is being disabled'
+			// Only retention skips MariaDB, so only retention takes effect right away
+			if (!this.enabled)
+				return 'Audit logging will stop once MariaDB is updated, in a few minutes'
 			if (!this.isEnabled)
-				return 'Audit logging is being enabled. MariaDB will restart shortly.'
-			return 'Audit trail settings saved'
+				return 'Setting up audit logging. MariaDB restarts once, so give it a few minutes.'
+			if (this.captureModeChanged)
+				return 'The new capture mode takes a few minutes to reach MariaDB'
+			return 'Retention updated'
 		},
 		price() {
 			const plan = this.$resources.s3StoragePlan.data?.[0]
@@ -155,7 +164,7 @@ export default {
 					{
 						onSuccess: () => {
 							this.show = false
-							this.server.reload()
+							this.showRequestedState()
 						},
 					},
 				),
@@ -165,6 +174,14 @@ export default {
 					error: (e) => getToastErrorMessage(e),
 				},
 			)
+		},
+		showRequestedState() {
+			// Reopening the dialog shows what was asked for. The flag itself only flips
+			// when MariaDB confirms, so a reload here would put the old switch back.
+			const doc = this.server.doc
+			doc.is_database_audit_log_enabled = Number(this.enabled)
+			doc.database_audit_log_capture_reads = Number(this.captureReads)
+			doc.audit_log_retention_days = this.retentionDays
 		},
 	},
 }
