@@ -615,9 +615,14 @@ class Site(Document, TagHelpers):
 		self.update_config_preview()
 
 	def _set_keys_removed_in_last_update(self, old_config: dict):
-		"""Keys the agent must delete from the site's site_config.json."""
+		"""Keys the agent must delete from the site's site_config.json.
+
+		Encryption keys are never removed. A caller that replaces the whole
+		configuration (see _set_configuration) drops every key it doesn't send,
+		and dropping this one costs the site every secret it has stored.
+		"""
 		new_keys = [x.key for x in self.configuration]
-		removed_keys = [x for x in old_config if x not in new_keys]
+		removed_keys = [x for x in old_config if x not in new_keys and x not in ENCRYPTION_KEYS]
 		self._keys_removed_in_last_update = json.dumps(removed_keys)
 
 	def _validate_changed_encryption_keys(self, old_config: dict):

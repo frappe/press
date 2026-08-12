@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 import frappe
 import frappe.utils
 import responses
+from cryptography.fernet import Fernet
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
@@ -577,6 +578,20 @@ class TestSite(FrappeTestCase):
 			json.loads(update_job.request_data).get("remove"),
 			["key1", "key2"],
 		)
+
+	def test_config_update_that_drops_encryption_key_doesnt_remove_it_from_site(self):
+		site = create_test_site()
+		site._set_configuration(
+			[
+				{"key": "encryption_key", "value": Fernet.generate_key().decode(), "type": "Password"},
+				{"key": "key1", "value": "value1", "type": "String"},
+			]
+		)
+		site.delete_multiple_config(["key1", "encryption_key"])
+		update_job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Update Site Configuration", "site": site.name}
+		)
+		self.assertEqual(json.loads(update_job.request_data).get("remove"), ["key1"])
 
 	def test_invalid_encryption_key_is_rejected(self):
 		site = create_test_site()
