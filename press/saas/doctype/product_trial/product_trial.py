@@ -31,6 +31,7 @@ class ProductTrial(Document):
 		from press.saas.doctype.product_trial_help_text.product_trial_help_text import ProductTrialHelpText
 
 		apps: DF.Table[ProductTrialApp]
+		cleanup_remaining_pool: DF.Check
 		domain: DF.Link
 		email_account: DF.Link | None
 		email_full_logo: DF.AttachImage | None
@@ -65,7 +66,9 @@ class ProductTrial(Document):
 
 	def get_doc(self, doc):
 		if not self.published:
-			frappe.throw("Not permitted")
+			frappe.throw(
+				"This product trial isn't available right now. Please try again later, or contact the app's publisher."
+			)
 
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
@@ -78,7 +81,10 @@ class ProductTrial(Document):
 			frappe.throw("Selected plan is not a trial plan")
 
 		if not self.redirect_to_after_login.startswith("/"):
-			frappe.throw("Redirection route after login should start with /")
+			frappe.throw("Please enter a redirection route that starts with '/'.")
+
+		if self.enable_pooling:
+			self.cleanup_remaining_pool = 0
 
 		self.validate_hybrid_rules()
 
@@ -101,30 +107,47 @@ class ProductTrial(Document):
 		from press.press.doctype.site.site import Site, get_plan_config
 
 		if Site.exists(subdomain, domain):
-			frappe.throw("Site with this subdomain already exists")
+			frappe.throw("A site with this subdomain already exists. Please choose a different subdomain.")
 
 		site_domain = f"{subdomain}.{domain}"
 
 		standby_site = self.get_standby_site(cluster, account_request)
 
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
-		agent_job_name: str | None = None
+		agent_jobs = []
 		plan = self.trial_plan
 
 		if standby_site:
-			site: Site = frappe.get_doc("Site", standby_site)
-			site.is_standby = False
-			site.team = team
-			site.trial_end_date = trial_end_date
-			site.account_request = account_request
-			apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps], standby_site)
-			site._update_configuration(apps_site_config, save=False)
-			site._update_configuration(get_plan_config(plan), save=False)
-			site.signup_time = frappe.utils.now()
-			site.generate_saas_communication_secret(create_agent_job=True, save=False)
-			site.save()  # Save is needed for create_subscription to work TODO: remove this
-			site.reload()
-			self.set_site_domain(site, site_domain)
+			frappe.db.set_value("Site", standby_site, "is_standby", 0)
+			frappe.db.commit()
+			try:
+				site: Site = frappe.get_doc("Site", standby_site)
+				site.team = team
+				site.trial_end_date = trial_end_date
+				site.account_request = account_request
+				apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps], standby_site)
+				site._update_configuration(apps_site_config, save=False)
+				site._update_configuration(get_plan_config(plan), save=False)
+				site.signup_time = frappe.utils.now()
+				communication_secret_job = site.generate_saas_communication_secret(
+					create_agent_job=True, save=False
+				)
+				if communication_secret_job:
+					agent_jobs.append(
+						{
+							"agent_job": communication_secret_job,
+							"purpose": "Update Site Configuration",
+							"required_for_completion": False,
+						}
+					)
+				site.save()  # Save is needed for create_subscription to work TODO: remove this
+				site.reload()
+				agent_jobs.extend(self.set_site_domain(site, site_domain))
+			except Exception:
+				frappe.db.rollback()
+				frappe.db.set_value("Site", standby_site, "is_standby", 1)
+				frappe.db.commit()
+				raise
 		else:
 			# Create a site in the cluster, if standby site is not available
 			apps = self.get_site_apps(account_request)
@@ -152,9 +175,10 @@ class ProductTrial(Document):
 			site._update_configuration(get_plan_config(plan), save=False)
 			site.generate_saas_communication_secret(create_agent_job=False, save=False)
 			site.insert()
-			agent_job_name = site.flags.get("new_site_agent_job_name", None)
+			if agent_job_name := site.flags.get("new_site_agent_job_name", None):
+				agent_jobs.append({"agent_job": agent_job_name, "purpose": "Create Site"})
 
-		return site, agent_job_name, bool(standby_site)
+		return site, agent_jobs, bool(standby_site)
 
 	def get_site_apps(self, account_request: str | None = None):
 		"""Get the list of site apps to include in the site creation
@@ -210,14 +234,24 @@ class ProductTrial(Document):
 		return proxy_servers_for_available_clusters
 
 	def set_site_domain(self, site: Site, site_domain: str):
+		agent_jobs: list = []
 		if not site_domain:
-			return
+			return agent_jobs
 
 		if site.name == site_domain or site.host_name == site_domain:
-			return
+			return agent_jobs
 
-		site.add_domain_for_product_site(site_domain)
-		site.add_domain_to_config(site_domain)
+		if add_domain_to_upstream_job := site.add_domain_for_product_site(site_domain):
+			agent_jobs.append(
+				{
+					"agent_job": add_domain_to_upstream_job,
+					"purpose": "Add Domain to Upstream",
+					"required_for_completion": False,
+				}
+			)
+		if add_domain_job := site.add_domain_to_config(site_domain):
+			agent_jobs.append({"agent_job": add_domain_job, "purpose": "Add Domain"})
+		return agent_jobs
 
 	def get_available_clusters(self):
 		release_group = frappe.get_doc("Release Group", self.release_group)
@@ -239,7 +273,7 @@ class ProductTrial(Document):
 			filters=filters,
 			fieldname="name",
 			order_by="status,standby_for,creation asc",
-			limit=3,
+			limit=2,
 			for_update=True,
 			skip_locked=True,
 			pluck=True,
@@ -263,11 +297,35 @@ class ProductTrial(Document):
 		sites_without_incident = [site["name"] for site in sites_without_incident]
 		return sites_without_incident[0] if sites_without_incident else sites[0]
 
+	def get_latest_benches(self) -> list[str]:
+		"""Newest Active bench per server for this product's release group.
+
+		A standby site is only handed out if it sits on one of these benches,
+		so a user never receives a site that predates the latest deploy. Sites
+		still waiting on the async site-update job to migrate them forward are
+		excluded until they land on the current bench.
+		"""
+		benches = frappe.get_all(
+			"Bench",
+			filters={"group": self.release_group, "status": "Active"},
+			fields=["name", "server"],
+			order_by="creation desc",
+		)
+		latest_by_server: dict[str, str] = {}
+		for bench in benches:
+			latest_by_server.setdefault(bench.server, bench.name)
+		return list(latest_by_server.values())
+
 	def get_standby_site(self, cluster: str | None = None, account_request: str | None = None) -> str | None:
+		latest_benches = self.get_latest_benches()
+		if not latest_benches:
+			return None
+
 		filters = {
 			"is_standby": True,
 			"standby_for_product": self.name,
 			"status": "Active",
+			"bench": ("in", latest_benches),
 		}
 		if cluster:
 			filters["cluster"] = cluster
@@ -350,7 +408,9 @@ class ProductTrial(Document):
 
 		server = self.get_server_from_cluster(cluster)
 		cluster_domains = frappe.db.get_all(
-			"Root Domain", {"name": ("like", f"%.{self.domain}")}, ["name", "default_cluster as cluster"]
+			"Root Domain",
+			{"name": ("like", f"%.{self.domain}"), "enabled": 1},
+			["name", "default_cluster as cluster"],
 		)
 		cluster_domain = find(
 			cluster_domains,
@@ -471,6 +531,7 @@ class ProductTrial(Document):
 			.join(Server)
 			.on(Server.name == ReleaseGroupServer.server)
 			.where(Server.cluster == cluster)
+			.where(Server.skip_standby_site_creation == 0)
 			.join(Bench)
 			.on(Bench.server == ReleaseGroupServer.server)
 			.run(pluck="server")
@@ -549,6 +610,50 @@ def replenish_standby_sites():
 				reference_name=product.name,
 			)
 			frappe.db.rollback()
+
+
+def archive_standby_sites_of_disabled_pooling_products():
+	"""Archive standby sites of products that have pooling disabled and cleanup requested."""
+	if not frappe.db.get_single_value("Press Settings", "cleanup_standby_site_pool"):
+		return
+
+	products = frappe.get_all(
+		"Product Trial", {"enable_pooling": 0, "cleanup_remaining_pool": 1}, pluck="name"
+	)
+	if not products:
+		return
+
+	sites = frappe.get_all(
+		"Site",
+		filters={
+			"is_standby": True,
+			"standby_for_product": ("in", products),
+			"status": ("!=", "Archived"),
+		},
+		pluck="name",
+		order_by="creation asc",
+		limit=20,
+	)
+	for site in sites:
+		try:
+			archive_standby_site(site)
+			frappe.db.commit()
+		except Exception as e:
+			log_error(
+				"Archive Standby Site Error",
+				data=e,
+				reference_doctype="Site",
+				reference_name=site,
+			)
+			frappe.db.rollback()
+
+
+def archive_standby_site(site: str):
+	site_doc = frappe.get_doc("Site", site, for_update=True)
+	if not site_doc.is_standby or site_doc.status == "Archived":
+		return
+
+	site_doc.archive(reason="Product Trial pooling disabled", create_offsite_backup=False)
 
 
 def send_verification_mail_for_login(email: str, product: str, code: str):

@@ -1,6 +1,8 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
+from typing import TYPE_CHECKING
+
 import frappe
 
 from press.press.doctype.server.server import BaseServer
@@ -11,8 +13,6 @@ from press.utils import log_error
 class NATServer(BaseServer):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
-
-	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -26,7 +26,7 @@ class NATServer(BaseServer):
 		is_server_setup: DF.Check
 		is_static_ip: DF.Check
 		private_ip: DF.Data | None
-		provider: DF.Literal["AWS EC2", "Frappe Compute"]
+		provider: DF.Literal["AWS EC2", "Frappe Compute", "Hetzner", "DigitalOcean", "OCI"]
 		root_public_key: DF.Code | None
 		secondary_private_ip: DF.Data | None
 		ssh_port: DF.Data | None
@@ -50,7 +50,7 @@ class NATServer(BaseServer):
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
 
 		return {
-			"certificate_private_key": certificate.private_key,
+			"certificate_private_key": certificate.get_private_key(),
 			"certificate_full_chain": certificate.full_chain,
 			"certificate_intermediate_chain": certificate.intermediate_chain,
 			"monitoring_password": monitoring_password,
@@ -68,6 +68,19 @@ class NATServer(BaseServer):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_server", queue="long", timeout=2400)
 
 	def _setup_server(self):
+		if self.provider == "OCI":
+			try:
+				ansible = Ansible(
+					playbook="oci.yml", server=self, user="ubuntu"
+				)  # Prepare server for OCI first.
+				play = ansible.run()
+				self.reload()
+			except Exception:
+				self.status = "Broken"
+				log_error("OCI Server Setup Exception", server=self.as_dict())
+				self.save()
+				return
+
 		try:
 			config = self.get_config() | {
 				"primary_ip": self.private_ip,
@@ -105,21 +118,14 @@ class NATServer(BaseServer):
 		return f"Failover Reference: {frappe.get_desk_link(failover.doctype, failover.name)}"
 
 	@frappe.whitelist()
-	def configure_monitoring(self):
-		try:
-			ansible = Ansible(
-				playbook="configure_monitoring_for_nat.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-				variables=self.get_config(),
-			)
-			ansible.run()
-		except Exception as e:
-			log_error("Configure Monitoring Failed", server=self.as_dict(), error=str(e))
-
-	@frappe.whitelist()
 	def attach_nat_security_group(self):
+		if self.provider != "AWS EC2":
+			frappe.throw(
+				"This action is only applicable to AWS EC2 NAT instances. "
+				"No manual security group attachment is required for Hetzner and Frappe Compute"
+			)
+			return None
+
 		vm = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		ec2 = vm.client()
 		response = ec2.describe_instances(InstanceIds=[vm.instance_id])

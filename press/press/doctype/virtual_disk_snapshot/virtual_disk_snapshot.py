@@ -236,6 +236,7 @@ class VirtualDiskSnapshot(Document):
 	def get_frappe_compute_status_map(self, status):
 		return {
 			"Draft": "Pending",
+			"Pending": "Pending",
 			"Available": "Completed",
 			"Unavailable": "Unavailable",
 		}.get(status, "Unavailable")

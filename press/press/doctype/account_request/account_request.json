@@ -11,14 +11,13 @@
 		"email",
 		"oauth_signup",
 		"send_email",
-		"otp",
-		"otp_generated_at",
 		"column_break_4",
 		"invited_by",
 		"ip_address",
 		"invited_by_parent_team",
 		"press_roles",
 		"agreed_to_terms",
+		"press_role",
 		"saas_sign_up_section",
 		"saas",
 		"saas_app",
@@ -48,6 +47,7 @@
 		"referral_source",
 		"url_args",
 		"referrer_id",
+		"pulse_anonymous_id",
 		"section_break_31",
 		"geo_location"
 	],
@@ -58,19 +58,51 @@
 			"label": "Email",
 			"search_index": 1
 		},
-		{ "fieldname": "request_key", "fieldtype": "Data", "label": "Request Key" },
-		{ "fieldname": "team", "fieldtype": "Data", "label": "Team" },
-		{ "fieldname": "invited_by", "fieldtype": "Data", "label": "Invited By" },
-		{ "fieldname": "ip_address", "fieldtype": "Data", "label": "IP Address" },
-		{ "fieldname": "country", "fieldtype": "Data", "label": "Country" },
-		{ "fieldname": "first_name", "fieldtype": "Data", "label": "First Name" },
-		{ "fieldname": "last_name", "fieldtype": "Data", "label": "Last Name" },
+		{
+			"fieldname": "request_key",
+			"fieldtype": "Data",
+			"label": "Request Key"
+		},
+		{
+			"fieldname": "team",
+			"fieldtype": "Data",
+			"label": "Team"
+		},
+		{
+			"fieldname": "invited_by",
+			"fieldtype": "Data",
+			"label": "Invited By"
+		},
+		{
+			"fieldname": "ip_address",
+			"fieldtype": "Data",
+			"label": "IP Address"
+		},
+		{
+			"fieldname": "country",
+			"fieldtype": "Data",
+			"label": "Country"
+		},
+		{
+			"fieldname": "first_name",
+			"fieldtype": "Data",
+			"label": "First Name"
+		},
+		{
+			"fieldname": "last_name",
+			"fieldtype": "Data",
+			"label": "Last Name"
+		},
 		{
 			"fieldname": "phone_number",
 			"fieldtype": "Data",
 			"label": "Phone Number"
 		},
-		{ "fieldname": "subdomain", "fieldtype": "Data", "label": "Subdomain" },
+		{
+			"fieldname": "subdomain",
+			"fieldtype": "Data",
+			"label": "Subdomain"
+		},
 		{
 			"default": "0",
 			"fieldname": "erpnext",
@@ -78,8 +110,16 @@
 			"hidden": 1,
 			"label": "ERPNext"
 		},
-		{ "fieldname": "company", "fieldtype": "Data", "label": "Company" },
-		{ "fieldname": "designation", "fieldtype": "Data", "label": "Designation" },
+		{
+			"fieldname": "company",
+			"fieldtype": "Data",
+			"label": "Company"
+		},
+		{
+			"fieldname": "designation",
+			"fieldtype": "Data",
+			"label": "Designation"
+		},
 		{
 			"fieldname": "referral_source",
 			"fieldtype": "Data",
@@ -96,8 +136,14 @@
 			"fieldtype": "Section Break",
 			"label": "ERPNext Sign Up"
 		},
-		{ "fieldname": "column_break_14", "fieldtype": "Column Break" },
-		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_14",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_4",
+			"fieldtype": "Column Break"
+		},
 		{
 			"collapsible": 1,
 			"fieldname": "referrer_data",
@@ -110,7 +156,11 @@
 			"label": "Plan",
 			"options": "Site Plan"
 		},
-		{ "fieldname": "industry", "fieldtype": "Data", "label": "Industry" },
+		{
+			"fieldname": "industry",
+			"fieldtype": "Data",
+			"label": "Industry"
+		},
 		{
 			"fieldname": "no_of_users",
 			"fieldtype": "Int",
@@ -130,7 +180,19 @@
 			"label": "Agreed to Partner Consent",
 			"read_only": 1
 		},
-		{ "fieldname": "referrer_id", "fieldtype": "Data", "label": "Referrer ID" },
+		{
+			"fieldname": "referrer_id",
+			"fieldtype": "Data",
+			"label": "Referrer ID"
+		},
+		{
+			"fieldname": "pulse_anonymous_id",
+			"fieldtype": "Data",
+			"label": "Pulse Anonymous ID",
+			"read_only": 1,
+			"no_copy": 1,
+			"description": "Pre-signup anonymous (anon_…) id forwarded from the product website as ?aid=… ; aliased to the account user at team creation."
+		},
 		{
 			"default": "0",
 			"fieldname": "saas",
@@ -155,7 +217,11 @@
 			"label": "Geo Location",
 			"read_only": 1
 		},
-		{ "fieldname": "state", "fieldtype": "Data", "label": "State" },
+		{
+			"fieldname": "state",
+			"fieldtype": "Data",
+			"label": "State"
+		},
 		{
 			"default": "0",
 			"fieldname": "send_email",
@@ -198,12 +264,9 @@
 			"label": "Press Roles",
 			"options": "Account Request Press Role"
 		},
-		{ "fieldname": "otp", "fieldtype": "Data", "label": "OTP" },
-		{ "fieldname": "column_break_eaxp", "fieldtype": "Column Break" },
 		{
-			"fieldname": "otp_generated_at",
-			"fieldtype": "Datetime",
-			"label": "OTP Generated at"
+			"fieldname": "column_break_eaxp",
+			"fieldtype": "Column Break"
 		},
 		{
 			"default": "0",
@@ -217,7 +280,11 @@
 			"fieldtype": "Check",
 			"label": "Is Mobile"
 		},
-		{ "fieldname": "continent", "fieldtype": "Data", "label": "Continent" },
+		{
+			"fieldname": "continent",
+			"fieldtype": "Data",
+			"label": "Continent"
+		},
 		{
 			"depends_on": "eval: doc.request_key",
 			"fieldname": "request_key_expiration_time",
@@ -230,12 +297,19 @@
 			"fieldname": "agreed_to_terms",
 			"fieldtype": "Check",
 			"label": "Agreed to Terms and Conditions"
+		},
+		{
+			"description": "Role which should be granted to a user upon accepting this account request.",
+			"fieldname": "press_role",
+			"fieldtype": "Link",
+			"label": "Press Role",
+			"options": "Press Role"
 		}
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-04-28 23:09:05.614019",
+	"modified": "2026-06-04 10:58:33.441832",
 	"modified_by": "hello@ssiyad.com",
 	"module": "Press",
 	"name": "Account Request",
@@ -253,7 +327,10 @@
 			"share": 1,
 			"write": 1
 		},
-		{ "create": 1, "role": "Press User" }
+		{
+			"create": 1,
+			"role": "Press User"
+		}
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",

@@ -37,13 +37,19 @@ class CommunicationInfo(Document):
 
 	def validate(self):
 		if not self.parenttype or not self.parent:
-			frappe.throw("parenttype and parent are required")
+			frappe.throw(
+				"Communication info must be attached to a record. Please provide both 'parenttype' and 'parent'."
+			)
 
 		if self.parenttype not in ("Team", "Site", "Server"):
-			frappe.throw("parenttype must be one of 'Team', 'Site', 'Server'")
+			frappe.throw(
+				"Communication info can only be attached to a Team, Site, or Server. Please set 'parenttype' to one of these."
+			)
 
 		if self.channel == "Phone Call" and self.type != "Incident":
-			frappe.throw("Phone Call is available only for 'Incident'")
+			frappe.throw(
+				"The Phone Call channel can only be used for incident notifications. Please choose Email, or set the type to 'Incident'."
+			)
 
 		if self.channel == "Email":
 			validate_email_address(self.value, throw=True)
@@ -136,7 +142,9 @@ def update_communication_infos(  # noqa: C901
 	"""
 
 	if resource_type not in ("Team", "Site", "Server"):
-		frappe.throw("resource_type must be one of 'Team', 'Site', 'Server'")
+		frappe.throw(
+			"Communication info is only supported for a Team, Site, or Server. Please pass one of these as 'resource_type'."
+		)
 
 	# Remove values with empty value
 	values = [value for value in values if value.get("value")]
@@ -192,7 +200,9 @@ def update_communication_infos(  # noqa: C901
 	if resource_type == "Team":
 		billing_count = sum(1 for value in values if value.get("type") == "Billing")
 		if billing_count > 1:
-			frappe.throw("For Billing, only one email can be configured")
+			frappe.throw(
+				"Only one billing email can be configured per team. Please keep a single billing email and remove the others."
+			)
 
 	# Delete unwanted
 	if to_delete:

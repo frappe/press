@@ -8,7 +8,14 @@
 					label: 'Change plan',
 					variant: 'solid',
 					onClick: changePlan,
-					disabled: !plan || plan === $server?.doc.plan,
+					disabled:
+					!plan ||
+					plan?.name === $server?.doc.plan ||
+					(($server?.doc?.provider === 'Hetzner' ||
+						$server?.doc?.provider === 'DigitalOcean') &&
+						cpu_and_memory_only_resize &&
+						plan?.instance_type ===
+							$server?.doc?.current_plan?.instance_type),
 				},
 			],
 		}"
@@ -45,9 +52,7 @@
 						]"
 					>
 						<div class="flex w-full items-center justify-between space-x-2">
-							<span class="text-sm font-medium">
-								{{ c.name }}
-							</span>
+							<span class="text-sm font-medium"> {{ c.name }} </span>
 							<Tooltip :text="c.description">
 								<lucide-info class="h-4 w-4 text-ink-gray-5" />
 							</Tooltip>
@@ -79,8 +84,9 @@
 				/>
 
 				<p class="text-base leading-relaxed" v-if="!cpu_and_memory_only_resize">
-					<b>Note :</b> You won't be able to downgrade this server to a plan
-					with a smaller disk size.<br />
+					<b>Note :</b>
+					You won't be able to downgrade this server to a plan with a smaller
+					disk size.<br />
 					If you only want to upgrade CPU and memory without changing the disk
 					size, keep this option checked.
 				</p>
@@ -93,7 +99,8 @@
 				class="h-64 flex flex-row justify-center items-center gap-2"
 				v-if="$resources?.serverPlansdata?.loading"
 			>
-				<Spinner class="w-4" /> Loading Server Plans...
+				<Spinner class="w-4" />
+				Loading Server Plans...
 			</div>
 			<div v-else>
 				<!-- Server Plan Type Selection -->
@@ -140,9 +147,9 @@
 					class="flex flex-col rounded border border-outline-gray-2 p-3 gap-2 mb-4"
 				>
 					<p class="text-base text-ink-gray-9">
-						<span class="font-medium">{{
-							Object.values(serverPlanTypes)[0].title
-						}}</span>
+						<span class="font-medium"
+							>{{ Object.values(serverPlanTypes)[0].title }}</span
+						>
 						machines are available.
 					</p>
 
@@ -159,8 +166,9 @@
 	</Dialog>
 </template>
 <script>
-import { getCachedDocumentResource, Checkbox, Spinner } from 'frappe-ui';
-import ServerPlansCards from './ServerPlansCards.vue';
+import { Checkbox, getCachedDocumentResource, Spinner } from 'frappe-ui'
+import { confirmDialog } from '../../utils/components'
+import ServerPlansCards from './ServerPlansCards.vue'
 
 export default {
 	components: { ServerPlansCards, Checkbox, Spinner },
@@ -181,7 +189,7 @@ export default {
 			planType: 'Standard',
 			serverPlanType: '',
 			cpu_and_memory_only_resize: true,
-		};
+		}
 	},
 	watch: {
 		server: {
@@ -189,15 +197,15 @@ export default {
 			handler(serverName) {
 				if (serverName) {
 					if (this.$server?.doc?.plan) {
-						this.plan = this.$server.doc.current_plan;
-						this.serverPlanType = this.$server.doc.current_plan.plan_type;
+						this.plan = this.$server.doc.current_plan
+						this.serverPlanType = this.$server.doc.current_plan.plan_type
 					}
 				}
 			},
 		},
 		cpu_and_memory_only_resize(value) {
-			if (!this.$resources?.serverPlansdata) return;
-			this.$resources?.serverPlansdata.submit();
+			if (!this.$resources?.serverPlansdata) return
+			this.$resources?.serverPlansdata.submit()
 		},
 	},
 	resources: {
@@ -216,13 +224,44 @@ export default {
 					plans: [],
 					types: {},
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		changePlan() {
 			// TODO: Add confirmation dialog for hetzner plan upgrade
 
+			if (this.isDowngrade) {
+				const planLabel = (plan) =>
+					`${this.$format.planTitle(plan)}/mo (${plan.vcpu} vCPU / ${this.$format.bytes(plan.memory, 0, 2)} RAM)`
+				const fromPlan = planLabel(this.$server.doc.current_plan)
+				const toPlan = planLabel(this.plan)
+				// Hide the Change Plan dialog so the confirmation isn't stacked on top of it.
+				this.show = false
+				return confirmDialog({
+					title: 'Downgrade Server Plan',
+					message: `
+						Are you sure you want to downgrade this server's plan from
+						<b>${fromPlan}</b> to <b>${toPlan}</b>?<br><br>
+						The new plan has fewer resources than the current one, so sites and
+						background jobs on this server may run slower or fail under load.
+						If you're not sure the smaller plan can handle this server's
+						workload, reach out at
+						<a href="https://support.frappe.io" target="_blank" class="underline">support.frappe.io</a>
+						before downgrading.
+					`,
+					primaryAction: {
+						label: 'Downgrade Plan',
+						variant: 'solid',
+						theme: 'red',
+						onClick: ({ hide }) => this.submitPlanChange().then(hide),
+					},
+				})
+			}
+
+			return this.submitPlanChange()
+		},
+		submitPlanChange() {
 			return this.$server.changePlan.submit(
 				{
 					plan: this.plan.name,
@@ -230,52 +269,62 @@ export default {
 				},
 				{
 					onSuccess: () => {
-						this.show = false;
+						this.show = false
 
 						const plan = this.serverPlans.find(
 							(plan) => plan.name === this.$server.doc.plan,
-						);
+						)
 
 						const formattedPlan = plan
 							? `${this.$format.planTitle(plan)}/mo`
-							: this.$server.doc.plan;
+							: this.$server.doc.plan
 
-						this.$toast.success(`Plan changed to ${formattedPlan}`);
+						this.$toast.success(`Plan changed to ${formattedPlan}`)
 					},
 				},
-			);
+			)
 		},
 	},
 	computed: {
 		$server() {
-			return getCachedDocumentResource(this.cleanedServerType, this.server);
+			return getCachedDocumentResource(this.cleanedServerType, this.server)
 		},
 		serverPlans() {
-			return this.$resources.serverPlansdata?.data?.plans || [];
+			return this.$resources.serverPlansdata?.data?.plans || []
 		},
 		serverPlanTypes() {
 			// Find out the plan_types that we have
-			let filtered_types = {};
+			let filtered_types = {}
 			this.serverPlans.forEach((plan) => {
 				filtered_types[plan.plan_type] =
-					this.$resources.serverPlansdata?.data?.types[plan.plan_type];
-			});
-			return filtered_types;
+					this.$resources.serverPlansdata?.data?.types[plan.plan_type]
+			})
+			return filtered_types
 		},
 		cleanedServerType() {
 			return this.serverType === 'Replication Server'
 				? 'Database Server'
-				: this.serverType;
+				: this.serverType
 		},
 		filteredServerPlans() {
-			let plans = [];
+			let plans = []
 			if (this.planType == 'Premium') {
-				plans = this.serverPlans.filter((p) => p.premium === 1);
+				plans = this.serverPlans.filter((p) => p.premium === 1)
 			} else {
-				plans = this.serverPlans.filter((p) => p.premium === 0);
+				plans = this.serverPlans.filter((p) => p.premium === 0)
 			}
-			return plans.filter((plan) => plan.plan_type === this.serverPlanType);
+			return plans.filter((plan) => plan.plan_type === this.serverPlanType)
+		},
+		isDowngrade() {
+			const currentPlan = this.$server?.doc?.current_plan
+			if (!this.plan || !currentPlan) return false
+			// A plan with fewer resources than the current one is a downgrade.
+			return (
+				this.plan.vcpu < currentPlan.vcpu ||
+				this.plan.memory < currentPlan.memory ||
+				this.plan.disk < currentPlan.disk
+			)
 		},
 	},
-};
+}
 </script>

@@ -48,7 +48,9 @@ class ProxyFailover(Document, StepHandler):
 		)
 
 		if secondary.cluster != primary.cluster:
-			frappe.throw("Failover can only be initiated between Proxy Servers in the same cluster")
+			frappe.throw(
+				"Failover can only be initiated between proxy servers in the same cluster. Please choose a target proxy server in the same cluster."
+			)
 
 		if (not primary.is_static_ip and not secondary.is_static_ip) or (
 			primary.is_static_ip and secondary.is_static_ip

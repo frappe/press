@@ -9,6 +9,9 @@
 	"field_order": [
 		"users",
 		"self_hosted_users",
+		"section_break_kbro",
+		"night_shifts",
+		"night_shift_call_limit",
 		"section_break_rnxb",
 		"enable_incident_detection",
 		"phone_call_alerts",
@@ -49,8 +52,14 @@
 			"label": "Self Hosted Users",
 			"options": "Incident Settings Self Hosted User"
 		},
-		{ "fieldname": "section_break_rnxb", "fieldtype": "Section Break" },
-		{ "fieldname": "column_break_voyg", "fieldtype": "Column Break" },
+		{
+			"fieldname": "section_break_rnxb",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "column_break_voyg",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "confirmation_threshold_day",
 			"fieldtype": "Duration",
@@ -87,7 +96,10 @@
 			"hide_days": 1,
 			"label": "Call Repeat Interval Night"
 		},
-		{ "fieldname": "column_break_ehby", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_ehby",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "0",
 			"fieldname": "email_alerts",
@@ -105,12 +117,29 @@
 			"fieldtype": "Duration",
 			"hide_days": 1,
 			"label": "Wait Time Post Investigator Actions"
+		},
+		{
+			"fieldname": "section_break_kbro",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "night_shifts",
+			"fieldtype": "Table",
+			"label": "Night Shifts",
+			"options": "Incident Settings Night Shift"
+		},
+		{
+			"default": "10",
+			"description": "Number of unanswered call attempts to night shift assignees before falling back to the full default on-call list",
+			"fieldname": "night_shift_call_limit",
+			"fieldtype": "Int",
+			"label": "Max Calls To Dedicated Persons (Night)"
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-02-18 11:05:28.583816",
+	"modified": "2026-06-02 15:33:07.990491",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Incident Settings",
@@ -128,7 +157,6 @@
 		}
 	],
 	"row_format": "Dynamic",
-	"rows_threshold_for_grid_search": 20,
 	"sort_field": "modified",
 	"sort_order": "DESC",
 	"states": []

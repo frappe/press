@@ -52,6 +52,12 @@ onMounted(() => {
 
 function getSiteActionHandler(action) {
 	const actionDialogs = {
+		'Manage Product Warranty': defineAsyncComponent(
+			() => import('./ManageProductWarrantyDialog.vue'),
+		),
+		'Configure compute allocation': defineAsyncComponent(
+			() => import('./ConfigureComputeAllocationDialog.vue'),
+		),
 		'Restore with files': defineAsyncComponent(
 			() => import('./SiteDatabaseRestoreDialog.vue'),
 		),

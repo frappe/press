@@ -4,6 +4,7 @@
 import frappe
 
 from press.utils import log_error
+from press.utils.telemetry import capture_pulse
 
 EVENT_TYPE_MAP = {
 	"invoice.finalized": "Finalized",
@@ -83,6 +84,18 @@ class StripeWebhookHandler:
 		except Exception:
 			log_error("Stripe Payment Event Error", event=event)
 			raise
+
+		if event_type == "invoice.paid":
+			capture_pulse(
+				"stripe_invoice_succeeded",
+				{
+					"invoice": self.invoice.name,
+					"team": self.invoice.team,
+					"amount": stripe_invoice.get("amount_paid"),
+					"currency": stripe_invoice.get("currency"),
+					"intent_id": stripe_invoice.get("payment_intent"),
+				},
+			)
 
 
 def handle_stripe_webhook_events(doc, method):

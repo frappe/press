@@ -25,6 +25,7 @@ from babel.dates import format_timedelta  # type: ignore[import-not-found]
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import ExtensionOID
+from frappe.query_builder.functions import Count
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import redis_cache, site_cache
 
@@ -164,6 +165,36 @@ def _get_current_team():
 	if not getattr(frappe.local, "_current_team", None):
 		frappe.local._current_team = get_current_team(get_doc=True)
 	return frappe.local._current_team
+
+
+def is_team_owner(team: str) -> bool:
+	"""
+	Checks if the current user is the owner of the given team, without
+	loading the full Team document (and all its child tables).
+	"""
+	return bool(frappe.db.get_value("Team", team, "user") == frappe.session.user)
+
+
+def is_admin_user(team: str) -> bool:
+	"""
+	Checks if the current user has admin access in the given team via roles,
+	without loading the full Team document (and all its child tables).
+	"""
+	PressRole = frappe.qb.DocType("Press Role")
+	PressRoleUser = frappe.qb.DocType("Press Role User")
+	return (
+		frappe.qb.from_(PressRoleUser)
+		.left_join(PressRole)
+		.on(PressRole.name == PressRoleUser.parent)
+		.select(Count(PressRoleUser.name).as_("count"))
+		.where(PressRole.team == team)
+		.where(PressRoleUser.user == frappe.session.user)
+		.where(PressRole.admin_access == 1)
+		.run(as_dict=1)
+		.pop()
+		.get("count", 0)
+		> 0
+	)
 
 
 def _system_user():
@@ -388,7 +419,9 @@ class RemoteFrappeSite:
 		res = requests.get(f"{self.user_site}/api/method/frappe.ping", timeout=(5, 10))
 
 		if not res.ok:
-			frappe.throw("Invalid Frappe Site")
+			frappe.throw(
+				"The Frappe site is invalid or unreachable. Please check the site URL and try again."
+			)
 
 		if res.json().get("message") == "pong":
 			# Get final redirect URL
@@ -404,7 +437,9 @@ class RemoteFrappeSite:
 		)
 		if not response.ok:
 			if response.status_code == 401:
-				frappe.throw("Invalid Credentials")
+				frappe.throw(
+					"The credentials are invalid. Please check the username and password and try again."
+				)
 			else:
 				response.raise_for_status()
 
@@ -977,7 +1012,7 @@ def timer(f):
 def validate_subdomain(subdomain: str):
 	site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
 	if not subdomain:
-		frappe.throw("Subdomain is required to create a site.")
+		frappe.throw("Please enter a subdomain to create the site.")
 	if not re.match(site_regex, subdomain):
 		frappe.throw("Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens")
 	if len(subdomain) > 32:

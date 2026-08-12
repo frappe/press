@@ -76,7 +76,7 @@
 - name: Setup Grafana Authentication
   become: yes
   become_user: frappe
-  command: "htpasswd -Bbc /home/frappe/agent/nginx/grafana.htpasswd frappe {{ grafana_password }}"
+  command: "htpasswd -Bbc /home/frappe/agent/nginx/grafana.htpasswd {{ prometheus_username }} {{ grafana_password }}"
 
 - name: Setup Grafana HTTP Authentication
   become: yes

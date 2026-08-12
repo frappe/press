@@ -42,11 +42,11 @@
 	</div>
 </template>
 <script setup>
-import { Button, ErrorMessage, FeatherIcon, createResource } from 'frappe-ui';
-import { ref, onMounted, onBeforeUnmount, inject } from 'vue';
-import { toast } from 'vue-sonner';
-import { DashboardError } from '../../utils/error';
-import { loadRazorpayScript } from '../../utils/razorpay';
+import { Button, createResource, ErrorMessage, FeatherIcon } from "frappe-ui";
+import { inject, onMounted, ref } from "vue";
+import { toast } from "vue-sonner";
+import { DashboardError } from "../../utils/error";
+import { loadRazorpayScript } from "../../utils/razorpay";
 
 const props = defineProps({
 	amount: {
@@ -63,7 +63,7 @@ const props = defineProps({
 	},
 	type: {
 		type: String,
-		default: 'Prepaid Credits',
+		default: "Prepaid Credits",
 	},
 	docName: {
 		type: String,
@@ -71,10 +71,10 @@ const props = defineProps({
 	},
 });
 
-const emit = defineEmits(['success']);
-const team = inject('team');
+const emit = defineEmits(["success"]);
+const team = inject("team");
 
-const paypalEnabled = team.doc.currency === 'USD' && props.paypalEnabled;
+const paypalEnabled = team.doc.currency === "USD" && props.paypalEnabled;
 const isPaymentComplete = ref(false);
 const isVerifyingPayment = ref(false);
 
@@ -87,13 +87,13 @@ onMounted(() => {
 		})
 		.catch(() => {
 			toast.error(
-				'Failed to load payment gateway. Please refresh and try again.',
+				"Failed to load payment gateway. Please refresh and try again.",
 			);
 		});
 });
 
 const createRazorpayOrder = createResource({
-	url: 'press.api.billing.create_razorpay_order',
+	url: "press.api.billing.create_razorpay_order",
 	params: {
 		amount: props.amount,
 		transaction_type: props.type,
@@ -105,15 +105,17 @@ const createRazorpayOrder = createResource({
 	},
 	validate: () => {
 		if (props.amount < props.minimumAmount) {
-			throw new DashboardError('Amount less than minimum amount required');
+			throw new DashboardError(
+				`Amount should be equal to or greater than ${props.minimumAmount}`,
+			);
 		}
 	},
 });
 
 const handlePaymentFailed = createResource({
-	url: 'press.api.billing.handle_razorpay_payment_failed',
+	url: "press.api.billing.handle_razorpay_payment_failed",
 	onSuccess: () => {
-		console.log('Payment Failed.');
+		console.log("Payment Failed.");
 	},
 });
 
@@ -121,27 +123,27 @@ function processOrder(data) {
 	const options = {
 		key: data.key_id,
 		order_id: data.order_id,
-		name: 'Frappe Cloud',
-		image: 'https://frappe.io/files/cloud.png',
+		name: "Frappe Cloud",
+		image: "https://frappe.io/files/cloud.png",
 		prefill: { email: team.doc?.user },
 		handler: handlePaymentSuccess,
-		theme: { color: '#171717' },
+		theme: { color: "#171717" },
 		...(paypalEnabled
 			? {
 					config: {
 						display: {
 							blocks: {
 								wallets: {
-									name: 'Pay using PayPal',
+									name: "Pay using PayPal",
 									instruments: [
 										{
-											method: 'wallet',
-											wallets: ['paypal'],
+											method: "wallet",
+											wallets: ["paypal"],
 										},
 									],
 								},
 							},
-							sequence: ['block.wallets'],
+							sequence: ["block.wallets"],
 							preferences: {
 								show_default_blocks: false,
 							},
@@ -157,18 +159,18 @@ function processOrder(data) {
 	rzp.open();
 
 	// Attach failure handler
-	rzp.on('payment.failed', handlePaymentFailure);
+	rzp.on("payment.failed", handlePaymentFailure);
 	// rzp.on('payment.success', this.handlePaymentSuccess);
 }
 
 function handlePaymentFailure(response) {
 	handlePaymentFailed.submit({ response });
-	toast.error('Payment failed');
+	toast.error("Payment failed");
 }
 
 function handlePaymentSuccess() {
 	isPaymentComplete.value = true;
-	emit('success');
-	toast.success('Payment successful');
+	emit("success");
+	toast.success("Payment successful");
 }
 </script>

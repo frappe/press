@@ -165,8 +165,26 @@ class RemoteFile(Document):
 		file_type: DF.Data | None
 		site: DF.Link | None
 		status: DF.Literal["Available", "Unavailable"]
+		team: DF.Link | None
 		url: DF.Code | None
 	# end: auto-generated types
+
+	def before_validate(self):
+		self.ensure_team_set()
+
+	def ensure_team_set(self):
+		if self.team:
+			return
+
+		if self.site:
+			# Backup remote files are created in agent job callbacks, where the
+			# session user is Administrator. The site's team is the owner there.
+			self.team = frappe.db.get_value("Site", self.site, "team")
+
+		if not self.team:
+			from press.utils import get_current_team
+
+			self.team = get_current_team()
 
 	@property
 	def s3_client(self):

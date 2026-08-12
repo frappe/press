@@ -32,7 +32,7 @@ class MariaDBVariable(Document):
 
 	def get_default_value(self):
 		if not (value := self.default_value):
-			frappe.throw("Default Value is required")
+			frappe.throw("Please set a default value for this MariaDB variable.")
 		match self.datatype:
 			case "Int":
 				return int(value)
@@ -52,4 +52,4 @@ class MariaDBVariable(Document):
 
 	def set_on_server(self, server: DatabaseServer):
 		value = self.get_default_value()
-		server.add_or_update_mariadb_variable(self.name, f"value_{self.datatype.lower()}", value)
+		server.add_or_update_mariadb_variable(self.name, f"value_{self.datatype.lower()}", value)  # type: ignore[arg-type]

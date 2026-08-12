@@ -2,22 +2,30 @@
 	<div v-if="$resources.options.loading" class="mt-2 flex justify-center">
 		<LoadingText />
 	</div>
-	<div class="flex justify-center pt-2" v-else-if="!options?.authorized">
-		<Button
-			v-if="requiresReAuth"
-			variant="solid"
-			icon-left="github"
-			label="Re-authorize GitHub"
-			@click="$resources.clearAccessToken.submit()"
-			:loading="$resources.clearAccessToken.loading"
-		/>
-		<Button
-			v-if="needsAuthorization"
-			variant="solid"
-			icon-left="github"
-			label="Connect To GitHub"
-			:link="installationLink"
-		/>
+	<div class="pt-2" v-else-if="!options?.authorized">
+		<div v-if="!!needsAuthorization" class="flex justify-center">
+			<Button
+				variant="solid"
+				icon-left="github"
+				label="Connect To GitHub"
+				:link="installationLink"
+			/>
+		</div>
+		<div v-else-if="!!requiresReAuth" class="flex justify-center">
+			<Button
+				variant="solid"
+				icon-left="github"
+				label="Re-authorize GitHub"
+				@click="$resources.clearAccessToken.submit()"
+				:loading="$resources.clearAccessToken.loading"
+			/>
+		</div>
+		<div
+			v-else-if="$resources.options.error?.messages?.[0]"
+			class="flex flex-row justify-center"
+		>
+			<ErrorMessage :message="$resources.options.error?.messages?.[0]" />
+		</div>
 	</div>
 	<div v-else class="space-y-4">
 		<FormControl
@@ -117,7 +125,7 @@
 </template>
 
 <script>
-import { Combobox, debounce } from 'frappe-ui';
+import { Combobox, debounce } from 'frappe-ui'
 
 export default {
 	components: {
@@ -130,31 +138,31 @@ export default {
 			selectedBranch: null,
 			selectedGithubUser: null,
 			selectedGithubRepository: null,
-		};
+		}
 	},
 	watch: {
 		selectedGithubUser() {
-			this.selectedBranch = '';
-			this.$emit('fieldChange');
+			this.selectedBranch = ''
+			this.$emit('fieldChange')
 		},
 		selectedGithubRepository(repo) {
 			if (!repo) {
-				this.selectedBranch = '';
-				return;
+				this.selectedBranch = ''
+				return
 			}
-			this.$emit('fieldChange');
+			this.$emit('fieldChange')
 			this.$resources.branches.submit({
 				owner: this.selectedGithubUser?.login,
 				name: repo?.name,
 				installation: this.selectedGithubUser?.id,
-			});
+			})
 
 			if (this.selectedGithubUserData) {
 				let defaultBranch = this.selectedGithubUserData.repos.find(
 					(r) => r.name === repo.name,
-				).default_branch;
-				this.selectedBranch = { label: defaultBranch, value: defaultBranch };
-			} else this.selectedBranch = '';
+				).default_branch
+				this.selectedBranch = { label: defaultBranch, value: defaultBranch }
+			} else this.selectedBranch = ''
 		},
 		selectedBranch(newSelectedBranch) {
 			if (this.appOwner && this.appName && newSelectedBranch)
@@ -163,7 +171,7 @@ export default {
 					repository: this.appName,
 					branch: newSelectedBranch.value,
 					selectedGithubUser: this.selectedGithubUserData,
-				});
+				})
 		},
 	},
 	resources: {
@@ -173,15 +181,15 @@ export default {
 				makeParams() {
 					return {
 						redirect_url: window.location.href,
-					};
+					}
 				},
 				auto: true,
-			};
+			}
 		},
 		branches() {
 			return {
 				url: 'press.api.github.branches',
-			};
+			}
 		},
 		clearAccessToken() {
 			return {
@@ -189,66 +197,66 @@ export default {
 				makeParams() {
 					return {
 						redirect_url: window.location.href,
-					};
+					}
 				},
 				onSuccess(installationData) {
-					window.location.href = this.getInstallationLink(installationData);
+					window.location.href = this.getInstallationLink(installationData)
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		getInstallationLink(installationData) {
 			if (!installationData?.installation_url || !installationData?.state) {
-				return null;
+				return null
 			}
 
-			return `${installationData.installation_url}?state=${installationData.state}`;
+			return `${installationData.installation_url}?state=${installationData.state}`
 		},
 	},
 	computed: {
 		options() {
-			return this.$resources.options.data;
+			return this.$resources.options.data
 		},
 		installationLink() {
-			return this.getInstallationLink(this.options);
+			return this.getInstallationLink(this.options)
 		},
 		appOwner() {
-			return this.selectedGithubUser?.login;
+			return this.selectedGithubUser?.login
 		},
 		appName() {
-			return this.selectedGithubRepository?.name;
+			return this.selectedGithubRepository?.name
 		},
 		branchOptions() {
 			return (this.$resources.branches.data || []).map((branch) => ({
 				label: branch.name,
 				value: branch.name,
-			}));
+			}))
 		},
 		selectedGithubUserData() {
-			if (!this.selectedGithubUser) return null;
+			if (!this.selectedGithubUser) return null
 			return this.options.installations.find(
 				(i) => i.id === Number(this.selectedGithubUser.id),
-			);
+			)
 		},
 		needsAuthorization() {
-			if (this.$resources.options.loading) return false;
+			if (this.$resources.options.loading) return false
 			return (
 				this.$resources.options.data &&
 				(!this.$resources.options.data.authorized ||
 					this.$resources.options.data.installations.length === 0)
-			);
+			)
 		},
 		requiresReAuth() {
-			return this.$resources.options?.error?.messages.some((msg) =>
-				msg.includes('Bad credentials'),
-			);
+			return this.$resources.options?.error?.messages?.some(
+				(msg) => msg.includes && msg.includes('Bad credentials'),
+			)
 		},
 	},
 	created() {
 		this.onChangeBranchDebounce = debounce((val) => {
-			this.selectedBranch = { label: val, value: val };
-		}, 500);
+			this.selectedBranch = { label: val, value: val }
+		}, 500)
 	},
-};
+}
 </script>

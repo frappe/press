@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 import frappe.utils
+from frappe import _
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
 from frappe.query_builder.terms import ValueWrapper
@@ -20,6 +21,8 @@ from press.guards import role_guard
 from press.guards.role_guard.document import has_user_permission
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.utils import docs
 
 if TYPE_CHECKING:
 	from datetime import date
@@ -149,9 +152,13 @@ class SiteBackup(Document):
 
 	def validate(self):
 		if self.physical and self.with_files:
-			frappe.throw("Physical backups cannot be taken with files")
+			frappe.throw(
+				f"Physical backups already include site files, so the 'with files' option can't be used. Please clear that option and try again. {docs.doc_link(docs.BACKUPS)}."
+			)
 		if self.physical and self.offsite:
-			frappe.throw("Physical and offsite logical backups cannot be taken together")
+			frappe.throw(
+				f"A backup can't be both physical and offsite. Please choose either a physical backup or an offsite logical backup. {docs.doc_link(docs.BACKUPS)}."
+			)
 
 		if self.deactivate_site_during_backup and not self.physical:
 			frappe.throw("Site deactivation should be used for physical backups only")
@@ -162,7 +169,9 @@ class SiteBackup(Document):
 
 		if getattr(self, "force", False):
 			if self.physical:
-				frappe.throw("Physical backups cannot be forcefully triggered")
+				frappe.throw(
+					"Physical backups can't be force-triggered. Please take a regular backup, or wait for the scheduled physical backup to run."
+				)
 			return
 
 		# For backups, check if there are too many pending backups
@@ -210,7 +219,9 @@ class SiteBackup(Document):
 			site.sync_info()
 			site.reload()
 		if not site.database_name:
-			frappe.throw("Database name is missing in the site")
+			frappe.throw(
+				"This site doesn't have a database name set yet, so a physical backup can't be taken. Please try again once the site has finished provisioning, or contact support."
+			)
 		self.database_name = site.database_name
 		self.snapshot_request_key = frappe.generate_hash(length=32)
 
@@ -375,7 +386,9 @@ class SiteBackup(Document):
 
 		virtual_machine.create_snapshots(exclude_boot_volume=True, physical_backup=True)
 		if len(virtual_machine.flags.created_snapshots) == 0:
-			frappe.throw("Failed to create a snapshot for the database server")
+			frappe.throw(
+				"We couldn't create a disk snapshot for the database server, so the physical backup failed. Please retry, and contact support if it keeps failing."
+			)
 		frappe.db.set_value(
 			"Site Backup", self.name, "database_snapshot", virtual_machine.flags.created_snapshots[0]
 		)
@@ -500,10 +513,10 @@ def process_backup_site_job_update(job):
 	backup = backups[0]
 	if job.status != backup.status:
 		status = job.status
-		if job.status == "Delivery Failure":
+		if status == "Delivery Failure":
 			status = "Failure"
 
-		if job.status == "Success":
+		if status == "Success":
 			if frappe.get_value("Site Backup", backup.name, "physical"):
 				doc: SiteBackup = frappe.get_doc("Site Backup", backup.name)
 				doc.files_availability = "Available"
@@ -558,14 +571,75 @@ def process_backup_site_job_update(job):
 			site_backup.status = status
 			site_backup.save()
 
+			_send_backup_failure_email_to_user(site_backup)
+
+
+def _send_backup_failure_email_to_user(site_backup: SiteBackup):
+	try:
+		if site_backup.status != "Failure":
+			return
+
+		site_name = site_backup.site
+		if _has_reached_max_failed_backup_attempts(site_name):
+			recipients = get_communication_info("Email", "Site Activity", "Site", site_name)
+			if not recipients:
+				return
+
+			subject = _("Backup attempts failed for {0}").format(site_name)
+			content = frappe.render_template(
+				"press/templates/emails/site_backup_failed.html",
+				{
+					"site_name": site_name,
+				},
+				is_path=True,
+			)
+			communication = frappe.get_doc(
+				{
+					"doctype": "Communication",
+					"communication_type": "Communication",
+					"communication_medium": "Email",
+					"reference_doctype": "Site Backup",
+					"reference_name": site_backup.name,
+					"subject": subject,
+					"content": content,
+					"is_notification": True,
+					"recipients": ", ".join(recipients),
+				}
+			)
+			communication.insert(ignore_permissions=True)
+			communication.send_email()
+	except Exception:
+		frappe.log_error(
+			title="Failed to send backup failure email",
+			reference_doctype="Site Backup",
+			reference_name=site_backup.name,
+		)
+
 
 def get_backup_bucket(cluster, region=False):
-	bucket_for_cluster = frappe.get_all("Backup Bucket", {"cluster": cluster}, ["name", "region"], limit=1)
-	default_bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
+	bucket_for_cluster = frappe.get_all(
+		"Backup Bucket", {"cluster": cluster}, ["name", "region", "endpoint_url"], limit=1
+	)
+
+	# `provider` and `endpoint_url` are only configured globally on Press Settings, so the
+	# provider is always sourced from there regardless of whether a cluster bucket is used.
+	provider = frappe.db.get_single_value("Press Settings", "offsite_backups_provider")
+
+	if bucket_for_cluster:
+		bucket_config = bucket_for_cluster[0]
+		bucket_config["provider"] = provider
+	else:
+		bucket_config = {
+			"name": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
+			"region": frappe.db.get_single_value("Press Settings", "backup_region"),
+			"endpoint_url": None,
+			"provider": provider,
+		}
 
 	if region:
-		return bucket_for_cluster[0] if bucket_for_cluster else default_bucket
-	return bucket_for_cluster[0]["name"] if bucket_for_cluster else default_bucket
+		return bucket_config
+
+	return bucket_config["name"]
 
 
 def process_deactivate_site_job_update(job: AgentJob):
@@ -850,3 +924,25 @@ def delete_backups_for_archived_sites_after_retention():
 			)
 
 	frappe.db.commit()
+
+
+def _has_reached_max_failed_backup_attempts(site_name: str) -> bool:
+	max_backup_attempts = (
+		frappe.get_cached_value(
+			"Press Settings",
+			"Press Settings",
+			"max_failed_backup_attempts_in_a_day",
+		)
+		or 6
+	)
+
+	backup_failures = frappe.db.count(
+		"Site Backup",
+		{
+			"site": site_name,
+			"status": ("in", ["Failure", "Delivery Failure"]),
+			"creation": (">=", frappe.utils.add_days(None, -1)),
+		},
+	)
+
+	return backup_failures == max_backup_attempts

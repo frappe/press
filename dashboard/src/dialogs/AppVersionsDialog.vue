@@ -57,7 +57,7 @@
 			<Button
 				v-if="
 					!['Draft', 'Preparing', 'Running', 'Pending'].includes(status) &&
-					!$resources?.redeployBuild?.loading
+					!$resources?.redeployBuild?.loading && !isPipeline
 				"
 				variant="solid"
 				iconLeft=""
@@ -83,7 +83,7 @@ import {
 import { toast } from 'vue-sonner';
 export default {
 	name: 'AppVersionsDialog',
-	props: ['group', 'dc_name', 'status'],
+	props: ['group', 'dc_name', 'status', 'isPipeline'],
 	components: {
 		Spinner,
 		ListView,
@@ -163,10 +163,8 @@ export default {
 			await this.$resources.redeployBuild
 				.submit()
 				.then((response) => {
-					this.$router.push({
-						path: response,
-					});
 					this.show = false;
+          window.location.href = response
 				})
 				.catch(() => {
 					toast.error('Failed to redeploy');

@@ -108,7 +108,9 @@ class SiteMigration(Document):
 
 	def validate_bench(self):
 		if frappe.db.get_value("Bench", self.destination_bench, "status", for_update=True) != "Active":
-			frappe.throw("Destination bench does not exist")
+			frappe.throw(
+				"The destination bench isn't active, so the site can't be moved to it. Please choose an active bench and try again."
+			)
 
 	@cached_property
 	def last_backup(self) -> SiteBackup | None:
@@ -623,6 +625,8 @@ class SiteMigration(Document):
 				"step_title": self.remove_site_from_source_proxy.__doc__,
 				"method_name": self.remove_site_from_source_proxy.__name__,
 				"status": "Pending",
+				"condition": frappe.db.get_value("Server", self.source_server, "proxy_server")
+				!= frappe.db.get_value("Server", self.destination_server, "proxy_server"),
 			},
 			{
 				"step_title": self.restore_site_on_destination_proxy.__doc__,
@@ -646,7 +650,9 @@ class SiteMigration(Document):
 			},
 		]
 		for step in steps:
-			self.append("steps", step)
+			if step.get("condition", None) is None or step["condition"]:
+				step.pop("condition", None)
+				self.append("steps", step)
 
 	def deactivate_site_on_source_server(self):
 		"""Deactivate site on source"""

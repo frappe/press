@@ -21,6 +21,12 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
 
 
+VERSIONING_DOCS = (
+	"See <a href='https://docs.frappe.io/cloud/custom-apps/app-versioning/versioning'>"
+	"declaring app versions</a> for how to set this up in pyproject.toml."
+)
+
+
 class VersioningError(Exception): ...
 
 
@@ -186,14 +192,20 @@ def get_lower_bound_major(spec: sv.NpmSpec) -> int | None:
 		if getattr(c, "operator", None) in ("<", "<=") and getattr(c, "target", None) is not None
 	]
 
-	# Ensure that there is no overlap or inconsistency between upper and lower bounds
+	# Ensure that there is no overlap or inconsistency between upper and lower bounds.
+	# A prerelease bound also lands a companion clause on the opposite side here —
+	# `<=17.0.0-dev` yields `>=17.0.0`, `>=16.0.0-dev` yields `<16.0.1` — which is why a
+	# range that reads fine can still trip this. See NpmSpec.parse in semantic_version/base.py
+	# and https://github.com/npm/node-semver#prerelease-tags for the rule it implements.
+	lowest = min(lowers)
 	if any(upper.major < lower.major for upper in uppers for lower in lowers):
 		frappe.throw(
-			"Invalid version range: There is an inconsistency between the upper and lower bound major versions. "
-			"Please ensure the version range specifies valid major versions."
+			f"Invalid version range '{spec}': the upper bound's major version is below the lower bound's. "
+			"A prerelease upper bound does this on its own — '<=X.0.0-dev' also implies '>=X.0.0'. "
+			f"Use a stable upper bound, e.g. '>={lowest} <{lowest.major + 1}.0.0'. {VERSIONING_DOCS}"
 		)
 
-	return min(lowers).major
+	return lowest.major
 
 
 def map_frappe_version(
@@ -207,16 +219,17 @@ def map_frappe_version(
 	try:
 		version_string = version_string.replace(" ", "").replace(",", " ")
 		spec = sv.NpmSpec(version_string)
-	except ValueError:
+	except (AttributeError, TypeError, ValueError):
 		frappe.throw(
-			f"Invalid version format for app '{app_title}'. Please use NPM-style semver ranges (e.g. '>=15.0.0 <16.0.0')."
+			f"Invalid version format for app '{app_title}'. Please use NPM-style semver ranges "
+			f"(e.g. '>=15.0.0 <16.0.0'). {VERSIONING_DOCS}"
 		)
 
 	if not is_bounded(spec):
 		frappe.throw(
 			f"Version range must be bounded for app '{app_title}'. "
 			"Please provide both a lower and an upper bound "
-			"(e.g. '>=15.0.0 <16.0.0')."
+			f"(e.g. '>=15.0.0 <16.0.0'). {VERSIONING_DOCS}"
 		)
 
 	highest_supported_stable_version = sv.Version(

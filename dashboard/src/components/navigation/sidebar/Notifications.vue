@@ -4,14 +4,19 @@ import {
   Button,
   createListResource,
   frappeRequest,
-  Popover,
   Tabs,
   Tooltip,
+  Popover,
 } from "frappe-ui";
 
-import { h, nextTick, ref, watch } from "vue";
+import Item from "./Item.vue";
+
+import { h, nextTick, ref, watch} from "vue";
 import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
+import { isMobile } from "@/utils/device";
+import { sanitizeHtml } from "@/utils/format";
+
 import Scrollbar from "@/components/common/Scrollbar.vue";
 import SupportAccessDialog from "@/components/SupportAccessDialog.vue";
 
@@ -20,24 +25,16 @@ import {
   unreadSupportNotificationsCount,
 } from "@/data/notifications";
 
+import { useRealtimeNotifs } from './useRealtimeNotifs'
+
 import { dayjsLocal } from "@/utils/dayjs";
 import { getDocResource } from "@/utils/resource";
 import { renderDialog } from "@/utils/components";
-import { isMobile } from "@/utils/device";
-
-let props = defineProps({
-  item: {
-    type: Object,
-    required: true,
-  },
-});
-
-const formatHtml = (str: string) => {
-  return str.replace(/<(?!\/?b\b)[^>]*>/g, "").split("\n")[0];
-};
+import { getTeam } from "@/data/team";
 
 const scrollRef = ref(null);
 const router = useRouter();
+const team = getTeam();
 
 const loadMore = async () => {
   await resource.next();
@@ -91,7 +88,7 @@ const markAsRead = (row, togglePopover) => {
     }
 
     if (row.route && row.type !== "Support Access") {
-      togglePopover();
+    togglePopover()
       router.push("/" + row.route);
     }
   });
@@ -105,7 +102,7 @@ const markAllAsRead = (togglePopover) => {
     {
       success: () => {
         resource.reload();
-        togglePopover();
+        togglePopover()
 
         return "All notifications marked as read";
       },
@@ -197,38 +194,30 @@ const tabs = [
   { label: "Requests", icon: LucideKeySquare },
   { label: "Unread", icon: LucideMessageSquareDot },
 ];
+  
+useRealtimeNotifs((data) => {
+	if (data.team === team.doc.name) resource.reload()
+})
 </script>
 
 <template>
-  <Popover :placement="isMobile() ? 'top-start' : 'right-start'" popover-class="-mt-[15%] md:-mt-2.5">
+    <Popover :placement="isMobile() ? 'top-start' : 'right-start'" popover-class="-mt-[15%] md:-mt-2.5">
     <!-- sidebar item -->
     <template #target="{ togglePopover }">
-      <button aria-label="Notifications btn" @click="togglePopover"
-        class="flex items-center rounded px-2 py-1.5 text-ink-gray-6 transition gap-2 hover:bg-surface-gray-2 w-full"
-        :class="[
-          item.disabled ? 'pointer-events-none opacity-50' : '',
-          $attrs.class,
-        ]">
+      <Item is='BUTTON' v-bind='$attrs' aria-label="Notifications btn" name='Notifications' @click="togglePopover" 
+      				:suffix="unreadNotificationsCount.data > 99 ? '99+': unreadNotificationsCount.data"
+            >
+        <template #prefix>
 
-        <span class="flex relative">
-          <LucideBell class="size-4 text-ink-gray-6" />
-          <span v-if="unreadNotificationsCount.data > 0"
-            class="size-1 bg-surface-blue-3 rounded-full absolute right-0 -top-0.5" />
-        </span>
-
-        <span class="text-sm flex-1 text-left">{{ item.name }}</span>
-
-        <span class="text-xs text-ink-gray-6" v-if="unreadNotificationsCount.data > 0">
-          {{
-            unreadNotificationsCount.data > 99
-              ? '99+'
-              : unreadNotificationsCount.data
-          }}
-        </span>
-      </button>
+          <span class="flex relative">
+            <LucideBell class="size-4 text-ink-gray-6" />
+            <span v-if="unreadNotificationsCount.data > 0"
+              class="size-1 bg-surface-blue-3 rounded-full absolute right-0 -top-0.5" />
+          </span>
+        </template>
+      </Item>
     </template>
 
-    <!-- floating drawer  -->
     <template #body="{ togglePopover }">
       <div
         class="text-ink-gray-9 bg-surface-white h-screen -ml-2.5 w-screen md:ml-2 shadow-xl md:w-[430px] flex flex-col dark:border-x">
@@ -263,8 +252,7 @@ const tabs = [
         </Tabs>
 
         <!-- body -->
-        <Scrollbar ref="scrollRef" v-if="resource.data.length > 0" class='max-h-[67%] md:max-h-full'>
-
+        <Scrollbar ref="scrollRef" v-if="resource?.data?.length > 0" class='max-h-[67%] md:max-h-full'>
           <!-- notif tiles = icon + info -->
           <div v-for="x in resource.data"
             class="[&_b]:font-semibold p-2 md:p-4 flex gap-4 items-center relative cursor-pointer border-b last:border-0 hover:bg-surface-gray-1"
@@ -281,7 +269,7 @@ const tabs = [
 
             <!-- info -->
             <div class="text-base leading-relaxed flex flex-wrap gap-2 w-full min-w-0">
-              <p v-html="formatHtml(x.message)" class="w-full" />
+              <p v-html="sanitizeHtml(x.message)" class="w-full" />
 
               <Badge class="text-xs mr-auto">
                 {{ x.title }}
@@ -305,6 +293,6 @@ const tabs = [
 
         <Button @click="loadMore" v-if="resource.hasNextPage" label="Load More" size="sm" class="ml-auto my-3 mr-3" />
       </div>
-    </template>
-  </Popover>
-</template>
+      </template>
+   </Popover>
+ </template>

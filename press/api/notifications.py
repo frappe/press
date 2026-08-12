@@ -1,7 +1,5 @@
 import frappe
 
-from press.guards import role_guard
-from press.guards.role_guard.document import has_user_permission
 from press.utils import get_current_team
 
 
@@ -35,12 +33,6 @@ def get_notifications(
 		.offset(limit_start)
 	)
 
-	if role_guard.is_restricted():
-		if not has_user_permission("Site"):
-			query = apply_permission_filter(query, "Site", PressNotification)
-		if not has_user_permission("Release Group"):
-			query = apply_permission_filter(query, "Release Group", PressNotification)
-
 	if filters.get("read") == "Unread":
 		query = query.where(PressNotification.read == 0)
 
@@ -68,15 +60,6 @@ def assign_notification_route(notification):
 		notification.route = "access-requests"
 	else:
 		notification.route = None
-
-
-def apply_permission_filter(query, doctype, PressNotification):
-	permitted = role_guard.permitted_documents(doctype)
-	if not permitted:
-		query = query.where(PressNotification.document_type != doctype)
-	else:
-		query = query.where(PressNotification.document_name.isin(permitted))
-	return query
 
 
 @frappe.whitelist()

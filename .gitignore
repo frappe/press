@@ -178,3 +178,5 @@ on_prem_dr
 
 # changelog dist
 press/www/releases
+
+dashboard/auto-imports.d.ts

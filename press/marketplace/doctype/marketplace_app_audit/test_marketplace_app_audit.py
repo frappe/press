@@ -91,6 +91,7 @@ class TestMarketplaceAppAudit(UnitTestCase):
 				"doctype": "Marketplace App Audit",
 				"marketplace_app": self.marketplace_app.name,
 				"app_release": app_release,
+				"app_source": self.source.name,
 				"audit_type": "Manual Run",
 				"status": status,
 				"audit_result": result,
@@ -104,6 +105,7 @@ class TestMarketplaceAppAudit(UnitTestCase):
 		return frappe.get_last_doc("App Release Approval Request", {"app_release": app_release})
 
 	def test_marketplace_release_creates_audit(self):
+		self.marketplace_app.db_set("status", "Published")
 		audits_before = frappe.db.count("Marketplace App Audit")
 		release = self.create_release(self.source, hash_value="marketplace-release-with-audit")
 		self.assertEqual(frappe.db.count("Marketplace App Audit"), audits_before + 1)
@@ -111,6 +113,8 @@ class TestMarketplaceAppAudit(UnitTestCase):
 		audit = frappe.get_last_doc("Marketplace App Audit", {"app_release": release.name})
 		self.assertEqual(audit.marketplace_app, self.marketplace_app.name)
 		self.assertEqual(audit.team, self.team.name)
+		self.assertEqual(audit.app_source, self.source.name)
+		self.assertIsNone(audit.approval_request)
 		self.assertEqual(audit.status, "Queued")
 		self.assertEqual(audit.audit_type, "Release Change")
 
@@ -128,6 +132,24 @@ class TestMarketplaceAppAudit(UnitTestCase):
 		self.assertEqual(audit.audit_type, "Manual Run")
 		self.assertEqual(audit.status, "Queued")
 		MarketplaceAppAudit.trigger_audit.assert_called()
+
+	def test_submission_gate_approval_request_creates_audit(self):
+		release = self.create_release(self.source)
+		audits_before = frappe.db.count("Marketplace App Audit")
+
+		request = self.create_approval_request(release.name)
+
+		self.assertEqual(frappe.db.count("Marketplace App Audit"), audits_before + 1)
+		audit = frappe.get_last_doc(
+			"Marketplace App Audit",
+			{"app_release": release.name, "approval_request": request.name},
+		)
+		self.assertEqual(audit.marketplace_app, self.marketplace_app.name)
+		self.assertEqual(audit.app_release, release.name)
+		self.assertEqual(audit.app_source, self.source.name)
+		self.assertEqual(audit.approval_request, request.name)
+		self.assertEqual(audit.audit_type, "Submission Gate")
+		self.assertEqual(audit.status, "Queued")
 
 	def test_run_audit_success_populates_checks_and_summary(self):
 		release = self.create_release(self.source)
@@ -278,6 +300,13 @@ class TestSemgrepRulesParsing(UnitTestCase):
 		self.assertEqual(security.result, "Warn")
 		self.assertEqual(security.severity, "Minor")
 
+	def test_high_severity_produces_major_fail_result(self):
+		findings = [self._make_finding("major-rule", severity="HIGH")]
+		results = _build_category_results(findings)
+		security = next(r for r in results if r.category == "Security")
+		self.assertEqual(security.result, "Fail")
+		self.assertEqual(security.severity, "Major")
+
 	def test_warning_severity_with_blocking_metadata_produces_fail(self):
 		findings = [self._make_finding("blocking-minor", severity="WARNING", is_blocking=True)]
 		results = _build_category_results(findings)
@@ -304,9 +333,18 @@ class TestSemgrepRulesParsing(UnitTestCase):
 		self.assertTrue(all(r.result == "Error" for r in results))
 
 	def test_severity_mapping_covers_all_levels(self):
-		self.assertEqual(SEMGREP_TO_AUDIT_SEVERITY["ERROR"], "Critical")
-		self.assertEqual(SEMGREP_TO_AUDIT_SEVERITY["WARNING"], "Minor")
-		self.assertEqual(SEMGREP_TO_AUDIT_SEVERITY["INFO"], "Info")
+		expected_mapping = {
+			"CRITICAL": "Critical",
+			"ERROR": "Critical",
+			"HIGH": "Major",
+			"WARNING": "Minor",
+			"MEDIUM": "Minor",
+			"LOW": "Info",
+			"INFO": "Info",
+		}
+		for semgrep_severity, audit_severity in expected_mapping.items():
+			with self.subTest(semgrep_severity=semgrep_severity):
+				self.assertEqual(SEMGREP_TO_AUDIT_SEVERITY[semgrep_severity], audit_severity)
 
 	def test_unknown_category_finding_is_ignored(self):
 		findings = [self._make_finding("unknown-rule", category="UnknownCategory")]
@@ -496,6 +534,7 @@ class TestAuditBlockingAndPublisherReport(UnitTestCase):
 				"doctype": "Marketplace App Audit",
 				"marketplace_app": self.marketplace_app.name,
 				"app_release": release_name,
+				"app_source": self.source.name,
 				"audit_type": "Manual Run",
 				"status": "Completed",
 				"audit_result": "Fail",
@@ -576,6 +615,7 @@ class TestAuditBlockingAndPublisherReport(UnitTestCase):
 				"doctype": "Marketplace App Audit",
 				"marketplace_app": self.marketplace_app.name,
 				"app_release": release.name,
+				"app_source": self.source.name,
 				"audit_type": "Manual Run",
 				"status": "Queued",
 				"audit_result": "Inconclusive",
@@ -610,6 +650,7 @@ class TestAuditBlockingAndPublisherReport(UnitTestCase):
 				"doctype": "Marketplace App Audit",
 				"marketplace_app": self.marketplace_app.name,
 				"app_release": release.name,
+				"app_source": self.source.name,
 				"audit_type": "Manual Run",
 				"status": "Queued",
 				"audit_result": "Inconclusive",

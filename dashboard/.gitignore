@@ -30,3 +30,5 @@ blob-report/
 playwright/.cache/
 *.trace.zip
 .nyc_output/
+
+auto-imports.d.ts

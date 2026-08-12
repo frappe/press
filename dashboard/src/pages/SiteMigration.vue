@@ -50,13 +50,13 @@
 							Destination Bench
 						</div>
 						<div
-							class="mt-2 text-sm text-ink-blue-3 font-medium"
+							class="mt-2 text-sm font-medium"
 							@click="openDestinationBenchPage"
 							v-if="destinationReleaseGroupName"
 							style="cursor: pointer"
 						>
 							{{ destinationReleaseGroupName || '-'
-							}}<span>&#8599;&#65038;</span>
+							}}<span class='ml-1'>&#8599;&#65038;</span>
 						</div>
 						<div class="mt-2 text-sm text-ink-gray-9" v-else>-</div>
 					</div>
@@ -65,12 +65,12 @@
 							Destination Server
 						</div>
 						<div
-							class="mt-2 text-sm text-ink-blue-3 font-medium"
+							class="mt-2 text-sm font-medium"
 							@click="openDestinationServerPage"
 							v-if="destinationServerName"
 							style="cursor: pointer"
 						>
-							{{ destinationServerName || '-' }}<span>&#8599;&#65038;</span>
+							{{ destinationServerName || '-' }}<span class='ml-1'>&#8599;&#65038;</span>
 						</div>
 						<div class="mt-2 text-sm text-ink-gray-9" v-else>-</div>
 					</div>

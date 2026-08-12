@@ -14,6 +14,25 @@ from press.press.doctype.account_request.test_account_request import (
 from press.press.doctype.team.team import Team
 
 
+def allow_server_creation(team: Team):
+	"""Give a team the billing address and entitlement a server purchase needs."""
+	address = frappe.get_doc(
+		{
+			"doctype": "Address",
+			"address_title": team.name,
+			"address_type": "Billing",
+			"address_line1": "1 Test Street",
+			"city": "Mumbai",
+			"state": "Maharashtra",
+			"gstin": "Not Applicable",
+			"country": team.country,
+		}
+	).insert(ignore_permissions=True)
+
+	team.db_set({"billing_address": address.name, "servers_enabled": 1})
+	team.reload()
+
+
 def create_test_press_admin_team(
 	email: str | None = None, skip_onboarding: bool | None = 0, free_account: bool | None = None
 ) -> Team:
@@ -95,3 +114,41 @@ class TestTeam(FrappeTestCase):
 				account_request2, "John", "Meyer", "jonmeyer@gmail.com", country="Pakistan"
 			)
 		self.assertEqual(team2.currency, "USD")
+
+	def test_total_subscribed_amount_skips_legacy_subscriptions_with_null_plan_fields(self):
+		team = create_test_team()
+		plan = frappe.get_doc(
+			{
+				"doctype": "Site Plan",
+				"name": "Test-Plan-USD-50",
+				"document_type": "Site",
+				"interval": "Daily",
+				"price_usd": 50,
+				"price_inr": 3000,
+			}
+		).insert()
+
+		def make_sub(todo_desc):
+			todo = frappe.get_doc(doctype="ToDo", description=todo_desc).insert()
+			return frappe.get_doc(
+				{
+					"doctype": "Subscription",
+					"document_type": "ToDo",
+					"document_name": todo.name,
+					"team": team.name,
+					"plan_type": "Site Plan",
+					"plan": plan.name,
+					"enabled": 1,
+				}
+			).insert()
+
+		make_sub("valid")
+
+		null_plan_type_sub = make_sub("null plan_type")
+		frappe.db.set_value("Subscription", null_plan_type_sub.name, "plan_type", None)
+
+		null_plan_sub = make_sub("null plan")
+		frappe.db.set_value("Subscription", null_plan_sub.name, "plan", None)
+
+		total = team.total_subscribed_amount()
+		self.assertEqual(total, 50)

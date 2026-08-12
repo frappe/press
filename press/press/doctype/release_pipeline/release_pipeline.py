@@ -11,8 +11,10 @@ import frappe
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import Version
 
-from press.api.github import get_dependant_apps_with_versions
+from press.api.client import dashboard_whitelist
+from press.api.github import GithubFetchError, get_dependant_apps_with_versions
 from press.exceptions import InsufficientSpaceOnServer, ReleasePipelineFailure
+from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import (
 	get_app_source_from_supported_versions,
 	get_latest_release_of_app_from_source,
@@ -31,6 +33,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.workflow_engine.doctype.press_workflow.press_workflow import PressWorkflow
+	from press.workflow_engine.doctype.press_workflow_step.press_workflow_step import PressWorkflowStep
 
 
 BENCH_TRANSITION_STATES = ["Pending", "Installing", "Updating"]
@@ -138,6 +141,13 @@ class ReleasePipeline(WorkflowBuilder):
 		workflow: DF.Link | None
 	# end: auto-generated types
 
+	dashboard_fields = (
+		"release_group",
+		"status",
+		"creation",
+		"team",
+	)
+
 	def send_failure_notification(self):
 		workflow = frappe.get_doc("Press Workflow", self.workflow)
 		failure_summary = self.get_failure_summary(workflow)
@@ -174,12 +184,33 @@ class ReleasePipeline(WorkflowBuilder):
 			"Retrying",
 		],
 	):
+		if status != "Failure" and frappe.db.get_value(self.doctype, self.name, "status") == "Failure":
+			# Nothing should move the pipeline away from Failure once stopped.
+			return
+
 		# If the workflow doc touches this for any reason
 		# Document native methods would raise a `TimeStampMismatch` error
 		self.db_set("status", status)
 
+		frappe.publish_realtime(
+			"doc_update",
+			{"doctype": "Release Pipeline", "name": self.name},
+			doctype="Release Pipeline",
+			docname=self.name,
+			after_commit=True,
+		)
+
 		if status == "Failure":
 			self.send_failure_notification()
+
+	@dashboard_whitelist()
+	def force_fail(self):
+		if self.status == "Failure":
+			return
+
+		self.update_pipeline_status("Failure")
+		if self.workflow:
+			frappe.get_doc("Press Workflow", self.workflow).force_fail()
 
 	def add_build_to_pipeline(self, build: str):
 		"""Attach a build to the pipeline if not present"""
@@ -187,7 +218,7 @@ class ReleasePipeline(WorkflowBuilder):
 
 		if build not in existing_builds:
 			self.append("pipeline_builds", {"build": build})
-			self.save()
+			self.save(ignore_permissions=True)
 
 	@cached_property
 	def release_group_doc(self) -> "ReleaseGroup":
@@ -203,6 +234,11 @@ class ReleasePipeline(WorkflowBuilder):
 	def _get_task_execution_queue() -> str:
 		"""Determine the appropriate queue for task execution based on the release group."""
 		return "default" if frappe.conf.developer_mode else "build"
+
+	def get_doc(self, doc):
+		if self.workflow:
+			doc.steps = self.get_steps()
+		return doc
 
 	@task(queue=_get_task_execution_queue())
 	def validate_app_hashes(self, apps: list[dict[str, str]]):
@@ -247,19 +283,24 @@ class ReleasePipeline(WorkflowBuilder):
 		apps: list[dict[str, str]],
 		sites: list[dict[str, Any]],
 		run_will_fail_check: bool = False,
-		create_deploy: bool = False,
+		trigger_patch_deploy: bool = False,
 	) -> str:
 		"""Create a Deploy Candidate for the release group."""
 		assert isinstance(self.release_group, str)
 		bench_update: BenchUpdate = get_bench_update(
 			self.release_group, apps, sites, is_inplace_update=False, ignore_permissions=True
 		)
-		return bench_update.deploy(
-			run_will_fail_check=run_will_fail_check,
-			validate_pre_candidate_checks=False,
-			create_build=create_deploy,
-			ignore_permissions=True,
-		)
+		# This is only to handle the suspended builds + patch build case.
+		try:
+			return bench_update.deploy(
+				run_will_fail_check=run_will_fail_check,
+				validate_pre_candidate_checks=False,
+				create_build=False,
+				ignore_permissions=True,
+				trigger_patch_deploy=trigger_patch_deploy,
+			)
+		except Exception as e:
+			raise ReleasePipelineFailure(f"Failed to create deploy candidate: {e!s}") from e
 
 	@task(queue=_get_task_execution_queue())
 	def initiate_pre_build_validations(self, deploy_candidate: str) -> str:
@@ -268,6 +309,17 @@ class ReleasePipeline(WorkflowBuilder):
 		deploy_candidate_build = candidate.schedule_build_and_deploy(
 			ignore_permissions=True,
 		)
+		return deploy_candidate_build["name"]
+
+	@task(queue=_get_task_execution_queue())
+	def initiate_patch_deploy(self, deploy_candidate: str) -> str:
+		"""Start the deploy candidate build process with patch deploy flag, skipping pre-build validations."""
+		candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", deploy_candidate)
+		deploy_candidate_build = candidate.trigger_patch_deploy(ignore_permissions=True)
+		if deploy_candidate_build.get("error"):
+			raise ReleasePipelineFailure(
+				deploy_candidate_build.get("message", "Patch build could not be initiated.")
+			)
 		return deploy_candidate_build["name"]
 
 	def _get_required_build_count(self, deploy_candidate: str) -> int:
@@ -285,7 +337,7 @@ class ReleasePipeline(WorkflowBuilder):
 
 		if user_addressable_failure or manually_failed:
 			self.is_user_addressable_failure = True
-			self.save()
+			self.save(ignore_permissions=True)
 
 	def _check_for_scheduled_build_retries(self, deploy_candidate_build: str):
 		"""Check if there are any scheduled retries for this build"""
@@ -337,16 +389,19 @@ class ReleasePipeline(WorkflowBuilder):
 	def monitor_build_success(self, deploy_candidate_build: str):
 		"""Monitor build till terminal state."""
 		deploy_candidate_build = self._get_latest_retried_build(deploy_candidate_build)
-		deploy_candidate_build_status = frappe.db.get_value(
-			"Deploy Candidate Build", deploy_candidate_build, "status"
+		deploy_candidate_build_doc: DeployCandidateBuild = frappe.get_doc(
+			"Deploy Candidate Build", deploy_candidate_build
 		)
 
-		if deploy_candidate_build_status == "Success":
+		if deploy_candidate_build_doc.status == "Success":
 			return  # Remote Build succeeded can mark as success and proceed
 
-		if deploy_candidate_build_status == "Failure":
+		if deploy_candidate_build_doc.status == "Failure":
 			# This will raise and enqueue the function again in case there are scheduled retries for the build
-			self._check_for_scheduled_build_retries(deploy_candidate_build)
+			# In case of patch builds we don't retry anyways therefore ignore that check here
+			if not deploy_candidate_build_doc.patch_build:
+				self._check_for_scheduled_build_retries(deploy_candidate_build)
+
 			raise ReleasePipelineFailure(
 				f"Remote build failed for Deploy Candidate Build {deploy_candidate_build}. Please check the build logs for more details."
 			)
@@ -515,7 +570,7 @@ class ReleasePipeline(WorkflowBuilder):
 		is_enabled = frappe.db.get_value("Release Group", self.release_group, "enabled")
 		if not is_enabled:
 			self.is_user_addressable_failure = True
-			self.save()
+			self.save(ignore_permissions=True)
 			raise ReleasePipelineFailure("Release Group is disabled. Updates can not be initiated.")
 
 		try:
@@ -571,7 +626,7 @@ class ReleasePipeline(WorkflowBuilder):
 		)
 
 	@task(queue=_get_task_execution_queue())
-	def prepare_deployment(self, apps, sites, run_will_fail_check) -> tuple[str, str]:
+	def prepare_deployment(self, apps, sites, run_will_fail_check, trigger_patch_deploy) -> tuple[str, str]:
 		"""Creates the candidate and returns the primary build name."""
 		auto_upgrade_dependencies = frappe.db.get_single_value(
 			"Press Settings",
@@ -583,17 +638,21 @@ class ReleasePipeline(WorkflowBuilder):
 				apps=apps,
 				sites=sites,
 				run_will_fail_check=run_will_fail_check,
-				create_deploy=False,
+				trigger_patch_deploy=trigger_patch_deploy,
 			)
 			self.add_implicit_app_dependencies(deploy_candidate)
 
 			if auto_upgrade_dependencies:
 				self.auto_update_bench_dependency_versions(deploy_candidate)
 
-			primary_build = self.initiate_pre_build_validations(deploy_candidate)
+			primary_build = (
+				self.initiate_pre_build_validations(deploy_candidate)
+				if not trigger_patch_deploy
+				else self.initiate_patch_deploy(deploy_candidate)
+			)
 
 			return deploy_candidate, primary_build
-		except frappe.ValidationError as e:
+		except (frappe.ValidationError, GithubFetchError) as e:
 			raise ReleasePipelineFailure(f"Failed to prepare deployment: {e!s}") from e
 
 	@task(queue=_get_task_execution_queue())
@@ -672,18 +731,21 @@ class ReleasePipeline(WorkflowBuilder):
 		apps: list[dict[str, str]],
 		sites: list[dict[str, Any]],
 		run_will_fail_check: bool = False,
+		trigger_patch_deploy: bool = False,
 	):
 		"""Orchestrates the release process from validation to bench creation with recursive monitoring and retry handling"""
 		if not self.workflow:
 			self.workflow = self.current_workflow
-			self.save()
+			self.save(ignore_permissions=True)
 
 		try:
 			# 1. Validation Phase
 			self.run_pre_release_checks(apps)
 
 			# 2. Initialization Phase
-			deploy_candidate, primary_build = self.prepare_deployment(apps, sites, run_will_fail_check)
+			deploy_candidate, primary_build = self.prepare_deployment(
+				apps, sites, run_will_fail_check, trigger_patch_deploy
+			)
 
 			# 3. Monitoring Phase (Handles 1 or 2 builds)
 			self.orchestrate_build_monitoring(deploy_candidate, primary_build)
@@ -697,3 +759,139 @@ class ReleasePipeline(WorkflowBuilder):
 
 	def on_workflow_failure(self, *args, **kwargs):
 		self.update_pipeline_status("Failure")
+
+	def get_steps(self):  # noqa: C901
+		workflow: PressWorkflow = frappe.get_doc("Press Workflow", self.workflow)
+
+		def _find_step_with_method_name(method_name: str) -> PressWorkflowStep:
+			for step in workflow.steps:
+				if step.step_method == method_name:
+					return step
+			return None
+
+		steps_info: dict[str, dict[str, Any]] = {
+			task.name: {
+				**task,
+				"start": task.start.isoformat() if task.start else None,
+				"end": task.end.isoformat() if task.end else None,
+			}
+			for task in frappe.get_all(
+				"Press Workflow Task",
+				# intentionally not filling up `label` field
+				filters={"name": ("in", [step.task for step in workflow.steps if step.task])},
+				fields=["name", "start", "end", "duration"],
+			)
+		}
+
+		def _get_step_info(step: PressWorkflowStep, label: str) -> dict[str, Any]:
+			if step.status in ["Running", "Success", "Failure"]:
+				return {
+					**steps_info.get(step.task, {}),
+					"label": label,
+					"status": step.status,
+				}
+
+			return {
+				"name": step.step_method,
+				"label": label,
+				"status": step.status,
+				"start": None,
+				"end": None,
+				"duration": 0,
+			}
+
+		stages = []
+
+		# Pre-release checks
+		if pre_release_checks_step := _find_step_with_method_name("run_pre_release_checks"):
+			stages.append(_get_step_info(pre_release_checks_step, label="Pre-release checks"))
+
+		# Preparing Builds
+		if prepare_build_step := _find_step_with_method_name("prepare_deployment"):
+			stages.append(_get_step_info(prepare_build_step, label="Preparing deployment"))
+
+		# Actual Build stage
+		if orchestrate_build_monitoring := _find_step_with_method_name("orchestrate_build_monitoring"):
+			building_stage = _get_step_info(orchestrate_build_monitoring, label="Building")
+			build_ids = [build.build for build in self.pipeline_builds]
+			build_data = {
+				b.name: b
+				for b in frappe.get_all(
+					"Deploy Candidate Build",
+					filters={"name": ["in", build_ids]},
+					fields=["name", "status", "platform"],
+				)
+			}
+			building_stage["builds"] = [
+				{
+					"doctype": "Deploy Candidate Build",
+					"name": build.build,
+					"status": build_data[build.build]["status"],
+					"architecture": build_data[build.build]["platform"],
+				}
+				for build in self.pipeline_builds
+			]
+			stages.append(building_stage)
+
+		# Bench Creation stage
+		if monitor_bench_creation := _find_step_with_method_name("monitor_bench_creation"):
+			bench_creation_stage = _get_step_info(monitor_bench_creation, label="Deploying")
+			bench_creation_stage["benches"] = [
+				frappe._dict(
+					{
+						"doctype": "Bench",
+						"name": bench.name,
+						"status": bench.status,
+						"server": bench.server,
+					}
+				)
+				for bench in frappe.get_all(
+					"Bench",
+					filters={
+						"build": ["in", [b.build for b in self.pipeline_builds]],
+						"team": self.team,
+					},
+					fields=["name", "status", "server"],
+				)
+			]
+
+			# Try to attach "New Bench" job references
+			new_bench_jobs = frappe.get_all(
+				"Agent Job",
+				filters={
+					"job_type": "New Bench",
+					"bench": ("in", [bench.name for bench in bench_creation_stage["benches"]]),
+				},
+				fields=["name", "bench", "status", "creation", "job_type"],
+			)
+
+			for bench in bench_creation_stage["benches"]:
+				bench["jobs"] = [
+					{
+						"doctype": "Agent Job",
+						"name": job.name,
+						"job_type": job.job_type,
+						"status": job.status,
+						"creation": int(job.creation.timestamp()) if job.creation else None,
+					}
+					for job in new_bench_jobs
+					if job.bench == bench["name"] and job.job_type == "New Bench"
+				]
+
+			if bench_creation_stage:
+				stages.append(bench_creation_stage)
+
+		return {
+			"doctype": self.doctype,
+			"name": self.name,
+			"status": self.status,
+			"start": workflow.start.isoformat() if workflow.start else None,
+			"end": workflow.end.isoformat() if workflow.end else None,
+			"duration": int((workflow.end - workflow.start).total_seconds())
+			if workflow.start and workflow.end
+			else None,
+			"stages": stages,
+		}
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Release Pipeline")

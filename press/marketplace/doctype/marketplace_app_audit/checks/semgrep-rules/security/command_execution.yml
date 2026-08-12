@@ -80,7 +80,7 @@ rules:
       Needs to be reviewed by review/security team. Keep arguments as a literal list (not a concatenated
       string) and validate any user-controlled values before interpolation.
   languages: [python]
-  severity: WARNING
+  severity: HIGH
   paths:
     exclude:
       - "**/test_*.py"

@@ -19,9 +19,9 @@
 	</div>
 </template>
 <script>
-import { Tabs, Breadcrumbs } from 'frappe-ui';
-import Header from '../components/Header.vue';
-import TabsWithRouter from '../components/TabsWithRouter.vue';
+import { Breadcrumbs, Tabs } from 'frappe-ui'
+import Header from '../components/Header.vue'
+import TabsWithRouter from '../components/TabsWithRouter.vue'
 
 export default {
 	name: 'Billing',
@@ -34,12 +34,13 @@ export default {
 	data() {
 		return {
 			currentTab: 0,
-		};
+		}
 	},
 	computed: {
 		tabs() {
 			const baseTabs = [
 				{ label: 'Overview', route: { name: 'BillingOverview' } },
+				{ label: 'Subscriptions', route: { name: 'BillingSubscriptions' } },
 				{ label: 'Forecast', route: { name: 'BillingForecast' } },
 				{ label: 'Invoices', route: { name: 'BillingInvoices' } },
 				{ label: 'Balances', route: { name: 'BillingBalances' } },
@@ -48,18 +49,22 @@ export default {
 					label: 'Marketplace Payouts',
 					route: { name: 'BillingMarketplacePayouts' },
 				},
-			];
+			]
 
-			// Add UPI Autopay tab for INR teams
-			if (this.$team?.doc?.currency === 'INR') {
-				baseTabs.splice(5, 0, {
-					label: 'UPI Autopay',
-					route: { name: 'BillingUPIAutopay' },
-				});
+			if (this.$team?.doc?.apply_limits && this.$team?.doc?.tier) {
+				baseTabs.push({ label: 'Limits', route: { name: 'BillingTiers' } })
 			}
 
-			return baseTabs;
+			// Add UPI Autopay tab for INR teams (before Marketplace Payouts)
+			if (this.$team?.doc?.currency === 'INR') {
+				baseTabs.splice(6, 0, {
+					label: 'UPI Autopay',
+					route: { name: 'BillingUPIAutopay' },
+				})
+			}
+
+			return baseTabs
 		},
 	},
-};
+}
 </script>

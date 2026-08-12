@@ -1,4 +1,5 @@
 import json
+import threading
 import typing
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -27,6 +28,40 @@ from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
+
+# Patch Ansible's hooks once at import and route callbacks through this thread-local
+# instead of re-patching every run. Each thread tracks its own active Ansible instance,
+# so concurrent runs in different threads don't clobber each other's callbacks. run()
+# resets it on entry, so a job killed mid-run (timeout, etc.) can't leak stale state into
+# the next job the way the old unpatch-at-end-of-run pattern did.
+_ansible_local = threading.local()
+
+
+def _get_current_ansible() -> "Ansible | None":
+	return getattr(_ansible_local, "current", None)
+
+
+def _patched_action_module_run(*args, **kwargs):
+	result = _action_module_run_orig(*args, **kwargs)
+	current_ansible = _get_current_ansible()
+	if current_ansible:
+		current_ansible.callback.on_async_poll(result)
+	return result
+
+
+def _patched_poll_async_result(executor, result, templar, task_vars=None):
+	current_ansible = _get_current_ansible()
+	if current_ansible:
+		task = executor._task
+		current_ansible.callback.on_async_start(task._role.get_name(), task.name, result["ansible_job_id"])
+	return _poll_async_result_orig(executor, result, templar, task_vars=task_vars)
+
+
+_action_module_run_orig = ActionModule.run
+_poll_async_result_orig = TaskExecutor._poll_async_result
+ActionModule.run = _patched_action_module_run
+TaskExecutor._poll_async_result = _patched_poll_async_result
 
 
 def reconnect_on_failure():
@@ -164,12 +199,12 @@ class AnsibleCallback(CallbackBase):
 
 class Ansible:
 	def __init__(self, server, playbook, user="root", variables=None, port=22):
-		self.patch()
 		self.server = server
 		self.playbook = playbook
 		self.playbook_path = frappe.get_app_path("press", "playbooks", self.playbook)
 		self.host = server.ip if server.ip else server.private_ip
-		self.variables = variables or {}
+		# Every playbook gets the provider, so templates don't depend on the caller passing it
+		self.variables = {"cloud_provider": server.get("provider") or ""} | (variables or {})
 
 		constants.HOST_KEY_CHECKING = False
 		context.CLIARGS = ImmutableDict(
@@ -215,31 +250,8 @@ class Ansible:
 
 		return proxy_command
 
-	def patch(self):
-		def modified_action_module_run(*args, **kwargs):
-			result = self.action_module_run(*args, **kwargs)
-			self.callback.on_async_poll(result)
-			return result
-
-		def modified_poll_async_result(executor, result, templar, task_vars=None):
-			job_id = result["ansible_job_id"]
-			task = executor._task
-			self.callback.on_async_start(task._role.get_name(), task.name, job_id)
-			return self._poll_async_result(executor, result, templar, task_vars=task_vars)
-
-		if ActionModule.run.__module__ != "press.runner":
-			self.action_module_run = ActionModule.run
-			ActionModule.run = modified_action_module_run
-
-		if TaskExecutor.run.__module__ != "press.runner":
-			self._poll_async_result = TaskExecutor._poll_async_result
-			TaskExecutor._poll_async_result = modified_poll_async_result
-
-	def unpatch(self):
-		TaskExecutor._poll_async_result = self._poll_async_result
-		ActionModule.run = self.action_module_run
-
 	def run(self) -> AnsiblePlay:
+		_ansible_local.current = self
 		self.executor = PlaybookExecutor(
 			playbooks=[self.playbook_path],
 			inventory=self.inventory,
@@ -253,7 +265,6 @@ class Ansible:
 		self.callback.tasks = self.tasks
 		self.callback.task_list = self.task_list
 		self.executor.run()
-		self.unpatch()
 		return frappe.get_doc("Ansible Play", self.play)
 
 	def create_ansible_play(self):

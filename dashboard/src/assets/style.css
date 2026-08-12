@@ -3,6 +3,7 @@
 body {
 	background-color: var(--surface-white);
 	color: var(--ink-gray-9);
+  @apply text-base;
 }
 
 @layer components {
@@ -56,4 +57,18 @@ body {
 
 *::-webkit-scrollbar-thumb:hover {
 	background-color: var(--scrollbar-thumb-hover);
+}
+
+/* lil transitions */
+.fade-in {
+	animation: fadeIn 0.3s ease-out both;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }

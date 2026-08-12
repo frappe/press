@@ -21,7 +21,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	get_total_installs_by_app,
 )
-from press.utils import get_app_tag, get_current_team, get_last_doc, is_user_part_of_team, unique
+from press.utils import docs, get_app_tag, get_current_team, get_last_doc, is_user_part_of_team, unique
 from press.utils.billing import get_frappe_io_connection
 
 if TYPE_CHECKING:
@@ -171,7 +171,9 @@ def create_site_on_public_bench(
 		):
 			group = group[0].name
 		else:
-			frappe.throw("No release group found for the selected apps")
+			frappe.throw(
+				"We couldn't find a compatible bench group for the selected apps. Please make sure the apps share a common Frappe version, or pick a different combination of apps."
+			)
 
 	site = frappe.get_doc(
 		{
@@ -217,7 +219,9 @@ def create_site_on_private_bench(
 	)
 
 	if not all_latest_stable_version_supported:
-		frappe.throw("No stable version found for the selected app(s)")
+		frappe.throw(
+			"None of the selected apps have a stable release yet. Please choose apps with a published stable version, or contact the app publisher."
+		)
 
 	latest_stable_version_supported = sorted(all_latest_stable_version_supported, reverse=True)[0]
 
@@ -577,7 +581,9 @@ def validate_app_image_dimensions(file_content):
 	im = Image.open(BytesIO(file_content))
 	im_width, im_height = im.size
 	if im_width != im_height or im_height < 300:
-		frappe.throw("Logo must be a square image atleast 300x300px in size")
+		frappe.throw(
+			"The logo must be a square image at least 300x300px in size. Please upload a larger square image."
+		)
 
 
 @frappe.whitelist()
@@ -645,7 +651,9 @@ def reason_for_rejection(app_release: str) -> str:
 	release_doc = frappe.get_doc("App Release", app_release)
 
 	if release_doc.status != "Rejected":
-		frappe.throw("The request for the given app release was not rejected!")
+		frappe.throw(
+			"This app release wasn't rejected, so there is no rejection reason to show. Rejection details are only available for releases that were reviewed and rejected."
+		)
 
 	return approval_request.reason_for_rejection
 
@@ -660,7 +668,9 @@ def get_latest_approval_request(app_release: str):
 	)
 
 	if len(approval_requests) == 0:
-		frappe.throw("No approval request exists for the given app release")
+		frappe.throw(
+			f"No review request exists for this app release yet. Please submit the release for review before checking its status. {docs.doc_link(docs.PUBLISH_APP)}."
+		)
 
 	approval_request = frappe.get_doc("App Release Approval Request", approval_requests[0])
 
@@ -788,7 +798,9 @@ def add_app(source: str, app: str):
 				marketplace_app.append("sources", {"source": source, "version": version})
 				marketplace_app.save(ignore_permissions=True)
 		else:
-			frappe.throw("A marketplace app already exists with the given versions!")
+			frappe.throw(
+				f"A marketplace app already exists for the selected versions. Please choose different versions, or edit the existing app instead. {docs.doc_link(docs.PUBLISH_APP)}."
+			)
 
 	return marketplace_app.name
 
@@ -1018,6 +1030,7 @@ def get_subscriptions_list(marketplace_app: str) -> list:
 
 
 @frappe.whitelist()
+@protected("Marketplace App")
 def create_app_plan(marketplace_app: str, plan_data: dict):
 	app_plan_doc = frappe.get_doc(
 		{
@@ -1037,9 +1050,13 @@ def create_app_plan(marketplace_app: str, plan_data: dict):
 @frappe.whitelist()
 def update_app_plan(app_plan_name: str, updated_plan_data: dict):
 	if not updated_plan_data.get("title"):
-		frappe.throw("Plan title is required")
+		frappe.throw("Please enter a title for the plan.")
 
 	app_plan_doc = frappe.get_doc("Marketplace App Plan", app_plan_name)
+	if frappe.session.data.user_type != "System User":
+		app_team = frappe.db.get_value("Marketplace App", app_plan_doc.app, "team")
+		if app_team != get_current_team():
+			frappe.throw("Not Permitted", frappe.PermissionError)
 
 	no_of_active_subscriptions = frappe.db.count(
 		"Subscription",
@@ -1080,69 +1097,13 @@ def reset_features_for_plan(app_plan_doc: MarketplaceAppPlan, feature_list: list
 	app_plan_doc.features = []
 	for feature in feature_list:
 		if not feature:
-			frappe.throw("Feature cannot be empty string")
+			frappe.throw(
+				"Plan features can't be blank. Please enter a description for each feature, or remove the empty rows."
+			)
 		app_plan_doc.append("features", {"description": feature})
 
 	if save:
 		app_plan_doc.save(ignore_permissions=True)
-
-
-@frappe.whitelist()
-def get_payouts_list() -> list[dict]:
-	team = get_current_team()
-	payouts = frappe.get_all(
-		"Payout Order",
-		filters={"recipient": team},
-		fields=[
-			"name",
-			"status",
-			"period_end",
-			"mode_of_payment",
-			"net_total_inr",
-			"net_total_usd",
-		],
-		order_by="period_end desc",
-	)
-
-	return payouts  # noqa: RET504
-
-
-@frappe.whitelist()
-def get_payout_details(name: str) -> dict:
-	order_items = frappe.get_all(
-		"Payout Order Item",
-		filters={"parent": name},
-		fields=[
-			"name",
-			"document_name",
-			"site",
-			"rate",
-			"plan",
-			"total_amount",
-			"currency",
-			"net_amount",
-			"gateway_fee",
-			"quantity",
-			"commission",
-		],
-		order_by="idx",
-	)
-
-	payout_order = frappe.db.get_value(
-		"Payout Order",
-		name,
-		["status", "due_date", "mode_of_payment", "net_total_inr", "net_total_usd"],
-		as_dict=True,
-	)
-
-	grouped_items = {"usd_items": [], "inr_items": [], **payout_order}
-	for item in order_items:
-		if item.currency == "INR":
-			grouped_items["inr_items"].append(item)
-		else:
-			grouped_items["usd_items"].append(item)
-
-	return grouped_items
 
 
 def get_discount_percent(plan, discount=0.0):
@@ -1172,7 +1133,7 @@ def get_discount_percent(plan, discount=0.0):
 @frappe.whitelist(allow_guest=True)
 def login_via_token(token: str, team: str, site: str):
 	if not token or not isinstance(token, str):
-		frappe.throw("Invalid Token")
+		frappe.throw("This login token is invalid. Please return to your site and start the login again.")
 
 	team = team.replace(" ", "+")
 	token_exists = frappe.db.exists(
@@ -1389,13 +1350,7 @@ def is_desk_user(user: str | None = None) -> bool:
 	return user_doc.user_type == "System User"
 
 
-@frappe.whitelist(methods=["GET"])
-def get_app_audit(app: str):
-	"""
-	Fetches the latest audit report for the given marketplace app.
-	By latest, it can be the latest release change audit or the latest submission gate audit.
-	If there is no audit report, it will return None.
-	"""
+def _validate_app_audit_access(app: str) -> None:
 	current_team = get_current_team()
 	app_team = frappe.db.get_value("Marketplace App", app, "team")
 	# for impersonation, the session user needs to have system user role, in that case we allow seeing other audit reports.
@@ -1406,13 +1361,60 @@ def get_app_audit(app: str):
 				_("You are not permitted to get the audit report for this app"), frappe.PermissionError
 			)
 
-	# get_all, limit 1, order by creation desc
-	audit_name = frappe.get_all(
-		"Marketplace App Audit", {"marketplace_app": app}, order_by="creation desc", limit=1, pluck="name"
+
+@frappe.whitelist(methods=["GET"])
+def get_app_audits(app: str) -> list[dict]:
+	"""Fetches audit report summaries for the list view."""
+	_validate_app_audit_access(app)
+
+	audits = frappe.get_all(
+		"Marketplace App Audit",
+		filters={"marketplace_app": app},
+		fields=[
+			"name",
+			"app_source",
+			"app_release",
+			"audit_type",
+			"audit_result",
+			"status",
+			"started_at",
+			"finished_at",
+		],
+		order_by="creation desc",
 	)
+	if not audits:
+		return []
+
+	return audits
+
+
+@frappe.whitelist(methods=["GET"])
+def get_app_audit(app: str, audit_name: str | None = None):
+	"""Fetches a single audit report with all checks. Falls back to latest if no name given."""
+	_validate_app_audit_access(app)
+
+	if not audit_name:
+		audit_name = frappe.db.get_value(
+			"Marketplace App Audit",
+			{"marketplace_app": app},
+			order_by="creation desc",
+		)
+
 	if not audit_name:
 		return None
 
-	app_audit = frappe.get_doc("Marketplace App Audit", audit_name[0])
+	audit = frappe.get_doc("Marketplace App Audit", audit_name)
+	if audit.marketplace_app != app:
+		frappe.throw(_("Audit does not belong to this app"), frappe.PermissionError)
 
-	return app_audit.as_dict()
+	result = audit.as_dict()
+	result["source_version"] = (
+		frappe.db.get_value(
+			"Marketplace App Version",
+			{"parent": app, "parenttype": "Marketplace App", "source": audit.app_source},
+			"version",
+		)
+		if audit.app_source
+		else None
+	)
+	return result

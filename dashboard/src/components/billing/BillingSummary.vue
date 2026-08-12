@@ -1,6 +1,6 @@
 <template>
 	<div class="flex flex-col gap-4">
-		<div class="flex flex-col rounded-lg text-base text-ink-gray-9 shadow">
+		<div class="flex flex-col rounded-lg text-base text-ink-gray-9 shadow dark:border">
 			<div class="flex flex-col gap-2.5 px-4 py-3">
 				<div class="flex items-center justify-between">
 					<div class="flex flex-col gap-1.5">

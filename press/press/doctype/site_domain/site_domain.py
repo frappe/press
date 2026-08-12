@@ -87,7 +87,9 @@ class SiteDomain(Document):
 
 		if self.has_root_tls_certificate:
 			server = frappe.db.get_value("Site", self.site, "server")
-			self.agent.add_domain_to_upstream(server=server, site=self.site, domain=self.domain)
+			self.flags.add_domain_to_upstream_job = self.agent.add_domain_to_upstream(
+				server=server, site=self.site, domain=self.domain
+			)
 			return
 
 		self.create_tls_certificate()
@@ -212,6 +214,19 @@ def process_new_host_job_update(job):
 
 	if updated_status != domain_status:
 		frappe.db.set_value("Site Domain", job.host, "status", updated_status)
+
+		if tls_certificate := frappe.get_value("Site Domain", job.host, "tls_certificate"):
+			cert = frappe.db.get_value(
+				"TLS Certificate",
+				tls_certificate,
+				["wildcard", "site_domain_tls_update_pending"],
+				as_dict=True,
+			)
+			if cert and cert.wildcard and cert.site_domain_tls_update_pending and updated_status == "Active":
+				frappe.db.set_value(
+					"TLS Certificate", tls_certificate, "site_domain_tls_update_pending", False
+				)
+
 		if updated_status == "Active":
 			frappe.get_doc("Site", job.site).add_domain_to_config(job.host)
 
@@ -232,10 +247,15 @@ def process_add_domain_to_upstream_job_update(job):
 	if updated_status != domain_status:
 		frappe.db.set_value("Site Domain", domain, "status", updated_status)
 
-	if job.status in ["Failure", "Delivery Failure"]:
-		frappe.db.set_value(
-			"Product Trial Request", {"domain": request_data.get("domain")}, "status", "Error"
-		)
+		# Domains activated via this path must also land in the site's `domains`
+		# config (same as `process_new_host_job_update`), else they're missing from
+		# `frappe.conf.domains` and reports opened on them fail PDF generation.
+		if updated_status == "Active":
+			frappe.get_doc("Site", job.site).add_domain_to_config(domain)
+	if job.status in ["Failure", "Delivery Failure"] and (
+		request := frappe.db.get_value("Product Trial Request", {"domain": domain})
+	):
+		frappe.get_doc("Product Trial Request", request).update_status_from_agent_jobs(job.data)
 
 
 def update_dns_type():

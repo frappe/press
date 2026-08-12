@@ -4,7 +4,7 @@
 			<div class="font-medium">Important</div>
 			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsImportant">
-					<div class="border rounded">
+					<div class="border rounded px-2">
 						<Switch
 							size="sm"
 							:disabled="disabled"
@@ -22,7 +22,7 @@
 			<div class="font-medium">General</div>
 			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsGeneral">
-					<div class="border rounded">
+					<div class="border rounded px-2">
 						<Switch
 							size="sm"
 							:disabled="disabled"
@@ -40,7 +40,7 @@
 			<div class="font-medium">Resources</div>
 			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsResources">
-					<div class="border rounded">
+					<div class="border rounded px-2">
 						<Switch
 							size="sm"
 							:disabled="disabled"
@@ -61,7 +61,7 @@
 			<div class="font-medium">Partner</div>
 			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsPartner">
-					<div class="border rounded">
+					<div class="border rounded px-2">
 						<Switch
 							size="sm"
 							:disabled="disabled || !$props.allow_partner"
@@ -79,28 +79,30 @@
 </template>
 
 <script setup lang="ts">
-import { Switch } from 'frappe-ui';
-import { inject } from 'vue';
-const team = inject('team');
+import { Switch } from 'frappe-ui'
+import { inject } from 'vue'
+
+const team = inject('team')
 
 const props = withDefaults(
 	defineProps<{
-		admin_access?: number;
-		all_servers?: number;
-		all_sites?: number;
-		all_release_groups?: number;
-		allow_bench_creation?: number;
-		allow_apps?: number;
-		allow_billing?: number;
-		allow_partner?: number;
-		allow_server_creation?: number;
-		allow_site_creation?: number;
-		allow_webhook_configuration?: number;
-		allow_dashboard?: number;
-		allow_customer?: number;
-		allow_leads?: number;
-		allow_contribution?: number;
-		disabled?: boolean;
+		admin_access?: number
+		all_servers?: number
+		all_sites?: number
+		all_release_groups?: number
+		allow_bench_creation?: number
+		allow_apps?: number
+		allow_billing?: number
+		allow_partner?: number
+		allow_server_creation?: number
+		allow_site_creation?: number
+		allow_webhook_configuration?: number
+		allow_dashboard?: number
+		allow_customer?: number
+		allow_leads?: number
+		allow_contribution?: number
+		allow_local_payment?: number
+		disabled?: boolean
 	}>(),
 	{
 		admin_access: 0,
@@ -118,22 +120,21 @@ const props = withDefaults(
 		allow_customer: 0,
 		allow_leads: 0,
 		allow_contribution: 0,
+		allow_local_payment: 0,
 		disabled: false,
 	},
-);
-
-console.log('props', props);
+)
 
 defineEmits<{
-	update: [key: string, value: boolean];
-}>();
+	update: [key: string, value: boolean]
+}>()
 
 const permissionsImportant = [
 	{
 		key: 'admin_access',
 		label: 'Administrator',
 	},
-];
+]
 
 const permissionsGeneral = [
 	{
@@ -164,7 +165,7 @@ const permissionsGeneral = [
 		key: 'allow_partner',
 		label: 'Partner Management',
 	},
-];
+]
 
 const permissionsResources = [
 	{
@@ -179,7 +180,7 @@ const permissionsResources = [
 		key: 'all_release_groups',
 		label: 'All Release Groups',
 	},
-];
+]
 
 const permissionsPartner = [
 	{
@@ -198,5 +199,9 @@ const permissionsPartner = [
 		key: 'allow_contribution',
 		label: 'Contribution',
 	},
-];
+	{
+		key: 'allow_local_payment',
+		label: 'Local Payment',
+	},
+]
 </script>

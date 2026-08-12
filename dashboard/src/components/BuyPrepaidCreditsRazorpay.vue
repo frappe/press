@@ -30,11 +30,11 @@
 	</div>
 </template>
 <script>
-import { toast } from 'vue-sonner';
-import { DashboardError } from '../utils/error';
+import { toast } from "vue-sonner";
+import { DashboardError } from "../utils/error";
 
 export default {
-	name: 'BuyPrepaidCreditsRazorpay',
+	name: "BuyPrepaidCreditsRazorpay",
 	props: {
 		amount: {
 			default: 0,
@@ -47,7 +47,7 @@ export default {
 		},
 		type: {
 			type: String,
-			default: 'Prepaid Credits',
+			default: "Prepaid Credits",
 		},
 		paypalEnabled: {
 			type: Boolean,
@@ -56,21 +56,21 @@ export default {
 	},
 	data() {
 		return {
-			paypalEnabled: this.$team.doc.currency === 'USD' && this.paypalEnabled,
+			paypalEnabled: this.$team.doc.currency === "USD" && this.paypalEnabled,
 			isPaymentComplete: false,
 			isVerifyingPayment: false,
 		};
 	},
 	computed: {
 		showPaypal() {
-			return this.$team.doc.currency === 'USD' && this.paypalEnabled;
+			return this.$team.doc.currency === "USD" && this.paypalEnabled;
 		},
 	},
 	mounted() {
-		this.razorpayCheckoutJS = document.createElement('script');
+		this.razorpayCheckoutJS = document.createElement("script");
 		this.razorpayCheckoutJS.setAttribute(
-			'src',
-			'https://checkout.razorpay.com/v1/checkout.js',
+			"src",
+			"https://checkout.razorpay.com/v1/checkout.js",
 		);
 		this.razorpayCheckoutJS.async = true;
 		document.head.appendChild(this.razorpayCheckoutJS);
@@ -78,7 +78,7 @@ export default {
 	resources: {
 		createRazorpayOrder() {
 			return {
-				url: 'press.api.billing.create_razorpay_order',
+				url: "press.api.billing.create_razorpay_order",
 				params: {
 					amount: this.amount,
 					transaction_type: this.type,
@@ -89,7 +89,7 @@ export default {
 				validate() {
 					if (this.amount < this.minimumAmount) {
 						throw new DashboardError(
-							'Amount less than minimum amount required',
+							`Amount should be equal to or greater than ${this.minimumAmount}`,
 						);
 					}
 				},
@@ -97,9 +97,9 @@ export default {
 		},
 		handlePaymentFailed() {
 			return {
-				url: 'press.api.billing.handle_razorpay_payment_failed',
+				url: "press.api.billing.handle_razorpay_payment_failed",
 				onSuccess() {
-					console.log('Payment Failed.');
+					console.log("Payment Failed.");
 				},
 			};
 		},
@@ -112,29 +112,29 @@ export default {
 			const options = {
 				key: data.key_id,
 				order_id: data.order_id,
-				name: 'Frappe Cloud',
-				image: '/assets/press/images/frappe-cloud-logo.png',
+				name: "Frappe Cloud",
+				image: "/assets/press/images/frappe-cloud-logo.png",
 				prefill: {
 					email: this.$team.doc.user,
 				},
 				handler: this.handlePaymentSuccess,
-				theme: { color: '#171717' },
+				theme: { color: "#171717" },
 				...(this.paypalEnabled
 					? {
 							config: {
 								display: {
 									blocks: {
 										wallets: {
-											name: 'Pay using PayPal',
+											name: "Pay using PayPal",
 											instruments: [
 												{
-													method: 'wallet',
-													wallets: ['paypal'],
+													method: "wallet",
+													wallets: ["paypal"],
 												},
 											],
 										},
 									},
-									sequence: ['block.wallets'],
+									sequence: ["block.wallets"],
 									preferences: {
 										show_default_blocks: false,
 									},
@@ -150,20 +150,20 @@ export default {
 			rzp.open();
 
 			// Attach failure handler
-			rzp.on('payment.failed', this.handlePaymentFailed);
+			rzp.on("payment.failed", this.handlePaymentFailed);
 			// rzp.on('payment.success', this.handlePaymentSuccess);
 		},
 		handlePaymentFailed(response) {
 			this.$resources.handlePaymentFailed.submit({ response });
-			toast.error('Payment failed');
+			toast.error("Payment failed");
 		},
 		handlePaymentSuccess() {
 			this.isPaymentComplete = true;
 			if (this.isOnboarding) {
 				this.checkForOnboardingPaymentCompletion();
 			} else {
-				this.$emit('success');
-				toast.success('Payment successful');
+				this.$emit("success");
+				toast.success("Payment successful");
 			}
 		},
 		async checkForOnboardingPaymentCompletion() {
@@ -173,7 +173,7 @@ export default {
 				setTimeout(this.checkForOnboardingPaymentCompletion, 2000);
 			} else {
 				this.isVerifyingPayment = false;
-				this.$emit('success');
+				this.$emit("success");
 			}
 		},
 	},

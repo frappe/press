@@ -1,7 +1,7 @@
 # !/usr/bin/env bash
 
 echo "Installing python dev dependencies"
-pip install -r dev-requirements.txt
+pip install -e ".[dev]"
 
 echo "Installing nodejs dev dependencies"
 yarn install --frozen-lockfile --dev

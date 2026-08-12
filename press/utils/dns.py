@@ -45,7 +45,7 @@ def create_dns_record(doc, record_name=None):
 		# Check if the cluster has multiple proxy servers
 		proxy_servers = frappe.get_all(
 			"Proxy Server",
-			{"cluster": doc.cluster, "status": "Active"},
+			{"cluster": doc.cluster, "status": "Active", "exclude_from_auto_selection": 0},
 			pluck="name",
 		)
 		if len(proxy_servers) == 1 or (
@@ -238,8 +238,7 @@ def check_for_ip_match(site_name: str, site_ip: str | None, domain_ip: str | Non
 			{"status": "Active", "cluster": cluster, "is_primary": True, "exclude_from_auto_selection": True},
 			pluck="ip",
 		)
-		if (domain_ip in secondary_ips) or (site_ip == proxy_ip and domain_ip in failed_over_ips):
-			return True
+		return domain_ip in [*secondary_ips, proxy_ip, *failed_over_ips]
 	return False
 
 

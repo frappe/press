@@ -62,6 +62,7 @@ MIN_FIRING_INSTANCES_FRACTION = (
 )
 
 DAY_HOURS = range(9, 18)
+MAX_ASSIGNED_CALLS_BEFORE_DEFAULT_AT_NIGHT = 10
 CONFIRMATION_THRESHOLD_SECONDS_DAY = 5 * 60  # 5 minutes;time after which humans are called
 CONFIRMATION_THRESHOLD_SECONDS_NIGHT = (
 	10 * 60  # 10 minutes; time after which humans are called
@@ -410,7 +411,9 @@ class Incident(WebsiteGenerator):
 	def monitor_server(self) -> MonitorServer:
 		press_settings: PressSettings = frappe.get_cached_doc("Press Settings")
 		if not (monitor_url := press_settings.monitor_server):
-			frappe.throw("Monitor Server not set in Press Settings")
+			frappe.throw(
+				"Monitor Server is not set. Please configure the Monitor Server in Press Settings before continuing."
+			)
 		return frappe.get_cached_doc("Monitor Server", monitor_url)
 
 	def get_grafana_auth_header(self):
@@ -437,7 +440,9 @@ class Incident(WebsiteGenerator):
 	def reboot_database_server(self):
 		db_server_name = frappe.db.get_value("Server", self.server, "database_server")
 		if not db_server_name:
-			frappe.throw("No database server found for this server")
+			frappe.throw(
+				"No database server is linked to this server. Please ensure the server has an associated database server."
+			)
 		db_server = DatabaseServer("Database Server", db_server_name)
 		try:
 			db_server.reboot_with_serial_console()
@@ -485,7 +490,7 @@ class Incident(WebsiteGenerator):
 		"""
 		down_benches = self.monitor_server.get_benches_down_for_server(str(self.server))
 		if not down_benches:
-			frappe.throw("No down benches found for this server")
+			frappe.throw("No down benches were found for this server. There may be nothing to act on.")
 			return
 		for bench_name in down_benches:
 			bench: Bench = Bench("Bench", bench_name)
@@ -506,6 +511,40 @@ class Incident(WebsiteGenerator):
 			deduplicate=True,
 		)
 
+	def get_night_shift_humans(
+		self,
+		incident_settings: "IncidentSettings",
+	) -> "list[IncidentSettingsUser | IncidentSettingsSelfHostedUser] | None":
+		"""Returns night shift users for today mapped to their IncidentSettingsUser records, or None if no shift defined."""
+		today = frappe.utils.now_datetime().strftime("%A")
+		today_users = [row.user for row in incident_settings.night_shifts if row.day == today]
+		if not today_users:
+			return None
+
+		# self_hosted_users entries overwrite users entries when the same person appears in both tables
+		phone_by_user: dict[str, "IncidentSettingsUser | IncidentSettingsSelfHostedUser"] = {
+			row.user: row for row in incident_settings.users
+		}
+		phone_by_user.update({row.user: row for row in incident_settings.self_hosted_users})
+
+		matched = [phone_by_user[u] for u in today_users if u in phone_by_user]
+		return matched or None
+
+	def _round_robin_order(self, users: list) -> list:
+		"""Rotate list so the user after acknowledged_by comes first."""
+		for i, user in enumerate(users):
+			if user.user == self.acknowledged_by:
+				return users[i + 1 :] + users[: i + 1]
+		return users
+
+	def _priority_order(self, users: list) -> list:
+		"""Put acknowledged_by first."""
+		for user in users:
+			if user.user == self.acknowledged_by:
+				users = [user] + [u for u in users if u != user]
+				break
+		return users
+
 	def get_humans(
 		self,
 	):
@@ -513,18 +552,30 @@ class Incident(WebsiteGenerator):
 		Returns a list of users who are in the incident team
 		"""
 		incident_settings: IncidentSettings = frappe.get_cached_doc("Incident Settings")  # type: ignore
-		users = incident_settings.users
+		is_night = frappe.utils.now_datetime().hour not in DAY_HOURS
+
+		call_count = len(self.updates)
+		max_assigned_calls = (
+			incident_settings.night_shift_call_limit or MAX_ASSIGNED_CALLS_BEFORE_DEFAULT_AT_NIGHT
+		)
+		if (
+			is_night
+			and call_count < max_assigned_calls
+			and (night_users := self.get_night_shift_humans(incident_settings))
+		):
+			if self.status == "Acknowledged":
+				return self._round_robin_order(night_users)
+			return night_users
+
+		users = list(incident_settings.users)
 		if frappe.db.exists("Self Hosted Server", {"server": self.server}) or frappe.db.get_value(
 			"Server", self.server, "is_self_hosted"
 		):
-			users = incident_settings.self_hosted_users
-		ret: DF.Table = users
-		if self.status == "Acknowledged":  # repeat the acknowledged user to be the first
-			for user in users:
-				if user.user == self.acknowledged_by:
-					ret.remove(user)
-					ret.insert(0, user)
-		return ret
+			users = list(incident_settings.self_hosted_users)
+
+		if self.status == "Acknowledged":
+			return self._priority_order(users)
+		return users
 
 	@property
 	def twilio_phone_number(self):
@@ -571,6 +622,24 @@ Likely due to insufficient balance or incorrect credentials""",
 			self.notify_unable_to_reach_twilio()
 			raise
 
+	def _attempt_call_human(self, human) -> bool:
+		"""Returns True if call was picked up (stop calling), False to continue to next human."""
+		call = self.call_human(human)
+		acknowledged = False
+		status = str(call.status)
+		try:
+			status = str(self.wait_for_pickup(call))
+		except RetryError:
+			status = "timeout"  # not Twilio's status; mostly translates to no-answer
+		else:
+			if status in ["in-progress", "completed"]:  # call was picked up
+				acknowledged = True
+				self.status = "Acknowledged"
+				self.acknowledged_by = human.user
+		finally:
+			self.add_acknowledgment_update(human, acknowledged=acknowledged, call_status=status)
+		return acknowledged
+
 	def _call_humans(self):
 		if not self.phone_call or not self.global_phone_call_enabled:
 			return
@@ -578,23 +647,12 @@ Likely due to insufficient balance or incorrect credentials""",
 			ignore_till := frappe.db.get_value("Server", self.server, "ignore_incidents_till")
 		) and ignore_till > frappe.utils.now_datetime():
 			return
+		if not self.monitor_server.get_sites_down_for_server(str(self.server)):
+			self.resolve()
+			return
 		for human in self.get_humans():
-			if not (call := self.call_human(human)):
-				return  # can't twilio
-			acknowledged = False
-			status = str(call.status)
-			try:
-				status = str(self.wait_for_pickup(call))
-			except RetryError:
-				status = "timeout"  # not Twilio's status; mostly translates to no-answer
-			else:
-				if status in ["in-progress", "completed"]:  # call was picked up
-					acknowledged = True
-					self.status = "Acknowledged"
-					self.acknowledged_by = human.user
-					break
-			finally:
-				self.add_acknowledgment_update(human, acknowledged=acknowledged, call_status=status)
+			if self._attempt_call_human(human):
+				break
 
 	def send_sms_via_twilio(self):
 		"""

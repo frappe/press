@@ -15,6 +15,7 @@ import frappe
 import OpenSSL
 from frappe.model.document import Document
 from frappe.query_builder.functions import Date
+from frappe.utils import now_datetime
 
 from press.exceptions import (
 	DNSValidationError,
@@ -50,10 +51,12 @@ class TLSCertificate(Document):
 		full_chain: DF.Code | None
 		intermediate_chain: DF.Code | None
 		issued_on: DF.Datetime | None
-		private_key: DF.Code | None
+		private_key: DF.Password | None
 		provider: DF.Literal["Let's Encrypt", "Other"]
 		retry_count: DF.Int
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
+		site_domain_tls_update_pending: DF.Check
+		site_domain_tls_update_triggered_at: DF.Datetime | None
 		status: DF.Literal["Pending", "Active", "Expired", "Revoked", "Failure"]
 		team: DF.Link | None
 		wildcard: DF.Check
@@ -71,7 +74,7 @@ class TLSCertificate(Document):
 	def validate(self):
 		if self.provider == "Other":
 			if not self.team:
-				frappe.throw("Team is mandatory for custom TLS certificates.")
+				frappe.throw("Please select the team that owns this custom TLS certificate before saving.")
 
 			self.configure_full_chain()
 			self.validate_key_length()
@@ -114,7 +117,6 @@ class TLSCertificate(Document):
 		frappe.set_user(user)
 		frappe.session.data = session_data
 
-	@frappe.whitelist()
 	def _obtain_certificate(self):
 		if self.provider != "Let's Encrypt":
 			return
@@ -156,7 +158,11 @@ class TLSCertificate(Document):
 			self.retry_count += 1
 			self.status = "Failure"
 			log_error("TLS Certificate Exception", certificate=self.name)
-		self.save()
+		# Runs only from the scheduled renewal job or a background job enqueued by the
+		# already permission-checked `obtain_certificate`. `get_current_team()` can't
+		# reliably resolve the team in that job context, so the team-scoped permission
+		# check in `has_permission` isn't meaningful here.
+		self.save(ignore_permissions=True)
 		self.trigger_site_domain_callback()
 		self.trigger_self_hosted_server_callback()
 		if self.wildcard:
@@ -224,6 +230,10 @@ class TLSCertificate(Document):
 	def trigger_site_domain_callback(self):
 		domain = frappe.db.get_value("Site Domain", {"tls_certificate": self.name}, "name")
 		if domain:
+			self.site_domain_tls_update_pending = True
+			self.site_domain_tls_update_triggered_at = now_datetime()
+			self.save(ignore_permissions=True)
+
 			frappe.get_doc("Site Domain", domain).process_tls_certificate_update()
 
 	def trigger_self_hosted_server_callback(self):
@@ -266,9 +276,20 @@ class TLSCertificate(Document):
 		if not self.full_chain:
 			self.full_chain = f"{self.certificate}\n{self.intermediate_chain}"
 
+	@frappe.whitelist()
+	def get_private_key(self) -> str | None:
+		"""Return the decrypted private key.
+
+		Whitelisted so the desk "Copy Private Key" button can fetch the real key:
+		`private_key` is a Password field, so the client only ever holds the mask.
+		Exposure is unchanged from when this was a Code field the button read
+		directly — both require read permission on the certificate.
+		"""
+		return self.get_password("private_key", raise_exception=False)
+
 	def _get_private_key_object(self):
 		try:
-			return OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, self.private_key)
+			return OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, self.get_private_key())
 		except OpenSSL.crypto.Error as e:
 			log_error("TLS Private Key Exception", certificate=self.name)
 			raise e
@@ -301,7 +322,9 @@ class TLSCertificate(Document):
 		except OpenSSL.SSL.Error as e:
 			self.error = repr(e)
 			log_error("TLS Key Certificate Association Exception", certificate=self.name)
-			frappe.throw("Private Key and Certificate do not match")
+			frappe.throw(
+				"The private key doesn't match the certificate. Please upload the private key that was used to generate this certificate."
+			)
 		finally:
 			if self.error:
 				self.status = "Failure"
@@ -343,6 +366,26 @@ def rollback_and_fail_tls(certificate: PendingCertificate, e: Exception):
 			"retry_count": certificate.retry_count + 1,
 		},
 	)
+
+
+def retrigger_pending_site_domain_callbacks():
+	certificates = frappe.get_all(
+		"TLS Certificate",
+		filters={
+			"status": "Active",
+			"site_domain_tls_update_pending": 1,
+			"site_domain_tls_update_triggered_at": ("<", frappe.utils.add_to_date(None, days=-1)),
+		},
+		pluck="name",
+	)
+	for certificate in certificates:
+		try:
+			certificate_doc: TLSCertificate = frappe.get_doc("TLS Certificate", certificate)
+			certificate_doc.trigger_site_domain_callback()
+		except Exception as e:
+			log_error("TLS Certificate Callback Exception", certificate=certificate, exception=e)
+		finally:
+			frappe.db.commit()
 
 
 def renew_tls_certificates():
@@ -425,7 +468,7 @@ def update_server_tls_certifcate(server, certificate, throw_on_failure: bool = F
 			port=server.get("ssh_port") or 22,
 			server=server,
 			variables={
-				"certificate_private_key": certificate.private_key,
+				"certificate_private_key": certificate.get_private_key(),
 				"certificate_full_chain": certificate.full_chain,
 				"certificate_intermediate_chain": certificate.intermediate_chain,
 				"is_proxy_server": bool(proxysql_admin_password),

@@ -13,6 +13,7 @@ from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
+from press.api.account import is_limits_exceeded
 from press.api.analytics import auto_timespan_timegrain, get_rounded_boundaries, get_rounded_boundary
 from press.api.bench import all as all_benches
 from press.api.site import protected
@@ -22,7 +23,7 @@ from press.press.doctype.cloud_provider.cloud_provider import get_cloud_provider
 from press.press.doctype.server_plan_type.server_plan_type import get_server_plan_types
 from press.press.doctype.site_plan.plan import Plan, filter_by_roles
 from press.press.doctype.team.team import get_child_team_members
-from press.utils import get_current_team
+from press.utils import docs, get_current_team
 
 if TYPE_CHECKING:
 	from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleRecord
@@ -120,9 +121,7 @@ def all(server_filter=None):  # noqa: C901
 	else:
 		query = app_server_query + database_server_query
 
-	# union isn't supported in qb for run method
-	# https://github.com/frappe/frappe/issues/15609
-	servers = frappe.db.sql(query.get_sql(), as_dict=True)
+	servers = query.run(as_dict=True)
 	for server in servers:
 		server_plan_name = frappe.get_value("Server", server.name, "plan")
 		server["plan"] = frappe.get_doc("Server Plan", server_plan_name) if server_plan_name else None
@@ -202,8 +201,7 @@ def get_reclaimable_size(name):
 @frappe.whitelist()
 def new_unified(server: UnifiedServerDetails):
 	team = get_current_team(get_doc=True)
-	if not team.enabled:
-		frappe.throw("You cannot create a new server because your account is disabled")
+	team.validate_can_create_server()
 
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
@@ -212,6 +210,10 @@ def new_unified(server: UnifiedServerDetails):
 		frappe.throw(
 			f"No machines of {app_plan.instance_type} are currently available in the {cluster.name} region"
 		)
+
+	server_plan_price = app_plan.price_usd
+	if team.apply_limits and is_limits_exceeded(server_plan_price):
+		frappe.throw("You have exceeded your spending limit. Please contact support to increase your limits.")
 
 	auto_increase_storage = server.get("auto_increase_storage", False)
 
@@ -243,8 +245,13 @@ def new(server):
 		frappe.throw(f"ARM Instances are currently unavailable in the {server['cluster']} region")
 
 	team = get_current_team(get_doc=True)
-	if not team.enabled:
-		frappe.throw("You cannot create a new server because your account is disabled")
+	team.validate_can_create_server()
+
+	server_plan_price = frappe.get_value("Server Plan", server["app_plan"], "price_usd") + frappe.get_value(
+		"Server Plan", server["db_plan"], "price_usd"
+	)
+	if team.apply_limits and is_limits_exceeded(server_plan_price):
+		frappe.throw("You have exceeded your spending limit. Please contact support to increase your limits.")
 
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
@@ -479,9 +486,11 @@ def analytics(name, query, timezone, start, end, server_type=None):
 		),
 		"database_connections": (
 			f"""{{__name__=~"mysql_global_status_threads_connected|mysql_global_variables_max_connections", instance="{name}"}}""",
-			lambda x: "Max Connections"
-			if x["__name__"] == "mysql_global_variables_max_connections"
-			else "Connected Clients",
+			lambda x: (
+				"Max Connections"
+				if x["__name__"] == "mysql_global_variables_max_connections"
+				else "Connected Clients"
+			),
 		),
 		"innodb_bp_size": (
 			f"""mysql_global_variables_innodb_buffer_pool_size{{instance='{name}'}}""",
@@ -560,6 +569,27 @@ def get_slow_logs_by_site(name, query, timezone, start, end, normalize=False):
 	)
 
 
+def prometheus_instant_value(query: str) -> float | None:
+	"""Latest scraped value, or None when there is no monitoring data.
+
+	Instant, unlike ``prometheus_query``, whose range samples can be a timegrain stale.
+	"""
+	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+	if not monitor_server:
+		return None
+
+	url = f"https://{monitor_server}/prometheus/api/v1/query"
+	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
+	try:
+		response = requests.get(url, params={"query": query}, auth=("frappe", str(password))).json()
+	except requests.exceptions.RequestException:
+		frappe.throw("Unable to connect to monitor server", MonitorServerDown)
+
+	# An error payload ({"status": "error", ...}) carries no data — treat it as no data.
+	result = response.get("data", {}).get("result", [])
+	return flt(result[0]["value"][1]) if result else None
+
+
 def prometheus_query(
 	query,
 	function,
@@ -567,8 +597,8 @@ def prometheus_query(
 	timespan: int,
 	timegrain: int,
 	use_timestamps: bool = False,
-	start: None | datetime = None,
-	end: None | datetime = None,
+	start: datetime | None = None,
+	end: datetime | None = None,
 ):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
@@ -627,7 +657,9 @@ def prometheus_query(
 @frappe.whitelist()
 def options():
 	if not get_current_team(get_doc=True).servers_enabled:
-		frappe.throw("Servers feature is not yet enabled on your account")
+		frappe.throw(
+			f"The dedicated servers feature isn't enabled on your account yet. Please contact support to enable it. {docs.doc_link(docs.SERVERS)}."
+		)
 
 	regions_filter = {"cloud_provider": ("!=", "Generic"), "public": True, "status": "Active"}
 

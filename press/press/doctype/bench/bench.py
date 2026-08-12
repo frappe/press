@@ -59,6 +59,9 @@ MIN_GUNICORN_WORKERS = 2
 MAX_BACKGROUND_WORKERS = 8
 MIN_BACKGROUND_WORKERS = 1
 
+BENCH_NAME_LEN_SOFT_LIMIT = 28  # soft limit to allow for -1, -2, etc in case of name clashes
+BENCH_NAME_LEN_HARD_LIMIT = 32  # maximum length allowed by bench, cannot be changed
+
 if TYPE_CHECKING:
 	from collections.abc import Generator, Iterable
 
@@ -222,10 +225,14 @@ class Bench(Document):
 	def get_bench_name(self, candidate_name, server_name, server_name_abbreviation):
 		bench_name = f"bench-{candidate_name}-{server_name}"
 
-		if len(bench_name) > 32:
+		if len(bench_name) > BENCH_NAME_LEN_SOFT_LIMIT:
 			bench_name = f"bench-{candidate_name}-{server_name_abbreviation}"
 
-		return append_number_if_name_exists("Bench", bench_name, separator="-")
+		ret = append_number_if_name_exists("Bench", bench_name, separator="-")
+		assert len(ret) <= BENCH_NAME_LEN_HARD_LIMIT, (
+			f"Bench name {ret} is too long even after abbreviation. Please reduce BENCH_NAME_LEN_SOFT_LIMIT."
+		)
+		return ret
 
 	def update_config_with_rg_config(self, config: dict):
 		release_group_common_site_config = frappe.db.get_value(
@@ -287,6 +294,11 @@ class Bench(Document):
 			self.port_offset = self.get_unused_port_offset()
 
 		config = {
+			# tells bench its state is owned by Press, so it can warn before
+			# commands that desync the container from the Bench/Site records.
+			# common_site_config is the only bench config bind-mounted into the
+			# container, so the marker has to live here.
+			"frappe_cloud": True,
 			"monitor": True,
 			"redis_cache": self.build_redis_uri(13000),
 			"redis_queue": self.build_redis_uri(11000),
@@ -1085,7 +1097,12 @@ class Bench(Document):
 	def check_ongoing_jobs(self):
 		frappe.db.commit()
 		if frappe.db.exists(
-			"Agent Job", {"bench": self.name, "status": ("in", ["Running", "Pending", "Undelivered"])}
+			"Agent Job",
+			{
+				"bench": self.name,
+				"creation": (">", frappe.utils.add_to_date(None, days=-2)),
+				"status": ("in", ["Running", "Pending", "Undelivered"]),
+			},
 		):
 			frappe.throw(
 				"Cannot archive bench because of ongoing jobs. Please retry after the job queue is cleared.",
@@ -1110,13 +1127,24 @@ class Bench(Document):
 				ArchiveBenchError,
 			)
 
+		sites = frappe.qb.DocType("Site")
 		fatal_site_updates = (
 			frappe.qb.from_(site_updates)
+			.join(sites)
+			.on(
+				(site_updates.site == sites.name)
+				& (
+					(sites.bench == site_updates.source_bench)
+					| (sites.bench == site_updates.destination_bench)
+				)
+			)
 			.select(site_updates.name)
 			.where((site_updates.source_bench == self.name) | (site_updates.destination_bench == self.name))
 			.where(
 				(site_updates.status == "Fatal")
 				& (site_updates.creation > frappe.utils.add_to_date(None, days=-EMPTY_BENCH_COURTESY_DAYS))
+				& (sites.status != "Archived")
+				& (site_updates.cause_of_failure_is_resolved == 0)
 			)
 			.limit(1)
 		).run()

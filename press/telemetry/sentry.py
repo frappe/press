@@ -25,4 +25,6 @@ def set_context(key: str, value: dict):
 
 
 def add_user_context():
+	if not frappe.request or not frappe.session or not frappe.session.data:
+		return
 	set_context("user_details", get_user_details())
