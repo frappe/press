@@ -103,8 +103,6 @@ from press.utils import (
 from press.utils.dns import _change_dns_record, check_dns_cname_a, create_dns_record
 
 if TYPE_CHECKING:
-	from datetime import datetime
-
 	from frappe.types import DF
 	from frappe.types.DF import Table
 
@@ -141,6 +139,9 @@ TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
 DEFAULT_MAX_STATEMENT_TIME = 3600
 # How much to bump max_statement_time by (in seconds) each time — one hour.
 STATEMENT_TIME_INCREMENT = 3600
+
+# Matches the four backups a day the default schedule already gives.
+MAXIMUM_CUSTOM_BACKUP_TIMES = 4
 
 # Conditions a site must satisfy for the agent to stream offsite backup
 # artifacts straight to S3 instead of uploading them after the dump finishes.
@@ -732,6 +733,33 @@ class Site(Document, TagHelpers):
 				frappe.throw(
 					f"Multiple backups have been scheduled at following hour {h}:00:00. Please configure the newer custom backup hours to a different time of the day."
 				)
+
+	@dashboard_whitelist()
+	def get_backup_schedule(self) -> dict:
+		"""Times are on the server's clock, same as the scheduler reads them."""
+		return {
+			"custom": bool(self.schedule_logical_backup_at_custom_time),
+			"times": sorted(
+				frappe.utils.get_time(row.backup_time).strftime("%H:%M") for row in self.logical_backup_times
+			),
+		}
+
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def update_backup_schedule(self, times: list[str] | None = None):
+		"""Replace the site's custom backup times. No times means back to the default schedule.
+
+		Logical only — physical backups deactivate the site while they run.
+		"""
+		times = [parse_backup_time(time) for time in times or []]
+		if len(times) > MAXIMUM_CUSTOM_BACKUP_TIMES:
+			frappe.throw(f"A site can have at most {MAXIMUM_CUSTOM_BACKUP_TIMES} backups a day.")
+
+		self.logical_backup_times = []
+		for backup_time in times:
+			self.append("logical_backup_times", {"backup_time": backup_time})
+		self.schedule_logical_backup_at_custom_time = bool(times)
+		self.save()
 
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)
@@ -4539,6 +4567,13 @@ class Site(Document, TagHelpers):
 		if not d:
 			return None
 		return str(timedelta(seconds=round(d.total_seconds() * 2)))
+
+
+def parse_backup_time(time: str) -> str:
+	try:
+		return datetime.strptime(time, "%H:%M").strftime("%H:%M:00")
+	except (TypeError, ValueError):
+		frappe.throw(f"{time} is not a valid backup time. Use HH:MM.")
 
 
 def get_inbound_ip(server: str) -> str | None:

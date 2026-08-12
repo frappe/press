@@ -236,3 +236,60 @@ class TestScheduledBackupJob(FrappeTestCase):
 			schedule_logical_backups_for_sites_with_backup_time()
 		mock_backup.assert_called_once()
 		mock_backup.reset_mock()
+
+
+@patch.object(AgentJob, "after_insert", new=Mock())
+class TestBackupSchedule(FrappeTestCase):
+	"""The backup schedule as the dashboard reads and writes it."""
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_setting_backup_times_takes_the_site_off_the_default_schedule(self):
+		site: Site = create_test_site()
+
+		site.update_backup_schedule(["02:00", "14:00"])
+
+		site.reload()
+		self.assertEqual(site.get_backup_schedule(), {"custom": True, "times": ["02:00", "14:00"]})
+		self.assertNotIn(site.name, [s.name for s in Site.get_sites_for_backup(6)])
+
+	def test_clearing_backup_times_returns_the_site_to_the_default_schedule(self):
+		site: Site = create_test_site()
+		site.update_backup_schedule(["02:00"])
+		site.reload()
+
+		site.update_backup_schedule([])
+
+		site.reload()
+		self.assertEqual(site.get_backup_schedule(), {"custom": False, "times": []})
+
+	def test_backup_schedule_rejects_more_than_four_times_a_day(self):
+		site: Site = create_test_site()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"at most 4 backups a day",
+			site.update_backup_schedule,
+			["01:00", "02:00", "03:00", "04:00", "05:00"],
+		)
+
+	def test_backup_schedule_rejects_a_time_that_is_not_hh_mm(self):
+		site: Site = create_test_site()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"not a valid backup time",
+			site.update_backup_schedule,
+			["2 AM"],
+		)
+
+	def test_backup_schedule_rejects_two_backups_in_the_same_hour(self):
+		site: Site = create_test_site()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Multiple backups have been scheduled",
+			site.update_backup_schedule,
+			["02:00", "02:30"],
+		)
