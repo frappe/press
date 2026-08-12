@@ -371,11 +371,8 @@ def paid_plans():
 		"Server Storage Plan",
 		"Cluster Plan",
 		"Static IP Plan",
-<<<<<<< HEAD
 		"Server Snapshot Plan",
-=======
 		"S3 Storage Plan",
->>>>>>> 56dfc95fc (feat(database-server): Add database audit logging)
 	]
 
 	for name in doctypes:
