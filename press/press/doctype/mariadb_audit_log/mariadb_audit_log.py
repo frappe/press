@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 def to_mb(size_in_bytes: int) -> float:
-	"""Floored at 0.001 MB: a gzipped log can be a few KB, and 0.00 reads as nothing at all."""
+	"""Floored at 0.001 MB, so a few-KB gzipped log doesn't read as nothing."""
 	if not size_in_bytes:
 		return 0
 	return max(round(size_in_bytes / (1024 * 1024), 3), 0.001)
