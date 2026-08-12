@@ -74,6 +74,7 @@ class DatabaseServer(BaseServer):
 		communication_info: DF.Table[CommunicationInfo]
 		database_audit_log_capture_reads: DF.Check
 		database_audit_log_max_disk_gb: DF.Int
+		database_audit_log_status: DF.Literal["Disabled", "Enabling", "Enabled", "Disabling"]
 		db_port: DF.Int
 		domain: DF.Link | None
 		enable_binlog_indexing: DF.Check
@@ -365,6 +366,7 @@ class DatabaseServer(BaseServer):
 		doc.auto_purge_binlog_based_on_size = self.auto_purge_binlog_based_on_size
 		doc.binlog_max_disk_usage_percent = self.binlog_max_disk_usage_percent
 		doc.is_database_audit_log_enabled = self.is_database_audit_log_enabled
+		doc.database_audit_log_status = self.database_audit_log_status
 		doc.database_audit_log_capture_reads = self.database_audit_log_capture_reads
 		doc.audit_log_retention_days = self.audit_log_retention_days
 		doc.has_data_volume = self.has_data_volume
@@ -1338,6 +1340,7 @@ class DatabaseServer(BaseServer):
 		# The plugin is configured from these two, so they're saved first
 		self.database_audit_log_capture_reads = cint(capture_reads)
 		self.audit_log_retention_days = cint(retention_days)
+		self.database_audit_log_status = "Enabling"
 		self.save(ignore_permissions=True)
 		frappe.enqueue_doc(self.doctype, self.name, "_enable_database_audit_log", queue="long", timeout=1800)
 
@@ -1451,6 +1454,7 @@ class DatabaseServer(BaseServer):
 
 		# The flag stays until the server stops logging, so uploads keep draining the disk
 		# if this fails. reconcile_audit_log_state clears it once MariaDB confirms.
+		self.db_set("database_audit_log_status", "Disabling")
 		frappe.enqueue_doc(self.doctype, self.name, "_disable_database_audit_log", queue="long", timeout=600)
 
 	def _disable_database_audit_log(self):
@@ -1477,6 +1481,9 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			# Logging may have started before the agent went away. The next enable reconciles it
 			log_error("Audit log state unknown after a failed enable", server=self.name)
+		self.db_set(
+			"database_audit_log_status", "Enabled" if self.is_database_audit_log_enabled else "Disabled"
+		)
 		self.sync_audit_log_subscription()
 		frappe.db.commit()
 
@@ -1489,6 +1496,7 @@ class DatabaseServer(BaseServer):
 		variables = self.audit_variables_on_server()
 		enabled = variables.get("server_audit_logging") == "ON"
 		self.db_set("is_database_audit_log_enabled", enabled)
+		self.db_set("database_audit_log_status", "Enabled" if enabled else "Disabled")
 		if events := variables.get("server_audit_events"):
 			self.db_set("database_audit_log_capture_reads", cint("QUERY_DML" in events.split(",")))
 		self.sync_audit_log_subscription()
