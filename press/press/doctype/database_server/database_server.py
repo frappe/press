@@ -1475,8 +1475,12 @@ class DatabaseServer(BaseServer):
 		The server is asked first in case logging did start, but an unreachable agent must
 		not mask the failure that got us here — the flag was never set, so silence is safe.
 		"""
-		with contextlib.suppress(Exception):
+		try:
 			self.db_set("is_database_audit_log_enabled", self.is_audit_logging_on_server())
+		except Exception:
+			# MariaDB may have started logging just before the agent went away. Billing
+			# stops either way and the next enable reconciles it, so this is only recorded.
+			log_error("Audit log state unknown after a failed enable", server=self.name)
 		self.sync_audit_log_subscription()
 		frappe.db.commit()
 
