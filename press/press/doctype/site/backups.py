@@ -265,11 +265,7 @@ class ScheduledBackupJob:
 			self.sites_without_offsite = []
 
 	def take_offsite(self, site: frappe._dict, day: datetime.date) -> bool:
-		return (
-			self.offsite_setup
-			and site.name not in self.sites_without_offsite
-			and not SiteBackup.offsite_backup_exists(site.name, day)
-		)
+		return should_take_offsite_backup(site.name, day, self.offsite_setup, self.sites_without_offsite)
 
 	def get_site_time(self, site: dict[str, str]) -> datetime:
 		timezone = site.timezone or "Asia/Kolkata"
@@ -345,6 +341,17 @@ class ScheduledBackupJob:
 			frappe.db.rollback()
 
 
+def should_take_offsite_backup(
+	site: str, day: datetime.date, offsite_setup: bool, sites_without_offsite: list[str]
+) -> bool:
+	"""Offsite backups go out once a day, and only on plans that include them."""
+	return (
+		offsite_setup
+		and site not in sites_without_offsite
+		and not SiteBackup.offsite_backup_exists(site, day)
+	)
+
+
 def schedule_logical_backups_for_sites_with_backup_time():
 	"""
 	Schedule logical backups for sites with backup time.
@@ -352,9 +359,20 @@ def schedule_logical_backups_for_sites_with_backup_time():
 	Run this hourly only
 	"""
 	sites = Site.get_sites_with_backup_time("Logical")
+	if not sites:
+		return
+
+	day = frappe.utils.getdate()
+	offsite_setup = PressSettings.is_offsite_setup()
+	sites_without_offsite = Subscription.get_sites_without_offsite_backups()
 	for site in sites:
+		offsite = should_take_offsite_backup(site.name, day, offsite_setup, sites_without_offsite)
 		site_doc: Site = frappe.get_doc("Site", site.name)
-		site_doc.backup(with_files=True, offsite=True, physical=False)
+		site_doc.backup(
+			with_files=offsite or not SiteBackup.file_backup_exists(site.name, day),
+			offsite=offsite,
+			physical=False,
+		)
 		frappe.db.commit()
 
 

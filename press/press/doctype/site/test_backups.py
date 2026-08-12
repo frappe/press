@@ -5,6 +5,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.press_settings.press_settings import PressSettings
 from press.press.doctype.site.backups import (
 	ScheduledBackupJob,
 	schedule_logical_backups_for_sites_with_backup_time,
@@ -13,6 +14,7 @@ from press.press.doctype.site.backups import (
 from press.press.doctype.site.site import Site
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+from press.press.doctype.subscription.subscription import Subscription
 
 
 @patch("press.press.doctype.site.backups.frappe.db.commit", new=MagicMock)
@@ -236,6 +238,40 @@ class TestScheduledBackupJob(FrappeTestCase):
 			schedule_logical_backups_for_sites_with_backup_time()
 		mock_backup.assert_called_once()
 		mock_backup.reset_mock()
+
+	def _create_site_with_backup_times(self, *times: str) -> Site:
+		site: Site = create_test_site()
+		site.update_backup_schedule(list(times))
+		return site
+
+	def test_custom_time_backup_is_not_offsite_on_a_plan_without_offsite_backups(self):
+		site = self._create_site_with_backup_times("00:00")
+
+		with (
+			patch.object(PressSettings, "is_offsite_setup", return_value=True),
+			patch.object(Subscription, "get_sites_without_offsite_backups", return_value=[site.name]),
+			self.freeze_time("2021-01-01 00:00"),
+		):
+			schedule_logical_backups_for_sites_with_backup_time()
+
+		self.assertEqual(self._offsite_count(site.name), 0)
+		self.assertEqual(frappe.db.count("Site Backup", {"site": site.name}), 1)
+
+	def test_custom_time_backups_go_offsite_only_once_a_day(self):
+		site = self._create_site_with_backup_times("00:00", "01:00")
+
+		with (
+			patch.object(PressSettings, "is_offsite_setup", return_value=True),
+			patch.object(Subscription, "get_sites_without_offsite_backups", return_value=[]),
+		):
+			with self.freeze_time("2021-01-01 00:00"):
+				schedule_logical_backups_for_sites_with_backup_time()
+			frappe.get_last_doc("Site Backup", {"site": site.name}).db_set("status", "Success")
+			with self.freeze_time("2021-01-01 01:00"):
+				schedule_logical_backups_for_sites_with_backup_time()
+
+		self.assertEqual(self._offsite_count(site.name), 1)
+		self.assertEqual(frappe.db.count("Site Backup", {"site": site.name}), 2)
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())
