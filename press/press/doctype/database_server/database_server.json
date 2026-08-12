@@ -124,6 +124,7 @@
 		"is_database_audit_log_enabled",
 		"database_audit_log_status",
 		"database_audit_log_capture_reads",
+		"is_database_audit_log_capturing_reads",
 		"column_break_wxts",
 		"database_audit_log_max_disk_gb",
 		"audit_log_retention_days",
@@ -812,10 +813,19 @@
 		{
 			"default": "0",
 			"depends_on": "is_database_audit_log_enabled",
-			"description": "Also audit SELECT statements. Roughly doubles log volume.",
+			"description": "Requested. Also audit SELECT statements, roughly doubling log volume.",
 			"fieldname": "database_audit_log_capture_reads",
 			"fieldtype": "Check",
 			"label": "Capture Read Queries"
+		},
+		{
+			"default": "0",
+			"depends_on": "is_database_audit_log_enabled",
+			"description": "What MariaDB reports auditing. Differs from the request until the change lands.",
+			"fieldname": "is_database_audit_log_capturing_reads",
+			"fieldtype": "Check",
+			"label": "Is Capturing Read Queries",
+			"read_only": 1
 		},
 		{
 			"fieldname": "column_break_wxts",

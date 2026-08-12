@@ -28,6 +28,12 @@
 					:title="pendingMessage"
 				/>
 
+				<AlertBanner
+					v-if="unappliedMode"
+					type="warning"
+					:title="unappliedMode"
+				/>
+
 				<template v-if="enabled">
 					<FormControl
 						v-model="captureMode"
@@ -123,6 +129,19 @@ export default {
 	computed: {
 		isEnabled() {
 			return auditTrailEnabled(this.server.doc)
+		},
+		unappliedMode() {
+			const doc = this.server.doc
+			// Only Enabled means reconciliation has run, so both fields are fresh
+			if (doc?.database_audit_log_status !== 'Enabled') return null
+			if (
+				Boolean(doc.is_database_audit_log_capturing_reads) ===
+				Boolean(doc.database_audit_log_capture_reads)
+			)
+				return null
+			return doc.is_database_audit_log_capturing_reads
+				? 'MariaDB is still auditing read and write queries.'
+				: 'MariaDB is still auditing write queries only.'
 		},
 		pendingMessage() {
 			const status = this.server.doc?.database_audit_log_status

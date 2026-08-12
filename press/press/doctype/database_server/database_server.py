@@ -93,6 +93,7 @@ class DatabaseServer(BaseServer):
 		is_auditd_setup: DF.Check
 		is_auto_coredump_enabled: DF.Check
 		is_binlog_indexer_running: DF.Check
+		is_database_audit_log_capturing_reads: DF.Check
 		is_database_audit_log_enabled: DF.Check
 		is_external_healthcheck_enabled: DF.Check
 		is_for_recovery: DF.Check
@@ -371,6 +372,7 @@ class DatabaseServer(BaseServer):
 		doc.is_database_audit_log_enabled = self.is_database_audit_log_enabled
 		doc.database_audit_log_status = self.database_audit_log_status
 		doc.database_audit_log_capture_reads = self.database_audit_log_capture_reads
+		doc.is_database_audit_log_capturing_reads = self.is_database_audit_log_capturing_reads
 		doc.audit_log_retention_days = self.audit_log_retention_days
 		doc.has_data_volume = self.has_data_volume
 		return doc
@@ -1386,18 +1388,10 @@ class DatabaseServer(BaseServer):
 
 	def _update_database_audit_log(self):
 		"""server_audit_events is dynamic, so the new mode applies without a restart."""
-		requested = self.database_audit_log_capture_reads
-		try:
-			self.configure_server_audit_plugin()
-			logging = self.reconcile_audit_log_state()
-		except Exception:
-			# The save above already stored the requested mode, so put MariaDB's back
-			with contextlib.suppress(Exception):
-				self.reconcile_audit_log_state()
-			raise
-		if not logging:
+		self.configure_server_audit_plugin()
+		if not self.reconcile_audit_log_state():
 			frappe.throw(f"MariaDB on {self.name} stopped logging while its capture mode was changed.")
-		if self.database_audit_log_capture_reads != requested:
+		if self.is_database_audit_log_capturing_reads != self.database_audit_log_capture_reads:
 			frappe.throw(
 				f"MariaDB on {self.name} kept its old capture mode. "
 				"Check the MariaDB System Variable Update errors for this server."
@@ -1511,8 +1505,8 @@ class DatabaseServer(BaseServer):
 		enabled = variables.get("server_audit_logging") == "ON"
 		self.db_set("is_database_audit_log_enabled", enabled)
 		self.db_set("database_audit_log_status", "Enabled" if enabled else "Disabled")
-		if events := variables.get("server_audit_events"):
-			self.db_set("database_audit_log_capture_reads", cint("QUERY_DML" in events.split(",")))
+		events = (variables.get("server_audit_events") or "").split(",")
+		self.db_set("is_database_audit_log_capturing_reads", cint("QUERY_DML" in events))
 		self.sync_audit_log_subscription()
 		frappe.db.commit()
 		return enabled
