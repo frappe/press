@@ -38,6 +38,8 @@ if TYPE_CHECKING:
 # Not the datadir: the agent runs as frappe and has to unlink these, and a directory
 # under /var/lib/mysql would show up as a database. Kept in sync with the agent.
 AUDIT_LOG_PATH = "/var/log/mysql/server_audit.log"
+# Smaller files rotate and upload sooner, so less of the trail sits only on the server
+AUDIT_LOG_ROTATE_SIZE_MB = 100
 
 
 class DatabaseServer(BaseServer):
@@ -1421,8 +1423,8 @@ class DatabaseServer(BaseServer):
 		return [
 			("server_audit_output_type", "value_str", "file"),
 			("server_audit_file_path", "value_str", AUDIT_LOG_PATH),
-			# value_int is read as MB, so 1024 means a 1 GiB rotate size
-			("server_audit_file_rotate_size", "value_int", 1024),
+			# value_int is read as MB
+			("server_audit_file_rotate_size", "value_int", AUDIT_LOG_ROTATE_SIZE_MB),
 			# value_str, not value_int: a count must not be multiplied by 1024 * 1024
 			("server_audit_file_rotations", "value_str", str(self.audit_log_max_rotations)),
 			("server_audit_events", "value_str", events),
@@ -1433,8 +1435,12 @@ class DatabaseServer(BaseServer):
 
 	@property
 	def audit_log_max_rotations(self) -> int:
-		"""The plugin keeps the live log plus this many rotations, each 1 GiB."""
-		return max(1, (self.database_audit_log_max_disk_gb or 25) - 1)
+		"""The plugin keeps the live log plus this many rotations, each AUDIT_LOG_ROTATE_SIZE_MB.
+
+		Capped at 999, which is all the plugin accepts.
+		"""
+		files = (self.database_audit_log_max_disk_gb or 25) * 1024 // AUDIT_LOG_ROTATE_SIZE_MB
+		return min(max(1, files - 1), 999)
 
 	def disable_database_audit_log(self):
 		if not self.is_database_audit_log_enabled:
