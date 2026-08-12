@@ -69,6 +69,13 @@ import { Switch } from 'frappe-ui'
 import { toast } from 'vue-sonner'
 import { getToastErrorMessage } from '../../utils/toast'
 
+// What MariaDB reports, unless a change is still on its way to it
+function auditTrailEnabled(doc) {
+	if (doc?.database_audit_log_status === 'Enabling') return true
+	if (doc?.database_audit_log_status === 'Disabling') return false
+	return Boolean(doc?.is_database_audit_log_enabled)
+}
+
 export default {
 	name: 'ConfigureDatabaseAuditTrailDialog',
 	props: {
@@ -82,9 +89,7 @@ export default {
 	data() {
 		return {
 			show: true,
-			enabled: ['Enabled', 'Enabling'].includes(
-				this.server.doc?.database_audit_log_status,
-			),
+			enabled: auditTrailEnabled(this.server.doc),
 			captureMode: this.server.doc?.database_audit_log_capture_reads
 				? 'read-write'
 				: 'write',
@@ -114,9 +119,7 @@ export default {
 	},
 	computed: {
 		isEnabled() {
-			return ['Enabled', 'Enabling'].includes(
-				this.server.doc?.database_audit_log_status,
-			)
+			return auditTrailEnabled(this.server.doc)
 		},
 		pendingMessage() {
 			const status = this.server.doc?.database_audit_log_status
