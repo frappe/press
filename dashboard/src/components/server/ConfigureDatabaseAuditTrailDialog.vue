@@ -22,9 +22,11 @@
 					description="Log every connection and query of this database"
 				/>
 
-				<p v-if="pendingMessage" class="text-ink-gray-6 text-p-sm">
-					{{ pendingMessage }}
-				</p>
+				<AlertBanner
+					v-if="pendingMessage"
+					type="info"
+					:title="pendingMessage"
+				/>
 
 				<template v-if="enabled">
 					<FormControl
@@ -68,6 +70,7 @@
 import { Switch } from 'frappe-ui'
 import { toast } from 'vue-sonner'
 import { getToastErrorMessage } from '../../utils/toast'
+import AlertBanner from '../AlertBanner.vue'
 
 // What MariaDB reports, unless a change is still on its way to it
 function auditTrailEnabled(doc) {
@@ -84,7 +87,7 @@ export default {
 			required: true,
 		},
 	},
-	components: { Switch },
+	components: { AlertBanner, Switch },
 	emits: ['update:show'],
 	data() {
 		return {
