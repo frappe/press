@@ -152,3 +152,82 @@ class TestTeam(FrappeTestCase):
 
 		total = team.total_subscribed_amount()
 		self.assertEqual(total, 50)
+
+
+class TestCreditTransfer(FrappeTestCase):
+	def setUp(self):
+		self.sender = create_test_team("sender@example.com")
+		self.recipient = create_test_team("recipient@example.com")
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_transfer_credits_moves_prepaid_credits_to_the_recipient_team(self):
+		self.sender.allocate_credit_amount(100, source="Prepaid Credits")
+
+		self.sender.transfer_credits(60, self.recipient.user)
+
+		self.assertEqual(self.sender.get_balance(), 40)
+		self.assertEqual(self.recipient.get_balance(), 60)
+
+	def test_transfer_credits_leaves_free_credits_with_the_team_they_were_given_to(self):
+		self.sender.allocate_credit_amount(100, source="Free Credits")
+		self.sender.allocate_credit_amount(50, source="Prepaid Credits")
+
+		self.sender.transfer_credits(50, self.recipient.user)
+
+		self.assertEqual(self.sender.get_transferable_credits(), 0)
+		self.assertEqual(self.sender.get_balance(), 100)
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"You can transfer at most",
+			self.sender.transfer_credits,
+			10,
+			self.recipient.user,
+		)
+
+	def test_transfer_credits_rejects_an_amount_above_the_transferable_credits(self):
+		self.sender.allocate_credit_amount(100, source="Prepaid Credits")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"You can transfer at most",
+			self.sender.transfer_credits,
+			101,
+			self.recipient.user,
+		)
+		self.assertEqual(self.recipient.get_balance(), 0)
+
+	def test_transfer_credits_rejects_a_recipient_billed_in_another_currency(self):
+		self.sender.allocate_credit_amount(100, source="Prepaid Credits")
+		foreign_team = create_test_team("foreign@example.com", country="Germany")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"billed in USD",
+			self.sender.transfer_credits,
+			10,
+			foreign_team.user,
+		)
+
+	def test_transfer_credits_rejects_a_transfer_to_the_senders_own_team(self):
+		self.sender.allocate_credit_amount(100, source="Prepaid Credits")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"your own account",
+			self.sender.transfer_credits,
+			10,
+			self.sender.user,
+		)
+
+	def test_transfer_credits_rejects_an_unknown_recipient(self):
+		self.sender.allocate_credit_amount(100, source="Prepaid Credits")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"No active Frappe Cloud account",
+			self.sender.transfer_credits,
+			10,
+			"nobody@example.com",
+		)
