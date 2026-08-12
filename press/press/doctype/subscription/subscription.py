@@ -13,6 +13,8 @@ from frappe.query_builder.functions import Coalesce, Count
 from frappe.utils import cint, flt
 
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.database_server.database_server import DatabaseServer
+from press.press.doctype.s3_storage_plan.s3_storage_plan import AUDIT_LOG_STORAGE_PLAN
 from press.press.doctype.site_plan.site_plan import SitePlan
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
@@ -100,7 +102,12 @@ class Subscription(Document):
 		self.validate_duplicate()
 
 	def on_update(self):
-		if self.plan_type in ["Server Storage Plan", "Server Snapshot Plan", "Static IP Plan"]:
+		if self.plan_type in [
+			"Server Storage Plan",
+			"Server Snapshot Plan",
+			"Static IP Plan",
+			"S3 Storage Plan",
+		]:
 			return
 
 		doc = self.get_subscribed_document()
@@ -187,6 +194,12 @@ class Subscription(Document):
 				),
 				2,
 			)
+
+		elif self.plan_type == "S3 Storage Plan" and self.plan == AUDIT_LOG_STORAGE_PLAN:
+			price = plan.price_inr if team.currency == "INR" else plan.price_usd
+			price_per_day = price / plan.period  # no rounding off to avoid discrepancies
+			database_server = DatabaseServer("Database Server", self.document_name)
+			amount = flt(price_per_day * database_server.get_audit_log_storage_gb(), 2)
 		else:
 			amount = plan.get_price_for_interval(self.interval, team.currency)
 
@@ -359,6 +372,7 @@ def paid_plans():
 		"Cluster Plan",
 		"Static IP Plan",
 		"Server Snapshot Plan",
+		"S3 Storage Plan",
 	]
 
 	for name in doctypes:

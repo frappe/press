@@ -1,0 +1,12 @@
+[
+	{
+		"docstatus": 0,
+		"doctype": "S3 Storage Plan",
+		"enabled": 1,
+		"modified": "2026-08-11 00:00:00.000000",
+		"name": "Audit Log Storage plan",
+		"price_inr": 1.886,
+		"price_usd": 0.023,
+		"title": "Audit Log Storage plan"
+	}
+]
