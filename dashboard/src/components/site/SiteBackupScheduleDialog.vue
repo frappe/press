@@ -15,47 +15,62 @@
 	>
 		<template #body-content>
 			<div class="flex flex-col gap-4">
-				<Switch
-					v-model="custom"
-					label="Pick backup times"
-					description="Move backups off your working hours instead of leaving them to the default schedule"
-				/>
+				<div class="rounded-md bg-surface-gray-1 p-3">
+					<Switch
+						v-model="custom"
+						label="Choose when backups run"
+						:description="
+							custom
+								? 'Backups run only at the times below'
+								: 'Backups run every 6 hours, whenever that falls'
+						"
+					/>
+				</div>
 
-				<p v-if="!custom" class="text-base text-ink-gray-6">
-					Backups are taken automatically every 6 hours.
-				</p>
+				<div v-if="custom" class="flex flex-col gap-3">
+					<div class="flex items-baseline justify-between">
+						<span class="text-base font-medium text-ink-gray-8">
+							Backup times
+						</span>
+						<span class="text-p-sm text-ink-gray-5">
+							{{ times.length }} of {{ maximumTimes }}
+						</span>
+					</div>
 
-				<div v-else class="flex flex-col gap-3">
-					<div
-						v-for="(time, index) in times"
-						:key="index"
-						class="flex items-center gap-2"
-					>
-						<FormControl
-							class="w-full"
-							type="time"
-							v-model="times[index]"
-						/>
-						<Button
-							v-if="times.length > 1"
-							icon="x"
-							@click="times.splice(index, 1)"
-						/>
+					<div class="grid grid-cols-2 gap-x-3 gap-y-2">
+						<div
+							v-for="(time, index) in times"
+							:key="index"
+							class="flex items-center gap-1"
+						>
+							<FormControl
+								class="flex-1"
+								type="time"
+								v-model="times[index]"
+							/>
+							<Button
+								v-if="times.length > 1"
+								variant="ghost"
+								icon="x"
+								:label="`Remove ${time}`"
+								@click="times.splice(index, 1)"
+							/>
+						</div>
 					</div>
 
 					<Button
 						v-if="times.length < maximumTimes"
 						class="w-fit"
+						variant="subtle"
 						icon-left="plus"
 						@click="addTime"
 					>
 						Add time
 					</Button>
 
-					<p class="text-p-sm text-ink-gray-5">
+					<p class="text-p-sm leading-5 text-ink-gray-5">
 						Times are in your timezone ({{ timezone }}). A backup starts
-						within the hour you pick, and replaces the default 6 hourly
-						schedule.
+						within the hour you pick.
 					</p>
 				</div>
 

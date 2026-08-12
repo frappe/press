@@ -1,4 +1,10 @@
-import { Badge, createListResource, createResource, LoadingIndicator } from 'frappe-ui'
+import {
+	Badge,
+	createListResource,
+	createResource,
+	LoadingIndicator,
+	Tooltip,
+} from 'frappe-ui'
 import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
 import ArrowLeftRightIcon from '~icons/lucide/arrow-left-right'
@@ -869,9 +875,14 @@ export default {
 					secondaryAction({ documentResource: site }) {
 						if (site.doc?.status !== 'Active') return null
 						return {
-							label: 'Schedule',
+							label: 'Backup Schedule',
 							slots: {
-								prefix: icon('clock'),
+								icon: () =>
+									h(
+										Tooltip,
+										{ text: 'Backup Schedule' },
+										icon('settings'),
+									),
 							},
 							onClick() {
 								renderDialog(
