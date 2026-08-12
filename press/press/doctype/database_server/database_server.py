@@ -25,6 +25,7 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 	DatabaseServerMariaDBVariable,
 )
+from press.press.doctype.s3_storage_plan.s3_storage_plan import AUDIT_LOG_STORAGE_PLAN
 from press.press.doctype.server.server import PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN, Agent, BaseServer, Server
 from press.runner import Ansible
 from press.utils import get_press_base_url, log_error
@@ -109,7 +110,6 @@ class DatabaseServer(BaseServer):
 		is_static_ip: DF.Check
 		is_unified_server: DF.Check
 		is_wazuh_agent_installed: DF.Check
-		wazuh_agent_status: DF.Data | None
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
 		memory_allocator: DF.Literal["System", "jemalloc", "TCMalloc"]
@@ -151,6 +151,7 @@ class DatabaseServer(BaseServer):
 		tls_certificate_renewal_failed: DF.Check
 		uploaded_binlogs_retention_days: DF.Int
 		virtual_machine: DF.Link | None
+		wazuh_agent_status: DF.Data | None
 	# end: auto-generated types
 
 	"""
@@ -1499,7 +1500,12 @@ class DatabaseServer(BaseServer):
 	def audit_log_subscription(self) -> str | None:
 		return frappe.db.exists(
 			"Subscription",
-			{"document_type": self.doctype, "document_name": self.name, "plan_type": "S3 Storage Plan"},
+			{
+				"document_type": self.doctype,
+				"document_name": self.name,
+				"plan_type": "S3 Storage Plan",
+				"plan": AUDIT_LOG_STORAGE_PLAN,
+			},
 		)
 
 	def create_audit_log_subscription(self):
@@ -1507,9 +1513,9 @@ class DatabaseServer(BaseServer):
 			frappe.db.set_value("Subscription", self.audit_log_subscription, "enabled", 1)
 			return
 
-		plan = frappe.db.get_value("S3 Storage Plan", {"enabled": 1}, "name")
-		if not plan:
-			frappe.throw("No enabled S3 Storage Plan found. Audit log storage can't be billed.")
+		# Named, not just any enabled S3 plan: Subscription bills this one per GB of stored log
+		if not frappe.db.exists("S3 Storage Plan", {"name": AUDIT_LOG_STORAGE_PLAN, "enabled": 1}):
+			frappe.throw(f"{AUDIT_LOG_STORAGE_PLAN} is not enabled. Audit log storage can't be billed.")
 
 		frappe.get_doc(
 			{
@@ -1519,7 +1525,7 @@ class DatabaseServer(BaseServer):
 				"document_type": self.doctype,
 				"document_name": self.name,
 				"plan_type": "S3 Storage Plan",
-				"plan": plan,
+				"plan": AUDIT_LOG_STORAGE_PLAN,
 				"interval": "Daily",
 			}
 		).insert(ignore_permissions=True)

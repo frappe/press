@@ -5,6 +5,10 @@ import frappe
 
 from press.press.doctype.site_plan.plan import Plan
 
+# The plan that bills audit log storage. Shipped in press/fixtures/s3_storage_plan.json,
+# and the only S3 plan priced per GB of MariaDB Audit Log held in S3.
+AUDIT_LOG_STORAGE_PLAN = "Audit Log Storage plan"
+
 
 class S3StoragePlan(Plan):
 	# begin: auto-generated types
