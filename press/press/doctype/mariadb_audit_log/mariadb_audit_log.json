@@ -62,13 +62,15 @@
 			"fieldname": "size_mb",
 			"fieldtype": "Float",
 			"label": "Size (MB)",
+			"precision": "3",
 			"reqd": 1
 		},
 		{ "fieldname": "column_break_hswb", "fieldtype": "Column Break" },
 		{
 			"fieldname": "uncompressed_size_mb",
 			"fieldtype": "Float",
-			"label": "Uncompressed Size (MB)"
+			"label": "Uncompressed Size (MB)",
+			"precision": "3"
 		},
 		{ "fieldname": "section_break_ytpc", "fieldtype": "Section Break" },
 		{
