@@ -294,6 +294,11 @@ class Bench(Document):
 			self.port_offset = self.get_unused_port_offset()
 
 		config = {
+			# tells bench its state is owned by Press, so it can warn before
+			# commands that desync the container from the Bench/Site records.
+			# common_site_config is the only bench config bind-mounted into the
+			# container, so the marker has to live here.
+			"frappe_cloud": True,
 			"monitor": True,
 			"redis_cache": self.build_redis_uri(13000),
 			"redis_queue": self.build_redis_uri(11000),

@@ -236,7 +236,7 @@ scheduler_events = {
 		"press.press.doctype.tls_certificate.tls_certificate.notify_custom_tls_renewal",
 		"press.press.doctype.tls_certificate.tls_certificate.retrigger_pending_site_domain_callbacks",
 		"press.press.doctype.site.site.suspend_sites_exceeding_disk_usage_for_last_14_days",
-		"press.press.doctype.user_2fa.user_2fa.yearly_2fa_recovery_code_reminder",
+		"press.press.doctype.user_2fa.user_2fa.send_2fa_recovery_code_reminders",
 		"press.press.doctype.registry_server.registry_server.delete_old_images_from_registry",
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_daily",

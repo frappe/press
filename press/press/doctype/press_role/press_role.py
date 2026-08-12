@@ -59,14 +59,43 @@ class PressRole(Document):
 		"allow_customer",
 		"allow_dashboard",
 		"allow_leads",
+		"allow_local_payment",
 		"allow_partner",
 		"allow_server_creation",
 		"allow_site_creation",
+		"allow_local_payment",
 		"allow_webhook_configuration",
 		"resources",
 		"team",
 		"title",
 		"users",
+	)
+
+	dashboard_insert_fields = (
+		"title",
+		"users",
+		"resources",
+	)
+
+	# The permission toggles the role configuration dialog flips. `resources`
+	# and `users` change through add_resource/add_user, which check the caller.
+	dashboard_editable_fields = (
+		"admin_access",
+		"all_release_groups",
+		"all_servers",
+		"all_sites",
+		"allow_apps",
+		"allow_bench_creation",
+		"allow_billing",
+		"allow_contribution",
+		"allow_customer",
+		"allow_dashboard",
+		"allow_leads",
+		"allow_local_payment",
+		"allow_partner",
+		"allow_server_creation",
+		"allow_site_creation",
+		"allow_webhook_configuration",
 	)
 
 	@team_guard.only_admin()

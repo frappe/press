@@ -44,6 +44,7 @@ export type PartnerOnboardingDoc = {
 	status?: 'Draft' | 'Pending Review' | 'Approved' | 'Rejected' | 'Cancelled'
 	company_name?: string
 	registered_country?: string
+	registered_state?: string
 	company_email?: string
 	contact?: string
 	address?: string
@@ -116,6 +117,7 @@ const certificateTypeCourses: Record<string, string[]> = {
 const form = reactive<PartnerOnboardingDoc>({
 	company_name: '',
 	registered_country: '',
+	registered_state: '',
 	company_email: '',
 	contact: '',
 	address: '',
@@ -166,6 +168,7 @@ function applyDoc(nextDoc: PartnerOnboardingDoc | null, team?: TeamResource) {
 			teamDoc.team_title ||
 			'',
 		registered_country: nextDoc?.registered_country || teamDoc.country || '',
+		registered_state: nextDoc?.registered_state || '',
 		company_email: nextDoc?.company_email || teamDoc.user || '',
 		contact: nextDoc?.contact || teamDoc.phone_number || '',
 		address: nextDoc?.address || '',
@@ -314,9 +317,13 @@ export function usePartnerOnboarding(team?: TeamResource) {
 			return true
 		}
 
+		const hasRegisteredState =
+			form.registered_country !== 'India' || Boolean(form.registered_state)
+
 		return Boolean(
 			form.company_name &&
 				form.registered_country &&
+				hasRegisteredState &&
 				form.company_email &&
 				form.contact &&
 				form.address &&
