@@ -142,9 +142,10 @@ export default {
 						format: (value) => (value ? date(value, 'lll') : '—'),
 					},
 					{
+						// The gzipped size held in S3, which is what the team is billed for
 						label: 'Size',
 						fieldname: 'size_mb',
-						align: 'right',
+						align: 'center',
 						width: 0.5,
 						class: 'text-ink-gray-6',
 						format: (value) => bytes(value * 1024 * 1024),
