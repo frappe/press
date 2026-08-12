@@ -24,7 +24,7 @@ import semantic_version
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import now_datetime as now
-from frappe.utils import rounded
+from frappe.utils import rounded, sbool
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from press.agent import Agent
@@ -1226,7 +1226,7 @@ class DeployCandidateBuild(Document):
 		if not deploy_candidate:
 			return dict(error=True, message="Cannot create duplicate Deploy Candidate")
 
-		deploy_candidate_build_name = deploy_candidate.build_and_deploy(no_cache=no_cache)
+		deploy_candidate_build_name = deploy_candidate.build_and_deploy(no_cache=bool(sbool(no_cache)))
 		return dict(error=False, message=deploy_candidate_build_name)
 
 	@frappe.whitelist()
@@ -1289,7 +1289,7 @@ def redeploy(dn: str, no_cache: bool = False) -> dict[str, str | bool]:
 			frappe.ValidationError,
 		)
 
-	return deploy_candidate_build.redeploy(no_cache=no_cache)
+	return deploy_candidate_build.redeploy(no_cache=bool(sbool(no_cache)))
 
 
 def _mark_build_as_failed(dn: str) -> bool:

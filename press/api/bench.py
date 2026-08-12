@@ -1202,7 +1202,7 @@ def show_app_versions(name: str, dc_name: str) -> list[dict[str, Any]]:
 @frappe.whitelist()
 @protected("Release Group")
 def redeploy(name: str, dc_name: str, no_cache: bool = False) -> str:
-	response = redeploy_candidate(dc_name, no_cache=no_cache)
+	response = redeploy_candidate(dc_name, no_cache=bool(sbool(no_cache)))
 
 	if response["error"]:
 		frappe.throw("Unable to redeploy this build!", frappe.ValidationError)
