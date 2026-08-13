@@ -815,3 +815,27 @@ class TestServer(FrappeTestCase):
 
 		methods = [call.args[0] for call in requests.request.call_args_list]
 		self.assertNotIn("DELETE", methods)
+
+
+@patch.object(BaseServer, "after_insert", new=Mock())
+class TestSSHCommand(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_ssh_command_uses_ssh_user_and_port_of_server(self):
+		server = create_test_server()
+		server.db_set({"ip": "1.2.3.4", "ssh_user": "ubuntu", "ssh_port": 2222})
+		server.reload()
+
+		self.assertEqual(server.get_ssh_command(), "ssh ubuntu@1.2.3.4 -p 2222")
+
+	def test_ssh_command_jumps_through_proxy_server_when_server_has_no_public_ip(self):
+		proxy_server = create_test_proxy_server()
+		server = create_test_server(proxy_server=proxy_server.name)
+		server.db_set("ip", None)
+		server.reload()
+
+		self.assertEqual(
+			server.get_ssh_command(),
+			f"ssh root@{server.private_ip} -p 22 -J root@{proxy_server.name}:22",
+		)

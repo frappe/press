@@ -52,6 +52,7 @@ from press.press.doctype.telegram_message.telegram_message import TelegramMessag
 from press.runner import Ansible
 from press.utils import docs, fmt_timedelta, log_error
 from press.utils.raven import send_raven_message
+from press.utils.user import is_desk_user
 from press.wazuh import WazuhManager
 
 if typing.TYPE_CHECKING:
@@ -2658,6 +2659,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if not hasattr(self, "ssh_port"):
 			return 22
 		return self.ssh_port or 22
+
+	@frappe.whitelist()
+	def get_ssh_command(self):
+		"""SSH command that connects the same way Ansible does."""
+		if not is_desk_user():
+			frappe.throw("Only system users can get the SSH command", frappe.PermissionError)
+
+		command = f"ssh {self._ssh_user()}@{self.ip or self.private_ip} -p {self._ssh_port()}"
+		if hasattr(self, "bastion_host") and (bastion := self.bastion_host):
+			command += f" -J {bastion.ssh_user or 'root'}@{bastion.ip}:{bastion.ssh_port or 22}"
+		return command
 
 	def get_primary_frappe_public_key(self):
 		if primary_public_key := frappe.db.get_value(self.doctype, self.primary, "frappe_public_key"):

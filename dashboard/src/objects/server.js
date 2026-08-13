@@ -25,6 +25,7 @@ export default {
 		changePlan: 'change_plan',
 		toggleAutoIncreaseStorage: 'toggle_auto_increase_storage',
 		reboot: 'reboot',
+		getSSHCommand: 'get_ssh_command',
 		rename: 'rename',
 		cleanup: 'cleanup_unused_files',
 		dropServer: 'drop_server',
@@ -131,6 +132,16 @@ export default {
 									}/app/database-server/${server.doc.replication_server}`,
 									'_blank',
 								);
+							},
+						},
+						{
+							label: 'Copy SSH Command',
+							icon: icon('clipboard'),
+							condition: () => $team.doc?.is_desk_user,
+							async onClick() {
+								const command = await server.getSSHCommand.submit();
+								await navigator.clipboard.writeText(command);
+								toast.success('SSH command copied to clipboard');
 							},
 						},
 						{
