@@ -14,30 +14,15 @@ export function getBackupsTab() {
 		label: 'Backups',
 		icon: icon('archive'),
 		route: 'backups',
-		type: 'Component',
-		redirectTo: 'Site Backup List',
-		childrenRoutes: ['Site Backup List', 'Site Backup Audit Trail'],
-		nestedChildrenRoutes: [
-			{
-				name: 'Site Backup List',
-				path: 'list',
-				component: () => import('../../components/site/SiteBackupList.vue'),
-			},
-			{
-				name: 'Site Backup Audit Trail',
-				path: 'audit-trail',
-				component: () =>
-					import('../../components/site/SiteBackupAuditTrail.vue'),
-			},
-		],
-		component: defineAsyncComponent(
-			() => import('../../components/site/SiteBackups.vue'),
-		),
+		type: 'list',
+		// Keeps the tab lit while the audit trail is open, since that is a page of its own
+		childrenRoutes: ['Site Backup Audit Trail'],
+		list: backupRecordsOptions(),
 	}
 }
 
-// The Site Backup records Press still holds. Kept as a plain options object so
-// SiteBackups.vue can layer the history control on top without touching it.
+// The Site Backup records Press still holds, which is every backup whose files
+// are still around: the list query drops a success once its files are gone.
 export function backupRecordsOptions() {
 	return {
 		doctype: 'Site Backup',
@@ -417,6 +402,17 @@ export function backupRecordsOptions() {
 					],
 				},
 			].filter((d) => (d.condition ? d.condition() : true))
+		},
+		actions({ documentResource: site }) {
+			return [
+				{
+					label: 'Audit Trail',
+					route: {
+						name: 'Site Backup Audit Trail',
+						params: { name: site.doc?.name },
+					},
+				},
+			]
 		},
 		primaryAction({ listResource: backups, documentResource: site }) {
 			return {
