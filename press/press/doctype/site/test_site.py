@@ -39,6 +39,7 @@ from press.press.doctype.site.site import (
 	process_rename_site_job_update,
 	suspend_sites_exceeding_disk_usage_for_last_14_days,
 )
+from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_migration.site_migration import SiteMigration
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_team
@@ -627,6 +628,35 @@ class TestSite(FrappeTestCase):
 		site_recent.reload()
 		self.assertEqual(site_to_notify_and_archive.status, "Pending")  # site is being archived
 		self.assertEqual(site_recent.status, "Suspended")  # Do not archive recently suspended site
+
+	def test_archival_details_name_the_user_who_archived_the_site_and_the_reason(self):
+		site = create_test_site()
+		activity = log_site_activity(site.name, "Archive", "Not needed anymore")
+		frappe.db.set_value("Site Activity", activity.name, "owner", "jane@example.com")
+
+		details = site.get_archival_details()
+
+		self.assertEqual(details["archived_by"], "jane@example.com")
+		self.assertEqual(details["reason"], "Not needed anymore")
+		self.assertEqual(details["archived_on"], frappe.utils.get_datetime(activity.creation))
+
+	def test_archival_details_credit_frappe_cloud_for_an_archival_run_by_administrator(self):
+		site = create_test_site()
+		log_site_activity(site.name, "Archive", "Archive suspended site")
+
+		self.assertEqual(site.get_archival_details()["archived_by"], "Frappe Cloud")
+
+	def test_archival_details_keep_the_reason_of_the_first_archive_attempt(self):
+		site = create_test_site()
+		log_site_activity(site.name, "Archive", "Archive suspended site")
+		log_site_activity(site.name, "Archive", "Retry Archive")
+
+		self.assertEqual(site.get_archival_details()["reason"], "Archive suspended site")
+
+	def test_archival_details_are_empty_for_a_site_that_was_never_archived(self):
+		site = create_test_site()
+
+		self.assertIsNone(site.get_archival_details())
 
 	def test_site_usage_exceed_tracking(self):
 		team = create_test_team()

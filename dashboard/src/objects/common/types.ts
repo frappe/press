@@ -51,6 +51,9 @@ export interface Detail {
 	route: string;
 	tabs: Tab[];
 	actions: (r: { documentResource: DocumentResource }) => Action[];
+	banner?: (r: {
+		documentResource: DocumentResource;
+	}) => BannerConfig | undefined;
 }
 
 export interface List {

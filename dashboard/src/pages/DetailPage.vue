@@ -34,6 +34,11 @@
 		</div>
 	</Header>
 	<div>
+		<AlertBanner
+			v-if="banner && $resources.document?.doc"
+			class="mx-5 mt-5"
+			v-bind="banner"
+		/>
 		<TabsWithRouter
 			v-if="!$resources.document.get.error && $resources.document.get.fetched"
 			:document="$resources.document?.doc"
@@ -69,6 +74,7 @@
 <script>
 import Header from '../components/Header.vue';
 import ActionButton from '../components/ActionButton.vue';
+import AlertBanner from '../components/AlertBanner.vue';
 import DetailPageError from '../components/DetailPageError.vue';
 import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
@@ -93,6 +99,7 @@ export default {
 	components: {
 		Header,
 		ActionButton,
+		AlertBanner,
 		TabsWithRouter,
 		FBreadcrumbs: Breadcrumbs,
 	},
@@ -149,6 +156,14 @@ export default {
 		title() {
 			let doc = this.$resources.document?.doc;
 			return doc ? doc[this.object.detail.titleField || 'name'] : this.name;
+		},
+		banner() {
+			if (this.object.detail.banner && this.$resources.document?.doc) {
+				return this.object.detail.banner({
+					documentResource: this.$resources.document,
+				});
+			}
+			return null;
 		},
 		badge() {
 			if (this.object.detail.statusBadge) {
