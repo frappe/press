@@ -267,3 +267,44 @@ class TestDatabaseServer(FrappeTestCase):
 		from press.api.server import prometheus_instant_value
 
 		self.assertIsNone(prometheus_instant_value('mysql_up{instance="m1",job="mariadb"}'))
+
+	@patch.object(Agent, "purge_binlog", new=Mock())
+	@patch.object(
+		DatabaseServer,
+		"get_binlogs_raw_data",
+		new=Mock(return_value={"binlogs_in_disk": [{"name": "mysql-bin.000002"}]}),
+	)
+	@patch.object(BaseServer, "restore_glass_file")
+	@patch.object(BaseServer, "break_glass")
+	@patch.object(BaseServer, "free_space")
+	def test_purge_binlogs_breaks_glass_on_a_full_disk_and_restores_it_after(
+		self, free_space: Mock, break_glass: Mock, restore_glass_file: Mock
+	):
+		# The agent can't answer on a full disk, and the purge is what makes the room back
+		free_space.return_value = 0
+		server = create_test_database_server()
+
+		server.purge_binlogs(to_binlog="mysql-bin.000001")
+
+		break_glass.assert_called_once()
+		restore_glass_file.assert_called_once()
+
+	@patch.object(Agent, "purge_binlog", new=Mock())
+	@patch.object(
+		DatabaseServer,
+		"get_binlogs_raw_data",
+		new=Mock(return_value={"binlogs_in_disk": [{"name": "mysql-bin.000002"}]}),
+	)
+	@patch.object(BaseServer, "restore_glass_file")
+	@patch.object(BaseServer, "break_glass")
+	@patch.object(BaseServer, "free_space")
+	def test_purge_binlogs_keeps_the_glass_file_when_the_disk_has_room(
+		self, free_space: Mock, break_glass: Mock, restore_glass_file: Mock
+	):
+		free_space.return_value = 50 * 1024 * 1024 * 1024
+		server = create_test_database_server()
+
+		server.purge_binlogs(to_binlog="mysql-bin.000001")
+
+		break_glass.assert_not_called()
+		restore_glass_file.assert_not_called()

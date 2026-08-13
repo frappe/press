@@ -2312,6 +2312,8 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		This will purge binlogs from disk.
 		to_binlog and older binlogs will be purged.
 		"""
+		# A full disk starves the agent, and the purge itself is what makes the room back
+		broke_glass = self.break_glass_if_agent_disk_full()
 		try:
 			binlogs_in_disk = [r["name"] for r in self.get_binlogs_raw_data().get("binlogs_in_disk", [])]
 			prefix = to_binlog.split(".")[0] + "."
@@ -2323,6 +2325,8 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			frappe.msgprint(f"Purged to {to_binlog}", "Successfully purged binlogs")
 			if self.enable_binlog_indexing:
 				self.sync_binlogs_info(index_binlogs=False, upload_binlogs=False)
+			if broke_glass:
+				self.restore_glass_file()
 		except Exception as e:
 			frappe.throw(f"Failed to purge binlogs. Please try again later. {e!s}")
 			raise e

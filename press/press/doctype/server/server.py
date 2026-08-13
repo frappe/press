@@ -1110,13 +1110,20 @@ class BaseServer(Document, TagHelpers):
 		agent = Agent(self.name, self.doctype)
 		if not force and agent.should_skip_requests():
 			return
-		if force and self.agent_disk_full():
-			self.break_glass()
+		if force:
+			self.break_glass_if_agent_disk_full()
 		agent.cleanup_unused_files(force)
 
 	def agent_disk_full(self) -> bool:
 		# On unified servers the agent shares the data disk; a full data volume starves it.
 		return self.free_space("/") < GLASS_FILE_SIZE
+
+	def break_glass_if_agent_disk_full(self) -> bool:
+		"""Give the agent room to work on a full disk. Tells whether glass was broken."""
+		if not self.agent_disk_full():
+			return False
+		self.break_glass()
+		return True
 
 	def on_trash(self):
 		plays = frappe.get_all("Ansible Play", filters={"server": self.name})
