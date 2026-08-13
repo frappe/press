@@ -1209,10 +1209,20 @@ Response: {reason or getattr(result, "text", "Unknown")}
 	def cancel_job(self, id):
 		return self.post(f"jobs/{id}/cancel")
 
-	def get_site_backup_jobs(self, site: str, start: str, end: str):
-		"""Backup Site jobs this server ran for the site, for the backup audit trail."""
-		query = urlencode({"start": start, "end": end})
-		return self.get(f"sites/{site}/backup-jobs?{query}")
+	def fetch_site_backup_jobs(self, site: str, start: str, end: str):
+		"""Queue a read of this server's job database for the backup audit trail.
+
+		The range rides in the path because job deduplication keys off it, and two
+		ranges for one site are different questions.
+		"""
+		query = urlencode({"site": site, "start": start, "end": end})
+		return self.create_agent_job(
+			"Fetch Backup Jobs",
+			f"server/backup-jobs?{query}",
+			site=site,
+			reference_doctype="Site",
+			reference_name=site,
+		)
 
 	def get_site_sid(self, site, user=None):
 		if user:
