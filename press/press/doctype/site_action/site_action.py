@@ -439,7 +439,7 @@ class SiteAction(Document):
 				release_group: ReleaseGroup = frappe.get_doc("Release Group", release_group_name)
 				release_group.archive()
 
-	def get_press_error_notifications(self) -> list[dict]:  # noqa: C901
+	def get_press_error_notifications(self) -> list[dict]:
 		if self.status != "Failure":
 			return []
 
@@ -449,47 +449,27 @@ class SiteAction(Document):
 				continue
 			if not step.reference_doctype or not step.reference_name:
 				continue
-			if step.reference_doctype == "Deploy Candidate Build":
-				notifications.extend(
-					frappe.get_all(
-						"Press Notification",
-						filters={
-							"team": self.team,
-							"type": "Bench Deploy",
-							"document_type": step.reference_doctype,
-							"document_name": step.reference_name,
-							"class": "Error",
-							"is_actionable": True,
-						},
-						fields=["title", "name"],
-					)
-				)
-
-			elif step.reference_doctype == "Site Update":
-				agent_jobs = []
-				site_update_doc: SiteUpdate = frappe.get_doc(step.reference_doctype, step.reference_name)
-				if site_update_doc.update_job:
-					agent_jobs.append(site_update_doc.update_job)
-				if site_update_doc.recover_job:
-					agent_jobs.append(site_update_doc.recover_job)
-
-				if agent_jobs:
-					notifications.extend(
-						frappe.get_all(
-							"Press Notification",
-							filters={
-								"team": self.team,
-								"type": "Site Update",
-								"document_type": "Agent Job",
-								"document_name": ("in", agent_jobs),
-								"class": "Error",
-								"is_actionable": True,
-							},
-							fields=["title", "name"],
-						)
-					)
+			notifications.extend(self.get_notifications_for_step(step))
 
 		return notifications
+
+	def get_notifications_for_step(self, step: SiteActionStep) -> list[dict]:
+		if step.reference_doctype == "Deploy Candidate Build":
+			return get_actionable_notifications(
+				self.team, "Bench Deploy", "Deploy Candidate Build", [step.reference_name]
+			)
+
+		if step.reference_doctype == "Site Update":
+			return get_actionable_notifications(
+				self.team, "Site Update", "Agent Job", get_site_update_jobs(step.reference_name)
+			)
+
+		if step.reference_doctype == "Site Migration":
+			return get_actionable_notifications(
+				self.team, "Site Migrate", "Agent Job", get_site_migration_jobs(step.reference_name)
+			)
+
+		return []
 
 	# Internal
 
@@ -853,6 +833,42 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype("S
 
 
 # Utility functions
+
+
+def get_actionable_notifications(
+	team: str, notification_type: str, document_type: str, document_names: list[str]
+) -> list[dict]:
+	"""Error notifications the user can act on, shown as a banner on the action page."""
+	if not document_names:
+		return []
+
+	return frappe.get_all(
+		"Press Notification",
+		filters={
+			"team": team,
+			"type": notification_type,
+			"document_type": document_type,
+			"document_name": ("in", document_names),
+			"class": "Error",
+			"is_actionable": True,
+		},
+		fields=["title", "name"],
+	)
+
+
+def get_site_update_jobs(site_update: str) -> list[str]:
+	jobs = frappe.db.get_value("Site Update", site_update, ["update_job", "recover_job"]) or []
+	return [job for job in jobs if job]
+
+
+def get_site_migration_jobs(site_migration: str) -> list[str]:
+	"""Agent jobs of a migration's failed steps. That's where the failure gets notified from."""
+	jobs = frappe.get_all(
+		"Site Migration Step",
+		filters={"parent": site_migration, "parenttype": "Site Migration", "status": "Failure"},
+		pluck="step_job",
+	)
+	return [job for job in jobs if job]
 
 
 def process_site_actions():
