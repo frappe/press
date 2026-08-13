@@ -548,7 +548,7 @@ class TestBackupHistory(FrappeTestCase):
 	def test_reversed_range_is_rejected(self):
 		self.assertRaisesRegex(
 			frappe.ValidationError,
-			"Start date must be on or before the end date",
+			"Pick a start date on or before the end date",
 			get_backup_history,
 			self.site.name,
 			"2023-10-05",
@@ -558,7 +558,7 @@ class TestBackupHistory(FrappeTestCase):
 	def test_range_wider_than_a_year_is_rejected(self):
 		self.assertRaisesRegex(
 			frappe.ValidationError,
-			f"Pick a range of {MAX_RANGE_DAYS} days or less",
+			f"more than the {MAX_RANGE_DAYS} day limit",
 			get_backup_history,
 			self.site.name,
 			"2023-01-01",

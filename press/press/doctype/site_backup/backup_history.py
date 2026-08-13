@@ -135,9 +135,16 @@ def resolve_range(site: str, start_date: str, end_date: str) -> tuple[date, date
 	"""Trim the asked-for range to days the site could have been backed up on."""
 	start, end = getdate(start_date), getdate(end_date)
 	if start > end:
-		frappe.throw("Start date must be on or before the end date")
+		frappe.throw(
+			f"The start date {start} comes after the end date {end}, so the range covers no days. "
+			"Pick a start date on or before the end date."
+		)
 	if (end - start).days >= MAX_RANGE_DAYS:
-		frappe.throw(f"Pick a range of {MAX_RANGE_DAYS} days or less")
+		frappe.throw(
+			f"The range {start} to {end} covers {(end - start).days + 1} days, "
+			f"more than the {MAX_RANGE_DAYS} day limit. "
+			"Pick a shorter range, or export one year at a time."
+		)
 
 	created_on = getdate(frappe.db.get_value("Site", site, "creation"))
 	return max(start, created_on), min(end, getdate())
