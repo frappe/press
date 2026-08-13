@@ -1448,6 +1448,13 @@ class Site(Document, TagHelpers):
 		).insert()
 
 	@dashboard_whitelist()
+	def get_backup_history(self, start_date, end_date):
+		"""Whether a backup was taken on each day of the range, answered even for days the list hides."""
+		from press.press.doctype.site_backup.backup_history import get_backup_history
+
+		return get_backup_history(self.name, start_date, end_date)
+
+	@dashboard_whitelist()
 	def get_backup_download_link(self, backup, file):
 		from botocore.exceptions import ClientError
 
