@@ -9,6 +9,7 @@ import re
 from contextlib import suppress
 from datetime import date
 from typing import TYPE_CHECKING, Any, Literal
+from urllib.parse import urlencode
 
 import frappe
 import frappe.utils
@@ -1207,6 +1208,11 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def cancel_job(self, id):
 		return self.post(f"jobs/{id}/cancel")
+
+	def get_site_backup_jobs(self, site: str, start: str, end: str):
+		"""Backup Site jobs this server ran for the site, for the backup audit trail."""
+		query = urlencode({"start": start, "end": end})
+		return self.get(f"sites/{site}/backup-jobs?{query}")
 
 	def get_site_sid(self, site, user=None):
 		if user:

@@ -10,6 +10,7 @@ from boto3 import client
 from frappe.utils import add_days, cint, getdate
 from frappe.utils.password import get_decrypted_password
 
+from press.agent import Agent
 from press.press.doctype.backup_bucket.backup_bucket import get_replication_target
 from press.press.doctype.site_backup.site_backup import get_backup_bucket
 from press.utils import chunk
@@ -22,6 +23,14 @@ CACHE_TTL = 60 * 60
 
 # Keeps the IN clause sane on a year of daily backups
 REMOTE_FILE_BATCH = 500
+
+# The agent names the config artifact after the file it dumps
+ARTIFACT_BY_JOB_KEY = {
+	"database": "database",
+	"public": "public",
+	"private": "private",
+	"site_config": "config",
+}
 
 ARTIFACT_BY_FIELD = {
 	"remote_database_file": "database",
@@ -67,13 +76,69 @@ def resolve_range(site: str, start_date: str, end_date: str) -> tuple[date, date
 
 
 def build_history(site: str, start: date, end: date) -> list[dict]:
+	"""Ask each source only for the days the cheaper ones before it could not answer."""
 	days = days_between(start, end)
 	backups = get_recorded_backups(site, start, end)
+
 	# Records outlive the objects themselves, so buckets are only worth reading for the gaps
-	if any(str(day) not in backups for day in days):
+	if has_gaps(backups, days):
 		backups = {**list_stored_backups(site, start, end), **backups}
 
+	# The agent knows a backup ran even where nothing was kept, and knows when one failed
+	if has_gaps(backups, days):
+		backups = {**get_agent_backup_jobs(site, start, end), **backups}
+
 	return [backups.get(str(day)) or missing_backup(str(day)) for day in days]
+
+
+def has_gaps(backups: dict[str, dict], days: list[date]) -> bool:
+	return any(str(day) not in backups for day in days)
+
+
+def get_agent_backup_jobs(site: str, start: date, end: date) -> dict[str, dict]:
+	"""What the site's server remembers running, which covers a backup no longer stored anywhere.
+
+	Only the current server is asked. Jobs a site ran before moving stay on the server it
+	left, and its objects are already picked up by walking the buckets it used.
+	"""
+	server = frappe.db.get_value("Site", site, "server")
+	if not server:
+		return {}
+
+	days: dict[str, dict] = {}
+	for job in fetch_agent_backup_jobs(server, site, start, end):
+		day = str(getdate(job["start"])) if job.get("start") else None
+		# A day that ran twice is answered by whichever run got furthest
+		if not day or outranks(days.get(day), job):
+			continue
+		days[day] = backup_from_job(day, job)
+	return days
+
+
+def fetch_agent_backup_jobs(server: str, site: str, start: date, end: date) -> list[dict]:
+	"""Raise rather than return nothing: a day we could not check is not a day without a backup."""
+	try:
+		return Agent(server).get_site_backup_jobs(site, str(start), str(end))["jobs"]
+	except Exception:
+		frappe.log_error("Backup audit trail could not reach the site's server")
+		frappe.throw(f"Could not reach {server} to check the days nothing is stored for. Try again.")
+		return []
+
+
+def outranks(existing: dict | None, job: dict) -> bool:
+	if not existing:
+		return False
+	return existing["status"] == "Success" and job["status"] != "Success"
+
+
+def backup_from_job(day: str, job: dict) -> dict:
+	status = "Success" if job["status"] == "Success" else "Failure"
+	sizes = job.get("sizes") or {}
+	return (
+		missing_backup(day)
+		| {"status": status}
+		| {artifact: cint(sizes.get(key)) for key, artifact in ARTIFACT_BY_JOB_KEY.items()}
+	)
 
 
 def get_cached_history(site: str, start: date, end: date) -> list[dict] | None:
