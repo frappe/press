@@ -5,7 +5,9 @@ defineOptions({ name: 'SiteBackups' })
 
 const tabs = [
 	{
-		label: 'Backups',
+		// Not "Backups" again: the tab already says that, and this view is the subset
+		// whose files are still around, which is what the audit trail is not
+		label: 'Available',
 		value: 'Site Backup List',
 	},
 	{
