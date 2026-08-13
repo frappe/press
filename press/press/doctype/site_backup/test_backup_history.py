@@ -360,12 +360,20 @@ class TestBackupHistory(FrappeTestCase):
 		self.assertEqual(day["status"], "Success")
 		self.assertEqual(day["database"], 900)
 
-	def test_the_server_is_left_alone_when_the_other_sources_cover_every_day(self):
-		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz")
+	def test_the_server_is_left_alone_when_records_cover_every_day(self):
+		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz")
 
 		get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
 
 		self.agent_backup_jobs.assert_not_called()
+
+	def test_the_bucket_is_left_alone_when_the_server_reports_a_success(self):
+		self.given_agent_jobs([self.agent_job("2023-10-02 04:00:00")])
+		boto3.client("s3", region_name=REGION).delete_bucket(Bucket=BUCKET)
+
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["status"], "Success")
 
 	def test_an_unreachable_server_is_reported_as_unconfirmed_not_as_no_backup(self):
 		self.agent_backup_jobs.side_effect = Exception("connection refused")

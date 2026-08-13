@@ -15,12 +15,24 @@ export function getBackupsTab() {
 		icon: icon('archive'),
 		route: 'backups',
 		type: 'Component',
+		redirectTo: 'Site Backup List',
+		childrenRoutes: ['Site Backup List', 'Site Backup Audit Trail'],
+		nestedChildrenRoutes: [
+			{
+				name: 'Site Backup List',
+				path: 'list',
+				component: () => import('../../components/site/SiteBackupList.vue'),
+			},
+			{
+				name: 'Site Backup Audit Trail',
+				path: 'audit-trail',
+				component: () =>
+					import('../../components/site/SiteBackupAuditTrail.vue'),
+			},
+		],
 		component: defineAsyncComponent(
 			() => import('../../components/site/SiteBackups.vue'),
 		),
-		props: (site) => {
-			return { documentResource: site }
-		},
 	}
 }
 
