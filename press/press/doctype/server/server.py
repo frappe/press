@@ -2663,14 +2663,20 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 	@frappe.whitelist()
 	def get_ssh_command(self):
-		"""SSH command that connects the same way Ansible does."""
+		"""SSH command that hops through the press server and the cluster's proxy."""
 		if not is_desk_user():
 			frappe.throw("Only system users can get the SSH command", frappe.PermissionError)
 
-		command = f"ssh {self._ssh_user()}@{self.ip or self.private_ip} -p {self._ssh_port()}"
-		if hasattr(self, "bastion_host") and (bastion := self.bastion_host):
-			command += f" -J {bastion.ssh_user or 'root'}@{bastion.ip}:{bastion.ssh_port or 22}"
-		return command
+		port = "" if self._ssh_port() == 22 else f" -p {self._ssh_port()}"
+		command = f"ssh{self._jump_through_proxy()} {self._ssh_user()}@{self.name}{port}"
+		return f"ssh frappe@{frappe.db.get_single_value('Press Settings', 'domain')} -t '{command}'"
+
+	def _jump_through_proxy(self):
+		"""Servers are reachable only through the proxy server of their cluster."""
+		proxy = frappe.db.get_value("Proxy Server", {"status": "Active", "cluster": self.cluster}, "name")
+		if not proxy or proxy == self.name:
+			return ""
+		return f" -J root@{proxy}"
 
 	def get_primary_frappe_public_key(self):
 		if primary_public_key := frappe.db.get_value(self.doctype, self.primary, "frappe_public_key"):

@@ -819,23 +819,31 @@ class TestServer(FrappeTestCase):
 
 @patch.object(BaseServer, "after_insert", new=Mock())
 class TestSSHCommand(FrappeTestCase):
+	def setUp(self):
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+
+		create_test_press_settings().db_set("domain", "fc.dev")
+		self.cluster = create_test_cluster(name="Mumbai").name
+
 	def tearDown(self):
 		frappe.db.rollback()
 
+	def test_ssh_command_hops_through_press_server_and_proxy_server(self):
+		proxy_server = create_test_proxy_server(cluster=self.cluster)
+		server = create_test_server(proxy_server=proxy_server.name, cluster=self.cluster)
+
+		self.assertEqual(
+			server.get_ssh_command(),
+			f"ssh frappe@fc.dev -t 'ssh -J root@{proxy_server.name} root@{server.name}'",
+		)
+
 	def test_ssh_command_uses_ssh_user_and_port_of_server(self):
-		server = create_test_server()
-		server.db_set({"ip": "1.2.3.4", "ssh_user": "ubuntu", "ssh_port": 2222})
-		server.reload()
-
-		self.assertEqual(server.get_ssh_command(), "ssh ubuntu@1.2.3.4 -p 2222")
-
-	def test_ssh_command_jumps_through_proxy_server_when_server_has_no_public_ip(self):
-		proxy_server = create_test_proxy_server()
-		server = create_test_server(proxy_server=proxy_server.name)
-		server.db_set("ip", None)
+		proxy_server = create_test_proxy_server(cluster=self.cluster)
+		server = create_test_server(proxy_server=proxy_server.name, cluster=self.cluster)
+		server.db_set({"ssh_user": "ubuntu", "ssh_port": 2222})
 		server.reload()
 
 		self.assertEqual(
 			server.get_ssh_command(),
-			f"ssh root@{server.private_ip} -p 22 -J root@{proxy_server.name}:22",
+			f"ssh frappe@fc.dev -t 'ssh -J root@{proxy_server.name} ubuntu@{server.name} -p 2222'",
 		)
