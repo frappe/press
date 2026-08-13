@@ -2660,7 +2660,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			return 22
 		return self.ssh_port or 22
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def get_ssh_command(self):
 		"""SSH command that hops through the press server and the cluster's proxy."""
 		if not is_desk_user():
