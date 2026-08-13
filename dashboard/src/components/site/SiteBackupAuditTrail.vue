@@ -1,5 +1,22 @@
 <template>
-	<ObjectList class="p-5" :options="options" />
+	<div class="p-5">
+		<Button :route="{ name: 'Site Detail Backups' }">
+			<template #prefix>
+				<lucide-arrow-left class="inline-block h-4 w-4" />
+			</template>
+			Backups
+		</Button>
+
+		<div class="mt-3 mb-4">
+			<h2 class="text-lg font-medium text-ink-gray-9">Audit Trail</h2>
+			<p class="mt-1 text-p-base text-ink-gray-6">
+				Every day in the range, so a day nothing was kept for is as visible as
+				one that was.
+			</p>
+		</div>
+
+		<ObjectList :options="options" />
+	</div>
 </template>
 
 <script>

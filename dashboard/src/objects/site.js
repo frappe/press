@@ -1302,6 +1302,11 @@ export default {
 
 	routes: [
 		{
+			name: 'Site Backup Audit Trail',
+			path: 'backups/audit-trail',
+			component: () => import('../components/site/SiteBackupAuditTrail.vue'),
+		},
+		{
 			name: 'Site Update',
 			path: 'updates/:id',
 			component: () => import('../pages/SiteUpdate.vue'),
