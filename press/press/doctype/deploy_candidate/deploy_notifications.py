@@ -793,6 +793,10 @@ def check_incompatible_node(old_dcb: "DeployCandidateBuild", new_dc: "DeployCand
 	if old_node != new_node:
 		return
 
+	# An app update can make the build compatible with the same Node version.
+	if apps_changed(old_dcb.candidate, new_dc):
+		return
+
 	frappe.throw(
 		f"The previous build failed because of an incompatible Node version. The Node version is still"
 		f" <b>{escape_html(new_node)}</b>. <b>Set a compatible Node version</b> in Bench Group &gt; Config &gt;"
@@ -829,6 +833,10 @@ def check_incompatible_python(old_dcb: "DeployCandidateBuild", new_dc: "DeployCa
 	new_python = new_dc.get_dependency_version("python")
 
 	if old_python != new_python:
+		return
+
+	# An app update can make the build compatible with the same Python version.
+	if apps_changed(old_dcb.candidate, new_dc):
 		return
 
 	frappe.throw(
@@ -1175,9 +1183,9 @@ def check_if_app_updated(old_dcb: "DeployCandidateBuild", new_dc: "DeployCandida
 	if old_hash != new_hash:
 		return
 
-	# The app itself wasn't updated, but the build may still succeed if the
-	# user changed the bench dependencies. Don't block the retry in that case.
-	if dependencies_changed(old_dcb.candidate, new_dc):
+	# The app itself wasn't updated, but the build may still succeed if the user
+	# changed a dependency or any other app. Don't block the retry in that case.
+	if build_inputs_changed(old_dcb.candidate, new_dc):
 		return
 
 	title = new_app.title or old_app.title
@@ -1190,9 +1198,20 @@ def check_if_app_updated(old_dcb: "DeployCandidateBuild", new_dc: "DeployCandida
 	)
 
 
+def build_inputs_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
+	"""Whether any dependency version or app commit hash differs between the two candidates."""
+	return dependencies_changed(old_dc, new_dc) or apps_changed(old_dc, new_dc)
+
+
 def dependencies_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
 	old = {d.dependency: d.version for d in old_dc.dependencies}
 	new = {d.dependency: d.version for d in new_dc.dependencies}
+	return old != new
+
+
+def apps_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
+	old = {app.app: app.hash or app.pullable_hash for app in old_dc.apps}
+	new = {app.app: app.hash or app.pullable_hash for app in new_dc.apps}
 	return old != new
 
 
