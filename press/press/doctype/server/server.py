@@ -2671,8 +2671,10 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return f"ssh frappe@{frappe.db.get_single_value('Press Settings', 'domain')} -t '{command}'"
 
 	def _jump_through_proxy(self):
-		"""Servers are reachable only through the proxy server of their cluster."""
-		proxy = frappe.db.get_value("Proxy Server", {"status": "Active", "cluster": self.cluster}, "name")
+		"""Servers are reachable only through their proxy server."""
+		proxy = self.get("proxy_server") or frappe.db.get_value(
+			"Proxy Server", {"status": "Active", "cluster": self.cluster}, "name"
+		)
 		if not proxy or proxy == self.name:
 			return ""
 		return f" -J root@{proxy}"
