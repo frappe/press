@@ -64,7 +64,7 @@ export default {
 				return {
 					title:
 						"This site's server could not be asked about the days nothing is stored for, so those show only what is still kept.",
-					type: 'gray',
+					type: 'general',
 					dismissable: true,
 					id: `${this.documentResource.doc?.name}-unconfirmed`,
 				}
@@ -78,7 +78,7 @@ export default {
 			// the plan working as sold rather than a backup that went missing
 			return {
 				title: `The ${plan.plan_title} plan does not store backups offsite, so days with nothing kept are expected.`,
-				type: 'gray',
+				type: 'general',
 				dismissable: true,
 				id: `${this.documentResource.doc?.name}-no-offsite`,
 			}
@@ -106,8 +106,9 @@ export default {
 					this.historyControl,
 				],
 				updateFilters: (filters) => {
-					if (filters.history !== undefined)
-						return this.setMode(filters.history)
+					// Presence, not truthiness: unchecking sends undefined, since the
+					// filter bar folds a false checkbox in with an empty text box
+					if ('history' in filters) return this.setMode(filters.history)
 					options.updateFilters(filters)
 				},
 			}
@@ -181,8 +182,9 @@ export default {
 					},
 					this.historyControl,
 				],
-				updateFilters: ({ history, startDate, endDate }) => {
-					if (history !== undefined) return this.setMode(history)
+				updateFilters: (filters) => {
+					if ('history' in filters) return this.setMode(filters.history)
+					const { startDate, endDate } = filters
 					if (startDate) this.startDate = this.clampToSiteAge(startDate)
 					if (endDate) this.endDate = this.clampToSiteAge(endDate)
 					this.$resources.history.fetch()
