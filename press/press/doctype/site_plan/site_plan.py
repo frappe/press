@@ -73,6 +73,7 @@ class SitePlan(Plan):
 		"support_included",
 		"private_benches",
 		"monitor_access",
+		"offsite_backups",
 		"is_trial_plan",
 		"restrict_based_on_dedicated_server_plan",
 		"minimum_server_price_usd",

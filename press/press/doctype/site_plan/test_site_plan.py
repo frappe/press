@@ -94,3 +94,11 @@ class TestSitePlan(FrappeTestCase):
 
 		self.assertNotEqual(per_day_for_29_usd, per_day_for_30_usd)
 		self.assertNotEqual(per_day_for_29_inr, per_day_for_30_inr)
+
+	def test_offsite_backups_reaches_the_dashboard(self):
+		"""The backups tab decides what to say about missing days from this flag."""
+		from press.api.client import get
+
+		plan = create_test_plan("Site", offsite_backups=True)
+
+		self.assertTrue(get("Site Plan", plan.name).offsite_backups)
