@@ -80,20 +80,20 @@ def resolve_range(site: str, start_date: str, end_date: str) -> tuple[date, date
 
 
 def build_history(site: str, start: date, end: date) -> dict:
-	"""Ask each source only for the days the cheaper ones before it could not answer."""
+	"""Ask each source only for the days the ones before it could not answer."""
 	days = days_between(start, end)
 	backups = get_recorded_backups(site, start, end)
 
-	# Records outlive the objects themselves, so buckets are only worth reading for the gaps
-	if has_gaps(backups, days):
-		backups = {**list_stored_backups(site, start, end), **backups}
-
-	# The agent knows a backup ran even where nothing was kept, and knows when one failed
-	unconfirmed = False
+	# The server knows a backup ran even where nothing was kept, and knows which failed
+	asked = True
 	if has_gaps(backups, days):
 		jobs, asked = get_agent_backup_jobs(site, start, end)
 		backups = {**jobs, **backups}
-		unconfirmed = not asked and has_gaps(backups, days)
+
+	if needs_bucket(backups, days):
+		backups = merge_stored(backups, list_stored_backups(site, start, end))
+
+	unconfirmed = not asked and has_gaps(backups, days)
 
 	return {
 		"days": [backups.get(str(day)) or missing_backup(str(day)) for day in days],
@@ -103,6 +103,20 @@ def build_history(site: str, start: date, end: date) -> dict:
 
 def has_gaps(backups: dict[str, dict], days: list[date]) -> bool:
 	return any(str(day) not in backups for day in days)
+
+
+def needs_bucket(backups: dict[str, dict], days: list[date]) -> bool:
+	"""A failed run still leaves a day worth looking for, so it is not the end of the search."""
+	return has_gaps(backups, days) or any(day["status"] == "Failure" for day in backups.values())
+
+
+def merge_stored(backups: dict[str, dict], stored: dict[str, dict]) -> dict[str, dict]:
+	"""An object sitting in the bucket outranks a job row saying the run did not finish."""
+	merged = dict(backups)
+	for day, entry in stored.items():
+		if merged.get(day, {}).get("status") in (None, "Failure"):
+			merged[day] = entry
+	return merged
 
 
 def get_agent_backup_jobs(site: str, start: date, end: date) -> tuple[dict[str, dict], bool]:
