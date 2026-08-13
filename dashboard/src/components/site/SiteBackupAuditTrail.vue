@@ -26,7 +26,8 @@ import { getDocResource } from '../../utils/resource'
 import ObjectList from '../ObjectList.vue'
 
 const DEFAULT_RANGE_DAYS = 30
-const PENDING_RECHECK_MS = 6000
+const POLL_MS = 5000
+const MAX_POLLS = 24
 
 export default {
 	name: 'SiteBackupAuditTrail',
@@ -36,24 +37,12 @@ export default {
 		return {
 			startDate: null,
 			endDate: dayjs().format('YYYY-MM-DD'),
-			pendingTimer: null,
+			pollTimer: null,
+			polls: 0,
 		}
 	},
 	beforeUnmount() {
-		clearTimeout(this.pendingTimer)
-	},
-	watch: {
-		'history.pending'(pending) {
-			clearTimeout(this.pendingTimer)
-			// The job lands within a poll cycle or two, so look again rather than
-			// making someone hit Refresh to find out
-			if (pending) {
-				this.pendingTimer = setTimeout(
-					() => this.$resources.history.fetch(),
-					PENDING_RECHECK_MS,
-				)
-			}
-		},
+		clearTimeout(this.pollTimer)
 	},
 	created() {
 		this.startDate = this.clampToSiteAge(
@@ -66,13 +55,20 @@ export default {
 			return {
 				url: 'press.api.client.run_doc_method',
 				initialData: {},
-				makeParams: () => ({
+				makeParams: (params) => ({
 					dt: 'Site',
 					dn: this.name,
 					method: 'get_backup_history',
-					args: { start_date: this.startDate, end_date: this.endDate },
+					args: {
+						start_date: this.startDate,
+						end_date: this.endDate,
+						refresh: params?.refresh ? 1 : 0,
+					},
 				}),
 				auto: true,
+				// Re-armed on every answer: watching the flag would stop after one look,
+				// because a second Preparing in a row is not a change
+				onSuccess: () => this.pollWhilePreparing(),
 			}
 		},
 	},
@@ -86,6 +82,9 @@ export default {
 		history() {
 			return this.$resources.history.data?.message || {}
 		},
+		preparing() {
+			return this.history.status === 'Preparing'
+		},
 		rows() {
 			// The API already returns one entry per day, ready to render
 			return (this.history.days || []).map((day) => ({
@@ -94,14 +93,16 @@ export default {
 			}))
 		},
 		banner() {
-			// The server reads its job database as a job of its own, so the first look
-			// lands before the answer does
-			if (this.history.pending) {
+			// Records are a query, but the server answers from a queue and the buckets
+			// are someone else's network, so the trail is put together in the background
+			if (this.preparing) {
 				return {
 					title:
-						"Checking this site's server for days with nothing stored. This page will fill in shortly.",
+						this.polls < MAX_POLLS
+							? 'Putting the trail together. This page will fill in on its own.'
+							: 'This is taking longer than usual. Hit Refresh to look again.',
 					type: 'info',
-					id: `${this.name}-pending`,
+					id: `${this.name}-preparing`,
 				}
 			}
 
@@ -131,8 +132,10 @@ export default {
 		options() {
 			return {
 				data: () => this.rows,
-				isLoading: () => this.$resources.history.loading,
-				emptyStateMessage: 'No backups stored for this range',
+				isLoading: () => this.$resources.history.loading || this.preparing,
+				emptyStateMessage: this.preparing
+					? 'Putting the trail together'
+					: 'No backups stored for this range',
 				banner: () => this.banner,
 				columns: [
 					{
@@ -198,14 +201,15 @@ export default {
 				updateFilters: ({ startDate, endDate }) => {
 					if (startDate) this.startDate = this.clampToSiteAge(startDate)
 					if (endDate) this.endDate = this.clampToSiteAge(endDate)
+					this.polls = 0
 					this.$resources.history.fetch()
 				},
 				actions: () => [
 					{
 						label: 'Refresh',
 						icon: 'refresh-ccw',
-						loading: this.$resources.history.loading,
-						onClick: () => this.$resources.history.fetch(),
+						loading: this.$resources.history.loading || this.preparing,
+						onClick: () => this.rebuild(),
 					},
 					{
 						label: 'Export as CSV',
@@ -217,6 +221,19 @@ export default {
 		},
 	},
 	methods: {
+		pollWhilePreparing() {
+			clearTimeout(this.pollTimer)
+			if (!this.preparing || this.polls >= MAX_POLLS) return
+			this.polls += 1
+			this.pollTimer = setTimeout(
+				() => this.$resources.history.fetch(),
+				POLL_MS,
+			)
+		},
+		rebuild() {
+			this.polls = 0
+			this.$resources.history.fetch({ refresh: true })
+		},
 		clampToSiteAge(day, { quiet = false } = {}) {
 			if (!this.site.doc?.creation || day >= this.siteCreatedOn) return day
 			if (!quiet) {

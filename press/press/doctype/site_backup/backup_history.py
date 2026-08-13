@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import date, timedelta
 from urllib.parse import parse_qs, urlparse
 
@@ -21,6 +22,25 @@ MAX_RANGE_DAYS = 366
 
 # A finished range barely changes, and an audit means opening the same one repeatedly
 CACHE_TTL = 60 * 60
+
+# A trail the server could not finish answering is kept only briefly, so the next look
+# picks the answer up rather than serving the gap for an hour
+PARTIAL_CACHE_TTL = 60
+
+# Long enough to outlast a build, short enough that a lost worker does not wedge a range
+BUILD_TTL = 5 * 60
+
+# The server reads its job database as a job of its own, and Press delivers that job from
+# a queue, so the wait is a queue wait and not a request
+AGENT_WAIT_SECONDS = 60
+AGENT_POLL_SECONDS = 3
+
+# Most servers run an agent without the route. The first ask finds out, and waits only
+# long enough for a healthy one to answer rather than the full wait.
+AGENT_PROBE_SECONDS = 10
+
+# Learned once and kept, so a server that can answer is waited for properly
+AGENT_SUPPORTED_TTL = 30 * 24 * 60 * 60
 
 # Keeps the IN clause sane on a year of daily backups
 REMOTE_FILE_BATCH = 500
@@ -53,19 +73,62 @@ ARTIFACT_BY_SUFFIX = (
 )
 
 
-def get_backup_history(site: str, start_date: str, end_date: str) -> dict:
-	"""Every day in the range, newest first, so a day holding nothing is as visible as one that does."""
+def get_backup_history(site: str, start_date: str, end_date: str, refresh: bool = False) -> dict:
+	"""The trail for a range, or word that it is still being put together.
+
+	Records are a query, but the server answers as a job and the buckets are a walk over
+	someone else's network, so the whole thing is built in the background and read here.
+	"""
 	start, end = resolve_range(site, start_date, end_date)
 	if start > end:
-		return {"days": [], "pending": False, "unconfirmed": False}
+		return ready([])
 
-	cached = get_cached_history(site, start, end)
+	if refresh:
+		frappe.cache().delete_value(cache_key(site, start, end))
+
+	cached = frappe.cache().get_value(cache_key(site, start, end))
 	if cached is not None:
 		return cached
 
-	history = build_history(site, start, end)
-	cache_history(site, start, end, history)
-	return history
+	queue_build(site, start, end)
+	return {"status": "Preparing", "days": [], "unconfirmed": False}
+
+
+def ready(days: list[dict], unconfirmed: bool = False) -> dict:
+	return {"status": "Ready", "days": days, "unconfirmed": unconfirmed}
+
+
+def build_key(site: str, start: date, end: date) -> str:
+	return f"backup_audit_trail_building:{site}:{start}:{end}"
+
+
+def queue_build(site: str, start: date, end: date):
+	"""One build per range at a time, so a page that keeps looking does not pile up work."""
+	if frappe.cache().get_value(build_key(site, start, end)):
+		return
+
+	frappe.cache().set_value(build_key(site, start, end), 1, expires_in_sec=BUILD_TTL)
+	frappe.enqueue(
+		"press.press.doctype.site_backup.backup_history.build_and_cache",
+		queue="long",
+		site=site,
+		start_date=str(start),
+		end_date=str(end),
+		job_id=f"backup_audit_trail:{site}:{start}:{end}",
+		deduplicate=True,
+		enqueue_after_commit=True,
+	)
+
+
+def build_and_cache(site: str, start_date: str, end_date: str):
+	start, end = getdate(start_date), getdate(end_date)
+	try:
+		history = build_history(site, start, end)
+		frappe.cache().set_value(
+			cache_key(site, start, end), history, expires_in_sec=cache_seconds(history, end)
+		)
+	finally:
+		frappe.cache().delete_value(build_key(site, start, end))
 
 
 def resolve_range(site: str, start_date: str, end_date: str) -> tuple[date, date]:
@@ -86,21 +149,18 @@ def build_history(site: str, start: date, end: date) -> dict:
 	backups = get_recorded_backups(site, start, end)
 
 	# The server knows a backup ran even where nothing was kept, and knows which failed
-	state = "answered"
+	answered = True
 	if has_gaps(backups, days):
-		jobs, state = get_agent_backup_jobs(site, start, end)
+		jobs, answered = await_agent_backup_jobs(site, start, end)
 		backups = {**jobs, **backups}
 
 	if needs_bucket(backups, days):
 		backups = merge_stored(backups, list_stored_backups(site, start, end))
 
-	waiting = state != "answered" and has_gaps(backups, days)
-
-	return {
-		"days": [backups.get(str(day)) or missing_backup(str(day)) for day in days],
-		"pending": waiting and state == "pending",
-		"unconfirmed": waiting and state == "unavailable",
-	}
+	return ready(
+		[backups.get(str(day)) or missing_backup(str(day)) for day in days],
+		unconfirmed=not answered and has_gaps(backups, days),
+	)
 
 
 def has_gaps(backups: dict[str, dict], days: list[date]) -> bool:
@@ -121,44 +181,69 @@ def merge_stored(backups: dict[str, dict], stored: dict[str, dict]) -> dict[str,
 	return merged
 
 
-def get_agent_backup_jobs(site: str, start: date, end: date) -> tuple[dict[str, dict], str]:
-	"""What the site's server remembers running, and how far the asking got.
+def await_agent_backup_jobs(site: str, start: date, end: date) -> tuple[dict[str, dict], bool]:
+	"""What the site's server remembers running, waited for rather than polled from a page.
 
-	Walking the job database takes seconds, so the server does it as a job and the answer
-	arrives on the next look. Only the current server is asked: jobs a site ran before
+	The server reads its job database as a job, and Press delivers that job from a queue,
+	so the answer is a minute away at worst. This runs in a background worker, which is
+	the right place to wait. Only the current server is asked: jobs a site ran before
 	moving stay on the server it left, and its objects come from the buckets it used.
 	"""
 	server = frappe.db.get_value("Site", site, "server")
-	if not server:
-		return {}, "unavailable"
+	if not server or is_agent_silenced(server):
+		return {}, False
 
-	answer = frappe.cache().get_value(agent_answer_key(site, start, end))
+	answer = read_agent_answer(site, start, end)
 	if answer is None:
-		return {}, request_agent_backup_jobs(server, site, start, end)
+		if not request_agent_backup_jobs(server, site, start, end):
+			return {}, False
+		# A server not yet known to answer is given a short look, not the full wait
+		seconds = AGENT_WAIT_SECONDS if is_agent_supported(server) else AGENT_PROBE_SECONDS
+		answer = wait_for_agent_answer(site, start, end, seconds)
 
+	if answer is None:
+		return {}, False
+	# A truncated answer dropped the oldest days in the range, so it is not the whole story
+	return days_from_agent_jobs(answer["jobs"]), not answer.get("truncated")
+
+
+def read_agent_answer(site: str, start: date, end: date) -> dict | None:
+	return frappe.cache().get_value(agent_answer_key(site, start, end))
+
+
+def wait_for_agent_answer(site: str, start: date, end: date, seconds: int) -> dict | None:
+	# Another worker delivers the job, so the job has to be visible to it before we wait
+	frappe.db.commit()
+
+	deadline = time.monotonic() + seconds
+	while time.monotonic() < deadline:
+		time.sleep(AGENT_POLL_SECONDS)
+		answer = read_agent_answer(site, start, end)
+		if answer is not None:
+			return answer
+	return None
+
+
+def request_agent_backup_jobs(server: str, site: str, start: date, end: date) -> bool:
+	"""Queue the read and commit, since another worker delivers the job to the agent."""
+	try:
+		# Deduplicated by Agent, so asking again while one is running adds nothing
+		Agent(server).fetch_site_backup_jobs(site, str(start), str(end))
+	except Exception:
+		silence_agent(server)
+		return False
+	return True
+
+
+def days_from_agent_jobs(jobs: list[dict]) -> dict[str, dict]:
 	days: dict[str, dict] = {}
-	for job in answer["jobs"]:
+	for job in jobs:
 		day = str(getdate(job["start"])) if job.get("start") else None
 		# A day that ran twice is answered by whichever run got furthest
 		if not day or outranks(days.get(day), job):
 			continue
 		days[day] = backup_from_job(day, job)
-	# A truncated answer dropped the oldest days in the range, so it is not the whole story
-	return days, "unavailable" if answer.get("truncated") else "answered"
-
-
-def request_agent_backup_jobs(server: str, site: str, start: date, end: date) -> str:
-	"""Queue the read, unless this server has already shown it cannot do it."""
-	if is_agent_silenced(server):
-		return "unavailable"
-
-	try:
-		# Deduplicated by Agent, so a second look while one is running adds nothing
-		Agent(server).fetch_site_backup_jobs(site, str(start), str(end))
-	except Exception:
-		silence_agent(server)
-		return "unavailable"
-	return "pending"
+	return days
 
 
 def agent_answer_key(site: str, start, end) -> str:
@@ -174,6 +259,9 @@ def process_fetch_backup_jobs_update(job):
 	if job.status != "Success" or not job.data:
 		return
 
+	# It answered once, so the next ask is worth waiting out
+	frappe.cache().set_value(agent_supported_key(job.server), 1, expires_in_sec=AGENT_SUPPORTED_TTL)
+
 	query = parse_qs(urlparse(job.request_path).query)
 	site, start, end = query.get("site"), query.get("start"), query.get("end")
 	if not (site and start and end):
@@ -184,6 +272,14 @@ def process_fetch_backup_jobs_update(job):
 		frappe.parse_json(job.data),
 		expires_in_sec=CACHE_TTL,
 	)
+
+
+def agent_supported_key(server: str) -> str:
+	return f"backup_audit_trail_agent_supported:{server}"
+
+
+def is_agent_supported(server: str) -> bool:
+	return bool(frappe.cache().get_value(agent_supported_key(server)))
 
 
 def agent_silence_key(server: str) -> str:
@@ -214,17 +310,11 @@ def backup_from_job(day: str, job: dict) -> dict:
 	)
 
 
-def get_cached_history(site: str, start: date, end: date) -> dict | None:
-	if end >= getdate():
-		return None
-	return frappe.cache().get_value(cache_key(site, start, end))
-
-
-def cache_history(site: str, start: date, end: date, history: dict):
-	"""Only a finished, fully answered range is worth keeping."""
-	if end >= getdate() or history["pending"] or history["unconfirmed"]:
-		return
-	frappe.cache().set_value(cache_key(site, start, end), history, expires_in_sec=CACHE_TTL)
+def cache_seconds(history: dict, end: date) -> int:
+	"""A finished, fully answered range keeps. Anything else is looked at again soon."""
+	if history["unconfirmed"] or end >= getdate():
+		return PARTIAL_CACHE_TTL
+	return CACHE_TTL
 
 
 def cache_key(site: str, start: date, end: date) -> str:
