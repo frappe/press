@@ -412,6 +412,30 @@ class TestBackupHistory(FrappeTestCase):
 
 		self.assertFalse(history["unconfirmed"])
 
+	def test_an_agent_that_answers_a_missing_route_with_nothing_is_not_asked_again(self):
+		# Agent.request swallows a 404 into None rather than raising
+		self.agent_backup_jobs.return_value = None
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		get_backup_history(self.site.name, "2023-10-03", "2023-10-03")
+
+		self.assertTrue(history["unconfirmed"])
+		self.assertEqual(self.agent_backup_jobs.call_count, 1)
+
+	def test_a_truncated_answer_leaves_the_remaining_days_unconfirmed(self):
+		self.agent_backup_jobs.return_value = {"jobs": [], "truncated": True}
+
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertTrue(history["unconfirmed"])
+
+	def test_a_complete_answer_leaves_nothing_unconfirmed(self):
+		self.given_agent_jobs([self.agent_job("2023-10-02 04:00:00")])
+
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertFalse(history["unconfirmed"])
+
 	def test_reversed_range_is_rejected(self):
 		self.assertRaisesRegex(
 			frappe.ValidationError,

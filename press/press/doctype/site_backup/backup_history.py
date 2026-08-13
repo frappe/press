@@ -115,22 +115,23 @@ def get_agent_backup_jobs(site: str, start: date, end: date) -> tuple[dict[str, 
 	if not server or is_agent_silenced(server):
 		return {}, False
 
-	jobs = fetch_agent_backup_jobs(server, site, start, end)
-	if jobs is None:
+	response = fetch_agent_backup_jobs(server, site, start, end)
+	if response is None:
 		return {}, False
 
 	days: dict[str, dict] = {}
-	for job in jobs:
+	for job in response["jobs"]:
 		day = str(getdate(job["start"])) if job.get("start") else None
 		# A day that ran twice is answered by whichever run got furthest
 		if not day or outranks(days.get(day), job):
 			continue
 		days[day] = backup_from_job(day, job)
-	return days, True
+	# A truncated answer dropped the oldest days in the range, so it is not the whole story
+	return days, not response.get("truncated")
 
 
-def fetch_agent_backup_jobs(server: str, site: str, start: date, end: date) -> list[dict] | None:
-	"""The server's jobs, or None when it could not answer.
+def fetch_agent_backup_jobs(server: str, site: str, start: date, end: date) -> dict | None:
+	"""The server's answer, or None when it could not give one.
 
 	An agent without this endpoint is the normal case during a rollout, and one that is
 	simply down looks the same from here, so neither is worth failing the whole page for.
@@ -138,10 +139,15 @@ def fetch_agent_backup_jobs(server: str, site: str, start: date, end: date) -> l
 	"""
 	try:
 		response = Agent(server).get_site_backup_jobs(site, str(start), str(end))
-		return response["jobs"]
 	except Exception:
+		response = None
+
+	# A down server raises, and an agent without the route has its error swallowed into
+	# None by Agent.request. Neither is an answer, and both are worth not repeating.
+	if not response or "jobs" not in response:
 		silence_agent(server)
 		return None
+	return response
 
 
 def agent_silence_key(server: str) -> str:
