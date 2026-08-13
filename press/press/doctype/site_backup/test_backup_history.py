@@ -11,6 +11,7 @@ from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.backup_history import MAX_RANGE_DAYS, get_backup_history
 
 BUCKET = "test-backups"
+REPLICA_BUCKET = "test-backups-replica"
 REGION = "us-east-1"
 
 
@@ -60,6 +61,21 @@ class TestBackupHistory(FrappeTestCase):
 			}
 		).db_insert()
 		return remote_file
+
+	def add_cluster_bucket(self, replication_enabled: bool):
+		"""A Backup Bucket for the site's cluster, which get_backup_bucket resolves ahead of Press Settings."""
+		frappe.get_doc(
+			{
+				"doctype": "Backup Bucket",
+				"cluster": frappe.db.get_value("Site", self.site.name, "cluster"),
+				"bucket_name": BUCKET,
+				"region": REGION,
+				"replication_enabled": int(replication_enabled),
+				"replication_bucket": REPLICA_BUCKET,
+				"replication_region": REGION,
+			}
+		).insert(ignore_permissions=True)
+		boto3.client("s3", region_name=REGION).create_bucket(Bucket=REPLICA_BUCKET)
 
 	def test_day_holding_backups_is_sized_by_artifact(self):
 		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz", body=b"d" * 2048)
@@ -168,6 +184,33 @@ class TestBackupHistory(FrappeTestCase):
 
 		keys = {"date", "status", "database", "public", "private", "config"}
 		self.assertEqual([set(day) for day in history], [keys, keys, keys])
+
+	def test_replicated_bucket_is_read_instead_of_the_primary(self):
+		self.add_cluster_bucket(replication_enabled=True)
+		# Only the replica holds it, as happens once the primary expires the object
+		boto3.client("s3", region_name=REGION).put_object(
+			Bucket=REPLICA_BUCKET,
+			Key=f"{self.site.name}/2023-10-02/20231002_000502-database.sql.gz",
+			Body=b"x" * 64,
+		)
+
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+
+		self.assertEqual(day["status"], "Success")
+		self.assertEqual(day["database"], 64)
+
+	def test_primary_bucket_is_read_when_replication_is_off(self):
+		self.add_cluster_bucket(replication_enabled=False)
+		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz", body=b"x" * 32)
+		boto3.client("s3", region_name=REGION).put_object(
+			Bucket=REPLICA_BUCKET,
+			Key=f"{self.site.name}/2023-10-02/20231002_000502-database.sql.gz",
+			Body=b"x" * 999,
+		)
+
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+
+		self.assertEqual(day["database"], 32)
 
 	def test_reversed_range_is_rejected(self):
 		self.assertRaisesRegex(

@@ -10,6 +10,7 @@ from boto3 import client
 from frappe.utils import add_days, cint, getdate
 from frappe.utils.password import get_decrypted_password
 
+from press.press.doctype.backup_bucket.backup_bucket import get_replication_target
 from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
 # An auditor asks about a year at a time; anything wider is a mistake, not a question
@@ -118,9 +119,15 @@ def artifact_of(file_name: str) -> str | None:
 	return None
 
 
+def get_read_bucket(cluster: str) -> dict:
+	"""The bucket to read a cluster's backups from, following replication the way Remote File does."""
+	bucket = get_backup_bucket(cluster, region=True)
+	return get_replication_target(bucket["name"]) or bucket
+
+
 def list_stored_backups(site: str, start: date, end: date) -> dict[str, dict]:
 	"""Walk the site's prefix in its cluster's backup bucket, sizing what is held per day."""
-	bucket = get_backup_bucket(frappe.db.get_value("Site", site, "cluster"), region=True)
+	bucket = get_read_bucket(frappe.db.get_value("Site", site, "cluster"))
 	prefix = f"{site}/"
 	pages = (
 		get_s3_client(bucket)
