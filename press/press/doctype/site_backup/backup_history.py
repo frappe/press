@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from urllib.parse import parse_qs, urlparse
 
 import frappe
 from boto3 import client
@@ -56,7 +57,7 @@ def get_backup_history(site: str, start_date: str, end_date: str) -> dict:
 	"""Every day in the range, newest first, so a day holding nothing is as visible as one that does."""
 	start, end = resolve_range(site, start_date, end_date)
 	if start > end:
-		return {"days": [], "unconfirmed": False}
+		return {"days": [], "pending": False, "unconfirmed": False}
 
 	cached = get_cached_history(site, start, end)
 	if cached is not None:
@@ -85,19 +86,20 @@ def build_history(site: str, start: date, end: date) -> dict:
 	backups = get_recorded_backups(site, start, end)
 
 	# The server knows a backup ran even where nothing was kept, and knows which failed
-	asked = True
+	state = "answered"
 	if has_gaps(backups, days):
-		jobs, asked = get_agent_backup_jobs(site, start, end)
+		jobs, state = get_agent_backup_jobs(site, start, end)
 		backups = {**jobs, **backups}
 
 	if needs_bucket(backups, days):
 		backups = merge_stored(backups, list_stored_backups(site, start, end))
 
-	unconfirmed = not asked and has_gaps(backups, days)
+	waiting = state != "answered" and has_gaps(backups, days)
 
 	return {
 		"days": [backups.get(str(day)) or missing_backup(str(day)) for day in days],
-		"unconfirmed": unconfirmed,
+		"pending": waiting and state == "pending",
+		"unconfirmed": waiting and state == "unavailable",
 	}
 
 
@@ -119,49 +121,69 @@ def merge_stored(backups: dict[str, dict], stored: dict[str, dict]) -> dict[str,
 	return merged
 
 
-def get_agent_backup_jobs(site: str, start: date, end: date) -> tuple[dict[str, dict], bool]:
-	"""What the site's server remembers running, and whether it could be asked at all.
+def get_agent_backup_jobs(site: str, start: date, end: date) -> tuple[dict[str, dict], str]:
+	"""What the site's server remembers running, and how far the asking got.
 
-	Only the current server is asked. Jobs a site ran before moving stay on the server it
-	left, and its objects are already picked up by walking the buckets it used.
+	Walking the job database takes seconds, so the server does it as a job and the answer
+	arrives on the next look. Only the current server is asked: jobs a site ran before
+	moving stay on the server it left, and its objects come from the buckets it used.
 	"""
 	server = frappe.db.get_value("Site", site, "server")
-	if not server or is_agent_silenced(server):
-		return {}, False
+	if not server:
+		return {}, "unavailable"
 
-	response = fetch_agent_backup_jobs(server, site, start, end)
-	if response is None:
-		return {}, False
+	answer = frappe.cache().get_value(agent_answer_key(site, start, end))
+	if answer is None:
+		return {}, request_agent_backup_jobs(server, site, start, end)
 
 	days: dict[str, dict] = {}
-	for job in response["jobs"]:
+	for job in answer["jobs"]:
 		day = str(getdate(job["start"])) if job.get("start") else None
 		# A day that ran twice is answered by whichever run got furthest
 		if not day or outranks(days.get(day), job):
 			continue
 		days[day] = backup_from_job(day, job)
 	# A truncated answer dropped the oldest days in the range, so it is not the whole story
-	return days, not response.get("truncated")
+	return days, "unavailable" if answer.get("truncated") else "answered"
 
 
-def fetch_agent_backup_jobs(server: str, site: str, start: date, end: date) -> dict | None:
-	"""The server's answer, or None when it could not give one.
+def request_agent_backup_jobs(server: str, site: str, start: date, end: date) -> str:
+	"""Queue the read, unless this server has already shown it cannot do it."""
+	if is_agent_silenced(server):
+		return "unavailable"
 
-	An agent without this endpoint is the normal case during a rollout, and one that is
-	simply down looks the same from here, so neither is worth failing the whole page for.
-	The caller says so in the response instead.
-	"""
 	try:
-		response = Agent(server).get_site_backup_jobs(site, str(start), str(end))
+		# Deduplicated by Agent, so a second look while one is running adds nothing
+		Agent(server).fetch_site_backup_jobs(site, str(start), str(end))
 	except Exception:
-		response = None
-
-	# A down server raises, and an agent without the route has its error swallowed into
-	# None by Agent.request. Neither is an answer, and both are worth not repeating.
-	if not response or "jobs" not in response:
 		silence_agent(server)
-		return None
-	return response
+		return "unavailable"
+	return "pending"
+
+
+def agent_answer_key(site: str, start, end) -> str:
+	return f"backup_audit_trail_jobs:{site}:{start}:{end}"
+
+
+def process_fetch_backup_jobs_update(job):
+	"""Put the server's answer where the audit trail looks for it, or stop asking."""
+	if job.status in ("Failure", "Delivery Failure"):
+		# An agent without the route fails every time, so leave it alone for a while
+		silence_agent(job.server)
+		return
+	if job.status != "Success" or not job.data:
+		return
+
+	query = parse_qs(urlparse(job.request_path).query)
+	site, start, end = query.get("site"), query.get("start"), query.get("end")
+	if not (site and start and end):
+		return
+
+	frappe.cache().set_value(
+		agent_answer_key(site[0], start[0], end[0]),
+		frappe.parse_json(job.data),
+		expires_in_sec=CACHE_TTL,
+	)
 
 
 def agent_silence_key(server: str) -> str:
@@ -200,7 +222,7 @@ def get_cached_history(site: str, start: date, end: date) -> dict | None:
 
 def cache_history(site: str, start: date, end: date, history: dict):
 	"""Only a finished, fully answered range is worth keeping."""
-	if end >= getdate() or history["unconfirmed"]:
+	if end >= getdate() or history["pending"] or history["unconfirmed"]:
 		return
 	frappe.cache().set_value(cache_key(site, start, end), history, expires_in_sec=CACHE_TTL)
 

@@ -12,8 +12,10 @@ from moto import mock_aws
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.backup_history import (
 	MAX_RANGE_DAYS,
+	agent_answer_key,
 	cache_key,
 	get_backup_history,
+	process_fetch_backup_jobs_update,
 )
 
 BUCKET = "test-backups"
@@ -31,14 +33,15 @@ class TestBackupHistory(FrappeTestCase):
 		frappe.db.set_value("Site", self.site.name, "creation", "2023-01-01 00:00:00", update_modified=False)
 		self.setup_press_settings()
 		boto3.client("s3", region_name=REGION).create_bucket(Bucket=BUCKET)
-		# The job database lives on a real agent, so every test stubs it and the ones
-		# that care about it set a return value
-		agent = patch(
-			"press.press.doctype.site_backup.backup_history.Agent.get_site_backup_jobs",
-			return_value={"jobs": []},
-		)
-		self.agent_backup_jobs = agent.start()
+		# The server answers as a job of its own, so tests leave its answer in the
+		# cache the way the job callback would, and stub the queueing
+		agent = patch("press.press.doctype.site_backup.backup_history.Agent.fetch_site_backup_jobs")
+		self.queue_backup_jobs = agent.start()
 		self.addCleanup(agent.stop)
+		self.addCleanup(self.clear_agent_answers)
+
+	def clear_agent_answers(self):
+		frappe.cache().delete_keys("backup_audit_trail_jobs:")
 
 	def tearDown(self):
 		# The silence flag lives in redis, which no rollback undoes
@@ -99,8 +102,21 @@ class TestBackupHistory(FrappeTestCase):
 		).insert(ignore_permissions=True)
 		boto3.client("s3", region_name=REGION).create_bucket(Bucket=REPLICA_BUCKET)
 
-	def given_agent_jobs(self, jobs: list[dict]):
-		self.agent_backup_jobs.return_value = {"site": self.site.name, "jobs": jobs}
+	def given_agent_jobs(self, jobs: list[dict], truncated: bool = False, day: str = "2023-10-02"):
+		"""The answer the server's job leaves behind, for a single day range."""
+		frappe.cache().set_value(
+			agent_answer_key(self.site.name, day, day),
+			{"jobs": jobs, "truncated": truncated},
+		)
+
+	def fake_job(self, status: str = "Success", data: dict | None = None, day: str = "2023-10-02"):
+		"""Enough of an Agent Job for the callback, which only reads these four fields."""
+		return frappe._dict(
+			status=status,
+			server=frappe.db.get_value("Site", self.site.name, "server"),
+			request_path=f"server/backup-jobs?site={self.site.name}&start={day}&end={day}",
+			data=frappe.as_json(data or {"jobs": [], "truncated": False}),
+		)
 
 	@staticmethod
 	def agent_job(started_on: str, status: str = "Success", sizes: dict | None = None) -> dict:
@@ -365,7 +381,7 @@ class TestBackupHistory(FrappeTestCase):
 
 		get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
 
-		self.agent_backup_jobs.assert_not_called()
+		self.queue_backup_jobs.assert_not_called()
 
 	def test_the_bucket_is_left_alone_when_the_server_reports_a_success(self):
 		self.given_agent_jobs([self.agent_job("2023-10-02 04:00:00")])
@@ -375,33 +391,15 @@ class TestBackupHistory(FrappeTestCase):
 
 		self.assertEqual(day["status"], "Success")
 
-	def test_an_unreachable_server_is_reported_as_unconfirmed_not_as_no_backup(self):
-		self.agent_backup_jobs.side_effect = Exception("connection refused")
-
+	def test_the_first_look_queues_the_read_and_reports_itself_pending(self):
 		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
 
+		self.queue_backup_jobs.assert_called_once()
+		self.assertTrue(history["pending"])
+		self.assertFalse(history["unconfirmed"])
 		self.assertEqual(history["days"][0]["status"], "Not Available")
-		self.assertTrue(history["unconfirmed"])
 
-	def test_an_agent_without_the_endpoint_leaves_the_trail_readable(self):
-		self.agent_backup_jobs.side_effect = Exception("404 Not Found")
-
-		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
-
-		self.assertEqual(history["days"][0]["status"], "Not Available")
-		self.assertTrue(history["unconfirmed"])
-
-	def test_a_server_that_could_not_answer_is_not_asked_again(self):
-		self.agent_backup_jobs.side_effect = Exception("404 Not Found")
-		get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
-
-		get_backup_history(self.site.name, "2023-10-03", "2023-10-03")
-
-		self.assertEqual(self.agent_backup_jobs.call_count, 1)
-
-	def test_a_trail_the_server_could_not_confirm_is_not_cached(self):
-		self.agent_backup_jobs.side_effect = Exception("404 Not Found")
-
+	def test_a_pending_trail_is_not_cached(self):
 		get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
 
 		self.assertIsNone(
@@ -412,26 +410,53 @@ class TestBackupHistory(FrappeTestCase):
 			)
 		)
 
-	def test_a_trail_the_other_sources_fully_answered_is_not_unconfirmed(self):
-		self.agent_backup_jobs.side_effect = Exception("404 Not Found")
+	def test_a_server_that_cannot_be_queued_is_reported_unconfirmed_not_as_no_backup(self):
+		self.queue_backup_jobs.side_effect = Exception("connection refused")
+
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertEqual(history["days"][0]["status"], "Not Available")
+		self.assertTrue(history["unconfirmed"])
+		self.assertFalse(history["pending"])
+
+	def test_a_server_that_could_not_be_queued_is_not_asked_again(self):
+		self.queue_backup_jobs.side_effect = Exception("connection refused")
+		get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		get_backup_history(self.site.name, "2023-10-03", "2023-10-03")
+
+		self.assertEqual(self.queue_backup_jobs.call_count, 1)
+
+	def test_a_failed_job_stops_the_server_being_asked_again(self):
+		"""An agent without the route fails every time, so the callback stops the asking."""
+		process_fetch_backup_jobs_update(self.fake_job(status="Failure"))
+
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_not_called()
+		self.assertTrue(history["unconfirmed"])
+
+	def test_a_successful_job_leaves_its_answer_for_the_next_look(self):
+		process_fetch_backup_jobs_update(
+			self.fake_job(data={"jobs": [self.agent_job("2023-10-02 04:00:00")], "truncated": False})
+		)
+
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_not_called()
+		self.assertEqual(history["days"][0]["status"], "Success")
+		self.assertFalse(history["pending"])
+
+	def test_a_trail_the_other_sources_fully_answered_is_neither_pending_nor_unconfirmed(self):
 		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz")
 
 		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
 
+		self.assertFalse(history["pending"])
 		self.assertFalse(history["unconfirmed"])
 
-	def test_an_agent_that_answers_a_missing_route_with_nothing_is_not_asked_again(self):
-		# Agent.request swallows a 404 into None rather than raising
-		self.agent_backup_jobs.return_value = None
-		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
-
-		get_backup_history(self.site.name, "2023-10-03", "2023-10-03")
-
-		self.assertTrue(history["unconfirmed"])
-		self.assertEqual(self.agent_backup_jobs.call_count, 1)
-
 	def test_a_truncated_answer_leaves_the_remaining_days_unconfirmed(self):
-		self.agent_backup_jobs.return_value = {"jobs": [], "truncated": True}
+		self.given_agent_jobs([], truncated=True)
 
 		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
 

@@ -26,6 +26,7 @@ import { getDocResource } from '../../utils/resource'
 import ObjectList from '../ObjectList.vue'
 
 const DEFAULT_RANGE_DAYS = 30
+const PENDING_RECHECK_MS = 6000
 
 export default {
 	name: 'SiteBackupAuditTrail',
@@ -35,7 +36,24 @@ export default {
 		return {
 			startDate: null,
 			endDate: dayjs().format('YYYY-MM-DD'),
+			pendingTimer: null,
 		}
+	},
+	beforeUnmount() {
+		clearTimeout(this.pendingTimer)
+	},
+	watch: {
+		'history.pending'(pending) {
+			clearTimeout(this.pendingTimer)
+			// The job lands within a poll cycle or two, so look again rather than
+			// making someone hit Refresh to find out
+			if (pending) {
+				this.pendingTimer = setTimeout(
+					() => this.$resources.history.fetch(),
+					PENDING_RECHECK_MS,
+				)
+			}
+		},
 	},
 	created() {
 		this.startDate = this.clampToSiteAge(
@@ -76,6 +94,17 @@ export default {
 			}))
 		},
 		banner() {
+			// The server reads its job database as a job of its own, so the first look
+			// lands before the answer does
+			if (this.history.pending) {
+				return {
+					title:
+						"Checking this site's server for days with nothing stored. This page will fill in shortly.",
+					type: 'info',
+					id: `${this.name}-pending`,
+				}
+			}
+
 			// The server has the last word on days nothing is stored for, so say when it
 			// could not be asked rather than letting those days read as no backup
 			if (this.history.unconfirmed) {
