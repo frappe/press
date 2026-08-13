@@ -443,6 +443,7 @@ class Site(Document, TagHelpers):
 			if self.status == "Suspended"
 			else None
 		)
+		doc.archival_details = self.get_archival_details() if self.status == "Archived" else None
 		doc.communication_infos = self.get_communication_infos()
 		if doc.owner == "Administrator":
 			doc.signup_by = frappe.db.get_value("Account Request", doc.account_request, "email")
@@ -455,6 +456,25 @@ class Site(Document, TagHelpers):
 			)[0]
 
 		return doc
+
+	def get_archival_details(self) -> dict | None:
+		"""Who dropped the site, when, and why."""
+		activity = frappe.db.get_value(
+			"Site Activity",
+			{"site": self.name, "action": "Archive"},
+			["owner", "creation", "reason"],
+			order_by="creation asc",  # a retried archive logs again; the first one holds the reason
+			as_dict=True,
+		)
+		if not activity:
+			return None
+
+		return {
+			# every scheduled archival runs as Administrator, which means nothing to a customer
+			"archived_by": "Frappe Cloud" if activity.owner == "Administrator" else activity.owner,
+			"archived_on": activity.creation,
+			"reason": activity.reason,
+		}
 
 	def site_action(allowed_status: list[str], disallowed_message: str | dict[str, str] | None = None):
 		def outer_wrapper(func):

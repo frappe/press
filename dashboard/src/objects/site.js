@@ -12,7 +12,7 @@ import { getRunningJobs } from '../utils/agentJob'
 import { confirmDialog, icon, renderDialog } from '../utils/components'
 import dayjs from '../utils/dayjs'
 import { isMobile } from '../utils/device'
-import { bytes, date } from '../utils/format'
+import { bytes, date, escapeHtml } from '../utils/format'
 import { getQueryParam, setQueryParam } from '../utils/index'
 import { getDocResource } from '../utils/resource'
 import { getToastErrorMessage } from '../utils/toast'
@@ -21,6 +21,23 @@ import { getAppsTab } from './common/apps'
 
 // prefilled so only the ticket id has to be typed; on its own it is not a reason
 const LOGIN_REASON_PREFIX = 'Investigating '
+
+// An archived site keeps no tab that could hold this, so it goes in a banner.
+function getArchivalMessage(site) {
+	const details = site.archival_details
+	if (!details) return 'This site is archived. It cannot be used again.'
+
+	const attribution = `Archived by ${escapeHtml(details.archived_by)} on ${date(
+		details.archived_on,
+		'LLL',
+	)}`
+	if (!details.reason) return attribution
+
+	// the reason can run long, so it gets its own line instead of stretching this one
+	return `${attribution}<div class="font-normal text-ink-gray-6">${escapeHtml(
+		details.reason,
+	)}</div>`
+}
 
 export default {
 	doctype: 'Site',
@@ -73,6 +90,10 @@ export default {
 		route: '/sites/:name',
 		statusBadge({ documentResource: site }) {
 			return { label: site.doc.status }
+		},
+		banner({ documentResource: site }) {
+			if (site.doc?.status !== 'Archived') return
+			return { title: getArchivalMessage(site.doc), type: 'info' }
 		},
 		breadcrumbs({ items, documentResource: site }) {
 			let breadcrumbs = []
