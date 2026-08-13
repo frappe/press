@@ -63,7 +63,7 @@ export default {
 			if (this.history.unconfirmed) {
 				return {
 					title:
-						"This site's server could not be asked about the days nothing is stored for, so those show only what is still kept.",
+						"Couldn't reach this site's server, so days showing Not Available aren't confirmed.",
 					type: 'general',
 					dismissable: true,
 					id: `${this.documentResource.doc?.name}-unconfirmed`,
@@ -77,7 +77,7 @@ export default {
 			// Without offsite backups nothing was ever uploaded, so empty days are
 			// the plan working as sold rather than a backup that went missing
 			return {
-				title: `The ${plan.plan_title} plan does not store backups offsite, so days with nothing kept are expected.`,
+				title: `The ${plan.plan_title} plan doesn't store backups offsite, so most days will show Not Available.`,
 				type: 'general',
 				dismissable: true,
 				id: `${this.documentResource.doc?.name}-no-offsite`,
