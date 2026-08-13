@@ -874,6 +874,7 @@ export default {
 					},
 					secondaryAction({ documentResource: site }) {
 						if (site.doc?.status !== 'Active') return null
+						if (!site.doc?.can_schedule_backups) return null
 						return {
 							label: 'Backup Schedule',
 							slots: {

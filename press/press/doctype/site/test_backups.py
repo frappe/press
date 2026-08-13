@@ -14,6 +14,7 @@ from press.press.doctype.site.backups import (
 from press.press.doctype.site.site import Site
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.subscription.subscription import Subscription
 
 
@@ -241,7 +242,10 @@ class TestScheduledBackupJob(FrappeTestCase):
 
 	def _create_site_with_backup_times(self, *times: str) -> Site:
 		site: Site = create_test_site()
-		site.update_backup_schedule(list(times))
+		site.schedule_logical_backup_at_custom_time = True
+		for backup_time in times:
+			site.append("logical_backup_times", {"backup_time": backup_time})
+		site.save()
 		return site
 
 	def test_custom_time_backup_is_not_offsite_on_a_plan_without_offsite_backups(self):
@@ -281,8 +285,17 @@ class TestBackupSchedule(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
+	def _create_site(self, price_usd: float = 25.0, offsite_backups: bool = True) -> Site:
+		plan = create_test_plan(
+			"Site",
+			plan_name=f"Test Site Plan USD {price_usd}{' with offsite backups' if offsite_backups else ''}",
+			price_usd=price_usd,
+			offsite_backups=offsite_backups,
+		)
+		return create_test_site(plan=plan.name)
+
 	def test_setting_backup_times_takes_the_site_off_the_default_schedule(self):
-		site: Site = create_test_site()
+		site = self._create_site()
 
 		site.update_backup_schedule(["02:00", "14:00"])
 
@@ -291,7 +304,7 @@ class TestBackupSchedule(FrappeTestCase):
 		self.assertNotIn(site.name, [s.name for s in Site.get_sites_for_backup(6)])
 
 	def test_clearing_backup_times_returns_the_site_to_the_default_schedule(self):
-		site: Site = create_test_site()
+		site = self._create_site()
 		site.update_backup_schedule(["02:00"])
 		site.reload()
 
@@ -301,7 +314,7 @@ class TestBackupSchedule(FrappeTestCase):
 		self.assertEqual(site.get_backup_schedule(), {"custom": False, "times": []})
 
 	def test_backup_schedule_rejects_more_than_four_times_a_day(self):
-		site: Site = create_test_site()
+		site = self._create_site()
 
 		self.assertRaisesRegex(
 			frappe.ValidationError,
@@ -311,7 +324,7 @@ class TestBackupSchedule(FrappeTestCase):
 		)
 
 	def test_backup_schedule_rejects_a_time_that_is_not_hh_mm(self):
-		site: Site = create_test_site()
+		site = self._create_site()
 
 		self.assertRaisesRegex(
 			frappe.ValidationError,
@@ -321,7 +334,7 @@ class TestBackupSchedule(FrappeTestCase):
 		)
 
 	def test_backup_schedule_rejects_two_backups_in_the_same_hour(self):
-		site: Site = create_test_site()
+		site = self._create_site()
 
 		self.assertRaisesRegex(
 			frappe.ValidationError,
@@ -329,3 +342,24 @@ class TestBackupSchedule(FrappeTestCase):
 			site.update_backup_schedule,
 			["02:00", "02:30"],
 		)
+
+	def test_backup_schedule_is_not_offered_below_the_cutoff_price(self):
+		site = self._create_site(price_usd=10.0)
+
+		self.assertFalse(site.plan_allows_backup_schedule())
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"doesn't come with a backup schedule",
+			site.update_backup_schedule,
+			["02:00"],
+		)
+
+	def test_backup_schedule_is_offered_on_enterprise_plans_priced_at_zero(self):
+		site = self._create_site(price_usd=0.0)
+
+		self.assertTrue(site.plan_allows_backup_schedule())
+
+	def test_backup_schedule_is_not_offered_on_plans_without_offsite_backups(self):
+		site = self._create_site(price_usd=0.0, offsite_backups=False)
+
+		self.assertFalse(site.plan_allows_backup_schedule())

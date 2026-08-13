@@ -143,6 +143,9 @@ STATEMENT_TIME_INCREMENT = 3600
 # Matches the four backups a day the default schedule already gives.
 MAXIMUM_CUSTOM_BACKUP_TIMES = 4
 
+# Picking backup times is for plans from this price up. Ref: USD 25.
+MINIMUM_BACKUP_SCHEDULE_PLAN_PRICE_USD = 25
+
 # Conditions a site must satisfy for the agent to stream offsite backup
 # artifacts straight to S3 instead of uploading them after the dump finishes.
 STREAMING_BACKUP_REQUIREMENTS = {
@@ -405,6 +408,7 @@ class Site(Document, TagHelpers):
 		)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
+		doc.can_schedule_backups = self.plan_allows_backup_schedule()
 		doc.last_updated = self.last_updated
 		doc.creation_failure_retention_days = CREATION_FAILURE_RETENTION_DAYS
 		doc.has_scheduled_updates = bool(
@@ -751,6 +755,9 @@ class Site(Document, TagHelpers):
 
 		Logical only — physical backups deactivate the site while they run.
 		"""
+		if not self.plan_allows_backup_schedule():
+			frappe.throw("Your plan doesn't come with a backup schedule you can set.")
+
 		times = [parse_backup_time(time) for time in times or []]
 		if len(times) > MAXIMUM_CUSTOM_BACKUP_TIMES:
 			frappe.throw(f"A site can have at most {MAXIMUM_CUSTOM_BACKUP_TIMES} backups a day.")
@@ -760,6 +767,20 @@ class Site(Document, TagHelpers):
 			self.append("logical_backup_times", {"backup_time": backup_time})
 		self.schedule_logical_backup_at_custom_time = bool(times)
 		self.save()
+
+	def plan_allows_backup_schedule(self) -> bool:
+		"""Entry-level plans stay on the default schedule.
+
+		Enterprise plans are priced at 0 and negotiated off the ladder, so the
+		cutoff only rules out the public plans under it. Offsite backups keep the
+		trial plans out, which are priced at 0 as well.
+		"""
+		if not self.plan:
+			return False
+		plan = frappe.get_cached_doc("Site Plan", self.plan)
+		if not plan.offsite_backups:
+			return False
+		return plan.price_usd == 0 or plan.price_usd >= MINIMUM_BACKUP_SCHEDULE_PLAN_PRICE_USD
 
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)
