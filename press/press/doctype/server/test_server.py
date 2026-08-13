@@ -831,6 +831,7 @@ class TestSSHCommand(FrappeTestCase):
 	def test_ssh_command_hops_through_press_server_and_proxy_server(self):
 		proxy_server = create_test_proxy_server(cluster=self.cluster)
 		server = create_test_server(proxy_server=proxy_server.name, cluster=self.cluster)
+		create_test_proxy_server(hostname="other", cluster=self.cluster)  # must not be picked
 
 		self.assertEqual(
 			server.get_ssh_command(),
