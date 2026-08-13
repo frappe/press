@@ -33,7 +33,7 @@
 			<div v-else class="flex flex-col gap-5">
 				<Switch
 					v-model="custom"
-					label="Choose when backups run"
+					label="Backup site at custom time"
 					:description="
 						custom
 							? 'Backups run once a day, at the hour below'
@@ -41,19 +41,23 @@
 					"
 				/>
 
-				<div v-if="custom" class="flex flex-col gap-2">
+				<!-- Laid out like the Switch above: label and description left, control right -->
+				<div v-if="custom" class="flex items-center justify-between">
+					<div class="flex flex-col gap-1">
+						<span class="text-base font-medium leading-normal text-ink-gray-8">
+							Backup time
+						</span>
+						<span class="text-p-sm text-ink-gray-7">
+							Starts within this hour ({{ timezone }})
+						</span>
+					</div>
 					<FormControl
-						class="w-36"
+						class="w-32"
 						type="select"
 						variant="outline"
-						label="Backup time"
 						:options="hourOptions"
 						v-model="hour"
 					/>
-					<p class="text-p-sm leading-5 text-ink-gray-5">
-						A backup starts within the hour you pick. Times are in your
-						timezone ({{ timezone }}).
-					</p>
 				</div>
 			</div>
 		</template>
@@ -61,7 +65,7 @@
 </template>
 
 <script>
-import { Switch, getCachedDocumentResource } from 'frappe-ui';
+import { getCachedDocumentResource, Switch } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import dayjs, { timeLocal, timeServer } from '../../utils/dayjs';
 import { getToastErrorMessage } from '../../utils/toast';
