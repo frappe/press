@@ -444,6 +444,27 @@ class TestBackupHistory(FrappeTestCase):
 
 		self.assertFalse(history["unconfirmed"])
 
+	def test_a_bench_without_offsite_credentials_still_answers(self):
+		"""get_decrypted_password throws when the secret was never set, which used to 500 the page."""
+		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz", size=64)
+
+		with patch(
+			"press.press.doctype.site_backup.backup_history.get_decrypted_password",
+			return_value=None,
+		):
+			history = get_backup_history(self.site.name, "2023-10-01", "2023-10-02")
+
+		self.assertEqual([day["status"] for day in history["days"]], ["Success", "Not Available"])
+		self.assertEqual(history["days"][0]["database"], 64)
+
+	def test_an_unset_access_key_skips_the_bucket_rather_than_raising(self):
+		frappe.db.set_single_value("Press Settings", "offsite_backups_access_key_id", "")
+		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz")
+
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["status"], "Not Available")
+
 	def test_reversed_range_is_rejected(self):
 		self.assertRaisesRegex(
 			frappe.ValidationError,

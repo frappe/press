@@ -312,19 +312,39 @@ def get_site_buckets(site: str) -> list[dict]:
 
 
 def list_stored_backups(site: str, start: date, end: date) -> dict[str, dict]:
+	credentials = get_offsite_credentials()
+	if not credentials:
+		return {}
+
 	days: dict[str, dict] = {}
 	for bucket in get_site_buckets(site):
 		# The current cluster's bucket is walked first, so it wins where both hold a day
-		for day, entry in list_bucket(bucket, site, start, end).items():
+		for day, entry in list_bucket(bucket, site, start, end, credentials).items():
 			days.setdefault(day, entry)
 	return days
 
 
-def list_bucket(bucket: dict, site: str, start: date, end: date) -> dict[str, dict]:
+def get_offsite_credentials() -> tuple[str, str] | None:
+	"""None on a bench where offsite backups were never set up, which is not an error."""
+	access_key = frappe.db.get_single_value("Press Settings", "offsite_backups_access_key_id")
+	secret_key = get_decrypted_password(
+		"Press Settings",
+		"Press Settings",
+		"offsite_backups_secret_access_key",
+		raise_exception=False,
+	)
+	if not (access_key and secret_key):
+		return None
+	return access_key, secret_key
+
+
+def list_bucket(
+	bucket: dict, site: str, start: date, end: date, credentials: tuple[str, str]
+) -> dict[str, dict]:
 	"""Walk the site's prefix in one bucket, sizing what is held per day."""
 	prefix = f"{site}/"
 	pages = (
-		get_s3_client(bucket)
+		get_s3_client(bucket, credentials)
 		.get_paginator("list_objects_v2")
 		.paginate(Bucket=bucket["name"], Prefix=prefix, StartAfter=f"{prefix}{start}")
 	)
@@ -344,13 +364,12 @@ def list_bucket(bucket: dict, site: str, start: date, end: date) -> dict[str, di
 	return days
 
 
-def get_s3_client(bucket: dict):
+def get_s3_client(bucket: dict, credentials: tuple[str, str]):
+	access_key, secret_key = credentials
 	return client(
 		"s3",
-		aws_access_key_id=frappe.db.get_single_value("Press Settings", "offsite_backups_access_key_id"),
-		aws_secret_access_key=get_decrypted_password(
-			"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
-		),
+		aws_access_key_id=access_key,
+		aws_secret_access_key=secret_key,
 		region_name=bucket["region"],
 		endpoint_url=bucket["endpoint_url"],
 	)
