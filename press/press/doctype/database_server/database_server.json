@@ -120,6 +120,14 @@
 		"column_break_blnf",
 		"enable_binlog_upload_to_s3",
 		"uploaded_binlogs_retention_days",
+		"database_audit_log_tab",
+		"is_database_audit_log_enabled",
+		"database_audit_log_status",
+		"database_audit_log_capture_reads",
+		"is_database_audit_log_capturing_reads",
+		"column_break_wxts",
+		"database_audit_log_max_disk_gb",
+		"audit_log_retention_days",
 		"monitor_tab",
 		"is_mariadb_monitor_installed",
 		"is_wazuh_agent_installed",
@@ -781,6 +789,61 @@
 			"fieldname": "uploaded_binlogs_retention_days",
 			"fieldtype": "Int",
 			"label": "Uploaded Binlogs Retention (days)"
+		},
+		{
+			"fieldname": "database_audit_log_tab",
+			"fieldtype": "Tab Break",
+			"label": "Audit Log"
+		},
+		{
+			"default": "0",
+			"fieldname": "is_database_audit_log_enabled",
+			"fieldtype": "Check",
+			"label": "Is Database Audit Log Enabled"
+		},
+		{
+			"default": "Disabled",
+			"description": "What was asked for. The check above is what MariaDB reports, and is what bills.",
+			"fieldname": "database_audit_log_status",
+			"fieldtype": "Select",
+			"label": "Database Audit Log Status",
+			"options": "Disabled\nEnabling\nEnabled\nDisabling",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"depends_on": "is_database_audit_log_enabled",
+			"description": "Requested. Also audit SELECT statements, roughly doubling log volume.",
+			"fieldname": "database_audit_log_capture_reads",
+			"fieldtype": "Check",
+			"label": "Capture Read Queries"
+		},
+		{
+			"default": "0",
+			"depends_on": "is_database_audit_log_enabled",
+			"description": "What MariaDB reports auditing. Differs from the request until the change lands.",
+			"fieldname": "is_database_audit_log_capturing_reads",
+			"fieldtype": "Check",
+			"label": "Is Capturing Read Queries",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_wxts",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "25",
+			"description": "Enforced by the audit plugin's own rotation. Oldest logs are dropped past this.",
+			"fieldname": "database_audit_log_max_disk_gb",
+			"fieldtype": "Int",
+			"label": "Audit Log Max Disk (GB)"
+		},
+		{
+			"default": "365",
+			"description": "Uploaded audit logs are deleted from S3 after this many days.",
+			"fieldname": "audit_log_retention_days",
+			"fieldtype": "Int",
+			"label": "Audit Log Retention (days)"
 		},
 		{
 			"default": "0",
