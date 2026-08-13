@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.tests.ui_test_helpers import create_test_user
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import add_days, today
 
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
@@ -231,3 +232,57 @@ class TestCreditTransfer(FrappeTestCase):
 			10,
 			"nobody@example.com",
 		)
+
+	def test_transfer_credits_is_blocked_by_an_unpaid_invoice(self):
+		self.sender.allocate_credit_amount(100, source="Prepaid Credits")
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.sender.name,
+			type="Subscription",
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+		frappe.db.set_value("Invoice", invoice.name, "status", "Unpaid")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"settle your unpaid invoices",
+			self.sender.transfer_credits,
+			10,
+			self.recipient.user,
+		)
+
+	def test_transfer_credits_ignores_the_current_months_draft_invoice(self):
+		self.sender.allocate_credit_amount(100, source="Prepaid Credits")
+		frappe.get_doc(
+			doctype="Invoice",
+			team=self.sender.name,
+			type="Subscription",
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+		# Well past the amount that counts as an unsettled invoice.
+		usage_record = frappe.get_doc(doctype="Usage Record", team=self.sender.name, amount=5000)
+		usage_record.insert()
+		usage_record.submit()
+
+		self.sender.transfer_credits(100, self.recipient.user)
+
+		self.assertEqual(self.recipient.get_balance(), 100)
+
+	def test_transfer_credits_to_a_team_that_has_no_payment_mode(self):
+		# Receiving credits sets the payment mode, which reads the recipient's
+		# payment methods. Run as a dashboard user, who holds only Press User.
+		sender = create_test_press_admin_team("press-user-sender@example.com")
+		sender.allocate_credit_amount(100, source="Prepaid Credits")
+		self.assertFalse(self.recipient.payment_mode)
+
+		frappe.set_user(sender.user)
+		try:
+			sender.transfer_credits(100, self.recipient.user)
+		finally:
+			frappe.set_user("Administrator")
+
+		self.recipient.reload()
+		self.assertEqual(self.recipient.get_balance(), 100)
+		self.assertEqual(self.recipient.payment_mode, "Prepaid Credits")

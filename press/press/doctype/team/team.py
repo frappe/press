@@ -1348,7 +1348,9 @@ class Team(Document):
 				f"{recipient.user} is billed in {recipient.currency}. Credits can only be transferred between accounts billed in the same currency."
 			)
 
-		if has_unsettled_invoices(self.name):
+		# Only overdue invoices block a transfer. The current month's invoice is
+		# always a draft, so counting drafts would block almost every team.
+		if frappe.db.exists("Invoice", {"team": self.name, "status": "Unpaid", "type": "Subscription"}):
 			frappe.throw("Please settle your unpaid invoices before transferring credits.")
 
 		transferable_credits = self.get_transferable_credits()
