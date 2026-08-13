@@ -8,7 +8,11 @@ from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
 from press.press.doctype.site.test_site import create_test_site
-from press.press.doctype.site_backup.backup_history import MAX_RANGE_DAYS, get_backup_history
+from press.press.doctype.site_backup.backup_history import (
+	MAX_RANGE_DAYS,
+	cache_key,
+	get_backup_history,
+)
 
 BUCKET = "test-backups"
 REPLICA_BUCKET = "test-backups-replica"
@@ -18,7 +22,11 @@ REGION = "us-east-1"
 @mock_aws
 class TestBackupHistory(FrappeTestCase):
 	def setUp(self):
-		self.site = create_test_site()
+		# Rollback resets the naming series, so without this the next test reuses the
+		# site name and inherits its objects, which moto does not roll back
+		self.site = create_test_site(subdomain=f"audit-{frappe.generate_hash(length=8)}")
+		# Backdate, or the clamp to site creation hides every date these tests use
+		frappe.db.set_value("Site", self.site.name, "creation", "2023-01-01 00:00:00", update_modified=False)
 		self.setup_press_settings()
 		boto3.client("s3", region_name=REGION).create_bucket(Bucket=BUCKET)
 
@@ -211,6 +219,83 @@ class TestBackupHistory(FrappeTestCase):
 		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
 
 		self.assertEqual(day["database"], 32)
+
+	def test_days_before_the_site_existed_are_left_out(self):
+		created_on = frappe.utils.getdate(frappe.db.get_value("Site", self.site.name, "creation"))
+		start = frappe.utils.add_days(created_on, -5)
+
+		history = get_backup_history(self.site.name, str(start), str(created_on))
+
+		self.assertEqual([day["date"] for day in history], [str(created_on)])
+
+	def test_range_entirely_before_the_site_existed_is_empty(self):
+		created_on = frappe.utils.getdate(frappe.db.get_value("Site", self.site.name, "creation"))
+
+		history = get_backup_history(
+			self.site.name,
+			str(frappe.utils.add_days(created_on, -10)),
+			str(frappe.utils.add_days(created_on, -2)),
+		)
+
+		self.assertEqual(history, [])
+
+	def test_future_days_are_left_out(self):
+		today = frappe.utils.getdate()
+
+		history = get_backup_history(self.site.name, str(today), str(frappe.utils.add_days(today, 5)))
+
+		self.assertEqual([day["date"] for day in history], [str(today)])
+
+	def test_a_finished_range_is_served_from_cache_on_the_second_call(self):
+		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz", body=b"x" * 16)
+		first = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		# Removing the object would make a fresh walk come back empty, so 16 proves the cache
+		boto3.client("s3", region_name=REGION).delete_object(
+			Bucket=BUCKET, Key=f"{self.site.name}/2023-10-02/20231002_000502-database.sql.gz"
+		)
+		second = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertEqual(first, second)
+		self.assertEqual(second[0]["database"], 16)
+
+	def test_a_range_reaching_today_is_not_cached(self):
+		today = frappe.utils.getdate()
+		get_backup_history(self.site.name, str(today), str(today))
+
+		self.assertIsNone(frappe.cache().get_value(cache_key(self.site.name, today, today)))
+
+	def test_a_bucket_the_site_used_before_moving_is_still_read(self):
+		# A Remote File pointing at another bucket is how a past cluster shows up
+		other_bucket = "old-cluster-backups"
+		boto3.client("s3", region_name=REGION).create_bucket(Bucket=other_bucket)
+		boto3.client("s3", region_name=REGION).put_object(
+			Bucket=other_bucket,
+			Key=f"{self.site.name}/2023-10-02/20231002_000502-database.sql.gz",
+			Body=b"x" * 24,
+		)
+		frappe.get_doc(
+			{
+				"doctype": "Remote File",
+				"site": self.site.name,
+				"file_name": "older.sql.gz",
+				"file_path": f"{self.site.name}/2020-01-01/older.sql.gz",
+				"bucket": other_bucket,
+			}
+		).insert(ignore_permissions=True)
+
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+
+		self.assertEqual(day["status"], "Success")
+		self.assertEqual(day["database"], 24)
+
+	def test_a_full_year_range_returns_a_row_per_day(self):
+		self.upload_backup("2023-06-15", "20230615_000502-database.sql.gz")
+
+		history = get_backup_history(self.site.name, "2023-01-01", "2023-12-31")
+
+		self.assertEqual(len(history), 365)
+		self.assertEqual(sum(day["status"] == "Success" for day in history), 1)
 
 	def test_reversed_range_is_rejected(self):
 		self.assertRaisesRegex(

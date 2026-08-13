@@ -12,9 +12,16 @@ from frappe.utils.password import get_decrypted_password
 
 from press.press.doctype.backup_bucket.backup_bucket import get_replication_target
 from press.press.doctype.site_backup.site_backup import get_backup_bucket
+from press.utils import chunk
 
 # An auditor asks about a year at a time; anything wider is a mistake, not a question
 MAX_RANGE_DAYS = 366
+
+# A finished range barely changes, and an audit means opening the same one repeatedly
+CACHE_TTL = 60 * 60
+
+# Keeps the IN clause sane on a year of daily backups
+REMOTE_FILE_BATCH = 500
 
 ARTIFACT_BY_FIELD = {
 	"remote_database_file": "database",
@@ -34,19 +41,56 @@ ARTIFACT_BY_SUFFIX = (
 
 def get_backup_history(site: str, start_date: str, end_date: str) -> list[dict]:
 	"""Every day in the range, newest first, so a day holding nothing is as visible as one that does."""
+	start, end = resolve_range(site, start_date, end_date)
+	if start > end:
+		return []
+
+	cached = get_cached_history(site, start, end)
+	if cached is not None:
+		return cached
+
+	history = build_history(site, start, end)
+	cache_history(site, start, end, history)
+	return history
+
+
+def resolve_range(site: str, start_date: str, end_date: str) -> tuple[date, date]:
+	"""Trim the asked-for range to days the site could have been backed up on."""
 	start, end = getdate(start_date), getdate(end_date)
 	if start > end:
 		frappe.throw("Start date must be on or before the end date")
 	if (end - start).days >= MAX_RANGE_DAYS:
 		frappe.throw(f"Pick a range of {MAX_RANGE_DAYS} days or less")
 
+	created_on = getdate(frappe.db.get_value("Site", site, "creation"))
+	return max(start, created_on), min(end, getdate())
+
+
+def build_history(site: str, start: date, end: date) -> list[dict]:
 	days = days_between(start, end)
 	backups = get_recorded_backups(site, start, end)
-	# Records outlive the objects themselves, so the bucket is only worth reading for the gaps
+	# Records outlive the objects themselves, so buckets are only worth reading for the gaps
 	if any(str(day) not in backups for day in days):
 		backups = {**list_stored_backups(site, start, end), **backups}
 
 	return [backups.get(str(day)) or missing_backup(str(day)) for day in days]
+
+
+def get_cached_history(site: str, start: date, end: date) -> list[dict] | None:
+	if end >= getdate():
+		return None
+	return frappe.cache().get_value(cache_key(site, start, end))
+
+
+def cache_history(site: str, start: date, end: date, history: list[dict]):
+	"""Only a finished range is worth keeping, since today can still gain a backup."""
+	if end >= getdate():
+		return
+	frappe.cache().set_value(cache_key(site, start, end), history, expires_in_sec=CACHE_TTL)
+
+
+def cache_key(site: str, start: date, end: date) -> str:
+	return f"backup_audit_trail:{site}:{start}:{end}"
 
 
 def days_between(start: date, end: date) -> list[date]:
@@ -89,19 +133,18 @@ def get_recorded_backups(site: str, start: date, end: date) -> dict[str, dict]:
 
 def get_remote_files(backups: list[dict]) -> dict[str, tuple[str, str]]:
 	names = [backup[field] for backup in backups for field in ARTIFACT_BY_FIELD if backup[field]]
-	if not names:
-		return {}
 
-	return {
-		name: (file_path, file_size)
-		for name, file_path, file_size in frappe.get_all(
+	files = {}
+	for batch in chunk(names, REMOTE_FILE_BATCH):
+		rows = frappe.get_all(
 			"Remote File",
-			{"name": ("in", names)},
+			{"name": ("in", batch)},
 			["name", "file_path", "file_size"],
 			as_list=True,
 			ignore_permissions=True,
 		)
-	}
+		files.update({name: (file_path, file_size) for name, file_path, file_size in rows})
+	return files
 
 
 def split_backup_key(site: str, file_path: str | None) -> tuple[str | None, str | None]:
@@ -119,15 +162,50 @@ def artifact_of(file_name: str) -> str | None:
 	return None
 
 
+def resolve_bucket(bucket_name: str) -> dict:
+	"""Where to read a bucket from, following replication the way Remote File does."""
+	target = get_replication_target(bucket_name)
+	if target:
+		return target
+
+	row = frappe.db.get_value("Backup Bucket", bucket_name, ["region", "endpoint_url"], as_dict=True)
+	if row:
+		return {"name": bucket_name, "region": row.region, "endpoint_url": row.endpoint_url}
+
+	return {
+		"name": bucket_name,
+		"region": frappe.db.get_single_value("Press Settings", "backup_region"),
+		"endpoint_url": None,
+	}
+
+
 def get_read_bucket(cluster: str) -> dict:
-	"""The bucket to read a cluster's backups from, following replication the way Remote File does."""
-	bucket = get_backup_bucket(cluster, region=True)
-	return get_replication_target(bucket["name"]) or bucket
+	return resolve_bucket(get_backup_bucket(cluster, region=True)["name"])
+
+
+def get_site_buckets(site: str) -> list[dict]:
+	"""The site's own cluster bucket first, then any it used before, so a move between clusters still reads."""
+	cluster = frappe.db.get_value("Site", site, "cluster")
+	current = get_read_bucket(cluster)
+
+	buckets = {current["name"]: current}
+	used_before = frappe.get_all("Remote File", {"site": site, "bucket": ("is", "set")}, pluck="bucket")
+	for bucket_name in set(used_before):
+		buckets.setdefault(bucket_name, resolve_bucket(bucket_name))
+	return list(buckets.values())
 
 
 def list_stored_backups(site: str, start: date, end: date) -> dict[str, dict]:
-	"""Walk the site's prefix in its cluster's backup bucket, sizing what is held per day."""
-	bucket = get_read_bucket(frappe.db.get_value("Site", site, "cluster"))
+	days: dict[str, dict] = {}
+	for bucket in get_site_buckets(site):
+		# The current cluster's bucket is walked first, so it wins where both hold a day
+		for day, entry in list_bucket(bucket, site, start, end).items():
+			days.setdefault(day, entry)
+	return days
+
+
+def list_bucket(bucket: dict, site: str, start: date, end: date) -> dict[str, dict]:
+	"""Walk the site's prefix in one bucket, sizing what is held per day."""
 	prefix = f"{site}/"
 	pages = (
 		get_s3_client(bucket)

@@ -4,6 +4,7 @@
 </template>
 
 <script>
+import { toast } from 'vue-sonner'
 import { backupRecordsOptions } from '../../objects/site/backups'
 import { downloadCSV } from '../../utils/csv'
 import dayjs from '../../utils/dayjs'
@@ -24,11 +25,15 @@ export default {
 	data() {
 		return {
 			mode: 'records',
-			startDate: dayjs()
-				.subtract(DEFAULT_RANGE_DAYS, 'day')
-				.format('YYYY-MM-DD'),
+			startDate: null,
 			endDate: dayjs().format('YYYY-MM-DD'),
 		}
+	},
+	created() {
+		this.startDate = this.clampToSiteAge(
+			dayjs().subtract(DEFAULT_RANGE_DAYS, 'day').format('YYYY-MM-DD'),
+			{ quiet: true },
+		)
 	},
 	resources: {
 		history() {
@@ -48,6 +53,21 @@ export default {
 	computed: {
 		context() {
 			return { documentResource: this.documentResource }
+		},
+		siteCreatedOn() {
+			return dayjs(this.documentResource.doc?.creation).format('YYYY-MM-DD')
+		},
+		offsiteBanner() {
+			const plan = this.documentResource.doc?.current_plan
+			if (!plan || plan.offsite_backups) return
+			// Without offsite backups nothing was ever uploaded, so empty days are
+			// the plan working as sold rather than a backup that went missing
+			return {
+				title: `The ${plan.plan_title} plan does not store backups offsite, so days with nothing kept are expected.`,
+				type: 'gray',
+				dismissable: true,
+				id: `${this.documentResource.doc?.name}-no-offsite`,
+			}
 		},
 		options() {
 			return this.mode === 'history' ? this.historyOptions : this.recordsOptions
@@ -84,6 +104,7 @@ export default {
 				data: () => this.historyRows,
 				isLoading: () => this.$resources.history.loading,
 				emptyStateMessage: 'No backups stored for this range',
+				banner: () => this.offsiteBanner,
 				columns: [
 					{
 						// Every row is a day, and a day recovered from the bucket has no
@@ -147,8 +168,8 @@ export default {
 				],
 				updateFilters: ({ history, startDate, endDate }) => {
 					if (history !== undefined) return this.setMode(history)
-					if (startDate) this.startDate = startDate
-					if (endDate) this.endDate = endDate
+					if (startDate) this.startDate = this.clampToSiteAge(startDate)
+					if (endDate) this.endDate = this.clampToSiteAge(endDate)
 					this.$resources.history.fetch()
 				},
 				actions: () => [
@@ -175,6 +196,15 @@ export default {
 		},
 	},
 	methods: {
+		clampToSiteAge(day, { quiet = false } = {}) {
+			if (day >= this.siteCreatedOn) return day
+			if (!quiet) {
+				toast.info(
+					`This site was created on ${date(this.siteCreatedOn, 'll')}, so that is the earliest date available.`,
+				)
+			}
+			return this.siteCreatedOn
+		},
 		exportHistory() {
 			// Built from the columns themselves, so the file always matches the screen
 			const rows = this.historyRows.map((row) => ({
