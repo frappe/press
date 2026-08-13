@@ -120,7 +120,8 @@ export default {
 						width: '150px',
 						align: 'center',
 						type: 'Badge',
-						theme: (value) => (value === 'Success' ? 'green' : 'gray'),
+						theme: (value) =>
+							({ Success: 'green', Failure: 'red' })[value] || 'gray',
 					},
 					{
 						label: 'Database',

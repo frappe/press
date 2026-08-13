@@ -2,6 +2,8 @@
 # See license.txt
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import boto3
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -29,6 +31,14 @@ class TestBackupHistory(FrappeTestCase):
 		frappe.db.set_value("Site", self.site.name, "creation", "2023-01-01 00:00:00", update_modified=False)
 		self.setup_press_settings()
 		boto3.client("s3", region_name=REGION).create_bucket(Bucket=BUCKET)
+		# The job database lives on a real agent, so every test stubs it and the ones
+		# that care about it set a return value
+		agent = patch(
+			"press.press.doctype.site_backup.backup_history.Agent.get_site_backup_jobs",
+			return_value={"jobs": []},
+		)
+		self.agent_backup_jobs = agent.start()
+		self.addCleanup(agent.stop)
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -84,6 +94,18 @@ class TestBackupHistory(FrappeTestCase):
 			}
 		).insert(ignore_permissions=True)
 		boto3.client("s3", region_name=REGION).create_bucket(Bucket=REPLICA_BUCKET)
+
+	def given_agent_jobs(self, jobs: list[dict]):
+		self.agent_backup_jobs.return_value = {"site": self.site.name, "jobs": jobs}
+
+	@staticmethod
+	def agent_job(started_on: str, status: str = "Success", sizes: dict | None = None) -> dict:
+		return {
+			"id": 1,
+			"status": status,
+			"start": started_on,
+			"sizes": sizes or {"database": 64, "public": 0, "private": 0, "site_config": 8},
+		}
 
 	def test_day_holding_backups_is_sized_by_artifact(self):
 		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz", body=b"d" * 2048)
@@ -296,6 +318,62 @@ class TestBackupHistory(FrappeTestCase):
 
 		self.assertEqual(len(history), 365)
 		self.assertEqual(sum(day["status"] == "Success" for day in history), 1)
+
+	def test_a_day_the_server_ran_a_backup_on_is_reported_even_with_nothing_stored(self):
+		self.given_agent_jobs([self.agent_job("2023-10-02 04:00:00")])
+
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+
+		self.assertEqual(day["status"], "Success")
+		self.assertEqual(day["database"], 64)
+		self.assertEqual(day["config"], 8)
+
+	def test_a_failed_backup_is_reported_as_a_failure_not_as_missing(self):
+		self.given_agent_jobs([self.agent_job("2023-10-02 04:00:00", status="Failure")])
+
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+
+		self.assertEqual(day["status"], "Failure")
+
+	def test_a_day_that_failed_then_succeeded_is_reported_as_a_success(self):
+		jobs = [
+			self.agent_job("2023-10-02 04:00:00", status="Failure"),
+			self.agent_job("2023-10-02 06:00:00"),
+		]
+		self.given_agent_jobs(jobs)
+
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+
+		self.assertEqual(day["status"], "Success")
+
+	def test_stored_objects_outrank_what_the_server_remembers(self):
+		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz", body=b"x" * 900)
+
+		self.given_agent_jobs([self.agent_job("2023-10-02 04:00:00", status="Failure")])
+
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+
+		self.assertEqual(day["status"], "Success")
+		self.assertEqual(day["database"], 900)
+
+	def test_the_server_is_left_alone_when_the_other_sources_cover_every_day(self):
+		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz")
+
+		get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.agent_backup_jobs.assert_not_called()
+
+	def test_an_unreachable_server_fails_loudly_rather_than_reporting_no_backup(self):
+		self.agent_backup_jobs.side_effect = Exception("connection refused")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Could not reach",
+			get_backup_history,
+			self.site.name,
+			"2023-10-02",
+			"2023-10-02",
+		)
 
 	def test_reversed_range_is_rejected(self):
 		self.assertRaisesRegex(
