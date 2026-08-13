@@ -190,7 +190,7 @@ class AgentUpdate(Document):
 		self.add_server_entries()
 
 	def add_server_entries(self):
-		filters = {"status": "Active"}
+		filters = {"status": "Active", "disable_agent_update": 0}
 		if self.exclude_self_hosted_servers:
 			filters.update({"is_self_hosted": 0})
 
@@ -501,6 +501,12 @@ class AgentUpdate(Document):
 		"""
 
 		if current_agent_update_to_process.status == "Pending":
+			# The server can be opted out after the plan was made
+			if self._is_agent_update_disabled(current_agent_update_to_process):
+				current_agent_update_to_process.status = "Skipped"
+				self.save(ignore_version=True)
+				return False
+
 			if (
 				self.run_on_fewer_servers_and_pause
 				and not self.paused_due_to_test_mode
@@ -594,6 +600,13 @@ class AgentUpdate(Document):
 			self.save()
 
 		return False
+
+	def _is_agent_update_disabled(self, agent_update_server: AgentUpdateServer) -> bool:
+		return bool(
+			frappe.db.get_value(
+				agent_update_server.server_type, agent_update_server.server, "disable_agent_update"
+			)
+		)
 
 	def _halt_agent_jobs(self, agent_update_server: AgentUpdateServer):
 		frappe.db.set_value(
