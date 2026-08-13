@@ -33,6 +33,7 @@
 		"use_agent_job_callbacks",
 		"is_pyspy_setup",
 		"halt_agent_jobs",
+		"disable_agent_update",
 		"stop_deployments",
 		"is_for_recovery",
 		"is_monitoring_disabled",
@@ -643,6 +644,13 @@
 			"label": "Halt Agent Jobs"
 		},
 		{
+			"default": "0",
+			"description": "Don't update the agent on this server",
+			"fieldname": "disable_agent_update",
+			"fieldtype": "Check",
+			"label": "Disable Agent Update"
+		},
+		{
 			"default": "x86_64",
 			"fieldname": "platform",
 			"fieldtype": "Select",
@@ -844,7 +852,7 @@
 			"link_fieldname": "app_server"
 		}
 	],
-	"modified": "2026-06-18 10:49:09.702133",
+	"modified": "2026-08-13 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Server",

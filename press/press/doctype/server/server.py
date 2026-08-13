@@ -1013,10 +1013,16 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def update_agent_ansible(self):
+		self.validate_agent_update_allowed()
 		# ponytail: 1h, not the long queue's 1500s — a busy rq worker's warm shutdown alone is 1500s
 		frappe.enqueue_doc(self.doctype, self.name, "_update_agent_ansible", queue="long", timeout=3600)
 
+	def validate_agent_update_allowed(self):
+		if self.disable_agent_update:
+			frappe.throw(f"Agent update is disabled on {self.name}")
+
 	def _update_agent_ansible(self, throw_on_failure: bool = False):
+		self.validate_agent_update_allowed()
 		try:
 			agent_branch = frappe.get_value("Press Settings", "Press Settings", "branch")
 			if not agent_branch:
@@ -3070,6 +3076,7 @@ class Server(BaseServer):
 		database_server: DF.Link | None
 		db_healthcheck_token: DF.Password | None
 		disable_agent_job_auto_retry: DF.Check
+		disable_agent_update: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
 		enable_on_prem_failover_support: DF.Check

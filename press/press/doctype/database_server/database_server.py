@@ -75,6 +75,7 @@ class DatabaseServer(BaseServer):
 		database_audit_log_max_disk_gb: DF.Int
 		database_audit_log_status: DF.Literal["Disabled", "Enabling", "Enabled", "Disabling"]
 		db_port: DF.Int
+		disable_agent_update: DF.Check
 		domain: DF.Link | None
 		enable_binlog_indexing: DF.Check
 		enable_binlog_upload_to_s3: DF.Check
