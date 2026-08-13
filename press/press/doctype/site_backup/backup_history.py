@@ -24,6 +24,10 @@ CACHE_TTL = 60 * 60
 # Keeps the IN clause sane on a year of daily backups
 REMOTE_FILE_BATCH = 500
 
+# Most servers run an agent without this endpoint, and will for a while. Remembering
+# that keeps every page view from retrying and logging against them.
+AGENT_SILENCE_TTL = 60 * 60
+
 # The agent names the config artifact after the file it dumps
 ARTIFACT_BY_JOB_KEY = {
 	"database": "database",
@@ -48,11 +52,11 @@ ARTIFACT_BY_SUFFIX = (
 )
 
 
-def get_backup_history(site: str, start_date: str, end_date: str) -> list[dict]:
+def get_backup_history(site: str, start_date: str, end_date: str) -> dict:
 	"""Every day in the range, newest first, so a day holding nothing is as visible as one that does."""
 	start, end = resolve_range(site, start_date, end_date)
 	if start > end:
-		return []
+		return {"days": [], "unconfirmed": False}
 
 	cached = get_cached_history(site, start, end)
 	if cached is not None:
@@ -75,7 +79,7 @@ def resolve_range(site: str, start_date: str, end_date: str) -> tuple[date, date
 	return max(start, created_on), min(end, getdate())
 
 
-def build_history(site: str, start: date, end: date) -> list[dict]:
+def build_history(site: str, start: date, end: date) -> dict:
 	"""Ask each source only for the days the cheaper ones before it could not answer."""
 	days = days_between(start, end)
 	backups = get_recorded_backups(site, start, end)
@@ -85,44 +89,71 @@ def build_history(site: str, start: date, end: date) -> list[dict]:
 		backups = {**list_stored_backups(site, start, end), **backups}
 
 	# The agent knows a backup ran even where nothing was kept, and knows when one failed
+	unconfirmed = False
 	if has_gaps(backups, days):
-		backups = {**get_agent_backup_jobs(site, start, end), **backups}
+		jobs, asked = get_agent_backup_jobs(site, start, end)
+		backups = {**jobs, **backups}
+		unconfirmed = not asked and has_gaps(backups, days)
 
-	return [backups.get(str(day)) or missing_backup(str(day)) for day in days]
+	return {
+		"days": [backups.get(str(day)) or missing_backup(str(day)) for day in days],
+		"unconfirmed": unconfirmed,
+	}
 
 
 def has_gaps(backups: dict[str, dict], days: list[date]) -> bool:
 	return any(str(day) not in backups for day in days)
 
 
-def get_agent_backup_jobs(site: str, start: date, end: date) -> dict[str, dict]:
-	"""What the site's server remembers running, which covers a backup no longer stored anywhere.
+def get_agent_backup_jobs(site: str, start: date, end: date) -> tuple[dict[str, dict], bool]:
+	"""What the site's server remembers running, and whether it could be asked at all.
 
 	Only the current server is asked. Jobs a site ran before moving stay on the server it
 	left, and its objects are already picked up by walking the buckets it used.
 	"""
 	server = frappe.db.get_value("Site", site, "server")
-	if not server:
-		return {}
+	if not server or is_agent_silenced(server):
+		return {}, False
+
+	jobs = fetch_agent_backup_jobs(server, site, start, end)
+	if jobs is None:
+		return {}, False
 
 	days: dict[str, dict] = {}
-	for job in fetch_agent_backup_jobs(server, site, start, end):
+	for job in jobs:
 		day = str(getdate(job["start"])) if job.get("start") else None
 		# A day that ran twice is answered by whichever run got furthest
 		if not day or outranks(days.get(day), job):
 			continue
 		days[day] = backup_from_job(day, job)
-	return days
+	return days, True
 
 
-def fetch_agent_backup_jobs(server: str, site: str, start: date, end: date) -> list[dict]:
-	"""Raise rather than return nothing: a day we could not check is not a day without a backup."""
+def fetch_agent_backup_jobs(server: str, site: str, start: date, end: date) -> list[dict] | None:
+	"""The server's jobs, or None when it could not answer.
+
+	An agent without this endpoint is the normal case during a rollout, and one that is
+	simply down looks the same from here, so neither is worth failing the whole page for.
+	The caller says so in the response instead.
+	"""
 	try:
-		return Agent(server).get_site_backup_jobs(site, str(start), str(end))["jobs"]
+		response = Agent(server).get_site_backup_jobs(site, str(start), str(end))
+		return response["jobs"]
 	except Exception:
-		frappe.log_error("Backup audit trail could not reach the site's server")
-		frappe.throw(f"Could not reach {server} to check the days nothing is stored for. Try again.")
-		return []
+		silence_agent(server)
+		return None
+
+
+def agent_silence_key(server: str) -> str:
+	return f"backup_audit_trail_agent_unavailable:{server}"
+
+
+def is_agent_silenced(server: str) -> bool:
+	return bool(frappe.cache().get_value(agent_silence_key(server)))
+
+
+def silence_agent(server: str):
+	frappe.cache().set_value(agent_silence_key(server), 1, expires_in_sec=AGENT_SILENCE_TTL)
 
 
 def outranks(existing: dict | None, job: dict) -> bool:
@@ -141,15 +172,15 @@ def backup_from_job(day: str, job: dict) -> dict:
 	)
 
 
-def get_cached_history(site: str, start: date, end: date) -> list[dict] | None:
+def get_cached_history(site: str, start: date, end: date) -> dict | None:
 	if end >= getdate():
 		return None
 	return frappe.cache().get_value(cache_key(site, start, end))
 
 
-def cache_history(site: str, start: date, end: date, history: list[dict]):
-	"""Only a finished range is worth keeping, since today can still gain a backup."""
-	if end >= getdate():
+def cache_history(site: str, start: date, end: date, history: dict):
+	"""Only a finished, fully answered range is worth keeping."""
+	if end >= getdate() or history["unconfirmed"]:
 		return
 	frappe.cache().set_value(cache_key(site, start, end), history, expires_in_sec=CACHE_TTL)
 

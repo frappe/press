@@ -57,6 +57,20 @@ export default {
 		siteCreatedOn() {
 			return dayjs(this.documentResource.doc?.creation).format('YYYY-MM-DD')
 		},
+		historyBanner() {
+			// The server has the last word on days nothing is stored for, so say when it
+			// could not be asked rather than letting those days read as no backup
+			if (this.history.unconfirmed) {
+				return {
+					title:
+						"This site's server could not be asked about the days nothing is stored for, so those show only what is still kept.",
+					type: 'gray',
+					dismissable: true,
+					id: `${this.documentResource.doc?.name}-unconfirmed`,
+				}
+			}
+			return this.offsiteBanner
+		},
 		offsiteBanner() {
 			const plan = this.documentResource.doc?.current_plan
 			if (!plan || plan.offsite_backups) return
@@ -104,7 +118,7 @@ export default {
 				data: () => this.historyRows,
 				isLoading: () => this.$resources.history.loading,
 				emptyStateMessage: 'No backups stored for this range',
-				banner: () => this.offsiteBanner,
+				banner: () => this.historyBanner,
 				columns: [
 					{
 						// Every row is a day, and a day recovered from the bucket has no
@@ -190,10 +204,13 @@ export default {
 		},
 		historyRows() {
 			// The API already returns one entry per day, ready to render
-			return (this.$resources.history.data?.message || []).map((day) => ({
+			return (this.history.days || []).map((day) => ({
 				...day,
 				name: day.date,
 			}))
+		},
+		history() {
+			return this.$resources.history.data?.message || {}
 		},
 	},
 	methods: {

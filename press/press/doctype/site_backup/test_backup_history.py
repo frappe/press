@@ -41,6 +41,10 @@ class TestBackupHistory(FrappeTestCase):
 		self.addCleanup(agent.stop)
 
 	def tearDown(self):
+		# The silence flag lives in redis, which no rollback undoes
+		frappe.cache().delete_value(
+			f"backup_audit_trail_agent_unavailable:{frappe.db.get_value('Site', self.site.name, 'server')}"
+		)
 		frappe.db.rollback()
 
 	def setup_press_settings(self):
@@ -112,7 +116,7 @@ class TestBackupHistory(FrappeTestCase):
 		self.upload_backup("2023-10-02", "20231002_000502-files.tar", body=b"p" * 512)
 		self.upload_backup("2023-10-02", "20231002_000502-private-files.tar", body=b"q" * 128)
 
-		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"][0]
 
 		self.assertEqual(day["status"], "Success")
 		self.assertEqual(day["database"], 2048)
@@ -122,7 +126,7 @@ class TestBackupHistory(FrappeTestCase):
 	def test_private_files_are_not_counted_as_public_files(self):
 		self.upload_backup("2023-10-02", "20231002_000502-private-files.tar", body=b"q" * 128)
 
-		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"][0]
 
 		self.assertEqual(day["public"], 0)
 		self.assertEqual(day["private"], 128)
@@ -130,7 +134,7 @@ class TestBackupHistory(FrappeTestCase):
 	def test_day_holding_nothing_is_marked_not_available(self):
 		self.upload_backup("2023-10-03", "20231003_000502-database.sql.gz")
 
-		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-03")
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-03")["days"]
 
 		self.assertEqual([day["status"] for day in history], ["Success", "Not Available"])
 		self.assertEqual(history[1]["database"], 0)
@@ -138,13 +142,13 @@ class TestBackupHistory(FrappeTestCase):
 	def test_config_only_day_still_counts_as_a_backup(self):
 		self.upload_backup("2023-10-02", "20231002_000502-site_config_backup.json")
 
-		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"][0]
 
 		self.assertEqual(day["status"], "Success")
 		self.assertEqual(day["database"], 0)
 
 	def test_range_is_inclusive_and_ordered_newest_first(self):
-		history = get_backup_history(self.site.name, "2023-10-01", "2023-10-04")
+		history = get_backup_history(self.site.name, "2023-10-01", "2023-10-04")["days"]
 
 		self.assertEqual(
 			[day["date"] for day in history],
@@ -156,7 +160,7 @@ class TestBackupHistory(FrappeTestCase):
 		self.upload_backup("2023-10-02", "inside-database.sql.gz")
 		self.upload_backup("2023-10-05", "after-database.sql.gz")
 
-		history = get_backup_history(self.site.name, "2023-10-01", "2023-10-03")
+		history = get_backup_history(self.site.name, "2023-10-01", "2023-10-03")["days"]
 
 		self.assertEqual(
 			[day["status"] for day in history],
@@ -169,14 +173,14 @@ class TestBackupHistory(FrappeTestCase):
 			Bucket=BUCKET, Key=f"{other_site.name}/2023-10-02/database.sql.gz", Body=b"backup"
 		)
 
-		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"]
 
 		self.assertEqual(history[0]["status"], "Not Available")
 
 	def test_press_record_answers_for_a_day_whose_object_is_gone_from_the_bucket(self):
 		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz", size=4096)
 
-		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"][0]
 
 		self.assertEqual(day["status"], "Success")
 		self.assertEqual(day["database"], 4096)
@@ -185,7 +189,7 @@ class TestBackupHistory(FrappeTestCase):
 		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz", size=4096)
 		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz", body=b"x" * 99)
 
-		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"][0]
 
 		self.assertEqual(day["database"], 4096)
 
@@ -193,7 +197,7 @@ class TestBackupHistory(FrappeTestCase):
 		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz", size=4096)
 		self.upload_backup("2023-10-03", "20231003_000502-database.sql.gz", body=b"x" * 99)
 
-		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-03")
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-03")["days"]
 
 		self.assertEqual([day["database"] for day in history], [99, 4096])
 
@@ -202,7 +206,7 @@ class TestBackupHistory(FrappeTestCase):
 
 		# Dropping the bucket makes any S3 read fail, so a passing call proves none happened
 		boto3.client("s3", region_name=REGION).delete_bucket(Bucket=BUCKET)
-		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"]
 
 		self.assertEqual(history[0]["database"], 4096)
 
@@ -210,7 +214,7 @@ class TestBackupHistory(FrappeTestCase):
 		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz")
 		self.upload_backup("2023-10-03", "20231003_000502-database.sql.gz")
 
-		history = get_backup_history(self.site.name, "2023-10-01", "2023-10-03")
+		history = get_backup_history(self.site.name, "2023-10-01", "2023-10-03")["days"]
 
 		keys = {"date", "status", "database", "public", "private", "config"}
 		self.assertEqual([set(day) for day in history], [keys, keys, keys])
@@ -224,7 +228,7 @@ class TestBackupHistory(FrappeTestCase):
 			Body=b"x" * 64,
 		)
 
-		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"][0]
 
 		self.assertEqual(day["status"], "Success")
 		self.assertEqual(day["database"], 64)
@@ -238,7 +242,7 @@ class TestBackupHistory(FrappeTestCase):
 			Body=b"x" * 999,
 		)
 
-		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"][0]
 
 		self.assertEqual(day["database"], 32)
 
@@ -246,7 +250,7 @@ class TestBackupHistory(FrappeTestCase):
 		created_on = frappe.utils.getdate(frappe.db.get_value("Site", self.site.name, "creation"))
 		start = frappe.utils.add_days(created_on, -5)
 
-		history = get_backup_history(self.site.name, str(start), str(created_on))
+		history = get_backup_history(self.site.name, str(start), str(created_on))["days"]
 
 		self.assertEqual([day["date"] for day in history], [str(created_on)])
 
@@ -257,14 +261,14 @@ class TestBackupHistory(FrappeTestCase):
 			self.site.name,
 			str(frappe.utils.add_days(created_on, -10)),
 			str(frappe.utils.add_days(created_on, -2)),
-		)
+		)["days"]
 
 		self.assertEqual(history, [])
 
 	def test_future_days_are_left_out(self):
 		today = frappe.utils.getdate()
 
-		history = get_backup_history(self.site.name, str(today), str(frappe.utils.add_days(today, 5)))
+		history = get_backup_history(self.site.name, str(today), str(frappe.utils.add_days(today, 5)))["days"]
 
 		self.assertEqual([day["date"] for day in history], [str(today)])
 
@@ -279,7 +283,7 @@ class TestBackupHistory(FrappeTestCase):
 		second = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
 
 		self.assertEqual(first, second)
-		self.assertEqual(second[0]["database"], 16)
+		self.assertEqual(second["days"][0]["database"], 16)
 
 	def test_a_range_reaching_today_is_not_cached(self):
 		today = frappe.utils.getdate()
@@ -306,7 +310,7 @@ class TestBackupHistory(FrappeTestCase):
 			}
 		).insert(ignore_permissions=True)
 
-		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"][0]
 
 		self.assertEqual(day["status"], "Success")
 		self.assertEqual(day["database"], 24)
@@ -314,7 +318,7 @@ class TestBackupHistory(FrappeTestCase):
 	def test_a_full_year_range_returns_a_row_per_day(self):
 		self.upload_backup("2023-06-15", "20230615_000502-database.sql.gz")
 
-		history = get_backup_history(self.site.name, "2023-01-01", "2023-12-31")
+		history = get_backup_history(self.site.name, "2023-01-01", "2023-12-31")["days"]
 
 		self.assertEqual(len(history), 365)
 		self.assertEqual(sum(day["status"] == "Success" for day in history), 1)
@@ -322,7 +326,7 @@ class TestBackupHistory(FrappeTestCase):
 	def test_a_day_the_server_ran_a_backup_on_is_reported_even_with_nothing_stored(self):
 		self.given_agent_jobs([self.agent_job("2023-10-02 04:00:00")])
 
-		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"][0]
 
 		self.assertEqual(day["status"], "Success")
 		self.assertEqual(day["database"], 64)
@@ -331,7 +335,7 @@ class TestBackupHistory(FrappeTestCase):
 	def test_a_failed_backup_is_reported_as_a_failure_not_as_missing(self):
 		self.given_agent_jobs([self.agent_job("2023-10-02 04:00:00", status="Failure")])
 
-		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"][0]
 
 		self.assertEqual(day["status"], "Failure")
 
@@ -342,7 +346,7 @@ class TestBackupHistory(FrappeTestCase):
 		]
 		self.given_agent_jobs(jobs)
 
-		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"][0]
 
 		self.assertEqual(day["status"], "Success")
 
@@ -351,7 +355,7 @@ class TestBackupHistory(FrappeTestCase):
 
 		self.given_agent_jobs([self.agent_job("2023-10-02 04:00:00", status="Failure")])
 
-		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")[0]
+		day = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["days"][0]
 
 		self.assertEqual(day["status"], "Success")
 		self.assertEqual(day["database"], 900)
@@ -363,17 +367,50 @@ class TestBackupHistory(FrappeTestCase):
 
 		self.agent_backup_jobs.assert_not_called()
 
-	def test_an_unreachable_server_fails_loudly_rather_than_reporting_no_backup(self):
+	def test_an_unreachable_server_is_reported_as_unconfirmed_not_as_no_backup(self):
 		self.agent_backup_jobs.side_effect = Exception("connection refused")
 
-		self.assertRaisesRegex(
-			frappe.ValidationError,
-			"Could not reach",
-			get_backup_history,
-			self.site.name,
-			"2023-10-02",
-			"2023-10-02",
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertEqual(history["days"][0]["status"], "Not Available")
+		self.assertTrue(history["unconfirmed"])
+
+	def test_an_agent_without_the_endpoint_leaves_the_trail_readable(self):
+		self.agent_backup_jobs.side_effect = Exception("404 Not Found")
+
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertEqual(history["days"][0]["status"], "Not Available")
+		self.assertTrue(history["unconfirmed"])
+
+	def test_a_server_that_could_not_answer_is_not_asked_again(self):
+		self.agent_backup_jobs.side_effect = Exception("404 Not Found")
+		get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		get_backup_history(self.site.name, "2023-10-03", "2023-10-03")
+
+		self.assertEqual(self.agent_backup_jobs.call_count, 1)
+
+	def test_a_trail_the_server_could_not_confirm_is_not_cached(self):
+		self.agent_backup_jobs.side_effect = Exception("404 Not Found")
+
+		get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertIsNone(
+			frappe.cache().get_value(
+				cache_key(
+					self.site.name, frappe.utils.getdate("2023-10-02"), frappe.utils.getdate("2023-10-02")
+				)
+			)
 		)
+
+	def test_a_trail_the_other_sources_fully_answered_is_not_unconfirmed(self):
+		self.agent_backup_jobs.side_effect = Exception("404 Not Found")
+		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz")
+
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertFalse(history["unconfirmed"])
 
 	def test_reversed_range_is_rejected(self):
 		self.assertRaisesRegex(
