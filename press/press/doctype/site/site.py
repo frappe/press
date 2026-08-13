@@ -140,10 +140,7 @@ DEFAULT_MAX_STATEMENT_TIME = 3600
 # How much to bump max_statement_time by (in seconds) each time — one hour.
 STATEMENT_TIME_INCREMENT = 3600
 
-# Matches the four backups a day the default schedule already gives.
-MAXIMUM_CUSTOM_BACKUP_TIMES = 4
-
-# Picking backup times is for plans from this price up. Ref: USD 25.
+# Picking a backup time is for plans from this price up. Ref: USD 25.
 MINIMUM_BACKUP_SCHEDULE_PLAN_PRICE_USD = 25
 
 # Conditions a site must satisfy for the agent to stream offsite backup
@@ -750,23 +747,26 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def update_backup_schedule(self, times: list[str] | None = None):
-		"""Replace the site's custom backup times. No times means back to the default schedule.
+	def update_backup_schedule(self, time: str | None = None):
+		"""Move the site's backups to a time of its own. No time means back to the default schedule.
 
-		Logical only — physical backups deactivate the site while they run.
+		One time a day — each extra time is one more backup we pay for. We set up
+		more times than that for a site ourselves. Logical only — physical backups
+		deactivate the site while they run.
 		"""
-		if not self.plan_allows_backup_schedule():
-			frappe.throw("Your plan doesn't come with a backup schedule you can set.")
-
-		times = [parse_backup_time(time) for time in times or []]
-		if len(times) > MAXIMUM_CUSTOM_BACKUP_TIMES:
-			frappe.throw(f"A site can have at most {MAXIMUM_CUSTOM_BACKUP_TIMES} backups a day.")
+		self.validate_backup_schedule_is_editable()
 
 		self.logical_backup_times = []
-		for backup_time in times:
-			self.append("logical_backup_times", {"backup_time": backup_time})
-		self.schedule_logical_backup_at_custom_time = bool(times)
+		if time:
+			self.append("logical_backup_times", {"backup_time": parse_backup_time(time)})
+		self.schedule_logical_backup_at_custom_time = bool(time)
 		self.save()
+
+	def validate_backup_schedule_is_editable(self):
+		if not self.plan_allows_backup_schedule():
+			frappe.throw("Your plan doesn't come with a backup schedule you can set.")
+		if len(self.logical_backup_times) > 1:
+			frappe.throw("We set up the backup times of your site. Write to support to change them.")
 
 	def plan_allows_backup_schedule(self) -> bool:
 		"""Entry-level plans stay on the default schedule.

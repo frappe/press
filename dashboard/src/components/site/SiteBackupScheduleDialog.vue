@@ -3,15 +3,17 @@
 		v-model="show"
 		:options="{
 			title: 'Backup Schedule',
-			actions: [
-				{
-					label: 'Save',
-					variant: 'solid',
-					disabled: !loaded,
-					loading: $site?.updateBackupSchedule?.loading,
-					onClick: save,
-				},
-			],
+			actions: managed
+				? []
+				: [
+						{
+							label: 'Save',
+							variant: 'solid',
+							disabled: !loaded,
+							loading: $site?.updateBackupSchedule?.loading,
+							onClick: save,
+						},
+					],
 		}"
 	>
 		<template #body-content>
@@ -23,60 +25,31 @@
 				<LoadingIndicator v-else class="h-5 w-5 text-ink-gray-5" />
 			</div>
 
+			<p v-else-if="managed" class="text-base leading-5 text-ink-gray-7">
+				Your site backs up at {{ managedTimes }} every day. We set that up for
+				you — write to support to change it.
+			</p>
+
 			<div v-else class="flex flex-col gap-5">
 				<Switch
 					v-model="custom"
 					label="Choose when backups run"
 					:description="
 						custom
-							? 'Backups run only at the hours below'
+							? 'Backups run once a day, at the hour below'
 							: 'Backups run every 6 hours, whenever that falls'
 					"
 				/>
 
-				<div v-if="custom" class="flex flex-col gap-3">
-					<div class="flex items-baseline justify-between">
-						<span class="text-base font-medium text-ink-gray-8">
-							Backup times
-						</span>
-						<span class="text-p-sm text-ink-gray-5">
-							{{ hours.length }} of {{ maximumTimes }}
-						</span>
-					</div>
-
-					<div class="flex flex-col gap-2">
-						<div
-							v-for="(hour, index) in hours"
-							:key="index"
-							class="flex items-center gap-2"
-						>
-							<FormControl
-								class="w-36"
-								type="select"
-								variant="outline"
-								:options="optionsFor(index)"
-								v-model="hours[index]"
-							/>
-							<Button
-								v-if="hours.length > 1"
-								variant="ghost"
-								icon="x"
-								:label="`Remove ${labelFor(hour)}`"
-								@click="hours.splice(index, 1)"
-							/>
-						</div>
-					</div>
-
-					<Button
-						v-if="hours.length < maximumTimes"
-						class="w-fit"
-						variant="subtle"
-						icon-left="plus"
-						@click="addHour"
-					>
-						Add time
-					</Button>
-
+				<div v-if="custom" class="flex flex-col gap-2">
+					<FormControl
+						class="w-36"
+						type="select"
+						variant="outline"
+						label="Backup time"
+						:options="hourOptions"
+						v-model="hour"
+					/>
 					<p class="text-p-sm leading-5 text-ink-gray-5">
 						A backup starts within the hour you pick. Times are in your
 						timezone ({{ timezone }}).
@@ -107,8 +80,11 @@ export default {
 		return {
 			show: true,
 			custom: false,
-			hours: ['02'],
-			maximumTimes: 4,
+			hour: '02',
+			hourOptions: HOURS,
+			// Times we set up for the site ourselves. A site can't give itself more
+			// than one backup a day, so it can't edit those times either.
+			times: [],
 			// Saving before this is true would submit the defaults over whatever
 			// the site already has
 			loaded: false,
@@ -117,8 +93,9 @@ export default {
 	mounted() {
 		this.$site.getBackupSchedule.submit().then((schedule) => {
 			this.custom = schedule.custom;
+			this.times = schedule.times;
 			if (schedule.times.length) {
-				this.hours = schedule.times.map((time) => timeLocal(time).slice(0, 2));
+				this.hour = timeLocal(schedule.times[0]).slice(0, 2);
 			}
 			this.loaded = true;
 		});
@@ -127,31 +104,25 @@ export default {
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
 		},
+		managed() {
+			return this.times.length > 1;
+		},
+		managedTimes() {
+			return this.times
+				.map((time) => this.labelFor(timeLocal(time).slice(0, 2)))
+				.join(', ');
+		},
 		timezone() {
 			return dayjs.tz.guess();
 		},
 	},
 	methods: {
-		// Hiding the hours already taken is what keeps two backups out of the same
-		// hour, where the scheduler would run only one of them
-		optionsFor(index) {
-			let taken = this.hours.filter((_, i) => i !== index);
-			return HOURS.filter((option) => !taken.includes(option.value));
-		},
 		labelFor(hour) {
 			return HOURS.find((option) => option.value === hour)?.label;
 		},
-		// Carry on from the last hour picked rather than filling up from midnight
-		addHour() {
-			let start = Number(this.hours[this.hours.length - 1] ?? -1) + 1;
-			let order = HOURS.slice(start).concat(HOURS.slice(0, start));
-			this.hours.push(order.find((option) => !this.hours.includes(option.value)).value);
-		},
 		save() {
 			let promise = this.$site.updateBackupSchedule.submit({
-				times: this.custom
-					? this.hours.map((hour) => timeServer(`${hour}:00`))
-					: [],
+				time: this.custom ? timeServer(`${this.hour}:00`) : null,
 			});
 			toast.promise(promise, {
 				loading: 'Saving backup schedule...',

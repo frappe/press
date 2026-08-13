@@ -294,34 +294,40 @@ class TestBackupSchedule(FrappeTestCase):
 		)
 		return create_test_site(plan=plan.name)
 
-	def test_setting_backup_times_takes_the_site_off_the_default_schedule(self):
+	def test_setting_a_backup_time_takes_the_site_off_the_default_schedule(self):
 		site = self._create_site()
 
-		site.update_backup_schedule(["02:00", "14:00"])
+		site.update_backup_schedule("02:00")
 
 		site.reload()
-		self.assertEqual(site.get_backup_schedule(), {"custom": True, "times": ["02:00", "14:00"]})
+		self.assertEqual(site.get_backup_schedule(), {"custom": True, "times": ["02:00"]})
 		self.assertNotIn(site.name, [s.name for s in Site.get_sites_for_backup(6)])
 
-	def test_clearing_backup_times_returns_the_site_to_the_default_schedule(self):
+	def test_clearing_the_backup_time_returns_the_site_to_the_default_schedule(self):
 		site = self._create_site()
-		site.update_backup_schedule(["02:00"])
+		site.update_backup_schedule("02:00")
 		site.reload()
 
-		site.update_backup_schedule([])
+		site.update_backup_schedule(None)
 
 		site.reload()
 		self.assertEqual(site.get_backup_schedule(), {"custom": False, "times": []})
 
-	def test_backup_schedule_rejects_more_than_four_times_a_day(self):
+	def test_the_dashboard_cannot_change_the_backup_times_we_set_up(self):
 		site = self._create_site()
+		for backup_time in ("02:00:00", "08:00:00"):
+			site.append("logical_backup_times", {"backup_time": backup_time})
+		site.schedule_logical_backup_at_custom_time = True
+		site.save()
 
 		self.assertRaisesRegex(
 			frappe.ValidationError,
-			"at most 4 backups a day",
+			"Write to support",
 			site.update_backup_schedule,
-			["01:00", "02:00", "03:00", "04:00", "05:00"],
+			"14:00",
 		)
+		site.reload()
+		self.assertEqual(site.get_backup_schedule(), {"custom": True, "times": ["02:00", "08:00"]})
 
 	def test_backup_schedule_rejects_a_time_that_is_not_hh_mm(self):
 		site = self._create_site()
@@ -330,17 +336,7 @@ class TestBackupSchedule(FrappeTestCase):
 			frappe.ValidationError,
 			"not a valid backup time",
 			site.update_backup_schedule,
-			["2 AM"],
-		)
-
-	def test_backup_schedule_rejects_two_backups_in_the_same_hour(self):
-		site = self._create_site()
-
-		self.assertRaisesRegex(
-			frappe.ValidationError,
-			"Multiple backups have been scheduled",
-			site.update_backup_schedule,
-			["02:00", "02:30"],
+			"2 AM",
 		)
 
 	def test_backup_schedule_is_not_offered_below_the_cutoff_price(self):
@@ -351,7 +347,7 @@ class TestBackupSchedule(FrappeTestCase):
 			frappe.ValidationError,
 			"doesn't come with a backup schedule",
 			site.update_backup_schedule,
-			["02:00"],
+			"02:00",
 		)
 
 	def test_backup_schedule_is_offered_on_enterprise_plans_priced_at_zero(self):
