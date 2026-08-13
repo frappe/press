@@ -1,4 +1,10 @@
-import { Badge, createListResource, createResource, LoadingIndicator } from 'frappe-ui'
+import {
+	Badge,
+	createListResource,
+	createResource,
+	LoadingIndicator,
+	Tooltip,
+} from 'frappe-ui'
 import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
 import ArrowLeftRightIcon from '~icons/lucide/arrow-left-right'
@@ -60,6 +66,8 @@ export default {
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
 		getBackupDownloadLink: 'get_backup_download_link',
+		getBackupSchedule: 'get_backup_schedule',
+		updateBackupSchedule: 'update_backup_schedule',
 		fetchDatabaseTableSchemas: 'fetch_database_table_schemas',
 		fetchSitesDataForExport: 'fetch_sites_data_for_export',
 	},
@@ -859,6 +867,32 @@ export default {
 											site: site.name,
 											onScheduleBackupSuccess: () => backups.reload(),
 										},
+									),
+								)
+							},
+						}
+					},
+					secondaryAction({ documentResource: site }) {
+						if (site.doc?.status !== 'Active') return null
+						if (!site.doc?.can_schedule_backups) return null
+						return {
+							label: 'Backup Schedule',
+							slots: {
+								icon: () =>
+									h(
+										Tooltip,
+										{ text: 'Backup Schedule' },
+										icon('settings'),
+									),
+							},
+							onClick() {
+								renderDialog(
+									h(
+										defineAsyncComponent(
+											() =>
+												import('../components/site/SiteBackupScheduleDialog.vue'),
+										),
+										{ site: site.name },
 									),
 								)
 							},
