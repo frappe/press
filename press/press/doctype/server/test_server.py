@@ -815,3 +815,36 @@ class TestServer(FrappeTestCase):
 
 		methods = [call.args[0] for call in requests.request.call_args_list]
 		self.assertNotIn("DELETE", methods)
+
+
+@patch.object(BaseServer, "after_insert", new=Mock())
+class TestSSHCommand(FrappeTestCase):
+	def setUp(self):
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+
+		create_test_press_settings().db_set("domain", "fc.dev")
+		self.cluster = create_test_cluster(name="Mumbai").name
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_ssh_command_hops_through_press_server_and_proxy_server(self):
+		proxy_server = create_test_proxy_server(cluster=self.cluster)
+		server = create_test_server(proxy_server=proxy_server.name, cluster=self.cluster)
+		create_test_proxy_server(hostname="other", cluster=self.cluster)  # must not be picked
+
+		self.assertEqual(
+			server.get_ssh_command(),
+			f"ssh frappe@fc.dev -t 'ssh -J root@{proxy_server.name} root@{server.name}'",
+		)
+
+	def test_ssh_command_uses_ssh_user_and_port_of_server(self):
+		proxy_server = create_test_proxy_server(cluster=self.cluster)
+		server = create_test_server(proxy_server=proxy_server.name, cluster=self.cluster)
+		server.db_set({"ssh_user": "ubuntu", "ssh_port": 2222})
+		server.reload()
+
+		self.assertEqual(
+			server.get_ssh_command(),
+			f"ssh frappe@fc.dev -t 'ssh -J root@{proxy_server.name} ubuntu@{server.name} -p 2222'",
+		)

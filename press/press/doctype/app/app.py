@@ -286,7 +286,9 @@ def parse_frappe_version(
 	return set(map_frappe_version(version_string, frappe_versions, app_title, ease_versioning_constrains))
 
 
-def get_app_source_from_supported_versions(app: str, supported_versions: set[str]) -> AppSource | None:
+def get_app_source_from_supported_versions(
+	app: str, supported_versions: set[str], filters: dict[str, str] | None = None
+) -> AppSource | None:
 	"""From the provided versions fetch the app source which supports the latest version.
 	In case no app supports the latest version the just get whatever app source supports any of the provided versions.
 	"""
@@ -307,6 +309,9 @@ def get_app_source_from_supported_versions(app: str, supported_versions: set[str
 		.groupby(app_source.name)
 		.limit(1)
 	)
+
+	for field, value in (filters or {}).items():
+		base_query = base_query.where(app_source[field] == value)
 
 	highest_priority_query = base_query.where(app_source_version.version == version_numbers[0]["name"])
 	highest_priority_app_source = highest_priority_query.run(pluck=True)

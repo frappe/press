@@ -24,6 +24,7 @@
 		"team",
 		"public",
 		"halt_agent_jobs",
+		"disable_agent_update",
 		"exclude_from_auto_selection",
 		"storage_section",
 		"auto_add_storage_min",
@@ -441,6 +442,13 @@
 		},
 		{
 			"default": "0",
+			"description": "Don't update the agent on this server",
+			"fieldname": "disable_agent_update",
+			"fieldtype": "Check",
+			"label": "Disable Agent Update"
+		},
+		{
+			"default": "0",
 			"fieldname": "tls_certificate_renewal_failed",
 			"fieldtype": "Check",
 			"label": "TLS Certificate Renewal Failed",
@@ -499,7 +507,7 @@
 		}
 	],
 	"links": [],
-	"modified": "2026-03-15 19:01:43.557830",
+	"modified": "2026-08-13 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Proxy Server",
