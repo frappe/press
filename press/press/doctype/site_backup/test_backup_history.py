@@ -676,6 +676,20 @@ class TestBackupHistory(FrappeTestCase):
 			published,
 		)
 
+	def test_a_site_name_that_is_not_text_is_rejected_plainly(self):
+		from press.api.site import backup_history
+
+		for value in [{"a": 1}, ["x"], 5]:
+			with self.subTest(value=value):
+				self.assertRaisesRegex(
+					frappe.ValidationError,
+					"Could not read the site name",
+					backup_history,
+					value,
+					"2023-10-01",
+					"2023-10-02",
+				)
+
 	def test_a_date_that_is_not_a_date_is_rejected_plainly(self):
 		"""Whitelisted parameters arrive as whatever the caller sent."""
 		for value in [{"a": 1}, ["2023-10-02"], None, "banana", 20231002]:
