@@ -45,11 +45,14 @@ from press.press.doctype.communication_info.communication_info import (
 	get_communication_info,
 )
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
+from press.press.doctype.server.server_monitoring import RAVEN_SERVER_ALERTS_CHANNEL
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
 from press.utils import docs, fmt_timedelta, log_error
+from press.utils.raven import send_raven_message
+from press.utils.user import is_desk_user
 from press.wazuh import WazuhManager
 
 if typing.TYPE_CHECKING:
@@ -101,6 +104,7 @@ class AutoScaleTriggerRow(TypedDict):
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
+GLASS_FILE_SIZE = 200 * 1024 * 1024  # /root/glass, see glass_file.yml
 
 
 class BaseServer(Document, TagHelpers):
@@ -1009,10 +1013,16 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def update_agent_ansible(self):
+		self.validate_agent_update_allowed()
 		# ponytail: 1h, not the long queue's 1500s — a busy rq worker's warm shutdown alone is 1500s
 		frappe.enqueue_doc(self.doctype, self.name, "_update_agent_ansible", queue="long", timeout=3600)
 
+	def validate_agent_update_allowed(self):
+		if self.disable_agent_update:
+			frappe.throw(f"Agent update is disabled on {self.name}")
+
 	def _update_agent_ansible(self, throw_on_failure: bool = False):
+		self.validate_agent_update_allowed()
 		try:
 			agent_branch = frappe.get_value("Press Settings", "Press Settings", "branch")
 			if not agent_branch:
@@ -1061,10 +1071,8 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
-	def cleanup_unused_files(self, force: bool = False):
-		if self.is_build_server():
-			return
-
+	def cleanup_unused_files(self, force: bool = True):
+		# User-triggered cleanup forces; the scheduled sweep passes force=False.
 		with suppress(frappe.DoesNotExistError):
 			cleanup_job: "AgentJob" = frappe.get_last_doc(
 				"Agent Job", {"server": self.name, "job_type": "Cleanup Unused Files"}
@@ -1098,10 +1106,18 @@ class BaseServer(Document, TagHelpers):
 		return False
 
 	def _cleanup_unused_files(self, force: bool = False):
-		agent = Agent(self.name, self.doctype)
-		if agent.should_skip_requests():
+		if self.is_build_server():
 			return
+		agent = Agent(self.name, self.doctype)
+		if not force and agent.should_skip_requests():
+			return
+		if force and self.agent_disk_full():
+			self.break_glass()
 		agent.cleanup_unused_files(force)
+
+	def agent_disk_full(self) -> bool:
+		# On unified servers the agent shares the data disk; a full data volume starves it.
+		return self.free_space("/") < GLASS_FILE_SIZE
 
 	def on_trash(self):
 		plays = frappe.get_all("Ansible Play", filters={"server": self.name})
@@ -1782,9 +1798,24 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			ansible.run()
+			return ansible.run()
 		except Exception:
 			log_error("Add Glass File Exception", doc=self)
+			return None
+
+	def restore_glass_file(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_restore_glass_file", enqueue_after_commit=True)
+
+	def _restore_glass_file(self):
+		play = self._add_glass_file()
+		if play and play.status == "Success":
+			return
+		send_raven_message(
+			f"⚠️ Could not restore break-glass file on "
+			f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
+			f"after cleanup — server has no emergency disk buffer.",
+			RAVEN_SERVER_ALERTS_CHANNEL,
+		)
 
 	@frappe.whitelist()
 	def setup_mysqldump(self):
@@ -2629,6 +2660,25 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			return 22
 		return self.ssh_port or 22
 
+	@dashboard_whitelist()
+	def get_ssh_command(self):
+		"""SSH command that hops through the press server and the cluster's proxy."""
+		if not is_desk_user():
+			frappe.throw("Only system users can get the SSH command", frappe.PermissionError)
+
+		port = "" if self._ssh_port() == 22 else f" -p {self._ssh_port()}"
+		command = f"ssh{self._jump_through_proxy()} {self._ssh_user()}@{self.name}{port}"
+		return f"ssh frappe@{frappe.db.get_single_value('Press Settings', 'domain')} -t '{command}'"
+
+	def _jump_through_proxy(self):
+		"""Servers are reachable only through their proxy server."""
+		proxy = self.get("proxy_server") or frappe.db.get_value(
+			"Proxy Server", {"status": "Active", "cluster": self.cluster}, "name"
+		)
+		if not proxy or proxy == self.name:
+			return ""
+		return f" -J root@{proxy}"
+
 	def get_primary_frappe_public_key(self):
 		if primary_public_key := frappe.db.get_value(self.doctype, self.primary, "frappe_public_key"):
 			return primary_public_key
@@ -3041,6 +3091,7 @@ class Server(BaseServer):
 		database_server: DF.Link | None
 		db_healthcheck_token: DF.Password | None
 		disable_agent_job_auto_retry: DF.Check
+		disable_agent_update: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
 		enable_on_prem_failover_support: DF.Check
@@ -4429,9 +4480,18 @@ def cleanup_unused_files():
 	servers = frappe.get_all("Server", fields=["name"], filters={"status": "Active"})
 	for server in servers:
 		try:
-			frappe.get_doc("Server", server.name).cleanup_unused_files()
+			frappe.get_doc("Server", server.name)._cleanup_unused_files(force=False)
 		except Exception:
 			log_error("Server File Cleanup Error", server=server)
+
+
+def process_cleanup_unused_files_job_update(job):
+	# A forced cleanup breaks glass for room; restore the buffer once it settles.
+	if job.status not in ("Success", "Failure"):
+		return
+	if not json.loads(job.request_data or "{}").get("force"):
+		return
+	frappe.get_doc(job.server_type, job.server).restore_glass_file()
 
 
 def sync_wazuh_agent_status():

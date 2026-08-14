@@ -3220,5 +3220,29 @@
 				"step_name": "Pull Docker Images"
 			}
 		]
+	},
+	{
+		"disabled_auto_retry": 1,
+		"docstatus": 0,
+		"doctype": "Agent Job Type",
+		"max_retry_count": 3,
+		"modified": "2026-08-11 00:00:00.000000",
+		"name": "Upload Audit Logs To S3",
+		"request_method": "POST",
+		"request_path": "/database/audit-logs/upload",
+		"steps": [
+			{
+				"parent": "Upload Audit Logs To S3",
+				"parentfield": "steps",
+				"parenttype": "Agent Job Type",
+				"step_name": "Rotate Audit Log"
+			},
+			{
+				"parent": "Upload Audit Logs To S3",
+				"parentfield": "steps",
+				"parenttype": "Agent Job Type",
+				"step_name": "Upload Audit Logs To S3"
+			}
+		]
 	}
 ]

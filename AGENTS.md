@@ -8,6 +8,14 @@
 
 @commit-guidelines.md
 
+## Pull requests
+
+Never hard-wrap the PR description at 80 characters (or any width). GitHub
+renders it as markdown and wraps it for the reader; hand-wrapped lines break
+when the box is resized and are painful to edit. Let paragraphs run on one
+line. The 72-character limit applies to the commit header only, not the PR
+body.
+
 ## Running Tests
 
 Before running tests, always ask the user which site to use.
@@ -30,7 +38,7 @@ If the test site is missing doctypes, migrate it first (use `--skip-failing` to 
 bench --site <site> migrate --skip-failing
 ```
 
-See [guide-to-testing.md](guide-to-testing.md) for how to write tests for this project, and the [Frappe testing docs](https://docs.frappe.io/framework/user/en/testing) for framework-level testing reference.
+See [docs/code/testing](docs/code/testing/index.md) for how to write tests for this project, and the [Frappe testing docs](https://docs.frappe.io/framework/user/en/testing) for framework-level testing reference.
 
 ## Running UI Tests (Playwright)
 
@@ -56,10 +64,12 @@ ruff check press/
 ruff format press/
 ```
 
-JavaScript/Vue (via Biome):
+JavaScript/Vue (via Biome). Do NOT use `npx biome` — it resolves to an unrelated
+package (v0.3.3) that silently does nothing. Use the real Biome (v2.x) installed by
+the pre-commit hook, with the repo-root `biome.json` and absolute file paths:
 ```bash
-npx biome check dashboard/
-npx biome format dashboard/
+BIOME=$(ls ~/.cache/pre-commit/*/node_env-default/lib/node_modules/@biomejs/pre-commit/node_modules/@biomejs/cli-linux-x64/biome | head -1)
+"$BIOME" check --write --config-path="$(pwd)/biome.json" <absolute-paths>
 ```
 
 Set up pre-commit hooks once with:

@@ -52,6 +52,19 @@ class SupportAccess(Document):
 		"bench_ssh",
 	)
 
+	dashboard_insert_fields = (
+		"reason",
+		"resources",
+		"login_as_administrator",
+		"site_domains",
+		"site_release_group",
+		"bench_ssh",
+	)
+
+	# What the target team answers a request with. `validate_status_change` and
+	# `validate_validity_change` decide whether this caller may.
+	dashboard_editable_fields = ("allowed_for", "status")
+
 	def get_list_query(query, filters: dict | None, **args):
 		filters = filters or {}
 		team = get_current_team()

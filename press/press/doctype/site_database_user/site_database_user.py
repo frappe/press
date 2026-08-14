@@ -65,6 +65,15 @@ class SiteDatabaseUser(Document):
 		"use_replica_server",
 	)
 
+	dashboard_insert_fields = (
+		"label",
+		"site",
+		"mode",
+		"permissions",
+		"max_connections",
+		"use_replica_server",
+	)
+
 	def validate(self):
 		if not self.has_value_changed("status"):
 			self._raise_error_if_archived()

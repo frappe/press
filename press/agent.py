@@ -1216,8 +1216,11 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			result = self.get(f"benches/{site.bench}/sites/{site.name}/sid")
 		return result and result.get("sid")
 
-	def get_site_info(self, site):
-		result = self.get(f"benches/{site.bench}/sites/{site.name}/info")
+	def get_site_info(self, site, database_only=False):
+		path = f"benches/{site.bench}/sites/{site.name}/info"
+		if database_only:
+			path += "?database_only=1"
+		result = self.get(path)
 		if result:
 			return result["data"]
 		return None
@@ -1645,6 +1648,24 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Upload Binlogs To S3",
 			"/database/binlogs/upload",
 			data={"binlogs": binlogs, "offsite": offsite_config},
+		)
+
+	def upload_audit_logs_to_s3(self, database_server: DatabaseServer):
+		if self.server_type != "Database Server":
+			return NotImplementedError("Only Database Server supports this method")
+
+		cluster = frappe.get_value("Database Server", self.server, "cluster")
+		# Binlogs use the bare server name as prefix, so audit logs get their own keyspace
+		offsite_config = self._get_offsite_backup_config(cluster, backups_path=f"{self.server}/audit")
+
+		return self.create_agent_job(
+			"Upload Audit Logs To S3",
+			"/database/audit-logs/upload",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"offsite": offsite_config,
+			},
 		)
 
 	def add_binlogs_to_indexer(self, binlogs):

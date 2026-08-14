@@ -677,6 +677,12 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 				bench.archive()
 			bench.reload()
 
+	def test_bench_config_marks_bench_as_frappe_cloud_managed(self):
+		"""bench reads this key to warn before commands that desync the container."""
+		with fake_agent_job({"New Bench": {"status": "Success"}, "Add User to Proxy": {"status": "Success"}}):
+			bench = create_test_bench()
+			self.assertTrue(json.loads(bench.config)["frappe_cloud"])
+
 	def test_bench_and_release_group_redis_password(self):
 		with fake_agent_job({"New Bench": {"status": "Success"}, "Add User to Proxy": {"status": "Success"}}):
 			frappe.db.set_single_value("Press Settings", "set_redis_password", True)
