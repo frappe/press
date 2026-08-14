@@ -725,7 +725,7 @@ def backup_history(name: str, start_date: str, end_date: str, refresh: bool = Fa
 	from press.press.doctype.site_backup.backup_history import get_backup_history
 
 	if not isinstance(name, str):
-		frappe.throw("Site name must be text.")
+		frappe.throw("Could not read the site name. Give it as text, for example demo.frappe.cloud.")
 
 	return get_backup_history(name, start_date, end_date, refresh=cint(refresh))
 
