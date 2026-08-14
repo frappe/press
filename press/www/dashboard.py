@@ -8,6 +8,7 @@ from frappe.utils.caching import redis_cache
 from press.utils import (
 	chat_enabled,
 	get_default_team_for_user,
+	get_disabled_team_of_user,
 	get_valid_teams_for_user,
 )
 from press.utils.telemetry import pulse_boot_config
@@ -48,6 +49,7 @@ def get_boot():
 		press_site_name=frappe.conf.site,
 		site_name=frappe.local.site,
 		default_team=default_team,
+		account_disabled=bool(get_disabled_team_of_user(frappe.session.user)),
 		valid_teams=get_valid_teams_for_user(frappe.session.user),
 		chat_enabled=chat_enabled(),
 		is_system_user=frappe.session.data.user_type == "System User",
