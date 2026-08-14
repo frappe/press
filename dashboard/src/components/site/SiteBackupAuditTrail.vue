@@ -215,12 +215,12 @@ export default {
 	},
 	methods: {
 		onTrailBuilt(data) {
-			// Every site shares the event, so only the range on screen reacts to it
-			if (
-				data?.site === this.name &&
-				data?.start_date === this.startDate &&
-				data?.end_date === this.endDate
-			) {
+			if (data?.site !== this.name) return
+
+			// Match on the range the server says it used, not the one we asked with: it
+			// trims a start before the site existed and an end past today
+			const { start_date: start, end_date: end } = this.history
+			if (!start || (data.start_date === start && data.end_date === end)) {
 				this.$resources.history.fetch()
 			}
 		},
