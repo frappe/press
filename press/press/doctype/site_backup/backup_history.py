@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-import time
+from contextlib import suppress
 from datetime import date, timedelta
 from urllib.parse import parse_qs, urlparse
 
@@ -30,17 +30,14 @@ PARTIAL_CACHE_TTL = 60
 # Long enough to outlast a build, short enough that a lost worker does not wedge a range
 BUILD_TTL = 5 * 60
 
-# The server reads its job database as a job of its own, and Press delivers that job from
-# a queue, so the wait is a queue wait and not a request
-AGENT_WAIT_SECONDS = 60
-AGENT_POLL_SECONDS = 3
+# What the page listens on, so a finished build reaches it without asking
+REALTIME_EVENT = "backup_audit_trail_update"
 
-# Most servers run an agent without the route. The first ask finds out, and waits only
-# long enough for a healthy one to answer rather than the full wait.
-AGENT_PROBE_SECONDS = 10
+AGENT_JOB_TYPE = "Fetch Backup Jobs"
 
-# Learned once and kept, so a server that can answer is waited for properly
-AGENT_SUPPORTED_TTL = 30 * 24 * 60 * 60
+# A job the agent never acknowledged after this is not being delivered, and the trail
+# goes on without it rather than expecting it on every look
+UNDELIVERED_GRACE_SECONDS = 60
 
 # Keeps the IN clause sane on a year of daily backups
 REMOTE_FILE_BATCH = 500
@@ -81,17 +78,26 @@ def get_backup_history(site: str, start_date: str, end_date: str, refresh: bool 
 	"""
 	start, end = resolve_range(site, start_date, end_date)
 	if start > end:
-		return ready([])
+		return with_range(ready([]), start, end)
 
 	if refresh:
 		frappe.cache().delete_value(cache_key(site, start, end))
 
 	cached = frappe.cache().get_value(cache_key(site, start, end))
 	if cached is not None:
-		return cached
+		return with_range(cached, start, end)
 
 	queue_build(site, start, end)
-	return {"status": "Preparing", "days": [], "unconfirmed": False}
+	return with_range({"status": "Preparing", "days": [], "unconfirmed": False}, start, end)
+
+
+def with_range(history: dict, start: date, end: date) -> dict:
+	"""The range actually used, which is trimmed to the days the site could have.
+
+	The page keys its completion event off this, so it has to hear the trimmed dates
+	rather than the ones it asked with.
+	"""
+	return history | {"start_date": str(start), "end_date": str(end)}
 
 
 def ready(days: list[dict], unconfirmed: bool = False) -> dict:
@@ -129,11 +135,36 @@ def build_and_cache(site: str, start_date: str, end_date: str):
 		)
 	finally:
 		frappe.cache().delete_value(build_key(site, start, end))
+	publish_update(site, start_date, end_date)
+
+
+def publish_update(site: str, start: str, end: str):
+	"""Tell whoever is looking at this range that there is something new to read."""
+	frappe.publish_realtime(
+		event=REALTIME_EVENT,
+		doctype="Site",
+		docname=site,
+		message={"site": site, "start_date": str(start), "end_date": str(end)},
+	)
+
+
+def parse_day(value, which: str) -> date:
+	"""A date, or a plain error saying so. Callers include whitelisted API parameters."""
+	if isinstance(value, date):
+		return value
+
+	if isinstance(value, str):
+		with suppress(Exception):
+			if day := getdate(value):
+				return day
+
+	frappe.throw(f"Could not read the {which} date. Give it as YYYY-MM-DD, for example 2023-10-02.")
+	raise ValueError(which)  # frappe.throw already raised; this keeps the return type honest
 
 
 def resolve_range(site: str, start_date: str, end_date: str) -> tuple[date, date]:
 	"""Trim the asked-for range to days the site could have been backed up on."""
-	start, end = getdate(start_date), getdate(end_date)
+	start, end = parse_day(start_date, "start"), parse_day(end_date, "end")
 	if start > end:
 		frappe.throw(
 			f"The start date {start} comes after the end date {end}, so the range covers no days. "
@@ -189,12 +220,12 @@ def merge_stored(backups: dict[str, dict], stored: dict[str, dict]) -> dict[str,
 
 
 def await_agent_backup_jobs(site: str, start: date, end: date) -> tuple[dict[str, dict], bool]:
-	"""What the site's server remembers running, waited for rather than polled from a page.
+	"""What the site's server remembers running, if it has already said.
 
-	The server reads its job database as a job, and Press delivers that job from a queue,
-	so the answer is a minute away at worst. This runs in a background worker, which is
-	the right place to wait. Only the current server is asked: jobs a site ran before
-	moving stay on the server it left, and its objects come from the buckets it used.
+	The server reads its job database as a job of its own, so the answer is never ready
+	the first time. Nothing waits for it: the job's callback drops the built trail when
+	it lands, and the next build picks the answer up. Only the current server is asked,
+	since jobs a site ran before moving stay on the server it left.
 	"""
 	server = frappe.db.get_value("Site", site, "server")
 	if not server or is_agent_silenced(server):
@@ -202,14 +233,9 @@ def await_agent_backup_jobs(site: str, start: date, end: date) -> tuple[dict[str
 
 	answer = read_agent_answer(site, start, end)
 	if answer is None:
-		if not request_agent_backup_jobs(server, site, start, end):
-			return {}, False
-		# A server not yet known to answer is given a short look, not the full wait
-		seconds = AGENT_WAIT_SECONDS if is_agent_supported(server) else AGENT_PROBE_SECONDS
-		answer = wait_for_agent_answer(site, start, end, seconds)
-
-	if answer is None:
+		request_agent_backup_jobs(server, site, start, end)
 		return {}, False
+
 	# A truncated answer dropped the oldest days in the range, so it is not the whole story
 	return days_from_agent_jobs(answer["jobs"]), not answer.get("truncated")
 
@@ -218,28 +244,39 @@ def read_agent_answer(site: str, start: date, end: date) -> dict | None:
 	return frappe.cache().get_value(agent_answer_key(site, start, end))
 
 
-def wait_for_agent_answer(site: str, start: date, end: date, seconds: int) -> dict | None:
-	# Another worker delivers the job, so the job has to be visible to it before we wait
-	frappe.db.commit()
-
-	deadline = time.monotonic() + seconds
-	while time.monotonic() < deadline:
-		time.sleep(AGENT_POLL_SECONDS)
-		answer = read_agent_answer(site, start, end)
-		if answer is not None:
-			return answer
-	return None
-
-
 def request_agent_backup_jobs(server: str, site: str, start: date, end: date) -> bool:
-	"""Queue the read and commit, since another worker delivers the job to the agent."""
+	"""Queue the read, unless nothing is reaching this server or one is already stuck."""
+	agent = Agent(server)
+	# An Agent Request Failure row means the server is unreachable, and a job created
+	# now would only sit undelivered
+	if agent.should_skip_requests() or has_stuck_request(server):
+		return False
+
 	try:
 		# Deduplicated by Agent, so asking again while one is running adds nothing
-		Agent(server).fetch_site_backup_jobs(site, str(start), str(end))
+		agent.fetch_site_backup_jobs(site, str(start), str(end))
 	except Exception:
 		silence_agent(server)
 		return False
 	return True
+
+
+def has_stuck_request(server: str) -> bool:
+	"""A job the agent never gave an id to never reached it, delivery failure included."""
+	return bool(
+		frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": AGENT_JOB_TYPE,
+				"server": server,
+				"job_id": 0,
+				"creation": (
+					"<",
+					frappe.utils.add_to_date(None, seconds=-UNDELIVERED_GRACE_SECONDS),
+				),
+			},
+		)
+	)
 
 
 def days_from_agent_jobs(jobs: list[dict]) -> dict[str, dict]:
@@ -266,9 +303,6 @@ def process_fetch_backup_jobs_update(job):
 	if job.status != "Success" or not job.data:
 		return
 
-	# It answered once, so the next ask is worth waiting out
-	frappe.cache().set_value(agent_supported_key(job.server), 1, expires_in_sec=AGENT_SUPPORTED_TTL)
-
 	query = parse_qs(urlparse(job.request_path).query)
 	site, start, end = query.get("site"), query.get("start"), query.get("end")
 	if not (site and start and end):
@@ -279,14 +313,9 @@ def process_fetch_backup_jobs_update(job):
 		frappe.parse_json(job.data),
 		expires_in_sec=CACHE_TTL,
 	)
-
-
-def agent_supported_key(server: str) -> str:
-	return f"backup_audit_trail_agent_supported:{server}"
-
-
-def is_agent_supported(server: str) -> bool:
-	return bool(frappe.cache().get_value(agent_supported_key(server)))
+	# The trail was built without this, so drop it and tell the page to look again
+	frappe.cache().delete_value(cache_key(site[0], start[0], end[0]))
+	publish_update(site[0], start[0], end[0])
 
 
 def agent_silence_key(server: str) -> str:

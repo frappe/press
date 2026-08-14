@@ -26,8 +26,8 @@ import { getDocResource } from '../../utils/resource'
 import ObjectList from '../ObjectList.vue'
 
 const DEFAULT_RANGE_DAYS = 30
-const POLL_MS = 5000
-const MAX_POLLS = 24
+// The build tells the page when it is done, so nothing is asked for on a timer
+const REALTIME_EVENT = 'backup_audit_trail_update'
 
 export default {
 	name: 'SiteBackupAuditTrail',
@@ -35,40 +35,40 @@ export default {
 	components: { ObjectList },
 	data() {
 		return {
-			startDate: null,
+			// Set here, not in created: the resource fetches before the component's own
+			// hooks run, and would send nothing. The server trims what it is given.
+			startDate: dayjs()
+				.subtract(DEFAULT_RANGE_DAYS, 'day')
+				.format('YYYY-MM-DD'),
 			endDate: dayjs().format('YYYY-MM-DD'),
-			pollTimer: null,
-			polls: 0,
 		}
 	},
-	beforeUnmount() {
-		clearTimeout(this.pollTimer)
+	mounted() {
+		this.$socket?.on(REALTIME_EVENT, this.onTrailBuilt)
 	},
-	created() {
-		this.startDate = this.clampToSiteAge(
-			dayjs().subtract(DEFAULT_RANGE_DAYS, 'day').format('YYYY-MM-DD'),
-			{ quiet: true },
-		)
+	beforeUnmount() {
+		this.$socket?.off(REALTIME_EVENT, this.onTrailBuilt)
 	},
 	resources: {
 		history() {
 			return {
-				url: 'press.api.client.run_doc_method',
+				// Its own endpoint rather than a doc method, which would return the whole
+				// Site document alongside every answer
+				url: 'press.api.site.backup_history',
 				initialData: {},
 				makeParams: (params) => ({
-					dt: 'Site',
-					dn: this.name,
-					method: 'get_backup_history',
-					args: {
-						start_date: this.startDate,
-						end_date: this.endDate,
-						refresh: params?.refresh ? 1 : 0,
-					},
+					name: this.name,
+					start_date: this.startDate,
+					end_date: this.endDate,
+					refresh: params?.refresh ? 1 : 0,
 				}),
 				auto: true,
-				// Re-armed on every answer: watching the flag would stop after one look,
-				// because a second Preparing in a row is not a change
-				onSuccess: () => this.pollWhilePreparing(),
+				// The dates the pickers show follow the range the trail was built for,
+				// which is trimmed to the days this site could have been backed up on
+				onSuccess: (data) => {
+					if (data?.start_date) this.startDate = data.start_date
+					if (data?.end_date) this.endDate = data.end_date
+				},
 			}
 		},
 	},
@@ -80,7 +80,7 @@ export default {
 			return dayjs(this.site.doc?.creation).format('YYYY-MM-DD')
 		},
 		history() {
-			return this.$resources.history.data?.message || {}
+			return this.$resources.history.data || {}
 		},
 		preparing() {
 			return this.history.status === 'Preparing'
@@ -98,9 +98,7 @@ export default {
 			if (this.preparing) {
 				return {
 					title:
-						this.polls < MAX_POLLS
-							? 'Putting the trail together. This page will fill in on its own.'
-							: 'This is taking longer than usual. Hit Refresh to look again.',
+						'Putting the trail together. This page will fill in on its own.',
 					type: 'info',
 					id: `${this.name}-preparing`,
 				}
@@ -201,7 +199,6 @@ export default {
 				updateFilters: ({ startDate, endDate }) => {
 					if (startDate) this.startDate = this.clampToSiteAge(startDate)
 					if (endDate) this.endDate = this.clampToSiteAge(endDate)
-					this.polls = 0
 					this.$resources.history.fetch()
 				},
 				actions: () => [
@@ -221,26 +218,24 @@ export default {
 		},
 	},
 	methods: {
-		pollWhilePreparing() {
-			clearTimeout(this.pollTimer)
-			if (!this.preparing || this.polls >= MAX_POLLS) return
-			this.polls += 1
-			this.pollTimer = setTimeout(
-				() => this.$resources.history.fetch(),
-				POLL_MS,
-			)
+		onTrailBuilt(data) {
+			if (data?.site !== this.name) return
+
+			// Match on the range the server says it used, not the one we asked with: it
+			// trims a start before the site existed and an end past today
+			const { start_date: start, end_date: end } = this.history
+			if (!start || (data.start_date === start && data.end_date === end)) {
+				this.$resources.history.fetch()
+			}
 		},
 		rebuild() {
-			this.polls = 0
 			this.$resources.history.fetch({ refresh: true })
 		},
-		clampToSiteAge(day, { quiet = false } = {}) {
+		clampToSiteAge(day) {
 			if (!this.site.doc?.creation || day >= this.siteCreatedOn) return day
-			if (!quiet) {
-				toast.info(
-					`This site was created on ${date(this.siteCreatedOn, 'll')}, so that is the earliest date available.`,
-				)
-			}
+			toast.info(
+				`This site was created on ${date(this.siteCreatedOn, 'll')}, so that is the earliest date available.`,
+			)
 			return this.siteCreatedOn
 		},
 		exportCSV() {

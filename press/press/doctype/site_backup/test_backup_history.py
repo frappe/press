@@ -11,14 +11,18 @@ from moto import mock_aws
 
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.backup_history import (
+	AGENT_JOB_TYPE,
 	CACHE_TTL,
 	MAX_RANGE_DAYS,
 	PARTIAL_CACHE_TTL,
+	REALTIME_EVENT,
 	agent_answer_key,
 	build_and_cache,
+	cache_key,
 	cache_seconds,
 	get_backup_history,
 	process_fetch_backup_jobs_update,
+	read_agent_answer,
 	ready,
 )
 
@@ -39,6 +43,10 @@ class TestBackupHistory(FrappeTestCase):
 		frappe.db.set_value("Site", self.site.name, "creation", "2023-01-01 00:00:00", update_modified=False)
 		self.setup_press_settings()
 		boto3.client("s3", region_name=REGION).create_bucket(Bucket=BUCKET)
+		# Building a test bench leaves failures against its server, which would make
+		# every test look like it is talking to an unreachable agent
+		frappe.db.delete("Agent Request Failure", {"server": self.server})
+
 		# The server answers as a job of its own, so tests leave its answer in the
 		# cache the way the job callback would, and stub the queueing
 		agent = patch("press.press.doctype.site_backup.backup_history.Agent.fetch_site_backup_jobs")
@@ -57,17 +65,48 @@ class TestBackupHistory(FrappeTestCase):
 		enqueue = patch.object(frappe, "enqueue", side_effect=run_build_inline)
 		self.enqueue_build = enqueue.start()
 		self.addCleanup(enqueue.stop)
-		wait = patch(
-			"press.press.doctype.site_backup.backup_history.wait_for_agent_answer",
-			return_value=None,
-		)
-		self.wait_for_agent = wait.start()
-		self.addCleanup(wait.stop)
+		realtime = patch("press.press.doctype.site_backup.backup_history.frappe.publish_realtime")
+		self.publish_realtime = realtime.start()
+		self.addCleanup(realtime.stop)
 
 	def audit_trail(self, start: str, end: str) -> dict:
 		"""The first look starts the build. It finishes inline here, so look again."""
 		get_backup_history(self.site.name, start, end)
 		return get_backup_history(self.site.name, start, end)
+
+	def given_undelivered_job(self, minutes_ago: int):
+		"""A job the agent never acknowledged, which leaves job_id at 0."""
+		if not frappe.db.exists("Agent Job Type", AGENT_JOB_TYPE):
+			frappe.get_doc(
+				{
+					"doctype": "Agent Job Type",
+					"name": AGENT_JOB_TYPE,
+					"request_method": "POST",
+					"request_path": "server/backup-jobs",
+					"steps": [{"step_name": AGENT_JOB_TYPE}],
+				}
+			).insert(ignore_permissions=True)
+
+		job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"server_type": "Server",
+				"server": self.server,
+				"site": self.site.name,
+				"status": "Undelivered",
+				"job_type": AGENT_JOB_TYPE,
+				"request_method": "POST",
+				"request_path": "server/backup-jobs",
+				"request_data": "{}",
+			}
+		).insert(ignore_permissions=True)
+		frappe.db.set_value(
+			"Agent Job",
+			job.name,
+			"creation",
+			frappe.utils.add_to_date(None, minutes=-minutes_ago),
+			update_modified=False,
+		)
 
 	def build_calls(self) -> int:
 		return sum(1 for call in self.enqueue_build.call_args_list if call.args[0] == BUILD_METHOD)
@@ -82,10 +121,12 @@ class TestBackupHistory(FrappeTestCase):
 
 	def tearDown(self):
 		# The silence flag lives in redis, which no rollback undoes
-		frappe.cache().delete_value(
-			f"backup_audit_trail_agent_unavailable:{frappe.db.get_value('Site', self.site.name, 'server')}"
-		)
+		frappe.cache().delete_value(f"backup_audit_trail_agent_unavailable:{self.server}")
 		frappe.db.rollback()
+
+	@property
+	def server(self) -> str:
+		return frappe.db.get_value("Site", self.site.name, "server")
 
 	def setup_press_settings(self):
 		settings = frappe.get_single("Press Settings")
@@ -544,6 +585,123 @@ class TestBackupHistory(FrappeTestCase):
 		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
 
 		self.assertEqual(day["status"], "Not Available")
+
+	def test_a_build_never_waits_on_the_server(self):
+		"""Sleeping here would hold a long queue worker while the agent job is delivered."""
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_called_once()
+		self.assertIsNone(read_agent_answer(self.site.name, "2023-10-02", "2023-10-02"))
+
+	def test_a_finished_build_tells_the_page_to_look_again(self):
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		events = [call.kwargs.get("event") for call in self.publish_realtime.call_args_list]
+		self.assertIn(REALTIME_EVENT, events)
+
+	def test_the_servers_answer_drops_the_trail_built_without_it(self):
+		"""Otherwise the answer sits behind an hour-old trail that was built ignoring it."""
+		day = frappe.utils.getdate("2023-10-02")
+		self.audit_trail("2023-10-02", "2023-10-02")
+		self.assertIsNotNone(frappe.cache().get_value(cache_key(self.site.name, day, day)))
+
+		process_fetch_backup_jobs_update(
+			self.fake_job(data={"jobs": [self.agent_job("2023-10-02 04:00:00")], "truncated": False})
+		)
+
+		self.assertIsNone(frappe.cache().get_value(cache_key(self.site.name, day, day)))
+
+	def test_an_unreachable_server_is_not_asked(self):
+		"""An Agent Request Failure row means nothing is getting through to it."""
+		frappe.get_doc(
+			{
+				"doctype": "Agent Request Failure",
+				"server_type": "Server",
+				"server": self.server,
+				"failure_count": 1,
+				"error": "Connection refused",
+				"traceback": "Connection refused",
+			}
+		).insert(ignore_permissions=True)
+		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz", body=b"x" * 8)
+
+		history = self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_not_called()
+		# The buckets still answer, so the trail is not held up by the server
+		self.assertEqual(history["days"][0]["database"], 8)
+
+	def test_a_job_left_undelivered_is_not_waited_on(self):
+		self.given_undelivered_job(minutes_ago=5)
+
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_not_called()
+
+	def test_a_job_only_just_queued_still_counts(self):
+		self.given_undelivered_job(minutes_ago=0)
+
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_called_once()
+
+	def test_a_trimmed_range_comes_back_with_the_trail(self):
+		"""The page keys its completion event off this, so it has to be the used range."""
+		history = get_backup_history(self.site.name, "2022-06-01", "2023-01-05")
+
+		self.assertEqual(history["start_date"], "2023-01-01")
+		self.assertEqual(history["end_date"], "2023-01-05")
+
+	def test_a_future_end_comes_back_trimmed_to_today(self):
+		today = frappe.utils.getdate()
+
+		history = get_backup_history(self.site.name, str(today), str(frappe.utils.add_days(today, 30)))
+
+		self.assertEqual(history["end_date"], str(today))
+
+	def test_the_event_carries_the_same_range_the_trail_reports(self):
+		history = self.audit_trail("2022-06-01", "2023-01-05")
+
+		published = [
+			call.kwargs["message"]
+			for call in self.publish_realtime.call_args_list
+			if call.kwargs.get("event") == REALTIME_EVENT
+		]
+		self.assertIn(
+			{
+				"site": self.site.name,
+				"start_date": history["start_date"],
+				"end_date": history["end_date"],
+			},
+			published,
+		)
+
+	def test_a_site_name_that_is_not_text_is_rejected_plainly(self):
+		from press.api.site import backup_history
+
+		for value in [{"a": 1}, ["x"], 5]:
+			with self.subTest(value=value):
+				self.assertRaisesRegex(
+					frappe.ValidationError,
+					"Could not read the site name",
+					backup_history,
+					value,
+					"2023-10-01",
+					"2023-10-02",
+				)
+
+	def test_a_date_that_is_not_a_date_is_rejected_plainly(self):
+		"""Whitelisted parameters arrive as whatever the caller sent."""
+		for value in [{"a": 1}, ["2023-10-02"], None, "banana", 20231002]:
+			with self.subTest(value=value):
+				self.assertRaisesRegex(
+					frappe.ValidationError,
+					"Could not read the start date",
+					get_backup_history,
+					self.site.name,
+					value,
+					"2023-10-02",
+				)
 
 	def test_reversed_range_is_rejected(self):
 		self.assertRaisesRegex(
