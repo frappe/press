@@ -252,6 +252,11 @@ class SiteUpdate(Document):
 		site: "Site" = frappe.get_doc("Site", self.site)
 		return cint(site.get_disk_usages()["database"])
 
+	@property
+	def database_server_provider(self) -> str | None:
+		database_server = frappe.get_value("Server", self.server, "database_server")
+		return database_server and frappe.get_value("Database Server", database_server, "provider")
+
 	def validate_backup_type_for_large_database(self):
 		"""A logical backup of a huge database takes too long and often fails mid-update.
 
@@ -261,6 +266,10 @@ class SiteUpdate(Document):
 			return
 
 		if self.database_size <= LARGE_DATABASE_SIZE_MB:
+			return
+
+		# Physical backup needs AWS EBS snapshots. Elsewhere support can't help either.
+		if self.database_server_provider != "AWS EC2":
 			return
 
 		frappe.throw(
