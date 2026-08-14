@@ -35,7 +35,11 @@ export default {
 	components: { ObjectList },
 	data() {
 		return {
-			startDate: null,
+			// Set here, not in created: the resource fetches before the component's own
+			// hooks run, and would send nothing. The server trims what it is given.
+			startDate: dayjs()
+				.subtract(DEFAULT_RANGE_DAYS, 'day')
+				.format('YYYY-MM-DD'),
 			endDate: dayjs().format('YYYY-MM-DD'),
 		}
 	},
@@ -44,12 +48,6 @@ export default {
 	},
 	beforeUnmount() {
 		this.$socket?.off(REALTIME_EVENT, this.onTrailBuilt)
-	},
-	created() {
-		this.startDate = this.clampToSiteAge(
-			dayjs().subtract(DEFAULT_RANGE_DAYS, 'day').format('YYYY-MM-DD'),
-			{ quiet: true },
-		)
 	},
 	resources: {
 		history() {
@@ -65,6 +63,12 @@ export default {
 					refresh: params?.refresh ? 1 : 0,
 				}),
 				auto: true,
+				// The dates the pickers show follow the range the trail was built for,
+				// which is trimmed to the days this site could have been backed up on
+				onSuccess: (data) => {
+					if (data?.start_date) this.startDate = data.start_date
+					if (data?.end_date) this.endDate = data.end_date
+				},
 			}
 		},
 	},
@@ -227,13 +231,11 @@ export default {
 		rebuild() {
 			this.$resources.history.fetch({ refresh: true })
 		},
-		clampToSiteAge(day, { quiet = false } = {}) {
+		clampToSiteAge(day) {
 			if (!this.site.doc?.creation || day >= this.siteCreatedOn) return day
-			if (!quiet) {
-				toast.info(
-					`This site was created on ${date(this.siteCreatedOn, 'll')}, so that is the earliest date available.`,
-				)
-			}
+			toast.info(
+				`This site was created on ${date(this.siteCreatedOn, 'll')}, so that is the earliest date available.`,
+			)
 			return this.siteCreatedOn
 		},
 		exportCSV() {
