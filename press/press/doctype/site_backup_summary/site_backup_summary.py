@@ -126,14 +126,18 @@ def _update_backup_summaries():
 			log_error("Backup Summary Rollup Failed", site=site)
 
 
-def backfill_backup_summaries(months: int = 12):
-	"""Summarise the backups Press still has, so the trail doesn't start empty.
+def backfill_backup_summaries(sites: list[str], months: int = 12):
+	"""Summarise the backups Press still holds for these sites.
 
-	Only reaches as far back as the Site Backup rows themselves: days pruned before this
-	ran are answered by the bucket, or not at all.
+	Named sites only, run by hand for an audit that asks about months before the nightly
+	pass existed. There are tens of thousands of sites with as many backups again, and
+	walking all of them to fill history nobody has asked for is not worth what it costs.
+
+	It only reaches as far back as the Site Backup rows themselves: days pruned before
+	this runs are the bucket's word, or nothing.
 	"""
 	since = add_to_date(None, months=-months)
-	for site in changed_sites(since):
+	for site in sites:
 		try:
 			record_site_backups(site, since)
 			frappe.db.commit()
