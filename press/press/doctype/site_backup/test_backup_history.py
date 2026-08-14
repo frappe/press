@@ -25,6 +25,7 @@ from press.press.doctype.site_backup.backup_history import (
 	read_agent_answer,
 	ready,
 )
+from press.press.doctype.site_backup_summary.site_backup_summary import record_days
 
 BUILD_METHOD = "press.press.doctype.site_backup.backup_history.build_and_cache"
 
@@ -310,7 +311,24 @@ class TestBackupHistory(FrappeTestCase):
 
 		history = self.audit_trail("2023-10-01", "2023-10-03")["days"]
 
-		keys = {"date", "status", "database", "public", "private", "config"}
+		keys = {
+			"date",
+			"status",
+			"database",
+			"public",
+			"private",
+			"config",
+			"files",
+			"source",
+			"expired_on",
+			"rule",
+			"keep_till",
+			"sizes_known",
+			"started_at",
+			"offsite",
+			"with_files",
+			"physical",
+		}
 		self.assertEqual([set(day) for day in history], [keys, keys, keys])
 
 	def test_replicated_bucket_is_read_instead_of_the_primary(self):
@@ -570,7 +588,7 @@ class TestBackupHistory(FrappeTestCase):
 		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz", size=64)
 
 		with patch(
-			"press.press.doctype.site_backup.backup_history.get_decrypted_password",
+			"press.press.doctype.site_backup.backup_objects.get_decrypted_password",
 			return_value=None,
 		):
 			history = self.audit_trail("2023-10-01", "2023-10-02")
@@ -722,3 +740,148 @@ class TestBackupHistory(FrappeTestCase):
 			"2023-01-01",
 			"2024-12-31",
 		)
+
+	def record_expired_backup(self, day: str, rule: str = "Daily", expired_on: str = "2023-10-09"):
+		"""A backup whose files retention has since deleted, which is most of an audit's range."""
+		remote_file = self.record_backup(day, f"{day.replace('-', '')}_000502-database.sql.gz")
+		backup = frappe.db.get_value("Site Backup", {"remote_database_file": remote_file.name})
+		frappe.db.set_value(
+			"Site Backup",
+			backup,
+			{
+				"database_size": 4096,
+				"files_availability": "Unavailable",
+				"files_expired_on": expired_on,
+				"retention_rule": rule,
+			},
+		)
+		return backup
+
+	def summarise(self, days: dict):
+		"""What the nightly roll-up leaves behind once the records are pruned."""
+		record_days(self.site.name, days)
+
+	def test_a_day_whose_files_retention_deleted_still_reports_their_size(self):
+		self.record_expired_backup("2023-10-02")
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["status"], "Success")
+		self.assertEqual(day["database"], 4096)
+		self.assertTrue(day["sizes_known"])
+
+	def test_a_day_whose_files_retention_deleted_says_when_and_under_which_rule(self):
+		self.record_expired_backup("2023-10-02", rule="Weekly", expired_on="2023-11-02")
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["files"], "Deleted")
+		self.assertEqual(day["rule"], "Weekly")
+		self.assertTrue(day["expired_on"].startswith("2023-11-02"))
+
+	def test_a_day_whose_files_are_still_stored_says_so(self):
+		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz")
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["files"], "Stored")
+		self.assertEqual(day["source"], "Press record")
+
+	def test_a_stored_day_names_the_tier_holding_it_and_how_long(self):
+		frappe.db.set_single_value("Press Settings", "backup_rotation_scheme", "Grandfather-father-son")
+		self.record_backup("2023-10-04", "20231004_000502-database.sql.gz")
+
+		day = self.audit_trail("2023-10-04", "2023-10-04")["days"][0]
+
+		self.assertEqual(day["rule"], "Daily")
+		self.assertEqual(day["keep_till"], "2023-10-11")
+
+	def test_a_day_holding_nothing_but_the_config_object_reports_the_files_as_deleted(self):
+		self.upload_backup("2023-10-02", "20231002_000502-site_config_backup.json", body=b"c" * 24)
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["status"], "Success")
+		self.assertEqual(day["files"], "Deleted")
+		self.assertFalse(day["sizes_known"])
+
+	def test_a_day_holding_a_database_object_reports_the_files_as_stored(self):
+		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz", body=b"d" * 64)
+		self.upload_backup("2023-10-02", "20231002_000502-site_config_backup.json", body=b"c" * 24)
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["files"], "Stored")
+		self.assertTrue(day["sizes_known"])
+
+	def test_a_failed_backup_press_recorded_is_reported_without_asking_the_server(self):
+		frappe.get_doc(
+			{
+				"doctype": "Site Backup",
+				"site": self.site.name,
+				"status": "Failure",
+				"creation": "2023-10-02 04:00:00",
+			}
+		).db_insert()
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["status"], "Failure")
+		self.assertEqual(day["files"], "None")
+		self.assertEqual(day["source"], "Press record")
+
+	def test_a_day_press_no_longer_has_a_record_of_is_answered_by_the_summary(self):
+		self.summarise(
+			{
+				"2023-10-02": {
+					"date": "2023-10-02",
+					"status": "Success",
+					"files": "Deleted",
+					"rule": "Daily",
+					"expired_on": "2023-10-09",
+					"sizes_known": True,
+					"database": 8192,
+				}
+			}
+		)
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["status"], "Success")
+		self.assertEqual(day["database"], 8192)
+		self.assertEqual(day["rule"], "Daily")
+		self.assertEqual(day["source"], "Daily summary")
+
+	def test_a_record_answers_ahead_of_the_summary_for_the_same_day(self):
+		self.summarise({"2023-10-02": {"date": "2023-10-02", "status": "Success", "database": 1}})
+		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz", size=2048)
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["database"], 2048)
+		self.assertEqual(day["source"], "Press record")
+
+	def test_the_summary_is_not_read_when_records_cover_every_day(self):
+		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz")
+
+		with patch(
+			"press.press.doctype.site_backup.backup_history.get_summarised_days"
+		) as get_summarised_days:
+			self.audit_trail("2023-10-02", "2023-10-02")
+
+		get_summarised_days.assert_not_called()
+
+	def test_a_day_the_server_answered_for_says_the_files_are_unknown(self):
+		self.given_agent_jobs([self.agent_job("2023-10-02 04:00:00")])
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["files"], "Unknown")
+		self.assertEqual(day["source"], "Server job log")
+
+	def test_a_day_nothing_answered_for_reports_no_source(self):
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["status"], "Not Available")
+		self.assertIsNone(day["source"])
+		self.assertFalse(day["sizes_known"])
