@@ -8,6 +8,7 @@ from frappe.tests.ui_test_helpers import create_test_user
 from press.api.account import (
 	accept_team_invite,
 	leave_team,
+	logout_from_all_devices,
 	set_2fa_recovery_code_reminders,
 	signup,
 	validate_pincode,
@@ -26,12 +27,14 @@ from press.press.doctype.user_2fa.test_user_2fa import create_test_user_2fa
 def user_context(user: str):
 	"""Run the wrapped block as `user`, restoring the session afterwards."""
 	session_user = frappe.session.user
+	session_sid = frappe.session.sid
 	session_data = frappe.session.data.copy()
 	try:
 		frappe.set_user(user)
 		yield
 	finally:
 		frappe.set_user(session_user)
+		frappe.session.sid = session_sid
 		frappe.session.data = session_data
 
 
@@ -63,11 +66,114 @@ class TestAccountApi(TestCase):
 			signup(email)
 		return mock_send_email
 
+	def _create_session(self, user: str, sid: str | None = None) -> str:
+		sid = sid or frappe.generate_hash(length=32)
+		sessions = frappe.qb.DocType("Sessions")
+
+		(
+			frappe.qb.into(sessions)
+			.columns(sessions.sessiondata, sessions.user, sessions.lastupdate, sessions.sid, sessions.status)
+			.insert((frappe.as_json({"user": user}), user, frappe.utils.now(), sid, "Active"))
+		).run()
+
+		return sid
+
+	def _delete_session_without_commit(self, sid=None, **_kwargs):
+		frappe.db.delete("Sessions", {"sid": sid})
+
 	def test_account_request_is_created_from_signup(self):
 		acc_req_count_before = frappe.db.count("Account Request")
 		self._fake_signup()
 		acc_req_count_after = frappe.db.count("Account Request")
 		self.assertGreater(acc_req_count_after, acc_req_count_before)
+
+	def test_logout_from_all_devices_clears_other_sessions_and_keeps_current(self):
+		user = frappe.mock("email")
+		create_test_user(user)
+		frappe.db.set_value("User", user, "simultaneous_sessions", 3)
+		current_sid = self._create_session(user)
+		other_sid = self._create_session(user)
+		another_sid = self._create_session(user)
+
+		with (
+			user_context(user),
+			patch("frappe.sessions.delete_session", side_effect=self._delete_session_without_commit),
+		):
+			frappe.session.sid = current_sid
+
+			logout_from_all_devices()
+
+			self.assertTrue(frappe.db.exists("Sessions", {"sid": current_sid}))
+			self.assertFalse(frappe.db.exists("Sessions", {"sid": other_sid}))
+			self.assertFalse(frappe.db.exists("Sessions", {"sid": another_sid}))
+			self.assertEqual(frappe.session.user, user)
+
+	def test_logout_from_all_devices_with_only_current_session_does_not_error(self):
+		user = frappe.mock("email")
+		create_test_user(user)
+		current_sid = self._create_session(user)
+
+		with (
+			user_context(user),
+			patch("frappe.sessions.delete_session", side_effect=self._delete_session_without_commit),
+		):
+			frappe.session.sid = current_sid
+
+			logout_from_all_devices()
+
+			self.assertTrue(frappe.db.exists("Sessions", {"sid": current_sid}))
+			self.assertEqual(frappe.db.count("Sessions", {"user": user}), 1)
+
+	def test_logout_from_all_devices_rejects_guest_call(self):
+		from frappe.handler import execute_cmd
+
+		request = getattr(frappe.local, "request", None)
+		form_dict = frappe.local.form_dict
+
+		try:
+			with user_context("Guest"):
+				frappe.local.request = frappe._dict(method="POST")
+				frappe.local.form_dict = frappe._dict(cmd="press.api.account.logout_from_all_devices")
+
+				with self.assertRaises(frappe.PermissionError):
+					execute_cmd(frappe.local.form_dict.cmd)
+		finally:
+			frappe.local.request = request
+			frappe.local.form_dict = form_dict
+
+	def test_accept_team_invite_with_blank_existing_member_role(self):
+		team = create_test_team()
+		existing_member = frappe.mock("email")
+		create_test_user(existing_member)
+		team.append("team_members", {"user": existing_member})
+		team.save(ignore_permissions=True)
+		member = frappe.db.get_value(
+			"Team Member",
+			{"parent": team.name, "user": existing_member},
+			"name",
+		)
+		frappe.db.set_value("Team Member", member, "role", "")
+
+		invited_member = frappe.mock("email")
+		create_test_user(invited_member)
+		key = frappe.generate_hash(length=32)
+		account_request = frappe.get_doc(
+			{
+				"doctype": "Account Request",
+				"team": team.name,
+				"email": invited_member,
+				"invited_by": team.user,
+				"request_key": key,
+				"request_key_expiration_time": frappe.utils.add_days(frappe.utils.now_datetime(), 1),
+			}
+		).insert(ignore_permissions=True)
+
+		with user_context(invited_member):
+			accept_team_invite(key)
+
+		self.assertTrue(frappe.db.exists("Team Member", {"parent": team.name, "user": invited_member}))
+		self.assertEqual(frappe.db.get_value("Team Member", member, "role"), "Member")
+		self.assertFalse(frappe.db.get_value("Account Request", account_request.name, "request_key"))
 
 	def test_invite_team_member_accepts_custom_role_by_press_role_name(self):
 		"""The invite dialog sends the Press Role document name (a hash) for
