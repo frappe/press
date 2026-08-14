@@ -8,7 +8,7 @@ import typing
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, flt, getdate
+from frappe.utils import cint, flt, formatdate, getdate
 from frappe.utils.data import fmt_money
 
 from press.api.billing import get_stripe
@@ -833,24 +833,7 @@ class Invoice(Document):
 	def update_item_descriptions(self):
 		for item in self.items:
 			if not item.description:
-				how_many_days = f"{cint(item.quantity)} day{'s' if item.quantity > 1 else ''}"
-				if item.document_type == "Site" and item.plan:
-					site_name = item.document_name.split(".archived")[0]
-					plan = frappe.get_cached_value("Site Plan", item.plan, "plan_title")
-					item.description = f"{site_name} active for {how_many_days} on {plan} plan"
-				elif item.document_type in ["Server", "Database Server"]:
-					server_title = frappe.get_cached_value(item.document_type, item.document_name, "title")
-					if item.plan == "Add-on Storage plan":
-						item.description = f"{server_title} Storage Add-on for {how_many_days}"
-					else:
-						item.description = f"{server_title} active for {how_many_days}"
-				elif item.document_type == "Server Snapshot":
-					item.description = f"{item.document_name} stored for {how_many_days}"
-				elif item.document_type == "Marketplace App":
-					app_title = frappe.get_cached_value("Marketplace App", item.document_name, "title")
-					item.description = f"Marketplace app {app_title} active for {how_many_days}"
-				else:
-					item.description = "Prepaid Credits"
+				item.description = get_item_description(item) + get_item_period_text(item)
 
 	def is_auto_scale_invoice_item(self, usage_record: UsageRecord) -> bool:
 		"""Check if this a secondary server usage record"""
@@ -928,11 +911,36 @@ class Invoice(Document):
 		else:
 			invoice_item.quantity = (invoice_item.quantity or 0) + 1
 
+		self.widen_item_period(invoice_item, usage_record_date)
+
 		if usage_record.payout:
 			self.payout += usage_record.payout
 
 		self.save()
 		usage_record.db_set("invoice", self.name)
+
+	def widen_item_period(self, invoice_item, usage_record_date):
+		"""Grow the item's billed period to include this usage record's date"""
+		if not invoice_item.period_start or getdate(invoice_item.period_start) > usage_record_date:
+			invoice_item.period_start = usage_record_date
+		if not invoice_item.period_end or getdate(invoice_item.period_end) < usage_record_date:
+			invoice_item.period_end = usage_record_date
+
+	def set_item_periods(self):
+		"""Read the billed period of every item back from the usage records it bills for"""
+		for invoice_item in self.items:
+			invoice_item.period_start = None
+			invoice_item.period_end = None
+
+		usage_records = frappe.get_all(
+			"Usage Record",
+			filters={"invoice": self.name, "docstatus": 1},
+			fields=["document_type", "document_name", "plan", "amount", "site", "date"],
+		)
+		for usage_record in usage_records:
+			invoice_item = self.get_invoice_item_for_usage_record(usage_record)
+			if invoice_item:
+				self.widen_item_period(invoice_item, getdate(usage_record.date))
 
 	def remove_usage_record(self, usage_record):
 		if self.type != "Subscription":
@@ -953,8 +961,10 @@ class Invoice(Document):
 			return
 
 		invoice_item.quantity -= 1
-		self.save()
+		# unlink first, so that the periods are read back from the remaining usage records
 		usage_record.db_set("invoice", None)
+		self.set_item_periods()
+		self.save()
 
 	def get_invoice_item_for_usage_record(self, usage_record):
 		invoice_item = None
@@ -1377,6 +1387,34 @@ class Invoice(Document):
 			return None
 		stripe = get_stripe()
 		return stripe.Invoice.retrieve(self.stripe_invoice_id)
+
+
+def get_item_description(item):
+	how_many_days = f"{cint(item.quantity)} day{'s' if item.quantity > 1 else ''}"
+	if item.document_type == "Site" and item.plan:
+		site_name = item.document_name.split(".archived")[0]
+		plan = frappe.get_cached_value("Site Plan", item.plan, "plan_title")
+		return f"{site_name} active for {how_many_days} on {plan} plan"
+	if item.document_type in ["Server", "Database Server"]:
+		server_title = frappe.get_cached_value(item.document_type, item.document_name, "title")
+		if item.plan == "Add-on Storage plan":
+			return f"{server_title} Storage Add-on for {how_many_days}"
+		return f"{server_title} active for {how_many_days}"
+	if item.document_type == "Server Snapshot":
+		return f"{item.document_name} stored for {how_many_days}"
+	if item.document_type == "Marketplace App":
+		app_title = frappe.get_cached_value("Marketplace App", item.document_name, "title")
+		return f"Marketplace app {app_title} active for {how_many_days}"
+	return "Prepaid Credits"
+
+
+def get_item_period_text(item):
+	"""Tell the customer which days of the invoice period the item bills for"""
+	if not item.period_start or not item.period_end:
+		return ""
+	if getdate(item.period_start) == getdate(item.period_end):
+		return f" on {formatdate(item.period_start)}"
+	return f" from {formatdate(item.period_start)} to {formatdate(item.period_end)}"
 
 
 def finalize_draft_invoices():

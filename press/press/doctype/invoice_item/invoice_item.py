@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -26,6 +25,8 @@ class InvoiceItem(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		period_end: DF.Date | None
+		period_start: DF.Date | None
 		plan: DF.Data | None
 		quantity: DF.Float
 		rate: DF.Currency

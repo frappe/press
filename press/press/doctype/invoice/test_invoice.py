@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from frappe.utils.data import add_days, today
+from frappe.utils.data import add_days, formatdate, getdate, today
 
 from press.press.doctype.team.test_team import create_test_team
 
@@ -22,6 +22,12 @@ class TestInvoice(FrappeTestCase):
 
 	def tearDown(self):
 		frappe.db.rollback()
+
+	def create_usage_record(self, date, amount=10):
+		usage_record = frappe.get_doc(doctype="Usage Record", team=self.team.name, amount=amount, date=date)
+		usage_record.insert()
+		usage_record.submit()
+		return usage_record
 
 	def test_invoice_add_usage_record(self):
 		invoice = frappe.get_doc(
@@ -73,6 +79,60 @@ class TestInvoice(FrappeTestCase):
 		self.assertEqual(len(invoice.items), 3)
 		self.assertEqual(invoice.total, 90)
 		self.assertEqual(usage_records[0].invoice, None)
+
+	def test_invoice_item_period_covers_first_and_last_usage_record(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+
+		for day in [0, 1, 2]:
+			self.create_usage_record(date=add_days(today(), day))
+
+		invoice.reload()
+
+		self.assertEqual(len(invoice.items), 1)
+		self.assertEqual(invoice.items[0].period_start, getdate(today()))
+		self.assertEqual(invoice.items[0].period_end, getdate(add_days(today(), 2)))
+
+	def test_invoice_item_period_moves_when_the_first_usage_record_is_cancelled(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+
+		usage_records = [self.create_usage_record(date=add_days(today(), day)) for day in [0, 1, 2]]
+
+		usage_records[0].cancel()
+		invoice.reload()
+
+		self.assertEqual(invoice.items[0].period_start, getdate(add_days(today(), 1)))
+		self.assertEqual(invoice.items[0].period_end, getdate(add_days(today(), 2)))
+
+	def test_invoice_item_description_names_the_billed_period(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+
+		for day in [0, 1]:
+			self.create_usage_record(date=add_days(today(), day))
+
+		invoice.reload()
+		with patch.object(invoice, "create_stripe_invoice", return_value=None):
+			invoice.finalize_invoice()
+
+		period = f"from {formatdate(today())} to {formatdate(add_days(today(), 1))}"
+		self.assertTrue(
+			invoice.items[0].description.endswith(period),
+			f"{invoice.items[0].description} does not end with {period}",
+		)
 
 	def test_invoice_with_credits_less_than_total(self):
 		invoice = frappe.get_doc(

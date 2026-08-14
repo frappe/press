@@ -301,6 +301,8 @@ def fetch_invoice_items(invoice):
 			"amount",
 			"plan",
 			"description",
+			"period_start",
+			"period_end",
 			"discount",
 			"site",
 		],
