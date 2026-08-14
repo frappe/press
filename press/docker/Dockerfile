@@ -267,7 +267,7 @@ RUN --mount=type=cache,sharing=locked,id=chromium-{% if is_arm_build %}arm64{% e
   elif bench setup-chrome --help > /dev/null 2>&1; then \
   bench setup-chrome \
   && cp -a /home/frappe/frappe-bench/chromium/. /home/frappe/chromium-cache/; \
-  else echo "bench setup-chrome unavailable on this Frappe version; skipping Chromium prebundle"; fi \
+  else echo "bench setup-chrome unavailable on this Frappe version; skipping Chromium prebundle"; fi; \
   `#stage-setup-chromium`
 
 # Install other apps
