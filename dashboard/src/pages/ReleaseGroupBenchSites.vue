@@ -54,6 +54,7 @@ import ObjectList from '../components/ObjectList.vue';
 import {
 	filterControls as benchFilterControls,
 	getBenchTitleSuffix,
+	getClusterImagePrefix,
 } from '../objects/bench';
 import {
 	getSitesTabColumns,
@@ -84,9 +85,14 @@ export default {
 					group: this.$releaseGroup.name,
 					skip_team_filter_for_system_user_and_support_agent: true,
 				},
-				fields: ['name', 'status'],
+				fields: [
+					'name',
+					'status',
+					'cluster.image as cluster_image',
+					'cluster.title as cluster_title',
+				],
 				orderBy: 'creation desc',
-				pageLength: 99999,
+				pageLength: this.isPublicBench ? 20 : 99999,
 				auto: true,
 				onSuccess() {
 					if (this.isPublicBench) return;
@@ -164,8 +170,14 @@ export default {
 						type: 'Badge',
 						width: '150px',
 					},
+					{
+						label: 'Region',
+						fieldname: 'cluster',
+						width: 0.75,
+						format: (value, row) => row.cluster_title || value || '',
+						prefix: getClusterImagePrefix,
+					},
 				],
-				// The group filter is redundant here, we're already inside one group
 				filterControls: () =>
 					benchFilterControls().filter(
 						(control) => control.fieldname !== 'group',
