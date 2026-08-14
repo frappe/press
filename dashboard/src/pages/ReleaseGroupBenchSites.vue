@@ -52,6 +52,10 @@ import ActionButton from '../components/ActionButton.vue';
 import SSHCertificateDialog from '../components/group/SSHCertificateDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
 import {
+	filterControls as benchFilterControls,
+	getBenchTitleSuffix,
+} from '../objects/bench';
+import {
 	getSitesTabColumns,
 	sitesTabRoute,
 	siteTabFilterControls,
@@ -85,6 +89,7 @@ export default {
 				pageLength: 99999,
 				auto: true,
 				onSuccess() {
+					if (this.isPublicBench) return;
 					this.$resources.sites.fetch();
 				},
 			};
@@ -133,7 +138,44 @@ export default {
 		},
 	},
 	computed: {
+		// Public benches has a lot of site so dont show sites list
+		isPublicBench() {
+			return Boolean(this.$releaseGroup.doc?.public);
+		},
 		listOptions() {
+			if (this.isPublicBench) return this.benchListOptions;
+			return this.groupedSiteListOptions;
+		},
+
+		benchListOptions() {
+			return {
+				list: this.$resources.benches,
+				emptyStateMessage: 'No benches found',
+				columns: [
+					{
+						label: 'Bench',
+						fieldname: 'name',
+						class: 'font-medium',
+						suffix: getBenchTitleSuffix,
+					},
+					{
+						label: 'Status',
+						fieldname: 'status',
+						type: 'Badge',
+						width: '150px',
+					},
+				],
+				// The group filter is redundant here, we're already inside one group
+				filterControls: () =>
+					benchFilterControls().filter(
+						(control) => control.fieldname !== 'group',
+					),
+				route: (row) => ({ name: 'Bench Detail', params: { name: row.name } }),
+				rowActions: ({ row }) => this.benchOptions(row),
+				primaryAction: this.newSiteAction,
+			};
+		},
+		groupedSiteListOptions() {
 			return {
 				list: this.$resources.sites,
 				groupHeader: ({ group: bench }) => {
@@ -187,24 +229,7 @@ export default {
 				columns: getSitesTabColumns(false),
 				filterControls: siteTabFilterControls,
 				route: sitesTabRoute,
-				primaryAction: () => {
-					return {
-						label: 'New Site',
-						slots: {
-							prefix: icon('plus', 'w-4 h-4'),
-						},
-						disabled:
-							!this.$resources.benches.data?.length ||
-							!this.$resources.benches.data?.some(
-								(bench) => bench.status === 'Active',
-							) ||
-							!this.$releaseGroup.doc?.deploy_information?.last_deploy,
-						route: {
-							name: 'Release Group New Site',
-							params: { bench: this.releaseGroup },
-						},
-					};
-				},
+				primaryAction: this.newSiteAction,
 			};
 		},
 		appVersionOptions() {
@@ -254,6 +279,24 @@ export default {
 		},
 	},
 	methods: {
+		newSiteAction() {
+			return {
+				label: 'New Site',
+				slots: {
+					prefix: icon('plus', 'w-4 h-4'),
+				},
+				disabled:
+					!this.$resources.benches.data?.length ||
+					!this.$resources.benches.data?.some(
+						(bench) => bench.status === 'Active',
+					) ||
+					!this.$releaseGroup.doc?.deploy_information?.last_deploy,
+				route: {
+					name: 'Release Group New Site',
+					params: { bench: this.releaseGroup },
+				},
+			};
+		},
 		groupSitesByBench(data) {
 			if (!this.$resources.benches.data) return [];
 			return this.$resources.benches.data.map((bench) => {
@@ -329,7 +372,9 @@ export default {
 				},
 				{
 					label: 'Update All Sites',
-					condition: () => bench.status === 'Active' && bench.rows.length > 0,
+					condition: () =>
+						bench.status === 'Active' &&
+						(bench.rows?.length ?? bench.site_count) > 0,
 					onClick: () => {
 						confirmDialog({
 							title: 'Update All Sites',
