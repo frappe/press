@@ -2046,8 +2046,11 @@ class Site(Document, TagHelpers):
 		frappe.db.set_value(
 			"Site Backup",
 			{"name": ("in", site_backups), "offsite": True},
-			"files_availability",
-			"Unavailable",
+			{
+				"files_availability": "Unavailable",
+				"files_expired_on": frappe.utils.now_datetime(),
+				"retention_rule": "Dropped",
+			},
 		)
 
 		return delete_remote_backup_objects(sites_remote_files)
