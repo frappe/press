@@ -16,12 +16,14 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.database_server.database_server import DatabaseServer
+from press.press.doctype.database_server.test_database_server import create_test_database_server
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
 )
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
+from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.site import (
 	DEFAULT_MAX_STATEMENT_TIME,
 	STATEMENT_TIME_INCREMENT,
@@ -931,7 +933,9 @@ class TestSiteUpdate(FrappeTestCase):
 		site = create_test_site()
 		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
 
-		site_update = frappe.new_doc("Site Update", site=site.name, backup_type="Logical Replication")
+		site_update = frappe.new_doc(
+			"Site Update", site=site.name, server=site.server, backup_type="Logical Replication"
+		)
 		site_update.validate_backup_type_for_large_database()  # shouldn't raise
 
 		site_update.backup_type = "Logical"
@@ -940,3 +944,20 @@ class TestSiteUpdate(FrappeTestCase):
 			"too large to update without a physical backup",
 			site_update.validate_backup_type_for_large_database,
 		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_site_update_is_allowed_on_large_site_of_non_aws_server(self):
+		"""Physical backup only works on AWS, so the size limit can't be worked around elsewhere."""
+		database_server = create_test_database_server()
+		frappe.db.set_value("Database Server", database_server.name, "provider", "OCI")
+		server = create_test_server(database_server=database_server.name, provider="OCI")
+
+		group = create_test_release_group([create_test_app()])
+		bench1 = create_test_bench(group=group, server=server.name)
+		bench2 = create_test_bench(group=group, server=server.name)
+		create_test_deploy_candidate_differences(bench2.candidate)
+
+		site = create_test_site(bench=bench1.name)
+		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
+
+		self.assertTrue(site.schedule_update())
