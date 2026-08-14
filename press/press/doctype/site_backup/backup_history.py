@@ -96,11 +96,18 @@ FILES_NONE = "None"
 FILES_UNKNOWN = "Unknown"
 
 
-def get_backup_history(site: str, start_date: str, end_date: str, refresh: bool = False) -> dict:
+def get_backup_history(
+	site: str, start_date: str, end_date: str, refresh: bool = False, build: bool = True
+) -> dict:
 	"""The trail for a range, or word that it is still being put together.
 
 	Records are a query, but the server answers as a job and the buckets are a walk over
 	someone else's network, so the whole thing is built in the background and read here.
+
+	`build` is what keeps the page and the builder from feeding each other: a finished
+	build tells the page to look again, and if that look were allowed to start a build
+	of its own, a build that keeps ending without an answer would keep the page asking
+	forever.
 	"""
 	start, end = resolve_range(site, start_date, end_date)
 	if start > end:
@@ -112,6 +119,11 @@ def get_backup_history(site: str, start_date: str, end_date: str, refresh: bool 
 	cached = frappe.cache().get_value(cache_key(site, start, end))
 	if cached is not None:
 		return with_range(cached, start, end)
+
+	if not build:
+		# A build has just finished and left nothing behind, so it died on the way
+		frappe.cache().delete_value(attempt_key(site, start, end))
+		return with_range(broken(), start, end)
 
 	if abandoned_build(site, start, end):
 		return with_range(broken(), start, end)
@@ -391,9 +403,11 @@ def process_fetch_backup_jobs_update(job):
 		frappe.parse_json(job.data),
 		expires_in_sec=CACHE_TTL,
 	)
-	# The trail was built without this, so drop it and tell the page to look again
-	frappe.cache().delete_value(cache_key(site[0], start[0], end[0]))
-	publish_update(site[0], start[0], end[0])
+	# The trail was built without this, so build it again. The page hears about it when
+	# that build lands: asking it to look now would only show it the trail it already has
+	start_day, end_day = getdate(start[0]), getdate(end[0])
+	frappe.cache().delete_value(cache_key(site[0], start_day, end_day))
+	queue_build(site[0], start_day, end_day)
 
 
 def agent_silence_key(server: str) -> str:

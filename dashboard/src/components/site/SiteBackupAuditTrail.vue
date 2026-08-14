@@ -90,6 +90,9 @@ export default {
 					start_date: this.startDate,
 					end_date: this.endDate,
 					refresh: params?.refresh ? 1 : 0,
+					// Reading the answer to a finished build must not start another one,
+					// or the two keep waking each other up
+					build: params?.build === false ? 0 : 1,
 				}),
 				auto: true,
 				// The dates the pickers show follow the range the trail was built for,
@@ -309,7 +312,7 @@ export default {
 			// trims a start before the site existed and an end past today
 			const { start_date: start, end_date: end } = this.history
 			if (!start || (data.start_date === start && data.end_date === end)) {
-				this.$resources.history.fetch()
+				this.$resources.history.fetch({ build: false })
 			}
 		},
 		rebuild() {

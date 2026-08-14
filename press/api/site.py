@@ -716,7 +716,7 @@ def running_jobs(name):
 
 @frappe.whitelist()
 @protected("Site")
-def backup_history(name: str, start_date: str, end_date: str, refresh: bool = False):
+def backup_history(name: str, start_date: str, end_date: str, refresh: bool = False, build: bool = True):
 	"""Whether a backup was taken on each day of the range, answered even for days the list hides.
 
 	Deliberately not a doc method: the page asks repeatedly while a trail is being built,
@@ -727,7 +727,7 @@ def backup_history(name: str, start_date: str, end_date: str, refresh: bool = Fa
 	if not isinstance(name, str):
 		frappe.throw("Could not read the site name. Give it as text, for example demo.frappe.cloud.")
 
-	return get_backup_history(name, start_date, end_date, refresh=cint(refresh))
+	return get_backup_history(name, start_date, end_date, refresh=cint(refresh), build=cint(build))
 
 
 @frappe.whitelist()

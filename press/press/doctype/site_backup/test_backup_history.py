@@ -642,17 +642,24 @@ class TestBackupHistory(FrappeTestCase):
 		events = [call.kwargs.get("event") for call in self.publish_realtime.call_args_list]
 		self.assertIn(REALTIME_EVENT, events)
 
-	def test_the_servers_answer_drops_the_trail_built_without_it(self):
+	def test_the_servers_answer_builds_the_trail_again(self):
 		"""Otherwise the answer sits behind an hour-old trail that was built ignoring it."""
 		day = frappe.utils.getdate("2023-10-02")
 		self.audit_trail("2023-10-02", "2023-10-02")
-		self.assertIsNotNone(frappe.cache().get_value(cache_key(self.site.name, day, day)))
+		self.assertEqual(
+			frappe.cache().get_value(cache_key(self.site.name, day, day))["days"][0]["status"],
+			"Not Available",
+		)
 
 		process_fetch_backup_jobs_update(
 			self.fake_job(data={"jobs": [self.agent_job("2023-10-02 04:00:00")], "truncated": False})
 		)
 
-		self.assertIsNone(frappe.cache().get_value(cache_key(self.site.name, day, day)))
+		# The build runs inline here, so the answer is already in the trail
+		self.assertEqual(
+			frappe.cache().get_value(cache_key(self.site.name, day, day))["days"][0]["status"],
+			"Success",
+		)
 
 	def test_an_unreachable_server_is_not_asked(self):
 		"""An Agent Request Failure row means nothing is getting through to it."""
@@ -942,3 +949,34 @@ class TestBackupHistory(FrappeTestCase):
 			history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
 
 		self.assertEqual(history["status"], "Preparing")
+
+	def test_reading_the_answer_to_a_build_does_not_start_another_build(self):
+		"""The page reads because a build finished; if that read builds, they loop."""
+		with patch.object(frappe, "enqueue") as enqueue:
+			get_backup_history(self.site.name, "2023-10-02", "2023-10-02", build=False)
+
+		enqueue.assert_not_called()
+
+	def test_a_build_that_finished_with_nothing_to_show_is_reported_as_broken(self):
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02", build=False)
+
+		self.assertEqual(history["status"], "Broken")
+
+	def test_a_finished_trail_is_read_without_building(self):
+		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz")
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02", build=False)
+
+		self.assertEqual(history["status"], "Ready")
+		self.assertEqual(history["days"][0]["status"], "Success")
+
+	def test_a_range_can_be_built_again_after_a_build_left_nothing(self):
+		"""Being told it is broken must not leave refresh unable to try again."""
+		get_backup_history(self.site.name, "2023-10-02", "2023-10-02", build=False)
+
+		with patch.object(frappe, "enqueue") as enqueue:
+			history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertEqual(history["status"], "Preparing")
+		enqueue.assert_called()
