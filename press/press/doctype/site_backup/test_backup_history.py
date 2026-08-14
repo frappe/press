@@ -645,6 +645,50 @@ class TestBackupHistory(FrappeTestCase):
 
 		self.queue_backup_jobs.assert_called_once()
 
+	def test_a_trimmed_range_comes_back_with_the_trail(self):
+		"""The page keys its completion event off this, so it has to be the used range."""
+		history = get_backup_history(self.site.name, "2022-06-01", "2023-01-05")
+
+		self.assertEqual(history["start_date"], "2023-01-01")
+		self.assertEqual(history["end_date"], "2023-01-05")
+
+	def test_a_future_end_comes_back_trimmed_to_today(self):
+		today = frappe.utils.getdate()
+
+		history = get_backup_history(self.site.name, str(today), str(frappe.utils.add_days(today, 30)))
+
+		self.assertEqual(history["end_date"], str(today))
+
+	def test_the_event_carries_the_same_range_the_trail_reports(self):
+		history = self.audit_trail("2022-06-01", "2023-01-05")
+
+		published = [
+			call.kwargs["message"]
+			for call in self.publish_realtime.call_args_list
+			if call.kwargs.get("event") == REALTIME_EVENT
+		]
+		self.assertIn(
+			{
+				"site": self.site.name,
+				"start_date": history["start_date"],
+				"end_date": history["end_date"],
+			},
+			published,
+		)
+
+	def test_a_date_that_is_not_a_date_is_rejected_plainly(self):
+		"""Whitelisted parameters arrive as whatever the caller sent."""
+		for value in [{"a": 1}, ["2023-10-02"], None, "banana", 20231002]:
+			with self.subTest(value=value):
+				self.assertRaisesRegex(
+					frappe.ValidationError,
+					"Could not read the start date",
+					get_backup_history,
+					self.site.name,
+					value,
+					"2023-10-02",
+				)
+
 	def test_reversed_range_is_rejected(self):
 		self.assertRaisesRegex(
 			frappe.ValidationError,
