@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import add_to_date, getdate
+from frappe.utils import add_months, add_to_date, getdate
 
 from press.utils import log_error
 
@@ -41,11 +41,26 @@ def summary_name(site: str, month: str) -> str:
 	return f"{site}::{month}"
 
 
+def months_between(start: date, end: date) -> list[str]:
+	"""Every month the range touches, listed out.
+
+	The month is text, and a between on it is read as numbers: frappe turns the bounds
+	into 0.0 and folds the rest of the filter into them, which quietly answers for every
+	site at once.
+	"""
+	months, month = [], getdate(start).replace(day=1)
+	last = month_of(end)
+	while month_of(month) <= last:
+		months.append(month_of(month))
+		month = add_months(month, 1)
+	return months
+
+
 def get_summarised_days(site: str, start: date, end: date) -> dict[str, dict]:
 	"""What the summaries remember for a range, long after the backups themselves are pruned."""
 	months = frappe.get_all(
 		"Site Backup Summary",
-		{"site": site, "month": ("between", [month_of(start), month_of(end)])},
+		{"site": site, "month": ("in", months_between(start, end))},
 		pluck="days",
 		# The trail is read for a site the caller already has access to
 		ignore_permissions=True,

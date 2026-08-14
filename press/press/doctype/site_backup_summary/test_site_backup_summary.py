@@ -13,6 +13,7 @@ from press.press.doctype.site_backup.test_site_backup import create_test_site_ba
 from press.press.doctype.site_backup_summary.site_backup_summary import (
 	_update_backup_summaries,
 	get_summarised_days,
+	months_between,
 	record_site_backups,
 	summary_name,
 )
@@ -111,3 +112,31 @@ class TestSiteBackupSummary(FrappeTestCase):
 		self.summarise()
 
 		self.assertNotIn(str(getdate()), self.summarised(self.yesterday, getdate()))
+
+	def test_another_sites_summary_is_not_read(self):
+		"""A between on the text month folds the site filter into itself and answers for everyone."""
+		other = create_test_site(subdomain=f"summary-other-{frappe.generate_hash(length=8)}")
+		create_test_site_backup(other.name, creation=self.yesterday)
+		record_site_backups(other.name, self.since)
+
+		self.assertEqual(self.summarised(), {})
+
+	def test_a_range_spanning_months_reads_every_month(self):
+		older = add_days(self.yesterday, -45)
+		create_test_site_backup(self.site.name, creation=older)
+		create_test_site_backup(self.site.name, creation=self.yesterday)
+		record_site_backups(self.site.name, add_to_date(None, days=-60))
+
+		summarised = self.summarised(older, self.yesterday)
+
+		self.assertIn(str(older), summarised)
+		self.assertIn(str(self.yesterday), summarised)
+
+	def test_a_range_inside_one_month_asks_for_that_month_alone(self):
+		self.assertEqual(months_between(getdate("2026-02-03"), getdate("2026-02-27")), ["2026-02"])
+
+	def test_a_range_over_a_year_end_lists_the_months_in_order(self):
+		self.assertEqual(
+			months_between(getdate("2025-11-30"), getdate("2026-02-01")),
+			["2025-11", "2025-12", "2026-01", "2026-02"],
+		)
