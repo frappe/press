@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 from datetime import date, timedelta
 from urllib.parse import parse_qs, urlparse
 
@@ -77,17 +78,26 @@ def get_backup_history(site: str, start_date: str, end_date: str, refresh: bool 
 	"""
 	start, end = resolve_range(site, start_date, end_date)
 	if start > end:
-		return ready([])
+		return with_range(ready([]), start, end)
 
 	if refresh:
 		frappe.cache().delete_value(cache_key(site, start, end))
 
 	cached = frappe.cache().get_value(cache_key(site, start, end))
 	if cached is not None:
-		return cached
+		return with_range(cached, start, end)
 
 	queue_build(site, start, end)
-	return {"status": "Preparing", "days": [], "unconfirmed": False}
+	return with_range({"status": "Preparing", "days": [], "unconfirmed": False}, start, end)
+
+
+def with_range(history: dict, start: date, end: date) -> dict:
+	"""The range actually used, which is trimmed to the days the site could have.
+
+	The page keys its completion event off this, so it has to hear the trimmed dates
+	rather than the ones it asked with.
+	"""
+	return history | {"start_date": str(start), "end_date": str(end)}
 
 
 def ready(days: list[dict], unconfirmed: bool = False) -> dict:
@@ -138,9 +148,23 @@ def publish_update(site: str, start: str, end: str):
 	)
 
 
+def parse_day(value, which: str) -> date:
+	"""A date, or a plain error saying so. Callers include whitelisted API parameters."""
+	if isinstance(value, date):
+		return value
+
+	if isinstance(value, str):
+		with suppress(Exception):
+			if day := getdate(value):
+				return day
+
+	frappe.throw(f"Could not read the {which} date. Give it as YYYY-MM-DD, for example 2023-10-02.")
+	raise ValueError(which)  # frappe.throw already raised; this keeps the return type honest
+
+
 def resolve_range(site: str, start_date: str, end_date: str) -> tuple[date, date]:
 	"""Trim the asked-for range to days the site could have been backed up on."""
-	start, end = getdate(start_date), getdate(end_date)
+	start, end = parse_day(start_date, "start"), parse_day(end_date, "end")
 	if start > end:
 		frappe.throw(
 			f"The start date {start} comes after the end date {end}, so the range covers no days. "
