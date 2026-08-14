@@ -148,7 +148,7 @@ function getList() {
 	} satisfies List as List;
 }
 
-function getBenchTitleSuffix(row: Row) {
+export function getBenchTitleSuffix(row: Row) {
 	const ch: VNode[] = [];
 	if (row.inplace_update_docker_image) ch.push(getInPlaceUpdatesSuffix(row));
 	if (row.has_app_patch_applied) ch.push(getAppPatchSuffix(row));
@@ -194,7 +194,7 @@ function getAppPatchSuffix(row: Row) {
 	);
 }
 
-function getClusterImagePrefix(row: Row) {
+export function getClusterImagePrefix(row: Row) {
 	if (!row.cluster_image) return;
 
 	return h('img', {
@@ -204,7 +204,7 @@ function getClusterImagePrefix(row: Row) {
 	});
 }
 
-function filterControls() {
+export function filterControls() {
 	return [
 		{
 			type: 'select',
