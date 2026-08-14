@@ -32,6 +32,12 @@ BUILD_TTL = 5 * 60
 # What the page listens on, so a finished build reaches it without asking
 REALTIME_EVENT = "backup_audit_trail_update"
 
+AGENT_JOB_TYPE = "Fetch Backup Jobs"
+
+# A job the agent never acknowledged after this is not being delivered, and the trail
+# goes on without it rather than expecting it on every look
+UNDELIVERED_GRACE_SECONDS = 60
+
 # Keeps the IN clause sane on a year of daily backups
 REMOTE_FILE_BATCH = 500
 
@@ -215,14 +221,38 @@ def read_agent_answer(site: str, start: date, end: date) -> dict | None:
 
 
 def request_agent_backup_jobs(server: str, site: str, start: date, end: date) -> bool:
-	"""Queue the read. Nothing waits on it, so this returns as soon as the job exists."""
+	"""Queue the read, unless nothing is reaching this server or one is already stuck."""
+	agent = Agent(server)
+	# An Agent Request Failure row means the server is unreachable, and a job created
+	# now would only sit undelivered
+	if agent.should_skip_requests() or has_stuck_request(server):
+		return False
+
 	try:
 		# Deduplicated by Agent, so asking again while one is running adds nothing
-		Agent(server).fetch_site_backup_jobs(site, str(start), str(end))
+		agent.fetch_site_backup_jobs(site, str(start), str(end))
 	except Exception:
 		silence_agent(server)
 		return False
 	return True
+
+
+def has_stuck_request(server: str) -> bool:
+	"""A job the agent never gave an id to never reached it, delivery failure included."""
+	return bool(
+		frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": AGENT_JOB_TYPE,
+				"server": server,
+				"job_id": 0,
+				"creation": (
+					"<",
+					frappe.utils.add_to_date(None, seconds=-UNDELIVERED_GRACE_SECONDS),
+				),
+			},
+		)
+	)
 
 
 def days_from_agent_jobs(jobs: list[dict]) -> dict[str, dict]:

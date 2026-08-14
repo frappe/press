@@ -11,6 +11,7 @@ from moto import mock_aws
 
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.backup_history import (
+	AGENT_JOB_TYPE,
 	CACHE_TTL,
 	MAX_RANGE_DAYS,
 	PARTIAL_CACHE_TTL,
@@ -42,6 +43,10 @@ class TestBackupHistory(FrappeTestCase):
 		frappe.db.set_value("Site", self.site.name, "creation", "2023-01-01 00:00:00", update_modified=False)
 		self.setup_press_settings()
 		boto3.client("s3", region_name=REGION).create_bucket(Bucket=BUCKET)
+		# Building a test bench leaves failures against its server, which would make
+		# every test look like it is talking to an unreachable agent
+		frappe.db.delete("Agent Request Failure", {"server": self.server})
+
 		# The server answers as a job of its own, so tests leave its answer in the
 		# cache the way the job callback would, and stub the queueing
 		agent = patch("press.press.doctype.site_backup.backup_history.Agent.fetch_site_backup_jobs")
@@ -69,6 +74,40 @@ class TestBackupHistory(FrappeTestCase):
 		get_backup_history(self.site.name, start, end)
 		return get_backup_history(self.site.name, start, end)
 
+	def given_undelivered_job(self, minutes_ago: int):
+		"""A job the agent never acknowledged, which leaves job_id at 0."""
+		if not frappe.db.exists("Agent Job Type", AGENT_JOB_TYPE):
+			frappe.get_doc(
+				{
+					"doctype": "Agent Job Type",
+					"name": AGENT_JOB_TYPE,
+					"request_method": "POST",
+					"request_path": "server/backup-jobs",
+					"steps": [{"step_name": AGENT_JOB_TYPE}],
+				}
+			).insert(ignore_permissions=True)
+
+		job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"server_type": "Server",
+				"server": self.server,
+				"site": self.site.name,
+				"status": "Undelivered",
+				"job_type": AGENT_JOB_TYPE,
+				"request_method": "POST",
+				"request_path": "server/backup-jobs",
+				"request_data": "{}",
+			}
+		).insert(ignore_permissions=True)
+		frappe.db.set_value(
+			"Agent Job",
+			job.name,
+			"creation",
+			frappe.utils.add_to_date(None, minutes=-minutes_ago),
+			update_modified=False,
+		)
+
 	def build_calls(self) -> int:
 		return sum(1 for call in self.enqueue_build.call_args_list if call.args[0] == BUILD_METHOD)
 
@@ -82,10 +121,12 @@ class TestBackupHistory(FrappeTestCase):
 
 	def tearDown(self):
 		# The silence flag lives in redis, which no rollback undoes
-		frappe.cache().delete_value(
-			f"backup_audit_trail_agent_unavailable:{frappe.db.get_value('Site', self.site.name, 'server')}"
-		)
+		frappe.cache().delete_value(f"backup_audit_trail_agent_unavailable:{self.server}")
 		frappe.db.rollback()
+
+	@property
+	def server(self) -> str:
+		return frappe.db.get_value("Site", self.site.name, "server")
 
 	def setup_press_settings(self):
 		settings = frappe.get_single("Press Settings")
@@ -569,6 +610,40 @@ class TestBackupHistory(FrappeTestCase):
 		)
 
 		self.assertIsNone(frappe.cache().get_value(cache_key(self.site.name, day, day)))
+
+	def test_an_unreachable_server_is_not_asked(self):
+		"""An Agent Request Failure row means nothing is getting through to it."""
+		frappe.get_doc(
+			{
+				"doctype": "Agent Request Failure",
+				"server_type": "Server",
+				"server": self.server,
+				"failure_count": 1,
+				"error": "Connection refused",
+				"traceback": "Connection refused",
+			}
+		).insert(ignore_permissions=True)
+		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz", body=b"x" * 8)
+
+		history = self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_not_called()
+		# The buckets still answer, so the trail is not held up by the server
+		self.assertEqual(history["days"][0]["database"], 8)
+
+	def test_a_job_left_undelivered_is_not_waited_on(self):
+		self.given_undelivered_job(minutes_ago=5)
+
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_not_called()
+
+	def test_a_job_only_just_queued_still_counts(self):
+		self.given_undelivered_job(minutes_ago=0)
+
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_called_once()
 
 	def test_reversed_range_is_rejected(self):
 		self.assertRaisesRegex(
