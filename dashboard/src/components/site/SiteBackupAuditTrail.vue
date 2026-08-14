@@ -42,6 +42,7 @@ import { downloadCSV } from '../../utils/csv'
 import dayjs from '../../utils/dayjs'
 import { date } from '../../utils/format'
 import { getDocResource } from '../../utils/resource'
+import { showErrorToast } from '../../utils/toast'
 import ObjectList from '../ObjectList.vue'
 import SiteBackupAuditDayDialog from './SiteBackupAuditDayDialog.vue'
 
@@ -97,6 +98,9 @@ export default {
 					if (data?.start_date) this.startDate = data.start_date
 					if (data?.end_date) this.endDate = data.end_date
 				},
+				// A rejected range is an error the server explains, and saying nothing
+				// leaves the page looking stuck on the old trail
+				onError: showErrorToast,
 			}
 		},
 	},
@@ -235,10 +239,11 @@ export default {
 						default: this.endDate,
 					},
 				],
+				// Picking dates only changes what will be asked for: an audit range is
+				// set two controls at a time, and each one would cost a build of its own
 				updateFilters: ({ startDate, endDate }) => {
 					if (startDate) this.startDate = this.clampToSiteAge(startDate)
 					if (endDate) this.endDate = this.clampToSiteAge(endDate)
-					this.$resources.history.fetch()
 				},
 				actions: () => [
 					{
