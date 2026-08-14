@@ -236,10 +236,14 @@ def get_default_team_for_user(user):
 
 
 def get_disabled_team_of_user(user):
-	"""Returns the Team the user owns and disabled, whichever other teams they belong to"""
-	if frappe.db.exists("Team", {"user": user, "enabled": 1}):
+	"""Returns the account the user owns and disabled, whichever other teams they belong to
+
+	Child teams are not accounts, a partner owns one per customer.
+	"""
+	own_account = {"user": user, "parent_team": ("is", "not set")}
+	if frappe.db.exists("Team", own_account | {"enabled": 1}):
 		return None
-	return frappe.db.get_value("Team", {"user": user, "enabled": 0}, "name")
+	return frappe.db.get_value("Team", own_account | {"enabled": 0}, "name")
 
 
 def chat_enabled():

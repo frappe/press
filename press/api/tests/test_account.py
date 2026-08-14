@@ -506,6 +506,18 @@ class TestReactivateAccount(TestCase):
 		other_team.save()
 		self.assertEqual(get_disabled_team_of_user(self.team.user), self.team.name)
 
+	def test_a_child_team_is_never_mistaken_for_the_account(self):
+		frappe.get_doc(
+			{
+				"doctype": "Team",
+				"user": self.team.user,
+				"parent_team": self.team.name,
+				"country": self.team.country,
+				"enabled": 1,
+			}
+		).insert(ignore_permissions=True)
+		self.assertEqual(get_disabled_team_of_user(self.team.user), self.team.name)
+
 	def test_reactivating_an_enabled_account_throws(self):
 		self.team.db_set("enabled", 1)
 		with user_context(self.team.user):
