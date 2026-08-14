@@ -438,7 +438,9 @@ def reactivate_account():
 	"""Enable the account of the logged in user, on their way in from the login page"""
 	team_name = get_disabled_team_of_user(frappe.session.user)
 	if not team_name:
-		frappe.throw("You don't have a disabled account to reactivate.")
+		frappe.throw(
+			"You don't have a disabled account to reactivate. Please log in with the account you disabled."
+		)
 
 	# The team is disabled, so get_current_team throws for this session and every
 	# permission check on the team and its sites fails. Run as Administrator,
