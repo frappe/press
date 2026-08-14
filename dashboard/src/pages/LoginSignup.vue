@@ -435,7 +435,7 @@
 		>
 			<template v-slot:body-content>
 				<p class="text-p-base text-ink-gray-7">
-					This account is disabled. Reactivating restores your sites and
+					This account is disabled. Reactivating restores your account and
 					resumes billing.
 				</p>
 				<ErrorMessage
