@@ -315,10 +315,6 @@ scheduler_events = {
 			"press.press.doctype.site.backups.expire_physical",
 			"press.press.cleanup.unlink_remote_files_from_site",
 		],
-		# After rotation, so the day's backups and the day's deletions are summarised together
-		"0 5 * * *": [
-			"press.press.doctype.site_backup_summary.site_backup_summary.update_backup_summaries",
-		],
 		"10 0 * * *": [
 			"press.press.audit.check_backup_records",
 			"press.press.audit.billing_audit",

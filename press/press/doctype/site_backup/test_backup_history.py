@@ -26,7 +26,6 @@ from press.press.doctype.site_backup.backup_history import (
 	read_agent_answer,
 	ready,
 )
-from press.press.doctype.site_backup_summary.site_backup_summary import record_days
 
 BUILD_METHOD = "press.press.doctype.site_backup.backup_history.build_and_cache"
 
@@ -763,10 +762,6 @@ class TestBackupHistory(FrappeTestCase):
 		)
 		return backup
 
-	def summarise(self, days: dict):
-		"""What the nightly roll-up leaves behind once the records are pruned."""
-		record_days(self.site.name, days)
-
 	def test_a_day_whose_files_retention_deleted_still_reports_their_size(self):
 		self.record_expired_backup("2023-10-02")
 
@@ -835,47 +830,6 @@ class TestBackupHistory(FrappeTestCase):
 		self.assertEqual(day["status"], "Failure")
 		self.assertEqual(day["files"], "None")
 		self.assertEqual(day["source"], "Press record")
-
-	def test_a_day_press_no_longer_has_a_record_of_is_answered_by_the_summary(self):
-		self.summarise(
-			{
-				"2023-10-02": {
-					"date": "2023-10-02",
-					"status": "Success",
-					"files": "Deleted",
-					"rule": "Daily",
-					"expired_on": "2023-10-09",
-					"sizes_known": True,
-					"database": 8192,
-				}
-			}
-		)
-
-		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
-
-		self.assertEqual(day["status"], "Success")
-		self.assertEqual(day["database"], 8192)
-		self.assertEqual(day["rule"], "Daily")
-		self.assertEqual(day["source"], "Daily summary")
-
-	def test_a_record_answers_ahead_of_the_summary_for_the_same_day(self):
-		self.summarise({"2023-10-02": {"date": "2023-10-02", "status": "Success", "database": 1}})
-		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz", size=2048)
-
-		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
-
-		self.assertEqual(day["database"], 2048)
-		self.assertEqual(day["source"], "Press record")
-
-	def test_the_summary_is_not_read_when_records_cover_every_day(self):
-		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz")
-
-		with patch(
-			"press.press.doctype.site_backup.backup_history.get_summarised_days"
-		) as get_summarised_days:
-			self.audit_trail("2023-10-02", "2023-10-02")
-
-		get_summarised_days.assert_not_called()
 
 	def test_a_day_the_server_answered_for_says_the_files_are_unknown(self):
 		self.given_agent_jobs([self.agent_job("2023-10-02 04:00:00")])

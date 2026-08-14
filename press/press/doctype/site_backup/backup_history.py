@@ -13,7 +13,6 @@ from frappe.utils import add_days, cint, getdate
 from press.agent import Agent
 from press.press.doctype.site.backups import rotation_scheme
 from press.press.doctype.site_backup.backup_objects import list_stored_objects, split_backup_key
-from press.press.doctype.site_backup_summary.site_backup_summary import get_summarised_days
 from press.utils import chunk
 
 # An auditor asks about a year at a time; anything wider is a mistake, not a question
@@ -83,7 +82,6 @@ RECORD_FIELDS = (
 
 # Where a day's answer came from, which is half of what an audit is asking for
 SOURCE_RECORD = "Press record"
-SOURCE_SUMMARY = "Daily summary"
 SOURCE_JOB = "Server job log"
 SOURCE_BUCKET = "Bucket object"
 
@@ -221,10 +219,6 @@ def build_history(site: str, start: date, end: date) -> dict:
 	days = days_between(start, end)
 	backups = get_recorded_backups(site, start, end)
 
-	# What Press remembers of days whose records have since been pruned
-	if has_gaps(backups, days):
-		backups = get_summarised_backups(site, start, end) | backups
-
 	# The server knows a backup ran even where nothing was kept, and knows which failed
 	answered = True
 	if has_gaps(backups, days):
@@ -236,12 +230,6 @@ def build_history(site: str, start: date, end: date) -> dict:
 
 	trail = [backups.get(str(day)) or missing_backup(str(day)) for day in days]
 	return ready(with_retention_policy(trail), unconfirmed=not answered and has_gaps(backups, days))
-
-
-def get_summarised_backups(site: str, start: date, end: date) -> dict[str, dict]:
-	"""The monthly summaries, which are kept long after the backups they describe."""
-	summarised = get_summarised_days(site, start, end)
-	return {day: entry | {"source": SOURCE_SUMMARY} for day, entry in summarised.items()}
 
 
 def with_retention_policy(days: list[dict]) -> list[dict]:
