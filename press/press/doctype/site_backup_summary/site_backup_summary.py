@@ -85,20 +85,22 @@ def record_days(site: str, entries: dict[str, dict]):
 
 
 def record_month(site: str, month: str, days: dict[str, dict]):
-	summary = frappe.db.get_value(
-		"Site Backup Summary", summary_name(site, month), ["name", "days"], as_dict=True
-	)
-	if not summary:
-		frappe.get_doc({"doctype": "Site Backup Summary", "site": site, "month": month, "days": days}).insert(
-			ignore_permissions=True
-		)
-		return
+	"""Merge these days into the month, one writer at a time.
 
+	The backfill runs for hours and the nightly pass starts while it is going, so both
+	can land on one month at once. Merging is a read and then a write, and without the
+	row held for the length of it the second writer overwrites the days the first just
+	added — which is unrecoverable once the backups behind them are pruned.
+	"""
+	name = summary_name(site, month)
+	if not frappe.db.exists("Site Backup Summary", name):
+		frappe.get_doc({"doctype": "Site Backup Summary", "site": site, "month": month}).insert(
+			ignore_permissions=True, ignore_if_duplicate=True
+		)
+
+	stored = frappe.db.get_value("Site Backup Summary", name, "days", for_update=True)
 	frappe.db.set_value(
-		"Site Backup Summary",
-		summary.name,
-		"days",
-		frappe.as_json((frappe.parse_json(summary.days) or {}) | days),
+		"Site Backup Summary", name, "days", frappe.as_json((frappe.parse_json(stored) or {}) | days)
 	)
 
 

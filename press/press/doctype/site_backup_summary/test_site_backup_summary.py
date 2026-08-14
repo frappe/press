@@ -14,6 +14,7 @@ from press.press.doctype.site_backup_summary.site_backup_summary import (
 	_update_backup_summaries,
 	get_summarised_days,
 	months_between,
+	record_days,
 	record_site_backups,
 	summary_name,
 )
@@ -140,3 +141,22 @@ class TestSiteBackupSummary(FrappeTestCase):
 			months_between(getdate("2025-11-30"), getdate("2026-02-01")),
 			["2025-11", "2025-12", "2026-01", "2026-02"],
 		)
+
+	def test_the_month_is_held_while_its_days_are_merged(self):
+		"""Two rollups meeting on one month would otherwise write over each other's days."""
+		create_test_site_backup(self.site.name, creation=self.yesterday)
+
+		with patch.object(frappe.db, "get_value", wraps=frappe.db.get_value) as get_value:
+			self.summarise()
+
+		self.assertTrue(any(call.kwargs.get("for_update") for call in get_value.call_args_list))
+
+	def test_a_month_another_rollup_created_first_is_merged_into(self):
+		older = add_days(self.yesterday, -2)
+		record_days(self.site.name, {str(older): {"date": str(older), "status": "Success"}})
+
+		record_days(self.site.name, {str(self.yesterday): {"date": str(self.yesterday), "status": "Success"}})
+
+		summarised = self.summarised(older, self.yesterday)
+		self.assertIn(str(older), summarised)
+		self.assertIn(str(self.yesterday), summarised)
