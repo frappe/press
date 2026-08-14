@@ -22,21 +22,21 @@ import { getAppsTab } from './common/apps'
 // prefilled so only the ticket id has to be typed; on its own it is not a reason
 const LOGIN_REASON_PREFIX = 'Investigating '
 
-// An archived site keeps no tab that could hold this, so it goes in a banner.
+// A scheduled action runs as Administrator, which means nothing to a customer.
+// Site.get_archival_details does the same for the banner.
+function getActorName(owner) {
+	return owner === 'Administrator' ? 'Frappe Cloud' : owner
+}
+
+// The banner names who and when; the Activity tab carries the reason and the rest.
 function getArchivalMessage(site) {
 	const details = site.archival_details
 	if (!details) return 'This site is archived. It cannot be used again.'
 
-	const attribution = `Archived by ${escapeHtml(details.archived_by)} on ${date(
+	return `Archived by ${escapeHtml(details.archived_by)} on ${date(
 		details.archived_on,
 		'LLL',
 	)}`
-	if (!details.reason) return attribution
-
-	// the reason can run long, so it gets its own line instead of stretching this one
-	return `${attribution}<div class="font-normal text-ink-gray-6">${escapeHtml(
-		details.reason,
-	)}</div>`
 }
 
 export default {
@@ -1444,7 +1444,6 @@ export default {
 				icon: icon('activity'),
 				route: 'activity',
 				type: 'list',
-				condition: (site) => site.doc?.status !== 'Archived',
 				list: {
 					doctype: 'Site Activity',
 					filters: (site) => {
@@ -1469,7 +1468,7 @@ export default {
 								if (action == 'Create') {
 									action = 'Site created'
 								}
-								return `${action} by ${row.owner}`
+								return `${action} by ${getActorName(row.owner)}`
 							},
 						},
 						{
