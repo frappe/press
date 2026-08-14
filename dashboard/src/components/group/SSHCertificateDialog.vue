@@ -8,24 +8,11 @@
 	>
 		<template #body-content v-if="$bench.doc">
 			<div v-if="certificate" class="space-y-3 [&_pre]:text-ink-gray-6 -mt-3">
-				<template v-if="isWindows">
-					<p class="text-base">Step 1: Set the encoding to UTF-8</p>
-					<ClickToCopyField
-						textContent="$PSDefaultParameterValues['*: Encoding'] = 'utf8'"
-					/>
-				</template>
-
-				<p class="text-base pt-2">
-					Step {{ isWindows ? '2' : '1' }}: Store the SSH certificate locally
+				<p class="text-p-base text-ink-gray-7">
+					Copy the command to SSH into your bench
 				</p>
 
-				<ClickToCopyField :textContent="certificateCommand" />
-
-				<p class="text-base pt-2">
-					Step {{ isWindows ? '3' : '2' }}: SSH into your bench
-				</p>
-
-				<ClickToCopyField :textContent="sshCommand" />
+				<ClickToCopyField :textContent="fullCommand" />
 
 				<div class="flex items-center gap-2.5 rounded bg-surface-gray-2 p-3">
 					<lucide-alert-triangle class="size-4 shrink-0 mb-auto mt-0.5" />
@@ -158,6 +145,15 @@ export default {
 				}-cert.pub`;
 			}
 			return null;
+		},
+		fullCommand() {
+			if (!this.certificateCommand || !this.sshCommand) return null;
+			const commands = [this.certificateCommand, this.sshCommand];
+			if (this.isWindows) {
+				commands.unshift("$PSDefaultParameterValues['*: Encoding'] = 'utf8'");
+				return commands.join('; ');
+			}
+			return commands.join(' && ');
 		},
 		isWindows() {
 			return navigator.userAgent.includes('Windows');
