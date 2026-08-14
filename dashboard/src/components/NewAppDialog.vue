@@ -65,6 +65,13 @@
 									@update:modelValue="onChangeBranchDebounce"
 								/>
 							</div>
+							<p v-if="repositoryNotFound" class="text-base text-ink-gray-7">
+								Repository not found. If it is private, add it from the
+								<span class="cursor-pointer underline" @click="tabIndex = 1"
+									>Private Repository</span
+								>
+								tab.
+							</p>
 						</div>
 						<div v-else-if="tab.value === 'your-github-app'" class="pt-4">
 							<GitHubAppSelector
@@ -103,6 +110,7 @@
 			/>
 
 			<ErrorMessage
+				v-if="!repositoryNotFound"
 				:message="$resources.validateApp.error || $resources.branches.error"
 			/>
 		</template>
@@ -110,10 +118,10 @@
 </template>
 
 <script>
-import { Combobox, debounce, FormControl, Tabs } from 'frappe-ui';
-import { DashboardError } from '../utils/error';
-import GitHubAppSelector from './GitHubAppSelector.vue';
-import AlertBanner from './AlertBanner.vue';
+import { Combobox, debounce, FormControl, Tabs } from 'frappe-ui'
+import { DashboardError } from '../utils/error'
+import AlertBanner from './AlertBanner.vue'
+import GitHubAppSelector from './GitHubAppSelector.vue'
 
 export default {
 	name: 'NewAppDialog',
@@ -133,8 +141,8 @@ export default {
 	emits: ['app-added'],
 	created() {
 		this.onChangeBranchDebounce = debounce((val) => {
-			this.selectedBranch = { label: val, value: val };
-		}, 500);
+			this.selectedBranch = { label: val, value: val }
+		}, 500)
 	},
 	data() {
 		return {
@@ -148,30 +156,30 @@ export default {
 			selectedGithubRepository: null,
 			tabs: [
 				{
-					label: 'Public GitHub App',
+					label: 'Public Repository',
 					value: 'public-github-app',
 				},
 				{
-					label: 'Your GitHub App',
+					label: 'Private Repository',
 					value: 'your-github-app',
 				},
 			],
-		};
+		}
 	},
 	watch: {
 		tabIndex() {
-			this.app = null;
-			this.appValidated = false;
-			this.selectedBranch = '';
-			this.githubAppLink = '';
-			this.selectedGithubUser = null;
-			this.selectedGithubRepository = null;
-			this.$resources.branches.reset();
-			this.$resources.validateApp.reset();
+			this.app = null
+			this.appValidated = false
+			this.selectedBranch = ''
+			this.githubAppLink = ''
+			this.selectedGithubUser = null
+			this.selectedGithubRepository = null
+			this.$resources.branches.reset()
+			this.$resources.validateApp.reset()
 		},
 		githubAppLink() {
-			this.selectedBranch = '';
-			this.appValidated = false;
+			this.selectedBranch = ''
+			this.appValidated = false
 		},
 		selectedBranch(newSelectedBranch) {
 			if (this.appOwner && this.appName && newSelectedBranch?.value)
@@ -180,7 +188,7 @@ export default {
 					repository: this.appName,
 					branch: newSelectedBranch.value,
 					installation: this.selectedGithubUser?.id,
-				});
+				})
 		},
 	},
 	resources: {
@@ -188,16 +196,16 @@ export default {
 			return {
 				url: 'press.api.github.app',
 				onSuccess(data) {
-					this.appValidated = true;
+					this.appValidated = true
 					if (!data) {
-						return;
+						return
 					}
 
-					let repository_url = this.githubAppLink;
+					let repository_url = this.githubAppLink
 					if (!repository_url) {
-						const repo_owner = this.selectedGithubUser?.login;
-						const repo = this.selectedGithubRepository || data.name;
-						repository_url = `https://github.com/${repo_owner}/${repo}`;
+						const repo_owner = this.selectedGithubUser?.login
+						const repo = this.selectedGithubRepository || data.name
+						repository_url = `https://github.com/${repo_owner}/${repo}`
 					}
 
 					this.app = {
@@ -206,23 +214,19 @@ export default {
 						repository_url,
 						github_installation_id: this.selectedGithubUser?.id,
 						branch: this.selectedBranch.value,
-					};
+					}
 				},
 				onError() {
-					this.appValidated = false;
+					this.appValidated = false
 				},
-			};
+			}
 		},
 		branches() {
 			return {
 				url: 'press.api.github.branches',
 				validate() {
-					const githubUrlRegex =
-						/^(https?:\/\/)?(www\.)?github\.com\/([a-zA-Z0-9_.\-]+)\/([a-zA-Z0-9_.\-]+)(\/)?$/;
-					const isValidUrl = githubUrlRegex.test(this.githubAppLink);
-
-					if (!isValidUrl) {
-						throw new DashboardError('Please enter a valid github link');
+					if (!this.githubUrlMatch) {
+						throw new DashboardError('Please enter a valid github link')
 					}
 				},
 				onSuccess(data) {
@@ -230,44 +234,49 @@ export default {
 						this.selectedBranch = {
 							label: data[0].name,
 							value: data[0].name,
-						};
+						}
 				},
-			};
+			}
 		},
 	},
 	computed: {
+		githubUrlMatch() {
+			const githubUrlRegex =
+				/^(https?:\/\/)?(www\.)?github\.com\/([a-zA-Z0-9_.\-]+)\/([a-zA-Z0-9_.\-]+)(\/)?$/
+			return this.githubAppLink.match(githubUrlRegex)
+		},
 		appOwner() {
 			if (this.tabIndex === 0) {
-				const urlParts = this.githubAppLink.split('/');
-				if (urlParts.length < 4) return;
-
-				return urlParts[3];
+				return this.githubUrlMatch?.[3]
 			}
 		},
 		appName() {
 			if (this.tabIndex === 0) {
-				const urlParts = this.githubAppLink.split('/');
-				if (urlParts.length < 5) return;
-
-				return urlParts[4].replace('.git', '');
+				return this.githubUrlMatch?.[4]?.replace('.git', '')
 			}
+		},
+		repositoryNotFound() {
+			const error = this.$resources.branches.error
+			return /not found/i.test(
+				error?.messages?.join(' ') || error?.message || '',
+			)
 		},
 		branchOptions() {
 			return (this.$resources.branches.data || []).map((branch) => ({
 				label: branch.name,
 				value: branch.name,
-			}));
+			}))
 		},
 		isAppOnBench() {
 			if (!this.app) {
-				return false;
+				return false
 			}
 
 			for (const app of this.group.apps) {
-				if (app.app == this.app.name) return true;
+				if (app.app == this.app.name) return true
 			}
 
-			return false;
+			return false
 		},
 	},
 	methods: {
@@ -275,18 +284,18 @@ export default {
 			this.selectedBranch = {
 				label: data.branch,
 				value: data.branch,
-			};
-			this.selectedGithubRepository = data.repository;
-			this.selectedGithubUser = data.selectedGithubUser;
+			}
+			this.selectedGithubRepository = data.repository
+			this.selectedGithubUser = data.selectedGithubUser
 			this.$resources.validateApp.submit({
 				...data,
 				installation: data.selectedGithubUser.id,
-			});
+			})
 		},
 		addAppHandler() {
-			this.$emit('app-added', this.app, this.isAppOnBench);
-			this.show = false;
+			this.$emit('app-added', this.app, this.isAppOnBench)
+			this.show = false
 		},
 	},
-};
+}
 </script>

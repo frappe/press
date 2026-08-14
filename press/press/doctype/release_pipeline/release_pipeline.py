@@ -11,6 +11,7 @@ import frappe
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import Version
 
+from press.api.client import dashboard_whitelist
 from press.api.github import GithubFetchError, get_dependant_apps_with_versions
 from press.exceptions import InsufficientSpaceOnServer, ReleasePipelineFailure
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -20,6 +21,10 @@ from press.press.doctype.app.app import (
 	parse_frappe_version,
 )
 from press.press.doctype.bench_update.bench_update import get_bench_update
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
+	Status as DeployCandidateBuildStatus,
+)
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import fail_remote_job
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 
@@ -52,24 +57,30 @@ class BenchInfo(TypedDict):
 	status: str
 
 
-def _resolve_dependent_app(app: str, supported_frappe_version: set[str]) -> tuple[AppSource, AppRelease]:
-	"""Resolve app source and latest release for a dependent app."""
-	if not frappe.db.exists("App", app):
-		raise ReleasePipelineFailure(
-			f"Dependent app {app} does not exist in the system. "
-			"Please add this app to your bench group first."
+def _get_trusted_app_source(app: str, supported_frappe_version: set[str], team: str) -> AppSource | None:
+	"""Any other app source just happens to share the name of the dependency."""
+	for filters in ({"repository_owner": "frappe"}, {"team": team}):
+		app_source = get_app_source_from_supported_versions(
+			app=app,
+			supported_versions=supported_frappe_version,
+			filters=filters,
 		)
+		if app_source:
+			return app_source
 
-	app_source = get_app_source_from_supported_versions(
-		app=app,
-		supported_versions=supported_frappe_version,
-	)
+	return None
+
+
+def _resolve_dependent_app(
+	app: str, supported_frappe_version: set[str], team: str
+) -> tuple[AppSource, AppRelease] | None:
+	"""Returns None when no trusted app source exists, the dependency is then left out of the deploy."""
+	if not frappe.db.exists("App", app):
+		return None
+
+	app_source = _get_trusted_app_source(app, supported_frappe_version, team)
 	if not app_source:
-		raise ReleasePipelineFailure(
-			f"Unable to find an app source for dependent app {app} "
-			f"with supported versions {supported_frappe_version}. "
-			"Please add this app to your bench group."
-		)
+		return None
 
 	app_release = get_latest_release_of_app_from_source(app_source)
 	if not app_release:
@@ -183,6 +194,10 @@ class ReleasePipeline(WorkflowBuilder):
 			"Retrying",
 		],
 	):
+		if status != "Failure" and frappe.db.get_value(self.doctype, self.name, "status") == "Failure":
+			# Nothing should move the pipeline away from Failure once stopped.
+			return
+
 		# If the workflow doc touches this for any reason
 		# Document native methods would raise a `TimeStampMismatch` error
 		self.db_set("status", status)
@@ -197,6 +212,34 @@ class ReleasePipeline(WorkflowBuilder):
 
 		if status == "Failure":
 			self.send_failure_notification()
+
+	@dashboard_whitelist()
+	def force_fail(self):
+		if self.status == "Failure":
+			return
+
+		self.update_pipeline_status("Failure")
+		if self.workflow:
+			frappe.get_doc("Press Workflow", self.workflow).force_fail()
+
+		self._cancel_running_builds()
+
+	def _cancel_running_builds(self):
+		for pipeline_build in self.pipeline_builds:
+			if (
+				frappe.db.get_value("Deploy Candidate Build", pipeline_build.build, "status")
+				not in DeployCandidateBuildStatus.intermediate()
+			):
+				continue
+
+			try:
+				fail_remote_job(pipeline_build.build)
+			except Exception:
+				frappe.log_error(
+					f"Failed to cancel Deploy Candidate Build {pipeline_build.build} on pipeline force fail",
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
 
 	def add_build_to_pipeline(self, build: str):
 		"""Attach a build to the pipeline if not present"""
@@ -531,10 +574,15 @@ class ReleasePipeline(WorkflowBuilder):
 			if app in release_group_apps:
 				continue
 
-			app_source, app_release = _resolve_dependent_app(
+			resolved_app = _resolve_dependent_app(
 				app,
 				parsed_supported_frappe_version,
+				self.team,
 			)
+			if not resolved_app:
+				continue
+
+			app_source, app_release = resolved_app
 			deploy_candidate.append(
 				"apps",
 				{

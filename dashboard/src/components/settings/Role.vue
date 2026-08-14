@@ -85,17 +85,14 @@
 	/>
 	<RoleResources
 		v-else-if="tab === 'resources'"
-		:key="role.doc?.resources"
 		:resources="role.doc?.resources"
-		@include="role.add_resource.submit($event)"
-		@remove="
-			(document_type, document_name) => {
+		:include="(resources) => role.add_resource.submit(resources)"
+		:remove="
+			(document_type, document_name) =>
 				role.remove_resource.submit({
 					document_type,
 					document_name,
-				});
-				role.reload();
-			}
+				})
 		"
 	/>
 	<RolePermissions
@@ -115,6 +112,7 @@
 		:allow_customer="role.doc?.allow_customer"
 		:allow_leads="role.doc?.allow_leads"
 		:allow_contribution="role.doc?.allow_contribution"
+		:allow_local_payment="role.doc?.allow_local_payment"
 		:disabled="user != team.doc?.user"
 		@update="
 			(key: string, value: boolean) => {

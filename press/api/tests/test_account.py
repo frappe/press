@@ -5,13 +5,21 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.tests.ui_test_helpers import create_test_user
 
-from press.api.account import accept_team_invite, leave_team, signup, validate_pincode
+from press.api.account import (
+	accept_team_invite,
+	leave_team,
+	set_2fa_recovery_code_reminders,
+	signup,
+	validate_pincode,
+)
 from press.press.doctype.account_request.account_request import AccountRequest
+from press.press.doctype.team.team import Team
 from press.press.doctype.team.team_members import get_invitations
 from press.press.doctype.team.test_team import (
 	create_test_press_admin_team,
 	create_test_team,
 )
+from press.press.doctype.user_2fa.test_user_2fa import create_test_user_2fa
 
 
 @contextmanager
@@ -362,6 +370,33 @@ class TestAccountApi(TestCase):
 		self.assertIn("can't be accepted with the current account", str(cm.exception))
 		self.assertFalse(frappe.db.exists("Team Member", {"parent": team.name, "user": intruder}))
 
+	def test_accept_team_invite_adds_member_as_administrator(self):
+		"""Adding the member triggers side effects a plain Press User invitee can't
+		perform (e.g. an Email Group Member subscription), so acceptance must run
+		as Administrator and restore the session afterwards. Regression for the
+		elevation removed in f1a0e80ba."""
+		team = create_test_team()
+		invited = frappe.mock("email")
+		create_test_user(invited)
+		key = self._invite(team, invited, roles=None)
+
+		session_user_while_creating = {}
+		create_member = Team.create_user_for_member
+
+		def record_session_user(self, *args, **kwargs):
+			session_user_while_creating["user"] = frappe.session.user
+			return create_member(self, *args, **kwargs)
+
+		with (
+			user_context(invited),
+			patch.object(Team, "create_user_for_member", record_session_user),
+		):
+			accept_team_invite(key)
+			self.assertEqual(frappe.session.user, invited)
+
+		self.assertEqual(session_user_while_creating["user"], "Administrator")
+		self.assertTrue(frappe.db.exists("Team Member", {"parent": team.name, "user": invited}))
+
 	def test_accept_team_invite_recovers_from_quoted_printable_break_in_key(self):
 		"""The invite URL is long enough that email transport wraps it with a
 		quoted-printable soft break ("=" + newline). If that artifact leaks into
@@ -406,3 +441,36 @@ class TestAccountApi(TestCase):
 			validate_pincode,
 			test_billing_details,
 		)
+
+
+class TestSet2FARecoveryCodeReminders(TestCase):
+	def setUp(self):
+		self.team = create_test_team()
+		create_test_user_2fa(self.team.user)
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def is_unsubscribed(self) -> int:
+		return frappe.db.get_value("User 2FA", self.team.user, "unsubscribed_from_recovery_code_reminders")
+
+	def test_the_string_sent_by_the_dashboard_switch_turns_reminders_off(self):
+		with user_context(self.team.user):
+			set_2fa_recovery_code_reminders("false")
+		self.assertEqual(self.is_unsubscribed(), 1)
+
+	def test_turning_reminders_back_on_resubscribes_the_user(self):
+		frappe.db.set_value("User 2FA", self.team.user, "unsubscribed_from_recovery_code_reminders", 1)
+		with user_context(self.team.user):
+			set_2fa_recovery_code_reminders("true")
+		self.assertEqual(self.is_unsubscribed(), 0)
+
+	def test_setting_reminders_without_2fa_throws(self):
+		other_team = create_test_team()
+		with user_context(other_team.user):
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				f"2FA is not enabled for {other_team.user}",
+				set_2fa_recovery_code_reminders,
+				True,
+			)

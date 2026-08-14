@@ -12,6 +12,10 @@ from press.runner import Ansible
 from press.security import fail2ban
 from press.utils import log_error
 
+# ProxySQL image version rolled out to all proxies. Bumped from 2.3.2 to fix
+# ProxySQL failing to serve newly issued Let's Encrypt certificates.
+PROXYSQL_VERSION = "3.0.9"
+
 
 class ProxyServer(BaseServer):
 	# begin: auto-generated types
@@ -31,6 +35,7 @@ class ProxyServer(BaseServer):
 		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
+		disable_agent_update: DF.Check
 		domain: DF.Link | None
 		domains: DF.Table[ProxyServerDomain]
 		enabled_default_routing: DF.Check
@@ -41,6 +46,7 @@ class ProxyServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_auditd_setup: DF.Check
 		is_primary: DF.Check
 		is_proxysql_setup: DF.Check
 		is_replication_setup: DF.Check
@@ -48,6 +54,8 @@ class ProxyServer(BaseServer):
 		is_server_setup: DF.Check
 		is_ssh_proxy_setup: DF.Check
 		is_static_ip: DF.Check
+		is_wazuh_agent_installed: DF.Check
+		wazuh_agent_status: DF.Data | None
 		is_wireguard_setup: DF.Check
 		mem_limits: DF.Code | None
 		plan: DF.Link | None
@@ -141,7 +149,7 @@ class ProxyServer(BaseServer):
 					"monitoring_password": monitoring_password,
 					"log_server": log_server,
 					"kibana_password": kibana_password,
-					"certificate_private_key": certificate.private_key,
+					"certificate_private_key": certificate.get_private_key(),
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"press_url": frappe.utils.get_url(),
@@ -152,6 +160,8 @@ class ProxyServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				self.set_auditd_setup_from_base_playbook()
+				self.install_wazuh_agent_if_configured()
 			else:
 				self.status = "Broken"
 		except Exception:
@@ -313,6 +323,23 @@ class ProxyServer(BaseServer):
 					self.reboot()
 		except Exception:
 			log_error("ProxySQL Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def update_proxysql(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_update_proxysql", queue="long", timeout=1200)
+
+	def _update_proxysql(self):
+		try:
+			ansible = Ansible(
+				playbook="update_proxysql.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={"proxysql_version": PROXYSQL_VERSION},
+			)
+			ansible.run()
+		except Exception:
+			log_error("ProxySQL Update Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def setup_replication(self):

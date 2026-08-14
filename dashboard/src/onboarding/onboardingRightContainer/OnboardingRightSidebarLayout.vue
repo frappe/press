@@ -53,5 +53,17 @@ const resources = [
 				</a>
 			</div>
 		</div>
+
+		<div class="mt-auto border-t border-outline-gray-1 px-4 py-3">
+			<p class="text-p-sm leading-5 text-ink-gray-6">
+				Questions? Contact
+				<a
+					href="mailto:sales@frappe.io"
+					class="font-medium text-ink-gray-8 underline"
+				>
+					sales@frappe.io
+				</a>
+			</p>
+		</div>
 	</div>
 </template>

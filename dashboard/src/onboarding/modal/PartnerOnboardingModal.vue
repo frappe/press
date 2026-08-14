@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button, Dialog } from 'frappe-ui'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Eligibility from '@/onboarding/modal/Eligibility.vue'
 import FrappePartnerships from '@/onboarding/modal/FrappePartnerships.vue'
@@ -9,11 +9,15 @@ import PartnerPlans from '@/onboarding/modal/PartnerPlans.vue'
 import PartnerRegistration from '@/onboarding/modal/PartnerRegistration.vue'
 import PostRegistrationMessage from '@/onboarding/modal/PostRegistrationMessage.vue'
 import SidebarItem from '@/onboarding/modal/SidebarItem.vue'
+import { showOnboardingToast } from '@/onboarding/toast'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
 import LucideXIcon from '~icons/lucide/x'
 
 const open = defineModel<boolean>({ default: false })
 const registered = ref(false)
+// Frozen when the modal opens so first-time Proceed → success isn't swapped
+// into the edit Dialog after the Draft is created.
+const editModeSession = ref(false)
 const router = useRouter()
 const onboarding = usePartnerOnboarding(inject('team') as any)
 
@@ -45,7 +49,15 @@ const partnerOnboardingSteps = [
 	},
 ]
 
+const registrationStep = partnerOnboardingSteps[4]
 const currentStep = ref(partnerOnboardingSteps[0])
+
+const isDraftOnboarding = computed(
+	() =>
+		Boolean(onboarding.doc.value?.name) &&
+		onboarding.doc.value?.docstatus === 0 &&
+		onboarding.doc.value?.status === 'Draft',
+)
 
 const isLastStep = computed(
 	() => currentStep.value.id === partnerOnboardingSteps.length - 1,
@@ -67,6 +79,11 @@ const onRegistered = () => {
 	registered.value = true
 }
 
+const onUpdated = () => {
+	open.value = false
+	showOnboardingToast('success', 'Registration details updated')
+}
+
 // The record now exists — close the modal and take the user to the full
 // onboarding workflow. If they are already on that page this is a no-op.
 const onContinue = () => {
@@ -75,10 +92,55 @@ const onContinue = () => {
 		router.push('/partner-onboarding')
 	}
 }
+
+watch(
+	open,
+	(isOpen) => {
+		if (!isOpen) {
+			registered.value = false
+			return
+		}
+
+		registered.value = false
+		editModeSession.value = isDraftOnboarding.value
+		currentStep.value = editModeSession.value
+			? registrationStep
+			: partnerOnboardingSteps[0]
+	},
+	{ flush: 'sync' },
+)
 </script>
 
 <template>
+	<!-- Edit registration: default frappe-ui Dialog chrome (title + close) -->
 	<Dialog
+		v-if="editModeSession"
+		v-model="open"
+		:disable-outside-click-to-close="true"
+		:options="{
+			size: '2xl',
+			title: 'Edit registration',
+		}"
+	>
+		<template #body-content>
+			<PartnerRegistration edit-mode @updated="onUpdated" />
+		</template>
+		<template #actions>
+			<div class="flex justify-end">
+				<Button
+					variant="solid"
+					type="submit"
+					form="registration-form"
+					:loading="onboarding.saving.value"
+					label="Save"
+				/>
+			</div>
+		</template>
+	</Dialog>
+
+	<!-- First-time partner interest wizard -->
+	<Dialog
+		v-else
 		v-model="open"
 		:disable-outside-click-to-close="true"
 		:options="{
@@ -88,7 +150,6 @@ const onContinue = () => {
 	>
 		<template #body>
 			<div class="flex min-h-[480px]">
-				<!-- hide sidebar if registered -->
 				<div
 					v-if="!registered"
 					class="flex w-[240px] shrink-0 flex-col gap-0.5 rounded-l-xl bg-surface-gray-1 p-3"
@@ -102,17 +163,16 @@ const onContinue = () => {
 					/>
 				</div>
 
-				<!-- Main content -->
 				<div class="flex flex-1 flex-col p-6">
-					<!-- Header -->
 					<div
-						class="mb-6 flex items-center justify-between"
 						v-if="!registered"
+						class="mb-6 flex items-center justify-between"
 					>
 						<h3 class="text-2xl font-semibold text-ink-gray-8">
 							Interested in partnering with us?
 						</h3>
 						<button
+							type="button"
 							class="rounded-md p-1 text-ink-gray-6 hover:bg-surface-gray-2 hover:text-ink-gray-9"
 							@click="open = false"
 						>
@@ -120,10 +180,9 @@ const onContinue = () => {
 						</button>
 					</div>
 
-					<!-- Step content -->
 					<div
 						class="-m-2 flex-1 overflow-y-auto p-2"
-						:class="registered ? 'flex justify-center items-center' : ''"
+						:class="registered ? 'flex items-center justify-center' : ''"
 					>
 						<PostRegistrationMessage v-if="registered" @continue="onContinue" />
 						<component
@@ -133,7 +192,6 @@ const onContinue = () => {
 						/>
 					</div>
 
-					<!-- Footer (hidden after registration) -->
 					<div
 						v-if="!registered"
 						class="mt-8 flex items-center justify-between"
@@ -161,7 +219,7 @@ const onContinue = () => {
 								form="registration-form"
 								:loading="onboarding.saving.value"
 							>
-								Register as a partner
+								Proceed
 							</Button>
 						</div>
 					</div>

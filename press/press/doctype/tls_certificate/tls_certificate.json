@@ -132,7 +132,7 @@
 			"depends_on": "eval: doc.provider !== \"Let's Encrypt\"",
 			"description": "Output of openssl genpkey -algorithm RSA -out private.key -pkeyopt rsa_keygen_bits:4096\n",
 			"fieldname": "private_key",
-			"fieldtype": "Code",
+			"fieldtype": "Password",
 			"label": "Private Key",
 			"read_only": 1,
 			"read_only_depends_on": "eval: doc.provider === \"Let's Encrypt\""

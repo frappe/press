@@ -294,6 +294,11 @@ class Bench(Document):
 			self.port_offset = self.get_unused_port_offset()
 
 		config = {
+			# tells bench its state is owned by Press, so it can warn before
+			# commands that desync the container from the Bench/Site records.
+			# common_site_config is the only bench config bind-mounted into the
+			# container, so the marker has to live here.
+			"frappe_cloud": True,
 			"monitor": True,
 			"redis_cache": self.build_redis_uri(13000),
 			"redis_queue": self.build_redis_uri(11000),
@@ -1122,13 +1127,24 @@ class Bench(Document):
 				ArchiveBenchError,
 			)
 
+		sites = frappe.qb.DocType("Site")
 		fatal_site_updates = (
 			frappe.qb.from_(site_updates)
+			.join(sites)
+			.on(
+				(site_updates.site == sites.name)
+				& (
+					(sites.bench == site_updates.source_bench)
+					| (sites.bench == site_updates.destination_bench)
+				)
+			)
 			.select(site_updates.name)
 			.where((site_updates.source_bench == self.name) | (site_updates.destination_bench == self.name))
 			.where(
 				(site_updates.status == "Fatal")
 				& (site_updates.creation > frappe.utils.add_to_date(None, days=-EMPTY_BENCH_COURTESY_DAYS))
+				& (sites.status != "Archived")
+				& (site_updates.cause_of_failure_is_resolved == 0)
 			)
 			.limit(1)
 		).run()
