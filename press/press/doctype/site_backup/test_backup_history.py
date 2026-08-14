@@ -14,11 +14,14 @@ from press.press.doctype.site_backup.backup_history import (
 	CACHE_TTL,
 	MAX_RANGE_DAYS,
 	PARTIAL_CACHE_TTL,
+	REALTIME_EVENT,
 	agent_answer_key,
 	build_and_cache,
+	cache_key,
 	cache_seconds,
 	get_backup_history,
 	process_fetch_backup_jobs_update,
+	read_agent_answer,
 	ready,
 )
 
@@ -57,12 +60,9 @@ class TestBackupHistory(FrappeTestCase):
 		enqueue = patch.object(frappe, "enqueue", side_effect=run_build_inline)
 		self.enqueue_build = enqueue.start()
 		self.addCleanup(enqueue.stop)
-		wait = patch(
-			"press.press.doctype.site_backup.backup_history.wait_for_agent_answer",
-			return_value=None,
-		)
-		self.wait_for_agent = wait.start()
-		self.addCleanup(wait.stop)
+		realtime = patch("press.press.doctype.site_backup.backup_history.frappe.publish_realtime")
+		self.publish_realtime = realtime.start()
+		self.addCleanup(realtime.stop)
 
 	def audit_trail(self, start: str, end: str) -> dict:
 		"""The first look starts the build. It finishes inline here, so look again."""
@@ -544,6 +544,31 @@ class TestBackupHistory(FrappeTestCase):
 		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
 
 		self.assertEqual(day["status"], "Not Available")
+
+	def test_a_build_never_waits_on_the_server(self):
+		"""Sleeping here would hold a long queue worker while the agent job is delivered."""
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_called_once()
+		self.assertIsNone(read_agent_answer(self.site.name, "2023-10-02", "2023-10-02"))
+
+	def test_a_finished_build_tells_the_page_to_look_again(self):
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		events = [call.kwargs.get("event") for call in self.publish_realtime.call_args_list]
+		self.assertIn(REALTIME_EVENT, events)
+
+	def test_the_servers_answer_drops_the_trail_built_without_it(self):
+		"""Otherwise the answer sits behind an hour-old trail that was built ignoring it."""
+		day = frappe.utils.getdate("2023-10-02")
+		self.audit_trail("2023-10-02", "2023-10-02")
+		self.assertIsNotNone(frappe.cache().get_value(cache_key(self.site.name, day, day)))
+
+		process_fetch_backup_jobs_update(
+			self.fake_job(data={"jobs": [self.agent_job("2023-10-02 04:00:00")], "truncated": False})
+		)
+
+		self.assertIsNone(frappe.cache().get_value(cache_key(self.site.name, day, day)))
 
 	def test_reversed_range_is_rejected(self):
 		self.assertRaisesRegex(
