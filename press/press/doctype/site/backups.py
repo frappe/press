@@ -5,17 +5,18 @@ from __future__ import annotations
 
 import functools
 from collections import deque
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from functools import wraps
 from itertools import groupby
 from time import time
+from typing import Literal, TypeAlias
 
 import frappe
 import pytz
 
 from press.press.doctype.press_settings.press_settings import PressSettings
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
-from press.press.doctype.site.site import Literal, Site
+from press.press.doctype.site.site import Site
 from press.press.doctype.site_backup.site_backup import SiteBackup
 from press.press.doctype.subscription.subscription import Subscription
 from press.utils import log_error
@@ -33,7 +34,7 @@ def timing(f):
 	return wrap
 
 
-BACKUP_TYPES = Literal["Logical", "Physical"]
+BACKUP_TYPES: TypeAlias = Literal["Logical", "Physical"]
 
 
 class BackupRotationScheme:
@@ -264,14 +265,14 @@ class ScheduledBackupJob:
 		else:
 			self.sites_without_offsite = []
 
-	def take_offsite(self, site: frappe._dict, day: datetime.date) -> bool:
+	def take_offsite(self, site: frappe._dict, day: date) -> bool:
 		return (
 			self.offsite_setup
 			and site.name not in self.sites_without_offsite
 			and not SiteBackup.offsite_backup_exists(site.name, day)
 		)
 
-	def get_site_time(self, site: dict[str, str]) -> datetime:
+	def get_site_time(self, site: frappe._dict) -> datetime:
 		timezone = site.timezone or "Asia/Kolkata"
 		site_timezone = pytz.timezone(timezone)
 		return self.server_time.astimezone(site_timezone)
@@ -343,6 +344,7 @@ class ScheduledBackupJob:
 		except Exception:
 			log_error("Site Backup Exception", site=site)
 			frappe.db.rollback()
+			return False
 
 
 def schedule_logical_backups_for_sites_with_backup_time():
