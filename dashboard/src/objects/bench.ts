@@ -148,7 +148,7 @@ function getList() {
 	} satisfies List as List;
 }
 
-function getBenchTitleSuffix(row: Row) {
+export function getBenchTitleSuffix(row: Row) {
 	const ch: VNode[] = [];
 	if (row.inplace_update_docker_image) ch.push(getInPlaceUpdatesSuffix(row));
 	if (row.has_app_patch_applied) ch.push(getAppPatchSuffix(row));
@@ -204,7 +204,7 @@ function getClusterImagePrefix(row: Row) {
 	});
 }
 
-function filterControls() {
+export function filterControls() {
 	return [
 		{
 			type: 'select',
