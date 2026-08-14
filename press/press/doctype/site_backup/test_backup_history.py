@@ -18,6 +18,7 @@ from press.press.doctype.site_backup.backup_history import (
 	REALTIME_EVENT,
 	agent_answer_key,
 	build_and_cache,
+	build_key,
 	cache_key,
 	cache_seconds,
 	get_backup_history,
@@ -28,6 +29,11 @@ from press.press.doctype.site_backup.backup_history import (
 from press.press.doctype.site_backup_summary.site_backup_summary import record_days
 
 BUILD_METHOD = "press.press.doctype.site_backup.backup_history.build_and_cache"
+
+
+class BucketOnFire(Exception):
+	"""Whatever a build can die of, which the trail has to survive either way."""
+
 
 BUCKET = "test-backups"
 REPLICA_BUCKET = "test-backups-replica"
@@ -885,3 +891,23 @@ class TestBackupHistory(FrappeTestCase):
 		self.assertEqual(day["status"], "Not Available")
 		self.assertIsNone(day["source"])
 		self.assertFalse(day["sizes_known"])
+
+	def failing_build(self):
+		return patch(
+			"press.press.doctype.site_backup.backup_history.build_history",
+			side_effect=BucketOnFire,
+		)
+
+	def test_a_build_that_fails_tells_the_page_instead_of_leaving_it_waiting(self):
+		"""Without an answer the page keeps saying the trail is being put together."""
+		with self.failing_build():
+			self.assertRaises(BucketOnFire, build_and_cache, self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertEqual(get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["status"], "Broken")
+		self.publish_realtime.assert_called()
+
+	def test_a_failed_build_is_not_left_marked_as_building(self):
+		with self.failing_build():
+			self.assertRaises(BucketOnFire, build_and_cache, self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertFalse(frappe.cache().get_value(build_key(self.site.name, "2023-10-02", "2023-10-02")))

@@ -128,6 +128,11 @@ def ready(days: list[dict], unconfirmed: bool = False) -> dict:
 	return {"status": "Ready", "days": days, "unconfirmed": unconfirmed}
 
 
+def broken() -> dict:
+	"""Said once, and only for as long as a partial answer is kept, so a refresh retries."""
+	return {"status": "Broken", "days": [], "unconfirmed": False}
+
+
 def build_key(site: str, start: date, end: date) -> str:
 	return f"backup_audit_trail_building:{site}:{start}:{end}"
 
@@ -157,9 +162,15 @@ def build_and_cache(site: str, start_date: str, end_date: str):
 		frappe.cache().set_value(
 			cache_key(site, start, end), history, expires_in_sec=cache_seconds(history, end)
 		)
+	except Exception:
+		# The page is waiting on this build and has no other way to hear about it, so a
+		# build that dies without an answer leaves it saying it is still being put
+		# together, for as long as the tab is open
+		frappe.cache().set_value(cache_key(site, start, end), broken(), expires_in_sec=PARTIAL_CACHE_TTL)
+		raise
 	finally:
 		frappe.cache().delete_value(build_key(site, start, end))
-	publish_update(site, start_date, end_date)
+		publish_update(site, start_date, end_date)
 
 
 def publish_update(site: str, start: str, end: str):

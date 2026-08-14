@@ -117,6 +117,9 @@ export default {
 		preparing() {
 			return this.history.status === 'Preparing'
 		},
+		broken() {
+			return this.history.status === 'Broken'
+		},
 		rows() {
 			// The API already returns one entry per day, ready to render
 			return (this.history.days || []).map((day) => ({
@@ -125,6 +128,16 @@ export default {
 			}))
 		},
 		banner() {
+			// A build that died has already said so, and nothing else will arrive
+			if (this.broken) {
+				return {
+					title:
+						"Couldn't put the trail together for this range. Try refresh, and check the error log if it keeps failing.",
+					type: 'warning',
+					id: `${this.name}-broken`,
+				}
+			}
+
 			// Records are a query, but the server answers from a queue and the buckets
 			// are someone else's network, so the trail is put together in the background
 			if (this.preparing) {
@@ -219,7 +232,9 @@ export default {
 				isLoading: () => this.$resources.history.loading || this.preparing,
 				emptyStateMessage: this.preparing
 					? 'Putting the trail together'
-					: 'No backups stored for this range',
+					: this.broken
+						? 'Nothing to show'
+						: 'No backups stored for this range',
 				banner: () => this.banner,
 				onRowClick: (row) => (this.selectedDay = row),
 				columns: this.columns,
