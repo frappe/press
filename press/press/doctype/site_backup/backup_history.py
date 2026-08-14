@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import time
 from datetime import date, timedelta
 from urllib.parse import parse_qs, urlparse
 
@@ -30,17 +29,8 @@ PARTIAL_CACHE_TTL = 60
 # Long enough to outlast a build, short enough that a lost worker does not wedge a range
 BUILD_TTL = 5 * 60
 
-# The server reads its job database as a job of its own, and Press delivers that job from
-# a queue, so the wait is a queue wait and not a request
-AGENT_WAIT_SECONDS = 60
-AGENT_POLL_SECONDS = 3
-
-# Most servers run an agent without the route. The first ask finds out, and waits only
-# long enough for a healthy one to answer rather than the full wait.
-AGENT_PROBE_SECONDS = 10
-
-# Learned once and kept, so a server that can answer is waited for properly
-AGENT_SUPPORTED_TTL = 30 * 24 * 60 * 60
+# What the page listens on, so a finished build reaches it without asking
+REALTIME_EVENT = "backup_audit_trail_update"
 
 # Keeps the IN clause sane on a year of daily backups
 REMOTE_FILE_BATCH = 500
@@ -129,6 +119,17 @@ def build_and_cache(site: str, start_date: str, end_date: str):
 		)
 	finally:
 		frappe.cache().delete_value(build_key(site, start, end))
+	publish_update(site, start_date, end_date)
+
+
+def publish_update(site: str, start: str, end: str):
+	"""Tell whoever is looking at this range that there is something new to read."""
+	frappe.publish_realtime(
+		event=REALTIME_EVENT,
+		doctype="Site",
+		docname=site,
+		message={"site": site, "start_date": str(start), "end_date": str(end)},
+	)
 
 
 def resolve_range(site: str, start_date: str, end_date: str) -> tuple[date, date]:
@@ -189,12 +190,12 @@ def merge_stored(backups: dict[str, dict], stored: dict[str, dict]) -> dict[str,
 
 
 def await_agent_backup_jobs(site: str, start: date, end: date) -> tuple[dict[str, dict], bool]:
-	"""What the site's server remembers running, waited for rather than polled from a page.
+	"""What the site's server remembers running, if it has already said.
 
-	The server reads its job database as a job, and Press delivers that job from a queue,
-	so the answer is a minute away at worst. This runs in a background worker, which is
-	the right place to wait. Only the current server is asked: jobs a site ran before
-	moving stay on the server it left, and its objects come from the buckets it used.
+	The server reads its job database as a job of its own, so the answer is never ready
+	the first time. Nothing waits for it: the job's callback drops the built trail when
+	it lands, and the next build picks the answer up. Only the current server is asked,
+	since jobs a site ran before moving stay on the server it left.
 	"""
 	server = frappe.db.get_value("Site", site, "server")
 	if not server or is_agent_silenced(server):
@@ -202,14 +203,9 @@ def await_agent_backup_jobs(site: str, start: date, end: date) -> tuple[dict[str
 
 	answer = read_agent_answer(site, start, end)
 	if answer is None:
-		if not request_agent_backup_jobs(server, site, start, end):
-			return {}, False
-		# A server not yet known to answer is given a short look, not the full wait
-		seconds = AGENT_WAIT_SECONDS if is_agent_supported(server) else AGENT_PROBE_SECONDS
-		answer = wait_for_agent_answer(site, start, end, seconds)
-
-	if answer is None:
+		request_agent_backup_jobs(server, site, start, end)
 		return {}, False
+
 	# A truncated answer dropped the oldest days in the range, so it is not the whole story
 	return days_from_agent_jobs(answer["jobs"]), not answer.get("truncated")
 
@@ -218,21 +214,8 @@ def read_agent_answer(site: str, start: date, end: date) -> dict | None:
 	return frappe.cache().get_value(agent_answer_key(site, start, end))
 
 
-def wait_for_agent_answer(site: str, start: date, end: date, seconds: int) -> dict | None:
-	# Another worker delivers the job, so the job has to be visible to it before we wait
-	frappe.db.commit()
-
-	deadline = time.monotonic() + seconds
-	while time.monotonic() < deadline:
-		time.sleep(AGENT_POLL_SECONDS)
-		answer = read_agent_answer(site, start, end)
-		if answer is not None:
-			return answer
-	return None
-
-
 def request_agent_backup_jobs(server: str, site: str, start: date, end: date) -> bool:
-	"""Queue the read and commit, since another worker delivers the job to the agent."""
+	"""Queue the read. Nothing waits on it, so this returns as soon as the job exists."""
 	try:
 		# Deduplicated by Agent, so asking again while one is running adds nothing
 		Agent(server).fetch_site_backup_jobs(site, str(start), str(end))
@@ -266,9 +249,6 @@ def process_fetch_backup_jobs_update(job):
 	if job.status != "Success" or not job.data:
 		return
 
-	# It answered once, so the next ask is worth waiting out
-	frappe.cache().set_value(agent_supported_key(job.server), 1, expires_in_sec=AGENT_SUPPORTED_TTL)
-
 	query = parse_qs(urlparse(job.request_path).query)
 	site, start, end = query.get("site"), query.get("start"), query.get("end")
 	if not (site and start and end):
@@ -279,14 +259,9 @@ def process_fetch_backup_jobs_update(job):
 		frappe.parse_json(job.data),
 		expires_in_sec=CACHE_TTL,
 	)
-
-
-def agent_supported_key(server: str) -> str:
-	return f"backup_audit_trail_agent_supported:{server}"
-
-
-def is_agent_supported(server: str) -> bool:
-	return bool(frappe.cache().get_value(agent_supported_key(server)))
+	# The trail was built without this, so drop it and tell the page to look again
+	frappe.cache().delete_value(cache_key(site[0], start[0], end[0]))
+	publish_update(site[0], start[0], end[0])
 
 
 def agent_silence_key(server: str) -> str:
