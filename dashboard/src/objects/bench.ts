@@ -194,7 +194,7 @@ function getAppPatchSuffix(row: Row) {
 	);
 }
 
-function getClusterImagePrefix(row: Row) {
+export function getClusterImagePrefix(row: Row) {
 	if (!row.cluster_image) return;
 
 	return h('img', {
