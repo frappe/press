@@ -28,6 +28,10 @@ PARTIAL_CACHE_TTL = 60
 # Long enough to outlast a build, short enough that a lost worker does not wedge a range
 BUILD_TTL = 5 * 60
 
+# Outlives the build it belongs to, so a build that never came back can be told apart
+# from one that was never started
+ATTEMPT_TTL = BUILD_TTL + 60
+
 # What the page listens on, so a finished build reaches it without asking
 REALTIME_EVENT = "backup_audit_trail_update"
 
@@ -109,8 +113,28 @@ def get_backup_history(site: str, start_date: str, end_date: str, refresh: bool 
 	if cached is not None:
 		return with_range(cached, start, end)
 
+	if abandoned_build(site, start, end):
+		return with_range(broken(), start, end)
+
+	frappe.cache().set_value(attempt_key(site, start, end), 1, expires_in_sec=ATTEMPT_TTL)
 	queue_build(site, start, end)
 	return with_range({"status": "Preparing", "days": [], "unconfirmed": False}, start, end)
+
+
+def abandoned_build(site: str, start: date, end: date) -> bool:
+	"""A build was started, is no longer running, and left no answer behind.
+
+	A worker killed under the job — out of memory, restarted mid-build — never reaches
+	the code that says why. Without this the page is told the trail is still being put
+	together, forever, and asking again only starts another build that dies the same way.
+	"""
+	if not frappe.cache().get_value(attempt_key(site, start, end)):
+		return False
+	if frappe.cache().get_value(build_key(site, start, end)):
+		return False
+
+	frappe.cache().delete_value(attempt_key(site, start, end))
+	return True
 
 
 def with_range(history: dict, start: date, end: date) -> dict:
@@ -133,6 +157,10 @@ def broken() -> dict:
 
 def build_key(site: str, start: date, end: date) -> str:
 	return f"backup_audit_trail_building:{site}:{start}:{end}"
+
+
+def attempt_key(site: str, start: date, end: date) -> str:
+	return f"backup_audit_trail_attempted:{site}:{start}:{end}"
 
 
 def queue_build(site: str, start: date, end: date):
@@ -168,6 +196,7 @@ def build_and_cache(site: str, start_date: str, end_date: str):
 		raise
 	finally:
 		frappe.cache().delete_value(build_key(site, start, end))
+		frappe.cache().delete_value(attempt_key(site, start, end))
 		publish_update(site, start_date, end_date)
 
 
@@ -226,7 +255,9 @@ def build_history(site: str, start: date, end: date) -> dict:
 		backups = {**jobs, **backups}
 
 	if needs_bucket(backups, days):
-		backups = merge_stored(backups, list_stored_backups(site, start, end))
+		stored, buckets_answered = list_stored_backups(site, start, end)
+		backups = merge_stored(backups, stored)
+		answered = answered and buckets_answered
 
 	trail = [backups.get(str(day)) or missing_backup(str(day)) for day in days]
 	return ready(with_retention_policy(trail), unconfirmed=not answered and has_gaps(backups, days))
@@ -519,10 +550,10 @@ def recorded_size(backup: dict, artifact: str, remote_files: dict) -> int:
 	return cint(file_size)
 
 
-def list_stored_backups(site: str, start: date, end: date) -> dict[str, dict]:
-	"""The days the buckets still hold something for, read as a day of the trail."""
-	stored = list_stored_objects(site, start, end)
-	return {day: backup_from_objects(day, sizes) for day, sizes in stored.items()}
+def list_stored_backups(site: str, start: date, end: date) -> tuple[dict[str, dict], bool]:
+	"""The days the buckets still hold something for, read as days of the trail."""
+	stored, answered = list_stored_objects(site, start, end)
+	return {day: backup_from_objects(day, sizes) for day, sizes in stored.items()}, answered
 
 
 def backup_from_objects(day: str, sizes: dict[str, int]) -> dict:

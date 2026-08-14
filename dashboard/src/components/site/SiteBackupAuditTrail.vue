@@ -149,12 +149,13 @@ export default {
 				}
 			}
 
-			// The server has the last word on days nothing is stored for, so say when it
-			// could not be asked rather than letting those days read as no backup
+			// The server and the buckets have the last word on days nothing is stored
+			// for, so say when they could not be reached rather than letting those days
+			// read as no backup
 			if (this.history.unconfirmed) {
 				return {
 					title:
-						"Couldn't reach this site's server, so days showing Unconfirmed aren't answered by anything.",
+						"Couldn't reach this site's server or its backup storage, so days showing Unconfirmed aren't answered by anything.",
 					type: 'general',
 					dismissable: true,
 					id: `${this.name}-unconfirmed`,

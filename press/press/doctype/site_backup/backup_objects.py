@@ -12,10 +12,12 @@ from typing import TYPE_CHECKING
 
 import frappe
 from boto3 import client
+from botocore.exceptions import BotoCoreError, ClientError
 from frappe.utils.password import get_decrypted_password
 
 from press.press.doctype.backup_bucket.backup_bucket import get_replication_target
 from press.press.doctype.site_backup.site_backup import get_backup_bucket
+from press.utils import log_error
 
 if TYPE_CHECKING:
 	from datetime import date
@@ -77,18 +79,28 @@ def get_site_buckets(site: str) -> list[dict]:
 	return list(buckets.values())
 
 
-def list_stored_objects(site: str, start: date, end: date) -> dict[str, dict[str, int]]:
-	"""What each bucket still holds for this site, as a size per artifact per day."""
+def list_stored_objects(site: str, start: date, end: date) -> tuple[dict[str, dict[str, int]], bool]:
+	"""What each bucket still holds for this site, and whether they all answered.
+
+	A bucket that cannot be read is a gap in the answer, not the end of the trail: the
+	records and the server have already said what they know, and an audit is better
+	served by those with the gap named than by an error page.
+	"""
 	credentials = get_offsite_credentials()
 	if not credentials:
-		return {}
+		return {}, True
 
 	days: dict[str, dict[str, int]] = {}
+	answered = True
 	for bucket in get_site_buckets(site):
-		# The current cluster's bucket is walked first, so it wins where both hold a day
-		for day, sizes in walk_bucket(bucket, site, start, end, credentials).items():
-			days.setdefault(day, sizes)
-	return days
+		try:
+			# The current cluster's bucket is walked first, so it wins where both hold a day
+			for day, sizes in walk_bucket(bucket, site, start, end, credentials).items():
+				days.setdefault(day, sizes)
+		except (ClientError, BotoCoreError):
+			log_error("Backup Audit Trail Bucket Unreadable", site=site, bucket=bucket["name"])
+			answered = False
+	return days, answered
 
 
 def get_offsite_credentials() -> tuple[str, str] | None:

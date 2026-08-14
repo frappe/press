@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import boto3
 import frappe
+from botocore.exceptions import ClientError
 from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
@@ -28,6 +29,10 @@ from press.press.doctype.site_backup.backup_history import (
 )
 
 BUILD_METHOD = "press.press.doctype.site_backup.backup_history.build_and_cache"
+
+# press's log_error re-raises whatever is being handled while tests run, which is the
+# opposite of what a test about carrying on past a failure needs
+BUCKET_ERROR_LOG = "press.press.doctype.site_backup.backup_objects.log_error"
 
 
 class BucketOnFire(Exception):
@@ -121,6 +126,7 @@ class TestBackupHistory(FrappeTestCase):
 		for prefix in (
 			"backup_audit_trail_jobs:",
 			"backup_audit_trail_building:",
+			"backup_audit_trail_attempted:",
 			"backup_audit_trail:",
 		):
 			frappe.cache().delete_keys(prefix)
@@ -134,13 +140,27 @@ class TestBackupHistory(FrappeTestCase):
 	def server(self) -> str:
 		return frappe.db.get_value("Site", self.site.name, "server")
 
+	# Enough to put the bench back, without loading or locking the whole Single
+	BACKUP_SETTINGS = ("aws_s3_bucket", "backup_region", "offsite_backups_access_key_id")
+
 	def setup_press_settings(self):
+		# A Single is written straight to the database, so anything that commits during a
+		# test leaves these fake credentials behind on the bench. Put back what was there.
+		before = {
+			field: frappe.db.get_single_value("Press Settings", field) for field in self.BACKUP_SETTINGS
+		}
+		self.addCleanup(self.restore_press_settings, before)
+
 		settings = frappe.get_single("Press Settings")
 		settings.aws_s3_bucket = BUCKET
 		settings.backup_region = REGION
 		settings.offsite_backups_access_key_id = "test-access-key"
 		settings.offsite_backups_secret_access_key = "test-secret-key"  # pragma: allowlist secret
 		settings.save()
+
+	def restore_press_settings(self, before: dict):
+		for field, value in before.items():
+			frappe.db.set_single_value("Press Settings", field, value)
 
 	def upload_backup(self, day: str, file_name: str, body: bytes = b"backup"):
 		boto3.client("s3", region_name=REGION).put_object(
@@ -865,3 +885,60 @@ class TestBackupHistory(FrappeTestCase):
 			self.assertRaises(BucketOnFire, build_and_cache, self.site.name, "2023-10-02", "2023-10-02")
 
 		self.assertFalse(frappe.cache().get_value(build_key(self.site.name, "2023-10-02", "2023-10-02")))
+
+	def unreadable_bucket(self):
+		"""Bad credentials, an expired key, a bucket that has gone away."""
+		return patch(
+			"press.press.doctype.site_backup.backup_objects.walk_bucket",
+			side_effect=ClientError({"Error": {"Code": "InvalidAccessKeyId"}}, "ListObjectsV2"),
+		)
+
+	def test_a_bucket_that_cannot_be_read_does_not_take_the_trail_down(self):
+		"""Bad credentials on a bench killed the build, and the page waited on it forever."""
+		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz")
+
+		with self.unreadable_bucket(), patch(BUCKET_ERROR_LOG) as log_error:
+			history = self.audit_trail("2023-10-01", "2023-10-02")
+
+		# Newest first, so the recorded day leads and the unreadable one follows
+		self.assertEqual(history["status"], "Ready")
+		self.assertEqual(history["days"][0]["status"], "Success")
+		self.assertEqual(history["days"][1]["status"], "Not Available")
+		log_error.assert_called()
+
+	def test_a_bucket_that_cannot_be_read_leaves_the_empty_days_unconfirmed(self):
+		with self.unreadable_bucket(), patch(BUCKET_ERROR_LOG):
+			history = self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.assertTrue(history["unconfirmed"])
+
+	def test_a_build_the_worker_died_under_is_not_reported_as_still_building(self):
+		"""A killed worker never reaches the code that says why, so the page waited forever."""
+		with patch.object(frappe, "enqueue"):
+			self.assertEqual(
+				get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["status"], "Preparing"
+			)
+			frappe.cache().delete_value(build_key(self.site.name, "2023-10-02", "2023-10-02"))
+
+			history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertEqual(history["status"], "Broken")
+
+	def test_a_build_still_running_is_still_reported_as_building(self):
+		with patch.object(frappe, "enqueue"):
+			get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+			history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertEqual(history["status"], "Preparing")
+
+	def test_a_range_asked_for_again_after_a_dead_build_starts_a_new_one(self):
+		"""Saying it is broken once must not leave the range unable to try again."""
+		with patch.object(frappe, "enqueue"):
+			get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+			frappe.cache().delete_value(build_key(self.site.name, "2023-10-02", "2023-10-02"))
+			get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+			history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertEqual(history["status"], "Preparing")
