@@ -21,6 +21,10 @@ from press.press.doctype.app.app import (
 	parse_frappe_version,
 )
 from press.press.doctype.bench_update.bench_update import get_bench_update
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
+	Status as DeployCandidateBuildStatus,
+)
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import fail_remote_job
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 
@@ -211,6 +215,13 @@ class ReleasePipeline(WorkflowBuilder):
 		self.update_pipeline_status("Failure")
 		if self.workflow:
 			frappe.get_doc("Press Workflow", self.workflow).force_fail()
+
+		for pipeline_build in self.pipeline_builds:
+			if (
+				frappe.db.get_value("Deploy Candidate Build", pipeline_build.build, "status")
+				in DeployCandidateBuildStatus.intermediate()
+			):
+				fail_remote_job(pipeline_build.build)
 
 	def add_build_to_pipeline(self, build: str):
 		"""Attach a build to the pipeline if not present"""
