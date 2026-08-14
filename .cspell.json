@@ -802,6 +802,10 @@
 		"kcore",
 		"MRR",
 		"notif",
-		"smallbtn"
+		"smallbtn",
+		"rollup",
+		"summarise",
+		"summarised",
+		"summarises"
 	]
 }

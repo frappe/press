@@ -1,0 +1,65 @@
+{
+	"actions": [],
+	"autoname": "format:{site}::{month}",
+	"creation": "2026-08-14 10:00:00.000000",
+	"description": "One month of a site's backup history, kept long after the backups themselves are pruned.",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": ["site", "month", "days"],
+	"fields": [
+		{
+			"fieldname": "site",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Site",
+			"options": "Site",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"description": "YYYY-MM",
+			"fieldname": "month",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Month",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"description": "One entry per day: status, sizes, and what retention did with the files.",
+			"fieldname": "days",
+			"fieldtype": "JSON",
+			"label": "Days"
+		}
+	],
+	"grid_page_length": 50,
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-08-14 10:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Site Backup Summary",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
+}
