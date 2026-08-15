@@ -1,0 +1,133 @@
+{
+	"add_total_row": 1,
+	"columns": [
+		{
+			"fieldname": "instance_id",
+			"fieldtype": "Data",
+			"label": "Instance ID",
+			"width": 0
+		},
+		{
+			"fieldname": "name_tag",
+			"fieldtype": "Data",
+			"label": "AWS Name Tag",
+			"width": 0
+		},
+		{
+			"fieldname": "cluster",
+			"fieldtype": "Link",
+			"label": "Cluster",
+			"options": "Cluster",
+			"width": 0
+		},
+		{
+			"fieldname": "region",
+			"fieldtype": "Link",
+			"label": "Region",
+			"options": "Cloud Region",
+			"width": 0
+		},
+		{
+			"fieldname": "instance_type",
+			"fieldtype": "Data",
+			"label": "Instance Type",
+			"width": 0
+		},
+		{
+			"fieldname": "aws_status",
+			"fieldtype": "Data",
+			"label": "AWS Status (live)",
+			"width": 0
+		},
+		{
+			"fieldname": "tracked_in_press",
+			"fieldtype": "Check",
+			"label": "Tracked In Press",
+			"width": 0
+		},
+		{
+			"fieldname": "virtual_machine",
+			"fieldtype": "Link",
+			"label": "Virtual Machine",
+			"options": "Virtual Machine",
+			"width": 0
+		},
+		{
+			"fieldname": "press_status",
+			"fieldtype": "Data",
+			"label": "Press Status (cached)",
+			"width": 0
+		},
+		{
+			"fieldname": "server_type",
+			"fieldtype": "Link",
+			"label": "Server Type",
+			"options": "DocType",
+			"width": 0
+		},
+		{
+			"fieldname": "server",
+			"fieldtype": "Dynamic Link",
+			"label": "Server",
+			"options": "server_type",
+			"width": 0
+		},
+		{
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"label": "Team",
+			"options": "Team",
+			"width": 0
+		},
+		{
+			"fieldname": "active_in_production",
+			"fieldtype": "Check",
+			"label": "Active In Production",
+			"width": 0
+		},
+		{
+			"fieldname": "estimated_monthly_cost",
+			"fieldtype": "Currency",
+			"label": "Estimated Monthly Cost (USD)",
+			"width": 0
+		}
+	],
+	"creation": "2026-08-15 12:00:00.000000",
+	"disabled": 0,
+	"docstatus": 0,
+	"doctype": "Report",
+	"filters": [
+		{
+			"fieldname": "cluster",
+			"fieldtype": "Link",
+			"label": "Cluster",
+			"options": "Cluster",
+			"wildcard_filter": 0
+		},
+		{
+			"fieldname": "aws_status",
+			"fieldtype": "Select",
+			"label": "AWS Status",
+			"options": "\npending\nrunning\nstopping\nstopped\nshutting-down",
+			"wildcard_filter": 0
+		}
+	],
+	"idx": 0,
+	"is_standard": "Yes",
+	"json": "",
+	"letterhead": null,
+	"modified": "2026-08-15 12:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "AWS VM Cost Utilization",
+	"owner": "Administrator",
+	"prepared_report": 0,
+	"ref_doctype": "Virtual Machine",
+	"report_name": "AWS VM Cost Utilization",
+	"report_type": "Script Report",
+	"roles": [
+		{
+			"role": "System Manager"
+		}
+	]
+}
