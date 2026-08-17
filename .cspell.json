@@ -813,6 +813,13 @@
 		"mcp",
 		"hicm",
 		"kcore",
+<<<<<<< HEAD
 		"MRR"
+=======
+		"MRR",
+		"notif",
+		"smallbtn",
+		"Unblended"
+>>>>>>> 55cb4a99a (feat(report): More AWS reports)
 	]
 }
