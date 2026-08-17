@@ -25,6 +25,9 @@ SERVER_TYPES = [
 HOURS_PER_MONTH = 750
 BILLABLE_STATES = ["pending", "running", "stopping", "stopped", "shutting-down"]
 
+# Bahrain (unreachable), Beijing (separate AWS China partition, priced in CNY not USD).
+EXCLUDED_REGIONS = ["me-south-1", "cn-north-1"]
+
 
 def execute(filters=None):
 	frappe.only_for("System Manager")
@@ -188,7 +191,10 @@ def get_monthly_price(machine_type, region):
 		product = json.loads(item)
 		for term in product["terms"].get("OnDemand", {}).values():
 			dimension = next(iter(term["priceDimensions"].values()))
-			price = flt(dimension["pricePerUnit"]["USD"]) * HOURS_PER_MONTH
+			usd_price = dimension["pricePerUnit"].get("USD")
+			# AWS China regions (e.g. cn-north-1) price only in CNY; skip rather than misreport.
+			if usd_price is not None:
+				price = flt(usd_price) * HOURS_PER_MONTH
 
 	return price
 

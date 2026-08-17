@@ -21,11 +21,4 @@ frappe.query_reports['AWS VM Cost Utilization'] = {
 			options: '\npending\nrunning\nstopping\nstopped\nshutting-down',
 		},
 	],
-	onload: function (report) {
-		report.page.add_inner_message(
-			__(
-				'Instances are read live from AWS (not from cached Press status). "Tracked In Press" is unchecked when AWS is billing for an instance with no matching Virtual Machine record in Press. Cost is an on-demand list-price estimate for running instances (compute only); it excludes EBS storage and any Reserved Instance / Savings Plan discounts.',
-			),
-		)
-	},
 }
