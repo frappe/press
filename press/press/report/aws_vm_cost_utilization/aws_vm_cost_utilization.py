@@ -83,17 +83,41 @@ def get_aws_instances(filters):
 	if filters.get("cluster"):
 		return get_cluster_instances(filters["cluster"], filters)
 
-	cluster_by_region = get_cluster_by_region()
 	instances = {}
-	for region in get_all_aws_regions():
-		for instance in get_region_instances(region, cluster_by_region, filters):
+	for account in get_aws_accounts():
+		for instance in get_account_instances(account, filters):
 			# A misconfigured account could list the same instance under two regions; keep one.
 			instances[instance["instance_id"]] = instance
 	return list(instances.values())
 
 
-def get_all_aws_regions():
-	client = boto3.client("ec2", region_name="us-east-1", **get_press_aws_credentials())
+def get_aws_accounts():
+	"""Group AWS EC2 clusters by IAM access key. Dedicated clusters can live in
+	separate AWS accounts, each needing its own credentials and region sweep."""
+	clusters = frappe.get_all(
+		"Cluster", {"cloud_provider": "AWS EC2"}, ["name", "region", "aws_access_key_id"]
+	)
+
+	accounts = {}
+	for cluster in clusters:
+		account = accounts.setdefault(
+			cluster.aws_access_key_id, {"sample_cluster": cluster.name, "clusters_by_region": {}}
+		)
+		account["clusters_by_region"].setdefault(cluster.region, []).append(cluster.name)
+	return list(accounts.values())
+
+
+def get_account_instances(account, filters):
+	credentials = get_cluster_aws_credentials(account["sample_cluster"])
+	instances = []
+	for region in get_account_regions(credentials):
+		clusters = account["clusters_by_region"].get(region, [])
+		instances.extend(get_region_instances(region, credentials, clusters, filters))
+	return instances
+
+
+def get_account_regions(credentials):
+	client = boto3.client("ec2", region_name="us-east-1", **credentials)
 	return [
 		region["RegionName"]
 		for region in client.describe_regions()["Regions"]
@@ -101,17 +125,22 @@ def get_all_aws_regions():
 	]
 
 
-def get_cluster_by_region():
-	clusters = frappe.get_all("Cluster", {"cloud_provider": "AWS EC2"}, ["name", "region"])
-	return {cluster.region: cluster.name for cluster in clusters}
+def get_cluster_aws_credentials(cluster_name):
+	cluster = frappe.get_doc("Cluster", cluster_name)
+	secret_key = cluster.get_password("aws_secret_access_key", raise_exception=False)
+	if not cluster.aws_access_key_id or not secret_key:
+		frappe.throw(f"AWS credentials are not configured on Cluster {cluster_name}")
+	return {"aws_access_key_id": cluster.aws_access_key_id, "aws_secret_access_key": secret_key}
 
 
-def get_region_instances(region, cluster_by_region, filters):
-	client = boto3.client("ec2", region_name=region, **get_press_aws_credentials())
+def get_region_instances(region, credentials, clusters, filters):
+	client = boto3.client("ec2", region_name=region, **credentials)
 	states = [filters["aws_status"]] if filters.get("aws_status") else BILLABLE_STATES
 	paginator = client.get_paginator("describe_instances")
 	pages = paginator.paginate(Filters=[{"Name": "instance-state-name", "Values": states}])
 
+	# A region can legitimately host more than one Press cluster; attribute all of them.
+	cluster_label = ", ".join(clusters) if clusters else None
 	instances = []
 	for page in pages:
 		for reservation in page["Reservations"]:
@@ -120,7 +149,7 @@ def get_region_instances(region, cluster_by_region, filters):
 					{
 						"instance_id": instance["InstanceId"],
 						"name_tag": get_name_tag(instance),
-						"cluster": cluster_by_region.get(region),
+						"cluster": cluster_label,
 						"region": region,
 						"instance_type": instance["InstanceType"],
 						"aws_status": instance["State"]["Name"],
@@ -131,36 +160,8 @@ def get_region_instances(region, cluster_by_region, filters):
 
 def get_cluster_instances(cluster_name, filters):
 	cluster = frappe.get_doc("Cluster", cluster_name)
-	secret_key = cluster.get_password("aws_secret_access_key", raise_exception=False)
-	if not cluster.aws_access_key_id or not secret_key:
-		frappe.throw(f"AWS credentials are not configured on Cluster {cluster_name}")
-
-	client = boto3.client(
-		"ec2",
-		region_name=cluster.region,
-		aws_access_key_id=cluster.aws_access_key_id,
-		aws_secret_access_key=secret_key,
-	)
-
-	states = [filters["aws_status"]] if filters.get("aws_status") else BILLABLE_STATES
-	paginator = client.get_paginator("describe_instances")
-	pages = paginator.paginate(Filters=[{"Name": "instance-state-name", "Values": states}])
-
-	instances = []
-	for page in pages:
-		for reservation in page["Reservations"]:
-			for instance in reservation["Instances"]:
-				instances.append(
-					{
-						"instance_id": instance["InstanceId"],
-						"name_tag": get_name_tag(instance),
-						"cluster": cluster.name,
-						"region": cluster.region,
-						"instance_type": instance["InstanceType"],
-						"aws_status": instance["State"]["Name"],
-					}
-				)
-	return instances
+	credentials = get_cluster_aws_credentials(cluster_name)
+	return get_region_instances(cluster.region, credentials, [cluster_name], filters)
 
 
 def get_name_tag(instance):
