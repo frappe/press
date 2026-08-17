@@ -79,16 +79,52 @@ def build_row(instance, vm, server_by_vm):
 
 def get_aws_instances(filters):
 	if filters.get("cluster"):
-		clusters = [filters["cluster"]]
-	else:
-		clusters = frappe.get_all("Cluster", {"cloud_provider": "AWS EC2"}, pluck="name")
+		return get_cluster_instances(filters["cluster"], filters)
 
+	cluster_by_region = get_cluster_by_region()
 	instances = {}
-	for cluster_name in clusters:
-		for instance in get_cluster_instances(cluster_name, filters):
-			# A misconfigured account could list the same instance under two clusters; keep one.
+	for region in get_all_aws_regions():
+		for instance in get_region_instances(region, cluster_by_region, filters):
+			# A misconfigured account could list the same instance under two regions; keep one.
 			instances[instance["instance_id"]] = instance
 	return list(instances.values())
+
+
+def get_all_aws_regions():
+	client = boto3.client("ec2", region_name="us-east-1", **get_press_aws_credentials())
+	return [
+		region["RegionName"]
+		for region in client.describe_regions()["Regions"]
+		if region["RegionName"] not in EXCLUDED_REGIONS
+	]
+
+
+def get_cluster_by_region():
+	clusters = frappe.get_all("Cluster", {"cloud_provider": "AWS EC2"}, ["name", "region"])
+	return {cluster.region: cluster.name for cluster in clusters}
+
+
+def get_region_instances(region, cluster_by_region, filters):
+	client = boto3.client("ec2", region_name=region, **get_press_aws_credentials())
+	states = [filters["aws_status"]] if filters.get("aws_status") else BILLABLE_STATES
+	paginator = client.get_paginator("describe_instances")
+	pages = paginator.paginate(Filters=[{"Name": "instance-state-name", "Values": states}])
+
+	instances = []
+	for page in pages:
+		for reservation in page["Reservations"]:
+			for instance in reservation["Instances"]:
+				instances.append(
+					{
+						"instance_id": instance["InstanceId"],
+						"name_tag": get_name_tag(instance),
+						"cluster": cluster_by_region.get(region),
+						"region": region,
+						"instance_type": instance["InstanceType"],
+						"aws_status": instance["State"]["Name"],
+					}
+				)
+	return instances
 
 
 def get_cluster_instances(cluster_name, filters):
@@ -159,18 +195,20 @@ def get_server_by_virtual_machine():
 	return server_by_vm
 
 
-def get_pricing_client():
+def get_press_aws_credentials():
 	settings = frappe.get_single("Press Settings")
 	secret_key = settings.get_password("aws_secret_access_key", raise_exception=False)
 	if not settings.aws_access_key_id or not secret_key:
 		frappe.throw("AWS credentials are not configured in Press Settings")
 
-	return boto3.client(
-		"pricing",
-		region_name="ap-south-1",
-		aws_access_key_id=settings.aws_access_key_id,
-		aws_secret_access_key=secret_key,
-	)
+	return {
+		"aws_access_key_id": settings.aws_access_key_id,
+		"aws_secret_access_key": secret_key,
+	}
+
+
+def get_pricing_client():
+	return boto3.client("pricing", region_name="ap-south-1", **get_press_aws_credentials())
 
 
 @redis_cache(ttl=24 * 60 * 60)
