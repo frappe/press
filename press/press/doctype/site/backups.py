@@ -193,7 +193,13 @@ class GFS(BackupRotationScheme):
 			f"""
 			SELECT name from `tabSite Backup`
 			WHERE
-				site in (select name from tabSite where status != "Archived") and
+				site in (
+						select name from tabSite
+						where status != "Archived" and
+						(cluster is null or cluster not in (
+								select name from tabCluster where status = "Archived"
+						))
+				) and
 				status="Success" and
 				files_availability="Available" and
 				offsite={backup_type == "Logical"} and
