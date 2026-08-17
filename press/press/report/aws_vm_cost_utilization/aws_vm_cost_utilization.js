@@ -20,5 +20,10 @@ frappe.query_reports['AWS VM Cost Utilization'] = {
 			fieldtype: 'Select',
 			options: '\npending\nrunning\nstopping\nstopped\nshutting-down',
 		},
+		{
+			fieldname: 'active_in_production',
+			label: __('Active In Production Only'),
+			fieldtype: 'Check',
+		},
 	],
 }
