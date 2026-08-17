@@ -15,9 +15,8 @@
 		},
 		{
 			"fieldname": "cluster",
-			"fieldtype": "Link",
+			"fieldtype": "Data",
 			"label": "Cluster",
-			"options": "Cluster",
 			"width": 0
 		},
 		{
@@ -109,6 +108,12 @@
 			"fieldtype": "Select",
 			"label": "AWS Status",
 			"options": "\npending\nrunning\nstopping\nstopped\nshutting-down",
+			"wildcard_filter": 0
+		},
+		{
+			"fieldname": "active_in_production",
+			"fieldtype": "Check",
+			"label": "Active In Production Only",
 			"wildcard_filter": 0
 		}
 	],

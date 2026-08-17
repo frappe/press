@@ -5,7 +5,7 @@ import json
 
 import boto3
 import frappe
-from frappe.utils import flt
+from frappe.utils import cint, flt
 from frappe.utils.caching import redis_cache
 
 SERVER_TYPES = [
@@ -25,6 +25,9 @@ SERVER_TYPES = [
 HOURS_PER_MONTH = 750
 BILLABLE_STATES = ["pending", "running", "stopping", "stopped", "shutting-down"]
 
+# Bahrain (unreachable), Beijing (separate AWS China partition, priced in CNY not USD).
+EXCLUDED_REGIONS = ["me-south-1", "cn-north-1"]
+
 
 def execute(filters=None):
 	frappe.only_for("System Manager")
@@ -43,6 +46,8 @@ def get_data(filters):
 	rows = [
 		build_row(instance, press_vms.get(instance["instance_id"]), server_by_vm) for instance in instances
 	]
+	if cint(filters.get("active_in_production")):
+		rows = [row for row in rows if row["active_in_production"]]
 	rows.sort(key=lambda row: (row["tracked_in_press"], -row["estimated_monthly_cost"]))
 	return rows
 
@@ -76,35 +81,66 @@ def build_row(instance, vm, server_by_vm):
 
 def get_aws_instances(filters):
 	if filters.get("cluster"):
-		clusters = [filters["cluster"]]
-	else:
-		clusters = frappe.get_all("Cluster", {"cloud_provider": "AWS EC2"}, pluck="name")
+		return get_cluster_instances(filters["cluster"], filters)
 
 	instances = {}
-	for cluster_name in clusters:
-		for instance in get_cluster_instances(cluster_name, filters):
-			# A misconfigured account could list the same instance under two clusters; keep one.
+	for account in get_aws_accounts():
+		for instance in get_account_instances(account, filters):
+			# A misconfigured account could list the same instance under two regions; keep one.
 			instances[instance["instance_id"]] = instance
 	return list(instances.values())
 
 
-def get_cluster_instances(cluster_name, filters):
+def get_aws_accounts():
+	"""Group AWS EC2 clusters by IAM access key. Dedicated clusters can live in
+	separate AWS accounts, each needing its own credentials and region sweep."""
+	clusters = frappe.get_all(
+		"Cluster", {"cloud_provider": "AWS EC2"}, ["name", "region", "aws_access_key_id"]
+	)
+
+	accounts = {}
+	for cluster in clusters:
+		account = accounts.setdefault(
+			cluster.aws_access_key_id, {"sample_cluster": cluster.name, "clusters_by_region": {}}
+		)
+		account["clusters_by_region"].setdefault(cluster.region, []).append(cluster.name)
+	return list(accounts.values())
+
+
+def get_account_instances(account, filters):
+	credentials = get_cluster_aws_credentials(account["sample_cluster"])
+	instances = []
+	for region in get_account_regions(credentials):
+		clusters = account["clusters_by_region"].get(region, [])
+		instances.extend(get_region_instances(region, credentials, clusters, filters))
+	return instances
+
+
+def get_account_regions(credentials):
+	client = boto3.client("ec2", region_name="us-east-1", **credentials)
+	return [
+		region["RegionName"]
+		for region in client.describe_regions()["Regions"]
+		if region["RegionName"] not in EXCLUDED_REGIONS
+	]
+
+
+def get_cluster_aws_credentials(cluster_name):
 	cluster = frappe.get_doc("Cluster", cluster_name)
 	secret_key = cluster.get_password("aws_secret_access_key", raise_exception=False)
 	if not cluster.aws_access_key_id or not secret_key:
 		frappe.throw(f"AWS credentials are not configured on Cluster {cluster_name}")
+	return {"aws_access_key_id": cluster.aws_access_key_id, "aws_secret_access_key": secret_key}
 
-	client = boto3.client(
-		"ec2",
-		region_name=cluster.region,
-		aws_access_key_id=cluster.aws_access_key_id,
-		aws_secret_access_key=secret_key,
-	)
 
+def get_region_instances(region, credentials, clusters, filters):
+	client = boto3.client("ec2", region_name=region, **credentials)
 	states = [filters["aws_status"]] if filters.get("aws_status") else BILLABLE_STATES
 	paginator = client.get_paginator("describe_instances")
 	pages = paginator.paginate(Filters=[{"Name": "instance-state-name", "Values": states}])
 
+	# A region can legitimately host more than one Press cluster; attribute all of them.
+	cluster_label = ", ".join(clusters) if clusters else None
 	instances = []
 	for page in pages:
 		for reservation in page["Reservations"]:
@@ -113,13 +149,19 @@ def get_cluster_instances(cluster_name, filters):
 					{
 						"instance_id": instance["InstanceId"],
 						"name_tag": get_name_tag(instance),
-						"cluster": cluster.name,
-						"region": cluster.region,
+						"cluster": cluster_label,
+						"region": region,
 						"instance_type": instance["InstanceType"],
 						"aws_status": instance["State"]["Name"],
 					}
 				)
 	return instances
+
+
+def get_cluster_instances(cluster_name, filters):
+	cluster = frappe.get_doc("Cluster", cluster_name)
+	credentials = get_cluster_aws_credentials(cluster_name)
+	return get_region_instances(cluster.region, credentials, [cluster_name], filters)
 
 
 def get_name_tag(instance):
@@ -156,18 +198,20 @@ def get_server_by_virtual_machine():
 	return server_by_vm
 
 
-def get_pricing_client():
+def get_press_aws_credentials():
 	settings = frappe.get_single("Press Settings")
 	secret_key = settings.get_password("aws_secret_access_key", raise_exception=False)
 	if not settings.aws_access_key_id or not secret_key:
 		frappe.throw("AWS credentials are not configured in Press Settings")
 
-	return boto3.client(
-		"pricing",
-		region_name="ap-south-1",
-		aws_access_key_id=settings.aws_access_key_id,
-		aws_secret_access_key=secret_key,
-	)
+	return {
+		"aws_access_key_id": settings.aws_access_key_id,
+		"aws_secret_access_key": secret_key,
+	}
+
+
+def get_pricing_client():
+	return boto3.client("pricing", region_name="ap-south-1", **get_press_aws_credentials())
 
 
 @redis_cache(ttl=24 * 60 * 60)
@@ -188,7 +232,10 @@ def get_monthly_price(machine_type, region):
 		product = json.loads(item)
 		for term in product["terms"].get("OnDemand", {}).values():
 			dimension = next(iter(term["priceDimensions"].values()))
-			price = flt(dimension["pricePerUnit"]["USD"]) * HOURS_PER_MONTH
+			usd_price = dimension["pricePerUnit"].get("USD")
+			# AWS China regions (e.g. cn-north-1) price only in CNY; skip rather than misreport.
+			if usd_price is not None:
+				price = flt(usd_price) * HOURS_PER_MONTH
 
 	return price
 
