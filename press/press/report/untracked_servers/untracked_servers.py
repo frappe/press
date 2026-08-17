@@ -3,10 +3,21 @@
 
 import boto3
 import frappe
+from botocore.config import Config as BotoConfig
 from hcloud import Client as HetznerClient
 
 AWS_STATES = ["pending", "running", "stopping", "stopped", "shutting-down"]
 DIGITAL_OCEAN_PAGE_SIZE = 200
+
+# me-south-1 (Bahrain) is currently unreachable; TODO remove once AWS resolves it
+# cn-north-1 (Beijing) is a separate AWS partition, excluded intentionally
+EXCLUDED_AWS_REGIONS = {"me-south-1", "cn-north-1"}
+
+AWS_CLIENT_CONFIG = BotoConfig(
+	connect_timeout=10,
+	read_timeout=20,
+	retries={"max_attempts": 2, "mode": "standard"},
+)
 
 
 def execute(filters=None):
@@ -28,10 +39,31 @@ def get_data(provider, cluster):
 		"DigitalOcean": get_untracked_digital_ocean_droplets,
 	}[provider]
 
+	clusters = [frappe.get_doc("Cluster", name) for name in get_clusters(provider, cluster)]
 	rows = []
-	for cluster_name in get_clusters(provider, cluster):
-		rows.extend(fetch_untracked(frappe.get_doc("Cluster", cluster_name)))
+	for cluster in clusters:
+		rows.extend(get_cluster_rows(fetch_untracked, cluster, provider))
 	return rows
+
+
+def get_cluster_rows(fetch_untracked, cluster, provider):
+	try:
+		return fetch_untracked(cluster)
+	except Exception:
+		frappe.log_error(title=f"Untracked Servers: Failed to fetch {cluster.name}")
+		return [get_status_row(provider, cluster, "Error: Could not fetch from provider (see Error Log)")]
+
+
+def get_status_row(provider, cluster, status):
+	return {
+		"provider": provider,
+		"cluster": cluster.name,
+		"instance_id": None,
+		"name": None,
+		"status": status,
+		"instance_type": None,
+		"region": cluster.region,
+	}
 
 
 def get_clusters(provider, cluster):
@@ -56,6 +88,9 @@ def get_known_instance_ids(provider, cluster_name):
 
 
 def get_untracked_aws_instances(cluster):
+	if cluster.region in EXCLUDED_AWS_REGIONS:
+		return [get_status_row("AWS EC2", cluster, "Skipped: region excluded")]
+
 	secret_key = cluster.get_password("aws_secret_access_key", raise_exception=False)
 	if not cluster.aws_access_key_id or not secret_key:
 		frappe.throw(f"AWS credentials are not configured on Cluster {cluster.name}")
@@ -65,6 +100,7 @@ def get_untracked_aws_instances(cluster):
 		region_name=cluster.region,
 		aws_access_key_id=cluster.aws_access_key_id,
 		aws_secret_access_key=secret_key,
+		config=AWS_CLIENT_CONFIG,
 	)
 	known_instance_ids = get_known_instance_ids("AWS EC2", cluster.name)
 
