@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import boto3
 import frappe
 from frappe.utils import flt
+from frappe.utils.caching import redis_cache
 
 from press.utils.aws import EXCLUDED_REGIONS, get_press_aws_credentials
 
@@ -32,9 +33,7 @@ def execute(filters=None):
 	filters = filters or {}
 
 	buckets = get_buckets(filters)
-	pricing_client = get_pricing_client()
-
-	rows = [build_row(bucket, pricing_client) for bucket in buckets]
+	rows = [build_row(bucket) for bucket in buckets]
 	rows.sort(key=lambda row: row["current_size_gb"], reverse=True)
 
 	columns = get_columns()
@@ -43,8 +42,7 @@ def execute(filters=None):
 
 
 def get_buckets(filters):
-	credentials = get_press_aws_credentials()
-	client = boto3.client("s3", region_name="us-east-1", **credentials)
+	client = boto3.client("s3", region_name="us-east-1", **get_press_aws_credentials())
 
 	buckets = []
 	for bucket in client.list_buckets()["Buckets"]:
@@ -55,7 +53,7 @@ def get_buckets(filters):
 		region = get_bucket_region(client, name)
 		if region in EXCLUDED_REGIONS:
 			continue
-		buckets.append({"name": name, "region": region, "credentials": credentials})
+		buckets.append({"name": name, "region": region})
 	return buckets
 
 
@@ -64,11 +62,11 @@ def get_bucket_region(client, bucket_name):
 	return location or "us-east-1"
 
 
-def build_row(bucket, pricing_client):
+def build_row(bucket):
 	series_by_type = get_bucket_storage_series(bucket)
 	breakdown = {storage_type: series[-1]["size"] for storage_type, series in series_by_type.items()}
 	current_size = sum(breakdown.values())
-	monthly_cost, unpriced_size = get_monthly_storage_cost(pricing_client, bucket["region"], breakdown)
+	monthly_cost, unpriced_size = get_monthly_storage_cost(bucket["region"], breakdown)
 
 	size_history = get_combined_daily_history(series_by_type)
 	weekly_growth, prior_weekly_growth = get_weekly_growth(size_history)
@@ -80,7 +78,7 @@ def build_row(bucket, pricing_client):
 		"bucket": bucket["name"],
 		"region": bucket["region"],
 		"current_size_gb": flt(current_size / BYTES_PER_GB, 2),
-		"object_count": get_latest_object_count(bucket),
+		"object_count": get_latest_object_count(bucket["name"], bucket["region"]),
 		"monthly_cost": monthly_cost,
 		"unpriced_size_gb": unpriced_size,
 		"daily_growth_gb": flt(weekly_growth / BYTES_PER_GB / 7, 3),
@@ -89,8 +87,8 @@ def build_row(bucket, pricing_client):
 	}
 
 
-def get_cloudwatch_client(bucket):
-	return boto3.client("cloudwatch", region_name=bucket["region"], **bucket["credentials"])
+def get_cloudwatch_client(region):
+	return boto3.client("cloudwatch", region_name=region, **get_press_aws_credentials())
 
 
 def get_bucket_storage_series(bucket):
@@ -98,14 +96,17 @@ def get_bucket_storage_series(bucket):
 	actually has data for (a class with no objects returns no datapoints)."""
 	series_by_type = {}
 	for storage_type in STORAGE_TYPES:
-		series = get_storage_type_series(bucket, storage_type)
+		series = get_storage_type_series(bucket["name"], bucket["region"], storage_type)
 		if series:
 			series_by_type[storage_type] = series
 	return series_by_type
 
 
-def get_storage_type_series(bucket, storage_type):
-	client = get_cloudwatch_client(bucket)
+@redis_cache(ttl=24 * 60 * 60)
+def get_storage_type_series(bucket_name, region, storage_type):
+	"""S3 only publishes BucketSizeBytes once a day, so re-fetching within the
+	same day is pure waste — cached for a day to match that update cadence."""
+	client = get_cloudwatch_client(region)
 	end = datetime.utcnow()
 	start = end - timedelta(days=TRAILING_DAYS + 1)
 
@@ -113,7 +114,7 @@ def get_storage_type_series(bucket, storage_type):
 		Namespace="AWS/S3",
 		MetricName="BucketSizeBytes",
 		Dimensions=[
-			{"Name": "BucketName", "Value": bucket["name"]},
+			{"Name": "BucketName", "Value": bucket_name},
 			{"Name": "StorageType", "Value": storage_type},
 		],
 		StartTime=start,
@@ -123,7 +124,7 @@ def get_storage_type_series(bucket, storage_type):
 	)
 
 	datapoints = sorted(response["Datapoints"], key=lambda point: point["Timestamp"])
-	return [{"timestamp": point["Timestamp"], "size": point["Average"]} for point in datapoints]
+	return [{"date": point["Timestamp"].date().isoformat(), "size": point["Average"]} for point in datapoints]
 
 
 def get_combined_daily_history(series_by_type):
@@ -133,13 +134,13 @@ def get_combined_daily_history(series_by_type):
 	size_by_date = {}
 	for series in series_by_type.values():
 		for point in series:
-			date = point["timestamp"].date()
-			size_by_date[date] = size_by_date.get(date, 0) + point["size"]
+			size_by_date[point["date"]] = size_by_date.get(point["date"], 0) + point["size"]
 	return [{"size": size} for _, size in sorted(size_by_date.items())]
 
 
-def get_latest_object_count(bucket):
-	client = get_cloudwatch_client(bucket)
+@redis_cache(ttl=24 * 60 * 60)
+def get_latest_object_count(bucket_name, region):
+	client = get_cloudwatch_client(region)
 	end = datetime.utcnow()
 	start = end - timedelta(days=3)
 
@@ -147,7 +148,7 @@ def get_latest_object_count(bucket):
 		Namespace="AWS/S3",
 		MetricName="NumberOfObjects",
 		Dimensions=[
-			{"Name": "BucketName", "Value": bucket["name"]},
+			{"Name": "BucketName", "Value": bucket_name},
 			{"Name": "StorageType", "Value": "AllStorageTypes"},
 		],
 		StartTime=start,
@@ -171,11 +172,7 @@ def get_weekly_growth(size_history):
 	return this_week_growth, prior_week_growth
 
 
-def get_pricing_client():
-	return boto3.client("pricing", region_name="ap-south-1", **get_press_aws_credentials())
-
-
-def get_monthly_storage_cost(client, region, breakdown):
+def get_monthly_storage_cost(region, breakdown):
 	"""Price each storage class at its own rate — first pricing tier only, a
 	reasonable approximation for buckets under ~50TB. Bytes in a class this
 	can't find a price for are counted as size but reported as unpriced,
@@ -183,7 +180,7 @@ def get_monthly_storage_cost(client, region, breakdown):
 	total_cost = 0
 	unpriced_bytes = 0
 	for storage_type, size_bytes in breakdown.items():
-		price_per_gb = get_s3_price_per_gb(client, region, STORAGE_TYPES[storage_type])
+		price_per_gb = get_s3_price_per_gb(region, STORAGE_TYPES[storage_type])
 		if price_per_gb is None:
 			unpriced_bytes += size_bytes
 			continue
@@ -191,7 +188,9 @@ def get_monthly_storage_cost(client, region, breakdown):
 	return flt(total_cost, 2), flt(unpriced_bytes / BYTES_PER_GB, 2)
 
 
-def get_s3_price_per_gb(client, region, volume_type):
+@redis_cache(ttl=24 * 60 * 60)
+def get_s3_price_per_gb(region, volume_type):
+	client = boto3.client("pricing", region_name="ap-south-1", **get_press_aws_credentials())
 	product_filters = [
 		{"Type": "TERM_MATCH", "Field": "regionCode", "Value": region},
 		{"Type": "TERM_MATCH", "Field": "volumeType", "Value": volume_type},

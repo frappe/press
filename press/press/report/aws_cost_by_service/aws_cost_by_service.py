@@ -4,6 +4,7 @@
 import boto3
 import frappe
 from frappe.utils import add_days, add_months, cint, flt, get_first_day, getdate
+from frappe.utils.caching import redis_cache
 
 from press.utils.aws import get_press_aws_credentials
 
@@ -32,10 +33,10 @@ def get_months(lookback_months):
 
 
 def get_cost_by_service(months):
-	client = boto3.client("ce", region_name="us-east-1", **get_press_aws_credentials())
+	months_key = tuple(str(month) for month in months)
 
 	cost_by_service = {}
-	for period in get_cost_and_usage_pages(client, months):
+	for period in get_cost_and_usage_pages(months_key):
 		month = period["TimePeriod"]["Start"]
 		for group in period["Groups"]:
 			service = group["Keys"][0]
@@ -44,11 +45,18 @@ def get_cost_by_service(months):
 	return cost_by_service
 
 
-def get_cost_and_usage_pages(client, months):
+def get_ce_client():
+	return boto3.client("ce", region_name="us-east-1", **get_press_aws_credentials())
+
+
+@redis_cache(ttl=60 * 60)
+def get_cost_and_usage_pages(months):
 	"""get_cost_and_usage paginates via NextPageToken once the account has enough
-	distinct line items; reading only the first page silently drops services."""
+	distinct line items; reading only the first page silently drops services.
+	Cached briefly since Cost Explorer bills $0.01 per request."""
+	client = get_ce_client()
 	kwargs = {
-		"TimePeriod": {"Start": str(months[0]), "End": str(add_days(getdate(), 1))},
+		"TimePeriod": {"Start": months[0], "End": str(add_days(getdate(), 1))},
 		"Granularity": "MONTHLY",
 		"Metrics": ["UnblendedCost"],
 		"GroupBy": [{"Type": "DIMENSION", "Key": "SERVICE"}],
