@@ -6,6 +6,7 @@ import json
 import boto3
 import frappe
 from frappe.utils import flt
+from frappe.utils.caching import redis_cache
 
 SERVER_TYPES = [
 	"Server",
@@ -38,27 +39,22 @@ def get_data(filters):
 	instances = get_aws_instances(filters)
 	press_vms = get_press_virtual_machines([instance["instance_id"] for instance in instances])
 	server_by_vm = get_server_by_virtual_machine()
-	price_cache = {}
-	pricing_client = get_pricing_client()
 
 	rows = [
-		build_row(instance, press_vms.get(instance["instance_id"]), server_by_vm, pricing_client, price_cache)
-		for instance in instances
+		build_row(instance, press_vms.get(instance["instance_id"]), server_by_vm) for instance in instances
 	]
 	rows.sort(key=lambda row: (row["tracked_in_press"], -row["estimated_monthly_cost"]))
 	return rows
 
 
-def build_row(instance, vm, server_by_vm, pricing_client, price_cache):
+def build_row(instance, vm, server_by_vm):
 	server = server_by_vm.get(vm.name) if vm else None
 	is_running = instance["aws_status"] == "running"
 	active_in_production = bool(is_running and server and server.status == "Active")
 
 	monthly_cost = 0
 	if is_running:
-		monthly_cost = get_monthly_price(
-			pricing_client, instance["instance_type"], instance["region"], price_cache
-		)
+		monthly_cost = get_monthly_price(instance["instance_type"], instance["region"])
 
 	return {
 		"instance_id": instance["instance_id"],
@@ -174,11 +170,9 @@ def get_pricing_client():
 	)
 
 
-def get_monthly_price(client, machine_type, region, cache):
-	cache_key = (machine_type, region)
-	if cache_key in cache:
-		return cache[cache_key]
-
+@redis_cache(ttl=24 * 60 * 60)
+def get_monthly_price(machine_type, region):
+	client = get_pricing_client()
 	product_filters = [
 		{"Type": "TERM_MATCH", "Field": "regionCode", "Value": region},
 		{"Type": "TERM_MATCH", "Field": "instanceType", "Value": machine_type},
@@ -196,7 +190,6 @@ def get_monthly_price(client, machine_type, region, cache):
 			dimension = next(iter(term["priceDimensions"].values()))
 			price = flt(dimension["pricePerUnit"]["USD"]) * HOURS_PER_MONTH
 
-	cache[cache_key] = price
 	return price
 
 
