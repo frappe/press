@@ -278,8 +278,10 @@ class Invoice(Document):
 			)
 
 	def calculate_values(self):
-		if self.status == "Paid" and self.docstatus == 1:
-			# don't calculate if already invoice is paid and already submitted
+		if self.status == "Paid":
+			# don't recalculate once paid — recomputing amount_due from
+			# total - applied_credits would clobber it back to a nonzero
+			# balance for invoices paid directly via Stripe/Razorpay
 			return
 		self.calculate_total()
 		self.calculate_discounts()
@@ -310,7 +312,7 @@ class Invoice(Document):
 			stripe = get_stripe()
 			invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
 			if invoice.status == "paid":
-				self.status = "Paid"
+				self.mark_as_fully_paid()
 				self.update_transaction_details(invoice.charge)
 				self.submit()
 				self.unsuspend_sites_if_applicable()
@@ -414,6 +416,12 @@ class Invoice(Document):
 		if self.amount_due > 0 and self.amount_due < 0.1:
 			self.write_off_amount = self.amount_due
 			self.amount_due = 0
+
+	def mark_as_fully_paid(self):
+		# used when a payment gateway confirms full payment outside of applied credits
+		self.status = "Paid"
+		self.amount_due = 0
+		self.amount_due_with_tax = 0
 
 	def on_submit(self):
 		self.create_invoice_on_frappeio()
@@ -624,7 +632,7 @@ class Invoice(Document):
 			client = get_razorpay_client()
 			payment = client.payment.fetch(self.razorpay_payment_id)
 			if payment.get("status") == "captured":
-				self.status = "Paid"
+				self.mark_as_fully_paid()
 				self.update_razorpay_transaction_details(payment)
 				self.submit()
 				self.unsuspend_sites_if_applicable()
@@ -1472,8 +1480,8 @@ def finalize_razorpay_mandate_invoices():
 
 			if payment_status == "captured":
 				invoice = frappe.get_doc("Invoice", inv.name)
-				invoice.status = "Paid"
 				invoice.amount_paid = invoice.amount_due_with_tax
+				invoice.mark_as_fully_paid()
 				invoice.payment_date = frappe.utils.today()
 				invoice.update_razorpay_transaction_details(payment)
 				invoice.save(ignore_permissions=True)

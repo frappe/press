@@ -511,6 +511,49 @@ class TestInvoice(FrappeTestCase):
 		self.assertRaises(frappe.ValidationError, invoice._make_stripe_invoice, "cus_test123", 10000)
 		mock_stripe.return_value.Invoice.create.assert_not_called()
 
+	def test_mark_as_fully_paid_zeroes_amount_due_and_survives_recalculation(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+			items=[{"quantity": 1, "rate": 100, "amount": 100}],
+		).insert()
+		invoice.reload()
+		self.assertEqual(invoice.amount_due, 100)
+
+		invoice.mark_as_fully_paid()
+		# validate() recalculates on every save; it must not clobber amount_due
+		# back to a nonzero balance now that the invoice is marked Paid
+		invoice.save()
+		invoice.reload()
+
+		self.assertEqual(invoice.status, "Paid")
+		self.assertEqual(invoice.amount_due, 0)
+		self.assertEqual(invoice.amount_due_with_tax, 0)
+
+	@patch("press.press.doctype.invoice.invoice.get_stripe")
+	def test_finalize_invoice_zeroes_amount_due_when_stripe_invoice_already_paid(self, mock_stripe):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			payment_mode="Card",
+			period_start=today(),
+			period_end=add_days(today(), 10),
+			items=[{"quantity": 1, "rate": 100, "amount": 100}],
+		).insert()
+		invoice.stripe_invoice_id = "in_test123"
+		mock_stripe.return_value.Invoice.retrieve.return_value = frappe._dict(
+			status="paid", charge="ch_test123"
+		)
+
+		with patch.object(Invoice, "update_transaction_details", return_value=None):
+			invoice.finalize_invoice()
+
+		self.assertEqual(invoice.status, "Paid")
+		self.assertEqual(invoice.amount_due, 0)
+		self.assertEqual(invoice.amount_due_with_tax, 0)
+
 	def test_negative_balance_case(self):
 		team = create_test_team("test22@example.com")
 
