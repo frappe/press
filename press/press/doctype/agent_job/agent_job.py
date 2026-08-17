@@ -1164,6 +1164,12 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			Bench.process_recover_update_inplace(job)
 		elif job.job_type == "Fetch Database Table Schema":
 			process_fetch_database_table_schema_job_update(job)
+		elif job.job_type == "Fetch Backup Jobs":
+			from press.press.doctype.site_backup.backup_history import (
+				process_fetch_backup_jobs_update,
+			)
+
+			process_fetch_backup_jobs_update(job)
 		elif job.job_type in [
 			"Create Database User",
 			"Remove Database User",

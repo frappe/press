@@ -52,6 +52,7 @@ from press.press.doctype.telegram_message.telegram_message import TelegramMessag
 from press.runner import Ansible
 from press.utils import docs, fmt_timedelta, log_error
 from press.utils.raven import send_raven_message
+from press.utils.user import is_desk_user
 from press.wazuh import WazuhManager
 
 if typing.TYPE_CHECKING:
@@ -1012,10 +1013,16 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def update_agent_ansible(self):
+		self.validate_agent_update_allowed()
 		# ponytail: 1h, not the long queue's 1500s — a busy rq worker's warm shutdown alone is 1500s
 		frappe.enqueue_doc(self.doctype, self.name, "_update_agent_ansible", queue="long", timeout=3600)
 
+	def validate_agent_update_allowed(self):
+		if self.disable_agent_update:
+			frappe.throw(f"Agent update is disabled on {self.name}")
+
 	def _update_agent_ansible(self, throw_on_failure: bool = False):
+		self.validate_agent_update_allowed()
 		try:
 			agent_branch = frappe.get_value("Press Settings", "Press Settings", "branch")
 			if not agent_branch:
@@ -2653,6 +2660,25 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			return 22
 		return self.ssh_port or 22
 
+	@dashboard_whitelist()
+	def get_ssh_command(self):
+		"""SSH command that hops through the press server and the cluster's proxy."""
+		if not is_desk_user():
+			frappe.throw("Only system users can get the SSH command", frappe.PermissionError)
+
+		port = "" if self._ssh_port() == 22 else f" -p {self._ssh_port()}"
+		command = f"ssh{self._jump_through_proxy()} {self._ssh_user()}@{self.name}{port}"
+		return f"ssh frappe@{frappe.db.get_single_value('Press Settings', 'domain')} -t '{command}'"
+
+	def _jump_through_proxy(self):
+		"""Servers are reachable only through their proxy server."""
+		proxy = self.get("proxy_server") or frappe.db.get_value(
+			"Proxy Server", {"status": "Active", "cluster": self.cluster}, "name"
+		)
+		if not proxy or proxy == self.name:
+			return ""
+		return f" -J root@{proxy}"
+
 	def get_primary_frappe_public_key(self):
 		if primary_public_key := frappe.db.get_value(self.doctype, self.primary, "frappe_public_key"):
 			return primary_public_key
@@ -3065,6 +3091,7 @@ class Server(BaseServer):
 		database_server: DF.Link | None
 		db_healthcheck_token: DF.Password | None
 		disable_agent_job_auto_retry: DF.Check
+		disable_agent_update: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
 		enable_on_prem_failover_support: DF.Check
