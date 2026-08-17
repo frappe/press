@@ -10,7 +10,7 @@ AWS_STATES = ["pending", "running", "stopping", "stopped", "shutting-down"]
 DIGITAL_OCEAN_PAGE_SIZE = 200
 
 # me-south-1 (Bahrain) is currently unreachable; TODO remove once AWS resolves it
-# cn-north-1 (Beijing) is a separate AWS partition, excluded intentionally
+# cn-north-1 (Beijing) is a separate AWS partition, needs separate credentials
 EXCLUDED_AWS_REGIONS = {"me-south-1", "cn-north-1"}
 
 AWS_CLIENT_CONFIG = BotoConfig(
@@ -33,16 +33,18 @@ def execute(filters=None):
 
 
 def get_data(provider, cluster):
+	if provider == "AWS EC2":
+		return get_untracked_aws_instances(cluster)
+
 	fetch_untracked = {
-		"AWS EC2": get_untracked_aws_instances,
 		"Hetzner": get_untracked_hetzner_servers,
 		"DigitalOcean": get_untracked_digital_ocean_droplets,
 	}[provider]
 
 	clusters = [frappe.get_doc("Cluster", name) for name in get_clusters(provider, cluster)]
 	rows = []
-	for cluster in clusters:
-		rows.extend(get_cluster_rows(fetch_untracked, cluster, provider))
+	for cluster_doc in clusters:
+		rows.extend(get_cluster_rows(fetch_untracked, cluster_doc, provider))
 	return rows
 
 
@@ -51,18 +53,19 @@ def get_cluster_rows(fetch_untracked, cluster, provider):
 		return fetch_untracked(cluster)
 	except Exception:
 		frappe.log_error(title=f"Untracked Servers: Failed to fetch {cluster.name}")
-		return [get_status_row(provider, cluster, "Error: Could not fetch from provider (see Error Log)")]
+		error = "Error: Could not fetch from provider (see Error Log)"
+		return [get_status_row(provider, cluster.name, cluster.region, error)]
 
 
-def get_status_row(provider, cluster, status):
+def get_status_row(provider, cluster_name, region, status):
 	return {
 		"provider": provider,
-		"cluster": cluster.name,
+		"cluster": cluster_name,
 		"instance_id": None,
 		"name": None,
 		"status": status,
 		"instance_type": None,
-		"region": cluster.region,
+		"region": region,
 	}
 
 
@@ -73,36 +76,54 @@ def get_clusters(provider, cluster):
 	return frappe.get_all("Cluster", filters, pluck="name")
 
 
-def get_known_instance_ids(provider, cluster_name):
-	instance_ids = frappe.get_all(
-		"Virtual Machine",
-		{
-			"cloud_provider": provider,
-			"cluster": cluster_name,
-			"status": ("!=", "Terminated"),
-			"instance_id": ("is", "set"),
-		},
-		pluck="instance_id",
-	)
+def get_known_instance_ids(provider, **filters):
+	filters.update({"cloud_provider": provider, "status": ("!=", "Terminated"), "instance_id": ("is", "set")})
+	instance_ids = frappe.get_all("Virtual Machine", filters, pluck="instance_id")
 	return {str(instance_id) for instance_id in instance_ids}
 
 
 def get_untracked_aws_instances(cluster):
-	if cluster.region in EXCLUDED_AWS_REGIONS:
-		return [get_status_row("AWS EC2", cluster, "Skipped: region excluded")]
+	press_settings = frappe.get_cached_doc("Press Settings")
+	secret_key = press_settings.get_password("aws_secret_access_key", raise_exception=False)
+	if not press_settings.aws_access_key_id or not secret_key:
+		frappe.throw("AWS credentials are not configured on Press Settings")
 
-	secret_key = cluster.get_password("aws_secret_access_key", raise_exception=False)
-	if not cluster.aws_access_key_id or not secret_key:
-		frappe.throw(f"AWS credentials are not configured on Cluster {cluster.name}")
+	rows = []
+	for region in get_aws_regions(cluster):
+		rows.extend(get_region_rows(press_settings.aws_access_key_id, secret_key, region))
+	return rows
 
+
+def get_aws_regions(cluster):
+	"""All AWS regions, so leaked instances in a region Press never registered still show up."""
+	if cluster:
+		region = frappe.db.get_value("Cluster", {"name": cluster, "cloud_provider": "AWS EC2"}, "region")
+		return [region] if region else []
+	return boto3.session.Session().get_available_regions("ec2", partition_name="aws")
+
+
+def get_region_rows(access_key_id, secret_key, region):
+	cluster_name = frappe.db.get_value("Cluster", {"cloud_provider": "AWS EC2", "region": region}, "name")
+	if region in EXCLUDED_AWS_REGIONS:
+		return [get_status_row("AWS EC2", cluster_name, region, "Skipped: region excluded")]
+
+	try:
+		return fetch_aws_region_instances(access_key_id, secret_key, region, cluster_name)
+	except Exception:
+		frappe.log_error(title=f"Untracked Servers: Failed to fetch {region}")
+		error = "Error: Could not fetch from provider (see Error Log)"
+		return [get_status_row("AWS EC2", cluster_name, region, error)]
+
+
+def fetch_aws_region_instances(access_key_id, secret_key, region, cluster_name):
 	client = boto3.client(
 		"ec2",
-		region_name=cluster.region,
-		aws_access_key_id=cluster.aws_access_key_id,
+		region_name=region,
+		aws_access_key_id=access_key_id,
 		aws_secret_access_key=secret_key,
 		config=AWS_CLIENT_CONFIG,
 	)
-	known_instance_ids = get_known_instance_ids("AWS EC2", cluster.name)
+	known_instance_ids = get_known_instance_ids("AWS EC2", region=region)
 
 	paginator = client.get_paginator("describe_instances")
 	pages = paginator.paginate(Filters=[{"Name": "instance-state-name", "Values": AWS_STATES}])
@@ -116,12 +137,12 @@ def get_untracked_aws_instances(cluster):
 				rows.append(
 					{
 						"provider": "AWS EC2",
-						"cluster": cluster.name,
+						"cluster": cluster_name,
 						"instance_id": instance["InstanceId"],
 						"name": get_aws_name_tag(instance),
 						"status": instance["State"]["Name"],
 						"instance_type": instance["InstanceType"],
-						"region": cluster.region,
+						"region": region,
 					}
 				)
 	return rows
@@ -140,7 +161,7 @@ def get_untracked_hetzner_servers(cluster):
 		frappe.throw(f"Hetzner API token is not configured on Cluster {cluster.name}")
 
 	client = HetznerClient(token=api_token)
-	known_instance_ids = get_known_instance_ids("Hetzner", cluster.name)
+	known_instance_ids = get_known_instance_ids("Hetzner", cluster=cluster.name)
 
 	rows = []
 	for server in client.servers.get_all():
@@ -168,7 +189,7 @@ def get_untracked_digital_ocean_droplets(cluster):
 		frappe.throw(f"DigitalOcean API token is not configured on Cluster {cluster.name}")
 
 	client = pydo.Client(token=api_token)
-	known_instance_ids = get_known_instance_ids("DigitalOcean", cluster.name)
+	known_instance_ids = get_known_instance_ids("DigitalOcean", cluster=cluster.name)
 
 	rows = []
 	page = 1
