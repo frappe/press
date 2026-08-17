@@ -15,9 +15,8 @@
 		},
 		{
 			"fieldname": "cluster",
-			"fieldtype": "Link",
+			"fieldtype": "Data",
 			"label": "Cluster",
-			"options": "Cluster",
 			"width": 0
 		},
 		{
