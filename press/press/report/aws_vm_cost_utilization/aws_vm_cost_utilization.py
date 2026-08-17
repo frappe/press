@@ -8,6 +8,8 @@ import frappe
 from frappe.utils import cint, flt
 from frappe.utils.caching import redis_cache
 
+from press.utils.aws import EXCLUDED_REGIONS, get_press_aws_credentials
+
 SERVER_TYPES = [
 	"Server",
 	"Database Server",
@@ -24,9 +26,6 @@ SERVER_TYPES = [
 
 HOURS_PER_MONTH = 750
 BILLABLE_STATES = ["pending", "running", "stopping", "stopped", "shutting-down"]
-
-# Bahrain (unreachable), Beijing (separate AWS China partition, priced in CNY not USD).
-EXCLUDED_REGIONS = ["me-south-1", "cn-north-1"]
 
 
 def execute(filters=None):
@@ -196,18 +195,6 @@ def get_server_by_virtual_machine():
 				team=server.get("team"),
 			)
 	return server_by_vm
-
-
-def get_press_aws_credentials():
-	settings = frappe.get_single("Press Settings")
-	secret_key = settings.get_password("aws_secret_access_key", raise_exception=False)
-	if not settings.aws_access_key_id or not secret_key:
-		frappe.throw("AWS credentials are not configured in Press Settings")
-
-	return {
-		"aws_access_key_id": settings.aws_access_key_id,
-		"aws_secret_access_key": secret_key,
-	}
 
 
 def get_pricing_client():
