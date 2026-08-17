@@ -33,21 +33,37 @@ def get_months(lookback_months):
 
 def get_cost_by_service(months):
 	client = boto3.client("ce", region_name="us-east-1", **get_press_aws_credentials())
-	response = client.get_cost_and_usage(
-		TimePeriod={"Start": str(months[0]), "End": str(add_days(getdate(), 1))},
-		Granularity="MONTHLY",
-		Metrics=["UnblendedCost"],
-		GroupBy=[{"Type": "DIMENSION", "Key": "SERVICE"}],
-	)
 
 	cost_by_service = {}
-	for period in response["ResultsByTime"]:
+	for period in get_cost_and_usage_pages(client, months):
 		month = period["TimePeriod"]["Start"]
 		for group in period["Groups"]:
 			service = group["Keys"][0]
 			cost = flt(group["Metrics"]["UnblendedCost"]["Amount"])
 			cost_by_service.setdefault(service, {})[month] = cost
 	return cost_by_service
+
+
+def get_cost_and_usage_pages(client, months):
+	"""get_cost_and_usage paginates via NextPageToken once the account has enough
+	distinct line items; reading only the first page silently drops services."""
+	kwargs = {
+		"TimePeriod": {"Start": str(months[0]), "End": str(add_days(getdate(), 1))},
+		"Granularity": "MONTHLY",
+		"Metrics": ["UnblendedCost"],
+		"GroupBy": [{"Type": "DIMENSION", "Key": "SERVICE"}],
+	}
+
+	results = []
+	next_page_token = None
+	while True:
+		if next_page_token:
+			kwargs["NextPageToken"] = next_page_token
+		response = client.get_cost_and_usage(**kwargs)
+		results.extend(response["ResultsByTime"])
+		next_page_token = response.get("NextPageToken")
+		if not next_page_token:
+			return results
 
 
 def build_rows(cost_by_service, months):

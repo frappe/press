@@ -32,6 +32,12 @@
 			"width": 180
 		},
 		{
+			"fieldname": "unpriced_size_gb",
+			"fieldtype": "Float",
+			"label": "Unpriced Size (GB)",
+			"width": 130
+		},
+		{
 			"fieldname": "daily_growth_gb",
 			"fieldtype": "Float",
 			"label": "Daily Avg Growth (GB/day)",

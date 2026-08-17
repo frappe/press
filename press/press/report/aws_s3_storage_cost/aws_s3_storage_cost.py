@@ -13,6 +13,19 @@ from press.utils.aws import EXCLUDED_REGIONS, get_press_aws_credentials
 BYTES_PER_GB = 1024**3
 TRAILING_DAYS = 14
 
+# CloudWatch publishes BucketSizeBytes separately per storage class — there is no
+# combined "all classes" size metric — mapped to the AWS Pricing API's volumeType
+# for that class. Rarely-used overhead/staging sub-metrics are not covered.
+STORAGE_TYPES = {
+	"StandardStorage": "Standard",
+	"StandardIAStorage": "Standard - Infrequent Access",
+	"OneZoneIAStorage": "One Zone - Infrequent Access",
+	"IntelligentTieringFAStorage": "Intelligent-Tiering",
+	"GlacierStorage": "Glacier",
+	"DeepArchiveStorage": "Glacier Deep Archive",
+	"ReducedRedundancyStorage": "Reduced Redundancy",
+}
+
 
 def execute(filters=None):
 	frappe.only_for("System Manager")
@@ -52,8 +65,12 @@ def get_bucket_region(client, bucket_name):
 
 
 def build_row(bucket, pricing_client):
-	size_history = get_daily_size_history(bucket)
-	current_size = size_history[-1]["size"] if size_history else 0
+	series_by_type = get_bucket_storage_series(bucket)
+	breakdown = {storage_type: series[-1]["size"] for storage_type, series in series_by_type.items()}
+	current_size = sum(breakdown.values())
+	monthly_cost, unpriced_size = get_monthly_storage_cost(pricing_client, bucket["region"], breakdown)
+
+	size_history = get_combined_daily_history(series_by_type)
 	weekly_growth, prior_weekly_growth = get_weekly_growth(size_history)
 	growth_change_percent = (
 		((weekly_growth - prior_weekly_growth) / prior_weekly_growth * 100) if prior_weekly_growth else 0
@@ -64,7 +81,8 @@ def build_row(bucket, pricing_client):
 		"region": bucket["region"],
 		"current_size_gb": flt(current_size / BYTES_PER_GB, 2),
 		"object_count": get_latest_object_count(bucket),
-		"monthly_cost": get_monthly_storage_cost(pricing_client, bucket["region"], current_size),
+		"monthly_cost": monthly_cost,
+		"unpriced_size_gb": unpriced_size,
 		"daily_growth_gb": flt(weekly_growth / BYTES_PER_GB / 7, 3),
 		"weekly_growth_gb": flt(weekly_growth / BYTES_PER_GB, 2),
 		"growth_change_percent": flt(growth_change_percent, 1),
@@ -75,10 +93,18 @@ def get_cloudwatch_client(bucket):
 	return boto3.client("cloudwatch", region_name=bucket["region"], **bucket["credentials"])
 
 
-def get_daily_size_history(bucket):
-	"""Daily average bucket size (Standard storage) over the trailing window.
-	Reflects net size change, not gross bytes uploaded — S3 request-level upload
-	metrics require per-bucket CloudWatch request metrics, which aren't assumed enabled."""
+def get_bucket_storage_series(bucket):
+	"""Daily size series per storage class, for whichever classes this bucket
+	actually has data for (a class with no objects returns no datapoints)."""
+	series_by_type = {}
+	for storage_type in STORAGE_TYPES:
+		series = get_storage_type_series(bucket, storage_type)
+		if series:
+			series_by_type[storage_type] = series
+	return series_by_type
+
+
+def get_storage_type_series(bucket, storage_type):
 	client = get_cloudwatch_client(bucket)
 	end = datetime.utcnow()
 	start = end - timedelta(days=TRAILING_DAYS + 1)
@@ -88,7 +114,7 @@ def get_daily_size_history(bucket):
 		MetricName="BucketSizeBytes",
 		Dimensions=[
 			{"Name": "BucketName", "Value": bucket["name"]},
-			{"Name": "StorageType", "Value": "StandardStorage"},
+			{"Name": "StorageType", "Value": storage_type},
 		],
 		StartTime=start,
 		EndTime=end,
@@ -98,6 +124,18 @@ def get_daily_size_history(bucket):
 
 	datapoints = sorted(response["Datapoints"], key=lambda point: point["Timestamp"])
 	return [{"timestamp": point["Timestamp"], "size": point["Average"]} for point in datapoints]
+
+
+def get_combined_daily_history(series_by_type):
+	"""Sum per-class series into one total-size-per-day history.
+	Reflects net size change, not gross bytes uploaded — S3 request-level upload
+	metrics require per-bucket CloudWatch request metrics, which aren't assumed enabled."""
+	size_by_date = {}
+	for series in series_by_type.values():
+		for point in series:
+			date = point["timestamp"].date()
+			size_by_date[date] = size_by_date.get(date, 0) + point["size"]
+	return [{"size": size} for _, size in sorted(size_by_date.items())]
 
 
 def get_latest_object_count(bucket):
@@ -137,18 +175,26 @@ def get_pricing_client():
 	return boto3.client("pricing", region_name="ap-south-1", **get_press_aws_credentials())
 
 
-def get_monthly_storage_cost(client, region, size_bytes):
-	price_per_gb = get_s3_price_per_gb(client, region)
-	return flt(price_per_gb * (size_bytes / BYTES_PER_GB), 2)
+def get_monthly_storage_cost(client, region, breakdown):
+	"""Price each storage class at its own rate — first pricing tier only, a
+	reasonable approximation for buckets under ~50TB. Bytes in a class this
+	can't find a price for are counted as size but reported as unpriced,
+	rather than silently priced at $0 or folded into the Standard rate."""
+	total_cost = 0
+	unpriced_bytes = 0
+	for storage_type, size_bytes in breakdown.items():
+		price_per_gb = get_s3_price_per_gb(client, region, STORAGE_TYPES[storage_type])
+		if price_per_gb is None:
+			unpriced_bytes += size_bytes
+			continue
+		total_cost += price_per_gb * (size_bytes / BYTES_PER_GB)
+	return flt(total_cost, 2), flt(unpriced_bytes / BYTES_PER_GB, 2)
 
 
-def get_s3_price_per_gb(client, region):
-	# S3 Standard storage, first pricing tier only — a reasonable approximation for
-	# buckets under ~50TB. Buckets on Infrequent Access/Glacier tiers are not priced here.
+def get_s3_price_per_gb(client, region, volume_type):
 	product_filters = [
 		{"Type": "TERM_MATCH", "Field": "regionCode", "Value": region},
-		{"Type": "TERM_MATCH", "Field": "storageClass", "Value": "General Purpose"},
-		{"Type": "TERM_MATCH", "Field": "volumeType", "Value": "Standard"},
+		{"Type": "TERM_MATCH", "Field": "volumeType", "Value": volume_type},
 	]
 
 	response = client.get_products(ServiceCode="AmazonS3", Filters=product_filters, MaxResults=1)
@@ -159,7 +205,7 @@ def get_s3_price_per_gb(client, region):
 			usd_price = dimension["pricePerUnit"].get("USD")
 			if usd_price is not None:
 				return flt(usd_price)
-	return 0
+	return None
 
 
 def get_columns():
@@ -173,6 +219,12 @@ def get_columns():
 			"label": "Est. Monthly Storage Cost (USD)",
 			"fieldtype": "Currency",
 			"width": 180,
+		},
+		{
+			"fieldname": "unpriced_size_gb",
+			"label": "Unpriced Size (GB)",
+			"fieldtype": "Float",
+			"width": 130,
 		},
 		{
 			"fieldname": "daily_growth_gb",
@@ -193,6 +245,7 @@ def get_columns():
 def get_report_summary(rows):
 	total_size = sum(row["current_size_gb"] for row in rows)
 	total_cost = sum(row["monthly_cost"] for row in rows)
+	total_unpriced = sum(row["unpriced_size_gb"] for row in rows)
 	total_weekly_growth = sum(row["weekly_growth_gb"] for row in rows)
 
 	return [
@@ -208,6 +261,12 @@ def get_report_summary(rows):
 			"label": "Total Estimated Monthly Cost (USD)",
 			"datatype": "Currency",
 			"indicator": "blue",
+		},
+		{
+			"value": flt(total_unpriced, 2),
+			"label": "Unpriced Storage (GB)",
+			"datatype": "Float",
+			"indicator": "red",
 		},
 		{
 			"value": flt(total_weekly_growth, 2),
