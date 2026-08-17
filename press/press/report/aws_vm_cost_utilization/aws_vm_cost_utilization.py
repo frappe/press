@@ -5,7 +5,7 @@ import json
 
 import boto3
 import frappe
-from frappe.utils import flt
+from frappe.utils import cint, flt
 from frappe.utils.caching import redis_cache
 
 SERVER_TYPES = [
@@ -46,6 +46,8 @@ def get_data(filters):
 	rows = [
 		build_row(instance, press_vms.get(instance["instance_id"]), server_by_vm) for instance in instances
 	]
+	if cint(filters.get("active_in_production")):
+		rows = [row for row in rows if row["active_in_production"]]
 	rows.sort(key=lambda row: (row["tracked_in_press"], -row["estimated_monthly_cost"]))
 	return rows
 
