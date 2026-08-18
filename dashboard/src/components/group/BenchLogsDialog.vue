@@ -34,6 +34,7 @@
 				</div>
 				<div class="mt-4">
 					<div
+						ref="logBody"
 						class="h-[34rem] overflow-scroll rounded border border-outline-gray-1 bg-gray-900 px-2.5 py-2 text-sm text-ink-gray-2"
 					>
 						<pre>{{
@@ -48,7 +49,7 @@
 
 <script setup>
 import { createResource } from 'frappe-ui'
-import { defineProps, h, ref } from 'vue'
+import { defineProps, h, nextTick, ref } from 'vue'
 import LucideSparkleIcon from '~icons/lucide/sparkle'
 import router from '../../router'
 import { date } from '../../utils/format'
@@ -64,6 +65,7 @@ const props = defineProps({
 const show = ref(true)
 const logName = ref(props.initialLog ?? '')
 const showLog = ref(Boolean(props.initialLog))
+const logBody = ref(null)
 
 const log = createResource({
 	url: 'press.api.bench.log',
@@ -73,6 +75,12 @@ const log = createResource({
 			bench: props.bench,
 			log: logName.value,
 		}
+	},
+	onSuccess() {
+		// newest entries are at the end, and these files run to megabytes
+		nextTick(() => {
+			if (logBody.value) logBody.value.scrollTop = logBody.value.scrollHeight
+		})
 	},
 })
 
