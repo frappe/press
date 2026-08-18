@@ -3484,7 +3484,7 @@ class Server(BaseServer):
 		except Exception:
 			log_error("Install and ncdu Setup Exception", server=self.as_dict())
 
-	def _setup_rclone(self):
+	def _setup_rclone(self) -> AnsiblePlay | None:
 		try:
 			ansible = Ansible(
 				playbook="install_rclone.yml",
@@ -3492,9 +3492,20 @@ class Server(BaseServer):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			ansible.run()
+			return ansible.run()
 		except Exception:
 			log_error("Install Rclone Exception", server=self.as_dict())
+			return None
+
+	def enable_backup_streaming(self):
+		"""Install rclone, then let this server stream offsite backups.
+
+		The agent rejects a streamed backup when rclone is missing, so the flag
+		must not be set until the play has actually succeeded.
+		"""
+		play = self._setup_rclone()
+		if play and play.status == "Success":
+			self.db_set("stream_backups", True)
 
 	@frappe.whitelist()
 	def add_upstream_to_proxy(self):

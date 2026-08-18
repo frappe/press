@@ -696,6 +696,38 @@ class TestServer(FrappeTestCase):
 				server.set_auditd_setup_from_base_playbook()
 				self.assertFalse(server.is_auditd_setup)
 
+	def test_backup_streaming_enabled_after_rclone_play_succeeds(self):
+		server = create_test_server()
+		self.assertFalse(server.stream_backups)
+
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server.enable_backup_streaming()
+
+		server.reload()
+		self.assertTrue(server.stream_backups)
+
+	def test_backup_streaming_stays_disabled_when_rclone_play_fails(self):
+		"""The agent rejects a streamed backup when rclone is missing."""
+		server = create_test_server()
+
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Failure")
+			server.enable_backup_streaming()
+
+		server.reload()
+		self.assertFalse(server.stream_backups)
+
+	def test_backup_streaming_stays_disabled_when_rclone_play_errors_out(self):
+		server = create_test_server()
+
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.side_effect = Exception("Connection refused")
+			server.enable_backup_streaming()
+
+		server.reload()
+		self.assertFalse(server.stream_backups)
+
 	@patch.object(BaseServer, "_archive", new=Mock())
 	@patch.object(BaseServer, "disable_subscription", new=Mock())
 	def test_archival_uninstalls_wazuh_agent_when_installed(self):
@@ -779,7 +811,7 @@ class TestServer(FrappeTestCase):
 		settings = create_test_press_settings()
 		settings.wazuh_api_url = "https://wazuh.example.com:55000"
 		settings.wazuh_api_username = "user"
-		settings.wazuh_api_password = "pass"
+		settings.wazuh_api_password = "pass"  # pragma: allowlist secret
 		settings.wazuh_api_verify_tls = 0
 		settings.save()
 
@@ -801,7 +833,7 @@ class TestServer(FrappeTestCase):
 		settings = create_test_press_settings()
 		settings.wazuh_api_url = "https://wazuh.example.com:55000"
 		settings.wazuh_api_username = "user"
-		settings.wazuh_api_password = "pass"
+		settings.wazuh_api_password = "pass"  # pragma: allowlist secret
 		settings.wazuh_api_verify_tls = 0
 		settings.save()
 
