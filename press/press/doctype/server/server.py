@@ -3453,7 +3453,7 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def setup_rclone(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_rclone")
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_rclone", queue="long", timeout=1200)
 
 	@frappe.whitelist()
 	def install_nfs_common(self):
