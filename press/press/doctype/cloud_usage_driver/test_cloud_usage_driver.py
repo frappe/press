@@ -8,9 +8,10 @@ from frappe.utils import add_days, getdate
 from press.press.doctype.cloud_usage_driver.cloud_usage_driver import (
 	DRIVER_BACKUP_OBJECTS,
 	DRIVER_BACKUP_UPLOADED,
+	by_provider,
 	collect_upload_drivers,
 	record,
-	with_total,
+	with_totals,
 )
 
 BUCKET_ONE = "test-backups-blr"
@@ -84,23 +85,49 @@ class TestCloudUsageDriver(FrappeTestCase):
 
 	def test_fleet_total_is_stored_alongside_the_scopes(self):
 		self.assertEqual(
-			with_total({"a": 3, "b": 7}),
-			[("", 10), ("a", 3), ("b", 7)],
+			with_totals({("", "a"): 3, ("", "b"): 7}),
+			[("", "", 10), ("", "a", 3), ("", "b", 7)],
 		)
 
 	def test_rows_without_a_scope_do_not_collide_with_the_total(self):
 		"""A bucket or cluster left unset once wrote itself into the blank scope and
 		overwrote the fleet total, which every verdict is measured against."""
 		self.assertEqual(
-			with_total({"": 3, "b": 7}),
-			[("", 10), ("(none)", 3), ("b", 7)],
+			with_totals({("", ""): 3, ("", "b"): 7}),
+			[("", "", 10), ("", "(none)", 3), ("", "b", 7)],
+		)
+
+	def test_each_provider_gets_its_own_total_as_well_as_the_fleet(self):
+		"""A Hetzner volume growing says nothing about whether AWS storage should have
+		grown, so each provider is judged against its own count first."""
+		self.assertEqual(
+			with_totals({("AWS EC2", "blr"): 10, ("Hetzner", "fsn1"): 4}),
+			[
+				("", "", 14),
+				("AWS EC2", "", 10),
+				("Hetzner", "", 4),
+				("AWS EC2", "blr", 10),
+				("Hetzner", "fsn1", 4),
+			],
 		)
 
 	def test_recording_nothing_clears_the_day(self):
 		yesterday = add_days(getdate(), -1)
-		record(yesterday, DRIVER_BACKUP_UPLOADED, [("", 5)], "Bytes")
+		record(yesterday, DRIVER_BACKUP_UPLOADED, [("", "", 5)], "Bytes")
 		record(yesterday, DRIVER_BACKUP_UPLOADED, [], "Bytes")
 
 		self.assertFalse(
 			frappe.db.exists("Cloud Usage Driver", {"date": yesterday, "driver": DRIVER_BACKUP_UPLOADED})
 		)
+
+	def test_a_driver_with_no_scope_does_not_repeat_itself(self):
+		"""Machine counts have no scope of their own. Routing them through the scoped
+		helper filed the same number twice, once as the provider total and once as an
+		unnamed detail row."""
+		self.assertEqual(
+			by_provider({"AWS EC2": 266, "Hetzner": 12}),
+			[("", "", 278), ("AWS EC2", "", 266), ("Hetzner", "", 12)],
+		)
+
+	def test_a_machine_with_no_provider_still_counts_towards_the_fleet(self):
+		self.assertEqual(by_provider({"": 5, "Hetzner": 12}), [("", "", 17), ("Hetzner", "", 12)])

@@ -24,20 +24,44 @@ from press.press.doctype.telegram_message.telegram_message import TelegramMessag
 
 DAYS_PER_MONTH = 30
 
-# What each kind of usage is expected to grow with. Ordered: the first marker found in
-# the usage type wins, so the specific markers come before the general ones.
-DRIVER_FOR_USAGE_TYPE = [
-	("EBS:SnapshotUsage", DRIVER_SNAPSHOT_SIZE),
-	("EBS:VolumeUsage", DRIVER_VOLUME_SIZE),
-	("EBS:VolumeP-IOPS", DRIVER_VOLUME_SIZE),
-	("BoxUsage", DRIVER_RUNNING_MACHINES),
-	("SpotUsage", DRIVER_RUNNING_MACHINES),
-	("DedicatedUsage", DRIVER_RUNNING_MACHINES),
-	("TimedStorage", DRIVER_BACKUP_STORED),
-	("Requests-Tier", DRIVER_BACKUP_OBJECTS),
-	("DataTransfer", DRIVER_ACTIVE_SITES),
-	("NatGateway", DRIVER_ACTIVE_SITES),
-]
+# What each kind of usage is expected to grow with, per provider, because the four of
+# them name things nothing alike: AWS folds storage and snapshots into usage types under
+# EC2-Other, OCI answers with a service and a SKU, and the two accrued providers use the
+# names our own adapters give them. Ordered: the first rule that matches wins, so the
+# specific ones come before the general ones.
+DRIVER_RULES = {
+	"AWS EC2": [
+		("usage_type", "EBS:SnapshotUsage", DRIVER_SNAPSHOT_SIZE),
+		("usage_type", "EBS:VolumeUsage", DRIVER_VOLUME_SIZE),
+		("usage_type", "EBS:VolumeP-IOPS", DRIVER_VOLUME_SIZE),
+		("usage_type", "BoxUsage", DRIVER_RUNNING_MACHINES),
+		("usage_type", "SpotUsage", DRIVER_RUNNING_MACHINES),
+		("usage_type", "DedicatedUsage", DRIVER_RUNNING_MACHINES),
+		("usage_type", "TimedStorage", DRIVER_BACKUP_STORED),
+		("usage_type", "Requests-Tier", DRIVER_BACKUP_OBJECTS),
+		("usage_type", "DataTransfer", DRIVER_ACTIVE_SITES),
+		("usage_type", "NatGateway", DRIVER_ACTIVE_SITES),
+	],
+	"OCI": [
+		# Volume backups bill under the block storage service, so the SKU has to be read
+		# before the service or every snapshot leak reads as a volume growing.
+		("usage_type", "Backup", DRIVER_SNAPSHOT_SIZE),
+		("service", "BLOCK_STORAGE", DRIVER_VOLUME_SIZE),
+		("service", "COMPUTE", DRIVER_RUNNING_MACHINES),
+		("service", "OBJECT_STORAGE", DRIVER_BACKUP_STORED),
+	],
+	"Hetzner": [
+		("usage_type", "Server:", DRIVER_RUNNING_MACHINES),
+		("usage_type", "Volume", DRIVER_VOLUME_SIZE),
+		("usage_type", "Snapshot", DRIVER_SNAPSHOT_SIZE),
+		("usage_type", "Traffic", DRIVER_ACTIVE_SITES),
+	],
+	"DigitalOcean": [
+		("usage_type", "Droplet:", DRIVER_RUNNING_MACHINES),
+		("usage_type", "Volume", DRIVER_VOLUME_SIZE),
+		("usage_type", "Snapshot", DRIVER_SNAPSHOT_SIZE),
+	],
+}
 
 
 class CloudUsageAnomaly(Document):
@@ -83,6 +107,14 @@ def series_key(row):
 	return " / ".join(part for part in [row.service, row.usage_type, row.region] if part)
 
 
+def driver_for(provider, service, usage_type):
+	values = {"service": service or "", "usage_type": usage_type or ""}
+	for field, marker, driver in DRIVER_RULES.get(provider, []):
+		if marker in values[field]:
+			return driver
+	return None
+
+
 def get_cost_series(start, end):
 	"""Every day's cost and usage, grouped into one series per account, service, usage
 	type and region."""
@@ -92,6 +124,8 @@ def get_cost_series(start, end):
 		[
 			"date",
 			"account",
+			"provider",
+			"currency",
 			"service",
 			"usage_type",
 			"region",
@@ -114,23 +148,16 @@ def get_driver_series(start, end):
 	rows = frappe.get_all(
 		"Cloud Usage Driver",
 		{"date": ("between", [start, end]), "scope": ("in", ["", None])},
-		["date", "driver", "value"],
+		["date", "driver", "provider", "value"],
 		order_by="date asc",
 		limit_page_length=0,
 	)
 
 	series = {}
 	for row in rows:
-		series.setdefault(row.driver, []).append({"date": getdate(row.date), "value": flt(row.value)})
+		key = (row.driver, row.provider or "")
+		series.setdefault(key, []).append({"date": getdate(row.date), "value": flt(row.value)})
 	return series
-
-
-def driver_for(usage_type):
-	usage_type = usage_type or ""
-	for marker, driver in DRIVER_FOR_USAGE_TYPE:
-		if marker in usage_type:
-			return driver
-	return None
 
 
 def fill_missing_days(points_by_date, start, end):
@@ -207,6 +234,8 @@ def build_anomaly(account, key, rows, settings, drivers, start, end):
 	sample = rows[0]
 	anomaly = {
 		"account": account,
+		"provider": sample.provider,
+		"currency": sample.currency,
 		"series_key": key,
 		"service": sample.service,
 		"usage_type": sample.usage_type,
@@ -222,16 +251,24 @@ def build_anomaly(account, key, rows, settings, drivers, start, end):
 		"daily_cost_impact": daily_cost_impact,
 		"monthly_cost_impact": daily_cost_impact * DAYS_PER_MONTH,
 	}
-	anomaly.update(judge(sample.usage_type, drivers, found, settings))
+	anomaly.update(judge(sample, drivers, found, settings))
 	anomaly["summary"] = describe(anomaly)
 	return anomaly
 
 
-def judge(usage_type, drivers, found, settings):
+def judge(sample, drivers, found, settings):
 	"""Growth that its driver kept up with is the product working. Growth its driver
-	did not follow is the alert."""
-	driver = driver_for(usage_type)
-	points = drivers.get(driver) if driver else None
+	did not follow is the alert.
+
+	The provider's own count is preferred over the fleet's: Hetzner volumes growing says
+	nothing about whether AWS storage should have grown, and judging one against the
+	other would call a real leak organic.
+	"""
+	driver = driver_for(sample.provider, sample.service, sample.usage_type)
+	if not driver:
+		return {"driver": None, "driver_change_percent": 0, "verdict": "No Driver"}
+
+	points = drivers.get((driver, sample.provider)) or drivers.get((driver, ""))
 	if not points:
 		return {"driver": driver, "driver_change_percent": 0, "verdict": "No Driver"}
 
@@ -255,8 +292,8 @@ def describe(anomaly):
 		f"{anomaly['series_key']} {'stepped' if anomaly['detector'] == 'Level Shift' else 'spiked'} "
 		f"from {anomaly['baseline_value']:,.2f} to {anomaly['current_value']:,.2f} "
 		f"{anomaly['unit']} on {anomaly['changed_on']} ({anomaly['change_percent']:+.1f}%).",
-		f"Costing about ${anomaly['daily_cost_impact']:,.2f} a day more "
-		f"(${anomaly['monthly_cost_impact']:,.0f} a month).",
+		f"Costing about {anomaly['daily_cost_impact']:,.2f} {anomaly['currency']} a day more "
+		f"({anomaly['monthly_cost_impact']:,.0f} a month).",
 	]
 	if anomaly["verdict"] == "No Driver":
 		lines.append("No business driver is mapped to this usage type, so it cannot be explained away.")
@@ -286,7 +323,9 @@ def save_anomaly(anomaly):
 	if not existing and is_dismissed(anomaly):
 		return None
 
-	contributors = get_contributors(anomaly["usage_type"], anomaly["region"], anomaly["changed_on"])
+	contributors = get_contributors(
+		anomaly["provider"], anomaly["usage_type"], anomaly["region"], anomaly["changed_on"]
+	)
 
 	if existing:
 		doc = frappe.get_doc("Cloud Usage Anomaly", existing.name)
@@ -324,9 +363,14 @@ def supersede_spikes(anomaly):
 
 
 def notify(anomaly):
-	"""Only unexplained growth is worth interrupting someone for. Growth its driver
-	kept pace with is recorded and left in the list."""
-	if anomaly.verdict != "Inorganic":
+	"""Only unexplained growth is worth interrupting someone for. Growth its driver kept
+	pace with is recorded and left in the list.
+
+	No Driver counts as unexplained. A usage type nothing in Press drives is the case we
+	understand least, and staying quiet about it would make an unmapped series the
+	safest place for a leak to hide.
+	"""
+	if anomaly.verdict == "Organic":
 		return
 
 	contributors = "\n".join(

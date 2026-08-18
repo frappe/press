@@ -17,6 +17,7 @@
 		"section_break_summary",
 		"summary",
 		"section_break_series",
+		"provider",
 		"account",
 		"service",
 		"usage_type",
@@ -24,6 +25,7 @@
 		"region",
 		"metric",
 		"unit",
+		"currency",
 		"section_break_change",
 		"baseline_value",
 		"current_value",
@@ -68,7 +70,10 @@
 			"options": "Inorganic\nOrganic\nNo Driver",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_head", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_head",
+			"fieldtype": "Column Break"
+		},
 		{
 			"description": "The day the series changed level. This is the answer to when it started.",
 			"fieldname": "changed_on",
@@ -91,7 +96,10 @@
 			"label": "Detected On",
 			"read_only": 1
 		},
-		{ "fieldname": "section_break_summary", "fieldtype": "Section Break" },
+		{
+			"fieldname": "section_break_summary",
+			"fieldtype": "Section Break"
+		},
 		{
 			"fieldname": "summary",
 			"fieldtype": "Small Text",
@@ -102,6 +110,14 @@
 			"fieldname": "section_break_series",
 			"fieldtype": "Section Break",
 			"label": "Series"
+		},
+		{
+			"fieldname": "provider",
+			"fieldtype": "Select",
+			"label": "Provider",
+			"options": "AWS EC2\nOCI\nHetzner\nDigitalOcean",
+			"in_standard_filter": 1,
+			"read_only": 1
 		},
 		{
 			"fieldname": "account",
@@ -122,7 +138,10 @@
 			"label": "Usage Type",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_series", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_series",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "region",
 			"fieldtype": "Data",
@@ -141,6 +160,13 @@
 			"fieldname": "unit",
 			"fieldtype": "Data",
 			"label": "Unit",
+			"read_only": 1
+		},
+		{
+			"fieldname": "currency",
+			"fieldtype": "Link",
+			"label": "Currency",
+			"options": "Currency",
 			"read_only": 1
 		},
 		{
@@ -169,7 +195,10 @@
 			"label": "Change",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_change", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_change",
+			"fieldtype": "Column Break"
+		},
 		{
 			"description": "The business measure this series is expected to track.",
 			"fieldname": "driver",
@@ -191,16 +220,21 @@
 		{
 			"fieldname": "daily_cost_impact",
 			"fieldtype": "Currency",
-			"label": "Daily Cost Impact (USD)",
-			"read_only": 1
+			"label": "Daily Cost Impact",
+			"read_only": 1,
+			"options": "currency"
 		},
-		{ "fieldname": "column_break_impact", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_impact",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "monthly_cost_impact",
 			"fieldtype": "Currency",
 			"in_list_view": 1,
-			"label": "Monthly Cost Impact (USD)",
-			"read_only": 1
+			"label": "Monthly Cost Impact",
+			"read_only": 1,
+			"options": "currency"
 		},
 		{
 			"fieldname": "section_break_contributors",

@@ -21,7 +21,11 @@
 		"column_break_detection",
 		"level_shift_minimum_change",
 		"organic_tolerance",
-		"minimum_series_cost"
+		"minimum_series_cost",
+		"section_break_do_rates",
+		"do_volume_rate",
+		"column_break_do",
+		"do_snapshot_rate"
 	],
 	"fields": [
 		{
@@ -62,7 +66,10 @@
 			"fieldtype": "Int",
 			"label": "Retention Days"
 		},
-		{ "fieldname": "column_break_ingest", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_ingest",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "14",
 			"description": "How far back Backfill History reaches. Cost Explorer charges $0.01 per request and holds 14 months of daily data.",
@@ -96,7 +103,10 @@
 			"fieldtype": "Currency",
 			"label": "Minimum Daily Cost Impact (USD)"
 		},
-		{ "fieldname": "column_break_detection", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_detection",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "20",
 			"description": "A level shift is reported when the step is at least this large.",
@@ -117,6 +127,30 @@
 			"fieldname": "minimum_series_cost",
 			"fieldtype": "Currency",
 			"label": "Minimum Series Cost (USD/day)"
+		},
+		{
+			"fieldname": "section_break_do_rates",
+			"fieldtype": "Section Break",
+			"label": "DigitalOcean Rates",
+			"description": "DigitalOcean publishes no price API for block storage or snapshots, so these are the rates we are charged. Droplets are priced from the sizes API and need no setting."
+		},
+		{
+			"default": "0.10",
+			"fieldname": "do_volume_rate",
+			"fieldtype": "Currency",
+			"label": "Volume Rate (USD per GB-month)",
+			"precision": "4"
+		},
+		{
+			"fieldname": "column_break_do",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "0.06",
+			"fieldname": "do_snapshot_rate",
+			"fieldtype": "Currency",
+			"label": "Snapshot Rate (USD per GB-month)",
+			"precision": "4"
 		}
 	],
 	"index_web_pages_for_search": 0,

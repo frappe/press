@@ -8,7 +8,9 @@
 	"engine": "InnoDB",
 	"field_order": [
 		"date",
+		"provider",
 		"account",
+		"source",
 		"column_break_key",
 		"service",
 		"usage_type",
@@ -16,6 +18,7 @@
 		"section_break_amounts",
 		"amortized_cost",
 		"unblended_cost",
+		"currency",
 		"column_break_usage",
 		"usage_quantity",
 		"usage_unit"
@@ -31,6 +34,17 @@
 			"search_index": 1
 		},
 		{
+			"fieldname": "provider",
+			"fieldtype": "Select",
+			"label": "Provider",
+			"options": "AWS EC2\nOCI\nHetzner\nDigitalOcean",
+			"default": "AWS EC2",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
 			"fieldname": "account",
 			"fieldtype": "Data",
 			"in_standard_filter": 1,
@@ -38,7 +52,19 @@
 			"reqd": 1,
 			"search_index": 1
 		},
-		{ "fieldname": "column_break_key", "fieldtype": "Column Break" },
+		{
+			"fieldname": "source",
+			"fieldtype": "Select",
+			"label": "Source",
+			"options": "Billed\nAccrued",
+			"default": "Billed",
+			"in_standard_filter": 1,
+			"description": "Billed came from the provider's own cost API. Accrued is our own inventory priced at the provider's published rates, because that provider has no cost API to ask."
+		},
+		{
+			"fieldname": "column_break_key",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "service",
 			"fieldtype": "Data",
@@ -62,22 +88,38 @@
 			"in_standard_filter": 1,
 			"label": "Region"
 		},
-		{ "fieldname": "section_break_amounts", "fieldtype": "Section Break" },
+		{
+			"fieldname": "section_break_amounts",
+			"fieldtype": "Section Break"
+		},
 		{
 			"description": "Savings Plan and Reserved Instance discounts spread across the resources that used them. Preferred over unblended cost for attribution.",
 			"fieldname": "amortized_cost",
 			"fieldtype": "Currency",
 			"in_list_view": 1,
 			"label": "Amortized Cost (USD)",
-			"precision": "6"
+			"precision": "6",
+			"options": "currency"
 		},
 		{
 			"fieldname": "unblended_cost",
 			"fieldtype": "Currency",
 			"label": "Unblended Cost (USD)",
-			"precision": "6"
+			"precision": "6",
+			"options": "currency"
 		},
-		{ "fieldname": "column_break_usage", "fieldtype": "Column Break" },
+		{
+			"fieldname": "currency",
+			"fieldtype": "Link",
+			"label": "Currency",
+			"options": "Currency",
+			"default": "USD",
+			"in_standard_filter": 1
+		},
+		{
+			"fieldname": "column_break_usage",
+			"fieldtype": "Column Break"
+		},
 		{
 			"description": "The physical measure behind the cost: GB-hours, instance hours, requests.",
 			"fieldname": "usage_quantity",

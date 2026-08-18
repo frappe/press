@@ -14,12 +14,15 @@ class TestCloudCostDrilldown(FrappeTestCase):
 	def setUp(self):
 		frappe.db.delete("Cloud Cost Daily")
 
-	def seed(self, date, service, usage_type, cost):
+	def seed(self, date, service, usage_type, cost, provider="AWS EC2", currency="USD"):
 		frappe.get_doc(
 			{
 				"doctype": "Cloud Cost Daily",
 				"date": date,
 				"account": ACCOUNT,
+				"provider": provider,
+				"source": "Billed",
+				"currency": currency,
 				"service": service,
 				"usage_type": usage_type,
 				"region": "ap-south-1",
@@ -30,9 +33,9 @@ class TestCloudCostDrilldown(FrappeTestCase):
 			}
 		).insert()
 
-	def seed_window(self, start, days, service, usage_type, cost):
+	def seed_window(self, start, days, service, usage_type, cost, **kwargs):
 		for offset in range(days):
-			self.seed(add_days(start, offset), service, usage_type, cost)
+			self.seed(add_days(start, offset), service, usage_type, cost, **kwargs)
 
 	def run_report(self, group_by, **filters):
 		from_date, to_date = add_days(getdate(), -7), add_days(getdate(), -1)
@@ -91,3 +94,35 @@ class TestCloudCostDrilldown(FrappeTestCase):
 		_, _, _, _, summary = self.run_report("Service")
 
 		self.assertAlmostEqual(summary[2]["value"], 105)
+
+	def test_two_currencies_are_never_added_together(self):
+		"""Hetzner bills in euros and AWS in dollars. There is no exchange rate in Press
+		worth trusting, so one currency is shown at a time rather than summed into a
+		number that means nothing."""
+		self.seed_window(add_days(getdate(), -7), 7, "AmazonS3", "APS3-TimedStorage-ByteHrs", 10)
+		self.seed_window(
+			add_days(getdate(), -7),
+			7,
+			"Compute",
+			"Server:cx42",
+			5,
+			provider="Hetzner",
+			currency="EUR",
+		)
+
+		_, dollars, _, _, _ = self.run_report("Provider")
+		_, euros, _, _, _ = self.run_report("Provider", currency="EUR")
+
+		self.assertEqual([row["provider"] for row in dollars], ["AWS EC2"])
+		self.assertAlmostEqual(dollars[0]["cost"], 70)
+		self.assertEqual([row["provider"] for row in euros], ["Hetzner"])
+		self.assertAlmostEqual(euros[0]["cost"], 35)
+
+	def test_accrued_and_billed_rows_can_be_told_apart(self):
+		self.seed_window(add_days(getdate(), -7), 7, "AmazonS3", "APS3-TimedStorage-ByteHrs", 10)
+
+		_, billed, _, _, _ = self.run_report("Service", source="Billed")
+		_, accrued, _, _, _ = self.run_report("Service", source="Accrued")
+
+		self.assertEqual(len(billed), 1)
+		self.assertEqual(accrued, [])

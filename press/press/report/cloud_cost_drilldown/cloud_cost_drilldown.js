@@ -21,9 +21,35 @@ frappe.query_reports['Cloud Cost Drilldown'] = {
 			fieldname: 'group_by',
 			label: __('Group By'),
 			fieldtype: 'Select',
-			options: 'Service\nUsage Type\nRegion\nDate',
+			options: 'Provider\nService\nUsage Type\nRegion\nDate',
 			default: 'Service',
 			reqd: 1,
+		},
+		{
+			fieldname: 'currency',
+			label: __('Currency'),
+			fieldtype: 'Link',
+			options: 'Currency',
+			default: 'USD',
+			reqd: 1,
+			description: __(
+				'Providers bill in different currencies and are never summed together',
+			),
+		},
+		{
+			fieldname: 'provider',
+			label: __('Provider'),
+			fieldtype: 'Select',
+			options: '\nAWS EC2\nOCI\nHetzner\nDigitalOcean',
+		},
+		{
+			fieldname: 'source',
+			label: __('Source'),
+			fieldtype: 'Select',
+			options: '\nBilled\nAccrued',
+			description: __(
+				'Accrued is our own inventory priced at the provider rate card, not an invoice',
+			),
 		},
 		{
 			fieldname: 'service',
