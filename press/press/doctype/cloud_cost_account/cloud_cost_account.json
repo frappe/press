@@ -1,0 +1,60 @@
+{
+	"actions": [],
+	"allow_rename": 0,
+	"creation": "2026-08-18 10:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": ["label", "enabled", "credentials_from", "cluster"],
+	"fields": [
+		{
+			"columns": 2,
+			"fieldname": "label",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Label",
+			"reqd": 1
+		},
+		{
+			"columns": 1,
+			"default": "1",
+			"fieldname": "enabled",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"label": "Enabled"
+		},
+		{
+			"columns": 2,
+			"default": "Press Settings",
+			"fieldname": "credentials_from",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Credentials From",
+			"options": "Press Settings\nCluster",
+			"reqd": 1
+		},
+		{
+			"columns": 3,
+			"depends_on": "eval:doc.credentials_from == 'Cluster'",
+			"description": "Cost Explorer is queried with this cluster's AWS credentials.",
+			"fieldname": "cluster",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Cluster",
+			"mandatory_depends_on": "eval:doc.credentials_from == 'Cluster'",
+			"options": "Cluster"
+		}
+	],
+	"index_web_pages_for_search": 0,
+	"istable": 1,
+	"links": [],
+	"modified": "2026-08-18 10:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Cloud Cost Account",
+	"owner": "Administrator",
+	"permissions": [],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": []
+}
