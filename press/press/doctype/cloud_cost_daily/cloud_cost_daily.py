@@ -55,16 +55,34 @@ class CloudCostDaily(Document):
 
 
 def get_cost_accounts():
-	"""The accounts to pull from, as configured on Cloud Cost Settings. Each row is
-	queried separately, so an AWS payer account and one of its members must not both be
-	listed — Cost Explorer would report the member's spend under both."""
-	settings = frappe.get_single("Cloud Cost Settings")
+	"""The accounts to pull from, worked out from what Press already knows.
 
-	return [
-		{"label": row.label, "provider": row.provider, "cluster": row.cluster}
-		for row in settings.accounts
-		if row.enabled
-	]
+	AWS is one account: the payer whose keys are in Press Settings. Per-cluster AWS keys
+	are for running machines, not for reading bills, and querying a member account that
+	the payer already covers would count its spend twice.
+
+	The other three keep their credentials per cluster because that is where the token
+	lives, so each distinct tenancy or project is its own account.
+	"""
+	accounts = []
+	if frappe.db.get_single_value("Press Settings", "aws_access_key_id"):
+		accounts.append({"label": "aws", "provider": "AWS EC2", "cluster": None})
+
+	seen = set()
+	clusters = frappe.get_all(
+		"Cluster",
+		{"cloud_provider": ("in", ["OCI", "Hetzner", "DigitalOcean"]), "status": ("!=", "Archived")},
+		["name", "cloud_provider", "oci_tenancy"],
+		order_by="name asc",
+	)
+	for cluster in clusters:
+		# One OCI tenancy can back several clusters and bills as a whole.
+		key = (cluster.cloud_provider, cluster.oci_tenancy or cluster.name)
+		if key in seen:
+			continue
+		seen.add(key)
+		accounts.append({"label": cluster.name, "provider": cluster.cloud_provider, "cluster": cluster.name})
+	return accounts
 
 
 def store_rows(label, rows_by_date):

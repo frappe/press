@@ -5,7 +5,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.cloud_cost_daily.adapters.aws import AWSCostSource
-from press.press.doctype.cloud_cost_daily.cloud_cost_daily import store_rows
+from press.press.doctype.cloud_cost_daily.cloud_cost_daily import get_cost_accounts, store_rows
 from press.utils.aws import region_from_usage_type
 
 ACCOUNT = {"label": "test-payer", "provider": "AWS EC2", "cluster": None}
@@ -105,3 +105,40 @@ class TestCloudCostDaily(FrappeTestCase):
 			),
 			10,
 		)
+
+
+class TestCostAccounts(FrappeTestCase):
+	"""Accounts are worked out from what Press already knows, so there is nothing to
+	configure and no list to keep in step with the clusters."""
+
+	def set_aws_key(self, value):
+		frappe.db.set_single_value("Press Settings", "aws_access_key_id", value)
+
+	def test_aws_is_one_account_from_press_settings(self):
+		"""Per-cluster AWS keys run machines, they do not read bills. Querying a member
+		account the payer already covers would count its spend twice."""
+		self.set_aws_key("AKIATESTONLY")
+
+		aws = [account for account in get_cost_accounts() if account["provider"] == "AWS EC2"]
+
+		self.assertEqual(len(aws), 1)
+		self.assertIsNone(aws[0]["cluster"])
+
+	def test_no_aws_account_when_no_keys_are_configured(self):
+		self.set_aws_key("")
+
+		self.assertEqual([a for a in get_cost_accounts() if a["provider"] == "AWS EC2"], [])
+
+	def test_every_other_provider_is_read_from_its_own_cluster(self):
+		"""Only AWS keeps billing credentials centrally. The rest hold their token on
+		the cluster, so that is where each account has to come from."""
+		for account in get_cost_accounts():
+			if account["provider"] != "AWS EC2":
+				self.assertTrue(account["cluster"])
+
+	def test_archived_clusters_are_not_queried(self):
+		archived = frappe.get_all("Cluster", {"status": "Archived"}, pluck="name")
+		labels = [account["label"] for account in get_cost_accounts()]
+
+		for cluster in archived:
+			self.assertNotIn(cluster, labels)

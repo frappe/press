@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import add_days, cint, flt, getdate
+from frappe.utils import add_days, flt, getdate
 
 from press.press.doctype.cloud_cost_daily.adapters import ACCRUED
 from press.press.doctype.cloud_usage_anomaly.contributors import get_contributors
@@ -24,6 +24,15 @@ from press.press.doctype.cloud_usage_driver.cloud_usage_driver import (
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
 DAYS_PER_MONTH = 30
+
+# The shape of detection is a design decision, not an operations one. These are the
+# numbers to argue about in a pull request, not knobs to leave on a settings page for
+# nobody to turn. Only the money floors, which decide how much a change has to be worth
+# before anyone hears about it, are configurable.
+BASELINE_DAYS = 30
+SPIKE_MAD_THRESHOLD = 3
+LEVEL_SHIFT_MINIMUM_CHANGE = 20
+ORGANIC_TOLERANCE = 5
 
 # What each kind of usage is expected to grow with, per provider, because the four of
 # them name things nothing alike: AWS folds storage and snapshots into usage types under
@@ -74,15 +83,11 @@ class CloudUsageAnomaly(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.cloud_usage_anomaly_contributor.cloud_usage_anomaly_contributor import (
-			CloudUsageAnomalyContributor,
-		)
-
 		account: DF.Data | None
 		baseline_value: DF.Float
 		change_percent: DF.Percent
 		changed_on: DF.Date | None
-		contributors: DF.Table[CloudUsageAnomalyContributor]
+		contributors: DF.TextEditor | None
 		current_value: DF.Float
 		daily_cost_impact: DF.Currency
 		detected_on: DF.Date | None
@@ -220,10 +225,10 @@ def build_anomaly(account, key, rows, settings, drivers, start, end):
 	# Level shift first. A series that settled at a new number weeks ago still reads as
 	# a loud day every single morning, and answering "it was high yesterday" when the
 	# real answer is "it changed on the twelfth" is the whole failure this replaces.
-	found = detect_level_shift(points, flt(settings.level_shift_minimum_change) or 20)
+	found = detect_level_shift(points, LEVEL_SHIFT_MINIMUM_CHANGE)
 	detector = "Level Shift"
 	if not found:
-		found = detect_spike(points, flt(settings.spike_mad_threshold) or 3)
+		found = detect_spike(points, SPIKE_MAD_THRESHOLD)
 		detector = "Spike"
 	if not found:
 		return None
@@ -253,12 +258,12 @@ def build_anomaly(account, key, rows, settings, drivers, start, end):
 		"daily_cost_impact": daily_cost_impact,
 		"monthly_cost_impact": daily_cost_impact * DAYS_PER_MONTH,
 	}
-	anomaly.update(judge(sample, drivers, found, settings))
+	anomaly.update(judge(sample, drivers, found))
 	anomaly["summary"] = describe(anomaly)
 	return anomaly
 
 
-def judge(sample, drivers, found, settings):
+def judge(sample, drivers, found):
 	"""Growth that its driver kept up with is the product working. Growth its driver
 	did not follow is the alert.
 
@@ -279,8 +284,7 @@ def judge(sample, drivers, found, settings):
 		return {"driver": driver, "driver_change_percent": 0, "verdict": "No Driver"}
 
 	driver_percent = change_percent(movement["baseline"], movement["current"])
-	tolerance = flt(settings.organic_tolerance)
-	organic = driver_percent >= found["change_percent"] - tolerance
+	organic = driver_percent >= found["change_percent"] - ORGANIC_TOLERANCE
 
 	return {
 		"driver": driver,
@@ -332,15 +336,13 @@ def save_anomaly(anomaly):
 		anomaly["provider"], anomaly["usage_type"], anomaly["region"], anomaly["changed_on"]
 	)
 
+	anomaly["contributors"] = render_contributors(contributors)
 	if existing:
 		doc = frappe.get_doc("Cloud Usage Anomaly", existing.name)
 		doc.update(anomaly)
 	else:
 		doc = frappe.get_doc({"doctype": "Cloud Usage Anomaly", **anomaly})
 
-	doc.contributors = []
-	for contributor in contributors:
-		doc.append("contributors", contributor)
 	doc.save(ignore_permissions=True)
 
 	if not existing:
@@ -367,6 +369,17 @@ def supersede_spikes(anomaly):
 		frappe.db.set_value("Cloud Usage Anomaly", name, "status", "Resolved")
 
 
+def render_contributors(contributors):
+	"""Contributors are read, never queried, so they are rendered once here instead of
+	earning a child table of their own. The links still open the record."""
+	items = []
+	for row in contributors:
+		route = f"/app/{frappe.scrub(row['document_type']).replace('_', '-')}/{row['document_name']}"
+		value = f"{row['value']:,.1f} {row['unit']}".rstrip()
+		items.append(f"<li><a href='{route}'>{frappe.utils.escape_html(row['label'])}</a> — {value}</li>")
+	return f"<ul>{''.join(items)}</ul>" if items else ""
+
+
 def notify(anomaly):
 	"""Only unexplained growth is worth interrupting someone for. Growth its driver kept
 	pace with is recorded and left in the list.
@@ -378,14 +391,11 @@ def notify(anomaly):
 	if anomaly.verdict == "Organic":
 		return
 
-	contributors = "\n".join(
-		f"- {row.label}: {row.value:,.1f} {row.unit or ''}".rstrip() for row in anomaly.contributors
+	TelegramMessage.enqueue(
+		message=f"*Unexplained cloud usage*\n\n{anomaly.summary}",
+		topic="Cloud Cost",
+		priority="Medium",
 	)
-	message = f"*Unexplained cloud usage*\n\n{anomaly.summary}"
-	if contributors:
-		message += f"\n\nLargest contributors:\n{contributors}"
-
-	TelegramMessage.enqueue(message=message, topic="Cloud Cost", priority="Medium")
 
 
 def is_dismissed(anomaly):
@@ -444,13 +454,12 @@ def get_stale_accounts(series, today):
 
 def detect_anomalies():
 	settings = frappe.get_single("Cloud Cost Settings")
-	baseline_days = cint(settings.baseline_days) or 28
 	today = getdate()
 
 	# Widest window any source could need, narrowed per series once its own last
 	# complete day is known.
-	drivers = get_driver_series(add_days(today, -baseline_days), today)
-	series = get_cost_series(add_days(today, -baseline_days), today)
+	drivers = get_driver_series(add_days(today, -BASELINE_DAYS), today)
+	series = get_cost_series(add_days(today, -BASELINE_DAYS), today)
 	stale = get_stale_accounts(series, today)
 
 	found = 0
@@ -459,7 +468,7 @@ def detect_anomalies():
 			continue
 
 		end = last_complete_day(rows, today)
-		start = add_days(end, -(baseline_days - 1))
+		start = add_days(end, -(BASELINE_DAYS - 1))
 		window = [row for row in rows if start <= getdate(row.date) <= end]
 		if not window:
 			continue
