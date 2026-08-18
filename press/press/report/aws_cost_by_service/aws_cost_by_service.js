@@ -15,5 +15,15 @@ frappe.query_reports['AWS Cost By Service'] = {
 			label: __('Service'),
 			fieldtype: 'Data',
 		},
+		{
+			fieldname: 'breakdown_by',
+			label: __('Breakdown By'),
+			fieldtype: 'Select',
+			options: 'Usage Type\nRegion',
+			default: 'Usage Type',
+		},
 	],
+	tree: true,
+	parent_field: 'parent_service',
+	initial_depth: 0,
 }
