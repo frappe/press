@@ -1,0 +1,145 @@
+{
+	"actions": [],
+	"allow_rename": 0,
+	"creation": "2026-08-18 10:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"enabled",
+		"section_break_accounts",
+		"accounts",
+		"section_break_ingest",
+		"restatement_days",
+		"retention_days",
+		"column_break_ingest",
+		"backfill_months",
+		"section_break_detection",
+		"baseline_days",
+		"spike_mad_threshold",
+		"minimum_daily_cost_impact",
+		"column_break_detection",
+		"level_shift_minimum_change",
+		"organic_tolerance",
+		"minimum_series_cost"
+	],
+	"fields": [
+		{
+			"default": "0",
+			"description": "Runs the daily ingest, driver collection and anomaly detection pipeline.",
+			"fieldname": "enabled",
+			"fieldtype": "Check",
+			"label": "Enabled"
+		},
+		{
+			"fieldname": "section_break_accounts",
+			"fieldtype": "Section Break",
+			"label": "AWS Accounts"
+		},
+		{
+			"description": "Each row is queried separately. Only add a member account if it is not already covered by a payer account listed here, otherwise its cost is counted twice.",
+			"fieldname": "accounts",
+			"fieldtype": "Table",
+			"label": "Accounts",
+			"options": "Cloud Cost Account"
+		},
+		{
+			"fieldname": "section_break_ingest",
+			"fieldtype": "Section Break",
+			"label": "Ingest"
+		},
+		{
+			"default": "5",
+			"description": "AWS restates recent days. Every run re-fetches this many trailing days and replaces what it stored.",
+			"fieldname": "restatement_days",
+			"fieldtype": "Int",
+			"label": "Restatement Days"
+		},
+		{
+			"default": "550",
+			"description": "Daily cost rows older than this are deleted. 0 keeps everything.",
+			"fieldname": "retention_days",
+			"fieldtype": "Int",
+			"label": "Retention Days"
+		},
+		{ "fieldname": "column_break_ingest", "fieldtype": "Column Break" },
+		{
+			"default": "14",
+			"description": "How far back Backfill History reaches. Cost Explorer charges $0.01 per request and holds 14 months of daily data.",
+			"fieldname": "backfill_months",
+			"fieldtype": "Int",
+			"label": "Backfill Months"
+		},
+		{
+			"fieldname": "section_break_detection",
+			"fieldtype": "Section Break",
+			"label": "Detection"
+		},
+		{
+			"default": "28",
+			"description": "Trailing days used to build a baseline for each series.",
+			"fieldname": "baseline_days",
+			"fieldtype": "Int",
+			"label": "Baseline Days"
+		},
+		{
+			"default": "3",
+			"description": "A day is a spike when it deviates from the same-weekday median by more than this many median absolute deviations.",
+			"fieldname": "spike_mad_threshold",
+			"fieldtype": "Float",
+			"label": "Spike MAD Threshold"
+		},
+		{
+			"default": "20",
+			"description": "Anomalies costing less than this per day are not recorded, however large the percentage.",
+			"fieldname": "minimum_daily_cost_impact",
+			"fieldtype": "Currency",
+			"label": "Minimum Daily Cost Impact (USD)"
+		},
+		{ "fieldname": "column_break_detection", "fieldtype": "Column Break" },
+		{
+			"default": "20",
+			"description": "A level shift is reported when the step is at least this large.",
+			"fieldname": "level_shift_minimum_change",
+			"fieldtype": "Percent",
+			"label": "Level Shift Minimum Change"
+		},
+		{
+			"default": "5",
+			"description": "Growth is organic when its driver grew to within this many percentage points of it.",
+			"fieldname": "organic_tolerance",
+			"fieldtype": "Percent",
+			"label": "Organic Tolerance"
+		},
+		{
+			"default": "5",
+			"description": "Series averaging less than this per day are ignored entirely.",
+			"fieldname": "minimum_series_cost",
+			"fieldtype": "Currency",
+			"label": "Minimum Series Cost (USD/day)"
+		}
+	],
+	"index_web_pages_for_search": 0,
+	"issingle": 1,
+	"links": [],
+	"modified": "2026-08-18 10:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Cloud Cost Settings",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": []
+}
