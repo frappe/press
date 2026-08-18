@@ -14,23 +14,15 @@ class CloudCostSettings(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.cloud_cost_account.cloud_cost_account import CloudCostAccount
-
-		accounts: DF.Table[CloudCostAccount]
 		backfill_months: DF.Int
-		baseline_days: DF.Int
+		do_snapshot_rate: DF.Currency
+		do_volume_rate: DF.Currency
 		enabled: DF.Check
-		level_shift_minimum_change: DF.Percent
 		minimum_daily_cost_impact: DF.Currency
 		minimum_series_cost: DF.Currency
-		organic_tolerance: DF.Percent
 		restatement_days: DF.Int
 		retention_days: DF.Int
-		spike_mad_threshold: DF.Float
 	# end: auto-generated types
-
-	def validate(self):
-		self.validate_unique_labels()
 
 	@frappe.whitelist()
 	def backfill_cost_history(self):
@@ -55,16 +47,6 @@ class CloudCostSettings(Document):
 		return "Queued. Rebuilding the backup upload series from Remote File."
 
 	def _backfill_driver_history(self):
-		from press.press.doctype.cloud_usage_driver.cloud_usage_driver import (
-			backfill_upload_drivers,
-		)
+		from press.press.doctype.cloud_usage_driver.cloud_usage_driver import backfill_upload_drivers
 
 		backfill_upload_drivers(self.backfill_months or 14)
-
-	def validate_unique_labels(self):
-		"""Every account's rows are stored under its label, so two accounts sharing one
-		label would silently merge into a single series."""
-		labels = [row.label for row in self.accounts]
-		duplicates = {label for label in labels if labels.count(label) > 1}
-		if duplicates:
-			frappe.throw(f"Account labels must be unique. Repeated: {', '.join(sorted(duplicates))}")

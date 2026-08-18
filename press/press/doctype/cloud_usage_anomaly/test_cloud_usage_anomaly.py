@@ -6,6 +6,7 @@ from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, getdate
 
 from press.press.doctype.cloud_usage_anomaly.cloud_usage_anomaly import (
+	BASELINE_DAYS,
 	detect_anomalies,
 	run_daily_pipeline,
 )
@@ -17,7 +18,6 @@ from press.press.doctype.cloud_usage_driver.cloud_usage_driver import (
 )
 
 ACCOUNT = "test-payer"
-BASELINE_DAYS = 30
 SNAPSHOT_USAGE_TYPE = "APS3-EBS:SnapshotUsage"
 STORAGE_USAGE_TYPE = "APS3-TimedStorage-ByteHrs"
 
@@ -27,23 +27,12 @@ class TestCloudUsageAnomaly(FrappeTestCase):
 		for doctype in (
 			"Cloud Cost Daily",
 			"Cloud Usage Driver",
-			"Cloud Usage Anomaly Contributor",
 			"Cloud Usage Anomaly",
 		):
 			frappe.db.delete(doctype)
 
 		settings = frappe.get_single("Cloud Cost Settings")
-		settings.update(
-			{
-				"enabled": 1,
-				"baseline_days": BASELINE_DAYS,
-				"spike_mad_threshold": 3,
-				"minimum_daily_cost_impact": 5,
-				"minimum_series_cost": 1,
-				"level_shift_minimum_change": 20,
-				"organic_tolerance": 5,
-			}
-		)
+		settings.update({"enabled": 1, "minimum_daily_cost_impact": 5, "minimum_series_cost": 1})
 		settings.save()
 
 	def day(self, offset):

@@ -7,20 +7,14 @@
 	"engine": "InnoDB",
 	"field_order": [
 		"enabled",
-		"section_break_accounts",
-		"accounts",
 		"section_break_ingest",
 		"restatement_days",
 		"retention_days",
 		"column_break_ingest",
 		"backfill_months",
-		"section_break_detection",
-		"baseline_days",
-		"spike_mad_threshold",
+		"section_break_noise",
 		"minimum_daily_cost_impact",
-		"column_break_detection",
-		"level_shift_minimum_change",
-		"organic_tolerance",
+		"column_break_noise",
 		"minimum_series_cost",
 		"section_break_do_rates",
 		"do_volume_rate",
@@ -30,22 +24,10 @@
 	"fields": [
 		{
 			"default": "0",
-			"description": "Runs the daily ingest, driver collection and anomaly detection pipeline.",
+			"description": "Runs the daily ingest, driver collection and anomaly detection pipeline. Accounts are read from Press Settings and your clusters; there is nothing to configure.",
 			"fieldname": "enabled",
 			"fieldtype": "Check",
 			"label": "Enabled"
-		},
-		{
-			"fieldname": "section_break_accounts",
-			"fieldtype": "Section Break",
-			"label": "AWS Accounts"
-		},
-		{
-			"description": "Each row is queried separately. Only add a member account if it is not already covered by a payer account listed here, otherwise its cost is counted twice.",
-			"fieldname": "accounts",
-			"fieldtype": "Table",
-			"label": "Accounts",
-			"options": "Cloud Cost Account"
 		},
 		{
 			"fieldname": "section_break_ingest",
@@ -78,23 +60,10 @@
 			"label": "Backfill Months"
 		},
 		{
-			"fieldname": "section_break_detection",
+			"fieldname": "section_break_noise",
 			"fieldtype": "Section Break",
-			"label": "Detection"
-		},
-		{
-			"default": "28",
-			"description": "Trailing days used to build a baseline for each series.",
-			"fieldname": "baseline_days",
-			"fieldtype": "Int",
-			"label": "Baseline Days"
-		},
-		{
-			"default": "3",
-			"description": "A day is a spike when it deviates from the same-weekday median by more than this many median absolute deviations.",
-			"fieldname": "spike_mad_threshold",
-			"fieldtype": "Float",
-			"label": "Spike MAD Threshold"
+			"label": "What Is Worth Reporting",
+			"description": "Everything else about detection is fixed in code. These two decide how much money a change has to be worth before anyone hears about it."
 		},
 		{
 			"default": "20",
@@ -104,22 +73,8 @@
 			"label": "Minimum Daily Cost Impact (USD)"
 		},
 		{
-			"fieldname": "column_break_detection",
+			"fieldname": "column_break_noise",
 			"fieldtype": "Column Break"
-		},
-		{
-			"default": "20",
-			"description": "A level shift is reported when the step is at least this large.",
-			"fieldname": "level_shift_minimum_change",
-			"fieldtype": "Percent",
-			"label": "Level Shift Minimum Change"
-		},
-		{
-			"default": "5",
-			"description": "Growth is organic when its driver grew to within this many percentage points of it.",
-			"fieldname": "organic_tolerance",
-			"fieldtype": "Percent",
-			"label": "Organic Tolerance"
 		},
 		{
 			"default": "5",
@@ -132,7 +87,7 @@
 			"fieldname": "section_break_do_rates",
 			"fieldtype": "Section Break",
 			"label": "DigitalOcean Rates",
-			"description": "DigitalOcean publishes no price API for block storage or snapshots, so these are the rates we are charged. Droplets are priced from the sizes API and need no setting."
+			"description": "DigitalOcean publishes no price API for block storage or snapshots, so these are the rates we are charged."
 		},
 		{
 			"default": "0.10",

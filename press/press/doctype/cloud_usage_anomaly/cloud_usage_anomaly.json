@@ -244,9 +244,8 @@
 		{
 			"description": "The Press records holding the largest share of this series on the day it changed.",
 			"fieldname": "contributors",
-			"fieldtype": "Table",
+			"fieldtype": "Text Editor",
 			"label": "Contributors",
-			"options": "Cloud Usage Anomaly Contributor",
 			"read_only": 1
 		}
 	],
