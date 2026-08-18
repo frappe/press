@@ -49,7 +49,7 @@
 
 <script setup>
 import { createResource } from 'frappe-ui'
-import { defineProps, h, nextTick, ref } from 'vue'
+import { defineProps, h, ref, watch } from 'vue'
 import LucideSparkleIcon from '~icons/lucide/sparkle'
 import router from '../../router'
 import { date } from '../../utils/format'
@@ -76,13 +76,18 @@ const log = createResource({
 			log: logName.value,
 		}
 	},
-	onSuccess() {
-		// newest entries are at the end, and these files run to megabytes
-		nextTick(() => {
-			if (logBody.value) logBody.value.scrollTop = logBody.value.scrollHeight
-		})
-	},
 })
+
+// newest entries are at the end, and these files run to megabytes. Watching
+// both the element and the data covers the deep link, where the response can
+// arrive before the dialog body mounts.
+watch(
+	[logBody, () => log.data],
+	() => {
+		if (logBody.value) logBody.value.scrollTop = logBody.value.scrollHeight
+	},
+	{ flush: 'post' },
+)
 
 if (showLog.value) log.fetch()
 
