@@ -44,6 +44,14 @@
 			"fieldtype": "Data",
 			"label": "Service",
 			"wildcard_filter": 0
+		},
+		{
+			"default": "Usage Type",
+			"fieldname": "breakdown_by",
+			"fieldtype": "Select",
+			"label": "Breakdown By",
+			"options": "Usage Type\nRegion",
+			"wildcard_filter": 0
 		}
 	],
 	"idx": 0,
