@@ -316,14 +316,19 @@ def delete_s3_files(buckets):
 
 	press_settings = frappe.get_single("Press Settings")
 	for bucket_name in buckets:
+		endpoint_url = (
+			frappe.db.get_value("Backup Bucket", bucket_name, "endpoint_url") or "https://s3.amazonaws.com"
+		)
+		if "s3.me-south-1.amazonaws.com" in endpoint_url:
+			continue
+
 		s3 = resource(
 			"s3",
 			aws_access_key_id=press_settings.offsite_backups_access_key_id,
 			aws_secret_access_key=press_settings.get_password(
 				"offsite_backups_secret_access_key", raise_exception=False
 			),
-			endpoint_url=frappe.db.get_value("Backup Bucket", bucket_name, "endpoint_url")
-			or "https://s3.amazonaws.com",
+			endpoint_url=endpoint_url,
 		)
 		bucket = s3.Bucket(bucket_name)
 		for objects in chunk([{"Key": x} for x in buckets[bucket_name]], 1000):

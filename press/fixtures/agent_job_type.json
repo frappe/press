@@ -4,6 +4,24 @@
 		"docstatus": 0,
 		"doctype": "Agent Job Type",
 		"max_retry_count": 3,
+		"modified": "2026-08-13 12:00:00.000000",
+		"name": "Fetch Backup Jobs",
+		"request_method": "POST",
+		"request_path": "server/backup-jobs",
+		"steps": [
+			{
+				"parent": "Fetch Backup Jobs",
+				"parentfield": "steps",
+				"parenttype": "Agent Job Type",
+				"step_name": "Fetch Backup Jobs"
+			}
+		]
+	},
+	{
+		"disabled_auto_retry": 1,
+		"docstatus": 0,
+		"doctype": "Agent Job Type",
+		"max_retry_count": 3,
 		"modified": "2025-10-03 18:02:49.847351",
 		"name": "Run Bench on Shared FS",
 		"request_method": "POST",

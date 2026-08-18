@@ -745,6 +745,22 @@ def running_jobs(name):
 
 @frappe.whitelist()
 @protected("Site")
+def backup_history(name: str, start_date: str, end_date: str, refresh: bool = False):
+	"""Whether a backup was taken on each day of the range, answered even for days the list hides.
+
+	Deliberately not a doc method: the page asks repeatedly while a trail is being built,
+	and run_doc_method returns the whole Site document with every answer.
+	"""
+	from press.press.doctype.site_backup.backup_history import get_backup_history
+
+	if not isinstance(name, str):
+		frappe.throw("Could not read the site name. Give it as text, for example demo.frappe.cloud.")
+
+	return get_backup_history(name, start_date, end_date, refresh=cint(refresh))
+
+
+@frappe.whitelist()
+@protected("Site")
 def backups(name):
 	available_offsite_backups = frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
 	fields = [
