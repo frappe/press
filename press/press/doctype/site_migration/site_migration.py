@@ -76,7 +76,7 @@ class SiteMigration(Document):
 		source_bench: DF.Link
 		source_cluster: DF.Link
 		source_server: DF.Link
-		status: DF.Literal["Scheduled", "Pending", "Running", "Success", "Failure"]
+		status: DF.Literal["Scheduled", "Pending", "Running", "Success", "Failure", "Cancelled"]
 		steps: DF.Table[SiteMigrationStep]
 	# end: auto-generated types
 

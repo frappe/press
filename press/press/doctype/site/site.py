@@ -1474,6 +1474,24 @@ class Site(Document, TagHelpers):
 			"Site Update", {"site": self.name, "status": "Scheduled"}, "scheduled_time"
 		)
 
+	def site_action_scheduled(self):
+		return frappe.db.exists("Site Action", {"site": self.name, "status": "Scheduled"})
+
+	def site_action_running(self):
+		return frappe.db.exists("Site Action", {"site": self.name, "status": "Running"})
+
+	def check_move_running(self):
+		"""A move that is on the site right now must finish first.
+
+		Only `Running` is checked here. A move sets its own record to `Pending`
+		before it calls this method, so it would block itself.
+		"""
+		for doctype in ("Site Update", "Site Migration"):
+			if name := frappe.db.exists(doctype, {"site": self.name, "status": "Running"}):
+				frappe.throw(
+					f"{doctype} {name} is running for this site. Wait for it to finish, then try again."
+				)
+
 	def check_move_scheduled(self):
 		if time := self.site_migration_scheduled():
 			frappe.throw(f"Site Migration is scheduled for {self.name} at {time}")  # nosemgrep
@@ -1489,6 +1507,7 @@ class Site(Document, TagHelpers):
 		elif self.status == "Archived":
 			frappe.throw("The site has already been archived. Cannot move this site.", SiteAlreadyArchived)
 		self.check_move_scheduled()
+		self.check_move_running()
 
 		self.status_before_update = self.status
 		self.status = "Pending"
@@ -1934,6 +1953,7 @@ class Site(Document, TagHelpers):
 	@site_action(["Active", "Broken", "Inactive", "Suspended"])
 	def archive(self, site_name=None, reason=None, force=False, create_offsite_backup=True):
 		agent = Agent(self.server)
+		self.cancel_moves_that_didnt_reach_the_site()
 		self.ready_for_move()
 		job = agent.archive_site(self, site_name, force, create_offsite_backup)
 		log_site_activity(self.name, "Archive", reason, job.name)
@@ -1952,6 +1972,25 @@ class Site(Document, TagHelpers):
 		self.disable_marketplace_subscriptions()
 
 		self.archive_site_database_users()
+
+	def cancel_moves_that_didnt_reach_the_site(self):
+		"""A drop wins over a move that is still waiting. `Pending` waits for a job slot."""
+		waiting = {"site": self.name, "status": ("in", ["Scheduled", "Pending"])}
+
+		for action in frappe.get_all("Site Action", {"site": self.name, "status": "Scheduled"}, pluck="name"):
+			frappe.get_doc("Site Action", action).cancel_action()
+
+		updates = frappe.get_all("Site Update", waiting, pluck="name")
+		for update in updates:
+			frappe.get_doc("Site Update", update).fail_with_notification("the site was dropped")
+
+		migrations = frappe.get_all("Site Migration", waiting, pluck="name")
+		for migration in migrations:
+			frappe.db.set_value("Site Migration", migration, "status", "Cancelled")
+
+		if (updates or migrations) and self.status_before_update:
+			# A pending move left the site in `Pending`, which `ready_for_move()` rejects
+			self.reset_previous_status()
 
 	@frappe.whitelist()
 	def cleanup_after_archive(self):

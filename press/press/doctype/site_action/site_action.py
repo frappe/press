@@ -510,13 +510,7 @@ class SiteAction(Document):
 
 	def before_insert(self):
 		# Check if no other site action/migration is running for the same site
-		if frappe.db.exists(
-			"Site Action",
-			{
-				"site": self.site,
-				"status": ("not in", ["Success", "Failure", "Cancelled"]),
-			},
-		):
+		if self.site_doc.site_action_scheduled() or self.site_doc.site_action_running():
 			frappe.throw(
 				"Another site action is already scheduled / running for this site. Please wait for it to complete before starting a new one."
 			)
@@ -525,6 +519,9 @@ class SiteAction(Document):
 			frappe.throw(
 				f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists, retry once it is completed"
 			)
+
+		# Catches a scheduled Site Update too, which the check above doesn't cover
+		self.site_doc.check_move_scheduled()
 
 		# If any key is blank string or None, remove it from arguments
 		args = self.arguments_dict
@@ -657,6 +654,10 @@ class SiteAction(Document):
 
 	@frappe.whitelist()
 	def execute(self):
+		if frappe.db.get_value("Site", self.site, "status") in (None, "Archived"):
+			self.fail_because_site_is_dropped()
+			return
+
 		if (
 			self.status == "Scheduled"
 			and self.scheduled_time_formatted
@@ -710,6 +711,22 @@ class SiteAction(Document):
 			return
 
 		self.next()
+
+	def fail_because_site_is_dropped(self) -> None:
+		"""Fail an action whose site was dropped under it.
+
+		Dropping renames the site to `<name>.archived`, and an in-flight step that
+		saves afterwards writes the old name back. The link is then dangling, so
+		every `save()` throws and `process_site_actions` retries the action every 30
+		seconds forever. `ignore_links` is the way out of that loop.
+		"""
+		step = self.current_running_step or self.next_step
+		if step:
+			step.status = "Failure"
+			step.error_message = f"Site {self.site} has been dropped, so the action can't continue."
+
+		self.flags.ignore_links = True
+		self.fail()
 
 	def fail(self, save: bool = True) -> None:
 		self.status = "Failure"
