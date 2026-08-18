@@ -45,12 +45,21 @@
 </template>
 
 <script setup>
+<<<<<<< HEAD
 import { createResource } from 'frappe-ui';
 import { defineProps, h, ref } from 'vue';
 import LucideSparkleIcon from '~icons/lucide/sparkle';
 import ObjectList from '../ObjectList.vue';
 import { date } from '../../utils/format';
 import router from '../../router';
+=======
+import { createResource } from 'frappe-ui'
+import { defineProps, h, ref, watch } from 'vue'
+import LucideSparkleIcon from '~icons/lucide/sparkle'
+import router from '../../router'
+import { date } from '../../utils/format'
+import ObjectList from '../ObjectList.vue'
+>>>>>>> 48d5c2080 (fix(ui): Scroll the bench log dialog after the body mounts)
 
 const props = defineProps({
 	bench: String,
@@ -69,7 +78,24 @@ const log = createResource({
 			log: logName.value,
 		};
 	},
+<<<<<<< HEAD
 });
+=======
+})
+
+// newest entries are at the end, and these files run to megabytes. Watching
+// both the element and the data covers the deep link, where the response can
+// arrive before the dialog body mounts.
+watch(
+	[logBody, () => log.data],
+	() => {
+		if (logBody.value) logBody.value.scrollTop = logBody.value.scrollHeight
+	},
+	{ flush: 'post' },
+)
+
+if (showLog.value) log.fetch()
+>>>>>>> 48d5c2080 (fix(ui): Scroll the bench log dialog after the body mounts)
 
 const navigateToLogBrowser = () => {
 	show.value = false;
