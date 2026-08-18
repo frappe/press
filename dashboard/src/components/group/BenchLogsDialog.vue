@@ -15,7 +15,9 @@
 							<lucide-arrow-left class="inline-block h-4 w-4" />
 						</template>
 					</Button>
-					<h2 class="ml-4 text-lg font-medium text-ink-gray-9">{{ logName }}</h2>
+					<h2 class="ml-4 text-lg font-medium text-ink-gray-9">
+						{{ logName }}
+					</h2>
 					<div class="!ml-auto flex gap-2">
 						<Button @click="log.reload()" :loading="log.loading">
 							<template #icon>
@@ -45,20 +47,23 @@
 </template>
 
 <script setup>
-import { createResource } from 'frappe-ui';
-import { defineProps, h, ref } from 'vue';
-import LucideSparkleIcon from '~icons/lucide/sparkle';
-import ObjectList from '../ObjectList.vue';
-import { date } from '../../utils/format';
-import router from '../../router';
+import { createResource } from 'frappe-ui'
+import { defineProps, h, ref } from 'vue'
+import LucideSparkleIcon from '~icons/lucide/sparkle'
+import router from '../../router'
+import { date } from '../../utils/format'
+import ObjectList from '../ObjectList.vue'
 
 const props = defineProps({
 	bench: String,
-});
+	// a deep link (the 500 page's error log link) names one log, so open it
+	// straight away instead of showing the list first
+	initialLog: String,
+})
 
-const show = ref(true);
-const logName = ref('');
-const showLog = ref(false);
+const show = ref(true)
+const logName = ref(props.initialLog ?? '')
+const showLog = ref(Boolean(props.initialLog))
 
 const log = createResource({
 	url: 'press.api.bench.log',
@@ -67,12 +72,14 @@ const log = createResource({
 			name: `bench-${props.bench?.split('-')[1]}`,
 			bench: props.bench,
 			log: logName.value,
-		};
+		}
 	},
-});
+})
+
+if (showLog.value) log.fetch()
 
 const navigateToLogBrowser = () => {
-	show.value = false;
+	show.value = false
 	router.push({
 		name: 'Log Browser',
 		params: {
@@ -80,8 +87,8 @@ const navigateToLogBrowser = () => {
 			docName: props.bench,
 			logId: logName.value,
 		},
-	});
-};
+	})
+}
 
 const listOptions = ref({
 	resource() {
@@ -91,16 +98,16 @@ const listOptions = ref({
 				return {
 					name: `bench-${props.bench?.split('-')[1]}`,
 					bench: props.bench,
-				};
+				}
 			},
 			cache: ['BenchLogs', props.bench],
 			auto: true,
-		};
+		}
 	},
 	onRowClick(row) {
-		logName.value = row.name;
-		showLog.value = true;
-		log.fetch();
+		logName.value = row.name
+		showLog.value = true
+		log.fetch()
 	},
 	columns: [
 		{
@@ -112,14 +119,14 @@ const listOptions = ref({
 			fieldname: 'size',
 			class: 'text-ink-gray-6',
 			format(value) {
-				return `${value} kB`;
+				return `${value} kB`
 			},
 		},
 		{
 			label: 'Created On',
 			fieldname: 'created',
 			format(value) {
-				return value ? date(value, 'lll') : '';
+				return value ? date(value, 'lll') : ''
 			},
 		},
 	],
@@ -130,13 +137,13 @@ const listOptions = ref({
 			},
 			label: 'View in Log Browser',
 			onClick: () => {
-				show.value = false;
+				show.value = false
 				router.push({
 					name: 'Log Browser',
 					params: { mode: 'bench', docName: props.bench },
-				});
+				})
 			},
 		},
 	],
-});
+})
 </script>
