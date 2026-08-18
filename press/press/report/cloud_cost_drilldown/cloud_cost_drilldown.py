@@ -13,16 +13,22 @@ import frappe
 from frappe.utils import add_days, cint, flt, getdate
 
 GROUP_FIELDS = {
+	"Provider": "provider",
 	"Service": "service",
 	"Usage Type": "usage_type",
 	"Region": "region",
 	"Date": "date",
 }
 
+# Providers bill in their own currency and there is no exchange rate in Press worth
+# trusting, so one currency is shown at a time and nothing is ever summed across two.
+DEFAULT_CURRENCY = "USD"
+
 
 def execute(filters=None):
 	frappe.only_for("System Manager")
 	filters = frappe._dict(filters or {})
+	filters.currency = filters.currency or DEFAULT_CURRENCY
 	group_field = GROUP_FIELDS.get(filters.group_by or "Service", "service")
 
 	from_date, to_date = getdate(filters.from_date), getdate(filters.to_date)
@@ -34,13 +40,16 @@ def execute(filters=None):
 	else:
 		data = build_grouped_rows(rows, group_field, from_date, to_date)
 
-	columns = get_columns(filters.group_by or "Service")
-	chart = get_chart(rows, from_date, to_date)
-	return columns, data, None, chart, get_report_summary(data)
+	columns = get_columns(filters.group_by or "Service", filters.currency)
+	chart = get_chart(rows, from_date, to_date, filters.currency)
+	return columns, data, None, chart, get_report_summary(data, filters.currency)
 
 
 def get_rows(filters, from_date, to_date):
-	conditions = {"date": ("between", [from_date, to_date])}
+	conditions = {"date": ("between", [from_date, to_date]), "currency": filters.currency}
+	for fieldname in ("provider", "source"):
+		if filters.get(fieldname):
+			conditions[fieldname] = filters[fieldname]
 	for fieldname in ("account", "service", "usage_type", "region"):
 		if filters.get(fieldname):
 			conditions[fieldname] = ("like", f"%{filters[fieldname]}%")
@@ -51,6 +60,9 @@ def get_rows(filters, from_date, to_date):
 		[
 			"date",
 			"account",
+			"provider",
+			"source",
+			"currency",
 			"service",
 			"usage_type",
 			"region",
@@ -129,7 +141,7 @@ def percent_change(previous, current):
 	return (current - previous) / abs(previous) * 100
 
 
-def get_columns(group_by):
+def get_columns(group_by, currency):
 	group_field = GROUP_FIELDS[group_by]
 	first = {
 		"fieldname": group_field,
@@ -140,18 +152,28 @@ def get_columns(group_by):
 
 	return [
 		first,
-		{"fieldname": "cost", "label": "Cost (USD)", "fieldtype": "Currency", "width": 120},
-		{"fieldname": "previous_cost", "label": "Previous (USD)", "fieldtype": "Currency", "width": 120},
-		{"fieldname": "change_amount", "label": "Change (USD)", "fieldtype": "Currency", "width": 120},
+		{"fieldname": "cost", "label": f"Cost ({currency})", "fieldtype": "Currency", "width": 120},
+		{
+			"fieldname": "previous_cost",
+			"label": f"Previous ({currency})",
+			"fieldtype": "Currency",
+			"width": 120,
+		},
+		{
+			"fieldname": "change_amount",
+			"label": f"Change ({currency})",
+			"fieldtype": "Currency",
+			"width": 120,
+		},
 		{"fieldname": "change_percent", "label": "Change", "fieldtype": "Percent", "width": 100},
-		{"fieldname": "daily_cost", "label": "Per Day (USD)", "fieldtype": "Currency", "width": 120},
+		{"fieldname": "daily_cost", "label": f"Per Day ({currency})", "fieldtype": "Currency", "width": 120},
 		{"fieldname": "usage", "label": "Usage", "fieldtype": "Float", "width": 120},
 		{"fieldname": "usage_change_percent", "label": "Usage Change", "fieldtype": "Percent", "width": 120},
 		{"fieldname": "unit", "label": "Unit", "fieldtype": "Data", "width": 90},
 	]
 
 
-def get_chart(rows, from_date, to_date):
+def get_chart(rows, from_date, to_date, currency):
 	totals = {}
 	for row in rows:
 		date = getdate(row.date)
@@ -166,27 +188,27 @@ def get_chart(rows, from_date, to_date):
 		date = add_days(date, 1)
 
 	return {
-		"data": {"labels": labels, "datasets": [{"name": "Daily Cost (USD)", "values": values}]},
+		"data": {"labels": labels, "datasets": [{"name": f"Daily Cost ({currency})", "values": values}]},
 		"type": "line",
 	}
 
 
-def get_report_summary(data):
+def get_report_summary(data, currency):
 	total = sum(row["cost"] for row in data)
 	risers = [row for row in data if row["change_amount"] > 0]
 	biggest = max(risers, key=lambda row: row["change_amount"], default=None)
 
 	return [
-		{"value": total, "label": "Total (USD)", "datatype": "Currency", "indicator": "blue"},
+		{"value": total, "label": f"Total ({currency})", "datatype": "Currency", "indicator": "blue"},
 		{
 			"value": sum(row["change_amount"] for row in data),
-			"label": "Change vs Previous Window (USD)",
+			"label": f"Change vs Previous Window ({currency})",
 			"datatype": "Currency",
 			"indicator": "orange",
 		},
 		{
 			"value": biggest["change_amount"] if biggest else 0,
-			"label": "Largest Increase (USD)",
+			"label": f"Largest Increase ({currency})",
 			"datatype": "Currency",
 			"indicator": "red",
 		},

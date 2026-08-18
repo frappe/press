@@ -2,8 +2,9 @@
 // For license information, please see license.txt
 
 frappe.listview_settings['Cloud Usage Anomaly'] = {
-	// Growth a driver explained is kept for the record, not for the queue.
-	filters: [['verdict', '=', 'Inorganic']],
+	// Growth a driver explained is kept for the record, not for the queue. Growth with
+	// no driver mapped stays in the queue: unexplainable is not the same as fine.
+	filters: [['verdict', '!=', 'Organic']],
 
 	get_indicator(doc) {
 		const colours = {

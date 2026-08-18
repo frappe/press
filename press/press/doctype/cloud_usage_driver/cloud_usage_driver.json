@@ -9,6 +9,7 @@
 	"field_order": [
 		"date",
 		"driver",
+		"provider",
 		"scope",
 		"column_break_value",
 		"value",
@@ -35,6 +36,15 @@
 			"search_index": 1
 		},
 		{
+			"fieldname": "provider",
+			"fieldtype": "Select",
+			"label": "Provider",
+			"options": "\nAWS EC2\nOCI\nHetzner\nDigitalOcean",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"description": "Blank is the whole fleet. A series on one provider is judged against that provider's own count first, because a Hetzner volume growing says nothing about AWS."
+		},
+		{
 			"description": "Optional dimension the driver is counted within, such as a bucket or a cluster. Blank means the whole fleet.",
 			"fieldname": "scope",
 			"fieldtype": "Data",
@@ -42,7 +52,10 @@
 			"in_standard_filter": 1,
 			"label": "Scope"
 		},
-		{ "fieldname": "column_break_value", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_value",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "value",
 			"fieldtype": "Float",
@@ -50,7 +63,11 @@
 			"label": "Value",
 			"precision": "6"
 		},
-		{ "fieldname": "unit", "fieldtype": "Data", "label": "Unit" }
+		{
+			"fieldname": "unit",
+			"fieldtype": "Data",
+			"label": "Unit"
+		}
 	],
 	"in_create": 1,
 	"index_web_pages_for_search": 0,

@@ -30,6 +30,7 @@ STORED_FIELDS = [
 	"modified_by",
 	"date",
 	"driver",
+	"provider",
 	"scope",
 	"value",
 	"unit",
@@ -47,6 +48,7 @@ class CloudUsageDriver(Document):
 
 		date: DF.Date
 		driver: DF.Data
+		provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "DigitalOcean"]
 		scope: DF.Data | None
 		unit: DF.Data | None
 		value: DF.Float
@@ -56,8 +58,9 @@ class CloudUsageDriver(Document):
 
 
 def record(date, driver, rows, unit):
-	"""Replace a driver's rows for one day. Rows are (scope, value) pairs; a blank
-	scope is the fleet-wide figure the detectors compare against."""
+	"""Replace a driver's rows for one day. Rows are (provider, scope, value) triples;
+	a blank provider and blank scope is the fleet-wide figure the detectors fall back
+	on when a provider has no count of its own."""
 	frappe.db.delete("Cloud Usage Driver", {"date": date, "driver": driver})
 	if not rows:
 		return
@@ -73,38 +76,69 @@ def record(date, driver, rows, unit):
 			user,
 			date,
 			driver,
+			provider,
 			scope,
 			value,
 			unit,
 		)
-		for scope, value in rows
+		for provider, scope, value in rows
 	]
 	frappe.db.bulk_insert("Cloud Usage Driver", STORED_FIELDS, values)
 
 
-def with_total(rows_by_scope):
-	"""Per-scope rows plus the fleet-wide total under a blank scope.
+def by_provider(values_by_provider):
+	"""For drivers that have no scope of their own: a fleet total and one row per
+	provider. A machine with no provider recorded still counts towards the fleet."""
+	return [("", "", sum(values_by_provider.values()))] + [
+		(provider, "", value) for provider, value in values_by_provider.items() if provider
+	]
 
-	The blank scope is reserved for that total, because the detectors compare against it.
-	A row that has no scope of its own — a bucket or cluster left unset — is named
-	instead of silently merging into the total and doubling it.
+
+def with_totals(values_by_key):
+	"""For drivers counted within a scope: one row per provider and scope, plus a total
+	for each provider, plus a fleet total.
+
+	The blank provider and blank scope are reserved for those totals. A row with no
+	provider or scope of its own is named instead of silently merging into a total and
+	doubling it.
 	"""
-	rows = [(scope or UNATTRIBUTED_SCOPE, value) for scope, value in rows_by_scope.items()]
-	return [("", sum(rows_by_scope.values())), *rows]
+	rows = [
+		(provider or "", scope or UNATTRIBUTED_SCOPE, value)
+		for (provider, scope), value in values_by_key.items()
+	]
+
+	totals = {}
+	for (provider, _scope), value in values_by_key.items():
+		totals[provider or ""] = totals.get(provider or "", 0) + value
+
+	fleet = [("", "", sum(values_by_key.values()))]
+	per_provider = [(provider, "", value) for provider, value in totals.items() if provider]
+	return fleet + per_provider + rows
 
 
 def count_active_sites():
-	return frappe.db.count("Site", {"status": "Active"})
+	"""Sites are not provider-scoped in any way worth modelling, so this stays a single
+	fleet figure that every provider's transfer series falls back on."""
+	return [("", "", frappe.db.count("Site", {"status": "Active"}))]
 
 
 def count_running_machines():
-	return frappe.db.count("Virtual Machine", {"status": "Running"})
+	Machine = frappe.qb.DocType("Virtual Machine")
+
+	result = (
+		frappe.qb.from_(Machine)
+		.select(Machine.cloud_provider.as_("provider"), Count(Machine.name).as_("machines"))
+		.where(Machine.status == "Running")
+		.groupby(Machine.cloud_provider)
+	).run(as_dict=True)
+
+	return by_provider({row.provider or "": row.machines for row in result})
 
 
 def get_attached_volume_size():
 	"""Provisioned block storage on machines that still exist, in GB. A terminated
 	machine whose volume survived is exactly the leak this is meant to expose, so the
-	comparison against what AWS bills matters more than the number itself."""
+	comparison against what the provider bills matters more than the number itself."""
 	Volume = frappe.qb.DocType("Virtual Machine Volume")
 	Machine = frappe.qb.DocType("Virtual Machine")
 
@@ -112,28 +146,39 @@ def get_attached_volume_size():
 		frappe.qb.from_(Volume)
 		.inner_join(Machine)
 		.on(Volume.parent == Machine.name)
-		.select(Machine.cluster.as_("scope"), Sum(Volume.size).as_("size"))
+		.select(
+			Machine.cloud_provider.as_("provider"),
+			Machine.cluster.as_("scope"),
+			Sum(Volume.size).as_("size"),
+		)
 		.where(Machine.status != "Terminated")
-		.groupby(Machine.cluster)
+		.groupby(Machine.cloud_provider, Machine.cluster)
 	).run(as_dict=True)
 
-	return {row.scope or "": row.size or 0 for row in result}
+	return with_totals({(row.provider, row.scope): row.size or 0 for row in result})
 
 
 def get_snapshot_size():
-	"""Snapshot storage Press believes it is holding, in GB. Snapshots that AWS bills
-	for but Press no longer lists are the classic retention leak."""
+	"""Snapshot storage Press believes it is holding, in GB. Snapshots the provider
+	bills for but Press no longer lists are the classic retention leak."""
 	Snapshot = frappe.qb.DocType("Virtual Disk Snapshot")
+	Cluster = frappe.qb.DocType("Cluster")
 
 	result = (
 		frappe.qb.from_(Snapshot)
-		.select(Snapshot.cluster.as_("scope"), Sum(Snapshot.size).as_("size"))
+		.left_join(Cluster)
+		.on(Snapshot.cluster == Cluster.name)
+		.select(
+			Cluster.cloud_provider.as_("provider"),
+			Snapshot.cluster.as_("scope"),
+			Sum(Snapshot.size).as_("size"),
+		)
 		.where(Snapshot.status == "Completed")
 		.where(Snapshot.expired == 0)
-		.groupby(Snapshot.cluster)
+		.groupby(Cluster.cloud_provider, Snapshot.cluster)
 	).run(as_dict=True)
 
-	return {row.scope or "": row.size or 0 for row in result}
+	return with_totals({(row.provider, row.scope): row.size or 0 for row in result})
 
 
 def get_backup_bytes_stored():
@@ -148,7 +193,7 @@ def get_backup_bytes_stored():
 		.groupby(RemoteFile.bucket)
 	).run(as_dict=True)
 
-	return {row.scope or "": row.size or 0 for row in result}
+	return with_totals({("", row.scope): row.size or 0 for row in result})
 
 
 def collect_point_in_time_drivers(date=None):
@@ -156,16 +201,16 @@ def collect_point_in_time_drivers(date=None):
 	day this runs for the first time; there is no history to recover."""
 	date = getdate(date) if date else getdate()
 
-	record(date, DRIVER_ACTIVE_SITES, [("", count_active_sites())], "Nos")
-	record(date, DRIVER_RUNNING_MACHINES, [("", count_running_machines())], "Nos")
-	record(date, DRIVER_VOLUME_SIZE, with_total(get_attached_volume_size()), "GB")
-	record(date, DRIVER_SNAPSHOT_SIZE, with_total(get_snapshot_size()), "GB")
-	record(date, DRIVER_BACKUP_STORED, with_total(get_backup_bytes_stored()), "Bytes")
+	record(date, DRIVER_ACTIVE_SITES, count_active_sites(), "Nos")
+	record(date, DRIVER_RUNNING_MACHINES, count_running_machines(), "Nos")
+	record(date, DRIVER_VOLUME_SIZE, get_attached_volume_size(), "GB")
+	record(date, DRIVER_SNAPSHOT_SIZE, get_snapshot_size(), "GB")
+	record(date, DRIVER_BACKUP_STORED, get_backup_bytes_stored(), "Bytes")
 
 
 def collect_upload_drivers(start, end):
-	"""Gross bytes and objects written to each backup bucket per day. CloudWatch only
-	publishes net bucket size, which hides a doubling of uploads whenever deletion
+	"""Gross bytes and objects written to each backup bucket per day. Object storage
+	metrics report net bucket size, which hides a doubling of uploads whenever deletion
 	doubles with it — and hides a stalled reaper completely. Remote File rows carry
 	their own creation date, so unlike the other drivers this one has full history."""
 	RemoteFile = frappe.qb.DocType("Remote File")
@@ -188,13 +233,13 @@ def collect_upload_drivers(start, end):
 	objects_by_date = {}
 	for row in result:
 		date = getdate(row.day)
-		bytes_by_date.setdefault(date, {})[row.scope or ""] = row.size or 0
-		objects_by_date.setdefault(date, {})[row.scope or ""] = row.objects or 0
+		bytes_by_date.setdefault(date, {})[("", row.scope)] = row.size or 0
+		objects_by_date.setdefault(date, {})[("", row.scope)] = row.objects or 0
 
-	for date, rows_by_scope in bytes_by_date.items():
-		record(date, DRIVER_BACKUP_UPLOADED, with_total(rows_by_scope), "Bytes")
-	for date, rows_by_scope in objects_by_date.items():
-		record(date, DRIVER_BACKUP_OBJECTS, with_total(rows_by_scope), "Nos")
+	for date, values in bytes_by_date.items():
+		record(date, DRIVER_BACKUP_UPLOADED, with_totals(values), "Bytes")
+	for date, values in objects_by_date.items():
+		record(date, DRIVER_BACKUP_OBJECTS, with_totals(values), "Nos")
 
 
 def collect_daily_drivers(date=None):

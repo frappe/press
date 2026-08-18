@@ -9,6 +9,11 @@ from press.press.doctype.cloud_usage_anomaly.cloud_usage_anomaly import (
 	detect_anomalies,
 	run_daily_pipeline,
 )
+from press.press.doctype.cloud_usage_driver.cloud_usage_driver import (
+	DRIVER_ACTIVE_SITES,
+	DRIVER_RUNNING_MACHINES,
+	DRIVER_VOLUME_SIZE,
+)
 
 ACCOUNT = "test-payer"
 BASELINE_DAYS = 30
@@ -44,13 +49,26 @@ class TestCloudUsageAnomaly(FrappeTestCase):
 		"""Offset 0 is the oldest day in the detection window, offset 29 the newest."""
 		return add_days(getdate(), -BASELINE_DAYS + offset)
 
-	def seed_cost(self, service, usage_type, values, cost_per_unit=0.03):
+	def seed_cost(
+		self,
+		service,
+		usage_type,
+		values,
+		cost_per_unit=0.03,
+		provider="AWS EC2",
+		currency="USD",
+		source="Billed",
+		account=ACCOUNT,
+	):
 		for offset, quantity in enumerate(values):
 			frappe.get_doc(
 				{
 					"doctype": "Cloud Cost Daily",
 					"date": self.day(offset),
-					"account": ACCOUNT,
+					"account": account,
+					"provider": provider,
+					"source": source,
+					"currency": currency,
 					"service": service,
 					"usage_type": usage_type,
 					"region": "ap-south-1",
@@ -61,13 +79,14 @@ class TestCloudUsageAnomaly(FrappeTestCase):
 				}
 			).insert()
 
-	def seed_driver(self, driver, values):
+	def seed_driver(self, driver, values, provider=""):
 		for offset, value in enumerate(values):
 			frappe.get_doc(
 				{
 					"doctype": "Cloud Usage Driver",
 					"date": self.day(offset),
 					"driver": driver,
+					"provider": provider,
 					"scope": "",
 					"value": value,
 					"unit": "GB",
@@ -166,3 +185,102 @@ class TestCloudUsageAnomaly(FrappeTestCase):
 		run_daily_pipeline()
 
 		self.assertEqual(frappe.db.count("Cloud Usage Anomaly"), 0)
+
+	def test_hetzner_growth_is_judged_against_hetzner_machines_not_the_fleet(self):
+		"""The fleet is mostly AWS. Judging a Hetzner series against the whole fleet
+		would let a real Hetzner leak hide behind AWS growth."""
+		self.seed_cost(
+			"Compute",
+			"Server:cx42",
+			[400] * 20 + [700] * 10,
+			provider="Hetzner",
+			currency="EUR",
+			source="Accrued",
+		)
+		self.seed_driver(DRIVER_RUNNING_MACHINES, [400] * 20 + [700] * 10)
+		self.seed_driver(DRIVER_RUNNING_MACHINES, [400] * 30, provider="Hetzner")
+
+		self.assertEqual(detect_anomalies(), 1)
+
+		anomaly = frappe.get_last_doc("Cloud Usage Anomaly")
+		self.assertEqual(anomaly.provider, "Hetzner")
+		self.assertEqual(anomaly.currency, "EUR")
+		self.assertEqual(anomaly.verdict, "Inorganic")
+		self.assertAlmostEqual(anomaly.driver_change_percent, 0)
+
+	def test_a_provider_without_its_own_count_falls_back_to_the_fleet(self):
+		self.seed_cost("Droplets", "Droplet:s-4vcpu-8gb", [400] * 20 + [700] * 10, provider="DigitalOcean")
+		self.seed_driver(DRIVER_RUNNING_MACHINES, [400] * 20 + [700] * 10)
+
+		detect_anomalies()
+
+		anomaly = frappe.get_last_doc("Cloud Usage Anomaly")
+		self.assertEqual(anomaly.provider, "DigitalOcean")
+		self.assertEqual(anomaly.verdict, "Organic")
+
+	def test_hetzner_traffic_overage_is_reported(self):
+		"""Hetzner bills traffic over the included allowance and shows it nowhere until
+		the invoice arrives. Sites served did not move, so the egress did not come from
+		more customers."""
+		self.seed_cost(
+			"Traffic",
+			"Traffic",
+			[0] * 20 + [800] * 10,
+			cost_per_unit=1.19,
+			provider="Hetzner",
+			currency="EUR",
+			source="Accrued",
+		)
+		self.seed_driver(DRIVER_ACTIVE_SITES, [500] * 30)
+
+		self.assertEqual(detect_anomalies(), 1)
+
+		anomaly = frappe.get_last_doc("Cloud Usage Anomaly")
+		self.assertEqual(anomaly.series_key, "Traffic / Traffic / ap-south-1")
+		self.assertEqual(getdate(anomaly.changed_on), self.day(20))
+		self.assertEqual(anomaly.verdict, "Inorganic")
+
+	def test_a_series_nothing_drives_is_still_raised(self):
+		"""A usage type with no driver mapped is the case we understand least. Recording
+		it and staying quiet would make an unmapped series the safest place for a leak
+		to hide."""
+		before = frappe.db.count("Telegram Message")
+		self.seed_cost("AWS Key Management Service", "APS3-KMS-Requests", [400] * 20 + [700] * 10)
+
+		detect_anomalies()
+
+		self.assertEqual(frappe.get_last_doc("Cloud Usage Anomaly").verdict, "No Driver")
+		self.assertEqual(frappe.db.count("Telegram Message"), before + 1)
+
+	def test_oci_is_matched_on_its_service_not_on_aws_usage_type_names(self):
+		self.seed_cost(
+			"BLOCK_STORAGE",
+			"Block Volume - Storage",
+			[400] * 20 + [700] * 10,
+			provider="OCI",
+		)
+		self.seed_driver(DRIVER_VOLUME_SIZE, [400] * 30, provider="OCI")
+
+		detect_anomalies()
+
+		anomaly = frappe.get_last_doc("Cloud Usage Anomaly")
+		self.assertEqual(anomaly.driver, DRIVER_VOLUME_SIZE)
+		self.assertEqual(anomaly.verdict, "Inorganic")
+
+	def test_two_providers_moving_at_once_are_two_findings(self):
+		self.seed_cost("EC2 - Other", SNAPSHOT_USAGE_TYPE, [400] * 20 + [700] * 10)
+		self.seed_cost(
+			"Compute",
+			"Server:cx42",
+			[400] * 20 + [700] * 10,
+			provider="Hetzner",
+			currency="EUR",
+			source="Accrued",
+			account="test-hetzner",
+		)
+
+		self.assertEqual(detect_anomalies(), 2)
+		self.assertEqual(
+			sorted(frappe.get_all("Cloud Usage Anomaly", pluck="provider")),
+			["AWS EC2", "Hetzner"],
+		)

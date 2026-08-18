@@ -16,15 +16,15 @@ BYTES_PER_GB = 1024**3
 CONTRIBUTOR_LIMIT = 5
 
 
-def get_contributors(usage_type, region, changed_on):
+def get_contributors(provider, usage_type, region, changed_on):
 	resolver = get_resolver(usage_type)
 	if not resolver:
 		return []
 
 	try:
-		return resolver(region, getdate(changed_on))
+		return resolver(provider, region, getdate(changed_on))
 	except Exception:
-		frappe.log_error(title="Cloud Cost Contributor Lookup Failed", message=usage_type)
+		frappe.log_error(title="Cloud Cost Contributor Lookup Failed", message=f"{provider} {usage_type}")
 		return []
 
 
@@ -42,7 +42,7 @@ def get_buckets_in_region(region):
 	return frappe.get_all("Backup Bucket", {"region": region}, pluck="name")
 
 
-def stored_backup_bytes(region, changed_on):
+def stored_backup_bytes(provider, region, changed_on):
 	"""Whose backups are sitting in the bucket right now."""
 	RemoteFile = frappe.qb.DocType("Remote File")
 
@@ -72,7 +72,7 @@ def stored_backup_bytes(region, changed_on):
 	]
 
 
-def uploaded_backup_objects(region, changed_on):
+def uploaded_backup_objects(provider, region, changed_on):
 	"""Who wrote to the bucket on the day it changed."""
 	RemoteFile = frappe.qb.DocType("Remote File")
 
@@ -106,7 +106,7 @@ def uploaded_backup_objects(region, changed_on):
 	]
 
 
-def uploaded_backup_bytes(region, changed_on):
+def uploaded_backup_bytes(provider, region, changed_on):
 	"""Transfer has no Press-side meter, so the bytes we pushed to backups stand in
 	for it. Treat these as the largest movers that day, not as the transfer itself."""
 	RemoteFile = frappe.qb.DocType("Remote File")
@@ -134,13 +134,16 @@ def uploaded_backup_bytes(region, changed_on):
 	]
 
 
-def snapshot_storage(region, changed_on):
+def snapshot_storage(provider, region, changed_on):
 	"""Machines holding the most snapshot storage, and how old the pile is. A machine
 	whose snapshots stretch back past its retention window is a reaper that stopped."""
 	Snapshot = frappe.qb.DocType("Virtual Disk Snapshot")
+	Cluster = frappe.qb.DocType("Cluster")
 
 	query = (
 		frappe.qb.from_(Snapshot)
+		.left_join(Cluster)
+		.on(Snapshot.cluster == Cluster.name)
 		.select(
 			Snapshot.virtual_machine,
 			Sum(Snapshot.size).as_("size"),
@@ -153,6 +156,8 @@ def snapshot_storage(region, changed_on):
 		.orderby(Sum(Snapshot.size), order=frappe.qb.desc)
 		.limit(CONTRIBUTOR_LIMIT)
 	)
+	if provider:
+		query = query.where(Cluster.cloud_provider == provider)
 	if region:
 		query = query.where(Snapshot.region == region)
 
@@ -172,7 +177,7 @@ def snapshot_storage(region, changed_on):
 	]
 
 
-def volume_storage(region, changed_on):
+def volume_storage(provider, region, changed_on):
 	"""Machines carrying the most block storage."""
 	Volume = frappe.qb.DocType("Virtual Machine Volume")
 	Machine = frappe.qb.DocType("Virtual Machine")
@@ -187,6 +192,8 @@ def volume_storage(region, changed_on):
 		.orderby(Sum(Volume.size), order=frappe.qb.desc)
 		.limit(CONTRIBUTOR_LIMIT)
 	)
+	if provider:
+		query = query.where(Machine.cloud_provider == provider)
 	if region:
 		query = query.where(Machine.region == region)
 
@@ -203,13 +210,15 @@ def volume_storage(region, changed_on):
 	]
 
 
-def machines_created_around(region, changed_on):
+def machines_created_around(provider, region, changed_on):
 	"""Compute steps up when machines are added, so the machines added that day are
 	the answer far more often than the ones that were already running."""
 	filters = {
 		"creation": ("between", [add_days(changed_on, -1), add_days(changed_on, 1)]),
 		"status": ("!=", "Terminated"),
 	}
+	if provider:
+		filters["cloud_provider"] = provider
 	if region:
 		filters["region"] = region
 
@@ -254,4 +263,12 @@ RESOLVERS = [
 	("Requests-Tier", uploaded_backup_objects),
 	("DataTransfer", uploaded_backup_bytes),
 	("NatGateway", uploaded_backup_bytes),
+	# Names our own accrual adapters give Hetzner and DigitalOcean inventory, and the
+	# SKU words OCI uses. Kept last so the AWS markers above win where they overlap.
+	("Server:", machines_created_around),
+	("Droplet:", machines_created_around),
+	("Snapshot", snapshot_storage),
+	("Backup", snapshot_storage),
+	("Volume", volume_storage),
+	("Traffic", uploaded_backup_bytes),
 ]

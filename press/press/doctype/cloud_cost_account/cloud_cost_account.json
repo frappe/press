@@ -5,7 +5,7 @@
 	"doctype": "DocType",
 	"editable_grid": 1,
 	"engine": "InnoDB",
-	"field_order": ["label", "enabled", "credentials_from", "cluster"],
+	"field_order": ["label", "enabled", "provider", "cluster"],
 	"fields": [
 		{
 			"columns": 2,
@@ -25,24 +25,23 @@
 		},
 		{
 			"columns": 2,
-			"default": "Press Settings",
-			"fieldname": "credentials_from",
+			"default": "AWS EC2",
+			"fieldname": "provider",
 			"fieldtype": "Select",
 			"in_list_view": 1,
-			"label": "Credentials From",
-			"options": "Press Settings\nCluster",
+			"label": "Provider",
+			"options": "AWS EC2\nOCI\nHetzner\nDigitalOcean",
 			"reqd": 1
 		},
 		{
 			"columns": 3,
-			"depends_on": "eval:doc.credentials_from == 'Cluster'",
-			"description": "Cost Explorer is queried with this cluster's AWS credentials.",
 			"fieldname": "cluster",
 			"fieldtype": "Link",
 			"in_list_view": 1,
 			"label": "Cluster",
-			"mandatory_depends_on": "eval:doc.credentials_from == 'Cluster'",
-			"options": "Cluster"
+			"options": "Cluster",
+			"description": "Credentials are read from this cluster. Leave blank on AWS to use the keys in Press Settings; every other provider keeps its token on the cluster.",
+			"mandatory_depends_on": "eval:doc.provider != 'AWS EC2'"
 		}
 	],
 	"index_web_pages_for_search": 0,
