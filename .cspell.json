@@ -813,6 +813,9 @@
 		"mcp",
 		"hicm",
 		"kcore",
-		"MRR"
+		"MRR",
+		"notif",
+		"smallbtn",
+		"Unblended"
 	]
 }
