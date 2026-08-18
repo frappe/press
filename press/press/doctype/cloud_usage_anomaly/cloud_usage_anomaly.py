@@ -5,6 +5,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import add_days, cint, flt, getdate
 
+from press.press.doctype.cloud_cost_daily.adapters import ACCRUED
 from press.press.doctype.cloud_usage_anomaly.contributors import get_contributors
 from press.press.doctype.cloud_usage_anomaly.detectors import (
 	change_percent,
@@ -125,6 +126,7 @@ def get_cost_series(start, end):
 			"date",
 			"account",
 			"provider",
+			"source",
 			"currency",
 			"service",
 			"usage_type",
@@ -288,21 +290,24 @@ def judge(sample, drivers, found, settings):
 
 
 def describe(anomaly):
-	lines = [
-		f"{anomaly['series_key']} {'stepped' if anomaly['detector'] == 'Level Shift' else 'spiked'} "
-		f"from {anomaly['baseline_value']:,.2f} to {anomaly['current_value']:,.2f} "
-		f"{anomaly['unit']} on {anomaly['changed_on']} ({anomaly['change_percent']:+.1f}%).",
-		f"Costing about {anomaly['daily_cost_impact']:,.2f} {anomaly['currency']} a day more "
-		f"({anomaly['monthly_cost_impact']:,.0f} a month).",
-	]
+	movement = "stepped" if anomaly["detector"] == "Level Shift" else "spiked"
+	what_moved = (
+		f"{anomaly['series_key']} {movement} from {anomaly['baseline_value']:,.2f}"
+		f" to {anomaly['current_value']:,.2f} {anomaly['unit']} on {anomaly['changed_on']}"
+		f" ({anomaly['change_percent']:+.1f}%)."
+	)
+	what_it_costs = (
+		f"Costing about {anomaly['daily_cost_impact']:,.2f} {anomaly['currency']} a day more"
+		f" ({anomaly['monthly_cost_impact']:,.0f} a month)."
+	)
 	if anomaly["verdict"] == "No Driver":
-		lines.append("No business driver is mapped to this usage type, so it cannot be explained away.")
+		why = "No business driver is mapped to this usage type, so it cannot be explained away."
 	else:
-		lines.append(
-			f"{anomaly['driver']} moved {anomaly['driver_change_percent']:+.1f}% over the same days, "
-			f"so this reads as {anomaly['verdict'].lower()}."
+		why = (
+			f"{anomaly['driver']} moved {anomaly['driver_change_percent']:+.1f}% over the same days,"
+			f" so this reads as {anomaly['verdict'].lower()}."
 		)
-	return "\n".join(lines)
+	return "\n".join([what_moved, what_it_costs, why])
 
 
 def save_anomaly(anomaly):
@@ -399,17 +404,67 @@ def is_dismissed(anomaly):
 	)
 
 
+def last_complete_day(rows, today):
+	"""The last day this account has whole data for.
+
+	An accrued source prices today's inventory the moment it runs, so today is already
+	complete and waiting for tomorrow would delay the alert by a day on exactly the
+	providers where the reading is live. A metered provider is still billing today, so
+	yesterday is the last day worth judging.
+	"""
+	if all(row.source == ACCRUED for row in rows):
+		return today
+	return add_days(today, -1)
+
+
+def get_stale_accounts(series, today):
+	"""Accounts whose most recent day never arrived.
+
+	Ingest isolates each account so one bad token does not discard three healthy
+	providers, which means a single account can be left short of today while the rest
+	are current. Its series then end in a gap, gaps are read as zeros, and a run of
+	trailing zeros makes a real problem look like calm. Not judging is the honest
+	answer, and saying so out loud is the point.
+	"""
+	latest = {}
+	expected = {}
+	for (account, _key), rows in series.items():
+		expected[account] = last_complete_day(rows, today)
+		newest = max(getdate(row.date) for row in rows)
+		latest[account] = max(latest.get(account, newest), newest)
+
+	stale = {account for account, day in expected.items() if latest[account] < day}
+	if stale:
+		frappe.log_error(
+			title="Cloud Cost Detection Skipped Stale Accounts",
+			message="No data for the latest complete day: " + ", ".join(sorted(stale)),
+		)
+	return stale
+
+
 def detect_anomalies():
 	settings = frappe.get_single("Cloud Cost Settings")
-	# Yesterday is the last complete day AWS has billed. The window is inclusive of both
-	# ends, so it holds exactly as many days as the setting asks for.
-	end = add_days(getdate(), -1)
-	start = add_days(end, -((cint(settings.baseline_days) or 28) - 1))
+	baseline_days = cint(settings.baseline_days) or 28
+	today = getdate()
 
-	drivers = get_driver_series(start, end)
+	# Widest window any source could need, narrowed per series once its own last
+	# complete day is known.
+	drivers = get_driver_series(add_days(today, -baseline_days), today)
+	series = get_cost_series(add_days(today, -baseline_days), today)
+	stale = get_stale_accounts(series, today)
+
 	found = 0
-	for (account, key), rows in get_cost_series(start, end).items():
-		anomaly = build_anomaly(account, key, rows, settings, drivers, start, end)
+	for (account, key), rows in series.items():
+		if account in stale:
+			continue
+
+		end = last_complete_day(rows, today)
+		start = add_days(end, -(baseline_days - 1))
+		window = [row for row in rows if start <= getdate(row.date) <= end]
+		if not window:
+			continue
+
+		anomaly = build_anomaly(account, key, window, settings, drivers, start, end)
 		if anomaly and save_anomaly(anomaly):
 			found += 1
 
