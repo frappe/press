@@ -12,6 +12,7 @@ from press.press.doctype.cloud_usage_anomaly.cloud_usage_anomaly import (
 from press.press.doctype.cloud_usage_driver.cloud_usage_driver import (
 	DRIVER_ACTIVE_SITES,
 	DRIVER_RUNNING_MACHINES,
+	DRIVER_SNAPSHOT_SIZE,
 	DRIVER_VOLUME_SIZE,
 )
 
@@ -59,12 +60,13 @@ class TestCloudUsageAnomaly(FrappeTestCase):
 		currency="USD",
 		source="Billed",
 		account=ACCOUNT,
+		offset=0,
 	):
-		for offset, quantity in enumerate(values):
+		for index, quantity in enumerate(values):
 			frappe.get_doc(
 				{
 					"doctype": "Cloud Cost Daily",
-					"date": self.day(offset),
+					"date": self.day(index + offset),
 					"account": account,
 					"provider": provider,
 					"source": source,
@@ -79,12 +81,12 @@ class TestCloudUsageAnomaly(FrappeTestCase):
 				}
 			).insert()
 
-	def seed_driver(self, driver, values, provider=""):
-		for offset, value in enumerate(values):
+	def seed_driver(self, driver, values, provider="", offset=0):
+		for index, value in enumerate(values):
 			frappe.get_doc(
 				{
 					"doctype": "Cloud Usage Driver",
-					"date": self.day(offset),
+					"date": self.day(index + offset),
 					"driver": driver,
 					"provider": provider,
 					"scope": "",
@@ -196,9 +198,10 @@ class TestCloudUsageAnomaly(FrappeTestCase):
 			provider="Hetzner",
 			currency="EUR",
 			source="Accrued",
+			offset=1,
 		)
-		self.seed_driver(DRIVER_RUNNING_MACHINES, [400] * 20 + [700] * 10)
-		self.seed_driver(DRIVER_RUNNING_MACHINES, [400] * 30, provider="Hetzner")
+		self.seed_driver(DRIVER_RUNNING_MACHINES, [400] * 20 + [700] * 10, offset=1)
+		self.seed_driver(DRIVER_RUNNING_MACHINES, [400] * 30, provider="Hetzner", offset=1)
 
 		self.assertEqual(detect_anomalies(), 1)
 
@@ -230,14 +233,15 @@ class TestCloudUsageAnomaly(FrappeTestCase):
 			provider="Hetzner",
 			currency="EUR",
 			source="Accrued",
+			offset=1,
 		)
-		self.seed_driver(DRIVER_ACTIVE_SITES, [500] * 30)
+		self.seed_driver(DRIVER_ACTIVE_SITES, [500] * 30, offset=1)
 
 		self.assertEqual(detect_anomalies(), 1)
 
 		anomaly = frappe.get_last_doc("Cloud Usage Anomaly")
 		self.assertEqual(anomaly.series_key, "Traffic / Traffic / ap-south-1")
-		self.assertEqual(getdate(anomaly.changed_on), self.day(20))
+		self.assertEqual(getdate(anomaly.changed_on), self.day(21))
 		self.assertEqual(anomaly.verdict, "Inorganic")
 
 	def test_a_series_nothing_drives_is_still_raised(self):
@@ -277,6 +281,7 @@ class TestCloudUsageAnomaly(FrappeTestCase):
 			currency="EUR",
 			source="Accrued",
 			account="test-hetzner",
+			offset=1,
 		)
 
 		self.assertEqual(detect_anomalies(), 2)
@@ -284,3 +289,61 @@ class TestCloudUsageAnomaly(FrappeTestCase):
 			sorted(frappe.get_all("Cloud Usage Anomaly", pluck="provider")),
 			["AWS EC2", "Hetzner"],
 		)
+
+	def test_an_accrued_provider_is_judged_the_same_day_it_is_priced(self):
+		"""Hetzner and DigitalOcean have no cost API, so their rows are today's inventory
+		priced now. Holding them back until tomorrow would delay the alert by a day on
+		the two providers where the reading is already live."""
+		self.seed_cost(
+			"Traffic",
+			"Traffic",
+			[0] * 20 + [62] * 10,
+			cost_per_unit=1.19,
+			provider="Hetzner",
+			currency="EUR",
+			source="Accrued",
+			offset=1,
+		)
+		self.seed_driver(DRIVER_ACTIVE_SITES, [8420] * 30, offset=1)
+
+		self.assertEqual(detect_anomalies(), 1)
+		self.assertEqual(getdate(frappe.get_last_doc("Cloud Usage Anomaly").changed_on), self.day(21))
+
+	def test_a_metered_provider_still_waits_for_the_day_to_finish(self):
+		"""AWS is still billing today, so a part day must not be read as a collapse."""
+		self.seed_cost("EC2 - Other", SNAPSHOT_USAGE_TYPE, [400] * 30, offset=1)
+		self.seed_driver(DRIVER_SNAPSHOT_SIZE, [400] * 30, offset=1)
+
+		self.assertEqual(detect_anomalies(), 0)
+
+	def test_an_account_that_failed_to_ingest_is_not_judged_at_all(self):
+		"""A failed ingest leaves that account short of today while the rest are current.
+		Its series then end in a gap, gaps read as zeros, and trailing zeros make a real
+		problem look like calm. Skipping is the honest answer."""
+		self.seed_cost("EC2 - Other", SNAPSHOT_USAGE_TYPE, [400] * 20 + [700] * 10)
+		self.seed_driver(DRIVER_SNAPSHOT_SIZE, [400] * 30)
+		self.assertEqual(detect_anomalies(), 1)
+
+		frappe.db.delete("Cloud Usage Anomaly")
+		frappe.db.delete("Cloud Cost Daily", {"date": self.day(29)})
+
+		self.assertEqual(detect_anomalies(), 0)
+
+	def test_one_stale_account_does_not_silence_the_healthy_ones(self):
+		self.seed_cost("EC2 - Other", SNAPSHOT_USAGE_TYPE, [400] * 20 + [700] * 10)
+		self.seed_driver(DRIVER_SNAPSHOT_SIZE, [400] * 30)
+		self.seed_cost(
+			"Compute",
+			"Server:cx42",
+			[400] * 20 + [700] * 10,
+			provider="Hetzner",
+			currency="EUR",
+			source="Accrued",
+			account="test-hetzner",
+			offset=1,
+		)
+
+		frappe.db.delete("Cloud Cost Daily", {"account": ACCOUNT, "date": self.day(29)})
+
+		self.assertEqual(detect_anomalies(), 1)
+		self.assertEqual(frappe.get_last_doc("Cloud Usage Anomaly").account, "test-hetzner")
