@@ -1,0 +1,75 @@
+{
+	"add_total_row": 0,
+	"columns": [
+		{
+			"fieldname": "service",
+			"fieldtype": "Data",
+			"label": "Service",
+			"width": 220
+		},
+		{
+			"fieldname": "change_amount",
+			"fieldtype": "Currency",
+			"label": "Change ($)",
+			"width": 110
+		},
+		{
+			"fieldname": "change_percent",
+			"fieldtype": "Percent",
+			"label": "Change (%)",
+			"width": 100
+		},
+		{
+			"fieldname": "notable_change",
+			"fieldtype": "Check",
+			"label": "Notable Change",
+			"width": 120
+		}
+	],
+	"creation": "2026-08-17 12:00:00.000000",
+	"disabled": 0,
+	"docstatus": 0,
+	"doctype": "Report",
+	"filters": [
+		{
+			"default": "6",
+			"fieldname": "lookback_months",
+			"fieldtype": "Select",
+			"label": "Lookback Period",
+			"options": "3\n6\n12",
+			"wildcard_filter": 0
+		},
+		{
+			"fieldname": "service",
+			"fieldtype": "Data",
+			"label": "Service",
+			"wildcard_filter": 0
+		},
+		{
+			"default": "Usage Type",
+			"fieldname": "breakdown_by",
+			"fieldtype": "Select",
+			"label": "Breakdown By",
+			"options": "Usage Type\nRegion",
+			"wildcard_filter": 0
+		}
+	],
+	"idx": 0,
+	"is_standard": "Yes",
+	"json": "",
+	"letterhead": null,
+	"modified": "2026-08-17 12:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "AWS Cost By Service",
+	"owner": "Administrator",
+	"prepared_report": 0,
+	"ref_doctype": "Cluster",
+	"report_name": "AWS Cost By Service",
+	"report_type": "Script Report",
+	"roles": [
+		{
+			"role": "System Manager"
+		}
+	]
+}
