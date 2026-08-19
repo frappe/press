@@ -199,22 +199,15 @@ export interface BannerConfig {
 }
 
 export interface DialogConfig {
-<<<<<<< HEAD
 	title: string
 	message: string
-	primaryAction?: { onClick: () => void }
-	onSuccess?: (o: { hide: () => void }) => void
-=======
-	title: string;
-	message: string;
 	primaryAction?: {
-		label?: string;
-		variant?: string;
-		theme?: string;
-		onClick: (context: { hide: () => void }) => void;
-	};
-	onSuccess?: (o: { hide: () => void }) => void;
->>>>>>> 5b9e2c084 (feat(ui): Include Bench row in sites overview page)
+		label?: string
+		variant?: string
+		theme?: string
+		onClick: (context: { hide: () => void }) => void
+	}
+	onSuccess?: (o: { hide: () => void }) => void
 }
 
 export interface Process {
