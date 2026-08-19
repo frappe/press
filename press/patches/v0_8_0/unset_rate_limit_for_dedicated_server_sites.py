@@ -11,7 +11,7 @@ def execute():
 	plans = frappe.get_all("Site Plan", filters={"dedicated_server_plan": 1}, pluck="name")
 	sites = frappe.get_all(
 		"Site",
-		filters={"plan": ["in", plans], "status": ["not in", ("Archived", "Suspended")]},
+		filters={"plan": ["in", plans], "status": ["!=", "Archived"]},
 		fields=["name", "config"],
 	)
 	for site in sites:
