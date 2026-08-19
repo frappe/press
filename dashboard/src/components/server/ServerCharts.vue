@@ -44,7 +44,7 @@
 					title="Uptime"
 					:key="databaseUptimeData"
 					:data="databaseUptimeData"
-					unit=""
+					unit="%"
 					:chartTheme="[$theme.colors.purple[500]]"
 					:loading="$resources.databaseUptime.loading"
 					:error="$resources.databaseUptime.error"
@@ -981,7 +981,9 @@ export default {
 			const uptime = this.$resources.databaseUptime.data;
 			if (!uptime) return;
 
-			return this.transformSingleLineChartData(uptime);
+			const data = this.transformSingleLineChartData(uptime);
+			// uptime sits at 100%, so a zero-based axis flattens every dip
+			return data && { ...data, yScale: true };
 		},
 		databaseCommandsCountData() {
 			const commandsCount = this.$resources.databaseCommandsCount.data;

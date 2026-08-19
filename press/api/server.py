@@ -477,7 +477,8 @@ def analytics(name, query, timezone, start, end, server_type=None):
 			lambda x: "Used",
 		),
 		"database_uptime": (
-			f"""mysql_up{{instance="{name}",job="mariadb"}}""",
+			# avg over the bucket, else a short outage between steps is invisible on long timespans
+			f"""avg_over_time(mysql_up{{instance="{name}",job="mariadb"}}[{timegrain}s]) * 100""",
 			lambda x: "Uptime",
 		),
 		"database_commands_count": (
