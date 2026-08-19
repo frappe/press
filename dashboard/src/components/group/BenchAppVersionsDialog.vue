@@ -1,21 +1,20 @@
 <script setup lang="ts">
-import { createResource, Dialog } from 'frappe-ui'
-import { computed, ref } from 'vue'
+import { Dialog } from 'frappe-ui'
+import { computed, onMounted, ref } from 'vue'
+import releaseGroup from '../../objects/group'
+import { getDocResource } from '../../utils/resource'
 import ObjectList from '../ObjectList.vue'
 
 const props = defineProps<{ bench: string; releaseGroup: string }>()
 
 const show = ref(true)
-const appVersions = createResource({
-	url: 'press.api.client.run_doc_method',
-	params: {
-		dt: 'Release Group',
-		dn: props.releaseGroup,
-		method: 'get_app_versions',
-		args: { bench: props.bench },
-	},
-	auto: true,
+const group = getDocResource({
+	doctype: 'Release Group',
+	name: props.releaseGroup,
+	whitelistedMethods: releaseGroup.whitelistedMethods,
 })
+
+onMounted(() => group.getAppVersions.submit({ bench: props.bench }))
 
 const listOptions = computed(() => ({
 	columns: [
@@ -38,7 +37,7 @@ const listOptions = computed(() => ({
 		},
 		{ label: 'Tag', fieldname: 'tag', type: 'Badge' },
 	],
-	data: () => appVersions.data,
+	data: () => group.getAppVersions.data,
 }))
 </script>
 
