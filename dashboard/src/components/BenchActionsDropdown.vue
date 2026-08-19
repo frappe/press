@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { createListResource } from 'frappe-ui'
 import { computed } from 'vue'
+import releaseGroup from '../objects/group'
 import { type BenchRow, getBenchOptions } from '../utils/benchOptions'
 import { getDocResource } from '../utils/resource'
 import ActionButton from './ActionButton.vue'
@@ -15,6 +16,7 @@ const props = defineProps<{
 const group = getDocResource({
 	doctype: 'Release Group',
 	name: props.releaseGroup,
+	whitelistedMethods: releaseGroup.whitelistedMethods,
 })
 const fetchedBench = createListResource({
 	doctype: 'Bench',
