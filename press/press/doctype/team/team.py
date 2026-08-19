@@ -1808,9 +1808,7 @@ def handle_payment_intent_succeeded(payment_intent):  # noqa: C901
 		status="Paid",
 		due_date=datetime.fromtimestamp(payment_intent["created"]),
 		total=amount,
-		amount_due=amount,
 		gst=gst or 0,
-		amount_due_with_tax=amount_with_tax,
 		amount_paid=amount_with_tax,
 		stripe_payment_intent_id=payment_intent["id"],
 	)
