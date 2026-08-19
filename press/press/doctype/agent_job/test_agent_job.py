@@ -16,7 +16,12 @@ from frappe.utils import add_days
 
 from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob, fail_old_jobs, lock_doc_updated_by_job
-from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.agent_job.agent_job_notifications import DOC_URLS, JobErr, get_details
+from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.app_release.test_app_release import create_test_app_release
+from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.release_group.test_release_group import create_test_release_group
+from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
@@ -344,3 +349,226 @@ class TestAgentJob(FrappeTestCase):
 		self.assertEqual(in_execution_job.name, job.name)
 
 		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", True)
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestCancelJob(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_cancelling_a_finished_job_is_rejected(self):
+		job = create_test_agent_job(job_type="Restore Site", status="Success", job_id=42)
+
+		self.assertRaisesRegex(frappe.ValidationError, "job that is Success", job.cancel_job)
+
+	def test_dashboard_cant_cancel_a_job_type_without_a_failure_path(self):
+		job = create_test_agent_job(job_type="Migrate Site", status="Running", job_id=42)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Migrate Site jobs can't be cancelled",
+			job.validate_dashboard_cancellation,
+		)
+
+	def test_dashboard_can_cancel_a_running_restore(self):
+		job = create_test_agent_job(job_type="Restore Site", status="Running", job_id=42)
+
+		job.validate_dashboard_cancellation()  # doesn't raise
+
+	def test_dashboard_cant_cancel_a_site_update_that_skipped_backups(self):
+		job = create_test_agent_job(job_type="Update Site Migrate", status="Running", job_id=42)
+		site_update = frappe.get_doc(
+			doctype="Site Update",
+			name="test-site-update-cancel",
+			status="Running",
+			update_job=job.name,
+			skipped_backups=1,
+		)
+		site_update.db_insert()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"backups skipped",
+			job.validate_dashboard_cancellation,
+		)
+
+
+class TestAgentJobNotifications(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	PKG_RESOURCES_TRACEBACK = (
+		'  File "/home/frappe/frappe-bench/apps/frappe/frappe/__init__.py", line 1461, in get_module\n'
+		'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/utils.py", line 6, in <module>\n'
+		"    import razorpay\n"
+		'  File "/home/frappe/frappe-bench/env/lib/python3.11/site-packages/razorpay/client.py", line 4, in <module>\n'
+		"    import pkg_resources\n"
+		"ModuleNotFoundError: No module named 'pkg_resources'"
+	)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_missing_pkg_resources_points_at_the_app_and_the_doc(self):
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False, newer_release=True)
+		job = self.update_job(site, bench, self.PKG_RESOURCES_TRACEBACK)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Update failed because of the dummy_app app")
+		self.assertIn("<code>pkg_resources</code>", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.PKG_RESOURCES])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_missing_pkg_resources_in_teams_own_app_points_at_the_same_doc(self):
+		site, bench = self.site_with_app("dummy_app", newer_release=True)
+		job = self.update_job(site, bench, self.PKG_RESOURCES_TRACEBACK)
+
+		details = get_details(job, "", "")
+
+		self.assertIn("<code>pkg_resources</code>", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.PKG_RESOURCES])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_missing_pkg_resources_gets_a_banner_even_when_the_app_is_on_its_latest_release(self):
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False)
+		job = self.update_job(site, bench, self.PKG_RESOURCES_TRACEBACK)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.PKG_RESOURCES])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_known_traceback_wins_over_the_app_update_suggestion(self):
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False, newer_release=True)
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
+			"pymysql.err.OperationalError: (1118, 'Row size too large')",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertEqual(details["title"], "Row size too large error")
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.ROW_SIZE_TOO_LARGE])
+
+	def test_missing_pkg_resources_on_a_job_without_bench_is_not_actionable(self):
+		job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Update Agent",
+				"server": "test.frappe.cloud",
+				"traceback": "ImportError: Module import failed for Dropbox Settings, the DocType you're trying to open might be deleted.\nError: No module named 'pkg_resources'",
+			}
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertFalse(details["is_actionable"])
+		self.assertIsNone(details["assistance_url"])
+
+	def site_with_app(
+		self, app_name: str, owned_by_site_team: bool = True, newer_release: bool = False
+	) -> tuple[str, str]:
+		"""Site on a bench that has app_name installed"""
+		frappe_app = create_test_app()
+		other_app = create_test_app(app_name, app_name.title())
+		app_source = create_test_app_source(
+			"Version 14", other_app, repository_url=f"https://github.com/dummy/{app_name}"
+		)
+		group = create_test_release_group(
+			[frappe_app, other_app],
+			app_sources=[create_test_app_source("Version 14", frappe_app).name, app_source.name],
+		)
+		bench = create_test_bench(group=group)
+
+		if newer_release:
+			create_test_app_release(app_source)
+
+		site = create_test_site(bench=bench.name)
+		if not owned_by_site_team:
+			app_source.db_set("team", self.team_other_than(site.team))
+
+		return site.name, bench.name
+
+	def team_other_than(self, team: str) -> str:
+		"""Reuse an existing team, creating one per test gets rate limited"""
+		return frappe.db.get_value("Team", {"name": ("!=", team), "enabled": 1}, "name")
+
+	def update_job(self, site: str, bench: str, traceback: str) -> AgentJob:
+		return frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Update Site Migrate",
+				"site": site,
+				"bench": bench,
+				"traceback": traceback,
+			}
+		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_update_failing_inside_teams_own_app_asks_them_to_debug_it(self):
+		site, bench = self.site_with_app("dummy_app")
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/modules/patch_handler.py", line 90, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
+			"KeyError: 'rate'",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Update failed because of the dummy_app app")
+		self.assertIn("failed inside your app <b>dummy_app</b>", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_DEBUG])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_update_failing_inside_someone_elses_app_suggests_updating_it(self):
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False, newer_release=True)
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
+			"KeyError: 'rate'",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Update failed because of the dummy_app app")
+		self.assertIn("newer release of <b>dummy_app</b> is available", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_UPDATE])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_app_name_with_digits_is_not_skipped(self):
+		site, bench = self.site_with_app("dummy_app2")
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/modules/patch_handler.py", line 90, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/dummy_app2/dummy_app2/patches/fix_rates.py", line 12, in execute\n'
+			"KeyError: 'rate'",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertEqual(details["title"], "Update failed because of the dummy_app2 app")
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_DEBUG])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_someone_elses_app_already_on_latest_release_gets_no_banner(self):
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False)
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
+			"KeyError: 'rate'",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertFalse(details["is_actionable"])
+		self.assertIsNone(details["assistance_url"])

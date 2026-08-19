@@ -59,9 +59,11 @@ class PressRole(Document):
 		"allow_customer",
 		"allow_dashboard",
 		"allow_leads",
+		"allow_local_payment",
 		"allow_partner",
 		"allow_server_creation",
 		"allow_site_creation",
+		"allow_local_payment",
 		"allow_webhook_configuration",
 		"resources",
 		"team",
@@ -69,9 +71,51 @@ class PressRole(Document):
 		"users",
 	)
 
+	# The permission toggles the role configuration dialog flips. `resources`
+	# and `users` change through add_resource/add_user, which check the caller.
+	dashboard_editable_fields = (
+		"admin_access",
+		"all_release_groups",
+		"all_servers",
+		"all_sites",
+		"allow_apps",
+		"allow_bench_creation",
+		"allow_billing",
+		"allow_contribution",
+		"allow_customer",
+		"allow_dashboard",
+		"allow_leads",
+		"allow_local_payment",
+		"allow_partner",
+		"allow_server_creation",
+		"allow_site_creation",
+		"allow_webhook_configuration",
+	)
+
+	dashboard_insert_fields = (
+		"title",
+		"users",
+		"resources",
+	)
+
 	@team_guard.only_admin()
 	def validate(self):
 		self.validate_duplicate_title()
+
+	def reload_for_update(self):
+		"""
+		Re-read the role under a row lock.
+
+		Every dashboard edit rewrites the whole role document. Two of them in
+		flight at once — two admins, or a second click while the first request
+		is still running — make the later save fail with
+		`TimestampMismatchError`, because the row was committed after this
+		request read it. `FOR UPDATE` waits for the earlier write and returns
+		the committed row, so the second edit applies on top of the first
+		instead of erroring out.
+		"""
+		self.flags.for_update = True
+		self.reload()
 
 	def validate_duplicate_title(self):
 		exists = frappe.db.exists({"doctype": "Press Role", "title": self.title, "team": self.team})
@@ -87,6 +131,7 @@ class PressRole(Document):
 		skip=lambda _, args: args.get("skip_validations", False),
 	)
 	def add_user(self, user, skip_validations=False):
+		self.reload_for_update()
 		user_dict = {"user": user}
 		if self.get("users", user_dict):
 			message = _("{0} already belongs to {1}").format(user, self.title)
@@ -97,6 +142,7 @@ class PressRole(Document):
 	@dashboard_whitelist()
 	@team_guard.only_admin()
 	def remove_user(self, user):
+		self.reload_for_update()
 		users = self.get("users", {"user": user})
 		if not users:
 			message = _("User {0} does not belong to {1}").format(user, self.title)
@@ -107,6 +153,7 @@ class PressRole(Document):
 	@dashboard_whitelist()
 	@team_guard.only_admin()
 	def add_resource(self, resources: list[dict[str, str]]):
+		self.reload_for_update()
 		existing = {(row.document_type, row.document_name) for row in self.get("resources")}
 		for resource in resources:
 			document_type = resource["document_type"]
@@ -133,6 +180,7 @@ class PressRole(Document):
 	@dashboard_whitelist()
 	@team_guard.only_admin()
 	def remove_resource(self, document_type: str, document_name: str):
+		self.reload_for_update()
 		resources = self.get("resources", {"document_type": document_type, "document_name": document_name})
 		if not resources:
 			message = _("Resource {0} does not belong to {1}").format(document_name, self.title)
@@ -143,6 +191,7 @@ class PressRole(Document):
 	@dashboard_whitelist()
 	@team_guard.only_admin()
 	def set_permission(self, fieldname: str, value: int):
+		self.reload_for_update()
 		if fieldname not in PERMISSION_FIELDS:
 			frappe.throw(_("Invalid permission field: {0}").format(fieldname))
 		setattr(self, fieldname, value)

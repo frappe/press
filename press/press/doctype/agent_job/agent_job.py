@@ -23,7 +23,7 @@ from frappe.utils import (
 
 from press.access.support_access import has_support_access
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
-from press.api.client import is_owned_by_team
+from press.api.client import dashboard_whitelist, is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
 )
@@ -40,6 +40,18 @@ AGENT_JOB_TIMEOUT_HOURS = 4
 CALLBACK_FAILURE_LIMIT = 5000
 
 BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
+
+# Jobs a team can cancel from the dashboard. Restricted to long running jobs whose
+# failure path Press already handles — Broken site, failed backup, or (for site
+# updates) an automatic recovery job that rolls the site back to the old bench.
+# App installs and standalone Migrate Site jobs are left out: they have no rollback,
+# so cancelling midway leaves a half migrated database.
+DASHBOARD_CANCELLABLE_JOB_TYPES = [
+	"Restore Site",
+	"New Site from Backup",
+	"Backup Site",
+	"Update Site Migrate",
+]
 
 
 class AgentJob(Document):
@@ -115,6 +127,11 @@ class AgentJob(Document):
 
 		if server:
 			is_owned_by_team("Server", server, raise_exception=True)
+
+		# `bench` on its own gets the caller past the check above, so it needs an
+		# owner of its own — otherwise naming someone else's bench lists their jobs.
+		if bench and not has_support_access("Bench", bench):
+			is_owned_by_team("Bench", bench, raise_exception=True)
 
 		results = query.run(as_dict=1)
 		update_query_result_status_timestamps(results)
@@ -313,10 +330,30 @@ class AgentJob(Document):
 	def process_job_updates(self):
 		process_job_updates(self.name)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def cancel_job(self):
+		if self.status not in ("Pending", "Running"):
+			frappe.throw(f"Can't cancel a job that is {self.status}")
+		if not frappe.local.system_user():
+			self.validate_dashboard_cancellation()
+
 		agent = Agent(self.server, server_type=self.server_type)
 		agent.cancel_job(self.job_id)
+
+	def validate_dashboard_cancellation(self):
+		if self.job_type not in DASHBOARD_CANCELLABLE_JOB_TYPES:
+			frappe.throw(f"{self.job_type} jobs can't be cancelled")
+
+		# Without a backup the failed update has nothing to recover from, so
+		# cancelling would leave the site broken on the destination bench.
+		if self.job_type == "Update Site Migrate" and frappe.db.exists(
+			"Site Update", {"update_job": self.name, "skipped_backups": 1}
+		):
+			frappe.throw(
+				"This site update started with backups skipped. "
+				"Without a backup the site cannot be rolled back to the old bench. "
+				"Wait for the update to finish."
+			)
 
 	def on_trash(self):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
@@ -980,6 +1017,9 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_logical_replication_backup_deactivate_site_job_update,
 			process_logical_replication_backup_update_database_host_job_update,
 		)
+		from press.press.doctype.mariadb_audit_log.mariadb_audit_log import (
+			process_upload_audit_logs_to_s3_job_update,
+		)
 		from press.press.doctype.mariadb_binlog.mariadb_binlog import (
 			process_upload_binlogs_to_s3_job_update,
 		)
@@ -992,7 +1032,10 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		from press.press.doctype.proxy_server.proxy_server import (
 			process_update_nginx_job_update,
 		)
-		from press.press.doctype.server.server import process_new_server_job_update
+		from press.press.doctype.server.server import (
+			process_cleanup_unused_files_job_update,
+			process_new_server_job_update,
+		)
 		from press.press.doctype.server_snapshot_recovery.server_snapshot_recovery import (
 			process_backup_database_from_snapshot_job_callback,
 			process_backup_files_from_snapshot_job_callback,
@@ -1042,6 +1085,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			return
 		elif job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
+		elif job.job_type == "Cleanup Unused Files":
+			process_cleanup_unused_files_job_update(job)
 		elif job.job_type == "New Bench":
 			process_new_bench_job_update(job)
 		elif job.job_type == "Archive Bench":
@@ -1120,6 +1165,12 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			Bench.process_recover_update_inplace(job)
 		elif job.job_type == "Fetch Database Table Schema":
 			process_fetch_database_table_schema_job_update(job)
+		elif job.job_type == "Fetch Backup Jobs":
+			from press.press.doctype.site_backup.backup_history import (
+				process_fetch_backup_jobs_update,
+			)
+
+			process_fetch_backup_jobs_update(job)
 		elif job.job_type in [
 			"Create Database User",
 			"Remove Database User",
@@ -1150,6 +1201,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_remove_binlogs_from_indexer_agent_job_update(job)
 		elif job.job_type == "Upload Binlogs To S3":
 			process_upload_binlogs_to_s3_job_update(job)
+		elif job.job_type == "Upload Audit Logs To S3":
+			process_upload_audit_logs_to_s3_job_update(job)
 		elif job.job_type == "Search Sites In Snapshot":
 			process_search_sites_in_snapshot_job_callback(job)
 		elif job.job_type == "Backup Database From Snapshot":

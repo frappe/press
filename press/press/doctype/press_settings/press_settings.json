@@ -205,6 +205,7 @@
 		"raven_url",
 		"column_break_pqic",
 		"raven_secret_access_key",
+		"raven_incidents_channel",
 		"marketplace_tab",
 		"marketplace_settings_section",
 		"max_allowed_screenshots",
@@ -261,6 +262,7 @@
 		"realtime_job_updates",
 		"disable_agent_job_deduplication",
 		"disable_binlog_indexer_service",
+		"disable_database_audit_service",
 		"enable_mcp",
 		"column_break_rdlr",
 		"disable_auto_retry",
@@ -291,6 +293,10 @@
 		"tls_renewal_queue_size",
 		"security_tab",
 		"wazuh_server",
+		"wazuh_api_url",
+		"wazuh_api_username",
+		"wazuh_api_password",
+		"wazuh_api_verify_tls",
 		"dashboard_tab",
 		"latest_blog_url"
 	],
@@ -1610,6 +1616,27 @@
 			"label": "Wazuh Server"
 		},
 		{
+			"fieldname": "wazuh_api_url",
+			"fieldtype": "Data",
+			"label": "Wazuh API URL"
+		},
+		{
+			"fieldname": "wazuh_api_username",
+			"fieldtype": "Data",
+			"label": "Wazuh API Username"
+		},
+		{
+			"fieldname": "wazuh_api_password",
+			"fieldtype": "Password",
+			"label": "Wazuh API Password"
+		},
+		{
+			"default": "1",
+			"fieldname": "wazuh_api_verify_tls",
+			"fieldtype": "Check",
+			"label": "Wazuh API Verify TLS"
+		},
+		{
 			"fieldname": "dashboard_tab",
 			"fieldtype": "Tab Break",
 			"label": "Dashboard"
@@ -1630,6 +1657,12 @@
 			"fieldname": "disable_binlog_indexer_service",
 			"fieldtype": "Check",
 			"label": "Disable Binlog Indexer Service"
+		},
+		{
+			"default": "0",
+			"fieldname": "disable_database_audit_service",
+			"fieldtype": "Check",
+			"label": "Disable Database Audit Service"
 		},
 		{
 			"fieldname": "default_server_plan_type",
@@ -1853,6 +1886,12 @@
 			"fieldname": "raven_secret_access_key",
 			"fieldtype": "Password",
 			"label": "Raven Secret Access Key"
+		},
+		{
+			"description": "Channel ID of the Raven channel incident alerts are posted to",
+			"fieldname": "raven_incidents_channel",
+			"fieldtype": "Data",
+			"label": "Raven Incidents Channel"
 		}
 	],
 	"issingle": 1,

@@ -12,9 +12,9 @@ import requests
 from frappe.utils.password import get_decrypted_password
 
 from press.utils import log_error
+from press.utils.raven import send_raven_message
 
 RAVEN_SERVER_ALERTS_CHANNEL = "frappe-cloud-server-alerts"
-RAVEN_BOT_ID = "Frappe Notifications"
 PROMETHEUS_REGEX_META_CHAR_PATTERN = re.compile(r"([\\.^$*+?()[\]{}|])")
 
 
@@ -350,50 +350,13 @@ def _send_public_server_pool_health_alert(server_issues: dict[str, list[str]]) -
 		issues = "<br>".join(_escape_markdown_table_cell(issue) for issue in server_issues[server])
 		table_rows.append(f"| {_escape_markdown_table_cell(server)} | {issues} |")
 
-	_send_raven_server_alert("\n".join(header_lines + table_header + table_rows).strip())
+	send_raven_message(
+		"\n".join(header_lines + table_header + table_rows).strip(), RAVEN_SERVER_ALERTS_CHANNEL
+	)
 
 
 def _escape_markdown_table_cell(value: str) -> str:
 	return value.replace("|", "\\|").replace("\n", "<br>")
-
-
-def _send_raven_server_alert(text: str) -> None:
-	settings = frappe.get_single("Press Settings")
-	url = settings.raven_url
-	api_key = settings.raven_access_key_id
-	api_secret = settings.get_password("raven_secret_access_key", raise_exception=False)
-	if not url or not api_key or not api_secret:
-		log_error("Raven server alert settings missing")
-		return
-
-	headers = {
-		"Authorization": f"token {api_key}:{api_secret}",
-		"Content-Type": "application/json",
-	}
-
-	try:
-		response = requests.post(
-			url,
-			json={
-				"bot_id": RAVEN_BOT_ID,
-				"message": text,
-				"channel_id": RAVEN_SERVER_ALERTS_CHANNEL,
-			},
-			headers=headers,
-			timeout=30,
-		)
-	except requests.exceptions.RequestException as exc:
-		log_error("Failed to send public server pool health alert to Raven", exception=exc)
-		return
-
-	if response.ok:
-		return
-
-	log_error(
-		"Failed to send public server pool health alert to Raven",
-		status_code=response.status_code,
-		response=response.text[:1000],
-	)
 
 
 def _create_no_suitable_servers_incident(

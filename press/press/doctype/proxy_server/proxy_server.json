@@ -17,10 +17,14 @@
 		"provider",
 		"virtual_machine",
 		"is_server_setup",
+		"is_wazuh_agent_installed",
+		"wazuh_agent_status",
+		"is_auditd_setup",
 		"is_self_hosted",
 		"team",
 		"public",
 		"halt_agent_jobs",
+		"disable_agent_update",
 		"exclude_from_auto_selection",
 		"storage_section",
 		"auto_add_storage_min",
@@ -110,6 +114,26 @@
 			"fieldname": "is_server_setup",
 			"fieldtype": "Check",
 			"label": "Server Setup",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_wazuh_agent_installed",
+			"fieldtype": "Check",
+			"label": "Is Wazuh Agent Installed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "wazuh_agent_status",
+			"fieldtype": "Data",
+			"label": "Wazuh Agent Status",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_auditd_setup",
+			"fieldtype": "Check",
+			"label": "Is Auditd Setup",
 			"read_only": 1
 		},
 		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
@@ -418,6 +442,13 @@
 		},
 		{
 			"default": "0",
+			"description": "Don't update the agent on this server",
+			"fieldname": "disable_agent_update",
+			"fieldtype": "Check",
+			"label": "Disable Agent Update"
+		},
+		{
+			"default": "0",
 			"fieldname": "tls_certificate_renewal_failed",
 			"fieldtype": "Check",
 			"label": "TLS Certificate Renewal Failed",
@@ -476,7 +507,7 @@
 		}
 	],
 	"links": [],
-	"modified": "2026-03-15 19:01:43.557830",
+	"modified": "2026-08-13 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Proxy Server",

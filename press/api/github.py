@@ -415,6 +415,8 @@ def branches(owner: str, name: str, installation: str | None = None, app_source:
 			headers=headers,
 			timeout=20,
 		)
+		if resp.status_code == 404:
+			frappe.throw(f"Repository {owner}/{name} not found on GitHub")
 		if not resp.ok:
 			frappe.throw("Error fetching branch list from GitHub: " + resp.text)
 
@@ -490,7 +492,7 @@ def _get_compatible_frappe_version_from_pyproject(
 
 	if not compatible_frappe_version:
 		frappe.throw(
-			"Could not find compatible Frappe version in pyproject.toml file. "
+			f"Could not find a compatible Frappe version in pyproject.toml for app '{repository}'. "
 			"Please ensure '[tool.bench.frappe-dependencies]' is defined. "
 			"Click <a class='underline' href='https://docs.frappe.io/cloud/benches/custom-app#note'>here</a> for more details."
 		)

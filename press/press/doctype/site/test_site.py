@@ -39,6 +39,7 @@ from press.press.doctype.site.site import (
 	process_rename_site_job_update,
 	suspend_sites_exceeding_disk_usage_for_last_14_days,
 )
+from press.press.doctype.site_migration.site_migration import SiteMigration
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
@@ -190,6 +191,34 @@ class TestSite(FrappeTestCase):
 		site = create_test_site("testsubdomain")
 		site.host_name = "balu.codes"  # domain that doesn't exist
 		self.assertRaises(frappe.exceptions.ValidationError, site.save)
+
+	def test_db_server_restore_space_includes_app_space_on_unified_server(self):
+		"""On a unified server (shared disk) the db requirement must include app space."""
+		site = frappe.new_doc("Site")
+		app = frappe._dict(private_ip="10.0.0.1")
+		unified_db = frappe._dict(private_ip="10.0.0.1")
+		split_db = frappe._dict(private_ip="10.0.0.2")
+
+		self.assertEqual(site.db_server_restore_space(app, unified_db, db_required=100, app_required=30), 130)
+		self.assertEqual(site.db_server_restore_space(app, split_db, db_required=100, app_required=30), 100)
+
+	def test_has_recent_failed_migration_only_true_for_a_recent_failure(self):
+		site = create_test_site("testsubdomain")
+		self.assertFalse(site.has_recent_failed_migration())
+
+		bench = create_test_bench()
+		with patch.object(SiteMigration, "after_insert"):
+			migration = frappe.get_doc(
+				{"doctype": "Site Migration", "site": site.name, "destination_bench": bench.name}
+			).insert()
+
+		frappe.db.set_value("Site Migration", migration.name, "status", "Failure")
+		self.assertTrue(site.has_recent_failed_migration())
+
+		frappe.db.set_value(
+			"Site Migration", migration.name, "creation", frappe.utils.add_to_date(None, days=-2)
+		)
+		self.assertFalse(site.has_recent_failed_migration())
 
 	def test_site_has_default_site_domain_on_create(self):
 		"""Ensure site has default site domain on create."""
@@ -396,6 +425,40 @@ class TestSite(FrappeTestCase):
 			config_host = site.configuration[0].value
 		self.assertEqual(config_host, f"https://{site_domain1.name}")
 
+	def test_site_without_custom_domain_has_no_domain_with_a_record(self):
+		"""The default domain is a CNAME of the site itself, so it must not count."""
+		site = create_test_site("testsubdomain")
+		self.assertFalse(site.has_domain_with_a_record)
+
+	def test_custom_domain_with_a_record_is_detected(self):
+		from press.press.doctype.site_domain.test_site_domain import create_test_site_domain
+
+		site = create_test_site("testsubdomain")
+		create_test_site_domain(site.name, "sitedomain1.com")
+		self.assertTrue(site.has_domain_with_a_record)
+
+	def test_custom_domain_with_cname_is_not_detected_as_a_record(self):
+		from press.press.doctype.site_domain.test_site_domain import create_test_site_domain
+
+		site = create_test_site("testsubdomain")
+		domain = create_test_site_domain(site.name, "sitedomain1.com")
+		frappe.db.set_value("Site Domain", domain.name, "dns_type", "CNAME")
+		self.assertFalse(site.has_domain_with_a_record)
+
+	def test_inbound_ip_in_cluster_is_of_proxy_of_destination_bench(self):
+		"""The warning shown before a region move must name the destination cluster's proxy IP."""
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
+		from press.press.doctype.server.test_server import create_test_server
+
+		site = create_test_site("testsubdomain")
+		cluster = create_test_cluster("Mumbai")
+		proxy_server = create_test_proxy_server(cluster=cluster.name)
+		server = create_test_server(proxy_server.name, cluster=cluster.name)
+		create_test_bench(group=frappe.get_doc("Release Group", site.group), server=server.name)
+
+		self.assertEqual(site.inbound_ip_in_cluster(cluster.name), proxy_server.ip)
+
 	@patch.object(RemoteFile, "download_link", new="http://test.com")
 	@patch.object(RemoteFile, "get_content", new=lambda x: {"a": "test"})  # type: ignore
 	def test_new_site_with_backup_files(self):
@@ -580,6 +643,31 @@ class TestSite(FrappeTestCase):
 		self.assertTrue(site.site_usage_exceeded)
 		self.assertIsNotNone(site.site_usage_exceeded_on)
 		self.assertEqual(site.status, "Active")
+
+	def test_sync_info_database_only_refreshes_db_size_and_carries_files_forward(self):
+		site = create_test_site()
+		frappe.get_doc(
+			{
+				"doctype": "Site Usage",
+				"site": site.name,
+				"database": 100,
+				"public": 200,
+				"private": 300,
+				"backups": 400,
+			}
+		).insert()
+
+		# In database_only mode the agent returns only the database size; the
+		# file totals must be carried forward, not recomputed (no file walk).
+		with patch.object(Site, "fetch_info", return_value={"usage": {"database": 150}}) as fetch_info:
+			site.sync_info(database_only=True)
+
+		fetch_info.assert_called_once_with(database_only=True)
+		latest = frappe.get_last_doc("Site Usage", {"site": site.name})
+		self.assertEqual(latest.database, 150)
+		self.assertEqual(latest.public, 200)
+		self.assertEqual(latest.private, 300)
+		self.assertEqual(latest.backups, 400)
 
 	def test_free_sites_ignore_usage_exceed_tracking(self):
 		team = create_test_team(free_account=False)

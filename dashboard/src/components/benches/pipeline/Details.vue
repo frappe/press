@@ -381,21 +381,14 @@ const stopBuild = () => {
 
 	confirmDialog({
 		title: 'Fail Running Build',
-		message: `
-				Are you sure you want to fail this running build?<br><br>
-				<div class="text-bg-base bg-surface-gray-2 p-2 rounded-md">
-				This will <strong>stop the current build immediately</strong>.  
-				All progress made so far will be <strong>discarded</strong>, and the next triggered build will start from scratch.
-				<br><br>
-				Use this option if a build is stuck, taking unusually long, or is expected to fail.
-				</div>
-				`,
+		message:
+			'Are you sure you want to stop this build?<br><br>All progress made so far will be <b>discarded</b>, and the next triggered build will start from scratch.<br><br>Use this if the build is stuck, taking unusually long, or is expected to fail.',
 		primaryAction: {
 			label: 'Stop Build',
 			variant: 'solid',
 			theme: 'red',
 			onClick({ hide }) {
-				createResource({
+				return createResource({
 					url: 'press.api.bench.fail_build',
 					params: { dn: deploy.name },
 				})
@@ -405,6 +398,37 @@ const stopBuild = () => {
 						hide()
 						toast.error(
 							'Unable to stop build please wait for the status to be updated',
+						)
+					})
+			},
+		},
+	})
+}
+
+const stopPipeline = () => {
+	confirmDialog({
+		title: 'Stop Deploy',
+		message:
+			'Are you sure you want to stop this deploy?<br><br>All progress made so far will be <b>discarded</b>, and you will need to trigger a fresh deploy.<br><br>Use this if the deploy is stuck, taking unusually long, or is expected to fail.',
+		primaryAction: {
+			label: 'Stop Deploy',
+			variant: 'solid',
+			theme: 'red',
+			onClick({ hide }) {
+				return createResource({
+					url: 'press.api.client.run_doc_method',
+					params: {
+						dt: 'Release Pipeline',
+						dn: pipeline.doc.name,
+						method: 'force_fail',
+					},
+				})
+					.fetch()
+					.then(() => hide())
+					.catch(() => {
+						hide()
+						toast.error(
+							'Unable to stop deploy please wait for the status to be updated',
 						)
 					})
 			},
@@ -453,8 +477,12 @@ const stopBuild = () => {
 			/>
 
 			<Button
-				@click="stopBuild"
-				v-if="deployview && builds[activeBuildId]?.doc?.status === 'Running'"
+				@click="deployview ? stopBuild() : stopPipeline()"
+				v-if="
+					deployview
+						? builds[activeBuildId]?.doc?.status === 'Running'
+						: pipeline?.doc?.status === 'Running'
+				"
 				theme="red"
 			>
 				Stop Deploy

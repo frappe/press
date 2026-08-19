@@ -35,6 +35,7 @@ class ProxyServer(BaseServer):
 		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
+		disable_agent_update: DF.Check
 		domain: DF.Link | None
 		domains: DF.Table[ProxyServerDomain]
 		enabled_default_routing: DF.Check
@@ -45,6 +46,7 @@ class ProxyServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_auditd_setup: DF.Check
 		is_primary: DF.Check
 		is_proxysql_setup: DF.Check
 		is_replication_setup: DF.Check
@@ -52,6 +54,8 @@ class ProxyServer(BaseServer):
 		is_server_setup: DF.Check
 		is_ssh_proxy_setup: DF.Check
 		is_static_ip: DF.Check
+		is_wazuh_agent_installed: DF.Check
+		wazuh_agent_status: DF.Data | None
 		is_wireguard_setup: DF.Check
 		mem_limits: DF.Code | None
 		plan: DF.Link | None
@@ -145,7 +149,7 @@ class ProxyServer(BaseServer):
 					"monitoring_password": monitoring_password,
 					"log_server": log_server,
 					"kibana_password": kibana_password,
-					"certificate_private_key": certificate.private_key,
+					"certificate_private_key": certificate.get_private_key(),
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"press_url": frappe.utils.get_url(),
@@ -156,6 +160,8 @@ class ProxyServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				self.set_auditd_setup_from_base_playbook()
+				self.install_wazuh_agent_if_configured()
 			else:
 				self.status = "Broken"
 		except Exception:

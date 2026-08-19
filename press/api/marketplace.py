@@ -1106,64 +1106,6 @@ def reset_features_for_plan(app_plan_doc: MarketplaceAppPlan, feature_list: list
 		app_plan_doc.save(ignore_permissions=True)
 
 
-@frappe.whitelist()
-def get_payouts_list() -> list[dict]:
-	team = get_current_team()
-	payouts = frappe.get_all(
-		"Payout Order",
-		filters={"recipient": team},
-		fields=[
-			"name",
-			"status",
-			"period_end",
-			"mode_of_payment",
-			"net_total_inr",
-			"net_total_usd",
-		],
-		order_by="period_end desc",
-	)
-
-	return payouts  # noqa: RET504
-
-
-@frappe.whitelist()
-def get_payout_details(name: str) -> dict:
-	order_items = frappe.get_all(
-		"Payout Order Item",
-		filters={"parent": name},
-		fields=[
-			"name",
-			"document_name",
-			"site",
-			"rate",
-			"plan",
-			"total_amount",
-			"currency",
-			"net_amount",
-			"gateway_fee",
-			"quantity",
-			"commission",
-		],
-		order_by="idx",
-	)
-
-	payout_order = frappe.db.get_value(
-		"Payout Order",
-		name,
-		["status", "due_date", "mode_of_payment", "net_total_inr", "net_total_usd"],
-		as_dict=True,
-	)
-
-	grouped_items = {"usd_items": [], "inr_items": [], **payout_order}
-	for item in order_items:
-		if item.currency == "INR":
-			grouped_items["inr_items"].append(item)
-		else:
-			grouped_items["usd_items"].append(item)
-
-	return grouped_items
-
-
 def get_discount_percent(plan, discount=0.0):
 	team = get_current_team(True)
 	partner_discount_percent = {

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import inspect
+import json
 import typing
 
 import frappe
@@ -62,6 +63,7 @@ ALLOWED_DOCTYPES = [
 	"Database Server",
 	"Ansible Play",
 	"Server Plan",
+	"S3 Storage Plan",
 	"Release Group Variable",
 	"Resource Tag",
 	"Press Tag",
@@ -299,7 +301,7 @@ def insert(doc=None):
 		parent.save()
 		return get(parent.doctype, parent.name)
 
-	_doc = frappe.get_doc(doc)
+	_doc = frappe.get_doc(filter_insertable_fields(doc.doctype, doc))
 
 	if frappe.get_meta(doc.doctype).has_field("team"):
 		if not _doc.team:
@@ -308,6 +310,11 @@ def insert(doc=None):
 		if not frappe.local.system_user():
 			# don't allow dashboard user to set any other team
 			_doc.team = frappe.local.team().name
+
+	if not frappe.local.system_user():
+		# don't allow a dashboard user to create an already-submitted document
+		_doc.docstatus = 0
+
 	_doc.insert()
 	return get(_doc.doctype, _doc.name)
 
@@ -327,9 +334,13 @@ def set_value(doctype: str, name: str, fieldname: dict | str, value: str | None 
 	if not has_support_access(doctype, name):
 		check_document_write_access(doctype, name)
 
-	for field in fieldname:
+	check_editable_fields(doctype, fields_being_set(fieldname, value))
+
+	fields = fieldname if isinstance(fieldname, dict) else {fieldname: value}
+	for field in fields:
 		# fields mentioned in dashboard_fields are allowed to be set via set_value
-		is_allowed_field(doctype, field)
+		if not is_allowed_field(doctype, field):
+			raise_not_permitted()
 
 	_set_value(doctype, name, fieldname, value)
 
@@ -514,6 +525,39 @@ def is_allowed_field(doctype, field):
 	return False
 
 
+def fields_being_set(fieldname: dict | str, value: str | None) -> list[str]:
+	"""The fields `frappe.client.set_value` will write, however it was called.
+
+	It takes either a mapping or a single fieldname with its value, and a
+	fieldname that parses as JSON is treated as the mapping.
+	"""
+	if isinstance(fieldname, dict):
+		return list(fieldname)
+
+	if value:
+		return [fieldname]
+
+	try:
+		return list(json.loads(fieldname))
+	except (TypeError, ValueError):
+		return [fieldname]
+
+
+def check_editable_fields(doctype: str, fields: list[str]):
+	"""Refuse to write a field the doctype hasn't offered up for editing.
+
+	`dashboard_fields` says what the dashboard may read, which is a much longer
+	list than what it may write — a site shows its plan, server and team without
+	anyone being allowed to set them from here. Doctypes name the writable ones
+	in `dashboard_editable_fields`, and everything else is refused.
+	"""
+	editable = getattr(get_controller(doctype), "dashboard_editable_fields", ())
+
+	for field in fields:
+		if field not in editable:
+			frappe.throw(f"{doctype}.{field} cannot be edited from the dashboard", frappe.PermissionError)
+
+
 def is_allowed_linked_field(doctype, field):
 	linked_field = linked_field_fieldname = None
 	if " as " in field:
@@ -542,6 +586,29 @@ def is_allowed_table_field(doctype, field):
 			if not is_allowed_field(table_doctype, table_field):
 				return False
 	return True
+
+
+def filter_insertable_fields(doctype, doc):
+	"""Restrict a dashboard-submitted insert payload to a doctype's explicit
+	create-time allowlist.
+
+	Unlike `is_allowed_field` (used for reads and filters), this doesn't fall
+	back to Frappe's `default_fields` — that list includes `docstatus`, which
+	is exactly the field a dashboard user must never get to set directly.
+	System users (Desk, scripts) are trusted with the full payload, as before.
+	"""
+	if frappe.local.system_user():
+		return doc
+
+	controller = get_controller(doctype)
+	insertable_fields = getattr(controller, "dashboard_insert_fields", ())
+
+	filtered = frappe._dict({"doctype": doctype})
+	for field in insertable_fields:
+		if field in doc:
+			filtered[field] = doc[field]
+
+	return filtered
 
 
 def check_permissions(doctype):

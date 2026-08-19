@@ -327,6 +327,62 @@ class TestInvoice(FrappeTestCase):
 		self.assertEqual(invoice.total_discount_amount, 100)
 		self.assertEqual(invoice.total, 2000 - 100)
 
+	def test_flat_discount_amount(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+
+		invoice.append("items", {"quantity": 1, "rate": 1000, "amount": 1000})
+		invoice.append("discounts", {"based_on": "Amount", "amount": 50})
+		invoice.save()
+		invoice.reload()
+
+		self.assertEqual(invoice.discounts[0].amount, 50)
+		self.assertEqual(invoice.total_before_discount, 1000)
+		self.assertEqual(invoice.total_discount_amount, 50)
+		self.assertEqual(invoice.total, 950)
+
+	def test_flat_discount_percent(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+
+		invoice.append("items", {"quantity": 1, "rate": 1000, "amount": 1000})
+		invoice.append("discounts", {"based_on": "Percent", "percent": 10})
+		invoice.save()
+		invoice.reload()
+
+		self.assertEqual(invoice.discounts[0].amount, 100)
+		self.assertEqual(invoice.total_before_discount, 1000)
+		self.assertEqual(invoice.total_discount_amount, 100)
+		self.assertEqual(invoice.total, 900)
+
+	def test_flat_discount_percent_on_top_of_item_discount(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+
+		# 10% partner discount on the item, and a separate 5% flat discount
+		invoice.append("items", {"quantity": 1, "rate": 1000, "amount": 1000, "discount_percentage": 10})
+		invoice.append("discounts", {"based_on": "Percent", "percent": 5})
+		invoice.save()
+		invoice.reload()
+
+		self.assertEqual(invoice.items[0].discount, 100)
+		self.assertEqual(invoice.discounts[0].amount, 50)
+		self.assertEqual(invoice.total_before_discount, 1000)
+		self.assertEqual(invoice.total_discount_amount, 150)
+		self.assertEqual(invoice.total, 850)
+
 	def test_finalize_invoice_with_total_zero(self):
 		invoice = frappe.get_doc(
 			doctype="Invoice",
@@ -377,6 +433,168 @@ class TestInvoice(FrappeTestCase):
 		).insert()
 		invoice.finalize_invoice()
 		self.assertEqual(invoice.stripe_invoice_id, None)
+
+	@patch("press.press.doctype.invoice.invoice.get_stripe")
+	def test_make_stripe_invoice_passes_default_payment_method(self, mock_stripe):
+		frappe.get_doc(
+			{
+				"doctype": "Stripe Payment Method",
+				"team": self.team.name,
+				"stripe_customer_id": "cus_test123",
+				"stripe_payment_method_id": "pm_test123",
+				"is_default": 1,
+			}
+		).insert(ignore_permissions=True)
+		mock_stripe.return_value.Invoice.create.return_value = {"id": "in_test123"}
+
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		invoice._make_stripe_invoice("cus_test123", 10000)
+
+		kwargs = mock_stripe.return_value.Invoice.create.call_args.kwargs
+		self.assertEqual(kwargs["default_payment_method"], "pm_test123")
+
+	@patch("press.press.doctype.invoice.invoice.get_stripe")
+	def test_make_stripe_invoice_adds_comment_when_mandate_check_fails(self, mock_stripe):
+		frappe.get_doc(
+			{
+				"doctype": "Stripe Payment Method",
+				"team": self.team.name,
+				"stripe_customer_id": "cus_test123",
+				"stripe_payment_method_id": "pm_test123",
+				"stripe_mandate_id": "mandate_test123",
+				"is_default": 1,
+			}
+		).insert(ignore_permissions=True)
+		mock_stripe.return_value.Mandate.retrieve.side_effect = Exception("stripe unavailable")
+
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		# _make_stripe_invoice commits/rolls back the real transaction on failure;
+		# stub those out so the test's own uncommitted fixtures survive.
+		with patch("frappe.db.rollback"), patch("frappe.db.commit"):
+			invoice._make_stripe_invoice("cus_test123", 10000)
+
+		mock_stripe.return_value.Invoice.create.assert_not_called()
+		comments = frappe.get_all(
+			"Comment",
+			filters={"reference_doctype": "Invoice", "reference_name": invoice.name},
+			pluck="content",
+		)
+		self.assertTrue(any("Stripe Invoice Creation Failed" in comment for comment in comments))
+
+	@patch("press.api.billing.get_stripe")
+	def test_make_stripe_invoice_without_default_payment_method_raises(self, mock_stripe):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		self.assertRaises(frappe.ValidationError, invoice._make_stripe_invoice, "cus_test123", 10000)
+		mock_stripe.return_value.Invoice.create.assert_not_called()
+
+	def test_mark_as_fully_paid_zeroes_amount_due_and_survives_recalculation(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+			items=[{"quantity": 1, "rate": 100, "amount": 100}],
+		).insert()
+		invoice.reload()
+		self.assertEqual(invoice.amount_due, 100)
+
+		invoice.mark_as_fully_paid()
+		# validate() recalculates on every save; it must not clobber amount_due
+		# back to a nonzero balance now that the invoice is marked Paid
+		invoice.save()
+		invoice.reload()
+
+		self.assertEqual(invoice.status, "Paid")
+		self.assertEqual(invoice.amount_due, 0)
+		# amount_due_with_tax must survive untouched — it's the tax-inclusive
+		# billed amount sent to Frappe.io via create_invoice_on_frappeio()
+		self.assertEqual(invoice.amount_due_with_tax, 100)
+
+	@patch("press.press.doctype.invoice.invoice.get_stripe")
+	def test_finalize_invoice_zeroes_amount_due_when_stripe_invoice_already_paid(self, mock_stripe):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			payment_mode="Card",
+			period_start=today(),
+			period_end=add_days(today(), 10),
+			items=[{"quantity": 1, "rate": 100, "amount": 100}],
+		).insert()
+		invoice.stripe_invoice_id = "in_test123"
+		mock_stripe.return_value.Invoice.retrieve.return_value = frappe._dict(
+			status="paid", charge="ch_test123"
+		)
+
+		with patch.object(Invoice, "update_transaction_details", return_value=None):
+			invoice.finalize_invoice()
+
+		self.assertEqual(invoice.status, "Paid")
+		self.assertEqual(invoice.amount_due, 0)
+		# amount_due_with_tax must survive untouched — it's the tax-inclusive
+		# billed amount sent to Frappe.io via create_invoice_on_frappeio()
+		self.assertEqual(invoice.amount_due_with_tax, 100)
+
+	@patch("press.press.doctype.invoice.invoice.get_razorpay_client")
+	def test_finalize_razorpay_mandate_invoices_retains_billed_amount_after_capture(self, mock_get_client):
+		from press.press.doctype.invoice.invoice import finalize_razorpay_mandate_invoices
+
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+			items=[{"quantity": 1, "rate": 100, "amount": 100}],
+		).insert()
+		# validate_team() overrides payment_mode from the team while status is
+		# Draft, so set these post-insert fields via db_set to bypass that
+		invoice.db_set(
+			{
+				"status": "Invoice Created",
+				"payment_mode": "UPI Autopay",
+				"razorpay_payment_id": "pay_test123",
+			},
+			commit=False,
+		)
+		mock_get_client.return_value.payment.fetch.return_value = {
+			"status": "captured",
+			"amount": 10000,
+			"fee": 0,
+			"tax": 0,
+		}
+
+		finalize_razorpay_mandate_invoices()
+		invoice.reload()
+
+		self.assertEqual(invoice.status, "Paid")
+		self.assertEqual(invoice.amount_due, 0)
+		self.assertEqual(invoice.amount_paid, 100)
+		# create_invoice_on_frappeio() (mocked at class level) reads this off the
+		# submitted doc to bill Frappe.io — it must not have been zeroed out
+		self.assertEqual(invoice.amount_due_with_tax, 100)
 
 	def test_negative_balance_case(self):
 		team = create_test_team("test22@example.com")

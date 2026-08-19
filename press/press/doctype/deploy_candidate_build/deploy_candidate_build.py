@@ -1320,7 +1320,12 @@ def fail_remote_job(dn: str) -> bool:
 	agent_job_doc = agent_job_doc.reload()
 
 	if agent_job_doc.status in ["Success", "Failure"]:
-		# Job is already in a terminal state, nothing we can do here
+		# Job reached a terminal state right as we were trying to stop it — there's
+		# no job left to cancel, but the build itself may not have been reconciled
+		# yet (that normally happens via the job update poller). Reconcile it here
+		# so it doesn't stay stuck as "in progress" forever.
+		if frappe.db.get_value("Deploy Candidate Build", dn, "status") in Status.intermediate():
+			return _mark_build_as_failed(dn)
 		return False
 
 	if agent_job_doc.status in ["Pending", "Undelivered"]:

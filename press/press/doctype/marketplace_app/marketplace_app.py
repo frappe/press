@@ -104,6 +104,16 @@ class MarketplaceApp(WebsiteGenerator):
 		"description",
 	]
 
+	dashboard_insert_fields: ClassVar = [
+		"name",
+		"title",
+		"repository_url",
+		"github_installation_id",
+		"branch",
+		"is_public",
+		"frappe_version",
+	]
+
 	def autoname(self):
 		self.name = self.app
 
@@ -798,8 +808,15 @@ def validate_frappe_version_for_branch(
 		app_name=app_name,
 	)
 	frappe_version = app_info.get("frappe_version")
-	frappe_version = parse_frappe_version(frappe_version, app_info.get("title"), ease_versioning_constrains)
-	if version not in frappe_version:
+	if frappe_version is None:
+		# The framework doesn't declare a supported range of itself. Its branches are
+		# checked against the bench version in ReleaseGroup.change_app_branch instead.
+		return
+
+	supported_versions = parse_frappe_version(
+		frappe_version, app_info.get("title"), ease_versioning_constrains
+	)
+	if version not in supported_versions:
 		frappe.throw(f"{version} is not supported by branch {branch} for app {app_name}", VersioningError)
 
 

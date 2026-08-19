@@ -121,9 +121,7 @@ def all(server_filter=None):  # noqa: C901
 	else:
 		query = app_server_query + database_server_query
 
-	# union isn't supported in qb for run method
-	# https://github.com/frappe/frappe/issues/15609
-	servers = frappe.db.sql(query.get_sql(), as_dict=True)
+	servers = query.run(as_dict=True)
 	for server in servers:
 		server_plan_name = frappe.get_value("Server", server.name, "plan")
 		server["plan"] = frappe.get_doc("Server Plan", server_plan_name) if server_plan_name else None
@@ -203,8 +201,7 @@ def get_reclaimable_size(name):
 @frappe.whitelist()
 def new_unified(server: UnifiedServerDetails):
 	team = get_current_team(get_doc=True)
-	if not team.enabled:
-		frappe.throw("You cannot create a new server because your account is disabled")
+	team.validate_can_create_server()
 
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
@@ -248,8 +245,7 @@ def new(server):
 		frappe.throw(f"ARM Instances are currently unavailable in the {server['cluster']} region")
 
 	team = get_current_team(get_doc=True)
-	if not team.enabled:
-		frappe.throw("You cannot create a new server because your account is disabled")
+	team.validate_can_create_server()
 
 	server_plan_price = frappe.get_value("Server Plan", server["app_plan"], "price_usd") + frappe.get_value(
 		"Server Plan", server["db_plan"], "price_usd"
@@ -580,8 +576,8 @@ def prometheus_query(
 	timespan: int,
 	timegrain: int,
 	use_timestamps: bool = False,
-	start: None | datetime = None,
-	end: None | datetime = None,
+	start: datetime | None = None,
+	end: datetime | None = None,
 ):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
