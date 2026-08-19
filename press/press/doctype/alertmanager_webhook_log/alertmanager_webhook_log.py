@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import math
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import frappe
 from frappe.core.utils import find
@@ -168,7 +168,7 @@ class AlertmanagerWebhookLog(Document):
 			return alert["labels"]
 		return {}
 
-	def past_alert_instances(self, status: DF.Literal["Firing", "Resolved"]) -> set[str]:
+	def past_alert_instances(self, status: Literal["Firing", "Resolved"]) -> set[str]:
 		past_alerts = frappe.get_all(
 			self.doctype,
 			fields=["payload"],
@@ -186,7 +186,7 @@ class AlertmanagerWebhookLog(Document):
 			ignore_ifnull=True,
 		)  # get site down alerts grouped by benches
 
-		instances = []
+		instances: list[str] = []
 		for alert in past_alerts:
 			instances.extend(instances_in_payload(alert["payload"]))
 		return set(instances)
@@ -350,7 +350,7 @@ def disk_full_servers() -> set[str]:
 		order_by="creation asc",
 	)
 
-	instances = set()
+	instances: set[str] = set()
 	for log in logs:
 		alerted = instances_in_payload(log.payload)
 		instances = instances | alerted if log.status == "Firing" else instances - alerted
@@ -366,11 +366,11 @@ def app_servers_of(instances: set[str]) -> set[str]:
 	if not instances:
 		return set()
 
-	instances = list(instances)
+	names = list(instances)
 	return set(
 		frappe.get_all(
 			"Server",
-			or_filters={"name": ("in", instances), "database_server": ("in", instances)},
+			or_filters={"name": ("in", names), "database_server": ("in", names)},
 			pluck="name",
 		)
 	)
