@@ -927,3 +927,16 @@ class TestSite(FrappeTestCase):
 		}
 		self.assertTrue(bahrain_files.isdisjoint(deleted_files))
 		self.assertTrue(other_files.issubset(set(deleted_files)))
+
+	def test_dedicated_server_plan_does_not_get_a_rate_limit(self):
+		"""Sites on a dedicated server must not be usage tracked, whatever the plan is named."""
+		plan = create_test_plan("Site", cpu_time=10, dedicated_server_plan=True)
+		site = Site({"doctype": "Site", "plan": plan.name})
+
+		self.assertEqual(site.get_plan_config()["rate_limit"], {})
+
+	def test_shared_server_plan_gets_a_rate_limit_from_cpu_time(self):
+		plan = create_test_plan("Site", cpu_time=10)
+		site = Site({"doctype": "Site", "plan": plan.name})
+
+		self.assertEqual(site.get_plan_config()["rate_limit"], {"limit": 36000, "window": 86400})
