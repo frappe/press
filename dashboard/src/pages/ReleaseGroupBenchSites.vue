@@ -239,7 +239,6 @@ export default {
 								</Tooltip>
 							)}
 							<BenchActionsDropdown
-								class="ml-auto"
 								bench={bench.name}
 								benchRow={bench}
 								releaseGroup={this.$releaseGroup.name}
