@@ -33,18 +33,24 @@
 	</div>
 </template>
 <script lang="jsx">
-import Badge from '@/components/global/Badge.vue';
-import { getCachedDocumentResource, Tooltip } from 'frappe-ui';
-import BenchActionsDropdown from '../components/BenchActionsDropdown.vue';
-import ObjectList from '../components/ObjectList.vue';
+import { getCachedDocumentResource, Tooltip } from 'frappe-ui'
+import Badge from '@/components/global/Badge.vue'
+import BenchActionsDropdown from '../components/BenchActionsDropdown.vue'
+import CustomAlerts from '../components/CustomAlerts.vue'
+import DismissableBanner from '../components/DismissableBanner.vue'
+import ObjectList from '../components/ObjectList.vue'
+import {
+	filterControls as benchFilterControls,
+	getBenchTitleSuffix,
+	getClusterImagePrefix,
+} from '../objects/bench'
 import {
 	getSitesTabColumns,
 	sitesTabRoute,
 	siteTabFilterControls,
-} from '../objects/common';
-import { icon } from '../utils/components';
-import DismissableBanner from '../components/DismissableBanner.vue';
-import CustomAlerts from '../components/CustomAlerts.vue';
+} from '../objects/common'
+import { getBenchOptions, showBenchLogs } from '../utils/benchOptions'
+import { icon } from '../utils/components'
 
 export default {
 	name: 'ReleaseGroupBenchSites',
@@ -53,7 +59,7 @@ export default {
 	data() {
 		return {
 			sitesGroupedByBench: [],
-		};
+		}
 	},
 	resources: {
 		benches() {
@@ -64,14 +70,20 @@ export default {
 					group: this.$releaseGroup.name,
 					skip_team_filter_for_system_user_and_support_agent: true,
 				},
-				fields: ['name', 'status'],
+				fields: [
+					'name',
+					'status',
+					'cluster.image as cluster_image',
+					'cluster.title as cluster_title',
+				],
 				orderBy: 'creation desc',
-				pageLength: 99999,
+				pageLength: this.isPublicBench ? 20 : 99999,
 				auto: true,
 				onSuccess() {
-					this.$resources.sites.fetch();
+					if (this.isPublicBench) return
+					this.$resources.sites.fetch()
 				},
-			};
+			}
 		},
 		inQueueBenches() {
 			return {
@@ -86,7 +98,7 @@ export default {
 				orderBy: 'creation desc',
 				pageLength: 99999,
 				auto: true,
-			};
+			}
 		},
 		sites() {
 			return {
@@ -110,21 +122,70 @@ export default {
 				orderBy: 'creation desc, bench desc',
 				pageLength: 99999,
 				transform(data) {
-					return this.groupSitesByBench(data);
+					return this.groupSitesByBench(data)
 				},
 				auto: false,
-			};
+			}
 		},
 	},
 	computed: {
+		// Public benches has a lot of site so dont show sites list
+		isPublicBench() {
+			return Boolean(this.$releaseGroup.doc?.public)
+		},
 		listOptions() {
+			if (this.isPublicBench) return this.benchListOptions
+			return this.groupedSiteListOptions
+		},
+
+		benchListOptions() {
+			return {
+				list: this.$resources.benches,
+				emptyStateMessage: 'No benches found',
+				columns: [
+					{
+						label: 'Bench',
+						fieldname: 'name',
+						class: 'font-medium',
+						suffix: getBenchTitleSuffix,
+					},
+					{
+						label: 'Status',
+						fieldname: 'status',
+						type: 'Badge',
+						width: '150px',
+					},
+					{
+						label: 'Region',
+						fieldname: 'cluster',
+						width: 0.75,
+						format: (value, row) => row.cluster_title || value || '',
+						prefix: getClusterImagePrefix,
+					},
+				],
+				filterControls: () =>
+					benchFilterControls().filter(
+						(control) => control.fieldname !== 'group',
+					),
+				route: (row) => ({ name: 'Bench Detail', params: { name: row.name } }),
+				rowActions: ({ row }) =>
+					getBenchOptions({
+						row,
+						releaseGroup: this.$releaseGroup.name,
+						version: this.$releaseGroup.doc.version,
+						actionsAccess: this.actionsAccess,
+					}),
+				primaryAction: this.newSiteAction,
+			}
+		},
+		groupedSiteListOptions() {
 			return {
 				list: this.$resources.sites,
 				groupHeader: ({ group: bench }) => {
-					if (!bench?.status) return;
+					if (!bench?.status) return
 
-					const IconHash = icon('hash', 'w-3 h-3');
-					const IconStar = icon('star', 'w-3 h-3');
+					const IconHash = icon('hash', 'w-3 h-3')
+					const IconStar = icon('star', 'w-3 h-3')
 					return (
 						<div class="flex items-center">
 							<Tooltip text="View bench details">
@@ -168,7 +229,7 @@ export default {
 								actionsAccess={this.actionsAccess}
 							/>
 						</div>
-					);
+					)
 				},
 				emptyStateMessage: this.$releaseGroup.doc.deploy_information.last_deploy
 					? 'No sites found'
@@ -176,45 +237,53 @@ export default {
 				columns: getSitesTabColumns(false),
 				filterControls: siteTabFilterControls,
 				route: sitesTabRoute,
-				primaryAction: () => {
-					return {
-						label: 'New Site',
-						slots: {
-							prefix: icon('plus', 'w-4 h-4'),
-						},
-						disabled:
-							!this.$resources.benches.data?.length ||
-							!this.$resources.benches.data?.some(
-								(bench) => bench.status === 'Active',
-							) ||
-							!this.$releaseGroup.doc?.deploy_information?.last_deploy,
-						route: {
-							name: 'Release Group New Site',
-							params: { bench: this.releaseGroup },
-						},
-					};
-				},
-			};
+				primaryAction: this.newSiteAction,
+			}
 		},
 		$releaseGroup() {
-			return getCachedDocumentResource('Release Group', this.releaseGroup);
+			return getCachedDocumentResource('Release Group', this.releaseGroup)
 		},
 	},
+	mounted() {
+		const { bench, log } = this.$route.query
+		if (bench) showBenchLogs(bench, log)
+	},
 	methods: {
+		// the bench detail page is off the sidebar, so this dialog is the only
+		// way in. Deep links land here too, e.g. the 500 page's error log link:
+		// /groups/<group>/sites?bench=<bench>&log=web.error.log
+		newSiteAction() {
+			return {
+				label: 'New Site',
+				slots: {
+					prefix: icon('plus', 'w-4 h-4'),
+				},
+				disabled:
+					!this.$resources.benches.data?.length ||
+					!this.$resources.benches.data?.some(
+						(bench) => bench.status === 'Active',
+					) ||
+					!this.$releaseGroup.doc?.deploy_information?.last_deploy,
+				route: {
+					name: 'Release Group New Site',
+					params: { bench: this.releaseGroup },
+				},
+			}
+		},
 		groupSitesByBench(data) {
-			if (!this.$resources.benches.data) return [];
+			if (!this.$resources.benches.data) return []
 			return this.$resources.benches.data.map((bench) => {
-				let sites = (data || []).filter((site) => site.bench === bench.name);
-				const isLargeDataset = this.$resources.benches.data?.length >= 1000;
+				let sites = (data || []).filter((site) => site.bench === bench.name)
+				const isLargeDataset = this.$resources.benches.data?.length >= 1000
 				return {
 					...bench,
 					// To prevent rendering delays for large servers with many benches and sites
 					collapsed: isLargeDataset,
 					group: bench.name,
 					rows: sites,
-				};
-			});
+				}
+			})
 		},
 	},
-};
+}
 </script>

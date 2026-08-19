@@ -10,11 +10,11 @@
 
 ## Pull requests
 
-Never hard-wrap the PR description at 80 characters (or any width). GitHub
-renders it as markdown and wraps it for the reader; hand-wrapped lines break
-when the box is resized and are painful to edit. Let paragraphs run on one
-line. The 72-character limit applies to the commit header only, not the PR
-body.
+Never hard-wrap the PR description at 80 characters, or at any width. GitHub
+renders the description as markdown and wraps it for the reader. Hand-wrapped
+lines break when the reader changes the width of the box, and they are hard to
+edit. Let each paragraph run on one line. The 72-character limit applies to the
+commit header only, not to the PR body.
 
 ## Running Tests
 
@@ -32,13 +32,13 @@ To run a single test:
 bench --site <site> run-tests --app press --module press.press.doctype.site_update.test_site_update --test test_specific_thing
 ```
 
-If the test site is missing doctypes, migrate it first (use `--skip-failing` to avoid getting blocked by unrelated errors):
+If the test site does not have all the doctypes, migrate it first. Use `--skip-failing` so that unrelated errors do not block the migration:
 
 ```bash
 bench --site <site> migrate --skip-failing
 ```
 
-See [docs/code/testing](docs/code/testing/index.md) for how to write tests for this project, and the [Frappe testing docs](https://docs.frappe.io/framework/user/en/testing) for framework-level testing reference.
+Read [docs/code/testing](docs/code/testing/index.md) to learn how to write tests for this project. The [Frappe testing docs](https://docs.frappe.io/framework/user/en/testing) give the framework-level reference.
 
 ## Running UI Tests (Playwright)
 
@@ -64,15 +64,16 @@ ruff check press/
 ruff format press/
 ```
 
-JavaScript/Vue (via Biome). Do NOT use `npx biome` — it resolves to an unrelated
-package (v0.3.3) that silently does nothing. Use the real Biome (v2.x) installed by
-the pre-commit hook, with the repo-root `biome.json` and absolute file paths:
+JavaScript/Vue (via Biome). Do NOT use `npx biome`. It resolves to an unrelated
+package (v0.3.3) that does nothing and reports no error. Use the real Biome
+(v2.x) that the pre-commit hook installs, with the repo-root `biome.json` and
+absolute file paths:
 ```bash
 BIOME=$(ls ~/.cache/pre-commit/*/node_env-default/lib/node_modules/@biomejs/pre-commit/node_modules/@biomejs/cli-linux-x64/biome | head -1)
 "$BIOME" check --write --config-path="$(pwd)/biome.json" <absolute-paths>
 ```
 
-Set up pre-commit hooks once with:
+Install the pre-commit hooks once with:
 ```bash
 bash setup-pre-commit.sh
 ```
@@ -87,18 +88,19 @@ yarn build                     # builds dashboard + email/marketplace/saas CSS
 
 ## Finding docs.frappe.io/cloud URLs
 
-Error messages and dialogs often link to Frappe Cloud docs. Don't guess slugs —
-they 404 (the uninstall page is `how-to-uninstall-an-app-from-the-site`, not
-`sites/uninstall-an-app`). Search the wiki API instead:
+Error messages and dialogs often link to Frappe Cloud docs. Do not guess a slug.
+A guess gives a 404. The uninstall page is `how-to-uninstall-an-app-from-the-site`,
+not `sites/uninstall-an-app`. Search the wiki API instead:
 
 ```bash
 curl -s "https://docs.frappe.io/api/method/wiki.frappe_wiki.doctype.wiki_document.search.search?query=<TERM>&space=0uh9cfn2fk"
 ```
 
-Returns `{message:{results:[{title, route, content, score}], total}}`. Take the
-top result's `route` and prepend `https://docs.frappe.io/`. `space=0uh9cfn2fk`
-scopes results to the **Cloud** space (all routes start with `cloud/`); omit
-`space` to search all of docs.frappe.io (framework, etc.).
+The call returns `{message:{results:[{title, route, content, score}], total}}`.
+Take the `route` of the top result and put `https://docs.frappe.io/` before it.
+`space=0uh9cfn2fk` limits the results to the **Cloud** space, where all routes
+start with `cloud/`. Omit `space` to search all of docs.frappe.io, which
+includes the framework documentation.
 
 ## Architecture
 
@@ -109,9 +111,9 @@ Press is a [Frappe](https://github.com/frappe/frappe) app that powers Frappe Clo
 
 ### Two main layers
 
-**Backend** (`press/`): A Frappe app. Business logic lives in doctypes at `press/press/doctype/`. The REST API consumed by the dashboard is in `press/api/`. Scheduled tasks and event hooks are wired up in `press/hooks.py`.
+**Backend** (`press/`): A Frappe app. The business logic lives in the doctypes at `press/press/doctype/`. The REST API for the dashboard is in `press/api/`. `press/hooks.py` registers the scheduled tasks and the document events.
 
-**Frontend** (`dashboard/`): A Vue 3 SPA using [Frappe UI](https://github.com/frappe/frappe-ui). Pages live in `dashboard/src/pages/`, reusable components in `dashboard/src/components/`. The frontend calls the whitelisted Python API methods in `press/api/`.
+**Frontend** (`dashboard/`): A Vue 3 single-page application, built with [Frappe UI](https://github.com/frappe/frappe-ui). Pages live in `dashboard/src/pages/`, and reusable components in `dashboard/src/components/`. The frontend calls the whitelisted Python methods in `press/api/`.
 
 ### Core entity hierarchy
 
@@ -124,7 +126,7 @@ App
       └── AppRelease (a specific commit)
            └── ReleaseGroup (a set of AppSources + their versions, user-facing "Bench group")
                 └── DeployCandidate (snapshot of a group ready to be built)
-                     └── DeployCandidateBuild (the Docker build; separate arm64 / x86_64)
+                     └── DeployCandidateBuild (the Docker build, one for arm64 and one for x86_64)
 ```
 
 **Infrastructure chain** (where a bench runs):
@@ -152,8 +154,8 @@ Each key doctype has a `README.md` in its folder with more detail:
 
 ### Agent communication
 
-`press/agent.py` contains the `Agent` class — the sole interface for Press to talk to the [Agent](https://github.com/frappe/agent) flask app running on each server. Every operation on a remote server (create site, install app, run backup, etc.) goes through `Agent`, which creates an `AgentJob` record and sends an HTTP request. Agent jobs are polled via `poll_pending_jobs` (runs every 5 seconds) and callbacks are dispatched on completion.
+`press/agent.py` holds the `Agent` class. It is the only interface from Press to the [Agent](https://github.com/frappe/agent) flask app on each server. Every operation on a remote server goes through `Agent`, which creates an `AgentJob` record and sends an HTTP request. Site creation, app installation, and backups all work this way. `poll_pending_jobs` runs every 5 seconds. It polls the open jobs and dispatches the callback of each job that is complete.
 
 ### Infrastructure automation
 
-Ansible playbooks in `press/playbooks/` handle server provisioning. Docker images for benches are built by `DeployCandidateBuild`. Virtual machines are managed via cloud provider APIs (AWS, Hetzner, OCI, Frappe Compute) through the `VirtualMachine` doctype.
+The Ansible playbooks in `press/playbooks/` provision the servers. `DeployCandidateBuild` builds the Docker images for the benches. The `VirtualMachine` doctype manages the machines through the API of each cloud provider: AWS, Hetzner, OCI, and Frappe Compute.
