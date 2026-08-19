@@ -30,20 +30,10 @@
 			</Button>
 		</AlertBanner>
 		<ObjectList class="mt-3" :options="listOptions" />
-		<Dialog
-			v-model="showAppVersionDialog"
-			:options="{
-				title: `Apps in ${$releaseGroup.getAppVersions.params?.args.bench}`,
-				size: '6xl',
-			}"
-		>
-			<template #body-content>
-				<ObjectList :options="appVersionOptions" />
-			</template>
-		</Dialog>
 	</div>
 </template>
 <script lang="jsx">
+<<<<<<< HEAD
 import { createResource, getCachedDocumentResource, Tooltip } from 'frappe-ui'
 import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
@@ -58,13 +48,26 @@ import {
 	getBenchTitleSuffix,
 	getClusterImagePrefix,
 } from '../objects/bench'
+=======
+import Badge from '@/components/global/Badge.vue';
+import { getCachedDocumentResource, Tooltip } from 'frappe-ui';
+import BenchActionsDropdown from '../components/BenchActionsDropdown.vue';
+import ObjectList from '../components/ObjectList.vue';
+>>>>>>> 5b9e2c084 (feat(ui): Include Bench row in sites overview page)
 import {
 	getSitesTabColumns,
 	sitesTabRoute,
 	siteTabFilterControls,
+<<<<<<< HEAD
 } from '../objects/common'
 import { confirmDialog, icon, renderDialog } from '../utils/components'
 import { getToastErrorMessage } from '../utils/toast'
+=======
+} from '../objects/common';
+import { icon } from '../utils/components';
+import DismissableBanner from '../components/DismissableBanner.vue';
+import CustomAlerts from '../components/CustomAlerts.vue';
+>>>>>>> 5b9e2c084 (feat(ui): Include Bench row in sites overview page)
 
 export default {
 	name: 'ReleaseGroupBenchSites',
@@ -72,7 +75,6 @@ export default {
 	components: { ObjectList, DismissableBanner, CustomAlerts },
 	data() {
 		return {
-			showAppVersionDialog: false,
 			sitesGroupedByBench: [],
 		}
 	},
@@ -193,9 +195,14 @@ export default {
 				groupHeader: ({ group: bench }) => {
 					if (!bench?.status) return
 
+<<<<<<< HEAD
 					const options = this.benchOptions(bench)
 					const IconHash = icon('hash', 'w-3 h-3')
 					const IconStar = icon('star', 'w-3 h-3')
+=======
+					const IconHash = icon('hash', 'w-3 h-3');
+					const IconStar = icon('star', 'w-3 h-3');
+>>>>>>> 5b9e2c084 (feat(ui): Include Bench row in sites overview page)
 					return (
 						<div class="flex items-center">
 							<Tooltip text="View bench details">
@@ -231,7 +238,13 @@ export default {
 									</a>
 								</Tooltip>
 							)}
-							<ActionButton class="ml-auto" options={options} />
+							<BenchActionsDropdown
+								class="ml-auto"
+								bench={bench.name}
+								benchRow={bench}
+								releaseGroup={this.$releaseGroup.name}
+								actionsAccess={this.actionsAccess}
+							/>
 						</div>
 					)
 				},
@@ -244,6 +257,7 @@ export default {
 				primaryAction: this.newSiteAction,
 			}
 		},
+<<<<<<< HEAD
 		appVersionOptions() {
 			return {
 				columns: [
@@ -286,6 +300,8 @@ export default {
 				data: () => this.$releaseGroup.getAppVersions.data,
 			}
 		},
+=======
+>>>>>>> 5b9e2c084 (feat(ui): Include Bench row in sites overview page)
 		$releaseGroup() {
 			return getCachedDocumentResource('Release Group', this.releaseGroup)
 		},
@@ -337,6 +353,7 @@ export default {
 				}
 			})
 		},
+<<<<<<< HEAD
 		benchOptions(bench) {
 			if (!bench) return []
 
@@ -540,6 +557,8 @@ export default {
 				method: methodName,
 			})
 		},
+=======
+>>>>>>> 5b9e2c084 (feat(ui): Include Bench row in sites overview page)
 	},
 }
 </script>
