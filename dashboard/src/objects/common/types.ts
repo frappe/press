@@ -199,7 +199,12 @@ export interface BannerConfig {
 export interface DialogConfig {
 	title: string;
 	message: string;
-	primaryAction?: { onClick: () => void };
+	primaryAction?: {
+		label?: string;
+		variant?: string;
+		theme?: string;
+		onClick: (context: { hide: () => void }) => void;
+	};
 	onSuccess?: (o: { hide: () => void }) => void;
 }
 
