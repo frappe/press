@@ -418,7 +418,7 @@ class Invoice(Document):
 			self.amount_due = 0
 
 	def mark_as_fully_paid(self):
-		# used when a payment gateway confirms full payment outside of applied credits
+		# used when a payment gateway confirms full payment outside of applied credits.
 		self.status = "Paid"
 		self.amount_due = 0
 		self.amount_due_with_tax = 0
