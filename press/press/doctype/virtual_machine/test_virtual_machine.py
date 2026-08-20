@@ -130,9 +130,7 @@ class TestVirtualMachine(FrappeTestCase):
 			"oci.core.models": MagicMock(),
 		},
 	)
-	@patch("press.press.doctype.virtual_machine.virtual_machine.frappe.db.get_value")
-	@patch("press.press.doctype.virtual_machine.virtual_machine.frappe.get_doc")
-	def test_attach_to_firewall_oci(self, mock_get_doc, mock_get_value):
+	def test_attach_to_firewall_oci(self):
 		import sys
 
 		from press.press.doctype.virtual_machine.virtual_machine import (
@@ -153,9 +151,6 @@ class TestVirtualMachine(FrappeTestCase):
 
 		mock_cluster = MagicMock()
 		mock_cluster.oci_tenancy = "tenancy-1"
-		mock_get_doc.return_value = mock_cluster
-
-		mock_get_value.return_value = proxy_security_group_id
 
 		mock_network_client = MagicMock()
 		mock_compute_client = MagicMock()
@@ -173,17 +168,25 @@ class TestVirtualMachine(FrappeTestCase):
 
 		vm.client = MagicMock(side_effect=mock_client_side_effect)
 
-		vm.attach_to_firewall(firewall_id)
+		with patch(
+			"press.press.doctype.virtual_machine.virtual_machine.frappe.get_doc"
+		) as mock_get_doc, patch(
+			"press.press.doctype.virtual_machine.virtual_machine.frappe.db.get_value"
+		) as mock_get_value:
+			mock_get_doc.return_value = mock_cluster
+			mock_get_value.return_value = proxy_security_group_id
 
-		mock_compute_client.list_vnic_attachments.assert_called_once_with(
-			compartment_id="tenancy-1", instance_id=vm.instance_id
-		)
+			vm.attach_to_firewall(firewall_id)
 
-		mock_get_value.assert_called_once_with("Cluster", "test-cluster", "proxy_security_group_id")
+			mock_compute_client.list_vnic_attachments.assert_called_once_with(
+				compartment_id="tenancy-1", instance_id=vm.instance_id
+			)
 
-		mock_network_client.update_vnic.assert_called_once_with(
-			"vnic-123", mock_update_vnic_details.return_value
-		)
-		mock_update_vnic_details.assert_called_once_with(
-			network_security_group_ids=[security_group_id, proxy_security_group_id, firewall_id]
-		)
+			mock_get_value.assert_called_once_with("Cluster", "test-cluster", "proxy_security_group_id")
+
+			mock_network_client.update_vnic.assert_called_once_with(
+				"vnic-123", mock_update_vnic_details.return_value
+			)
+			mock_update_vnic_details.assert_called_once_with(
+				network_security_group_ids=[security_group_id, proxy_security_group_id, firewall_id]
+			)
