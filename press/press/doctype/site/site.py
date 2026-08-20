@@ -136,6 +136,10 @@ SERVER_SCRIPT_DISABLED_VERSION = (
 )
 TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
 
+# Losing these makes every secret stored on the site unreadable. Frappe silently
+# generates a new encryption_key when the old one is gone.
+ENCRYPTION_KEYS = ("encryption_key", "backup_encryption_key")
+
 # Fallback when max_statement_time isn't explicitly set on the database server.
 # Ref: press/fixtures/mariadb_variable.json
 DEFAULT_MAX_STATEMENT_TIME = 3600
@@ -603,13 +607,32 @@ class Site(Document, TagHelpers):
 			self._validate_host_name()
 
 	def validate_site_config(self):
-		# update site._keys_removed_in_last_update value
-		old_keys = json.loads(self.config)
-		new_keys = [x.key for x in self.configuration]
-		self._keys_removed_in_last_update = json.dumps([x for x in old_keys if x not in new_keys])
+		old_config = json.loads(self.config)
+		self._set_keys_removed_in_last_update(old_config)
+		self._validate_changed_encryption_keys(old_config)
 
 		# generate site.config from site.configuration
 		self.update_config_preview()
+
+	def _set_keys_removed_in_last_update(self, old_config: dict):
+		"""Keys the agent must delete from the site's site_config.json.
+
+		Encryption keys are never removed. A caller that replaces the whole
+		configuration (see _set_configuration) drops every key it doesn't send,
+		and dropping this one costs the site every secret it has stored.
+		"""
+		new_keys = [x.key for x in self.configuration]
+		removed_keys = [x for x in old_config if x not in new_keys and x not in ENCRYPTION_KEYS]
+		self._keys_removed_in_last_update = json.dumps(removed_keys)
+
+	def _validate_changed_encryption_keys(self, old_config: dict):
+		"""Validate encryption keys the current save changes.
+
+		Only changed values, so a site that already holds a bad key stays saveable.
+		"""
+		for row in self.configuration:
+			if row.key in ENCRYPTION_KEYS and row.value != old_config.get(row.key):
+				self.validate_encryption_key(row.key, row.value)
 
 		# create an agent request if config has been updated
 		# if not self.is_new() and self.has_value_changed("config"):
@@ -2609,13 +2632,13 @@ class Site(Document, TagHelpers):
 			)
 
 	def validate_encryption_key(self, key: str, value: Any):
-		if key != "encryption_key" or key != "backup_encryption_key":
+		if key not in ENCRYPTION_KEYS:
 			return
-		from cryptography.fernet import Fernet, InvalidToken
+		from cryptography.fernet import Fernet
 
 		try:
 			Fernet(value)
-		except (ValueError, InvalidToken):
+		except (ValueError, TypeError):
 			frappe.throw(
 				_(
 					"This is not a valid encryption key. Please copy it exactly. Check <a href='https://docs.frappe.io/cloud/sites/migrate-an-existing-site#encryption-key' class='underline' target='_blank'>this document</a> if you have lost the encryption key."
@@ -2645,7 +2668,6 @@ class Site(Document, TagHelpers):
 					_(f"The key <b>{key}</b> is blacklisted or internal and cannot be updated")
 				)  # nosemgrep
 			self.check_server_script_enabled_on_public_bench(key)
-			self.validate_encryption_key(key, value)
 
 			_type = self._site_config_key_type(key, value)
 
