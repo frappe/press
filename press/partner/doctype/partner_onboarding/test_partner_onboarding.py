@@ -108,7 +108,10 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 			# balance-due submit guard makes a normal submit awkward in tests —
 			# force the persisted state the query reads.
 			frappe.db.set_value(
-				"Invoice", invoice.name, {"status": status, "docstatus": 1 if submitted else 0}, update_modified=False
+				"Invoice",
+				invoice.name,
+				{"status": status, "docstatus": 1 if submitted else 0},
+				update_modified=False,
 			)
 		return invoice
 
