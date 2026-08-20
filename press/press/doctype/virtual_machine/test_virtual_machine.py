@@ -168,11 +168,12 @@ class TestVirtualMachine(FrappeTestCase):
 
 		vm.client = MagicMock(side_effect=mock_client_side_effect)
 
-		with patch(
-			"press.press.doctype.virtual_machine.virtual_machine.frappe.get_doc"
-		) as mock_get_doc, patch(
-			"press.press.doctype.virtual_machine.virtual_machine.frappe.db.get_value"
-		) as mock_get_value:
+		with (
+			patch("press.press.doctype.virtual_machine.virtual_machine.frappe.get_doc") as mock_get_doc,
+			patch(
+				"press.press.doctype.virtual_machine.virtual_machine.frappe.db.get_value"
+			) as mock_get_value,
+		):
 			mock_get_doc.return_value = mock_cluster
 			mock_get_value.return_value = proxy_security_group_id
 
