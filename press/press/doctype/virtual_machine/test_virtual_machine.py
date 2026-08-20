@@ -133,10 +133,7 @@ class TestVirtualMachine(FrappeTestCase):
 	def test_attach_to_firewall_oci(self):
 		import sys
 
-		from press.press.doctype.virtual_machine.virtual_machine import (
-			ComputeClient,
-			VirtualNetworkClient,
-		)
+		from oci.core import ComputeClient, VirtualNetworkClient
 
 		mock_update_vnic_details = MagicMock()
 		sys.modules["oci.core.models"].UpdateVnicDetails = mock_update_vnic_details

@@ -2708,6 +2708,7 @@ class VirtualMachine(Document):
 			)
 
 		elif self.cloud_provider == "OCI":
+			from oci.core import ComputeClient, VirtualNetworkClient
 			from oci.core.models import UpdateVnicDetails
 
 			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
@@ -2744,6 +2745,7 @@ class VirtualMachine(Document):
 			)
 
 		elif self.cloud_provider == "OCI":
+			from oci.core import ComputeClient, VirtualNetworkClient
 			from oci.core.models import UpdateVnicDetails
 
 			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
