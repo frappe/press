@@ -160,9 +160,10 @@ class TestVirtualMachine(FrappeTestCase):
 		mock_compute_client.list_vnic_attachments.return_value.data = [mock_attachment]
 
 		def mock_client_side_effect(client_class):
-			if client_class is VirtualNetworkClient:
+			name = getattr(client_class, "__name__", None)
+			if client_class is VirtualNetworkClient or name == "VirtualNetworkClient":
 				return mock_network_client
-			if client_class is ComputeClient:
+			if client_class is ComputeClient or name == "ComputeClient":
 				return mock_compute_client
 			return MagicMock()
 
