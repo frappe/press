@@ -100,15 +100,15 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 			team=team,
 			type="Subscription",
 			due_date=due_date,
-			status=status,
+			status="Unpaid" if status == "Paid" else status,
 			items=[{"quantity": 1, "rate": amount}],
 		).insert()
-		if submitted:
+		if status == "Paid" or submitted:
 			# Paid Subscription invoices are submitted in production, but the
 			# balance-due submit guard makes a normal submit awkward in tests —
 			# force the persisted state the query reads.
 			frappe.db.set_value(
-				"Invoice", invoice.name, {"status": status, "docstatus": 1}, update_modified=False
+				"Invoice", invoice.name, {"status": status, "docstatus": 1 if submitted else 0}, update_modified=False
 			)
 		return invoice
 
