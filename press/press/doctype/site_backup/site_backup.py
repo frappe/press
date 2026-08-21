@@ -51,6 +51,7 @@ class SiteBackup(Document):
 		database_url: DF.Text | None
 		deactivate_site_during_backup: DF.Check
 		files_availability: DF.Literal["", "Available", "Unavailable"]
+		files_expired_on: DF.Datetime | None
 		for_site_update: DF.Check
 		job: DF.Link | None
 		offsite: DF.Check
@@ -66,6 +67,7 @@ class SiteBackup(Document):
 		remote_database_file: DF.Link | None
 		remote_private_file: DF.Link | None
 		remote_public_file: DF.Link | None
+		retention_rule: DF.Data | None
 		site: DF.Link
 		snapshot_request_key: DF.Data | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]

@@ -5,17 +5,18 @@ from __future__ import annotations
 
 import functools
 from collections import deque
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from functools import wraps
 from itertools import groupby
 from time import time
+from typing import ClassVar, Literal, TypeAlias
 
 import frappe
 import pytz
 
 from press.press.doctype.press_settings.press_settings import PressSettings
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
-from press.press.doctype.site.site import Literal, Site
+from press.press.doctype.site.site import Site
 from press.press.doctype.site_backup.site_backup import SiteBackup
 from press.press.doctype.subscription.subscription import Subscription
 from press.utils import log_error
@@ -33,7 +34,24 @@ def timing(f):
 	return wrap
 
 
-BACKUP_TYPES = Literal["Logical", "Physical"]
+BACKUP_TYPES: TypeAlias = Literal["Logical", "Physical"]
+
+
+def expire_backup_files(backup: str, rule: str):
+	"""Record that retention took the files, not just that they are gone.
+
+	An audit asks about these days long after the objects went, and a bare
+	Unavailable cannot tell them apart from a backup that never happened.
+	"""
+	frappe.db.set_value(
+		"Site Backup",
+		backup,
+		{
+			"files_availability": "Unavailable",
+			"files_expired_on": frappe.utils.now_datetime(),
+			"retention_rule": rule,
+		},
+	)
 
 
 class BackupRotationScheme:
@@ -43,17 +61,26 @@ class BackupRotationScheme:
 	Rotation is maintained by controlled deletion of daily backups.
 	"""
 
+	# What goes on the record when this scheme deletes a backup's files
+	rule = "Rotation"
+
+	def rule_for(self, creation) -> str:
+		return self.rule
+
+	def keep_till(self, creation):
+		"""The day this scheme lets a stored backup go, where the scheme fixes one."""
+
 	def _expire_and_get_remote_files(self, offsite_backups: list[str]) -> list[str]:
 		"""Mark backup as unavailable and return remote files to delete."""
 		remote_files_to_delete = []
 		for backup in offsite_backups:
-			remote_files = frappe.db.get_value(
+			*remote_files, creation = frappe.db.get_value(
 				"Site Backup",
 				backup,
-				["remote_database_file", "remote_private_file", "remote_public_file"],
+				["remote_database_file", "remote_private_file", "remote_public_file", "creation"],
 			)
 			remote_files_to_delete.extend(remote_files)
-			frappe.db.set_value("Site Backup", backup, "files_availability", "Unavailable")
+			expire_backup_files(backup, self.rule_for(creation))
 		return remote_files_to_delete
 
 	def expire_local_backups(self):
@@ -93,8 +120,11 @@ class BackupRotationScheme:
 					"offsite": False,
 					"creation": ("<", frappe.utils.add_to_date(None, hours=-expiry)),
 				},
-				"files_availability",
-				"Unavailable",
+				{
+					"files_availability": "Unavailable",
+					"files_expired_on": frappe.utils.now_datetime(),
+					"retention_rule": "Local",
+				},
 			)
 
 	def _mark_physical_backups_as_expired(self, backups: list[str]):
@@ -110,12 +140,7 @@ class BackupRotationScheme:
 		)
 		for backup in site_backups:
 			# set snapshot as Unavailable
-			frappe.db.set_value(
-				"Site Backup",
-				backup,
-				"files_availability",
-				"Unavailable",
-			)
+			expire_backup_files(backup, "Snapshot")
 			frappe.db.set_value(
 				"Virtual Disk Snapshot",
 				frappe.db.get_value("Site Backup", backup, "database_snapshot"),
@@ -142,6 +167,8 @@ class BackupRotationScheme:
 
 class FIFO(BackupRotationScheme):
 	"""Represents First-in-First-out backup rotation scheme."""
+
+	rule = "Rolling"
 
 	def __init__(self):
 		self.offsite_backups_count = (
@@ -182,6 +209,24 @@ class GFS(BackupRotationScheme):
 	weekly_backup_day = 1  # days of the week (1-7) (SUN-SAT)
 	monthly_backup_day = 1  # days of the month (1-31)
 	yearly_backup_day = 1  # days of the year (1-366)
+
+	# How long each tier is kept, in days
+	tiers: ClassVar[dict[str, int]] = {"Daily": daily, "Weekly": 28, "Monthly": 366, "Yearly": 3653}
+
+	def rule_for(self, creation) -> str:
+		"""The tier that kept this backup this long, and so the one letting it go."""
+		day = frappe.utils.getdate(creation)
+		if int(day.strftime("%j")) == self.yearly_backup_day:
+			return "Yearly"
+		if day.day == self.monthly_backup_day:
+			return "Monthly"
+		# SQL counts the week from Sunday, python from Monday
+		if day.isoweekday() % 7 + 1 == self.weekly_backup_day:
+			return "Weekly"
+		return "Daily"
+
+	def keep_till(self, creation):
+		return frappe.utils.add_days(frappe.utils.getdate(creation), self.tiers[self.rule_for(creation)])
 
 	def get_backups_due_for_expiry(self, backup_type: BACKUP_TYPES) -> list[str]:
 		today = frappe.utils.getdate()
@@ -270,14 +315,14 @@ class ScheduledBackupJob:
 		else:
 			self.sites_without_offsite = []
 
-	def take_offsite(self, site: frappe._dict, day: datetime.date) -> bool:
+	def take_offsite(self, site: frappe._dict, day: date) -> bool:
 		return (
 			self.offsite_setup
 			and site.name not in self.sites_without_offsite
 			and not SiteBackup.offsite_backup_exists(site.name, day)
 		)
 
-	def get_site_time(self, site: dict[str, str]) -> datetime:
+	def get_site_time(self, site: frappe._dict) -> datetime:
 		timezone = site.timezone or "Asia/Kolkata"
 		site_timezone = pytz.timezone(timezone)
 		return self.server_time.astimezone(site_timezone)
@@ -349,6 +394,8 @@ class ScheduledBackupJob:
 		except Exception:
 			log_error("Site Backup Exception", site=site)
 			frappe.db.rollback()
+			return False
+			return False
 
 
 def schedule_logical_backups_for_sites_with_backup_time():
@@ -392,13 +439,14 @@ def cleanup_offsite():
 	frappe.enqueue("press.press.doctype.site.backups._cleanup_offsite", queue="long", timeout=3600)
 
 
-def _cleanup_offsite():
+def rotation_scheme() -> BackupRotationScheme:
+	"""The scheme this bench runs, which decides how long a backup is kept and under which rule."""
 	scheme = frappe.db.get_single_value("Press Settings", "backup_rotation_scheme") or "FIFO"
-	if scheme == "FIFO":
-		rotation = FIFO()
-	elif scheme == "Grandfather-father-son":
-		rotation = GFS()
-	rotation.cleanup_offsite()
+	return GFS() if scheme == "Grandfather-father-son" else FIFO()
+
+
+def _cleanup_offsite():
+	rotation_scheme().cleanup_offsite()
 	frappe.db.commit()
 
 
