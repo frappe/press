@@ -24,5 +24,10 @@ frappe.ui.form.on('Root Domain', {
 			'reqd',
 			frm.doc.dns_provider === 'AWS Route 53',
 		);
+		frm.set_df_property(
+			'cloudflare_api_key',
+			'reqd',
+			frm.doc.dns_provider === 'Cloudflare',
+		);
 	},
 });
