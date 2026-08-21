@@ -701,6 +701,28 @@ class ReleaseGroup(Document, TagHelpers):
 			msg = f"{repo.rsplit('/')[-1] or repo.rsplit('/')[-2]}:{branch} branch is no longer compatible with bench of {self.version}"
 			frappe.throw(msg, frappe.ValidationError)
 
+	def validate_frappe_not_in_python_dependencies(self, apps: list[dict]):
+		"""Blocked on deploy because the build only fails much later, deep in pip.
+
+		Bench installs frappe from git. An app that also pip installs it sends
+		pip to PyPI, which only has a 0.0.1 placeholder named frappe.
+		"""
+		from press.api.github import is_frappe_a_python_dependency
+		from press.utils import docs
+
+		for app in apps:
+			if app["app"] == "frappe" or not is_frappe_a_python_dependency(app["source"], app["hash"]):
+				continue
+
+			title = frappe.get_cached_value("App", app["app"], "title")
+			frappe.throw(
+				f"{title} lists <code>frappe</code> under <code>[project]</code> "
+				"<code>dependencies</code> in its pyproject.toml. Remove <code>frappe</code> from "
+				"<code>dependencies</code> and deploy again. "
+				f"{docs.doc_link(docs.FRAPPE_AS_PYTHON_DEPENDENCY, 'Why?')}",
+				frappe.ValidationError,
+			)
+
 	def validate_servers(self):
 		if self.servers:
 			servers = set(server.server for server in self.servers)
@@ -927,6 +949,7 @@ class ReleaseGroup(Document, TagHelpers):
 		apps = self.get_apps_to_update(apps_to_update)
 		for app in self.apps:
 			self.validate_app_version(app.source)
+		self.validate_frappe_not_in_python_dependencies(apps)
 		if apps_to_update is None:
 			self.validate_dc_apps_against_rg(apps)
 

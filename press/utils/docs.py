@@ -31,6 +31,9 @@ CUSTOM_APP = f"{DOCS_BASE}/benches/custom-app"
 UPDATE_BENCH = f"{DOCS_BASE}/benches/updating_a_bench"
 BENCH_CONFIG = f"{DOCS_BASE}/benches/bench-config"
 SSH = f"{DOCS_BASE}/benches/ssh"
+FRAPPE_AS_PYTHON_DEPENDENCY = (
+	f"{DOCS_BASE}/private-benches/common-issues/frappe-listed-as-a-python-dependency"
+)
 
 # Servers
 SERVERS = f"{DOCS_BASE}/servers/servers-introduction"
