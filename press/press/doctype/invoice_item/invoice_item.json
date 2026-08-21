@@ -9,6 +9,8 @@
 		"document_name",
 		"plan",
 		"description",
+		"period_start",
+		"period_end",
 		"quantity",
 		"rate",
 		"amount",
@@ -18,7 +20,26 @@
 		"has_marketplace_payout_completed"
 	],
 	"fields": [
-		{ "fieldname": "description", "fieldtype": "Data", "label": "Description" },
+		{
+			"fieldname": "description",
+			"fieldtype": "Data",
+			"label": "Description",
+			"length": 240
+		},
+		{
+			"description": "First day of usage that this item bills for",
+			"fieldname": "period_start",
+			"fieldtype": "Date",
+			"label": "Period Start",
+			"read_only": 1
+		},
+		{
+			"description": "Last day of usage that this item bills for",
+			"fieldname": "period_end",
+			"fieldtype": "Date",
+			"label": "Period End",
+			"read_only": 1
+		},
 		{
 			"columns": 1,
 			"default": "1",
@@ -93,7 +114,7 @@
 	"index_web_pages_for_search": 1,
 	"istable": 1,
 	"links": [],
-	"modified": "2024-11-06 20:44:24.686991",
+	"modified": "2026-08-14 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Invoice Item",

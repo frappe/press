@@ -16,6 +16,7 @@
 				<thead class="bg-surface-gray-2">
 					<tr class="text-ink-gray-6">
 						<th class="rounded-l p-2 text-left font-normal">Description</th>
+						<th class="whitespace-nowrap p-2 text-left font-normal">Period</th>
 						<th class="whitespace-nowrap p-2 text-right font-normal">Rate</th>
 						<th class="whitespace-nowrap p-2 text-right font-normal">
 							Quantity
@@ -46,6 +47,9 @@
 									({{ formatPlan(row.plan) }})
 								</span>
 							</td>
+							<td class="whitespace-nowrap py-1 pl-2 pr-2 text-ink-gray-7">
+								{{ formatPeriod(row) }}
+							</td>
 							<td class="py-1 pl-2 pr-2 text-right">
 								{{ formatCurrency(row.rate) }}
 							</td>
@@ -72,6 +76,7 @@
 					<tr v-if="doc.total_discount_amount > 0">
 						<td></td>
 						<td></td>
+						<td></td>
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">
 							Total Without Discount
 						</td>
@@ -80,6 +85,7 @@
 						</td>
 					</tr>
 					<tr v-if="doc.total_discount_amount > 0">
+						<td></td>
 						<td></td>
 						<td></td>
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">
@@ -94,6 +100,7 @@
 					<tr v-if="doc.gst > 0">
 						<td></td>
 						<td></td>
+						<td></td>
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">
 							Total (Without Tax)
 						</td>
@@ -104,6 +111,7 @@
 					<tr v-if="doc.gst > 0">
 						<td></td>
 						<td></td>
+						<td></td>
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">
 							IGST @ {{ Number(gstPercentage * 100) }}%
 						</td>
@@ -112,6 +120,7 @@
 						</td>
 					</tr>
 					<tr>
+						<td></td>
 						<td></td>
 						<td></td>
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">Grand Total</td>
@@ -128,12 +137,14 @@
 						<tr>
 							<td></td>
 							<td></td>
+							<td></td>
 							<td class="pr-2 text-right font-medium">Applied Balance</td>
 							<td class="whitespace-nowrap py-3 pr-2 text-right font-medium">
 								- {{ formatCurrency(doc.applied_credits) }}
 							</td>
 						</tr>
 						<tr>
+							<td></td>
 							<td></td>
 							<td></td>
 							<td class="pr-2 text-right font-medium">Amount Due</td>
@@ -152,6 +163,7 @@
 </template>
 <script>
 import { getPlans } from '../data/plans'
+import dayjs from '../utils/dayjs'
 
 export default {
 	name: 'InvoiceTable',
@@ -231,6 +243,13 @@ export default {
 				)
 			}
 			return plan
+		},
+		formatPeriod(row) {
+			// plain dates, so format them as-is instead of shifting them to the local timezone
+			if (!row.period_start || !row.period_end) return '-'
+			const start = dayjs(row.period_start).format('D MMM')
+			const end = dayjs(row.period_end).format('D MMM')
+			return start === end ? start : `${start} - ${end}`
 		},
 		formatCurrency(value) {
 			if (!this.doc) return
