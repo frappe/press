@@ -129,8 +129,13 @@ test('dragging over a server line chart narrows the range to the selection', asy
 		})
 		.toBe(true)
 
+	// One refetch, not two: the range must never pass through a default window
+	// on its way to the dragged one, or every chart on the tab reloads twice.
+	const cpuRequests = requests.filter((request) => request.query === 'cpu')
+	expect(cpuRequests).toHaveLength(1)
+
 	// The refetch asks for the dragged window, not the 1 hour default.
-	const zoomed = requests.filter((request) => request.query === 'cpu').pop()!
+	const zoomed = cpuRequests.pop()!
 	const dataStart = RANGE_START.getTime()
 	const span = (BUCKETS - 1) * BUCKET_MS
 	const tolerance = 2 * BUCKET_MS

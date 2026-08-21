@@ -518,16 +518,21 @@ export default {
 				},
 			});
 		},
-		duration() {
-			const now = dayjs();
-			// floor to 15 minutes to avoid issues with caching
-			const flooredEndDate = dayjsFloorToMinutes(now, 15);
-			this.customEndTime = flooredEndDate.toDate();
-			const dur =
-				this.duration === 'custom'
-					? this.defaultDurationToArray
-					: this.inputDurationToArray;
-			this.customStartTime = flooredEndDate.subtract(...dur).toDate();
+		duration: {
+			// sync, so that a zoom can overwrite the range this sets before any
+			// chart reads it. Otherwise the tab refetches the default range first.
+			flush: 'sync',
+			handler() {
+				const now = dayjs();
+				// floor to 15 minutes to avoid issues with caching
+				const flooredEndDate = dayjsFloorToMinutes(now, 15);
+				this.customEndTime = flooredEndDate.toDate();
+				const dur =
+					this.duration === 'custom'
+						? this.defaultDurationToArray
+						: this.inputDurationToArray;
+				this.customStartTime = flooredEndDate.subtract(...dur).toDate();
+			},
 		},
 	},
 	resources: {
@@ -1146,10 +1151,8 @@ export default {
 			clearTimeout(this.zoomTimeout);
 			// debounce: one drag can end in more than one zoom event, and every
 			// chart on the tab refetches when the range changes
-			this.zoomTimeout = setTimeout(async () => {
+			this.zoomTimeout = setTimeout(() => {
 				this.duration = 'custom';
-				// the duration watcher rewrites the custom range, so wait it out
-				await this.$nextTick();
 				this.customStartTime = startDate;
 				this.customEndTime = endDate;
 			}, 500);
