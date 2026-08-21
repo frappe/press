@@ -81,6 +81,7 @@
 					:loading="$resources.analytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -106,6 +107,7 @@
 					:loading="$resources.analytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 				<template #action>
 					<router-link
@@ -129,6 +131,7 @@
 					:loading="$resources.analytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 		</div>
@@ -160,6 +163,7 @@
 					:loading="$resources.backgroundJobUsage.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -177,6 +181,7 @@
 					:loading="$resources.backgroundJobUsage.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
