@@ -13,6 +13,7 @@ export function getTeam() {
 				inviteTeamMember: 'invite_team_member',
 				removeTeamMember: 'remove_team_member',
 				cancelInvitation: 'cancel_invitation',
+				transferCredits: 'transfer_credits',
 			},
 		})
 	}

@@ -12,15 +12,26 @@ from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.core.utils import find
 from frappe.model.document import Document
-from frappe.query_builder.functions import Count
+from frappe.query_builder.functions import Count, Sum
 from frappe.rate_limiter import rate_limit
-from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_form, getdate, random_string
+from frappe.utils import (
+	add_to_date,
+	flt,
+	get_fullname,
+	get_last_day,
+	get_url_to_form,
+	getdate,
+	random_string,
+)
 
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
 from press.guards.team_guard import only_admin
 from press.partner.doctype.partner_onboarding.partner_onboarding import has_partner_onboarding
 from press.press.doctype.account_request.account_request import AccountRequest
+from press.press.doctype.balance_transaction.balance_transaction import (
+	TRANSFERABLE_CREDIT_SOURCES,
+)
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import get_valid_teams_for_user, has_role, log_error
@@ -1285,6 +1296,68 @@ class Team(Document):
 		if not res:
 			return 0
 		return res[0]
+
+	@dashboard_whitelist()
+	def get_transferable_credits(self):
+		"""Credits the team bought and hasn't spent yet."""
+		BalanceTransaction = frappe.qb.DocType("Balance Transaction")
+		transferable = (
+			frappe.qb.from_(BalanceTransaction)
+			.select(Sum(BalanceTransaction.unallocated_amount))
+			.where(BalanceTransaction.team == self.name)
+			.where(BalanceTransaction.docstatus == 1)
+			.where(BalanceTransaction.source.isin(TRANSFERABLE_CREDIT_SOURCES))
+			.where(BalanceTransaction.unallocated_amount > 0)
+		).run(pluck=True)
+		return transferable[0] or 0
+
+	@dashboard_whitelist()
+	@only_admin(team=lambda document, _: str(document.name))
+	def transfer_credits(self, amount, recipient_email):
+		"""Move prepaid credits to another team."""
+		amount = flt(amount, 2)
+		recipient = self.get_credit_transfer_recipient(recipient_email)
+		self.validate_credit_transfer(amount, recipient)
+
+		recipient.allocate_credit_amount(
+			amount, "Transferred Credits", f"Transferred Credits from {self.user}"
+		)
+		self.allocate_credit_amount(
+			-amount, "Transferred Credits", f"Transferred Credits to {recipient.user}"
+		)
+
+	def get_credit_transfer_recipient(self, recipient_email):
+		recipient = frappe.db.get_value("Team", {"user": recipient_email, "enabled": 1}, "name")
+		if not recipient:
+			frappe.throw(
+				f"No active Frappe Cloud account found for {recipient_email}. Check the email address the account signed up with and try again."
+			)
+		return Team("Team", recipient)
+
+	def validate_credit_transfer(self, amount, recipient):
+		if amount <= 0:
+			frappe.throw("Enter an amount greater than zero to transfer.")
+
+		if recipient.name == self.name:
+			frappe.throw(
+				"You cannot transfer credits to your own account. Enter the email address of the account you want to send credits to."
+			)
+
+		if recipient.currency != self.currency:
+			frappe.throw(
+				f"{recipient.user} is billed in {recipient.currency}. Credits can only be transferred between accounts billed in the same currency."
+			)
+
+		# Only overdue invoices block a transfer. The current month's invoice is
+		# always a draft, so counting drafts would block almost every team.
+		if frappe.db.exists("Invoice", {"team": self.name, "status": "Unpaid", "type": "Subscription"}):
+			frappe.throw("Please settle your unpaid invoices before transferring credits.")
+
+		transferable_credits = self.get_transferable_credits()
+		if amount > transferable_credits:
+			frappe.throw(
+				f"You can transfer at most {frappe.utils.fmt_money(transferable_credits, 2, self.currency)}. Free credits cannot be transferred."
+			)
 
 	def can_create_site(self):  # noqa: C901
 		why = ""

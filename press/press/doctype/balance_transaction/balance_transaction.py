@@ -8,6 +8,9 @@ from frappe.query_builder.functions import Sum
 
 from press.overrides import get_permission_query_conditions_for_doctype
 
+# Credits a team paid for. Free credits are a gift to one team and stay with it.
+TRANSFERABLE_CREDIT_SOURCES = ("Prepaid Credits", "Transferred Credits")
+
 
 class BalanceTransaction(Document):
 	# begin: auto-generated types
@@ -92,17 +95,24 @@ class BalanceTransaction(Document):
 	def on_submit(self):
 		frappe.publish_realtime("balance_updated", user=self.team)
 
+	def get_unallocated_transactions(self):
+		"""Submitted transactions this one can draw credit from, oldest first."""
+		filters = {"docstatus": 1, "team": self.team, "unallocated_amount": (">", 0)}
+		if self.source == "Transferred Credits":
+			filters["source"] = ("in", TRANSFERABLE_CREDIT_SOURCES)
+		return frappe.get_all(
+			"Balance Transaction",
+			filters=filters,
+			fields=["name", "unallocated_amount"],
+			order_by="creation asc",
+		)
+
 	def consume_unallocated_amount(self):
 		self.validate_total_unallocated_amount()
 
 		allocation_map = {}
 		remaining_amount = abs(self.amount)
-		transactions = frappe.get_all(
-			"Balance Transaction",
-			filters={"docstatus": 1, "team": self.team, "unallocated_amount": (">", 0)},
-			fields=["name", "unallocated_amount"],
-			order_by="creation asc",
-		)
+		transactions = self.get_unallocated_transactions()
 		for transaction in transactions:
 			if remaining_amount <= 0:
 				break
@@ -123,15 +133,7 @@ class BalanceTransaction(Document):
 			doc.save(ignore_permissions=True)
 
 	def validate_total_unallocated_amount(self):
-		unallocated_amounts = (
-			frappe.get_all(
-				"Balance Transaction",
-				filters={"docstatus": 1, "team": self.team, "unallocated_amount": (">", 0)},
-				fields=["unallocated_amount"],
-				pluck="unallocated_amount",
-			)
-			or []
-		)
+		unallocated_amounts = [d.unallocated_amount for d in self.get_unallocated_transactions()]
 		if not unallocated_amounts:
 			frappe.throw(
 				"This team has no unallocated credit to draw from, so this transaction can't be created. Please add credits before allocating them."
