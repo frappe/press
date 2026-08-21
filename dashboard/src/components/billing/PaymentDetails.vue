@@ -337,6 +337,10 @@ const paymentMode = computed(() => {
 	return paymentModeOptions.find((o) => o.value === team.doc.payment_mode);
 });
 
+function paymentModeLabel(mode) {
+	return paymentModeOptions.find((o) => o.value === mode)?.label || mode;
+}
+
 function payUnpaidInvoices() {
 	let _unpaidInvoices = unpaidInvoices.data;
 	if (_unpaidInvoices.length > 1) {
@@ -371,6 +375,14 @@ function payUnpaidInvoices() {
 
 const showMessage = ref(false);
 function updatePaymentMode(mode) {
+	if (hasUnsettledInvoices(mode)) {
+		confirmSwitchWithUnsettledInvoices(mode);
+		return;
+	}
+	proceedWithPaymentModeChange(mode);
+}
+
+function proceedWithPaymentModeChange(mode) {
 	showMessage.value = false;
 	if (!billingDetailsSummary.value) {
 		showMessage.value = true;
@@ -384,6 +396,7 @@ function updatePaymentMode(mode) {
 	} else if (mode === 'Card' && !team.doc.payment_method) {
 		showMessage.value = true;
 		showAddCardDialog.value = true;
+		return;
 	} else if (
 		mode === 'Paid By Partner' &&
 		Boolean(unpaidInvoices.data.length > 0)
@@ -402,13 +415,84 @@ function updatePaymentMode(mode) {
 	}
 	if (mode === 'UPI Autopay') {
 		if (team.doc.default_razorpay_mandate) {
-			if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
+			submitPaymentModeChange(mode);
 		} else {
 			router.push({ name: 'BillingUPIAutopay' });
 		}
 		return;
 	}
+	submitPaymentModeChange(mode);
+}
+
+function submitPaymentModeChange(mode) {
 	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
+}
+
+const draftInvoiceAmount = computed(
+	() => Number(currentBillingAmount.value) || 0,
+);
+
+const unpaidInvoiceAmount = computed(() =>
+	(unpaidInvoices.data || []).reduce(
+		(total, invoice) => total + Number(invoice.amount_due || 0),
+		0,
+	),
+);
+
+// Paid By Partner is left out because the server rejects it outright while the
+// team has draft or unpaid invoices (Team.validate_billing_team), so there is
+// nothing to confirm — that mode has to finalize them first, which
+// proceedWithPaymentModeChange already routes it to.
+function hasUnsettledInvoices(mode) {
+	return (
+		mode !== 'Paid By Partner' &&
+		Boolean(team.doc.payment_mode) &&
+		mode !== team.doc.payment_mode &&
+		(draftInvoiceAmount.value > 0 || unpaidInvoiceAmount.value > 0)
+	);
+}
+
+function formatAmount(amount) {
+	return `${currency.value} ${amount.toFixed(2)}`;
+}
+
+function unsettledInvoiceLines() {
+	const lines = [];
+	if (draftInvoiceAmount.value > 0) {
+		lines.push(
+			`<li>Draft invoice for this period — <strong>${formatAmount(draftInvoiceAmount.value)}</strong></li>`,
+		);
+	}
+	if (unpaidInvoiceAmount.value > 0) {
+		const count = unpaidInvoices.data.length;
+		lines.push(
+			`<li>${count} unpaid ${count === 1 ? 'invoice' : 'invoices'} — <strong>${formatAmount(unpaidInvoiceAmount.value)}</strong></li>`,
+		);
+	}
+	return lines.join('');
+}
+
+// The draft invoice for the running period is reassigned to whichever mode the
+// team ends up on (Team.update_draft_invoice_payment_mode), so usage already
+// accrued on the old mode gets billed through the new one. Unpaid invoices are
+// submitted and keep the old mode, so they stop lining up with how the
+// dashboard offers to pay them.
+function confirmSwitchWithUnsettledInvoices(mode) {
+	const currentMode = paymentModeLabel(team.doc.payment_mode);
+	const newMode = paymentModeLabel(mode);
+
+	confirmDialog({
+		title: 'Settle pending invoices first',
+		message: `You still have amounts outstanding on ${currentMode}:<br><ul class="list-disc pl-4 my-2">${unsettledInvoiceLines()}</ul>Switching bills the draft invoice through <strong>${newMode}</strong>, including the usage already accrued on ${currentMode}, and leaves the unpaid invoices behind on ${currentMode}.<br><br>Clear them from the invoices page before switching.`,
+		primaryAction: {
+			label: 'Switch anyway',
+			variant: 'solid',
+			onClick: ({ hide }) => {
+				hide();
+				proceedWithPaymentModeChange(mode);
+			},
+		},
+	});
 }
 
 function changeMethod() {
