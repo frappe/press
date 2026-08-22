@@ -27,6 +27,7 @@
 			<NoDataMsg v-else />
 		</div>
 		<VChart
+			ref="chartRef"
 			v-else
 			autoresize
 			class="chart"
@@ -39,9 +40,11 @@
 <script setup>
 import { LineChart } from 'echarts/charts'
 import {
+	DataZoomComponent,
 	GridComponent,
 	LegendComponent,
 	MarkLineComponent,
+	ToolboxComponent,
 	TooltipComponent,
 } from 'echarts/components'
 import { graphic, use } from 'echarts/core'
@@ -50,9 +53,11 @@ import { DateTime } from 'luxon'
 import { ref, toRefs } from 'vue'
 import VChart from 'vue-echarts'
 import NoDataMsg from '@/components/common/NoDataMsg.vue'
+import dayjs from '../../utils/dayjs'
 import { bytes, escapeHtml, getUnit } from '../../utils/format'
 import { theme } from '../../utils/theme'
 import Card from '../global/Card.vue'
+import { useDataZoom } from './useDataZoom'
 
 const props = defineProps({
 	showCard: {
@@ -113,6 +118,8 @@ use([
 	LineChart,
 	TooltipComponent,
 	MarkLineComponent,
+	DataZoomComponent,
+	ToolboxComponent,
 ])
 
 const initOptions = {
@@ -125,6 +132,13 @@ const options = ref({
 		left: 50,
 		right: 20,
 		bottom: data.value.datasets.length > 1 ? 60 : 30, // if there's legend show more space for it
+	},
+	toolbox: {
+		feature: {
+			dataZoom: {
+				yAxisIndex: false,
+			},
+		},
 	},
 	tooltip: {
 		trigger: 'axis',
@@ -232,4 +246,20 @@ const options = ref({
 		}
 	}),
 })
+
+const chartRef = ref(null)
+const emits = defineEmits(['datazoom'])
+
+// A time axis reports the zoomed range as timestamps, a category axis as
+// indexes into the labels.
+const axisValueToDate = (value) =>
+	type.value === 'time'
+		? new Date(value)
+		: dayjs(
+				data.value.labels[value],
+				'YYYY-MM-DD HH:mm:ss',
+				dayjs.tz.guess(),
+			).toDate()
+
+useDataZoom(chartRef, axisValueToDate, emits)
 </script>
