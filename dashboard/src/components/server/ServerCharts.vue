@@ -50,6 +50,7 @@
 					:error="$resources.databaseUptime.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -74,6 +75,7 @@
 					:error="$resources.cpu.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -92,6 +94,7 @@
 					:error="$resources.loadavg.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -107,6 +110,7 @@
 					:error="$resources.memory.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -122,6 +126,7 @@
 					:error="$resources.space.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -137,6 +142,7 @@
 					:error="$resources.network.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -152,6 +158,7 @@
 					:error="$resources.iops.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 		</div>
@@ -187,6 +194,7 @@
 					:error="$resources.requestCountBySite.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -205,6 +213,7 @@
 					:error="$resources.requestDurationBySite.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -223,6 +232,7 @@
 					:error="$resources.backgroundJobCountBySite.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -241,6 +251,7 @@
 					:error="$resources.backgroundJobDurationBySite.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -265,6 +276,7 @@
 					:error="$resources.databaseCommandsCount.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -286,6 +298,7 @@
 					:error="$resources.databaseConnections.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -304,6 +317,7 @@
 					:error="$resources.innodbAvgRowLockTime.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -322,6 +336,7 @@
 					:error="$resources.innodbBufferPoolSize.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -340,6 +355,7 @@
 					:error="$resources.innodbBufferPoolSizeOfTotalRam.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 				<template #action>
 					<router-link
@@ -369,6 +385,7 @@
 					:error="$resources.innodbBufferPoolMissPercentage.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 				<template #action>
 					<router-link
@@ -404,6 +421,7 @@
 					:error="$resources.slowLogsCount.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -428,6 +446,7 @@
 					:error="$resources.slowLogsDuration.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 		</div>
@@ -499,16 +518,21 @@ export default {
 				},
 			});
 		},
-		duration() {
-			const now = dayjs();
-			// floor to 15 minutes to avoid issues with caching
-			const flooredEndDate = dayjsFloorToMinutes(now, 15);
-			this.customEndTime = flooredEndDate.toDate();
-			const dur =
-				this.duration === 'custom'
-					? this.defaultDurationToArray
-					: this.inputDurationToArray;
-			this.customStartTime = flooredEndDate.subtract(...dur).toDate();
+		duration: {
+			// sync, so that a zoom can overwrite the range this sets before any
+			// chart reads it. Otherwise the tab refetches the default range first.
+			flush: 'sync',
+			handler() {
+				const now = dayjs();
+				// floor to 15 minutes to avoid issues with caching
+				const flooredEndDate = dayjsFloorToMinutes(now, 15);
+				this.customEndTime = flooredEndDate.toDate();
+				const dur =
+					this.duration === 'custom'
+						? this.defaultDurationToArray
+						: this.inputDurationToArray;
+				this.customStartTime = flooredEndDate.subtract(...dur).toDate();
+			},
 		},
 	},
 	resources: {
@@ -1122,6 +1146,16 @@ export default {
 		},
 		toggleAdvancedAnalytics() {
 			this.showAdvancedAnalytics = !this.showAdvancedAnalytics;
+		},
+		handleDataZoom({ startDate, endDate }) {
+			clearTimeout(this.zoomTimeout);
+			// debounce: one drag can end in more than one zoom event, and every
+			// chart on the tab refetches when the range changes
+			this.zoomTimeout = setTimeout(() => {
+				this.duration = 'custom';
+				this.customStartTime = startDate;
+				this.customEndTime = endDate;
+			}, 500);
 		},
 	},
 };
