@@ -16,6 +16,10 @@ from press.utils.raven import send_raven_message
 
 RAVEN_SERVER_ALERTS_CHANNEL = "frappe-cloud-server-alerts"
 PROMETHEUS_REGEX_META_CHAR_PATTERN = re.compile(r"([\\.^$*+?()[\]{}|])")
+# Hetzner volumes do not grow on demand, so disk decides where new sites go
+DISK_AWARE_PROVIDERS = ["Hetzner"]
+MINIMUM_SITE_DISK_BYTES = 50 * 1024 * 1024 * 1024
+MINIMUM_SITE_DISK_RATIO = 0.5
 
 
 class PublicServerHealthMetrics(TypedDict):
@@ -23,6 +27,8 @@ class PublicServerHealthMetrics(TypedDict):
 	available_memory_ratio: dict[str, float]
 	cpu_idle_ratio: dict[str, float]
 	oom_kills: dict[str, float]
+	available_disk_bytes: dict[str, float]
+	available_disk_ratio: dict[str, float]
 
 
 class PublicServerPoolDecision(TypedDict):
@@ -38,32 +44,35 @@ def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
 	1. Consider active, public primary servers for each cluster
 	2. Fetch memory, CPU and OOM-kill health for all servers in bulk from Prometheus
 	3. Prefer healthy servers, and fall back to the least-bad server when a cluster has no healthy candidates
+	4. Keep new sites away from Hetzner servers that are low on disk, and alert about them
 	"""
-	server_names, servers_by_cluster = _get_public_primary_servers_by_cluster()
+	server_names, servers_by_cluster, disk_aware_servers = _get_public_primary_servers_by_cluster()
 	if not server_names:
 		return
 
-	metrics = _get_public_server_health_metrics(server_names)
+	metrics = _get_public_server_health_metrics(server_names, disk_aware_servers)
 	if not metrics:
 		return
 
 	pool_decision = _get_public_server_pool_decision(servers_by_cluster, metrics)
 	_apply_public_server_pool_decision(server_names, pool_decision)
 	_send_public_server_pool_health_alert(pool_decision["server_issues"])
+	_send_low_disk_alert(pool_decision["selected_site_servers"], metrics)
 	_create_no_suitable_servers_incident(pool_decision["fallback_servers_by_cluster"], metrics)
 
 
-def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[str]]]:
+def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[str]], list[str]]:
 	servers = frappe.get_all(
 		"Server",
 		filters={"status": "Active", "is_primary": True, "public": True, "exclude_for_scheduling": False},
-		fields=["name", "cluster"],
+		fields=["name", "cluster", "provider"],
 	)
 	server_names = [server.name for server in servers]
 	servers_by_cluster: dict[str, list[str]] = {}
 	for server in servers:
 		servers_by_cluster.setdefault(server.cluster, []).append(server.name)
-	return server_names, servers_by_cluster
+	disk_aware_servers = [server.name for server in servers if server.provider in DISK_AWARE_PROVIDERS]
+	return server_names, servers_by_cluster, disk_aware_servers
 
 
 def _get_public_server_pool_decision(
@@ -104,8 +113,9 @@ def _get_public_server_pool_decision(
 			decision["selected_bench_servers"].add(
 				max(sorted(healthy_servers), key=lambda server: _get_bench_pool_score(server, metrics))
 			)
+			site_servers = _servers_with_enough_disk(healthy_servers, metrics["available_disk_bytes"])
 			decision["selected_site_servers"].add(
-				max(sorted(healthy_servers), key=lambda server: _get_site_pool_score(server, metrics))
+				max(sorted(site_servers), key=lambda server: _get_site_pool_score(server, metrics))
 			)
 			continue
 
@@ -123,6 +133,16 @@ def _get_public_server_pool_decision(
 			)
 
 	return decision
+
+
+def _servers_with_enough_disk(server_names: list[str], available_disk_bytes: dict[str, float]) -> list[str]:
+	"""Drop servers that are low on disk. Only disk-aware providers are in the map."""
+	servers = [
+		server
+		for server in server_names
+		if available_disk_bytes.get(server, MINIMUM_SITE_DISK_BYTES) >= MINIMUM_SITE_DISK_BYTES
+	]
+	return servers or server_names
 
 
 def _get_public_server_health_issues(server: str, metrics: PublicServerHealthMetrics) -> list[str]:
@@ -219,8 +239,11 @@ def _apply_public_server_pool_decision(
 		)
 
 
-def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHealthMetrics | None:
-	"""Fetch memory, CPU and kernel OOM-kill metrics for public servers from Prometheus."""
+def _get_public_server_health_metrics(
+	server_names: list[str],
+	disk_aware_servers: list[str] | None = None,
+) -> PublicServerHealthMetrics | None:
+	"""Fetch memory, CPU, kernel OOM-kill and disk metrics for public servers from Prometheus."""
 	if not server_names:
 		return None
 
@@ -257,6 +280,8 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 	):
 		return None
 
+	available_disk_bytes, available_disk_ratio = _get_available_disk(disk_aware_servers or [], url, auth)
+
 	return {
 		"available_memory_bytes": _build_public_server_metric_map(
 			server_names, available_memory_bytes_results
@@ -266,7 +291,38 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 		),
 		"cpu_idle_ratio": _build_public_server_metric_map(server_names, cpu_idle_ratio_results),
 		"oom_kills": _build_public_server_metric_map(server_names, oom_kills_results, default=0.0),
+		"available_disk_bytes": available_disk_bytes,
+		"available_disk_ratio": available_disk_ratio,
 	}
+
+
+def _get_available_disk(
+	server_names: list[str],
+	url: str,
+	auth: tuple[str, str],
+) -> tuple[dict[str, float], dict[str, float]]:
+	"""Fetch free bytes and free ratio of the fullest volume that holds benches."""
+	from press.press.doctype.server.server import BENCH_DATA_MNT_POINT  # circular import
+
+	if not server_names:
+		return {}, {}
+
+	instance_matcher = "|".join(_escape_prometheus_regex_literal(name) for name in server_names)
+	labels = f'instance=~"^({instance_matcher})$", job="node", mountpoint=~"/|{BENCH_DATA_MNT_POINT}"'
+	available_disk_bytes_query = f"min by (instance) (node_filesystem_avail_bytes{{{labels}}})"
+	available_disk_ratio_query = (
+		f"min by (instance) (node_filesystem_avail_bytes{{{labels}}}"
+		f" / node_filesystem_size_bytes{{{labels}}})"
+	)
+
+	return (
+		_build_public_server_metric_map(
+			server_names, _query_prometheus_vector(available_disk_bytes_query, url, auth)
+		),
+		_build_public_server_metric_map(
+			server_names, _query_prometheus_vector(available_disk_ratio_query, url, auth)
+		),
+	)
 
 
 def _get_public_server_pool_prometheus_connection() -> tuple[str, tuple[str, str]] | None:
@@ -353,6 +409,51 @@ def _send_public_server_pool_health_alert(server_issues: dict[str, list[str]]) -
 	send_raven_message(
 		"\n".join(header_lines + table_header + table_rows).strip(), RAVEN_SERVER_ALERTS_CHANNEL
 	)
+
+
+def _send_low_disk_alert(
+	selected_site_servers: set[str],
+	metrics: PublicServerHealthMetrics,
+) -> None:
+	"""Alert when new sites go to a server that is low on disk.
+
+	The disk of these servers does not grow on demand. Add a server in the
+	cluster instead of a move to a larger plan.
+	"""
+	available_disk_bytes = metrics["available_disk_bytes"]
+	available_disk_ratio = metrics["available_disk_ratio"]
+	low_disk_servers = sorted(
+		server
+		for server in selected_site_servers
+		if server in available_disk_bytes
+		and (
+			available_disk_bytes[server] < MINIMUM_SITE_DISK_BYTES
+			or available_disk_ratio.get(server, 1.0) < MINIMUM_SITE_DISK_RATIO
+		)
+	)
+	if not low_disk_servers:
+		return
+
+	minimum_disk_gib = MINIMUM_SITE_DISK_BYTES / 1024**3
+	header_lines = [
+		f"**Public Server Pool Disk Alerts** - {len(low_disk_servers)}",
+		"",
+		"New sites go to these servers, but they are low on disk. Add a server in the cluster.",
+		f"Thresholds: free disk < {minimum_disk_gib:.0f} GiB, or free disk < "
+		f"{MINIMUM_SITE_DISK_RATIO * 100:.0f}% of the volume",
+		"",
+		"| Server | Free disk | Free |",
+		"| --- | --- | --- |",
+	]
+
+	table_rows = [
+		f"| {_escape_markdown_table_cell(server)} "
+		f"| {available_disk_bytes[server] / 1024**3:.2f} GiB "
+		f"| {available_disk_ratio.get(server, 0.0) * 100:.2f}% |"
+		for server in low_disk_servers
+	]
+
+	send_raven_message("\n".join(header_lines + table_rows).strip(), RAVEN_SERVER_ALERTS_CHANNEL)
 
 
 def _escape_markdown_table_cell(value: str) -> str:
