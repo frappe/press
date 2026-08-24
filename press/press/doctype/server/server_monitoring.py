@@ -15,6 +15,7 @@ from press.utils import log_error
 from press.utils.raven import send_raven_message
 
 RAVEN_SERVER_ALERTS_CHANNEL = "frappe-cloud-server-alerts"
+HEALTH_ALERT_SENT_CACHE_KEY = "public_server_pool_health_alert_sent"
 PROMETHEUS_REGEX_META_CHAR_PATTERN = re.compile(r"([\\.^$*+?()[\]{}|])")
 # Hetzner volumes do not grow on demand, so disk decides where new sites go
 DISK_AWARE_PROVIDERS = ["Hetzner"]
@@ -406,8 +407,13 @@ def _query_prometheus_vector(query: str, url: str, auth: tuple[str, str]) -> lis
 
 
 def _send_public_server_pool_health_alert(server_issues: dict[str, list[str]]) -> None:
+	"""Alert once a day. The pool refresh runs every hour, but a busy server stays busy."""
 	if not server_issues:
 		return
+
+	if frappe.cache().get_value(HEALTH_ALERT_SENT_CACHE_KEY):
+		return
+	frappe.cache().set_value(HEALTH_ALERT_SENT_CACHE_KEY, 1, expires_in_sec=24 * 60 * 60)
 
 	affected_servers = sorted(server_issues)
 	header_lines = [

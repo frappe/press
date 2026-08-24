@@ -10,10 +10,12 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.server.server import BENCH_DATA_MNT_POINT
 from press.press.doctype.server.server_monitoring import (
+	HEALTH_ALERT_SENT_CACHE_KEY,
 	MINIMUM_SITE_DISK_BYTES,
 	PublicServerHealthMetrics,
 	_get_disk_aware_servers_by_mount_point,
 	_send_low_disk_alert,
+	_send_public_server_pool_health_alert,
 	_servers_with_enough_disk,
 )
 
@@ -30,6 +32,24 @@ def create_test_metrics(
 		"available_disk_bytes": available_disk_bytes,
 		"available_disk_ratio": available_disk_ratio,
 	}
+
+
+@patch("press.press.doctype.server.server_monitoring.send_raven_message")
+class TestPublicServerPoolHealthAlert(FrappeTestCase):
+	def setUp(self):
+		frappe.cache().delete_value(HEALTH_ALERT_SENT_CACHE_KEY)
+
+	def tearDown(self):
+		frappe.cache().delete_value(HEALTH_ALERT_SENT_CACHE_KEY)
+
+	def test_alert_sent_for_server_with_health_issues(self, send_raven_message):
+		_send_public_server_pool_health_alert({"busy.server": ["RAM utilization: 90.00%"]})
+		self.assertIn("busy.server", send_raven_message.call_args[0][0])
+
+	def test_alert_not_repeated_on_the_next_hourly_run(self, send_raven_message):
+		_send_public_server_pool_health_alert({"busy.server": ["RAM utilization: 90.00%"]})
+		_send_public_server_pool_health_alert({"busy.server": ["RAM utilization: 90.00%"]})
+		self.assertEqual(send_raven_message.call_count, 1)
 
 
 class TestDiskAwareServersByMountPoint(FrappeTestCase):
