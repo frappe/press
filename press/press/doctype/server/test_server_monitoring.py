@@ -5,11 +5,14 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.press.doctype.server.server import BENCH_DATA_MNT_POINT
 from press.press.doctype.server.server_monitoring import (
 	MINIMUM_SITE_DISK_BYTES,
 	PublicServerHealthMetrics,
+	_get_disk_aware_servers_by_mount_point,
 	_send_low_disk_alert,
 	_servers_with_enough_disk,
 )
@@ -27,6 +30,23 @@ def create_test_metrics(
 		"available_disk_bytes": available_disk_bytes,
 		"available_disk_ratio": available_disk_ratio,
 	}
+
+
+class TestDiskAwareServersByMountPoint(FrappeTestCase):
+	def test_server_with_data_volume_is_read_on_the_bench_mount_point(self):
+		servers = [frappe._dict(name="volume.hetzner", provider="Hetzner", has_data_volume=1)]
+		self.assertEqual(
+			_get_disk_aware_servers_by_mount_point(servers),
+			{BENCH_DATA_MNT_POINT: ["volume.hetzner"]},
+		)
+
+	def test_server_without_data_volume_is_read_on_the_root_mount_point(self):
+		servers = [frappe._dict(name="root.hetzner", provider="Hetzner", has_data_volume=0)]
+		self.assertEqual(_get_disk_aware_servers_by_mount_point(servers), {"/": ["root.hetzner"]})
+
+	def test_server_of_other_provider_is_left_out(self):
+		servers = [frappe._dict(name="aws.server", provider="AWS EC2", has_data_volume=1)]
+		self.assertEqual(_get_disk_aware_servers_by_mount_point(servers), {})
 
 
 class TestServersWithEnoughDisk(FrappeTestCase):

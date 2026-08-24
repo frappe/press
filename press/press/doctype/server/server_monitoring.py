@@ -46,11 +46,15 @@ def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
 	3. Prefer healthy servers, and fall back to the least-bad server when a cluster has no healthy candidates
 	4. Keep new sites away from Hetzner servers that are low on disk, and alert about them
 	"""
-	server_names, servers_by_cluster, disk_aware_servers = _get_public_primary_servers_by_cluster()
+	(
+		server_names,
+		servers_by_cluster,
+		disk_aware_servers_by_mount_point,
+	) = _get_public_primary_servers_by_cluster()
 	if not server_names:
 		return
 
-	metrics = _get_public_server_health_metrics(server_names, disk_aware_servers)
+	metrics = _get_public_server_health_metrics(server_names, disk_aware_servers_by_mount_point)
 	if not metrics:
 		return
 
@@ -61,18 +65,30 @@ def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
 	_create_no_suitable_servers_incident(pool_decision["fallback_servers_by_cluster"], metrics)
 
 
-def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[str]], list[str]]:
+def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[str]], dict[str, list[str]]]:
 	servers = frappe.get_all(
 		"Server",
 		filters={"status": "Active", "is_primary": True, "public": True, "exclude_for_scheduling": False},
-		fields=["name", "cluster", "provider"],
+		fields=["name", "cluster", "provider", "has_data_volume"],
 	)
 	server_names = [server.name for server in servers]
 	servers_by_cluster: dict[str, list[str]] = {}
 	for server in servers:
 		servers_by_cluster.setdefault(server.cluster, []).append(server.name)
-	disk_aware_servers = [server.name for server in servers if server.provider in DISK_AWARE_PROVIDERS]
-	return server_names, servers_by_cluster, disk_aware_servers
+	return server_names, servers_by_cluster, _get_disk_aware_servers_by_mount_point(servers)
+
+
+def _get_disk_aware_servers_by_mount_point(servers: list[frappe._dict]) -> dict[str, list[str]]:
+	"""Group the servers whose disk decides site placement by the mount point of their benches."""
+	from press.press.doctype.server.server import BENCH_DATA_MNT_POINT  # circular import
+
+	servers_by_mount_point: dict[str, list[str]] = {}
+	for server in servers:
+		if server.provider not in DISK_AWARE_PROVIDERS:
+			continue
+		mount_point = BENCH_DATA_MNT_POINT if server.has_data_volume else "/"
+		servers_by_mount_point.setdefault(mount_point, []).append(server.name)
+	return servers_by_mount_point
 
 
 def _get_public_server_pool_decision(
@@ -241,7 +257,7 @@ def _apply_public_server_pool_decision(
 
 def _get_public_server_health_metrics(
 	server_names: list[str],
-	disk_aware_servers: list[str] | None = None,
+	disk_aware_servers_by_mount_point: dict[str, list[str]] | None = None,
 ) -> PublicServerHealthMetrics | None:
 	"""Fetch memory, CPU, kernel OOM-kill and disk metrics for public servers from Prometheus."""
 	if not server_names:
@@ -280,7 +296,9 @@ def _get_public_server_health_metrics(
 	):
 		return None
 
-	available_disk_bytes, available_disk_ratio = _get_available_disk(disk_aware_servers or [], url, auth)
+	available_disk_bytes, available_disk_ratio = _get_available_disk(
+		disk_aware_servers_by_mount_point or {}, url, auth
+	)
 
 	return {
 		"available_memory_bytes": _build_public_server_metric_map(
@@ -297,32 +315,34 @@ def _get_public_server_health_metrics(
 
 
 def _get_available_disk(
-	server_names: list[str],
+	servers_by_mount_point: dict[str, list[str]],
 	url: str,
 	auth: tuple[str, str],
 ) -> tuple[dict[str, float], dict[str, float]]:
-	"""Fetch free bytes and free ratio of the fullest volume that holds benches."""
-	from press.press.doctype.server.server import BENCH_DATA_MNT_POINT  # circular import
+	"""Fetch free bytes and free ratio of the volume that holds the benches."""
+	available_disk_bytes: dict[str, float] = {}
+	available_disk_ratio: dict[str, float] = {}
 
-	if not server_names:
-		return {}, {}
+	for mount_point, server_names in servers_by_mount_point.items():
+		instance_matcher = "|".join(_escape_prometheus_regex_literal(name) for name in server_names)
+		labels = f'instance=~"^({instance_matcher})$", job="node", mountpoint="{mount_point}"'
+		available_disk_bytes_query = f"node_filesystem_avail_bytes{{{labels}}}"
+		available_disk_ratio_query = (
+			f"node_filesystem_avail_bytes{{{labels}}} / node_filesystem_size_bytes{{{labels}}}"
+		)
 
-	instance_matcher = "|".join(_escape_prometheus_regex_literal(name) for name in server_names)
-	labels = f'instance=~"^({instance_matcher})$", job="node", mountpoint=~"/|{BENCH_DATA_MNT_POINT}"'
-	available_disk_bytes_query = f"min by (instance) (node_filesystem_avail_bytes{{{labels}}})"
-	available_disk_ratio_query = (
-		f"min by (instance) (node_filesystem_avail_bytes{{{labels}}}"
-		f" / node_filesystem_size_bytes{{{labels}}})"
-	)
+		available_disk_bytes.update(
+			_build_public_server_metric_map(
+				server_names, _query_prometheus_vector(available_disk_bytes_query, url, auth)
+			)
+		)
+		available_disk_ratio.update(
+			_build_public_server_metric_map(
+				server_names, _query_prometheus_vector(available_disk_ratio_query, url, auth)
+			)
+		)
 
-	return (
-		_build_public_server_metric_map(
-			server_names, _query_prometheus_vector(available_disk_bytes_query, url, auth)
-		),
-		_build_public_server_metric_map(
-			server_names, _query_prometheus_vector(available_disk_ratio_query, url, auth)
-		),
-	)
+	return available_disk_bytes, available_disk_ratio
 
 
 def _get_public_server_pool_prometheus_connection() -> tuple[str, tuple[str, str]] | None:
