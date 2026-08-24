@@ -630,7 +630,7 @@ def get_app_source(name: str) -> AppSource:
 
 
 @frappe.whitelist()
-def latest_approved_release(source: None | str) -> AppRelease | None:
+def latest_approved_release(source: str | None) -> AppRelease | None:
 	"""Return the latest app release with `approved` status"""
 	return get_last_doc("App Release", {"source": source, "status": "Approved"})
 
