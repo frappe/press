@@ -317,22 +317,29 @@ class TestReleaseGroup(FrappeTestCase):
 		self.assertEqual(new_app_source.app, app.name)
 
 	@patch.object(AppSource, "sync_versions", autospec=True)
-	def test_branch_change_syncs_versions_for_non_public_source(self, mock_sync_versions):
+	def test_branch_change_syncs_versions_for_newly_created_source(self, mock_sync_versions):
 		app = create_test_app("erpnext", "ERPNext")
 		rg = create_test_release_group([create_test_app(), app])
 
-		current_app_source = frappe.get_doc("App Source", rg.apps[1].source)
-		app_source = create_test_app_source(
-			current_app_source.versions[0].version,
-			app,
-			current_app_source.repository_url,
-			"develop",
-		)
-
 		rg.change_app_branch(app.name, "develop")
+		rg.reload()
 
 		self.assertEqual(mock_sync_versions.call_count, 1)
-		self.assertEqual(mock_sync_versions.call_args.args[0].name, app_source.name)
+		self.assertEqual(mock_sync_versions.call_args.args[0].name, rg.apps[1].source)
+
+	@patch.object(AppSource, "sync_versions", autospec=True)
+	def test_branch_change_does_not_sync_versions_of_source_group_switches_back_to(self, mock_sync_versions):
+		app = create_test_app("erpnext", "ERPNext")
+		rg = create_test_release_group([create_test_app(), app])
+		original_source = rg.apps[1].source
+
+		rg.change_app_branch(app.name, "develop")
+		mock_sync_versions.reset_mock()
+		rg.change_app_branch(app.name, "master")
+		rg.reload()
+
+		self.assertEqual(rg.apps[1].source, original_source)
+		mock_sync_versions.assert_not_called()
 
 	@patch.object(AppSource, "sync_versions", autospec=True)
 	def test_branch_change_does_not_sync_versions_for_public_source(self, mock_sync_versions):

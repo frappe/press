@@ -1704,8 +1704,9 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 
 		required_app_source = required_app_source[0] if required_app_source else None
+		source_is_new = not required_app_source
 
-		if not required_app_source:
+		if source_is_new:
 			versions = frappe.get_all(
 				"App Source Version", filters={"parent": current_app_source.name}, pluck="version"
 			)
@@ -1725,11 +1726,10 @@ class ReleaseGroup(Document, TagHelpers):
 		if app == "frappe":
 			# Framework is a special case we must just compare the major versions
 			self._validate_frappe_branch_matches_bench_version(current_app_source, to_branch)
-		# Skip public sources, and sources owned by other teams — the same repository
-		# and branch can have a separate App Source per team, and neither should be
-		# mutated on behalf of a different team's branch change.
-		elif not required_app_source.public and required_app_source.team == get_current_team():
-			frappe.get_doc("App Source", required_app_source.name).sync_versions()
+		elif source_is_new:
+			# A sync saves the source. A save of a source that already exists fails
+			# if the table holds a duplicate row for the same repository and branch.
+			required_app_source.sync_versions()
 
 		self.set_app_source(app, required_app_source.name)
 
