@@ -11,15 +11,29 @@
 			<h3 class="text-base font-medium text-ink-gray-9">{{ title }}</h3>
 			<slot name="action"></slot>
 
-			<button
-				@click="shareCard"
-				class="flex items-center gap-1.5 ml-auto"
-				aria-label="Copy"
-			>
-				<LucideLink
-					class="size-3 outline-none duration-200 hover:text-current cursor-pointer"
-				/>
-			</button>
+			<div class="ml-auto flex items-center gap-2">
+				<a
+					v-if="docs"
+					:href="docs"
+					target="_blank"
+					rel="noopener"
+					title="Read the docs"
+					aria-label="Read the docs"
+					class="flex items-center text-ink-gray-5 hover:text-ink-gray-8"
+				>
+					<LucideHelpCircle class="size-3.5" />
+				</a>
+
+				<button
+					@click="shareCard"
+					class="flex items-center gap-1.5"
+					aria-label="Copy"
+				>
+					<LucideLink
+						class="size-3 outline-none duration-200 hover:text-current cursor-pointer"
+					/>
+				</button>
+			</div>
 		</div>
 
 		<slot></slot>
@@ -31,7 +45,7 @@ import { Tooltip } from 'frappe-ui'
 
 export default {
 	name: 'AnalyticsCard',
-	props: ['title'],
+	props: ['title', 'docs'],
 	emits: ['share-card'],
 	components: {
 		Tooltip,
