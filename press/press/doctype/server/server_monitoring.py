@@ -461,23 +461,28 @@ def _send_low_disk_alert(
 		return
 
 	minimum_disk_gib = MINIMUM_SITE_DISK_BYTES / 1024**3
+	minimum_disk_percent = MINIMUM_SITE_DISK_RATIO * 100
+	threshold_line = (
+		f"Thresholds: free disk < {minimum_disk_gib:.0f} GiB, "
+		f"or free disk < {minimum_disk_percent:.0f}% of the volume"
+	)
 	header_lines = [
 		f"**Public Server Pool Disk Alerts** - {len(low_disk_servers)}",
 		"",
 		"New sites go to these servers, but they are low on disk. Add a server in the cluster.",
-		f"Thresholds: free disk < {minimum_disk_gib:.0f} GiB, or free disk < "
-		f"{MINIMUM_SITE_DISK_RATIO * 100:.0f}% of the volume",
+		threshold_line,
 		"",
 		"| Server | Free disk | Free |",
 		"| --- | --- | --- |",
 	]
 
-	table_rows = [
-		f"| {_escape_markdown_table_cell(server)} "
-		f"| {available_disk_bytes[server] / 1024**3:.2f} GiB "
-		f"| {available_disk_ratio.get(server, 0.0) * 100:.2f}% |"
-		for server in low_disk_servers
-	]
+	table_rows = []
+	for server in low_disk_servers:
+		free_disk_gib = available_disk_bytes[server] / 1024**3
+		free_disk_percent = available_disk_ratio.get(server, 0.0) * 100
+		table_rows.append(
+			f"| {_escape_markdown_table_cell(server)} | {free_disk_gib:.2f} GiB | {free_disk_percent:.2f}% |"
+		)
 
 	send_raven_message("\n".join(header_lines + table_rows).strip(), RAVEN_SERVER_ALERTS_CHANNEL)
 
