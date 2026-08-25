@@ -716,6 +716,22 @@ def running_jobs(name):
 
 @frappe.whitelist()
 @protected("Site")
+def backup_history(name: str, start_date: str, end_date: str, refresh: bool = False):
+	"""Whether a backup was taken on each day of the range, answered even for days the list hides.
+
+	Deliberately not a doc method: the page asks repeatedly while a trail is being built,
+	and run_doc_method returns the whole Site document with every answer.
+	"""
+	from press.press.doctype.site_backup.backup_history import get_backup_history
+
+	if not isinstance(name, str):
+		frappe.throw("Could not read the site name. Give it as text, for example demo.frappe.cloud.")
+
+	return get_backup_history(name, start_date, end_date, refresh=cint(refresh))
+
+
+@frappe.whitelist()
+@protected("Site")
 def backups(name):
 	available_offsite_backups = frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
 	fields = [
@@ -1265,6 +1281,8 @@ def set_bench_and_clusters(version, for_bench):
 			allowed_cluster_names = list(set(public_servers_clusters))
 
 		filters = {"name": ("in", allowed_cluster_names)}
+		if not for_bench:
+			filters["public"] = 1
 
 		version.group.clusters = frappe.db.get_all(
 			"Cluster",
@@ -1318,7 +1336,7 @@ def get_additional_clusters_for_private_benches(existing_clusters, cloud_provide
 
 		cluster_info = frappe.db.get_value(
 			"Cluster",
-			cluster_name,
+			{"name": cluster_name, "public": 1},
 			["name", "title", "image", "beta", "cloud_provider"],
 			as_dict=True,
 		)
@@ -2207,7 +2225,12 @@ def validate_restoration_space_requirements(
 		public_file_size=public_file_size,
 		private_file_size=private_file_size,
 	)
-	required_space_on_db_server = site.get_restore_space_required_on_db(db_file_size=db_file_size)
+	required_space_on_db_server = site.db_server_restore_space(
+		server,
+		database_server,
+		site.get_restore_space_required_on_db(db_file_size=db_file_size),
+		required_space_on_app_server,
+	)
 
 	free_space_on_app_server = server.free_space(server.guess_data_disk_mountpoint())
 	free_space_on_db_server = database_server.free_space(database_server.guess_data_disk_mountpoint())

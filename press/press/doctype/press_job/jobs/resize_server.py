@@ -20,7 +20,6 @@ if TYPE_CHECKING:
 class ResizeServerJob(PressJob):
 	@flow
 	def execute(self):
-		self.remove_nat_config_if_applicable()
 		self.halt_agent_jobs()
 		self.wait_for_recent_pending_agent_jobs_to_complete()
 		self.stop_virtual_machine()
@@ -32,21 +31,9 @@ class ResizeServerJob(PressJob):
 		self.wait_for_virtual_machine_to_start()
 
 		self.wait_for_server_to_be_accessible()
-		self.add_nat_config_if_applicable()
-		self.start_agent_jobs()
+    self.start_agent_jobs()
 		self.set_additional_config()
 		self.increase_disk_size()
-
-	@task
-	def remove_nat_config_if_applicable(self):
-		if self.server_type not in ("Server", "Database Server") or (
-			not self.server_doc.nat_server and self.server_doc.ip
-		):
-			return
-
-		play = self.server_doc._remove_nat_iptables()
-		if not play or play.status != "Success":
-			raise Exception("Failed to remove NAT configuration")
 
 	@task
 	def halt_agent_jobs(self):
@@ -148,17 +135,6 @@ class ResizeServerJob(PressJob):
 			self.defer_current_task()
 
 	@task
-	def add_nat_config_if_applicable(self):
-		if self.server_type not in ("Server", "Database Server") or (
-			not self.server_doc.nat_server and self.server_doc.ip
-		):
-			return
-
-		play = self.server_doc._install_nat_iptables()
-		if not play or play.status != "Success":
-			self.defer_current_task()
-
-	@task
 	def set_additional_config(self):
 		if self.server_type not in ["Server", "Database Server"]:
 			return
@@ -188,8 +164,6 @@ class ResizeServerJob(PressJob):
 
 	def on_press_job_failure(self, workflow: PressWorkflow):
 		self.start_virtual_machine()
-		# TODO: fix this; this won't really do much as the vm might've just been brought up but it's better than nothing
-		self.add_nat_config_if_applicable()
 		self.start_agent_jobs()
 
 		# Find out the last plan change of the server

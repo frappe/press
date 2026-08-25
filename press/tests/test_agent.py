@@ -67,6 +67,44 @@ class TestAgent(FrappeTestCase):
 		self.assertEqual(failure.failure_count, 1)
 
 	@responses.activate
+	def test_non_json_response_creates_failure_record(self):
+		server = create_test_server()
+
+		responses.add(
+			responses.GET,
+			f"https://{server.name}:443/agent/ping",
+			status=502,
+			body="<html><body><h1>502 Bad Gateway</h1></body></html>",
+		)
+
+		agent = Agent(server.name, server.doctype)
+		self.assertRaises(requests.JSONDecodeError, agent.request, "GET", "ping")
+
+		failure = frappe.get_last_doc("Agent Request Failure")
+		self.assertEqual(failure.server, server.name)
+		self.assertEqual(agent.should_skip_requests(), True)
+
+	@responses.activate
+	def test_non_json_endpoint_error_doesnt_create_failure_record(self):
+		"""A broken endpoint shouldn't block every other job on the server."""
+		for status in (417, 500):
+			with self.subTest(status=status):
+				server = create_test_server()
+
+				responses.add(
+					responses.GET,
+					f"https://{server.name}:443/agent/ping",
+					status=status,
+					body="<html><body><h1>Error</h1></body></html>",
+				)
+
+				agent = Agent(server.name, server.doctype)
+				self.assertRaises(requests.JSONDecodeError, agent.request, "GET", "ping")
+
+				self.assertEqual(frappe.db.count("Agent Request Failure", {"server": server.name}), 0)
+				self.assertEqual(agent.should_skip_requests(), False)
+
+	@responses.activate
 	def test_request_skips_after_past_failure(self):
 		server = create_test_server()
 

@@ -1,10 +1,10 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Schedule Backup',
+			title: 'Take Backup',
 			actions: [
 				{
-					label: 'Schedule Backup',
+					label: 'Start Backup',
 					loading: this.site?.backup?.loading,
 					variant: 'solid',
 					onClick: scheduleBackup,
@@ -20,7 +20,8 @@
 					class="text-md text-base text-ink-gray-8"
 					v-if="!this.$site?.doc?.allow_physical_backup_by_user"
 				>
-					Are you sure you want to backup your site ?
+					This will take an onsite backup (assets won't be uploaded to
+					S3).
 				</p>
 				<AlertBanner
 					v-if="this.$site?.doc?.allow_physical_backup_by_user"
@@ -110,7 +111,7 @@ export default {
 				physical: this.isPhysical,
 			});
 			toast.promise(site_backup_promise, {
-				loading: 'Scheduling backup...',
+				loading: 'Taking backup...',
 				success: () => {
 					this.show = false;
 					if (this.onScheduleBackupSuccess) {
@@ -121,7 +122,7 @@ export default {
 							params: { name: this.$site.doc.name },
 						});
 					}
-					return 'Backup scheduled successfully.';
+					return 'Backup taken successfully.';
 				},
 				error: (e) => getToastErrorMessage(e),
 			});

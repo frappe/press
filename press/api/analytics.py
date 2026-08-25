@@ -169,6 +169,29 @@ def auto_timespan_timegrain(start: datetime, end: datetime, target_points: int =
 	return (total_seconds, interval)
 
 
+# All metrics relevant to the server charts (node_exporter, mariadb_exporter, ...)
+# are scraped every 60s, see press/playbooks/roles/prometheus/templates/prometheus.yml
+PROMETHEUS_SCRAPE_INTERVAL: Final[int] = 60
+
+
+def get_rate_interval(timegrain: int, scrape_interval: int = PROMETHEUS_SCRAPE_INTERVAL) -> int:
+	"""Lookback window to use inside rate()/increase() for range queries.
+
+	Prometheus' rate()/increase() need at least two samples within their window
+	to return a value. When the window is smaller than ~2x the scrape interval it
+	intermittently sees a single sample (depending on how the step grid aligns
+	with the scrape grid), so Prometheus returns no value for those steps. The
+	charts render the resulting gaps as spikes down to zero.
+
+	The step (timegrain) controls the chart resolution; this controls the rate()
+	window. Keeping them separate and ensuring the window always spans several
+	scrapes removes the gaps. This mirrors Grafana's ``$__rate_interval``.
+	"""
+	if timegrain <= 0:
+		return scrape_interval * 4
+	return max(timegrain + scrape_interval, scrape_interval * 4)
+
+
 def parse_iso_datetime(value: str | datetime) -> datetime:
 	if isinstance(value, datetime):
 		return value
@@ -794,114 +817,151 @@ def get_additional_duration_reports(
 
 @frappe.whitelist()
 @protected("Site")
-def get_advanced_analytics(
+def get_request_count_by_path(
 	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
 ):
 	start_dt = parse_iso_datetime(start)
 	end_dt = parse_iso_datetime(end)
 	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	return {
+		"request_count_by_path": get_request_by_(
+			name, "count", timezone, start_dt, end_dt, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+		)
+	}
 
-	job_data = get_usage(name, "job", timezone, start_dt, end_dt, timegrain)
 
+@frappe.whitelist()
+@protected("Site")
+def get_request_duration_by_path(
+	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
+):
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
 	request_duration_by_path = get_request_by_(
-		name,
-		"duration",
-		timezone,
-		start_dt,
-		end_dt,
-		timespan,
-		timegrain,
-		ResourceType.SITE,
-		max_no_of_paths,
+		name, "duration", timezone, start_dt, end_dt, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+	)
+	# The slow-path breakdowns depend on the top paths of this chart, so they are
+	# computed here (in this worker) rather than as a dependent second request.
+	return {"request_duration_by_path": request_duration_by_path} | get_additional_duration_reports(
+		request_duration_by_path, name, timezone, start_dt, end_dt, timespan, timegrain, max_no_of_paths
 	)
 
+
+@frappe.whitelist()
+@protected("Site")
+def get_average_request_duration_by_path(
+	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
+):
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	return {
+		"average_request_duration_by_path": get_request_by_(
+			name,
+			"average_duration",
+			timezone,
+			start_dt,
+			end_dt,
+			timespan,
+			timegrain,
+			ResourceType.SITE,
+			max_no_of_paths,
+		)
+	}
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_request_count_by_ip(
+	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
+):
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	return {
+		"request_count_by_ip": get_nginx_request_by_(
+			name, "count", timezone, start_dt, end_dt, timespan, timegrain, max_no_of_paths
+		)
+	}
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_background_job_count_by_method(
+	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
+):
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	return {
+		"background_job_count_by_method": get_background_job_by_(
+			name, "count", timezone, start_dt, end_dt, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+		)
+	}
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_background_job_duration_by_method(
+	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
+):
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
 	background_job_duration_by_method = get_background_job_by_(
+		name, "duration", timezone, start_dt, end_dt, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+	)
+	# The slow-job breakdowns depend on the top methods of this chart, so they are
+	# computed here (in this worker) rather than as a dependent second request.
+	return {
+		"background_job_duration_by_method": background_job_duration_by_method
+	} | get_additional_duration_reports(
+		background_job_duration_by_method,
 		name,
-		"duration",
 		timezone,
 		start_dt,
 		end_dt,
 		timespan,
 		timegrain,
-		ResourceType.SITE,
 		max_no_of_paths,
 	)
 
-	return (
-		{
-			"request_count_by_path": get_request_by_(
-				name,
-				"count",
-				timezone,
-				start_dt,
-				end_dt,
-				timespan,
-				timegrain,
-				ResourceType.SITE,
-				max_no_of_paths,
-			),
-			"request_duration_by_path": request_duration_by_path,
-			"average_request_duration_by_path": get_request_by_(
-				name,
-				"average_duration",
-				timezone,
-				start_dt,
-				end_dt,
-				timespan,
-				timegrain,
-				ResourceType.SITE,
-				max_no_of_paths,
-			),
-			"request_count_by_ip": get_nginx_request_by_(
-				name, "count", timezone, start_dt, end_dt, timespan, timegrain, max_no_of_paths
-			),
-			"background_job_count_by_method": get_background_job_by_(
-				name,
-				"count",
-				timezone,
-				start_dt,
-				end_dt,
-				timespan,
-				timegrain,
-				ResourceType.SITE,
-				max_no_of_paths,
-			),
-			"background_job_duration_by_method": background_job_duration_by_method,
-			"average_background_job_duration_by_method": get_background_job_by_(
-				name,
-				"average_duration",
-				timezone,
-				start_dt,
-				end_dt,
-				timespan,
-				timegrain,
-				ResourceType.SITE,
-				max_no_of_paths,
-			),
-			"job_count": [{"value": r.count, "date": r.date} for r in job_data],
-			"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
-		}
-		| get_additional_duration_reports(
-			request_duration_by_path,
+
+@frappe.whitelist()
+@protected("Site")
+def get_average_background_job_duration_by_method(
+	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
+):
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	return {
+		"average_background_job_duration_by_method": get_background_job_by_(
 			name,
+			"average_duration",
 			timezone,
 			start_dt,
 			end_dt,
 			timespan,
 			timegrain,
+			ResourceType.SITE,
 			max_no_of_paths,
 		)
-		| get_additional_duration_reports(
-			background_job_duration_by_method,
-			name,
-			timezone,
-			start_dt,
-			end_dt,
-			timespan,
-			timegrain,
-			max_no_of_paths,
-		)
-	)
+	}
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_background_job_usage(name: str, timezone: str, start: str, end: str):
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	_, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	job_data = get_usage(name, "job", timezone, start_dt, end_dt, timegrain)
+	return {
+		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
+		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
+	}
 
 
 @frappe.whitelist()
@@ -976,6 +1036,17 @@ def get_rounded_boundary(dt: datetime, timegrain: int = 60):
 	return datetime.fromtimestamp(floored_ts, tz=dt.tzinfo)
 
 
+def align_to_quarter_hour(start: datetime, end: datetime, timezone: str) -> tuple[datetime, datetime]:
+	"""Widen the range to the quarter-hour marks around it."""
+	local_start = start.astimezone(pytz_timezone(timezone))
+	local_end = end.astimezone(pytz_timezone(timezone))
+	return (
+		local_start.replace(minute=local_start.minute // 15 * 15, second=0, microsecond=0),
+		local_end.replace(minute=0, second=0, microsecond=0)
+		+ timedelta(minutes=(local_end.minute // 15 + 1) * 15),
+	)
+
+
 def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegrain: int):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
@@ -997,19 +1068,7 @@ def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegra
 	# if the difference is less than an hour, set timegrain to 1 min
 	elif int((end - start).total_seconds()) < 60 * 60:
 		timegrain = 60
-		local_end = end.astimezone(pytz_timezone(timezone))
-		# align end to next 15-minute interval if not already aligned
-		minutes = (local_end.minute // 15 + 1) * 15
-		if minutes == 60:
-			local_end = local_end.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-		else:
-			local_end = local_end.replace(minute=minutes, second=0, microsecond=0)
-		end = local_end
-		# align start to previous 15-minute interval if not already aligned
-		local_start = start.astimezone(pytz_timezone(timezone))
-		minutes = (local_start.minute // 15 - (1 if local_end.minute % 15 != 0 else 0)) * 15
-		local_start = local_end.replace(minute=minutes, second=0, microsecond=0)
-		start = local_start
+		start, end = align_to_quarter_hour(start, end, timezone)
 
 	query: dict[str, str | float] = {
 		"query": (

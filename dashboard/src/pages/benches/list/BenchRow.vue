@@ -12,6 +12,7 @@ import { h, ref, computed, defineAsyncComponent, onBeforeUnmount, watch, reactiv
 import Collapsable from '@/components/common/Collapsable.vue'
 import { renderDialog } from '@/utils/components'
 import { dropBench } from '@/pages/servers/list/utils'
+import { getSiteStatusBadge } from '@/utils/site'
 
 interface Props {
 	data: any
@@ -188,17 +189,6 @@ const siteOptions = (site: any) => [
 	},
 ]
 
-const siteStatusBadges: Record<string, { theme: 'green' | 'red' | 'orange' | 'blue' | 'gray' | null; dot: string }> = {
-	Active: { theme: null, dot: 'bg-surface-green-3' },
-	Inactive: { theme: 'gray', dot: 'bg-surface-gray-4' },
-	Suspended: { theme: 'gray', dot: 'bg-surface-gray-4' },
-	Archived: { theme: 'gray', dot: 'bg-surface-gray-4' },
-	Broken: { theme: 'red', dot: 'bg-surface-red-5' },
-	Draft: { theme: 'orange', dot: 'bg-surface-orange-3' },
-	AwaitingApproval: { theme: 'orange', dot: 'bg-surface-orange-3' },
-	'Update Available': { theme: 'blue', dot: 'bg-surface-blue-3' },
-}
-const defaultSiteStatusBadge = { theme: 'gray' as const, dot: 'bg-surface-gray-4' }
 </script>
 
 <template>
@@ -332,11 +322,11 @@ const defaultSiteStatusBadge = { theme: 'gray' as const, dot: 'bg-surface-gray-4
 					v-else
 					variant="subtle"
 					class="w-fit"
-					:theme="(siteStatusBadges[site.status] || defaultSiteStatusBadge).theme"
+					:theme="getSiteStatusBadge(site.status).theme"
 				>
 					<span
 						class="size-1.5 rounded-full shrink-0 mr-0.5"
-						:class="(siteStatusBadges[site.status] || defaultSiteStatusBadge).dot"
+						:class="getSiteStatusBadge(site.status).dot"
 					/>
 					{{ site.status }}
 				</Badge>

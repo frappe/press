@@ -25,6 +25,7 @@ from babel.dates import format_timedelta  # type: ignore[import-not-found]
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import ExtensionOID
+from frappe.query_builder.functions import Count
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import redis_cache, site_cache
 
@@ -166,6 +167,36 @@ def _get_current_team():
 	return frappe.local._current_team
 
 
+def is_team_owner(team: str) -> bool:
+	"""
+	Checks if the current user is the owner of the given team, without
+	loading the full Team document (and all its child tables).
+	"""
+	return bool(frappe.db.get_value("Team", team, "user") == frappe.session.user)
+
+
+def is_admin_user(team: str) -> bool:
+	"""
+	Checks if the current user has admin access in the given team via roles,
+	without loading the full Team document (and all its child tables).
+	"""
+	PressRole = frappe.qb.DocType("Press Role")
+	PressRoleUser = frappe.qb.DocType("Press Role User")
+	return (
+		frappe.qb.from_(PressRoleUser)
+		.left_join(PressRole)
+		.on(PressRole.name == PressRoleUser.parent)
+		.select(Count(PressRoleUser.name).as_("count"))
+		.where(PressRole.team == team)
+		.where(PressRoleUser.user == frappe.session.user)
+		.where(PressRole.admin_access == 1)
+		.run(as_dict=1)
+		.pop()
+		.get("count", 0)
+		> 0
+	)
+
+
 def _system_user():
 	return frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
 
@@ -202,6 +233,17 @@ def get_default_team_for_user(user):
 		if frappe.db.exists("Team", {"name": team, "enabled": 1}):
 			return team
 	return None
+
+
+def get_disabled_team_of_user(user):
+	"""Returns the account the user owns and disabled, whichever other teams they belong to
+
+	Child teams are not accounts, a partner owns one per customer.
+	"""
+	own_account = {"user": user, "parent_team": ("is", "not set")}
+	if frappe.db.exists("Team", own_account | {"enabled": 1}):
+		return None
+	return frappe.db.get_value("Team", own_account | {"enabled": 0}, "name")
 
 
 def chat_enabled():
@@ -1038,7 +1080,7 @@ def get_cluster_timezone_map() -> dict[str, str]:
 	Builds and returns a map of cluster name to its timezone
 	based on the country it is in
 	"""
-	from frappe.geo.country_info import get_country_info as get_frappe_country_info
+	from press.utils.country import get_country_timezones
 
 	clusters = frappe.get_all(
 		"Cluster",
@@ -1053,8 +1095,7 @@ def get_cluster_timezone_map() -> dict[str, str]:
 
 	cluster_timezone_map: dict[str, str] = {}
 	for cluster in clusters:
-		country_info = get_frappe_country_info(cluster.country) or {}
-		timezones = country_info.get("timezones") or []
+		timezones = get_country_timezones(cluster.country)
 		if timezones:
 			cluster_timezone_map[cluster.name] = timezones[0]
 
@@ -1111,7 +1152,7 @@ def get_nearest_cluster_for_country(country: str | None) -> str | None:
 	Returns the nearest cluster for a given country based on timezone information.
 	If country has multiple timezones, it considers all of them and returns the cluster with the closest timezone offset to any of the country's timezones.
 	"""
-	from frappe.geo.country_info import get_country_info as get_frappe_country_info
+	from press.utils.country import get_country_timezones
 
 	if not country:
 		return None
@@ -1119,8 +1160,7 @@ def get_nearest_cluster_for_country(country: str | None) -> str | None:
 	if preferred_cluster := _get_mapped_cluster_for_country(country):
 		return preferred_cluster
 
-	country_info = get_frappe_country_info(country) or {}
-	timezones = country_info.get("timezones") or []
+	timezones = get_country_timezones(country)
 	if not timezones:
 		return None
 

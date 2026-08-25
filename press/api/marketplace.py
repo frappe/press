@@ -484,12 +484,16 @@ def convert_to_webp(file_content: bytes) -> bytes:
 
 	from PIL import Image
 
-	image_bytes = BytesIO()
 	image = Image.open(BytesIO(file_content))
-	image = image.convert("RGB")
+	# RGB conversion drops alpha and keeps leftover RGB in transparent pixels.
+	# Composite onto white first so logos with straight alpha stay intact.
+	if image.mode in ("RGBA", "LA") or (image.mode == "P" and "transparency" in image.info):
+		rgba = image.convert("RGBA")
+		background = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+		image = Image.alpha_composite(background, rgba)
 
-	image.save(image_bytes, "webp")
-
+	image_bytes = BytesIO()
+	image.convert("RGB").save(image_bytes, "webp")
 	return image_bytes.getvalue()
 
 
@@ -626,7 +630,7 @@ def get_app_source(name: str) -> AppSource:
 
 
 @frappe.whitelist()
-def latest_approved_release(source: None | str) -> AppRelease:
+def latest_approved_release(source: str | None) -> AppRelease | None:
 	"""Return the latest app release with `approved` status"""
 	return get_last_doc("App Release", {"source": source, "status": "Approved"})
 
@@ -1104,64 +1108,6 @@ def reset_features_for_plan(app_plan_doc: MarketplaceAppPlan, feature_list: list
 
 	if save:
 		app_plan_doc.save(ignore_permissions=True)
-
-
-@frappe.whitelist()
-def get_payouts_list() -> list[dict]:
-	team = get_current_team()
-	payouts = frappe.get_all(
-		"Payout Order",
-		filters={"recipient": team},
-		fields=[
-			"name",
-			"status",
-			"period_end",
-			"mode_of_payment",
-			"net_total_inr",
-			"net_total_usd",
-		],
-		order_by="period_end desc",
-	)
-
-	return payouts  # noqa: RET504
-
-
-@frappe.whitelist()
-def get_payout_details(name: str) -> dict:
-	order_items = frappe.get_all(
-		"Payout Order Item",
-		filters={"parent": name},
-		fields=[
-			"name",
-			"document_name",
-			"site",
-			"rate",
-			"plan",
-			"total_amount",
-			"currency",
-			"net_amount",
-			"gateway_fee",
-			"quantity",
-			"commission",
-		],
-		order_by="idx",
-	)
-
-	payout_order = frappe.db.get_value(
-		"Payout Order",
-		name,
-		["status", "due_date", "mode_of_payment", "net_total_inr", "net_total_usd"],
-		as_dict=True,
-	)
-
-	grouped_items = {"usd_items": [], "inr_items": [], **payout_order}
-	for item in order_items:
-		if item.currency == "INR":
-			grouped_items["inr_items"].append(item)
-		else:
-			grouped_items["usd_items"].append(item)
-
-	return grouped_items
 
 
 def get_discount_percent(plan, discount=0.0):
