@@ -1013,6 +1013,17 @@ def get_rounded_boundary(dt: datetime, timegrain: int = 60):
 	return datetime.fromtimestamp(floored_ts, tz=dt.tzinfo)
 
 
+def align_to_quarter_hour(start: datetime, end: datetime, timezone: str) -> tuple[datetime, datetime]:
+	"""Widen the range to the quarter-hour marks around it."""
+	local_start = start.astimezone(pytz_timezone(timezone))
+	local_end = end.astimezone(pytz_timezone(timezone))
+	return (
+		local_start.replace(minute=local_start.minute // 15 * 15, second=0, microsecond=0),
+		local_end.replace(minute=0, second=0, microsecond=0)
+		+ timedelta(minutes=(local_end.minute // 15 + 1) * 15),
+	)
+
+
 def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegrain: int):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
@@ -1034,19 +1045,7 @@ def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegra
 	# if the difference is less than an hour, set timegrain to 1 min
 	elif int((end - start).total_seconds()) < 60 * 60:
 		timegrain = 60
-		local_end = end.astimezone(pytz_timezone(timezone))
-		# align end to next 15-minute interval if not already aligned
-		minutes = (local_end.minute // 15 + 1) * 15
-		if minutes == 60:
-			local_end = local_end.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-		else:
-			local_end = local_end.replace(minute=minutes, second=0, microsecond=0)
-		end = local_end
-		# align start to previous 15-minute interval if not already aligned
-		local_start = start.astimezone(pytz_timezone(timezone))
-		minutes = (local_start.minute // 15 - (1 if local_end.minute % 15 != 0 else 0)) * 15
-		local_start = local_end.replace(minute=minutes, second=0, microsecond=0)
-		start = local_start
+		start, end = align_to_quarter_hour(start, end, timezone)
 
 	query: dict[str, str | float] = {
 		"query": (
