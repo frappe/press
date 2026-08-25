@@ -31,7 +31,7 @@ class ResizeServerJob(PressJob):
 		self.wait_for_virtual_machine_to_start()
 
 		self.wait_for_server_to_be_accessible()
-    self.start_agent_jobs()
+		self.start_agent_jobs()
 		self.set_additional_config()
 		self.increase_disk_size()
 
