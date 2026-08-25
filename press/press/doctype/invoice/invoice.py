@@ -421,7 +421,6 @@ class Invoice(Document):
 		# used when a payment gateway confirms full payment outside of applied credits.
 		self.status = "Paid"
 		self.amount_due = 0
-		self.amount_due_with_tax = 0
 
 	def on_submit(self):
 		self.create_invoice_on_frappeio()
