@@ -117,7 +117,6 @@ class TestPayoutOrder(FrappeTestCase):
 			status="Paid",
 			exchange_rate=70,
 		).insert()
-
 		# create test marketplace app
 		test_app = create_test_app("test_app")
 		test_mp_app = create_test_marketplace_app(test_app.name, self.test_team.name)

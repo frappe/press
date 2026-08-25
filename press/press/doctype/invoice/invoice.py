@@ -278,7 +278,7 @@ class Invoice(Document):
 			)
 
 	def calculate_values(self):
-		if self.status == "Paid":
+		if self.status == "Paid" and self.docstatus == 1:
 			# don't recalculate once paid — recomputing amount_due from
 			# total - applied_credits would clobber it back to a nonzero
 			# balance for invoices paid directly via Stripe/Razorpay
