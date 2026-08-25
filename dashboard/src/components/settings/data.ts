@@ -43,6 +43,11 @@ export const teamMembers = (ignore: string[] = []) => {
 		}));
 };
 
+// Titles are not unique. Two benches can share one, and the native select of
+// the create dialog has no room for a second line, so the name goes inline.
+const resourceLabel = (title: string, name: string) =>
+	title && title !== name ? `${title} (${name})` : name;
+
 export const teamResources = computed(() => {
 	const r: {
 		document_type: string;
@@ -55,7 +60,7 @@ export const teamResources = computed(() => {
 			...sites.data.map((site: any) => ({
 				document_type: 'Site',
 				document_name: site.name,
-				label: site.host_name || site.name,
+				label: resourceLabel(site.host_name, site.name),
 				value: site.name,
 			})),
 		);
@@ -65,7 +70,7 @@ export const teamResources = computed(() => {
 			...servers.data.map((server: any) => ({
 				document_type: 'Server',
 				document_name: server.name,
-				label: server.title || server.name,
+				label: resourceLabel(server.title, server.name),
 				value: server.name,
 			})),
 		);
@@ -75,7 +80,7 @@ export const teamResources = computed(() => {
 			...releaseGroups.data.map((rg: any) => ({
 				document_type: 'Release Group',
 				document_name: rg.name,
-				label: rg.title || rg.name,
+				label: resourceLabel(rg.title, rg.name),
 				value: rg.name,
 			})),
 		);
