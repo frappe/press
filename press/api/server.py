@@ -14,7 +14,12 @@ from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
 from press.api.account import is_limits_exceeded
-from press.api.analytics import auto_timespan_timegrain, get_rounded_boundaries, get_rounded_boundary
+from press.api.analytics import (
+	auto_timespan_timegrain,
+	get_rate_interval,
+	get_rounded_boundaries,
+	get_rounded_boundary,
+)
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
@@ -450,18 +455,21 @@ def analytics(name, query, timezone, start, end, server_type=None):
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
 	_, timegrain = auto_timespan_timegrain(start, end)
+	# Window for rate()/increase() must span several scrapes, otherwise the charts
+	# spike to zero on steps where the rate window saw fewer than two samples.
+	rate_interval = get_rate_interval(timegrain)
 
 	query_map = {
 		"cpu": (
-			f"""sum by (mode)(rate(node_cpu_seconds_total{{instance="{name}", job="node"}}[{timegrain}s])) * 100""",
+			f"""sum by (mode)(rate(node_cpu_seconds_total{{instance="{name}", job="node"}}[{rate_interval}s])) * 100""",
 			lambda x: x["mode"],
 		),
 		"network": (
-			f"""rate(node_network_receive_bytes_total{{instance="{name}", job="node", device=~"ens.*"}}[{timegrain}s]) * 8""",
+			f"""rate(node_network_receive_bytes_total{{instance="{name}", job="node", device=~"ens.*"}}[{rate_interval}s]) * 8""",
 			lambda x: x["device"],
 		),
 		"iops": (
-			f"""rate(node_disk_reads_completed_total{{instance="{name}", job="node"}}[{timegrain}s])""",
+			f"""rate(node_disk_reads_completed_total{{instance="{name}", job="node"}}[{rate_interval}s])""",
 			lambda x: x["device"],
 		),
 		"space": (
@@ -477,11 +485,12 @@ def analytics(name, query, timezone, start, end, server_type=None):
 			lambda x: "Used",
 		),
 		"database_uptime": (
-			f"""mysql_up{{instance="{name}",job="mariadb"}}""",
+			# avg over the bucket, else a short outage between steps is invisible on long timespans
+			f"""avg_over_time(mysql_up{{instance="{name}",job="mariadb"}}[{timegrain}s]) * 100""",
 			lambda x: "Uptime",
 		),
 		"database_commands_count": (
-			f"""sum(round(increase(mysql_global_status_commands_total{{instance='{name}', command=~"select|update|insert|delete|begin|commit|rollback"}}[{timegrain}s]))) by (command)""",
+			f"""sum(round(increase(mysql_global_status_commands_total{{instance='{name}', command=~"select|update|insert|delete|begin|commit|rollback"}}[{rate_interval}s]))) by (command)""",
 			lambda x: x["command"],
 		),
 		"database_connections": (
@@ -503,15 +512,15 @@ def analytics(name, query, timezone, start, end, server_type=None):
 		"innodb_bp_miss_percent": (
 			f"""
 avg by (instance) (
-		rate(mysql_global_status_innodb_buffer_pool_reads{{instance=~"{name}"}}[{timegrain}s])
+		rate(mysql_global_status_innodb_buffer_pool_reads{{instance=~"{name}"}}[{rate_interval}s])
 		/
-		rate(mysql_global_status_innodb_buffer_pool_read_requests{{instance=~"{name}"}}[{timegrain}s])
+		rate(mysql_global_status_innodb_buffer_pool_read_requests{{instance=~"{name}"}}[{rate_interval}s])
 )
 """,
 			lambda x: "Buffer Pool Miss Percentage",
 		),
 		"innodb_avg_row_lock_time": (
-			f"""(rate(mysql_global_status_innodb_row_lock_time{{instance="{name}"}}[{timegrain}s]) / 1000)/rate(mysql_global_status_innodb_row_lock_waits{{instance="{name}"}}[{timegrain}s])""",
+			f"""(rate(mysql_global_status_innodb_row_lock_time{{instance="{name}"}}[{rate_interval}s]) / 1000)/rate(mysql_global_status_innodb_row_lock_waits{{instance="{name}"}}[{rate_interval}s])""",
 			lambda x: "Avg Row Lock Time",
 		),
 	}

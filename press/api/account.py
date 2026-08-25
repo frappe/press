@@ -27,7 +27,14 @@ from press.press.doctype.team.team import (
 	get_child_team_members,
 	get_team_members,
 )
-from press.utils import docs, get_country_info, get_current_team, is_user_part_of_team, log_error
+from press.utils import (
+	docs,
+	get_country_info,
+	get_current_team,
+	get_disabled_team_of_user,
+	is_user_part_of_team,
+	log_error,
+)
 from press.utils import otp as otp_purpose
 from press.utils import user as user_utils
 from press.utils.otp import OneTimePassword
@@ -424,6 +431,28 @@ def enable_account():
 			f"Only the team owner can enable this account. Please ask the team owner to do this. {docs.doc_link(docs.DISABLE_ACCOUNT)}."
 		)
 	team.enable_account()
+
+
+@frappe.whitelist()
+def reactivate_account():
+	"""Enable the account of the logged in user, on their way in from the login page"""
+	team_name = get_disabled_team_of_user(frappe.session.user)
+	if not team_name:
+		frappe.throw(
+			"You don't have a disabled account to reactivate. Please log in with the account you disabled."
+		)
+
+	# The team is disabled, so get_current_team throws for this session and every
+	# permission check on the team and its sites fails. Run as Administrator,
+	# mirroring setup_account.
+	current_user = frappe.session.user
+	try:
+		frappe.set_user("Administrator")
+		Team("Team", team_name).enable_account()
+	finally:
+		frappe.set_user(current_user)
+
+	return team_name
 
 
 @frappe.whitelist()

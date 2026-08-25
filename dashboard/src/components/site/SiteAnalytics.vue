@@ -70,7 +70,11 @@
 		/>
 
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-			<AnalyticsCard title="Daily Usage" @share-card="shareDashboard">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/daily-usage-limit-reached"
+				title="Daily Usage"
+				@share-card="shareDashboard"
+			>
 				<LineChart
 					type="time"
 					title="Usage Counter"
@@ -81,6 +85,7 @@
 					:loading="$resources.analytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
@@ -95,7 +100,11 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Requests" @share-card="shareDashboard">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#site-analytics"
+				title="Requests"
+				@share-card="shareDashboard"
+			>
 				<LineChart
 					type="time"
 					title="Requests"
@@ -106,6 +115,7 @@
 					:loading="$resources.analytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 				<template #action>
 					<router-link
@@ -118,7 +128,11 @@
 				</template>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Requests CPU Usage" @share-card="shareDashboard">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#site-analytics"
+				title="Requests CPU Usage"
+				@share-card="shareDashboard"
+			>
 				<LineChart
 					type="time"
 					title="Requests CPU Usage"
@@ -129,6 +143,7 @@
 					:loading="$resources.analytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 		</div>
@@ -149,7 +164,11 @@
 			v-if="showAdvancedAnalytics"
 			class="grid grid-cols-1 gap-5 sm:grid-cols-2"
 		>
-			<AnalyticsCard title="Background Jobs" @share-card="shareDashboard">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#site-analytics"
+				title="Background Jobs"
+				@share-card="shareDashboard"
+			>
 				<LineChart
 					type="time"
 					title="Background Jobs"
@@ -160,10 +179,12 @@
 					:loading="$resources.backgroundJobUsage.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#site-analytics"
 				title="Background Jobs CPU Usage"
 				@share-card="shareDashboard"
 			>
@@ -177,10 +198,12 @@
 					:loading="$resources.backgroundJobUsage.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				class="sm:col-span-2"
 				title="Frequent Requests"
 				@share-card="shareDashboard"
@@ -199,6 +222,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout#what-does-other-mean-in-chart"
 				class="sm:col-span-2"
 				title="Slowest Requests"
 				@share-card="shareDashboard"
@@ -216,6 +240,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout#slow-reports"
 				class="sm:col-span-2"
 				title="Query Report Durations"
 				v-if="queryReportRunReportsData"
@@ -239,6 +264,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout"
 				class="sm:col-span-2"
 				title="Run Doc Method Durations"
 				v-if="runDocMethodMethodnamesData"
@@ -262,6 +288,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout"
 				class="sm:col-span-2"
 				title="Save Docs Doctype Durations"
 				v-if="saveDocsDoctypesData"
@@ -283,6 +310,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout"
 				class="sm:col-span-2"
 				title="Save Docs Action Durations"
 				v-if="saveDocsActionData"
@@ -304,6 +332,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout"
 				class="sm:col-span-2"
 				title="Individual Request Time (Average)"
 				@share-card="shareDashboard"
@@ -320,6 +349,7 @@
 				/>
 			</AnalyticsCard>
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				class="sm:col-span-2"
 				title="Requests by IP"
 				@share-card="shareDashboard"
@@ -337,6 +367,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				class="sm:col-span-2"
 				title="Frequent Background Jobs"
 				@share-card="shareDashboard"
@@ -354,6 +385,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				class="sm:col-span-2"
 				title="Slowest Background Jobs"
 				@share-card="shareDashboard"
@@ -371,6 +403,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout#slow-reports"
 				class="sm:col-span-2"
 				title="Background Report Durations"
 				v-if="generateReportReportsData"
@@ -394,6 +427,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				class="sm:col-span-2"
 				title="Individual Background Job Time (Average)"
 				@share-card="shareDashboard"
@@ -411,6 +445,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				class="sm:col-span-2 [&_[aria-label='Copy']]:m-0"
 				title="Frequent Slow Queries"
 				@share-card="shareDashboard"
@@ -442,6 +477,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				class="sm:col-span-2 [&_[aria-label='Copy']]:m-0"
 				title="Top Slow Queries"
 				@share-card="shareDashboard"
