@@ -106,6 +106,8 @@ class TestReleasePipeline(FrappeTestCase):
 		frappe.db.delete("App")
 		frappe.db.delete("App Source")
 		frappe.db.delete("App Release")
+		# App sources are recreated with the same names across tests, so their cached dependencies would leak
+		frappe.cache().delete_keys("app_deps:")
 
 	@classmethod
 	def setUpClass(cls):
@@ -192,11 +194,6 @@ class TestReleasePipeline(FrappeTestCase):
 		parent_hash = frappe.mock("sha1")
 		frappe.db.set_single_value("Press Settings", "auto_upgrade_dependencies", 1)
 
-		for dep in self.test_release_group.dependencies:
-			if dep.dependency == "PYTHON_VERSION":
-				dep.version = "3.8"
-				dep.save()
-
 		root_app = create_test_app("frappe")
 		root_app_source = create_test_app_source(
 			app=root_app,
@@ -205,6 +202,19 @@ class TestReleasePipeline(FrappeTestCase):
 			branch="main",
 		)
 		root_app_release = create_test_app_release(root_app_source, parent_hash)
+
+		# Own release group, the class level one loses its app sources to the tearDown of any test before this one
+		release_group = create_test_release_group(
+			apps=[root_app],
+			frappe_version="Version 15",
+			servers=[self.server.name],
+			app_sources=[root_app_source.name],
+		)
+
+		for dep in release_group.dependencies:
+			if dep.dependency == "PYTHON_VERSION":
+				dep.version = "3.8"
+				dep.save()
 
 		app_dependencies = get_dependant_apps_with_versions(root_app_source.name, root_app_release.hash).get(
 			"frappe_dependencies"
@@ -230,16 +240,16 @@ class TestReleasePipeline(FrappeTestCase):
 		)
 
 		self.assertNotIn(
-			"telephony", [app.app for app in self.test_release_group.apps]
+			"telephony", [app.app for app in release_group.apps]
 		)  # Ensure app was added as part of the release pipeline
 
-		for dependency in self.test_release_group.dependencies:
+		for dependency in release_group.dependencies:
 			if dependency.dependency == "PYTHON_VERSION":
 				self.assertEqual(dependency.version, "3.8")
 
 		with fake_agent_job("Remote Build Job", "Success"):
 			deploy_and_update(
-				self.test_release_group.name,
+				release_group.name,
 				apps=[
 					{
 						"app": root_app.name,
@@ -251,7 +261,7 @@ class TestReleasePipeline(FrappeTestCase):
 			)
 			poll_pending_jobs()
 
-		test_release_group = self.test_release_group.reload()
+		test_release_group = release_group.reload()
 		self.assertIn(
 			"telephony", [app.app for app in test_release_group.apps]
 		)  # Ensure app was added as part of the release pipeline
@@ -263,11 +273,11 @@ class TestReleasePipeline(FrappeTestCase):
 
 		with self.assertRaises(ReleasePipelineFailure):
 			_resolve_python_version_conflicts_and_update_group(
-				self.test_release_group.name, {"frappe": ">=3.10", "erpnext": "<3.10"}
+				release_group.name, {"frappe": ">=3.10", "erpnext": "<3.10"}
 			)  # This should raise an error since frappe and erpnext have conflicting python version requirements
 
 		_resolve_python_version_conflicts_and_update_group(
-			self.test_release_group.name,
+			release_group.name,
 			{
 				"frappe": ">=3.10",
 				"erpnext": ">=3.10",
