@@ -71,9 +71,10 @@ def _get_trusted_app_source(app: str, supported_frappe_version: set[str], team: 
 	return None
 
 
-def _app_position(doc, app: str) -> int:
-	"""Index of `app` in the doc's apps child table."""
-	return next(index for index, row in enumerate(doc.apps) if row.app == app)
+def _dependency_position(doc, app: str) -> int:
+	"""Index to insert `app`'s dependencies at, never before frappe which has to stay first."""
+	position = next(index for index, row in enumerate(doc.apps) if row.app == app)
+	return max(position, 1)
 
 
 def _resolve_dependent_app(
@@ -579,8 +580,8 @@ class ReleasePipeline(WorkflowBuilder):
 			return []
 
 		# Dependencies go right before the app that needs them, so they are built first
-		position = _app_position(deploy_candidate, dependent_app)
-		group_position = _app_position(release_group_doc, dependent_app)
+		position = _dependency_position(deploy_candidate, dependent_app)
+		group_position = _dependency_position(release_group_doc, dependent_app)
 		added_apps = []
 
 		for dependency in dependencies:
