@@ -7,6 +7,7 @@ const team = getTeam();
 const sites = createListResource({
 	doctype: 'Site',
 	auto: true,
+	fields: ['name', 'host_name'],
 	pageLength: 99999,
 	filters: {
 		team: team.doc?.name,
@@ -54,7 +55,7 @@ export const teamResources = computed(() => {
 			...sites.data.map((site: any) => ({
 				document_type: 'Site',
 				document_name: site.name,
-				label: site.name,
+				label: site.host_name || site.name,
 				value: site.name,
 			})),
 		);
