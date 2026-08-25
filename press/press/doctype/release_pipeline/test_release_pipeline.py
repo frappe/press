@@ -408,9 +408,9 @@ class TestReleasePipeline(FrappeTestCase):
 		self.assertEqual(resolved_source.name, own_source.name)
 		self.assertEqual(resolved_release.name, own_release.name)
 
-	def create_dependency_app(self, name: str):
-		"""Create an app with a source and release that _resolve_dependent_app can pick up."""
-		app = frappe.get_doc({"doctype": "App", "title": name.title(), "frappe": 1, "name": name}).insert()
+	def create_app_with_release(self, name: str):
+		"""Create an app with a source and release so it can be deployed or resolved as a dependency."""
+		app = create_test_app(name, name.title())
 		source = create_test_app_source(
 			"Version 15", app, repository_url=f"https://github.com/frappe/{name}", branch="main"
 		)
@@ -428,37 +428,41 @@ class TestReleasePipeline(FrappeTestCase):
 		pipeline.add_implicit_app_dependencies(deploy_candidate.name)
 
 	def test_implicit_dependency_is_added_before_the_app_that_depends_on_it(self):
-		root_app = create_test_app("someapp", "Some App")
+		frappe_app = self.create_app_with_release("frappe")
+		helpdesk_app = self.create_app_with_release("helpdesk")
+		self.create_app_with_release("telephony")
 		release_group = create_test_release_group(
-			apps=[self.test_frappe_app, root_app],
+			apps=[frappe_app, helpdesk_app],
 			frappe_version="Version 15",
 			servers=[self.server.name],
 		)
-		self.create_dependency_app("telephony")
 		deploy_candidate = create_test_deploy_candidate(release_group)
 
-		with mock_pyproject_per_app({"someapp": {"telephony": ">=0.0.1,<1.0.0"}}):
+		with mock_pyproject_per_app({"helpdesk": {"telephony": ">=0.0.1,<1.0.0"}}):
 			self.add_implicit_app_dependencies(release_group, deploy_candidate)
 
 		self.assertEqual(
-			[app.app for app in deploy_candidate.reload().apps], ["frappe", "telephony", "someapp"]
+			[app.app for app in deploy_candidate.reload().apps], ["frappe", "telephony", "helpdesk"]
 		)
-		self.assertEqual([app.app for app in release_group.reload().apps], ["frappe", "telephony", "someapp"])
+		self.assertEqual(
+			[app.app for app in release_group.reload().apps], ["frappe", "telephony", "helpdesk"]
+		)
 
 	def test_dependency_of_an_implicit_dependency_is_added_before_that_dependency(self):
-		root_app = create_test_app("someapp", "Some App")
+		frappe_app = self.create_app_with_release("frappe")
+		helpdesk_app = self.create_app_with_release("helpdesk")
+		self.create_app_with_release("telephony")
+		self.create_app_with_release("gameplan")
 		release_group = create_test_release_group(
-			apps=[self.test_frappe_app, root_app],
+			apps=[frappe_app, helpdesk_app],
 			frappe_version="Version 15",
 			servers=[self.server.name],
 		)
-		self.create_dependency_app("telephony")
-		self.create_dependency_app("gameplan")
 		deploy_candidate = create_test_deploy_candidate(release_group)
 
 		with mock_pyproject_per_app(
 			{
-				"someapp": {"telephony": ">=0.0.1,<1.0.0"},
+				"helpdesk": {"telephony": ">=0.0.1,<1.0.0"},
 				"telephony": {"gameplan": ">=0.0.1,<1.0.0"},
 			}
 		):
@@ -466,28 +470,47 @@ class TestReleasePipeline(FrappeTestCase):
 
 		self.assertEqual(
 			[app.app for app in deploy_candidate.reload().apps],
-			["frappe", "gameplan", "telephony", "someapp"],
+			["frappe", "gameplan", "telephony", "helpdesk"],
 		)
 		self.assertEqual(
 			[app.app for app in release_group.reload().apps],
-			["frappe", "gameplan", "telephony", "someapp"],
+			["frappe", "gameplan", "telephony", "helpdesk"],
 		)
 
-	def test_dependency_already_in_the_release_group_keeps_its_position(self):
-		root_app = create_test_app("someapp", "Some App")
-		dependency_app = self.create_dependency_app("telephony")
+	def test_dependency_of_frappe_is_added_after_frappe_which_has_to_stay_first(self):
+		frappe_app = self.create_app_with_release("frappe")
+		helpdesk_app = self.create_app_with_release("helpdesk")
+		self.create_app_with_release("telephony")
 		release_group = create_test_release_group(
-			apps=[self.test_frappe_app, root_app, dependency_app],
+			apps=[frappe_app, helpdesk_app],
 			frappe_version="Version 15",
 			servers=[self.server.name],
 		)
 		deploy_candidate = create_test_deploy_candidate(release_group)
 
-		with mock_pyproject_per_app({"someapp": {"telephony": ">=0.0.1,<1.0.0"}}):
+		with mock_pyproject_per_app({"frappe": {"telephony": ">=0.0.1,<1.0.0"}}):
 			self.add_implicit_app_dependencies(release_group, deploy_candidate)
 
 		self.assertEqual(
-			[app.app for app in deploy_candidate.reload().apps], ["frappe", "someapp", "telephony"]
+			[app.app for app in release_group.reload().apps], ["frappe", "telephony", "helpdesk"]
+		)
+
+	def test_dependency_already_in_the_release_group_keeps_its_position(self):
+		frappe_app = self.create_app_with_release("frappe")
+		helpdesk_app = self.create_app_with_release("helpdesk")
+		telephony_app = self.create_app_with_release("telephony")
+		release_group = create_test_release_group(
+			apps=[frappe_app, helpdesk_app, telephony_app],
+			frappe_version="Version 15",
+			servers=[self.server.name],
+		)
+		deploy_candidate = create_test_deploy_candidate(release_group)
+
+		with mock_pyproject_per_app({"helpdesk": {"telephony": ">=0.0.1,<1.0.0"}}):
+			self.add_implicit_app_dependencies(release_group, deploy_candidate)
+
+		self.assertEqual(
+			[app.app for app in deploy_candidate.reload().apps], ["frappe", "helpdesk", "telephony"]
 		)
 
 	@classmethod
