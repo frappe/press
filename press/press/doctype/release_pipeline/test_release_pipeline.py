@@ -17,6 +17,7 @@ from press.press.doctype.app.app import parse_frappe_version
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.deploy_candidate.test_deploy_candidate import create_test_deploy_candidate
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.release_pipeline.release_pipeline import (
@@ -79,6 +80,23 @@ def get_mock_pyproject_file(*args, **kwargs):
 		out_dir = "./helpdesk/public/desk"
 		index_html_path = "./helpdesk/www/helpdesk/index.html"
 """)
+
+
+def pyproject_with_frappe_dependencies(dependencies: dict[str, str]) -> dict:
+	return {
+		"project": {"requires-python": ">=3.10"},
+		"tool": {"bench": {"frappe-dependencies": {"frappe": ">=14.0.0,<17.0.0", **dependencies}}},
+	}
+
+
+def mock_pyproject_per_app(dependencies_by_app: dict[str, dict[str, str]]):
+	"""Patch the pyproject fetch so every app source returns the dependencies of its own app."""
+
+	def get_pyproject(app_source, commit):
+		app = frappe.db.get_value("App Source", app_source, "app")
+		return pyproject_with_frappe_dependencies(dependencies_by_app.get(app, {}))
+
+	return patch("press.api.github._get_pyproject_from_commit", get_pyproject)
 
 
 @patch.object(MariaDBDatabase, "commit", Mock())
@@ -389,6 +407,88 @@ class TestReleasePipeline(FrappeTestCase):
 
 		self.assertEqual(resolved_source.name, own_source.name)
 		self.assertEqual(resolved_release.name, own_release.name)
+
+	def create_dependency_app(self, name: str):
+		"""Create an app with a source and release that _resolve_dependent_app can pick up."""
+		app = frappe.get_doc({"doctype": "App", "title": name.title(), "frappe": 1, "name": name}).insert()
+		source = create_test_app_source(
+			"Version 15", app, repository_url=f"https://github.com/frappe/{name}", branch="main"
+		)
+		create_test_app_release(source, frappe.mock("sha1"))
+		return app
+
+	def add_implicit_app_dependencies(self, release_group, deploy_candidate):
+		pipeline: ReleasePipeline = frappe.get_doc(
+			{
+				"doctype": "Release Pipeline",
+				"release_group": release_group.name,
+				"team": get_current_team(),
+			}
+		).insert()
+		pipeline.add_implicit_app_dependencies(deploy_candidate.name)
+
+	def test_implicit_dependency_is_added_before_the_app_that_depends_on_it(self):
+		root_app = create_test_app("someapp", "Some App")
+		release_group = create_test_release_group(
+			apps=[self.test_frappe_app, root_app],
+			frappe_version="Version 15",
+			servers=[self.server.name],
+		)
+		self.create_dependency_app("telephony")
+		deploy_candidate = create_test_deploy_candidate(release_group)
+
+		with mock_pyproject_per_app({"someapp": {"telephony": ">=0.0.1,<1.0.0"}}):
+			self.add_implicit_app_dependencies(release_group, deploy_candidate)
+
+		self.assertEqual(
+			[app.app for app in deploy_candidate.reload().apps], ["frappe", "telephony", "someapp"]
+		)
+		self.assertEqual([app.app for app in release_group.reload().apps], ["frappe", "telephony", "someapp"])
+
+	def test_dependency_of_an_implicit_dependency_is_added_before_that_dependency(self):
+		root_app = create_test_app("someapp", "Some App")
+		release_group = create_test_release_group(
+			apps=[self.test_frappe_app, root_app],
+			frappe_version="Version 15",
+			servers=[self.server.name],
+		)
+		self.create_dependency_app("telephony")
+		self.create_dependency_app("gameplan")
+		deploy_candidate = create_test_deploy_candidate(release_group)
+
+		with mock_pyproject_per_app(
+			{
+				"someapp": {"telephony": ">=0.0.1,<1.0.0"},
+				"telephony": {"gameplan": ">=0.0.1,<1.0.0"},
+			}
+		):
+			self.add_implicit_app_dependencies(release_group, deploy_candidate)
+
+		self.assertEqual(
+			[app.app for app in deploy_candidate.reload().apps],
+			["frappe", "gameplan", "telephony", "someapp"],
+		)
+		self.assertEqual(
+			[app.app for app in release_group.reload().apps],
+			["frappe", "gameplan", "telephony", "someapp"],
+		)
+
+	def test_dependency_already_in_the_release_group_keeps_its_position(self):
+		root_app = create_test_app("someapp", "Some App")
+		dependency_app = self.create_dependency_app("telephony")
+		release_group = create_test_release_group(
+			apps=[self.test_frappe_app, root_app, dependency_app],
+			frappe_version="Version 15",
+			servers=[self.server.name],
+		)
+		deploy_candidate = create_test_deploy_candidate(release_group)
+
+		with mock_pyproject_per_app({"someapp": {"telephony": ">=0.0.1,<1.0.0"}}):
+			self.add_implicit_app_dependencies(release_group, deploy_candidate)
+
+		self.assertEqual(
+			[app.app for app in deploy_candidate.reload().apps], ["frappe", "someapp", "telephony"]
+		)
 
 	@classmethod
 	def tearDownClass(cls):
