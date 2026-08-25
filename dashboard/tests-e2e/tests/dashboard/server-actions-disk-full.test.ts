@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { expect, test } from './coverage.fixture'
 
 const APP_SERVER = 'f-test-app.frappe.cloud'
@@ -16,6 +17,15 @@ const appServerDoc = {
 			description: 'Reboot the server',
 			button_label: 'Reboot',
 			doc_method: 'reboot',
+			group: 'Server Actions',
+			server_doctype: 'Server',
+			server_name: APP_SERVER,
+		},
+		{
+			action: 'Manage On-Prem Replication',
+			description: 'Manage On-Prem Replication &amp; Failover',
+			button_label: 'Manage',
+			doc_method: 'dummy',
 			group: 'Server Actions',
 			server_doctype: 'Server',
 			server_name: APP_SERVER,
@@ -41,7 +51,7 @@ const databaseServerDoc = {
 	],
 }
 
-test('disk full in the purge binlogs description is red', async ({ page }) => {
+async function mockServerDocs(page: Page) {
 	await page.route(
 		/\/api\/method\/press\.api\.client\.get\b/,
 		async (route) => {
@@ -60,6 +70,10 @@ test('disk full in the purge binlogs description is red', async ({ page }) => {
 			})
 		},
 	)
+}
+
+test('disk full in the purge binlogs description is red', async ({ page }) => {
+	await mockServerDocs(page)
 
 	await page.goto(`/dashboard/servers/${APP_SERVER}/actions`)
 
@@ -77,4 +91,17 @@ test('disk full in the purge binlogs description is red', async ({ page }) => {
 	expect(red, 'disk full is red').toBeGreaterThan(150)
 	expect(green).toBeLessThan(100)
 	expect(blue).toBeLessThan(100)
+})
+
+test('a description without markup renders as written', async ({ page }) => {
+	await mockServerDocs(page)
+	await page.goto(`/dashboard/servers/${APP_SERVER}/actions`)
+
+	// The rest of the tab still reads as plain text, entities included.
+	await expect(page.getByText('Reboot the server')).toBeVisible({
+		timeout: 30000,
+	})
+	await expect(
+		page.getByText('Manage On-Prem Replication & Failover'),
+	).toBeVisible()
 })
