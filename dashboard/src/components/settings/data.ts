@@ -16,6 +16,7 @@ const sites = createListResource({
 const servers = createListResource({
 	doctype: 'Server',
 	auto: true,
+	fields: ['name', 'title'],
 	pageLength: 99999,
 	filters: {
 		team: team.doc?.name,
@@ -25,6 +26,7 @@ const servers = createListResource({
 const releaseGroups = createListResource({
 	doctype: 'Release Group',
 	auto: true,
+	fields: ['name', 'title'],
 	pageLength: 99999,
 	filters: {
 		team: team.doc?.name,
@@ -62,7 +64,7 @@ export const teamResources = computed(() => {
 			...servers.data.map((server: any) => ({
 				document_type: 'Server',
 				document_name: server.name,
-				label: server.name,
+				label: server.title || server.name,
 				value: server.name,
 			})),
 		);
@@ -72,7 +74,7 @@ export const teamResources = computed(() => {
 			...releaseGroups.data.map((rg: any) => ({
 				document_type: 'Release Group',
 				document_name: rg.name,
-				label: rg.name,
+				label: rg.title || rg.name,
 				value: rg.name,
 			})),
 		);
