@@ -54,7 +54,10 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="CPU">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#cpu"
+				title="CPU"
+			>
 				<LineChart
 					type="time"
 					title="CPU"
@@ -79,7 +82,10 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Load Average">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#load-average"
+				title="Load Average"
+			>
 				<LineChart
 					type="time"
 					title="Load Average"
@@ -98,7 +104,10 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Memory">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#bench-memory-usage"
+				title="Memory"
+			>
 				<LineChart
 					type="time"
 					title="Memory"
@@ -114,7 +123,10 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Disk Space">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#server-analytics"
+				title="Disk Space"
+			>
 				<LineChart
 					type="time"
 					title="Disk Space"
@@ -130,7 +142,10 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Network">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#server-analytics"
+				title="Network"
+			>
 				<LineChart
 					type="time"
 					title="Network"
@@ -146,7 +161,10 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Disk I/O">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#server-analytics"
+				title="Disk I/O"
+			>
 				<LineChart
 					type="time"
 					title="Disk I/O"
@@ -180,6 +198,7 @@
 		>
 			<!-- Advanced Charts -->
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				v-if="isServerType('Application Server')"
 				class="sm:col-span-2"
 				title="Request frequency by site"
@@ -199,6 +218,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout"
 				v-if="isServerType('Application Server')"
 				class="sm:col-span-2"
 				title="Slowest request by site"
@@ -218,6 +238,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				v-if="isServerType('Application Server')"
 				class="sm:col-span-2"
 				title="Background job frequency by site"
@@ -237,6 +258,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				v-if="isServerType('Application Server')"
 				class="sm:col-span-2"
 				title="Slowest background jobs by site"
@@ -255,7 +277,11 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Queries" v-if="isServerType('Database Server')">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
+				title="Queries"
+				v-if="isServerType('Database Server')"
+			>
 				<LineChart
 					type="time"
 					title="Queries"
@@ -281,6 +307,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				title="DB Connections"
 				v-if="isServerType('Database Server')"
 			>
@@ -303,6 +330,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				title="Average Row Lock Time"
 				v-if="isServerType('Database Server')"
 			>
@@ -322,6 +350,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#very-high-database-server-memory-usage"
 				title="Buffer Pool Size"
 				v-if="isServerType('Database Server')"
 			>
@@ -341,6 +370,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#very-high-database-server-memory-usage"
 				title="Buffer Pool Size of Total Ram"
 				v-if="isServerType('Database Server')"
 			>
@@ -371,6 +401,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#very-high-database-server-memory-usage"
 				title="Buffer Pool Miss Percent"
 				v-if="isServerType('Database Server')"
 			>
@@ -401,6 +432,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				v-if="isServerType('Database Server')"
 				class="sm:col-span-2"
 				title="Frequent Slow queries"
@@ -426,6 +458,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				v-if="isServerType('Database Server')"
 				class="sm:col-span-2"
 				title="Slowest queries"

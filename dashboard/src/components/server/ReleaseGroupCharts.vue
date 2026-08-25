@@ -19,7 +19,10 @@
 			/>
 		</div>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-			<AnalyticsCard title="Memory">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/bench-analytics"
+				title="Memory"
+			>
 				<LineChart
 					type="time"
 					title="Memory"
@@ -33,7 +36,10 @@
 					class="h-[15.55rem] p-2 pb-3"
 				/>
 			</AnalyticsCard>
-			<AnalyticsCard title="CPU">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/bench-analytics"
+				title="CPU"
+			>
 				<LineChart
 					type="time"
 					title="CPU"
@@ -49,7 +55,10 @@
 			</AnalyticsCard>
 		</div>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-			<AnalyticsCard title="Incoming Network">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/bench-analytics"
+				title="Incoming Network"
+			>
 				<LineChart
 					type="time"
 					title="Memory"
@@ -63,7 +72,10 @@
 					class="h-[15.55rem] p-2 pb-3"
 				/>
 			</AnalyticsCard>
-			<AnalyticsCard title="Outgoing Network">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/bench-analytics"
+				title="Outgoing Network"
+			>
 				<LineChart
 					type="time"
 					title="CPU"
@@ -79,7 +91,10 @@
 			</AnalyticsCard>
 		</div>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-			<AnalyticsCard title="Read Bytes">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/bench-analytics"
+				title="Read Bytes"
+			>
 				<LineChart
 					type="time"
 					title="Memory"
@@ -93,7 +108,10 @@
 					class="h-[15.55rem] p-2 pb-3"
 				/>
 			</AnalyticsCard>
-			<AnalyticsCard title="Write Bytes">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/bench-analytics"
+				title="Write Bytes"
+			>
 				<LineChart
 					type="time"
 					title="CPU"
