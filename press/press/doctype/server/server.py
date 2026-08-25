@@ -429,7 +429,7 @@ class BaseServer(Document, TagHelpers):
 		actions = [
 			{
 				"action": "Manage On-Prem Replication",
-				"description": "Manage On-Prem Replication & Failover",
+				"description": "Manage On-Prem Replication &amp; Failover",
 				"button_label": "Manage",
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
