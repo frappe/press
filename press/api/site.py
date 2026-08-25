@@ -1310,6 +1310,8 @@ def set_bench_and_clusters(version, for_bench):
 			allowed_cluster_names = list(set(public_servers_clusters))
 
 		filters = {"name": ("in", allowed_cluster_names)}
+		if not for_bench:
+			filters["public"] = 1
 
 		version.group.clusters = frappe.db.get_all(
 			"Cluster",
@@ -1363,7 +1365,7 @@ def get_additional_clusters_for_private_benches(existing_clusters, cloud_provide
 
 		cluster_info = frappe.db.get_value(
 			"Cluster",
-			cluster_name,
+			{"name": cluster_name, "public": 1},
 			["name", "title", "image", "beta", "cloud_provider"],
 			as_dict=True,
 		)
