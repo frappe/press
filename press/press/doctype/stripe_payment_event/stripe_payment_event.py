@@ -86,8 +86,6 @@ class StripePaymentEvent(Document):
 				"status": "Paid",
 				"amount_paid": stripe_invoice["amount_paid"] / 100,
 				"stripe_invoice_url": stripe_invoice["hosted_invoice_url"],
-				"amount_due_with_tax": 0,
-				"amount_due": 0,
 			}
 		)
 		invoice.save()
