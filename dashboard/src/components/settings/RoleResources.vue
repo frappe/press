@@ -90,6 +90,11 @@
 							:name="icons[item.document_type]"
 						/>
 						{{ item.label }}
+						<span
+							v-if="item.label !== item.document_name"
+							class="ml-2 text-ink-gray-5"
+							>{{ item.document_name }}</span
+						>
 					</template>
 				</MultiSelect>
 			</template>
