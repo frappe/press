@@ -8,8 +8,12 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.press.doctype.remote_file.remote_file import get_remote_key, get_team_prefix
+
 if TYPE_CHECKING:
 	from datetime import datetime
+
+UPLOADS_BUCKET = "test-remote-uploads"
 
 
 def create_test_remote_file(
@@ -75,6 +79,91 @@ OFFSITE_BACKUP_JOB_DATA = {
 class TestRemoteFile(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
+		frappe.set_user("Administrator")
+
+	def test_uploaded_file_path_outside_team_prefix_is_rejected(self):
+		from press.press.doctype.team.test_team import create_test_team
+
+		team = create_test_team()
+		frappe.db.set_single_value("Press Settings", "remote_uploads_bucket", UPLOADS_BUCKET)
+
+		with self.assertRaises(frappe.PermissionError) as context:
+			frappe.get_doc(
+				{
+					"doctype": "Remote File",
+					"team": team.name,
+					"bucket": UPLOADS_BUCKET,
+					"file_path": f"{get_team_prefix('victim@example.com')}/1_2/database.sql.gz",
+				}
+			).insert()
+
+		self.assertIn("is not under this team's upload prefix", str(context.exception))
+
+	def test_uploaded_file_path_under_team_prefix_is_accepted(self):
+		from press.press.doctype.team.test_team import create_test_team
+
+		team = create_test_team()
+		frappe.db.set_single_value("Press Settings", "remote_uploads_bucket", UPLOADS_BUCKET)
+
+		file_path = f"{get_team_prefix(team.name)}/1_2/database.sql.gz"
+		remote_file = frappe.get_doc(
+			{
+				"doctype": "Remote File",
+				"team": team.name,
+				"bucket": UPLOADS_BUCKET,
+				"file_path": file_path,
+			}
+		).insert()
+
+		self.assertEqual(remote_file.file_path, file_path)
+
+	def test_backup_file_in_another_bucket_is_not_checked_against_prefix(self):
+		"""Backups are keyed by the agent and never carry a team prefix."""
+		from press.press.doctype.team.test_team import create_test_team
+
+		team = create_test_team()
+		frappe.db.set_single_value("Press Settings", "remote_uploads_bucket", UPLOADS_BUCKET)
+
+		remote_file = frappe.get_doc(
+			{
+				"doctype": "Remote File",
+				"team": team.name,
+				"bucket": "offsite-backups",
+				"file_path": "/benches/breadshop_database.sql.gz",
+			}
+		).insert()
+
+		self.assertEqual(remote_file.file_path, "/benches/breadshop_database.sql.gz")
+
+	def test_existing_uploaded_file_can_still_be_saved(self):
+		"""The prefix rule applies on insert only, so old rows stay editable."""
+		from press.press.doctype.team.test_team import create_test_team
+
+		team = create_test_team()
+		remote_file = frappe.get_doc(
+			{
+				"doctype": "Remote File",
+				"team": team.name,
+				"file_path": "some/legacy/path.sql.gz",
+			}
+		).insert()
+
+		frappe.db.set_single_value("Press Settings", "remote_uploads_bucket", UPLOADS_BUCKET)
+		remote_file.bucket = UPLOADS_BUCKET
+		remote_file.save()
+
+		self.assertEqual(remote_file.file_path, "some/legacy/path.sql.gz")
+
+	def test_absolute_upload_filename_stays_under_team_prefix(self):
+		from press.press.doctype.team.test_team import create_test_team
+
+		team = create_test_team()
+		frappe.set_user(team.user)
+
+		key = get_remote_key("/etc/passwd")
+
+		self.assertTrue(key.startswith(f"{get_team_prefix(team.name)}/"))
+		self.assertTrue(key.endswith("/passwd"))
 
 	def test_offsite_backup_remote_files_belong_to_sites_team(self):
 		"""Backup remote files are created in the agent job's callback, as Administrator."""

@@ -29,7 +29,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	get_total_installs_by_app,
 )
-from press.press.doctype.remote_file.remote_file import get_remote_key
+from press.press.doctype.remote_file.remote_file import get_remote_key, validate_files_belong_to_team
 from press.press.doctype.root_domain.root_domain import get_matching_domain
 from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site.site import (
@@ -148,6 +148,7 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 		)
 
 	files = site.get("files", {})
+	validate_files_belong_to_team(files, team.name)
 
 	apps = [{"app": app} for app in site["apps"]]
 
@@ -2195,6 +2196,7 @@ def restore(name, files, skip_failing_patches=False):
 			"At least one file must be provided for restoration. Please provide either of database, public or private file to begin restoration of the site {name}."
 		)
 
+	validate_files_belong_to_team(files, frappe.db.get_value("Site", name, "team"))
 	frappe.db.set_value(
 		"Site",
 		name,
