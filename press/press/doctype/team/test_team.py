@@ -79,6 +79,29 @@ class TestTeam(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
+	def test_switching_to_card_payment_mode_moves_beginner_team_to_growth_tier(self):
+		team = create_test_team()
+		frappe.db.set_value(
+			"Team",
+			team.name,
+			{"apply_limits": 1, "tier": "Beginner", "spending_limit": 100, "payment_mode": "Prepaid Credits"},
+		)
+		frappe.get_doc(
+			{
+				"doctype": "Stripe Payment Method",
+				"team": team.name,
+				"stripe_customer_id": "cus_test123",
+				"stripe_payment_method_id": "pm_test123",
+			}
+		).insert(ignore_permissions=True)
+
+		team.reload()
+		team.payment_mode = "Card"
+		team.save()
+
+		self.assertEqual(frappe.db.get_value("Team", team.name, "tier"), "Growth")
+		self.assertEqual(frappe.db.get_value("Team", team.name, "spending_limit"), 250)
+
 	def test_create_new_method_works(self):
 		account_request = create_test_account_request("testsubdomain")
 		team_count_before = frappe.db.count("Team")
