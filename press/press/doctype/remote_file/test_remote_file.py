@@ -4,11 +4,12 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from unittest.mock import Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from press.press.doctype.remote_file.remote_file import get_remote_key, get_team_prefix
+from press.press.doctype.remote_file.remote_file import RemoteFile, get_remote_key, get_team_prefix
 
 if TYPE_CHECKING:
 	from datetime import datetime
@@ -98,6 +99,22 @@ class TestRemoteFile(FrappeTestCase):
 			).insert()
 
 		self.assertIn("is not under this team's upload prefix", str(context.exception))
+
+	@patch.object(RemoteFile, "ensure_team_set", new=Mock())
+	def test_uploaded_file_without_team_is_rejected(self):
+		"""ensure_team_set leaves the team empty when the site has none."""
+		frappe.db.set_single_value("Press Settings", "remote_uploads_bucket", UPLOADS_BUCKET)
+
+		with self.assertRaises(frappe.PermissionError) as context:
+			frappe.get_doc(
+				{
+					"doctype": "Remote File",
+					"bucket": UPLOADS_BUCKET,
+					"file_path": "anything/database.sql.gz",
+				}
+			).insert()
+
+		self.assertIn("must belong to a team", str(context.exception))
 
 	def test_uploaded_file_path_under_team_prefix_is_accepted(self):
 		from press.press.doctype.team.test_team import create_test_team

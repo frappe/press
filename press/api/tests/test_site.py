@@ -899,6 +899,21 @@ erpnext 0.8.3	    HEAD
 
 		self.assertEqual(frappe.db.get_value("Remote File", name, "file_path"), file_path)
 
+	def test_restore_rejects_remote_file_with_no_team(self):
+		"""A file with no team has no owner to check against."""
+		from press.api.site import restore
+
+		site = create_test_site(team=self.team.name)
+		remote_file = create_test_remote_file(file_path="somewhere/database.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", None)
+
+		frappe.set_user(self.team.user)
+		with self.assertRaises(frappe.PermissionError) as context:
+			restore(site.name, {"database": remote_file.name})
+
+		self.assertIn("does not belong to site's team", str(context.exception))
+		self.assertFalse(frappe.db.get_value("Site", site.name, "remote_database_file"))
+
 	def test_restore_rejects_remote_file_of_another_team(self):
 		from press.api.site import restore
 

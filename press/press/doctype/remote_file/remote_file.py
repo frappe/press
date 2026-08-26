@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import frappe
 import requests
 from boto3 import client, resource
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 
@@ -46,10 +47,11 @@ def validate_files_belong_to_team(files: dict, team: str):
 		if not name:
 			continue
 
+		# A file with no team has no established owner, so it is never the site's
 		file_team = frappe.db.get_value("Remote File", name, "team")
-		if file_team is not None and file_team != team:
+		if file_team != team:
 			frappe.throw(
-				frappe._("Remote File {0} does not belong to site's team").format(name),
+				_("Remote File {0} does not belong to site's team").format(name),
 				frappe.PermissionError,
 			)
 
@@ -224,10 +226,13 @@ class RemoteFile(Document):
 		if not uploads_bucket or self.bucket != uploads_bucket:
 			return
 
+		if not self.team:
+			frappe.throw(_("Uploaded file must belong to a team"), frappe.PermissionError)
+
 		prefix = get_team_prefix(self.team)
 		if not self.file_path.startswith(f"{prefix}/"):
 			frappe.throw(
-				frappe._("File path {0} is not under this team's upload prefix").format(self.file_path),
+				_("File path {0} is not under this team's upload prefix").format(self.file_path),
 				frappe.PermissionError,
 			)
 
