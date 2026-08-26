@@ -100,7 +100,8 @@
 						{{ availableCredits || currency + ' 0.00' }}
 					</div>
 				</div>
-				<div class="shrink-0">
+				<div class="flex shrink-0 gap-2">
+					<Button label="Transfer" @click="showTransferCreditsDialog = true" />
 					<Button
 						:label="'Add credit'"
 						@click="
@@ -165,6 +166,16 @@
 		:showMessage="showMessage"
 		@success="upcomingInvoice.reload()"
 	/>
+	<TransferCreditsDialog
+		v-if="showTransferCreditsDialog"
+		v-model="showTransferCreditsDialog"
+		@success="
+			() => {
+				team.reload();
+				upcomingInvoice.reload();
+			}
+		"
+	/>
 	<AddCardDialog
 		v-if="showAddCardDialog"
 		v-model="showAddCardDialog"
@@ -194,6 +205,7 @@ import DropdownItem from './DropdownItem.vue';
 import BillingDetailsDialog from './BillingDetailsDialog.vue';
 import BudgetAlertDialog from './BudgetAlertDialog.vue';
 import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue';
+import TransferCreditsDialog from './TransferCreditsDialog.vue';
 import AddCardDialog from './AddCardDialog.vue';
 import ChangeCardDialog from './ChangeCardDialog.vue';
 import { Dropdown, Button, FeatherIcon, createResource } from 'frappe-ui';
@@ -216,6 +228,7 @@ const {
 const showBillingDetailsDialog = ref(false);
 const showBudgetAlertDialog = ref(false);
 const showAddPrepaidCreditsDialog = ref(false);
+const showTransferCreditsDialog = ref(false);
 const showAddCardDialog = ref(false);
 const showChangeCardDialog = ref(false);
 
