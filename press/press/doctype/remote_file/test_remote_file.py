@@ -182,6 +182,38 @@ class TestRemoteFile(FrappeTestCase):
 		self.assertTrue(key.startswith(f"{get_team_prefix(team.name)}/"))
 		self.assertTrue(key.endswith("/passwd"))
 
+	@patch.object(frappe.db, "commit", new=Mock())
+	def test_backfill_patch_sets_team_from_the_files_own_site(self):
+		from press.patches.v0_8_0.set_team_on_remote_file import execute
+		from press.press.doctype.site.test_site import create_test_site
+		from press.press.doctype.team.test_team import create_test_team
+
+		team = create_test_team()
+		site = create_test_site(subdomain="breadshop", team=team.name)
+		remote_file = create_test_remote_file(site=site.name, file_path="benches/db.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", None)
+
+		execute()
+
+		self.assertEqual(frappe.db.get_value("Remote File", remote_file.name, "team"), team.name)
+
+	@patch.object(frappe.db, "commit", new=Mock())
+	def test_backfill_patch_sets_team_from_the_site_that_uses_the_file(self):
+		"""Uploaded files carry no site of their own."""
+		from press.patches.v0_8_0.set_team_on_remote_file import execute
+		from press.press.doctype.site.test_site import create_test_site
+		from press.press.doctype.team.test_team import create_test_team
+
+		team = create_test_team()
+		site = create_test_site(subdomain="breadshop", team=team.name)
+		remote_file = create_test_remote_file(file_path="uploads/db.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", None)
+		frappe.db.set_value("Site", site.name, "remote_database_file", remote_file.name)
+
+		execute()
+
+		self.assertEqual(frappe.db.get_value("Remote File", remote_file.name, "team"), team.name)
+
 	def test_offsite_backup_remote_files_belong_to_sites_team(self):
 		"""Backup remote files are created in the agent job's callback, as Administrator."""
 		from press.press.doctype.agent_job.agent_job import poll_pending_jobs

@@ -899,6 +899,30 @@ erpnext 0.8.3	    HEAD
 
 		self.assertEqual(frappe.db.get_value("Remote File", name, "file_path"), file_path)
 
+	def test_new_site_rejects_backup_of_another_team_for_dashboard_user(self):
+		from press.api.site import validate_files_for_new_site
+
+		other_team = create_test_press_admin_team()
+		remote_file = create_test_remote_file(file_path="somewhere/database.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", other_team.name)
+
+		frappe.set_user(self.team.user)
+		with self.assertRaises(frappe.PermissionError) as context:
+			validate_files_for_new_site({"database": remote_file.name}, self.team.name)
+
+		self.assertIn("does not belong to site's team", str(context.exception))
+
+	def test_new_site_allows_backup_of_another_team_for_system_user(self):
+		"""Site Replication runs from desk, under the operator's own team."""
+		from press.api.site import validate_files_for_new_site
+
+		other_team = create_test_press_admin_team()
+		remote_file = create_test_remote_file(file_path="somewhere/database.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", other_team.name)
+
+		frappe.set_user("Administrator")
+		validate_files_for_new_site({"database": remote_file.name}, self.team.name)
+
 	def test_restore_rejects_remote_file_with_no_team(self):
 		"""A file with no team has no owner to check against."""
 		from press.api.site import restore
