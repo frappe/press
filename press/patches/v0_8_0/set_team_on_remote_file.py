@@ -9,45 +9,45 @@ SITE_FILE_FIELDS = (
 
 BATCH_SIZE = 5000
 
-OWN_SITE_QUERY = """
-	SELECT remote_file.name AS name, site.team AS team
-	FROM `tabRemote File` remote_file
-	JOIN `tabSite` site ON site.name = remote_file.site
-	WHERE remote_file.team IS NULL AND site.team IS NOT NULL
-	LIMIT %s
-"""
-
-SITE_USING_FILE_QUERY = """
-	SELECT remote_file.name AS name, site.team AS team
-	FROM `tabRemote File` remote_file
-	JOIN `tabSite` site ON site.{field} = remote_file.name
-	WHERE remote_file.team IS NULL AND site.team IS NOT NULL
-	LIMIT %s
-"""
-
 
 def execute():
 	"""Give older Remote Files a team, so restore can reject the ones without an owner.
 
 	`ensure_team_set` only runs on documents saved after it was added.
 	"""
-	backfill(OWN_SITE_QUERY)
+	backfill()
 
 	# Uploaded files carry no site, so take the team of the site they were restored into
 	for field in SITE_FILE_FIELDS:
-		backfill(
-			SITE_USING_FILE_QUERY.format(field=field)
-		)  # nosemgrep: frappe-manual-commit-and-sql-injection
+		backfill(field)
 
 
-def backfill(query: str):
+def backfill(field: str | None = None):
 	"""One batch at a time, so a large table does not hold write locks through the migration."""
 	while True:
-		files = frappe.db.sql(query, BATCH_SIZE, as_dict=True)
+		files = get_files_without_team(field)
 		if not files:
 			return
 
 		set_team_on_files(files)
+
+
+def get_files_without_team(field: str | None):
+	"""Take the team from the file's own site, or from the site that uses the file."""
+	remote_file = frappe.qb.DocType("Remote File")
+	site = frappe.qb.DocType("Site")
+	joined_on = site[field] == remote_file.name if field else site.name == remote_file.site
+
+	return (
+		frappe.qb.from_(remote_file)
+		.join(site)
+		.on(joined_on)
+		.select(remote_file.name.as_("name"), site.team.as_("team"))
+		.where(remote_file.team.isnull())
+		.where(site.team.isnotnull())
+		.limit(BATCH_SIZE)
+		.run(as_dict=True)
+	)
 
 
 def set_team_on_files(files: list[frappe._dict]):
