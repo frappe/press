@@ -19,17 +19,39 @@ if TYPE_CHECKING:
 	from press.press.doctype.backup_bucket.backup_bucket import BackupBucket
 
 
-def get_remote_key(file):
+def get_team_prefix(team: str) -> str:
+	"""Every uploaded file is keyed under a prefix derived from the team."""
 	from hashlib import sha1
-	from os.path import join
+
+	return sha1(team.encode()).hexdigest()
+
+
+def get_remote_key(file):
+	from os.path import basename
 	from time import time
 
 	from press.utils import get_current_team
 
-	team = sha1(get_current_team().encode()).hexdigest()
-	time = str(time()).replace(".", "_")
+	prefix = get_team_prefix(get_current_team())
+	timestamp = str(time()).replace(".", "_")
 
-	return join(team, time, file)
+	# basename, because join() drops the prefix when file is an absolute path
+	return f"{prefix}/{timestamp}/{basename(file)}"
+
+
+def validate_files_belong_to_team(files: dict, team: str):
+	"""Restore accepts Remote File names from the client. They must be the team's own."""
+	for key in ("database", "public", "private", "config"):
+		name = files.get(key)
+		if not name:
+			continue
+
+		file_team = frappe.db.get_value("Remote File", name, "team")
+		if file_team is not None and file_team != team:
+			frappe.throw(
+				frappe._("Remote File {0} does not belong to site's team").format(name),
+				frappe.PermissionError,
+			)
 
 
 def poll_file_statuses():
@@ -185,6 +207,29 @@ class RemoteFile(Document):
 			from press.utils import get_current_team
 
 			self.team = get_current_team()
+
+	def validate(self):
+		self.validate_upload_prefix()
+
+	def validate_upload_prefix(self):
+		"""An uploaded file must sit under its team's prefix.
+
+		The path comes from the client, and the restore flow later hands it to
+		the agent as a presigned link.
+		"""
+		if not self.is_new() or not self.file_path:
+			return
+
+		uploads_bucket = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
+		if not uploads_bucket or self.bucket != uploads_bucket:
+			return
+
+		prefix = get_team_prefix(self.team)
+		if not self.file_path.startswith(f"{prefix}/"):
+			frappe.throw(
+				frappe._("File path {0} is not under this team's upload prefix").format(self.file_path),
+				frappe.PermissionError,
+			)
 
 	@property
 	def s3_client(self):
