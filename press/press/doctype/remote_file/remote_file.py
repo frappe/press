@@ -21,15 +21,16 @@ if TYPE_CHECKING:
 
 def get_remote_key(file):
 	from hashlib import sha1
-	from os.path import join
+	from os.path import basename
 	from time import time
 
 	from press.utils import get_current_team
 
 	team = sha1(get_current_team().encode()).hexdigest()
 	time = str(time()).replace(".", "_")
+	safe_filename = basename(file.lstrip("/\\"))
 
-	return join(team, time, file)
+	return f"{team}/{time}/{safe_filename}"
 
 
 def poll_file_statuses():
