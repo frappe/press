@@ -44,6 +44,7 @@ from press.press.doctype.site.site_plan_utils import (
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import (
+	_system_user,
 	get_client_blacklisted_keys,
 	get_current_team,
 	get_frappe_backups,
@@ -139,6 +140,14 @@ def get_name_from_filters(filters: dict):
 	return None
 
 
+def validate_files_for_new_site(files: dict, team: str):
+	"""Site Replication creates the site from desk, under the operator's own team."""
+	if _system_user():
+		return
+
+	validate_files_belong_to_team(files, team)
+
+
 def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
@@ -147,7 +156,7 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 		)
 
 	files = site.get("files", {})
-	validate_files_belong_to_team(files, team.name)
+	validate_files_for_new_site(files, team.name)
 
 	apps = [{"app": app} for app in site["apps"]]
 
