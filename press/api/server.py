@@ -566,16 +566,15 @@ def get_background_job_by_site(name, query, timezone, start, end):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
-def get_slow_logs_by_site(name, query, timezone, start, end, normalize=False):
+def get_slow_logs_by_site(name, query, timezone, start, end):
 	from press.api.analytics import ResourceType, get_slow_logs
 
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
 	timespan, timegrain = auto_timespan_timegrain(start, end)
 
-	return get_slow_logs(
-		name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER, normalize
-	)
+	# Not normalized: this chart groups by database name, not by query text
+	return get_slow_logs(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
 
 
 def prometheus_query(

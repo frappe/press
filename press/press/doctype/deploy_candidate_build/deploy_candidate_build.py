@@ -1675,4 +1675,10 @@ def on_doctype_update():
 		return
 	# Ignoring filesorts
 	# https://dev.mysql.com/doc/refman/8.4/en/order-by-optimization.html#order-by-index-use
-	frappe.db.add_index("Deploy Candidate Build", ["team", "group", "creation"])
+	# `group` is a reserved word, and add_index joins the columns without quoting
+	# them. Name the index too, or the backticks land in the name as well.
+	frappe.db.add_index(
+		"Deploy Candidate Build",
+		["team", "`group`", "creation"],
+		index_name="team_group_creation_index",
+	)

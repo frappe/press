@@ -437,12 +437,6 @@
 				class="sm:col-span-2"
 				title="Frequent Slow queries"
 			>
-				<template #action>
-					<TabButtons
-						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
-						v-model="slowLogsFrequencyType"
-					/>
-				</template>
 				<BarChart
 					title="Frequent Slow queries"
 					:key="slowLogsCountData"
@@ -463,12 +457,6 @@
 				class="sm:col-span-2"
 				title="Slowest queries"
 			>
-				<template #action>
-					<TabButtons
-						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
-						v-model="slowLogsDurationType"
-					/>
-				</template>
 				<BarChart
 					title="Slowest queries"
 					:key="slowLogsDurationData"
@@ -487,11 +475,7 @@
 </template>
 
 <script>
-import {
-	DateTimePicker,
-	getCachedDocumentResource,
-	TabButtons,
-} from 'frappe-ui'
+import { DateTimePicker, getCachedDocumentResource } from 'frappe-ui'
 import BarChart from '@/components/charts/BarChart.vue'
 import LineChart from '@/components/charts/LineChart.vue'
 import dayjs, { dayjsFloorToMinutes } from '../../utils/dayjs'
@@ -516,8 +500,6 @@ export default {
 			customEndTime: null,
 			showAdvancedAnalytics: false,
 			localTimezone: dayjs.tz.guess(),
-			slowLogsDurationType: 'Denormalized',
-			slowLogsFrequencyType: 'Denormalized',
 			chosenServer: this.$route.query.server ?? this.serverName,
 			durationOptions: [
 				{ label: 'Duration', value: null, disabled: true },
@@ -730,7 +712,6 @@ export default {
 					timezone: this.localTimezone,
 					start: this.startTime,
 					end: this.endTime,
-					normalize: this.slowLogsFrequencyType === 'Normalized',
 				},
 				auto:
 					this.showAdvancedAnalytics &&
@@ -746,7 +727,6 @@ export default {
 					timezone: this.localTimezone,
 					start: this.startTime,
 					end: this.endTime,
-					normalize: this.slowLogsDurationType === 'Normalized',
 				},
 				auto:
 					this.showAdvancedAnalytics &&
