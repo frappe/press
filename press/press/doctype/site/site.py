@@ -410,8 +410,13 @@ class Site(Document, TagHelpers):
 			frappe.db.exists("Site Update", {"site": self.name, "status": "Scheduled"})
 		)
 		doc.update_information = self.get_update_information()
-		doc.fatal_site_update_start = (
-			frappe.db.get_value("Site Update", self.fatal_site_update, "update_start")
+		doc.fatal_update = (
+			frappe.db.get_value(
+				"Site Update",
+				self.fatal_site_update,
+				["update_start", "update_job", "recover_job"],
+				as_dict=True,
+			)
 			if self.fatal_site_update
 			else None
 		)

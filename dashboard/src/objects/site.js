@@ -21,6 +21,11 @@ import { getBackupsTab } from './site/backups'
 // prefilled so only the ticket id has to be typed; on its own it is not a reason
 const LOGIN_REASON_PREFIX = 'Investigating '
 
+function jobLink(site, job, text) {
+	if (!job) return text
+	return `<a href="/dashboard/sites/${site.doc.name}/insights/jobs/${job}" class="underline" target="_blank">${text}</a>`
+}
+
 export function canRestoreTables(site) {
 	return site.doc?.fatal_site_update && site.doc?.status === 'Broken'
 }
@@ -28,7 +33,7 @@ export function canRestoreTables(site) {
 export function confirmRestoreTables(site) {
 	confirmDialog({
 		title: 'Restore Tables',
-		message: `The update failed and the automatic recovery could not restore the tables.<br><br>Re-attempt the recovery manually?<br><br>The site database goes back to <b>${date(site.doc?.fatal_site_update_start, 'lll')}</b>, when the update started. <b>All data written to the site after that time is lost.</b> You cannot undo this.`,
+		message: `The ${jobLink(site, site.doc?.fatal_update?.update_job, 'last update')} failed and the ${jobLink(site, site.doc?.fatal_update?.recover_job, 'automatic recovery')} could not restore the tables.<br><br>Re-attempt the recovery manually?<br><br>The site database goes back to <b>${date(site.doc?.fatal_update?.update_start, 'lll')}</b>, when the last update started. <b>Any data written to the site after that time is lost.</b> You cannot undo this.`,
 		primaryAction: {
 			label: 'Restore Tables',
 			theme: 'red',
