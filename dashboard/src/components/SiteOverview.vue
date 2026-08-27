@@ -10,13 +10,6 @@
 			:ctx_name="[$site?.doc?.name, $site?.doc.server, $site?.doc?.cluster]"
 		/>
 		<AlertBanner
-			v-if="canRestoreTables($site)"
-			class="col-span-1 lg:col-span-2"
-			type="error"
-			title="The last update failed and the tables could not be restored. The site stays broken until you restore them."
-		/>
-
-		<AlertBanner
 			v-if="$site?.doc?.creation_failed"
 			class="col-span-1 lg:col-span-2"
 			type="error"
@@ -367,7 +360,6 @@ import { getCachedDocumentResource, Progress, Tooltip } from 'frappe-ui'
 import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
 import InfoIcon from '~icons/lucide/info'
-import { canRestoreTables } from '../objects/site'
 import { renderDialog } from '../utils/components'
 import { trialDays } from '../utils/site'
 import { getToastErrorMessage } from '../utils/toast'
@@ -401,7 +393,6 @@ export default {
 		}
 	},
 	methods: {
-		canRestoreTables,
 		showPlanChangeDialog() {
 			let SitePlansDialog = defineAsyncComponent(
 				() => import('../components/ManageSitePlansDialog.vue'),
