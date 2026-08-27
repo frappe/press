@@ -453,13 +453,14 @@
 				<template #action>
 					<Tooltip text="Show Detailed Reports">
 						<router-link
-							class="mr-auto text-base text-ink-gray-6 hover:text-ink-gray-7"
+							class="text-base text-ink-gray-6 hover:text-ink-gray-7"
 							:to="{ name: 'Site Performance Slow Queries' }"
 						>
 							→
 						</router-link>
 					</Tooltip>
 					<TabButtons
+						class="ml-auto"
 						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
 						v-model="slowLogsFrequencyType"
 					/>
@@ -485,13 +486,14 @@
 				<template #action>
 					<Tooltip text="Show Detailed Reports">
 						<router-link
-							class="mr-auto text-base text-ink-gray-6 hover:text-ink-gray-7"
+							class="text-base text-ink-gray-6 hover:text-ink-gray-7"
 							:to="{ name: 'Site Performance Slow Queries' }"
 						>
 							→
 						</router-link>
 					</Tooltip>
 					<TabButtons
+						class="ml-auto"
 						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
 						v-model="slowLogsDurationType"
 					/>
@@ -550,8 +552,8 @@ export default {
 			logicalEndDate: null,
 			showAdvancedAnalytics: false,
 			localTimezone: dayjs.tz.guess(),
-			slowLogsDurationType: 'Denormalized',
-			slowLogsFrequencyType: 'Denormalized',
+			slowLogsDurationType: 'Normalized',
+			slowLogsFrequencyType: 'Normalized',
 			allowDrillDown: false,
 			durationOptions: [
 				{ label: 'Duration', value: null, disabled: true },
