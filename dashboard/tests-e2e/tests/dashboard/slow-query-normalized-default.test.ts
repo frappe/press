@@ -20,14 +20,14 @@ function normalizeParam(request: Request): string | null {
 	}
 }
 
-async function openAdvancedAnalytics(page: Page) {
+async function loadAnalyticsPage(page: Page) {
 	await page.setViewportSize({ width: 1440, height: 900 })
 	await mockAnalytics(page)
 
 	const query = `?start=${RANGE_START.toISOString()}&end=${RANGE_END.toISOString()}`
 	await page.goto(`/dashboard/sites/${SITE_NAME}/insights/analytics${query}`)
-	await page.getByText('Advanced Analytics').click()
 
+	// The advanced section is open by default, so no click is necessary.
 	for (const card of SLOW_QUERY_CARDS) {
 		await expect(page.locator(card)).toBeVisible({ timeout: 30000 })
 	}
@@ -47,7 +47,7 @@ test('the slow query charts ask for normalized queries without being told to', a
 		if (flag !== null) normalizeFlags.push(flag)
 	})
 
-	await openAdvancedAnalytics(page)
+	await loadAnalyticsPage(page)
 	await expect.poll(() => normalizeFlags.length).toBeGreaterThanOrEqual(2)
 
 	// Both charts, count and duration, before anyone touches the toggle
@@ -69,7 +69,7 @@ test('the slow query toggle sits at the right edge of the card header', async ({
 	page,
 }) => {
 	test.slow()
-	await openAdvancedAnalytics(page)
+	await loadAnalyticsPage(page)
 
 	for (const card of SLOW_QUERY_CARDS) {
 		const header = page.locator(`${card} > div`).first()
