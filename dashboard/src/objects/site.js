@@ -109,7 +109,7 @@ export default {
 			if (!canRestoreTables(site)) return null
 			return {
 				title:
-					'The last update failed and the tables could not be restored. The site stays broken until you restore them.',
+					'The last update failed and the tables could not be restored. The site stays broken until you <b>Restore Tables</b>.',
 				type: 'error',
 			}
 		},
