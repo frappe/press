@@ -24,7 +24,9 @@
 		<div class="mt-3">
 			<div>
 				<div class="flex items-center">
-					<h2 class="text-lg font-medium text-ink-gray-9">{{ job.job_type }}</h2>
+					<h2 class="text-lg font-medium text-ink-gray-9">
+						{{ job.job_type }}
+					</h2>
 					<Badge class="ml-2" :label="job.status" />
 					<div class="ml-auto flex items-center space-x-2">
 						<Button
@@ -99,14 +101,14 @@
 	</div>
 </template>
 <script>
-import { FeatherIcon, Tooltip } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import AlertAddressableError from '../components/AlertAddressableError.vue';
-import { duration } from '../utils/format';
-import { getObject } from '../objects';
-import JobStep from '../components/JobStep.vue';
-import { confirmDialog } from '../utils/components';
-import { getToastErrorMessage } from '../utils/toast';
+import { FeatherIcon, Tooltip } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import AlertAddressableError from '../components/AlertAddressableError.vue'
+import JobStep from '../components/JobStep.vue'
+import { getObject } from '../objects'
+import { confirmDialog } from '../utils/components'
+import { duration } from '../utils/format'
+import { getToastErrorMessage } from '../utils/toast'
 
 // Keep in sync with DASHBOARD_CANCELLABLE_JOB_TYPES in agent_job.py
 const cancellableJobTypes = [
@@ -114,7 +116,7 @@ const cancellableJobTypes = [
 	'New Site from Backup',
 	'Backup Site',
 	'Update Site Migrate',
-];
+]
 
 export default {
 	name: 'JobPage',
@@ -129,25 +131,25 @@ export default {
 				whitelistedMethods: { cancelJob: 'cancel_job' },
 				transform(job) {
 					for (let step of job.steps) {
-						step.title = step.step_name;
-						step.duration = duration(step.duration);
+						step.title = step.step_name
+						step.duration = duration(step.duration)
 						step.isOpen =
 							this.job?.steps?.find((s) => s.name === step.name)?.isOpen ||
-							false;
+							false
 					}
 
 					// on delivery failure, there'll be no output for any step
 					// so show the job output (error) in the first step
 					if (['Undelivered', 'Delivery Failure'].includes(job.status)) {
-						job.steps[0].output = job.output;
+						job.steps[0].output = job.output
 					}
 
-					return job;
+					return job
 				},
 				onSuccess() {
-					this.lastLoaded = Date.now();
+					this.lastLoaded = Date.now()
 				},
-			};
+			}
 		},
 		// a site update that skipped backups has nothing to recover from,
 		// so its migrate job can't be cancelled
@@ -159,7 +161,7 @@ export default {
 				fields: ['skipped_backups'],
 				filters: { update_job: this.id },
 				limit: 1,
-			};
+			}
 		},
 		errors() {
 			return {
@@ -176,28 +178,28 @@ export default {
 				},
 				limit: 1,
 				orderBy: 'creation desc',
-			};
+			}
 		},
 	},
 	computed: {
 		object() {
-			return getObject(this.objectType);
+			return getObject(this.objectType)
 		},
 		job() {
-			return this.$resources.job.doc;
+			return this.$resources.job.doc
 		},
 		error() {
-			return this.$resources.errors?.data?.[0] ?? null;
+			return this.$resources.errors?.data?.[0] ?? null
 		},
 		canCancel() {
-			if (!['Pending', 'Running'].includes(this.job.status)) return false;
-			if (!cancellableJobTypes.includes(this.job.job_type)) return false;
-			if (this.job.job_type !== 'Update Site Migrate') return true;
+			if (!['Pending', 'Running'].includes(this.job.status)) return false
+			if (!cancellableJobTypes.includes(this.job.job_type)) return false
+			if (this.job.job_type !== 'Update Site Migrate') return true
 
 			// wait for the site update, so the button doesn't flash for an
 			// update that turns out to have skipped its backups
-			const siteUpdate = this.$resources.siteUpdate.data?.[0];
-			return Boolean(siteUpdate) && !siteUpdate.skipped_backups;
+			const siteUpdate = this.$resources.siteUpdate.data?.[0]
+			return Boolean(siteUpdate) && !siteUpdate.skipped_backups
 		},
 		dropdownOptions() {
 			return [
@@ -209,46 +211,46 @@ export default {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/agent-job/${this.id}`,
 							'_blank',
-						);
+						)
 					},
 				},
-			].filter((option) => option.condition?.() ?? true);
+			].filter((option) => option.condition?.() ?? true)
 		},
 	},
 	mounted() {
-		this.$socket.emit('doc_subscribe', 'Agent Job', this.id);
+		this.$socket.emit('doc_subscribe', 'Agent Job', this.id)
 		this.$socket.on('agent_job_update', (data) => {
 			if (data.id === this.id) {
 				data.steps = data.steps.map((step) => {
-					step.title = step.step_name;
-					step.duration = duration(step.duration);
+					step.title = step.step_name
+					step.duration = duration(step.duration)
 					step.isOpen =
-						this.job?.steps?.find((s) => s.name === step.name)?.isOpen || false;
-					return step;
-				});
+						this.job?.steps?.find((s) => s.name === step.name)?.isOpen || false
+					return step
+				})
 
 				this.$resources.job.doc = {
 					...this.$resources.job.doc,
 					...data,
-				};
+				}
 			}
-		});
+		})
 		// reload job every minute, in case socket is not working
 		this.reloadInterval = setInterval(() => {
-			this.reload();
-		}, 1000 * 60);
+			this.reload()
+		}, 1000 * 60)
 	},
 	beforeUnmount() {
-		this.$socket.emit('doc_unsubscribe', 'Agent Job', this.id);
-		this.$socket.off('agent_job_update');
-		clearInterval(this.reloadInterval);
+		this.$socket.emit('doc_unsubscribe', 'Agent Job', this.id)
+		this.$socket.off('agent_job_update')
+		clearInterval(this.reloadInterval)
 	},
 	methods: {
 		confirmCancel() {
 			const warning =
 				this.job.job_type === 'Update Site Migrate'
 					? '<br><br>The update will be marked as failed and a recovery job will restore the backup and roll the site back to the previous bench.'
-					: '';
+					: ''
 
 			confirmDialog({
 				title: 'Cancel Job',
@@ -261,14 +263,14 @@ export default {
 						toast.promise(this.$resources.job.cancelJob.submit(), {
 							loading: 'Cancelling job...',
 							success: () => {
-								hide();
-								return 'Job will be cancelled shortly';
+								hide()
+								return 'Job will be cancelled shortly'
 							},
 							error: (e) => getToastErrorMessage(e, 'Failed to cancel job'),
-						});
+						})
 					},
 				},
-			});
+			})
 		},
 		reload() {
 			if (
@@ -276,9 +278,9 @@ export default {
 				// reload if job was loaded more than 5 seconds ago
 				Date.now() - this.lastLoaded > 5000
 			) {
-				this.$resources.job.reload();
+				this.$resources.job.reload()
 			}
 		},
 	},
-};
+}
 </script>
