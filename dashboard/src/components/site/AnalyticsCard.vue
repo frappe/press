@@ -9,9 +9,12 @@
 	>
 		<div class="flex items-center border-b p-3 gap-2">
 			<h3 class="text-base font-medium text-ink-gray-9">{{ title }}</h3>
-			<slot name="action"></slot>
+			<!-- Grows, so the action slot can push its own content to either edge -->
+			<div class="flex flex-1 items-center gap-2">
+				<slot name="action"></slot>
+			</div>
 
-			<div class="ml-auto flex items-center gap-2">
+			<div class="flex items-center gap-2">
 				<a
 					v-if="docs"
 					:href="docs"
