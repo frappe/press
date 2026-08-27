@@ -498,7 +498,7 @@ export default {
 			duration: defaultDuration,
 			customStartTime: null,
 			customEndTime: null,
-			showAdvancedAnalytics: false,
+			showAdvancedAnalytics: true,
 			localTimezone: dayjs.tz.guess(),
 			chosenServer: this.$route.query.server ?? this.serverName,
 			durationOptions: [
