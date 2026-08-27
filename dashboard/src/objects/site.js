@@ -21,6 +21,32 @@ import { getBackupsTab } from './site/backups'
 // prefilled so only the ticket id has to be typed; on its own it is not a reason
 const LOGIN_REASON_PREFIX = 'Investigating '
 
+export function canRestoreTables(site) {
+	return site.doc?.fatal_site_update && site.doc?.status === 'Broken'
+}
+
+export function confirmRestoreTables(site) {
+	confirmDialog({
+		title: 'Restore Tables',
+		message: `The last update failed and the automatic recovery could not restore the tables.<br><br>This cannot be undone. The site database goes back to <b>${date(site.doc?.fatal_site_update_start, 'lll')}</b>, when the failed update started. All data written to the site after that time is lost.<br><br>Restore the tables now?`,
+		primaryAction: {
+			label: 'Restore Tables',
+			theme: 'red',
+		},
+		onSuccess({ hide }) {
+			if (site.retryRestoreTables.loading) return
+			toast.promise(site.retryRestoreTables.submit(), {
+				loading: 'Starting table restore...',
+				success: () => {
+					hide()
+					return 'Table restore started'
+				},
+				error: (e) => getToastErrorMessage(e),
+			})
+		},
+	})
+}
+
 export default {
 	doctype: 'Site',
 	whitelistedMethods: {
@@ -41,6 +67,7 @@ export default {
 		loginAsTeam: 'login_as_team',
 		isSetupWizardComplete: 'is_setup_wizard_complete',
 		reinstall: 'reinstall',
+		retryRestoreTables: 'retry_restore_tables',
 		removeDomain: 'remove_domain',
 		redirectToPrimary: 'set_redirect',
 		removeRedirect: 'unset_redirect',
@@ -1166,6 +1193,15 @@ export default {
 							params: { name: site.name },
 						})
 					},
+				},
+				{
+					label: 'Restore Tables',
+					variant: 'solid',
+					slots: {
+						prefix: icon('database'),
+					},
+					condition: () => canRestoreTables(site),
+					onClick: () => confirmRestoreTables(site),
 				},
 				{
 					label: 'Enable Monitoring',
