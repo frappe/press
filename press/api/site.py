@@ -42,6 +42,7 @@ from press.press.doctype.site.site_plan_utils import (
 	get_next_allowed_dedicated_product_warranty_change_date,
 	is_product_warranty_enabled_for_plan_,
 )
+from press.press.doctype.site_config.site_config import parse_json_config_value
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import (
@@ -2383,7 +2384,7 @@ def update_config(name, config):
 		elif c.type == "Boolean":
 			c.value = bool(sbool(c.value))
 		elif c.type == "JSON":
-			c.value = frappe.parse_json(c.value)
+			c.value = parse_json_config_value(c.key, c.value)
 		elif c.type == "Password" and c.value == "*******":
 			c.value = frappe.get_value("Site Config", {"key": c.key, "parent": name}, "value")
 		sanitized_config.append(c)
