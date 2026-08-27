@@ -910,3 +910,81 @@ class TestSite(FrappeTestCase):
 		}
 		self.assertTrue(bahrain_files.isdisjoint(deleted_files))
 		self.assertTrue(other_files.issubset(set(deleted_files)))
+
+	def _broken_site_with_fatal_update(self) -> Site:
+		from press.press.doctype.site_update.test_site_update import create_test_site_update
+
+		site = create_test_site("fatalupdate")
+		site_update = create_test_site_update(site.name, site.group, "Fatal", ignore_validate=True)
+		site.db_set("fatal_site_update", site_update.name)
+		site.db_set("status", "Broken")
+		site.reload()
+		return site
+
+	def test_retry_restore_tables_is_rejected_when_site_has_no_fatal_update(self):
+		site = create_test_site("healthysite")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError, "no failed update to recover from", site.retry_restore_tables
+		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_retry_restore_tables_is_rejected_while_another_restore_runs(self):
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		site = self._broken_site_with_fatal_update()
+		running_restore = create_test_agent_job("Restore Site Tables", server=site.server, status="Running")
+		running_restore.db_set("site", site.name)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError, "is already running on this site", site.retry_restore_tables
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=None))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_retry_restore_tables_is_rejected_when_database_reports_no_metrics(self):
+		# A database server that is down stops reporting mysql_up at all. Without a metric
+		# we cannot tell the database is back, so the one-shot restore must not be spent.
+		site = self._broken_site_with_fatal_update()
+
+		self.assertRaisesRegex(frappe.ValidationError, "database server is not up", site.retry_restore_tables)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run without proof that the database is up",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_retry_restore_tables_creates_restore_job_when_database_is_up(self):
+		site = self._broken_site_with_fatal_update()
+
+		site.retry_restore_tables()
+
+		self.assertTrue(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables should run once the database reports itself up",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_retry_restore_tables_is_rejected_when_a_newer_site_update_exists(self):
+		from press.press.doctype.site_update.test_site_update import create_test_site_update
+
+		# The newer update has to exist before the site is marked fatal — a fatal update
+		# blocks new ones.
+		site = create_test_site("newerupdate")
+		fatal_update = create_test_site_update(site.name, site.group, "Fatal", ignore_validate=True)
+		newer_update = create_test_site_update(site.name, site.group, "Success", ignore_validate=True)
+		site.db_set("fatal_site_update", fatal_update.name)
+		site.db_set("status", "Broken")
+		site.reload()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			f"Site Update {newer_update.name} ran after the failed one",
+			site.retry_restore_tables,
+		)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run once a newer update has moved the site on",
+		)

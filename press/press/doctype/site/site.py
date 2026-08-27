@@ -410,6 +410,11 @@ class Site(Document, TagHelpers):
 			frappe.db.exists("Site Update", {"site": self.name, "status": "Scheduled"})
 		)
 		doc.update_information = self.get_update_information()
+		doc.fatal_site_update_start = (
+			frappe.db.get_value("Site Update", self.fatal_site_update, "update_start")
+			if self.fatal_site_update
+			else None
+		)
 		doc.actions = self.get_actions()
 		server = frappe.get_value(
 			"Server",
@@ -1272,6 +1277,36 @@ class Site(Document, TagHelpers):
 				return True
 
 		return False
+
+	@dashboard_whitelist()
+	def retry_restore_tables(self):
+		"""Manual retry of the table restore the automatic recovery could not finish."""
+		if not self.fatal_site_update:
+			frappe.throw("This site has no failed update to recover from.")
+		# A newer update has moved the site on; its tables are not the ones to restore.
+		latest_update = frappe.db.get_value(
+			"Site Update", {"site": self.name}, "name", order_by="creation desc"
+		)
+		if latest_update != self.fatal_site_update:
+			frappe.throw(f"Site Update {latest_update} ran after the failed one. Cannot restore tables.")
+		if job := self.fetch_running_restore_tables_job():
+			frappe.throw(f"Table restore {job} is already running on this site.")
+		database_server = frappe.get_doc("Database Server", self.database_server_name)
+		# The restore only has one shot. Without metrics we cannot tell the database is up,
+		# so refuse and let the operator retry once the server reports itself again.
+		if not database_server.is_mariadb_up():
+			frappe.throw("The database server is not up. Try again once it is back.")
+		return self.restore_tables()
+
+	def fetch_running_restore_tables_job(self) -> str | None:
+		return frappe.db.exists(
+			"Agent Job",
+			{
+				"site": self.name,
+				"job_type": "Restore Site Tables",
+				"status": ["in", ["Undelivered", "Running", "Pending"]],
+			},
+		)
 
 	@frappe.whitelist()
 	def restore_tables(self):
