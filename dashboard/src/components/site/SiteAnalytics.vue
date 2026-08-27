@@ -550,7 +550,7 @@ export default {
 			logicalStartDate: null,
 			inputEndDate: null,
 			logicalEndDate: null,
-			showAdvancedAnalytics: false,
+			showAdvancedAnalytics: true,
 			localTimezone: dayjs.tz.guess(),
 			slowLogsDurationType: 'Normalized',
 			slowLogsFrequencyType: 'Normalized',
