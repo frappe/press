@@ -1418,10 +1418,7 @@ class Invoice(Document):
 
 def finalize_draft_invoices():
 	"""Runs hourly, 500 at a time. Finalizes only the previous month's Draft invoices,
-	starting 6 AM on the 1st - keeps the current month's invoice open for new usage."""
-
-	if frappe.utils.get_datetime().hour < 6:
-		return
+	keeps the current month's invoice open for new usage."""
 
 	previous_month_end = frappe.utils.get_last_day(frappe.utils.add_months(frappe.utils.today(), -1))
 	# only finalize for enabled teams
