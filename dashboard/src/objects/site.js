@@ -28,7 +28,7 @@ export function canRestoreTables(site) {
 export function confirmRestoreTables(site) {
 	confirmDialog({
 		title: 'Restore Tables',
-		message: `The last update failed and the automatic recovery could not restore the tables.<br><br>This cannot be undone. The site database goes back to <b>${date(site.doc?.fatal_site_update_start, 'lll')}</b>, when the failed update started. All data written to the site after that time is lost.<br><br>Restore the tables now?`,
+		message: `The update failed and the automatic recovery could not restore the tables.<br><br>Re-attempt the recovery manually?<br><br>The site database goes back to <b>${date(site.doc?.fatal_site_update_start, 'lll')}</b>, when the update started. <b>All data written to the site after that time is lost.</b> You cannot undo this.`,
 		primaryAction: {
 			label: 'Restore Tables',
 			theme: 'red',
