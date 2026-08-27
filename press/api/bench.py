@@ -32,6 +32,7 @@ from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
+from press.press.doctype.site_config.site_config import parse_json_config_value
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import (
 	docs,
@@ -355,7 +356,7 @@ def format_config_value(group: str, c: frappe._dict):
 	elif c.type == "Boolean":
 		c.value = bool(sbool(c.value))
 	elif c.type == "JSON":
-		c.value = frappe.parse_json(c.value)
+		c.value = parse_json_config_value(c.key, c.value)
 	elif c.type == "Password" and c.value == "*******":
 		c.value = frappe.get_value("Site Config", {"key": c.key, "parent": group}, "value")
 
