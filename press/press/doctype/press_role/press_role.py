@@ -71,20 +71,9 @@ class PressRole(Document):
 		"users",
 	)
 
-<<<<<<< HEAD
-	# The permission toggles the role configuration dialog flips. `resources`
-	# and `users` change through add_resource/add_user, which check the caller.
-=======
-	dashboard_insert_fields = (
-		"title",
-		"users",
-		"resources",
-	)
-
 	# The title and the permission toggles the role configuration dialog flips.
 	# `resources` and `users` change through add_resource/add_user, which check
 	# the caller.
->>>>>>> cdb742b (feat(dashboard): Allow renaming a press role)
 	dashboard_editable_fields = (
 		"admin_access",
 		"all_release_groups",
