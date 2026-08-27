@@ -124,6 +124,25 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#bench-memory-usage"
+				title="OOM Kills"
+			>
+				<LineChart
+					type="time"
+					title="OOM Kills"
+					unit="kills"
+					:key="oomKillsData"
+					:data="oomKillsData"
+					:chartTheme="[$theme.colors.red[500]]"
+					:loading="$resources.oomKills.loading"
+					:error="$resources.oomKills.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#server-analytics"
 				title="Disk Space"
 			>
@@ -599,6 +618,22 @@ export default {
 				auto: true,
 			}
 		},
+		oomKills() {
+			return {
+				url: 'press.api.server.analytics',
+				params: {
+					name: this.chosenServer,
+					timezone: this.localTimezone,
+					query: 'oom_kills',
+					start: this.startTime,
+					end: this.endTime,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
+				},
+				auto: true,
+			}
+		},
 		network() {
 			return {
 				url: 'press.api.server.analytics',
@@ -959,6 +994,12 @@ export default {
 			if (!memory) return
 
 			return this.transformSingleLineChartData(memory)
+		},
+		oomKillsData() {
+			let oomKills = this.$resources.oomKills.data
+			if (!oomKills) return
+
+			return this.transformSingleLineChartData(oomKills)
 		},
 		iopsData() {
 			let iops = this.$resources.iops.data
