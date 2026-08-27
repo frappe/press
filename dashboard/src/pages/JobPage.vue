@@ -175,6 +175,8 @@ export default {
 					document_name: this.id,
 					is_actionable: true,
 					class: 'Error',
+					// the page itself opens for support, so the banner must too
+					skip_team_filter_for_system_user_and_support_agent: true,
 				},
 				limit: 1,
 				orderBy: 'creation desc',
