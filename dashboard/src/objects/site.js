@@ -39,8 +39,8 @@ function confirmRestoreTables(site) {
 			theme: 'red',
 		},
 		onSuccess({ hide }) {
-			if (site.retryRestoreTables.loading) return
-			toast.promise(site.retryRestoreTables.submit(), {
+			if (site.restoreTables.loading) return
+			toast.promise(site.restoreTables.submit(), {
 				loading: 'Starting table restore...',
 				success: () => {
 					hide()
@@ -72,7 +72,7 @@ export default {
 		loginAsTeam: 'login_as_team',
 		isSetupWizardComplete: 'is_setup_wizard_complete',
 		reinstall: 'reinstall',
-		retryRestoreTables: 'retry_restore_tables',
+		restoreTables: 'restore_tables',
 		removeDomain: 'remove_domain',
 		redirectToPrimary: 'set_redirect',
 		removeRedirect: 'unset_redirect',

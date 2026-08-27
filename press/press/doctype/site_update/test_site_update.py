@@ -468,7 +468,8 @@ class TestSiteUpdate(FrappeTestCase):
 		site.save()
 
 		with fake_agent_job("Restore Site Tables", "Success"):
-			site.restore_tables()
+			# force: this test is about the callback, not the guards restore_tables applies
+			site.restore_tables(force=True)
 			poll_pending_jobs()
 
 		site.reload()

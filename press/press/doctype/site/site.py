@@ -1283,12 +1283,43 @@ class Site(Document, TagHelpers):
 
 		return False
 
+	def fetch_running_restore_tables_job(self) -> str | None:
+		return frappe.db.exists(
+			"Agent Job",
+			{
+				"site": self.name,
+				"job_type": "Restore Site Tables",
+				"status": ["in", ["Undelivered", "Running", "Pending"]],
+			},
+		)
+
 	@dashboard_whitelist()
-	def retry_restore_tables(self):
-		"""Manual retry of the table restore the automatic recovery could not finish."""
-		# Lock the site until this request commits, so two clicks cannot both pass the
-		# checks below and start two restores on the same database.
-		fatal_site_update = frappe.db.get_value("Site", self.name, "fatal_site_update", for_update=True)
+	def restore_tables(self, force: bool = False):
+		"""Restore the tables the failed update's recovery could not restore.
+
+		``force`` skips the checks that are judgement calls, for a system user who can
+		see more than the checks can. It never skips the concurrent-restore check.
+		"""
+		# Lock the site until this request commits. The dashboard and the desk both reach
+		# this method, and two restores against one database would corrupt it.
+		frappe.db.get_value("Site", self.name, "name", for_update=True)
+		if job := self.fetch_running_restore_tables_job():
+			frappe.throw(
+				f"Table restore {job} is already running on this site. Wait for it to finish, "
+				"then reload the page."
+			)
+		if not (force and is_system_user()):
+			self.validate_table_restore()
+		if not self.status_before_update:
+			self.status_before_update = self.status
+		agent = Agent(self.server)
+		job = agent.restore_site_tables(self)
+		self.status = "Pending"
+		self.save()
+		return job.name
+
+	def validate_table_restore(self):
+		fatal_site_update = frappe.db.get_value("Site", self.name, "fatal_site_update")
 		if not fatal_site_update:
 			frappe.throw(
 				"This site has no failed update to recover from. Its tables are already "
@@ -1304,37 +1335,11 @@ class Site(Document, TagHelpers):
 				f"Site Update {latest_update} ran after the failed one, so the backup no longer "
 				"matches this site. Restore the site from a backup instead."
 			)
-		if job := self.fetch_running_restore_tables_job():
-			frappe.throw(
-				f"Table restore {job} is already running on this site. Wait for it to finish, "
-				"then reload the page."
-			)
-		database_server = frappe.get_doc("Database Server", self.database_server_name)
 		# The restore only has one shot. Without metrics we cannot tell the database is up,
 		# so refuse and let the operator retry once the server reports itself again.
+		database_server = frappe.get_doc("Database Server", self.database_server_name)
 		if not database_server.is_mariadb_up():
 			frappe.throw("The database server is not up. Wait for it to come back, then try again.")
-		return self.restore_tables()
-
-	def fetch_running_restore_tables_job(self) -> str | None:
-		return frappe.db.exists(
-			"Agent Job",
-			{
-				"site": self.name,
-				"job_type": "Restore Site Tables",
-				"status": ["in", ["Undelivered", "Running", "Pending"]],
-			},
-		)
-
-	@frappe.whitelist()
-	def restore_tables(self):
-		if not self.status_before_update:
-			self.status_before_update = self.status
-		agent = Agent(self.server)
-		job = agent.restore_site_tables(self)
-		self.status = "Pending"
-		self.save()
-		return job.name
 
 	@property
 	def database_size(self) -> int:
