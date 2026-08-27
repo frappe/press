@@ -224,15 +224,17 @@ class SiteUpdate(Document):
 	def should_mark_site_fatal(self) -> bool:
 		"""An update that failed before it moved the site left nothing for an operator to resolve.
 
-		A job that fails marks its remaining steps Skipped, so a move that is still Pending or
-		Skipped never ran. Anything else, a missing step included, gets the site blocked.
+		A step gets a start time only when the agent runs it. Stale job cleanup overwrites the
+		status of steps that never ran, so the start time is the only reliable signal. A missing
+		step gets the site blocked.
 		"""
-		move_site_status = frappe.db.get_value(
+		move_site = frappe.db.get_value(
 			"Agent Job Step",
 			{"agent_job": self.update_job, "step_name": POINT_OF_NO_RETURN_STEP},
-			"status",
+			"start",
+			as_dict=True,
 		)
-		return move_site_status not in ("Pending", "Skipped")
+		return not move_site or bool(move_site.start)
 
 	def validate_past_failed_updates(self):
 		if getattr(self, "ignore_past_failures", False):

@@ -321,6 +321,42 @@ class TestSiteUpdate(FrappeTestCase):
 		)
 
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_stale_job_cleanup_doesnt_mark_site_fatal_for_a_move_that_never_ran(self):
+		# fail_old_jobs and update_job_step_status stamp the job status on every step that is
+		# still Pending, so a Move Site that never ran can end up Failure or Delivery Failure.
+		site = self._migrate_site_with_difference()
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Backup Site Tables", "status": "Failure"},
+						{"name": "Move Site", "status": "Pending"},
+					],
+				},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		update_job = frappe.db.get_value("Site Update", site_update, "update_job")
+		for status in ("Failure", "Delivery Failure"):
+			frappe.db.set_value(
+				"Agent Job Step",
+				{"agent_job": update_job, "step_name": "Move Site"},
+				"status",
+				status,
+			)
+			self.assertFalse(
+				SiteUpdate("Site Update", site_update).should_mark_site_fatal(),
+				f"A Move Site step stamped {status} by cleanup has no start time, so the move"
+				" never ran and the site should not be blocked",
+			)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 	def test_failed_migrate_with_skipped_backup_step_marks_site_fatal(self):
 		# A physical backup skips the in-job backup step, but the migration still runs.
 		site = self._migrate_site_with_difference()
