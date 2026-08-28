@@ -366,6 +366,15 @@ class ProductTrialRequest(Document):
 		if domain not in get_domains():
 			frappe.throw("The domain is invalid. Please enter a valid domain name.")
 
+	def resolve_cluster_and_domain(self, product: ProductTrial, domain: str) -> tuple[str, str]:
+		"""Re-resolve an apex domain, so that a signup never lands on it."""
+		if domain != product.domain:
+			return frappe.db.get_value("Root Domain", domain, "default_cluster"), domain
+
+		# The apex slipped through: the geo lookup failed, or the frontend state is stale.
+		cluster = product.get_cluster_for_request(self.account_request)
+		return cluster, product.get_signup_domain(cluster)
+
 	@dashboard_whitelist()
 	def create_site(self, subdomain: str, domain: str):
 		"""
@@ -378,13 +387,7 @@ class ProductTrialRequest(Document):
 			return
 
 		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
-		if domain == product.domain:
-			# Apex domain slipped through (geo lookup failed or stale frontend state).
-			# Re-resolve to a cluster subdomain so signups never land on the apex.
-			cluster = product.get_cluster_for_request(self.account_request)
-			domain = product.get_signup_domain(cluster)
-		else:
-			cluster = frappe.db.get_value("Root Domain", domain, "default_cluster")
+		cluster, domain = self.resolve_cluster_and_domain(product, domain)
 
 		self.validate_subdomain_and_domain(subdomain, domain)
 
