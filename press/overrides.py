@@ -57,23 +57,6 @@ def upload_file():
 	return ret
 
 
-def on_session_creation():
-	from press.utils import get_current_team
-
-	if (
-		not frappe.db.exists("Team", {"user": frappe.session.user})
-		and frappe.session.data.user_type == "System User"
-	):
-		return
-
-	try:
-		team = get_current_team(get_doc=True)
-		route = team.get_route_on_login()
-		frappe.local.response.update({"dashboard_route": route})
-	except Exception:
-		pass
-
-
 def on_login(login_manager):
 	if frappe.session.user and frappe.session.data and frappe.session.data.user_type == "System User":
 		return
@@ -87,19 +70,15 @@ def on_login(login_manager):
 	):
 		frappe.throw("Please re-login to verify your identity.")
 
-	if not frappe.db.exists("Team", {"user": frappe.session.user, "enabled": 1}) and frappe.db.exists(
-		"Team", {"user": frappe.session.user, "enabled": 0}
-	):
-		frappe.db.set_value("Team", {"user": frappe.session.user, "enabled": 0}, "enabled", 1)
-		frappe.db.commit()
-
 
 def before_job():
+	frappe.local._current_team = None
 	frappe.local.team = _get_current_team
 	frappe.local.system_user = _system_user
 
 
 def before_request():
+	frappe.local._current_team = None
 	frappe.local.team = _get_current_team
 	frappe.local.system_user = _system_user
 

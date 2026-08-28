@@ -62,7 +62,9 @@ class UserSSHCertificate(Document):
 				"docstatus": 1,
 			},
 		):
-			frappe.throw("A valid certificate already exists.")
+			frappe.throw(
+				"You already have a valid SSH certificate for this server. Please use the existing certificate, or wait for it to expire before requesting a new one."
+			)
 
 	def before_save(self):
 		# decode the ssh key and generate a fingerprint

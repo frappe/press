@@ -29,7 +29,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	get_total_installs_by_app,
 )
-from press.press.doctype.remote_file.remote_file import get_remote_key
+from press.press.doctype.remote_file.remote_file import get_remote_key, validate_files_belong_to_team
 from press.press.doctype.root_domain.root_domain import get_matching_domain
 from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site.site import (
@@ -45,6 +45,7 @@ from press.press.doctype.site.site_plan_utils import (
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import (
+	_system_user,
 	get_client_blacklisted_keys,
 	get_current_team,
 	get_frappe_backups,
@@ -140,6 +141,14 @@ def get_name_from_filters(filters: dict):
 	return None
 
 
+def validate_files_for_new_site(files: dict, team: str):
+	"""Site Replication creates the site from desk, under the operator's own team."""
+	if _system_user():
+		return
+
+	validate_files_belong_to_team(files, team)
+
+
 def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
@@ -148,6 +157,7 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 		)
 
 	files = site.get("files", {})
+	validate_files_for_new_site(files, team.name)
 
 	apps = [{"app": app} for app in site["apps"]]
 
@@ -298,17 +308,27 @@ def _check_warranty_restrictions(
 ) -> None:
 	if is_new or is_system_user or not is_current_dedicated_server_plan:
 		return
-	if is_current_plan_supported == is_product_warranty_enabled_for_plan_(new_plan):
+	is_new_plan_supported = is_product_warranty_enabled_for_plan_(new_plan)
+	if is_current_plan_supported == is_new_plan_supported:
 		return
+	if is_new_plan_supported:
+		# Enabling warranty is gated only by the server quota (it consumes a slot).
+		# The cooldown deliberately does not apply: the only enable the cooldown
+		# would block is a site reclaiming the slot it itself just gave up, which
+		# is legitimate as long as a slot is free. Rotating support to a *different*
+		# site is already prevented by the quota plus the cooldown on disabling.
+		quota = get_available_warranty_quota_for_server(server)
+		if quota.get("available") <= 0:
+			frappe.throw(
+				"You have exhausted the site warranty quota for this server. To increase limit, please contact support."
+			)
+		return
+	# Disabling warranty is gated by the cooldown to deter freeing a slot only to
+	# rotate it onto another site.
 	next_warranty_change = get_next_allowed_dedicated_product_warranty_change_date(site)
 	if get_datetime() < next_warranty_change:
 		pretty_date = format_datetime(next_warranty_change, "MMM d, YYYY hh:mm a")
 		frappe.throw(f"Cannot change product warranty for this site before {pretty_date}")  # nosemgrep
-	quota = get_available_warranty_quota_for_server(server)
-	if quota.get("available") <= 0:
-		frappe.throw(
-			"You have exhausted the site warranty quota for this server. To increase limit, please contact support."
-		)
 
 
 def _is_plan_allowed_on_server(server: str, new_site_plan: dict) -> bool:
@@ -321,10 +341,21 @@ def _is_plan_allowed_on_server(server: str, new_site_plan: dict) -> bool:
 		return False
 	if not new_site_plan.get("restrict_based_on_dedicated_server_plan", 0):
 		return True
-	app_server_plan = frappe.db.get_value("Server", server, "plan")
 	min_price = new_site_plan.get("minimum_server_price_usd", 0)
-	app_server_price = frappe.db.get_value("Server Plan", app_server_plan, "price_usd")
-	return app_server_price >= min_price
+	return get_dedicated_server_price(server) >= min_price
+
+
+def get_dedicated_server_price(server: str) -> float:
+	"""Combined monthly USD cost of a dedicated server: app server plan + its database server plan."""
+	app_server_plan, database_server = frappe.db.get_value("Server", server, ["plan", "database_server"])
+	app_server_price = frappe.db.get_value("Server Plan", app_server_plan, "price_usd") or 0
+
+	database_server_price = 0
+	if database_server:
+		database_server_plan = frappe.db.get_value("Database Server", database_server, "plan")
+		database_server_price = frappe.db.get_value("Server Plan", database_server_plan, "price_usd") or 0
+
+	return app_server_price + database_server_price
 
 
 @validate_argument_types
@@ -695,6 +726,22 @@ def running_jobs(name):
 
 @frappe.whitelist()
 @protected("Site")
+def backup_history(name: str, start_date: str, end_date: str, refresh: bool = False):
+	"""Whether a backup was taken on each day of the range, answered even for days the list hides.
+
+	Deliberately not a doc method: the page asks repeatedly while a trail is being built,
+	and run_doc_method returns the whole Site document with every answer.
+	"""
+	from press.press.doctype.site_backup.backup_history import get_backup_history
+
+	if not isinstance(name, str):
+		frappe.throw("Could not read the site name. Give it as text, for example demo.frappe.cloud.")
+
+	return get_backup_history(name, start_date, end_date, refresh=cint(refresh))
+
+
+@frappe.whitelist()
+@protected("Site")
 def backups(name):
 	available_offsite_backups = frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
 	fields = [
@@ -943,10 +990,14 @@ def _get_team_dedicated_server_info(for_server: str | None = None):
 			"cluster",
 			"provider",
 			"plan",
-			"plan.price_usd as price_usd",
 			"public",
 		],
 	)
+
+	for server in servers:
+		# Combined app server + database server cost, matching the gate in
+		# `_is_plan_allowed_on_server` so the UI and backend agree.
+		server["price_usd"] = get_dedicated_server_price(server["name"])
 
 	if for_server:
 		servers = attach_warranty_info_to_dedicated_servers(servers)
@@ -1069,7 +1120,7 @@ def options_for_new(for_bench: str | None = None, for_server: str | None = None)
 	default_domain = frappe.db.get_single_value("Press Settings", "domain")
 	cluster_specific_root_domains = frappe.db.get_all(
 		"Root Domain",
-		{"name": ("like", f"%.{default_domain}")},
+		{"name": ("like", f"%.{default_domain}"), "enabled": 1},
 		["name", "default_cluster as cluster"],
 	)
 
@@ -1240,6 +1291,8 @@ def set_bench_and_clusters(version, for_bench):
 			allowed_cluster_names = list(set(public_servers_clusters))
 
 		filters = {"name": ("in", allowed_cluster_names)}
+		if not for_bench:
+			filters["public"] = 1
 
 		version.group.clusters = frappe.db.get_all(
 			"Cluster",
@@ -1293,7 +1346,7 @@ def get_additional_clusters_for_private_benches(existing_clusters, cloud_provide
 
 		cluster_info = frappe.db.get_value(
 			"Cluster",
-			cluster_name,
+			{"name": cluster_name, "public": 1},
 			["name", "title", "image", "beta", "cloud_provider"],
 			as_dict=True,
 		)
@@ -2154,6 +2207,7 @@ def restore(name, files, skip_failing_patches=False):
 			"At least one file must be provided for restoration. Please provide either of database, public or private file to begin restoration of the site {name}."
 		)
 
+	validate_files_belong_to_team(files, frappe.db.get_value("Site", name, "team"))
 	frappe.db.set_value(
 		"Site",
 		name,
@@ -2182,7 +2236,12 @@ def validate_restoration_space_requirements(
 		public_file_size=public_file_size,
 		private_file_size=private_file_size,
 	)
-	required_space_on_db_server = site.get_restore_space_required_on_db(db_file_size=db_file_size)
+	required_space_on_db_server = site.db_server_restore_space(
+		server,
+		database_server,
+		site.get_restore_space_required_on_db(db_file_size=db_file_size),
+		required_space_on_app_server,
+	)
 
 	free_space_on_app_server = server.free_space(server.guess_data_disk_mountpoint())
 	free_space_on_db_server = database_server.free_space(database_server.guess_data_disk_mountpoint())

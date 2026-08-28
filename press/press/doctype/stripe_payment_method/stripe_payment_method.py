@@ -9,6 +9,7 @@ from frappe.model.document import Document
 from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.team.team import upgrade_beginner_tier_for_new_card
 from press.utils import log_error
 from press.utils.telemetry import capture
 
@@ -87,10 +88,15 @@ class StripePaymentMethod(Document):
 	def set_default(self):
 		stripe = get_stripe()
 		# set default payment method on stripe
-		stripe.Customer.modify(
-			self.stripe_customer_id,
-			invoice_settings={"default_payment_method": self.stripe_payment_method_id},
-		)
+		try:
+			stripe.Customer.modify(
+				self.stripe_customer_id,
+				invoice_settings={"default_payment_method": self.stripe_payment_method_id},
+			)
+		except Exception as e:
+			log_error("Failed to set default payment method on Stripe", doc=self, data=e)
+			frappe.throw("Could not set this card as default. Please try again or contact support.")
+
 		frappe.db.set_value(
 			"Stripe Payment Method",
 			{"team": self.team, "name": ("!=", self.name)},
@@ -102,6 +108,7 @@ class StripePaymentMethod(Document):
 		frappe.db.set_value("Team", self.team, "default_payment_method", self.name)
 		if not frappe.db.get_value("Team", self.team, "payment_mode"):
 			frappe.db.set_value("Team", self.team, "payment_mode", "Card")
+			upgrade_beginner_tier_for_new_card(self.team)
 			account_request_name = frappe.get_value("Team", self.team, "account_request")
 			if account_request_name:
 				account_request = frappe.get_doc("Account Request", account_request_name)
@@ -116,6 +123,22 @@ class StripePaymentMethod(Document):
 			team = frappe.get_doc("Team", self.team)
 			team.default_payment_method = None
 			team.save()
+
+	def after_delete(self):
+		# on_trash runs before the row is removed; detach here so this only
+		# happens once the payment method has actually been deleted locally
+		self.detach_from_stripe()
+
+	def detach_from_stripe(self):
+		if not self.stripe_payment_method_id:
+			return
+
+		stripe = get_stripe()
+		try:
+			stripe.PaymentMethod.detach(self.stripe_payment_method_id)
+		except Exception as e:
+			log_error("Failed to detach payment method from stripe", doc=self, data=e)
+			frappe.throw("Could not remove this card. Please try again or contact support.")
 
 	def remove_address_links(self):
 		address_links = frappe.db.get_all(
@@ -143,13 +166,6 @@ class StripePaymentMethod(Document):
 			"stripe_payment_method",
 			None,
 		)
-
-	def after_delete(self):
-		try:
-			stripe = get_stripe()
-			stripe.PaymentMethod.detach(self.stripe_payment_method_id)
-		except Exception as e:
-			log_error("Failed to detach payment method from stripe", data=e)
 
 	@frappe.whitelist()
 	def check_mandate_status(self):

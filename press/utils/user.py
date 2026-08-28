@@ -15,7 +15,7 @@ def is_system_manager(user: str | None = None) -> bool:
 	user_doc: User = frappe.get_cached_doc("User", user)
 	# FIX: Do not consider system users as system managers.
 	# TODO: Remove system users from being considered as system managers.
-	# HACK: Done to accomodate logics where system users are treated as system managers.
+	# HACK: Done to accommodate logics where system users are treated as system managers.
 	return user_doc.user_type == "System User" or bool(user_doc.get("roles", {"role": "System Manager"}))
 
 
@@ -29,13 +29,3 @@ def is_desk_user(user: str | None = None) -> bool:
 	user = user or frappe.session.user
 	user_doc: User = frappe.get_cached_doc("User", user)
 	return user_doc.user_type == "System User"
-
-
-def is_beta_tester(user: str | None = None) -> bool:
-	"""
-	Checks if the given user is a beta tester.
-
-	:param user: User to check. If None, uses the current session user.
-	:return: True if the user is a beta tester, False otherwise.
-	"""
-	return is_desk_user(user)

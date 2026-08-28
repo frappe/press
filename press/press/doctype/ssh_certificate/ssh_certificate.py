@@ -60,7 +60,9 @@ class SSHCertificate(Document):
 			self.ssh_fingerprint = base64.b64encode(sha256_sum.digest()).decode()
 			self.key_type = self.ssh_public_key.strip().split()[0].split("-")[1]
 		except binascii.Error:
-			frappe.throw("Attached text is a not valid public key")
+			frappe.throw(
+				"This doesn't look like a valid SSH public key. Please paste the full contents of your public key file (for example id_ed25519.pub)."
+			)
 
 		self.key_type = self.ssh_public_key.strip().split()[0].split("-")[1]
 		if not self.key_type:
@@ -90,7 +92,9 @@ class SSHCertificate(Document):
 				"group": self.group,
 			},
 		):
-			frappe.throw("A valid certificate already exists.")
+			frappe.throw(
+				"You already have a valid SSH certificate. Please use the existing certificate, or wait for it to expire before requesting a new one."
+			)
 
 	def create_public_key_file(self):
 		with open(self.public_key_file, "w") as file:
@@ -119,9 +123,7 @@ class SSHCertificate(Document):
 
 	def run(self, command):
 		try:
-			return subprocess.check_output(
-				shlex.split(command), stderr=subprocess.STDOUT
-			).decode()
+			return subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT).decode()
 		except subprocess.CalledProcessError as e:
 			log_error("Command failed", output={e.output.decode()}, doc=self)
 			raise

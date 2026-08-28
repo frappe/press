@@ -23,4 +23,10 @@ class PartnerTier(Document):
 		title: DF.Data | None
 	# end: auto-generated types
 
-	pass
+	dashboard_fields = (
+		"enabled",
+		"name",
+		"target_in_inr",
+		"target_in_usd",
+		"title",
+	)

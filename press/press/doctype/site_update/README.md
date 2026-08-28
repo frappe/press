@@ -11,6 +11,22 @@ Scheduled → Pending → Running → Success
                               → Cancelled
 ```
 
+| Status | Terminal | Meaning |
+|--------|----------|---------|
+| `Scheduled` | No | Waiting for the scheduled window |
+| `Pending` | No | Queued, AgentJob not yet started |
+| `Running` | No | AgentJob in progress on the server |
+| `Success` | Yes | Update completed successfully |
+| `Failure` | **No** | AgentJob failed; a recovery job is being created automatically. This is a transient state — the record will move to `Recovering` shortly |
+| `Recovering` | No | Recovery (rollback) job is running |
+| `Recovered` | Yes | Update failed but the site was rolled back to its previous bench successfully |
+| `Fatal` | Yes | Update failed and recovery also failed; usually needs manual intervention (but see the transient-error fallback below) |
+| `Cancelled` | Yes | Update was cancelled before or during execution |
+
+`Failure` is **not** a terminal state. Do not treat it as a final outcome when reading a site update record — wait for the transition to `Recovered` or `Fatal`.
+
+When a **migrate** recovery fails after moving the site back, due to a *transient* DB error (the server dropping the connection), Press makes one automatic attempt to bring the site back up by re-issuing a `Restore Site Tables` job. If that succeeds the site becomes `Active` again but the update **stays `Fatal`** (with its cause of failure marked resolved) — the update itself failed for good. See [docs/code/site-update](../../../../docs/code/site-update/index.md) for the full recovery flow.
+
 ## Deploy types
 
 | Type | Description |

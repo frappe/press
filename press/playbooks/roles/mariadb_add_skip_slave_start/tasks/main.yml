@@ -9,6 +9,10 @@
   systemd:
     daemon_reload: true
     name: mariadb
+    # Servers provisioned from an already-current data disk snapshot skip the
+    # MariaDB upgrade role (which would otherwise unmask the unit via apt), so
+    # mariadb.service can still be masked here. Unmask before the first start.
+    masked: false
     state: restarted
     enabled: yes
   when: restart_mariadb | default(true) | bool

@@ -75,11 +75,12 @@ class StripeWebhookLog(Document):
 			failure_reason = (
 				payload.get("data", {}).get("object", {}).get("last_payment_error", {}).get("message")
 			)
+			intent_id = payload.get("data", {}).get("object", {}).get("id")
 			capture_pulse(
 				"stripe_payment_failed",
 				{
 					"team": self.team,
-					"intent_id": self.stripe_payment_intent_id,
+					"intent_id": intent_id,
 					"failure_reason": failure_reason,
 				},
 			)
@@ -100,11 +101,13 @@ class StripeWebhookLog(Document):
 			)
 
 		if self.event_type == "invoice.payment_failed":
+			intent_id = payload.get("data", {}).get("object", {}).get("payment_intent")
 			capture_pulse(
 				"stripe_invoice_failed",
 				{
 					"team": self.team,
 					"invoice": self.invoice,
+					"intent_id": intent_id,
 				},
 			)
 

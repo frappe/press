@@ -76,6 +76,7 @@
 		"physical_backup_times",
 		"flags1_section",
 		"allow_physical_backup_by_user",
+		"disable_streaming_backups",
 		"tab_break_46",
 		"notifications_section",
 		"communication_infos",
@@ -567,6 +568,13 @@
 			"fieldname": "allow_physical_backup_by_user",
 			"fieldtype": "Check",
 			"label": "Allow Physical Backup By User"
+		},
+		{
+			"default": "0",
+			"description": "Stop the agent from streaming backup artifacts straight to S3 for offsite backups on this site.",
+			"fieldname": "disable_streaming_backups",
+			"fieldtype": "Check",
+			"label": "Disable Streaming Backups"
 		},
 		{
 			"collapsible_depends_on": "eval: doc.schedule_logical_backup_at_custom_time",

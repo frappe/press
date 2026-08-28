@@ -40,7 +40,7 @@ class DatabaseServerMariaDBVariable(Document):
 		return list(filter(lambda x: x.startswith("value_"), self.as_dict().keys()))
 
 	@property
-	def value_field(self) -> str:
+	def value_field(self) -> str | None:
 		"""Return the first value field that has a value"""
 		for f in self.value_fields:
 			if self.get(f):
@@ -72,7 +72,7 @@ class DatabaseServerMariaDBVariable(Document):
 	def get_variable_dict_for_play(self) -> dict:
 		var = self.mariadb_variable
 		if self.skip:
-			var = "skip-" + var
+			var = f"skip-{var}"
 		res = {
 			"variable": var,
 			"dynamic": self.dynamic,
@@ -85,7 +85,9 @@ class DatabaseServerMariaDBVariable(Document):
 
 	def validate_only_one_value_is_set(self):
 		if sum([bool(self.get(f)) for f in self.value_fields]) > 1:
-			frappe.throw("Only one value can be set for MariaDB system variable")
+			frappe.throw(
+				"A MariaDB variable can only have one value. Please fill in just one of the value fields and clear the others."
+			)
 
 	def validate_datatype_of_field_is_correct(self):
 		if type(self.value).__name__ != self.datatype.lower():

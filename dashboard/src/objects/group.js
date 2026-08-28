@@ -17,6 +17,21 @@ import { tagTab } from './common/tags';
 
 import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline';
 
+const removeApps = async (releaseGroup, rows) => {
+	let removed = 0;
+	for (const row of rows) {
+		try {
+			await releaseGroup.removeApp.submit({ app: row.name });
+			removed++;
+		} catch (e) {
+			const detail = e.messages?.length ? e.messages.join(' ') : e.message;
+			throw new Error(
+				`Removed ${removed} of ${rows.length} apps. Failed to remove "${row.title}": ${detail}`,
+			);
+		}
+	}
+}
+
 export default {
 	doctype: 'Release Group',
 	whitelistedMethods: {
@@ -43,75 +58,7 @@ export default {
 	list: {
 		route: '/groups',
 		title: 'Benches',
-		fields: [{ apps: ['app'] }],
-		searchField: 'title',
-		filterControls() {
-			return [
-				{
-					type: 'link',
-					label: 'Version',
-					fieldname: 'version',
-					options: {
-						doctype: 'Frappe Version',
-					},
-				},
-				{
-					type: 'link',
-					label: 'Tag',
-					fieldname: 'tags.tag',
-					options: {
-						doctype: 'Press Tag',
-						filters: {
-							doctype_name: 'Release Group',
-						},
-					},
-				},
-			];
-		},
-		columns: [
-			{ label: 'Title', fieldname: 'title', class: 'font-medium' },
-			{
-				label: 'Status',
-				fieldname: 'active_benches',
-				type: 'Badge',
-				width: 0.5,
-				format: (value, row) => {
-					if (!value) return 'Awaiting Deploy';
-					else return 'Active';
-				},
-			},
-			{
-				label: 'Version',
-				fieldname: 'version',
-				width: 0.5,
-			},
-			{
-				label: 'Apps',
-				fieldname: 'app',
-				format: (value, row) => {
-					return (row.apps || []).map((d) => d.app).join(', ');
-				},
-				width: '25rem',
-			},
-			{
-				label: 'Sites',
-				fieldname: 'site_count',
-				class: 'text-ink-gray-6',
-				width: 0.25,
-			},
-		],
-		primaryAction() {
-			return {
-				label: 'New Bench',
-				variant: 'solid',
-				slots: {
-					prefix: icon('plus'),
-				},
-				onClick() {
-					router.push({ name: 'New Release Group' });
-				},
-			};
-		},
+		component: () => import('../pages/benches/list/Page.vue'),
 	},
 	detail: {
 		titleField: 'title',
@@ -164,6 +111,7 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Release Group App',
+					reloadOnDocField: 'status',
 					filters: (releaseGroup) => {
 						return {
 							parenttype: 'Release Group',
@@ -245,6 +193,7 @@ export default {
 							width: 0.5,
 						},
 					],
+					rowDisabled: (row) => row.name === 'frappe',
 					rowActions({
 						row,
 						listResource: apps,
@@ -343,10 +292,62 @@ export default {
 							},
 						];
 					},
+					moreActions({ selectionMode, enterSelectionMode }) {
+						if (selectionMode) return [];
+						return [
+							{
+								label: 'Uninstall Multiple',
+								icon: 'trash-2',
+								onClick: () => enterSelectionMode(),
+							},
+						];
+					},
+					secondaryAction({ selectionMode, exitSelectionMode }) {
+						if (!selectionMode) return null;
+						return {
+							label: 'Cancel',
+							onClick: () => exitSelectionMode(),
+						};
+					},
 					primaryAction({
 						listResource: apps,
 						documentResource: releaseGroup,
+						selectionMode,
+						selectedRows,
+						exitSelectionMode,
 					}) {
+						if (selectionMode) {
+							return {
+								label: selectedRows.length
+									? `Remove ${selectedRows.length} App${selectedRows.length === 1 ? '' : 's'}`
+									: 'Remove Apps',
+								theme: 'red',
+								disabled: selectedRows.length === 0,
+								onClick() {
+									confirmDialog({
+										title: 'Remove Apps',
+										message: `Are you sure you want to remove <b>${selectedRows.length}</b> app${selectedRows.length === 1 ? '' : 's'}: ${selectedRows.map((row) => row.title).join(', ')}?`,
+										onSuccess: ({ hide }) => {
+											toast.promise(removeApps(releaseGroup, selectedRows), {
+												loading: 'Removing Apps...',
+												success: () => {
+													hide();
+													exitSelectionMode();
+													apps.reload();
+													return 'Apps Removed';
+												},
+												error: (e) => {
+													hide();
+													exitSelectionMode();
+													apps.reload();
+													return getToastErrorMessage(e);
+												},
+											});
+										},
+									});
+								},
+							};
+						}
 						return {
 							label: 'Add App',
 							slots: {
@@ -746,10 +747,7 @@ export default {
 			let { documentResource: group } = context;
 			let team = getTeam();
 
-			if (
-				group.doc?.deploy_information?.has_running_release_pipeline &&
-				!group.doc?.deploy_information?.deploy_in_progress
-			) {
+			if (group.doc?.deploy_information?.has_running_release_pipeline) {
 				pollReleasePipelineValidationStatus(group);
 			}
 

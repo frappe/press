@@ -167,7 +167,9 @@ def get_stripe():
 		)
 
 		if not secret_key:
-			frappe.throw("Setup stripe via Press Settings before using press.api.billing.get_stripe")
+			frappe.throw(
+				"Stripe is not configured. Please set up Stripe in Press Settings before using this feature."
+			)
 
 		stripe.api_key = secret_key
 		# Set the maximum number of retries for network requests
@@ -211,7 +213,7 @@ def get_razorpay_client():
 
 		if not (key_id and key_secret):
 			frappe.throw(
-				"Setup razorpay via Press Settings before using press.api.billing.get_razorpay_client"
+				"Razorpay is not configured. Please set up Razorpay in Press Settings before using this feature."
 			)
 
 		frappe.local.press_razorpay_client_object = razorpay.Client(auth=(key_id, key_secret))
@@ -260,7 +262,9 @@ def get_partner_external_connection(mpesa_setup):
 		fields=["name", "url", "api_key", "api_secret"],
 	)
 	if not payment_gateway:
-		frappe.throw("Mpesa Setup not set up in Payment Gateway")
+		frappe.throw(
+			"M-Pesa is not configured. Please set up M-Pesa in the Payment Gateway settings before using this feature."
+		)
 	# Fetch API key and secret
 	pg = frappe.get_doc("Payment Gateway", payment_gateway[0].name)
 	api_key = pg.api_key

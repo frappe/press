@@ -65,7 +65,9 @@ class WireguardPeer(Document):
 				self.peer_ip = str(next_ip_addr)
 		except Exception:
 			log_error("Wireguard Peer IP Exception", server=self.as_dict())
-			frappe.throw("Invalid Wireguard Network")
+			frappe.throw(
+				"The WireGuard network is invalid. Please provide a valid network address in CIDR notation."
+			)
 
 	@frappe.whitelist()
 	def setup_wireguard(self):

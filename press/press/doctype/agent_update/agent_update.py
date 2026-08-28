@@ -139,12 +139,14 @@ class AgentUpdate(Document):
 			frappe.throw("Please select at least one server type")
 
 		if not self.restart_web_workers and not self.restart_rq_workers and not self.restart_redis:
-			frappe.throw("At minimum, you need to restart web workers during update")
+			frappe.throw(
+				"An agent update must restart something. Please enable at least 'restart web workers'."
+			)
 
 		if self.restart_redis:  # noqa: SIM102
 			if not self.restart_rq_workers or not self.restart_web_workers:
 				frappe.throw(
-					"If you are restarting redis, you need to restart rq workers and web workers as well"
+					"Restarting Redis also requires restarting rq workers and web workers. Please enable both of those options as well."
 				)
 
 		if not self.agent_startup_timeout_minutes:
@@ -175,16 +177,20 @@ class AgentUpdate(Document):
 		# Verify rollback commit hash
 		if self.auto_rollback_changes and self.rollback_to_specific_commit:
 			if not self.default_rollback_commit:
-				frappe.throw("Rollback commit hash is required when rollback to specific commit is enabled")
+				frappe.throw(
+					"Please enter the commit hash to roll back to, since 'rollback to specific commit' is enabled."
+				)
 
 			if self.fetch_commit_date(self.default_rollback_commit) is None:
-				frappe.throw("Rollback commit hash is not valid")
+				frappe.throw(
+					"We couldn't find that rollback commit hash in the agent repository. Please check the hash and try again."
+				)
 
 		# Add servers
 		self.add_server_entries()
 
 	def add_server_entries(self):
-		filters = {"status": "Active"}
+		filters = {"status": "Active", "disable_agent_update": 0}
 		if self.exclude_self_hosted_servers:
 			filters.update({"is_self_hosted": 0})
 
@@ -223,10 +229,14 @@ class AgentUpdate(Document):
 		frappe.db.get_value(self.doctype, self.name, "name", for_update=True)
 
 		if self.status != "Pending":
-			frappe.throw("You can only split updates when the status is Pending")
+			frappe.throw(
+				"Updates can only be split while the status is Pending. This update has already started, so it can no longer be split."
+			)
 
 		if not self.servers:
-			frappe.throw("No servers found to split updates")
+			frappe.throw(
+				"There are no servers on this update to split. Please add servers before splitting into batches."
+			)
 
 		if len(self.servers) < no_of_batches:
 			frappe.throw(
@@ -234,7 +244,7 @@ class AgentUpdate(Document):
 			)
 
 		if no_of_batches <= 1:
-			frappe.throw("You need to split into at least 2 groups")
+			frappe.throw("Please split into at least 2 groups — splitting into one group has no effect.")
 
 		"""
 		For splitting updates, we need to create a duplicate Agent Update document for N groups
@@ -383,7 +393,9 @@ class AgentUpdate(Document):
 	@frappe.whitelist()
 	def force_continue(self):
 		if self.status not in ["Failure", "Partial Success"]:
-			frappe.throw("You can only force continue when the status is Failure or Partial Success")
+			frappe.throw(
+				"Force continue is only available after a Failure or Partial Success. This update is still in another state, so there's nothing to continue."
+			)
 
 		# Reset failed updates
 		for failed_update in self.servers:
@@ -413,7 +425,9 @@ class AgentUpdate(Document):
 	@frappe.whitelist()
 	def execute(self):
 		if self.status not in ["Pending", "Running"]:
-			frappe.throw("You can only call execute when the status is Pending or Running")
+			frappe.throw(
+				"This update can only be executed while it is Pending or Running. It has already finished, so there's nothing to execute."
+			)
 
 		if self._process_next_step():
 			frappe.enqueue_doc(
@@ -487,6 +501,12 @@ class AgentUpdate(Document):
 		"""
 
 		if current_agent_update_to_process.status == "Pending":
+			# The server can be opted out after the plan was made
+			if self._is_agent_update_disabled(current_agent_update_to_process):
+				current_agent_update_to_process.status = "Skipped"
+				self.save(ignore_version=True)
+				return False
+
 			if (
 				self.run_on_fewer_servers_and_pause
 				and not self.paused_due_to_test_mode
@@ -581,6 +601,13 @@ class AgentUpdate(Document):
 
 		return False
 
+	def _is_agent_update_disabled(self, agent_update_server: AgentUpdateServer) -> bool:
+		return bool(
+			frappe.db.get_value(
+				agent_update_server.server_type, agent_update_server.server, "disable_agent_update"
+			)
+		)
+
 	def _halt_agent_jobs(self, agent_update_server: AgentUpdateServer):
 		frappe.db.set_value(
 			agent_update_server.server_type,
@@ -600,17 +627,17 @@ class AgentUpdate(Document):
 		)
 
 	def _update_agent_on_server(self):
-		current_agent_update_to_process = self.current_agent_update_to_process
-		server_doc = frappe.get_doc(
-			current_agent_update_to_process.server_type, current_agent_update_to_process.server
-		)
+		agent_update_server = self.current_agent_update_to_process
+		is_rollback = agent_update_server.status == "Rolling Back"
+		try:
+			self._run_agent_update_play(agent_update_server, is_rollback)
+		except Exception:
+			frappe.db.rollback()
+			self._fail_agent_update_play(agent_update_server, is_rollback)
 
-		is_rollback = False
-		if current_agent_update_to_process.status == "Rolling Back":
-			is_rollback = True
-		commit = self.commit_hash
-		if is_rollback:
-			commit = current_agent_update_to_process.rollback_commit
+	def _run_agent_update_play(self, agent_update_server: AgentUpdateServer, is_rollback: bool):
+		server_doc = frappe.get_doc(agent_update_server.server_type, agent_update_server.server)
+		commit = agent_update_server.rollback_commit if is_rollback else self.commit_hash
 
 		play = Ansible(
 			playbook="update_agent.yml",
@@ -624,24 +651,40 @@ class AgentUpdate(Document):
 			port=server_doc._ssh_port(),
 		)
 
-		data_to_update = {
-			"start": frappe.utils.now_datetime(),
-		}
-
-		if is_rollback:
-			data_to_update["rollback_ansible_play"] = play.play
-		else:
-			data_to_update["update_ansible_play"] = play.play
-
+		play_field = "rollback_ansible_play" if is_rollback else "update_ansible_play"
 		frappe.db.set_value(
 			"Agent Update Server",
-			current_agent_update_to_process.name,
-			data_to_update,
+			agent_update_server.name,
+			{"start": frappe.utils.now_datetime(), play_field: play.play},
 			update_modified=False,
 		)
 		frappe.db.commit()
 
 		play.run()
+
+	def _fail_agent_update_play(self, agent_update_server: AgentUpdateServer, is_rollback: bool):
+		"""The play can blow up before it records a status, so mark the failure ourselves."""
+		frappe.log_error(
+			"Agent Update Play Failed",
+			reference_doctype=self.doctype,
+			reference_name=self.name,
+		)
+
+		# A failed update still gets rolled back, a failed rollback has nowhere left to go
+		data_to_update = {
+			"status": "Fatal" if is_rollback else "Failure",
+			"end": frappe.utils.now_datetime(),
+		}
+		if is_rollback:
+			data_to_update["reason_of_fatal_status"] = "Rollback play failed to run. Check the error log."
+
+		frappe.db.set_value(
+			"Agent Update Server",
+			agent_update_server.name,
+			data_to_update,
+			update_modified=False,
+		)
+		frappe.db.commit()
 
 	@property
 	def github_access_token_header(self):

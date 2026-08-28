@@ -6,11 +6,14 @@ from typing import Any
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import flt, get_last_day, now_datetime, today
+from frappe.utils import add_months, flt, get_last_day, getdate, now_datetime, today
 from pypika.enums import Order
 
 from press.guards import role_guard
-from press.partner.doctype.certificate_link_request.certificate_link_request import CertificateLinkRequest
+from press.partner.doctype.certificate_link_request.certificate_link_request import (
+	CertificateLinkRequest,
+	notify_partner_team,
+)
 from press.utils import get_current_team
 
 
@@ -28,8 +31,10 @@ class PartnerOnboarding(Document):
 		agreed_to_partnership_agreement: DF.Check
 		amended_from: DF.Link | None
 		annual_revenue: DF.Currency
+		approved_on: DF.Datetime | None
 		certified_employees_range: DF.Data | None
 		company_email: DF.Data
+		company_logo: DF.Attach | None
 		company_name: DF.Data
 		contact: DF.Phone
 		customer_count_range: DF.Data | None
@@ -40,6 +45,7 @@ class PartnerOnboarding(Document):
 		headquarter_city: DF.Data | None
 		incorporation_certificate: DF.Attach | None
 		registered_country: DF.Link
+		registered_state: DF.Data | None
 		revenue_currency: DF.Link | None
 		reviewed_by: DF.Link | None
 		reviewed_on: DF.Datetime | None
@@ -54,6 +60,7 @@ class PartnerOnboarding(Document):
 		"team",
 		"company_name",
 		"registered_country",
+		"registered_state",
 		"company_email",
 		"contact",
 		"address",
@@ -68,9 +75,21 @@ class PartnerOnboarding(Document):
 		"existing_partnerships",
 		"erp_implementations_range",
 		"incorporation_certificate",
+		"company_logo",
 		"agreed_to_due_diligence",
 		"agreed_to_partnership_agreement",
 	)
+
+	def validate(self):
+		# State is only meaningful for India territory assignment; drop it otherwise.
+		if self.registered_country != "India":
+			self.registered_state = None
+			return
+
+		# Only gate drafts — submitted/approved India rows may predate this field.
+		if self.docstatus == 0 and not self.registered_state:
+			# nosemgrep: non-actionable-error-message - error is self-explanatory
+			frappe.throw("Registered state is required when registered country is India.")
 
 	def before_submit(self):
 		team = frappe.get_cached_doc("Team", self.team)
@@ -90,6 +109,30 @@ class PartnerOnboarding(Document):
 		self.status = "Pending Review"
 		self.submitted_on = now_datetime()
 
+	def before_save(self):
+		# Status is read-only in desk, but still fill review metadata whenever it
+		# flips to a decision — covers Approve/Reject buttons and any server-side set.
+		if not self.has_value_changed("status"):
+			return
+
+		if self.status in ("Approved", "Rejected"):
+			self.reviewed_by = frappe.session.user
+			self.reviewed_on = now_datetime()
+			if self.status == "Approved":
+				self.approved_on = now_datetime()
+
+	def on_update(self):
+		if not self.has_value_changed("status"):
+			return
+
+		if self.status == "Approved":
+			team = frappe.get_doc("Team", self.team)
+			team.enable_erpnext_partner_privileges()
+			_sync_company_logo_to_team(team, self.company_logo)
+			notify_partner_team(self.team, "partner_onboarding_status_updated")
+		elif self.status == "Rejected":
+			notify_partner_team(self.team, "partner_onboarding_status_updated")
+
 	@frappe.whitelist()
 	def approve(self):
 		frappe.only_for("Partner Manager")
@@ -103,21 +146,9 @@ class PartnerOnboarding(Document):
 				"Only pending submissions can be approved. Refresh the page and open a pending review request."
 			)
 
-		team = frappe.get_doc("Team", self.team)
-		team.enable_erpnext_partner_privileges()
-
 		self.status = "Approved"
-		self.reviewed_by = frappe.session.user
-		self.reviewed_on = now_datetime()
 		self.reviewer_comments = None
 		self.save()
-		# publish a realtime event to update the partner onboarding status
-		frappe.publish_realtime(
-			"partner_onboarding_status_updated",
-			message={"team": self.team},
-			doctype="Team",
-			after_commit=True,
-		)
 
 	@frappe.whitelist()
 	def reject(self, reason: str | None = None):
@@ -133,23 +164,18 @@ class PartnerOnboarding(Document):
 			)
 
 		self.status = "Rejected"
-		self.reviewed_by = frappe.session.user
-		self.reviewed_on = now_datetime()
 		self.reviewer_comments = reason
 		self.save()
-		# publish a realtime event to update the partner onboarding status
-		frappe.publish_realtime(
-			"partner_onboarding_status_updated",
-			message={"team": self.team},
-			doctype="Team",
-			after_commit=True,
-		)
+
+
+def _active_onboarding_filters(team: str) -> dict:
+	return {"team": team, "docstatus": ["<", 2], "status": ["!=", "Cancelled"]}
 
 
 def _get_partner_onboarding(team: str):
 	names = frappe.get_all(
 		"Partner Onboarding",
-		filters={"team": team, "docstatus": ["<", 2], "status": ["!=", "Cancelled"]},
+		filters=_active_onboarding_filters(team),
 		pluck="name",
 		order_by="creation desc",
 		limit=1,
@@ -157,6 +183,11 @@ def _get_partner_onboarding(team: str):
 	if names:
 		return frappe.get_doc("Partner Onboarding", names[0])
 	return None
+
+
+def has_partner_onboarding(team: str) -> bool:
+	"""Whether the team has started (and not cancelled) a partner onboarding request."""
+	return bool(frappe.db.exists("Partner Onboarding", _active_onboarding_filters(team)))
 
 
 def _clear_certificate_links(team: str) -> None:
@@ -178,12 +209,7 @@ def _clear_certificate_links(team: str) -> None:
 			{"status": "Cancelled", "key": None},
 		)
 
-	frappe.publish_realtime(
-		"partner_onboarding_certificates_updated",
-		message={"team": team},
-		user=frappe.session.user,
-		after_commit=True,
-	)
+	notify_partner_team(team, "partner_onboarding_certificates_updated")
 
 
 def _get_certificate_link_status(team: str) -> dict:
@@ -239,22 +265,60 @@ def _get_mrr_currency(team) -> str:
 	return "USD"
 
 
+def _get_mrr_subscription_invoices(team_name: str) -> list:
+	"""Pick the invoice cycle that best represents the team's MRR.
+
+	A team in its first billing month only has a current month invoice, still
+	in Draft, so we count that one. Once a previous cycle exists we look at
+	last month's invoice instead: past the 15th that cycle is settled enough
+	to only count it if Paid, otherwise we also accept it as Unpaid since the
+	partner is assumed to settle it by month end.
+	"""
+	invoice = frappe.qb.DocType("Invoice")
+	subscription_invoice_count = frappe.db.count(
+		"Invoice",
+		filters={"team": team_name, "type": "Subscription", "docstatus": ["<", 2]},
+	)
+
+	if subscription_invoice_count <= 1:
+		current_month_due_date = get_last_day(today())
+		query = (
+			frappe.qb.from_(invoice)
+			.select(invoice.currency, invoice.total_before_discount)
+			.where(
+				(invoice.team == team_name)
+				& (invoice.type == "Subscription")
+				& (invoice.due_date == current_month_due_date)
+				& (invoice.docstatus < 2)
+			)
+		)
+		return query.run(as_dict=True)
+
+	last_month_due_date = get_last_day(add_months(today(), -1))
+	query = (
+		frappe.qb.from_(invoice)
+		.select(invoice.currency, invoice.total_before_discount)
+		.where(
+			(invoice.team == team_name)
+			& (invoice.type == "Subscription")
+			& (invoice.due_date == last_month_due_date)
+			& (invoice.docstatus < 2)
+		)
+	)
+
+	if getdate(today()).day > 15:
+		query = query.where(invoice.status == "Paid")
+	else:
+		query = query.where(invoice.status.isin(["Paid", "Unpaid"]))
+
+	return query.run(as_dict=True)
+
+
 def _get_mrr_status(team) -> dict:
 	team_currency = _get_mrr_currency(team)
 	target_amount = 10000 if team_currency == "INR" else 100
 
-	invoice = frappe.qb.DocType("Invoice")
-	invoices = (
-		frappe.qb.from_(invoice)
-		.select(invoice.currency, invoice.total_before_discount)
-		.where(
-			(invoice.partner_email == team.partner_email)
-			& (invoice.due_date == get_last_day(today()))
-			& (invoice.type == "Subscription")
-			& (invoice.docstatus == 1)
-		)
-		.run(as_dict=True)
-	)
+	invoices = _get_mrr_subscription_invoices(team.name)
 
 	current_amount = 0
 	for row in invoices:
@@ -275,19 +339,21 @@ def _get_mrr_status(team) -> dict:
 
 
 def _is_profile_complete(doc: PartnerOnboarding) -> bool:
-	return all(
-		[
-			doc.company_name,
-			doc.registered_country,
-			doc.company_email,
-			doc.contact,
-			doc.address,
-			doc.headquarter_city,
-			doc.incorporation_certificate,
-			doc.agreed_to_due_diligence,
-			doc.agreed_to_partnership_agreement,
-		]
-	)
+	required = [
+		doc.company_name,
+		doc.registered_country,
+		doc.company_email,
+		doc.contact,
+		doc.address,
+		doc.headquarter_city,
+		doc.incorporation_certificate,
+		doc.company_logo,
+		doc.agreed_to_due_diligence,
+		doc.agreed_to_partnership_agreement,
+	]
+	if doc.registered_country == "India":
+		required.append(doc.registered_state)
+	return all(required)
 
 
 @frappe.whitelist()
@@ -298,6 +364,19 @@ def get_partner_onboarding() -> dict | None:
 	if not doc:
 		return None
 	return doc.as_dict()
+
+
+def _sync_company_name_to_team(team, company_name: str | None) -> None:
+	"""The company name is the team's identity (shown to certificate holders,
+	in partner listings, etc.), so keep it on the Team as the source of truth."""
+	if company_name and company_name != team.company_name:
+		frappe.db.set_value("Team", team.name, "company_name", company_name)
+
+
+def _sync_company_logo_to_team(team, company_logo: str | None) -> None:
+	"""Partner listings read the logo from Team, so mirror it on save/approve."""
+	if company_logo and company_logo != team.company_logo:
+		frappe.db.set_value("Team", team.name, "company_logo", company_logo)
 
 
 @frappe.whitelist(methods=["POST"])
@@ -333,6 +412,9 @@ def save_partner_onboarding(details: dict[str, Any]) -> dict:
 		doc.insert()
 	else:
 		doc.save()
+
+	_sync_company_name_to_team(team, doc.company_name)
+	_sync_company_logo_to_team(team, doc.company_logo)
 
 	return doc.as_dict()
 

@@ -117,8 +117,11 @@ def callback(code=None, state=None):
 		# login
 		else:
 			frappe.local.login_manager.login_as(email)
+			# route lookup fails for a disabled team, the dashboard asks them to reactivate
+			team_name = frappe.db.get_value("Team", {"user": email, "enabled": 1}, "name")
+			route = frappe.get_doc("Team", team_name).get_route_on_login() if team_name else ""
 			frappe.local.response.type = "redirect"
-			frappe.response.location = "/dashboard"
+			frappe.response.location = f"/dashboard{route}"
 
 	return None
 

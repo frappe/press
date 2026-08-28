@@ -93,7 +93,7 @@ def get_saas_bench(app):
 	)
 	release_group = get_saas_group(app)
 	cluster = get_saas_cluster(app)
-	bench_servers = frappe.db.sql(
+	bench_servers = frappe.db.sql(  # nosemgrep
 		"""
 		SELECT
 			bench.name, bench.server
@@ -105,6 +105,7 @@ def get_saas_bench(app):
 			bench.server = server.name
 		WHERE
 			server.proxy_server in %s AND server.cluster = %s AND bench.status = "Active" AND bench.group = %s
+			AND server.skip_standby_site_creation = 0
 		ORDER BY
 			server.use_for_new_sites DESC, bench.creation DESC
 	""",

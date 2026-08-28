@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Avatar, Badge, Tooltip } from 'frappe-ui'
+import { Avatar, Badge, Button, Tooltip } from 'frappe-ui'
 import { computed, inject, ref } from 'vue'
 import UnregisterButton from '@/onboarding/onboardingRightContainer/UnregisterButton.vue'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
@@ -31,6 +31,11 @@ const statusTheme = computed(() => {
 	if (status.value === 'Rejected') return 'red'
 	return 'orange'
 })
+
+// only show tooltip when the company name is truncated
+const showTooltip = computed(() => {
+	return companyName.value.length > 20
+})
 </script>
 
 <template>
@@ -38,13 +43,19 @@ const statusTheme = computed(() => {
 		<div class="flex items-center gap-3">
 			<Avatar :label="companyInitial" size="lg" class="shrink-0" />
 			<div class="min-w-0 flex-1">
-				<Tooltip :text="companyName">
+				<Tooltip v-if="showTooltip" :text="companyName">
 					<p
 						class="truncate text-p-base font-semibold text-ink-gray-9 cursor-default"
 					>
 						{{ companyName }}
 					</p>
 				</Tooltip>
+				<p
+					v-else
+					class="text-p-base font-semibold text-ink-gray-9 cursor-default"
+				>
+					{{ companyName }}
+				</p>
 				<div class="mt-1 flex items-center gap-2">
 					<span class="text-p-sm text-ink-gray-5">Partner application</span>
 					<Badge variant="subtle" :theme="statusTheme" size="sm">
@@ -54,17 +65,19 @@ const statusTheme = computed(() => {
 			</div>
 		</div>
 
-		<button
+		<Button
 			v-if="onboarding.isRegistered.value"
-			type="button"
-			class="group flex w-full items-center justify-center gap-1.5 rounded-md border border-outline-gray-2 px-3 py-2 text-p-sm text-ink-gray-6 transition-colors hover:border-outline-gray-3 hover:bg-surface-gray-1 hover:text-ink-red-4"
+			class="w-full"
+			size="md"
+			variant="outline"
+			theme="red"
+			label="Unregister"
 			@click="openUnregisterConfirmationDialog = true"
 		>
-			<LucideLogOut
-				class="size-3.5 text-ink-gray-5 transition-colors group-hover:text-ink-red-4"
-			/>
-			Unregister
-		</button>
+			<template #prefix>
+				<LucideLogOut class="size-4" />
+			</template>
+		</Button>
 
 		<UnregisterButton v-model="openUnregisterConfirmationDialog" />
 	</div>

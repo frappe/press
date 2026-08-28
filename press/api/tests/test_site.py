@@ -16,6 +16,9 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.cluster.test_cluster import create_test_cluster
+from press.press.doctype.database_server.test_database_server import (
+	create_test_database_server,
+)
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
 )
@@ -31,6 +34,7 @@ from press.press.doctype.remote_file.remote_file import RemoteFile
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
@@ -129,15 +133,11 @@ class TestAPISite(FrappeTestCase):
 		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name, public=True)
 
 		group = create_test_release_group(
-			[frappe_app, allowed_app, disallowed_app], public=True, frappe_version="Version 15"
+			[frappe_app, allowed_app, disallowed_app],
+			public=True,
+			frappe_version="Version 15",
+			servers=[f1_server.name],
 		)
-		group.append(
-			"servers",
-			{
-				"server": f1_server.name,
-			},
-		)
-		group.save()
 		create_test_bench(group=group, server=f1_server.name)
 
 		plan = create_test_plan("Site", allowed_apps=[frappe_app.name, allowed_app.name])
@@ -172,14 +172,12 @@ class TestAPISite(FrappeTestCase):
 		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
 		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name, public=True)
 
-		group = create_test_release_group([frappe_app, another_app], public=True, frappe_version="Version 15")
-		group.append(
-			"servers",
-			{
-				"server": f1_server.name,
-			},
+		group = create_test_release_group(
+			[frappe_app, another_app],
+			public=True,
+			frappe_version="Version 15",
+			servers=[f1_server.name],
 		)
-		group.save()
 		create_test_bench(group=group, server=f1_server.name)
 
 		plan = create_test_plan("Site", allowed_apps=[])
@@ -213,24 +211,14 @@ class TestAPISite(FrappeTestCase):
 		n2_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
 		f2_server = create_test_server(cluster=cluster.name, proxy_server=n2_server.name, public=True)
 
-		rg1 = create_test_release_group([frappe_app], public=True, frappe_version="Version 15")
-		rg1.append(
-			"servers",
-			{
-				"server": f1_server.name,
-			},
+		rg1 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15", servers=[f1_server.name]
 		)
-		rg1.save()
 		create_test_bench(group=rg1, server=f1_server.name)
 
-		rg2 = create_test_release_group([frappe_app], public=True, frappe_version="Version 15")
-		rg2.append(
-			"servers",
-			{
-				"server": f2_server.name,
-			},
+		rg2 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15", servers=[f2_server.name]
 		)
-		rg2.save()
 		rg2_bench = create_test_bench(group=rg2, server=f2_server.name)
 
 		plan = create_test_plan("Site", allowed_apps=[], release_groups=[rg2.name])
@@ -273,24 +261,14 @@ class TestAPISite(FrappeTestCase):
 		n2_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
 		f2_server = create_test_server(cluster=cluster.name, proxy_server=n2_server.name, public=True)
 
-		rg1 = create_test_release_group([frappe_app], public=True, frappe_version="Version 15")
-		rg1.append(
-			"servers",
-			{
-				"server": f1_server.name,
-			},
+		rg1 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15", servers=[f1_server.name]
 		)
-		rg1.save()
 		rg1_bench = create_test_bench(group=rg1, server=f1_server.name)
 
-		rg2 = create_test_release_group([frappe_app], public=True, frappe_version="Version 15")
-		rg2.append(
-			"servers",
-			{
-				"server": f2_server.name,
-			},
+		rg2 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15", servers=[f2_server.name]
 		)
-		rg2.save()
 		create_test_bench(group=rg2, server=f2_server.name)
 
 		plan = create_test_plan("Site", allowed_apps=[], release_groups=[], plan_title="Unlimited Plan")
@@ -890,8 +868,90 @@ erpnext 0.8.3	    HEAD
 	def test_update_config(self):
 		pass
 
-	def test_get_upload_link(self):
-		pass
+	def test_uploaded_backup_info_rejects_path_outside_team_prefix(self):
+		from press.api.site import uploaded_backup_info
+		from press.press.doctype.remote_file.remote_file import get_team_prefix
+
+		frappe.db.set_single_value("Press Settings", "remote_uploads_bucket", "test-remote-uploads")
+		frappe.set_user(self.team.user)
+
+		with self.assertRaises(frappe.PermissionError) as context:
+			uploaded_backup_info(
+				file="database.sql.gz",
+				path=f"{get_team_prefix('victim@example.com')}/1_2/database.sql.gz",
+				type="application/x-gzip",
+				size=1024,
+			)
+
+		self.assertIn("is not under this team's upload prefix", str(context.exception))
+
+	def test_uploaded_backup_info_accepts_path_under_own_prefix(self):
+		from press.api.site import uploaded_backup_info
+		from press.press.doctype.remote_file.remote_file import get_team_prefix
+
+		frappe.db.set_single_value("Press Settings", "remote_uploads_bucket", "test-remote-uploads")
+		frappe.set_user(self.team.user)
+
+		file_path = f"{get_team_prefix(self.team.name)}/1_2/database.sql.gz"
+		name = uploaded_backup_info(
+			file="database.sql.gz", path=file_path, type="application/x-gzip", size=1024
+		)
+
+		self.assertEqual(frappe.db.get_value("Remote File", name, "file_path"), file_path)
+
+	def test_new_site_rejects_backup_of_another_team_for_dashboard_user(self):
+		from press.api.site import validate_files_for_new_site
+
+		other_team = create_test_press_admin_team()
+		remote_file = create_test_remote_file(file_path="somewhere/database.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", other_team.name)
+
+		frappe.set_user(self.team.user)
+		with self.assertRaises(frappe.PermissionError) as context:
+			validate_files_for_new_site({"database": remote_file.name}, self.team.name)
+
+		self.assertIn("does not belong to site's team", str(context.exception))
+
+	def test_new_site_allows_backup_of_another_team_for_system_user(self):
+		"""Site Replication runs from desk, under the operator's own team."""
+		from press.api.site import validate_files_for_new_site
+
+		other_team = create_test_press_admin_team()
+		remote_file = create_test_remote_file(file_path="somewhere/database.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", other_team.name)
+
+		frappe.set_user("Administrator")
+		validate_files_for_new_site({"database": remote_file.name}, self.team.name)
+
+	def test_restore_rejects_remote_file_with_no_team(self):
+		"""A file with no team has no owner to check against."""
+		from press.api.site import restore
+
+		site = create_test_site(team=self.team.name)
+		remote_file = create_test_remote_file(file_path="somewhere/database.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", None)
+
+		frappe.set_user(self.team.user)
+		with self.assertRaises(frappe.PermissionError) as context:
+			restore(site.name, {"database": remote_file.name})
+
+		self.assertIn("does not belong to site's team", str(context.exception))
+		self.assertFalse(frappe.db.get_value("Site", site.name, "remote_database_file"))
+
+	def test_restore_rejects_remote_file_of_another_team(self):
+		from press.api.site import restore
+
+		other_team = create_test_press_admin_team()
+		site = create_test_site(team=self.team.name)
+		remote_file = create_test_remote_file(file_path="somewhere/database.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", other_team.name)
+
+		frappe.set_user(self.team.user)
+		with self.assertRaises(frappe.PermissionError) as context:
+			restore(site.name, {"database": remote_file.name})
+
+		self.assertIn("does not belong to site's team", str(context.exception))
+		self.assertFalse(frappe.db.get_value("Site", site.name, "remote_database_file"))
 
 	def test_archive_site_job_with_backup_step_failed_and_archive_skipped_doesnt_archive_site(self):
 		site = create_test_site()
@@ -1135,3 +1195,126 @@ class TestAPISiteDomain(FrappeTestCase):
 		):
 			add_domain(site.name, "example.com")
 		self.assertTrue(frappe.db.exists("Site Domain", {"site": site.name, "domain": "example.com"}))
+
+
+class TestCheckWarrantyRestrictions(FrappeTestCase):
+	"""Tests for _check_warranty_restrictions.
+
+	Enabling support is gated only by the server quota (it consumes a slot) and is
+	allowed irrespective of the cooldown, so a site can reclaim a free slot any
+	time. Disabling support is gated only by the cooldown, which deters freeing a
+	slot only to rotate it onto another site.
+	"""
+
+	def _check(self, *, current_supported, new_supported, quota_available=0, cooldown_active=False):
+		from press.api.site import _check_warranty_restrictions
+
+		now = datetime.datetime.now()
+		next_change = now + datetime.timedelta(days=1) if cooldown_active else now
+		with (
+			patch(
+				"press.api.site.is_product_warranty_enabled_for_plan_",
+				return_value=new_supported,
+			),
+			patch(
+				"press.api.site.get_next_allowed_dedicated_product_warranty_change_date",
+				return_value=next_change,
+			),
+			patch(
+				"press.api.site.get_available_warranty_quota_for_server",
+				return_value={"available": quota_available},
+			),
+		):
+			_check_warranty_restrictions(
+				site="test-site.frappe.cloud",
+				server="test-server",
+				new_plan="test-plan",
+				is_new=False,
+				is_system_user=False,
+				is_current_dedicated_server_plan=True,
+				is_current_plan_supported=current_supported,
+			)
+
+	def test_disabling_warranty_allowed_even_when_quota_exhausted(self):
+		"""Disabling support on a server with no quota left must not throw."""
+		self._check(current_supported=True, new_supported=False, quota_available=0)
+
+	def test_enabling_warranty_blocked_when_quota_exhausted(self):
+		"""Enabling support on a server with no quota left must throw."""
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"exhausted the site warranty quota",
+			self._check,
+			current_supported=False,
+			new_supported=True,
+			quota_available=0,
+		)
+
+	def test_enabling_warranty_allowed_when_quota_available(self):
+		"""Enabling support with quota left must not throw."""
+		self._check(current_supported=False, new_supported=True, quota_available=1)
+
+	def test_enabling_warranty_allowed_during_cooldown_when_quota_available(self):
+		"""Reclaiming a free slot is allowed even while the cooldown is active."""
+		self._check(
+			current_supported=False,
+			new_supported=True,
+			quota_available=1,
+			cooldown_active=True,
+		)
+
+	def test_enabling_warranty_blocked_when_quota_exhausted_during_cooldown(self):
+		"""Enabling with no free slot must throw on quota, not silently pass."""
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"exhausted the site warranty quota",
+			self._check,
+			current_supported=False,
+			new_supported=True,
+			quota_available=0,
+			cooldown_active=True,
+		)
+
+	def test_disabling_warranty_blocked_during_cooldown(self):
+		"""Disabling support is still subject to the cooldown window."""
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Cannot change product warranty for this site before",
+			self._check,
+			current_supported=True,
+			new_supported=False,
+			cooldown_active=True,
+		)
+
+
+class TestDedicatedServerPrice(FrappeTestCase):
+	"""The product-warranty plan gate compares a dedicated server's cost against
+	`minimum_server_price_usd`. That cost is the app server plan plus its paired
+	database server plan, not the app server plan alone."""
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _make_server(self, app_price, db_price=None):
+		app_plan = create_test_server_plan(server_type="Server")
+		frappe.db.set_value("Server Plan", app_plan.name, "price_usd", app_price)
+
+		database_server = create_test_database_server()
+		if db_price is not None:
+			db_plan = create_test_server_plan(server_type="Database Server")
+			frappe.db.set_value("Server Plan", db_plan.name, "price_usd", db_price)
+			frappe.db.set_value("Database Server", database_server.name, "plan", db_plan.name)
+
+		return create_test_server(plan=app_plan.name, database_server=database_server.name)
+
+	def test_price_is_sum_of_app_and_database_server_plans(self):
+		from press.api.site import get_dedicated_server_price
+
+		server = self._make_server(app_price=200, db_price=150)
+		self.assertEqual(get_dedicated_server_price(server.name), 350)
+
+	def test_price_falls_back_to_app_server_plan_when_database_has_no_plan(self):
+		from press.api.site import get_dedicated_server_price
+
+		server = self._make_server(app_price=200)
+		self.assertEqual(get_dedicated_server_price(server.name), 200)

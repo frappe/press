@@ -63,15 +63,49 @@ const canEditDraft = computed(
 		onboarding.doc.value?.status === 'Draft',
 )
 
+const isRegistrationComplete = computed(() => {
+	if (!onboarding.isRegistered.value) return false
+
+	// Submitted/decided applications are past registration editing — don't
+	// reopen the checklist for India rows that predate registered_state.
+	if (
+		onboarding.doc.value?.docstatus === 1 ||
+		onboarding.doc.value?.status === 'Approved' ||
+		onboarding.doc.value?.status === 'Pending Review' ||
+		onboarding.doc.value?.status === 'Rejected'
+	) {
+		return true
+	}
+
+	if (
+		onboarding.form.registered_country === 'India' &&
+		!onboarding.form.registered_state
+	) {
+		return false
+	}
+	return Boolean(
+		onboarding.form.company_name &&
+			onboarding.form.registered_country &&
+			onboarding.form.company_email &&
+			onboarding.form.contact,
+	)
+})
+
 const steps = computed(() => [
 	{
 		value: 'step-register',
 		title: 'Register as a Frappe Partner',
 		required: true,
-		status: onboarding.isRegistered.value ? 'completed' : 'pending',
+		status: isRegistrationComplete.value ? 'completed' : 'pending',
 		description: null,
+		link: null,
 		summaryRight: null,
-		actionLabel: onboarding.isRegistered.value ? null : 'Register as a partner',
+		actionLabel: !onboarding.isRegistered.value
+			? 'Register as a partner'
+			: canEditDraft.value
+				? 'Edit registration'
+				: 'Registered',
+		actionDisabled: onboarding.isRegistered.value && !canEditDraft.value,
 		onClick: () => {
 			registrationModalOpen.value = true
 		},
@@ -83,6 +117,7 @@ const steps = computed(() => [
 		status: onboarding.isProfileComplete.value ? 'completed' : 'pending',
 		description:
 			'Before you continue, we need to know more about your company to understand how your company can benefit from becoming a Frappe Partner.',
+		link: null,
 		summaryRight: null,
 		actionLabel:
 			onboarding.isRegistered.value && canEditDraft.value
@@ -100,7 +135,12 @@ const steps = computed(() => [
 			? 'completed'
 			: 'pending',
 		description:
-			'Link two Framework or ERPNext certificates from Frappe School. We will send verification email to each certificate holder to link the certificate.',
+			'Link two Framework or ERPNext certificates from Frappe School. We will send a verification email to each certificate holder to confirm the link.',
+		linkPrefix: "Don't have certification?",
+		link: {
+			text: 'Browse upcoming batches',
+			url: 'https://school.frappe.io/lms/batches',
+		},
 		summaryRight: onboarding.isCertificateRequirementComplete.value
 			? null
 			: `${onboarding.linkedCertificateCount.value} / 2 linked`,
@@ -127,6 +167,7 @@ const steps = computed(() => [
 		status: onboarding.isMRRRequirementComplete.value ? 'completed' : 'pending',
 		description:
 			'We track this automatically from customer subscription invoices linked to your partner account. No manual update is needed.',
+		link: null,
 		summaryRight: onboarding.isMRRRequirementComplete.value
 			? null
 			: `${mrrCurrentLabel.value} / ${mrrTargetLabel.value}`,
@@ -279,22 +320,36 @@ async function submitForApproval() {
 						</span>
 
 						<LucideChevronDown
-							class="size-4 shrink-0 text-ink-gray-6 transition-transform duration-200 group-data-[state=open]:rotate-180"
+							class="size-4 shrink-0 text-ink-gray-6 transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[state=open]:rotate-180 motion-reduce:transition-none"
 						/>
 					</FAccordionTrigger>
 				</FAccordionHeader>
 
 				<FAccordionContent
 					v-if="
-					step.description || step.actionLabel || step.secondaryActionLabel
-				"
+	step.description ||
+	step.link ||
+	step.actionLabel ||
+	step.secondaryActionLabel
+					"
 				>
-					<p
+					<div
 						v-if="step.description"
 						class="mb-2 max-w-prose self-stretch text-p-base font-normal leading-5 text-ink-gray-6"
 					>
-						{{ step.description }}
-					</p>
+						<p>{{ step.description }}</p>
+						<p v-if="step.link" class="mt-2">
+							{{ step.linkPrefix }}
+							<a
+								:href="step.link.url"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="underline"
+							>
+								{{ step.link.text }}
+							</a>
+						</p>
+					</div>
 					<div
 						v-if="step.value === 'step-mrr'"
 						class="mb-4 flex max-w-prose flex-col gap-2"
@@ -315,6 +370,7 @@ async function submitForApproval() {
 					<Button
 						v-if="step.actionLabel"
 						variant="solid"
+						:disabled="'actionDisabled' in step && step.actionDisabled"
 						:label="step.actionLabel"
 						@click="step.onClick"
 					/>
@@ -353,13 +409,16 @@ async function submitForApproval() {
 				variant="solid"
 				class="w-full sm:w-auto"
 				:disabled="!canClickPrimaryAction"
-				:iconLeft="submitIcon"
 				:loading="
 					onboarding.submittingForApproval.value || onboarding.unregistering.value
 				"
 				:label="submitLabel"
 				@click="submitForApproval"
-			/>
+			>
+				<template #prefix>
+					<component :is="submitIcon" class="size-3.5 -mr-0.5" />
+				</template>
+			</Button>
 		</div>
 	</div>
 </template>

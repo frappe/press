@@ -195,18 +195,7 @@ class Invoice(Document):
 
 	def _format_invoice_item(self, item, price_field, currency_symbol):
 		if item.document_type in ("Server", "Database Server"):
-			is_primary = frappe.get_value(item.document_type, item.document_name, "is_primary")
-			item.document_name = frappe.get_value(item.document_type, item.document_name, "title")
-			if server_plan := frappe.get_value("Server Plan", item.plan, price_field):
-				if not is_primary and item.document_type == "Server":
-					item.plan = (
-						f"{currency_symbol}{calculate_secondary_server_price(self.team, item.plan)}/hour"
-					)
-				else:
-					item.plan = f"{currency_symbol}{server_plan}/mo"
-			elif server_plan := frappe.get_value("Server Storage Plan", item.plan, price_field):
-				item.plan = f"Storage Add-on {currency_symbol}{server_plan}/GB"
-
+			self._format_server_invoice_item(item, price_field, currency_symbol)
 		elif item.document_type == "Marketplace App":
 			item.document_name = frappe.get_value(item.document_type, item.document_name, "title")
 			item.plan = f"{currency_symbol}{frappe.get_value('Marketplace App Plan', item.plan, price_field)}"
@@ -214,6 +203,19 @@ class Invoice(Document):
 			hostname = frappe.get_value(item.document_type, item.document_name, "host_name")
 			if hostname:
 				item.document_name = hostname
+
+	def _format_server_invoice_item(self, item, price_field, currency_symbol):
+		is_primary = frappe.get_value(item.document_type, item.document_name, "is_primary")
+		item.document_name = frappe.get_value(item.document_type, item.document_name, "title")
+		if server_plan := frappe.get_value("Server Plan", item.plan, price_field):
+			if not is_primary and item.document_type == "Server":
+				item.plan = f"{currency_symbol}{calculate_secondary_server_price(self.team, item.plan)}/hour"
+			else:
+				item.plan = f"{currency_symbol}{server_plan}/mo"
+		elif server_plan := frappe.get_value("Server Storage Plan", item.plan, price_field):
+			item.plan = f"Storage Add-on {currency_symbol}{server_plan}/GB"
+		elif s3_plan := frappe.get_value("S3 Storage Plan", item.plan, price_field):
+			item.plan = f"Audit Log Storage {currency_symbol}{s3_plan}/GB"
 
 	@dashboard_whitelist()
 	def stripe_payment_url(self):
@@ -271,7 +273,9 @@ class Invoice(Document):
 
 	def before_submit(self):
 		if self.total > 0 and self.status != "Paid":
-			frappe.throw("Invoice must be Paid to be submitted")
+			frappe.throw(
+				"An invoice with a balance due can only be submitted once it is Paid. Please collect or record the payment first."
+			)
 
 	def calculate_values(self):
 		if self.status == "Paid" and self.docstatus == 1:
@@ -533,17 +537,26 @@ class Invoice(Document):
 		return mandate.status in ("inactive", "pending")
 
 	def _make_stripe_invoice(self, customer_id, amount):
+		payment_method_id = self.get_default_payment_method_id()
+		if not payment_method_id:
+			frappe.throw(
+				f"Cannot create Stripe invoice for {self.name}: team {self.team} has no default payment method"
+			)
+
 		mandate_id = self.get_mandate_id(customer_id)
-		if mandate_id and self.mandate_inactive(mandate_id):
-			frappe.db.set_value("Invoice", self.name, "payment_mode", "Prepaid Credits")
-			self.reload()
-			return None
+
 		try:
+			if mandate_id and self.mandate_inactive(mandate_id):
+				frappe.db.set_value("Invoice", self.name, "payment_mode", "Prepaid Credits")
+				self.reload()
+				return None
+
 			stripe = get_stripe()
 			invoice = stripe.Invoice.create(
 				customer=customer_id,
 				pending_invoice_items_behavior="exclude",
 				collection_method="charge_automatically",
+				default_payment_method=payment_method_id,
 				auto_advance=True,
 				currency=self.currency.lower(),
 				payment_settings={"default_mandate": mandate_id},
@@ -586,6 +599,11 @@ class Invoice(Document):
 		if not mandate_id:
 			return ""
 		return mandate_id
+
+	def get_default_payment_method_id(self):
+		return frappe.get_value(
+			"Stripe Payment Method", {"team": self.team, "is_default": 1}, "stripe_payment_method_id"
+		)
 
 	def create_razorpay_payment(self):
 		"""Create a recurring payment via Razorpay mandate"""
@@ -751,7 +769,11 @@ class Invoice(Document):
 	@frappe.whitelist()
 	def finalize_stripe_invoice(self):
 		stripe = get_stripe()
-		stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
+		try:
+			stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
+		except Exception:
+			log_error("Failed to finalize Stripe invoice")
+			frappe.throw("Could not finalize the Stripe invoice. Please try again later.")
 
 	def validate_duplicate(self):
 		invoice_exists = frappe.db.exists(
@@ -968,6 +990,12 @@ class Invoice(Document):
 			if item.discount_percentage:
 				item.discount = flt(item.amount * (item.discount_percentage / 100), 2)
 
+		self.total_before_discount = self.total
+
+		for discount in self.discounts:
+			if discount.based_on == "Percent":
+				discount.amount = flt(self.total_before_discount * (discount.percent / 100), 2)
+
 		self.total_discount_amount = sum([item.discount for item in self.items]) + sum(
 			[d.amount for d in self.discounts]
 		)
@@ -978,7 +1006,6 @@ class Invoice(Document):
 			if npo_discount:
 				self.total_discount_amount += flt(self.total * (npo_discount / 100), 2)
 
-		self.total_before_discount = self.total
 		self.total = flt(self.total_before_discount - self.total_discount_amount, 2)
 
 	def on_cancel(self):
@@ -1190,9 +1217,18 @@ class Invoice(Document):
 		if not stripe_charge:
 			return
 		stripe = get_stripe()
-		charge = stripe.Charge.retrieve(stripe_charge)
-		if charge.balance_transaction:
-			balance_transaction = stripe.BalanceTransaction.retrieve(charge.balance_transaction)
+		try:
+			charge = stripe.Charge.retrieve(stripe_charge)
+			balance_transaction = (
+				stripe.BalanceTransaction.retrieve(charge.balance_transaction)
+				if charge.balance_transaction
+				else None
+			)
+		except Exception:
+			log_error("Failed to fetch Stripe transaction details")
+			raise
+
+		if balance_transaction:
 			self.exchange_rate = balance_transaction.exchange_rate
 			self.transaction_amount = convert_stripe_money(balance_transaction.amount)
 			self.transaction_net = convert_stripe_money(balance_transaction.net)
@@ -1295,7 +1331,12 @@ class Invoice(Document):
 		if not charge:
 			frappe.throw("Cannot refund payment because Stripe Charge not found for this invoice")
 
-		stripe.Refund.create(charge=charge)
+		try:
+			stripe.Refund.create(charge=charge)
+		except Exception:
+			log_error("Failed to refund Stripe payment")
+			raise
+
 		self.status = "Refunded"
 		self.refund_reason = reason
 		self.save()
@@ -1304,17 +1345,27 @@ class Invoice(Document):
 	@frappe.whitelist()
 	def change_stripe_invoice_status(self, status):
 		stripe = get_stripe()
-		if status == "Paid":
-			stripe.Invoice.modify(self.stripe_invoice_id, paid=True)
-		elif status == "Uncollectible":
-			stripe.Invoice.mark_uncollectible(self.stripe_invoice_id)
-		elif status == "Void":
-			stripe.Invoice.void_invoice(self.stripe_invoice_id)
+		try:
+			if status == "Paid":
+				stripe.Invoice.modify(self.stripe_invoice_id, paid=True)
+			elif status == "Uncollectible":
+				stripe.Invoice.mark_uncollectible(self.stripe_invoice_id)
+			elif status == "Void":
+				stripe.Invoice.void_invoice(self.stripe_invoice_id)
+		except Exception:
+			log_error(
+				"Failed to change Stripe invoice status",
+			)
+			raise
 
 	@frappe.whitelist()
 	def refresh_stripe_payment_link(self):
 		stripe = get_stripe()
-		stripe_invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+		try:
+			stripe_invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+		except Exception:
+			log_error("Failed to refresh Stripe payment link")
+			frappe.throw("Could not refresh the payment link. Please try again later.")
 		self.stripe_invoice_url = stripe_invoice.hosted_invoice_url
 		self.save()
 

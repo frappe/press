@@ -6,6 +6,7 @@ import frappe
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
+from press.utils import docs
 
 
 class PressRolePermission(Document):
@@ -32,7 +33,9 @@ class PressRolePermission(Document):
 			and frappe.session.user != frappe.db.get_value("Team", self.team, "user")
 			and not is_user_part_of_admin_role()
 		):
-			frappe.throw("Only the team owner or admin can create role permissions")
+			frappe.throw(
+				f"Only the team owner or an admin can create role permissions. Please ask a team admin to do this. {docs.doc_link(docs.ROLE_PERMISSIONS)}."
+			)
 
 		if frappe.db.exists(
 			"Press Role Permission",
@@ -44,7 +47,9 @@ class PressRolePermission(Document):
 				"server": self.server,
 			},
 		):
-			frappe.throw("Role Permission already exists")
+			frappe.throw(
+				"This role already has a permission for this resource. Please edit the existing permission instead of adding a duplicate."
+			)
 
 	@dashboard_whitelist()
 	def delete(self):
@@ -53,7 +58,9 @@ class PressRolePermission(Document):
 			and frappe.session.user != frappe.get_cached_value("Team", self.team, "user")
 			and not is_user_part_of_admin_role()
 		):
-			frappe.throw("Only the team owner or admin can delete this role permission")
+			frappe.throw(
+				f"Only the team owner or an admin can delete this role permission. Please ask a team admin to do this. {docs.doc_link(docs.ROLE_PERMISSIONS)}."
+			)
 
 		super().delete()
 

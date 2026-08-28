@@ -16,6 +16,7 @@ from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site_activity.site_activity import log_site_activity
+from press.utils import docs
 
 if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
@@ -59,6 +60,15 @@ class SiteDatabaseUser(Document):
 		"mode",
 		"failed_agent_job",
 		"failure_reason",
+		"permissions",
+		"max_connections",
+		"use_replica_server",
+	)
+
+	dashboard_insert_fields = (
+		"label",
+		"site",
+		"mode",
 		"permissions",
 		"max_connections",
 		"use_replica_server",
@@ -112,7 +122,9 @@ class SiteDatabaseUser(Document):
 				},
 			)
 			if not replica_exists:
-				frappe.throw("Replica server is not available for this site")
+				frappe.throw(
+					f"This site doesn't have a read replica, so a read-only database user can't connect to one. Please add a replica to the server, or use the primary database instead. {docs.doc_link(docs.DATABASE_ACCESS)}."
+				)
 
 		self.status = "Pending"
 		if not self.username:
@@ -149,7 +161,9 @@ class SiteDatabaseUser(Document):
 		site = frappe.get_doc("Site", self.site)
 		db_name = site.fetch_info().get("config", {}).get("db_name")
 		if not db_name:
-			frappe.throw("Failed to fetch database name of site")
+			frappe.throw(
+				"We couldn't fetch the database name for this site. Please make sure the site is active and try again."
+			)
 		return db_name
 
 	@dashboard_whitelist()

@@ -38,6 +38,7 @@ def process_bench_build_and_deploy(self: DeployCandidateBuild):
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import Status
 
 	self.set_status(Status.SUCCESS)
+	assert self.deploy_on_server  # narrows DF.Link | None for mypy
 	self._create_deploy([self.deploy_on_server])
 
 
@@ -363,7 +364,7 @@ class TestSiteAction(FrappeTestCase):
 			).insert()
 			self.fail("Expected validation error for unavailable action type")
 		except frappe.ValidationError as e:
-			self.assertIn("not available", str(e).lower())
+			self.assertIn("isn't available", str(e).lower())
 
 	def test_cancel_action_raises_when_not_scheduled(self):
 		"""Cancel should raise when action is not in Scheduled state"""

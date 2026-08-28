@@ -9,6 +9,7 @@ import re
 from contextlib import suppress
 from datetime import date
 from typing import TYPE_CHECKING, Any, Literal
+from urllib.parse import urlencode
 
 import frappe
 import frappe.utils
@@ -173,15 +174,21 @@ class Agent:
 		)
 
 	def restore_site(self, site: "Site", skip_failing_patches=False):
+		from press.utils import sanitize_config
+
 		site.check_space_on_server_for_restore()
 		apps = [app.app for app in site.apps]
-		public_link, private_link, database_link = None, None, None
+		public_link, private_link, database_link, sanitized_config_content = None, None, None, None
 		if site.remote_database_file:
 			database_link = frappe.get_doc("Remote File", site.remote_database_file).download_link
 		if site.remote_public_file:
 			public_link = frappe.get_doc("Remote File", site.remote_public_file).download_link
 		if site.remote_private_file:
 			private_link = frappe.get_doc("Remote File", site.remote_private_file).download_link
+		if site.remote_config_file:
+			config_content = frappe.get_doc("Remote File", site.remote_config_file).get_content()
+			sanitized_config_content = sanitize_config(config_content) if config_content else None
+			sanitized_config_content.update({"maintenance_mode": 0}) if sanitized_config_content else None
 
 		data = {
 			"apps": apps,
@@ -190,6 +197,7 @@ class Agent:
 			"database": database_link,
 			"public": public_link,
 			"private": private_link,
+			"sanitized_config_content": sanitized_config_content,
 			"skip_failing_patches": skip_failing_patches,
 			"managed_database_config": self._get_managed_db_config(site),
 		}
@@ -577,7 +585,10 @@ class Agent:
 				{
 					"keep_files_locally_after_offsite_backup": bool(
 						frappe.get_value("Server", site.server, "keep_files_on_server_in_offsite_backup")
-					)
+					),
+					# Streaming only applies to offsite backups (agent streams the
+					# artifacts straight to S3), so only send it for offsite jobs.
+					"stream": site.is_streaming_backup_supported(),
 				}
 			)
 
@@ -616,7 +627,7 @@ class Agent:
 			"name": domain.domain,
 			"target": domain.site,
 			"certificate": {
-				"privkey.pem": certificate.private_key,
+				"privkey.pem": certificate.get_private_key(),
 				"fullchain.pem": certificate.full_chain,
 				"chain.pem": certificate.intermediate_chain,
 			},
@@ -965,19 +976,27 @@ class Agent:
 					response=response,
 				)
 			return json_response
+		except requests.JSONDecodeError as exc:
+			# Non-JSON body, e.g. nginx's 502 page when agent is down. Must come before
+			# the ValueError clause below, which would otherwise swallow it.
+			if response.status_code in (502, 503, 504):
+				# nginx couldn't reach agent at all. Record the failure so we stop hitting it.
+				self.log_request_failure(exc)
+				self.handle_exception(agent_job, exc)
+			else:
+				# One endpoint misbehaved (e.g. Flask's HTML 500 page). The server is still
+				# up, so don't block every other job on it.
+				self.handle_request_failure(agent_job, response)
+			log_error(
+				title="Agent Request Exception",
+				result=getattr(response, "text", None),
+			)
 		except (HTTPError, TypeError, ValueError):
 			self.handle_request_failure(agent_job, response)
 			log_error(
 				title="Agent Request Result Exception",
 				result=json_response or getattr(response, "text", None),
 			)
-		except requests.JSONDecodeError as exc:
-			if response and response.status_code >= 500:
-				self.log_request_failure(exc)
-				self.handle_exception(agent_job, exc)
-				log_error(
-					title="Agent Request Exception",
-				)
 		except Exception as exc:
 			self.log_request_failure(exc)
 			self.handle_exception(agent_job, exc)
@@ -1190,6 +1209,21 @@ Response: {reason or getattr(result, "text", "Unknown")}
 	def cancel_job(self, id):
 		return self.post(f"jobs/{id}/cancel")
 
+	def fetch_site_backup_jobs(self, site: str, start: str, end: str):
+		"""Queue a read of this server's job database for the backup audit trail.
+
+		The range rides in the path because job deduplication keys off it, and two
+		ranges for one site are different questions.
+		"""
+		query = urlencode({"site": site, "start": start, "end": end})
+		return self.create_agent_job(
+			"Fetch Backup Jobs",
+			f"server/backup-jobs?{query}",
+			site=site,
+			reference_doctype="Site",
+			reference_name=site,
+		)
+
 	def get_site_sid(self, site, user=None):
 		if user:
 			data = {"user": user}
@@ -1198,8 +1232,11 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			result = self.get(f"benches/{site.bench}/sites/{site.name}/sid")
 		return result and result.get("sid")
 
-	def get_site_info(self, site):
-		result = self.get(f"benches/{site.bench}/sites/{site.name}/info")
+	def get_site_info(self, site, database_only=False):
+		path = f"benches/{site.bench}/sites/{site.name}/info"
+		if database_only:
+			path += "?database_only=1"
+		result = self.get(path)
 		if result:
 			return result["data"]
 		return None
@@ -1629,6 +1666,24 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			data={"binlogs": binlogs, "offsite": offsite_config},
 		)
 
+	def upload_audit_logs_to_s3(self, database_server: DatabaseServer):
+		if self.server_type != "Database Server":
+			return NotImplementedError("Only Database Server supports this method")
+
+		cluster = frappe.get_value("Database Server", self.server, "cluster")
+		# Binlogs use the bare server name as prefix, so audit logs get their own keyspace
+		offsite_config = self._get_offsite_backup_config(cluster, backups_path=f"{self.server}/audit")
+
+		return self.create_agent_job(
+			"Upload Audit Logs To S3",
+			"/database/audit-logs/upload",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"offsite": offsite_config,
+			},
+		)
+
 	def add_binlogs_to_indexer(self, binlogs):
 		return self.create_agent_job(
 			"Add Binlogs To Indexer",
@@ -1816,7 +1871,9 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if offsite_config:
 			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw("Offsite Backups aren't setup yet")
+			frappe.throw(
+				"Offsite Backups aren't set up yet. Please configure offsite backup storage in Press Settings before taking an offsite backup."
+			)
 
 		return self.create_agent_job(
 			"Backup Database From Snapshot",
@@ -1845,7 +1902,9 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if offsite_config:
 			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw("Offsite Backups aren't setup yet")
+			frappe.throw(
+				"Offsite Backups aren't set up yet. Please configure offsite backup storage in Press Settings before taking an offsite backup."
+			)
 
 		return self.create_agent_job(
 			"Backup Files From Snapshot",
@@ -1980,8 +2039,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
 		settings = frappe.get_single("Press Settings")
-		backup_bucket = get_backup_bucket(cluster, region=True)
-		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
+		backup_bucket_config = get_backup_bucket(cluster, region=True)
+		bucket_name = backup_bucket_config.get("name")
 
 		if not (settings.aws_s3_bucket or bucket_name):
 			return None
@@ -1989,7 +2048,9 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		auth = {
 			"ACCESS_KEY": settings.offsite_backups_access_key_id,
 			"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
-			"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
+			"REGION": backup_bucket_config.get("region"),
+			"PROVIDER": backup_bucket_config.get("provider"),
+			"ENDPOINT_URL": backup_bucket_config.get("endpoint_url"),
 		}
 
 		return {

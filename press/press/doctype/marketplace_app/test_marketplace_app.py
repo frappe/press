@@ -3,11 +3,17 @@
 
 from __future__ import annotations
 
+from unittest.mock import Mock, patch
+
 import frappe
 from frappe.tests.ui_test_helpers import create_test_user
 from frappe.tests.utils import FrappeTestCase
 
+from press.press.doctype.app.app import VersioningError
 from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.app_source.app_source import AppSource
+from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.marketplace_app.marketplace_app import validate_frappe_version_for_branch
 from press.press.doctype.marketplace_app.utils import (
 	get_rating_percentage_distribution,
 	number_k_format,
@@ -54,6 +60,85 @@ def create_team_with_press_user():
 
 
 class TestMarketplaceApp(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	@patch.object(AppSource, "create_release", new=Mock())
+	@patch.object(AppSource, "validate_dependent_apps", new=Mock())
+	@patch(
+		"press.press.doctype.marketplace_app.marketplace_app.validate_frappe_version_for_branch", new=Mock()
+	)
+	def test_add_version_uses_app_source_when_sources_child_table_is_empty(self):
+		"""Regression: a draft app whose versions were all removed has an empty `sources` child table
+		but still has App Source records. add_version used to crash with IndexError on self.sources[0];
+		it should now find the source by repository and add the version."""
+		team = create_test_team()
+		app = create_test_app(f"mp_test_{frappe.generate_hash(length=8).lower()}", "Empty Sources App")
+		create_test_app_source(
+			"Version 14",
+			app,
+			repository_url="https://github.com/frappe/erpnext",
+			branch="master",
+			team=team.name,
+		)
+		marketplace_app = create_test_marketplace_app(app.name, team=team.name)
+		self.assertEqual(len(marketplace_app.sources), 0)
+
+		marketplace_app.add_version(
+			version="Version 15", repo_owner="frappe", repo_name="erpnext", branch="version-15"
+		)
+
+		marketplace_app.reload()
+		self.assertIn("Version 15", [s.version for s in marketplace_app.sources])
+
+	def test_add_version_throws_readable_error_when_no_source_exists_for_repo(self):
+		"""add_version must throw a readable error (not IndexError) when neither an existing source
+		nor any App Source for the selected repository exists."""
+		team = create_test_team()
+		app = create_test_app(f"mp_test_{frappe.generate_hash(length=8).lower()}", "No Source App")
+		marketplace_app = create_test_marketplace_app(app.name, team=team.name)
+
+		with self.assertRaises(frappe.ValidationError) as context:
+			marketplace_app.add_version(
+				version="Version 15", repo_owner="frappe", repo_name="erpnext", branch="version-15"
+			)
+		self.assertIn("No app source found for frappe/erpnext", str(context.exception))
+
+	@patch("press.press.doctype.marketplace_app.marketplace_app.app")
+	def test_validate_frappe_version_skips_a_branch_that_declares_no_frappe_version(self, github_app: Mock):
+		"""Regression: `api.github.app` returns frappe_version=None for the framework itself,
+		which used to crash with AttributeError inside map_frappe_version."""
+		github_app.return_value = {"name": "frappe", "title": "Frappe Framework", "frappe_version": None}
+
+		self.assertIsNone(
+			validate_frappe_version_for_branch(
+				app_name="frappe",
+				owner="frappe",
+				repository="frappe",
+				branch="version-16",
+				version="Version 16",
+			)
+		)
+
+	@patch("press.press.doctype.marketplace_app.marketplace_app.app")
+	def test_validate_frappe_version_rejects_a_branch_that_does_not_support_the_version(
+		self, github_app: Mock
+	):
+		github_app.return_value = {
+			"name": "erpnext",
+			"title": "ERPNext",
+			"frappe_version": ">=15.0.0,<16.0.0",
+		}
+
+		with self.assertRaises(VersioningError):
+			validate_frappe_version_for_branch(
+				app_name="erpnext",
+				owner="frappe",
+				repository="erpnext",
+				branch="version-15",
+				version="Version 16",
+			)
+
 	def create_marketplace_app_for_team(self, team):
 		app_name = f"perm_app_{frappe.generate_hash(length=8).lower()}"
 		create_test_app(app_name, app_name.replace("_", " ").title())

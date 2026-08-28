@@ -55,3 +55,24 @@ class TestAppSource(FrappeTestCase):
 
 		for req_app in source.required_apps:
 			self.assertEqual("https://github.com/frappe/erpnext", req_app.repository_url)
+
+	@patch.object(AppSource, "after_insert", new=Mock())
+	def test_sync_versions_replaces_versions_with_what_the_repo_currently_supports(self):
+		team_name = create_test_team().name
+		app: App = self.create_app("hrms", "HRMS")
+		source = app.add_source(
+			frappe_version="Version 14",
+			repository_url="https://github.com/frappe/hrms",
+			branch="develop",
+			team=team_name,
+		)
+		source.append("versions", {"version": "Version 13"})
+		source.save()
+
+		with patch(
+			"press.press.doctype.app_source.app_source.get_repo_app_info",
+			return_value={"frappe_version": "Version 15", "title": "HRMS"},
+		):
+			source.sync_versions()
+
+		self.assertEqual([row.version for row in source.versions], ["Version 15"])

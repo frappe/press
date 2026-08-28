@@ -14,13 +14,6 @@
 				@click="showCreateDialog = !showCreateDialog"
 			/>
 		</div>
-		<Switch
-			v-model="relaxedPermissions"
-			label="Relaxed Permissions"
-			description="Users without a role can access resources without restrictions if this feature is enabled.
-      Use with caution. This will be deprecated in the future and removed eventually. Please prefer creating roles and assigning users to them for better access control."
-			class="rounded px-5 py-4 bg-surface-amber-2"
-		/>
 		<div class="grid grid-cols-3 gap-4 text-base">
 			<RouterLink
 				v-for="role in roles.data"
@@ -104,23 +97,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { createListResource, createResource, Switch } from 'frappe-ui';
-import RoleCreateDialog from './RoleCreateDialog.vue';
-import { getTeam } from '../../data/team';
+import { createListResource, createResource } from 'frappe-ui'
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import RoleCreateDialog from './RoleCreateDialog.vue'
 
-const showCreateDialog = ref(false);
+const showCreateDialog = ref(false)
 
-const team = getTeam();
+const route = useRoute()
+const router = useRouter()
 
-const relaxedPermissions = computed({
-	get() {
-		return Boolean(team.doc?.relaxed_permissions);
-	},
-	set(value: boolean) {
-		team.setValue.submit({ relaxed_permissions: value });
-	},
-});
+onMounted(() => {
+	if (route.query.createRole === 'true') {
+		showCreateDialog.value = true
+		router.replace({ query: {} })
+	}
+})
 
 const roles = createListResource({
 	doctype: 'Press Role',
@@ -137,16 +129,16 @@ const roles = createListResource({
 	sortBy: 'title',
 	sortOrder: 'asc',
 	auto: true,
-});
+})
 
 const insert = createResource({
 	url: 'press.api.client.insert',
 	auto: false,
 	onSuccess: () => {
-		roles.reload();
-		showCreateDialog.value = false;
+		roles.reload()
+		showCreateDialog.value = false
 	},
-});
+})
 
 const permissions = (role) => {
 	return [
@@ -175,6 +167,6 @@ const permissions = (role) => {
 			label: 'Webhook',
 			color: 'green',
 		},
-	].filter((permission) => role[permission.key]);
-};
+	].filter((permission) => role[permission.key])
+}
 </script>

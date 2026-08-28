@@ -25,6 +25,7 @@ def create_test_site_backup(
 	files_availability: str = "Available",
 	offsite: bool = True,
 	status: str = "Success",
+	bucket: str | None = None,
 ):
 	"""
 	Create test site backup doc for required timestamp.
@@ -41,9 +42,9 @@ def create_test_site_backup(
 		"with_files": offsite,
 	}
 	if offsite:
-		params_dict["remote_public_file"] = create_test_remote_file(site, creation).name
-		params_dict["remote_private_file"] = create_test_remote_file(site, creation).name
-		params_dict["remote_database_file"] = create_test_remote_file(site, creation).name
+		params_dict["remote_public_file"] = create_test_remote_file(site, creation, bucket=bucket).name
+		params_dict["remote_private_file"] = create_test_remote_file(site, creation, bucket=bucket).name
+		params_dict["remote_database_file"] = create_test_remote_file(site, creation, bucket=bucket).name
 	site_backup = frappe.get_doc(params_dict).insert(ignore_if_duplicate=True)
 
 	site_backup.db_set("creation", creation)

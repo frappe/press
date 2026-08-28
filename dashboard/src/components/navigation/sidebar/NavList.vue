@@ -4,12 +4,10 @@ import { useRoute } from 'vue-router'
 import { unreadNotificationsCount } from '@/data/notifications'
 import { session } from '@/data/session'
 import { getTeam } from '@/data/team'
-import { isMac } from '@/utils/device'
 import { searchModalOpen } from '@/data/ui'
-
+import { isMac } from '@/utils/device'
+import NotificationPanel from './Notifications.vue'
 import { useRealtimeNotifs } from './useRealtimeNotifs'
-
-import NotificationPanel from "./Notifications.vue"
 
 const $route = useRoute()
 const $team = getTeam()
@@ -53,7 +51,7 @@ const list = computed(() => {
 			name: 'Notifications',
 			condition: onboardingComplete && !isSaasUser,
 			customComponent: NotificationPanel,
- 			disabled: enforce2FA,
+			disabled: enforce2FA,
 		},
 
 		{
@@ -165,6 +163,7 @@ const list = computed(() => {
 			isActive:
 				$route.path.startsWith('/partners') ||
 				routeName === 'Partner Onboarding',
+			condition: activePartner || Boolean($team.doc.has_partner_onboarding),
 			disabled: enforce2FA,
 		},
 

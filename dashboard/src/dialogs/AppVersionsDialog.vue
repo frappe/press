@@ -57,7 +57,7 @@
 			<Button
 				v-if="
 					!['Draft', 'Preparing', 'Running', 'Pending'].includes(status) &&
-					!$resources?.redeployBuild?.loading
+					!$resources?.redeployBuild?.loading && !isPipeline
 				"
 				variant="solid"
 				iconLeft=""
@@ -83,7 +83,7 @@ import {
 import { toast } from 'vue-sonner';
 export default {
 	name: 'AppVersionsDialog',
-	props: ['group', 'dc_name', 'status'],
+	props: ['group', 'dc_name', 'status', 'isPipeline'],
 	components: {
 		Spinner,
 		ListView,

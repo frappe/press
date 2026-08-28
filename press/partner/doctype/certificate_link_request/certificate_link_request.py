@@ -6,6 +6,33 @@ from frappe.model.document import Document
 from frappe.utils import get_url
 
 
+def _resolve_partner_name(team: str) -> str | None:
+	"""Display name of the requesting team, shown to the certificate holder.
+
+	company_name is the team's identity, persisted on the Team during partner
+	registration. billing_name is a defensive fallback that is always present
+	from account creation.
+	"""
+	values = frappe.db.get_value("Team", team, ["company_name", "billing_name"], as_dict=True)
+	if not values:
+		return None
+	return values.company_name or values.billing_name
+
+
+def notify_partner_team(team: str, event: str) -> None:
+	"""Push a realtime onboarding event to every member of the partner team.
+
+	The change can originate outside the team's own session — a Partner Manager
+	approving in Desk, or a certificate holder approving on the guest www page
+	(certificate holders are often not Frappe Cloud users). So we cannot rely on
+	frappe.session.user. Broadcasting to the site room ("all") would only reach
+	Desk users, but partners use the dashboard as Website users, so we must emit
+	to each member's user room explicitly for them to receive the update.
+	"""
+	for user in frappe.get_all("Team Member", filters={"parent": team}, pluck="user"):
+		frappe.publish_realtime(event, message={"team": team}, user=user, after_commit=True)
+
+
 class CertificateLinkRequest(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -20,12 +47,12 @@ class CertificateLinkRequest(Document):
 		partner: DF.Data | None
 		partner_team: DF.Link | None
 		status: DF.Literal["Approved", "Cancelled", "Pending"]
-		user_email: DF.Link | None
+		user_email: DF.Data | None
 	# end: auto-generated types
 
 	def before_insert(self):
 		self.status = "Pending"
-		self.partner = frappe.db.get_value("Team", self.partner_team, "company_name")
+		self.partner = _resolve_partner_name(self.partner_team)
 		self.key = frappe.generate_hash(15)
 
 	def on_update(self):
@@ -39,7 +66,7 @@ class CertificateLinkRequest(Document):
 		self.publish_status_update()
 
 	def send_validation_email(self):
-		link = get_url(f"/api/method/press.api.partner.approve_certificate_link_request?key={self.key}")
+		link = get_url(f"/certificate-approval?key={self.key}")
 
 		frappe.sendmail(
 			recipients=[self.user_email],
@@ -75,12 +102,7 @@ class CertificateLinkRequest(Document):
 		)
 
 	def publish_status_update(self):
-		frappe.publish_realtime(
-			"partner_onboarding_certificates_updated",
-			message={"team": self.partner_team},
-			doctype="Team",
-			after_commit=True,
-		)
+		notify_partner_team(self.partner_team, "partner_onboarding_certificates_updated")
 
 	@staticmethod
 	def get_certificate(user_email: str, course: str):
@@ -163,12 +185,10 @@ class CertificateLinkRequest(Document):
 				"Certificate link request has already been approved. Refresh the page to see the latest status."
 			)
 
-		if doc.user_email != frappe.session.user:
-			frappe.throw(
-				"Log in with the email address attached to this certificate. Then open the link again."
-			)
-
+		# The secret key is emailed only to the certificate holder and is
+		# consumed on first use, so possession of a valid key authorizes the
+		# approval. The holder need not be a Frappe Cloud user, so we must not
+		# require a matching logged-in session here.
 		doc.status = "Approved"
-		# key + user email is sufficient to approve the request
 		doc.save(ignore_permissions=True)
 		return doc

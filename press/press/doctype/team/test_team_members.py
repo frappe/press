@@ -10,10 +10,9 @@ from frappe.tests.ui_test_helpers import create_test_user
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.team.team_members import (
+	PERMISSION_FIELDS,
 	get_invitations,
-	get_members,
 	get_roles,
-	remove_member,
 )
 
 if TYPE_CHECKING:
@@ -87,35 +86,6 @@ class TestTeamMembers(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_get_members_returns_active_members(self):
-		team = create_test_team_for_members()
-		team_user = frappe.get_value("Team", team, "user")
-		with user_context(team_user):
-			member_email = frappe.mock("email")
-			add_team_member(team, member_email)
-			members = get_members(team)
-			self.assertEqual(len(members), 1)
-			self.assertEqual(members[0].email, member_email)
-			self.assertEqual(members[0].status, "Active")
-			self.assertEqual(members[0].role, "Developer")
-
-	def test_get_members_returns_empty_for_team_without_members(self):
-		team = create_test_team_for_members()
-		team_user = frappe.get_value("Team", team, "user")
-		with user_context(team_user):
-			members = get_members(team)
-			self.assertEqual(len(members), 0)
-
-	def test_get_members_includes_user_details(self):
-		team = create_test_team_for_members()
-		team_user = frappe.get_value("Team", team, "user")
-		with user_context(team_user):
-			member_email = frappe.mock("email")
-			add_team_member(team, member_email)
-			members = get_members(team)
-			self.assertIsNotNone(members[0].full_name)
-			self.assertIn("user_image", members[0])
-
 	def test_get_invitations_returns_pending_invitations(self):
 		team = create_test_team_for_members()
 		team_user = frappe.get_value("Team", team, "user")
@@ -136,6 +106,30 @@ class TestTeamMembers(FrappeTestCase):
 			invitations = get_invitations(team)
 			self.assertEqual(len(invitations), 0)
 
+	def test_get_invitations_excludes_accepted_invitations_with_cleared_request_key(self):
+		"""Acceptance nulls request_key but leaves the expiration time in the
+		future, so the invite must not keep showing as pending."""
+		team = create_test_team_for_members()
+		team_user = frappe.get_value("Team", team, "user")
+		with user_context(team_user):
+			accepted_email = frappe.mock("email")
+			create_account_request(team, accepted_email, invited_by=team)
+			frappe.db.set_value("Account Request", {"email": accepted_email}, "request_key", None)
+			invitations = get_invitations(team)
+			self.assertEqual(len(invitations), 0)
+
+	def test_get_invitations_excludes_invitations_with_blanked_request_key(self):
+		"""The expire_request_key scheduled job blanks request_key to an empty
+		string; such invites must not show as pending either."""
+		team = create_test_team_for_members()
+		team_user = frappe.get_value("Team", team, "user")
+		with user_context(team_user):
+			invalidated_email = frappe.mock("email")
+			create_account_request(team, invalidated_email, invited_by=team)
+			frappe.db.set_value("Account Request", {"email": invalidated_email}, "request_key", "")
+			invitations = get_invitations(team)
+			self.assertEqual(len(invitations), 0)
+
 	def test_get_invitations_excludes_uninvited_requests(self):
 		team = create_test_team_for_members()
 		team_user = frappe.get_value("Team", team, "user")
@@ -152,18 +146,13 @@ class TestTeamMembers(FrappeTestCase):
 			invitations = get_invitations(team)
 			self.assertEqual(len(invitations), 0)
 
-	def test_get_roles_returns_all_available_roles(self):
-		roles = get_roles(frappe.mock("email"))
-		expected_roles = [
-			{"label": "Admin", "value": "Admin"},
-			{"label": "Member", "value": "Member"},
-			{"label": "Developer", "value": "Developer"},
-			{"label": "Viewer", "value": "Viewer"},
-		]
-		self.assertEqual(len(roles), 4)
-		self.assertEqual(roles, expected_roles)
+	def test_get_roles_returns_empty_when_no_team(self):
+		"""When no team is provided, an empty list should be returned."""
+		roles = get_roles(None)
+		self.assertEqual(roles, [])
 
 	def test_get_roles_accepts_team_parameter(self):
+		"""get_roles should accept a team parameter and return a list of roles."""
 		team = create_test_team_for_members()
 		team_user = frappe.get_value("Team", team, "user")
 		with user_context(team_user):
@@ -171,33 +160,57 @@ class TestTeamMembers(FrappeTestCase):
 			self.assertIsNotNone(roles)
 			self.assertIsInstance(roles, list)
 
-	def test_remove_member_deletes_team_member(self):
+	def test_get_roles_includes_custom_press_roles_for_team(self):
+		"""When a team has custom Press Roles, they should be returned."""
 		team = create_test_team_for_members()
 		team_user = frappe.get_value("Team", team, "user")
 		with user_context(team_user):
-			member_email = frappe.mock("email")
-			add_team_member(team, member_email)
-			member = frappe.db.get_value("Team Member", {"parent": team, "user": member_email}, "name")
-			remove_member(team, member)
-			self.assertFalse(frappe.db.exists("Team Member", {"parent": team, "user": member_email}))
+			frappe.get_doc(
+				{
+					"doctype": "Press Role",
+					"title": "Custom Role",
+					"team": team,
+					"admin_access": 0,
+					"allow_billing": 1,
+					"allow_apps": 1,
+					"allow_site_creation": 0,
+				}
+			).insert(ignore_permissions=True)
 
-	def test_remove_member_handles_nonexistent_member(self):
-		team = create_test_team_for_members()
-		team_user = frappe.get_value("Team", team, "user")
-		with user_context(team_user):
-			nonexistent_member = frappe.generate_hash(length=10)
-			remove_member(team, nonexistent_member)
-			self.assertTrue(True)
+			roles = get_roles(team)
+			self.assertEqual(len(roles), 1)
+			self.assertEqual(roles[0]["label"], "Custom Role")
+			self.assertEqual(roles[0]["value"], "Custom Role")
+			self.assertIsNotNone(roles[0]["name"])
+			for field in PERMISSION_FIELDS:
+				self.assertIn(field, roles[0])
+			self.assertTrue(roles[0]["allow_billing"])
+			self.assertTrue(roles[0]["allow_apps"])
+			self.assertFalse(roles[0]["admin_access"])
+			self.assertFalse(roles[0]["allow_site_creation"])
 
-	def test_remove_member_only_removes_specific_member(self):
-		team = create_test_team_for_members()
-		team_user = frappe.get_value("Team", team, "user")
-		with user_context(team_user):
-			member1_email = frappe.mock("email")
-			member2_email = frappe.mock("email")
-			add_team_member(team, member1_email)
-			add_team_member(team, member2_email)
-			member1 = frappe.db.get_value("Team Member", {"parent": team, "user": member1_email}, "name")
-			remove_member(team, member1)
-			self.assertFalse(frappe.db.exists("Team Member", {"parent": team, "user": member1_email}))
-			self.assertTrue(frappe.db.exists("Team Member", {"parent": team, "user": member2_email}))
+	def test_get_roles_excludes_custom_roles_from_other_teams(self):
+		"""Custom Press Roles from other teams should not be included."""
+		team1 = create_test_team_for_members()
+		team2 = create_test_team_for_members()
+		team1_user = frappe.get_value("Team", team1, "user")
+		with user_context(team1_user):
+			frappe.get_doc(
+				{
+					"doctype": "Press Role",
+					"title": "Team1 Role",
+					"team": team1,
+				}
+			).insert(ignore_permissions=True)
+			frappe.get_doc(
+				{
+					"doctype": "Press Role",
+					"title": "Team2 Role",
+					"team": team2,
+				}
+			).insert(ignore_permissions=True)
+
+			roles = get_roles(team1)
+			labels = [r["label"] for r in roles]
+			self.assertIn("Team1 Role", labels)
+			self.assertNotIn("Team2 Role", labels)

@@ -31,7 +31,7 @@ const eligibilityCriteria = computed(() => [
 </script>
 <template>
 	<p class="text-p-base text-ink-gray-6 mb-4">
-		Fulfill the following eligibility criteria to become a partner:
+		Fulfill the following eligibility criteria to become a partner
 	</p>
 
 	<ul

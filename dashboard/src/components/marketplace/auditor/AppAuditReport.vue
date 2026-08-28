@@ -19,6 +19,7 @@ import type {
 	MarketplaceAppAuditCheckRow,
 } from "@/components/marketplace/auditor/auditReportTypes";
 import TextParser from "@/components/marketplace/auditor/TextParser.vue";
+import CopyBtn from "@/components/utils/CopyBtn.vue";
 import {
 	auditResultHeadline,
 	type BadgeTheme,
@@ -250,7 +251,7 @@ const heroSurface = computed(() => {
 	const st = doc.value?.status;
 	if (st === "Running" || st === "Queued")
 		return "border-outline-gray-2 bg-surface-blue-2";
-	if (st === "Failed") return "border-outline-gray-2 bg-surface-red-2";
+	if (st === "Failed") return "border-outline-gray-1 bg-surface-gray-2";
 	const r = doc.value?.audit_result;
 	if (r === "Fail") return "border-outline-gray-2 bg-surface-red-2";
 	if (r === "Pass") return "border-outline-gray-2 bg-surface-green-2";
@@ -400,21 +401,28 @@ v-else-if="auditResource.error"
 
 				<section
 					v-if="doc.status === 'Failed' && doc.error_traceback"
-					class="scroll-mt-20 rounded-lg border border-outline-gray-2 bg-surface-red-2 px-4 py-3"
+					class="scroll-mt-20 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-white"
 					role="region" aria-label="Audit error details">
-					<div
-class="mb-2 flex items-center gap-2 text-sm font-medium text-ink-red-3">
-						<lucide-alert-circle
-class="h-4 w-4 shrink-0 text-ink-red-3" aria-hidden="true" />
-
-
-						Audit error
+					<div class="border-b border-outline-gray-1 px-4 py-3">
+						<div class="flex min-w-0 items-start gap-2.5">
+							<lucide-alert-circle
+class="mt-0.5 h-4 w-4 shrink-0 text-ink-red-3" aria-hidden="true" />
+							<div class="min-w-0 space-y-0.5">
+								<p class="text-sm font-medium text-ink-red-3">Audit error</p>
+								<p class="text-xs leading-relaxed text-ink-gray-5">
+									The audit could not complete. Share this traceback with support
+									if you need help.
+								</p>
+							</div>
+						</div>
 					</div>
-					<pre
-class="max-h-64 overflow-auto whitespace-pre-wrap break-words font-mono text-xs text-ink-red-4"
-						translate="no"
-						>{{ doc.error_traceback }}</pre
-					>
+					<div class="relative bg-surface-gray-2 p-3">
+						<CopyBtn :text="doc.error_traceback"
+							class="absolute right-2 top-2 rounded p-1 text-ink-gray-5 hover:bg-surface-gray-3 hover:text-ink-gray-7" />
+						<pre
+class="max-h-64 overflow-auto whitespace-pre-wrap break-words pr-7 font-mono text-xs leading-relaxed text-ink-gray-7"
+							translate="no">{{ doc.error_traceback }}</pre>
+					</div>
 				</section>
 
 				<section class="space-y-3" aria-labelledby="audit-checks-heading">

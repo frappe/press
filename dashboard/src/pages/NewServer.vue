@@ -24,9 +24,17 @@
 	>
 		<LucideAlertTriangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 		<p>
-			Your spending limit has been exceeded. Please contact support to increase
-			your limit.
+			Your spending limit has been exceeded. Please
+			<a href="https://support.frappe.io" target="_blank">contact support</a> to
+			increase your limit.
 		</p>
+	</div>
+	<div
+		v-else-if="hasUnpaidInvoices"
+		class="mx-auto mt-60 w-fit rounded-md border border-dashed px-12 py-8 text-center text-ink-gray-6"
+	>
+		<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+		<p>Please settle your outstanding invoices to create new servers.</p>
 	</div>
 	<div
 		v-else-if="serverEnabled"
@@ -1017,6 +1025,7 @@ export default {
 			unifiedServer: false,
 			avoidAutoResetPlanSelection: false,
 			spendingLimitExceeded: false,
+			hasUnpaidInvoices: false,
 		}
 	},
 	watch: {
@@ -1389,6 +1398,16 @@ export default {
 				auto: true,
 				onSuccess(response) {
 					this.spendingLimitExceeded = response
+				},
+			}
+		},
+		hasUnpaidInvoices() {
+			return {
+				url: 'press.api.billing.get_unpaid_invoices',
+				auto: true,
+				onSuccess(data) {
+					if (!data) return
+					this.hasUnpaidInvoices = Boolean(data.length >= 2)
 				},
 			}
 		},

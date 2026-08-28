@@ -44,6 +44,7 @@ export type PartnerOnboardingDoc = {
 	status?: 'Draft' | 'Pending Review' | 'Approved' | 'Rejected' | 'Cancelled'
 	company_name?: string
 	registered_country?: string
+	registered_state?: string
 	company_email?: string
 	contact?: string
 	address?: string
@@ -62,7 +63,9 @@ export type PartnerOnboardingDoc = {
 	agreed_to_partnership_agreement?: boolean | 0 | 1
 	reviewed_on?: string
 	reviewed_by?: string
+	approved_on?: string
 	reviewer_comments?: string
+	company_logo?: string
 }
 
 export function getPartnerMRRCurrency(country?: string) {
@@ -114,6 +117,7 @@ const certificateTypeCourses: Record<string, string[]> = {
 const form = reactive<PartnerOnboardingDoc>({
 	company_name: '',
 	registered_country: '',
+	registered_state: '',
 	company_email: '',
 	contact: '',
 	address: '',
@@ -128,6 +132,7 @@ const form = reactive<PartnerOnboardingDoc>({
 	existing_partnerships: '',
 	erp_implementations_range: '',
 	incorporation_certificate: '',
+	company_logo: '',
 	agreed_to_due_diligence: false,
 	agreed_to_partnership_agreement: false,
 })
@@ -163,6 +168,7 @@ function applyDoc(nextDoc: PartnerOnboardingDoc | null, team?: TeamResource) {
 			teamDoc.team_title ||
 			'',
 		registered_country: nextDoc?.registered_country || teamDoc.country || '',
+		registered_state: nextDoc?.registered_state || '',
 		company_email: nextDoc?.company_email || teamDoc.user || '',
 		contact: nextDoc?.contact || teamDoc.phone_number || '',
 		address: nextDoc?.address || '',
@@ -177,6 +183,7 @@ function applyDoc(nextDoc: PartnerOnboardingDoc | null, team?: TeamResource) {
 		existing_partnerships: nextDoc?.existing_partnerships || '',
 		erp_implementations_range: nextDoc?.erp_implementations_range || '',
 		incorporation_certificate: nextDoc?.incorporation_certificate || '',
+		company_logo: nextDoc?.company_logo || teamDoc.company_logo || '',
 		agreed_to_due_diligence: Boolean(nextDoc?.agreed_to_due_diligence),
 		agreed_to_partnership_agreement: Boolean(
 			nextDoc?.agreed_to_partnership_agreement,
@@ -257,7 +264,16 @@ const savePartnerOnboarding = createResource({
 	url: `${baseUrl}.save_partner_onboarding`,
 	auto: false,
 	onSuccess: (nextDoc: PartnerOnboardingDoc) => {
+		const wasRegistered = Boolean(doc.value?.name)
 		applyDoc(nextDoc, activeTeam.value)
+		// First registration only needs the sidebar to surface the "Partnership"
+		// item (see NavList.vue / Sidebar.vue). The backend doesn't mutate the
+		// Team here — the sole delta is the computed `has_partner_onboarding`
+		// flag — so set it optimistically instead of triggering a heavy full
+		// Team reload (balance, billing, subscriptions, ...).
+		if (!wasRegistered && nextDoc?.name && activeTeam.value?.doc) {
+			activeTeam.value.doc.has_partner_onboarding = true
+		}
 	},
 })
 
@@ -276,6 +292,9 @@ const unregisterPartnerOnboarding = createResource({
 		applyDoc(null, activeTeam.value)
 		resetCertificateStatus()
 		resetMRRStatus()
+		// Record removed — reload the team so the sidebar drops "Partnership"
+		// and the "Become a Partner" entry returns to the dropdown.
+		void activeTeam.value?.reload?.()
 	},
 })
 
@@ -285,19 +304,36 @@ export function usePartnerOnboarding(team?: TeamResource) {
 	const mrrStatusResource = getMRRStatusResource(team)
 
 	const isRegistered = computed(() => Boolean(doc.value?.name))
-	const isProfileComplete = computed(() =>
-		Boolean(
+	const isProfileComplete = computed(() => {
+		// Submitted/decided applications are past profile editing. Older approved
+		// docs predate required fields like company_logo — don't reopen the
+		// checklist for them.
+		if (
+			doc.value?.docstatus === 1 ||
+			doc.value?.status === 'Approved' ||
+			doc.value?.status === 'Pending Review' ||
+			doc.value?.status === 'Rejected'
+		) {
+			return true
+		}
+
+		const hasRegisteredState =
+			form.registered_country !== 'India' || Boolean(form.registered_state)
+
+		return Boolean(
 			form.company_name &&
 				form.registered_country &&
+				hasRegisteredState &&
 				form.company_email &&
 				form.contact &&
 				form.address &&
 				form.headquarter_city &&
 				form.incorporation_certificate &&
+				form.company_logo &&
 				form.agreed_to_due_diligence &&
 				form.agreed_to_partnership_agreement,
-		),
-	)
+		)
+	})
 	const loading = computed(() => getPartnerOnboarding.loading)
 	const saving = computed(() => savePartnerOnboarding.loading)
 	const submittingForApproval = computed(() => submitPartnerOnboarding.loading)
@@ -326,8 +362,9 @@ export function usePartnerOnboarding(team?: TeamResource) {
 			resetMRRStatus()
 			return nextDoc
 		}
-		await loadCertificateStatus()
-		await loadMRRStatus()
+		// Certificate and MRR status are independent — fetch them concurrently so
+		// the partner-onboarding page renders without waiting on a serial chain.
+		await Promise.all([loadCertificateStatus(), loadMRRStatus()])
 		return nextDoc
 	}
 

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import inspect
+import json
 import typing
 
 import frappe
@@ -16,7 +17,7 @@ from frappe.query_builder.terms import ValueWrapper
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
-from press.access import dashboard_access_rules
+from press.access import dashboard_access_rules, ownership
 from press.access.support_access import has_support_access
 from press.exceptions import TeamHeaderNotInRequestError
 from press.guards import role_guard
@@ -62,6 +63,7 @@ ALLOWED_DOCTYPES = [
 	"Database Server",
 	"Ansible Play",
 	"Server Plan",
+	"S3 Storage Plan",
 	"Release Group Variable",
 	"Resource Tag",
 	"Press Tag",
@@ -87,6 +89,7 @@ ALLOWED_DOCTYPES = [
 	"Razorpay Mandate",
 	"Partner Certificate",
 	"Partner Payment Payout",
+	"Partner Tier",
 	"Deploy Candidate Build",
 	"Partner Lead",
 	"Partner Lead Type",
@@ -108,6 +111,8 @@ ALLOWED_DOCTYPES = [
 	"Partner Non Conformance",
 	"Team Member Resource",
 	"Release Pipeline",
+	"Site Plan Change",
+	"Plan Change",
 ]
 
 whitelisted_methods = set()
@@ -126,10 +131,6 @@ def get_list(
 ):
 	if filters is None:
 		filters = {}
-
-	# these doctypes doesn't have a team field to filter by but are used in get or run_doc_method
-	if doctype in ["Team", "User SSH Key"]:
-		return []
 
 	context_data = {
 		"doctype": doctype,
@@ -152,7 +153,9 @@ def get_list(
 
 	meta = frappe.get_meta(doctype)
 	if meta.istable and not (filters.get("parenttype") and filters.get("parent")):
-		frappe.throw("parenttype and parent are required to get child records")
+		frappe.throw(
+			"To fetch child table records, please provide both 'parenttype' and 'parent' in the filters."
+		)
 
 	apply_team_filter = not (
 		filters.get("skip_team_filter_for_system_user_and_support_agent")
@@ -205,15 +208,7 @@ def get_list_query(
 		doctype, filters=valid_filters, fields=valid_fields, offset=start, limit=limit, order_by=order_by
 	)
 
-	if meta.istable and frappe.get_meta(filters.get("parenttype")).has_field("team"):
-		ParentDocType = frappe.qb.DocType(filters.get("parenttype"))
-		ChildDocType = frappe.qb.DocType(doctype)
-
-		query = (
-			query.join(ParentDocType)
-			.on(ParentDocType.name == ChildDocType.parent)
-			.where(ParentDocType.team == frappe.local.team().name)
-		)
+	query = ownership.scope_query(doctype, meta, filters, query)
 
 	restricted_doctypes = ("Site", "Release Group", "Server")
 	if doctype in restricted_doctypes and role_guard.is_restricted() and not has_user_permission(doctype):
@@ -257,12 +252,8 @@ def get(doctype, name):  # noqa: C901
 			return controller.on_not_found(name)
 		raise
 
-	if (
-		not (is_system_user or is_support)
-		and frappe.get_meta(doctype).has_field("team")
-		and doc.team != frappe.local.team().name
-	):
-		raise_not_permitted()
+	if not (is_system_user or is_support):
+		check_document_access(doctype, name, doc=doc)
 
 	fields = tuple(default_fields)
 	if hasattr(doc, "dashboard_fields"):
@@ -304,15 +295,13 @@ def insert(doc=None):
 
 		# inserting a child record
 		parent = frappe.get_doc(doc.parenttype, doc.parent)
-
-		if frappe.get_meta(parent.doctype).has_field("team") and parent.team != frappe.local.team().name:
-			raise_not_permitted()
+		check_document_write_access(parent.doctype, parent.name)
 
 		parent.append(doc.parentfield, doc)
 		parent.save()
 		return get(parent.doctype, parent.name)
 
-	_doc = frappe.get_doc(doc)
+	_doc = frappe.get_doc(filter_insertable_fields(doc.doctype, doc))
 
 	if frappe.get_meta(doc.doctype).has_field("team"):
 		if not _doc.team:
@@ -321,6 +310,11 @@ def insert(doc=None):
 		if not frappe.local.system_user():
 			# don't allow dashboard user to set any other team
 			_doc.team = frappe.local.team().name
+
+	if not frappe.local.system_user():
+		# don't allow a dashboard user to create an already-submitted document
+		_doc.docstatus = 0
+
 	_doc.insert()
 	return get(_doc.doctype, _doc.name)
 
@@ -337,11 +331,16 @@ def set_value(doctype: str, name: str, fieldname: dict | str, value: str | None 
 	add_data_to_monitor(press_api_client_method="set_value", press_api_client_payload=context_data)
 	sentry.set_context("press_client", {"method": "set_value", "data": context_data})
 	check_permissions(doctype)
-	check_document_access(doctype, name)
+	if not has_support_access(doctype, name):
+		check_document_write_access(doctype, name)
 
-	for field in fieldname:
+	check_editable_fields(doctype, fields_being_set(fieldname, value))
+
+	fields = fieldname if isinstance(fieldname, dict) else {fieldname: value}
+	for field in fields:
 		# fields mentioned in dashboard_fields are allowed to be set via set_value
-		is_allowed_field(doctype, field)
+		if not is_allowed_field(doctype, field):
+			raise_not_permitted()
 
 	_set_value(doctype, name, fieldname, value)
 
@@ -354,7 +353,8 @@ def delete(doctype: str, name: str):
 	method = "delete"
 
 	check_permissions(doctype)
-	check_document_access(doctype, name)
+	if not has_support_access(doctype, name):
+		check_document_write_access(doctype, name)
 	check_dashboard_actions(doctype, name, method)
 
 	_run_doc_method(dt=doctype, dn=name, method=method, args=None)
@@ -372,7 +372,8 @@ def run_doc_method(dt: str, dn: str, method: str, args: dict | None = None):
 	sentry.set_context("press_client", {"method": "run_doc_method", "data": context_data})
 
 	check_permissions(dt)
-	check_document_access(dt, dn)
+	if not has_support_access(dt, dn):
+		check_document_write_access(dt, dn)
 	check_dashboard_actions(dt, dn, method)
 
 	_run_doc_method(
@@ -439,30 +440,20 @@ def search_link(
 	return q.run(as_dict=1)
 
 
-def check_document_access(doctype: str, name: str):
+def check_document_access(doctype: str, name: str, doc=None):
 	if frappe.local.system_user():
 		return
 
-	team = ""
-	meta = frappe.get_meta(doctype)
-	if meta.has_field("team"):
-		team = frappe.db.get_value(doctype, name, "team")
-	elif meta.has_field("bench"):
-		bench = frappe.db.get_value(doctype, name, "bench")
-		team = frappe.db.get_value("Bench", bench, "team")
-	elif meta.has_field("group"):
-		group = frappe.db.get_value(doctype, name, "group")
-		team = frappe.db.get_value("Release Group", group, "team")
-	else:
-		return
+	if not ownership.has_document_access(doctype, name, doc=doc):
+		raise_not_permitted()
 
-	if team == frappe.local.team().name:
-		return
 
-	if has_support_access(doctype, name):
-		return
+def check_document_write_access(doctype: str, name: str):
+	# Reference data is the same for every team, so no team gets to change it.
+	if doctype in ownership.GLOBAL_DOCTYPES and not frappe.local.system_user():
+		raise_not_permitted()
 
-	raise_not_permitted()
+	check_document_access(doctype, name)
 
 
 def check_dashboard_actions(doctype, name, method):
@@ -534,6 +525,39 @@ def is_allowed_field(doctype, field):
 	return False
 
 
+def fields_being_set(fieldname: dict | str, value: str | None) -> list[str]:
+	"""The fields `frappe.client.set_value` will write, however it was called.
+
+	It takes either a mapping or a single fieldname with its value, and a
+	fieldname that parses as JSON is treated as the mapping.
+	"""
+	if isinstance(fieldname, dict):
+		return list(fieldname)
+
+	if value:
+		return [fieldname]
+
+	try:
+		return list(json.loads(fieldname))
+	except (TypeError, ValueError):
+		return [fieldname]
+
+
+def check_editable_fields(doctype: str, fields: list[str]):
+	"""Refuse to write a field the doctype hasn't offered up for editing.
+
+	`dashboard_fields` says what the dashboard may read, which is a much longer
+	list than what it may write — a site shows its plan, server and team without
+	anyone being allowed to set them from here. Doctypes name the writable ones
+	in `dashboard_editable_fields`, and everything else is refused.
+	"""
+	editable = getattr(get_controller(doctype), "dashboard_editable_fields", ())
+
+	for field in fields:
+		if field not in editable:
+			frappe.throw(f"{doctype}.{field} cannot be edited from the dashboard", frappe.PermissionError)
+
+
 def is_allowed_linked_field(doctype, field):
 	linked_field = linked_field_fieldname = None
 	if " as " in field:
@@ -562,6 +586,29 @@ def is_allowed_table_field(doctype, field):
 			if not is_allowed_field(table_doctype, table_field):
 				return False
 	return True
+
+
+def filter_insertable_fields(doctype, doc):
+	"""Restrict a dashboard-submitted insert payload to a doctype's explicit
+	create-time allowlist.
+
+	Unlike `is_allowed_field` (used for reads and filters), this doesn't fall
+	back to Frappe's `default_fields` — that list includes `docstatus`, which
+	is exactly the field a dashboard user must never get to set directly.
+	System users (Desk, scripts) are trusted with the full payload, as before.
+	"""
+	if frappe.local.system_user():
+		return doc
+
+	controller = get_controller(doctype)
+	insertable_fields = getattr(controller, "dashboard_insert_fields", ())
+
+	filtered = frappe._dict({"doctype": doctype})
+	for field in insertable_fields:
+		if field in doc:
+			filtered[field] = doc[field]
+
+	return filtered
 
 
 def check_permissions(doctype):

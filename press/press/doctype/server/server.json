@@ -20,6 +20,9 @@
 		"ignore_incidents_till",
 		"section_break_mequ",
 		"is_server_setup",
+		"is_wazuh_agent_installed",
+		"wazuh_agent_status",
+		"is_auditd_setup",
 		"is_server_prepared",
 		"is_server_renamed",
 		"is_provisioning_press_job_completed",
@@ -30,6 +33,7 @@
 		"use_agent_job_callbacks",
 		"is_pyspy_setup",
 		"halt_agent_jobs",
+		"disable_agent_update",
 		"stop_deployments",
 		"is_for_recovery",
 		"is_monitoring_disabled",
@@ -97,11 +101,13 @@
 		"use_for_build",
 		"platform",
 		"column_break_ktkv",
+		"exclude_for_scheduling",
 		"new_worker_allocation",
 		"set_bench_memory_limits",
 		"ram",
 		"backups_section",
 		"skip_scheduled_backups",
+		"stream_backups",
 		"standalone_section",
 		"is_standalone",
 		"column_break_edyf",
@@ -151,6 +157,26 @@
 			"fieldname": "is_server_setup",
 			"fieldtype": "Check",
 			"label": "Is Server Setup",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_wazuh_agent_installed",
+			"fieldtype": "Check",
+			"label": "Is Wazuh Agent Installed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "wazuh_agent_status",
+			"fieldtype": "Data",
+			"label": "Wazuh Agent Status",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_auditd_setup",
+			"fieldtype": "Check",
+			"label": "Is Auditd Setup",
 			"read_only": 1
 		},
 		{
@@ -249,6 +275,12 @@
 			"fieldname": "use_for_new_sites",
 			"fieldtype": "Check",
 			"label": "Use For New Sites"
+		},
+		{
+			"default": "0",
+			"fieldname": "skip_standby_site_creation",
+			"fieldtype": "Check",
+			"label": "Skip Standby Site Creation"
 		},
 		{
 			"fieldname": "cluster",
@@ -499,6 +531,13 @@
 			"label": "Skip Scheduled Backups"
 		},
 		{
+			"default": "0",
+			"description": "Stream backups directly to offsite storage instead of staging them on the server",
+			"fieldname": "stream_backups",
+			"fieldtype": "Check",
+			"label": "Stream Backups"
+		},
+		{
 			"fieldname": "column_break_pdbx",
 			"fieldtype": "Column Break"
 		},
@@ -603,6 +642,13 @@
 			"fieldname": "halt_agent_jobs",
 			"fieldtype": "Check",
 			"label": "Halt Agent Jobs"
+		},
+		{
+			"default": "0",
+			"description": "Don't update the agent on this server",
+			"fieldname": "disable_agent_update",
+			"fieldtype": "Check",
+			"label": "Disable Agent Update"
 		},
 		{
 			"default": "x86_64",
@@ -786,6 +832,14 @@
 			"fieldtype": "Int",
 			"label": "Supported Site Quota",
 			"read_only_depends_on": "eval:!!doc.__islocal"
+		},
+		{
+			"default": "0",
+			"depends_on": "eval: doc.public",
+			"description": "Enable to skip this server when refreshing public server pool for new benches/sites",
+			"fieldname": "exclude_for_scheduling",
+			"fieldtype": "Check",
+			"label": "Exclude being considered for new benches/sites"
 		}
 	],
 	"links": [
@@ -798,7 +852,7 @@
 			"link_fieldname": "app_server"
 		}
 	],
-	"modified": "2026-05-18 10:49:09.702133",
+	"modified": "2026-08-13 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Server",
