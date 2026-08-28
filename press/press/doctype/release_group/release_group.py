@@ -37,6 +37,10 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 )
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
+from press.press.doctype.site_config.site_config import (
+	decode_json_config_value,
+	parse_json_config_value,
+)
 from press.utils import (
 	fmt_timedelta,
 	get_app_tag,
@@ -519,7 +523,7 @@ class ReleaseGroup(Document, TagHelpers):
 			elif key_type == "Boolean":
 				key_value = row.value if isinstance(row.value, bool) else bool(json.loads(cstr(row.value)))
 			elif key_type == "JSON":
-				key_value = json.loads(cstr(row.value))
+				key_value = decode_json_config_value(row.key, row.value)
 			else:
 				key_value = row.value
 
@@ -2262,7 +2266,7 @@ def get_formatted_config_value(config_type: str, value: Any, key: str, name: str
 		return bool(sbool(value))
 
 	if config_type == "JSON":
-		return frappe.parse_json(value)
+		return parse_json_config_value(key, value)
 
 	if config_type == "Password" and value == "*******":
 		return frappe.get_value("Site Config", {"key": key, "parent": name}, "value")
