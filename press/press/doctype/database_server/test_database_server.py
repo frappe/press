@@ -245,16 +245,15 @@ class TestDatabaseServer(FrappeTestCase):
 		)
 
 	@patch("press.api.server.prometheus_instant_value")
-	def test_is_mariadb_up_treats_missing_monitoring_data_as_up(self, mysql_up: Mock):
-		# A server without monitoring, or one Prometheus can't be reached for, must not look
-		# down — that would block actions that depend on the check.
+	def test_is_mariadb_up_treats_missing_monitoring_data_as_down(self, mysql_up: Mock):
+		# A one-shot restore a user triggers must not run on a guess, so it asks for proof.
 		server = create_test_database_server()
 
 		mysql_up.return_value = None
-		self.assertTrue(server.is_mariadb_up(), "No monitoring data should count as up")
+		self.assertFalse(server.is_mariadb_up(), "No monitoring data means no proof")
 
 		mysql_up.side_effect = MonitorServerDown("Unable to connect to monitor server")
-		self.assertTrue(server.is_mariadb_up(), "An unreachable monitor server should count as up")
+		self.assertFalse(server.is_mariadb_up(), "An unreachable monitor server means no proof")
 
 	@patch("press.api.server.get_decrypted_password", new=Mock(return_value="password"))
 	@patch("press.api.server.requests.get")

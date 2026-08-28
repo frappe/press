@@ -476,10 +476,43 @@ ${r.message.error}
 			},
 			__('Dangerous Actions'),
 		)
+		frm.add_custom_button(
+			__('Restore Tables'),
+			() => {
+				const dialog = new frappe.ui.Dialog({
+					title: __('Restore Tables'),
+					fields: [
+						{
+							fieldtype: 'HTML',
+							options: `<p class="text-muted">Restores this site's tables from the
+								backup its last update took. Any data written after the update
+								started is lost.</p>`,
+						},
+						{
+							fieldtype: 'Check',
+							label: __('Force'),
+							fieldname: 'force',
+							description: __(
+								'Restore even if the site has no failed update, a newer update ran after it, or the database server does not report itself up. A restore already running is never skipped.',
+							),
+						},
+					],
+				})
+
+				dialog.set_primary_action(__('Restore Tables'), (args) => {
+					frm.call('restore_tables', { force: args.force }).then(() => {
+						dialog.hide()
+						frm.refresh()
+					})
+				})
+
+				dialog.show()
+			},
+			__('Dangerous Actions'),
+		)
 		;[
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore_site'],
-			[__('Restore Tables'), 'restore_tables'],
 			[__('Archive'), 'archive', frm.doc.status !== 'Archived'],
 			[__('Cleanup after Archive'), 'cleanup_after_archive'],
 		].forEach(([label, method]) => {
