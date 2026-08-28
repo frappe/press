@@ -4,6 +4,20 @@
 			ctx_type="Server"
 			:ctx_name="[$appServer?.doc?.name, $appServer?.doc?.cluster]"
 		/>
+		<AlertBanner
+			v-if="$appServer?.doc?.is_server_disk_full"
+			class="mb-5"
+			type="error"
+			title="This server is out of disk space. Sites on it may stop responding until space is freed up."
+		>
+			<Button
+				class="ml-auto min-w-[7rem]"
+				variant="outline"
+				link="https://docs.frappe.io/cloud/storage-addons"
+			>
+				More Info
+			</Button>
+		</AlertBanner>
 		<div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
 			<div
 				v-for="server in servers"
@@ -189,6 +203,7 @@ import { toast } from 'vue-sonner'
 import { confirmDialog, renderDialog } from '../../utils/components'
 import { getDocResource } from '../../utils/resource'
 import { getToastErrorMessage } from '../../utils/toast'
+import AlertBanner from '../AlertBanner.vue'
 import CustomAlerts from '../CustomAlerts.vue'
 import Badge from '../global/Badge.vue'
 import ServerLoadAverage from './ServerLoadAverage.vue'
@@ -204,6 +219,7 @@ export default {
 		ServerPlansDialog,
 		StorageBreakdownDialog,
 		CustomAlerts,
+		AlertBanner,
 	},
 	data() {
 		return {
