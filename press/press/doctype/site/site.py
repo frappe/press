@@ -83,7 +83,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
-from press.press.doctype.site_plan.site_plan import UNLIMITED_PLANS, get_plan_config
+from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 	get_doctype_name,
 )
@@ -411,6 +411,16 @@ class Site(Document, TagHelpers):
 			frappe.db.exists("Site Update", {"site": self.name, "status": "Scheduled"})
 		)
 		doc.update_information = self.get_update_information()
+		doc.fatal_update = (
+			frappe.db.get_value(
+				"Site Update",
+				self.fatal_site_update,
+				["update_start", "update_job", "recover_job"],
+				as_dict=True,
+			)
+			if self.fatal_site_update
+			else None
+		)
 		doc.actions = self.get_actions()
 		server = frappe.get_value(
 			"Server",
@@ -1276,8 +1286,33 @@ class Site(Document, TagHelpers):
 
 		return False
 
-	@frappe.whitelist()
-	def restore_tables(self):
+	def fetch_running_restore_tables_job(self) -> str | None:
+		return frappe.db.exists(
+			"Agent Job",
+			{
+				"site": self.name,
+				"job_type": "Restore Site Tables",
+				"status": ["in", ["Undelivered", "Running", "Pending"]],
+			},
+		)
+
+	@dashboard_whitelist()
+	def restore_tables(self, force: bool = False):
+		"""Restore the tables the failed update's recovery could not restore.
+
+		``force`` skips the checks that are judgement calls, for a system user who can
+		see more than the checks can. It never skips the concurrent-restore check.
+		"""
+		# Lock the site until this request commits. The dashboard and the desk both reach
+		# this method, and two restores against one database would corrupt it.
+		frappe.db.get_value("Site", self.name, "name", for_update=True)
+		if job := self.fetch_running_restore_tables_job():
+			frappe.throw(
+				f"Table restore {job} is already running on this site. Wait for it to finish, "
+				"then reload the page."
+			)
+		if not (force and is_system_user()):
+			self.validate_table_restore()
 		if not self.status_before_update:
 			self.status_before_update = self.status
 		agent = Agent(self.server)
@@ -1285,6 +1320,29 @@ class Site(Document, TagHelpers):
 		self.status = "Pending"
 		self.save()
 		return job.name
+
+	def validate_table_restore(self):
+		fatal_site_update = frappe.db.get_value("Site", self.name, "fatal_site_update")
+		if not fatal_site_update:
+			frappe.throw(
+				"This site has no failed update to recover from. Its tables are already "
+				"restored, or it was never broken by an update. Reload the page to see "
+				"the current state of the site."
+			)
+		# A newer update has moved the site on; its tables are not the ones to restore.
+		latest_update = frappe.db.get_value(
+			"Site Update", {"site": self.name}, "name", order_by="creation desc"
+		)
+		if latest_update != fatal_site_update:
+			frappe.throw(
+				f"Site Update {latest_update} ran after the failed one, so the backup no longer "
+				"matches this site. Restore the site from a backup instead."
+			)
+		# The restore only has one shot. Without metrics we cannot tell the database is up,
+		# so refuse and let the operator retry once the server reports itself again.
+		database_server = frappe.get_doc("Database Server", self.database_server_name)
+		if not database_server.is_mariadb_up():
+			frappe.throw("The database server is not up. Wait for it to come back, then try again.")
 
 	@property
 	def database_size(self) -> int:
@@ -3143,8 +3201,8 @@ class Site(Document, TagHelpers):
 	def get_plan_config(self, plan=None):
 		plan = self.get_plan_name(plan)
 		config = get_plan_config(plan)
-		if plan in UNLIMITED_PLANS:
-			# PERF: do not enable usage tracking on unlimited sites.
+		if plan and frappe.db.get_value("Site Plan", plan, "dedicated_server_plan"):
+			# PERF: do not enable usage tracking on dedicated server sites.
 			config["rate_limit"] = {}
 		return config
 

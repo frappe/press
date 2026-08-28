@@ -46,50 +46,38 @@ Update. Smaller databases finish well within the timeout and are skipped.
 
 The pre-bump value is stashed on the Site Update
 (`previous_max_statement_time`) and **restored once recovery finishes**
-(`restore_max_statement_time`) — at the recover job's terminal state, or, when
-the fallback table restore runs, at that job's callback (so the higher ceiling
-stays in place for the whole recovery). Otherwise the value would ratchet up an
-hour on every recovery.
+(`restore_max_statement_time`), at the recover job's terminal state. Otherwise
+the value would ratchet up an hour on every recovery.
 
 ### When recovery fails
 
 If the recovery job fails, the Site Update goes `Fatal`, the site is marked
 `Broken`, and `Site.fatal_site_update` is set to the failed update.
 
-Press makes one automatic attempt to bring the site back up before leaving it
-for a human (`restore_tables_after_failed_recovery`), but **only** when all of
-these hold:
-
-- it was a **migrate** recovery (`Recover Failed Site Migrate`);
-- its **"Move Site" step succeeded**, so the site is back on the source bench
-  (otherwise restoring tables would target the wrong bench); and
-- it failed due to a **transient DB error** — the database server dropping the
-  connection (`MySQL server has gone away`, `Lost connection to MySQL server`),
-  detected from the job's output/traceback and step output by
-  `failed_due_to_transient_db_error`. Other failures are genuine problems that
-  need manual attention, so the site is left `Fatal`; and
-- **MariaDB is up again** (`DatabaseServer.is_mariadb_up`, reading mysqld_exporter's
-  `mysql_up` metric). The restore gets one attempt, so it isn't spent on a database
-  that hasn't come back. A server without monitoring — or an unreachable monitor
-  server — counts as up, so a monitoring outage never blocks recovery. When MariaDB
-  is down, the skip is recorded as a comment on the Site Update and it stays `Fatal`.
-
-The metric is read with `prometheus_instant_value` (`/api/v1/query`), not
-`prometheus_query`, whose range samples can be a timegrain (120s) stale — too old to
-decide whether a server is up right now.
-
-When those hold, only the table restore is left undone — re-running the whole
-recovery would fail at "Move Site" because the agent's `move_site` is not
-idempotent (the site directory is no longer on the destination bench). So Press
-re-issues just a `Restore Site Tables` job (see below) and links it on the Site
-Update as a comment for traceability.
+The site is left for a human. A migrate recovery that fails after its
+"Move Site" step has moved the site back to the source bench leaves only the
+table restore undone; re-running the whole recovery would fail at "Move Site",
+because the agent's `move_site` is not idempotent (the site directory is no
+longer on the destination bench). The operator restores just the tables with the
+**Restore Tables** button (see below).
 
 ## Restoring tables after a fatal update
 
 Restoring a site's tables from its backup (`Site.restore_tables`, a
-`Restore Site Tables` agent job) is what brings a `Fatal` site back up — both
-the automatic fallback above and a manual operator click go through the same
-job, handled by `process_restore_tables_job_update`:
+`Restore Site Tables` agent job) is what brings a `Fatal` site back up. The
+dashboard shows a **Restore Tables** banner and action on a `Broken` site with a
+`fatal_site_update`. The button calls `Site.retry_restore_tables`, which refuses
+unless the fatal update is still the site's latest, no `Restore Site Tables` job
+is already running, and **MariaDB reports itself up**
+(`DatabaseServer.is_mariadb_up`, reading mysqld_exporter's `mysql_up` metric).
+The restore gets one attempt, so a server with no metric — a monitoring outage
+included — counts as down and the operator retries later.
+
+The metric is read with `prometheus_instant_value` (`/api/v1/query`), not
+`prometheus_query`, whose range samples can be a timegrain (120s) stale — too old
+to decide whether a server is up right now.
+
+The job is handled by `process_restore_tables_job_update`:
 
 - **On success**, the site is reactivated. If it was stuck on a fatal update,
   that update **stays `Fatal`** but its cause of failure is marked resolved
@@ -128,23 +116,16 @@ Update fails
         │
         └─ recover failure ─────────► Fatal  (site Broken, fatal_site_update set)
                                           │
-                   migrate recovery + Move Site ok + transient DB error?
-                              │                              │
-                             no                            yes
-                              │                              │
-                       stays Fatal                  MariaDB up? (mysql_up)
-                   (manual intervention)              │              │
-                                                     no             yes
-                                                      │              │
-                                               stays Fatal    one-shot restore_tables
-                                          (skip recorded as          │
-                                           a comment)         ┌──────┴──────┐
-                                                           failure       success
-                                                              │             │
-                                                              ▼             ▼
-                                                           Broken    Fatal, cause resolved
-                                                      (fatal_site_update (site Active again,
-                                                           remains set)  fatal_site_update cleared)
+                              operator clicks Restore Tables
+                              (needs MariaDB up: mysql_up)
+                                          │
+                                   ┌──────┴──────┐
+                                failure       success
+                                   │             │
+                                   ▼             ▼
+                                Broken    Fatal, cause resolved
+                           (fatal_site_update (site Active again,
+                                remains set)  fatal_site_update cleared)
 ```
 
 (In all terminal cases the recovery-migrate `max_statement_time` bump is
