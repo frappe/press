@@ -484,6 +484,10 @@ def analytics(name, query, timezone, start, end, server_type=None):
 			f"""node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}} - (node_memory_Cached_bytes{{instance="{name}",job="node"}} + node_memory_Buffers_bytes{{instance="{name}",job="node"}})""",
 			lambda x: "Used",
 		),
+		"oom_kills": (
+			f"""round(increase(node_vmstat_oom_kill{{instance="{name}", job="node"}}[{rate_interval}s]))""",
+			lambda x: "OOM Kills",
+		),
 		"database_uptime": (
 			# avg over the bucket, else a short outage between steps is invisible on long timespans
 			f"""avg_over_time(mysql_up{{instance="{name}",job="mariadb"}}[{timegrain}s]) * 100""",
