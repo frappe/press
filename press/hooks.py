@@ -505,6 +505,8 @@ __persistent_cache_keys = [
 	"one_time_login_key*",
 	"press-auth-logs",
 	"rl:*",
+	"press_otp:*",
+	"press_otp_sent:*"
 ]
 
 # `frappe.rename_doc` erases all caches, this hook preserves some of them.
