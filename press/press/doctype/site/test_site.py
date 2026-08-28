@@ -184,6 +184,7 @@ class TestSite(FrappeTestCase):
 	"""Tests for Site Document methods."""
 
 	def tearDown(self):
+		frappe.set_user("Administrator")
 		frappe.db.rollback()
 
 	def test_restore_site_from_files_rejects_remote_file_of_another_team(self):
@@ -988,3 +989,143 @@ class TestSite(FrappeTestCase):
 		}
 		self.assertTrue(bahrain_files.isdisjoint(deleted_files))
 		self.assertTrue(other_files.issubset(set(deleted_files)))
+
+	def _broken_site_with_fatal_update(self) -> Site:
+		from press.press.doctype.site_update.test_site_update import create_test_site_update
+
+		site = create_test_site("fatalupdate")
+		site_update = create_test_site_update(site.name, site.group, "Fatal", ignore_validate=True)
+		site.db_set("fatal_site_update", site_update.name)
+		site.db_set("status", "Broken")
+		site.reload()
+		return site
+
+	def test_restore_tables_is_rejected_when_site_has_no_fatal_update(self):
+		site = create_test_site("healthysite")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError, "no failed update to recover from", site.restore_tables
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_while_another_restore_runs(self):
+		site = self._site_with_a_running_table_restore()
+
+		self.assertRaisesRegex(frappe.ValidationError, "is already running on this site", site.restore_tables)
+		self.assertEqual(
+			frappe.db.count("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			1,
+			"The refused restore must not have created a second job",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=None))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_force_restore_tables_skips_the_checks_for_a_system_user(self):
+		# The operator can see things the checks cannot, so force skips them. Here the
+		# database server reports no metric, which normally refuses the restore.
+		site = self._broken_site_with_fatal_update()
+
+		site.restore_tables(force=True)
+
+		self.assertTrue(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"A forced restore should run even without proof that the database is up",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_force_restore_tables_still_refuses_while_another_restore_runs(self):
+		# Two restores against one database corrupt it, so force must not skip that check.
+		site = self._site_with_a_running_table_restore()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"is already running on this site",
+			lambda: site.restore_tables(force=True),
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=None))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_force_restore_tables_is_ignored_for_a_user_who_is_not_a_system_user(self):
+		site = self._broken_site_with_fatal_update()
+		team_user = frappe.db.get_value("Team", site.team, "user")
+		frappe.db.set_value("User", team_user, "user_type", "Website User")
+		frappe.clear_cache(doctype="User")
+		frappe.set_user(team_user)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"database server is not up",
+			lambda: site.restore_tables(force=True),
+		)
+
+	def _site_with_a_running_table_restore(self) -> Site:
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		site = self._broken_site_with_fatal_update()
+		running_restore = create_test_agent_job("Restore Site Tables", server=site.server, status="Running")
+		running_restore.db_set("site", site.name)
+		return site
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=None))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_when_database_reports_no_metrics(self):
+		# A database server that is down stops reporting mysql_up at all. Without a metric
+		# we cannot tell the database is back, so the one-shot restore must not be spent.
+		site = self._broken_site_with_fatal_update()
+
+		self.assertRaisesRegex(frappe.ValidationError, "database server is not up", site.restore_tables)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run without proof that the database is up",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_creates_restore_job_when_database_is_up(self):
+		site = self._broken_site_with_fatal_update()
+
+		site.restore_tables()
+
+		self.assertTrue(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables should run once the database reports itself up",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_when_a_newer_site_update_exists(self):
+		from press.press.doctype.site_update.test_site_update import create_test_site_update
+
+		# The newer update has to exist before the site is marked fatal — a fatal update
+		# blocks new ones.
+		site = create_test_site("newerupdate")
+		fatal_update = create_test_site_update(site.name, site.group, "Fatal", ignore_validate=True)
+		newer_update = create_test_site_update(site.name, site.group, "Success", ignore_validate=True)
+		site.db_set("fatal_site_update", fatal_update.name)
+		site.db_set("status", "Broken")
+		site.reload()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			f"Site Update {newer_update.name} ran after the failed one",
+			site.restore_tables,
+		)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run once a newer update has moved the site on",
+		)
+
+	def test_dedicated_server_plan_does_not_get_a_rate_limit(self):
+		"""Sites on a dedicated server must not be usage tracked, whatever the plan is named."""
+		plan = create_test_plan("Site", cpu_time=10, dedicated_server_plan=True)
+		site = Site({"doctype": "Site", "plan": plan.name})
+
+		self.assertEqual(site.get_plan_config()["rate_limit"], {})
+
+	def test_shared_server_plan_gets_a_rate_limit_from_cpu_time(self):
+		plan = create_test_plan("Site", cpu_time=10)
+		site = Site({"doctype": "Site", "plan": plan.name})
+
+		self.assertEqual(site.get_plan_config()["rate_limit"], {"limit": 36000, "window": 86400})
