@@ -366,7 +366,7 @@ class ProductTrialRequest(Document):
 		if domain not in get_domains():
 			frappe.throw("The domain is invalid. Please enter a valid domain name.")
 
-	def resolve_cluster_and_domain(self, product: ProductTrial, domain: str) -> tuple[str, str]:
+	def resolve_cluster_and_domain(self, product: ProductTrial, domain: str) -> tuple[str | None, str]:
 		"""Re-resolve an apex domain, so that a signup never lands on it."""
 		if domain != product.domain:
 			return frappe.db.get_value("Root Domain", domain, "default_cluster"), domain
