@@ -21,6 +21,37 @@ import { getBackupsTab } from './site/backups'
 // prefilled so only the ticket id has to be typed; on its own it is not a reason
 const LOGIN_REASON_PREFIX = 'Investigating '
 
+function jobLink(site, job, text) {
+	if (!job) return text
+	return `<a href="/dashboard/sites/${site.doc.name}/insights/jobs/${job}" class="underline" target="_blank">${text}</a>`
+}
+
+function canRestoreTables(site) {
+	return site.doc?.fatal_site_update && site.doc?.status === 'Broken'
+}
+
+function confirmRestoreTables(site) {
+	confirmDialog({
+		title: 'Restore Tables',
+		message: `The ${jobLink(site, site.doc?.fatal_update?.update_job, 'last update')} failed and the ${jobLink(site, site.doc?.fatal_update?.recover_job, 'automatic recovery')} could not restore the tables.<br><br>Re-attempt the recovery manually?<br><br>The site database goes back to <b>${date(site.doc?.fatal_update?.update_start, 'lll')}</b>, when the last update started. <b>Any data written to the site after that time is lost.</b> You cannot undo this.`,
+		primaryAction: {
+			label: 'Restore Tables',
+			theme: 'red',
+		},
+		onSuccess({ hide }) {
+			if (site.restoreTables.loading) return
+			toast.promise(site.restoreTables.submit(), {
+				loading: 'Starting table restore...',
+				success: () => {
+					hide()
+					return 'Table restore started'
+				},
+				error: (e) => getToastErrorMessage(e),
+			})
+		},
+	})
+}
+
 export default {
 	doctype: 'Site',
 	whitelistedMethods: {
@@ -41,6 +72,7 @@ export default {
 		loginAsTeam: 'login_as_team',
 		isSetupWizardComplete: 'is_setup_wizard_complete',
 		reinstall: 'reinstall',
+		restoreTables: 'restore_tables',
 		removeDomain: 'remove_domain',
 		redirectToPrimary: 'set_redirect',
 		removeRedirect: 'unset_redirect',
@@ -72,6 +104,14 @@ export default {
 		route: '/sites/:name',
 		statusBadge({ documentResource: site }) {
 			return { label: site.doc.status }
+		},
+		banner({ documentResource: site }) {
+			if (!canRestoreTables(site)) return null
+			return {
+				title:
+					'The last update failed and the tables could not be restored. The site stays broken until you <b>Restore Tables</b>.',
+				type: 'error',
+			}
 		},
 		breadcrumbs({ items, documentResource: site }) {
 			let breadcrumbs = []
@@ -1168,6 +1208,15 @@ export default {
 							params: { name: site.name },
 						})
 					},
+				},
+				{
+					label: 'Restore Tables',
+					variant: 'solid',
+					slots: {
+						prefix: icon('database'),
+					},
+					condition: () => canRestoreTables(site),
+					onClick: () => confirmRestoreTables(site),
 				},
 				{
 					label: 'Enable Monitoring',
