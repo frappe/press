@@ -30,41 +30,27 @@
 			</Button>
 		</AlertBanner>
 		<ObjectList class="mt-3" :options="listOptions" />
-		<Dialog
-			v-model="showAppVersionDialog"
-			:options="{
-				title: `Apps in ${$releaseGroup.getAppVersions.params?.args.bench}`,
-				size: '6xl',
-			}"
-		>
-			<template #body-content>
-				<ObjectList :options="appVersionOptions" />
-			</template>
-		</Dialog>
 	</div>
 </template>
 <script lang="jsx">
-import Badge from '@/components/global/Badge.vue';
-import { createResource, getCachedDocumentResource, Tooltip } from 'frappe-ui';
-import { defineAsyncComponent, h } from 'vue';
-import { toast } from 'vue-sonner';
-import ActionButton from '../components/ActionButton.vue';
-import SSHCertificateDialog from '../components/group/SSHCertificateDialog.vue';
-import ObjectList from '../components/ObjectList.vue';
+import { getCachedDocumentResource, Tooltip } from 'frappe-ui'
+import Badge from '@/components/global/Badge.vue'
+import BenchActionsDropdown from '../components/BenchActionsDropdown.vue'
+import CustomAlerts from '../components/CustomAlerts.vue'
+import DismissableBanner from '../components/DismissableBanner.vue'
+import ObjectList from '../components/ObjectList.vue'
 import {
 	filterControls as benchFilterControls,
 	getBenchTitleSuffix,
 	getClusterImagePrefix,
-} from '../objects/bench';
+} from '../objects/bench'
 import {
 	getSitesTabColumns,
 	sitesTabRoute,
 	siteTabFilterControls,
-} from '../objects/common';
-import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { getToastErrorMessage } from '../utils/toast';
-import DismissableBanner from '../components/DismissableBanner.vue';
-import CustomAlerts from '../components/CustomAlerts.vue';
+} from '../objects/common'
+import { getBenchOptions, showBenchLogs } from '../utils/benchOptions'
+import { icon } from '../utils/components'
 
 export default {
 	name: 'ReleaseGroupBenchSites',
@@ -72,9 +58,8 @@ export default {
 	components: { ObjectList, DismissableBanner, CustomAlerts },
 	data() {
 		return {
-			showAppVersionDialog: false,
 			sitesGroupedByBench: [],
-		};
+		}
 	},
 	resources: {
 		benches() {
@@ -95,10 +80,10 @@ export default {
 				pageLength: this.isPublicBench ? 20 : 99999,
 				auto: true,
 				onSuccess() {
-					if (this.isPublicBench) return;
-					this.$resources.sites.fetch();
+					if (this.isPublicBench) return
+					this.$resources.sites.fetch()
 				},
-			};
+			}
 		},
 		inQueueBenches() {
 			return {
@@ -113,7 +98,7 @@ export default {
 				orderBy: 'creation desc',
 				pageLength: 99999,
 				auto: true,
-			};
+			}
 		},
 		sites() {
 			return {
@@ -137,20 +122,20 @@ export default {
 				orderBy: 'creation desc, bench desc',
 				pageLength: 99999,
 				transform(data) {
-					return this.groupSitesByBench(data);
+					return this.groupSitesByBench(data)
 				},
 				auto: false,
-			};
+			}
 		},
 	},
 	computed: {
 		// Public benches has a lot of site so dont show sites list
 		isPublicBench() {
-			return Boolean(this.$releaseGroup.doc?.public);
+			return Boolean(this.$releaseGroup.doc?.public)
 		},
 		listOptions() {
-			if (this.isPublicBench) return this.benchListOptions;
-			return this.groupedSiteListOptions;
+			if (this.isPublicBench) return this.benchListOptions
+			return this.groupedSiteListOptions
 		},
 
 		benchListOptions() {
@@ -183,19 +168,24 @@ export default {
 						(control) => control.fieldname !== 'group',
 					),
 				route: (row) => ({ name: 'Bench Detail', params: { name: row.name } }),
-				rowActions: ({ row }) => this.benchOptions(row),
+				rowActions: ({ row }) =>
+					getBenchOptions({
+						row,
+						releaseGroup: this.$releaseGroup.name,
+						version: this.$releaseGroup.doc.version,
+						actionsAccess: this.actionsAccess,
+					}),
 				primaryAction: this.newSiteAction,
-			};
+			}
 		},
 		groupedSiteListOptions() {
 			return {
 				list: this.$resources.sites,
 				groupHeader: ({ group: bench }) => {
-					if (!bench?.status) return;
+					if (!bench?.status) return
 
-					const options = this.benchOptions(bench);
-					const IconHash = icon('hash', 'w-3 h-3');
-					const IconStar = icon('star', 'w-3 h-3');
+					const IconHash = icon('hash', 'w-3 h-3')
+					const IconStar = icon('star', 'w-3 h-3')
 					return (
 						<div class="flex items-center">
 							<Tooltip text="View bench details">
@@ -231,9 +221,14 @@ export default {
 									</a>
 								</Tooltip>
 							)}
-							<ActionButton class="ml-auto" options={options} />
+							<BenchActionsDropdown
+								bench={bench.name}
+								benchRow={bench}
+								releaseGroup={this.$releaseGroup.name}
+								actionsAccess={this.actionsAccess}
+							/>
 						</div>
-					);
+					)
 				},
 				emptyStateMessage: this.$releaseGroup.doc.deploy_information.last_deploy
 					? 'No sites found'
@@ -242,55 +237,20 @@ export default {
 				filterControls: siteTabFilterControls,
 				route: sitesTabRoute,
 				primaryAction: this.newSiteAction,
-			};
-		},
-		appVersionOptions() {
-			return {
-				columns: [
-					{
-						label: 'App',
-						fieldname: 'app',
-					},
-					{
-						label: 'Repo',
-						fieldname: 'repository',
-						format(value, row) {
-							return `${row.repository_owner}/${row.repository}`;
-						},
-						link: (value, row) => {
-							return row.repository_url;
-						},
-					},
-					{
-						label: 'Branch',
-						fieldname: 'branch',
-						type: 'Badge',
-					},
-					{
-						label: 'Commit',
-						fieldname: 'hash',
-						type: 'Badge',
-						format(value, row) {
-							return value.slice(0, 7);
-						},
-						link: (value, row) => {
-							return `https://github.com/${row.repository_owner}/${row.repository}/commit/${value}`;
-						},
-					},
-					{
-						label: 'Tag',
-						fieldname: 'tag',
-						type: 'Badge',
-					},
-				],
-				data: () => this.$releaseGroup.getAppVersions.data,
-			};
+			}
 		},
 		$releaseGroup() {
-			return getCachedDocumentResource('Release Group', this.releaseGroup);
+			return getCachedDocumentResource('Release Group', this.releaseGroup)
 		},
 	},
+	mounted() {
+		const { bench, log } = this.$route.query
+		if (bench) showBenchLogs(bench, log)
+	},
 	methods: {
+		// the bench detail page is off the sidebar, so this dialog is the only
+		// way in. Deep links land here too, e.g. the 500 page's error log link:
+		// /groups/<group>/sites?bench=<bench>&log=web.error.log
 		newSiteAction() {
 			return {
 				label: 'New Site',
@@ -307,241 +267,22 @@ export default {
 					name: 'Release Group New Site',
 					params: { bench: this.releaseGroup },
 				},
-			};
+			}
 		},
 		groupSitesByBench(data) {
-			if (!this.$resources.benches.data) return [];
+			if (!this.$resources.benches.data) return []
 			return this.$resources.benches.data.map((bench) => {
-				let sites = (data || []).filter((site) => site.bench === bench.name);
-				const isLargeDataset = this.$resources.benches.data?.length >= 1000;
+				let sites = (data || []).filter((site) => site.bench === bench.name)
+				const isLargeDataset = this.$resources.benches.data?.length >= 1000
 				return {
 					...bench,
 					// To prevent rendering delays for large servers with many benches and sites
 					collapsed: isLargeDataset,
 					group: bench.name,
 					rows: sites,
-				};
-			});
-		},
-		benchOptions(bench) {
-			if (!bench) return [];
-
-			return [
-				{
-					label: 'View in Desk',
-					condition: () => this.$team?.doc?.is_desk_user,
-					onClick: () =>
-						window.open(
-							`${window.location.protocol}//${window.location.host}/app/bench/${bench.name}`,
-							'_blank',
-						),
-				},
-				{
-					label: 'Show Apps',
-					condition: () => bench.status === 'Active',
-					onClick: () => {
-						toast.promise(
-							this.$releaseGroup.getAppVersions
-								.submit({ bench: bench.name })
-								.then(() => {
-									this.showAppVersionDialog = true;
-								}),
-							{
-								loading: 'Fetching apps...',
-								success: 'Fetched apps with versions',
-								error: 'Failed to fetch apps',
-								duration: 1000,
-							},
-						);
-					},
-				},
-				{
-					label: 'SSH Access',
-					condition: () => bench.status === 'Active',
-					onClick: () => {
-						renderDialog(
-							h(SSHCertificateDialog, {
-								bench: bench.name,
-								releaseGroup: this.$releaseGroup.name,
-							}),
-						);
-					},
-				},
-				{
-					label: 'View Logs',
-					condition: () => bench.status === 'Active',
-					onClick: () => {
-						let BenchLogsDialog = defineAsyncComponent(
-							() => import('../components/group/BenchLogsDialog.vue'),
-						);
-
-						renderDialog(
-							h(BenchLogsDialog, {
-								bench: bench.name,
-							}),
-						);
-					},
-				},
-				{
-					label: 'Update All Sites',
-					condition: () =>
-						bench.status === 'Active' &&
-						(bench.rows?.length ?? bench.site_count) > 0,
-					onClick: () => {
-						confirmDialog({
-							title: 'Update All Sites',
-							message: `Are you sure you want to update all sites in the bench <b>${bench.name}</b> to the latest bench?`,
-							primaryAction: {
-								label: 'Update',
-								variant: 'solid',
-								onClick: ({ hide }) => {
-									toast.promise(
-										this.runBenchMethod(bench.name, 'update_all_sites'),
-										{
-											loading: 'Scheduling updates for the sites...',
-											success: () => {
-												hide();
-												return 'Sites have been scheduled for update';
-											},
-											error: (e) => {
-												hide();
-												return getToastErrorMessage(
-													e,
-													'Failed to update sites',
-												);
-											},
-											duration: 1000,
-										},
-									);
-								},
-							},
-						});
-					},
-				},
-				{
-					label: 'Restart Bench',
-					condition: () => bench.status === 'Active',
-					onClick: () => {
-						confirmDialog({
-							title: 'Restart Bench',
-							message: `Are you sure you want to restart the bench <b>${bench.name}</b>?`,
-							primaryAction: {
-								label: 'Restart',
-								variant: 'solid',
-								theme: 'red',
-								onClick: ({ hide }) => {
-									toast.promise(this.runBenchMethod(bench.name, 'restart'), {
-										loading: 'Restarting bench...',
-										success: () => {
-											hide();
-											return 'Bench will restart shortly';
-										},
-										error: (e) => {
-											hide();
-											return getToastErrorMessage(e, 'Failed to restart bench');
-										},
-										duration: 1000,
-									});
-								},
-							},
-						});
-					},
-				},
-				{
-					label: 'Rebuild Assets',
-					condition: () =>
-						bench.status === 'Active' &&
-						!bench.on_public_server &&
-						(Number(this.$releaseGroup.doc.version.split(' ')[1]) > 13 ||
-							this.$releaseGroup.doc.version === 'Nightly'),
-
-					onClick: () => {
-						confirmDialog({
-							title: 'Rebuild Assets',
-							message: `Are you sure you want to rebuild assets for the bench <b>${bench.name}</b>?`,
-							primaryAction: {
-								label: 'Rebuild',
-								variant: 'solid',
-								theme: 'red',
-								onClick: ({ hide }) => {
-									toast.promise(this.runBenchMethod(bench.name, 'rebuild'), {
-										loading: 'Rebuilding assets...',
-										success: () => {
-											hide();
-											return 'Assets will be rebuilt in the background. This may take a few minutes.';
-										},
-										error: (e) => {
-											hide();
-											return getToastErrorMessage(
-												e,
-												'Failed to rebuild assets',
-											);
-										},
-										duration: 1000,
-									});
-								},
-							},
-						});
-					},
-				},
-				{
-					label: 'Archive Bench',
-					condition: () => true,
-					onClick: () => {
-						confirmDialog({
-							title: 'Archive Bench',
-							message: `Are you sure you want to archive the bench <b>${bench.name}</b>?`,
-							primaryAction: {
-								label: 'Archive',
-								variant: 'solid',
-								theme: 'red',
-								onClick: ({ hide }) => {
-									toast.promise(this.runBenchMethod(bench.name, 'archive'), {
-										loading: 'Scheduling bench for archival...',
-										success: () => {
-											hide();
-											return 'Bench is scheduled for archival';
-										},
-										error: (e) =>
-											getToastErrorMessage(e, 'Failed to archive bench'),
-									});
-								},
-							},
-						});
-					},
-				},
-				{
-					label: 'View Processes',
-					condition: () => bench.status === 'Active',
-					onClick: () => {
-						let SupervisorProcessesDialog = defineAsyncComponent(
-							() => import('../components/group/SupervisorProcessesDialog.vue'),
-						);
-
-						renderDialog(
-							h(SupervisorProcessesDialog, {
-								bench: bench.name,
-							}),
-						);
-					},
-				},
-			].filter((option) => {
-				const hasAccess = this.actionsAccess[option.label] ?? true;
-				if (!hasAccess) return false;
-				if (!option.condition?.()) return false;
-				return true;
-			});
-		},
-		runBenchMethod(name, methodName) {
-			const method = createResource({
-				url: 'press.api.client.run_doc_method',
-			});
-			return method.submit({
-				dt: 'Bench',
-				dn: name,
-				method: methodName,
-			});
+				}
+			})
 		},
 	},
-};
+}
 </script>

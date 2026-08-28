@@ -409,7 +409,7 @@ class DatabaseServer(BaseServer):
 			},
 			{
 				"action": "Forcefully Purge Binlogs",
-				"description": "Use this in case of disk full issues",
+				"description": 'Use this in case of <span class="text-red-600">disk full</span> issues',
 				"button_label": "Purge",
 				"condition": self.status == "Active",
 				"doc_method": "purge_binlogs_forcefully",
@@ -1888,13 +1888,14 @@ class DatabaseServer(BaseServer):
 		)
 
 	def is_mariadb_up(self) -> bool:
-		"""Whether mysqld_exporter last scraped MariaDB as up; unknown counts as up."""
+		"""Whether mysqld_exporter last scraped MariaDB as up; without metrics, count it down."""
 		from press.api.server import prometheus_instant_value
 
 		try:
-			return prometheus_instant_value(f"""mysql_up{{instance="{self.name}",job="mariadb"}}""") != 0
+			value = prometheus_instant_value(f"""mysql_up{{instance="{self.name}",job="mariadb"}}""")
 		except MonitorServerDown:
-			return True
+			return False
+		return bool(value)
 
 	def get_stalks(self):
 		if self.agent.should_skip_requests():

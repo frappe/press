@@ -385,6 +385,7 @@ class Site(Document, TagHelpers):
 
 	def get_doc(self, doc):
 		from press.api.client import get
+		from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import disk_full_servers
 
 		group = frappe.db.get_value(
 			"Release Group",
@@ -414,6 +415,16 @@ class Site(Document, TagHelpers):
 			frappe.db.exists("Site Update", {"site": self.name, "status": "Scheduled"})
 		)
 		doc.update_information = self.get_update_information()
+		doc.fatal_update = (
+			frappe.db.get_value(
+				"Site Update",
+				self.fatal_site_update,
+				["update_start", "update_job", "recover_job"],
+				as_dict=True,
+			)
+			if self.fatal_site_update
+			else None
+		)
 		doc.actions = self.get_actions()
 		server = frappe.get_value(
 			"Server",
@@ -435,6 +446,8 @@ class Site(Document, TagHelpers):
 		doc.server_provider = server.provider
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
+		# on shared hosting the disk is ours to free up, not the site owner's
+		doc.is_server_disk_full = doc.is_dedicated_server and self.server in disk_full_servers()
 
 		if doc.is_dedicated_server:
 			doc.next_allowed_dedicated_product_warranty_change_date = (
@@ -1277,8 +1290,33 @@ class Site(Document, TagHelpers):
 
 		return False
 
-	@frappe.whitelist()
-	def restore_tables(self):
+	def fetch_running_restore_tables_job(self) -> str | None:
+		return frappe.db.exists(
+			"Agent Job",
+			{
+				"site": self.name,
+				"job_type": "Restore Site Tables",
+				"status": ["in", ["Undelivered", "Running", "Pending"]],
+			},
+		)
+
+	@dashboard_whitelist()
+	def restore_tables(self, force: bool = False):
+		"""Restore the tables the failed update's recovery could not restore.
+
+		``force`` skips the checks that are judgement calls, for a system user who can
+		see more than the checks can. It never skips the concurrent-restore check.
+		"""
+		# Lock the site until this request commits. The dashboard and the desk both reach
+		# this method, and two restores against one database would corrupt it.
+		frappe.db.get_value("Site", self.name, "name", for_update=True)
+		if job := self.fetch_running_restore_tables_job():
+			frappe.throw(
+				f"Table restore {job} is already running on this site. Wait for it to finish, "
+				"then reload the page."
+			)
+		if not (force and is_system_user()):
+			self.validate_table_restore()
 		if not self.status_before_update:
 			self.status_before_update = self.status
 		agent = Agent(self.server)
@@ -1286,6 +1324,29 @@ class Site(Document, TagHelpers):
 		self.status = "Pending"
 		self.save()
 		return job.name
+
+	def validate_table_restore(self):
+		fatal_site_update = frappe.db.get_value("Site", self.name, "fatal_site_update")
+		if not fatal_site_update:
+			frappe.throw(
+				"This site has no failed update to recover from. Its tables are already "
+				"restored, or it was never broken by an update. Reload the page to see "
+				"the current state of the site."
+			)
+		# A newer update has moved the site on; its tables are not the ones to restore.
+		latest_update = frappe.db.get_value(
+			"Site Update", {"site": self.name}, "name", order_by="creation desc"
+		)
+		if latest_update != fatal_site_update:
+			frappe.throw(
+				f"Site Update {latest_update} ran after the failed one, so the backup no longer "
+				"matches this site. Restore the site from a backup instead."
+			)
+		# The restore only has one shot. Without metrics we cannot tell the database is up,
+		# so refuse and let the operator retry once the server reports itself again.
+		database_server = frappe.get_doc("Database Server", self.database_server_name)
+		if not database_server.is_mariadb_up():
+			frappe.throw("The database server is not up. Wait for it to come back, then try again.")
 
 	@property
 	def database_size(self) -> int:
@@ -1379,15 +1440,9 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive"])
 	def restore_site_from_files(self, files, skip_failing_patches=False):
-		for key in ("database", "public", "private", "config"):
-			rf_name = files.get(key)
-			if rf_name:
-				rf_team = frappe.db.get_value("Remote File", rf_name, "team")
-				if rf_team is not None and rf_team != self.team:
-					frappe.throw(
-						_("Remote File {0} does not belong to site's team").format(rf_name),
-						frappe.PermissionError,
-					)
+		from press.press.doctype.remote_file.remote_file import validate_files_belong_to_team
+
+		validate_files_belong_to_team(files, self.team)
 		self.remote_database_file = files["database"]
 		self.remote_public_file = files["public"]
 		self.remote_private_file = files["private"]
@@ -3150,8 +3205,8 @@ class Site(Document, TagHelpers):
 	def get_plan_config(self, plan=None):
 		plan = self.get_plan_name(plan)
 		config = get_plan_config(plan)
-		if plan in UNLIMITED_PLANS:
-			# PERF: do not enable usage tracking on unlimited sites.
+		if plan and frappe.db.get_value("Site Plan", plan, "dedicated_server_plan"):
+			# PERF: do not enable usage tracking on dedicated server sites.
 			config["rate_limit"] = {}
 		return config
 
