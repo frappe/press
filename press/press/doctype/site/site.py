@@ -1628,6 +1628,9 @@ class Site(Document, TagHelpers):
 		scheduled_time: str | None = None,
 		cluster: str | None = None,
 	) -> str:
+		if self.is_on_trial_plan:
+			frappe.throw("Cannot move a site on a trial plan. Please upgrade the plan first.")  # nosemgrep
+
 		if scheduled_time:
 			try:
 				scheduled_time = get_datetime(scheduled_time)
@@ -4503,6 +4506,7 @@ class Site(Document, TagHelpers):
 
 		return {
 			"has_recent_failed_migration": self.has_recent_failed_migration(),
+			"on_trial_plan": self.is_on_trial_plan,
 			"In-Place Migrate Site": {
 				"hidden": False,
 				"allow_scheduling": False,
@@ -4510,7 +4514,7 @@ class Site(Document, TagHelpers):
 				"options": {},
 			},
 			"Move Site To Different Server / Bench": {
-				"hidden": False,
+				"hidden": self.is_on_trial_plan,
 				"allow_scheduling": True,
 				"button_label": "Move Site To Private Bench"
 				if release_group.public
@@ -4521,7 +4525,7 @@ class Site(Document, TagHelpers):
 				},
 			},
 			"Move Site To Different Region": {
-				"hidden": False,
+				"hidden": self.is_on_trial_plan,
 				"allow_scheduling": True,
 				"button_label": "Move Site",
 				"options": {
@@ -4571,6 +4575,10 @@ class Site(Document, TagHelpers):
 	@property
 	def is_on_standalone(self):
 		return bool(frappe.db.get_value("Server", self.server, "is_standalone"))
+
+	@property
+	def is_on_trial_plan(self) -> bool:
+		return bool(frappe.db.get_value("Site Plan", self.plan, "is_trial_plan"))
 
 	@cached_property
 	def last_backup(self) -> SiteBackup | None:

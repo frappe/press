@@ -1068,3 +1068,26 @@ class TestSite(FrappeTestCase):
 		site = Site({"doctype": "Site", "plan": plan.name})
 
 		self.assertEqual(site.get_plan_config()["rate_limit"], {"limit": 36000, "window": 86400})
+
+	def test_site_on_trial_plan_cannot_be_moved_to_another_server_or_region(self):
+		plan = create_test_plan("Site", is_trial_plan=True)
+		site = create_test_site(plan=plan.name)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Cannot move a site on a trial plan",
+			site.create_migration_plan,
+			"Move Site To Different Region",
+			cluster="Default",
+		)
+		self.assertFalse(frappe.db.exists("Site Action", {"site": site.name}))
+
+	def test_migration_options_hide_the_moves_for_a_site_on_a_trial_plan(self):
+		plan = create_test_plan("Site", is_trial_plan=True)
+		site = create_test_site(plan=plan.name)
+
+		options = site.get_migration_options()
+
+		self.assertTrue(options["Move Site To Different Server / Bench"]["hidden"])
+		self.assertTrue(options["Move Site To Different Region"]["hidden"])
+		self.assertFalse(options["In-Place Migrate Site"]["hidden"])
