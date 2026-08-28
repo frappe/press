@@ -295,7 +295,9 @@ class Invoice(Document):
 
 		if self.total == 0:
 			self.status = "Empty"
+			self.truncate_period_end_if_finalized_early()
 			self.submit()
+			self.ensure_next_invoice_exists()
 			return
 
 		team = frappe.get_doc("Team", self.team)
@@ -312,8 +314,10 @@ class Invoice(Document):
 			if invoice.status == "paid":
 				self.status = "Paid"
 				self.update_transaction_details(invoice.charge)
+				self.truncate_period_end_if_finalized_early()
 				self.submit()
 				self.unsuspend_sites_if_applicable()
+				self.ensure_next_invoice_exists()
 				return
 
 		if self.razorpay_payment_id and self.status == "Invoice Created":
@@ -323,6 +327,7 @@ class Invoice(Document):
 
 		# set as unpaid by default
 		self.status = "Unpaid"
+		self.truncate_period_end_if_finalized_early()
 		self.update_item_descriptions()
 
 		if self.amount_due > 0:
@@ -369,6 +374,8 @@ class Invoice(Document):
 		if self.status == "Paid":
 			self.submit()
 			self.unsuspend_sites_if_applicable()
+
+		self.ensure_next_invoice_exists()
 
 	def unsuspend_sites_if_applicable(self):
 		if (
@@ -788,14 +795,19 @@ class Invoice(Document):
 			frappe.throw("Invoice with same Stripe payment intent exists", frappe.DuplicateEntryError)
 
 		if self.type == "Subscription" and self.period_start and self.period_end and self.is_new():
-			query = (
-				f"select `name` from `tabInvoice` where team = '{self.team}' and"
-				f" status = 'Draft' and ('{self.period_start}' between `period_start` and"
-				f" `period_end` or '{self.period_end}' between `period_start` and"
-				" `period_end`)"
+			# a non-cancelled invoice (Draft, Unpaid, Paid, ...) already owns this period -
+			# not just a Draft one, otherwise a finalized invoice's period could get a duplicate
+			intersecting_invoices = frappe.db.get_all(
+				"Invoice",
+				filters={
+					"team": self.team,
+					"type": "Subscription",
+					"docstatus": ("<", 2),
+					"period_start": ("<=", self.period_end),
+					"period_end": (">=", self.period_start),
+				},
+				pluck="name",
 			)
-
-			intersecting_invoices = [x[0] for x in frappe.db.sql(query, as_list=True)]
 
 			if intersecting_invoices:
 				frappe.throw(
@@ -1099,7 +1111,32 @@ class Invoice(Document):
 		if already_exists:
 			return None
 
-		return frappe.get_doc(doctype="Invoice", team=self.team, period_start=next_start).insert()
+		try:
+			return frappe.get_doc(
+				doctype="Invoice", team=self.team, period_start=next_start, type="Subscription"
+			).insert()
+		except frappe.DuplicateEntryError:
+			# another process created it between the exists check above and this insert
+			return None
+
+	def truncate_period_end_if_finalized_early(self):
+		# shrink period_end to today if finalized before the period ended (e.g. account
+		# closure), so a follow-up invoice can cover the rest without a period overlap
+		if self.type != "Subscription":
+			return
+		today = frappe.utils.getdate()
+		if getdate(self.period_end) > today:
+			self.period_end = today
+
+	def ensure_next_invoice_exists(self):
+		# guarantees a Draft invoice for any not-yet-billed date, whether this invoice
+		# finalized on time or early (account closure, deletion, manual finalize)
+		if self.type != "Subscription":
+			return
+		try:
+			self.create_next()
+		except Exception:
+			log_error("Failed to create follow-up invoice after finalize", invoice=self.name)
 
 	def get_pdf(self):
 		print_format = self.meta.default_print_format
@@ -1379,27 +1416,26 @@ class Invoice(Document):
 		return stripe.Invoice.retrieve(self.stripe_invoice_id)
 
 
-def finalize_draft_invoices():
-	"""
-	- Runs every hour
-	- Processes 500 invoices at a time
-	- Finalizes the invoices whose
-	- period ends today and time is 6PM or later
-	- period has ended before
-	"""
+def finalize_monthly_draft_invoices():
+	"""Enqueue finalize_draft_invoices to run in the background. This is called from a scheduler event."""
+	frappe.enqueue(finalize_draft_invoices, queue="long", timeout=1800)
 
-	today = frappe.utils.today()
+
+def finalize_draft_invoices():
+	"""Runs hourly, 500 at a time. Finalizes only the previous month's Draft invoices,
+	keeps the current month's invoice open for new usage."""
+
+	previous_month_end = frappe.utils.get_last_day(frappe.utils.add_months(frappe.utils.today(), -1))
 	# only finalize for enabled teams
 	# since 'limit' returns the same set of invoices for disabled teams which are ignored
 	enabled_teams = frappe.get_all("Team", {"enabled": 1}, pluck="name")
 
-	# get draft invoices whose period has ended or ends today
 	invoices = frappe.db.get_all(
 		"Invoice",
 		filters={
 			"status": "Draft",
 			"type": "Subscription",
-			"period_end": ("<=", today),
+			"period_end": previous_month_end,
 			"team": ("in", enabled_teams),
 		},
 		pluck="name",
@@ -1407,14 +1443,42 @@ def finalize_draft_invoices():
 		order_by="total desc",
 	)
 
-	current_time = frappe.utils.get_datetime().time()
-	today = frappe.utils.getdate()
 	for name in invoices:
+		finalize_draft_invoice(name)
+
+
+def create_invoices_for_next_month():
+	"""Runs hourly, 500 at a time. On the last day of the month, creates next month's
+	Draft invoice for every enabled team before usage records for it start coming in."""
+
+	today = frappe.utils.getdate(frappe.utils.today())
+	if today != frappe.utils.get_last_day(today):
+		return
+
+	enabled_teams = frappe.get_all("Team", {"enabled": 1}, pluck="name")
+	invoices = frappe.db.get_all(
+		"Invoice",
+		filters={
+			"type": "Subscription",
+			"period_end": today,
+			"docstatus": ("<", 2),
+			"team": ("in", enabled_teams),
+		},
+		pluck="name",
+		limit=500,
+	)
+
+	for name in invoices:
+		if has_job_timeout_exceeded():
+			return
 		invoice = frappe.get_doc("Invoice", name)
-		# don't finalize if invoice ends today and time is before 6 PM
-		if invoice.period_end == today and current_time.hour < 18:
-			continue
-		finalize_draft_invoice(invoice)
+		try:
+			invoice.create_next()
+		except Exception:
+			frappe.db.rollback()
+			log_error("Invoice creation for next month failed", invoice=invoice.name)
+		finally:
+			frappe.db.commit()
 
 
 def finalize_unpaid_prepaid_credit_invoices():
@@ -1517,12 +1581,6 @@ def finalize_draft_invoice(invoice):
 		invoice.add_comment(text="Finalize Invoice Failed" + "<br><br>" + msg)
 	finally:
 		frappe.db.commit()  # For the comment
-
-	try:
-		invoice.create_next()
-	except Exception:
-		frappe.db.rollback()
-		log_error("Invoice creation for next month failed", invoice=invoice.name)
 
 
 def calculate_gst(amount):
