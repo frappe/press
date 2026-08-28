@@ -19,4 +19,4 @@ class PartnerConsent(Document):
 		team: DF.Link | None
 	# end: auto-generated types
 
-	pass
+	dashboard_insert_fields = ("agreed",)

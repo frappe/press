@@ -40,6 +40,9 @@ if TYPE_CHECKING:
 
 # Site Usage stores sizes in MB
 LARGE_DATABASE_SIZE_MB = 100 * 1024
+# Above this a recovery migrate risks the statement timeout, so the bump is worthwhile.
+# Well below LARGE_DATABASE_SIZE_MB above, which gates a different thing — read both.
+STATEMENT_TIME_BUMP_SIZE_MB = 2 * 1024
 
 
 class SiteUpdate(Document):
@@ -65,6 +68,7 @@ class SiteUpdate(Document):
 		group: DF.Link | None
 		logical_replication_backup: DF.Link | None
 		physical_backup_restoration: DF.Link | None
+		previous_max_statement_time: DF.Int
 		recover_job: DF.Link | None
 		scheduled_time: DF.Datetime | None
 		server: DF.Link | None
@@ -247,10 +251,14 @@ class SiteUpdate(Document):
 			self.start()
 
 	@property
-	def database_size(self):
+	def database_size(self) -> int:
 		"""Database size in MB, as last reported by the site's server."""
-		site: "Site" = frappe.get_doc("Site", self.site)
-		return cint(site.get_disk_usages()["database"])
+		return frappe.get_doc("Site", self.site).database_size
+
+	@property
+	def database_server_provider(self) -> str | None:
+		database_server = frappe.get_value("Server", self.server, "database_server")
+		return database_server and frappe.get_value("Database Server", database_server, "provider")
 
 	def validate_backup_type_for_large_database(self):
 		"""A logical backup of a huge database takes too long and often fails mid-update.
@@ -261,6 +269,10 @@ class SiteUpdate(Document):
 			return
 
 		if self.database_size <= LARGE_DATABASE_SIZE_MB:
+			return
+
+		# Physical backup needs AWS EBS snapshots. Elsewhere support can't help either.
+		if self.database_server_provider != "AWS EC2":
 			return
 
 		frappe.throw(
@@ -569,6 +581,41 @@ class SiteUpdate(Document):
 		except Exception:
 			return []
 
+	def bump_max_statement_time_before_recovery(self, site: "Site") -> None:
+		# A migrate recovery's heavy queries can exceed max_statement_time on large sites
+		# and get killed, so bump it by an hour first. Small databases aren't at risk.
+		if self.deploy_type != "Migrate" or site.database_size <= STATEMENT_TIME_BUMP_SIZE_MB:
+			return
+		# This is a best-effort optimization; a failure here (e.g. Ansible can't reach the
+		# database server) must not abort the recovery, which is the whole point of this flow.
+		try:
+			old_timeout, new_timeout = site.increase_max_statement_time()
+		except Exception:
+			log_error("Failed to bump max_statement_time before recovery", site_update=self.name)
+			return
+		if not old_timeout:
+			# The server had no limit, so nothing was bumped and nothing needs restoring.
+			return
+		# Stash the old value so restore_max_statement_time can put it back once recovery ends.
+		self.db_set("previous_max_statement_time", old_timeout)
+		self.add_comment(
+			text=(
+				f"Increased <code>max_statement_time</code> on the database server from "
+				f"{old_timeout}s to {new_timeout}s before the recovery migrate job."
+			)
+		)
+
+	def restore_max_statement_time(self) -> None:
+		# No-op unless a recovery migrate bumped it (see bump_max_statement_time_before_recovery).
+		if not self.previous_max_statement_time:
+			return
+		# In the background: this runs from agent job callbacks, and an inline Ansible play
+		# commits mid-callback and can raise into it. Nothing waits on the new value.
+		frappe.get_doc("Site", self.site).set_max_statement_time(
+			self.previous_max_statement_time, synchronously=False
+		)
+		self.db_set("previous_max_statement_time", 0)
+
 	@frappe.whitelist()
 	def trigger_recovery_job(self):  # noqa: C901
 		if self.recover_job:
@@ -633,6 +680,8 @@ class SiteUpdate(Document):
 					)
 
 			# Attempt to move site to source bench
+
+			self.bump_max_statement_time_before_recovery(site)
 
 			# Disable maintenance mode for active sites
 			activate = site.status_before_update == "Active"
@@ -1192,11 +1241,8 @@ def process_update_site_recover_job_update(job: AgentJob):
 		"Failure": "Fatal",
 		"Delivery Failure": "Fatal",
 	}[job.status]
-	site_update = frappe.get_all(
-		"Site Update",
-		fields=["name", "status", "source_bench", "group"],
-		filters={"recover_job": job.name},
-	)[0]
+	site_update_name = frappe.db.get_value("Site Update", {"recover_job": job.name}, "name")
+	site_update = frappe.get_doc("Site Update", site_update_name)
 	if updated_status != site_update.status:
 		site_bench = frappe.db.get_value("Site", job.site, "bench")
 		move_site_step_status = frappe.db.get_value(
@@ -1212,9 +1258,11 @@ def process_update_site_recover_job_update(job: AgentJob):
 			frappe.db.set_value("Site", job.site, "status", "Recovering")
 		elif updated_status == "Recovered":
 			frappe.get_doc("Site", job.site).reset_previous_status()
+			site_update.restore_max_statement_time()
 		elif updated_status == "Fatal":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
 			frappe.db.set_value("Site", job.site, "fatal_site_update", site_update.name)
+			site_update.restore_max_statement_time()
 
 
 def mark_stuck_updates_as_fatal():

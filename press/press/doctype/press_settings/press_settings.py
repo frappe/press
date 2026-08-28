@@ -126,6 +126,7 @@ class PressSettings(Document):
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check
 		disable_binlog_indexer_service: DF.Check
+		disable_database_audit_service: DF.Check
 		disable_frappe_auth: DF.Check
 		disable_physical_backup: DF.Check
 		disallow_disposable_emails: DF.Check
@@ -208,6 +209,7 @@ class PressSettings(Document):
 		pulse_api_key: DF.Data | None
 		pulse_site: DF.Data | None
 		raven_access_key_id: DF.Data | None
+		raven_incidents_channel: DF.Data | None
 		raven_secret_access_key: DF.Password | None
 		raven_url: DF.Data | None
 		razorpay_key_id: DF.Data | None

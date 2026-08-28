@@ -39,6 +39,7 @@ from press.press.doctype.site.site import (
 	process_rename_site_job_update,
 	suspend_sites_exceeding_disk_usage_for_last_14_days,
 )
+from press.press.doctype.site_migration.site_migration import SiteMigration
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
@@ -183,13 +184,59 @@ class TestSite(FrappeTestCase):
 	"""Tests for Site Document methods."""
 
 	def tearDown(self):
+		frappe.set_user("Administrator")
 		frappe.db.rollback()
+
+	def test_restore_site_from_files_rejects_remote_file_of_another_team(self):
+		from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
+		from press.press.doctype.team.test_team import create_test_team
+
+		team = create_test_team()
+		other_team = create_test_team()
+		site = create_test_site("testsubdomain", team=team.name)
+		remote_file = create_test_remote_file(file_path="somewhere/database.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", other_team.name)
+
+		with self.assertRaises(frappe.PermissionError) as context:
+			site.restore_site_from_files({"database": remote_file.name, "public": "", "private": ""})
+
+		self.assertIn("does not belong to site's team", str(context.exception))
+		site.reload()
+		self.assertFalse(site.remote_database_file)
 
 	def test_host_name_updates_perform_checks_on_host_name(self):
 		"""Ensure update of host name triggers verification of host_name."""
 		site = create_test_site("testsubdomain")
 		site.host_name = "balu.codes"  # domain that doesn't exist
 		self.assertRaises(frappe.exceptions.ValidationError, site.save)
+
+	def test_db_server_restore_space_includes_app_space_on_unified_server(self):
+		"""On a unified server (shared disk) the db requirement must include app space."""
+		site = frappe.new_doc("Site")
+		app = frappe._dict(private_ip="10.0.0.1")
+		unified_db = frappe._dict(private_ip="10.0.0.1")
+		split_db = frappe._dict(private_ip="10.0.0.2")
+
+		self.assertEqual(site.db_server_restore_space(app, unified_db, db_required=100, app_required=30), 130)
+		self.assertEqual(site.db_server_restore_space(app, split_db, db_required=100, app_required=30), 100)
+
+	def test_has_recent_failed_migration_only_true_for_a_recent_failure(self):
+		site = create_test_site("testsubdomain")
+		self.assertFalse(site.has_recent_failed_migration())
+
+		bench = create_test_bench()
+		with patch.object(SiteMigration, "after_insert"):
+			migration = frappe.get_doc(
+				{"doctype": "Site Migration", "site": site.name, "destination_bench": bench.name}
+			).insert()
+
+		frappe.db.set_value("Site Migration", migration.name, "status", "Failure")
+		self.assertTrue(site.has_recent_failed_migration())
+
+		frappe.db.set_value(
+			"Site Migration", migration.name, "creation", frappe.utils.add_to_date(None, days=-2)
+		)
+		self.assertFalse(site.has_recent_failed_migration())
 
 	def test_site_has_default_site_domain_on_create(self):
 		"""Ensure site has default site domain on create."""
@@ -396,6 +443,40 @@ class TestSite(FrappeTestCase):
 			config_host = site.configuration[0].value
 		self.assertEqual(config_host, f"https://{site_domain1.name}")
 
+	def test_site_without_custom_domain_has_no_domain_with_a_record(self):
+		"""The default domain is a CNAME of the site itself, so it must not count."""
+		site = create_test_site("testsubdomain")
+		self.assertFalse(site.has_domain_with_a_record)
+
+	def test_custom_domain_with_a_record_is_detected(self):
+		from press.press.doctype.site_domain.test_site_domain import create_test_site_domain
+
+		site = create_test_site("testsubdomain")
+		create_test_site_domain(site.name, "sitedomain1.com")
+		self.assertTrue(site.has_domain_with_a_record)
+
+	def test_custom_domain_with_cname_is_not_detected_as_a_record(self):
+		from press.press.doctype.site_domain.test_site_domain import create_test_site_domain
+
+		site = create_test_site("testsubdomain")
+		domain = create_test_site_domain(site.name, "sitedomain1.com")
+		frappe.db.set_value("Site Domain", domain.name, "dns_type", "CNAME")
+		self.assertFalse(site.has_domain_with_a_record)
+
+	def test_inbound_ip_in_cluster_is_of_proxy_of_destination_bench(self):
+		"""The warning shown before a region move must name the destination cluster's proxy IP."""
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
+		from press.press.doctype.server.test_server import create_test_server
+
+		site = create_test_site("testsubdomain")
+		cluster = create_test_cluster("Mumbai")
+		proxy_server = create_test_proxy_server(cluster=cluster.name)
+		server = create_test_server(proxy_server.name, cluster=cluster.name)
+		create_test_bench(group=frappe.get_doc("Release Group", site.group), server=server.name)
+
+		self.assertEqual(site.inbound_ip_in_cluster(cluster.name), proxy_server.ip)
+
 	@patch.object(RemoteFile, "download_link", new="http://test.com")
 	@patch.object(RemoteFile, "get_content", new=lambda x: {"a": "test"})  # type: ignore
 	def test_new_site_with_backup_files(self):
@@ -580,6 +661,31 @@ class TestSite(FrappeTestCase):
 		self.assertTrue(site.site_usage_exceeded)
 		self.assertIsNotNone(site.site_usage_exceeded_on)
 		self.assertEqual(site.status, "Active")
+
+	def test_sync_info_database_only_refreshes_db_size_and_carries_files_forward(self):
+		site = create_test_site()
+		frappe.get_doc(
+			{
+				"doctype": "Site Usage",
+				"site": site.name,
+				"database": 100,
+				"public": 200,
+				"private": 300,
+				"backups": 400,
+			}
+		).insert()
+
+		# In database_only mode the agent returns only the database size; the
+		# file totals must be carried forward, not recomputed (no file walk).
+		with patch.object(Site, "fetch_info", return_value={"usage": {"database": 150}}) as fetch_info:
+			site.sync_info(database_only=True)
+
+		fetch_info.assert_called_once_with(database_only=True)
+		latest = frappe.get_last_doc("Site Usage", {"site": site.name})
+		self.assertEqual(latest.database, 150)
+		self.assertEqual(latest.public, 200)
+		self.assertEqual(latest.private, 300)
+		self.assertEqual(latest.backups, 400)
 
 	def test_free_sites_ignore_usage_exceed_tracking(self):
 		team = create_test_team(free_account=False)
@@ -822,3 +928,143 @@ class TestSite(FrappeTestCase):
 		}
 		self.assertTrue(bahrain_files.isdisjoint(deleted_files))
 		self.assertTrue(other_files.issubset(set(deleted_files)))
+
+	def _broken_site_with_fatal_update(self) -> Site:
+		from press.press.doctype.site_update.test_site_update import create_test_site_update
+
+		site = create_test_site("fatalupdate")
+		site_update = create_test_site_update(site.name, site.group, "Fatal", ignore_validate=True)
+		site.db_set("fatal_site_update", site_update.name)
+		site.db_set("status", "Broken")
+		site.reload()
+		return site
+
+	def test_restore_tables_is_rejected_when_site_has_no_fatal_update(self):
+		site = create_test_site("healthysite")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError, "no failed update to recover from", site.restore_tables
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_while_another_restore_runs(self):
+		site = self._site_with_a_running_table_restore()
+
+		self.assertRaisesRegex(frappe.ValidationError, "is already running on this site", site.restore_tables)
+		self.assertEqual(
+			frappe.db.count("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			1,
+			"The refused restore must not have created a second job",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=None))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_force_restore_tables_skips_the_checks_for_a_system_user(self):
+		# The operator can see things the checks cannot, so force skips them. Here the
+		# database server reports no metric, which normally refuses the restore.
+		site = self._broken_site_with_fatal_update()
+
+		site.restore_tables(force=True)
+
+		self.assertTrue(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"A forced restore should run even without proof that the database is up",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_force_restore_tables_still_refuses_while_another_restore_runs(self):
+		# Two restores against one database corrupt it, so force must not skip that check.
+		site = self._site_with_a_running_table_restore()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"is already running on this site",
+			lambda: site.restore_tables(force=True),
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=None))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_force_restore_tables_is_ignored_for_a_user_who_is_not_a_system_user(self):
+		site = self._broken_site_with_fatal_update()
+		team_user = frappe.db.get_value("Team", site.team, "user")
+		frappe.db.set_value("User", team_user, "user_type", "Website User")
+		frappe.clear_cache(doctype="User")
+		frappe.set_user(team_user)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"database server is not up",
+			lambda: site.restore_tables(force=True),
+		)
+
+	def _site_with_a_running_table_restore(self) -> Site:
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		site = self._broken_site_with_fatal_update()
+		running_restore = create_test_agent_job("Restore Site Tables", server=site.server, status="Running")
+		running_restore.db_set("site", site.name)
+		return site
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=None))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_when_database_reports_no_metrics(self):
+		# A database server that is down stops reporting mysql_up at all. Without a metric
+		# we cannot tell the database is back, so the one-shot restore must not be spent.
+		site = self._broken_site_with_fatal_update()
+
+		self.assertRaisesRegex(frappe.ValidationError, "database server is not up", site.restore_tables)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run without proof that the database is up",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_creates_restore_job_when_database_is_up(self):
+		site = self._broken_site_with_fatal_update()
+
+		site.restore_tables()
+
+		self.assertTrue(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables should run once the database reports itself up",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_when_a_newer_site_update_exists(self):
+		from press.press.doctype.site_update.test_site_update import create_test_site_update
+
+		# The newer update has to exist before the site is marked fatal — a fatal update
+		# blocks new ones.
+		site = create_test_site("newerupdate")
+		fatal_update = create_test_site_update(site.name, site.group, "Fatal", ignore_validate=True)
+		newer_update = create_test_site_update(site.name, site.group, "Success", ignore_validate=True)
+		site.db_set("fatal_site_update", fatal_update.name)
+		site.db_set("status", "Broken")
+		site.reload()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			f"Site Update {newer_update.name} ran after the failed one",
+			site.restore_tables,
+		)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run once a newer update has moved the site on",
+		)
+
+	def test_dedicated_server_plan_does_not_get_a_rate_limit(self):
+		"""Sites on a dedicated server must not be usage tracked, whatever the plan is named."""
+		plan = create_test_plan("Site", cpu_time=10, dedicated_server_plan=True)
+		site = Site({"doctype": "Site", "plan": plan.name})
+
+		self.assertEqual(site.get_plan_config()["rate_limit"], {})
+
+	def test_shared_server_plan_gets_a_rate_limit_from_cpu_time(self):
+		plan = create_test_plan("Site", cpu_time=10)
+		site = Site({"doctype": "Site", "plan": plan.name})
+
+		self.assertEqual(site.get_plan_config()["rate_limit"], {"limit": 36000, "window": 86400})

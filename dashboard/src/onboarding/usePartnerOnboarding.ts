@@ -44,6 +44,7 @@ export type PartnerOnboardingDoc = {
 	status?: 'Draft' | 'Pending Review' | 'Approved' | 'Rejected' | 'Cancelled'
 	company_name?: string
 	registered_country?: string
+	registered_state?: string
 	company_email?: string
 	contact?: string
 	address?: string
@@ -116,6 +117,7 @@ const certificateTypeCourses: Record<string, string[]> = {
 const form = reactive<PartnerOnboardingDoc>({
 	company_name: '',
 	registered_country: '',
+	registered_state: '',
 	company_email: '',
 	contact: '',
 	address: '',
@@ -166,6 +168,7 @@ function applyDoc(nextDoc: PartnerOnboardingDoc | null, team?: TeamResource) {
 			teamDoc.team_title ||
 			'',
 		registered_country: nextDoc?.registered_country || teamDoc.country || '',
+		registered_state: nextDoc?.registered_state || '',
 		company_email: nextDoc?.company_email || teamDoc.user || '',
 		contact: nextDoc?.contact || teamDoc.phone_number || '',
 		address: nextDoc?.address || '',
@@ -301,10 +304,26 @@ export function usePartnerOnboarding(team?: TeamResource) {
 	const mrrStatusResource = getMRRStatusResource(team)
 
 	const isRegistered = computed(() => Boolean(doc.value?.name))
-	const isProfileComplete = computed(() =>
-		Boolean(
+	const isProfileComplete = computed(() => {
+		// Submitted/decided applications are past profile editing. Older approved
+		// docs predate required fields like company_logo — don't reopen the
+		// checklist for them.
+		if (
+			doc.value?.docstatus === 1 ||
+			doc.value?.status === 'Approved' ||
+			doc.value?.status === 'Pending Review' ||
+			doc.value?.status === 'Rejected'
+		) {
+			return true
+		}
+
+		const hasRegisteredState =
+			form.registered_country !== 'India' || Boolean(form.registered_state)
+
+		return Boolean(
 			form.company_name &&
 				form.registered_country &&
+				hasRegisteredState &&
 				form.company_email &&
 				form.contact &&
 				form.address &&
@@ -313,8 +332,8 @@ export function usePartnerOnboarding(team?: TeamResource) {
 				form.company_logo &&
 				form.agreed_to_due_diligence &&
 				form.agreed_to_partnership_agreement,
-		),
-	)
+		)
+	})
 	const loading = computed(() => getPartnerOnboarding.loading)
 	const saving = computed(() => savePartnerOnboarding.loading)
 	const submittingForApproval = computed(() => submitPartnerOnboarding.loading)

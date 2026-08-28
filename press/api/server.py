@@ -14,7 +14,12 @@ from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
 from press.api.account import is_limits_exceeded
-from press.api.analytics import auto_timespan_timegrain, get_rounded_boundaries, get_rounded_boundary
+from press.api.analytics import (
+	auto_timespan_timegrain,
+	get_rate_interval,
+	get_rounded_boundaries,
+	get_rounded_boundary,
+)
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
@@ -121,9 +126,7 @@ def all(server_filter=None):  # noqa: C901
 	else:
 		query = app_server_query + database_server_query
 
-	# union isn't supported in qb for run method
-	# https://github.com/frappe/frappe/issues/15609
-	servers = frappe.db.sql(query.get_sql(), as_dict=True)
+	servers = query.run(as_dict=True)
 	for server in servers:
 		server_plan_name = frappe.get_value("Server", server.name, "plan")
 		server["plan"] = frappe.get_doc("Server Plan", server_plan_name) if server_plan_name else None
@@ -203,8 +206,7 @@ def get_reclaimable_size(name):
 @frappe.whitelist()
 def new_unified(server: UnifiedServerDetails):
 	team = get_current_team(get_doc=True)
-	if not team.enabled:
-		frappe.throw("You cannot create a new server because your account is disabled")
+	team.validate_can_create_server()
 
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
@@ -248,8 +250,7 @@ def new(server):
 		frappe.throw(f"ARM Instances are currently unavailable in the {server['cluster']} region")
 
 	team = get_current_team(get_doc=True)
-	if not team.enabled:
-		frappe.throw("You cannot create a new server because your account is disabled")
+	team.validate_can_create_server()
 
 	server_plan_price = frappe.get_value("Server Plan", server["app_plan"], "price_usd") + frappe.get_value(
 		"Server Plan", server["db_plan"], "price_usd"
@@ -454,18 +455,21 @@ def analytics(name, query, timezone, start, end, server_type=None):
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
 	_, timegrain = auto_timespan_timegrain(start, end)
+	# Window for rate()/increase() must span several scrapes, otherwise the charts
+	# spike to zero on steps where the rate window saw fewer than two samples.
+	rate_interval = get_rate_interval(timegrain)
 
 	query_map = {
 		"cpu": (
-			f"""sum by (mode)(rate(node_cpu_seconds_total{{instance="{name}", job="node"}}[{timegrain}s])) * 100""",
+			f"""sum by (mode)(rate(node_cpu_seconds_total{{instance="{name}", job="node"}}[{rate_interval}s])) * 100""",
 			lambda x: x["mode"],
 		),
 		"network": (
-			f"""rate(node_network_receive_bytes_total{{instance="{name}", job="node", device=~"ens.*"}}[{timegrain}s]) * 8""",
+			f"""rate(node_network_receive_bytes_total{{instance="{name}", job="node", device=~"ens.*"}}[{rate_interval}s]) * 8""",
 			lambda x: x["device"],
 		),
 		"iops": (
-			f"""rate(node_disk_reads_completed_total{{instance="{name}", job="node"}}[{timegrain}s])""",
+			f"""rate(node_disk_reads_completed_total{{instance="{name}", job="node"}}[{rate_interval}s])""",
 			lambda x: x["device"],
 		),
 		"space": (
@@ -480,12 +484,17 @@ def analytics(name, query, timezone, start, end, server_type=None):
 			f"""node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}} - (node_memory_Cached_bytes{{instance="{name}",job="node"}} + node_memory_Buffers_bytes{{instance="{name}",job="node"}})""",
 			lambda x: "Used",
 		),
+		"oom_kills": (
+			f"""round(increase(node_vmstat_oom_kill{{instance="{name}", job="node"}}[{rate_interval}s]))""",
+			lambda x: "OOM Kills",
+		),
 		"database_uptime": (
-			f"""mysql_up{{instance="{name}",job="mariadb"}}""",
+			# avg over the bucket, else a short outage between steps is invisible on long timespans
+			f"""avg_over_time(mysql_up{{instance="{name}",job="mariadb"}}[{timegrain}s]) * 100""",
 			lambda x: "Uptime",
 		),
 		"database_commands_count": (
-			f"""sum(round(increase(mysql_global_status_commands_total{{instance='{name}', command=~"select|update|insert|delete|begin|commit|rollback"}}[{timegrain}s]))) by (command)""",
+			f"""sum(round(increase(mysql_global_status_commands_total{{instance='{name}', command=~"select|update|insert|delete|begin|commit|rollback"}}[{rate_interval}s]))) by (command)""",
 			lambda x: x["command"],
 		),
 		"database_connections": (
@@ -507,15 +516,15 @@ def analytics(name, query, timezone, start, end, server_type=None):
 		"innodb_bp_miss_percent": (
 			f"""
 avg by (instance) (
-		rate(mysql_global_status_innodb_buffer_pool_reads{{instance=~"{name}"}}[{timegrain}s])
+		rate(mysql_global_status_innodb_buffer_pool_reads{{instance=~"{name}"}}[{rate_interval}s])
 		/
-		rate(mysql_global_status_innodb_buffer_pool_read_requests{{instance=~"{name}"}}[{timegrain}s])
+		rate(mysql_global_status_innodb_buffer_pool_read_requests{{instance=~"{name}"}}[{rate_interval}s])
 )
 """,
 			lambda x: "Buffer Pool Miss Percentage",
 		),
 		"innodb_avg_row_lock_time": (
-			f"""(rate(mysql_global_status_innodb_row_lock_time{{instance="{name}"}}[{timegrain}s]) / 1000)/rate(mysql_global_status_innodb_row_lock_waits{{instance="{name}"}}[{timegrain}s])""",
+			f"""(rate(mysql_global_status_innodb_row_lock_time{{instance="{name}"}}[{rate_interval}s]) / 1000)/rate(mysql_global_status_innodb_row_lock_waits{{instance="{name}"}}[{rate_interval}s])""",
 			lambda x: "Avg Row Lock Time",
 		),
 	}
@@ -561,16 +570,36 @@ def get_background_job_by_site(name, query, timezone, start, end):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
-def get_slow_logs_by_site(name, query, timezone, start, end, normalize=False):
+def get_slow_logs_by_site(name, query, timezone, start, end):
 	from press.api.analytics import ResourceType, get_slow_logs
 
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
 	timespan, timegrain = auto_timespan_timegrain(start, end)
 
-	return get_slow_logs(
-		name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER, normalize
-	)
+	# Not normalized: this chart groups by database name, not by query text
+	return get_slow_logs(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
+
+
+def prometheus_instant_value(query: str) -> float | None:
+	"""Latest scraped value, or None when there is no monitoring data.
+
+	Instant, unlike ``prometheus_query``, whose range samples can be a timegrain stale.
+	"""
+	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+	if not monitor_server:
+		return None
+
+	url = f"https://{monitor_server}/prometheus/api/v1/query"
+	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
+	try:
+		response = requests.get(url, params={"query": query}, auth=("frappe", str(password))).json()
+	except requests.exceptions.RequestException:
+		frappe.throw("Unable to connect to monitor server", MonitorServerDown)
+
+	# An error payload ({"status": "error", ...}) carries no data — treat it as no data.
+	result = response.get("data", {}).get("result", [])
+	return flt(result[0]["value"][1]) if result else None
 
 
 def prometheus_query(
@@ -580,8 +609,8 @@ def prometheus_query(
 	timespan: int,
 	timegrain: int,
 	use_timestamps: bool = False,
-	start: None | datetime = None,
-	end: None | datetime = None,
+	start: datetime | None = None,
+	end: datetime | None = None,
 ):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:

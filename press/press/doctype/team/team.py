@@ -42,6 +42,23 @@ from .team_members import get_invitations, get_roles
 if TYPE_CHECKING:
 	from press.press.doctype.account_request.account_request import AccountRequest
 
+# Credits a team has to hold before it may buy a server, unless servers have
+# been enabled for it outright. Currencies not listed here are not held to it.
+SERVER_CREDIT_THRESHOLD = {"USD": 200, "INR": 16000}
+
+
+# Team with a Beginner tier upgrades to Growth tier when card is added
+# Teams without a card stay on Beginner.
+TIER_AFTER_CARD_ADDED = "Growth"
+
+
+def upgrade_beginner_tier_for_new_card(team_name):
+	tier, apply_limits = frappe.db.get_value("Team", team_name, ["tier", "apply_limits"])
+	if not apply_limits or tier != "Beginner":
+		return
+	new_limit = frappe.db.get_value("Team Tier", TIER_AFTER_CARD_ADDED, "amount")
+	frappe.db.set_value("Team", team_name, {"tier": TIER_AFTER_CARD_ADDED, "spending_limit": new_limit})
+
 
 class Team(Document):
 	# begin: auto-generated types
@@ -176,6 +193,18 @@ class Team(Document):
 		"tier",
 	)
 
+	# Everything else about a team moves through billing, onboarding or an
+	# explicit action, not through `set_value`.
+	dashboard_editable_fields = (
+		"benches_enabled",
+		"enforce_2fa",
+		"is_developer",
+		"monthly_alert_threshold",
+		"receive_budget_alerts",
+		"relaxed_permissions",
+		"servers_enabled",
+	)
+
 	def get_doc(self, doc):
 		if (
 			not frappe.local.system_user()
@@ -190,7 +219,17 @@ class Team(Document):
 			["name", "first_name", "last_name", "user_image", "user_type", "email", "api_key"],
 			as_dict=True,
 		)
-		user.is_2fa_enabled = frappe.db.get_value("User 2FA", {"user": user.name}, "enabled")
+		two_fa = (
+			frappe.db.get_value(
+				"User 2FA",
+				{"user": user.name},
+				["enabled", "unsubscribed_from_recovery_code_reminders"],
+				as_dict=True,
+			)
+			or frappe._dict()
+		)
+		user.is_2fa_enabled = two_fa.enabled
+		user.unsubscribed_from_recovery_code_reminders = two_fa.unsubscribed_from_recovery_code_reminders
 		doc.user_info = user
 		doc.balance = self.get_balance()
 		doc.is_desk_user = user.user_type == "System User"
@@ -320,6 +359,9 @@ class Team(Document):
 			)
 
 	def validate_billing_team(self):
+		if self.billing_team and self.payment_mode != "Paid By Partner":
+			self.billing_team = ""
+
 		if not (self.billing_team and self.payment_mode == "Paid By Partner"):
 			return
 
@@ -565,11 +607,10 @@ class Team(Document):
 			self.payment_mode = "Prepaid Credits"
 
 		if self.has_value_changed("payment_mode"):
-			if (
-				self.payment_mode == "Card"
-				and frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0
-			):
-				frappe.throw("No card added. Please add a card to your account.")
+			if self.payment_mode == "Card":
+				if frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0:
+					frappe.throw("No card added. Please add a card to your account.")
+				upgrade_beginner_tier_for_new_card(self.name)
 			# This check to verify recent pending payment is added to avoid validation issue when updating team doctype with payment mode as credits without balance as transaction is on going
 			if (
 				self.payment_mode == "Prepaid Credits"
@@ -650,6 +691,10 @@ class Team(Document):
 		total = 0
 		for sub in subscriptions:
 			if not sub.plan_type or not sub.plan:
+				continue
+			if sub.plan_type == "S3 Storage Plan":
+				# Metered per GB stored, so there is no fixed amount subscribed to. Adding
+				# the per-GB price here would read as a monthly commitment.
 				continue
 			if sub.plan_type == "Server Storage Plan":
 				total += (frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") or 0) * flt(
@@ -887,16 +932,19 @@ class Team(Document):
 			address = frappe.get_doc("Address", self.billing_address)
 
 		country_code = frappe.db.get_value("Country", address.country, "code")
-		stripe.Customer.modify(
-			self.stripe_customer_id,
-			address={
-				"line1": address.address_line1,
-				"postal_code": address.pincode,
-				"city": address.city,
-				"state": address.state,
-				"country": country_code.upper(),
-			},
-		)
+		try:
+			stripe.Customer.modify(
+				self.stripe_customer_id,
+				address={
+					"line1": address.address_line1,
+					"postal_code": address.pincode,
+					"city": address.city,
+					"state": address.state,
+					"country": country_code.upper(),
+				},
+			)
+		except Exception:
+			log_error("Failed to update billing details on Stripe")
 
 	def create_payment_method(
 		self,
@@ -908,7 +956,11 @@ class Team(Document):
 		verified_with_micro_charge=False,
 	):
 		stripe = get_stripe()
-		payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+		try:
+			payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+		except Exception:
+			log_error("Failed to retrieve Stripe payment method", traceback=frappe.get_traceback())
+			frappe.throw("Could not add this card. Please try again or contact support.")
 
 		try:
 			doc = frappe.get_doc(
@@ -1301,6 +1353,30 @@ class Team(Document):
 			why = "Cannot create site without an active UPI Autopay mandate"
 
 		return (False, why)
+
+	def validate_can_create_server(self):
+		"""Refuse a server the team is not entitled to buy.
+
+		These are the rules the New Server form checks before it submits, and
+		the form was the only thing checking them — a request sent past it
+		provisioned real machines for a team with no billing address and no
+		credits. Kept identical to the form so nobody who can create a server
+		today is turned away.
+		"""
+		if not self.enabled:
+			frappe.throw("You cannot create a new server because your account is disabled")
+
+		if not self.billing_address:
+			frappe.throw(
+				"You don't have billing details added. Please add billing details from settings to continue."
+			)
+
+		if self.servers_enabled:
+			return
+
+		threshold = SERVER_CREDIT_THRESHOLD.get(self.currency)
+		if threshold and self.get_balance() < threshold:
+			frappe.throw(f"You need to have {threshold} {self.currency} worth of credits to create a server.")
 
 	def can_install_paid_apps(self):
 		if self.free_account or self.billing_team or self.payment_mode:

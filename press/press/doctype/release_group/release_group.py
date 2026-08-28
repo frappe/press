@@ -151,6 +151,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 	dashboard_fields = ("title", "version", "apps", "team", "public", "tags")
 
+	# Apps and dependencies move through deploys, not through `set_value`.
+	dashboard_editable_fields = ("title",)
+
 	@staticmethod
 	def get_list_query(query, filters, **list_args):
 		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")

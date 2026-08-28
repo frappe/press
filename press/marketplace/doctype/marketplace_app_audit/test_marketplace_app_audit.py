@@ -204,6 +204,31 @@ class TestMarketplaceAppAudit(UnitTestCase):
 		audit.reload()
 		self.assertEqual(audit.audit_result, "Fail")
 
+	def test_overall_result_ignores_internal_only_checks(self):
+		release = self.create_release(self.source)
+		audit = self.create_audit_doc(release.name, status="Queued")
+		results = [
+			CheckResult(
+				check_id="meta_categories_checks",
+				check_name="No Categories",
+				category="Metadata",
+				result="Warn",
+				severity="Minor",
+				is_internal_only=True,
+			),
+			CheckResult(
+				check_id="meta_screenshots_checks",
+				check_name="Screenshots Checks",
+				category="Metadata",
+				result="Pass",
+				severity="Major",
+			),
+		]
+		with patch.object(MarketplaceAppAudit, "execute_audit_checks", return_value=results):
+			audit.run_audit()
+		audit.reload()
+		self.assertEqual(audit.audit_result, "Pass")
+
 	def test_approval_blocked_when_audit_fails(self):
 		release = self.create_release(self.source)
 		self.create_audit_doc(

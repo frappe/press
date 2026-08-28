@@ -19,7 +19,7 @@ from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.press_job.jobs.resize_server import ResizeServerJob
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.server.server import BaseServer
-from press.press.doctype.team.test_team import create_test_press_admin_team
+from press.press.doctype.team.test_team import allow_server_creation, create_test_press_admin_team
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
 	create_test_virtual_machine_image,
@@ -142,6 +142,7 @@ class TestAPIServer(FrappeTestCase):
 		super().setUp()
 
 		self.team = create_test_press_admin_team()
+		allow_server_creation(self.team)
 
 		self.app_plan = create_test_server_plan("Server")
 		self.app_plan.db_set("memory", 1024)
@@ -263,6 +264,39 @@ class TestAPIServer(FrappeTestCase):
 		)
 		self.assertTrue(db_subscription.enabled)
 		self.assertEqual(db_subscription.plan, self.db_plan.name)
+
+	def _new_server(self):
+		return new(
+			{
+				"cluster": self.cluster.name,
+				"db_plan": self.db_plan.name,
+				"app_plan": self.app_plan.name,
+				"title": "Test Server",
+			}
+		)
+
+	def test_new_refuses_a_team_without_a_billing_address(self):
+		"""The New Server form checks this; a request sent past the form did not."""
+		self.team.db_set("billing_address", None)
+		frappe.set_user(self.team.user)
+
+		servers_before = frappe.db.count("Server", {"team": self.team.name})
+		with self.assertRaises(frappe.ValidationError) as caught:
+			self._new_server()
+
+		self.assertIn("billing details", str(caught.exception))
+		self.assertEqual(frappe.db.count("Server", {"team": self.team.name}), servers_before)
+
+	def test_new_refuses_a_team_with_neither_servers_enabled_nor_credits(self):
+		self.team.db_set({"servers_enabled": 0, "currency": "INR"})
+		frappe.set_user(self.team.user)
+
+		servers_before = frappe.db.count("Server", {"team": self.team.name})
+		with self.assertRaises(frappe.ValidationError) as caught:
+			self._new_server()
+
+		self.assertIn("worth of credits", str(caught.exception))
+		self.assertEqual(frappe.db.count("Server", {"team": self.team.name}), servers_before)
 
 	@patch.object(VirtualMachine, "provision", new=successful_provision)
 	@patch.object(VirtualMachine, "sync", new=successful_sync)
@@ -395,3 +429,11 @@ class TestAPIServerList(FrappeTestCase):
 			all(server_filter={"server_type": "", "tag": "test_tag"}),
 			[self.app_server_dict],
 		)
+
+	def test_tag_ending_in_backslash_is_treated_as_a_value(self):
+		"""A trailing backslash used to escape the closing quote and made the rest of the query run as SQL."""
+		self.assertEqual(all(server_filter={"server_type": "", "tag": "test_tag\\"}), [])
+
+	def test_tag_carrying_a_union_payload_returns_no_servers(self):
+		payload = "test_tag\\' UNION SELECT name, name, name, creation, name FROM `tabTeam` -- "
+		self.assertEqual(all(server_filter={"server_type": "", "tag": payload}), [])

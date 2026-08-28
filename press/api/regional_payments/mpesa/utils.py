@@ -7,6 +7,7 @@ from frappe import _
 from frappe.query_builder import DocType
 from frappe.utils.password import get_decrypted_password
 
+from press.press.doctype.mpesa_setup.mpesa_connector import MpesaConnector
 from press.utils import get_current_team
 
 supported_mpesa_currencies = ["KES"]
@@ -315,6 +316,32 @@ def get_mpesa_setup_for_team(team_name):
 			_(f"Mpesa Setup not configured for the team {team_name}"), title=_("Mpesa Express Error")
 		)  # nosemgrep
 	return frappe.get_doc("Mpesa Setup", mpesa_setup[0])
+
+
+def get_mpesa_connector(mpesa_setup):
+	return MpesaConnector(
+		env="sandbox" if mpesa_setup.sandbox else "production",
+		app_key=mpesa_setup.consumer_key,
+		app_secret=mpesa_setup.get_password("consumer_secret"),
+	)
+
+
+def get_business_shortcode(mpesa_setup):
+	# For sandbox, business shortcode is same as till number.
+	return mpesa_setup.till_number if mpesa_setup.sandbox else mpesa_setup.business_shortcode
+
+
+def confirmed_by_mpesa(checkout_request_id):
+	"""Ask Mpesa for confirmation of the transaction."""
+	partner = get_details_from_request_log(checkout_request_id).partner
+	mpesa_setup = get_mpesa_setup_for_team(partner)
+	connector = get_mpesa_connector(mpesa_setup)
+	response = connector.stk_push_query(
+		business_shortcode=get_business_shortcode(mpesa_setup),
+		passcode=mpesa_setup.get_password("pass_key"),
+		checkout_request_id=checkout_request_id,
+	)
+	return str(response.get("ResultCode")) == "0"
 
 
 def sanitize_mobile_number(number):
