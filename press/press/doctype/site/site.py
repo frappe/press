@@ -87,7 +87,7 @@ from press.press.doctype.site_config.site_config import (
 	decode_json_config_value,
 	parse_json_config_value,
 )
-from press.press.doctype.site_plan.site_plan import UNLIMITED_PLANS, get_plan_config
+from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 	get_doctype_name,
 )
