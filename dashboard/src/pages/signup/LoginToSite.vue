@@ -179,9 +179,9 @@ export default {
 		},
 		currentHelpText() {
 			const defaultHelpTexts = [
-				'Find anything with the Awesome bar!',
-				'All Frappe apps are open-source!',
-				'You can install more apps later!',
+				'Find anything with the Awesome bar',
+				'All Frappe apps are open-source',
+				'You can install more apps later',
 			];
 
 			const productHelpTexts = this.saasProduct?.help_texts
