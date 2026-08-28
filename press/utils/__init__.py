@@ -235,6 +235,17 @@ def get_default_team_for_user(user):
 	return None
 
 
+def get_disabled_team_of_user(user):
+	"""Returns the account the user owns and disabled, whichever other teams they belong to
+
+	Child teams are not accounts, a partner owns one per customer.
+	"""
+	own_account = {"user": user, "parent_team": ("is", "not set")}
+	if frappe.db.exists("Team", own_account | {"enabled": 1}):
+		return None
+	return frappe.db.get_value("Team", own_account | {"enabled": 0}, "name")
+
+
 def chat_enabled():
 	if frappe.session.user == "Guest":
 		return False
@@ -1069,7 +1080,7 @@ def get_cluster_timezone_map() -> dict[str, str]:
 	Builds and returns a map of cluster name to its timezone
 	based on the country it is in
 	"""
-	from frappe.geo.country_info import get_country_info as get_frappe_country_info
+	from press.utils.country import get_country_timezones
 
 	clusters = frappe.get_all(
 		"Cluster",
@@ -1084,8 +1095,7 @@ def get_cluster_timezone_map() -> dict[str, str]:
 
 	cluster_timezone_map: dict[str, str] = {}
 	for cluster in clusters:
-		country_info = get_frappe_country_info(cluster.country) or {}
-		timezones = country_info.get("timezones") or []
+		timezones = get_country_timezones(cluster.country)
 		if timezones:
 			cluster_timezone_map[cluster.name] = timezones[0]
 
@@ -1142,7 +1152,7 @@ def get_nearest_cluster_for_country(country: str | None) -> str | None:
 	Returns the nearest cluster for a given country based on timezone information.
 	If country has multiple timezones, it considers all of them and returns the cluster with the closest timezone offset to any of the country's timezones.
 	"""
-	from frappe.geo.country_info import get_country_info as get_frappe_country_info
+	from press.utils.country import get_country_timezones
 
 	if not country:
 		return None
@@ -1150,8 +1160,7 @@ def get_nearest_cluster_for_country(country: str | None) -> str | None:
 	if preferred_cluster := _get_mapped_cluster_for_country(country):
 		return preferred_cluster
 
-	country_info = get_frappe_country_info(country) or {}
-	timezones = country_info.get("timezones") or []
+	timezones = get_country_timezones(country)
 	if not timezones:
 		return None
 

@@ -189,7 +189,10 @@ class MarketplaceAppAudit(Document):
 
 	def _tally_checks(self) -> dict:
 		"""
-		Count check results grouped by severity.
+		Count publisher-facing check results grouped by severity.
+
+		is_internal_only rows stay on the audit for reviewers, but they must
+		not move audit_result — publishers cannot act on those findings.
 
 		Returns:
 			{
@@ -207,6 +210,8 @@ class MarketplaceAppAudit(Document):
 		tally["totals"] = {r: 0 for r in results}
 
 		for check in self.audit_checks:
+			if check.is_internal_only:
+				continue
 			severity = check.severity
 			result = check.result
 			if severity in tally and result in tally[severity]:

@@ -47,13 +47,14 @@ import {
 import { graphic, use } from 'echarts/core'
 import { SVGRenderer } from 'echarts/renderers'
 import { DateTime } from 'luxon'
-import { onMounted, ref, toRefs } from 'vue'
+import { ref, toRefs } from 'vue'
 import VChart from 'vue-echarts'
 import NoDataMsg from '@/components/common/NoDataMsg.vue'
 import dayjs from '../../utils/dayjs'
 import { bytes, escapeHtml, getUnit } from '../../utils/format'
 import { theme } from '../../utils/theme'
 import Card from '../global/Card.vue'
+import { useDataZoom } from './useDataZoom'
 
 const props = defineProps({
 	showCard: {
@@ -257,37 +258,12 @@ const options = ref({
 const chartRef = ref(null)
 const emits = defineEmits(['datazoom'])
 
-onMounted(() => {
-	const chart = chartRef.value?.chart
-	// Detach before dispatching: takeGlobalCursor triggers a re-render, which
-	// fires `finished` again. Left attached, that is an endless render loop that
-	// pegs the main thread for as long as the page is open.
-	const activateDataZoomCursor = () => {
-		chart?.off('finished', activateDataZoomCursor)
-		chart?.dispatchAction({
-			type: 'takeGlobalCursor',
-			key: 'dataZoomSelect',
-			dataZoomSelectActive: true,
-		})
-	}
-	chart?.on('finished', activateDataZoomCursor)
+const labelToDate = (index) =>
+	dayjs(
+		data.value.labels[index],
+		'YYYY-MM-DD HH:mm:ss',
+		dayjs.tz.guess(),
+	).toDate()
 
-	chart?.on('datazoom', (evt) => {
-		const timezone = dayjs.tz.guess()
-		const { startValue: startIndex, endValue: endIndex } = evt.batch[0]
-		const responseLabelTimestampFormat = 'YYYY-MM-DD HH:mm:ss'
-		const startDate = dayjs(
-			data.value.labels[startIndex],
-			responseLabelTimestampFormat,
-			timezone,
-		)
-		const endDate = dayjs(
-			data.value.labels[endIndex],
-			responseLabelTimestampFormat,
-			timezone,
-		)
-		evt = { startDate: startDate.toDate(), endDate: endDate.toDate() }
-		emits('datazoom', evt)
-	})
-})
+useDataZoom(chartRef, labelToDate, emits)
 </script>

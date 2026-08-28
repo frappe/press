@@ -1016,6 +1016,9 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_logical_replication_backup_deactivate_site_job_update,
 			process_logical_replication_backup_update_database_host_job_update,
 		)
+		from press.press.doctype.mariadb_audit_log.mariadb_audit_log import (
+			process_upload_audit_logs_to_s3_job_update,
+		)
 		from press.press.doctype.mariadb_binlog.mariadb_binlog import (
 			process_upload_binlogs_to_s3_job_update,
 		)
@@ -1161,6 +1164,12 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			Bench.process_recover_update_inplace(job)
 		elif job.job_type == "Fetch Database Table Schema":
 			process_fetch_database_table_schema_job_update(job)
+		elif job.job_type == "Fetch Backup Jobs":
+			from press.press.doctype.site_backup.backup_history import (
+				process_fetch_backup_jobs_update,
+			)
+
+			process_fetch_backup_jobs_update(job)
 		elif job.job_type in [
 			"Create Database User",
 			"Remove Database User",
@@ -1191,6 +1200,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_remove_binlogs_from_indexer_agent_job_update(job)
 		elif job.job_type == "Upload Binlogs To S3":
 			process_upload_binlogs_to_s3_job_update(job)
+		elif job.job_type == "Upload Audit Logs To S3":
+			process_upload_audit_logs_to_s3_job_update(job)
 		elif job.job_type == "Search Sites In Snapshot":
 			process_search_sites_in_snapshot_job_callback(job)
 		elif job.job_type == "Backup Database From Snapshot":

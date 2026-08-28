@@ -186,6 +186,23 @@ class TestSite(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
+	def test_restore_site_from_files_rejects_remote_file_of_another_team(self):
+		from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
+		from press.press.doctype.team.test_team import create_test_team
+
+		team = create_test_team()
+		other_team = create_test_team()
+		site = create_test_site("testsubdomain", team=team.name)
+		remote_file = create_test_remote_file(file_path="somewhere/database.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", other_team.name)
+
+		with self.assertRaises(frappe.PermissionError) as context:
+			site.restore_site_from_files({"database": remote_file.name, "public": "", "private": ""})
+
+		self.assertIn("does not belong to site's team", str(context.exception))
+		site.reload()
+		self.assertFalse(site.remote_database_file)
+
 	def test_host_name_updates_perform_checks_on_host_name(self):
 		"""Ensure update of host name triggers verification of host_name."""
 		site = create_test_site("testsubdomain")

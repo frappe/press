@@ -63,6 +63,7 @@ ALLOWED_DOCTYPES = [
 	"Database Server",
 	"Ansible Play",
 	"Server Plan",
+	"S3 Storage Plan",
 	"Release Group Variable",
 	"Resource Tag",
 	"Press Tag",
