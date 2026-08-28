@@ -21,6 +21,10 @@ from press.press.doctype.app.app import (
 	parse_frappe_version,
 )
 from press.press.doctype.bench_update.bench_update import get_bench_update
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
+	Status as DeployCandidateBuildStatus,
+)
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import fail_remote_job
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 
@@ -65,6 +69,12 @@ def _get_trusted_app_source(app: str, supported_frappe_version: set[str], team: 
 			return app_source
 
 	return None
+
+
+def _dependency_position(doc, app: str) -> int:
+	"""Index to insert `app`'s dependencies at, never before frappe which has to stay first."""
+	position = next(index for index, row in enumerate(doc.apps) if row.app == app)
+	return max(position, 1)
 
 
 def _resolve_dependent_app(
@@ -217,6 +227,25 @@ class ReleasePipeline(WorkflowBuilder):
 		self.update_pipeline_status("Failure")
 		if self.workflow:
 			frappe.get_doc("Press Workflow", self.workflow).force_fail()
+
+		self._cancel_running_builds()
+
+	def _cancel_running_builds(self):
+		for pipeline_build in self.pipeline_builds:
+			if (
+				frappe.db.get_value("Deploy Candidate Build", pipeline_build.build, "status")
+				not in DeployCandidateBuildStatus.intermediate()
+			):
+				continue
+
+			try:
+				fail_remote_job(pipeline_build.build)
+			except Exception:
+				frappe.log_error(
+					f"Failed to cancel Deploy Candidate Build {pipeline_build.build} on pipeline force fail",
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
 
 	def add_build_to_pipeline(self, build: str):
 		"""Attach a build to the pipeline if not present"""
@@ -522,18 +551,21 @@ class ReleasePipeline(WorkflowBuilder):
 			"name",
 		)
 
-	def _add_app_to_group_and_candidate(
+	def _add_dependencies_to_group_and_candidate(
 		self,
 		deploy_candidate: DeployCandidate,
 		supported_frappe_version: str | None,
-		dependent_apps: set[str],
-	):
-		"""Helper function to add the dependant apps to the release group and deploy candidate automatically.
+		dependencies: set[str],
+		dependent_app: str,
+	) -> list:
+		"""Add the apps `dependent_app` depends on to the release group and the deploy candidate.
 		In case we don't find the app or the app source in press we need to raise, and ask users to add
 		the app in the bench group first.
+
+		Returns the rows added to the deploy candidate.
 		"""
-		if not supported_frappe_version or not dependent_apps:
-			return
+		if not supported_frappe_version or not dependencies:
+			return []
 
 		release_group_doc: ReleaseGroup = frappe.get_doc("Release Group", self.release_group, for_update=True)
 		release_group_apps = {app.app for app in release_group_doc.apps}
@@ -545,14 +577,19 @@ class ReleasePipeline(WorkflowBuilder):
 				ease_versioning_constrains=False,
 			)
 		except frappe.ValidationError:
-			return
+			return []
 
-		for app in dependent_apps:
-			if app in release_group_apps:
+		# Dependencies go right before the app that needs them, so they are built first
+		position = _dependency_position(deploy_candidate, dependent_app)
+		group_position = _dependency_position(release_group_doc, dependent_app)
+		added_apps = []
+
+		for dependency in dependencies:
+			if dependency in release_group_apps:
 				continue
 
 			resolved_app = _resolve_dependent_app(
-				app,
+				dependency,
 				parsed_supported_frappe_version,
 				self.team,
 			)
@@ -560,20 +597,27 @@ class ReleasePipeline(WorkflowBuilder):
 				continue
 
 			app_source, app_release = resolved_app
-			deploy_candidate.append(
-				"apps",
-				{
-					"app": app,
-					"source": app_source.name,
-					"release": app_release.name,
-					"hash": app_release.hash,
-				},
+			added_apps.append(
+				deploy_candidate.append(
+					"apps",
+					{
+						"app": dependency,
+						"source": app_source.name,
+						"release": app_release.name,
+						"hash": app_release.hash,
+					},
+					position=position,
+				)
 			)
-			release_group_doc.append("apps", {"app": app, "source": app_source.name})
+			release_group_doc.append(
+				"apps", {"app": dependency, "source": app_source.name}, position=group_position
+			)
 
 		# Final save
 		deploy_candidate.save(ignore_permissions=True)
 		release_group_doc.save(ignore_permissions=True)
+
+		return added_apps
 
 	@task(queue=_get_task_execution_queue())
 	def run_pre_release_checks(self, apps: list[dict[str, str]]):
@@ -600,19 +644,21 @@ class ReleasePipeline(WorkflowBuilder):
 		deploy_candidate_doc: DeployCandidate = frappe.get_doc(
 			"Deploy Candidate", deploy_candidate, for_update=True
 		)
-		for app in deploy_candidate_doc.apps:
-			dependant_app_versions = get_dependant_apps_with_versions(
+		pending = list(deploy_candidate_doc.apps)
+		while pending:
+			app = pending.pop(0)
+			app_versions = get_dependant_apps_with_versions(
 				app_source=app.source, commit=app.hash, cache=True, raises=False
 			)
-			supported_frappe_version = dependant_app_versions["frappe_dependencies"].get("frappe")
-			dependent_apps = dependant_app_versions["frappe_dependencies"].keys() - {"frappe"}
-
-			# Here we don't care about the version of the dependent apps, since we
-			# will just be fetching the app source that complies with the supported frappe version
-			self._add_app_to_group_and_candidate(
-				deploy_candidate_doc,
-				supported_frappe_version=supported_frappe_version,
-				dependent_apps=dependent_apps,
+			supported_frappe_version = app_versions["frappe_dependencies"].get("frappe")
+			dependencies = app_versions["frappe_dependencies"].keys() - {"frappe"}
+			pending.extend(
+				self._add_dependencies_to_group_and_candidate(
+					deploy_candidate_doc,
+					supported_frappe_version=supported_frappe_version,
+					dependencies=dependencies,
+					dependent_app=app.app,
+				)
 			)
 
 	@task(queue=_get_task_execution_queue())

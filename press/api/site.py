@@ -29,7 +29,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	get_total_installs_by_app,
 )
-from press.press.doctype.remote_file.remote_file import get_remote_key
+from press.press.doctype.remote_file.remote_file import get_remote_key, validate_files_belong_to_team
 from press.press.doctype.root_domain.root_domain import get_matching_domain
 from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site.site import (
@@ -45,6 +45,7 @@ from press.press.doctype.site.site_plan_utils import (
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import (
+	_system_user,
 	get_client_blacklisted_keys,
 	get_current_team,
 	get_frappe_backups,
@@ -140,6 +141,14 @@ def get_name_from_filters(filters: dict):
 	return None
 
 
+def validate_files_for_new_site(files: dict, team: str):
+	"""Site Replication creates the site from desk, under the operator's own team."""
+	if _system_user():
+		return
+
+	validate_files_belong_to_team(files, team)
+
+
 def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
@@ -148,6 +157,7 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 		)
 
 	files = site.get("files", {})
+	validate_files_for_new_site(files, team.name)
 
 	apps = [{"app": app} for app in site["apps"]]
 
@@ -716,6 +726,22 @@ def running_jobs(name):
 
 @frappe.whitelist()
 @protected("Site")
+def backup_history(name: str, start_date: str, end_date: str, refresh: bool = False):
+	"""Whether a backup was taken on each day of the range, answered even for days the list hides.
+
+	Deliberately not a doc method: the page asks repeatedly while a trail is being built,
+	and run_doc_method returns the whole Site document with every answer.
+	"""
+	from press.press.doctype.site_backup.backup_history import get_backup_history
+
+	if not isinstance(name, str):
+		frappe.throw("Could not read the site name. Give it as text, for example demo.frappe.cloud.")
+
+	return get_backup_history(name, start_date, end_date, refresh=cint(refresh))
+
+
+@frappe.whitelist()
+@protected("Site")
 def backups(name):
 	available_offsite_backups = frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
 	fields = [
@@ -1265,6 +1291,8 @@ def set_bench_and_clusters(version, for_bench):
 			allowed_cluster_names = list(set(public_servers_clusters))
 
 		filters = {"name": ("in", allowed_cluster_names)}
+		if not for_bench:
+			filters["public"] = 1
 
 		version.group.clusters = frappe.db.get_all(
 			"Cluster",
@@ -1318,7 +1346,7 @@ def get_additional_clusters_for_private_benches(existing_clusters, cloud_provide
 
 		cluster_info = frappe.db.get_value(
 			"Cluster",
-			cluster_name,
+			{"name": cluster_name, "public": 1},
 			["name", "title", "image", "beta", "cloud_provider"],
 			as_dict=True,
 		)
@@ -2179,6 +2207,7 @@ def restore(name, files, skip_failing_patches=False):
 			"At least one file must be provided for restoration. Please provide either of database, public or private file to begin restoration of the site {name}."
 		)
 
+	validate_files_belong_to_team(files, frappe.db.get_value("Site", name, "team"))
 	frappe.db.set_value(
 		"Site",
 		name,

@@ -563,6 +563,11 @@ router.beforeEach(async (to, from, next) => {
 	let hasTeamPrivileges = !!window.default_team
 	let goingToLoginPage = to.matched.some((record) => record.meta.isLoginPage)
 
+	if (isLoggedIn && window.account_disabled) {
+		next(goingToLoginPage ? undefined : { name: 'Login' })
+		return
+	}
+
 	if (isLoggedIn && hasTeamPrivileges) {
 		await waitUntilTeamLoaded()
 		let $team = getTeam()

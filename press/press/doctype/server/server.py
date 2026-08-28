@@ -52,6 +52,7 @@ from press.press.doctype.telegram_message.telegram_message import TelegramMessag
 from press.runner import Ansible
 from press.utils import docs, fmt_timedelta, log_error
 from press.utils.raven import send_raven_message
+from press.utils.user import is_desk_user
 from press.wazuh import WazuhManager
 
 if typing.TYPE_CHECKING:
@@ -170,6 +171,7 @@ class BaseServer(Document, TagHelpers):
 	def get_doc(self, doc):  # noqa: C901
 		from press.api.client import get
 		from press.api.server import usage
+		from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import disk_full_servers
 
 		warn_at_storage_percentage = 0.8
 
@@ -213,6 +215,7 @@ class BaseServer(Document, TagHelpers):
 		)
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
+		doc.is_server_disk_full = self.name in disk_full_servers()
 
 		if not self.is_self_hosted:
 			doc.disk_size = self.get_data_disk_size()
@@ -426,7 +429,7 @@ class BaseServer(Document, TagHelpers):
 		actions = [
 			{
 				"action": "Manage On-Prem Replication",
-				"description": "Manage On-Prem Replication & Failover",
+				"description": "Manage On-Prem Replication &amp; Failover",
 				"button_label": "Manage",
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
@@ -2658,6 +2661,25 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if not hasattr(self, "ssh_port"):
 			return 22
 		return self.ssh_port or 22
+
+	@dashboard_whitelist()
+	def get_ssh_command(self):
+		"""SSH command that hops through the press server and the cluster's proxy."""
+		if not is_desk_user():
+			frappe.throw("Only system users can get the SSH command", frappe.PermissionError)
+
+		port = "" if self._ssh_port() == 22 else f" -p {self._ssh_port()}"
+		command = f"ssh{self._jump_through_proxy()} {self._ssh_user()}@{self.name}{port}"
+		return f"ssh frappe@{frappe.db.get_single_value('Press Settings', 'domain')} -t '{command}'"
+
+	def _jump_through_proxy(self):
+		"""Servers are reachable only through their proxy server."""
+		proxy = self.get("proxy_server") or frappe.db.get_value(
+			"Proxy Server", {"status": "Active", "cluster": self.cluster}, "name"
+		)
+		if not proxy or proxy == self.name:
+			return ""
+		return f" -J root@{proxy}"
 
 	def get_primary_frappe_public_key(self):
 		if primary_public_key := frappe.db.get_value(self.doctype, self.primary, "frappe_public_key"):

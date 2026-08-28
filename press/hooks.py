@@ -248,6 +248,7 @@ scheduler_events = {
 		"press.press.doctype.site.site.notify_sites_before_archival",
 		"press.press.doctype.invoice.invoice.sync_paid_invoices_to_frappeio",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_card_invoices",
+		"press.press.doctype.cloud_usage_anomaly.cloud_usage_anomaly.run_daily_pipeline",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -504,6 +505,8 @@ __persistent_cache_keys = [
 	"one_time_login_key*",
 	"press-auth-logs",
 	"rl:*",
+	"press_otp:*",
+	"press_otp_sent:*"
 ]
 
 # `frappe.rename_doc` erases all caches, this hook preserves some of them.
