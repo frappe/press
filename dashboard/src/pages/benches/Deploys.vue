@@ -11,10 +11,9 @@ import { defineAsyncComponent, h, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { toast } from 'vue-sonner'
 import Scrollbar from '@/components/common/Scrollbar.vue'
-import { confirmDialog, renderDialog } from '@/utils/components'
+import { renderDialog } from '@/utils/components'
 import { date, duration } from '@/utils/format'
 import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline'
-import { getToastErrorMessage } from '@/utils/toast'
 
 interface Props {
 	name?: string
@@ -89,45 +88,26 @@ function handleDeploy() {
 		return toast.error('Deploy is in progress. Please wait for it to complete.')
 	}
 
-	if (group.doc?.deploy_information?.update_available) {
-		const UpdateReleaseGroupDialog = defineAsyncComponent(
-			() => import('@/components/group/UpdateReleaseGroupDialog.vue'),
-		)
-		renderDialog(
-			h(UpdateReleaseGroupDialog, {
-				bench: group.name,
-				lastDeploy: true,
-				onSuccess(candidate: string) {
-					group.doc.deploy_information.has_running_release_pipeline = true
-					group.doc.deploy_information.update_available = false
-					if (candidate) {
-						group.doc.deploy_information.last_deploy = { name: candidate }
-					}
-					pollReleasePipelineValidationStatus(group)
-				},
-			}),
-		)
+	const UpdateReleaseGroupDialog = defineAsyncComponent(
+		() => import('@/components/group/UpdateReleaseGroupDialog.vue'),
+	)
 
-		return
-	}
-
-	return confirmDialog({
-		title: 'Deploy without app updates?',
-		message:
-			'No app updates detected. Changes in dependencies and environment variables will be applied on deploying.',
-		onSuccess: ({ hide }: { hide: () => void }) => {
-			toast.promise(group.redeploy.submit(), {
-				loading: 'Deploying...',
-				success: () => {
-					hide()
-					pipelines.reload()
-					deployBuilds.reload()
-					return 'Changes Deployed'
-				},
-				error: (e: Error) => getToastErrorMessage(e),
-			})
-		},
-	})
+	renderDialog(
+		h(UpdateReleaseGroupDialog, {
+			bench: group.name,
+			lastDeploy: true,
+			onSuccess(candidate: string) {
+				group.doc.deploy_information.has_running_release_pipeline = true
+				group.doc.deploy_information.update_available = false
+				if (candidate) {
+					group.doc.deploy_information.last_deploy = { name: candidate }
+				}
+				pollReleasePipelineValidationStatus(group)
+				pipelines.reload()
+				deployBuilds.reload()
+			},
+		}),
+	)
 }
 </script>
 
@@ -159,7 +139,7 @@ function handleDeploy() {
 			<lucide-refresh-ccw class="size-4" />
 		</Button>
 
-		<Button @click="handleDeploy" v-if='mode == "older"'>
+		<Button @click="handleDeploy">
 			<template #prefix> <LucideRocket class="size-4" /></template>
 			Deploy
 		</Button>
