@@ -37,6 +37,7 @@ from press.press.doctype.site_update.site_update import (
 	is_site_in_deploy_hours,
 	run_scheduled_updates,
 	sites_with_available_update,
+	update_status,
 )
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 
@@ -218,6 +219,18 @@ class TestSiteUpdate(FrappeTestCase):
 			frappe.get_value("Site", site.name, "fatal_site_update"),
 			site_update,
 			"Site's fatal_site_update should be set to the last fatal Site Update",
+		)
+
+	def test_recovery_after_fatal_status_clears_fatal_flag_on_site(self):
+		site = create_test_site()
+		site_update = create_test_site_update(site.name, site.group, "Fatal", ignore_validate=True)
+		frappe.db.set_value("Site", site.name, "fatal_site_update", site_update.name)
+
+		update_status(site_update.name, "Recovered")
+
+		self.assertIsNone(
+			frappe.db.get_value("Site", site.name, "fatal_site_update"),
+			"A retried physical restore that recovers the update should unblock the site",
 		)
 
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)

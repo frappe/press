@@ -882,6 +882,10 @@ def update_status(name: str, status: str):
 				),
 			)
 	if status in ["Success", "Recovered"]:
+		site = frappe.db.get_value("Site Update", name, "site")
+		if frappe.db.get_value("Site", site, "fatal_site_update") == name:
+			# The update recovered after it was marked Fatal. Stop blocking the site.
+			frappe.db.set_value("Site", site, "fatal_site_update", None)
 		backup_type = frappe.db.get_value("Site Update", name, "backup_type")
 		if backup_type == "Physical":
 			# Remove the snapshot
