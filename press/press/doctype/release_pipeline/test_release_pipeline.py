@@ -446,9 +446,9 @@ class TestReleasePipeline(FrappeTestCase):
 			frappe_version="Version 15",
 			servers=[self.server.name],
 		)
-		deploy_candidate = create_test_deploy_candidate(release_group)
 
 		with mock_pyproject_per_app({"helpdesk": {"telephony": ">=0.0.1,<1.0.0"}}):
+			deploy_candidate = create_test_deploy_candidate(release_group)
 			self.add_implicit_app_dependencies(release_group, deploy_candidate)
 
 		self.assertEqual(
@@ -468,7 +468,6 @@ class TestReleasePipeline(FrappeTestCase):
 			frappe_version="Version 15",
 			servers=[self.server.name],
 		)
-		deploy_candidate = create_test_deploy_candidate(release_group)
 
 		with mock_pyproject_per_app(
 			{
@@ -476,6 +475,7 @@ class TestReleasePipeline(FrappeTestCase):
 				"telephony": {"gameplan": ">=0.0.1,<1.0.0"},
 			}
 		):
+			deploy_candidate = create_test_deploy_candidate(release_group)
 			self.add_implicit_app_dependencies(release_group, deploy_candidate)
 
 		self.assertEqual(
@@ -496,9 +496,9 @@ class TestReleasePipeline(FrappeTestCase):
 			frappe_version="Version 15",
 			servers=[self.server.name],
 		)
-		deploy_candidate = create_test_deploy_candidate(release_group)
 
 		with mock_pyproject_per_app({"frappe": {"telephony": ">=0.0.1,<1.0.0"}}):
+			deploy_candidate = create_test_deploy_candidate(release_group)
 			self.add_implicit_app_dependencies(release_group, deploy_candidate)
 
 		self.assertEqual(
@@ -514,9 +514,9 @@ class TestReleasePipeline(FrappeTestCase):
 			frappe_version="Version 15",
 			servers=[self.server.name],
 		)
-		deploy_candidate = create_test_deploy_candidate(release_group)
 
 		with mock_pyproject_per_app({"helpdesk": {"telephony": ">=0.0.1,<1.0.0"}}):
+			deploy_candidate = create_test_deploy_candidate(release_group)
 			self.add_implicit_app_dependencies(release_group, deploy_candidate)
 
 		self.assertEqual(
