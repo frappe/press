@@ -372,3 +372,79 @@ class TestSetValue(FrappeTestCase):
 			set_value("Subscription", subscription.name, {"enabled": 0})
 
 		self.assertEqual(frappe.db.get_value("Subscription", subscription.name, "enabled"), 1)
+
+
+class TestSupportAgentTeamFilter(FrappeTestCase):
+	"""The dashboard shows a support agent a page it must also fill with data.
+
+	A support agent reads another team's agent job, but `get_list` pins every
+	doctype with a `team` field to the agent's own team. The error banner above
+	the job page stayed empty until the agent impersonated the customer.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_press_admin_team()
+		self.other_team = create_test_press_admin_team()
+		self.notification = self.create_notification_for(self.other_team)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def create_notification_for(self, team):
+		return frappe.get_doc(
+			{
+				"doctype": "Press Notification",
+				"team": team.name,
+				"type": "Agent Job Failure",
+				"document_type": "Agent Job",
+				"document_name": create_test_agent_job().name,
+				"class": "Error",
+				"is_actionable": True,
+				"title": "Server out of memory error",
+			}
+		).insert(ignore_permissions=True)
+
+	def make_support_agent(self, team):
+		frappe.get_doc("User", team.user).add_roles("Press Support Agent")
+
+	def banner_filters(self, skip_team_filter):
+		return {
+			"document_type": "Agent Job",
+			"document_name": self.notification.document_name,
+			"is_actionable": True,
+			"class": "Error",
+			"skip_team_filter_for_system_user_and_support_agent": skip_team_filter,
+		}
+
+	def test_support_agent_reads_the_notification_of_another_team(self):
+		self.make_support_agent(self.team)
+
+		sign_in_as(self.team)
+		names = [
+			row.name
+			for row in get_list("Press Notification", fields=["name"], filters=self.banner_filters(True))
+		]
+
+		self.assertEqual(names, [self.notification.name])
+
+	def test_support_agent_reads_nothing_without_the_skip_filter(self):
+		self.make_support_agent(self.team)
+
+		sign_in_as(self.team)
+		names = [
+			row.name
+			for row in get_list("Press Notification", fields=["name"], filters=self.banner_filters(False))
+		]
+
+		self.assertEqual(names, [])
+
+	def test_plain_user_reads_nothing_even_with_the_skip_filter(self):
+		sign_in_as(self.team)
+		names = [
+			row.name
+			for row in get_list("Press Notification", fields=["name"], filters=self.banner_filters(True))
+		]
+
+		self.assertEqual(names, [])

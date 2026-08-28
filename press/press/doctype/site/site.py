@@ -83,7 +83,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
-from press.press.doctype.site_plan.site_plan import UNLIMITED_PLANS, get_plan_config
+from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 	get_doctype_name,
 )
@@ -381,6 +381,7 @@ class Site(Document, TagHelpers):
 
 	def get_doc(self, doc):
 		from press.api.client import get
+		from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import disk_full_servers
 
 		group = frappe.db.get_value(
 			"Release Group",
@@ -441,6 +442,8 @@ class Site(Document, TagHelpers):
 		doc.server_provider = server.provider
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
+		# on shared hosting the disk is ours to free up, not the site owner's
+		doc.is_server_disk_full = doc.is_dedicated_server and self.server in disk_full_servers()
 
 		if doc.is_dedicated_server:
 			doc.next_allowed_dedicated_product_warranty_change_date = (
@@ -1433,15 +1436,9 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive"])
 	def restore_site_from_files(self, files, skip_failing_patches=False):
-		for key in ("database", "public", "private", "config"):
-			rf_name = files.get(key)
-			if rf_name:
-				rf_team = frappe.db.get_value("Remote File", rf_name, "team")
-				if rf_team is not None and rf_team != self.team:
-					frappe.throw(
-						_("Remote File {0} does not belong to site's team").format(rf_name),
-						frappe.PermissionError,
-					)
+		from press.press.doctype.remote_file.remote_file import validate_files_belong_to_team
+
+		validate_files_belong_to_team(files, self.team)
 		self.remote_database_file = files["database"]
 		self.remote_public_file = files["public"]
 		self.remote_private_file = files["private"]
@@ -3204,8 +3201,8 @@ class Site(Document, TagHelpers):
 	def get_plan_config(self, plan=None):
 		plan = self.get_plan_name(plan)
 		config = get_plan_config(plan)
-		if plan in UNLIMITED_PLANS:
-			# PERF: do not enable usage tracking on unlimited sites.
+		if plan and frappe.db.get_value("Site Plan", plan, "dedicated_server_plan"):
+			# PERF: do not enable usage tracking on dedicated server sites.
 			config["rate_limit"] = {}
 		return config
 

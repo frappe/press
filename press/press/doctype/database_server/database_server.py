@@ -409,7 +409,7 @@ class DatabaseServer(BaseServer):
 			},
 			{
 				"action": "Forcefully Purge Binlogs",
-				"description": "Use this in case of disk full issues",
+				"description": 'Use this in case of <span class="text-red-600">disk full</span> issues',
 				"button_label": "Purge",
 				"condition": self.status == "Active",
 				"doc_method": "purge_binlogs_forcefully",

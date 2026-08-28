@@ -70,7 +70,11 @@
 		/>
 
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-			<AnalyticsCard title="Daily Usage" @share-card="shareDashboard">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/daily-usage-limit-reached"
+				title="Daily Usage"
+				@share-card="shareDashboard"
+			>
 				<LineChart
 					type="time"
 					title="Usage Counter"
@@ -96,7 +100,11 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Requests" @share-card="shareDashboard">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#site-analytics"
+				title="Requests"
+				@share-card="shareDashboard"
+			>
 				<LineChart
 					type="time"
 					title="Requests"
@@ -120,7 +128,11 @@
 				</template>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Requests CPU Usage" @share-card="shareDashboard">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#site-analytics"
+				title="Requests CPU Usage"
+				@share-card="shareDashboard"
+			>
 				<LineChart
 					type="time"
 					title="Requests CPU Usage"
@@ -152,7 +164,11 @@
 			v-if="showAdvancedAnalytics"
 			class="grid grid-cols-1 gap-5 sm:grid-cols-2"
 		>
-			<AnalyticsCard title="Background Jobs" @share-card="shareDashboard">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#site-analytics"
+				title="Background Jobs"
+				@share-card="shareDashboard"
+			>
 				<LineChart
 					type="time"
 					title="Background Jobs"
@@ -168,6 +184,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#site-analytics"
 				title="Background Jobs CPU Usage"
 				@share-card="shareDashboard"
 			>
@@ -186,6 +203,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				class="sm:col-span-2"
 				title="Frequent Requests"
 				@share-card="shareDashboard"
@@ -204,6 +222,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout#what-does-other-mean-in-chart"
 				class="sm:col-span-2"
 				title="Slowest Requests"
 				@share-card="shareDashboard"
@@ -221,6 +240,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout#slow-reports"
 				class="sm:col-span-2"
 				title="Query Report Durations"
 				v-if="queryReportRunReportsData"
@@ -244,6 +264,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout"
 				class="sm:col-span-2"
 				title="Run Doc Method Durations"
 				v-if="runDocMethodMethodnamesData"
@@ -267,6 +288,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout"
 				class="sm:col-span-2"
 				title="Save Docs Doctype Durations"
 				v-if="saveDocsDoctypesData"
@@ -288,6 +310,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout"
 				class="sm:col-span-2"
 				title="Save Docs Action Durations"
 				v-if="saveDocsActionData"
@@ -309,6 +332,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout"
 				class="sm:col-span-2"
 				title="Individual Request Time (Average)"
 				@share-card="shareDashboard"
@@ -325,6 +349,7 @@
 				/>
 			</AnalyticsCard>
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				class="sm:col-span-2"
 				title="Requests by IP"
 				@share-card="shareDashboard"
@@ -342,6 +367,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				class="sm:col-span-2"
 				title="Frequent Background Jobs"
 				@share-card="shareDashboard"
@@ -359,6 +385,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				class="sm:col-span-2"
 				title="Slowest Background Jobs"
 				@share-card="shareDashboard"
@@ -376,6 +403,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout#slow-reports"
 				class="sm:col-span-2"
 				title="Background Report Durations"
 				v-if="generateReportReportsData"
@@ -399,6 +427,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				class="sm:col-span-2"
 				title="Individual Background Job Time (Average)"
 				@share-card="shareDashboard"
@@ -416,6 +445,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				class="sm:col-span-2 [&_[aria-label='Copy']]:m-0"
 				title="Frequent Slow Queries"
 				@share-card="shareDashboard"
@@ -423,13 +453,14 @@
 				<template #action>
 					<Tooltip text="Show Detailed Reports">
 						<router-link
-							class="mr-auto text-base text-ink-gray-6 hover:text-ink-gray-7"
+							class="text-base text-ink-gray-6 hover:text-ink-gray-7"
 							:to="{ name: 'Site Performance Slow Queries' }"
 						>
 							→
 						</router-link>
 					</Tooltip>
 					<TabButtons
+						class="ml-auto"
 						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
 						v-model="slowLogsFrequencyType"
 					/>
@@ -447,6 +478,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				class="sm:col-span-2 [&_[aria-label='Copy']]:m-0"
 				title="Top Slow Queries"
 				@share-card="shareDashboard"
@@ -454,13 +486,14 @@
 				<template #action>
 					<Tooltip text="Show Detailed Reports">
 						<router-link
-							class="mr-auto text-base text-ink-gray-6 hover:text-ink-gray-7"
+							class="text-base text-ink-gray-6 hover:text-ink-gray-7"
 							:to="{ name: 'Site Performance Slow Queries' }"
 						>
 							→
 						</router-link>
 					</Tooltip>
 					<TabButtons
+						class="ml-auto"
 						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
 						v-model="slowLogsDurationType"
 					/>
@@ -517,10 +550,10 @@ export default {
 			logicalStartDate: null,
 			inputEndDate: null,
 			logicalEndDate: null,
-			showAdvancedAnalytics: false,
+			showAdvancedAnalytics: true,
 			localTimezone: dayjs.tz.guess(),
-			slowLogsDurationType: 'Denormalized',
-			slowLogsFrequencyType: 'Denormalized',
+			slowLogsDurationType: 'Normalized',
+			slowLogsFrequencyType: 'Normalized',
 			allowDrillDown: false,
 			durationOptions: [
 				{ label: 'Duration', value: null, disabled: true },

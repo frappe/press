@@ -985,6 +985,8 @@ export default {
 							filters: {
 								document_type: 'Site Update',
 								document_name: latest.name,
+								// the tab itself opens for support, so the banner must too
+								skip_team_filter_for_system_user_and_support_agent: true,
 							},
 							limit: 1,
 							auto: true,
