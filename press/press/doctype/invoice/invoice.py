@@ -1416,6 +1416,11 @@ class Invoice(Document):
 		return stripe.Invoice.retrieve(self.stripe_invoice_id)
 
 
+def finalize_monthly_draft_invoices():
+	"""Enqueue finalize_draft_invoices to run in the background. This is called from a scheduler event."""
+	frappe.enqueue(finalize_draft_invoices, queue="long", timeout=1800)
+
+
 def finalize_draft_invoices():
 	"""Runs hourly, 500 at a time. Finalizes only the previous month's Draft invoices,
 	keeps the current month's invoice open for new usage."""

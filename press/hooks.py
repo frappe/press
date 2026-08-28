@@ -425,7 +425,7 @@ scheduler_events = {
 			"press.saas.doctype.product_trial_request.product_trial_request.gather_weekly_stats",
 		],
 		"*/30 * 1 * *": [
-			"press.press.doctype.invoice.invoice.finalize_draft_invoices",
+			"press.press.doctype.invoice.invoice.finalize_monthly_draft_invoices",
 		],
 	},
 }
