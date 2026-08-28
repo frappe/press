@@ -27,7 +27,12 @@ function jobLink(site, job, text) {
 }
 
 function canRestoreTables(site) {
-	return site.doc?.fatal_site_update && site.doc?.status === 'Broken'
+	// Only a logical backup makes the dump that the restore reads
+	return (
+		site.doc?.fatal_site_update &&
+		site.doc?.status === 'Broken' &&
+		site.doc?.fatal_update?.backup_type === 'Logical'
+	)
 }
 
 function confirmRestoreTables(site) {

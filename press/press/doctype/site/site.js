@@ -493,7 +493,7 @@ ${r.message.error}
 							label: __('Force'),
 							fieldname: 'force',
 							description: __(
-								'Restore even if the site has no failed update, a newer update ran after it, or the database server does not report itself up. A restore already running is never skipped.',
+								'Restore even if the site has no failed update, a newer update ran after it, or the database server does not report itself up. A restore already running, and an update that took a physical backup, are never skipped.',
 							),
 						},
 					],
