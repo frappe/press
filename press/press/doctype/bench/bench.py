@@ -50,6 +50,7 @@ TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
 
 RETRYABLE_ERROR_PATTERNS = ["TLS handshake timeout", "Retrying in 10 seconds"]
+MINIMUM_REGISTRY_RETRIES_TO_CANCEL = 3
 BENCH_QUEUE_EXECUTION_LOCK_KEY = "process_bench_queue_lock"
 
 EMPTY_BENCH_COURTESY_DAYS = 3
@@ -1341,8 +1342,7 @@ def cancel_and_retry_bench_job_if_required(job: AgentJob) -> bool:
 	if initialize_bench_step.get("status") != "Running":
 		return False
 
-	has_retryable_error = any(pattern in output_from_cache for pattern in RETRYABLE_ERROR_PATTERNS)
-	if not has_retryable_error:
+	if not is_stuck_in_registry_retry_loop(output_from_cache):
 		return False
 
 	bench: Bench = frappe.get_doc("Bench", job.bench)
@@ -1357,11 +1357,24 @@ def cancel_and_retry_bench_job_if_required(job: AgentJob) -> bool:
 	job.cancel_job()
 
 	frappe.db.set_value("Agent Job", job.name, "status", "Failure")
+	fail_bench_job_step(initialize_bench_step.get("name"), output_from_cache)
 	frappe.db.set_value("Bench", job.bench, "status", "Broken")
 
 	bench = bench.reload()
 	bench.archive(retry_new_bench=True)
 	return True
+
+
+def is_stuck_in_registry_retry_loop(output: str) -> bool:
+	"""Docker recovers from a single registry blip on its own. Only a repeated retry means it is stuck."""
+	retries = max(output.count(pattern) for pattern in RETRYABLE_ERROR_PATTERNS)
+	return retries >= MINIMUM_REGISTRY_RETRIES_TO_CANCEL
+
+
+def fail_bench_job_step(step_name: str, output: str):
+	"""Press fails the job itself, so polling stops here. Persist the cached output, or nobody
+	can tell why the bench broke."""
+	frappe.db.set_value("Agent Job Step", step_name, {"status": "Failure", "output": output})
 
 
 def process_new_bench_job_update(job: AgentJob):  # noqa: C901

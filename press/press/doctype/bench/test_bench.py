@@ -51,6 +51,10 @@ if TYPE_CHECKING:
 	from press.press.doctype.team.team import Team
 
 
+# Docker keeps announcing the same retry, which is what a stuck pull looks like.
+STUCK_REGISTRY_OUTPUT = "\n".join(["TLS handshake timeout", "Retrying in 10 seconds"] * 3)
+
+
 def dummy_payload(*args, **kwargs):
 	return {"dummy": "payload"}
 
@@ -732,7 +736,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 				frappe.cache().hset(
 					"agent_job_step_output",
 					job_step_name,
-					"Retrying in 10 seconds",
+					STUCK_REGISTRY_OUTPUT,
 				)
 
 			poll_pending_jobs()  # Should create archive job
@@ -755,6 +759,94 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			archive_bench_jobs = [job for job in bench_jobs if job["job_type"] == "Archive Bench"]
 			self.assertEqual(len(archive_bench_jobs), 1)
 			self.assertEqual(archive_bench_jobs[0]["status"], "Success")
+
+	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
+	@patch("press.press.doctype.bench.bench.frappe.db.commit", Mock())
+	@patch.object(Bench, "update_bench_config", Mock())
+	@patch.object(AgentJob, "cancel_job", Mock())
+	def test_new_bench_job_survives_a_single_registry_retry(self):
+		"""Docker retries a slow pull on its own. Killing the job on the first retry breaks
+		every deploy to a region far from the registry."""
+		with (
+			fake_agent_job(
+				"New Bench",
+				"Running",
+				steps=[
+					{"name": "Initialize Bench", "status": "Running"},
+				],
+			),
+			fake_agent_job("Archive Bench", "Success"),
+		):
+			bench = create_test_bench()
+			job_step_names = frappe.db.get_all(
+				"Agent Job Step",
+				{"step_name": "Initialize Bench"},
+				pluck="name",
+			)
+			for job_step_name in job_step_names:
+				frappe.cache().hset(
+					"agent_job_step_output",
+					job_step_name,
+					"TLS handshake timeout\nRetrying in 10 seconds",
+				)
+
+			poll_pending_jobs()
+
+			bench_jobs = frappe.get_all("Agent Job", {"bench": bench.name}, ["status", "job_type"])
+
+			new_bench_jobs = [job for job in bench_jobs if job["job_type"] == "New Bench"]
+			self.assertEqual(len(new_bench_jobs), 1)
+			self.assertEqual(new_bench_jobs[0]["status"], "Running")
+
+			archive_bench_jobs = [job for job in bench_jobs if job["job_type"] == "Archive Bench"]
+			self.assertEqual(len(archive_bench_jobs), 0)
+
+			self.assertEqual(frappe.db.get_value("Bench", bench.name, "status"), "Installing")
+
+	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
+	@patch("press.press.doctype.bench.bench.frappe.db.commit", Mock())
+	@patch.object(Bench, "update_bench_config", Mock())
+	@patch.object(AgentJob, "cancel_job", Mock())
+	def test_cancelled_new_bench_job_keeps_the_registry_output_on_the_step(self):
+		"""Press fails the job itself, so polling stops. Without this the operator sees an
+		empty step and cannot tell why the bench broke."""
+		with (
+			fake_agent_job(
+				"New Bench",
+				"Running",
+				steps=[
+					{"name": "Initialize Bench", "status": "Running"},
+				],
+			),
+			fake_agent_job("Archive Bench", "Success"),
+		):
+			bench = create_test_bench()
+			job_step_names = frappe.db.get_all(
+				"Agent Job Step",
+				{"step_name": "Initialize Bench"},
+				pluck="name",
+			)
+			for job_step_name in job_step_names:
+				frappe.cache().hset(
+					"agent_job_step_output",
+					job_step_name,
+					STUCK_REGISTRY_OUTPUT,
+				)
+
+			poll_pending_jobs()
+
+			new_bench_job = frappe.db.get_value(
+				"Agent Job", {"bench": bench.name, "job_type": "New Bench"}, "name"
+			)
+			step = frappe.db.get_value(
+				"Agent Job Step",
+				{"agent_job": new_bench_job, "step_name": "Initialize Bench"},
+				["status", "output"],
+				as_dict=True,
+			)
+
+			self.assertEqual(step.status, "Failure")
+			self.assertEqual(step.output, STUCK_REGISTRY_OUTPUT)
 
 	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
 	@patch("press.press.doctype.bench.bench.frappe.db.commit", Mock())
@@ -826,7 +918,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 					frappe.cache().hset(
 						"agent_job_step_output",
 						job_step_name,
-						"Retrying in 10 seconds",
+						STUCK_REGISTRY_OUTPUT,
 					)
 
 				poll_pending_jobs()
@@ -889,7 +981,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 				"Agent Job Step", {"step_name": "Initialize Bench"}, pluck="name"
 			)
 			for job_step_name in job_step_names:
-				frappe.cache().hset("agent_job_step_output", job_step_name, "Retrying in 10 seconds")
+				frappe.cache().hset("agent_job_step_output", job_step_name, STUCK_REGISTRY_OUTPUT)
 
 			# poll enough times to allow retries
 			for _ in range(10):
