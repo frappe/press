@@ -41,6 +41,31 @@ class TestServerFirewallDashboardEditing(FrappeTestCase):
 		saved = frappe.get_doc("Server Firewall", self.firewall.name)
 		self.assertEqual([rule.source for rule in saved.rules], [rule["source"] for rule in rules])
 
+	def test_owner_can_save_the_whole_document_the_dashboard_read(self):
+		"""frappe-ui posts back every field it read, standard ones included."""
+		owner = self.firewall.owner
+		document = {
+			"owner": "somebody@example.com",
+			"creation": "2026-08-26 21:51:49.591602",
+			"modified": "2026-08-26 21:51:49.591602",
+			"modified_by": "somebody@example.com",
+			"docstatus": 1,
+			"idx": 0,
+			"enabled": 1,
+			"rules": [{"source": "173.245.48.0/20", "port": 443, "protocol": "TCP", "action": "Allow"}],
+			"tabs_access": {},
+			"actions_access": {},
+		}
+
+		sign_in_as(self.team)
+		set_value("Server Firewall", self.firewall.name, document)
+
+		saved = frappe.get_doc("Server Firewall", self.firewall.name)
+		self.assertEqual(saved.enabled, 1)
+		self.assertEqual([rule.source for rule in saved.rules], ["173.245.48.0/20"])
+		self.assertEqual(saved.owner, owner)
+		self.assertEqual(saved.docstatus, 0)
+
 	def test_another_team_cannot_write_the_rules_table(self):
 		other_team = create_test_press_admin_team()
 
