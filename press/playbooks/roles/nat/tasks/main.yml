@@ -20,3 +20,20 @@
     iptables -t nat -A POSTROUTING -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
     iptables -F FORWARD
     netfilter-persistent save
+
+- name: Check whether forwarded connections are already MSS clamped
+  command: iptables -t mangle -C {{ mss_clamp_rule }}
+  register: mss_clamp_check
+  changed_when: false
+  failed_when: false
+
+# Private servers advertise an MSS from their own MTU, which some paths cannot
+# carry. The remote end's segments are dropped in transit and the connection
+# stalls, most visibly as a TLS handshake timeout on a registry pull.
+- name: Clamp MSS on forwarded connections
+  command: iptables -t mangle -A {{ mss_clamp_rule }}
+  when: mss_clamp_check.rc != 0
+
+- name: Persist the MSS clamp rule
+  command: netfilter-persistent save
+  when: mss_clamp_check.rc != 0

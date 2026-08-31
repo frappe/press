@@ -1,0 +1,4 @@
+---
+# Below the smallest path MTU seen between a region and the registry.
+mss_clamp: 1400
+mss_clamp_rule: "FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss {{ mss_clamp }}"
