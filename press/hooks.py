@@ -277,7 +277,7 @@ scheduler_events = {
 		"press.press.doctype.server.server.scale_workers",
 		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
-		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
+		"press.press.doctype.invoice.invoice.create_invoices_for_next_month",
 		"press.press.doctype.invoice.invoice.finalize_razorpay_mandate_invoices",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
@@ -423,6 +423,9 @@ scheduler_events = {
 		"0 9 * * 2": [
 			"press.press.doctype.build_metric.build_metric.create_build_metric",
 			"press.saas.doctype.product_trial_request.product_trial_request.gather_weekly_stats",
+		],
+		"*/30 * 1 * *": [
+			"press.press.doctype.invoice.invoice.finalize_monthly_draft_invoices",
 		],
 	},
 }
