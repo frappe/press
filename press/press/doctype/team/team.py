@@ -47,6 +47,19 @@ if TYPE_CHECKING:
 SERVER_CREDIT_THRESHOLD = {"USD": 200, "INR": 16000}
 
 
+# Team with a Beginner tier upgrades to Growth tier when card is added
+# Teams without a card stay on Beginner.
+TIER_AFTER_CARD_ADDED = "Growth"
+
+
+def upgrade_beginner_tier_for_new_card(team_name):
+	tier, apply_limits = frappe.db.get_value("Team", team_name, ["tier", "apply_limits"])
+	if not apply_limits or tier != "Beginner":
+		return
+	new_limit = frappe.db.get_value("Team Tier", TIER_AFTER_CARD_ADDED, "amount")
+	frappe.db.set_value("Team", team_name, {"tier": TIER_AFTER_CARD_ADDED, "spending_limit": new_limit})
+
+
 class Team(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -594,11 +607,10 @@ class Team(Document):
 			self.payment_mode = "Prepaid Credits"
 
 		if self.has_value_changed("payment_mode"):
-			if (
-				self.payment_mode == "Card"
-				and frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0
-			):
-				frappe.throw("No card added. Please add a card to your account.")
+			if self.payment_mode == "Card":
+				if frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0:
+					frappe.throw("No card added. Please add a card to your account.")
+				upgrade_beginner_tier_for_new_card(self.name)
 			# This check to verify recent pending payment is added to avoid validation issue when updating team doctype with payment mode as credits without balance as transaction is on going
 			if (
 				self.payment_mode == "Prepaid Credits"
@@ -1592,17 +1604,18 @@ class Team(Document):
 			except Exception:
 				log_error("Failed to remove subscription config in trial sites")
 
-	def get_upcoming_invoice(self, for_update=False):
-		# get the current period's invoice
-		today = frappe.utils.today()
+	def get_upcoming_invoice(self, date=None, for_update=False):
+		# only Draft counts - a finalized invoice may already have a Stripe/Razorpay
+		# invoice created against it and must never be mutated further
+		date = date or frappe.utils.today()
 		result = frappe.db.get_all(
 			"Invoice",
 			filters={
 				"status": "Draft",
 				"team": self.name,
 				"type": "Subscription",
-				"period_start": ("<=", today),
-				"period_end": (">=", today),
+				"period_start": ("<=", date),
+				"period_end": (">=", date),
 			},
 			order_by="creation desc",
 			limit=1,
@@ -1612,11 +1625,23 @@ class Team(Document):
 			return frappe.get_doc("Invoice", result[0], for_update=for_update)
 		return None
 
-	def create_upcoming_invoice(self):
-		today = frappe.utils.today()
-		return frappe.get_doc(
-			doctype="Invoice", team=self.name, period_start=today, type="Subscription"
-		).insert()
+	def create_upcoming_invoice(self, date=None):
+		date = date or frappe.utils.today()
+		try:
+			return frappe.get_doc(
+				doctype="Invoice", team=self.name, period_start=date, type="Subscription"
+			).insert()
+		except frappe.DuplicateEntryError:
+			# another process created the invoice for this period first
+			invoice = self.get_upcoming_invoice(date)
+			if not invoice:
+				# the period is already owned by a finalized (no longer Draft) invoice
+				frappe.throw(
+					f"Cannot create an invoice for {self.name} on {date}: a finalized invoice "
+					"already covers this period",
+					frappe.ValidationError,
+				)
+			return invoice
 
 	@frappe.whitelist()
 	def send_telegram_alert_for_failed_payment(self, invoice):
@@ -1808,7 +1833,9 @@ def handle_payment_intent_succeeded(payment_intent):  # noqa: C901
 		status="Paid",
 		due_date=datetime.fromtimestamp(payment_intent["created"]),
 		total=amount,
+		amount_due=amount,
 		gst=gst or 0,
+		amount_due_with_tax=amount_with_tax,
 		amount_paid=amount_with_tax,
 		stripe_payment_intent_id=payment_intent["id"],
 	)

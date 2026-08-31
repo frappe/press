@@ -484,12 +484,16 @@ def convert_to_webp(file_content: bytes) -> bytes:
 
 	from PIL import Image
 
-	image_bytes = BytesIO()
 	image = Image.open(BytesIO(file_content))
-	image = image.convert("RGB")
+	# RGB conversion drops alpha and keeps leftover RGB in transparent pixels.
+	# Composite onto white first so logos with straight alpha stay intact.
+	if image.mode in ("RGBA", "LA") or (image.mode == "P" and "transparency" in image.info):
+		rgba = image.convert("RGBA")
+		background = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+		image = Image.alpha_composite(background, rgba)
 
-	image.save(image_bytes, "webp")
-
+	image_bytes = BytesIO()
+	image.convert("RGB").save(image_bytes, "webp")
 	return image_bytes.getvalue()
 
 
@@ -626,7 +630,7 @@ def get_app_source(name: str) -> AppSource:
 
 
 @frappe.whitelist()
-def latest_approved_release(source: None | str) -> AppRelease:
+def latest_approved_release(source: str | None) -> AppRelease | None:
 	"""Return the latest app release with `approved` status"""
 	return get_last_doc("App Release", {"source": source, "status": "Approved"})
 

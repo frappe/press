@@ -36,6 +36,13 @@ class ServerFirewall(Document):
 		"rules",
 	)
 
+	# The firewall page is an editor: it flips the switch and rewrites the rules
+	# table, then saves both through `set_value`.
+	dashboard_editable_fields = (
+		"enabled",
+		"rules",
+	)
+
 	def before_validate(self):
 		self.deduplicate_rules()
 
