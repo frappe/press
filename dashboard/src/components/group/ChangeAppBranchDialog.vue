@@ -116,6 +116,12 @@ export default {
 	},
 
 	watch: {
+		'$resources.branches.data'(branches) {
+			// The app can sit on a branch that has since been deleted on GitHub
+			if (branches?.length && !branches.includes(this.selectedBranch)) {
+				this.selectedBranch = null
+			}
+		},
 		useOtherBranch() {
 			this.otherBranchValidated = false
 			this.branchVerificationError = null

@@ -17,6 +17,7 @@ from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app.app import get_app_from_policies
 from press.press.doctype.app_patch.app_patch import create_app_patch
+from press.press.doctype.app_source.app_source import is_branch_deleted
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.deploy_candidate.deploy_candidate import RESTING_STATES, TRANSITORY_STATES
@@ -978,31 +979,31 @@ def validate_branch(name: str, app: str, branch: str):
 
 def get_branches_for_marketplace_app(app: str, marketplace_app: str, app_source: AppSource) -> list[dict]:
 	"""Return list of branches allowed for this `marketplace` app"""
-	branch_set = set()
 	marketplace_app_doc: MarketplaceApp = frappe.get_doc("Marketplace App", marketplace_app)
+	source_names = {row.source for row in marketplace_app_doc.sources}
 
-	for marketplace_app_source in marketplace_app_doc.sources:
-		app_source = frappe.get_doc("App Source", marketplace_app_source.source)
-		branch_set.add(app_source.branch)
-
-	# Also, append public source branches
-	repo_owner = app_source.repository_owner
-	repo_name = app_source.repository
-
-	public_app_sources = frappe.get_all(
-		"App Source",
-		filters={
-			"app": app,
-			"repository_owner": repo_owner,
-			"repository": repo_name,
-			"public": True,
-		},
-		pluck="branch",
+	# Also, append public sources of the same repository
+	source_names.update(
+		frappe.get_all(
+			"App Source",
+			filters={
+				"app": app,
+				"repository_owner": app_source.repository_owner,
+				"repository": app_source.repository,
+				"public": True,
+			},
+			pluck="name",
+		)
 	)
-	branch_set.update(public_app_sources)
 
-	branch_list = sorted(list(branch_set))
-	return [{"name": b} for b in branch_list]
+	sources = frappe.get_all(
+		"App Source",
+		filters={"name": ("in", list(source_names))},
+		fields=["branch", "last_github_poll_failed", "last_github_response"],
+	)
+	branch_names = {source.branch for source in sources if not is_branch_deleted(source)}
+
+	return [{"name": branch} for branch in sorted(branch_names)]
 
 
 def belongs_to_current_team(app: str) -> bool:

@@ -273,11 +273,7 @@ class AppSource(Document):
 
 	@property
 	def branch_deleted(self) -> bool:
-		"""GitHub answers a poll for a branch that no longer exists with a 404 that names the branch."""
-		if not self.last_github_poll_failed:
-			return False
-
-		return get_github_message(self.last_github_response) == BRANCH_NOT_FOUND
+		return is_branch_deleted(self)
 
 	def set_poll_succeeded(self):
 		self.last_github_response = ""
@@ -369,3 +365,11 @@ def get_github_message(response_text: str | None) -> str:
 		return json.loads(response_text or "{}").get("message", "")
 	except json.JSONDecodeError:
 		return ""
+
+
+def is_branch_deleted(source) -> bool:
+	"""GitHub answers a poll for a branch that no longer exists with a 404 that names the branch."""
+	if not source.last_github_poll_failed:
+		return False
+
+	return get_github_message(source.last_github_response) == BRANCH_NOT_FOUND
