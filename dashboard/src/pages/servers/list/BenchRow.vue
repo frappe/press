@@ -127,7 +127,13 @@ const addSite = (e, bench) => {
 	const AddSiteDialog = defineAsyncComponent(
 		() => import('./AddSiteDialog.vue'),
 	)
-	renderDialog(h(AddSiteDialog, { bench, onSiteCreated: () => sites.reload() }))
+	renderDialog(
+		h(AddSiteDialog, {
+			bench,
+			server: props.server,
+			onSiteCreated: () => sites.reload(),
+		}),
+	)
 }
 
 const benchOptions = (bench) => [
