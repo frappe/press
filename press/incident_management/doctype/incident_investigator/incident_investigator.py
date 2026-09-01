@@ -168,7 +168,7 @@ class PrometheusInvestigationHelper:
 		step.save()
 
 	def has_high_cpu_load(self, instance: str, step: "InvestigationStep"):
-		"""Check high cpu rate during window"""
+		"""Check high CPU rate during window"""
 		query = f'node_cpu_seconds_total{{instance="{instance}",mode="idle"}}'
 		assert self.investigation_window_start_time and self.investigation_window_end_time, (
 			"Investigation window not set"
@@ -192,7 +192,7 @@ class PrometheusInvestigationHelper:
 		step.save()
 
 	def has_high_memory_usage(self, instance: str, step: "InvestigationStep"):
-		"Determine high memory usage over a period of investigation window"
+		"Determined high memory usage over a period of investigation window"
 		query = f"""
 				(
 					1 - (
