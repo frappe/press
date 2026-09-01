@@ -236,7 +236,7 @@ class AppSource(Document):
 		).insert(ignore_permissions=True)
 		return app_release
 
-	def get_commit_info(self, commit_hash: None | str = None) -> tuple[str, dict, bool]:
+	def get_commit_info(self, commit_hash: str | None = None) -> tuple[str, dict, bool]:
 		"""
 		If `commit_hash` is not provided, `commit_info` is of the latest commit
 		on the branch pointed to by `self.hash`.
@@ -259,7 +259,7 @@ class AppSource(Document):
 		commit_info = data.get("commit", {}).get("commit", {})
 		return (commit_hash, commit_info, True)
 
-	def poll_github(self, commit_hash: None | str = None) -> requests.Response:
+	def poll_github(self, commit_hash: str | None = None) -> requests.Response:
 		headers = self.get_auth_headers()
 		url = f"https://api.github.com/repos/{self.repository_owner}/{self.repository}"
 
