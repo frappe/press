@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
-import { Dialog, TextInput, Button, Checkbox, createResource } from 'frappe-ui'
+import { Button, Checkbox, createResource, Dialog, TextInput } from 'frappe-ui'
+import { computed, reactive, ref } from 'vue'
 import router from '@/router'
 
 interface Props {
 	bench: any
+	server: any
 }
 
 const show = ref(true)
@@ -17,7 +18,7 @@ const emit = defineEmits<{ siteCreated: [] }>()
 const formType = ref('addApps')
 
 const handleAppSelection = (cond: boolean, app: any) => {
-  if (cond && !addedApps.includes(app)) addedApps.push(app)
+	if (cond && !addedApps.includes(app)) addedApps.push(app)
 	else addedApps.splice(addedApps.indexOf(app), 1)
 }
 
@@ -32,7 +33,6 @@ const installableApps = createResource({
 		siteOptions.value = {
 			domain: data.domain,
 			group: version?.group?.name,
-			cluster: version?.group?.clusters?.[0]?.name,
 		}
 		const sources = version?.group?.bench_app_sources || []
 		return sources
@@ -79,7 +79,8 @@ const submitForm = () => {
 			doctype: 'Site',
 			subdomain: subdomain.value,
 			apps: [{ app: 'frappe' }, ...addedApps.map((x: any) => ({ app: x.app }))],
-			cluster: siteOptions.value.cluster,
+			cluster: props.server.cluster,
+			server: props.server.name,
 			group: siteOptions.value.group,
 			domain: siteOptions.value.domain,
 		},
