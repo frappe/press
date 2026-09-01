@@ -158,6 +158,17 @@ export default {
 							suffix(row) {
 								if (!row.last_github_poll_failed) return
 
+								if (row.branch_deleted)
+									return h(
+										Tooltip,
+										{
+											text: `The ${row.branch} branch no longer exists on GitHub. Change the branch to resume updates.`,
+											placement: 'top',
+											class: 'rounded-full bg-surface-gray-2 p-1',
+										},
+										() => [h(icon('alert-circle', 'w-3 h-3'), {})],
+									)
+
 								return h(
 									Tooltip,
 									{
@@ -178,8 +189,14 @@ export default {
 								)
 							},
 							format(value, row) {
-								let { update_available, deployed, last_github_poll_failed } =
-									row
+								let {
+									update_available,
+									deployed,
+									last_github_poll_failed,
+									branch_deleted,
+								} = row
+
+								if (branch_deleted) return 'Branch Deleted'
 
 								return last_github_poll_failed
 									? 'Action Required'
@@ -188,6 +205,9 @@ export default {
 										: update_available
 											? 'Update Available'
 											: 'Latest Version'
+							},
+							theme(value, row) {
+								return row.last_github_poll_failed ? 'red' : 'gray'
 							},
 							width: 0.5,
 						},

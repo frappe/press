@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -19,6 +20,7 @@ from press.press.doctype.app.app import parse_frappe_version
 from press.utils import get_current_team, log_error
 
 REQUIRED_APPS_PATTERN = re.compile(r"^\s*(?!#)\s*required_apps\s*=\s*\[(.*?)\]", re.DOTALL | re.MULTILINE)
+BRANCH_NOT_FOUND = "Branch not found"
 
 if TYPE_CHECKING:
 	from press.press.doctype.app_release.app_release import AppRelease
@@ -269,6 +271,14 @@ class AppSource(Document):
 
 		return requests.get(url, headers=headers)
 
+	@property
+	def branch_deleted(self) -> bool:
+		"""GitHub answers a poll for a branch that no longer exists with a 404 that names the branch."""
+		if not self.last_github_poll_failed:
+			return False
+
+		return get_github_message(self.last_github_response) == BRANCH_NOT_FOUND
+
 	def set_poll_succeeded(self):
 		self.last_github_response = ""
 		self.last_github_poll_failed = False
@@ -285,9 +295,11 @@ class AppSource(Document):
 		*probably* means that FC hasn't been granted access to this particular
 		app by the user.
 
-		In this case the App Source is in an uninstalled state.
+		In this case the App Source is in an uninstalled state. A deleted branch
+		also answers 404, but there the repository is still reachable, so the
+		source is not uninstalled.
 		"""
-		self.uninstalled = response.status_code == 404
+		self.uninstalled = response.status_code == 404 and not self.branch_deleted
 
 		if response.status_code != 404:
 			log_error(
@@ -350,3 +362,10 @@ def get_timestamp_from_commit_info(commit_info: dict) -> str | None:
 
 	timestamp_str = timestamp_str.replace("Z", "+00:00")
 	return datetime.fromisoformat(timestamp_str).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def get_github_message(response_text: str | None) -> str:
+	try:
+		return json.loads(response_text or "{}").get("message", "")
+	except json.JSONDecodeError:
+		return ""

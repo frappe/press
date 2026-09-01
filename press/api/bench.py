@@ -471,6 +471,7 @@ def apps(name):
 				"deployed": app.name in deployed_apps,
 				"update_available": bool(update_available),
 				"last_github_poll_failed": source.last_github_poll_failed,
+				"branch_deleted": source.branch_deleted,
 			}
 		)
 	return apps
