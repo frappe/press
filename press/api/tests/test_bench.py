@@ -228,6 +228,24 @@ class TestAPIBenchConfig(FrappeTestCase):
 		)
 		self.assertEqual(new_bench_config, {"http_timeout": 120})
 
+	def test_json_config_key_rejects_a_value_that_isnt_json(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"is not valid JSON",
+			update_config,
+			self.rg.name,
+			[{"key": "limits", "value": "{limit: val}", "type": "JSON"}],
+		)
+
+	def test_json_config_key_rejects_a_json_scalar(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"must be a JSON object or array",
+			update_config,
+			self.rg.name,
+			[{"key": "limits", "value": '"val"', "type": "JSON"}],
+		)
+
 	def test_bench_config_is_updated_in_subsequent_benches(self):
 		bench = create_test_bench(group=self.rg)
 		bench.reload()
