@@ -1,33 +1,32 @@
-import { LoadingIndicator, Tooltip } from 'frappe-ui';
-import { defineAsyncComponent, h } from 'vue';
-import { toast } from 'vue-sonner';
-import LucideAppWindow from '~icons/lucide/app-window';
-import LucideHardDriveDownload from '~icons/lucide/hard-drive-download';
-import LucideRocket from '~icons/lucide/rocket';
-import AddAppDialog from '../components/group/AddAppDialog.vue';
-import ChangeAppBranchDialog from '../components/group/ChangeAppBranchDialog.vue';
-import PatchAppDialog from '../components/group/PatchAppDialog.vue';
-import { getTeam, switchToTeam } from '../data/team';
-import router from '../router';
-import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { getToastErrorMessage } from '../utils/toast';
-import { getJobsTab } from './common/jobs';
-import { getPatchesTab } from './common/patches';
-import { tagTab } from './common/tags';
-
-import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline';
+import { LoadingIndicator, Tooltip } from 'frappe-ui'
+import { defineAsyncComponent, h } from 'vue'
+import { toast } from 'vue-sonner'
+import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline'
+import LucideAppWindow from '~icons/lucide/app-window'
+import LucideHardDriveDownload from '~icons/lucide/hard-drive-download'
+import LucideRocket from '~icons/lucide/rocket'
+import AddAppDialog from '../components/group/AddAppDialog.vue'
+import ChangeAppBranchDialog from '../components/group/ChangeAppBranchDialog.vue'
+import PatchAppDialog from '../components/group/PatchAppDialog.vue'
+import { getTeam, switchToTeam } from '../data/team'
+import router from '../router'
+import { confirmDialog, icon, renderDialog } from '../utils/components'
+import { getToastErrorMessage } from '../utils/toast'
+import { getJobsTab } from './common/jobs'
+import { getPatchesTab } from './common/patches'
+import { tagTab } from './common/tags'
 
 const removeApps = async (releaseGroup, rows) => {
-	let removed = 0;
+	let removed = 0
 	for (const row of rows) {
 		try {
-			await releaseGroup.removeApp.submit({ app: row.name });
-			removed++;
+			await releaseGroup.removeApp.submit({ app: row.name })
+			removed++
 		} catch (e) {
-			const detail = e.messages?.length ? e.messages.join(' ') : e.message;
+			const detail = e.messages?.length ? e.messages.join(' ') : e.message
 			throw new Error(
 				`Removed ${removed} of ${rows.length} apps. Failed to remove "${row.title}": ${detail}`,
-			);
+			)
 		}
 	}
 }
@@ -63,13 +62,13 @@ export default {
 	detail: {
 		titleField: 'title',
 		statusBadge({ documentResource: releaseGroup }) {
-			return { label: releaseGroup.doc.status };
+			return { label: releaseGroup.doc.status }
 		},
 		breadcrumbs({ items, documentResource: releaseGroup }) {
-			if (!releaseGroup.doc.server_team) return items;
+			if (!releaseGroup.doc.server_team) return items
 
-			let breadcrumbs = [];
-			let $team = getTeam();
+			let breadcrumbs = []
+			let $team = getTeam()
 
 			if (
 				releaseGroup.doc.server_team == $team.doc?.name ||
@@ -81,11 +80,11 @@ export default {
 						route: `/servers/${releaseGroup.doc?.server}`,
 					},
 					items[1],
-				);
+				)
 			} else {
-				breadcrumbs.push(...items);
+				breadcrumbs.push(...items)
 			}
-			return breadcrumbs;
+			return breadcrumbs
 		},
 		route: '/groups/:name',
 		tabs: [
@@ -101,7 +100,7 @@ export default {
 					return {
 						releaseGroup: releaseGroup.doc.name,
 						actionsAccess: releaseGroup.doc.actions_access,
-					};
+					}
 				},
 			},
 			{
@@ -116,7 +115,7 @@ export default {
 						return {
 							parenttype: 'Release Group',
 							parent: releaseGroup.doc.name,
-						};
+						}
 					},
 					pageLength: 99999,
 					columns: [
@@ -129,10 +128,10 @@ export default {
 							label: 'Repository',
 							width: 1,
 							format(value, row) {
-								return `${row.repository_owner}/${row.repository}`;
+								return `${row.repository_owner}/${row.repository}`
 							},
 							link(value, row) {
-								return row.repository_url;
+								return row.repository_url
 							},
 						},
 						{
@@ -141,7 +140,7 @@ export default {
 							type: 'Badge',
 							width: 0.5,
 							link(value, row) {
-								return `${row.repository_url}/tree/${value}`;
+								return `${row.repository_url}/tree/${value}`
 							},
 						},
 						{
@@ -150,14 +149,25 @@ export default {
 							fieldname: 'tag',
 							width: 0.5,
 							format(value, row) {
-								return value || row.hash?.slice(0, 7);
+								return value || row.hash?.slice(0, 7)
 							},
 						},
 						{
 							label: 'Status',
 							type: 'Badge',
 							suffix(row) {
-								if (!row.last_github_poll_failed) return;
+								if (!row.last_github_poll_failed) return
+
+								if (row.branch_deleted)
+									return h(
+										Tooltip,
+										{
+											text: `The ${row.branch} branch no longer exists on GitHub. Change the branch to resume updates.`,
+											placement: 'top',
+											class: 'rounded-full bg-surface-gray-2 p-1',
+										},
+										() => [h(icon('alert-circle', 'w-3 h-3'), {})],
+									)
 
 								return h(
 									Tooltip,
@@ -176,11 +186,17 @@ export default {
 											[h(icon('help-circle', 'w-3 h-3'), {})],
 										),
 									],
-								);
+								)
 							},
 							format(value, row) {
-								let { update_available, deployed, last_github_poll_failed } =
-									row;
+								let {
+									update_available,
+									deployed,
+									last_github_poll_failed,
+									branch_deleted,
+								} = row
+
+								if (branch_deleted) return 'Branch Deleted'
 
 								return last_github_poll_failed
 									? 'Action Required'
@@ -188,7 +204,10 @@ export default {
 										? 'Not Deployed'
 										: update_available
 											? 'Update Available'
-											: 'Latest Version';
+											: 'Latest Version'
+							},
+							theme(value, row) {
+								return row.last_github_poll_failed ? 'red' : 'gray'
 							},
 							width: 0.5,
 						},
@@ -199,7 +218,7 @@ export default {
 						listResource: apps,
 						documentResource: releaseGroup,
 					}) {
-						let team = getTeam();
+						let team = getTeam()
 						return [
 							{
 								label: 'View in Desk',
@@ -208,7 +227,7 @@ export default {
 									window.open(
 										`${window.location.protocol}//${window.location.host}/app/app/${row.name}`,
 										'_blank',
-									);
+									)
 								},
 							},
 							{
@@ -221,12 +240,12 @@ export default {
 										{
 											loading: `Fetching Latest Updates for ${row.title}...`,
 											success: () => {
-												apps.reload();
-												return `Latest Updates Fetched for ${row.title}`;
+												apps.reload()
+												return `Latest Updates Fetched for ${row.title}`
 											},
 											error: (e) => getToastErrorMessage(e),
 										},
-									);
+									)
 								},
 							},
 							{
@@ -237,17 +256,17 @@ export default {
 											bench: releaseGroup.name,
 											app: row,
 											onBranchChange() {
-												apps.reload();
+												apps.reload()
 											},
 										}),
-									);
+									)
 								},
 							},
 							{
 								label: 'Remove App',
 								condition: () => row.name !== 'frappe',
 								onClick() {
-									if (releaseGroup.removeApp.loading) return;
+									if (releaseGroup.removeApp.loading) return
 									confirmDialog({
 										title: 'Remove App',
 										message: `Are you sure you want to remove the app <b>${row.title}</b>?`,
@@ -259,15 +278,15 @@ export default {
 												{
 													loading: 'Removing App...',
 													success: () => {
-														hide();
-														apps.reload();
-														return 'App Removed';
+														hide()
+														apps.reload()
+														return 'App Removed'
 													},
 													error: (e) => getToastErrorMessage(e),
 												},
-											);
+											)
 										},
-									});
+									})
 								},
 							},
 							{
@@ -276,7 +295,7 @@ export default {
 									window.open(
 										`${row.repository_url}/tree/${row.branch}`,
 										'_blank',
-									);
+									)
 								},
 							},
 							{
@@ -287,27 +306,27 @@ export default {
 											group: releaseGroup.name,
 											app: row.name,
 										}),
-									);
+									)
 								},
 							},
-						];
+						]
 					},
 					moreActions({ selectionMode, enterSelectionMode }) {
-						if (selectionMode) return [];
+						if (selectionMode) return []
 						return [
 							{
 								label: 'Uninstall Multiple',
 								icon: 'trash-2',
 								onClick: () => enterSelectionMode(),
 							},
-						];
+						]
 					},
 					secondaryAction({ selectionMode, exitSelectionMode }) {
-						if (!selectionMode) return null;
+						if (!selectionMode) return null
 						return {
 							label: 'Cancel',
 							onClick: () => exitSelectionMode(),
-						};
+						}
 					},
 					primaryAction({
 						listResource: apps,
@@ -331,22 +350,22 @@ export default {
 											toast.promise(removeApps(releaseGroup, selectedRows), {
 												loading: 'Removing Apps...',
 												success: () => {
-													hide();
-													exitSelectionMode();
-													apps.reload();
-													return 'Apps Removed';
+													hide()
+													exitSelectionMode()
+													apps.reload()
+													return 'Apps Removed'
 												},
 												error: (e) => {
-													hide();
-													exitSelectionMode();
-													apps.reload();
-													return getToastErrorMessage(e);
+													hide()
+													exitSelectionMode()
+													apps.reload()
+													return getToastErrorMessage(e)
 												},
-											});
+											})
 										},
-									});
+									})
 								},
-							};
+							}
 						}
 						return {
 							label: 'Add App',
@@ -358,13 +377,13 @@ export default {
 									h(AddAppDialog, {
 										group: releaseGroup.doc,
 										onAppAdd() {
-											apps.reload();
-											releaseGroup.reload();
+											apps.reload()
+											releaseGroup.reload()
 										},
 										onNewApp(app, isUpdate) {
 											const loading = isUpdate
 												? 'Replacing App...'
-												: 'Adding App...';
+												: 'Adding App...'
 
 											toast.promise(
 												releaseGroup.addApp.submit({
@@ -374,28 +393,27 @@ export default {
 												{
 													loading,
 													success: () => {
-														apps.reload();
-														releaseGroup.reload();
+														apps.reload()
+														releaseGroup.reload()
 
 														if (isUpdate) {
-															return `App ${app.title} updated`;
+															return `App ${app.title} updated`
 														}
 
-														return `App ${app.title} added`;
+														return `App ${app.title} added`
 													},
 													error: (e) => getToastErrorMessage(e),
 												},
-											);
+											)
 										},
 									}),
-								);
+								)
 							},
-						};
+						}
 					},
 				},
 			},
 
-      
 			{
 				label: 'Deploys',
 				route: 'deploys',
@@ -405,7 +423,7 @@ export default {
 					() => import('../pages/benches/Deploys.vue'),
 				),
 				childrenRoutes: ['Deploy Candidate', 'Release Pipeline'],
-        	props: (releaseGroup) => ({
+				props: (releaseGroup) => ({
 					name: releaseGroup.doc.name,
 				}),
 			},
@@ -422,7 +440,7 @@ export default {
 						return {
 							parenttype: 'Release Group',
 							parent: releaseGroup.name,
-						};
+						}
 					},
 					orderBy: 'creation desc',
 					fields: ['name'],
@@ -433,9 +451,9 @@ export default {
 							fieldname: 'key',
 							format(value, row) {
 								if (row.title) {
-									return `${row.title} (${row.key})`;
+									return `${row.title} (${row.key})`
 								}
-								return row.key;
+								return row.key
 							},
 						},
 						{
@@ -462,17 +480,17 @@ export default {
 							onClick() {
 								let ConfigEditorDialog = defineAsyncComponent(
 									() => import('../components/ConfigEditorDialog.vue'),
-								);
+								)
 								renderDialog(
 									h(ConfigEditorDialog, {
 										group: releaseGroup.doc.name,
 										onSuccess() {
-											configs.reload();
+											configs.reload()
 										},
 									}),
-								);
+								)
 							},
-						};
+						}
 					},
 					secondaryAction({ listResource: configs }) {
 						return {
@@ -483,14 +501,14 @@ export default {
 							onClick() {
 								let ConfigPreviewDialog = defineAsyncComponent(
 									() => import('../components/ConfigPreviewDialog.vue'),
-								);
+								)
 								renderDialog(
 									h(ConfigPreviewDialog, {
 										configs: configs.data,
 									}),
-								);
+								)
 							},
-						};
+						}
 					},
 					rowActions({
 						row,
@@ -503,16 +521,16 @@ export default {
 								onClick() {
 									let ConfigEditorDialog = defineAsyncComponent(
 										() => import('../components/ConfigEditorDialog.vue'),
-									);
+									)
 									renderDialog(
 										h(ConfigEditorDialog, {
 											group: releaseGroup.doc.name,
 											config: row,
 											onSuccess() {
-												configs.reload();
+												configs.reload()
 											},
 										}),
-									);
+									)
 								},
 							},
 							{
@@ -522,14 +540,14 @@ export default {
 										title: 'Delete Config',
 										message: `Are you sure you want to delete the config <b>${row.key}</b>?`,
 										onSuccess({ hide }) {
-											if (releaseGroup.deleteConfig.loading) return;
+											if (releaseGroup.deleteConfig.loading) return
 											toast.promise(
 												releaseGroup.deleteConfig.submit(
 													{ key: row.key },
 													{
 														onSuccess: () => {
-															configs.reload();
-															hide();
+															configs.reload()
+															hide()
 														},
 													},
 												),
@@ -538,12 +556,12 @@ export default {
 													success: () => `Config ${row.key} removed`,
 													error: (e) => getToastErrorMessage(e),
 												},
-											);
+											)
 										},
-									});
+									})
 								},
 							},
-						];
+						]
 					},
 				},
 			},
@@ -556,7 +574,7 @@ export default {
 					() => import('../components/group/ReleaseGroupActions.vue'),
 				),
 				props: (releaseGroup) => {
-					return { releaseGroup: releaseGroup.name };
+					return { releaseGroup: releaseGroup.name }
 				},
 			},
 			{
@@ -567,7 +585,7 @@ export default {
 				list: {
 					doctype: 'Cluster',
 					filters: (releaseGroup) => {
-						return { group: releaseGroup.name };
+						return { group: releaseGroup.name }
 					},
 					columns: [
 						{
@@ -578,14 +596,14 @@ export default {
 							label: 'Country',
 							fieldname: 'image',
 							format(value, row) {
-								return '';
+								return ''
 							},
 							prefix(row) {
 								return h('img', {
 									src: row.image,
 									class: 'w-4 h-4',
 									alt: row.title,
-								});
+								})
 							},
 						},
 					],
@@ -601,17 +619,17 @@ export default {
 							onClick() {
 								let AddRegionDialog = defineAsyncComponent(
 									() => import('../components/group/AddRegionDialog.vue'),
-								);
+								)
 								renderDialog(
 									h(AddRegionDialog, {
 										group: releaseGroup.doc.name,
 										onSuccess() {
-											clusters.reload();
+											clusters.reload()
 										},
 									}),
-								);
+								)
 							},
-						};
+						}
 					},
 				},
 			},
@@ -628,7 +646,7 @@ export default {
 					return {
 						releaseGroup: releaseGroup.doc.name,
 						releaseGroupDocumentResource: releaseGroup,
-					};
+					}
 				},
 			},
 			{
@@ -642,7 +660,7 @@ export default {
 						return {
 							parenttype: 'Release Group',
 							parent: releaseGroup.name,
-						};
+						}
 					},
 					orderBy: 'creation desc',
 					fields: ['name'],
@@ -669,17 +687,17 @@ export default {
 								let EnvironmentVariableEditorDialog = defineAsyncComponent(
 									() =>
 										import('../components/EnvironmentVariableEditorDialog.vue'),
-								);
+								)
 								renderDialog(
 									h(EnvironmentVariableEditorDialog, {
 										group: releaseGroup.doc.name,
 										onSuccess() {
-											environmentVariables.reload();
+											environmentVariables.reload()
 										},
 									}),
-								);
+								)
 							},
-						};
+						}
 					},
 					rowActions({
 						row,
@@ -695,16 +713,16 @@ export default {
 											import(
 												'../components/EnvironmentVariableEditorDialog.vue'
 											),
-									);
+									)
 									renderDialog(
 										h(ConfigEditorDialog, {
 											group: releaseGroup.doc.name,
 											environment_variable: row,
 											onSuccess() {
-												environmentVariables.reload();
+												environmentVariables.reload()
 											},
 										}),
-									);
+									)
 								},
 							},
 							{
@@ -714,15 +732,14 @@ export default {
 										title: 'Delete Environment Variable',
 										message: `Are you sure you want to delete the environment variable <b>${row.key}</b>?`,
 										onSuccess({ hide }) {
-											if (releaseGroup.deleteEnvironmentVariable.loading)
-												return;
+											if (releaseGroup.deleteEnvironmentVariable.loading) return
 											toast.promise(
 												releaseGroup.deleteEnvironmentVariable.submit(
 													{ key: row.key },
 													{
 														onSuccess: () => {
-															environmentVariables.reload();
-															hide();
+															environmentVariables.reload()
+															hide()
 														},
 													},
 												),
@@ -732,23 +749,23 @@ export default {
 														`Environment variable ${row.key} removed`,
 													error: (e) => getToastErrorMessage(e),
 												},
-											);
+											)
 										},
-									});
+									})
 								},
 							},
-						];
+						]
 					},
 				},
 			},
 			tagTab('Release Group'),
 		],
 		actions(context) {
-			let { documentResource: group } = context;
-			let team = getTeam();
+			let { documentResource: group } = context
+			let team = getTeam()
 
 			if (group.doc?.deploy_information?.has_running_release_pipeline) {
-				pollReleasePipelineValidationStatus(group);
+				pollReleasePipelineValidationStatus(group)
 			}
 
 			return [
@@ -763,7 +780,7 @@ export default {
 					condition: () =>
 						team.doc?.is_desk_user && group.doc.team !== team.name,
 					onClick() {
-						switchToTeam(group.doc.team);
+						switchToTeam(group.doc.team)
 					},
 				},
 				{
@@ -783,24 +800,24 @@ export default {
 					onClick() {
 						let UpdateReleaseGroupDialog = defineAsyncComponent(
 							() => import('../components/group/UpdateReleaseGroupDialog.vue'),
-						);
+						)
 						renderDialog(
 							h(UpdateReleaseGroupDialog, {
 								bench: group.name,
 								lastDeploy: group.doc?.deploy_information?.last_deploy,
 								onSuccess(candidate) {
-									group.doc.deploy_information.has_running_release_pipeline = true;
-									group.doc.deploy_information.update_available = false;
+									group.doc.deploy_information.has_running_release_pipeline = true
+									group.doc.deploy_information.update_available = false
 
 									if (candidate) {
 										group.doc.deploy_information.last_deploy = {
 											name: candidate,
-										};
+										}
 									}
-									pollReleasePipelineValidationStatus(group);
+									pollReleasePipelineValidationStatus(group)
 								},
 							}),
-						);
+						)
 					},
 				},
 				{
@@ -815,12 +832,12 @@ export default {
 								window.open(
 									`${window.location.protocol}//${window.location.host}/app/release-group/${group.name}`,
 									'_blank',
-								);
+								)
 							},
 						},
 					],
 				},
-			];
+			]
 		},
 	},
 	routes: [
@@ -828,9 +845,9 @@ export default {
 			name: 'Deploy Candidate',
 			path: 'deploys/:id',
 			component: () => import('../components/benches/pipeline/Details.vue'),
-      props: { deployview: true }
+			props: { deployview: true },
 		},
-   	{
+		{
 			name: 'Release Pipeline',
 			path: 'pipeline/:id',
 			component: () => import('../components/benches/pipeline/Details.vue'),
@@ -841,4 +858,4 @@ export default {
 			component: () => import('../pages/JobPage.vue'),
 		},
 	],
-};
+}
