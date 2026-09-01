@@ -13,6 +13,7 @@ from frappe.tests.utils import FrappeTestCase
 from press.agent import Agent
 from press.api.bench import deploy_information
 from press.api.client import get_list
+from press.overrides import before_request
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
@@ -103,6 +104,7 @@ class TestReleaseGroup(FrappeTestCase):
 		self.team = create_test_team().name
 
 	def tearDown(self):
+		frappe.set_user("Administrator")
 		frappe.db.rollback()
 
 	def test_create_release_group(self):
@@ -663,3 +665,29 @@ class TestReleaseGroup(FrappeTestCase):
 		create_test_bench(group=test_release_group)
 
 		test_release_group.check_app_server_storage()
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_counts_of_a_group_on_two_servers_are_scoped_to_the_filtered_server(self):
+		"""A group runs on two servers. Each server card must count only its own benches and sites."""
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.site.test_site import create_test_bench, create_test_site
+
+		app = create_test_app()
+		user = frappe.get_value("Team", self.team, "user")
+		first_server = create_test_server(team=self.team).name
+		second_server = create_test_server(team=self.team).name
+		group = create_test_release_group([app], user=user, servers=[first_server, second_server])
+
+		create_test_site(bench=create_test_bench(group=group, server=first_server).name, team=self.team)
+		for _ in range(2):
+			create_test_site(bench=create_test_bench(group=group, server=second_server).name, team=self.team)
+
+		frappe.set_user(user)
+		before_request()
+
+		def counts_on(server):
+			[fetched] = get_list("Release Group", fields=["name"], filters={"server": server})
+			return fetched.active_benches, fetched.site_count
+
+		self.assertEqual(counts_on(first_server), (1, 1))
+		self.assertEqual(counts_on(second_server), (2, 2))
