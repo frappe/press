@@ -70,7 +70,7 @@ const serverActions = (server) => [
 </script>
 
 <template>
-	<section class="shadow dark:bg-surface-cards rounded" :key="data.name">
+	<section class="shadow dark:bg-surface-cards rounded pb-2" :key="data.name">
 		<div class="bordered p-4 flex gap-3 items-center">
 			<Tooltip :text="data.provider">
 				<ServerIcon :provider="data.provider" class="size-6 mb-auto" />
@@ -108,7 +108,7 @@ const serverActions = (server) => [
 				</div>
 			</div>
 
-			<div class="flex items-center gap-1 text-ink-gray-6 ml-auto">
+			<div class="flex items-center gap-1 text-ink-gray-6 ml-auto text-sm">
 				<LucideMapPin class="size-4" />
 				<span
 					>{{ data?.cluster_title }}
@@ -152,7 +152,7 @@ const serverActions = (server) => [
 
 		<div
 			v-if="benches.hasNextPage"
-			class="flex px-4 py-2 border-t dark:border-outline-gray-2"
+			class="flex mx-4 py-2 border-t dark:border-outline-gray-2"
 		>
 			<Button
 				@click="benches.next()"
