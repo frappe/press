@@ -86,7 +86,7 @@
 </template>
 
 <script>
-import { DashboardError } from '../../utils/error';
+import { DashboardError } from '../../utils/error'
 
 export default {
 	name: 'ChangeAppBranchDialog',
@@ -103,27 +103,27 @@ export default {
 			branchVerificationSuccess: null,
 			validatingBranch: false,
 			showDialog: true,
-		};
+		}
 	},
 
 	computed: {
 		canChangeBranch() {
 			if (this.useOtherBranch) {
-				return this.otherBranchValidated;
+				return this.otherBranchValidated
 			}
-			return this.selectedBranch && this.selectedBranch !== this.app.branch;
+			return this.selectedBranch && this.selectedBranch !== this.app.branch
 		},
 	},
 
 	watch: {
 		useOtherBranch() {
-			this.otherBranchValidated = false;
-			this.branchVerificationError = null;
+			this.otherBranchValidated = false
+			this.branchVerificationError = null
 		},
 		otherBranchName() {
-			this.otherBranchValidated = false;
-			this.branchVerificationError = null;
-			this.branchVerificationSuccess = null;
+			this.otherBranchValidated = false
+			this.branchVerificationError = null
+			this.branchVerificationSuccess = null
 		},
 	},
 
@@ -138,15 +138,15 @@ export default {
 				auto: true,
 				initialData: [],
 				transform(data) {
-					return data.map((d) => d.name);
+					return data.map((d) => d.name)
 				},
-			};
+			}
 		},
 
 		validateBranchUsingInstallation() {
 			return {
 				url: 'press.api.bench.validate_branch',
-			};
+			}
 		},
 
 		changeBranch() {
@@ -155,39 +155,39 @@ export default {
 				validate() {
 					const targetBranch = this.useOtherBranch
 						? this.otherBranchName
-						: this.selectedBranch;
+						: this.selectedBranch
 
 					if (!targetBranch || targetBranch === this.app.branch) {
-						throw new DashboardError('Please select a different branch');
+						throw new DashboardError('Please select a different branch')
 					}
 				},
 				onSuccess() {
-					this.$emit('branchChange');
-					this.showDialog = false;
+					this.$emit('branchChange')
+					this.showDialog = false
 				},
-			};
+			}
 		},
 	},
 
 	methods: {
 		async validateOtherBranch() {
-			this.$resources.changeBranch.reset();
-			this.validatingBranch = true;
-			this.branchVerificationError = null;
+			this.$resources.changeBranch.reset()
+			this.validatingBranch = true
+			this.branchVerificationError = null
 			try {
 				await this.$resources.validateBranchUsingInstallation.submit({
 					name: this.bench,
 					app: this.app.name,
 					branch: this.otherBranchName.trim(),
-				});
+				})
 
-				this.otherBranchValidated = true;
-				this.branchVerificationSuccess = 'Branch validated successfully';
+				this.otherBranchValidated = true
+				this.branchVerificationSuccess = 'Branch validated successfully'
 			} catch (e) {
-				this.branchVerificationError = "Branch couldn't be verified on GitHub";
-				this.otherBranchValidated = false;
+				this.branchVerificationError = "Branch couldn't be verified on GitHub"
+				this.otherBranchValidated = false
 			} finally {
-				this.validatingBranch = false;
+				this.validatingBranch = false
 			}
 		},
 
@@ -198,8 +198,8 @@ export default {
 				to_branch: this.useOtherBranch
 					? this.otherBranchName.trim()
 					: this.selectedBranch,
-			});
+			})
 		},
 	},
-};
+}
 </script>
