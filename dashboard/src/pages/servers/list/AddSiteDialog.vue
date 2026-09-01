@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
-import { Dialog, TextInput, Button, Checkbox, createResource } from 'frappe-ui'
+import { Button, Checkbox, createResource, Dialog, TextInput } from 'frappe-ui'
+import { computed, reactive, ref } from 'vue'
 import router from '@/router'
 
 interface Props {
@@ -17,7 +17,7 @@ const emit = defineEmits<{ siteCreated: [] }>()
 const formType = ref('addApps')
 
 const handleAppSelection = (cond: boolean, app: any) => {
-  if (cond && !addedApps.includes(app)) addedApps.push(app)
+	if (cond && !addedApps.includes(app)) addedApps.push(app)
 	else addedApps.splice(addedApps.indexOf(app), 1)
 }
 
