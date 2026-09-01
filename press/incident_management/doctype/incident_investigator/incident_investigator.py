@@ -25,13 +25,13 @@ from press.runner import Ansible, StepHandler
 from press.runner import Status as StepStatus
 
 if typing.TYPE_CHECKING:
+	from press.incident_management.doctype.action_step.action_step import ActionStep
+	from press.incident_management.doctype.investigation_step.investigation_step import (
+		InvestigationStep,
+	)
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
-	from press.press.incident_management.doctype.action_step.action_step import ActionStep
-	from press.press.incident_management.doctype.investigation_step.investigation_step import (
-		InvestigationStep,
-	)
 
 
 INVESTIGATION_WINDOW = 5  # Use 5m timeframe
