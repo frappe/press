@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 from contextlib import suppress
 from typing import TypedDict
 
@@ -16,6 +17,19 @@ from press.utils.raven import send_raven_message
 
 RAVEN_SERVER_ALERTS_CHANNEL = "frappe-cloud-server-alerts"
 PROMETHEUS_REGEX_META_CHAR_PATTERN = re.compile(r"([\\.^$*+?()[\]{}|])")
+
+# No dedicated signup channel yet, so signup alerts land with the other alerts
+RAVEN_SIGNUP_ALERTS_CHANNEL = RAVEN_SERVER_ALERTS_CHANNEL
+SIGNUP_ALERT_WINDOW_HOURS = 1
+# Time a signup gets to read the mail and finish before it counts as incomplete
+SIGNUP_COMPLETION_GRACE_HOURS = 1
+TEST_SIGNUP_EMAIL_PATTERN = "fc-signup-test%"
+TRIAL_SIGNUP_FAILURE_RATIO_THRESHOLD = 0.3
+TRIAL_SIGNUP_MINIMUM_COUNT = 5
+# Most people who ask for a verification mail never finish, so only a near-total
+# stall means signups are broken rather than merely abandoned
+INCOMPLETE_SIGNUP_RATIO_THRESHOLD = 0.9
+INCOMPLETE_SIGNUP_MINIMUM_COUNT = 10
 
 
 class PublicServerHealthMetrics(TypedDict):
@@ -31,6 +45,16 @@ class PublicServerPoolDecision(TypedDict):
 	servers_with_decision: set[str]
 	server_issues: dict[str, list[str]]
 	fallback_servers_by_cluster: dict[str, str]
+
+
+class SignupFailureRate(TypedDict):
+	label: str
+	failed: int
+	total: int
+	ratio_threshold: float
+	minimum_count: int
+	breakdown: dict[str, int]
+	link: str
 
 
 def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
@@ -438,3 +462,102 @@ def _open_public_server_pool_incident_exists(subject: str, cluster: str | None =
 	if cluster:
 		filters["cluster"] = cluster
 	return bool(frappe.db.exists("Incident", filters))
+
+
+def alert_on_failing_signups() -> None:
+	"""Alert when a large share of recent signups failed.
+
+	Two independent signals: product trial signups that errored out, and signups that
+	never became a team. Each is compared against its own ratio, over a volume floor,
+	so a single person walking away at 3am doesn't page anyone.
+	"""
+	rates = [_get_trial_signup_failure_rate(), _get_incomplete_signup_rate()]
+	breached = [rate for rate in rates if _breaches_signup_failure_threshold(rate)]
+	if breached:
+		_send_signup_failure_alert(breached)
+
+
+def _get_trial_signup_failure_rate() -> SignupFailureRate:
+	"""Product trial signups that settled in the window - errored out against site created.
+
+	Windowed on when the status last changed, not on creation: a request that took three
+	hours to fail is a failure this hour, and windowing on creation would drop it for
+	good, exactly when provisioning is slow enough to be the outage worth alerting on.
+	"""
+	requests = frappe.get_all(
+		"Product Trial Request",
+		filters={
+			"modified": (">", frappe.utils.add_to_date(None, hours=-SIGNUP_ALERT_WINDOW_HOURS)),
+			"status": ("in", ["Error", "Site Created"]),
+			"owner": ("not like", TEST_SIGNUP_EMAIL_PATTERN),
+		},
+		fields=["status", "product_trial"],
+	)
+	failed = [request for request in requests if request.status == "Error"]
+	return {
+		"label": "Product trial signups that errored out",
+		"failed": len(failed),
+		"total": len(requests),
+		"ratio_threshold": TRIAL_SIGNUP_FAILURE_RATIO_THRESHOLD,
+		"minimum_count": TRIAL_SIGNUP_MINIMUM_COUNT,
+		"breakdown": Counter(request.product_trial or "Unknown" for request in failed),
+		"link": frappe.utils.get_url("/app/product-trial-request?status=Error"),
+	}
+
+
+def _get_incomplete_signup_rate() -> SignupFailureRate:
+	"""Signups that asked for verification but never ended up with a team."""
+	emails = set(_get_signup_emails_past_grace_period())
+	teams = frappe.get_all("Team", filters={"user": ("in", list(emails))}, pluck="user") if emails else []
+	return {
+		"label": "Signups that never became a team",
+		"failed": len(emails - set(teams)),
+		"total": len(emails),
+		"ratio_threshold": INCOMPLETE_SIGNUP_RATIO_THRESHOLD,
+		"minimum_count": INCOMPLETE_SIGNUP_MINIMUM_COUNT,
+		"breakdown": {},
+		"link": frappe.utils.get_url("/app/account-request"),
+	}
+
+
+def _get_signup_emails_past_grace_period() -> list[str]:
+	"""Emails from signup requests old enough to have finished, but no older than the window.
+
+	Team invites are left out - a member joining an existing team is a different funnel.
+	"""
+	window_end = frappe.utils.add_to_date(None, hours=-SIGNUP_COMPLETION_GRACE_HOURS)
+	window_start = frappe.utils.add_to_date(window_end, hours=-SIGNUP_ALERT_WINDOW_HOURS)
+	return frappe.get_all(
+		"Account Request",
+		filters={
+			"creation": ("between", [window_start, window_end]),
+			"invited_by": ("is", "not set"),
+			"email": ("not like", TEST_SIGNUP_EMAIL_PATTERN),
+		},
+		pluck="email",
+	)
+
+
+def _breaches_signup_failure_threshold(rate: SignupFailureRate) -> bool:
+	if rate["total"] < rate["minimum_count"]:
+		return False
+	return rate["failed"] / rate["total"] > rate["ratio_threshold"]
+
+
+def _send_signup_failure_alert(rates: list[SignupFailureRate]) -> None:
+	lines = [f"**Signup Failure Alerts** - {len(rates)}", ""]
+	for rate in rates:
+		lines.append(_describe_signup_failure_rate(rate))
+		lines.extend(f"- {name}: {count}" for name, count in sorted(rate["breakdown"].items()))
+		lines.append("")
+
+	send_raven_message("\n".join(lines).strip(), RAVEN_SIGNUP_ALERTS_CHANNEL)
+
+
+def _describe_signup_failure_rate(rate: SignupFailureRate) -> str:
+	failure_ratio = rate["failed"] / rate["total"] * 100
+	return (
+		f"[{rate['label']}]({rate['link']}): {rate['failed']} of {rate['total']} "
+		f"({failure_ratio:.2f}%) in the last {SIGNUP_ALERT_WINDOW_HOURS}h, "
+		f"threshold {rate['ratio_threshold'] * 100:.0f}%"
+	)
