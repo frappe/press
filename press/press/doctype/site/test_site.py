@@ -984,6 +984,7 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 		self.site.update_config({"test_limits": {"space": 1}})
 		self.site.reload()
 		self.site.save()
+
 	def _broken_site_with_fatal_update(self, backup_type: str = "Logical") -> Site:
 		from press.press.doctype.site_update.test_site_update import create_test_site_update
 
