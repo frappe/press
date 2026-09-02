@@ -63,7 +63,8 @@ def count_sites_by_version_and_age() -> list[dict]:
 	"""Active sites grouped by version and by the age of their frappe release."""
 	site = frappe.qb.DocType("Site")
 	query = frappe.qb.from_(site).where(site.status == "Active")
-	return _count_by_version_and_age(query, site.bench, site.group, CurDate()).run(as_dict=True)
+	query, app_release = _join_running_release(query, site.bench)
+	return _count_by_version_and_age(query, app_release, site.group, CurDate()).run(as_dict=True)
 
 
 def count_sites_by_version_and_age_on(month_end: str) -> list[dict]:
@@ -85,20 +86,63 @@ def count_sites_by_version_and_age_on(month_end: str) -> list[dict]:
 		.on(move.site == site.name)
 		.where((site.status == "Active") & (site.creation <= month_end))
 	)
+	query, app_release = _join_built_release(query, Coalesce(move.source_bench, site.bench))
 	return _count_by_version_and_age(
-		query,
-		Coalesce(move.source_bench, site.bench),
-		Coalesce(move.source_group, site.group),
-		month_end,
+		query, app_release, Coalesce(move.source_group, site.group), month_end
 	).run(as_dict=True)
 
 
-def _count_by_version_and_age(query, bench, group, as_of):
-	"""Add the version and release lookups, and count sites per band."""
-	release_group = frappe.qb.DocType("Release Group")
-	frappe_version = frappe.qb.DocType("Frappe Version")
+def _join_running_release(query, bench):
+	"""The frappe release the bench runs right now, in place updates included."""
 	bench_app = frappe.qb.DocType("Bench App")
 	app_release = frappe.qb.DocType("App Release")
+	query = (
+		query.left_join(bench_app)
+		.on(
+			(bench_app.parent == bench)
+			& (bench_app.parenttype == "Bench")
+			& (bench_app.parentfield == "apps")
+			& (bench_app.app == "frappe")
+		)
+		.left_join(app_release)
+		.on(app_release.name == bench_app.release)
+	)
+	return query, app_release
+
+
+def _join_built_release(query, bench):
+	"""The frappe release the bench was built with.
+
+	`Bench App` is rewritten in place by an in place update, see
+	`Bench.update_apps_after_inplace_update`, so reading it for a past date
+	reports whatever the bench runs today. A Deploy Candidate is a build snapshot
+	and never changes, so it is the only stable answer for a past date. It misses
+	an in place update applied before that date, which leaves a backfilled row
+	reading older than the truth rather than newer.
+	"""
+	bench_table = frappe.qb.DocType("Bench")
+	candidate_app = frappe.qb.DocType("Deploy Candidate App")
+	app_release = frappe.qb.DocType("App Release")
+	query = (
+		query.left_join(bench_table)
+		.on(bench_table.name == bench)
+		.left_join(candidate_app)
+		.on(
+			(candidate_app.parent == bench_table.candidate)
+			& (candidate_app.parenttype == "Deploy Candidate")
+			& (candidate_app.parentfield == "apps")
+			& (candidate_app.app == "frappe")
+		)
+		.left_join(app_release)
+		.on(app_release.name == Coalesce(candidate_app.pullable_release, candidate_app.release))
+	)
+	return query, app_release
+
+
+def _count_by_version_and_age(query, app_release, group, as_of):
+	"""Add the version lookup and count sites per band."""
+	release_group = frappe.qb.DocType("Release Group")
+	frappe_version = frappe.qb.DocType("Frappe Version")
 
 	version = Coalesce(frappe_version.name, "Unknown")
 	band = _age_band(app_release, as_of)
@@ -109,15 +153,6 @@ def _count_by_version_and_age(query, bench, group, as_of):
 		.on(release_group.name == group)
 		.left_join(frappe_version)
 		.on(frappe_version.name == release_group.version)
-		.left_join(bench_app)
-		.on(
-			(bench_app.parent == bench)
-			& (bench_app.parenttype == "Bench")
-			& (bench_app.parentfield == "apps")
-			& (bench_app.app == "frappe")
-		)
-		.left_join(app_release)
-		.on(app_release.name == bench_app.release)
 		.select(
 			version.as_("frappe_version"),
 			band.as_("days_since_update"),
@@ -140,12 +175,19 @@ def _age_band(app_release, as_of):
 
 
 def _earliest_move_after(month_end: str):
-	"""Where each site sat before its first completed move after a date."""
+	"""Where each site sat before its first move to complete after a date.
+
+	Timed by `update_end`, when the status became final, not by `creation`. A
+	scheduled update is created days before it runs, and until it completes the
+	site is still on the source bench. Older rows predate `update_end`, so they
+	fall back to `creation`.
+	"""
 	update = frappe.qb.DocType("Site Update")
+	completed_at = Coalesce(update.update_end, update.creation)
 	first_move = (
 		frappe.qb.from_(update)
-		.select(update.site, Min(update.creation).as_("moved_at"))
-		.where(update.status.isin(COMPLETED_MOVES) & (update.creation > month_end))
+		.select(update.site, Min(completed_at).as_("moved_at"))
+		.where(update.status.isin(COMPLETED_MOVES) & (completed_at > month_end))
 		.groupby(update.site)
 	).as_("first_move")
 
@@ -153,7 +195,9 @@ def _earliest_move_after(month_end: str):
 	return (
 		frappe.qb.from_(first_move)
 		.inner_join(move)
-		.on((move.site == first_move.site) & (move.creation == first_move.moved_at))
+		.on(
+			(move.site == first_move.site) & (Coalesce(move.update_end, move.creation) == first_move.moved_at)
+		)
 		.select(
 			move.site.as_("site"),
 			move.source_bench.as_("source_bench"),
