@@ -1,10 +1,12 @@
 import { defineAsyncComponent, h } from 'vue'
 import { renderDialog } from '../../utils/components'
+import dayjs, { dayjsLocal } from '../../utils/dayjs'
 import { planTitle } from '../../utils/format'
 import { trialDays } from '../../utils/site'
 import type {
 	BannerConfig,
 	ColumnField,
+	DetailBannerConfig,
 	DocumentResource,
 	Route,
 	Row,
@@ -25,6 +27,30 @@ export const clusterOptions = [
 	'Virginia',
 	'Zurich',
 ]
+
+const FRAPPE_UPDATE_REMINDER_DAYS = 30
+const UPDATE_BENCH_DOCS =
+	'https://docs.frappe.io/cloud/benches/updating_a_bench'
+
+// `frappe_updated_on` is the commit time of the frappe release that is deployed,
+// so this measures the age of the running code, not the time since the last deploy.
+export function getFrappeUpdateBanner(
+	doc: { frappe_updated_on?: string },
+	subject: string,
+): DetailBannerConfig | undefined {
+	if (!doc.frappe_updated_on) return
+
+	const days = dayjs().diff(dayjsLocal(doc.frappe_updated_on), 'day')
+	if (days < FRAPPE_UPDATE_REMINDER_DAYS) return
+
+	return {
+		title:
+			`${subject} runs Frappe Framework code that is ${days} days old. ` +
+			'Update to get the latest fixes and security patches.',
+		type: 'warning',
+		button: { label: 'Learn more', link: UPDATE_BENCH_DOCS },
+	}
+}
 
 export function getUpsellBanner(site: DocumentResource, title: string) {
 	if (

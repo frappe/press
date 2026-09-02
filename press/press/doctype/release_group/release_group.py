@@ -196,6 +196,8 @@ class ReleaseGroup(Document, TagHelpers):
 		return query
 
 	def get_doc(self, doc):
+		from press.press.doctype.bench.bench import get_frappe_release_timestamp
+
 		doc.deploy_information = self.deploy_information()
 		doc.status = self.status
 		doc.actions = self.get_actions()
@@ -207,6 +209,10 @@ class ReleaseGroup(Document, TagHelpers):
 			order_by="name desc",
 			pluck="name",
 		)
+		last_deployed_bench = frappe.db.get_value(
+			"Bench", {"group": self.name, "status": "Active"}, "name", order_by="creation desc"
+		)
+		doc.frappe_updated_on = get_frappe_release_timestamp(last_deployed_bench)
 
 		if len(self.servers) == 1:
 			server = frappe.db.get_value("Server", self.servers[0].server, ["team", "title"], as_dict=True)
