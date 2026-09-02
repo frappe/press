@@ -211,6 +211,7 @@ scheduler_events = {
 	"daily": [
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
+		"press.press.doctype.site_version_audit.site_version_audit.record_audit",
 		"press.press.doctype.incident.incident.notify_ignored_servers",
 		"press.press.doctype.database_server.database_server.unindex_mariadb_binlogs",
 		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_disk",
@@ -508,7 +509,7 @@ __persistent_cache_keys = [
 	"press-auth-logs",
 	"rl:*",
 	"press_otp:*",
-	"press_otp_sent:*"
+	"press_otp_sent:*",
 ]
 
 # `frappe.rename_doc` erases all caches, this hook preserves some of them.
