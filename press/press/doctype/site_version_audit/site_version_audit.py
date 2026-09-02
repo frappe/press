@@ -178,11 +178,15 @@ def _age_band(app_release, as_of):
 def _earliest_move_after(month_end: str):
 	"""Where each site sat before its first move to complete after a date.
 
-	Timed by `update_end`, when the status became final, not by `creation`. A
-	scheduled update is created days before it runs, and until it completes the
-	site is still on the source bench. The few rows that predate `update_end`
-	fall back to `modified`, when the status was last written, rather than to
-	`creation`, which is only when the update was queued.
+	Timed by `update_end`, when the status became final, not by `creation`, which
+	is only when the update was queued: a scheduled update is created days before
+	it runs, and until it completes the site is still on the source bench.
+
+	The few rows that predate `update_end` fall back to `update_start`, which is
+	off by the length of the update and cannot move afterwards. `modified` is no
+	use here, being whenever the row was last written for any reason, and it has
+	already drifted past completion on every such row. A row with neither is
+	skipped, leaving the site where it sits now.
 
 	Ranked rather than aggregated, so the bench and the group always come from
 	one row and a site can only be counted once. Moves that share a completion
@@ -190,7 +194,7 @@ def _earliest_move_after(month_end: str):
 	not placed on a bench it had already left.
 	"""
 	update = frappe.qb.DocType("Site Update")
-	completed_at = Coalesce(update.update_end, update.modified)
+	completed_at = Coalesce(update.update_end, update.update_start)
 	ranked = (
 		frappe.qb.from_(update)
 		.select(
