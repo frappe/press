@@ -226,7 +226,8 @@ class SiteUpdate(Document):
 
 		A step gets a start time only when the agent runs it. Stale job cleanup overwrites the
 		status of steps that never ran, so the start time is the only reliable signal. A missing
-		step gets the site blocked.
+		step gets the site blocked. A move that started but failed also gets the site blocked:
+		the agent doesn't say how far it got, so we assume the worst.
 		"""
 		move_site = frappe.db.get_value(
 			"Agent Job Step",
