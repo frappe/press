@@ -9,6 +9,12 @@ jobs:
   lint:
     name: 'Lint'
     runs-on: ubuntu-latest
+    env:
+      # A backport keeps the source PR's title and adds a "(backport #N)" suffix,
+      # which puts it over the 72 character limit. Nobody writes these by hand, so
+      # there is nothing to validate. Mergify makes most of them; the rest are made
+      # by hand when mergify cannot, and both target master.
+      SKIP: ${{ github.event.pull_request.user.login == 'mergify[bot]' || github.event.pull_request.base.ref == 'master' }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -19,11 +25,11 @@ jobs:
       - name: Run Commitlint
         id: commitlint
         run: npx commitlint --edit pr-title.txt > commitlint_output.txt 2>&1
-        if: github.event.pull_request.user.login != 'mergify[bot]'
+        if: env.SKIP != 'true'
       - name: Run CSpell
         id: cspell
         run: npx cspell --config .cspell.json pr-title.txt > cspell_output.txt 2>&1
-        if: github.event.pull_request.user.login != 'mergify[bot]'
+        if: env.SKIP != 'true'
       - name: Delete Old Bot Comments
         if: always()
         env:
@@ -37,7 +43,7 @@ jobs:
             gh api repos/${{ github.repository }}/issues/comments/$COMMENT_ID -X DELETE
           done
       - name: Post PR Comment
-        if: github.event.pull_request.user.login != 'mergify[bot]'
+        if: env.SKIP != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
