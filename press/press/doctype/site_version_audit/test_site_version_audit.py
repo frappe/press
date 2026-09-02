@@ -9,6 +9,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.site.site import Site
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
@@ -85,7 +86,53 @@ class TestSiteVersionAudit(FrappeTestCase):
 
 		self.assertEqual(sum(row.sites for row in counts), 0)
 
-	def move_site_to_a_fresh_bench(self, site: Site, frappe_released_days_ago: int):
+	def test_audit_for_a_past_date_ignores_an_in_place_update_made_since(self):
+		"""An in place update rewrites Bench App, so a past date must not read it."""
+		site = self.create_site_with_frappe_released_days_ago(400)
+		self.backdate_site(site, days=60)
+		self.update_bench_in_place(site)
+
+		month_end = frappe.utils.add_days(frappe.utils.today(), -30)
+
+		self.assertIn(0, self.bands_for(count_sites_by_version_and_age(), site))
+		self.assertIn(360, self.bands_for(count_sites_by_version_and_age_on(month_end), site))
+
+	def test_audit_for_a_past_date_uses_the_bench_a_move_had_not_yet_left(self):
+		"""A move created before the date but completed after had not happened yet."""
+		site = self.create_site_with_frappe_released_days_ago(400)
+		self.backdate_site(site, days=60)
+		month_end = frappe.utils.add_days(frappe.utils.today(), -30)
+		self.move_site_to_a_fresh_bench(
+			site,
+			frappe_released_days_ago=3,
+			created_on=frappe.utils.add_days(month_end, -5),
+			completed_on=frappe.utils.add_days(month_end, 5),
+		)
+
+		bands = self.bands_for(count_sites_by_version_and_age_on(month_end), site)
+
+		self.assertIn(360, bands)
+
+	def backdate_site(self, site: Site, days: int):
+		"""The audit skips a site that did not exist yet on the date asked about."""
+		frappe.db.set_value(
+			"Site", site.name, "creation", frappe.utils.add_days(frappe.utils.now_datetime(), -days)
+		)
+
+	def update_bench_in_place(self, site: Site):
+		"""Point Bench App at a release built today, leaving the candidate alone."""
+		bench_app = {"parent": site.bench, "app": "frappe"}
+		source = frappe.db.get_value("Bench App", bench_app, "source")
+		fresh = create_test_app_release(frappe.get_doc("App Source", source))
+		frappe.db.set_value("Bench App", bench_app, "release", fresh.name)
+
+	def move_site_to_a_fresh_bench(
+		self,
+		site: Site,
+		frappe_released_days_ago: int,
+		created_on=None,
+		completed_on=None,
+	):
 		"""Record a completed move, which freezes the bench the site came from."""
 		group = frappe.db.get_value("Site", site.name, "group")
 		destination = create_test_bench(group=frappe.get_doc("Release Group", group))
@@ -96,7 +143,12 @@ class TestSiteVersionAudit(FrappeTestCase):
 			"creation",
 			frappe.utils.add_days(frappe.utils.now_datetime(), -frappe_released_days_ago),
 		)
-		create_test_site_update(site.name, group, "Success", ignore_validate=True)
+		update = create_test_site_update(site.name, group, "Success", ignore_validate=True)
+		if created_on:
+			frappe.db.set_value("Site Update", update.name, "creation", created_on)
+		frappe.db.set_value(
+			"Site Update", update.name, "update_end", completed_on or frappe.utils.now_datetime()
+		)
 		frappe.db.set_value("Site", site.name, "bench", destination.name)
 
 	def create_site_with_frappe_released_days_ago(self, days: int, clear_commit_time: bool = False):
