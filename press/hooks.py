@@ -248,6 +248,7 @@ scheduler_events = {
 		"press.press.doctype.site.site.notify_sites_before_archival",
 		"press.press.doctype.invoice.invoice.sync_paid_invoices_to_frappeio",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_card_invoices",
+		"press.press.doctype.cloud_usage_anomaly.cloud_usage_anomaly.run_daily_pipeline",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
