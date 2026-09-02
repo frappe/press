@@ -10,6 +10,7 @@ from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent
+from press.exceptions import MonitorServerDown
 from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
@@ -226,3 +227,43 @@ class TestDatabaseServer(FrappeTestCase):
 			).value_int,
 			int(15007.248 * 0.65),
 		)
+
+	@patch("press.api.server.prometheus_instant_value")
+	def test_is_mariadb_up_reads_the_currently_scraped_mysql_up_value(self, mysql_up: Mock):
+		server = create_test_database_server()
+
+		mysql_up.return_value = 0.0
+		self.assertFalse(server.is_mariadb_up(), "mysql_up=0 means MariaDB is down")
+
+		mysql_up.return_value = 1.0
+		self.assertTrue(server.is_mariadb_up(), "mysql_up=1 means MariaDB is up")
+
+		self.assertEqual(
+			mysql_up.call_args[0][0],
+			f'mysql_up{{instance="{server.name}",job="mariadb"}}',
+			"The scrape must be read for this database server's own instance",
+		)
+
+	@patch("press.api.server.prometheus_instant_value")
+	def test_is_mariadb_up_treats_missing_monitoring_data_as_up(self, mysql_up: Mock):
+		# A server without monitoring, or one Prometheus can't be reached for, must not look
+		# down — that would block actions that depend on the check.
+		server = create_test_database_server()
+
+		mysql_up.return_value = None
+		self.assertTrue(server.is_mariadb_up(), "No monitoring data should count as up")
+
+		mysql_up.side_effect = MonitorServerDown("Unable to connect to monitor server")
+		self.assertTrue(server.is_mariadb_up(), "An unreachable monitor server should count as up")
+
+	@patch("press.api.server.get_decrypted_password", new=Mock(return_value="password"))
+	@patch("press.api.server.requests.get")
+	def test_prometheus_instant_value_treats_an_error_response_as_no_data(self, get: Mock):
+		# Prometheus answers a bad or overloaded query with {"status": "error", ...} and no
+		# "data" key. Reading it must not raise into the caller.
+		frappe.db.set_single_value("Press Settings", "monitor_server", "monitor.example.com")
+		get.return_value.json.return_value = {"status": "error", "errorType": "bad_data"}
+
+		from press.api.server import prometheus_instant_value
+
+		self.assertIsNone(prometheus_instant_value('mysql_up{instance="m1",job="mariadb"}'))
