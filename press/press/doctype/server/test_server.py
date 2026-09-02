@@ -14,6 +14,8 @@ from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
 from press.agent import Agent
+from press.api.client import get_list
+from press.overrides import before_request
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
@@ -30,7 +32,7 @@ from press.press.doctype.server.server import (
 )
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.site.test_site import create_test_bench
-from press.press.doctype.team.test_team import create_test_team
+from press.press.doctype.team.test_team import create_test_press_admin_team, create_test_team
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 
 if typing.TYPE_CHECKING:
@@ -848,3 +850,38 @@ class TestSSHCommand(FrappeTestCase):
 			server.get_ssh_command(),
 			f"ssh frappe@fc.dev -t 'ssh -J root@{proxy_server.name} ubuntu@{server.name} -p 2222'",
 		)
+
+
+@patch.object(BaseServer, "after_insert", new=Mock())
+class TestServerListSearch(FrappeTestCase):
+	"""The servers list must find a server by either of the labels it shows: title or name."""
+
+	def setUp(self):
+		self.team = create_test_press_admin_team()
+		self.server = create_test_server(team=self.team.name)
+		self.server.db_set("title", "Navi Mumbai Production")
+		self.other_server = create_test_server(team=self.team.name)
+		self.other_server.db_set("title", "Frankfurt Production")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def search(self, term: str) -> list[str]:
+		frappe.set_user(self.team.user)
+		before_request()  # puts the request-scoped team in place
+		return [row.name for row in get_list("Server", fields=["name"], filters={"_search": term})]
+
+	def test_part_of_the_title_finds_only_that_server(self):
+		self.assertEqual(self.search("navi mumbai"), [self.server.name])
+
+	def test_part_of_the_name_finds_only_that_server(self):
+		hostname = self.server.name.split(".")[0]
+
+		self.assertEqual(self.search(hostname), [self.server.name])
+
+	def test_a_server_without_a_title_is_still_found_by_its_name(self):
+		self.server.db_set("title", None)
+		hostname = self.server.name.split(".")[0]
+
+		self.assertEqual(self.search(hostname), [self.server.name])
