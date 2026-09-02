@@ -71,8 +71,9 @@ test('keeps the update reminder visible across tabs', async ({ page }) => {
 	await page.goto(`/dashboard/sites/${SITE_NAME}/updates`)
 	await expect(page.getByText(BANNER_TEXT)).toBeVisible({ timeout: 10000 })
 
-	// The banner sits above the tab bar, so switching tabs must not drop it
-	await page.getByRole('link', { name: 'Domains' }).click()
+	// The tab bar exposes role=tab, not link: the router-link inside each tab is
+	// a presentational child of the tab and never reaches the accessibility tree.
+	await page.getByRole('tab', { name: 'Domains' }).click()
 	await expect(page).toHaveURL(/\/domains$/)
 	await expect(page.getByText(BANNER_TEXT)).toBeVisible()
 })
@@ -85,7 +86,7 @@ test('hides the update reminder when the deployed frappe commit is recent', asyn
 	await page.goto(`/dashboard/sites/${SITE_NAME}/updates`)
 
 	// Wait for the page to settle before asserting an absence
-	await expect(page.getByRole('link', { name: 'Domains' })).toBeVisible({
+	await expect(page.getByRole('tab', { name: 'Domains' })).toBeVisible({
 		timeout: 10000,
 	})
 	await expect(page.getByText(BANNER_TEXT)).not.toBeVisible()
