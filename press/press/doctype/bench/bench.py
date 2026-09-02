@@ -39,6 +39,7 @@ from press.utils.webhook import create_webhook_event
 
 if TYPE_CHECKING:
 	from collections.abc import Generator, Iterable
+	from datetime import datetime
 
 	from frappe.types import DF
 
@@ -1896,6 +1897,14 @@ def get_apps_in_bench(bench_name: str):
 		.select(BenchApp.app)
 		.run(pluck=True)
 	)
+
+
+def get_frappe_release_timestamp(bench: str | None) -> datetime | None:
+	"""Commit time of the frappe release running on this bench."""
+	if not bench:
+		return None
+	release = frappe.db.get_value("Bench App", {"parent": bench, "app": "frappe"}, "release")
+	return frappe.db.get_value("App Release", release, "timestamp") if release else None
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")

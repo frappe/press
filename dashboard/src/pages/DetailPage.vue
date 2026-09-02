@@ -34,6 +34,10 @@
 		</div>
 	</Header>
 	<div>
+<<<<<<< HEAD
+=======
+		<PageBanner v-if="banner" v-bind="banner" />
+>>>>>>> e630c37 (feat(dashboard): Warning for outdated framework version)
 		<TabsWithRouter
 			v-if="!$resources.document.get.error && $resources.document.get.fetched"
 			:document="$resources.document?.doc"
@@ -74,6 +78,10 @@ import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
 import AccessRequestButton from '../components/AccessRequestButton.vue';
+<<<<<<< HEAD
+=======
+import PageBanner from '../components/PageBanner.vue';
+>>>>>>> e630c37 (feat(dashboard): Warning for outdated framework version)
 
 let subscribed = {};
 
@@ -94,6 +102,10 @@ export default {
 		Header,
 		ActionButton,
 		TabsWithRouter,
+<<<<<<< HEAD
+=======
+		PageBanner,
+>>>>>>> e630c37 (feat(dashboard): Warning for outdated framework version)
 		FBreadcrumbs: Breadcrumbs,
 	},
 	resources: {

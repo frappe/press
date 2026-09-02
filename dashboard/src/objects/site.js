@@ -14,7 +14,7 @@ import { isMobile } from '../utils/device'
 import { date } from '../utils/format'
 import { getDocResource } from '../utils/resource'
 import { getToastErrorMessage } from '../utils/toast'
-import { getUpsellBanner } from './common'
+import { getFrappeUpdateBanner, getUpsellBanner } from './common'
 import { getAppsTab } from './common/apps'
 import { getBackupsTab } from './site/backups'
 
@@ -73,6 +73,20 @@ export default {
 		statusBadge({ documentResource: site }) {
 			return { label: site.doc.status }
 		},
+<<<<<<< HEAD
+=======
+		banner({ documentResource: site }) {
+			if (canRestoreTables(site)) {
+				return {
+					title:
+						'The last update failed and the tables could not be restored. The site stays broken until you <b>Restore Tables</b>.',
+					type: 'error',
+				}
+			}
+			if (site.doc.status === 'Archived') return null
+			return getFrappeUpdateBanner(site.doc, 'This site')
+		},
+>>>>>>> e630c37 (feat(dashboard): Warning for outdated framework version)
 		breadcrumbs({ items, documentResource: site }) {
 			let breadcrumbs = []
 			let $team = getTeam()
