@@ -929,6 +929,61 @@ class TestSite(FrappeTestCase):
 		self.assertTrue(bahrain_files.isdisjoint(deleted_files))
 		self.assertTrue(other_files.issubset(set(deleted_files)))
 
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestSiteConfigJSONValidation(FrappeTestCase):
+	"""A JSON config value that isn't an object breaks every later save of the site."""
+
+	def setUp(self):
+		self.site = create_test_site("testsubdomain")
+		frappe.get_doc({"doctype": "Site Config Key", "key": "test_limits", "type": "JSON"}).insert()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_json_config_key_accepts_an_object(self):
+		self.site.update_config({"test_limits": {"space": 1}})
+		self.assertEqual(json.loads(self.site.config)["test_limits"], {"space": 1})
+
+	def test_json_config_key_accepts_an_array(self):
+		self.site.update_config({"test_limits": ["space"]})
+		self.assertEqual(json.loads(self.site.config)["test_limits"], ["space"])
+
+	def test_json_config_key_rejects_a_value_that_isnt_json(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"is not valid JSON",
+			self.site.update_config,
+			{"test_limits": "{space: 1}"},
+		)
+		self.site.reload()
+		self.assertNotIn("test_limits", json.loads(self.site.config))
+
+	def test_json_config_key_rejects_a_json_string(self):
+		"""A JSON string decodes to a scalar, gets stored as plain text and can't be read back."""
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"must be a JSON object or array",
+			self.site.update_config,
+			{"test_limits": '"abc"'},
+		)
+		self.site.reload()
+		self.assertNotIn("test_limits", json.loads(self.site.config))
+
+	def test_json_config_key_rejects_a_number(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"must be a JSON object or array",
+			self.site.update_config,
+			{"test_limits": 1},
+		)
+		self.site.reload()
+		self.assertNotIn("test_limits", json.loads(self.site.config))
+
+	def test_site_with_a_json_config_key_can_be_saved_again(self):
+		self.site.update_config({"test_limits": {"space": 1}})
+		self.site.reload()
+		self.site.save()
 	def _broken_site_with_fatal_update(self, backup_type: str = "Logical") -> Site:
 		from press.press.doctype.site_update.test_site_update import create_test_site_update
 

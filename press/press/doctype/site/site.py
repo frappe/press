@@ -83,6 +83,10 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
+from press.press.doctype.site_config.site_config import (
+	decode_json_config_value,
+	parse_json_config_value,
+)
 from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 	get_doctype_name,
@@ -925,7 +929,7 @@ class Site(Document, TagHelpers):
 				"""
 				if row.key == "allow_cors" and not is_list(row.value):
 					row.value = json.dumps([row.value])
-				key_value = json.loads(cstr(row.value))
+				key_value = decode_json_config_value(row.key, row.value)
 			else:
 				key_value = row.value
 
@@ -2730,7 +2734,7 @@ class Site(Document, TagHelpers):
 			elif _type == "Boolean":
 				value = bool(sbool(value))
 			elif _type == "JSON":
-				value = frappe.parse_json(value)
+				value = parse_json_config_value(key, value)
 			elif _type == "Password" and value == "*******":
 				value = frappe.get_value("Site Config", {"key": key, "parent": self.name}, "value")
 			sanitized_config[key] = value
