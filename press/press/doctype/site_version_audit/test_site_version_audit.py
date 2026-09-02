@@ -187,6 +187,38 @@ class TestSiteVersionAudit(FrappeTestCase):
 
 		self.assertEqual(observed, {(version, 360)})
 
+	def test_audit_takes_the_first_of_two_moves_that_share_a_completion_time(self):
+		"""Two moves in a chain: the site sat on the first one's source, not the second's."""
+		left_bench, intermediate = self.two_benches_on_their_own_versions()
+		site = create_test_site(bench=left_bench.name)
+		self.backdate_site(Site("Site", site.name), days=60)
+		month_end = frappe.utils.add_days(frappe.utils.today(), -30)
+
+		moves = [
+			self.tied_move(site.name, left_bench.name, left_bench.group, month_end),
+			self.tied_move(site.name, intermediate.name, intermediate.group, month_end),
+		]
+		# the later move has to sort first by name, or name ordering hides the bug
+		later, earlier = sorted(moves)
+		self.place_move(earlier, left_bench, created_on=frappe.utils.add_days(month_end, -10))
+		self.place_move(later, intermediate, created_on=frappe.utils.add_days(month_end, -5))
+
+		version = frappe.db.get_value("Release Group", left_bench.group, "version")
+		observed = {
+			(row.frappe_version, row.days_since_update)
+			for row in count_sites_by_version_and_age_on(month_end)
+			if row.frappe_version.startswith("Version 9")
+		}
+
+		self.assertEqual(observed, {(version, 360)})
+
+	def place_move(self, move: str, bench, created_on):
+		frappe.db.set_value(
+			"Site Update",
+			move,
+			{"source_bench": bench.name, "group": bench.group, "creation": created_on},
+		)
+
 	def two_benches_on_their_own_versions(self):
 		"""Benches on versions no other site uses, so the counts stay isolated."""
 		benches = []
