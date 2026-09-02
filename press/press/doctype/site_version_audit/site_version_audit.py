@@ -6,7 +6,8 @@ from __future__ import annotations
 import frappe
 from frappe.model.document import Document
 from frappe.query_builder import Case, CustomFunction
-from frappe.query_builder.functions import Coalesce, Count, CurDate, Floor, Min, Star
+from frappe.query_builder.functions import Coalesce, Count, CurDate, Floor, Star
+from pypika.analytics import RowNumber
 
 BAND_DAYS = 30
 OLDEST_BAND_DAYS = 360
@@ -179,46 +180,33 @@ def _earliest_move_after(month_end: str):
 
 	Timed by `update_end`, when the status became final, not by `creation`. A
 	scheduled update is created days before it runs, and until it completes the
-	site is still on the source bench. Older rows predate `update_end`, so they
-	fall back to `creation`.
+	site is still on the source bench. The few rows that predate `update_end`
+	fall back to `modified`, when the status was last written, rather than to
+	`creation`, which is only when the update was queued.
 
-	Nothing in the database stops two moves for one site sharing a completion
-	time, so the earliest one is picked by primary key. Aggregating the bench and
-	the group separately would let them come from different rows and place the
-	site on a bench and group pairing that never existed. The tie break repeats
-	the status filter, so that it ranges over the same rows the minimum was taken
-	over and a failed move cannot win it.
+	Ranked rather than aggregated, so the bench and the group always come from
+	one row and a site can only be counted once. Moves that share a completion
+	time are ordered by creation, so the first of a chain wins and the site is
+	not placed on a bench it had already left.
 	"""
 	update = frappe.qb.DocType("Site Update")
-	completed_at = Coalesce(update.update_end, update.creation)
-	first_move = (
+	completed_at = Coalesce(update.update_end, update.modified)
+	ranked = (
 		frappe.qb.from_(update)
-		.select(update.site, Min(completed_at).as_("moved_at"))
-		.where(update.status.isin(COMPLETED_MOVES) & (completed_at > month_end))
-		.groupby(update.site)
-	).as_("first_move")
-
-	tied = frappe.qb.DocType("Site Update").as_("tied")
-	chosen_move = (
-		frappe.qb.from_(first_move)
-		.inner_join(tied)
-		.on(
-			(tied.site == first_move.site)
-			& tied.status.isin(COMPLETED_MOVES)
-			& (Coalesce(tied.update_end, tied.creation) == first_move.moved_at)
-		)
-		.select(tied.site.as_("site"), Min(tied.name).as_("move_name"))
-		.groupby(tied.site)
-	).as_("chosen_move")
-
-	move = frappe.qb.DocType("Site Update").as_("move")
-	return (
-		frappe.qb.from_(chosen_move)
-		.inner_join(move)
-		.on(move.name == chosen_move.move_name)
 		.select(
-			move.site.as_("site"),
-			move.source_bench.as_("source_bench"),
-			move.group.as_("source_group"),
+			update.site.as_("site"),
+			update.source_bench.as_("source_bench"),
+			update.group.as_("source_group"),
+			RowNumber()
+			.over(update.site)
+			.orderby(completed_at, update.creation, update.name)
+			.as_("move_rank"),
 		)
+		.where(update.status.isin(COMPLETED_MOVES) & (completed_at > month_end))
+	).as_("ranked_move")
+
+	return (
+		frappe.qb.from_(ranked)
+		.select(ranked.site, ranked.source_bench, ranked.source_group)
+		.where(ranked.move_rank == 1)
 	).as_("move")
