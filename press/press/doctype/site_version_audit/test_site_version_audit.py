@@ -127,6 +127,83 @@ class TestSiteVersionAudit(FrappeTestCase):
 		after = sum(row.sites for row in count_sites_by_version_and_age_on(month_end))
 		self.assertEqual(before, after)
 
+	def test_audit_takes_the_bench_and_group_of_one_move_when_two_are_tied(self):
+		"""Tied moves must not have their bench taken from one and group from another."""
+		old_bench, new_bench = self.two_benches_on_their_own_versions()
+		site = create_test_site(bench=old_bench.name)
+		self.backdate_site(Site("Site", site.name), days=60)
+		month_end = frappe.utils.add_days(frappe.utils.today(), -30)
+
+		# cross the orderings, so an aggregate per field draws from both rows
+		benches = sorted([old_bench.name, new_bench.name])
+		groups = sorted([old_bench.group, new_bench.group])
+		self.tied_move(site.name, benches[0], groups[1], month_end)
+		self.tied_move(site.name, benches[1], groups[0], month_end)
+
+		bands = {b.name: 360 if b is old_bench else 0 for b in (old_bench, new_bench)}
+		versions = {
+			b.group: frappe.db.get_value("Release Group", b.group, "version") for b in (old_bench, new_bench)
+		}
+		valid = {(versions[groups[1]], bands[benches[0]]), (versions[groups[0]], bands[benches[1]])}
+		observed = {
+			(row.frappe_version, row.days_since_update)
+			for row in count_sites_by_version_and_age_on(month_end)
+			if row.frappe_version in versions.values()
+		}
+
+		self.assertEqual(len(observed), 1)
+		self.assertTrue(observed <= valid, f"{observed} is not one of {valid}")
+
+	def two_benches_on_their_own_versions(self):
+		"""Benches on versions no other site uses, so the counts stay isolated."""
+		benches = []
+		for number, released_days_ago in ((98, 400), (99, 3)):
+			frappe.get_doc(
+				doctype="Frappe Version", name=f"Version {number}", number=number, status="Stable"
+			).insert(ignore_if_duplicate=True)
+			group = create_test_release_group([create_test_app()], frappe_version=f"Version {number}")
+			bench = create_test_bench(group=group)
+			self.age_the_built_release(bench, released_days_ago)
+			benches.append(bench)
+
+		self.assertNotEqual(
+			self.built_release(benches[0]),
+			self.built_release(benches[1]),
+			"the two benches must not share a release, or ageing one ages both",
+		)
+		return benches
+
+	def built_release(self, bench) -> str:
+		"""The frappe release the audit reads for a past date, via the candidate."""
+		candidate = frappe.db.get_value("Bench", bench.name, "candidate")
+		app = frappe.db.get_value(
+			"Deploy Candidate App",
+			{"parent": candidate, "app": "frappe"},
+			["pullable_release", "release"],
+			as_dict=True,
+		)
+		return app.pullable_release or app.release
+
+	def age_the_built_release(self, bench, days: int):
+		"""The age is read from `timestamp` first, so both fields have to move."""
+		released_at = frappe.utils.add_days(frappe.utils.now_datetime(), -days)
+		frappe.db.set_value(
+			"App Release", self.built_release(bench), {"timestamp": released_at, "creation": released_at}
+		)
+
+	def tied_move(self, site: str, source_bench: str, group: str, month_end: str):
+		"""A completed move sharing its completion time with the others."""
+		update = create_test_site_update(site, group, "Success", ignore_validate=True)
+		frappe.db.set_value(
+			"Site Update",
+			update.name,
+			{
+				"source_bench": source_bench,
+				"group": group,
+				"update_end": frappe.utils.add_days(month_end, 5),
+			},
+		)
+
 	def backdate_site(self, site: Site, days: int):
 		"""The audit skips a site that did not exist yet on the date asked about."""
 		frappe.db.set_value(

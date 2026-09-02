@@ -182,10 +182,10 @@ def _earliest_move_after(month_end: str):
 	site is still on the source bench. Older rows predate `update_end`, so they
 	fall back to `creation`.
 
-	Grouped by site so that this returns one row per site whatever the data says.
 	Nothing in the database stops two moves for one site sharing a completion
-	time, and a second row here would join twice and count the site twice. Tied
-	rows describe one site at one instant, so they carry the same source bench.
+	time, so the earliest one is picked by primary key. Aggregating the bench and
+	the group separately would let them come from different rows and place the
+	site on a bench and group pairing that never existed.
 	"""
 	update = frappe.qb.DocType("Site Update")
 	completed_at = Coalesce(update.update_end, update.creation)
@@ -196,17 +196,25 @@ def _earliest_move_after(month_end: str):
 		.groupby(update.site)
 	).as_("first_move")
 
+	tied = frappe.qb.DocType("Site Update").as_("tied")
+	chosen_move = (
+		frappe.qb.from_(first_move)
+		.inner_join(tied)
+		.on(
+			(tied.site == first_move.site) & (Coalesce(tied.update_end, tied.creation) == first_move.moved_at)
+		)
+		.select(tied.site.as_("site"), Min(tied.name).as_("move_name"))
+		.groupby(tied.site)
+	).as_("chosen_move")
+
 	move = frappe.qb.DocType("Site Update").as_("move")
 	return (
-		frappe.qb.from_(first_move)
+		frappe.qb.from_(chosen_move)
 		.inner_join(move)
-		.on(
-			(move.site == first_move.site) & (Coalesce(move.update_end, move.creation) == first_move.moved_at)
-		)
+		.on(move.name == chosen_move.move_name)
 		.select(
 			move.site.as_("site"),
-			Min(move.source_bench).as_("source_bench"),
-			Min(move.group).as_("source_group"),
+			move.source_bench.as_("source_bench"),
+			move.group.as_("source_group"),
 		)
-		.groupby(move.site)
 	).as_("move")
