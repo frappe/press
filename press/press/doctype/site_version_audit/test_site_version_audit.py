@@ -212,6 +212,35 @@ class TestSiteVersionAudit(FrappeTestCase):
 
 		self.assertEqual(observed, {(version, 360)})
 
+	def test_audit_ignores_a_legacy_move_that_completed_before_the_date(self):
+		"""A row with no update_end whose modified drifted past its completion."""
+		old_bench, new_bench = self.two_benches_on_their_own_versions()
+		site = create_test_site(bench=new_bench.name)
+		self.backdate_site(Site("Site", site.name), days=60)
+		month_end = frappe.utils.add_days(frappe.utils.today(), -30)
+
+		move = self.tied_move(site.name, old_bench.name, old_bench.group, month_end)
+		frappe.db.set_value(
+			"Site Update",
+			move,
+			{
+				"update_end": None,
+				"update_start": frappe.utils.add_days(month_end, -5),
+				"modified": frappe.utils.add_days(month_end, 5),
+			},
+			update_modified=False,
+		)
+
+		# the move finished before the date, so the site had already left old_bench
+		version = frappe.db.get_value("Release Group", new_bench.group, "version")
+		observed = {
+			(row.frappe_version, row.days_since_update)
+			for row in count_sites_by_version_and_age_on(month_end)
+			if row.frappe_version.startswith("Version 9")
+		}
+
+		self.assertEqual(observed, {(version, 0)})
+
 	def place_move(self, move: str, bench, created_on):
 		frappe.db.set_value(
 			"Site Update",
