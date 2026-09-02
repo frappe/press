@@ -195,9 +195,12 @@ interface Option {
 export interface DetailBannerConfig {
 	title: string
 	type?: string
+	// Spread onto Button, like BannerConfig's button in ObjectList
 	button?: {
 		label: string
-		link: string
+		variant?: string
+		link?: string
+		onClick?: () => void
 	}
 }
 
