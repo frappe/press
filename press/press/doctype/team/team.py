@@ -1686,6 +1686,24 @@ class Team(Document):
 			},
 		)
 
+	def send_email_for_invalid_payment_method(self, invoice):
+		if isinstance(invoice, str):
+			invoice = frappe.get_doc("Invoice", invoice)
+
+		email = get_communication_info("Email", "Billing", "Team", self.name) or [self.user]
+		subject = "Card on Frappe Cloud could not be charged"
+
+		frappe.sendmail(
+			recipients=email,
+			subject=subject,
+			template="payment_method_invalid",
+			args={
+				"subject": subject,
+				"amount": invoice.get_formatted("amount_due_with_tax"),
+				"billing_link": frappe.utils.get_url("/dashboard/billing"),
+			},
+		)
+
 	@frappe.whitelist()
 	def send_email_for_failed_payment(self, invoice, sites=None):
 		invoice = frappe.get_doc("Invoice", invoice)

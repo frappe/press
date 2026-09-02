@@ -6,9 +6,11 @@ import datetime
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
+import stripe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils.data import add_days, today
 
+from press.press.doctype.team.team import Team
 from press.press.doctype.team.test_team import create_test_team
 
 from .invoice import Invoice, create_invoices_for_next_month, finalize_draft_invoice, finalize_draft_invoices
@@ -516,6 +518,47 @@ class TestInvoice(FrappeTestCase):
 
 		self.assertRaises(frappe.ValidationError, invoice._make_stripe_invoice, "cus_test123", 10000)
 		mock_stripe.return_value.Invoice.create.assert_not_called()
+
+	@patch("press.press.doctype.invoice.invoice.get_stripe")
+	@patch.object(Team, "send_email_for_invalid_payment_method")
+	def test_make_stripe_invoice_switches_to_prepaid_credits_when_payment_method_detached(
+		self, mock_send_email, mock_stripe
+	):
+		frappe.get_doc(
+			{
+				"doctype": "Stripe Payment Method",
+				"team": self.team.name,
+				"stripe_customer_id": "cus_test123",
+				"stripe_payment_method_id": "pm_test123",
+				"is_default": 1,
+			}
+		).insert(ignore_permissions=True)
+		self.team.db_set("payment_mode", "Card")
+
+		mock_stripe.return_value.Invoice.create.side_effect = stripe.error.InvalidRequestError(
+			"The customer does not have a payment method with the ID pm_test123. "
+			"The payment method must be attached to the customer.",
+			None,
+		)
+
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		# _make_stripe_invoice commits/rolls back the real transaction on failure;
+		# stub those out so the test's own uncommitted fixtures survive.
+		with patch("frappe.db.rollback"), patch("frappe.db.commit"):
+			invoice._make_stripe_invoice("cus_test123", 10000)
+
+		invoice.reload()
+		self.assertEqual(invoice.payment_mode, "Prepaid Credits")
+		self.assertEqual(frappe.db.get_value("Team", self.team.name, "payment_mode"), "Prepaid Credits")
+		mock_send_email.assert_called_once()
 
 	def test_negative_balance_case(self):
 		team = create_test_team("test22@example.com")
