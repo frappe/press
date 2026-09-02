@@ -1900,11 +1900,19 @@ def get_apps_in_bench(bench_name: str):
 
 
 def get_frappe_release_timestamp(bench: str | None) -> datetime | None:
-	"""Commit time of the frappe release running on this bench."""
+	"""When the frappe release running on this bench was published.
+
+	`timestamp` is the commit time, but it is unset on most releases, so fall
+	back to `creation`, the time Press recorded the release. Reading `timestamp`
+	alone leaves 37% of active sites without an age, and the banner silent.
+	"""
 	if not bench:
 		return None
 	release = frappe.db.get_value("Bench App", {"parent": bench, "app": "frappe"}, "release")
-	return frappe.db.get_value("App Release", release, "timestamp") if release else None
+	if not release:
+		return None
+	commit_time, recorded_at = frappe.db.get_value("App Release", release, ("timestamp", "creation"))
+	return commit_time or recorded_at
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")

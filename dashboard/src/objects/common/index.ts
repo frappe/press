@@ -32,8 +32,8 @@ const FRAPPE_UPDATE_REMINDER_DAYS = 30
 const UPDATE_BENCH_DOCS =
 	'https://docs.frappe.io/cloud/benches/updating_a_bench'
 
-// `frappe_updated_on` is the commit time of the frappe release that is deployed,
-// so this measures the age of the running code, not the time since the last deploy.
+// `frappe_updated_on` is when the deployed frappe release was published, so this
+// measures the age of the running code, not the time since the last deploy.
 export function getFrappeUpdateBanner(
 	doc: { frappe_updated_on?: string },
 	subject: string,

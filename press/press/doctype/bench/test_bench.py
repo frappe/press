@@ -402,6 +402,15 @@ class TestBench(FrappeTestCase):
 
 		self.assertEqual(get_frappe_release_timestamp(bench.name), commit_time)
 
+	def test_get_frappe_release_timestamp_falls_back_to_when_the_release_was_recorded(self):
+		bench = create_test_bench()
+		release = frappe.db.get_value("Bench App", {"parent": bench.name, "app": "frappe"}, "release")
+		recorded_at = frappe.utils.add_days(frappe.utils.now_datetime(), -45)
+		frappe.db.set_value("App Release", release, "timestamp", None)
+		frappe.db.set_value("App Release", release, "creation", recorded_at)
+
+		self.assertEqual(get_frappe_release_timestamp(bench.name), recorded_at)
+
 	def test_get_frappe_release_timestamp_is_none_when_bench_app_has_no_release(self):
 		bench = create_test_bench()
 		frappe.db.set_value("Bench App", {"parent": bench.name, "app": "frappe"}, "release", None)
