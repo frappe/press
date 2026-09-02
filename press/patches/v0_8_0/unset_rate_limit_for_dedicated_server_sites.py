@@ -20,6 +20,7 @@ def execute():
 		try:
 			Site("Site", site.name).update_site_config({"rate_limit": {}})
 			frappe.db.commit()
+			print(f"Reset rate limit: {site.name}")
 		except Exception:
 			# one unreachable bench must not stop the migration
 			frappe.db.rollback()
