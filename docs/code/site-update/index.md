@@ -65,13 +65,24 @@ longer on the destination bench). The operator restores just the tables with the
 
 Restoring a site's tables from its backup (`Site.restore_tables`, a
 `Restore Site Tables` agent job) is what brings a `Fatal` site back up. The
-dashboard shows a **Restore Tables** banner and action on a `Broken` site with a
-`fatal_site_update`. The button calls `Site.retry_restore_tables`, which refuses
-unless the fatal update is still the site's latest, no `Restore Site Tables` job
-is already running, and **MariaDB reports itself up**
-(`DatabaseServer.is_mariadb_up`, reading mysqld_exporter's `mysql_up` metric).
-The restore gets one attempt, so a server with no metric — a monitoring outage
-included — counts as down and the operator retries later.
+dashboard shows a **Restore Tables** banner and action on a `Broken` site whose
+`fatal_site_update` took a **logical** backup. The button calls
+`Site.restore_tables`, which refuses in these conditions:
+
+- The fatal update is not the latest update of the site.
+- A `Restore Site Tables` job is already in progress.
+- MariaDB does not report itself up (`DatabaseServer.is_mariadb_up`, which reads
+  the `mysql_up` metric of mysqld_exporter).
+
+The restore gets one attempt. A server with no metric — a monitoring outage
+included — counts as down, and the operator retries later.
+
+A physical backup, and a logical replication backup, make no table dump. The
+site of such an update also stays on the destination bench. A table restore has
+nothing to read, and a success activates the site and clears
+`fatal_site_update`. For this reason the backup type is the first condition, and
+the desk **Force** checkbox does not skip it. Recover such a site from its
+snapshot instead.
 
 The metric is read with `prometheus_instant_value` (`/api/v1/query`), not
 `prometheus_query`, whose range samples can be a timegrain (120s) stale — too old
