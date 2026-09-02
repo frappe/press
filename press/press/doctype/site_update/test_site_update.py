@@ -34,10 +34,16 @@ from press.press.doctype.subscription.test_subscription import create_test_subsc
 
 
 @patch.object(SiteUpdate, "start", new=Mock())
-def create_test_site_update(site: str, destination_group: str, status: str) -> SiteUpdate:
-	return frappe.get_doc(
+def create_test_site_update(
+	site: str, destination_group: str, status: str, ignore_validate: bool = False
+) -> SiteUpdate:
+	doc = frappe.get_doc(
 		dict(doctype="Site Update", site=site, destination_group=destination_group, status=status)
-	).insert(ignore_if_duplicate=True)
+	)
+	# Tests that only need a Site Update record in a given status (e.g. a Fatal update to
+	# recover from) can skip validation, which otherwise requires a real destination bench.
+	doc.flags.ignore_validate = ignore_validate
+	return doc.insert(ignore_if_duplicate=True)
 
 
 class TestSiteUpdate(FrappeTestCase):
