@@ -187,6 +187,16 @@ class TestSite(FrappeTestCase):
 		frappe.set_user("Administrator")
 		frappe.db.rollback()
 
+	def test_get_doc_reports_commit_time_of_the_frappe_release_on_the_bench(self):
+		site = create_test_site()
+		release = frappe.db.get_value("Bench App", {"parent": site.bench, "app": "frappe"}, "release")
+		commit_time = frappe.utils.add_days(frappe.utils.now_datetime(), -45)
+		frappe.db.set_value("App Release", release, "timestamp", commit_time)
+
+		doc = frappe._dict()
+		site.get_doc(doc)
+		self.assertEqual(doc.frappe_updated_on, commit_time)
+
 	def test_restore_site_from_files_rejects_remote_file_of_another_team(self):
 		from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 		from press.press.doctype.team.test_team import create_test_team
@@ -984,6 +994,7 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 		self.site.update_config({"test_limits": {"space": 1}})
 		self.site.reload()
 		self.site.save()
+
 	def _broken_site_with_fatal_update(self) -> Site:
 		from press.press.doctype.site_update.test_site_update import create_test_site_update
 
