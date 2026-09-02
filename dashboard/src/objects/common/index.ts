@@ -48,7 +48,11 @@ export function getFrappeUpdateBanner(
 			`${subject} runs Frappe Framework code that is ${days} days old. ` +
 			'Update to get the latest fixes and security patches.',
 		type: 'warning',
-		button: { label: 'Learn more', link: UPDATE_BENCH_DOCS },
+		button: {
+			label: 'Learn more',
+			variant: 'outline',
+			link: UPDATE_BENCH_DOCS,
+		},
 	}
 }
 
