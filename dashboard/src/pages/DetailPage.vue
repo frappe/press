@@ -161,6 +161,14 @@ export default {
 			}
 			return null;
 		},
+		banner() {
+			if (this.object.detail.banner && this.$resources.document?.doc) {
+				return this.object.detail.banner({
+					documentResource: this.$resources.document,
+				});
+			}
+			return null;
+		},
 		actions() {
 			if (this.object.detail.actions && this.$resources.document?.doc) {
 				let actions = this.object.detail.actions({
