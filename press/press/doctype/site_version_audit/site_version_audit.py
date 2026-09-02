@@ -181,6 +181,11 @@ def _earliest_move_after(month_end: str):
 	scheduled update is created days before it runs, and until it completes the
 	site is still on the source bench. Older rows predate `update_end`, so they
 	fall back to `creation`.
+
+	Grouped by site so that this returns one row per site whatever the data says.
+	Nothing in the database stops two moves for one site sharing a completion
+	time, and a second row here would join twice and count the site twice. Tied
+	rows describe one site at one instant, so they carry the same source bench.
 	"""
 	update = frappe.qb.DocType("Site Update")
 	completed_at = Coalesce(update.update_end, update.creation)
@@ -200,7 +205,8 @@ def _earliest_move_after(month_end: str):
 		)
 		.select(
 			move.site.as_("site"),
-			move.source_bench.as_("source_bench"),
-			move.group.as_("source_group"),
+			Min(move.source_bench).as_("source_bench"),
+			Min(move.group).as_("source_group"),
 		)
+		.groupby(move.site)
 	).as_("move")

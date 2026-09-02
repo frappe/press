@@ -113,6 +113,20 @@ class TestSiteVersionAudit(FrappeTestCase):
 
 		self.assertIn(360, bands)
 
+	def test_audit_counts_a_site_once_when_two_moves_share_a_completion_time(self):
+		"""Nothing stops two moves sharing update_end, and a tie must not double count."""
+		site = self.create_site_with_frappe_released_days_ago(400)
+		self.backdate_site(site, days=60)
+		month_end = frappe.utils.add_days(frappe.utils.today(), -30)
+		completed_on = frappe.utils.add_days(month_end, 5)
+		self.move_site_to_a_fresh_bench(site, 3, completed_on=completed_on)
+		before = sum(row.sites for row in count_sites_by_version_and_age_on(month_end))
+
+		self.move_site_to_a_fresh_bench(site, 3, completed_on=completed_on)
+
+		after = sum(row.sites for row in count_sites_by_version_and_age_on(month_end))
+		self.assertEqual(before, after)
+
 	def backdate_site(self, site: Site, days: int):
 		"""The audit skips a site that did not exist yet on the date asked about."""
 		frappe.db.set_value(
