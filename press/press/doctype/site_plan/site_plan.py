@@ -6,8 +6,6 @@ import frappe
 
 from press.press.doctype.site_plan.plan import Plan
 
-UNLIMITED_PLANS = ["Unlimited", "Unlimited - Supported"]
-
 
 class SitePlan(Plan):
 	# begin: auto-generated types
