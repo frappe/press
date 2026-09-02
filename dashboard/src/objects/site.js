@@ -14,7 +14,7 @@ import { isMobile } from '../utils/device'
 import { date } from '../utils/format'
 import { getDocResource } from '../utils/resource'
 import { getToastErrorMessage } from '../utils/toast'
-import { getUpsellBanner } from './common'
+import { getFrappeUpdateBanner, getUpsellBanner } from './common'
 import { getAppsTab } from './common/apps'
 import { getBackupsTab } from './site/backups'
 
@@ -72,6 +72,10 @@ export default {
 		route: '/sites/:name',
 		statusBadge({ documentResource: site }) {
 			return { label: site.doc.status }
+		},
+		banner({ documentResource: site }) {
+			if (site.doc.status === 'Archived') return null
+			return getFrappeUpdateBanner(site.doc, 'This site')
 		},
 		breadcrumbs({ items, documentResource: site }) {
 			let breadcrumbs = []
