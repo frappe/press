@@ -185,7 +185,9 @@ def _earliest_move_after(month_end: str):
 	Nothing in the database stops two moves for one site sharing a completion
 	time, so the earliest one is picked by primary key. Aggregating the bench and
 	the group separately would let them come from different rows and place the
-	site on a bench and group pairing that never existed.
+	site on a bench and group pairing that never existed. The tie break repeats
+	the status filter, so that it ranges over the same rows the minimum was taken
+	over and a failed move cannot win it.
 	"""
 	update = frappe.qb.DocType("Site Update")
 	completed_at = Coalesce(update.update_end, update.creation)
@@ -201,7 +203,9 @@ def _earliest_move_after(month_end: str):
 		frappe.qb.from_(first_move)
 		.inner_join(tied)
 		.on(
-			(tied.site == first_move.site) & (Coalesce(tied.update_end, tied.creation) == first_move.moved_at)
+			(tied.site == first_move.site)
+			& tied.status.isin(COMPLETED_MOVES)
+			& (Coalesce(tied.update_end, tied.creation) == first_move.moved_at)
 		)
 		.select(tied.site.as_("site"), Min(tied.name).as_("move_name"))
 		.groupby(tied.site)
