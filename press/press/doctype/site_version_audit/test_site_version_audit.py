@@ -154,6 +154,39 @@ class TestSiteVersionAudit(FrappeTestCase):
 		self.assertEqual(len(observed), 1)
 		self.assertTrue(observed <= valid, f"{observed} is not one of {valid}")
 
+	def test_audit_ignores_a_failed_move_tied_with_the_completed_one(self):
+		"""A move that never completed must not win the tie break."""
+		old_bench, new_bench = self.two_benches_on_their_own_versions()
+		site = create_test_site(bench=old_bench.name)
+		self.backdate_site(Site("Site", site.name), days=60)
+		month_end = frappe.utils.add_days(frappe.utils.today(), -30)
+
+		moves = [
+			self.tied_move(site.name, new_bench.name, new_bench.group, month_end),
+			self.tied_move(site.name, old_bench.name, old_bench.group, month_end),
+		]
+		# the move to ignore has to sort first, or the tie break hides the bug
+		ignored, kept = sorted(moves)
+		frappe.db.set_value(
+			"Site Update",
+			ignored,
+			{"status": "Failure", "source_bench": new_bench.name, "group": new_bench.group},
+		)
+		frappe.db.set_value(
+			"Site Update",
+			kept,
+			{"status": "Success", "source_bench": old_bench.name, "group": old_bench.group},
+		)
+
+		version = frappe.db.get_value("Release Group", old_bench.group, "version")
+		observed = {
+			(row.frappe_version, row.days_since_update)
+			for row in count_sites_by_version_and_age_on(month_end)
+			if row.frappe_version.startswith("Version 9")
+		}
+
+		self.assertEqual(observed, {(version, 360)})
+
 	def two_benches_on_their_own_versions(self):
 		"""Benches on versions no other site uses, so the counts stay isolated."""
 		benches = []
@@ -191,7 +224,7 @@ class TestSiteVersionAudit(FrappeTestCase):
 			"App Release", self.built_release(bench), {"timestamp": released_at, "creation": released_at}
 		)
 
-	def tied_move(self, site: str, source_bench: str, group: str, month_end: str):
+	def tied_move(self, site: str, source_bench: str, group: str, month_end: str) -> str:
 		"""A completed move sharing its completion time with the others."""
 		update = create_test_site_update(site, group, "Success", ignore_validate=True)
 		frappe.db.set_value(
@@ -203,6 +236,7 @@ class TestSiteVersionAudit(FrappeTestCase):
 				"update_end": frappe.utils.add_days(month_end, 5),
 			},
 		)
+		return update.name
 
 	def backdate_site(self, site: Site, days: int):
 		"""The audit skips a site that did not exist yet on the date asked about."""
