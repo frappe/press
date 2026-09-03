@@ -34,6 +34,7 @@ class ResizeServerJob(PressJob):
 		self.start_agent_jobs()
 		self.set_additional_config()
 		self.increase_disk_size()
+		self.restore_truncated_configs()
 
 	@task
 	def halt_agent_jobs(self):
@@ -149,6 +150,10 @@ class ResizeServerJob(PressJob):
 				self.server_doc.adjust_memory_config()
 			elif self.server_type == "Server":
 				self.server_doc.auto_scale_workers()
+
+	@task(queue="long", timeout=900)
+	def restore_truncated_configs(self):
+		self.server_doc.restore_truncated_configs()
 
 	@task
 	def increase_disk_size(self):
