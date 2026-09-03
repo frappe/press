@@ -1207,8 +1207,12 @@ def check_if_app_updated(old_dcb: "DeployCandidateBuild", new_dc: "DeployCandida
 
 
 def build_inputs_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
-	"""Whether any dependency version or app commit hash differs between the two candidates."""
-	return dependencies_changed(old_dc, new_dc) or apps_changed(old_dc, new_dc)
+	"""Whether any dependency, app commit hash or package differs between the two candidates."""
+	return (
+		dependencies_changed(old_dc, new_dc)
+		or apps_changed(old_dc, new_dc)
+		or packages_changed(old_dc, new_dc)
+	)
 
 
 def dependencies_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
@@ -1221,6 +1225,15 @@ def apps_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
 	old = {app.app: app.hash or app.pullable_hash for app in old_dc.apps}
 	new = {app.app: app.hash or app.pullable_hash for app in new_dc.apps}
 	return old != new
+
+
+def packages_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
+	"""If anything in the package manager changes we should allow a redeploy"""
+	return get_packages(old_dc) != get_packages(new_dc)
+
+
+def get_packages(dc: "DeployCandidate") -> set[tuple[str, str, str, str]]:
+	return {(p.package_manager, p.package, p.package_prerequisites, p.after_install) for p in dc.packages}
 
 
 def get_dc_app(dc: "DeployCandidate", app_name: str) -> "DeployCandidateApp | None":
