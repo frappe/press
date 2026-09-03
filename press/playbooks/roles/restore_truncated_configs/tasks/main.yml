@@ -1,4 +1,14 @@
 ---
+- name: Wait for Server to Go Down
+  wait_for:
+    host: '{{ inventory_hostname }}'
+    port: '{{ ansible_port }}'
+    state: stopped
+    timeout: 300
+  delegate_to: localhost
+  become: no
+  when: wait_for_reboot | default(false) | bool
+
 - name: Wait for Server to Come Back
   wait_for_connection:
     timeout: 600
@@ -44,3 +54,23 @@
   when:
     - live_configs.results[index].rc != 0
     - readable_backups.results[index].rc == 0
+
+- name: Find Configs
+  find:
+    paths:
+      - /home/frappe/agent
+      - /home/frappe/benches
+    patterns:
+      - config.json
+      - common_site_config.json
+      - site_config.json
+    depth: 4
+    recurse: yes
+  register: configs
+
+# Fail the play when a config is still unreadable, so that the caller does not
+# restart the benches on top of it.
+- name: Verify Configs
+  command: 'python3 -m json.tool {{ item.path }}'
+  loop: '{{ configs.files }}'
+  changed_when: false
