@@ -44,6 +44,11 @@ LARGE_DATABASE_SIZE_MB = 100 * 1024
 # Well below LARGE_DATABASE_SIZE_MB above, which gates a different thing — read both.
 STATEMENT_TIME_BUMP_SIZE_MB = 2 * 1024
 
+# Where an update stops being harmless: after this the site is on the destination bench,
+# and the migration runs there. Everything before it, the backup included, leaves the site
+# untouched — if the backup fails, the job stops and never gets here.
+POINT_OF_NO_RETURN_STEP = "Move Site"
+
 
 class SiteUpdate(Document):
 	# begin: auto-generated types
@@ -213,6 +218,22 @@ class SiteUpdate(Document):
 	@property
 	def use_logical_replication_backup(self):
 		return self.backup_type == "Logical Replication" and not self.skipped_backups
+
+	def should_mark_site_fatal(self) -> bool:
+		"""An update that failed before it moved the site left nothing for an operator to resolve.
+
+		A step gets a start time only when the agent runs it. Stale job cleanup overwrites the
+		status of steps that never ran, so the start time is the only reliable signal. A missing
+		step gets the site blocked. A move that started but failed also gets the site blocked:
+		the agent doesn't say how far it got, so we assume the worst.
+		"""
+		move_site = frappe.db.get_value(
+			"Agent Job Step",
+			{"agent_job": self.update_job, "step_name": POINT_OF_NO_RETURN_STEP},
+			"start",
+			as_dict=True,
+		)
+		return not move_site or bool(move_site.start)
 
 	def validate_past_failed_updates(self):
 		if getattr(self, "ignore_past_failures", False):
@@ -1242,7 +1263,8 @@ def process_update_site_recover_job_update(job: AgentJob):
 			site_update.restore_max_statement_time()
 		elif updated_status == "Fatal":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
-			frappe.db.set_value("Site", job.site, "fatal_site_update", site_update.name)
+			if site_update.should_mark_site_fatal():
+				frappe.db.set_value("Site", job.site, "fatal_site_update", site_update.name)
 			site_update.restore_max_statement_time()
 
 
