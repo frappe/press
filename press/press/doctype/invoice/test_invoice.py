@@ -6,6 +6,7 @@ import datetime
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
+import razorpay
 import stripe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils.data import add_days, today
@@ -559,6 +560,66 @@ class TestInvoice(FrappeTestCase):
 		self.assertEqual(invoice.payment_mode, "Prepaid Credits")
 		self.assertEqual(frappe.db.get_value("Team", self.team.name, "payment_mode"), "Prepaid Credits")
 		mock_send_email.assert_called_once()
+
+	@patch("press.press.doctype.razorpay_mandate.razorpay_mandate.get_razorpay_client")
+	@patch("press.press.doctype.invoice.invoice.get_razorpay_client")
+	@patch.object(Team, "send_email_for_failed_upi_payment")
+	def test_make_razorpay_payment_switches_to_prepaid_credits_when_token_unconfirmed(
+		self, mock_send_email, mock_invoice_razorpay_client, mock_mandate_razorpay_client
+	):
+		self.team.db_set("razorpay_customer_id", "cust_test123")
+		self.team.db_set("payment_mode", "UPI Autopay")
+
+		mandate = frappe.get_doc(
+			{
+				"doctype": "Razorpay Mandate",
+				"team": self.team.name,
+				"token_id": "token_test123",
+				"status": "Active",
+				"method": "emandate",
+				"auth_type": "upi",
+				"max_amount": 5000,
+				"is_default": 1,
+				"upi_vpa": "test@upi",
+				"contact": "+911234567890",
+			}
+		).insert(ignore_permissions=True)
+		frappe.db.set_value("Team", self.team.name, "default_razorpay_mandate", mandate.name)
+
+		mock_invoice_razorpay_client.return_value.order.create.return_value = {"id": "order_test123"}
+		mock_invoice_razorpay_client.return_value.payment.createRecurring.side_effect = (
+			razorpay.errors.BadRequestError("Token is not confirmed for recurring payments")
+		)
+
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+
+		mandate_details = frappe._dict(
+			name=mandate.name,
+			token_id="token_test123",
+			razorpay_customer_id="cust_test123",
+			max_amount=5000,
+			contact="+911234567890",
+			upi_vpa="test@upi",
+		)
+
+		# _make_razorpay_payment commits/rolls back the real transaction on failure;
+		# stub those out so the test's own uncommitted fixtures survive.
+		with patch("frappe.db.rollback"), patch("frappe.db.commit"):
+			invoice._make_razorpay_payment(mandate_details, 10000)
+
+		invoice.reload()
+		self.assertEqual(invoice.payment_mode, "Prepaid Credits")
+		self.assertEqual(frappe.db.get_value("Team", self.team.name, "payment_mode"), "Prepaid Credits")
+		self.assertEqual(frappe.db.get_value("Razorpay Mandate", mandate.name, "status"), "Cancelled")
+		mock_send_email.assert_called_once()
+		self.assertEqual(mock_send_email.call_args.kwargs.get("error_reason"), "TOKEN_NOT_CONFIRMED")
 
 	def test_negative_balance_case(self):
 		team = create_test_team("test22@example.com")
