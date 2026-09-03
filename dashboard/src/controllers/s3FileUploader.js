@@ -21,11 +21,12 @@ export default class S3FileUploader {
 		return new Promise(async (resolve, reject) => {
 			async function getUploadLink() {
 				try {
-					let response = await fetch(
-						`/api/method/press.api.site.get_upload_link?file=${file.name}`,
-					)
-					let data = await response.json()
-					return data.message
+					// call(), not fetch(), so that X-Press-Team goes along. The key
+					// is derived from the team, and uploaded_backup_info rejects a
+					// key that sits under another team's prefix.
+					return await call('press.api.site.get_upload_link', {
+						file: file.name,
+					})
 				} catch (e) {
 					reject(e)
 				}
