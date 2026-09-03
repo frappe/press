@@ -167,9 +167,21 @@ class ResizeServerJob(PressJob):
 		with suppress(Exception):
 			self.server_doc.increase_disk_size(increment=plan_disk_size - self.virtual_machine_doc.disk_size)
 
+	@property
+	def machine_is_resized(self) -> bool:
+		with suppress(Exception):
+			self.virtual_machine_doc.sync()
+
+		return self.virtual_machine_doc.machine_type == self.arguments_dict.machine_type
+
 	def on_press_job_failure(self, workflow: PressWorkflow):
 		self.start_virtual_machine()
 		self.start_agent_jobs()
+
+		# A later step failed, not the resize. Reverting the plan would bill the
+		# team for a size the machine no longer has.
+		if self.machine_is_resized:
+			return
 
 		# Find out the last plan change of the server
 		self.server_doc.reload()
