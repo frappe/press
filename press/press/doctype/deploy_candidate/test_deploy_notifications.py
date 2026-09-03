@@ -11,7 +11,13 @@ from press.press.doctype.deploy_candidate.deploy_notifications import (
 )
 
 
-def make_dc(app_hash: str, dependencies: dict, environment_variables: dict, other_app_hash: str = "xyz789"):
+def make_dc(
+	app_hash: str,
+	dependencies: dict,
+	environment_variables: dict,
+	other_app_hash: str = "xyz789",
+	packages: list[str] | None = None,
+):
 	return frappe._dict(
 		apps=[
 			frappe._dict(app="frappe", hash=app_hash, pullable_hash=None, title="Frappe"),
@@ -19,6 +25,15 @@ def make_dc(app_hash: str, dependencies: dict, environment_variables: dict, othe
 		],
 		dependencies=[frappe._dict(dependency=k, version=v) for k, v in dependencies.items()],
 		environment_variables=[frappe._dict(key=k, value=v) for k, v in environment_variables.items()],
+		packages=[
+			frappe._dict(
+				package_manager="apt",
+				package=package,
+				package_prerequisites="",
+				after_install="",
+			)
+			for package in (packages or ["wkhtmltopdf"])
+		],
 	)
 
 
@@ -84,3 +99,11 @@ class TestCheckIfAppUpdated(FrappeTestCase):
 			check_if_app_updated(old_build, new_dc)
 
 		self.assertNotIn("<img", str(raised.exception))
+
+	def test_allows_retry_when_packages_changed(self):
+		deps = {"python": "3.11"}
+		env = {"FOO": "bar"}
+		old_build = make_old_build(make_dc("abc123", deps, env, packages=["wkhtmltopdf"]))
+		new_dc = make_dc("abc123", deps, env, packages=["wkhtmltopdf", "libmagic1"])
+
+		check_if_app_updated(old_build, new_dc)  # no raise
