@@ -201,8 +201,8 @@ export default {
 						return
 					}
 
-					let repository_url = this.githubAppLink
-					if (!repository_url) {
+					let repository_url = `https://github.com/${this.appOwner}/${this.appName}`
+					if (!this.githubAppLink) {
 						const repo_owner = this.selectedGithubUser?.login
 						const repo = this.selectedGithubRepository || data.name
 						repository_url = `https://github.com/${repo_owner}/${repo}`
