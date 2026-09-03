@@ -1046,14 +1046,6 @@ class VirtualMachine(Document):
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Reboot")
-			frappe.enqueue_doc(
-				server.doctype,
-				server.name,
-				"restore_truncated_configs",
-				wait_for_reboot=True,
-				queue="long",
-				timeout=1200,
-			)
 
 		self.sync()
 
