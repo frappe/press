@@ -6,6 +6,7 @@ from __future__ import annotations
 import typing
 
 import frappe
+import razorpay
 import stripe
 from frappe import _
 from frappe.model.document import Document
@@ -751,9 +752,13 @@ class Invoice(Document):
 			)
 			self.reload()
 			return payment
-		except Exception:
+		except Exception as e:
 			frappe.db.rollback()
 			self.reload()
+
+			if self.is_razorpay_token_unconfirmed_error(e):
+				self.switch_to_prepaid_credits_on_cancelled_razorpay_token(mandate)
+				return None
 
 			# Log the traceback as comment
 			msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
@@ -769,6 +774,34 @@ class Invoice(Document):
 				self, error_reason="PAYMENT_CREATION_FAILED"
 			)
 			frappe.db.commit()
+			return None
+
+	def is_razorpay_token_unconfirmed_error(self, exception):
+		return isinstance(exception, razorpay.errors.BadRequestError) and (
+			"Token is not confirmed for recurring payments" in str(exception)
+		)
+
+	def switch_to_prepaid_credits_on_cancelled_razorpay_token(self, mandate):
+		frappe.db.set_value("Team", self.team, "payment_mode", "Prepaid Credits")
+		frappe.db.set_value("Invoice", self.name, "payment_mode", "Prepaid Credits")
+		self.add_comment(
+			"Comment",
+			_(
+				"Switched payment mode to Prepaid Credits: the UPI Autopay token was not confirmed by Razorpay."
+			),
+		)
+		frappe.db.commit()
+		self.reload()
+
+		# payment_mode is already "Prepaid Credits", so this will not also send a "MANDATE_CANCELLED" email
+		frappe.get_doc("Razorpay Mandate", mandate.name).cancel(
+			"Token is not confirmed for recurring payments"
+		)
+
+		team = frappe.get_cached_doc("Team", self.team)
+		team.send_email_for_failed_upi_payment(
+			self, error_reason="TOKEN_NOT_CONFIRMED", upi_vpa=mandate.upi_vpa
+		)
 
 	def get_razorpay_payment_description(self):
 		start = getdate(self.period_start)
