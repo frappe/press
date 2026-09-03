@@ -161,9 +161,7 @@ class SiteUpdate(Document):
 		self.validate_apps()
 		self.validate_pending_updates()
 		self.validate_past_failed_updates()
-		self.set_physical_backup_mode_if_eligible()
-		self.set_logical_replication_backup_mode_if_eligible()
-		self.validate_backup_type_for_large_database()
+		self.set_backup_type()
 
 	def validate_destination_bench(self, differences):
 		if not self.destination_bench:
@@ -281,19 +279,32 @@ class SiteUpdate(Document):
 		database_server = frappe.get_value("Server", self.server, "database_server")
 		return database_server and frappe.get_value("Database Server", database_server, "provider")
 
+	def set_backup_type(self):
+		"""Only a Migrate update on an AWS database server takes a backup worth a choice.
+
+		A Pull update just moves the site to the new bench, and the agent takes no backup
+		for it. Physical and Logical Replication backups need AWS EBS snapshots.
+		"""
+		if self.skipped_backups or self.deploy_type != "Migrate":
+			return
+
+		# No provider also means no database server, as with a configured RDS server.
+		if self.database_server_provider != "AWS EC2":
+			return
+
+		self.set_physical_backup_mode_if_eligible()
+		self.set_logical_replication_backup_mode_if_eligible()
+		self.validate_backup_type_for_large_database()
+
 	def validate_backup_type_for_large_database(self):
 		"""A logical backup of a huge database takes too long and often fails mid-update.
 
 		Physical and Logical Replication backups don't take a full dump, so they're fine.
 		"""
-		if self.skipped_backups or self.backup_type in ("Physical", "Logical Replication"):
+		if self.backup_type in ("Physical", "Logical Replication"):
 			return
 
 		if self.database_size <= LARGE_DATABASE_SIZE_MB:
-			return
-
-		# Physical backup needs AWS EBS snapshots. Elsewhere support can't help either.
-		if self.database_server_provider != "AWS EC2":
 			return
 
 		frappe.throw(
@@ -302,32 +313,18 @@ class SiteUpdate(Document):
 			frappe.ValidationError,
 		)
 
-	def set_physical_backup_mode_if_eligible(self):  # noqa: C901
-		if self.skipped_backups:
-			return
-
-		if self.deploy_type != "Migrate":
-			return
-
+	def set_physical_backup_mode_if_eligible(self):
 		# Check if physical backup is disabled globally from Press Settings
 		if frappe.utils.cint(frappe.get_value("Press Settings", None, "disable_physical_backup")):
 			return
 
 		database_server = frappe.get_value("Server", self.server, "database_server")
-		if not database_server:
-			# It might be the case of configured RDS server and no self hosted database server
-			return
 
 		# Check if physical backup is enabled on the database server
 		enable_physical_backup = frappe.get_value(
 			"Database Server", database_server, "enable_physical_backup"
 		)
 		if not enable_physical_backup:
-			return
-
-		# Sanity check - Provider should be AWS EC2
-		provider = frappe.get_value("Database Server", database_server, "provider")
-		if provider != "AWS EC2":
 			return
 
 		# In case of ebs encryption don't proceed with physical backup
@@ -355,22 +352,6 @@ class SiteUpdate(Document):
 			self.backup_type = "Physical"
 
 	def set_logical_replication_backup_mode_if_eligible(self):
-		if self.skipped_backups:
-			return
-
-		if self.deploy_type != "Migrate":
-			return
-
-		database_server = frappe.get_value("Server", self.server, "database_server")
-		if not database_server:
-			# It might be the case of configured RDS server and no self hosted database server
-			return
-
-		# Sanity check - Provider should be AWS EC2
-		provider = frappe.get_value("Database Server", database_server, "provider")
-		if provider != "AWS EC2":
-			return
-
 		if not frappe.get_value("Server", self.server, "enable_logical_replication_during_site_update"):
 			return
 
