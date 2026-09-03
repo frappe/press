@@ -1,4 +1,6 @@
 ---
+# A busy queue can start this play after the machine is already back. SSH then
+# never goes down, so do not fail the restore on a timeout here.
 - name: Wait for Server to Go Down
   wait_for:
     host: '{{ inventory_hostname }}'
@@ -7,6 +9,7 @@
     timeout: 300
   delegate_to: localhost
   become: no
+  failed_when: false
   when: wait_for_reboot | default(false) | bool
 
 - name: Wait for Server to Come Back
