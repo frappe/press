@@ -4785,20 +4785,8 @@ def get_remove_step_status(job):
 		for_update=True,
 	)
 
-	if (
-		remove_step_name == "Archive Site"
-		and status == "Skipped"
-		and (
-			frappe.db.get_value(
-				"Agent Job Step",
-				{"step_name": "Backup Site", "agent_job": job.name},
-				"status",
-				for_update=True,
-			)
-			== "Failure"
-		)
-	):
-		# consider as failure if archive was skipped because of backup failure
+	if status == "Skipped" and job.status != "Success":
+		# The step never ran. The job died before it, so nothing was removed.
 		status = "Failure"
 	return status
 
