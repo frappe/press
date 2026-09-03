@@ -2002,8 +2002,15 @@ class BaseServer(Document, TagHelpers):
 		):
 			raise NotImplementedError
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
-		# Virtual Machine.reboot enqueues the config restore for every reboot path.
 		virtual_machine.reboot()
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"restore_truncated_configs",
+			wait_for_reboot=True,
+			queue="long",
+			timeout=1200,
+		)
 
 	@dashboard_whitelist()
 	def rename(self, title):
