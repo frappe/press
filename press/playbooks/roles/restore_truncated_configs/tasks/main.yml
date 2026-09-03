@@ -55,22 +55,12 @@
     - live_configs.results[index].rc != 0
     - readable_backups.results[index].rc == 0
 
-- name: Find Configs
-  find:
-    paths:
-      - /home/frappe/agent
-      - /home/frappe/benches
-    patterns:
-      - config.json
-      - common_site_config.json
-      - site_config.json
-    depth: 4
-    recurse: yes
-  register: configs
-
 # Fail the play when a config is still unreadable, so that the caller does not
 # restart the benches on top of it.
-- name: Verify Configs
-  command: 'python3 -m json.tool {{ item.path }}'
-  loop: '{{ configs.files }}'
+- name: Verify Restored Configs
+  command: 'python3 -m json.tool {{ item.path | regex_replace("\.bak$", "") }}'
+  loop: '{{ config_backups.files }}'
+  loop_control:
+    index_var: index
   changed_when: false
+  when: live_configs.results[index].rc != 0
