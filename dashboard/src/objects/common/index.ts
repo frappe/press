@@ -134,7 +134,7 @@ export function siteTabFilterControls() {
 			type: 'select',
 			label: 'Status',
 			fieldname: 'status',
-			options: ['', 'Active', 'Inactive', 'Suspended', 'Broken'],
+			options: ['', 'Active', 'Inactive', 'Suspended', 'Broken', 'Archived'],
 		},
 		{
 			type: 'select',
