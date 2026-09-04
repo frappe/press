@@ -103,3 +103,13 @@ class TestPressJob(FrappeTestCase):
 			job.alert_failure(workflow)
 
 		send_raven_message.assert_not_called()
+
+	def test_no_alert_when_the_setting_disables_them(self):
+		frappe.db.set_single_value("Press Settings", "disable_press_job_failure_alerts", 1)
+		job = self.create_job("Resize Server")
+		workflow = self.create_workflow(job, failed_step="Stop Virtual Machine")
+
+		with patch("press.press.doctype.press_job.press_job.send_raven_message") as send_raven_message:
+			job.alert_failure(workflow)
+
+		send_raven_message.assert_not_called()

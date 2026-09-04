@@ -251,6 +251,9 @@ class PressJob(WorkflowBuilder):
 		if self.job_type not in ALERTED_JOB_TYPES:
 			return
 
+		if frappe.db.get_single_value("Press Settings", "disable_press_job_failure_alerts"):
+			return
+
 		send_raven_message(
 			f"**{self.job_type} failed** - {self.server}\n\n"
 			f"Step: {get_failed_step(workflow) or 'Unknown'}\n"
