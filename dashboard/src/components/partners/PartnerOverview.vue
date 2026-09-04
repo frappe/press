@@ -1,16 +1,46 @@
 <template>
 	<div class="flex flex-col gap-5 overflow-y-auto px-10 lg:px-80 py-6">
-		<div class="flex flex-col">
-			<div class="text-ink-gray-5">Welcome back!</div>
-			<div class="flex items-center gap-3">
-				<h1 class="text-3xl font-semibold">
-					{{ partnerDetails.data?.company_name }}
-				</h1>
-				<Badge
-					variant="subtle"
-					:label="team.doc.partner_status"
-					:theme="team.doc.partner_status == 'Active' ? 'green' : 'gray'"
+		<div class="flex items-center justify-between gap-4">
+			<div class="flex flex-col gap-1">
+				<div class="text-ink-gray-5">Welcome back!</div>
+				<div class="flex items-center gap-3">
+					<h1 class="text-3xl font-semibold">
+						{{ partnerDetails.data?.company_name }}
+					</h1>
+					<Badge
+						variant="subtle"
+						:label="team.doc.partner_status"
+						:theme="team.doc.partner_status == 'Active' ? 'green' : 'gray'"
+					/>
+				</div>
+			</div>
+			<div class="relative shrink-0 overflow-hidden rounded-[10px] border">
+				<Avatar
+					size="3xl"
+					shape="square"
+					:label="partnerDetails.data?.company_name"
+					:image="team.doc.company_logo"
 				/>
+				<FileUploader
+					fileTypes="image/*"
+					:upload-args="{
+						doctype: 'Team',
+						docname: team.doc.name,
+						method: 'press.api.partner.update_company_logo',
+					}"
+					@success="onLogoUpdated"
+					@failure="onLogoUploadFailed"
+				>
+					<template #default="{ openFileSelector, uploading }">
+						<button
+							class="absolute inset-0 grid place-items-center bg-black text-xs font-medium text-white opacity-0 transition hover:opacity-50 focus:opacity-50 focus:outline-none"
+							:class="{ 'opacity-50': uploading }"
+							@click="openFileSelector()"
+						>
+							{{ uploading ? 'Uploading...' : 'Edit' }}
+						</button>
+					</template>
+				</FileUploader>
 			</div>
 		</div>
 
@@ -112,6 +142,7 @@
 
 <script setup>
 import {
+	Avatar,
 	Button,
 	createResource,
 	Dialog,
@@ -119,13 +150,24 @@ import {
 	Progress,
 } from 'frappe-ui'
 import { inject, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
 import router from '../../router'
 import ClickToCopyField from '../ClickToCopyField.vue'
+import FileUploader from '../FileUploader.vue'
 import PartnerContribution from './PartnerContribution.vue'
 
 const team = inject('team')
 
 const showPartnerContributionDialog = ref(false)
+
+function onLogoUpdated() {
+	team.reload()
+	toast.success('Company logo updated')
+}
+
+function onLogoUploadFailed(error) {
+	toast.error(error || 'Error uploading company logo')
+}
 
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',
