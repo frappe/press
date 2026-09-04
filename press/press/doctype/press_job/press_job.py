@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe.utils import now_datetime
 
+from press.press.doctype.server.server_monitoring import RAVEN_SERVER_ALERTS_CHANNEL
+from press.utils.raven import send_raven_message
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 
 if TYPE_CHECKING:
@@ -18,6 +20,10 @@ if TYPE_CHECKING:
 	from press.workflow_engine.doctype.press_workflow.press_workflow import PressWorkflow
 
 _JOBS_REGISTRY: dict[str, type] = {}
+
+# A failure here leaves a server half provisioned, half archived, or on the wrong
+# plan. Someone has to look at it, so tell the alerts channel.
+ALERTED_JOB_TYPES = ("Create Server", "Archive Server", "Resize Server")
 
 
 def _init_jobs_registry() -> None:
@@ -80,6 +86,15 @@ def _init_jobs_registry() -> None:
 		"Upgrade MariaDB": UpgradeMariaDBJob,
 		"Warn disk at 80%": WarnDiskJob,
 	}
+
+
+def get_failed_step(workflow: "PressWorkflow") -> str | None:
+	return frappe.db.get_value(
+		"Press Workflow Task",
+		{"workflow": workflow.name, "status": "Failure"},
+		"method_title",
+		order_by="creation desc",
+	)
 
 
 class PressJob(WorkflowBuilder):
@@ -227,8 +242,24 @@ class PressJob(WorkflowBuilder):
 		self.status = "Failure"
 		self.save()
 
+		self.alert_failure(workflow)
+
 		if hasattr(self, "on_press_job_failure"):
 			self.on_press_job_failure(workflow)
+
+	def alert_failure(self, workflow: "PressWorkflow"):
+		if self.job_type not in ALERTED_JOB_TYPES:
+			return
+
+		if frappe.db.get_single_value("Press Settings", "disable_press_job_failure_alerts"):
+			return
+
+		send_raven_message(
+			f"**{self.job_type} failed** - {self.server}\n\n"
+			f"Step: {get_failed_step(workflow) or 'Unknown'}\n"
+			f"Job: {frappe.utils.get_url_to_form(self.doctype, self.name)}",
+			RAVEN_SERVER_ALERTS_CHANNEL,
+		)
 
 	@frappe.whitelist()
 	def retry(self):
