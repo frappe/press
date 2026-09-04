@@ -8,13 +8,11 @@ from datetime import date, timedelta
 from urllib.parse import parse_qs, urlparse
 
 import frappe
-from boto3 import client
 from frappe.utils import add_days, cint, getdate
-from frappe.utils.password import get_decrypted_password
 
 from press.agent import Agent
-from press.press.doctype.backup_bucket.backup_bucket import get_replication_target
-from press.press.doctype.site_backup.site_backup import get_backup_bucket
+from press.press.doctype.site.backups import rotation_scheme
+from press.press.doctype.site_backup.backup_objects import list_stored_objects, split_backup_key
 from press.utils import chunk
 
 # An auditor asks about a year at a time; anything wider is a mistake, not a question
@@ -29,6 +27,10 @@ PARTIAL_CACHE_TTL = 60
 
 # Long enough to outlast a build, short enough that a lost worker does not wedge a range
 BUILD_TTL = 5 * 60
+
+# Outlives the build it belongs to, so a build that never came back can be told apart
+# from one that was never started
+ATTEMPT_TTL = BUILD_TTL + 60
 
 # What the page listens on, so a finished build reaches it without asking
 REALTIME_EVENT = "backup_audit_trail_update"
@@ -61,20 +63,51 @@ ARTIFACT_BY_FIELD = {
 	"remote_config_file": "config",
 }
 
-# Longest suffix first: a private files tar also ends in the public one's suffix
-ARTIFACT_BY_SUFFIX = (
-	("-database.sql.gz", "database"),
-	("-private-files.tar", "private"),
-	("-files.tar", "public"),
-	("-site_config_backup.json", "config"),
+FIELD_BY_ARTIFACT = {artifact: field for field, artifact in ARTIFACT_BY_FIELD.items()}
+
+# The size Press wrote down when the backup ran, which outlives the object it describes
+SIZE_BY_ARTIFACT = {
+	"database": "database_size",
+	"public": "public_size",
+	"private": "private_size",
+	"config": "config_file_size",
+}
+
+RECORD_FIELDS = (
+	"creation",
+	"status",
+	"offsite",
+	"with_files",
+	"physical",
+	"files_availability",
+	"files_expired_on",
+	"retention_rule",
 )
 
+# Where a day's answer came from, which is half of what an audit is asking for
+SOURCE_RECORD = "Press record"
+SOURCE_JOB = "Server job log"
+SOURCE_BUCKET = "Bucket object"
 
-def get_backup_history(site: str, start_date: str, end_date: str, refresh: bool = False) -> dict:
+# What became of the files, which a size alone cannot say
+FILES_STORED = "Stored"
+FILES_DELETED = "Deleted"
+FILES_NONE = "None"
+FILES_UNKNOWN = "Unknown"
+
+
+def get_backup_history(
+	site: str, start_date: str, end_date: str, refresh: bool = False, build: bool = True
+) -> dict:
 	"""The trail for a range, or word that it is still being put together.
 
 	Records are a query, but the server answers as a job and the buckets are a walk over
 	someone else's network, so the whole thing is built in the background and read here.
+
+	`build` is what keeps the page and the builder from feeding each other: a finished
+	build tells the page to look again, and if that look were allowed to start a build
+	of its own, a build that keeps ending without an answer would keep the page asking
+	forever.
 	"""
 	start, end = resolve_range(site, start_date, end_date)
 	if start > end:
@@ -87,8 +120,33 @@ def get_backup_history(site: str, start_date: str, end_date: str, refresh: bool 
 	if cached is not None:
 		return with_range(cached, start, end)
 
+	if not build:
+		# A build has just finished and left nothing behind, so it died on the way
+		frappe.cache().delete_value(attempt_key(site, start, end))
+		return with_range(broken(), start, end)
+
+	if abandoned_build(site, start, end):
+		return with_range(broken(), start, end)
+
+	frappe.cache().set_value(attempt_key(site, start, end), 1, expires_in_sec=ATTEMPT_TTL)
 	queue_build(site, start, end)
 	return with_range({"status": "Preparing", "days": [], "unconfirmed": False}, start, end)
+
+
+def abandoned_build(site: str, start: date, end: date) -> bool:
+	"""A build was started, is no longer running, and left no answer behind.
+
+	A worker killed under the job — out of memory, restarted mid-build — never reaches
+	the code that says why. Without this the page is told the trail is still being put
+	together, forever, and asking again only starts another build that dies the same way.
+	"""
+	if not frappe.cache().get_value(attempt_key(site, start, end)):
+		return False
+	if frappe.cache().get_value(build_key(site, start, end)):
+		return False
+
+	frappe.cache().delete_value(attempt_key(site, start, end))
+	return True
 
 
 def with_range(history: dict, start: date, end: date) -> dict:
@@ -104,8 +162,17 @@ def ready(days: list[dict], unconfirmed: bool = False) -> dict:
 	return {"status": "Ready", "days": days, "unconfirmed": unconfirmed}
 
 
+def broken() -> dict:
+	"""Said once, and only for as long as a partial answer is kept, so a refresh retries."""
+	return {"status": "Broken", "days": [], "unconfirmed": False}
+
+
 def build_key(site: str, start: date, end: date) -> str:
 	return f"backup_audit_trail_building:{site}:{start}:{end}"
+
+
+def attempt_key(site: str, start: date, end: date) -> str:
+	return f"backup_audit_trail_attempted:{site}:{start}:{end}"
 
 
 def queue_build(site: str, start: date, end: date):
@@ -133,9 +200,16 @@ def build_and_cache(site: str, start_date: str, end_date: str):
 		frappe.cache().set_value(
 			cache_key(site, start, end), history, expires_in_sec=cache_seconds(history, end)
 		)
+	except Exception:
+		# The page is waiting on this build and has no other way to hear about it, so a
+		# build that dies without an answer leaves it saying it is still being put
+		# together, for as long as the tab is open
+		frappe.cache().set_value(cache_key(site, start, end), broken(), expires_in_sec=PARTIAL_CACHE_TTL)
+		raise
 	finally:
 		frappe.cache().delete_value(build_key(site, start, end))
-	publish_update(site, start_date, end_date)
+		frappe.cache().delete_value(attempt_key(site, start, end))
+		publish_update(site, start_date, end_date)
 
 
 def publish_update(site: str, start: str, end: str):
@@ -193,12 +267,28 @@ def build_history(site: str, start: date, end: date) -> dict:
 		backups = {**jobs, **backups}
 
 	if needs_bucket(backups, days):
-		backups = merge_stored(backups, list_stored_backups(site, start, end))
+		stored, buckets_answered = list_stored_backups(site, start, end)
+		backups = merge_stored(backups, stored)
+		answered = answered and buckets_answered
 
-	return ready(
-		[backups.get(str(day)) or missing_backup(str(day)) for day in days],
-		unconfirmed=not answered and has_gaps(backups, days),
-	)
+	trail = [backups.get(str(day)) or missing_backup(str(day)) for day in days]
+	return ready(with_retention_policy(trail), unconfirmed=not answered and has_gaps(backups, days))
+
+
+def with_retention_policy(days: list[dict]) -> list[dict]:
+	"""Say which tier still holds a stored backup, and how long the policy holds it.
+
+	Only stored days get this: for the rest the rule that deleted them is on the record,
+	and guessing one from today's policy would put a date on the page we never observed.
+	"""
+	scheme = rotation_scheme()
+	for day in days:
+		if day["files"] != FILES_STORED:
+			continue
+		day["rule"] = scheme.rule_for(day["date"])
+		keep_till = scheme.keep_till(day["date"])
+		day["keep_till"] = str(keep_till) if keep_till else None
+	return days
 
 
 def has_gaps(backups: dict[str, dict], days: list[date]) -> bool:
@@ -313,9 +403,11 @@ def process_fetch_backup_jobs_update(job):
 		frappe.parse_json(job.data),
 		expires_in_sec=CACHE_TTL,
 	)
-	# The trail was built without this, so drop it and tell the page to look again
-	frappe.cache().delete_value(cache_key(site[0], start[0], end[0]))
-	publish_update(site[0], start[0], end[0])
+	# The trail was built without this, so build it again. The page hears about it when
+	# that build lands: asking it to look now would only show it the trail it already has
+	start_day, end_day = getdate(start[0]), getdate(end[0])
+	frappe.cache().delete_value(cache_key(site[0], start_day, end_day))
+	queue_build(site[0], start_day, end_day)
 
 
 def agent_silence_key(server: str) -> str:
@@ -330,18 +422,25 @@ def silence_agent(server: str):
 	frappe.cache().set_value(agent_silence_key(server), 1, expires_in_sec=AGENT_SILENCE_TTL)
 
 
-def outranks(existing: dict | None, job: dict) -> bool:
+def outranks(existing: dict | None, answer: dict) -> bool:
+	"""A day that ran twice is answered by whichever run got furthest."""
 	if not existing:
 		return False
-	return existing["status"] == "Success" and job["status"] != "Success"
+	return existing["status"] == "Success" and answer["status"] != "Success"
 
 
 def backup_from_job(day: str, job: dict) -> dict:
-	status = "Success" if job["status"] == "Success" else "Failure"
+	"""The server remembers running it, but not what became of what it uploaded."""
+	failed = job["status"] != "Success"
 	sizes = job.get("sizes") or {}
 	return (
 		missing_backup(day)
-		| {"status": status}
+		| {
+			"status": "Failure" if failed else "Success",
+			"files": FILES_NONE if failed else FILES_UNKNOWN,
+			"source": SOURCE_JOB,
+			"sizes_known": not failed,
+		}
 		| {artifact: cint(sizes.get(key)) for key, artifact in ARTIFACT_BY_JOB_KEY.items()}
 	)
 
@@ -362,11 +461,32 @@ def days_between(start: date, end: date) -> list[date]:
 
 
 def missing_backup(day: str) -> dict:
-	return {"date": day, "status": "Not Available"} | dict.fromkeys(ARTIFACT_BY_FIELD.values(), 0)
+	return {
+		"date": day,
+		"status": "Not Available",
+		"files": FILES_NONE,
+		"source": None,
+		"expired_on": None,
+		"rule": None,
+		"keep_till": None,
+		# Blank sizes read as a backup of nothing, so every day says whether it knows
+		"sizes_known": False,
+		# What the record adds when there still is one, and the trail says nothing about otherwise
+		"started_at": None,
+		"offsite": None,
+		"with_files": None,
+		"physical": None,
+	} | dict.fromkeys(ARTIFACT_BY_FIELD.values(), 0)
 
 
 def found_backup(day: str) -> dict:
-	return missing_backup(day) | {"status": "Success"}
+	"""A day the bucket answered for, whose sizes are whatever it still holds."""
+	return missing_backup(day) | {
+		"status": "Success",
+		"files": FILES_STORED,
+		"source": SOURCE_BUCKET,
+		"sizes_known": True,
+	}
 
 
 def get_recorded_backups(site: str, start: date, end: date) -> dict[str, dict]:
@@ -375,24 +495,91 @@ def get_recorded_backups(site: str, start: date, end: date) -> dict[str, dict]:
 		"Site Backup",
 		filters={
 			"site": site,
-			"status": "Success",
+			"status": ("in", ("Success", "Failure")),
 			# A backup running over midnight lands in an adjacent day's folder
 			"creation": ("between", [add_days(start, -1), add_days(end, 1)]),
 		},
-		fields=list(ARTIFACT_BY_FIELD),
+		fields=[*RECORD_FIELDS, *SIZE_BY_ARTIFACT.values(), *ARTIFACT_BY_FIELD],
 	)
 	remote_files = get_remote_files(backups)
 
 	days: dict[str, dict] = {}
 	for backup in backups:
-		for field, artifact in ARTIFACT_BY_FIELD.items():
-			file_path, file_size = remote_files.get(backup[field], (None, None))
-			day, _ = split_backup_key(site, file_path)
-			if not day or not (str(start) <= day <= str(end)):
-				continue
-			entry = days.setdefault(day, found_backup(day))
-			entry[artifact] = cint(file_size)
+		day = recorded_day(site, backup, remote_files)
+		if not (str(start) <= day <= str(end)):
+			continue
+		entry = backup_from_record(day, backup, remote_files)
+		if not outranks(days.get(day), entry):
+			days[day] = entry
 	return days
+
+
+def recorded_day(site: str, backup: dict, remote_files: dict) -> str:
+	"""The day the objects were filed under, or the day Press made the record.
+
+	The bucket names a folder after the server's clock, so a backup that ran over
+	midnight is filed a day off its record. Following the folder keeps the same backup
+	from being read as two days once the bucket answers for it too.
+	"""
+	for field in ARTIFACT_BY_FIELD:
+		file_path, _ = remote_files.get(backup[field], (None, None))
+		day, _ = split_backup_key(site, file_path)
+		if day:
+			return day
+	return str(getdate(backup["creation"]))
+
+
+def backup_from_record(day: str, backup: dict, remote_files: dict) -> dict:
+	sizes = {artifact: recorded_size(backup, artifact, remote_files) for artifact in SIZE_BY_ARTIFACT}
+	failed = backup["status"] == "Failure"
+	return (
+		missing_backup(day)
+		| {
+			"status": backup["status"],
+			"files": files_state(backup),
+			"source": SOURCE_RECORD,
+			"expired_on": str(backup["files_expired_on"]) if backup["files_expired_on"] else None,
+			"rule": backup["retention_rule"],
+			"sizes_known": not failed,
+			"started_at": str(backup["creation"]),
+			"offsite": backup["offsite"],
+			"with_files": backup["with_files"],
+			"physical": backup["physical"],
+		}
+		| sizes
+	)
+
+
+def files_state(backup: dict) -> str:
+	if backup["status"] == "Failure":
+		return FILES_NONE
+	return FILES_DELETED if backup["files_availability"] == "Unavailable" else FILES_STORED
+
+
+def recorded_size(backup: dict, artifact: str, remote_files: dict) -> int:
+	"""The size Press wrote down, falling back to the object it uploaded."""
+	if size := cint(backup[SIZE_BY_ARTIFACT[artifact]]):
+		return size
+	_, file_size = remote_files.get(backup[FIELD_BY_ARTIFACT[artifact]], (None, None))
+	return cint(file_size)
+
+
+def list_stored_backups(site: str, start: date, end: date) -> tuple[dict[str, dict], bool]:
+	"""The days the buckets still hold something for, read as days of the trail."""
+	stored, answered = list_stored_objects(site, start, end)
+	return {day: backup_from_objects(day, sizes) for day, sizes in stored.items()}, answered
+
+
+def backup_from_objects(day: str, sizes: dict[str, int]) -> dict:
+	"""A day holding nothing but the site config was backed up and then emptied.
+
+	Rotation deletes the database and the files and leaves that one small object behind,
+	so it is evidence the backup ran and nothing more.
+	"""
+	entry = found_backup(day) | sizes
+	if entry["database"] or entry["public"] or entry["private"]:
+		return entry
+	return entry | {"files": FILES_DELETED, "sizes_known": False}
 
 
 def get_remote_files(backups: list[dict]) -> dict[str, tuple[str, str]]:
@@ -409,115 +596,3 @@ def get_remote_files(backups: list[dict]) -> dict[str, tuple[str, str]]:
 		)
 		files.update({name: (file_path, file_size) for name, file_path, file_size in rows})
 	return files
-
-
-def split_backup_key(site: str, file_path: str | None) -> tuple[str | None, str | None]:
-	"""Backup objects are keyed <site>/<day>/<file>. Anything shaped otherwise isn't one."""
-	parts = (file_path or "").split("/")
-	if len(parts) != 3 or parts[0] != site:
-		return None, None
-	return parts[1], parts[2]
-
-
-def artifact_of(file_name: str) -> str | None:
-	for suffix, artifact in ARTIFACT_BY_SUFFIX:
-		if file_name.endswith(suffix):
-			return artifact
-	return None
-
-
-def resolve_bucket(bucket_name: str) -> dict:
-	"""Where to read a bucket from, following replication the way Remote File does."""
-	target = get_replication_target(bucket_name)
-	if target:
-		return target
-
-	row = frappe.db.get_value("Backup Bucket", bucket_name, ["region", "endpoint_url"], as_dict=True)
-	if row:
-		return {"name": bucket_name, "region": row.region, "endpoint_url": row.endpoint_url}
-
-	return {
-		"name": bucket_name,
-		"region": frappe.db.get_single_value("Press Settings", "backup_region"),
-		"endpoint_url": None,
-	}
-
-
-def get_read_bucket(cluster: str) -> dict:
-	return resolve_bucket(get_backup_bucket(cluster, region=True)["name"])
-
-
-def get_site_buckets(site: str) -> list[dict]:
-	"""The site's own cluster bucket first, then any it used before, so a move between clusters still reads."""
-	cluster = frappe.db.get_value("Site", site, "cluster")
-	current = get_read_bucket(cluster)
-
-	buckets = {current["name"]: current}
-	used_before = frappe.get_all("Remote File", {"site": site, "bucket": ("is", "set")}, pluck="bucket")
-	for bucket_name in set(used_before):
-		buckets.setdefault(bucket_name, resolve_bucket(bucket_name))
-	return list(buckets.values())
-
-
-def list_stored_backups(site: str, start: date, end: date) -> dict[str, dict]:
-	credentials = get_offsite_credentials()
-	if not credentials:
-		return {}
-
-	days: dict[str, dict] = {}
-	for bucket in get_site_buckets(site):
-		# The current cluster's bucket is walked first, so it wins where both hold a day
-		for day, entry in list_bucket(bucket, site, start, end, credentials).items():
-			days.setdefault(day, entry)
-	return days
-
-
-def get_offsite_credentials() -> tuple[str, str] | None:
-	"""None on a bench where offsite backups were never set up, which is not an error."""
-	access_key = frappe.db.get_single_value("Press Settings", "offsite_backups_access_key_id")
-	secret_key = get_decrypted_password(
-		"Press Settings",
-		"Press Settings",
-		"offsite_backups_secret_access_key",
-		raise_exception=False,
-	)
-	if not (access_key and secret_key):
-		return None
-	return access_key, secret_key
-
-
-def list_bucket(
-	bucket: dict, site: str, start: date, end: date, credentials: tuple[str, str]
-) -> dict[str, dict]:
-	"""Walk the site's prefix in one bucket, sizing what is held per day."""
-	prefix = f"{site}/"
-	pages = (
-		get_s3_client(bucket, credentials)
-		.get_paginator("list_objects_v2")
-		.paginate(Bucket=bucket["name"], Prefix=prefix, StartAfter=f"{prefix}{start}")
-	)
-
-	days: dict[str, dict] = {}
-	for page in pages:
-		for s3_object in page.get("Contents", []):
-			day, file_name = split_backup_key(site, s3_object["Key"])
-			# Keys sort by day, so the first one past the range ends the walk
-			if day and day > str(end):
-				return days
-			if not day or not file_name:
-				continue
-			entry = days.setdefault(day, found_backup(day))
-			if artifact := artifact_of(file_name):
-				entry[artifact] = s3_object["Size"]
-	return days
-
-
-def get_s3_client(bucket: dict, credentials: tuple[str, str]):
-	access_key, secret_key = credentials
-	return client(
-		"s3",
-		aws_access_key_id=access_key,
-		aws_secret_access_key=secret_key,
-		region_name=bucket["region"],
-		endpoint_url=bucket["endpoint_url"],
-	)

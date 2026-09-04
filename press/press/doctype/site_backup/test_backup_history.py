@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import boto3
 import frappe
+from botocore.exceptions import ClientError
 from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
@@ -18,6 +19,7 @@ from press.press.doctype.site_backup.backup_history import (
 	REALTIME_EVENT,
 	agent_answer_key,
 	build_and_cache,
+	build_key,
 	cache_key,
 	cache_seconds,
 	get_backup_history,
@@ -27,6 +29,15 @@ from press.press.doctype.site_backup.backup_history import (
 )
 
 BUILD_METHOD = "press.press.doctype.site_backup.backup_history.build_and_cache"
+
+# press's log_error re-raises whatever is being handled while tests run, which is the
+# opposite of what a test about carrying on past a failure needs
+BUCKET_ERROR_LOG = "press.press.doctype.site_backup.backup_objects.log_error"
+
+
+class BucketOnFire(Exception):
+	"""Whatever a build can die of, which the trail has to survive either way."""
+
 
 BUCKET = "test-backups"
 REPLICA_BUCKET = "test-backups-replica"
@@ -115,6 +126,7 @@ class TestBackupHistory(FrappeTestCase):
 		for prefix in (
 			"backup_audit_trail_jobs:",
 			"backup_audit_trail_building:",
+			"backup_audit_trail_attempted:",
 			"backup_audit_trail:",
 		):
 			frappe.cache().delete_keys(prefix)
@@ -128,13 +140,27 @@ class TestBackupHistory(FrappeTestCase):
 	def server(self) -> str:
 		return frappe.db.get_value("Site", self.site.name, "server")
 
+	# Enough to put the bench back, without loading or locking the whole Single
+	BACKUP_SETTINGS = ("aws_s3_bucket", "backup_region", "offsite_backups_access_key_id")
+
 	def setup_press_settings(self):
+		# A Single is written straight to the database, so anything that commits during a
+		# test leaves these fake credentials behind on the bench. Put back what was there.
+		before = {
+			field: frappe.db.get_single_value("Press Settings", field) for field in self.BACKUP_SETTINGS
+		}
+		self.addCleanup(self.restore_press_settings, before)
+
 		settings = frappe.get_single("Press Settings")
 		settings.aws_s3_bucket = BUCKET
 		settings.backup_region = REGION
 		settings.offsite_backups_access_key_id = "test-access-key"
 		settings.offsite_backups_secret_access_key = "test-secret-key"  # pragma: allowlist secret
 		settings.save()
+
+	def restore_press_settings(self, before: dict):
+		for field, value in before.items():
+			frappe.db.set_single_value("Press Settings", field, value)
 
 	def upload_backup(self, day: str, file_name: str, body: bytes = b"backup"):
 		boto3.client("s3", region_name=REGION).put_object(
@@ -310,7 +336,24 @@ class TestBackupHistory(FrappeTestCase):
 
 		history = self.audit_trail("2023-10-01", "2023-10-03")["days"]
 
-		keys = {"date", "status", "database", "public", "private", "config"}
+		keys = {
+			"date",
+			"status",
+			"database",
+			"public",
+			"private",
+			"config",
+			"files",
+			"source",
+			"expired_on",
+			"rule",
+			"keep_till",
+			"sizes_known",
+			"started_at",
+			"offsite",
+			"with_files",
+			"physical",
+		}
 		self.assertEqual([set(day) for day in history], [keys, keys, keys])
 
 	def test_replicated_bucket_is_read_instead_of_the_primary(self):
@@ -570,7 +613,7 @@ class TestBackupHistory(FrappeTestCase):
 		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz", size=64)
 
 		with patch(
-			"press.press.doctype.site_backup.backup_history.get_decrypted_password",
+			"press.press.doctype.site_backup.backup_objects.get_decrypted_password",
 			return_value=None,
 		):
 			history = self.audit_trail("2023-10-01", "2023-10-02")
@@ -599,17 +642,24 @@ class TestBackupHistory(FrappeTestCase):
 		events = [call.kwargs.get("event") for call in self.publish_realtime.call_args_list]
 		self.assertIn(REALTIME_EVENT, events)
 
-	def test_the_servers_answer_drops_the_trail_built_without_it(self):
+	def test_the_servers_answer_builds_the_trail_again(self):
 		"""Otherwise the answer sits behind an hour-old trail that was built ignoring it."""
 		day = frappe.utils.getdate("2023-10-02")
 		self.audit_trail("2023-10-02", "2023-10-02")
-		self.assertIsNotNone(frappe.cache().get_value(cache_key(self.site.name, day, day)))
+		self.assertEqual(
+			frappe.cache().get_value(cache_key(self.site.name, day, day))["days"][0]["status"],
+			"Not Available",
+		)
 
 		process_fetch_backup_jobs_update(
 			self.fake_job(data={"jobs": [self.agent_job("2023-10-02 04:00:00")], "truncated": False})
 		)
 
-		self.assertIsNone(frappe.cache().get_value(cache_key(self.site.name, day, day)))
+		# The build runs inline here, so the answer is already in the trail
+		self.assertEqual(
+			frappe.cache().get_value(cache_key(self.site.name, day, day))["days"][0]["status"],
+			"Success",
+		)
 
 	def test_an_unreachable_server_is_not_asked(self):
 		"""An Agent Request Failure row means nothing is getting through to it."""
@@ -722,3 +772,211 @@ class TestBackupHistory(FrappeTestCase):
 			"2023-01-01",
 			"2024-12-31",
 		)
+
+	def record_expired_backup(self, day: str, rule: str = "Daily", expired_on: str = "2023-10-09"):
+		"""A backup whose files retention has since deleted, which is most of an audit's range."""
+		remote_file = self.record_backup(day, f"{day.replace('-', '')}_000502-database.sql.gz")
+		backup = frappe.db.get_value("Site Backup", {"remote_database_file": remote_file.name})
+		frappe.db.set_value(
+			"Site Backup",
+			backup,
+			{
+				"database_size": 4096,
+				"files_availability": "Unavailable",
+				"files_expired_on": expired_on,
+				"retention_rule": rule,
+			},
+		)
+		return backup
+
+	def test_a_day_whose_files_retention_deleted_still_reports_their_size(self):
+		self.record_expired_backup("2023-10-02")
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["status"], "Success")
+		self.assertEqual(day["database"], 4096)
+		self.assertTrue(day["sizes_known"])
+
+	def test_a_day_whose_files_retention_deleted_says_when_and_under_which_rule(self):
+		self.record_expired_backup("2023-10-02", rule="Weekly", expired_on="2023-11-02")
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["files"], "Deleted")
+		self.assertEqual(day["rule"], "Weekly")
+		self.assertTrue(day["expired_on"].startswith("2023-11-02"))
+
+	def test_a_day_whose_files_are_still_stored_says_so(self):
+		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz")
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["files"], "Stored")
+		self.assertEqual(day["source"], "Press record")
+
+	def test_a_stored_day_names_the_tier_holding_it_and_how_long(self):
+		frappe.db.set_single_value("Press Settings", "backup_rotation_scheme", "Grandfather-father-son")
+		self.record_backup("2023-10-04", "20231004_000502-database.sql.gz")
+
+		day = self.audit_trail("2023-10-04", "2023-10-04")["days"][0]
+
+		self.assertEqual(day["rule"], "Daily")
+		self.assertEqual(day["keep_till"], "2023-10-11")
+
+	def test_a_day_holding_nothing_but_the_config_object_reports_the_files_as_deleted(self):
+		self.upload_backup("2023-10-02", "20231002_000502-site_config_backup.json", body=b"c" * 24)
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["status"], "Success")
+		self.assertEqual(day["files"], "Deleted")
+		self.assertFalse(day["sizes_known"])
+
+	def test_a_day_holding_a_database_object_reports_the_files_as_stored(self):
+		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz", body=b"d" * 64)
+		self.upload_backup("2023-10-02", "20231002_000502-site_config_backup.json", body=b"c" * 24)
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["files"], "Stored")
+		self.assertTrue(day["sizes_known"])
+
+	def test_a_failed_backup_press_recorded_is_reported_without_asking_the_server(self):
+		frappe.get_doc(
+			{
+				"doctype": "Site Backup",
+				"site": self.site.name,
+				"status": "Failure",
+				"creation": "2023-10-02 04:00:00",
+			}
+		).db_insert()
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["status"], "Failure")
+		self.assertEqual(day["files"], "None")
+		self.assertEqual(day["source"], "Press record")
+
+	def test_a_day_the_server_answered_for_says_the_files_are_unknown(self):
+		self.given_agent_jobs([self.agent_job("2023-10-02 04:00:00")])
+
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["files"], "Unknown")
+		self.assertEqual(day["source"], "Server job log")
+
+	def test_a_day_nothing_answered_for_reports_no_source(self):
+		day = self.audit_trail("2023-10-02", "2023-10-02")["days"][0]
+
+		self.assertEqual(day["status"], "Not Available")
+		self.assertIsNone(day["source"])
+		self.assertFalse(day["sizes_known"])
+
+	def failing_build(self):
+		return patch(
+			"press.press.doctype.site_backup.backup_history.build_history",
+			side_effect=BucketOnFire,
+		)
+
+	def test_a_build_that_fails_tells_the_page_instead_of_leaving_it_waiting(self):
+		"""Without an answer the page keeps saying the trail is being put together."""
+		with self.failing_build():
+			self.assertRaises(BucketOnFire, build_and_cache, self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertEqual(get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["status"], "Broken")
+		self.publish_realtime.assert_called()
+
+	def test_a_failed_build_is_not_left_marked_as_building(self):
+		with self.failing_build():
+			self.assertRaises(BucketOnFire, build_and_cache, self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertFalse(frappe.cache().get_value(build_key(self.site.name, "2023-10-02", "2023-10-02")))
+
+	def unreadable_bucket(self):
+		"""Bad credentials, an expired key, a bucket that has gone away."""
+		return patch(
+			"press.press.doctype.site_backup.backup_objects.walk_bucket",
+			side_effect=ClientError({"Error": {"Code": "InvalidAccessKeyId"}}, "ListObjectsV2"),
+		)
+
+	def test_a_bucket_that_cannot_be_read_does_not_take_the_trail_down(self):
+		"""Bad credentials on a bench killed the build, and the page waited on it forever."""
+		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz")
+
+		with self.unreadable_bucket(), patch(BUCKET_ERROR_LOG) as log_error:
+			history = self.audit_trail("2023-10-01", "2023-10-02")
+
+		# Newest first, so the recorded day leads and the unreadable one follows
+		self.assertEqual(history["status"], "Ready")
+		self.assertEqual(history["days"][0]["status"], "Success")
+		self.assertEqual(history["days"][1]["status"], "Not Available")
+		log_error.assert_called()
+
+	def test_a_bucket_that_cannot_be_read_leaves_the_empty_days_unconfirmed(self):
+		with self.unreadable_bucket(), patch(BUCKET_ERROR_LOG):
+			history = self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.assertTrue(history["unconfirmed"])
+
+	def test_a_build_the_worker_died_under_is_not_reported_as_still_building(self):
+		"""A killed worker never reaches the code that says why, so the page waited forever."""
+		with patch.object(frappe, "enqueue"):
+			self.assertEqual(
+				get_backup_history(self.site.name, "2023-10-02", "2023-10-02")["status"], "Preparing"
+			)
+			frappe.cache().delete_value(build_key(self.site.name, "2023-10-02", "2023-10-02"))
+
+			history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertEqual(history["status"], "Broken")
+
+	def test_a_build_still_running_is_still_reported_as_building(self):
+		with patch.object(frappe, "enqueue"):
+			get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+			history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertEqual(history["status"], "Preparing")
+
+	def test_a_range_asked_for_again_after_a_dead_build_starts_a_new_one(self):
+		"""Saying it is broken once must not leave the range unable to try again."""
+		with patch.object(frappe, "enqueue"):
+			get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+			frappe.cache().delete_value(build_key(self.site.name, "2023-10-02", "2023-10-02"))
+			get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+			history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertEqual(history["status"], "Preparing")
+
+	def test_reading_the_answer_to_a_build_does_not_start_another_build(self):
+		"""The page reads because a build finished; if that read builds, they loop."""
+		with patch.object(frappe, "enqueue") as enqueue:
+			get_backup_history(self.site.name, "2023-10-02", "2023-10-02", build=False)
+
+		enqueue.assert_not_called()
+
+	def test_a_build_that_finished_with_nothing_to_show_is_reported_as_broken(self):
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02", build=False)
+
+		self.assertEqual(history["status"], "Broken")
+
+	def test_a_finished_trail_is_read_without_building(self):
+		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz")
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02", build=False)
+
+		self.assertEqual(history["status"], "Ready")
+		self.assertEqual(history["days"][0]["status"], "Success")
+
+	def test_a_range_can_be_built_again_after_a_build_left_nothing(self):
+		"""Being told it is broken must not leave refresh unable to try again."""
+		get_backup_history(self.site.name, "2023-10-02", "2023-10-02", build=False)
+
+		with patch.object(frappe, "enqueue") as enqueue:
+			history = get_backup_history(self.site.name, "2023-10-02", "2023-10-02")
+
+		self.assertEqual(history["status"], "Preparing")
+		enqueue.assert_called()

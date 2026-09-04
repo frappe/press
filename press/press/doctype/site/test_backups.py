@@ -3,9 +3,12 @@ from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import getdate
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.site.backups import (
+	FIFO,
+	GFS,
 	ScheduledBackupJob,
 	schedule_logical_backups_for_sites_with_backup_time,
 	schedule_physical_backups_for_sites_with_backup_time,
@@ -236,3 +239,59 @@ class TestScheduledBackupJob(FrappeTestCase):
 			schedule_logical_backups_for_sites_with_backup_time()
 		mock_backup.assert_called_once()
 		mock_backup.reset_mock()
+
+
+class TestBackupExpiry(FrappeTestCase):
+	"""What retention leaves behind, which is all an audit has to go on later."""
+
+	def setUp(self):
+		super().setUp()
+		self.site = create_test_site(subdomain="expiring")
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def expire(self, backup, scheme=None):
+		(scheme or GFS()).cleanup_offsite()
+		return frappe.db.get_value(
+			"Site Backup",
+			backup.name,
+			["files_availability", "files_expired_on", "retention_rule"],
+			as_dict=True,
+		)
+
+	def test_expiry_records_when_the_files_were_deleted(self):
+		backup = create_test_site_backup(self.site.name, creation=frappe.utils.add_days(None, -30))
+
+		with patch("press.press.doctype.site.backups.delete_remote_backup_objects"):
+			expired = self.expire(backup)
+
+		self.assertEqual(expired.files_availability, "Unavailable")
+		self.assertIsNotNone(expired.files_expired_on)
+
+	def test_expiry_names_the_tier_that_was_holding_the_backup(self):
+		# A Wednesday, so no weekly, monthly or yearly copy is keeping it
+		backup = create_test_site_backup(self.site.name, creation=getdate("2026-02-11"))
+
+		with patch("press.press.doctype.site.backups.delete_remote_backup_objects"):
+			expired = self.expire(backup)
+
+		self.assertEqual(expired.retention_rule, "Daily")
+
+	def test_a_sunday_is_expired_as_the_weekly_copy(self):
+		self.assertEqual(GFS().rule_for(getdate("2026-02-15")), "Weekly")
+
+	def test_the_first_of_a_month_is_expired_as_the_monthly_copy(self):
+		self.assertEqual(GFS().rule_for(getdate("2026-02-01")), "Monthly")
+
+	def test_new_years_day_is_expired_as_the_yearly_copy(self):
+		self.assertEqual(GFS().rule_for(getdate("2026-01-01")), "Yearly")
+
+	def test_a_daily_copy_is_kept_for_a_week(self):
+		self.assertEqual(GFS().keep_till(getdate("2026-02-11")), getdate("2026-02-18"))
+
+	def test_a_monthly_copy_is_kept_for_a_year(self):
+		self.assertEqual(GFS().keep_till(getdate("2026-02-01")), getdate("2027-02-02"))
+
+	def test_a_scheme_without_fixed_windows_promises_no_date(self):
+		self.assertIsNone(FIFO().keep_till(getdate("2026-02-11")))
