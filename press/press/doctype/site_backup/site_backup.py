@@ -22,7 +22,9 @@ from press.guards.role_guard.document import has_user_permission
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.server.server_monitoring import RAVEN_SERVER_ALERTS_CHANNEL
 from press.utils import docs
+from press.utils.raven import send_raven_message
 
 if TYPE_CHECKING:
 	from datetime import date
@@ -30,6 +32,10 @@ if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.site_update.site_update import SiteUpdate
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
+
+BACKUP_SUCCESS_RATE_THRESHOLD = 0.97
+BACKUP_FAILURE_ALERT_SITE_LIMIT = 20
 
 
 class SiteBackup(Document):
@@ -946,3 +952,53 @@ def _has_reached_max_failed_backup_attempts(site_name: str) -> bool:
 	)
 
 	return backup_failures == max_backup_attempts
+
+
+def alert_if_backup_success_rate_is_low() -> None:
+	"""Alert on Raven when the site backup success rate for the last hour dips below the threshold."""
+	since = frappe.utils.add_to_date(None, hours=-1)
+	completed_backups = frappe.db.count(
+		"Site Backup", {"status": ("in", ["Success", "Failure"]), "creation": (">=", since)}
+	)
+	if not completed_backups:
+		return
+
+	failed_backups = frappe.db.count("Site Backup", {"status": "Failure", "creation": (">=", since)})
+	success_rate = (completed_backups - failed_backups) / completed_backups
+	if success_rate >= BACKUP_SUCCESS_RATE_THRESHOLD:
+		return
+
+	_send_backup_success_rate_alert(success_rate, completed_backups, failed_backups, since)
+
+
+def _send_backup_success_rate_alert(
+	success_rate: float,
+	completed_backups: int,
+	failed_backups: int,
+	since: str,
+) -> None:
+	failures_by_site = frappe.get_all(
+		"Site Backup",
+		filters={"status": "Failure", "creation": (">=", since)},
+		fields=["site", "count(name) as failures"],
+		group_by="site",
+		order_by="failures desc, site asc",
+		limit=BACKUP_FAILURE_ALERT_SITE_LIMIT,
+	)
+
+	lines = [
+		f"**Site Backup Failure Alert** - {success_rate * 100:.2f}% success rate in the last hour",
+		"",
+		f"Threshold: success rate >= {BACKUP_SUCCESS_RATE_THRESHOLD * 100:.0f}% in the last hour",
+		f"Completed backups: {completed_backups}, failed: {failed_backups}",
+		"",
+		"| Site | Failed Backups |",
+		"| --- | --- |",
+	]
+	lines.extend(f"| {row.site} | {row.failures} |" for row in failures_by_site)
+
+	listed_failures = sum(row.failures for row in failures_by_site)
+	if unlisted_failures := failed_backups - listed_failures:
+		lines.append(f"| ... | {unlisted_failures} more failures on other sites |")
+
+	send_raven_message("\n".join(lines).strip(), RAVEN_SERVER_ALERTS_CHANNEL)
