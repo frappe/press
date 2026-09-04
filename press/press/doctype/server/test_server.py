@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 import typing
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.core.utils import find
@@ -14,6 +14,7 @@ from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
 from press.agent import Agent
+from press.exceptions import ArchiveBenchError
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
@@ -25,16 +26,16 @@ from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.server import (
 	BaseServer,
+	Server,
 	process_cleanup_unused_files_job_update,
 	sync_wazuh_agent_status,
 )
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
-from press.press.doctype.site.test_site import create_test_bench
+from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 
 if typing.TYPE_CHECKING:
-	from press.press.doctype.server.server import Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -779,7 +780,7 @@ class TestServer(FrappeTestCase):
 		settings = create_test_press_settings()
 		settings.wazuh_api_url = "https://wazuh.example.com:55000"
 		settings.wazuh_api_username = "user"
-		settings.wazuh_api_password = "pass"
+		settings.wazuh_api_password = "pass"  # pragma: allowlist secret
 		settings.wazuh_api_verify_tls = 0
 		settings.save()
 
@@ -801,7 +802,7 @@ class TestServer(FrappeTestCase):
 		settings = create_test_press_settings()
 		settings.wazuh_api_url = "https://wazuh.example.com:55000"
 		settings.wazuh_api_username = "user"
-		settings.wazuh_api_password = "pass"
+		settings.wazuh_api_password = "pass"  # pragma: allowlist secret
 		settings.wazuh_api_verify_tls = 0
 		settings.save()
 
@@ -848,3 +849,37 @@ class TestSSHCommand(FrappeTestCase):
 			server.get_ssh_command(),
 			f"ssh frappe@fc.dev -t 'ssh -J root@{proxy_server.name} ubuntu@{server.name} -p 2222'",
 		)
+
+
+@patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
+@patch.object(BaseServer, "after_insert", new=Mock())
+class TestArchiveBenches(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_broken_bench_left_on_server_is_archived_instead_of_blocking_the_drop(self):
+		bench = create_test_bench()
+		bench.db_set("status", "Broken")
+		server = Server("Server", bench.server)
+
+		server.archive_benches()
+
+		self.assertEqual(frappe.db.get_value("Bench", bench.name, "status"), "Archived")
+
+	def test_ssh_user_of_archived_bench_is_removed_from_the_proxy(self):
+		bench = create_test_bench()
+		bench.db_set("is_ssh_proxy_setup", True)
+		server = Server("Server", bench.server)
+
+		with patch.object(Agent, "remove_ssh_user") as remove_ssh_user:
+			server.archive_benches()
+
+		self.assertEqual(remove_ssh_user.call_args.args[0].name, bench.name)
+
+	def test_bench_that_still_has_a_site_is_not_archived(self):
+		bench = create_test_bench()
+		create_test_site(bench=bench.name)
+		server = Server("Server", bench.server)
+
+		self.assertRaisesRegex(ArchiveBenchError, "unarchived sites", server.archive_benches)
+		self.assertEqual(frappe.db.get_value("Bench", bench.name, "status"), "Active")
