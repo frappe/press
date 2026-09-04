@@ -225,6 +225,7 @@ def get_app_versions_list(only_frappe=False):
 		.select(
 			FrappeVersion.name.as_("version"),
 			FrappeVersion.status,
+			FrappeVersion.number,
 			FrappeVersion.default,
 			AppSource.name.as_("source"),
 			AppSource.app,
@@ -244,6 +245,7 @@ def get_app_versions_list(only_frappe=False):
 	rows = rows.run(as_dict=True)
 
 	version_list = unique(rows, lambda x: x.version)
+	version_list.sort(key=lambda x: (x.status == "Develop", -x.number))
 
 	return version_list, rows
 
