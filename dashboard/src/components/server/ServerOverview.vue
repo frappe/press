@@ -64,6 +64,14 @@
 									<div class="space-y-1">
 										<div class="flex items-center text-base text-ink-gray-9">
 											{{ d.value }}
+											<Badge
+												v-if="d.isShared && $team.doc?.is_desk_user"
+												class="ml-2"
+												theme="orange"
+												size="sm"
+												variant="subtle"
+												label="Shared"
+											/>
 											<Tooltip v-if="d.isPremium" text="Premium Server">
 												<!-- this icon isn't available in unplugin package yet -->
 												<svg
@@ -202,6 +210,7 @@ import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
 import { confirmDialog, renderDialog } from '../../utils/components'
 import { getDocResource } from '../../utils/resource'
+import { isSharedPlanType } from '../../utils/serverPlanType'
 import { getToastErrorMessage } from '../../utils/toast'
 import AlertBanner from '../AlertBanner.vue'
 import CustomAlerts from '../CustomAlerts.vue'
@@ -226,6 +235,7 @@ export default {
 			startedScaleUp: false,
 			startedScaleDown: false,
 			autoscaleDiscount: null,
+			planTypes: {},
 		}
 	},
 	async mounted() {
@@ -235,9 +245,20 @@ export default {
 		})
 
 		this.autoscaleDiscount = await get.fetch()
+
+		// Only support reads the shared badge, so only support pays for the call.
+		if (this.$team.doc?.is_desk_user) this.fetchPlanTypes()
 	},
 
 	methods: {
+		async fetchPlanTypes() {
+			const plans = createResource({ url: 'press.api.server.plans' })
+			const data = await plans.fetch({ name: 'Server' })
+			this.planTypes = data?.types ?? {}
+		},
+		isSharedPlan(plan) {
+			return isSharedPlanType(this.planTypes[plan?.plan_type]?.title)
+		},
 		showPlanChangeDialog(serverType) {
 			let ServerPlansDialog = defineAsyncComponent(
 				() => import('./ServerPlansDialog.vue'),
@@ -416,6 +437,7 @@ export default {
 						value: planDescription,
 						type: 'header',
 						isPremium: !!currentPlan?.premium,
+						isShared: this.isSharedPlan(currentPlan),
 					},
 					{
 						label: 'CPU',
@@ -455,6 +477,7 @@ export default {
 							: '',
 					type: 'header',
 					isPremium: !!currentPlan?.premium,
+					isShared: this.isSharedPlan(currentPlan),
 					help:
 						additionalStorage > 0
 							? `Server Plan: ${this.$format.userCurrency(

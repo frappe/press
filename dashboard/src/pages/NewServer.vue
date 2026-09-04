@@ -402,6 +402,12 @@
 								</div>
 							</div>
 
+							<AlertBanner
+								v-if="onSharedInstance"
+								type="warning"
+								title="A shared instance can have variable performance, and we give only limited support for it. <a href='https://docs.frappe.io/cloud/servers/instance-types#limited-support' target='_blank' style='font-weight: bold; text-decoration: underline;'>Read what this means</a> before you use it for production."
+							/>
+
 							<!-- App Server Plans -->
 							<div v-if="appServerPlanType" class="mt-2 space-y-2">
 								<ServerPlansCards
@@ -995,6 +1001,7 @@ import ClickToCopy from '../components/ClickToCopyField.vue'
 import Header from '../components/Header.vue'
 import ServerPlansCards from '../components/server/ServerPlansCards.vue'
 import { DashboardError } from '../utils/error'
+import { isSharedPlanType } from '../utils/serverPlanType'
 
 export default {
 	components: {
@@ -1475,6 +1482,16 @@ export default {
 				(plan) =>
 					plan.cluster === this.selectedCluster &&
 					(this.unifiedServer ? plan.allow_unified_server : true),
+			)
+		},
+		onSharedInstance() {
+			if (this.serverProvider !== 'Hetzner') return false
+			return [...this.availableAppPlanTypes, ...this.availableDbPlanTypes].some(
+				(planType) =>
+					isSharedPlanType(planType.title) &&
+					[this.appServerPlanType, this.dbServerPlanType].includes(
+						planType.name,
+					),
 			)
 		},
 		availableAppPlanTypes() {
