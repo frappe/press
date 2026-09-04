@@ -9,10 +9,10 @@ import json
 from urllib.parse import urlparse
 
 import frappe
-import frappe.query_builder
-import frappe.query_builder.functions
 import requests
 from frappe.model.document import Document
+from frappe.query_builder import Case
+from frappe.query_builder.functions import Count, Sum
 
 from press.api.client import dashboard_whitelist
 from press.guards import role_guard
@@ -198,18 +198,19 @@ MIN_ATTEMPTS_FOR_AUTO_DISABLE = 5
 
 def auto_disable_high_delivery_failure_webhooks():
 	# In past hour, if 70% of webhook deliveries has failed, disable the webhook and notify the user
-	data = frappe.db.sql(
-		"""
-SELECT `endpoint`
-FROM `tabPress Webhook Attempt`
-WHERE `creation` >= NOW() - INTERVAL 1 HOUR
-GROUP BY `endpoint`
-HAVING COUNT(*) >= %(min_attempts)s
-	AND (COUNT(CASE WHEN `status` = 'Failed' THEN 1 END) / COUNT(*)) * 100 > 70;
-""",
-		{"min_attempts": MIN_ATTEMPTS_FOR_AUTO_DISABLE},
-		as_dict=True,
+	PressWebhookAttempt = frappe.qb.DocType("Press Webhook Attempt")
+	total = Count("*")
+	failed = Sum(Case().when(PressWebhookAttempt.status == "Failed", 1).else_(0))
+	one_hour_ago = frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=-1)
+
+	query = (
+		frappe.qb.from_(PressWebhookAttempt)
+		.select(PressWebhookAttempt.endpoint)
+		.where(PressWebhookAttempt.creation >= one_hour_ago)
+		.groupby(PressWebhookAttempt.endpoint)
+		.having((total >= MIN_ATTEMPTS_FOR_AUTO_DISABLE) & ((failed / total) * 100 > 70))
 	)
+	data = query.run(as_dict=True)
 	endpoints = [row.endpoint for row in data]
 	doc_names = frappe.get_all("Press Webhook", filters={"endpoint": ("in", endpoints)}, pluck="name")
 	for doc_name in doc_names:
