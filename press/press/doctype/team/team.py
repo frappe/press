@@ -186,6 +186,7 @@ class Team(Document):
 		"receive_budget_alerts",
 		"monthly_alert_threshold",
 		"company_name",
+		"company_logo",
 		"hybrid_servers_enabled",
 		"relaxed_permissions",
 		"upi_autopay_enabled",

@@ -9,7 +9,7 @@ from frappe.utils import validate_email_address, validate_phone_number
 from frappe.utils.caching import redis_cache
 
 COMMUNICATION_TYPE_LITERAL = Literal[
-	"General", "Billing", "Incident", "Server Activity", "Site Activity", "Marketplace"
+	"General", "Billing", "Incident", "Server Activity", "Site Activity", "Marketplace", "Sales"
 ]
 
 
@@ -29,7 +29,9 @@ class CommunicationInfo(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		type: DF.Literal["General", "Billing", "Incident", "Server Activity", "Site Activity", "Marketplace"]
+		type: DF.Literal[
+			"General", "Billing", "Incident", "Server Activity", "Site Activity", "Marketplace", "Sales"
+		]
 		value: DF.Data
 	# end: auto-generated types
 
