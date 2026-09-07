@@ -22,6 +22,7 @@ class PublicServerHealthMetrics(TypedDict):
 	available_memory_bytes: dict[str, float]
 	available_memory_ratio: dict[str, float]
 	cpu_idle_ratio: dict[str, float]
+	disk_used_ratio: dict[str, float]
 	oom_kills: dict[str, float]
 
 
@@ -37,7 +38,8 @@ def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
 	"""Refresh `use_for_new_benches` and `use_for_new_sites` flags for public clusters
 	1. Consider active, public primary servers for each cluster
 	2. Fetch memory, CPU and OOM-kill health for all servers in bulk from Prometheus
-	3. Prefer healthy servers, and fall back to the least-bad server when a cluster has no healthy candidates
+	3. Prefer healthy servers on the lowest-priced plan
+	4. Fall back to the least-bad server when a cluster has no healthy candidates
 	"""
 	server_names, servers_by_cluster = _get_public_primary_servers_by_cluster()
 	if not server_names:
@@ -47,7 +49,8 @@ def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
 	if not metrics:
 		return
 
-	pool_decision = _get_public_server_pool_decision(servers_by_cluster, metrics)
+	server_plan_prices = _get_public_server_plan_prices(server_names)
+	pool_decision = _get_public_server_pool_decision(servers_by_cluster, metrics, server_plan_prices)
 	_apply_public_server_pool_decision(server_names, pool_decision)
 	_send_public_server_pool_health_alert(pool_decision["server_issues"])
 	_create_no_suitable_servers_incident(pool_decision["fallback_servers_by_cluster"], metrics)
@@ -66,10 +69,31 @@ def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[
 	return server_names, servers_by_cluster
 
 
+def _get_public_server_plan_prices(server_names: list[str]) -> dict[str, float]:
+	servers = frappe.get_all(
+		"Server",
+		filters={"name": ["in", server_names]},
+		fields=["name", "plan"],
+	)
+	plan_names = list({server.plan for server in servers if server.plan})
+	if not plan_names:
+		return {}
+
+	plans = frappe.get_all(
+		"Server Plan",
+		filters={"name": ["in", plan_names]},
+		fields=["name", "price_usd"],
+	)
+	prices_by_plan = {plan.name: float(plan.price_usd) for plan in plans if plan.price_usd is not None}
+	return {server.name: prices_by_plan[server.plan] for server in servers if server.plan in prices_by_plan}
+
+
 def _get_public_server_pool_decision(
 	servers_by_cluster: dict[str, list[str]],
 	metrics: PublicServerHealthMetrics,
+	server_plan_prices: dict[str, float] | None = None,
 ) -> PublicServerPoolDecision:
+	server_plan_prices = server_plan_prices or {}
 	ram_available_ratio = metrics["available_memory_ratio"]
 	cpu_idle_ratio = metrics["cpu_idle_ratio"]
 
@@ -88,11 +112,6 @@ def _get_public_server_pool_decision(
 		if not candidates:
 			continue
 
-		for server in candidates:
-			issues = _get_public_server_health_issues(server, metrics)
-			if issues:
-				decision["server_issues"][server] = issues
-
 		healthy_servers = [
 			server
 			for server in candidates
@@ -101,11 +120,18 @@ def _get_public_server_pool_decision(
 		decision["servers_with_decision"].update(cluster_servers)
 
 		if healthy_servers:
+			preferred_servers = _get_lowest_price_servers(healthy_servers, server_plan_prices)
 			decision["selected_bench_servers"].add(
-				max(sorted(healthy_servers), key=lambda server: _get_bench_pool_score(server, metrics))
+				max(
+					sorted(preferred_servers),
+					key=lambda server: _get_bench_pool_score(server, metrics),
+				)
 			)
 			decision["selected_site_servers"].add(
-				max(sorted(healthy_servers), key=lambda server: _get_site_pool_score(server, metrics))
+				max(
+					sorted(preferred_servers),
+					key=lambda server: _get_site_pool_score(server, metrics),
+				)
 			)
 			continue
 
@@ -116,16 +142,25 @@ def _get_public_server_pool_decision(
 		decision["selected_site_servers"].add(selected_server)
 		decision["fallback_servers_by_cluster"][cluster] = selected_server
 
-	for server, oom_kills in metrics["oom_kills"].items():
-		if oom_kills > 4:
-			decision["server_issues"].setdefault(server, []).append(
-				f"OOM kills in the last 60 minutes: {max(1, round(oom_kills))}"
-			)
+	alert_servers = {server for servers in servers_by_cluster.values() for server in servers}
+	for server in alert_servers:
+		issues = _get_public_server_alert_issues(server, metrics)
+		if issues:
+			decision["server_issues"][server] = issues
 
 	return decision
 
 
-def _get_public_server_health_issues(server: str, metrics: PublicServerHealthMetrics) -> list[str]:
+def _get_lowest_price_servers(servers: list[str], server_plan_prices: dict[str, float]) -> list[str]:
+	priced_servers = [server for server in servers if server in server_plan_prices]
+	if not priced_servers:
+		return servers
+
+	lowest_price = min(server_plan_prices[server] for server in priced_servers)
+	return [server for server in priced_servers if server_plan_prices[server] == lowest_price]
+
+
+def _get_public_server_placement_issues(server: str, metrics: PublicServerHealthMetrics) -> list[str]:
 	issues = []
 	ram_utilization = 1 - metrics["available_memory_ratio"][server]
 	cpu_utilization = 1 - metrics["cpu_idle_ratio"][server]
@@ -134,6 +169,25 @@ def _get_public_server_health_issues(server: str, metrics: PublicServerHealthMet
 		issues.append(f"RAM utilization: {ram_utilization * 100:.2f}%")
 	if cpu_utilization > 0.5:
 		issues.append(f"CPU utilization: {cpu_utilization * 100:.2f}%")
+
+	return issues
+
+
+def _get_public_server_alert_issues(server: str, metrics: PublicServerHealthMetrics) -> list[str]:
+	issues = []
+	ram_available_ratio = metrics["available_memory_ratio"].get(server)
+	cpu_idle_ratio = metrics["cpu_idle_ratio"].get(server)
+	disk_used_ratio = metrics["disk_used_ratio"].get(server, 0.0)
+	oom_kills = metrics["oom_kills"].get(server, 0.0)
+
+	if ram_available_ratio is not None and 1 - ram_available_ratio > 0.9:
+		issues.append(f"RAM utilization: {(1 - ram_available_ratio) * 100:.2f}%")
+	if cpu_idle_ratio is not None and 1 - cpu_idle_ratio > 0.5:
+		issues.append(f"CPU utilization: {(1 - cpu_idle_ratio) * 100:.2f}%")
+	if disk_used_ratio > 0.9:
+		issues.append(f"Disk utilization: {disk_used_ratio * 100:.2f}%")
+	if oom_kills > 4:
+		issues.append(f"OOM kills: {max(1, round(oom_kills))}")
 
 	return issues
 
@@ -167,7 +221,7 @@ def _get_site_pool_score(
 def _get_least_bad_pool_score(
 	server: str, metrics: PublicServerHealthMetrics
 ) -> tuple[int, float, float, float]:
-	failed_check_count = len(_get_public_server_health_issues(server, metrics))
+	failed_check_count = len(_get_public_server_placement_issues(server, metrics))
 	return (
 		-failed_check_count,
 		metrics["cpu_idle_ratio"].get(server, 0.0),
@@ -220,7 +274,7 @@ def _apply_public_server_pool_decision(
 
 
 def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHealthMetrics | None:
-	"""Fetch memory, CPU and kernel OOM-kill metrics for public servers from Prometheus."""
+	"""Fetch placement and alerting metrics for public servers from Prometheus."""
 	if not server_names:
 		return None
 
@@ -240,6 +294,11 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 		f'avg by (instance) (rate(node_cpu_seconds_total{{instance=~"^({instance_matcher})$", '
 		f'job="node", mode="idle"}}[60m]))'
 	)
+	disk_used_ratio_query = (
+		f'1 - (node_filesystem_avail_bytes{{instance=~"^({instance_matcher})$", job="node", '
+		f'device!~"rootfs", mountpoint="/"}} / node_filesystem_size_bytes{{'
+		f'instance=~"^({instance_matcher})$", job="node", device!~"rootfs", mountpoint="/"}})'
+	)
 	oom_kills_query = (
 		f'sum by (instance) (increase(node_vmstat_oom_kill{{instance=~"^({instance_matcher})$", '
 		f'job="node"}}[60m])) > 4'
@@ -248,6 +307,7 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 	available_memory_bytes_results = _query_prometheus_vector(available_memory_bytes_query, url, auth)
 	available_memory_ratio_results = _query_prometheus_vector(available_memory_ratio_query, url, auth)
 	cpu_idle_ratio_results = _query_prometheus_vector(cpu_idle_ratio_query, url, auth)
+	disk_used_ratio_results = _query_prometheus_vector(disk_used_ratio_query, url, auth)
 	oom_kills_results = _query_prometheus_vector(oom_kills_query, url, auth)
 
 	if (
@@ -265,6 +325,9 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 			server_names, available_memory_ratio_results
 		),
 		"cpu_idle_ratio": _build_public_server_metric_map(server_names, cpu_idle_ratio_results),
+		"disk_used_ratio": _build_public_server_metric_map(
+			server_names, disk_used_ratio_results, default=0.0
+		),
 		"oom_kills": _build_public_server_metric_map(server_names, oom_kills_results, default=0.0),
 	}
 
@@ -337,7 +400,7 @@ def _send_public_server_pool_health_alert(server_issues: dict[str, list[str]]) -
 	header_lines = [
 		f"**Public Server Pool Health Alerts** - {len(affected_servers)}",
 		"",
-		"Thresholds: RAM utilization > 80%, CPU utilization > 50%, OOM kills in the last hour > 4",
+		"Thresholds: RAM utilization > 90%, CPU utilization > 50%, Disk Utilization > 90%, OOM kills > 4",
 		"",
 	]
 	table_header = [
@@ -386,7 +449,7 @@ def _create_no_suitable_servers_incident(
 				"Health issues:",
 			]
 		)
-		issues = _get_public_server_health_issues(selected_server, metrics)
+		issues = _get_public_server_placement_issues(selected_server, metrics)
 		if issues:
 			description_lines.extend(f"- {issue}" for issue in issues)
 		else:
