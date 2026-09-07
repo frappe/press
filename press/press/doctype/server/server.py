@@ -1550,17 +1550,25 @@ class BaseServer(Document, TagHelpers):
 		"""
 		from press.press.doctype.bench.bench import Bench
 
-		benches = frappe.get_all(
-			"Bench",
-			filters={"server": self.name, "status": ("!=", "Archived")},
-			fields=["name", "is_ssh_proxy_setup"],
-			ignore_ifnull=True,
-		)
+		benches = [
+			Bench("Bench", name)
+			for name in frappe.get_all(
+				"Bench",
+				filters={"server": self.name, "status": ("!=", "Archived")},
+				pluck="name",
+				ignore_ifnull=True,
+			)
+		]
+
+		# Check every bench before archiving any. check_unarchived_sites commits,
+		# so a bench that fails the check halfway would leave the earlier ones
+		# archived while the server archive aborts.
 		for bench in benches:
-			doc = Bench("Bench", bench.name)
-			doc.check_unarchived_sites()
+			bench.check_unarchived_sites()
+
+		for bench in benches:
 			if bench.is_ssh_proxy_setup:
-				doc.remove_ssh_user()
+				bench.remove_ssh_user()
 			frappe.db.set_value("Bench", bench.name, "status", "Archived")
 
 	def _archive(self, reason=None):
