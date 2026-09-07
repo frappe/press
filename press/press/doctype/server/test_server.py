@@ -883,3 +883,19 @@ class TestArchiveBenches(FrappeTestCase):
 
 		self.assertRaisesRegex(ArchiveBenchError, "unarchived sites", server.archive_benches)
 		self.assertEqual(frappe.db.get_value("Bench", bench.name, "status"), "Active")
+
+	def test_no_bench_is_archived_when_a_later_bench_still_has_a_site(self):
+		server = create_test_server()
+		empty_bench = create_test_bench(server=server.name)
+		bench_with_site = create_test_bench(server=server.name)
+		create_test_site(bench=bench_with_site.name)
+		# Benches are read in `modified desc` order, so pin the empty one first.
+		frappe.db.set_value("Bench", empty_bench.name, "modified", "2026-01-02", update_modified=False)
+		frappe.db.set_value("Bench", bench_with_site.name, "modified", "2026-01-01", update_modified=False)
+
+		self.assertRaisesRegex(
+			ArchiveBenchError, "unarchived sites", Server("Server", server.name).archive_benches
+		)
+
+		statuses = frappe.get_all("Bench", {"server": server.name}, pluck="status")
+		self.assertNotIn("Archived", statuses)
