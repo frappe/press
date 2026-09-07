@@ -812,9 +812,14 @@ def secondary_server_plans(
 	return filter_by_roles(plans)
 
 
-def has_similar_enabled_plans(platform: str, cluster: bool) -> bool:
-	"""Check if enabled plans exist for the given platform with the same cluster"""
-	return frappe.db.exists("Server Plan", {"enabled": 1, platform: platform, "cluster": cluster})
+def has_similar_enabled_plans(platform: str, cluster: str) -> bool:
+	"""Check if enabled non-legacy plans exist for the given platform in the same cluster"""
+	return bool(
+		frappe.db.exists(
+			"Server Plan",
+			{"enabled": 1, "legacy_plan": 0, "platform": platform, "cluster": cluster},
+		)
+	)
 
 
 @frappe.whitelist()
@@ -833,11 +838,13 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 	if resource_name:
 		current_plan = frappe.db.get_value(name, resource_name, "plan")
 		if current_plan:
-			legacy_plan, cluster = frappe.db.get_value(
-				"Server Plan", current_plan, ["legacy_plan", "cluster"]
+			plan = frappe.db.get_value(
+				"Server Plan", current_plan, ["legacy_plan", "cluster", "platform"], as_dict=True
 			)
-			if legacy_plan:
-				has_enabled_plans = has_similar_enabled_plans(platform, cluster)
+			# A server never moves across platforms, so only offer plans of its own platform
+			filters.update({"platform": plan.platform})
+			if plan.legacy_plan:
+				has_enabled_plans = has_similar_enabled_plans(plan.platform, plan.cluster)
 				filters.update({"legacy_plan": not has_enabled_plans})
 			else:
 				filters.update({"legacy_plan": False})
