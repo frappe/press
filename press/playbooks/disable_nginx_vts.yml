@@ -1,0 +1,20 @@
+---
+- name: Disable NGINX VTS Module
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  tasks:
+    - name: Disable VTS Module in Agent Config
+      become_user: frappe
+      command: >-
+        /home/frappe/agent/env/bin/python -c
+        "from agent.server import Server; server = Server(); config = server.get_config(for_update=True); config['nginx_vts_module_enabled'] = False; server.set_config(config)"
+      args:
+        chdir: /home/frappe/agent
+
+    - name: Regenerate NGINX Configuration
+      become_user: frappe
+      command: /home/frappe/agent/env/bin/agent setup nginx
+      args:
+        chdir: /home/frappe/agent

@@ -2647,6 +2647,18 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			frappe.throw("Failed to set docker MTU")  # nosemgrep
 		return play
 
+	def _disable_nginx_vts(self, throw_on_failure: bool = False):
+		ansible = Ansible(
+			playbook="disable_nginx_vts.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+		)
+		play = ansible.run()
+		if play.status != "Success" and throw_on_failure:
+			frappe.throw("Failed to disable NGINX VTS module")  # nosemgrep
+		return play
+
 	@frappe.whitelist()
 	def reload_nginx(self):
 		agent = Agent(self.name, server_type=self.doctype)
