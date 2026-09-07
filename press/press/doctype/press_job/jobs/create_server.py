@@ -34,6 +34,7 @@ class CreateServerJob(PressJob):
 
 		self.update_tls_certificate()
 		self.update_agent()
+		self.disable_nginx_vts()
 
 		if self.server_type == "Database Server" or (
 			self.server_type == "Server" and self.server_doc.is_unified_server
@@ -259,6 +260,10 @@ class CreateServerJob(PressJob):
 	@task
 	def update_agent(self):
 		self.server_doc._update_agent_ansible(throw_on_failure=True)
+
+	@task
+	def disable_nginx_vts(self):
+		self.server_doc._disable_nginx_vts(throw_on_failure=True)
 
 	@task(queue="long", timeout=1800)
 	def upgrade_mariadb(self):
