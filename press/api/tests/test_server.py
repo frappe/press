@@ -114,6 +114,12 @@ def successful_update_agent_ansible(self: BaseServer, *args, **kwargs):
 	return create_test_ansible_play("Update Agent", "update_agent.yml", self.doctype, self.name)
 
 
+def successful_disable_nginx_vts(self: BaseServer, *args, **kwargs):
+	return create_test_ansible_play(
+		"Disable NGINX VTS Module", "disable_nginx_vts.yml", self.doctype, self.name
+	)
+
+
 def successful_wait_for_cloud_init(self: BaseServer, *args, **kwargs):
 	return create_test_ansible_play(
 		"Wait for Cloud Init to finish", "wait_for_cloud_init.yml", self.doctype, self.name
@@ -135,6 +141,7 @@ def successful_wait_for_cloud_init(self: BaseServer, *args, **kwargs):
 @patch.object(BaseServer, "update_tls_certificate", new=successful_tls_certificate)
 @patch.object(BaseServer, "update_agent_ansible", new=successful_update_agent_ansible)
 @patch.object(BaseServer, "_update_agent_ansible", new=successful_update_agent_ansible)
+@patch.object(BaseServer, "_disable_nginx_vts", new=successful_disable_nginx_vts)
 @patch.object(Cluster, "check_machine_availability", new=available_check_machine_availability)
 class TestAPIServer(FrappeTestCase):
 	@patch.object(Cluster, "provision_on_aws_ec2", new=Mock())
