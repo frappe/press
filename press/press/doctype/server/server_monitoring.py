@@ -37,7 +37,8 @@ def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
 	"""Refresh `use_for_new_benches` and `use_for_new_sites` flags for public clusters
 	1. Consider active, public primary servers for each cluster
 	2. Fetch memory, CPU and OOM-kill health for all servers in bulk from Prometheus
-	3. Prefer healthy servers, and fall back to the least-bad server when a cluster has no healthy candidates
+	3. Prefer healthy servers on the lowest-priced plan
+	4. Fall back to the least-bad server when a cluster has no healthy candidates
 	"""
 	server_names, servers_by_cluster = _get_public_primary_servers_by_cluster()
 	if not server_names:
@@ -47,7 +48,8 @@ def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
 	if not metrics:
 		return
 
-	pool_decision = _get_public_server_pool_decision(servers_by_cluster, metrics)
+	server_plan_prices = _get_public_server_plan_prices(server_names)
+	pool_decision = _get_public_server_pool_decision(servers_by_cluster, metrics, server_plan_prices)
 	_apply_public_server_pool_decision(server_names, pool_decision)
 	_send_public_server_pool_health_alert(pool_decision["server_issues"])
 	_create_no_suitable_servers_incident(pool_decision["fallback_servers_by_cluster"], metrics)
@@ -66,10 +68,31 @@ def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[
 	return server_names, servers_by_cluster
 
 
+def _get_public_server_plan_prices(server_names: list[str]) -> dict[str, float]:
+	servers = frappe.get_all(
+		"Server",
+		filters={"name": ["in", server_names]},
+		fields=["name", "plan"],
+	)
+	plan_names = list({server.plan for server in servers if server.plan})
+	if not plan_names:
+		return {}
+
+	plans = frappe.get_all(
+		"Server Plan",
+		filters={"name": ["in", plan_names]},
+		fields=["name", "price_usd"],
+	)
+	prices_by_plan = {plan.name: float(plan.price_usd) for plan in plans if plan.price_usd is not None}
+	return {server.name: prices_by_plan[server.plan] for server in servers if server.plan in prices_by_plan}
+
+
 def _get_public_server_pool_decision(
 	servers_by_cluster: dict[str, list[str]],
 	metrics: PublicServerHealthMetrics,
+	server_plan_prices: dict[str, float] | None = None,
 ) -> PublicServerPoolDecision:
+	server_plan_prices = server_plan_prices or {}
 	ram_available_ratio = metrics["available_memory_ratio"]
 	cpu_idle_ratio = metrics["cpu_idle_ratio"]
 
@@ -101,11 +124,18 @@ def _get_public_server_pool_decision(
 		decision["servers_with_decision"].update(cluster_servers)
 
 		if healthy_servers:
+			preferred_servers = _get_lowest_price_servers(healthy_servers, server_plan_prices)
 			decision["selected_bench_servers"].add(
-				max(sorted(healthy_servers), key=lambda server: _get_bench_pool_score(server, metrics))
+				max(
+					sorted(preferred_servers),
+					key=lambda server: _get_bench_pool_score(server, metrics),
+				)
 			)
 			decision["selected_site_servers"].add(
-				max(sorted(healthy_servers), key=lambda server: _get_site_pool_score(server, metrics))
+				max(
+					sorted(preferred_servers),
+					key=lambda server: _get_site_pool_score(server, metrics),
+				)
 			)
 			continue
 
@@ -123,6 +153,15 @@ def _get_public_server_pool_decision(
 			)
 
 	return decision
+
+
+def _get_lowest_price_servers(servers: list[str], server_plan_prices: dict[str, float]) -> list[str]:
+	priced_servers = [server for server in servers if server in server_plan_prices]
+	if not priced_servers:
+		return servers
+
+	lowest_price = min(server_plan_prices[server] for server in priced_servers)
+	return [server for server in priced_servers if server_plan_prices[server] == lowest_price]
 
 
 def _get_public_server_health_issues(server: str, metrics: PublicServerHealthMetrics) -> list[str]:
