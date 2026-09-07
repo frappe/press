@@ -21,8 +21,8 @@ if TYPE_CHECKING:
 
 _JOBS_REGISTRY: dict[str, type] = {}
 
-# A failure here leaves a server half provisioned, half archived, or on the wrong
-# plan. Someone has to look at it, so tell the alerts channel.
+# These failures require human intervention, so notify the server alerts
+# channel when they occur.
 ALERTED_JOB_TYPES = ("Create Server", "Archive Server", "Resize Server")
 
 
