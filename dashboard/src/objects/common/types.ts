@@ -48,6 +48,10 @@ export interface DashboardObject {
 export interface Detail {
 	titleField: string
 	statusBadge: StatusBadge
+	// Rendered above the tabs, so it stays on every tab of the detail page.
+	banner?: (r: {
+		documentResource: DocumentResource
+	}) => DetailBannerConfig | undefined
 	breadcrumbs?: Breadcrumbs
 	route: string
 	tabs: Tab[]
@@ -184,6 +188,20 @@ interface Option {
 	icon: Icon | AsyncComponent
 	condition: () => boolean
 	onClick: () => void
+}
+
+// Rendered by PageBanner.vue as a full-bleed strip under the page header, so a
+// detail banner carries no dismiss control. Use BannerConfig for ObjectList.
+export interface DetailBannerConfig {
+	title: string
+	type?: string
+	// Spread onto Button, like BannerConfig's button in ObjectList
+	button?: {
+		label: string
+		variant?: string
+		link?: string
+		onClick?: () => void
+	}
 }
 
 export interface BannerConfig {

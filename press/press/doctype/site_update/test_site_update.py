@@ -41,6 +41,13 @@ from press.press.doctype.site_update.site_update import (
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 
 
+def make_deploy_type_migrate(candidate: str, app: str):
+	"""Site Update reads the app rows of the difference to tell a Pull from a Migrate."""
+	difference = frappe.get_last_doc("Deploy Candidate Difference", {"destination": candidate})
+	difference.append("apps", {"app": app, "deploy_type": "Migrate"})
+	difference.save()
+
+
 @patch.object(SiteUpdate, "start", new=Mock())
 def create_test_site_update(
 	site: str, destination_group: str, status: str, ignore_validate: bool = False
@@ -620,11 +627,12 @@ class TestSiteUpdate(FrappeTestCase):
 		self.assertIn("SSH", details["message"])
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
-	def test_site_update_is_blocked_on_site_with_database_larger_than_100_gb(self):
+	def test_migrate_update_is_blocked_on_site_with_database_larger_than_100_gb(self):
 		group = create_test_release_group([create_test_app()])
 		bench1 = create_test_bench(group=group)
 		bench2 = create_test_bench(group=group, server=bench1.server)
 		create_test_deploy_candidate_differences(bench2.candidate)
+		make_deploy_type_migrate(bench2.candidate, "frappe")
 
 		site = create_test_site(bench=bench1.name)
 		# Site Usage sizes are in MB
@@ -635,6 +643,20 @@ class TestSiteUpdate(FrappeTestCase):
 			"too large to update without a physical backup",
 			site.schedule_update,
 		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_pull_update_is_allowed_on_site_with_database_larger_than_100_gb(self):
+		"""A Pull update takes no backup, so the size of the database doesn't matter."""
+		group = create_test_release_group([create_test_app()])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+
+		site = create_test_site(bench=bench1.name)
+		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
+
+		site_update = frappe.get_doc("Site Update", site.schedule_update())
+		self.assertEqual(site_update.deploy_type, "Pull")
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_site_update_is_allowed_on_site_with_database_smaller_than_100_gb(self):
@@ -676,6 +698,7 @@ class TestSiteUpdate(FrappeTestCase):
 		bench1 = create_test_bench(group=group, server=server.name)
 		bench2 = create_test_bench(group=group, server=server.name)
 		create_test_deploy_candidate_differences(bench2.candidate)
+		make_deploy_type_migrate(bench2.candidate, "frappe")
 
 		site = create_test_site(bench=bench1.name)
 		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()

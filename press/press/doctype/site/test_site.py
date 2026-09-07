@@ -34,7 +34,9 @@ from press.press.doctype.site.site import (
 	NOTIFY_BEFORE_ARCHIVAL_DAYS,
 	Site,
 	archive_suspended_sites,
+	get_remove_step_status,
 	notify_sites_before_archival,
+	process_archive_site_job_update,
 	process_new_site_job_update,
 	process_rename_site_job_update,
 	suspend_sites_exceeding_disk_usage_for_last_14_days,
@@ -186,6 +188,16 @@ class TestSite(FrappeTestCase):
 	def tearDown(self):
 		frappe.set_user("Administrator")
 		frappe.db.rollback()
+
+	def test_get_doc_reports_commit_time_of_the_frappe_release_on_the_bench(self):
+		site = create_test_site()
+		release = frappe.db.get_value("Bench App", {"parent": site.bench, "app": "frappe"}, "release")
+		commit_time = frappe.utils.add_days(frappe.utils.now_datetime(), -45)
+		frappe.db.set_value("App Release", release, "timestamp", commit_time)
+
+		doc = frappe._dict()
+		site.get_doc(doc)
+		self.assertEqual(doc.frappe_updated_on, commit_time)
 
 	def test_restore_site_from_files_rejects_remote_file_of_another_team(self):
 		from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
@@ -1151,3 +1163,69 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 		site = Site({"doctype": "Site", "plan": plan.name})
 
 		self.assertEqual(site.get_plan_config()["rate_limit"], {"limit": 36000, "window": 86400})
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestArchiveSiteJobUpdate(FrappeTestCase):
+	"""A skipped Archive Site step must not mark the site Archived."""
+
+	def setUp(self):
+		self.site = create_test_site("testsubdomain")
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _create_archive_jobs(self, archive_job_status: str) -> AgentJob:
+		"""Create the pair of jobs an archive runs, with the upstream one done."""
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		upstream_job = create_test_agent_job(
+			"Remove Site from Upstream", server=self.site.server, status="Success"
+		)
+		upstream_job.db_set("site", self.site.name)
+		self._set_step_status(upstream_job, "Remove Site File from Upstream Directory", "Success")
+
+		archive_job = create_test_agent_job(
+			"Archive Site", server=self.site.server, status=archive_job_status
+		)
+		archive_job.db_set("site", self.site.name)
+		return archive_job
+
+	def _set_step_status(self, job: AgentJob, step_name: str, status: str):
+		frappe.db.set_value(
+			"Agent Job Step", {"agent_job": job.name, "step_name": step_name}, "status", status
+		)
+
+	def test_archive_step_skipped_after_a_stuck_backup_marks_the_site_broken(self):
+		"""The job died while Backup Site was still running, so the site is still on the bench."""
+		archive_job = self._create_archive_jobs("Failure")
+		self._set_step_status(archive_job, "Backup Site", "Running")
+		self._set_step_status(archive_job, "Archive Site", "Skipped")
+
+		process_archive_site_job_update(archive_job)
+
+		self.site.reload()
+		self.assertEqual(self.site.status, "Broken")
+		self.assertTrue(self.site.archive_failed)
+
+	def test_archive_step_skipped_after_a_failed_backup_upload_marks_the_site_broken(self):
+		"""Backup Site succeeded, the upload failed, so Archive Site never ran."""
+		archive_job = self._create_archive_jobs("Failure")
+		self._set_step_status(archive_job, "Backup Site", "Success")
+		self._set_step_status(archive_job, "Upload Site Backup to S3", "Failure")
+		self._set_step_status(archive_job, "Archive Site", "Skipped")
+
+		process_archive_site_job_update(archive_job)
+
+		self.site.reload()
+		self.assertEqual(self.site.status, "Broken")
+		self.assertTrue(self.site.archive_failed)
+
+	def test_step_skipped_by_a_successful_job_still_counts_as_removed(self):
+		"""The agent skips a step it has no work for. That job succeeded, so nothing is left behind."""
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		job = create_test_agent_job("Remove Site from Upstream", server=self.site.server, status="Success")
+		self._set_step_status(job, "Remove Site File from Upstream Directory", "Skipped")
+
+		self.assertEqual(get_remove_step_status(job), "Skipped")

@@ -186,6 +186,7 @@ class Team(Document):
 		"receive_budget_alerts",
 		"monthly_alert_threshold",
 		"company_name",
+		"company_logo",
 		"hybrid_servers_enabled",
 		"relaxed_permissions",
 		"upi_autopay_enabled",
@@ -1683,6 +1684,24 @@ class Team(Document):
 				"requested_amount": f"{requested_amount:,.0f}",
 				"confirmed_amount": f"{confirmed_amount:,.0f}",
 				"upi_autopay_link": frappe.utils.get_url("/dashboard/billing/upi-autopay"),
+			},
+		)
+
+	def send_email_for_invalid_payment_method(self, invoice):
+		if isinstance(invoice, str):
+			invoice = frappe.get_doc("Invoice", invoice)
+
+		email = get_communication_info("Email", "Billing", "Team", self.name) or [self.user]
+		subject = "Card on Frappe Cloud could not be charged"
+
+		frappe.sendmail(
+			recipients=email,
+			subject=subject,
+			template="payment_method_invalid",
+			args={
+				"subject": subject,
+				"amount": invoice.get_formatted("amount_due_with_tax"),
+				"billing_link": frappe.utils.get_url("/dashboard/billing"),
 			},
 		)
 

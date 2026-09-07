@@ -129,7 +129,7 @@ const serverActions = (server) => [
 				<span>Version</span>
 			</template>
 
-			<div v-else class="flex gap-2 items-center pb-2 col-span-4">
+			<div v-else class="flex gap-2 items-center col-span-4">
 				<Tooltip
 					text="Add benches via the more button or benches tab to start hosting sites"
 					:hoverDelay="0"

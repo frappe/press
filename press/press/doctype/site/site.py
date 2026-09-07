@@ -386,6 +386,7 @@ class Site(Document, TagHelpers):
 	def get_doc(self, doc):
 		from press.api.client import get
 		from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import disk_full_servers
+		from press.press.doctype.bench.bench import get_frappe_release_timestamp
 
 		group = frappe.db.get_value(
 			"Release Group",
@@ -407,6 +408,7 @@ class Site(Document, TagHelpers):
 			order_by="name desc",
 			pluck="name",
 		)
+		doc.frappe_updated_on = get_frappe_release_timestamp(self.bench)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
 		doc.last_updated = self.last_updated
@@ -4894,20 +4896,8 @@ def get_remove_step_status(job):
 		for_update=True,
 	)
 
-	if (
-		remove_step_name == "Archive Site"
-		and status == "Skipped"
-		and (
-			frappe.db.get_value(
-				"Agent Job Step",
-				{"step_name": "Backup Site", "agent_job": job.name},
-				"status",
-				for_update=True,
-			)
-			== "Failure"
-		)
-	):
-		# consider as failure if archive was skipped because of backup failure
+	if status == "Skipped" and job.status != "Success":
+		# The step never ran. The job died before it, so nothing was removed.
 		status = "Failure"
 	return status
 

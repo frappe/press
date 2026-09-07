@@ -1,0 +1,93 @@
+{
+	"actions": [],
+	"creation": "2026-09-02 13:30:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"date",
+		"frappe_version",
+		"column_break_axmd",
+		"days_since_update",
+		"public_bench",
+		"section_break_pqvj",
+		"sites",
+		"backfilled"
+	],
+	"fields": [
+		{
+			"fieldname": "date",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Date",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"description": "Stored as data, not a link, so history survives a Frappe Version being renamed or removed.",
+			"fieldname": "frappe_version",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Frappe Version",
+			"reqd": 1
+		},
+		{ "fieldname": "column_break_axmd", "fieldtype": "Column Break" },
+		{
+			"description": "Start of the 30 day band. 0 means the deployed frappe is under 30 days old, 360 means a year or older.",
+			"fieldname": "days_since_update",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Days Since Update"
+		},
+		{
+			"default": "0",
+			"fieldname": "public_bench",
+			"fieldtype": "Check",
+			"in_standard_filter": 1,
+			"label": "Public Bench"
+		},
+		{ "fieldname": "section_break_pqvj", "fieldtype": "Section Break" },
+		{
+			"fieldname": "sites",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Sites"
+		},
+		{
+			"default": "0",
+			"description": "Reconstructed from Site Update history rather than observed. Only counts sites still active when the backfill ran, so it undercounts.",
+			"fieldname": "backfilled",
+			"fieldtype": "Check",
+			"in_standard_filter": 1,
+			"label": "Backfilled"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-09-02 13:30:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Site Version Audit",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "date",
+	"sort_order": "DESC",
+	"states": []
+}

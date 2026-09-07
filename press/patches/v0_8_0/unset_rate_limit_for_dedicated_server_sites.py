@@ -24,3 +24,5 @@ def execute():
 			# one unreachable bench must not stop the migration
 			frappe.db.rollback()
 			log_error("Dedicated Site Rate Limit Patch Failure", site=site.name)
+		else:
+			print(f"Reset rate limit: {site.name}")
