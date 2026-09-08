@@ -2,16 +2,24 @@
 import {
 	Badge,
 	Button,
+	createDocumentResource,
+	createListResource,
 	Dropdown,
 	Spinner,
 	Tooltip,
-	createListResource,
-	createDocumentResource,
 } from 'frappe-ui'
-import { h, ref, computed, defineAsyncComponent, onBeforeUnmount, watch, reactive } from 'vue'
+import {
+	computed,
+	defineAsyncComponent,
+	h,
+	onBeforeUnmount,
+	reactive,
+	ref,
+	watch,
+} from 'vue'
 import Collapsable from '@/components/common/Collapsable.vue'
-import { renderDialog } from '@/utils/components'
 import { dropBench } from '@/pages/servers/list/utils'
+import { renderDialog } from '@/utils/components'
 import { getSiteStatusBadge } from '@/utils/site'
 
 interface Props {
@@ -47,7 +55,6 @@ function onToggle(toggle: () => void) {
 	toggle()
 	if (!sites.data && props.data.site_count) sites.reload()
 }
-
 
 const pipelineId = ref<string | null>(null)
 const pipelineRes = ref<any>(null)
@@ -110,7 +117,6 @@ onBeforeUnmount(() => {
 	wiredSites.forEach((name) => socket.emit('doc_unsubscribe', 'Site', name))
 })
 
-
 const transientStatuses = ['Pending', 'Installing', 'Updating', 'Recovering']
 const wiredSites = reactive(new Set<string>())
 
@@ -124,7 +130,10 @@ watch(
 	() => sites.data,
 	(data) => {
 		data?.forEach((site: any) => {
-			if (transientStatuses.includes(site.status) && !wiredSites.has(site.name)) {
+			if (
+				transientStatuses.includes(site.status) &&
+				!wiredSites.has(site.name)
+			) {
 				socket.emit('doc_subscribe', 'Site', site.name)
 				wiredSites.add(site.name)
 			}
@@ -132,7 +141,6 @@ watch(
 	},
 	{ immediate: true },
 )
-
 
 function openDeployDialog(e: Event) {
 	e.stopPropagation()
@@ -157,7 +165,18 @@ function openAddSiteDialog() {
 	const AddSiteDialog = defineAsyncComponent(
 		() => import('@/pages/servers/list/AddSiteDialog.vue'),
 	)
-	renderDialog(h(AddSiteDialog, { bench: props.data, onSiteCreated: () => sites.reload() }))
+	const server = {
+		name: props.data.server,
+		title: props.data.server_title,
+		provider: props.data.server_provider,
+	}
+	renderDialog(
+		h(AddSiteDialog, {
+			bench: props.data,
+			server,
+			onSiteCreated: () => sites.reload(),
+		}),
+	)
 }
 
 const groupOptions = [
@@ -169,7 +188,10 @@ const groupOptions = [
 	{ label: 'App Marketplace', route: '/apps', icon: LucideStore },
 	{
 		label: 'Bench Actions',
-		route: { name: 'Release Group Detail Actions', params: { name: props.data.name } },
+		route: {
+			name: 'Release Group Detail Actions',
+			params: { name: props.data.name },
+		},
 		icon: LucideSlidersVertical,
 	},
 	{
@@ -188,7 +210,6 @@ const siteOptions = (site: any) => [
 		icon: LucideSlidersVertical,
 	},
 ]
-
 </script>
 
 <template>
@@ -216,7 +237,9 @@ const siteOptions = (site: any) => [
 						</router-link>
 					</Tooltip>
 					<Tooltip :text="`${data.site_count || 0} sites`">
-						<span class="text-xs bg-surface-gray-2 text-ink-gray-6 rounded px-1.5 py-0.5 font-medium shrink-0">
+						<span
+							class="text-xs bg-surface-gray-2 text-ink-gray-6 rounded px-1.5 py-0.5 font-medium shrink-0"
+						>
 							{{ data.site_count || 0 }}
 						</span>
 					</Tooltip>
@@ -337,14 +360,19 @@ const siteOptions = (site: any) => [
 				</span>
 
 				<span class="text-ink-gray-6 text-sm flex gap-1.5 items-center min-w-0">
-					<img v-if="site.cluster_image" :src="site.cluster_image" class="size-3.5 shrink-0" />
-					<span class="truncate">{{ site.cluster_title }}{{ site.cluster_country ? `, ${site.cluster_country}` : '' }}</span>
+					<img
+						v-if="site.cluster_image"
+						:src="site.cluster_image"
+						class="size-3.5 shrink-0"
+					/>
+					<span class="truncate"
+						>{{ site.cluster_title }}
+						{{ site.cluster_country ? `, ${site.cluster_country}` : '' }}</span
+					>
 				</span>
 
 				<Dropdown :options="siteOptions(site)">
-					<Button variant="ghost">
-						<LucideEllipsis class="size-4" />
-					</Button>
+					<Button variant="ghost"> <LucideEllipsis class="size-4" /> </Button>
 				</Dropdown>
 			</div>
 
@@ -353,7 +381,11 @@ const siteOptions = (site: any) => [
 				class="px-2 py-2"
 				:class="!isLast ? 'border-b dark:border-outline-gray-2' : ''"
 			>
-				<Button variant="ghost" :loading="sites.list?.loading" @click="sites.next()">
+				<Button
+					variant="ghost"
+					:loading="sites.list?.loading"
+					@click="sites.next()"
+				>
 					Load more
 				</Button>
 			</div>
@@ -365,7 +397,11 @@ const siteOptions = (site: any) => [
 			:class="!isLast ? 'border-b dark:border-outline-gray-2' : ''"
 		>
 			<span />
-			<Button class="w-fit pl-3" variant="ghost" @click.stop="openAddSiteDialog">
+			<Button
+				class="w-fit pl-3"
+				variant="ghost"
+				@click.stop="openAddSiteDialog"
+			>
 				<template #prefix><LucidePlus class="size-4" /></template>
 				Add site
 			</Button>
