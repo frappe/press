@@ -5,17 +5,19 @@
 				Performance Schema is not enabled on database server
 			</p>
 			<p class="text-base text-ink-gray-7">
-				Read the
+				Please refer to the
 				<a
 					href="https://docs.frappe.io/cloud/performance-tuning"
 					target="_blank"
 					class="underline"
-					>performance tuning guide</a
-				>, or reach out to
-				<a href="https://support.frappe.io/" target="_blank" class="underline"
-					>support</a
+					>performance tuning documentation</a
 				>
-				to enable it
+			</p>
+			<p class="text-base text-ink-gray-7">
+				For any other concern, raise a support ticket on
+				<a href="https://support.frappe.io/" target="_blank" class="underline"
+					>support.frappe.io</a
+				>
 			</p>
 		</template>
 		<template v-else>
