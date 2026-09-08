@@ -14,6 +14,7 @@
 			"mandatory": 0,
 			"options": "5 minutes\n15 minutes\n30 minutes\n1 hour\n3 hours\n6 hours\n12 hours\n24 hours",
 			"wildcard_filter": 0
+<<<<<<< HEAD
 		},
 		{
 			"fieldname": "from_datetime",
@@ -28,11 +29,17 @@
 			"label": "To",
 			"mandatory": 0,
 			"wildcard_filter": 0
+=======
+>>>>>>> 400b508 (feat(report): Add Build Server Stats report)
 		}
 	],
 	"idx": 0,
 	"is_standard": "Yes",
+<<<<<<< HEAD
 	"modified": "2026-09-30 12:00:00.000000",
+=======
+	"modified": "2026-09-08 10:00:00.000000",
+>>>>>>> 400b508 (feat(report): Add Build Server Stats report)
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Build Server Stats",

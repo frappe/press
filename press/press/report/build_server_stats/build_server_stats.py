@@ -1,6 +1,7 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
+<<<<<<< HEAD
 import math
 from collections import Counter
 from dataclasses import dataclass
@@ -9,6 +10,10 @@ from zoneinfo import ZoneInfo
 
 import frappe
 from frappe.utils import add_to_date, get_datetime, get_system_timezone, now_datetime, rounded
+=======
+import frappe
+from frappe.utils import rounded
+>>>>>>> 400b508 (feat(report): Add Build Server Stats report)
 
 from press.api.server import prometheus_query
 
@@ -22,6 +27,7 @@ DURATIONS = {
 	"12 hours": 12 * 60 * 60,
 	"24 hours": 24 * 60 * 60,
 }
+<<<<<<< HEAD
 QUEUED = ("Scheduled", "Pending")
 # Preparing already holds the build server, so it counts against capacity like Running does
 RUNNING = ("Preparing", "Running")
@@ -35,10 +41,14 @@ class Period:
 	@property
 	def seconds(self):
 		return int((self.end - self.start).total_seconds())
+=======
+QUEUED = ("Scheduled", "Pending", "Preparing")
+>>>>>>> 400b508 (feat(report): Add Build Server Stats report)
 
 
 def execute(filters=None):
 	frappe.only_for("System Manager")
+<<<<<<< HEAD
 	period = get_period(frappe._dict(filters or {}))
 	builds = get_builds(period)
 	return (
@@ -61,6 +71,10 @@ def get_period(filters):
 			"The period must be at least 5 minutes long. Choose a From at least 5 minutes before To."
 		)
 	return Period(start, end)
+=======
+	window = DURATIONS[(filters or {}).get("duration") or "1 hour"]
+	return get_columns(), get_data(window), None, get_chart(window)
+>>>>>>> 400b508 (feat(report): Add Build Server Stats report)
 
 
 def get_columns():
@@ -100,6 +114,7 @@ def get_columns():
 	]
 
 
+<<<<<<< HEAD
 def get_data(period, builds):
 	servers = get_servers()
 	names = [server.name for server in servers]
@@ -113,6 +128,21 @@ def get_data(period, builds):
 		server_builds = builds_by_server.get(server.name, [])
 		durations = seconds_of(server_builds, "build_start", "build_end")
 		waits = seconds_of(server_builds, "pending_start", "build_start")
+=======
+def get_data(window):
+	servers = get_servers()
+	names = [server.name for server in servers]
+	builds = get_builds(window)
+	queue = get_queue()
+	pull = get_pull_seconds(window)
+	stats = get_fleet_stats(names, window)
+	disk = get_fleet_disk_usage(names)
+	rows = []
+	for server in servers:
+		server_builds = builds.get(server.name, [])
+		durations = [build.duration for build in server_builds if build.duration is not None]
+		waits = [build.wait for build in server_builds if build.wait is not None]
+>>>>>>> 400b508 (feat(report): Add Build Server Stats report)
 		rows.append(
 			{
 				"server": server.name,
@@ -121,9 +151,15 @@ def get_data(period, builds):
 				"status": server.status,
 				"disk": disk[server.name],
 				"builds": len(server_builds),
+<<<<<<< HEAD
 				"builds_per_hour": rounded(len(server_builds) / (period.seconds / 3600), 1),
 				"running_builds": active.get(server.name, {}).get("running", 0),
 				"queued_builds": active.get(server.name, {}).get("queued", 0),
+=======
+				"builds_per_hour": rounded(len(server_builds) / (window / 3600), 1),
+				"running_builds": len([build for build in server_builds if build.status == "Running"]),
+				"queued_builds": queue.get(server.name, 0),
+>>>>>>> 400b508 (feat(report): Add Build Server Stats report)
 				"median_wait": percentile(waits, 0.5),
 				"median_build": percentile(durations, 0.5),
 				"p95_build": percentile(durations, 0.95),
@@ -147,12 +183,20 @@ def get_servers():
 	return servers
 
 
+<<<<<<< HEAD
 def get_fleet_stats(servers, period):
 	"""CPU, memory and network, averaged over the period, for every server in one query each.
 
 	Loss slows every image push and pull, so the network metrics matter as much as the CPU ones.
 	"""
 	window = period.seconds
+=======
+def get_fleet_stats(servers, window):
+	"""CPU, memory and network, averaged over the window, for every server in one query each.
+
+	Loss slows every image push and pull, so the network metrics matter as much as the CPU ones.
+	"""
+>>>>>>> 400b508 (feat(report): Add Build Server Stats report)
 	node = f'job="node", instance=~"{instances(servers)}"'
 	interface = f'{node}, device!="lo"'
 	memory = f"1 - node_memory_MemAvailable_bytes{{{node}}} / node_memory_MemTotal_bytes{{{node}}}"
@@ -171,7 +215,11 @@ def get_fleet_stats(servers, period):
 	}
 	stats = {server: dict.fromkeys(queries, 0) for server in servers}
 	for name, query in queries.items():
+<<<<<<< HEAD
 		for server, value in latest_values(query, period.end).items():
+=======
+		for server, value in latest_values(query).items():
+>>>>>>> 400b508 (feat(report): Add Build Server Stats report)
 			if server in stats:
 				stats[server][name] = value
 	return stats
@@ -185,12 +233,18 @@ def instances(servers):
 	return "|".join(server.replace(".", r"\\.") for server in servers)
 
 
+<<<<<<< HEAD
 def latest_values(query, end, key=lambda metric: metric.get("instance")):
 	"""Last point of every series up to `end`, keyed by label. A gap and a NaN both read as zero.
+=======
+def latest_values(query, key=lambda metric: metric.get("instance")):
+	"""Last point of every series, keyed by label. A gap and a NaN both read as zero.
+>>>>>>> 400b508 (feat(report): Add Build Server Stats report)
 
 	The window lives inside the query, so ask Prometheus for a short range only. A range as
 	long as the window rounds to whole window boundaries and hides the last several minutes.
 	"""
+<<<<<<< HEAD
 	end = end.replace(tzinfo=ZoneInfo(get_system_timezone()))  # Prometheus reads epoch seconds
 	datasets = prometheus_query(
 		query, key, "Asia/Kolkata", 120, 60, use_timestamps=True, start=end - timedelta(seconds=120), end=end
@@ -210,12 +264,26 @@ def last_number(points):
 
 
 def get_fleet_disk_usage(servers, end):
+=======
+	datasets = prometheus_query(query, key, "Asia/Kolkata", 120, 60)["datasets"]
+	values = {}
+	for dataset in datasets:
+		points = [point for point in dataset["values"] if point is not None]
+		values[dataset["name"]] = points[-1] if points and points[-1] == points[-1] else 0
+	return values
+
+
+def get_fleet_disk_usage(servers):
+>>>>>>> 400b508 (feat(report): Add Build Server Stats report)
 	"""Used percent of every real mountpoint, as "/ 41%, /opt/volumes/docker 88%"."""
 	filesystem = f'job="node", instance=~"{instances(servers)}", fstype!~"tmpfs|squashfs|overlay|fuse.lxcfs"'
 	used = latest_values(
 		f"100 * (1 - node_filesystem_avail_bytes{{{filesystem}}}"
 		f" / node_filesystem_size_bytes{{{filesystem}}})",
+<<<<<<< HEAD
 		end,
+=======
+>>>>>>> 400b508 (feat(report): Add Build Server Stats report)
 		lambda metric: (metric.get("instance"), metric.get("mountpoint")),
 	)
 	mountpoints = {server: [] for server in servers}
@@ -233,6 +301,7 @@ def percentile(values, fraction):
 	return values[min(int(len(values) * fraction), len(values) - 1)]
 
 
+<<<<<<< HEAD
 def get_builds(period):
 	"""Builds that started inside the period."""
 	return frappe.get_all(
@@ -345,3 +414,76 @@ def cluster_loss_row(cluster, retransmit, drops):
 		f"<tr {red}><td>{frappe.utils.escape_html(cluster)}</td>"
 		f"<td>{rounded(retransmit, 2)}</td><td>{rounded(drops, 2)}</td></tr>"
 	)
+=======
+def get_builds(window):
+	"""Builds started inside the window, by server, with their queue wait and run time."""
+	rows = frappe.db.sql(
+		"""
+		SELECT
+			build_server, status,
+			TIMESTAMPDIFF(SECOND, build_start, build_end) AS duration,
+			TIMESTAMPDIFF(SECOND, pending_start, build_start) AS wait
+		FROM `tabDeploy Candidate Build`
+		WHERE build_start >= NOW() - INTERVAL %s SECOND AND build_server IS NOT NULL
+		""",
+		window,
+		as_dict=True,
+	)
+	builds = {}
+	for row in rows:
+		builds.setdefault(row.build_server, []).append(row)
+	return builds
+
+
+def get_queue():
+	"""Builds waiting for a slot right now. Not bound to the window, a queue is always current."""
+	rows = frappe.db.sql(
+		"""
+		SELECT build_server, COUNT(*) AS queued
+		FROM `tabDeploy Candidate Build`
+		WHERE status IN %s AND build_server IS NOT NULL
+		GROUP BY build_server
+		""",
+		(QUEUED,),
+		as_dict=True,
+	)
+	return {row.build_server: row.queued for row in rows}
+
+
+def get_pull_seconds(window):
+	"""Median New Bench job. Every one pulls an image, so it tracks how fast the registry serves."""
+	rows = frappe.db.sql(
+		"""
+		SELECT TIMESTAMPDIFF(SECOND, `start`, `end`) AS duration
+		FROM `tabAgent Job`
+		WHERE job_type = 'New Bench' AND status = 'Success'
+			AND `end` >= NOW() - INTERVAL %s SECOND
+		""",
+		window,
+	)
+	return percentile([row[0] for row in rows if row[0] is not None], 0.5)
+
+
+def get_chart(window):
+	bucket = max(60, window // 12)  # about twelve bars, whatever the window
+	rows = frappe.db.sql(
+		"""
+		SELECT
+			FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(build_start) / %(bucket)s) * %(bucket)s) AS bucket,
+			COUNT(*) AS builds
+		FROM `tabDeploy Candidate Build`
+		WHERE build_start >= NOW() - INTERVAL %(window)s SECOND
+		GROUP BY bucket ORDER BY bucket
+		""",
+		{"bucket": bucket, "window": window},
+		as_dict=True,
+	)
+	return {
+		"title": f"Builds started per {bucket // 60} minutes",
+		"data": {
+			"labels": [row.bucket.strftime("%d %b %H:%M") for row in rows],
+			"datasets": [{"name": "Builds", "values": [row.builds for row in rows]}],
+		},
+		"type": "bar",
+	}
+>>>>>>> 400b508 (feat(report): Add Build Server Stats report)
