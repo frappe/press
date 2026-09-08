@@ -158,6 +158,8 @@ class TestPrometheusAlertRule(FrappeTestCase):
 			server.save()
 
 		pushed_rules = [
-			call for call in enqueue_doc.call_args_list if call.args[:2] == ("Prometheus Alert Rule", rule.name)
+			call
+			for call in enqueue_doc.call_args_list
+			if call.args[:2] == ("Prometheus Alert Rule", rule.name)
 		]
 		self.assertEqual(pushed_rules, [])

@@ -94,8 +94,9 @@ class PrometheusAlertRule(Document):
 
 	def get_rule_for_threshold(self, threshold: int, servers: list[str], exclude: bool) -> dict:
 		rule = self.get_rule()
+		expression: str = self.expression or ""
 		rule["expr"] = (
-			self.expression.replace(THRESHOLD_PLACEHOLDER, str(threshold))
+			expression.replace(THRESHOLD_PLACEHOLDER, str(threshold))
 			.replace(INSTANCES_PLACEHOLDER, instance_matcher(servers, exclude))
 			.strip()
 		)
@@ -251,7 +252,9 @@ def update_rules_on_storage_alert_threshold_change(server, method=None):
 		return
 
 	# Any split rule will do, pushing one rebuilds the rules of every enabled alert
-	rule = frappe.db.get_value("Prometheus Alert Rule", {"split_by_server_storage_threshold": 1, "enabled": 1})
+	rule = frappe.db.get_value(
+		"Prometheus Alert Rule", {"split_by_server_storage_threshold": 1, "enabled": 1}
+	)
 	if not rule:
 		return
 
