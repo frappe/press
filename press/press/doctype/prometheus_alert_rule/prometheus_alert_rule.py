@@ -56,10 +56,27 @@ class PrometheusAlertRule(Document):
 	# end: auto-generated types
 
 	def validate(self):
-		self.alert_preview = yaml.dump(self.get_alert_rules())
-		self.route_preview = yaml.dump(self.get_route())
 		if self.enabled and not self.expression:
 			frappe.throw("Please add an expression for this alert rule before enabling it.")
+
+		self.validate_split_placeholders()
+		self.alert_preview = yaml.dump(self.get_alert_rules())
+		self.route_preview = yaml.dump(self.get_route())
+
+	def validate_split_placeholders(self):
+		"""Without both placeholders a split rule repeats one hardcoded threshold, alerting twice."""
+		if not self.split_by_server_storage_threshold:
+			return
+
+		missing = [
+			placeholder
+			for placeholder in (THRESHOLD_PLACEHOLDER, INSTANCES_PLACEHOLDER)
+			if placeholder not in (self.expression or "")
+		]
+		if missing:
+			frappe.throw(
+				f"Splitting by storage alert threshold needs {' and '.join(missing)} in the expression."
+			)
 
 	def get_alert_rules(self) -> list[dict]:
 		"""One rule per storage alert threshold, so each server alerts at the level its team picked."""

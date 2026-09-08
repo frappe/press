@@ -56,6 +56,31 @@ class TestPrometheusAlertRule(FrappeTestCase):
 			split_by_server_storage_threshold=True,
 		)
 
+	def test_split_rule_without_the_threshold_placeholder_is_rejected(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			r"needs \{\{ threshold \}\} in the expression",
+			create_test_prometheus_alert_rule,
+			name="Disk Space Low",
+			expression=DISK_EXPRESSION.replace(" > {{ threshold }}", " > 90"),
+			split_by_server_storage_threshold=True,
+		)
+
+	def test_split_rule_without_the_instances_placeholder_is_rejected(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			r"needs \{\{ instances \}\} in the expression",
+			create_test_prometheus_alert_rule,
+			name="Disk Space Low",
+			expression=DISK_EXPRESSION.replace("{{ instances }}", 'mountpoint="/"'),
+			split_by_server_storage_threshold=True,
+		)
+
+	def test_a_rule_that_does_not_split_needs_no_placeholders(self):
+		rule = create_test_prometheus_alert_rule()
+
+		self.assertEqual(rule.get_alert_rules()[0]["expr"], rule.expression)
+
 	def test_expression_is_left_alone_when_splitting_is_disabled(self):
 		rule = create_test_prometheus_alert_rule(expression=DISK_EXPRESSION)
 
