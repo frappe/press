@@ -19,6 +19,7 @@ from frappe.utils import cint, flt, now_datetime
 from frappe.utils.password import get_decrypted_password
 
 from press.api.client import dashboard_whitelist
+from press.exceptions import MonitorServerDown
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
@@ -1900,6 +1901,16 @@ class DatabaseServer(BaseServer):
 			deduplicate=True,
 			queue="long",
 		)
+
+	def is_mariadb_up(self) -> bool:
+		"""Whether mysqld_exporter last scraped MariaDB as up; without metrics, count it down."""
+		from press.api.server import prometheus_instant_value
+
+		try:
+			value = prometheus_instant_value(f"""mysql_up{{instance="{self.name}",job="mariadb"}}""")
+		except MonitorServerDown:
+			return False
+		return bool(value)
 
 	def get_stalks(self):
 		if self.agent.should_skip_requests():
