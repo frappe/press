@@ -1511,16 +1511,8 @@ class BaseServer(Document, TagHelpers):
 					"Cannot archive a server with sites on it. Please archive all the sites before performing the drop action."
 				)
 			)
-		if frappe.get_all(
-			"Bench",
-			filters={"server": self.name, "status": ("!=", "Archived")},
-			ignore_ifnull=True,
-		):
-			frappe.throw(
-				_(
-					"The server has a few benches on it. Please archive them from their respective dashboards before attempting a drop."
-				)
-			)
+
+		self.archive_benches()
 
 		if self.is_wazuh_agent_installed:
 			self.uninstall_wazuh_agent()
@@ -1548,6 +1540,37 @@ class BaseServer(Document, TagHelpers):
 			)
 		self.disable_subscription()
 		self.remove_from_release_groups()
+
+	def archive_benches(self):
+		"""Archive the bench records left on the server.
+
+		The server has no sites left and its machine is about to be terminated,
+		so nothing has to be removed from it. Asking the user to archive the
+		benches first only blocks the drop: a bench that never came up cannot be
+		archived through the agent, and the dashboard offers no archive action.
+		"""
+		from press.press.doctype.bench.bench import Bench
+
+		benches = [
+			Bench("Bench", name)
+			for name in frappe.get_all(
+				"Bench",
+				filters={"server": self.name, "status": ("!=", "Archived")},
+				pluck="name",
+				ignore_ifnull=True,
+			)
+		]
+
+		# Check every bench before archiving any. check_unarchived_sites commits,
+		# so a bench that fails the check halfway would leave the earlier ones
+		# archived while the server archive aborts.
+		for bench in benches:
+			bench.check_unarchived_sites()
+
+		for bench in benches:
+			if bench.is_ssh_proxy_setup:
+				bench.remove_ssh_user()
+			frappe.db.set_value("Bench", bench.name, "status", "Archived")
 
 	def _archive(self, reason=None):
 		self.run_press_job("Archive Server", arguments={"reason": reason})
