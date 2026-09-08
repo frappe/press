@@ -667,6 +667,10 @@ class TestReleaseGroup(FrappeTestCase):
 		test_release_group.check_app_server_storage()
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	# The second bench of a group makes the storage precheck ask the agent for the size of
+	# the last deployed image. Nothing is really deployed here, so skip the precheck rather
+	# than fake a size for it.
+	@patch.object(ReleaseGroup, "check_app_server_storage", new=Mock())
 	def test_counts_of_a_group_on_two_servers_are_scoped_to_the_filtered_server(self):
 		"""A group runs on two servers. Each server card must count only its own benches and sites."""
 		from press.press.doctype.server.test_server import create_test_server
