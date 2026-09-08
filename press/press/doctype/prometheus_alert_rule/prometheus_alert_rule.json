@@ -13,6 +13,7 @@
 		"description",
 		"section_break_4",
 		"expression",
+		"split_by_server_storage_threshold",
 		"column_break_6",
 		"labels",
 		"annotations",
@@ -46,6 +47,12 @@
 			"fieldtype": "Code",
 			"in_list_view": 1,
 			"label": "Expression"
+		},
+		{
+			"description": "Emit one rule per storage alert threshold configured on servers. Use <code>{{ threshold }}</code> and <code>{{ instances }}</code> in the expression.",
+			"fieldname": "split_by_server_storage_threshold",
+			"fieldtype": "Check",
+			"label": "Split By Server Storage Threshold"
 		},
 		{
 			"default": "{}",
@@ -175,7 +182,7 @@
 	"links": [
 		{ "link_doctype": "Alertmanager Webhook Log", "link_fieldname": "alert" }
 	],
-	"modified": "2026-01-16 14:24:38.200768",
+	"modified": "2026-09-08 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Prometheus Alert Rule",
