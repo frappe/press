@@ -421,7 +421,7 @@ class Site(Document, TagHelpers):
 			frappe.db.get_value(
 				"Site Update",
 				self.fatal_site_update,
-				["update_start", "update_job", "recover_job", "backup_type"],
+				["update_start", "update_job", "recover_job", "backup_type", "deploy_type"],
 				as_dict=True,
 			)
 			if self.fatal_site_update
@@ -1308,7 +1308,7 @@ class Site(Document, TagHelpers):
 
 		``force`` skips the checks that are judgement calls, for a system user who can
 		see more than the checks can. It never skips the concurrent-restore check, nor
-		the backup-type check.
+		the check that a table dump exists.
 		"""
 		# Lock the site until this request commits. The dashboard and the desk both reach
 		# this method, and two restores against one database would corrupt it.
@@ -1318,7 +1318,7 @@ class Site(Document, TagHelpers):
 				f"Table restore {job} is already running on this site. Wait for it to finish, "
 				"then reload the page."
 			)
-		self.validate_backup_type_of_fatal_update()
+		self.validate_fatal_update_has_a_table_dump()
 		if not (force and is_system_user()):
 			self.validate_table_restore()
 		if not self.status_before_update:
@@ -1329,23 +1329,30 @@ class Site(Document, TagHelpers):
 		self.save()
 		return job.name
 
-	def validate_backup_type_of_fatal_update(self):
+	def validate_fatal_update_has_a_table_dump(self):
 		"""Refuse a restore that has no dump to read. Force does not skip this check.
 
-		Only a logical backup makes the table dump that this restore reads. A physical
-		update restores from a snapshot, and its site stays on the destination bench.
-		The restore finds nothing. A success then activates the site and clears the
-		fatal update.
+		Only a logical backup of a migrate update makes the table dump that this restore
+		reads. A pull update takes no backup at all. A physical update restores from a
+		snapshot, and its site stays on the destination bench. The restore finds nothing.
+		A success then activates the site and clears the fatal update.
 		"""
 		fatal_site_update = frappe.db.get_value("Site", self.name, "fatal_site_update")
 		if not fatal_site_update:
 			return
-		backup_type = frappe.db.get_value("Site Update", fatal_site_update, "backup_type")
-		if backup_type != "Logical":
+		update = frappe.db.get_value(
+			"Site Update", fatal_site_update, ["backup_type", "deploy_type"], as_dict=True
+		)
+		if update.deploy_type != "Migrate":
 			frappe.throw(
-				f"Update {fatal_site_update} used a {backup_type} backup. A {backup_type} backup "
-				"makes no table dump, so a table restore has nothing to read. Recover this site "
-				"from its snapshot instead."
+				f"Update {fatal_site_update} did not migrate the site, so it took no backup. "
+				"A table restore has nothing to read. Restore this site from a backup instead."
+			)
+		if update.backup_type != "Logical":
+			frappe.throw(
+				f"Update {fatal_site_update} used a {update.backup_type} backup. A "
+				f"{update.backup_type} backup makes no table dump, so a table restore has "
+				"nothing to read. Recover this site from its snapshot instead."
 			)
 
 	def validate_table_restore(self):
