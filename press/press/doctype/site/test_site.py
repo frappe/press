@@ -1102,6 +1102,30 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 
 	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_when_the_fatal_update_was_a_pull(self):
+		from press.press.doctype.site_update.test_site_update import create_test_site_update
+
+		# A pull update takes no backup, so there are no tables to put back.
+		site = create_test_site("pullupdate")
+		fatal_update = create_test_site_update(
+			site.name, site.group, "Fatal", ignore_validate=True, deploy_type="Pull"
+		)
+		site.db_set("fatal_site_update", fatal_update.name)
+		site.db_set("status", "Broken")
+		site.reload()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"did not migrate the site, so it took no",
+			site.restore_tables,
+		)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run for an update that took no backup",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_restore_tables_is_rejected_when_a_newer_site_update_exists(self):
 		from press.press.doctype.site_update.test_site_update import create_test_site_update
 

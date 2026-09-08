@@ -421,7 +421,7 @@ class Site(Document, TagHelpers):
 			frappe.db.get_value(
 				"Site Update",
 				self.fatal_site_update,
-				["update_start", "update_job", "recover_job"],
+				["update_start", "update_job", "recover_job", "deploy_type"],
 				as_dict=True,
 			)
 			if self.fatal_site_update
@@ -1334,6 +1334,13 @@ class Site(Document, TagHelpers):
 				"This site has no failed update to recover from. Its tables are already "
 				"restored, or it was never broken by an update. Reload the page to see "
 				"the current state of the site."
+			)
+		# Only a migrate update backs up the tables this restore puts back.
+		if frappe.db.get_value("Site Update", fatal_site_update, "deploy_type") != "Migrate":
+			frappe.throw(
+				f"Site Update {fatal_site_update} did not migrate the site, so it took no "
+				"backup of the tables. There is nothing to restore. Restore the site from "
+				"a backup instead."
 			)
 		# A newer update has moved the site on; its tables are not the ones to restore.
 		latest_update = frappe.db.get_value(
