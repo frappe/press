@@ -126,6 +126,18 @@ class TestPrometheusAlertRule(FrappeTestCase):
 		for server in servers:
 			self.assertIn(re.escape(server.name), alert_rules[1]["expr"])
 
+	def test_server_holding_a_threshold_outside_the_range_stays_on_the_default_rule(self):
+		rule = self.create_disk_alert_rule()
+		server = create_test_server()
+		# set_value skips validation, the way a stale row or a bad script would
+		frappe.db.set_value("Server", server.name, "storage_alert_threshold_percent", 0)
+
+		alert_rules = rule.get_alert_rules()
+
+		self.assertEqual(len(alert_rules), 1)
+		self.assertTrue(alert_rules[0]["expr"].endswith("> 90"))
+		self.assertNotIn(server.name, alert_rules[0]["expr"])
+
 	def test_alert_name_stays_the_same_across_split_rules(self):
 		rule = self.create_disk_alert_rule()
 		server = create_test_server()

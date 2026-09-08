@@ -13,7 +13,11 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.press.doctype.server.server import DEFAULT_STORAGE_ALERT_THRESHOLD
+from press.press.doctype.server.server import (
+	DEFAULT_STORAGE_ALERT_THRESHOLD,
+	MAX_STORAGE_ALERT_THRESHOLD,
+	MIN_STORAGE_ALERT_THRESHOLD,
+)
 
 if TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
@@ -229,7 +233,12 @@ def servers_by_storage_alert_threshold() -> dict[int, list[str]]:
 			["name", "storage_alert_threshold_percent"],
 		)
 		for server in servers:
-			overrides.setdefault(server.storage_alert_threshold_percent, []).append(server.name)
+			threshold = server.storage_alert_threshold_percent
+			if not MIN_STORAGE_ALERT_THRESHOLD <= threshold <= MAX_STORAGE_ALERT_THRESHOLD:
+				# never went through validation, so leave it on the default rule
+				# instead of alerting the server at, say, 0%
+				continue
+			overrides.setdefault(threshold, []).append(server.name)
 	return overrides
 
 
