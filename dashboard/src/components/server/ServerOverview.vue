@@ -64,14 +64,18 @@
 									<div class="space-y-1">
 										<div class="flex items-center text-base text-ink-gray-9">
 											{{ d.value }}
-											<Badge
+											<Tooltip
 												v-if="d.isShared && $team.doc?.is_desk_user"
-												class="ml-2"
-												theme="orange"
-												size="sm"
-												variant="subtle"
-												label="Shared"
-											/>
+												text="A shared instance can have variable performance. We give only limited support for it."
+											>
+												<Badge
+													class="ml-2"
+													theme="orange"
+													size="sm"
+													variant="subtle"
+													label="Shared"
+												/>
+											</Tooltip>
 											<Tooltip v-if="d.isPremium" text="Premium Server">
 												<!-- this icon isn't available in unplugin package yet -->
 												<svg
