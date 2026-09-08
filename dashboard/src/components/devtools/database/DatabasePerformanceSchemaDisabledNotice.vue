@@ -4,7 +4,7 @@
 			<p class="text-base text-ink-gray-7">
 				Please refer to the
 				<a
-					href="https://docs.frappe.io/cloud/performance-tuning"
+					href="https://docs.frappe.io/cloud/database-server-actions#performance-schema"
 					target="_blank"
 					class="underline"
 					>performance tuning documentation</a
