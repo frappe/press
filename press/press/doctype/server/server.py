@@ -290,7 +290,8 @@ class BaseServer(Document, TagHelpers):
 		current_disk_usage: int | None = None,
 	) -> None:
 		add_on_storage_log = None
-		storage_parameters = {
+		# untyped: the dict mixes value types and only feeds insert_addon_storage_log
+		storage_parameters: dict = {
 			"doctype": "Add On Storage Log",
 			"adding_storage": increment,
 			is_auto_triggered: is_auto_triggered,
