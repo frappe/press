@@ -27,7 +27,11 @@ function jobLink(site, job, text) {
 }
 
 function canRestoreTables(site) {
-	return site.doc?.fatal_site_update && site.doc?.status === 'Broken'
+	return (
+		site.doc?.fatal_site_update &&
+		site.doc?.status === 'Broken' &&
+		site.doc?.fatal_update?.deploy_type === 'Migrate'
+	)
 }
 
 function confirmRestoreTables(site) {
@@ -110,6 +114,13 @@ export default {
 				return {
 					title:
 						'The last update failed and the tables could not be restored. The site stays broken until you <b>Restore Tables</b>.',
+					type: 'error',
+				}
+			}
+			if (site.doc.fatal_site_update && site.doc.status === 'Broken') {
+				return {
+					title:
+						'The last update failed and the site could not be recovered. Contact support to bring it back.',
 					type: 'error',
 				}
 			}
