@@ -5,7 +5,7 @@ import router from '@/router'
 
 interface Props {
 	bench: any
-	server: any
+	server?: any
 }
 
 const show = ref(true)
@@ -33,6 +33,7 @@ const installableApps = createResource({
 		siteOptions.value = {
 			domain: data.domain,
 			group: version?.group?.name,
+			cluster: version?.group?.clusters?.[0]?.name,
 		}
 		const sources = version?.group?.bench_app_sources || []
 		return sources
@@ -79,8 +80,8 @@ const submitForm = () => {
 			doctype: 'Site',
 			subdomain: subdomain.value,
 			apps: [{ app: 'frappe' }, ...addedApps.map((x: any) => ({ app: x.app }))],
-			cluster: props.server.cluster,
-			server: props.server.name,
+			cluster: props.server?.cluster ?? siteOptions.value.cluster,
+			...(props.server?.name ? { server: props.server.name } : {}),
 			group: siteOptions.value.group,
 			domain: siteOptions.value.domain,
 		},
