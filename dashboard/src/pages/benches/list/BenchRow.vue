@@ -165,15 +165,12 @@ function openAddSiteDialog() {
 	const AddSiteDialog = defineAsyncComponent(
 		() => import('@/pages/servers/list/AddSiteDialog.vue'),
 	)
-	const server = {
-		name: props.data.server,
-		title: props.data.server_title,
-		provider: props.data.server_provider,
-	}
+	// No server: a row here is a group, which may be deployed on several, and
+	// `Release Group.dashboard_fields` doesn't carry one anyway. Without it the
+	// backend keeps picking the bench itself, as it did before.
 	renderDialog(
 		h(AddSiteDialog, {
 			bench: props.data,
-			server,
 			onSiteCreated: () => sites.reload(),
 		}),
 	)

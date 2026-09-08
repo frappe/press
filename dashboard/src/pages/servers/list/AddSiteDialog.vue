@@ -65,6 +65,16 @@ const filteredApps = computed(() => {
 	)
 })
 
+// A server pins the site only together with its own cluster: `set_bench_for_server()`
+// picks the group's bench on that server and rejects a cluster that isn't that
+// bench's own. So take both from the caller or neither — pairing a server with
+// the group's first cluster is what sent sites to the wrong one.
+const placement = computed(() => {
+	const { name, cluster } = props.server ?? {}
+	if (name && cluster) return { server: name, cluster }
+	return { cluster: siteOptions.value.cluster }
+})
+
 const newSite = createResource({
 	url: 'press.api.client.insert',
 	onSuccess(site: any) {
@@ -80,8 +90,7 @@ const submitForm = () => {
 			doctype: 'Site',
 			subdomain: subdomain.value,
 			apps: [{ app: 'frappe' }, ...addedApps.map((x: any) => ({ app: x.app }))],
-			cluster: props.server?.cluster ?? siteOptions.value.cluster,
-			...(props.server?.name ? { server: props.server.name } : {}),
+			...placement.value,
 			group: siteOptions.value.group,
 			domain: siteOptions.value.domain,
 		},
