@@ -7,7 +7,7 @@
 					href="https://docs.frappe.io/cloud/database-server-actions#performance-schema"
 					target="_blank"
 					class="underline"
-					>performance tuning documentation</a
+					>documentation to enable Performance Schema</a
 				>
 			</p>
 			<p class="text-base text-ink-gray-7">
