@@ -941,11 +941,15 @@ class TestSite(FrappeTestCase):
 		self.assertTrue(bahrain_files.isdisjoint(deleted_files))
 		self.assertTrue(other_files.issubset(set(deleted_files)))
 
-	def _broken_site_with_fatal_update(self, backup_type: str = "Logical") -> Site:
+	def _broken_site_with_fatal_update(
+		self, backup_type: str = "Logical", deploy_type: str = "Migrate"
+	) -> Site:
 		from press.press.doctype.site_update.test_site_update import create_test_site_update
 
 		site = create_test_site("fatalupdate")
-		site_update = create_test_site_update(site.name, site.group, "Fatal", ignore_validate=True)
+		site_update = create_test_site_update(
+			site.name, site.group, "Fatal", ignore_validate=True, deploy_type=deploy_type
+		)
 		site_update.db_set("backup_type", backup_type)
 		site.db_set("fatal_site_update", site_update.name)
 		site.db_set("status", "Broken")
@@ -1043,6 +1047,30 @@ class TestSite(FrappeTestCase):
 		self.assertTrue(
 			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
 			"Restore Site Tables should run once the database reports itself up",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_when_the_failed_update_was_a_pull(self):
+		# A pull update takes no backup at all, so there is no dump to read.
+		site = self._broken_site_with_fatal_update(deploy_type="Pull")
+
+		self.assertRaisesRegex(frappe.ValidationError, "did not migrate the site", site.restore_tables)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run for an update that took no backup",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_force_restore_tables_still_refuses_an_update_that_was_a_pull(self):
+		# There is no dump to read, for any user.
+		site = self._broken_site_with_fatal_update(deploy_type="Pull")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"did not migrate the site",
+			lambda: site.restore_tables(force=True),
 		)
 
 	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
