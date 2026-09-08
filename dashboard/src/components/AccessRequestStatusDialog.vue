@@ -28,7 +28,9 @@
 					<p><span class="font-medium">Resource:</span> {{ props.docname }}</p>
 					<p>
 						<span class="font-medium">Expiry:</span>
-						{{ dayjs(status.data?.until).fromNow() }}
+						<Tooltip :text="dayjs(status.data?.until).format('LLLL')">
+							<span>{{ dayjs(status.data?.until).fromNow() }}</span>
+						</Tooltip>
 					</p>
 				</div>
 				<div class="rounded-sm border divide-y">
@@ -48,7 +50,12 @@
 							{{ permission.allowed ? 'Yes' : 'No' }}
 						</div>
 						<div class="col-span-2 py-2 px-3">
-							{{ permission.until && dayjs(permission.until).fromNow() }}
+							<Tooltip
+								v-if="permission.until"
+								:text="dayjs(permission.until).format('LLLL')"
+							>
+								<span>{{ dayjs(permission.until).fromNow() }}</span>
+							</Tooltip>
 						</div>
 					</div>
 				</div>
@@ -58,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import { createResource } from 'frappe-ui';
+import { createResource, Tooltip } from 'frappe-ui';
 import { ref } from 'vue';
 import dayjs from '../utils/dayjs';
 

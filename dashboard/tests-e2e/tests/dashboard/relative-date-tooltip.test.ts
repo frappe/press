@@ -9,6 +9,18 @@ const DATABASE_SERVER = 'm-tooltip.frappe.cloud'
 // the Date column on screen, so hovering it doesn't scroll the row first.
 test.use({ timezoneId: 'Asia/Kolkata', viewport: { width: 1600, height: 900 } })
 
+const job = {
+	name: 'job-1',
+	job_type: 'Backup Site',
+	status: 'Pending',
+	site: 'shared-usd50.fc.dev',
+	duration: null,
+	owner: 'Administrator',
+	creation: '2026-06-08 16:05:00',
+	job_id: 1,
+	end: null,
+}
+
 const planChange = {
 	name: 'plan-change-1',
 	from_plan: 'DB - Starter 2vCPU 4GB',
@@ -46,7 +58,7 @@ async function fulfill(route: Route, message: unknown) {
 	})
 }
 
-async function openPlanHistory(page: Page) {
+async function openServerTab(page: Page, tab: string) {
 	await page.route(
 		/\/api\/method\/press\.api\.client\.get\b/,
 		async (route) => {
@@ -62,28 +74,45 @@ async function openPlanHistory(page: Page) {
 		/\/api\/method\/press\.api\.client\.get_list/,
 		async (route) => {
 			const doctype = route.request().postDataJSON()?.doctype
-			return fulfill(route, doctype === 'Plan Change' ? [planChange] : [])
+			if (doctype === 'Plan Change') return fulfill(route, [planChange])
+			if (doctype === 'Agent Job') return fulfill(route, [job])
+			return fulfill(route, [])
 		},
 	)
 
-	await page.goto(`/dashboard/servers/${APP_SERVER}/plan-history`)
+	await page.goto(`/dashboard/servers/${APP_SERVER}/${tab}`)
+}
+
+// getByRole misses these: the visible tooltip is aria-hidden, and reka exposes
+// a separate copy of the text to screen readers.
+function tooltip(page: Page) {
+	return page.locator('[role="tooltip"]')
+}
+
+async function hoverTheDate(page: Page) {
+	const date = page.getByText('ago', { exact: false }).first()
+	await expect(date).toBeVisible({ timeout: 30000 })
+	await date.hover()
 }
 
 test('hovering a plan change date shows the exact date and time', async ({
 	page,
 }) => {
-	await openPlanHistory(page)
+	await openServerTab(page, 'plan-history')
 
-	// The column itself stays relative, which is what makes the tooltip useful.
-	const date = page.getByText('ago', { exact: false }).last()
-	await expect(date).toBeVisible({ timeout: 30000 })
+	await hoverTheDate(page)
 
-	await date.hover()
+	await expect(tooltip(page)).toHaveText('Monday, June 8, 2026 4:05 PM', {
+		timeout: 10000,
+	})
+})
 
-	// getByRole misses this: the visible tooltip is aria-hidden, and reka exposes
-	// a separate copy of the text to screen readers.
-	await expect(page.locator('[role="tooltip"]')).toHaveText(
-		'Monday, June 8, 2026 4:05 PM',
-		{ timeout: 10000 },
-	)
+test('hovering a job date shows the exact date and time', async ({ page }) => {
+	await openServerTab(page, 'jobs')
+
+	await hoverTheDate(page)
+
+	await expect(tooltip(page)).toHaveText('Monday, June 8, 2026 4:05 PM', {
+		timeout: 10000,
+	})
 })

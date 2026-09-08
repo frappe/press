@@ -396,9 +396,11 @@ onBeforeUnmount(() => {
 				{{ site.status }}
 			</Badge>
 
-			<span class="text-ink-gray-8"
-				>{{ dayjsLocal(site.creation).fromNow() }}</span
-			>
+			<Tooltip :text="dayjsLocal(site.creation).format('LLLL')">
+				<span class="text-ink-gray-8"
+					>{{ dayjsLocal(site.creation).fromNow() }}</span
+				>
+			</Tooltip>
 			<Dropdown :options="siteOptions(site)">
 				<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
 			</Dropdown>
