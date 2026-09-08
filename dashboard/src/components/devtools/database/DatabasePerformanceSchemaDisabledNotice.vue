@@ -5,7 +5,13 @@
 				Performance Schema is not enabled on database server
 			</p>
 			<p class="text-base text-ink-gray-7">
-				Please reach out to
+				Read the
+				<a
+					href="https://docs.frappe.io/cloud/performance-tuning"
+					target="_blank"
+					class="underline"
+					>performance tuning guide</a
+				>, or reach out to
 				<a href="https://support.frappe.io/" target="_blank" class="underline"
 					>support</a
 				>
@@ -17,7 +23,13 @@
 				Performance Schema is disabled on shared hosting
 			</p>
 			<p class="text-base text-ink-gray-7">
-				This feature is only available on a dedicated server
+				This feature is only available on a
+				<a
+					href="https://frappe.io/cloud/servers"
+					target="_blank"
+					class="underline"
+					>dedicated server</a
+				>
 			</p>
 		</template>
 	</div>
