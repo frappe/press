@@ -14,6 +14,7 @@
 				:minimumAmount="minimumAmount"
 				:type="type"
 				:docName="docName"
+				:unpaidAmount="unpaidAmount"
 				@success="
 					() => {
 						show = false;
@@ -44,6 +45,10 @@ const props = defineProps({
 	type: {
 		type: String,
 		default: 'Prepaid Credits',
+	},
+	unpaidAmount: {
+		type: Number,
+		default: null,
 	},
 });
 
