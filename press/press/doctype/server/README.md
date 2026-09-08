@@ -44,8 +44,9 @@ Shared base class. Handles:
 
 ## Storage alert threshold
 
-`storage_alert_threshold_percent` (default 90) is the disk usage at which the
-team is emailed about running out of space.
+`storage_alert_threshold_percent` (default 90, valid 50-95) is the disk usage at
+which the team is emailed about running out of space. The dashboard offers the
+same range in steps of 5.
 
 Prometheus, not Press, decides when the alert fires, so the alert rule has to be
 written for it. Tick **Split By Server Storage Threshold** on the Prometheus

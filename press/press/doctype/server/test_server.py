@@ -465,10 +465,10 @@ class TestServer(FrappeTestCase):
 
 	def test_storage_alert_threshold_above_the_allowed_maximum_is_rejected(self):
 		server = create_test_server()
-		server.storage_alert_threshold_percent = 100
+		server.storage_alert_threshold_percent = 96
 
 		self.assertRaisesRegex(
-			frappe.ValidationError, "Storage alert threshold must be between 50% and 99%", server.save
+			frappe.ValidationError, "Storage alert threshold must be between 50% and 95%", server.save
 		)
 
 	def test_storage_alert_threshold_below_the_allowed_minimum_is_rejected(self):
@@ -476,7 +476,7 @@ class TestServer(FrappeTestCase):
 		server.storage_alert_threshold_percent = 30
 
 		self.assertRaisesRegex(
-			frappe.ValidationError, "Storage alert threshold must be between 50% and 99%", server.save
+			frappe.ValidationError, "Storage alert threshold must be between 50% and 95%", server.save
 		)
 
 	def test_storage_alert_threshold_defaults_to_90_and_accepts_a_custom_value(self):
@@ -515,7 +515,7 @@ class TestServer(FrappeTestCase):
 
 		self.assertRaisesRegex(
 			frappe.ValidationError,
-			"Storage alert threshold must be between 50% and 99%",
+			"Storage alert threshold must be between 50% and 95%",
 			server.configure_auto_add_storage,
 			server=server.name,
 			enabled=False,
