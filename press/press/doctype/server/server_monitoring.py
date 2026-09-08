@@ -483,11 +483,16 @@ def _get_trial_signup_failure_rate() -> SignupFailureRate:
 	Windowed on when the status last changed, not on creation: a request that took three
 	hours to fail is a failure this hour, and windowing on creation would drop it for
 	good, exactly when provisioning is slow enough to be the outage worth alerting on.
+	Not on `modified` either - a later write, like the accessibility check at login, would
+	drag a long-settled request into this window and alert on an outcome from yesterday.
 	"""
 	requests = frappe.get_all(
 		"Product Trial Request",
 		filters={
-			"modified": (">", frappe.utils.add_to_date(None, hours=-SIGNUP_ALERT_WINDOW_HOURS)),
+			"status_updated_on": (
+				">",
+				frappe.utils.add_to_date(None, hours=-SIGNUP_ALERT_WINDOW_HOURS),
+			),
 			"status": ("in", ["Error", "Site Created"]),
 			"owner": ("not like", TEST_SIGNUP_EMAIL_PATTERN),
 		},
