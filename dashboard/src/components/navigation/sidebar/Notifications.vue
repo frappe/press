@@ -298,9 +298,11 @@ useRealtimeNotifs((data) => {
                 </Tooltip>
               </Badge>
 
-              <span class="text-ink-gray-5 text-xs">
-                {{ dayjsLocal(x.creation).fromNow() }}
-              </span>
+              <Tooltip :text="dayjsLocal(x.creation).format('LLLL')">
+                <span class="text-ink-gray-5 text-xs">
+                  {{ dayjsLocal(x.creation).fromNow() }}
+                </span>
+              </Tooltip>
             </div>
           </div>
         </Scrollbar>
