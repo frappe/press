@@ -2,9 +2,6 @@
 	<div class="flex h-60 flex-col items-center justify-center gap-1">
 		<template v-if="isDedicatedServer">
 			<p class="text-base text-ink-gray-7">
-				Performance Schema is not enabled on database server
-			</p>
-			<p class="text-base text-ink-gray-7">
 				Please refer to the
 				<a
 					href="https://docs.frappe.io/cloud/performance-tuning"
