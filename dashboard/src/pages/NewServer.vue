@@ -405,7 +405,7 @@
 							<AlertBanner
 								v-if="onSharedInstance"
 								type="warning"
-								title="A shared instance can have variable performance, and we give only limited support for it. <a href='https://docs.frappe.io/cloud/servers/instance-types#limited-support' target='_blank' style='font-weight: bold; text-decoration: underline;'>Read what this means</a> before you use it for production."
+								title="A shared instance can have variable performance, and we give only limited support for it. We do not recommend it for production workloads. <a href='https://docs.frappe.io/cloud/servers/instance-types#limited-support' target='_blank' style='font-weight: bold; text-decoration: underline;'>Read what this means</a>."
 							/>
 
 							<!-- App Server Plans -->
