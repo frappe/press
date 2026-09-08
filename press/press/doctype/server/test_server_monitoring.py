@@ -33,11 +33,12 @@ def create_test_trial_request(status: str, owner: str | None = None, settled_min
 	request = frappe.get_doc({"doctype": "Product Trial Request", "status": "Pending"}).insert(
 		ignore_permissions=True
 	)
-	values = {"status": status}
+	values = {
+		"status": status,
+		"status_updated_on": frappe.utils.add_to_date(None, minutes=-settled_minutes_ago),
+	}
 	if owner:
 		values["owner"] = owner
-	if settled_minutes_ago:
-		values["modified"] = frappe.utils.add_to_date(None, minutes=-settled_minutes_ago)
 	frappe.db.set_value("Product Trial Request", request.name, values, update_modified=False)
 	return request
 
@@ -138,6 +139,28 @@ class TestSignupFailureRates(FrappeTestCase):
 		rate = _get_trial_signup_failure_rate()
 
 		self.assertEqual(rate["failed"] - baseline["failed"], 0)
+
+	def test_trial_signup_written_to_after_it_settled_is_not_counted_again(self):
+		"""A settled request keeps getting written to - the accessibility check at login,
+		the subscription flag - and none of that makes its outcome recent."""
+		baseline = _get_trial_signup_failure_rate()
+		request = create_test_trial_request("Error", settled_minutes_ago=90)
+		frappe.db.set_value("Product Trial Request", request.name, "is_site_accessible", "Yes")
+
+		rate = _get_trial_signup_failure_rate()
+
+		self.assertEqual(rate["failed"] - baseline["failed"], 0)
+
+	def test_trial_signup_is_stamped_when_its_status_changes(self):
+		request = create_test_trial_request("Pending", settled_minutes_ago=90)
+		request.reload()
+		request.status = "Error"
+		request.save(ignore_permissions=True)
+
+		self.assertGreater(
+			frappe.utils.get_datetime(request.status_updated_on),
+			frappe.utils.add_to_date(None, minutes=-1),
+		)
 
 	def test_signup_canary_trial_requests_are_not_counted(self):
 		baseline = _get_trial_signup_failure_rate()
