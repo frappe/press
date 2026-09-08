@@ -102,6 +102,9 @@ class AutoScaleTriggerRow(TypedDict):
 
 
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
+DEFAULT_STORAGE_ALERT_THRESHOLD = 90
+MIN_STORAGE_ALERT_THRESHOLD = 50
+MAX_STORAGE_ALERT_THRESHOLD = 99
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
 GLASS_FILE_SIZE = 200 * 1024 * 1024  # /root/glass, see glass_file.yml
@@ -120,6 +123,7 @@ class BaseServer(Document, TagHelpers):
 		"auto_add_storage_min",
 		"auto_add_storage_max",
 		"auto_increase_storage",
+		"storage_alert_threshold_percent",
 		"auto_purge_binlog_based_on_size",
 		"binlog_max_disk_usage_percent",
 		"is_monitoring_disabled",
@@ -376,16 +380,26 @@ class BaseServer(Document, TagHelpers):
 			)
 
 	@dashboard_whitelist()
-	def configure_auto_add_storage(self, server: str, enabled: bool, min: int = 0, max: int = 0) -> None:
+	def configure_auto_add_storage(
+		self,
+		server: str,
+		enabled: bool,
+		min: int = 0,
+		max: int = 0,
+		storage_alert_threshold: int | None = None,
+	) -> None:
 		# `self` is always the app server (the dashboard dispatches on $appServer);
 		# `server` identifies the actual target, which may be a Database Server.
-		# The dashboard API only team-checks `self`, and the disable path below writes via
-		# `set_value` (which skips permission hooks), so authorize the resolved target here.
+		# The dashboard API only team-checks `self`, so authorize the resolved target here.
 		server_doc = self if server == self.name else frappe.get_doc("Database Server", server)
 		server_doc.check_permission("write")
 
+		if storage_alert_threshold:
+			server_doc.storage_alert_threshold_percent = storage_alert_threshold
+
 		if not enabled:
-			frappe.db.set_value(server_doc.doctype, server_doc.name, "auto_increase_storage", False)
+			server_doc.auto_increase_storage = False
+			server_doc.save()
 			return
 
 		if min < 0 or max < 0:
@@ -578,6 +592,19 @@ class BaseServer(Document, TagHelpers):
 			self._set_hostname_abbreviation()
 
 		self.validate_mounts()
+		self.validate_storage_alert_threshold()
+
+	def validate_storage_alert_threshold(self):
+		threshold = self.get("storage_alert_threshold_percent")
+		if threshold is None:
+			return
+
+		if not MIN_STORAGE_ALERT_THRESHOLD <= threshold <= MAX_STORAGE_ALERT_THRESHOLD:
+			frappe.throw(
+				_("Storage alert threshold must be between {0}% and {1}%").format(
+					MIN_STORAGE_ALERT_THRESHOLD, MAX_STORAGE_ALERT_THRESHOLD
+				)
+			)
 
 	def _set_hostname_abbreviation(self):
 		self.hostname_abbreviation = get_hostname_abbreviation(self.hostname)
@@ -2521,7 +2548,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 	def recommend_disk_increase(self, mountpoint: str):
 		"""
-		Send disk expansion email to users with disabled auto addon storage at 80% capacity
+		Send disk expansion email to users with disabled auto addon storage
 		Calculate the disk usage over a 30 hour period and take 25 percent of that
 		"""
 		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)  # type: ignore
@@ -2540,16 +2567,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		current_disk_usage_flt = round(current_disk_usage / 1024 / 1024 / 1024, 2)
 		disk_capacity_flt = round(disk_capacity / 1024 / 1024 / 1024, 2)
+		used_storage_percentage = round(current_disk_usage / disk_capacity * 100) if disk_capacity else 0
 
 		frappe.sendmail(
 			recipients=get_communication_info("Email", "Incident", self.doctype, self.name),
-			subject=f"Important: Server {server.name} has used 80% of the available space",
+			subject=f"Important: Server {server.name} has used {used_storage_percentage}% of the available space",
 			template="disabled_auto_disk_expansion",
 			args={
 				"server": server.name,
 				"current_disk_usage": f"{current_disk_usage_flt} Gib",
 				"available_disk_space": f"{disk_capacity_flt} GiB",
-				"used_storage_percentage": "80%",
+				"used_storage_percentage": f"{used_storage_percentage}%",
 				"increase_by": f"{recommended_increase} GiB",
 			},
 		)
@@ -3182,6 +3210,7 @@ class Server(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		stop_deployments: DF.Check
 		stop_incident_actions: DF.Check
+		storage_alert_threshold_percent: DF.Int
 		stream_backups: DF.Check
 		supported_site_quota: DF.Int
 		tags: DF.Table[ResourceTag]

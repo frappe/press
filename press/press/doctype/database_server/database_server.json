@@ -38,6 +38,7 @@
 		"auto_add_storage_min",
 		"auto_add_storage_max",
 		"auto_increase_storage",
+		"storage_alert_threshold_percent",
 		"networking_section",
 		"ip",
 		"nat_server",
@@ -333,6 +334,14 @@
 			"fieldname": "auto_increase_storage",
 			"fieldtype": "Check",
 			"label": "Auto Increase Storage"
+		},
+		{
+			"default": "90",
+			"description": "Notify the team when disk usage crosses this percentage of capacity",
+			"fieldname": "storage_alert_threshold_percent",
+			"fieldtype": "Int",
+			"label": "Storage Alert Threshold Percent",
+			"non_negative": 1
 		},
 		{
 			"fieldname": "networking_section",
@@ -952,7 +961,7 @@
 			"link_fieldname": "database_server"
 		}
 	],
-	"modified": "2026-08-13 12:00:00.000000",
+	"modified": "2026-09-08 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Database Server",

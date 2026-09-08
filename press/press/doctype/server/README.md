@@ -41,3 +41,23 @@ Shared base class. Handles:
 - Ansible-based provisioning (`press/playbooks/`)
 - Status lifecycle: `Pending → Active / Broken / Archived`
 - Optional `VirtualMachine` linkage — servers can be provisioned automatically via cloud APIs or added manually by entering IP and credentials directly.
+
+## Storage alert threshold
+
+`storage_alert_threshold_percent` (default 90) is the disk usage at which the
+team is emailed about running out of space.
+
+Prometheus, not Press, decides when the alert fires, so the alert rule has to be
+written for it. Tick **Split By Server Storage Threshold** on the Prometheus
+Alert Rule and use the two placeholders in its expression:
+
+```
+100 - (node_filesystem_avail_bytes{job="node", {{ instances }}}
+  / node_filesystem_size_bytes{job="node", {{ instances }}} * 100) > {{ threshold }}
+```
+
+Press then emits one rule per threshold in use — the default one covering every
+server that hasn't overridden it (`instance!~"..."`), and one for each group of
+servers that has (`instance=~"..."`). All of them keep the alert's name, so the
+reaction job is unchanged. Rules are pushed to the monitor server whenever a
+server's threshold changes.

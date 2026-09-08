@@ -25,6 +25,7 @@ from press.press.doctype.press_settings.test_press_settings import (
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.server import (
+	DEFAULT_STORAGE_ALERT_THRESHOLD,
 	BaseServer,
 	Server,
 	process_cleanup_unused_files_job_update,
@@ -461,6 +462,65 @@ class TestServer(FrappeTestCase):
 					"volume_id": volume["volume_id"],
 				}
 			).insert()
+
+	def test_storage_alert_threshold_above_the_allowed_maximum_is_rejected(self):
+		server = create_test_server()
+		server.storage_alert_threshold_percent = 100
+
+		self.assertRaisesRegex(
+			frappe.ValidationError, "Storage alert threshold must be between 50% and 99%", server.save
+		)
+
+	def test_storage_alert_threshold_below_the_allowed_minimum_is_rejected(self):
+		server = create_test_server()
+		server.storage_alert_threshold_percent = 30
+
+		self.assertRaisesRegex(
+			frappe.ValidationError, "Storage alert threshold must be between 50% and 99%", server.save
+		)
+
+	def test_storage_alert_threshold_defaults_to_90_and_accepts_a_custom_value(self):
+		server = create_test_server()
+		self.assertEqual(server.storage_alert_threshold_percent, DEFAULT_STORAGE_ALERT_THRESHOLD)
+
+		server.storage_alert_threshold_percent = 75
+		server.save()
+
+		self.assertEqual(frappe.db.get_value("Server", server.name, "storage_alert_threshold_percent"), 75)
+
+	def test_configure_auto_add_storage_sets_the_alert_threshold_on_the_target_server(self):
+		database_server = create_test_database_server()
+		server = create_test_server(database_server=database_server.name)
+
+		server.configure_auto_add_storage(
+			server=database_server.name, enabled=False, storage_alert_threshold=75
+		)
+
+		self.assertEqual(
+			frappe.db.get_value("Database Server", database_server.name, "storage_alert_threshold_percent"),
+			75,
+		)
+
+	def test_configure_auto_add_storage_keeps_the_alert_threshold_when_it_is_not_passed(self):
+		server = create_test_server()
+		server.storage_alert_threshold_percent = 70
+		server.save()
+
+		server.configure_auto_add_storage(server=server.name, enabled=True, min=25, max=250)
+
+		self.assertEqual(frappe.db.get_value("Server", server.name, "storage_alert_threshold_percent"), 70)
+
+	def test_configure_auto_add_storage_rejects_an_out_of_range_alert_threshold(self):
+		server = create_test_server()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Storage alert threshold must be between 50% and 99%",
+			server.configure_auto_add_storage,
+			server=server.name,
+			enabled=False,
+			storage_alert_threshold=20,
+		)
 
 	def test_disable_auto_storage_on_database_server_clears_db_flag_not_app_flag(self):
 		database_server = create_test_database_server()

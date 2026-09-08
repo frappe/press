@@ -603,7 +603,7 @@ export default {
 												title: 'Configure Auto Increase Storage',
 												message: `<div class="rounded my-4 p-2 prose-sm prose bg-surface-gray-1 border">
 
-									This feature will automatically increases the storage as it reaches over <b>90%</b> of its capacity.
+									This feature will automatically increases the storage as it crosses the storage alert threshold below (<b>90%</b> by default).
 
 									<br><br>
 									With this feature disabled, disk capacity <strong>will not increase automatically</strong> in the event your server approaches or reaches its storage limit.
@@ -617,6 +617,9 @@ export default {
 										</li>
 										<li>
 											Storage can auto increase only once in <strong>6 hours</strong>.
+										</li>
+										<li>
+											We email you whenever storage usage crosses the threshold, even with this feature disabled.
 										</li>
 									</ul>
 `,
@@ -658,6 +661,19 @@ export default {
 															return values.auto_increase_storage
 														},
 													},
+													{
+														fieldname: 'storage_alert_threshold',
+														type: 'select',
+														default: String(doc.storage_alert_threshold_percent),
+														label: 'Alert Me At (% of storage used)',
+														variant: 'outline',
+														// options from 50% to 95% in steps of 5%
+														// values are strings so the select shows the current one
+														options: Array.from({ length: 10 }, (_, i) => ({
+															label: `${50 + i * 5}%`,
+															value: String(50 + i * 5),
+														})),
+													},
 												],
 												onSuccess: ({ hide, values }) => {
 													toast.promise(
@@ -667,6 +683,9 @@ export default {
 																enabled: values.auto_increase_storage,
 																min: Number(values.min),
 																max: Number(values.max),
+																storage_alert_threshold: Number(
+																	values.storage_alert_threshold,
+																),
 															},
 															{
 																onSuccess: () => {
@@ -684,13 +703,13 @@ export default {
 															},
 														),
 														{
-															loading: 'Configuring auto increase storage...',
-															success: 'Auto increase storage is configured',
+															loading: 'Updating storage settings...',
+															success: 'Storage settings are updated',
 															error: (err) => {
 																return err.messages.length
 																	? err.messages.join('/n')
 																	: err.message ||
-																			'Failed to configure auto increase storage'
+																			'Failed to update storage settings'
 															},
 														},
 													)

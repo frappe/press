@@ -200,6 +200,10 @@ doc_events = {
 			"press.press.doctype.press_role.press_role.create_user_resource",
 			"press.press.doctype.server_firewall.server_firewall.from_server",
 		],
+		"on_update": "press.press.doctype.prometheus_alert_rule.prometheus_alert_rule.update_rules_on_storage_alert_threshold_change",
+	},
+	"Database Server": {
+		"on_update": "press.press.doctype.prometheus_alert_rule.prometheus_alert_rule.update_rules_on_storage_alert_threshold_change",
 	},
 }
 
