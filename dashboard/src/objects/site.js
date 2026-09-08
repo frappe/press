@@ -27,10 +27,12 @@ function jobLink(site, job, text) {
 }
 
 function canRestoreTables(site) {
+	// Only a logical backup of a migrate update makes the dump that the restore reads
 	return (
 		site.doc?.fatal_site_update &&
 		site.doc?.status === 'Broken' &&
-		site.doc?.fatal_update?.deploy_type === 'Migrate'
+		site.doc?.fatal_update?.deploy_type === 'Migrate' &&
+		site.doc?.fatal_update?.backup_type === 'Logical'
 	)
 }
 
