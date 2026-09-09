@@ -77,12 +77,13 @@ dashboard shows a **Restore Tables** banner and action on a `Broken` site whose
 The restore gets one attempt. A server with no metric — a monitoring outage
 included — counts as down, and the operator retries later.
 
-A physical backup, and a logical replication backup, make no table dump. The
-site of such an update also stays on the destination bench. A table restore has
-nothing to read, and a success activates the site and clears
-`fatal_site_update`. For this reason the backup type is the first condition, and
-the desk **Force** checkbox does not skip it. Recover such a site from its
-snapshot instead.
+A pull update takes no backup at all. A physical backup, and a logical
+replication backup, make no table dump. The site of such an update also stays on
+the destination bench. A table restore has nothing to read, and a success
+activates the site and clears `fatal_site_update`. For this reason
+`validate_fatal_update_has_a_table_dump` is the first condition, and the desk
+**Force** checkbox does not skip it. Restore such a site from a backup, or
+recover it from its snapshot.
 
 The metric is read with `prometheus_instant_value` (`/api/v1/query`), not
 `prometheus_query`, whose range samples can be a timegrain (120s) stale — too old

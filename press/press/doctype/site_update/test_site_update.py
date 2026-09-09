@@ -50,10 +50,21 @@ def make_deploy_type_migrate(candidate: str, app: str):
 
 @patch.object(SiteUpdate, "start", new=Mock())
 def create_test_site_update(
-	site: str, destination_group: str, status: str, ignore_validate: bool = False
+	site: str,
+	destination_group: str,
+	status: str,
+	ignore_validate: bool = False,
+	deploy_type: str = "Migrate",
 ) -> SiteUpdate:
+	# validate() computes deploy_type itself, so it only holds when validation is skipped.
 	doc = frappe.get_doc(
-		dict(doctype="Site Update", site=site, destination_group=destination_group, status=status)
+		dict(
+			doctype="Site Update",
+			site=site,
+			destination_group=destination_group,
+			status=status,
+			deploy_type=deploy_type,
+		)
 	)
 	# Tests that only need a Site Update record in a given status (e.g. a Fatal update to
 	# recover from) can skip validation, which otherwise requires a real destination bench.
