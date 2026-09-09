@@ -11,7 +11,7 @@ import router from '../router'
 import { getRunningJobs } from '../utils/agentJob'
 import { confirmDialog, icon, renderDialog } from '../utils/components'
 import { isMobile } from '../utils/device'
-import { date } from '../utils/format'
+import { date, escapeHtml } from '../utils/format'
 import { getDocResource } from '../utils/resource'
 import { getToastErrorMessage } from '../utils/toast'
 import { getFrappeUpdateBanner, getUpsellBanner } from './common'
@@ -20,6 +20,23 @@ import { getBackupsTab } from './site/backups'
 
 // prefilled so only the ticket id has to be typed; on its own it is not a reason
 const LOGIN_REASON_PREFIX = 'Investigating '
+
+// A scheduled action runs as Administrator, which means nothing to a customer.
+// Site.get_archival_details does the same for the banner.
+function getActorName(owner) {
+	return owner === 'Administrator' ? 'Frappe Cloud' : owner
+}
+
+// The banner names who and when; the Activity tab carries the reason and the rest.
+function getArchivalMessage(site) {
+	const details = site.archival_details
+	if (!details) return 'This site is archived. It cannot be used again.'
+
+	return `Archived by ${escapeHtml(details.archived_by)} on ${date(
+		details.archived_on,
+		'LLL',
+	)}`
+}
 
 function jobLink(site, job, text) {
 	if (!job) return text
@@ -126,7 +143,9 @@ export default {
 					type: 'error',
 				}
 			}
-			if (site.doc.status === 'Archived') return null
+			if (site.doc.status === 'Archived') {
+				return { title: getArchivalMessage(site.doc), type: 'info' }
+			}
 			return getFrappeUpdateBanner(site.doc, 'This site')
 		},
 		breadcrumbs({ items, documentResource: site }) {
@@ -1038,7 +1057,6 @@ export default {
 				icon: icon('activity'),
 				route: 'activity',
 				type: 'list',
-				condition: (site) => site.doc?.status !== 'Archived',
 				list: {
 					doctype: 'Site Activity',
 					filters: (site) => {
@@ -1063,7 +1081,7 @@ export default {
 								if (action == 'Create') {
 									action = 'Site created'
 								}
-								return `${action} by ${row.owner}`
+								return `${action} by ${getActorName(row.owner)}`
 							},
 						},
 						{
