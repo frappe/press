@@ -8,6 +8,8 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.api import client
+from press.api.bench import redeploy
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.bench.bench import Bench, process_bench_queue
@@ -16,7 +18,10 @@ from press.press.doctype.deploy_candidate.test_deploy_candidate import (
 	create_test_deploy_candidate_build,
 	create_test_press_admin_team,
 )
-from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
+	DeployCandidateBuild,
+	is_cache_related_failure,
+)
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
@@ -182,3 +187,114 @@ class TestDeployCandidateBuild(FrappeTestCase):
 				self.assertEqual(newly_created_build.name, build)
 			else:
 				self.assertEqual(deploy_candidate_build.name, build)
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=Mock())
+	@patch.object(DeployCandidateBuild, "_process_run_build", new=Mock())
+	@patch.object(Bench, "after_insert", new=Mock())
+	def test_redeploy_without_cache_disables_the_cache_on_the_new_build(self, mock_commit):
+		self.assertIs(self.redeploy_and_capture_no_cache(True), True)
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=Mock())
+	@patch.object(DeployCandidateBuild, "_process_run_build", new=Mock())
+	@patch.object(Bench, "after_insert", new=Mock())
+	def test_redeploy_with_no_cache_as_the_string_false_keeps_the_cache(self, mock_commit):
+		self.assertIs(self.redeploy_and_capture_no_cache("false"), False)
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=Mock())
+	@patch.object(DeployCandidateBuild, "_process_run_build", new=Mock())
+	@patch.object(Bench, "after_insert", new=Mock())
+	def test_dashboard_is_told_a_failed_build_is_a_cache_failure(self, mock_commit):
+		build = self.create_failed_build()
+		build.db_set("build_output", "failed to compute cache key: not found")
+
+		self.assertTrue(client.get("Deploy Candidate Build", build.name).is_cache_failure)
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=Mock())
+	@patch.object(DeployCandidateBuild, "_process_run_build", new=Mock())
+	@patch.object(Bench, "after_insert", new=Mock())
+	def test_dashboard_is_not_told_an_unrelated_failure_is_a_cache_failure(self, mock_commit):
+		build = self.create_failed_build()
+		build.db_set("build_output", "RUN --mount=type=cache bench build\nModuleNotFoundError")
+
+		self.assertFalse(client.get("Deploy Candidate Build", build.name).is_cache_failure)
+
+	def redeploy_and_capture_no_cache(self, no_cache):
+		"""Redeploy a failed build and return the no_cache the new build sends to the agent.
+
+		The agent reads it off the in-memory document, so the persisted (cast) value
+		of the field says nothing about what the build actually runs with.
+		"""
+		build = self.create_failed_build()
+		sent_to_agent = []
+
+		def capture(build_being_run, **kwargs):
+			sent_to_agent.append(build_being_run.no_cache)
+
+		with patch.object(DeployCandidateBuild, "pre_build", capture):
+			redeploy(name=build.group, dc_name=build.name, no_cache=no_cache)
+
+		return sent_to_agent[0]
+
+	def create_failed_build(self) -> DeployCandidateBuild:
+		group = create_test_release_group(
+			[create_test_app()],
+			self.user,
+			servers=[self.x86_build_server.name],
+		)
+		candidate: DeployCandidate = group.create_deploy_candidate()
+		build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", candidate.build_and_deploy())
+		build.db_set("status", "Failure")
+		return build
+
+
+class TestCacheRelatedFailure(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_buildkit_cache_key_failure_is_cache_related(self):
+		self.assertTrue(
+			is_cache_related_failure("failed to compute cache key: failed to calculate checksum of ref")
+		)
+
+	def test_yarn_integrity_failure_is_cache_related(self):
+		self.assertTrue(is_cache_related_failure("error Incorrect integrity when fetching from the cache"))
+
+	def test_apt_lock_failure_is_cache_related(self):
+		self.assertTrue(
+			is_cache_related_failure("E: Could not get lock /var/cache/apt/archives/lock - open (11)")
+		)
+
+	def test_missing_import_inside_a_cache_mount_step_is_not_cache_related(self):
+		build_output = """
+			#42 [apps 3/5] RUN --mount=type=cache,target=/home/frappe/.cache/pip bench build
+			#42 12.34 ModuleNotFoundError: No module named 'press.utils.missing'
+			#42 ERROR: process "/bin/sh -c bench build" did not complete successfully: exit code: 1
+		"""
+		self.assertFalse(is_cache_related_failure(build_output))
+
+	def test_is_cache_failure_is_set_on_a_failed_build_with_a_cache_error(self):
+		build = DeployCandidateBuild(
+			{
+				"doctype": "Deploy Candidate Build",
+				"status": "Failure",
+				"build_output": "failed to compute cache key: not found",
+			}
+		)
+
+		self.assertTrue(build.get_doc(frappe._dict()).is_cache_failure)
+
+	def test_is_cache_failure_is_not_set_on_a_successful_build(self):
+		build = DeployCandidateBuild(
+			{
+				"doctype": "Deploy Candidate Build",
+				"status": "Success",
+				"build_output": "failed to compute cache key: not found",
+			}
+		)
+
+		self.assertFalse(build.get_doc(frappe._dict()).is_cache_failure)
+
+	def test_is_cache_failure_is_not_set_on_a_build_with_no_output(self):
+		build = DeployCandidateBuild({"doctype": "Deploy Candidate Build", "status": "Failure"})
+
+		self.assertFalse(build.get_doc(frappe._dict()).is_cache_failure)
