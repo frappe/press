@@ -11,15 +11,16 @@ import frappe
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
-from press.api.server import all, change_plan, new
+from press.api.server import all, change_plan, has_similar_enabled_plans, new, plans
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.database_server.database_server import DatabaseServer
+from press.press.doctype.database_server.test_database_server import create_test_database_server
 from press.press.doctype.press_job.jobs.resize_server import ResizeServerJob
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.server.server import BaseServer
-from press.press.doctype.team.test_team import create_test_press_admin_team
+from press.press.doctype.team.test_team import allow_server_creation, create_test_press_admin_team
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
 	create_test_virtual_machine_image,
@@ -40,6 +41,11 @@ def create_test_server_plan(
 	price_inr: float = 750.0,
 	title: str | None = None,
 	plan_name: str | None = None,
+	platform: str = "x86_64",
+	cluster: str | None = None,
+	enabled: bool = True,
+	legacy_plan: bool = False,
+	roles: list[str] | None = None,
 ):
 	"""Create test Plan doc."""
 	plan_name = plan_name or f"Test {document_type} plan {make_autoname('.#')}"
@@ -52,8 +58,12 @@ def create_test_server_plan(
 			"title": title,
 			"price_inr": price_inr,
 			"price_usd": price_usd,
-			"enabled": 1,
+			"enabled": enabled,
+			"legacy_plan": legacy_plan,
+			"platform": platform,
+			"cluster": cluster,
 			"instance_type": "t2.micro",
+			"roles": [{"role": role} for role in (roles or [])],
 		}
 	).insert(ignore_if_duplicate=True)
 	plan.reload()
@@ -142,6 +152,7 @@ class TestAPIServer(FrappeTestCase):
 		super().setUp()
 
 		self.team = create_test_press_admin_team()
+		allow_server_creation(self.team)
 
 		self.app_plan = create_test_server_plan("Server")
 		self.app_plan.db_set("memory", 1024)
@@ -263,6 +274,39 @@ class TestAPIServer(FrappeTestCase):
 		)
 		self.assertTrue(db_subscription.enabled)
 		self.assertEqual(db_subscription.plan, self.db_plan.name)
+
+	def _new_server(self):
+		return new(
+			{
+				"cluster": self.cluster.name,
+				"db_plan": self.db_plan.name,
+				"app_plan": self.app_plan.name,
+				"title": "Test Server",
+			}
+		)
+
+	def test_new_refuses_a_team_without_a_billing_address(self):
+		"""The New Server form checks this; a request sent past the form did not."""
+		self.team.db_set("billing_address", None)
+		frappe.set_user(self.team.user)
+
+		servers_before = frappe.db.count("Server", {"team": self.team.name})
+		with self.assertRaises(frappe.ValidationError) as caught:
+			self._new_server()
+
+		self.assertIn("billing details", str(caught.exception))
+		self.assertEqual(frappe.db.count("Server", {"team": self.team.name}), servers_before)
+
+	def test_new_refuses_a_team_with_neither_servers_enabled_nor_credits(self):
+		self.team.db_set({"servers_enabled": 0, "currency": "INR"})
+		frappe.set_user(self.team.user)
+
+		servers_before = frappe.db.count("Server", {"team": self.team.name})
+		with self.assertRaises(frappe.ValidationError) as caught:
+			self._new_server()
+
+		self.assertIn("worth of credits", str(caught.exception))
+		self.assertEqual(frappe.db.count("Server", {"team": self.team.name}), servers_before)
 
 	@patch.object(VirtualMachine, "provision", new=successful_provision)
 	@patch.object(VirtualMachine, "sync", new=successful_sync)
@@ -395,3 +439,69 @@ class TestAPIServerList(FrappeTestCase):
 			all(server_filter={"server_type": "", "tag": "test_tag"}),
 			[self.app_server_dict],
 		)
+
+	def test_tag_ending_in_backslash_is_treated_as_a_value(self):
+		"""A trailing backslash used to escape the closing quote and made the rest of the query run as SQL."""
+		self.assertEqual(all(server_filter={"server_type": "", "tag": "test_tag\\"}), [])
+
+	def test_tag_carrying_a_union_payload_returns_no_servers(self):
+		payload = "test_tag\\' UNION SELECT name, name, name, creation, name FROM `tabTeam` -- "
+		self.assertEqual(all(server_filter={"server_type": "", "tag": payload}), [])
+
+
+@patch.object(frappe, "enqueue_doc", new=Mock())
+class TestServerPlansForUpgrade(FrappeTestCase):
+	def setUp(self):
+		if not frappe.db.exists("Cloud Provider", "AWS EC2"):
+			frappe.get_doc(
+				{
+					"doctype": "Cloud Provider",
+					"name": "AWS EC2",
+					"title": "AWS EC2",
+					"image": "/assets/press/aws.png",
+				}
+			).insert()
+		self.cluster = create_test_cluster(name="Plan Test Cluster", region="ap-south-1")
+		self.server = create_test_database_server(cluster=self.cluster.name)
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _plan(self, **kwargs):
+		return create_test_server_plan(
+			"Database Server", cluster=self.cluster.name, roles=["System Manager"], **kwargs
+		)
+
+	def _plan_names(self):
+		result = plans("Database Server", cluster=self.cluster.name, resource_name=self.server.name)
+		return [plan["name"] for plan in result["plans"]]
+
+	def test_arm_server_on_legacy_plan_is_not_offered_x86_plans(self):
+		current = self._plan(platform="arm64", enabled=False, legacy_plan=True)
+		frappe.db.set_value("Database Server", self.server.name, "plan", current.name)
+		x86 = self._plan(platform="x86_64", price_usd=20.0)
+
+		self.assertNotIn(x86.name, self._plan_names())
+
+	def test_arm_server_on_legacy_plan_is_offered_enabled_arm_plans(self):
+		current = self._plan(platform="arm64", enabled=False, legacy_plan=True)
+		frappe.db.set_value("Database Server", self.server.name, "plan", current.name)
+		arm = self._plan(platform="arm64", price_usd=20.0)
+
+		self.assertIn(arm.name, self._plan_names())
+
+	def test_legacy_plans_are_offered_when_no_enabled_plan_exists_for_the_platform(self):
+		current = self._plan(platform="arm64", enabled=False, legacy_plan=True)
+		frappe.db.set_value("Database Server", self.server.name, "plan", current.name)
+		bigger_legacy = self._plan(platform="arm64", legacy_plan=True, price_usd=20.0)
+
+		self.assertIn(bigger_legacy.name, self._plan_names())
+
+	def test_has_similar_enabled_plans_ignores_legacy_plans(self):
+		self._plan(platform="arm64", legacy_plan=True)
+
+		self.assertFalse(has_similar_enabled_plans("arm64", self.cluster.name))
+
+		self._plan(platform="arm64", legacy_plan=False)
+
+		self.assertTrue(has_similar_enabled_plans("arm64", self.cluster.name))

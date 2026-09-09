@@ -45,6 +45,7 @@ class PartnerOnboarding(Document):
 		headquarter_city: DF.Data | None
 		incorporation_certificate: DF.Attach | None
 		registered_country: DF.Link
+		registered_state: DF.Data | None
 		revenue_currency: DF.Link | None
 		reviewed_by: DF.Link | None
 		reviewed_on: DF.Datetime | None
@@ -59,6 +60,7 @@ class PartnerOnboarding(Document):
 		"team",
 		"company_name",
 		"registered_country",
+		"registered_state",
 		"company_email",
 		"contact",
 		"address",
@@ -77,6 +79,17 @@ class PartnerOnboarding(Document):
 		"agreed_to_due_diligence",
 		"agreed_to_partnership_agreement",
 	)
+
+	def validate(self):
+		# State is only meaningful for India territory assignment; drop it otherwise.
+		if self.registered_country != "India":
+			self.registered_state = None
+			return
+
+		# Only gate drafts — submitted/approved India rows may predate this field.
+		if self.docstatus == 0 and not self.registered_state:
+			# nosemgrep: non-actionable-error-message - error is self-explanatory
+			frappe.throw("Registered state is required when registered country is India.")
 
 	def before_submit(self):
 		team = frappe.get_cached_doc("Team", self.team)
@@ -326,20 +339,21 @@ def _get_mrr_status(team) -> dict:
 
 
 def _is_profile_complete(doc: PartnerOnboarding) -> bool:
-	return all(
-		[
-			doc.company_name,
-			doc.registered_country,
-			doc.company_email,
-			doc.contact,
-			doc.address,
-			doc.headquarter_city,
-			doc.incorporation_certificate,
-			doc.company_logo,
-			doc.agreed_to_due_diligence,
-			doc.agreed_to_partnership_agreement,
-		]
-	)
+	required = [
+		doc.company_name,
+		doc.registered_country,
+		doc.company_email,
+		doc.contact,
+		doc.address,
+		doc.headquarter_city,
+		doc.incorporation_certificate,
+		doc.company_logo,
+		doc.agreed_to_due_diligence,
+		doc.agreed_to_partnership_agreement,
+	]
+	if doc.registered_country == "India":
+		required.append(doc.registered_state)
+	return all(required)
 
 
 @frappe.whitelist()

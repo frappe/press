@@ -45,13 +45,15 @@ class CreateServerJob(PressJob):
 			self.configure_mariadb_replica()
 			self.start_mariadb_replica()
 
+		# Before set_additional_config, because it reboots the server and
+		# set_additional_config only enqueues its plays (filebeat, cadvisor,
+		# wazuh, ...) - they'd still be running when the reboot lands
+		self.set_docker_mtu_hetzner()
+
 		self.set_additional_config()
 
 		if self.is_fs_server:
 			self.share_benches_over_nfs()
-
-		# Last, because it reboots the server
-		self.set_docker_mtu_hetzner()
 
 	@property
 	def is_setup_db_replication(self):

@@ -10,17 +10,19 @@ from frappe.core.utils import find
 from frappe.utils import fmt_money, get_request_site_address
 
 from press.api.regional_payments.mpesa.utils import (
+	confirmed_by_mpesa,
 	create_invoice_partner_site,
 	create_payment_partner_transaction,
 	fetch_param_value,
+	get_business_shortcode,
 	get_details_from_request_log,
+	get_mpesa_connector,
 	get_mpesa_setup_for_team,
 	get_payment_gateway,
 	sanitize_mobile_number,
 	update_tax_id_or_phone_no,
 )
 from press.guards import role_guard
-from press.press.doctype.mpesa_setup.mpesa_connector import MpesaConnector
 from press.press.doctype.team.team import (
 	_enqueue_finalize_unpaid_invoices_for_team,
 	has_unsettled_invoices,
@@ -467,8 +469,6 @@ def change_payment_mode(mode):
 			{"enabled": 1, "erpnext_partner": 1, "partner_email": team.partner_email},
 			"name",
 		)
-	if team.billing_team and mode != "Paid By Partner":
-		team.billing_team = ""
 	team.save()
 	return
 
@@ -1057,20 +1057,11 @@ def generate_stk_push(**kwargs):
 		callback_url = (
 			get_request_site_address(True) + "/api/method/press.api.billing.verify_m_pesa_transaction"
 		)
-		env = "production" if not mpesa_setup.sandbox else "sandbox"
-		# for sandbox, business shortcode is same as till number
-		business_shortcode = (
-			mpesa_setup.business_shortcode if env == "production" else mpesa_setup.till_number
-		)
-		connector = MpesaConnector(
-			env=env,
-			app_key=mpesa_setup.consumer_key,
-			app_secret=mpesa_setup.get_password("consumer_secret"),
-		)
+		connector = get_mpesa_connector(mpesa_setup)
 
 		mobile_number = sanitize_mobile_number(args.sender)
 		response = connector.stk_push(
-			business_shortcode=business_shortcode,
+			business_shortcode=get_business_shortcode(mpesa_setup),
 			amount=args.amount_with_tax,
 			passcode=mpesa_setup.get_password("pass_key"),
 			callback_url=callback_url,
@@ -1119,7 +1110,14 @@ def handle_transaction_result(transaction_response, integration_request):
 	status = None
 	current_user = frappe.session.user
 
-	if result_code == 0:
+	if result_code == 0 and not confirmed_by_mpesa(integration_request):
+		status = "Failed"
+		create_mpesa_request_log(
+			transaction_response, "Host", "Mpesa Express", integration_request, None, status
+		)
+		frappe.log_error(f"Mpesa: Callback claimed success but Mpesa did not confirm {integration_request}")
+
+	elif result_code == 0:
 		try:
 			frappe.set_user("Administrator")  # To create BT and Invoice
 			status = "Completed"

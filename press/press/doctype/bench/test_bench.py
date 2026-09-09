@@ -26,6 +26,7 @@ from press.press.doctype.bench.bench import (
 	StagingSite,
 	archive_obsolete_benches,
 	archive_obsolete_benches_for_server,
+	get_frappe_release_timestamp,
 	process_bench_queue,
 )
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
@@ -393,6 +394,32 @@ class TestBench(FrappeTestCase):
 		self.assertGreater(bench1.gunicorn_workers, 2)
 		self.assertGreater(bench2.gunicorn_workers, 2)
 
+	def test_get_frappe_release_timestamp_returns_commit_time_of_deployed_frappe(self):
+		bench = create_test_bench()
+		release = frappe.db.get_value("Bench App", {"parent": bench.name, "app": "frappe"}, "release")
+		commit_time = frappe.utils.add_days(frappe.utils.now_datetime(), -45)
+		frappe.db.set_value("App Release", release, "timestamp", commit_time)
+
+		self.assertEqual(get_frappe_release_timestamp(bench.name), commit_time)
+
+	def test_get_frappe_release_timestamp_falls_back_to_when_the_release_was_recorded(self):
+		bench = create_test_bench()
+		release = frappe.db.get_value("Bench App", {"parent": bench.name, "app": "frappe"}, "release")
+		recorded_at = frappe.utils.add_days(frappe.utils.now_datetime(), -45)
+		frappe.db.set_value("App Release", release, "timestamp", None)
+		frappe.db.set_value("App Release", release, "creation", recorded_at)
+
+		self.assertEqual(get_frappe_release_timestamp(bench.name), recorded_at)
+
+	def test_get_frappe_release_timestamp_is_none_when_bench_app_has_no_release(self):
+		bench = create_test_bench()
+		frappe.db.set_value("Bench App", {"parent": bench.name, "app": "frappe"}, "release", None)
+
+		self.assertIsNone(get_frappe_release_timestamp(bench.name))
+
+	def test_get_frappe_release_timestamp_is_none_without_a_bench(self):
+		self.assertIsNone(get_frappe_release_timestamp(None))
+
 
 @patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
@@ -676,6 +703,12 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			with self.assertRaises(ArchiveBenchError):
 				bench.archive()
 			bench.reload()
+
+	def test_bench_config_marks_bench_as_frappe_cloud_managed(self):
+		"""bench reads this key to warn before commands that desync the container."""
+		with fake_agent_job({"New Bench": {"status": "Success"}, "Add User to Proxy": {"status": "Success"}}):
+			bench = create_test_bench()
+			self.assertTrue(json.loads(bench.config)["frappe_cloud"])
 
 	def test_bench_and_release_group_redis_password(self):
 		with fake_agent_job({"New Bench": {"status": "Success"}, "Add User to Proxy": {"status": "Success"}}):

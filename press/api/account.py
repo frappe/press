@@ -27,7 +27,14 @@ from press.press.doctype.team.team import (
 	get_child_team_members,
 	get_team_members,
 )
-from press.utils import docs, get_country_info, get_current_team, is_user_part_of_team, log_error
+from press.utils import (
+	docs,
+	get_country_info,
+	get_current_team,
+	get_disabled_team_of_user,
+	is_user_part_of_team,
+	log_error,
+)
 from press.utils import otp as otp_purpose
 from press.utils import user as user_utils
 from press.utils.otp import OneTimePassword
@@ -427,6 +434,28 @@ def enable_account():
 
 
 @frappe.whitelist()
+def reactivate_account():
+	"""Enable the account of the logged in user, on their way in from the login page"""
+	team_name = get_disabled_team_of_user(frappe.session.user)
+	if not team_name:
+		frappe.throw(
+			"You don't have a disabled account to reactivate. Please log in with the account you disabled."
+		)
+
+	# The team is disabled, so get_current_team throws for this session and every
+	# permission check on the team and its sites fails. Run as Administrator,
+	# mirroring setup_account.
+	current_user = frappe.session.user
+	try:
+		frappe.set_user("Administrator")
+		Team("Team", team_name).enable_account()
+	finally:
+		frappe.set_user(current_user)
+
+	return team_name
+
+
+@frappe.whitelist()
 def request_team_deletion():
 	team = get_current_team(get_doc=True)
 	doc = frappe.get_doc({"doctype": "Team Deletion Request", "team": team.name}).insert()
@@ -513,30 +542,38 @@ def validate_request_key(key, timezone=None):
 
 @frappe.whitelist()
 def get_countries_with_isd_codes():
-	"""Get list of countries with their ISD codes from Frappe's country_info."""
-	import phonenumbers
-	from frappe.geo.country_info import get_all as get_country_data
+	return frappe.cache().get_value("countries_with_isd_codes", generator=build_countries_with_isd_codes)
 
-	country_data = get_country_data()
-	countries = []
-	for name, info in country_data.items():
-		code = info.get("code", "")
-		example = ""
-		if code:
-			try:
-				num = phonenumbers.example_number_for_type(code.upper(), phonenumbers.PhoneNumberType.MOBILE)
-				example = phonenumbers.national_significant_number(num)
-			except Exception:
-				pass
-		countries.append(
-			{
-				"name": name,
-				"code": code,
-				"isd": info.get("isd", ""),
-				"example": example,
-			}
+
+def build_countries_with_isd_codes():
+	from press.utils.country import get_isd_code
+
+	countries = frappe.db.get_all("Country", fields=["name", "code"], order_by="name")
+	return [
+		{
+			"name": country.name,
+			"code": country.code or "",
+			"isd": get_isd_code(country.code),
+			"example": get_example_phone_number(country.code),
+		}
+		for country in countries
+	]
+
+
+def get_example_phone_number(country_code: str | None) -> str:
+	"""An example mobile number for a country, shown as the phone input's placeholder."""
+	import phonenumbers
+
+	if not country_code:
+		return ""
+
+	try:
+		number = phonenumbers.example_number_for_type(
+			country_code.upper(), phonenumbers.PhoneNumberType.MOBILE
 		)
-	return sorted(countries, key=lambda x: x["name"])
+		return phonenumbers.national_significant_number(number)
+	except Exception:
+		return ""
 
 
 @frappe.whitelist(allow_guest=True)
@@ -547,8 +584,10 @@ def country_list():
 	return frappe.cache().get_value("country_list", generator=get_country_list)
 
 
-def clear_country_list_cache():
+def clear_country_list_cache(doc=None, method=None):
+	"""Also runs as a `Country` doc event, hence the unused arguments."""
 	frappe.cache().delete_value("country_list")
+	frappe.cache().delete_value("countries_with_isd_codes")
 
 
 @frappe.whitelist()
@@ -869,20 +908,6 @@ def get_user_for_reset_password_key(key):
 def remove_team_member(user_email):
 	team = get_current_team(True)
 	team.remove_team_member(user_email)
-
-
-@frappe.whitelist()
-def remove_child_team(child_team):
-	team = frappe.get_doc("Team", child_team)
-	sites = frappe.get_all("Site", {"status": ("!=", "Archived"), "team": team.name}, pluck="name")
-	if sites:
-		frappe.throw(
-			f"This child team still has active sites. Please archive or transfer its sites to another team before removing it. {docs.doc_link(docs.CHILD_TEAMS)}."
-		)
-
-	team.enabled = 0
-	team.parent_team = ""
-	team.save(ignore_permissions=True)
 
 
 @frappe.whitelist()
@@ -1328,6 +1353,25 @@ def disable_2fa(totp_code):
 		frappe.throw(
 			f"The code is incorrect or has expired. Please enter the current 6-digit code from your authenticator app. {docs.doc_link(docs.TWO_FACTOR_AUTH)}."
 		)
+
+
+@frappe.whitelist()
+def set_2fa_recovery_code_reminders(enabled: bool | str):
+	"""Turn the reminders to review 2FA recovery codes on or off.
+
+	The switch sends "true" / "false" as strings. This module postpones
+	annotations, so frappe skips its own type casting and we cast here.
+	"""
+
+	if not frappe.db.exists("User 2FA", frappe.session.user):
+		frappe.throw(f"2FA is not enabled for {frappe.session.user}")
+
+	frappe.db.set_value(
+		"User 2FA",
+		frappe.session.user,
+		"unsubscribed_from_recovery_code_reminders",
+		not frappe.utils.sbool(enabled),
+	)
 
 
 @frappe.whitelist(allow_guest=True)

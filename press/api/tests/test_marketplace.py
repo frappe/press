@@ -16,6 +16,7 @@ from press.api.marketplace import (
 	branches,
 	change_app_plan,
 	change_branch,
+	convert_to_webp,
 	create_app_plan,
 	create_approval_request,
 	get_app,
@@ -483,6 +484,24 @@ class TestAPIMarketplace(FrappeTestCase):
 
 		self.marketplace_app.reload()
 		self.assertEqual(len(self.marketplace_app.screenshots), 0)
+
+	def test_convert_to_webp_composites_transparent_pixels_onto_white(self):
+		"""Straight-alpha PNGs keep RGB in transparent pixels. Dropping alpha leaked those colors into listing logos."""
+		from io import BytesIO
+
+		from PIL import Image
+
+		image = Image.new("RGBA", (300, 300), (0, 132, 232, 0))
+		opaque = Image.new("RGBA", (100, 100), (68, 175, 106, 255))
+		image.paste(opaque, (100, 100), opaque)
+		buf = BytesIO()
+		image.save(buf, format="PNG")
+
+		result = Image.open(BytesIO(convert_to_webp(buf.getvalue()))).convert("RGB")
+		self.assertTrue(all(channel > 250 for channel in result.getpixel((0, 0))))
+		r, g, b = result.getpixel((150, 150))
+		self.assertGreater(g, r)
+		self.assertGreater(g, b)
 
 
 def _make_test_image(size=300):

@@ -59,14 +59,45 @@ class PressRole(Document):
 		"allow_customer",
 		"allow_dashboard",
 		"allow_leads",
+		"allow_local_payment",
 		"allow_partner",
 		"allow_server_creation",
 		"allow_site_creation",
+		"allow_local_payment",
 		"allow_webhook_configuration",
 		"resources",
 		"team",
 		"title",
 		"users",
+	)
+
+	dashboard_insert_fields = (
+		"title",
+		"users",
+		"resources",
+	)
+
+	# The title and the permission toggles the role configuration dialog flips.
+	# `resources` and `users` change through add_resource/add_user, which check
+	# the caller.
+	dashboard_editable_fields = (
+		"admin_access",
+		"all_release_groups",
+		"all_servers",
+		"all_sites",
+		"allow_apps",
+		"allow_bench_creation",
+		"allow_billing",
+		"allow_contribution",
+		"allow_customer",
+		"allow_dashboard",
+		"allow_leads",
+		"allow_local_payment",
+		"allow_partner",
+		"allow_server_creation",
+		"allow_site_creation",
+		"allow_webhook_configuration",
+		"title",
 	)
 
 	@team_guard.only_admin()
@@ -89,8 +120,10 @@ class PressRole(Document):
 		self.reload()
 
 	def validate_duplicate_title(self):
-		exists = frappe.db.exists({"doctype": "Press Role", "title": self.title, "team": self.team})
-		if self.is_new() and exists:
+		filters = {"doctype": "Press Role", "title": self.title, "team": self.team}
+		if not self.is_new():
+			filters["name"] = ("!=", self.name)
+		if frappe.db.exists(filters):
 			message = _("Role with title {0} already exists in this team").format(self.title)
 			frappe.throw(message, frappe.DuplicateEntryError)
 

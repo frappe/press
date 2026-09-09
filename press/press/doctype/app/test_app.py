@@ -167,6 +167,13 @@ class TestApp(FrappeTestCase):
 			with self.assertRaises(frappe.ValidationError):
 				parse_frappe_version(invalid_custom_version_string, app_title="test-app")
 
+	def test_version_parsing_rejects_a_missing_version_string_with_a_readable_error(self):
+		"""Regression: a None version string used to raise AttributeError from str.replace."""
+		with self.assertRaises(frappe.ValidationError) as context:
+			parse_frappe_version(None, app_title="test-app")
+
+		self.assertIn("Invalid version format for app 'test-app'", str(context.exception))
+
 	def test_prerelease_upper_bound_is_rejected_with_a_message_naming_the_range(self):
 		with self.assertRaises(frappe.ValidationError) as context:
 			parse_frappe_version(

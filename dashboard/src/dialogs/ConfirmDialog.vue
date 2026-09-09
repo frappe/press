@@ -3,7 +3,7 @@
 		<template #body-content>
 			<div class="space-y-4">
 				<p class="text-p-base text-ink-gray-8" v-if="message" v-html="message" />
-				<div class="space-y-4">
+				<div class="space-y-4" ref="fields">
 					<template v-for="field in fields" :key="field.fieldname">
 						<LinkControl
 							v-if="field.type == 'link'"
@@ -87,6 +87,13 @@ export default {
 		hide() {
 			this.showDialog = false;
 		},
+		focusFirstField() {
+			const field = this.$refs.fields?.querySelector('input, textarea, select');
+			if (!field) return;
+			field.focus();
+			// caret at the end so a prefilled default reads as a prefix to type after
+			field.setSelectionRange?.(field.value.length, field.value.length);
+		},
 		handleKeydown(event) {
 			if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
 				event.preventDefault();
@@ -96,6 +103,9 @@ export default {
 	},
 	mounted() {
 		document.addEventListener('keydown', this.handleKeydown);
+		// setTimeout because the dialog's focus trap grabs the close button on
+		// nextTick; we want the caret in the first field instead
+		setTimeout(() => this.focusFirstField(), 0);
 	},
 	beforeUnmount() {
 		document.removeEventListener('keydown', this.handleKeydown);

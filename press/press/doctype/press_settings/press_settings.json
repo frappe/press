@@ -262,6 +262,7 @@
 		"realtime_job_updates",
 		"disable_agent_job_deduplication",
 		"disable_binlog_indexer_service",
+		"disable_database_audit_service",
 		"enable_mcp",
 		"column_break_rdlr",
 		"disable_auto_retry",
@@ -1656,6 +1657,12 @@
 			"fieldname": "disable_binlog_indexer_service",
 			"fieldtype": "Check",
 			"label": "Disable Binlog Indexer Service"
+		},
+		{
+			"default": "0",
+			"fieldname": "disable_database_audit_service",
+			"fieldtype": "Check",
+			"label": "Disable Database Audit Service"
 		},
 		{
 			"fieldname": "default_server_plan_type",
