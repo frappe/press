@@ -345,7 +345,7 @@ class TestBackupSchedule(FrappeTestCase):
 		self.assertFalse(site.plan_allows_backup_schedule())
 		self.assertRaisesRegex(
 			frappe.ValidationError,
-			"doesn't come with a backup schedule",
+			"does not come with a backup schedule",
 			site.update_backup_schedule,
 			"02:00",
 		)

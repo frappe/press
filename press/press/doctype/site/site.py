@@ -783,7 +783,9 @@ class Site(Document, TagHelpers):
 
 	def validate_backup_schedule_is_editable(self):
 		if not self.plan_allows_backup_schedule():
-			frappe.throw("Your plan doesn't come with a backup schedule you can set.")
+			frappe.throw(
+				"Your plan does not come with a backup schedule you can set. Change to a plan of USD 25 or more to select a backup time."
+			)
 		if len(self.logical_backup_times) > 1:
 			frappe.throw("We set up the backup times of your site. Write to support to change them.")
 
@@ -4684,9 +4686,10 @@ class Site(Document, TagHelpers):
 
 def parse_backup_time(time: str) -> str:
 	try:
-		return datetime.strptime(time, "%H:%M").strftime("%H:%M:00")
+		parsed = datetime.strptime(time, "%H:%M")
 	except (TypeError, ValueError):
 		frappe.throw(f"{time} is not a valid backup time. Use HH:MM.")
+	return parsed.strftime("%H:%M:00")
 
 
 def get_inbound_ip(server: str) -> str | None:
