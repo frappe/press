@@ -2,28 +2,27 @@
 import {
 	Badge,
 	Button,
+	createDocumentResource,
+	createListResource,
 	Dropdown,
 	Spinner,
 	Tooltip,
-	createDocumentResource,
-	createListResource,
 } from 'frappe-ui'
-
-import { renderDialog } from '@/utils/components'
 import {
-	h,
-	ref,
-	defineAsyncComponent,
-	onBeforeUnmount,
 	computed,
+	defineAsyncComponent,
+	h,
+	onBeforeUnmount,
 	reactive,
+	ref,
 	watch,
 } from 'vue'
-import { dropBench } from './utils'
+import Collapsable from '@/components/common/Collapsable.vue'
+import { renderDialog } from '@/utils/components'
 
 import { dayjsLocal } from '@/utils/dayjs'
 import { getSiteStatusBadge } from '@/utils/site'
-import Collapsable from '@/components/common/Collapsable.vue'
+import { dropBench } from './utils'
 
 interface Props {
 	data: any
@@ -128,7 +127,13 @@ const addSite = (e, bench) => {
 	const AddSiteDialog = defineAsyncComponent(
 		() => import('./AddSiteDialog.vue'),
 	)
-	renderDialog(h(AddSiteDialog, { bench, onSiteCreated: () => sites.reload() }))
+	renderDialog(
+		h(AddSiteDialog, {
+			bench,
+			server: props.server,
+			onSiteCreated: () => sites.reload(),
+		}),
+	)
 }
 
 const benchOptions = (bench) => [
@@ -140,7 +145,10 @@ const benchOptions = (bench) => [
 	{ label: 'App Marketplace', route: '/apps', icon: LucideStore },
 	{
 		label: 'Bench Actions',
-		route: { name: 'Release Group Detail Actions', params: { name: bench.name } },
+		route: {
+			name: 'Release Group Detail Actions',
+			params: { name: bench.name },
+		},
 		icon: LucideSlidersVertical,
 	},
 	{

@@ -34,7 +34,9 @@ from press.press.doctype.site.site import (
 	NOTIFY_BEFORE_ARCHIVAL_DAYS,
 	Site,
 	archive_suspended_sites,
+	get_remove_step_status,
 	notify_sites_before_archival,
+	process_archive_site_job_update,
 	process_new_site_job_update,
 	process_rename_site_job_update,
 	suspend_sites_exceeding_disk_usage_for_last_14_days,
@@ -186,6 +188,16 @@ class TestSite(FrappeTestCase):
 	def tearDown(self):
 		frappe.set_user("Administrator")
 		frappe.db.rollback()
+
+	def test_get_doc_reports_commit_time_of_the_frappe_release_on_the_bench(self):
+		site = create_test_site()
+		release = frappe.db.get_value("Bench App", {"parent": site.bench, "app": "frappe"}, "release")
+		commit_time = frappe.utils.add_days(frappe.utils.now_datetime(), -45)
+		frappe.db.set_value("App Release", release, "timestamp", commit_time)
+
+		doc = frappe._dict()
+		site.get_doc(doc)
+		self.assertEqual(doc.frappe_updated_on, commit_time)
 
 	def test_restore_site_from_files_rejects_remote_file_of_another_team(self):
 		from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
@@ -984,11 +996,17 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 		self.site.update_config({"test_limits": {"space": 1}})
 		self.site.reload()
 		self.site.save()
-	def _broken_site_with_fatal_update(self) -> Site:
+
+	def _broken_site_with_fatal_update(
+		self, backup_type: str = "Logical", deploy_type: str = "Migrate"
+	) -> Site:
 		from press.press.doctype.site_update.test_site_update import create_test_site_update
 
 		site = create_test_site("fatalupdate")
-		site_update = create_test_site_update(site.name, site.group, "Fatal", ignore_validate=True)
+		site_update = create_test_site_update(
+			site.name, site.group, "Fatal", ignore_validate=True, deploy_type=deploy_type
+		)
+		site_update.db_set("backup_type", backup_type)
 		site.db_set("fatal_site_update", site_update.name)
 		site.db_set("status", "Broken")
 		site.reload()
@@ -1089,6 +1107,56 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 
 	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_when_the_failed_update_was_a_pull(self):
+		# A pull update takes no backup at all, so there is no dump to read.
+		site = self._broken_site_with_fatal_update(deploy_type="Pull")
+
+		self.assertRaisesRegex(frappe.ValidationError, "did not migrate the site", site.restore_tables)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run for an update that took no backup",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_force_restore_tables_still_refuses_an_update_that_was_a_pull(self):
+		# There is no dump to read, for any user.
+		site = self._broken_site_with_fatal_update(deploy_type="Pull")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"did not migrate the site",
+			lambda: site.restore_tables(force=True),
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_when_the_failed_update_used_a_physical_backup(self):
+		# A physical update restores from a snapshot, and its site stays on the destination
+		# bench. A table restore has no dump to read. A success activates the site and
+		# clears the fatal update.
+		site = self._broken_site_with_fatal_update("Physical")
+
+		self.assertRaisesRegex(frappe.ValidationError, "used a Physical backup", site.restore_tables)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run for an update that took a physical backup",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_force_restore_tables_still_refuses_an_update_that_took_a_physical_backup(self):
+		# There is no dump to read, for any user.
+		site = self._broken_site_with_fatal_update("Physical")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"used a Physical backup",
+			lambda: site.restore_tables(force=True),
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_restore_tables_is_rejected_when_a_newer_site_update_exists(self):
 		from press.press.doctype.site_update.test_site_update import create_test_site_update
 
@@ -1123,3 +1191,69 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 		site = Site({"doctype": "Site", "plan": plan.name})
 
 		self.assertEqual(site.get_plan_config()["rate_limit"], {"limit": 36000, "window": 86400})
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestArchiveSiteJobUpdate(FrappeTestCase):
+	"""A skipped Archive Site step must not mark the site Archived."""
+
+	def setUp(self):
+		self.site = create_test_site("testsubdomain")
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _create_archive_jobs(self, archive_job_status: str) -> AgentJob:
+		"""Create the pair of jobs an archive runs, with the upstream one done."""
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		upstream_job = create_test_agent_job(
+			"Remove Site from Upstream", server=self.site.server, status="Success"
+		)
+		upstream_job.db_set("site", self.site.name)
+		self._set_step_status(upstream_job, "Remove Site File from Upstream Directory", "Success")
+
+		archive_job = create_test_agent_job(
+			"Archive Site", server=self.site.server, status=archive_job_status
+		)
+		archive_job.db_set("site", self.site.name)
+		return archive_job
+
+	def _set_step_status(self, job: AgentJob, step_name: str, status: str):
+		frappe.db.set_value(
+			"Agent Job Step", {"agent_job": job.name, "step_name": step_name}, "status", status
+		)
+
+	def test_archive_step_skipped_after_a_stuck_backup_marks_the_site_broken(self):
+		"""The job died while Backup Site was still running, so the site is still on the bench."""
+		archive_job = self._create_archive_jobs("Failure")
+		self._set_step_status(archive_job, "Backup Site", "Running")
+		self._set_step_status(archive_job, "Archive Site", "Skipped")
+
+		process_archive_site_job_update(archive_job)
+
+		self.site.reload()
+		self.assertEqual(self.site.status, "Broken")
+		self.assertTrue(self.site.archive_failed)
+
+	def test_archive_step_skipped_after_a_failed_backup_upload_marks_the_site_broken(self):
+		"""Backup Site succeeded, the upload failed, so Archive Site never ran."""
+		archive_job = self._create_archive_jobs("Failure")
+		self._set_step_status(archive_job, "Backup Site", "Success")
+		self._set_step_status(archive_job, "Upload Site Backup to S3", "Failure")
+		self._set_step_status(archive_job, "Archive Site", "Skipped")
+
+		process_archive_site_job_update(archive_job)
+
+		self.site.reload()
+		self.assertEqual(self.site.status, "Broken")
+		self.assertTrue(self.site.archive_failed)
+
+	def test_step_skipped_by_a_successful_job_still_counts_as_removed(self):
+		"""The agent skips a step it has no work for. That job succeeded, so nothing is left behind."""
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		job = create_test_agent_job("Remove Site from Upstream", server=self.site.server, status="Success")
+		self._set_step_status(job, "Remove Site File from Upstream Directory", "Skipped")
+
+		self.assertEqual(get_remove_step_status(job), "Skipped")

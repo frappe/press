@@ -211,6 +211,7 @@ scheduler_events = {
 	"daily": [
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
+		"press.press.doctype.site_version_audit.site_version_audit.record_audit",
 		"press.press.doctype.incident.incident.notify_ignored_servers",
 		"press.press.doctype.database_server.database_server.unindex_mariadb_binlogs",
 		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_disk",
@@ -269,8 +270,10 @@ scheduler_events = {
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 		"press.press.doctype.server.server.sync_wazuh_agent_status",
 		"press.press.doctype.incident_settings.incident_settings.alert_if_phone_call_alerts_disabled",
+		"press.press.doctype.server.server_monitoring.alert_on_failing_signups",
 		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",
 		"press.press.doctype.database_server.database_server.upload_audit_logs_to_s3",
+		"press.press.doctype.site_backup.site_backup.alert_if_backup_success_rate_is_low",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -509,7 +512,7 @@ __persistent_cache_keys = [
 	"press-auth-logs",
 	"rl:*",
 	"press_otp:*",
-	"press_otp_sent:*"
+	"press_otp_sent:*",
 ]
 
 # `frappe.rename_doc` erases all caches, this hook preserves some of them.

@@ -11,11 +11,12 @@ import frappe
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
-from press.api.server import all, change_plan, new
+from press.api.server import all, change_plan, has_similar_enabled_plans, new, plans
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.database_server.database_server import DatabaseServer
+from press.press.doctype.database_server.test_database_server import create_test_database_server
 from press.press.doctype.press_job.jobs.resize_server import ResizeServerJob
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.server.server import BaseServer
@@ -40,6 +41,11 @@ def create_test_server_plan(
 	price_inr: float = 750.0,
 	title: str | None = None,
 	plan_name: str | None = None,
+	platform: str = "x86_64",
+	cluster: str | None = None,
+	enabled: bool = True,
+	legacy_plan: bool = False,
+	roles: list[str] | None = None,
 ):
 	"""Create test Plan doc."""
 	plan_name = plan_name or f"Test {document_type} plan {make_autoname('.#')}"
@@ -52,8 +58,12 @@ def create_test_server_plan(
 			"title": title,
 			"price_inr": price_inr,
 			"price_usd": price_usd,
-			"enabled": 1,
+			"enabled": enabled,
+			"legacy_plan": legacy_plan,
+			"platform": platform,
+			"cluster": cluster,
 			"instance_type": "t2.micro",
+			"roles": [{"role": role} for role in (roles or [])],
 		}
 	).insert(ignore_if_duplicate=True)
 	plan.reload()
@@ -437,3 +447,61 @@ class TestAPIServerList(FrappeTestCase):
 	def test_tag_carrying_a_union_payload_returns_no_servers(self):
 		payload = "test_tag\\' UNION SELECT name, name, name, creation, name FROM `tabTeam` -- "
 		self.assertEqual(all(server_filter={"server_type": "", "tag": payload}), [])
+
+
+@patch.object(frappe, "enqueue_doc", new=Mock())
+class TestServerPlansForUpgrade(FrappeTestCase):
+	def setUp(self):
+		if not frappe.db.exists("Cloud Provider", "AWS EC2"):
+			frappe.get_doc(
+				{
+					"doctype": "Cloud Provider",
+					"name": "AWS EC2",
+					"title": "AWS EC2",
+					"image": "/assets/press/aws.png",
+				}
+			).insert()
+		self.cluster = create_test_cluster(name="Plan Test Cluster", region="ap-south-1")
+		self.server = create_test_database_server(cluster=self.cluster.name)
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _plan(self, **kwargs):
+		return create_test_server_plan(
+			"Database Server", cluster=self.cluster.name, roles=["System Manager"], **kwargs
+		)
+
+	def _plan_names(self):
+		result = plans("Database Server", cluster=self.cluster.name, resource_name=self.server.name)
+		return [plan["name"] for plan in result["plans"]]
+
+	def test_arm_server_on_legacy_plan_is_not_offered_x86_plans(self):
+		current = self._plan(platform="arm64", enabled=False, legacy_plan=True)
+		frappe.db.set_value("Database Server", self.server.name, "plan", current.name)
+		x86 = self._plan(platform="x86_64", price_usd=20.0)
+
+		self.assertNotIn(x86.name, self._plan_names())
+
+	def test_arm_server_on_legacy_plan_is_offered_enabled_arm_plans(self):
+		current = self._plan(platform="arm64", enabled=False, legacy_plan=True)
+		frappe.db.set_value("Database Server", self.server.name, "plan", current.name)
+		arm = self._plan(platform="arm64", price_usd=20.0)
+
+		self.assertIn(arm.name, self._plan_names())
+
+	def test_legacy_plans_are_offered_when_no_enabled_plan_exists_for_the_platform(self):
+		current = self._plan(platform="arm64", enabled=False, legacy_plan=True)
+		frappe.db.set_value("Database Server", self.server.name, "plan", current.name)
+		bigger_legacy = self._plan(platform="arm64", legacy_plan=True, price_usd=20.0)
+
+		self.assertIn(bigger_legacy.name, self._plan_names())
+
+	def test_has_similar_enabled_plans_ignores_legacy_plans(self):
+		self._plan(platform="arm64", legacy_plan=True)
+
+		self.assertFalse(has_similar_enabled_plans("arm64", self.cluster.name))
+
+		self._plan(platform="arm64", legacy_plan=False)
+
+		self.assertTrue(has_similar_enabled_plans("arm64", self.cluster.name))

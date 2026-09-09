@@ -171,3 +171,4 @@ press.patches.v0_8_0.bump_v15_bench_version_to_5_31_0
 press.patches.v0_8_0.set_team_on_remote_file
 press.patches.v0_8_0.add_disk_full_alert_rule
 press.patches.v0_8_0.unset_rate_limit_for_dedicated_server_sites
+press.patches.v0_8_0.backfill_site_version_audits

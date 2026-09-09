@@ -386,6 +386,7 @@ class Site(Document, TagHelpers):
 	def get_doc(self, doc):
 		from press.api.client import get
 		from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import disk_full_servers
+		from press.press.doctype.bench.bench import get_frappe_release_timestamp
 
 		group = frappe.db.get_value(
 			"Release Group",
@@ -407,6 +408,7 @@ class Site(Document, TagHelpers):
 			order_by="name desc",
 			pluck="name",
 		)
+		doc.frappe_updated_on = get_frappe_release_timestamp(self.bench)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
 		doc.last_updated = self.last_updated
@@ -419,7 +421,7 @@ class Site(Document, TagHelpers):
 			frappe.db.get_value(
 				"Site Update",
 				self.fatal_site_update,
-				["update_start", "update_job", "recover_job"],
+				["update_start", "update_job", "recover_job", "backup_type", "deploy_type"],
 				as_dict=True,
 			)
 			if self.fatal_site_update
@@ -1305,7 +1307,8 @@ class Site(Document, TagHelpers):
 		"""Restore the tables the failed update's recovery could not restore.
 
 		``force`` skips the checks that are judgement calls, for a system user who can
-		see more than the checks can. It never skips the concurrent-restore check.
+		see more than the checks can. It never skips the concurrent-restore check, nor
+		the check that a table dump exists.
 		"""
 		# Lock the site until this request commits. The dashboard and the desk both reach
 		# this method, and two restores against one database would corrupt it.
@@ -1315,6 +1318,7 @@ class Site(Document, TagHelpers):
 				f"Table restore {job} is already running on this site. Wait for it to finish, "
 				"then reload the page."
 			)
+		self.validate_fatal_update_has_a_table_dump()
 		if not (force and is_system_user()):
 			self.validate_table_restore()
 		if not self.status_before_update:
@@ -1324,6 +1328,32 @@ class Site(Document, TagHelpers):
 		self.status = "Pending"
 		self.save()
 		return job.name
+
+	def validate_fatal_update_has_a_table_dump(self):
+		"""Refuse a restore that has no dump to read. Force does not skip this check.
+
+		Only a logical backup of a migrate update makes the table dump that this restore
+		reads. A pull update takes no backup at all. A physical update restores from a
+		snapshot, and its site stays on the destination bench. The restore finds nothing.
+		A success then activates the site and clears the fatal update.
+		"""
+		fatal_site_update = frappe.db.get_value("Site", self.name, "fatal_site_update")
+		if not fatal_site_update:
+			return
+		update = frappe.db.get_value(
+			"Site Update", fatal_site_update, ["backup_type", "deploy_type"], as_dict=True
+		)
+		if update.deploy_type != "Migrate":
+			frappe.throw(
+				f"Update {fatal_site_update} did not migrate the site, so it took no backup. "
+				"A table restore has nothing to read. Restore this site from a backup instead."
+			)
+		if update.backup_type != "Logical":
+			frappe.throw(
+				f"Update {fatal_site_update} used a {update.backup_type} backup. A "
+				f"{update.backup_type} backup makes no table dump, so a table restore has "
+				"nothing to read. Recover this site from its snapshot instead."
+			)
 
 	def validate_table_restore(self):
 		fatal_site_update = frappe.db.get_value("Site", self.name, "fatal_site_update")
@@ -3316,6 +3346,9 @@ class Site(Document, TagHelpers):
 		release_group_names = []
 		host_on_shared_server = False
 		plan_name = self.get_plan_name()
+
+		if self.is_standby:
+			host_on_shared_server = True
 		if plan_name:
 			release_group_names = frappe.db.get_all(
 				"Site Plan Release Group",
@@ -4873,20 +4906,8 @@ def get_remove_step_status(job):
 		for_update=True,
 	)
 
-	if (
-		remove_step_name == "Archive Site"
-		and status == "Skipped"
-		and (
-			frappe.db.get_value(
-				"Agent Job Step",
-				{"step_name": "Backup Site", "agent_job": job.name},
-				"status",
-				for_update=True,
-			)
-			== "Failure"
-		)
-	):
-		# consider as failure if archive was skipped because of backup failure
+	if status == "Skipped" and job.status != "Success":
+		# The step never ran. The job died before it, so nothing was removed.
 		status = "Failure"
 	return status
 
