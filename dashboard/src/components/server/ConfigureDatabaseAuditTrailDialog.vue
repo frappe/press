@@ -188,8 +188,8 @@ export default {
 			const plan = this.$resources.s3StoragePlan.data?.[0]
 			if (!plan) return null
 			return this.$team.doc.currency === 'INR'
-				? `₹${plan.price_inr}`
-				: `$${plan.price_usd}`
+				? `${plan.price_inr} INR`
+				: `${plan.price_usd} USD`
 		},
 	},
 	methods: {

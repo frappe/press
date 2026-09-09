@@ -76,6 +76,7 @@ class DatabaseServer(BaseServer):
 		database_audit_log_max_disk_gb: DF.Int
 		database_audit_log_status: DF.Literal["Disabled", "Enabling", "Enabled", "Disabling"]
 		db_port: DF.Int
+		disable_agent_update: DF.Check
 		domain: DF.Link | None
 		enable_binlog_indexing: DF.Check
 		enable_binlog_upload_to_s3: DF.Check
@@ -408,7 +409,7 @@ class DatabaseServer(BaseServer):
 			},
 			{
 				"action": "Forcefully Purge Binlogs",
-				"description": "Use this in case of disk full issues",
+				"description": 'Use this in case of <span class="text-red-600">disk full</span> issues',
 				"button_label": "Purge",
 				"condition": self.status == "Active",
 				"doc_method": "purge_binlogs_forcefully",
@@ -1349,6 +1350,8 @@ class DatabaseServer(BaseServer):
 	def _enable_database_audit_log(self):
 		"""Reconciling inside the try keeps a failure from leaving billing on."""
 		try:
+			# Don't let two transitions drive MariaDB at once
+			frappe.get_value(self.doctype, self.name, "status", for_update=True)
 			self.setup_mysql_log_directory()
 			self.load_server_audit_plugin()
 			self.configure_server_audit_plugin()
@@ -1374,6 +1377,8 @@ class DatabaseServer(BaseServer):
 
 	def _update_database_audit_log(self):
 		"""server_audit_events is dynamic, so the new mode applies without a restart."""
+		# Don't let two transitions drive MariaDB at once
+		frappe.get_value(self.doctype, self.name, "status", for_update=True)
 		self.configure_server_audit_plugin()
 		if not self.reconcile_audit_log_state():
 			frappe.throw(f"MariaDB on {self.name} stopped logging while its capture mode was changed.")
@@ -1402,6 +1407,8 @@ class DatabaseServer(BaseServer):
 		alone because a combined save can order a server_audit_* line above plugin-load-add,
 		which also stops it booting. Restarts MariaDB unless the line is already there.
 		"""
+		# The log directory play took minutes, so this row has moved on
+		self.reload()
 		self.add_or_update_mariadb_variable(
 			"plugin_load_add",
 			"value_str",
@@ -1413,6 +1420,8 @@ class DatabaseServer(BaseServer):
 		)
 
 	def configure_server_audit_plugin(self):
+		# Loading the plugin restarted MariaDB, so this row has moved on
+		self.reload()
 		for variable, value_type, value in self.server_audit_variables:
 			self.add_or_update_mariadb_variable(variable, value_type, value, persist=True, save=False)
 		self.flags.update_mariadb_system_variables_synchronously = True
@@ -1455,6 +1464,8 @@ class DatabaseServer(BaseServer):
 		# plugin_load_add is left alone: add_or_update_mariadb_variable has no removal path,
 		# and a loaded plugin with logging off writes nothing.
 		try:
+			# Don't let two transitions drive MariaDB at once
+			frappe.get_value(self.doctype, self.name, "status", for_update=True)
 			self.add_or_update_mariadb_variable(
 				"server_audit_logging",
 				"value_str",
@@ -1877,13 +1888,14 @@ class DatabaseServer(BaseServer):
 		)
 
 	def is_mariadb_up(self) -> bool:
-		"""Whether mysqld_exporter last scraped MariaDB as up; unknown counts as up."""
+		"""Whether mysqld_exporter last scraped MariaDB as up; without metrics, count it down."""
 		from press.api.server import prometheus_instant_value
 
 		try:
-			return prometheus_instant_value(f"""mysql_up{{instance="{self.name}",job="mariadb"}}""") != 0
+			value = prometheus_instant_value(f"""mysql_up{{instance="{self.name}",job="mariadb"}}""")
 		except MonitorServerDown:
-			return True
+			return False
+		return bool(value)
 
 	def get_stalks(self):
 		if self.agent.should_skip_requests():

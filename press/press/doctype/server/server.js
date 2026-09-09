@@ -75,6 +75,14 @@ frappe.ui.form.on('Server', {
 				true,
 				frm.doc.is_server_setup,
 			],
+			[
+				__('Copy SSH Command'),
+				() =>
+					frm
+						.call('get_ssh_command')
+						.then((r) => frappe.utils.copy_to_clipboard(r.message)),
+				false,
+			],
 			[__('Get Static IP'), 'get_static_ip', false],
 			[
 				__('Add public IP'),

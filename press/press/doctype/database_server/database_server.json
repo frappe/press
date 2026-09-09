@@ -22,6 +22,7 @@
 		"is_self_hosted",
 		"enable_physical_backup",
 		"halt_agent_jobs",
+		"disable_agent_update",
 		"enable_schema_size_parser",
 		"column_break_qsqm",
 		"is_server_setup",
@@ -243,6 +244,13 @@
 			"fieldname": "halt_agent_jobs",
 			"fieldtype": "Check",
 			"label": "Halt Agent Jobs"
+		},
+		{
+			"default": "0",
+			"description": "Don't update the agent on this server",
+			"fieldname": "disable_agent_update",
+			"fieldtype": "Check",
+			"label": "Disable Agent Update"
 		},
 		{
 			"fieldname": "column_break_qsqm",
@@ -944,7 +952,7 @@
 			"link_fieldname": "database_server"
 		}
 	],
-	"modified": "2026-05-19 03:59:16.146497",
+	"modified": "2026-08-13 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Database Server",

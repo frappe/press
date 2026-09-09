@@ -17,7 +17,7 @@ from frappe.query_builder.terms import ValueWrapper
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
-from press.access import dashboard_access_rules, ownership
+from press.access import SECTIONS, dashboard_access_rules, ownership
 from press.access.support_access import has_support_access
 from press.exceptions import TeamHeaderNotInRequestError
 from press.guards import role_guard
@@ -114,6 +114,10 @@ ALLOWED_DOCTYPES = [
 	"Site Plan Change",
 	"Plan Change",
 ]
+
+# What a dashboard save carries along but never means to write: the standard
+# fields, and the access sections `dashboard_access_rules` adds in `get`.
+READ_ONLY_FIELDS = frozenset([*default_fields, *child_table_fields, *SECTIONS])
 
 whitelisted_methods = set()
 
@@ -334,15 +338,10 @@ def set_value(doctype: str, name: str, fieldname: dict | str, value: str | None 
 	if not has_support_access(doctype, name):
 		check_document_write_access(doctype, name)
 
-	check_editable_fields(doctype, fields_being_set(fieldname, value))
+	values = writable_values(values_being_set(fieldname, value))
+	check_editable_fields(doctype, list(values))
 
-	fields = fieldname if isinstance(fieldname, dict) else {fieldname: value}
-	for field in fields:
-		# fields mentioned in dashboard_fields are allowed to be set via set_value
-		if not is_allowed_field(doctype, field):
-			raise_not_permitted()
-
-	_set_value(doctype, name, fieldname, value)
+	_set_value(doctype, name, values, None)
 
 	# frappe set_value returns just the doc and not press's overriden `get_doc`
 	return get(doctype, name)
@@ -525,22 +524,35 @@ def is_allowed_field(doctype, field):
 	return False
 
 
-def fields_being_set(fieldname: dict | str, value: str | None) -> list[str]:
-	"""The fields `frappe.client.set_value` will write, however it was called.
+def values_being_set(fieldname: dict | str, value: str | None) -> dict:
+	"""What `set_value` was asked to write, however it was called.
 
 	It takes either a mapping or a single fieldname with its value, and a
 	fieldname that parses as JSON is treated as the mapping.
 	"""
 	if isinstance(fieldname, dict):
-		return list(fieldname)
+		return fieldname
 
 	if value:
-		return [fieldname]
+		return {fieldname: value}
 
 	try:
-		return list(json.loads(fieldname))
+		values = json.loads(fieldname)
 	except (TypeError, ValueError):
-		return [fieldname]
+		values = None
+
+	return values if isinstance(values, dict) else {fieldname: ""}
+
+
+def writable_values(values: dict) -> dict:
+	"""Leave out what the dashboard sends back without meaning to write it.
+
+	A dashboard editor saves by posting the whole document it read, so the
+	standard fields and the access sections `get` adds ride along with the
+	edited ones. Refusing the write over those would fail every such save, and
+	honouring them would let a request rewrite `owner` or `docstatus`.
+	"""
+	return {field: value for field, value in values.items() if field not in READ_ONLY_FIELDS}
 
 
 def check_editable_fields(doctype: str, fields: list[str]):

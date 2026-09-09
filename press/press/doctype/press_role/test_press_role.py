@@ -95,6 +95,19 @@ class TestPressRole(FrappeTestCase):
 		self.perm_role.reload()
 		self.assertTrue(any(r.document_name == site_name for r in self.perm_role.resources))
 
+	def test_rename_keeps_the_role_and_rejects_a_title_another_role_already_has(self):
+		"""Roles created for a member's own resource get a generated title.
+		The team owner renames them, which must not trip the duplicate check
+		on the role's own title."""
+		self.perm_role.title = "Support"
+		self.perm_role.save()
+		self.assertEqual(frappe.db.get_value("Press Role", self.perm_role.name, "title"), "Support")
+
+		self.perm_role2.title = "Support"
+		with self.assertRaises(frappe.DuplicateEntryError) as context:
+			self.perm_role2.save()
+		self.assertIn("Support", str(context.exception))
+
 	def test_add_resource_rejects_cross_team_document(self):
 		other_team = create_test_team()
 		self.addCleanup(frappe.delete_doc, "Team", other_team.name, force=True)

@@ -9,6 +9,7 @@ from frappe.model.document import Document
 from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.team.team import upgrade_beginner_tier_for_new_card
 from press.utils import log_error
 from press.utils.telemetry import capture
 
@@ -107,6 +108,7 @@ class StripePaymentMethod(Document):
 		frappe.db.set_value("Team", self.team, "default_payment_method", self.name)
 		if not frappe.db.get_value("Team", self.team, "payment_mode"):
 			frappe.db.set_value("Team", self.team, "payment_mode", "Card")
+			upgrade_beginner_tier_for_new_card(self.team)
 			account_request_name = frappe.get_value("Team", self.team, "account_request")
 			if account_request_name:
 				account_request = frappe.get_doc("Account Request", account_request_name)
