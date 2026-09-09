@@ -64,6 +64,7 @@ const isHideSidebar = computed(() => {
 		'Site Login',
 		'SignupLoginToSite',
 		'SignupSetup',
+		'Quickstart',
 	]
 	const alwaysHideSidebarPaths = ['/dashboard/site-login']
 

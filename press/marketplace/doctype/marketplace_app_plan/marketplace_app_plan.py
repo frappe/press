@@ -64,14 +64,41 @@ class MarketplaceAppPlan(Plan):
 	def on_update(self):
 		self.update_marketplace_app_subscription_type()
 
-	def update_marketplace_app_subscription_type(self):
-		if cint(self.price_inr) > 0 or cint(self.price_usd) > 0:
-			frappe.db.set_value(
-				"Marketplace App",
-				self.app,
-				"subscription_type",
-				"Paid",
-			)
+	def on_trash(self):
+		# on_trash runs before DB delete; exclude this plan from the recalculation
+		self.update_marketplace_app_subscription_type(exclude_self=True)
+
+	def update_marketplace_app_subscription_type(self, exclude_self: bool = False):
+		if not self.app:
+			return
+
+		filters: dict = {"app": self.app, "enabled": 1}
+		if exclude_self:
+			filters["name"] = ("!=", self.name)
+
+		plans = frappe.get_all(
+			"Marketplace App Plan",
+			filters=filters,
+			fields=["price_inr", "price_usd"],
+		)
+
+		has_free = False
+		has_paid = False
+		for plan in plans:
+			if cint(plan.price_inr) > 0 or cint(plan.price_usd) > 0:
+				has_paid = True
+			else:
+				has_free = True
+
+		if has_free and has_paid:
+			subscription_type = "Freemium"
+		elif has_paid:
+			subscription_type = "Paid"
+		else:
+			subscription_type = "Free"
+
+		if frappe.db.get_value("Marketplace App", self.app, "subscription_type") != subscription_type:
+			frappe.db.set_value("Marketplace App", self.app, "subscription_type", subscription_type)
 
 	@staticmethod
 	def create_marketplace_app_subscription(

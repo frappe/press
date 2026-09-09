@@ -203,7 +203,8 @@ class Ansible:
 		self.playbook = playbook
 		self.playbook_path = frappe.get_app_path("press", "playbooks", self.playbook)
 		self.host = server.ip if server.ip else server.private_ip
-		self.variables = variables or {}
+		# Every playbook gets the provider, so templates don't depend on the caller passing it
+		self.variables = {"cloud_provider": server.get("provider") or ""} | (variables or {})
 
 		constants.HOST_KEY_CHECKING = False
 		context.CLIARGS = ImmutableDict(

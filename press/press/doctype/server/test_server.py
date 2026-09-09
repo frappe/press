@@ -3,8 +3,9 @@
 
 from __future__ import annotations
 
+import json
 import typing
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.core.utils import find
@@ -13,6 +14,7 @@ from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
 from press.agent import Agent
+from press.exceptions import ArchiveBenchError
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
@@ -22,14 +24,18 @@ from press.press.doctype.press_settings.test_press_settings import (
 )
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import create_test_release_group
-from press.press.doctype.server.server import BaseServer, sync_wazuh_agent_status
+from press.press.doctype.server.server import (
+	BaseServer,
+	Server,
+	process_cleanup_unused_files_job_update,
+	sync_wazuh_agent_status,
+)
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
-from press.press.doctype.site.test_site import create_test_bench
+from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 
 if typing.TYPE_CHECKING:
-	from press.press.doctype.server.server import Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -507,6 +513,95 @@ class TestServer(FrappeTestCase):
 			frappe.db.get_value("Database Server", victim_database_server.name, "auto_increase_storage")
 		)
 
+	@patch.object(BaseServer, "is_build_server", new=Mock(return_value=False))
+	def test_forced_cleanup_breaks_glass_when_agent_disk_is_full(self):
+		server = create_test_server()
+		with (
+			patch.object(BaseServer, "free_space", return_value=0),
+			patch.object(BaseServer, "break_glass") as break_glass,
+			patch.object(Agent, "cleanup_unused_files") as cleanup,
+		):
+			server._cleanup_unused_files(force=True)
+		break_glass.assert_called_once()
+		cleanup.assert_called_once_with(True)
+
+	@patch.object(BaseServer, "is_build_server", new=Mock(return_value=False))
+	def test_forced_cleanup_keeps_glass_when_agent_disk_has_space(self):
+		server = create_test_server()
+		with (
+			patch.object(BaseServer, "free_space", return_value=50 * 1024**3),
+			patch.object(BaseServer, "break_glass") as break_glass,
+			patch.object(Agent, "cleanup_unused_files") as cleanup,
+		):
+			server._cleanup_unused_files(force=True)
+		break_glass.assert_not_called()
+		cleanup.assert_called_once_with(True)
+
+	@patch.object(BaseServer, "is_build_server", new=Mock(return_value=False))
+	def test_forced_cleanup_runs_despite_pending_agent_request_failures(self):
+		server = create_test_server()
+		with (
+			patch.object(Agent, "should_skip_requests", return_value=True),
+			patch.object(BaseServer, "free_space", return_value=50 * 1024**3),
+			patch.object(Agent, "cleanup_unused_files") as cleanup,
+		):
+			server._cleanup_unused_files(force=True)
+		cleanup.assert_called_once_with(True)
+
+	@patch.object(BaseServer, "is_build_server", new=Mock(return_value=False))
+	def test_scheduled_cleanup_skips_when_agent_has_pending_request_failures(self):
+		server = create_test_server()
+		with (
+			patch.object(Agent, "should_skip_requests", return_value=True),
+			patch.object(Agent, "cleanup_unused_files") as cleanup,
+		):
+			server._cleanup_unused_files(force=False)
+		cleanup.assert_not_called()
+
+	def test_user_triggered_cleanup_forces_by_default(self):
+		server = create_test_server()
+		with patch.object(BaseServer, "_cleanup_unused_files") as inner:
+			server.cleanup_unused_files()
+		inner.assert_called_once_with(force=True)
+
+	def test_glass_file_restored_only_after_a_forced_cleanup_completes(self):
+		server = create_test_server()
+
+		def job(status, force):
+			return frappe._dict(
+				status=status,
+				request_data=json.dumps({"force": force}),
+				server_type="Server",
+				server=server.name,
+			)
+
+		with patch.object(BaseServer, "restore_glass_file") as restore:
+			process_cleanup_unused_files_job_update(job("Success", True))
+			restore.assert_called_once()
+			restore.reset_mock()
+
+			process_cleanup_unused_files_job_update(job("Success", False))
+			process_cleanup_unused_files_job_update(job("Running", True))
+			restore.assert_not_called()
+
+	def test_failure_to_restore_glass_file_alerts_on_raven(self):
+		server = create_test_server()
+		with (
+			patch.object(BaseServer, "_add_glass_file", return_value=Mock(status="Failure")),
+			patch("press.press.doctype.server.server.send_raven_message") as send_raven_message,
+		):
+			server._restore_glass_file()
+		self.assertIn("no emergency disk buffer", send_raven_message.call_args[0][0])
+
+	def test_successful_glass_file_restore_does_not_alert(self):
+		server = create_test_server()
+		with (
+			patch.object(BaseServer, "_add_glass_file", return_value=Mock(status="Success")),
+			patch("press.press.doctype.server.server.send_raven_message") as send_raven_message,
+		):
+			server._restore_glass_file()
+		send_raven_message.assert_not_called()
+
 	def _one_server_of_each_type(self):
 		"""App, database and proxy servers all inherit the Wazuh methods from BaseServer."""
 		return [
@@ -685,7 +780,7 @@ class TestServer(FrappeTestCase):
 		settings = create_test_press_settings()
 		settings.wazuh_api_url = "https://wazuh.example.com:55000"
 		settings.wazuh_api_username = "user"
-		settings.wazuh_api_password = "pass"
+		settings.wazuh_api_password = "pass"  # pragma: allowlist secret
 		settings.wazuh_api_verify_tls = 0
 		settings.save()
 
@@ -707,7 +802,7 @@ class TestServer(FrappeTestCase):
 		settings = create_test_press_settings()
 		settings.wazuh_api_url = "https://wazuh.example.com:55000"
 		settings.wazuh_api_username = "user"
-		settings.wazuh_api_password = "pass"
+		settings.wazuh_api_password = "pass"  # pragma: allowlist secret
 		settings.wazuh_api_verify_tls = 0
 		settings.save()
 
@@ -721,3 +816,86 @@ class TestServer(FrappeTestCase):
 
 		methods = [call.args[0] for call in requests.request.call_args_list]
 		self.assertNotIn("DELETE", methods)
+
+
+@patch.object(BaseServer, "after_insert", new=Mock())
+class TestSSHCommand(FrappeTestCase):
+	def setUp(self):
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+
+		create_test_press_settings().db_set("domain", "fc.dev")
+		self.cluster = create_test_cluster(name="Mumbai").name
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_ssh_command_hops_through_press_server_and_proxy_server(self):
+		proxy_server = create_test_proxy_server(cluster=self.cluster)
+		server = create_test_server(proxy_server=proxy_server.name, cluster=self.cluster)
+		create_test_proxy_server(hostname="other", cluster=self.cluster)  # must not be picked
+
+		self.assertEqual(
+			server.get_ssh_command(),
+			f"ssh frappe@fc.dev -t 'ssh -J root@{proxy_server.name} root@{server.name}'",
+		)
+
+	def test_ssh_command_uses_ssh_user_and_port_of_server(self):
+		proxy_server = create_test_proxy_server(cluster=self.cluster)
+		server = create_test_server(proxy_server=proxy_server.name, cluster=self.cluster)
+		server.db_set({"ssh_user": "ubuntu", "ssh_port": 2222})
+		server.reload()
+
+		self.assertEqual(
+			server.get_ssh_command(),
+			f"ssh frappe@fc.dev -t 'ssh -J root@{proxy_server.name} ubuntu@{server.name} -p 2222'",
+		)
+
+
+@patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
+@patch.object(BaseServer, "after_insert", new=Mock())
+class TestArchiveBenches(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_broken_bench_left_on_server_is_archived_instead_of_blocking_the_drop(self):
+		bench = create_test_bench()
+		bench.db_set("status", "Broken")
+		server = Server("Server", bench.server)
+
+		server.archive_benches()
+
+		self.assertEqual(frappe.db.get_value("Bench", bench.name, "status"), "Archived")
+
+	def test_ssh_user_of_archived_bench_is_removed_from_the_proxy(self):
+		bench = create_test_bench()
+		bench.db_set("is_ssh_proxy_setup", True)
+		server = Server("Server", bench.server)
+
+		with patch.object(Agent, "remove_ssh_user") as remove_ssh_user:
+			server.archive_benches()
+
+		self.assertEqual(remove_ssh_user.call_args.args[0].name, bench.name)
+
+	def test_bench_that_still_has_a_site_is_not_archived(self):
+		bench = create_test_bench()
+		create_test_site(bench=bench.name)
+		server = Server("Server", bench.server)
+
+		self.assertRaisesRegex(ArchiveBenchError, "unarchived sites", server.archive_benches)
+		self.assertEqual(frappe.db.get_value("Bench", bench.name, "status"), "Active")
+
+	def test_no_bench_is_archived_when_a_later_bench_still_has_a_site(self):
+		server = create_test_server()
+		empty_bench = create_test_bench(server=server.name)
+		bench_with_site = create_test_bench(server=server.name)
+		create_test_site(bench=bench_with_site.name)
+		# Benches are read in `modified desc` order, so pin the empty one first.
+		frappe.db.set_value("Bench", empty_bench.name, "modified", "2026-01-02", update_modified=False)
+		frappe.db.set_value("Bench", bench_with_site.name, "modified", "2026-01-01", update_modified=False)
+
+		self.assertRaisesRegex(
+			ArchiveBenchError, "unarchived sites", Server("Server", server.name).archive_benches
+		)
+
+		statuses = frappe.get_all("Bench", {"server": server.name}, pluck="status")
+		self.assertNotIn("Archived", statuses)

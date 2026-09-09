@@ -118,10 +118,10 @@ class Test2FA(FrappeTestCase):
 		secret = self.extract_secret_from_url(url)
 		code = pyotp.totp.TOTP(secret).now()
 		enable_2fa(code)
-		send_otp(self.team.user, for_2fa_keys=True)
-		verification_code = frappe.get_value(
-			"Account Request", {"email": self.team.user}, "otp", order_by="creation desc"
-		)
+		with patch("press.api.account.send_otp_mail") as send_otp_mail:
+			send_otp(self.team.user, for_2fa_keys=True)
+		# The code is no longer kept on Account Request; read what was mailed.
+		verification_code = send_otp_mail.call_args.args[1]
 		recovery_codes = get_2fa_recovery_codes(verification_code)
 		self.assertIsInstance(recovery_codes, list)
 		self.assertLessEqual(len(recovery_codes), self.recovery_codes_max)

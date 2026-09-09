@@ -136,12 +136,15 @@
 				</div>
 			</div>
 			<div
-				class="p-2 text-right"
+				class="flex items-center justify-end gap-3 p-2"
 				:class="{
 					'bg-surface-white bottom-0 sticky': $list?.next && $list?.hasNextPage,
 				}"
 				v-if="$list"
 			>
+				<span class="text-sm text-ink-gray-5" v-if="totalCount != null">
+					{{ totalCount }} {{ countLabel }}
+				</span>
 				<Button
 					v-if="$list.next && $list.hasNextPage"
 					@click="$list.next()"
@@ -207,6 +210,11 @@ export default {
 		}
 	},
 	watch: {
+		documentStatus(newValue, oldValue) {
+			if (oldValue && newValue !== oldValue) {
+				this.$list?.reload()
+			}
+		},
 		searchQuery(value) {
 			if (this.options.searchField && this.$list?.list) {
 				if (value) {
@@ -272,11 +280,20 @@ export default {
 			if (listRes) void listRes.data
 			return this.options.extraResource(this.context)
 		},
+		count() {
+			if (!this.options.count) return
+			if (typeof this.options.count === 'function') {
+				return this.options.count(this.context)
+			}
+			return this.options.count
+		},
 	},
 	beforeUpdate() {
 		if (this.$list?.list) {
 			const filters = this.$list.list?.params?.filters || {}
 			for (let control of this.filterControls) {
+				// A local control drives the page, not the query, so nothing syncs it back
+				if (control.local) continue
 				if (control.value !== filters[control.fieldname]) {
 					control.value = filters[control.fieldname]
 				}
@@ -314,6 +331,12 @@ export default {
 		}
 	},
 	computed: {
+		documentStatus() {
+			if (!this.options.reloadOnDocField) return
+			return this.options.context?.documentResource?.doc?.[
+				this.options.reloadOnDocField
+			]
+		},
 		$list() {
 			if (this.$resources.list) return this.$resources.list
 
@@ -460,8 +483,15 @@ export default {
 			}
 		},
 		isLoading() {
-			if (this.options.data) return false
+			if (this.options.data)
+				return this.options.isLoading?.(this.context) || false
 			return this.$list?.list?.loading || this.$list?.loading
+		},
+		totalCount() {
+			return this.$resources.count?.data
+		},
+		countLabel() {
+			return (this.options.title || 'items').toLowerCase()
 		},
 		showControls() {
 			return (
@@ -521,6 +551,12 @@ export default {
 			// If you provide `updateFilters` function to options, it will be called with the updated filters
 			// This is useful, when we are not using any standard resource and still want to update filters
 
+			// A local control changes what the page shows, so it never reaches the resource
+			if (control.local) {
+				this.options.updateFilters?.({ [control.fieldname]: control.value })
+				return
+			}
+
 			if (this.options.resource && !this.$list.filters) {
 				const params = {
 					...this.$list.params,
@@ -541,6 +577,7 @@ export default {
 
 			let filters = { ...this.$list.filters }
 			for (let c of this.filterControls) {
+				if (c.local) continue
 				filters[c.fieldname] = c.value
 			}
 			this.$list.update({

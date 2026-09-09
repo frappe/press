@@ -171,6 +171,25 @@ const iconCss = {
   },
 };
 
+const classCss = {
+  Error: {
+    txt: "text-ink-red-4",
+    bg: "bg-surface-red-1",
+  },
+  Warning: {
+    txt: "text-ink-amber-3",
+    bg: "bg-surface-amber-1",
+  },
+};
+
+const tileCss = (notification) => ({
+  icon: LucideCircleAlert,
+  txt: "text-ink-gray-6",
+  bg: "bg-surface-gray-1",
+  ...iconCss[notification.type],
+  ...classCss[notification.class],
+});
+
 // Reload resource on tab switch
 const activeTab = ref(0);
 
@@ -259,11 +278,10 @@ useRealtimeNotifs((data) => {
             @click="markAsRead(x, togglePopover)" title="Click to mark as read">
             <!-- type icon -->
             <div class="size-8 flex-shrink-0 flex items-center p-2 rounded mb-auto mt-1 relative
-              dark:bg-surface-gray-1" :class="[iconCss[x.type].bg || 'bg-surface-gray-1']">
+              dark:bg-surface-gray-1" :class="tileCss(x).bg">
               <span v-if="x.read == 0"
                 class="p-0.5 ring-outline-gray-2 ring-2 bg-surface-gray-7 absolute rounded top-0 left-0" />
-              <component :is="iconCss[x.type].icon || LucideCircleAlert" class="size-4"
-                :class="iconCss[x.type].txt || 'text-ink-gray-6'" />
+              <component :is="tileCss(x).icon" class="size-4" :class="tileCss(x).txt" />
             </div>
 
 

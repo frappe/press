@@ -1,0 +1,14 @@
+---
+- name: Remove Hetzner custom netplan configuration
+  file:
+    path: /etc/netplan/99-custom-gateway.yaml
+    state: absent
+  register: remove_custom_gateway
+  when:
+    - cloud_provider == "Hetzner"
+
+- name: Apply Netplan
+  command: netplan apply
+  when:
+    - cloud_provider == "Hetzner"
+    - remove_custom_gateway.changed

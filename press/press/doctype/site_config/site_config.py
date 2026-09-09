@@ -1,14 +1,18 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
 
+import json
+from typing import ClassVar
+
 import frappe
+from frappe import _
 from frappe.model.document import Document
+from frappe.utils import cstr
 
 
 class Config(Document):
-	dashboard_fields = ["key", "type", "value"]
+	dashboard_fields: ClassVar[list[str]] = ["key", "type", "value"]
 
 	def get_type(self):
 		return frappe.db.get_value("Site Config Key", self.key, "type")
@@ -19,9 +23,7 @@ class Config(Document):
 			fields=["key", "title"],
 			filters={"key": ["in", [c.key for c in configs]]},
 		)
-		secret_keys = frappe.get_all(
-			"Site Config Key", filters={"type": "Password"}, pluck="key"
-		)
+		secret_keys = frappe.get_all("Site Config Key", filters={"type": "Password"}, pluck="key")
 		for config in configs:
 			if config.key in secret_keys:
 				config.value = "*******"
@@ -53,3 +55,28 @@ class SiteConfig(Config):
 		query = query.where(Config.internal == 0)
 		configs = query.run(as_dict=True)
 		return SiteConfig.format_config_for_list(configs)
+
+
+def parse_json_config_value(key: str, value):
+	"""Config values of type JSON must be an object or an array.
+
+	Anything else is stored as plain text and can't be read back as JSON, which breaks
+	every subsequent save of the site. See decode_json_config_value.
+	"""
+	value = decode_json_config_value(key, value)
+	if not isinstance(value, dict | list):
+		frappe.throw(
+			_("Value of <b>{0}</b> must be a JSON object or array, not a {1}").format(
+				key, type(value).__name__
+			)
+		)
+	return value
+
+
+def decode_json_config_value(key: str, value):
+	if isinstance(value, dict | list):
+		return value
+	try:
+		return json.loads(cstr(value))
+	except ValueError:
+		frappe.throw(_("Value of <b>{0}</b> is not valid JSON: {1}").format(key, value))

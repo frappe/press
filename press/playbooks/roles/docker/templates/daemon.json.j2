@@ -6,5 +6,6 @@
     "metrics-addr": "127.0.0.1:9323",
     "no-new-privileges": true,
     "userland-proxy": false,
-    "max-concurrent-downloads": 5
+    "max-concurrent-downloads": 5,
+    "mtu": {{ 1450 if cloud_provider | default("") == "Hetzner" else 1500 }}
 }

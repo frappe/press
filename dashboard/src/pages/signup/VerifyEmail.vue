@@ -96,6 +96,10 @@ export default {
 					otp: this.code,
 				},
 				onSuccess: (key) => {
+					this.$pulse?.capture('signup_verified', {
+						method: 'email',
+						product: this.productId,
+					});
 					this.requestKey = key;
 					this.$resources.setupAccount.submit();
 				},

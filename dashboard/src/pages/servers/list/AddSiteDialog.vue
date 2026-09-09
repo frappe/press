@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
-import { Dialog, TextInput, Button, Checkbox, createResource } from 'frappe-ui'
+import { Button, Checkbox, createResource, Dialog, TextInput } from 'frappe-ui'
+import { computed, reactive, ref } from 'vue'
+import router from '@/router'
 
 interface Props {
 	bench: any
+	server?: any
 }
 
 const show = ref(true)
@@ -16,7 +18,7 @@ const emit = defineEmits<{ siteCreated: [] }>()
 const formType = ref('addApps')
 
 const handleAppSelection = (cond: boolean, app: any) => {
-  if (cond && !addedApps.includes(app)) addedApps.push(app)
+	if (cond && !addedApps.includes(app)) addedApps.push(app)
 	else addedApps.splice(addedApps.indexOf(app), 1)
 }
 
@@ -63,16 +65,22 @@ const filteredApps = computed(() => {
 	)
 })
 
-const err = ref<string | null>(null)
+// A server pins the site only together with its own cluster: `set_bench_for_server()`
+// picks the group's bench on that server and rejects a cluster that isn't that
+// bench's own. So take both from the caller or neither — pairing a server with
+// the group's first cluster is what sent sites to the wrong one.
+const placement = computed(() => {
+	const { name, cluster } = props.server ?? {}
+	if (name && cluster) return { server: name, cluster }
+	return { cluster: siteOptions.value.cluster }
+})
 
 const newSite = createResource({
 	url: 'press.api.client.insert',
-	onSuccess() {
+	onSuccess(site: any) {
 		emit('siteCreated')
 		show.value = false
-	},
-	onError(e) {
-		err.value = e.messages?.join(', ') ?? 'Failed to create site'
+		router.push({ name: 'Site Jobs', params: { name: site.name } })
 	},
 })
 
@@ -82,7 +90,7 @@ const submitForm = () => {
 			doctype: 'Site',
 			subdomain: subdomain.value,
 			apps: [{ app: 'frappe' }, ...addedApps.map((x: any) => ({ app: x.app }))],
-			cluster: siteOptions.value.cluster,
+			...placement.value,
 			group: siteOptions.value.group,
 			domain: siteOptions.value.domain,
 		},
@@ -162,7 +170,7 @@ const submitForm = () => {
 					</template>
 				</TextInput>
 
-				<p v-if="err" class="text-ink-red-4 text-sm mt-2">{{ err }}</p>
+				<ErrorMessage :message="newSite.error" class="mt-2" />
 
 				<div class="leading-relaxed mt-5">
 					<span class="font-medium"

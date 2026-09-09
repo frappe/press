@@ -8,13 +8,8 @@
     state: directory
   when: '"{{ variable }}" == "tmpdir" and value is defined'
 
-- name: Set global variable dynamically
-  mysql_variables:
-    variable: '{{ variable }}'
-    value: '{{ value }}'
-    mode: global
-  when: dynamic | default(true) | bool
-
+# Written before it's set on the running server, so that the value is not lost when
+# MariaDB refuses to change it at runtime
 - name: Add variable in frappe.cnf
   ini_file:
     path: /etc/mysql/conf.d/frappe.cnf
@@ -25,6 +20,23 @@
     allow_no_value: true
     create: false
   when: persist | default(false) | bool
+
+- name: Set global variable dynamically
+  mysql_variables:
+    variable: '{{ variable }}'
+    value: '{{ value }}'
+    mode: global
+  when: dynamic | default(true) | bool
+  register: set_variable_dynamically
+  ignore_errors: '{{ persist | default(false) | bool }}' # frappe.cnf has the value
+
+# MariaDB can refuse a dynamic change, e.g. shrinking innodb_buffer_pool_size on a
+# server that can't free the pages. Restart so it picks up frappe.cnf.
+- name: Restart MariaDB Service
+  systemd:
+    name: mysql
+    state: restarted
+  when: set_variable_dynamically is failed
 
 - name: Remove variable as it's been skipped/disabled
   ini_file:

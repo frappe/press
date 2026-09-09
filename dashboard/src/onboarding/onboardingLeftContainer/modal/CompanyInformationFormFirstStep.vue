@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { createResource, FormControl } from 'frappe-ui'
+import { FormControl } from 'frappe-ui'
 import { computed, inject, ref, watch } from 'vue'
 import {
 	getPartnerMRRCurrency,
@@ -13,19 +13,6 @@ const props = defineProps<{
 }>()
 
 const team = inject('team')
-
-const countryListResource = createResource({
-	url: 'press.api.account.country_list',
-	cache: 'countryList',
-	auto: true,
-})
-
-const countryOptions = computed(() => {
-	return (countryListResource.data || []).map((c) => ({
-		label: c.name,
-		value: c.name,
-	}))
-})
 
 const revenueCurrencyOptions = [
 	{ label: 'INR (Indian Rupees)', value: 'INR' },
@@ -60,13 +47,11 @@ watch(
 		if (!doc || props.form.company_name) return
 		props.form.company_name =
 			doc.company_name?.trim() || doc.billing_name?.trim() || ''
-		if (doc.country && !props.form.registered_country) {
-			props.form.registered_country = doc.country
-		}
 	},
 	{ immediate: true },
 )
 
+// Currency follows registration country; partners change country via Edit registration.
 watch(
 	() => props.form.registered_country,
 	(country) => {
@@ -133,7 +118,6 @@ const errors = computed(() => {
 			addressMinLength,
 			addressMaxLength,
 		),
-		country: props.form.registered_country ? '' : 'Country is required.',
 		headquarter_city: getLengthError(
 			props.form.headquarter_city,
 			'Headquarter city',
@@ -202,40 +186,20 @@ defineExpose({ tryContinue })
 			{{ errors.address }}
 		</p>
 
-		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-			<div class="flex flex-col gap-1">
-				<FormControl
-					v-model="props.form.registered_country"
-					label="Registered country"
-					type="select"
-					size="sm"
-					variant="outline"
-					placeholder="Select"
-					:options="countryOptions"
-					:class="{ 'has-error': errors.country }"
-				/>
-				<p v-if="errors.country" class="text-sm text-ink-red-4">
-					{{ errors.country }}
-				</p>
-			</div>
-
-			<div class="flex flex-col gap-1">
-				<FormControl
-					v-model="props.form.headquarter_city"
-					label="Headquarter city"
-					type="text"
-					size="sm"
-					variant="outline"
-					placeholder="Headquarter city"
-					:minlength="cityMinLength"
-					:maxlength="cityMaxLength"
-					:class="{ 'has-error': errors.headquarter_city }"
-				/>
-				<p v-if="errors.headquarter_city" class="text-sm text-ink-red-4">
-					{{ errors.headquarter_city }}
-				</p>
-			</div>
-		</div>
+		<FormControl
+			v-model="props.form.headquarter_city"
+			label="Headquarter city"
+			type="text"
+			size="sm"
+			variant="outline"
+			placeholder="Headquarter city"
+			:minlength="cityMinLength"
+			:maxlength="cityMaxLength"
+			:class="{ 'has-error': errors.headquarter_city }"
+		/>
+		<p v-if="errors.headquarter_city" class="-mt-3 text-sm text-ink-red-4">
+			{{ errors.headquarter_city }}
+		</p>
 
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 			<div class="flex flex-col gap-1">
@@ -255,9 +219,9 @@ defineExpose({ tryContinue })
 						size="sm"
 						variant="outline"
 						:class="[
-						'[&_input]:pl-7',
-						{ 'has-error': errors.annual_revenue },
-					]"
+							'[&_input]:pl-7',
+							{ 'has-error': errors.annual_revenue },
+						]"
 						placeholder="Amount"
 					/>
 				</div>

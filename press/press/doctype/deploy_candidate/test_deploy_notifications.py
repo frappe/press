@@ -11,11 +11,29 @@ from press.press.doctype.deploy_candidate.deploy_notifications import (
 )
 
 
-def make_dc(app_hash: str, dependencies: dict, environment_variables: dict):
+def make_dc(
+	app_hash: str,
+	dependencies: dict,
+	environment_variables: dict,
+	other_app_hash: str = "xyz789",
+	packages: list[str] | None = None,
+):
 	return frappe._dict(
-		apps=[frappe._dict(app="frappe", hash=app_hash, pullable_hash=None, title="Frappe")],
+		apps=[
+			frappe._dict(app="frappe", hash=app_hash, pullable_hash=None, title="Frappe"),
+			frappe._dict(app="helpdesk", hash=other_app_hash, pullable_hash=None, title="Helpdesk"),
+		],
 		dependencies=[frappe._dict(dependency=k, version=v) for k, v in dependencies.items()],
 		environment_variables=[frappe._dict(key=k, value=v) for k, v in environment_variables.items()],
+		packages=[
+			frappe._dict(
+				package_manager="apt",
+				package=package,
+				package_prerequisites="",
+				after_install="",
+			)
+			for package in (packages or ["wkhtmltopdf"])
+		],
 	)
 
 
@@ -54,6 +72,14 @@ class TestCheckIfAppUpdated(FrappeTestCase):
 
 		check_if_app_updated(old_build, new_dc)  # no raise
 
+	def test_allows_retry_when_another_apps_hash_changed(self):
+		deps = {"python": "3.11"}
+		env = {"FOO": "bar"}
+		old_build = make_old_build(make_dc("abc123", deps, env, other_app_hash="old111"))
+		new_dc = make_dc("abc123", deps, env, other_app_hash="new222")
+
+		check_if_app_updated(old_build, new_dc)  # no raise
+
 	def test_blocks_retry_when_only_environment_variables_changed(self):
 		deps = {"python": "3.11"}
 		old_build = make_old_build(make_dc("abc123", deps, {"FOO": "bar"}))
@@ -61,3 +87,23 @@ class TestCheckIfAppUpdated(FrappeTestCase):
 
 		with self.assertRaises(BuildValidationError):
 			check_if_app_updated(old_build, new_dc)
+
+	def test_escapes_app_title_in_blocked_retry_message(self):
+		deps = {"python": "3.11"}
+		env = {"FOO": "bar"}
+		old_build = make_old_build(make_dc("abc123", deps, env))
+		new_dc = make_dc("abc123", deps, env)
+		new_dc.apps[0].title = "<img src=x onerror=alert(1)>"
+
+		with self.assertRaises(BuildValidationError) as raised:
+			check_if_app_updated(old_build, new_dc)
+
+		self.assertNotIn("<img", str(raised.exception))
+
+	def test_allows_retry_when_packages_changed(self):
+		deps = {"python": "3.11"}
+		env = {"FOO": "bar"}
+		old_build = make_old_build(make_dc("abc123", deps, env, packages=["wkhtmltopdf"]))
+		new_dc = make_dc("abc123", deps, env, packages=["wkhtmltopdf", "libmagic1"])
+
+		check_if_app_updated(old_build, new_dc)  # no raise

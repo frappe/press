@@ -38,7 +38,7 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 		frappe.db.rollback()
 
 	def _create_onboarding(self, team: str, status: str = "Draft"):
-		# The Register Company modal collects these four fields on first
+		# The Register Company modal collects these fields on first
 		# registration, so they are mandatory at creation. Supply them here
 		# to mirror a real draft record.
 		return frappe.get_doc(
@@ -48,10 +48,44 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 				"status": status,
 				"company_name": "Test Partner Company",
 				"registered_country": "India",
+				"registered_state": "Maharashtra",
 				"company_email": "partner@example.com",
 				"contact": "+919876543210",
 			}
 		).insert(ignore_permissions=True)
+
+	def test_india_registration_requires_registered_state(self):
+		team = create_test_team()
+		doc = frappe.get_doc(
+			{
+				"doctype": "Partner Onboarding",
+				"team": team.name,
+				"status": "Draft",
+				"company_name": "Test Partner Company",
+				"registered_country": "India",
+				"company_email": "partner@example.com",
+				"contact": "+919876543210",
+			}
+		)
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			doc.insert(ignore_permissions=True)
+		self.assertIn("Registered state is required", str(ctx.exception))
+
+	def test_non_india_registration_clears_registered_state(self):
+		team = create_test_team(country="United States")
+		doc = frappe.get_doc(
+			{
+				"doctype": "Partner Onboarding",
+				"team": team.name,
+				"status": "Draft",
+				"company_name": "Test Partner Company",
+				"registered_country": "United States",
+				"registered_state": "Maharashtra",
+				"company_email": "partner@example.com",
+				"contact": "+14155552671",
+			}
+		).insert(ignore_permissions=True)
+		self.assertFalse(doc.registered_state)
 
 	def _create_subscription_invoice(
 		self,

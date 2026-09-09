@@ -16,6 +16,14 @@
 
 		<Button
 			v-if="session.userPermissions.data.owner || session.isTeamAdmin"
+			label="Rename"
+			icon-left="edit"
+			variant="subtle"
+			@click="renameRole"
+		/>
+
+		<Button
+			v-if="session.userPermissions.data.owner || session.isTeamAdmin"
 			label="Delete"
 			icon-left="trash-2"
 			theme="red"
@@ -85,17 +93,14 @@
 	/>
 	<RoleResources
 		v-else-if="tab === 'resources'"
-		:key="role.doc?.resources"
 		:resources="role.doc?.resources"
-		@include="role.add_resource.submit($event)"
-		@remove="
-			(document_type, document_name) => {
+		:include="(resources) => role.add_resource.submit(resources)"
+		:remove="
+			(document_type, document_name) =>
 				role.remove_resource.submit({
 					document_type,
 					document_name,
-				});
-				role.reload();
-			}
+				})
 		"
 	/>
 	<RolePermissions
@@ -158,4 +163,20 @@ const role = createDocumentResource({
 		remove_resource: 'remove_resource',
 	},
 })
+
+function renameRole() {
+	confirmDialog({
+		title: 'Rename Role',
+		fields: [
+			{
+				label: 'Enter new title for the role',
+				fieldname: 'title',
+				default: role.doc?.title,
+			},
+		],
+		primaryAction: { label: 'Rename' },
+		onSuccess: ({ hide, values }) =>
+			role.setValue.submit({ title: values.title }).then(hide),
+	})
+}
 </script>

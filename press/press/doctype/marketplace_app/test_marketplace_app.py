@@ -9,9 +9,11 @@ import frappe
 from frappe.tests.ui_test_helpers import create_test_user
 from frappe.tests.utils import FrappeTestCase
 
+from press.press.doctype.app.app import VersioningError
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.marketplace_app.marketplace_app import validate_frappe_version_for_branch
 from press.press.doctype.marketplace_app.utils import (
 	get_rating_percentage_distribution,
 	number_k_format,
@@ -101,6 +103,41 @@ class TestMarketplaceApp(FrappeTestCase):
 				version="Version 15", repo_owner="frappe", repo_name="erpnext", branch="version-15"
 			)
 		self.assertIn("No app source found for frappe/erpnext", str(context.exception))
+
+	@patch("press.press.doctype.marketplace_app.marketplace_app.app")
+	def test_validate_frappe_version_skips_a_branch_that_declares_no_frappe_version(self, github_app: Mock):
+		"""Regression: `api.github.app` returns frappe_version=None for the framework itself,
+		which used to crash with AttributeError inside map_frappe_version."""
+		github_app.return_value = {"name": "frappe", "title": "Frappe Framework", "frappe_version": None}
+
+		self.assertIsNone(
+			validate_frappe_version_for_branch(
+				app_name="frappe",
+				owner="frappe",
+				repository="frappe",
+				branch="version-16",
+				version="Version 16",
+			)
+		)
+
+	@patch("press.press.doctype.marketplace_app.marketplace_app.app")
+	def test_validate_frappe_version_rejects_a_branch_that_does_not_support_the_version(
+		self, github_app: Mock
+	):
+		github_app.return_value = {
+			"name": "erpnext",
+			"title": "ERPNext",
+			"frappe_version": ">=15.0.0,<16.0.0",
+		}
+
+		with self.assertRaises(VersioningError):
+			validate_frappe_version_for_branch(
+				app_name="erpnext",
+				owner="frappe",
+				repository="erpnext",
+				branch="version-15",
+				version="Version 16",
+			)
 
 	def create_marketplace_app_for_team(self, team):
 		app_name = f"perm_app_{frappe.generate_hash(length=8).lower()}"

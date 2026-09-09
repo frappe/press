@@ -12,7 +12,8 @@ from frappe.utils import get_url, random_string, validate_email_address
 
 from press.guards import settings
 from press.utils import disposable_emails, get_country_info, is_valid_email_address, log_error
-from press.utils.otp import generate_otp
+from press.utils import otp as otp_purpose
+from press.utils.otp import OneTimePassword
 from press.utils.telemetry import capture
 
 
@@ -49,8 +50,6 @@ class AccountRequest(Document):
 		no_of_employees: DF.Data | None
 		no_of_users: DF.Int
 		oauth_signup: DF.Check
-		otp: DF.Data | None
-		otp_generated_at: DF.Datetime | None
 		phone_number: DF.Data | None
 		plan: DF.Link | None
 		press_role: DF.Link | None
@@ -89,12 +88,6 @@ class AccountRequest(Document):
 		if not self.request_key:
 			self.request_key = random_string(32)
 			self.request_key_expiration_time = frappe.utils.add_to_date(hours=24)
-
-		if not self.otp:
-			self.otp = generate_otp()
-			self.otp_generated_at = frappe.utils.now_datetime()
-			if frappe.conf.developer_mode and frappe.local.dev_server:
-				self.otp = 111111
 
 		self.ip_address = frappe.local.request_ip
 		geo_location = self.get_country_info() or {}
@@ -175,7 +168,7 @@ class AccountRequest(Document):
 			capture("clicked_verify_link", "fc_signup", self.email)
 
 		if self.send_email:
-			self.send_verification_email()
+			self.send_verification_email(self.signup_otp.generate())
 		if self.oauth_signup:
 			# Telemetry: simulate verification email sent
 			capture("verification_email_sent", "fc_signup", self.email)
@@ -194,28 +187,37 @@ class AccountRequest(Document):
 				return True
 		return False
 
-	def reset_otp(self):
+	@property
+	def signup_otp(self) -> OneTimePassword:
+		"""Proves the address on this request. Only good for finishing this signup."""
+		return OneTimePassword(otp_purpose.SIGNUP, self.name)
+
+	def ensure_request_key(self) -> str:
+		"""The key the setup-account link is built from. Expires on its own."""
 		if not self.request_key:
 			self.request_key = random_string(32)
 			self.request_key_expiration_time = frappe.utils.add_to_date(hours=24)
-		self.otp = generate_otp()
-		if frappe.conf.developer_mode and frappe.local.dev_server:
-			self.otp = 111111
-		self.save(ignore_permissions=True)
+			self.save(ignore_permissions=True)
+
+		return self.request_key
 
 	@frappe.whitelist()
-	def send_verification_email(self):  # noqa: C901
+	def resend_verification_email(self):
+		"""Issues a fresh code. The caller doesn't get to choose what gets mailed."""
+		self.send_verification_email(self.signup_otp.generate())
+
+	def send_verification_email(self, otp: str):  # noqa: C901
 		url = self.get_verification_url()
 
 		if frappe.conf.developer_mode and frappe.local.dev_server:
 			print(f"\nSetup account URL for {self.email}:")
 			print(url)
 			print(f"\nOTP for {self.email}:")
-			print(self.otp)
+			print(otp)
 			print()
 			return
 
-		subject = f"{self.otp} - OTP for Frappe Cloud Account Verification"
+		subject = f"{otp} - OTP for Frappe Cloud Account Verification"
 		args = {}
 		sender = ""
 		inline_images = []
@@ -231,7 +233,7 @@ class AccountRequest(Document):
 				template = "product_trial_verify_account"
 				product_trial = frappe.get_doc("Product Trial", self.product_trial)
 				if product_trial.email_subject:
-					subject = product_trial.email_subject.format(otp=self.otp)
+					subject = product_trial.email_subject.format(otp=otp)
 				if product_trial.email_account:
 					sender = frappe.get_value("Email Account", product_trial.email_account, "email_id")
 				if product_trial.email_full_logo:
@@ -272,7 +274,7 @@ class AccountRequest(Document):
 				"read_pixel_path": get_url(
 					f"/api/method/press.utils.telemetry.capture_read_event?email={self.email}"
 				),
-				"otp": self.otp,
+				"otp": otp,
 			}
 		)
 		if not args.get("image_path"):
@@ -310,41 +312,6 @@ class AccountRequest(Document):
 				reference_doctype=self.doctype,
 				reference_name=self.name,
 			)
-
-	def send_otp_mail(self, for_login: bool = True):
-		if frappe.conf.developer_mode and frappe.local.dev_server:
-			print(
-				f"Login OTP for {self.email}:"
-				if for_login
-				else f"OTP to view 2FA recovery codes for {self.email}:"
-			)
-			print(self.otp)
-			print()
-			return
-
-		if hasattr(frappe.flags, "in_test") and frappe.flags.in_test:
-			return
-
-		if for_login:
-			template = "login_otp"
-			subject = f"{self.otp} - OTP for Frappe Cloud Login"
-		else:
-			template = "2fa_recovery_codes_otp"
-			subject = f"{self.otp} - OTP to view 2FA recovery codes for Frappe Cloud"
-
-		args = {
-			"otp": self.otp,
-		}
-
-		frappe.sendmail(
-			recipients=self.email,
-			subject=subject,
-			template=template,
-			args=args,
-			now=True,
-			reference_doctype=self.doctype,
-			reference_name=self.name,
-		)
 
 	def get_verification_url(self):
 		return get_url(f"/dashboard/setup-account/{self.request_key}")
@@ -400,8 +367,17 @@ class AccountRequest(Document):
 		pulse_identify(team, self.pulse_person_properties())
 
 	def pulse_person_properties(self):
-		product = self.product_trial or self.saas_app or ("erpnext" if self.erpnext else "fc")
-		return {"product": product, "plan": self.plan, "country": self.country}
+		properties = {
+			"plan": self.plan,
+			"country": self.country,
+			"signup_method": "oauth" if self.oauth_signup else "email",
+		}
+		# Only when the signup actually named one — a plain Frappe Cloud signup has no
+		# product, and labelling it "fc" invents a cohort that isn't there.
+		product = self.product_trial or self.saas_app or ("erpnext" if self.erpnext else None)
+		if product:
+			properties["product"] = product
+		return properties
 
 
 def expire_request_key():

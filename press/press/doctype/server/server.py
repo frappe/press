@@ -45,11 +45,14 @@ from press.press.doctype.communication_info.communication_info import (
 	get_communication_info,
 )
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
+from press.press.doctype.server.server_monitoring import RAVEN_SERVER_ALERTS_CHANNEL
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
 from press.utils import docs, fmt_timedelta, log_error
+from press.utils.raven import send_raven_message
+from press.utils.user import is_desk_user
 from press.wazuh import WazuhManager
 
 if typing.TYPE_CHECKING:
@@ -101,6 +104,7 @@ class AutoScaleTriggerRow(TypedDict):
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
+GLASS_FILE_SIZE = 200 * 1024 * 1024  # /root/glass, see glass_file.yml
 
 
 class BaseServer(Document, TagHelpers):
@@ -167,6 +171,7 @@ class BaseServer(Document, TagHelpers):
 	def get_doc(self, doc):  # noqa: C901
 		from press.api.client import get
 		from press.api.server import usage
+		from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import disk_full_servers
 
 		warn_at_storage_percentage = 0.8
 
@@ -210,6 +215,7 @@ class BaseServer(Document, TagHelpers):
 		)
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
+		doc.is_server_disk_full = self.name in disk_full_servers()
 
 		if not self.is_self_hosted:
 			doc.disk_size = self.get_data_disk_size()
@@ -406,22 +412,24 @@ class BaseServer(Document, TagHelpers):
 		"""Get clusters which have autoscaling enabled"""
 		return frappe.db.get_all("Cluster", {"enable_autoscaling": 1}, pluck="name")
 
-	def get_actions(self):
-		server_type = ""
+	@property
+	def server_type_for_actions(self) -> str:
+		"""What to call this server in action descriptions and action group titles."""
 		if self.doctype == "Server":
-			server_type = "application server" if not getattr(self, "is_unified_server", False) else "server"
-		elif self.doctype == "Database Server":
+			return "server" if getattr(self, "is_unified_server", False) else "application server"
+		if self.doctype == "Database Server":
 			if self.is_replication_setup:
-				server_type = "replication server"
-			else:
-				server_type = (
-					"database server" if not getattr(self, "is_unified_server", False) else "database"
-				)
+				return "replication server"
+			return "database" if getattr(self, "is_unified_server", False) else "database server"
+		return ""
+
+	def get_actions(self):
+		server_type = self.server_type_for_actions
 
 		actions = [
 			{
 				"action": "Manage On-Prem Replication",
-				"description": "Manage On-Prem Replication & Failover",
+				"description": "Manage On-Prem Replication &amp; Failover",
 				"button_label": "Manage",
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
@@ -815,7 +823,7 @@ class BaseServer(Document, TagHelpers):
 					"monitoring_password": self.get_monitoring_password(),
 					"log_server": log_server,
 					"kibana_password": kibana_password,
-					"certificate_private_key": certificate.private_key,
+					"certificate_private_key": certificate.get_private_key(),
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"docker_depends_on_mounts": self.docker_depends_on_mounts,
@@ -1007,9 +1015,16 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def update_agent_ansible(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_update_agent_ansible")
+		self.validate_agent_update_allowed()
+		# ponytail: 1h, not the long queue's 1500s — a busy rq worker's warm shutdown alone is 1500s
+		frappe.enqueue_doc(self.doctype, self.name, "_update_agent_ansible", queue="long", timeout=3600)
+
+	def validate_agent_update_allowed(self):
+		if self.disable_agent_update:
+			frappe.throw(f"Agent update is disabled on {self.name}")
 
 	def _update_agent_ansible(self, throw_on_failure: bool = False):
+		self.validate_agent_update_allowed()
 		try:
 			agent_branch = frappe.get_value("Press Settings", "Press Settings", "branch")
 			if not agent_branch:
@@ -1058,10 +1073,8 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
-	def cleanup_unused_files(self, force: bool = False):
-		if self.is_build_server():
-			return
-
+	def cleanup_unused_files(self, force: bool = True):
+		# User-triggered cleanup forces; the scheduled sweep passes force=False.
 		with suppress(frappe.DoesNotExistError):
 			cleanup_job: "AgentJob" = frappe.get_last_doc(
 				"Agent Job", {"server": self.name, "job_type": "Cleanup Unused Files"}
@@ -1095,10 +1108,18 @@ class BaseServer(Document, TagHelpers):
 		return False
 
 	def _cleanup_unused_files(self, force: bool = False):
-		agent = Agent(self.name, self.doctype)
-		if agent.should_skip_requests():
+		if self.is_build_server():
 			return
+		agent = Agent(self.name, self.doctype)
+		if not force and agent.should_skip_requests():
+			return
+		if force and self.agent_disk_full():
+			self.break_glass()
 		agent.cleanup_unused_files(force)
+
+	def agent_disk_full(self) -> bool:
+		# On unified servers the agent shares the data disk; a full data volume starves it.
+		return self.free_space("/") < GLASS_FILE_SIZE
 
 	def on_trash(self):
 		plays = frappe.get_all("Ansible Play", filters={"server": self.name})
@@ -1489,16 +1510,8 @@ class BaseServer(Document, TagHelpers):
 					"Cannot archive a server with sites on it. Please archive all the sites before performing the drop action."
 				)
 			)
-		if frappe.get_all(
-			"Bench",
-			filters={"server": self.name, "status": ("!=", "Archived")},
-			ignore_ifnull=True,
-		):
-			frappe.throw(
-				_(
-					"The server has a few benches on it. Please archive them from their respective dashboards before attempting a drop."
-				)
-			)
+
+		self.archive_benches()
 
 		if self.is_wazuh_agent_installed:
 			self.uninstall_wazuh_agent()
@@ -1526,6 +1539,37 @@ class BaseServer(Document, TagHelpers):
 			)
 		self.disable_subscription()
 		self.remove_from_release_groups()
+
+	def archive_benches(self):
+		"""Archive the bench records left on the server.
+
+		The server has no sites left and its machine is about to be terminated,
+		so nothing has to be removed from it. Asking the user to archive the
+		benches first only blocks the drop: a bench that never came up cannot be
+		archived through the agent, and the dashboard offers no archive action.
+		"""
+		from press.press.doctype.bench.bench import Bench
+
+		benches = [
+			Bench("Bench", name)
+			for name in frappe.get_all(
+				"Bench",
+				filters={"server": self.name, "status": ("!=", "Archived")},
+				pluck="name",
+				ignore_ifnull=True,
+			)
+		]
+
+		# Check every bench before archiving any. check_unarchived_sites commits,
+		# so a bench that fails the check halfway would leave the earlier ones
+		# archived while the server archive aborts.
+		for bench in benches:
+			bench.check_unarchived_sites()
+
+		for bench in benches:
+			if bench.is_ssh_proxy_setup:
+				bench.remove_ssh_user()
+			frappe.db.set_value("Bench", bench.name, "status", "Archived")
 
 	def _archive(self, reason=None):
 		self.run_press_job("Archive Server", arguments={"reason": reason})
@@ -1779,9 +1823,24 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			ansible.run()
+			return ansible.run()
 		except Exception:
 			log_error("Add Glass File Exception", doc=self)
+			return None
+
+	def restore_glass_file(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_restore_glass_file", enqueue_after_commit=True)
+
+	def _restore_glass_file(self):
+		play = self._add_glass_file()
+		if play and play.status == "Success":
+			return
+		send_raven_message(
+			f"⚠️ Could not restore break-glass file on "
+			f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
+			f"after cleanup — server has no emergency disk buffer.",
+			RAVEN_SERVER_ALERTS_CHANNEL,
+		)
 
 	@frappe.whitelist()
 	def setup_mysqldump(self):
@@ -2205,7 +2264,7 @@ class BaseServer(Document, TagHelpers):
 					),
 				},
 			)
-			return ansible.run()
+			ansible.run()
 		except Exception:
 			log_error("NAT Iptables Setup Exception", server=self.as_dict())
 
@@ -2221,7 +2280,7 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			return ansible.run()
+			ansible.run()
 		except Exception:
 			log_error("NAT Iptables Removal Exception", server=self.as_dict())
 
@@ -2596,6 +2655,22 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return None
 
 	@frappe.whitelist()
+	def set_docker_mtu(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_set_docker_mtu", queue="long", timeout=1200)
+
+	def _set_docker_mtu(self, throw_on_failure: bool = False):
+		ansible = Ansible(
+			playbook="docker_mtu.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+		)
+		play = ansible.run()
+		if play.status != "Success" and throw_on_failure:
+			frappe.throw("Failed to set docker MTU")  # nosemgrep
+		return play
+
+	@frappe.whitelist()
 	def reload_nginx(self):
 		agent = Agent(self.name, server_type=self.doctype)
 		agent.reload_nginx()
@@ -2609,6 +2684,25 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if not hasattr(self, "ssh_port"):
 			return 22
 		return self.ssh_port or 22
+
+	@dashboard_whitelist()
+	def get_ssh_command(self):
+		"""SSH command that hops through the press server and the cluster's proxy."""
+		if not is_desk_user():
+			frappe.throw("Only system users can get the SSH command", frappe.PermissionError)
+
+		port = "" if self._ssh_port() == 22 else f" -p {self._ssh_port()}"
+		command = f"ssh{self._jump_through_proxy()} {self._ssh_user()}@{self.name}{port}"
+		return f"ssh frappe@{frappe.db.get_single_value('Press Settings', 'domain')} -t '{command}'"
+
+	def _jump_through_proxy(self):
+		"""Servers are reachable only through their proxy server."""
+		proxy = self.get("proxy_server") or frappe.db.get_value(
+			"Proxy Server", {"status": "Active", "cluster": self.cluster}, "name"
+		)
+		if not proxy or proxy == self.name:
+			return ""
+		return f" -J root@{proxy}"
 
 	def get_primary_frappe_public_key(self):
 		if primary_public_key := frappe.db.get_value(self.doctype, self.primary, "frappe_public_key"):
@@ -2780,7 +2874,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				{
 					"domain": domain.domain,
 					"certificate": {
-						"privkey.pem": certificate.private_key,
+						"privkey.pem": certificate.get_private_key(),
 						"fullchain.pem": certificate.full_chain,
 						"chain.pem": certificate.intermediate_chain,
 					},
@@ -2858,6 +2952,51 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
 
+	@frappe.whitelist()
+	def add_hetzner_public_ip(self, primary_ip=None):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_add_hetzner_public_ip",
+			queue="long",
+			timeout=3600,
+			primary_ip=primary_ip,
+		)
+
+	def _add_hetzner_public_ip(self, primary_ip=None):
+		vm_doc: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		vm_doc.associate_hetzner_public_ip(primary_ip)
+
+		try:
+			ansible = Ansible(
+				playbook="hetzner_public_ip.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"cloud_provider": vm_doc.cloud_provider,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+
+			if play.status == "Success":
+				self.nat_server = None
+				self.save()
+			else:
+				log_error(
+					"Hetzner Public IP Ansible Playbook Failed",
+					server=self.as_dict(),
+				)
+				frappe.throw("Failed to add Hetzner public IP. Please check the logs.")
+
+		except Exception:
+			log_error(
+				"Hetzner Public IP Exception",
+				server=self.as_dict(),
+			)
+			raise
+
 	def get_oci_static_ip(self):
 		import oci
 
@@ -2886,11 +3025,19 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			frappe.throw("Primary Private IP not found.")  # nosemgrep
 
 		# 3. Check for existing Public IP and remove it if it exists
-		existing_public_ip = network_client.get_public_ip_by_private_ip_id(
-			get_public_ip_by_private_ip_id_details=oci.core.models.GetPublicIpByPrivateIpIdDetails(
-				private_ip_id=primary_private_ip.id
-			)
-		).data
+		from oci.exceptions import ServiceError
+
+		try:
+			existing_public_ip = network_client.get_public_ip_by_private_ip_id(
+				get_public_ip_by_private_ip_id_details=oci.core.models.GetPublicIpByPrivateIpIdDetails(
+					private_ip_id=primary_private_ip.id
+				)
+			).data
+		except ServiceError as e:
+			if e.status == 404:
+				existing_public_ip = None
+			else:
+				raise
 
 		if existing_public_ip:
 			# If it's ephemeral, we can just delete/detach it
@@ -2969,6 +3116,7 @@ class Server(BaseServer):
 		database_server: DF.Link | None
 		db_healthcheck_token: DF.Password | None
 		disable_agent_job_auto_retry: DF.Check
+		disable_agent_update: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
 		enable_on_prem_failover_support: DF.Check
@@ -3453,7 +3601,7 @@ class Server(BaseServer):
 					"monitoring_password": self.get_monitoring_password(),
 					"log_server": log_server,
 					"kibana_password": kibana_password,
-					"certificate_private_key": certificate.private_key,
+					"certificate_private_key": certificate.get_private_key(),
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"docker_depends_on_mounts": self.docker_depends_on_mounts,
@@ -3757,7 +3905,7 @@ class Server(BaseServer):
 					"monitoring_password": monitoring_password,
 					"log_server": log_server,
 					"kibana_password": kibana_password,
-					"certificate_private_key": certificate.private_key,
+					"certificate_private_key": certificate.get_private_key(),
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 				},
@@ -4357,9 +4505,18 @@ def cleanup_unused_files():
 	servers = frappe.get_all("Server", fields=["name"], filters={"status": "Active"})
 	for server in servers:
 		try:
-			frappe.get_doc("Server", server.name).cleanup_unused_files()
+			frappe.get_doc("Server", server.name)._cleanup_unused_files(force=False)
 		except Exception:
 			log_error("Server File Cleanup Error", server=server)
+
+
+def process_cleanup_unused_files_job_update(job):
+	# A forced cleanup breaks glass for room; restore the buffer once it settles.
+	if job.status not in ("Success", "Failure"):
+		return
+	if not json.loads(job.request_data or "{}").get("force"):
+		return
+	frappe.get_doc(job.server_type, job.server).restore_glass_file()
 
 
 def sync_wazuh_agent_status():

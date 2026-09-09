@@ -25,6 +25,7 @@ export default {
 		changePlan: 'change_plan',
 		toggleAutoIncreaseStorage: 'toggle_auto_increase_storage',
 		reboot: 'reboot',
+		getSSHCommand: 'get_ssh_command',
 		rename: 'rename',
 		cleanup: 'cleanup_unused_files',
 		dropServer: 'drop_server',
@@ -134,6 +135,16 @@ export default {
 							},
 						},
 						{
+							label: 'Copy SSH Command',
+							icon: icon('clipboard'),
+							condition: () => $team.doc?.is_desk_user,
+							async onClick() {
+								const command = await server.getSSHCommand.submit();
+								await navigator.clipboard.writeText(command);
+								toast.success('SSH command copied to clipboard');
+							},
+						},
+						{
 							label: 'Visit Server',
 							icon: icon('external-link'),
 							condition: () =>
@@ -224,7 +235,14 @@ export default {
 								type: 'select',
 								label: 'Status',
 								fieldname: 'status',
-								options: ['', 'Active', 'Inactive', 'Suspended', 'Broken'],
+								options: [
+									'',
+									'Active',
+									'Inactive',
+									'Suspended',
+									'Broken',
+									'Archived',
+								],
 							},
 							{
 								type: 'select',
