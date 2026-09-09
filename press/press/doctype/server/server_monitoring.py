@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 from contextlib import suppress
 from typing import TypedDict
 
@@ -17,11 +18,25 @@ from press.utils.raven import send_raven_message
 RAVEN_SERVER_ALERTS_CHANNEL = "frappe-cloud-server-alerts"
 PROMETHEUS_REGEX_META_CHAR_PATTERN = re.compile(r"([\\.^$*+?()[\]{}|])")
 
+# No dedicated signup channel yet, so signup alerts land with the other alerts
+RAVEN_SIGNUP_ALERTS_CHANNEL = RAVEN_SERVER_ALERTS_CHANNEL
+SIGNUP_ALERT_WINDOW_HOURS = 1
+# Time a signup gets to read the mail and finish before it counts as incomplete
+SIGNUP_COMPLETION_GRACE_HOURS = 1
+TEST_SIGNUP_EMAIL_PATTERN = "fc-signup-test%"
+TRIAL_SIGNUP_FAILURE_RATIO_THRESHOLD = 0.3
+TRIAL_SIGNUP_MINIMUM_COUNT = 5
+# Most people who ask for a verification mail never finish, so only a near-total
+# stall means signups are broken rather than merely abandoned
+INCOMPLETE_SIGNUP_RATIO_THRESHOLD = 0.9
+INCOMPLETE_SIGNUP_MINIMUM_COUNT = 10
+
 
 class PublicServerHealthMetrics(TypedDict):
 	available_memory_bytes: dict[str, float]
 	available_memory_ratio: dict[str, float]
 	cpu_idle_ratio: dict[str, float]
+	disk_used_ratio: dict[str, float]
 	oom_kills: dict[str, float]
 
 
@@ -31,6 +46,16 @@ class PublicServerPoolDecision(TypedDict):
 	servers_with_decision: set[str]
 	server_issues: dict[str, list[str]]
 	fallback_servers_by_cluster: dict[str, str]
+
+
+class SignupFailureRate(TypedDict):
+	label: str
+	failed: int
+	total: int
+	ratio_threshold: float
+	minimum_count: int
+	breakdown: dict[str, int]
+	link: str
 
 
 def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
@@ -111,11 +136,6 @@ def _get_public_server_pool_decision(
 		if not candidates:
 			continue
 
-		for server in candidates:
-			issues = _get_public_server_health_issues(server, metrics)
-			if issues:
-				decision["server_issues"][server] = issues
-
 		healthy_servers = [
 			server
 			for server in candidates
@@ -146,11 +166,11 @@ def _get_public_server_pool_decision(
 		decision["selected_site_servers"].add(selected_server)
 		decision["fallback_servers_by_cluster"][cluster] = selected_server
 
-	for server, oom_kills in metrics["oom_kills"].items():
-		if oom_kills > 4:
-			decision["server_issues"].setdefault(server, []).append(
-				f"OOM kills in the last 60 minutes: {max(1, round(oom_kills))}"
-			)
+	alert_servers = {server for servers in servers_by_cluster.values() for server in servers}
+	for server in alert_servers:
+		issues = _get_public_server_alert_issues(server, metrics)
+		if issues:
+			decision["server_issues"][server] = issues
 
 	return decision
 
@@ -164,7 +184,7 @@ def _get_lowest_price_servers(servers: list[str], server_plan_prices: dict[str, 
 	return [server for server in priced_servers if server_plan_prices[server] == lowest_price]
 
 
-def _get_public_server_health_issues(server: str, metrics: PublicServerHealthMetrics) -> list[str]:
+def _get_public_server_placement_issues(server: str, metrics: PublicServerHealthMetrics) -> list[str]:
 	issues = []
 	ram_utilization = 1 - metrics["available_memory_ratio"][server]
 	cpu_utilization = 1 - metrics["cpu_idle_ratio"][server]
@@ -173,6 +193,25 @@ def _get_public_server_health_issues(server: str, metrics: PublicServerHealthMet
 		issues.append(f"RAM utilization: {ram_utilization * 100:.2f}%")
 	if cpu_utilization > 0.5:
 		issues.append(f"CPU utilization: {cpu_utilization * 100:.2f}%")
+
+	return issues
+
+
+def _get_public_server_alert_issues(server: str, metrics: PublicServerHealthMetrics) -> list[str]:
+	issues = []
+	ram_available_ratio = metrics["available_memory_ratio"].get(server)
+	cpu_idle_ratio = metrics["cpu_idle_ratio"].get(server)
+	disk_used_ratio = metrics["disk_used_ratio"].get(server, 0.0)
+	oom_kills = metrics["oom_kills"].get(server, 0.0)
+
+	if ram_available_ratio is not None and 1 - ram_available_ratio > 0.9:
+		issues.append(f"RAM utilization: {(1 - ram_available_ratio) * 100:.2f}%")
+	if cpu_idle_ratio is not None and 1 - cpu_idle_ratio > 0.5:
+		issues.append(f"CPU utilization: {(1 - cpu_idle_ratio) * 100:.2f}%")
+	if disk_used_ratio > 0.9:
+		issues.append(f"Disk utilization: {disk_used_ratio * 100:.2f}%")
+	if oom_kills > 4:
+		issues.append(f"OOM kills: {max(1, round(oom_kills))}")
 
 	return issues
 
@@ -206,7 +245,7 @@ def _get_site_pool_score(
 def _get_least_bad_pool_score(
 	server: str, metrics: PublicServerHealthMetrics
 ) -> tuple[int, float, float, float]:
-	failed_check_count = len(_get_public_server_health_issues(server, metrics))
+	failed_check_count = len(_get_public_server_placement_issues(server, metrics))
 	return (
 		-failed_check_count,
 		metrics["cpu_idle_ratio"].get(server, 0.0),
@@ -259,7 +298,7 @@ def _apply_public_server_pool_decision(
 
 
 def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHealthMetrics | None:
-	"""Fetch memory, CPU and kernel OOM-kill metrics for public servers from Prometheus."""
+	"""Fetch placement and alerting metrics for public servers from Prometheus."""
 	if not server_names:
 		return None
 
@@ -279,6 +318,11 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 		f'avg by (instance) (rate(node_cpu_seconds_total{{instance=~"^({instance_matcher})$", '
 		f'job="node", mode="idle"}}[60m]))'
 	)
+	disk_used_ratio_query = (
+		f'1 - (node_filesystem_avail_bytes{{instance=~"^({instance_matcher})$", job="node", '
+		f'device!~"rootfs", mountpoint="/"}} / node_filesystem_size_bytes{{'
+		f'instance=~"^({instance_matcher})$", job="node", device!~"rootfs", mountpoint="/"}})'
+	)
 	oom_kills_query = (
 		f'sum by (instance) (increase(node_vmstat_oom_kill{{instance=~"^({instance_matcher})$", '
 		f'job="node"}}[60m])) > 4'
@@ -287,6 +331,7 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 	available_memory_bytes_results = _query_prometheus_vector(available_memory_bytes_query, url, auth)
 	available_memory_ratio_results = _query_prometheus_vector(available_memory_ratio_query, url, auth)
 	cpu_idle_ratio_results = _query_prometheus_vector(cpu_idle_ratio_query, url, auth)
+	disk_used_ratio_results = _query_prometheus_vector(disk_used_ratio_query, url, auth)
 	oom_kills_results = _query_prometheus_vector(oom_kills_query, url, auth)
 
 	if (
@@ -304,6 +349,9 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 			server_names, available_memory_ratio_results
 		),
 		"cpu_idle_ratio": _build_public_server_metric_map(server_names, cpu_idle_ratio_results),
+		"disk_used_ratio": _build_public_server_metric_map(
+			server_names, disk_used_ratio_results, default=0.0
+		),
 		"oom_kills": _build_public_server_metric_map(server_names, oom_kills_results, default=0.0),
 	}
 
@@ -376,7 +424,7 @@ def _send_public_server_pool_health_alert(server_issues: dict[str, list[str]]) -
 	header_lines = [
 		f"**Public Server Pool Health Alerts** - {len(affected_servers)}",
 		"",
-		"Thresholds: RAM utilization > 80%, CPU utilization > 50%, OOM kills in the last hour > 4",
+		"Thresholds: RAM utilization > 90%, CPU utilization > 50%, Disk Utilization > 90%, OOM kills > 4",
 		"",
 	]
 	table_header = [
@@ -425,7 +473,7 @@ def _create_no_suitable_servers_incident(
 				"Health issues:",
 			]
 		)
-		issues = _get_public_server_health_issues(selected_server, metrics)
+		issues = _get_public_server_placement_issues(selected_server, metrics)
 		if issues:
 			description_lines.extend(f"- {issue}" for issue in issues)
 		else:
@@ -477,3 +525,107 @@ def _open_public_server_pool_incident_exists(subject: str, cluster: str | None =
 	if cluster:
 		filters["cluster"] = cluster
 	return bool(frappe.db.exists("Incident", filters))
+
+
+def alert_on_failing_signups() -> None:
+	"""Alert when a large share of recent signups failed.
+
+	Two independent signals: product trial signups that errored out, and signups that
+	never became a team. Each is compared against its own ratio, over a volume floor,
+	so a single person walking away at 3am doesn't page anyone.
+	"""
+	rates = [_get_trial_signup_failure_rate(), _get_incomplete_signup_rate()]
+	breached = [rate for rate in rates if _breaches_signup_failure_threshold(rate)]
+	if breached:
+		_send_signup_failure_alert(breached)
+
+
+def _get_trial_signup_failure_rate() -> SignupFailureRate:
+	"""Product trial signups that settled in the window - errored out against site created.
+
+	Windowed on when the status last changed, not on creation: a request that took three
+	hours to fail is a failure this hour, and windowing on creation would drop it for
+	good, exactly when provisioning is slow enough to be the outage worth alerting on.
+	Not on `modified` either - a later write, like the accessibility check at login, would
+	drag a long-settled request into this window and alert on an outcome from yesterday.
+	"""
+	requests = frappe.get_all(
+		"Product Trial Request",
+		filters={
+			"status_updated_on": (
+				">",
+				frappe.utils.add_to_date(None, hours=-SIGNUP_ALERT_WINDOW_HOURS),
+			),
+			"status": ("in", ["Error", "Site Created"]),
+			"owner": ("not like", TEST_SIGNUP_EMAIL_PATTERN),
+		},
+		fields=["status", "product_trial"],
+	)
+	failed = [request for request in requests if request.status == "Error"]
+	return {
+		"label": "Product trial signups that errored out",
+		"failed": len(failed),
+		"total": len(requests),
+		"ratio_threshold": TRIAL_SIGNUP_FAILURE_RATIO_THRESHOLD,
+		"minimum_count": TRIAL_SIGNUP_MINIMUM_COUNT,
+		"breakdown": Counter(request.product_trial or "Unknown" for request in failed),
+		"link": frappe.utils.get_url("/app/product-trial-request?status=Error"),
+	}
+
+
+def _get_incomplete_signup_rate() -> SignupFailureRate:
+	"""Signups that asked for verification but never ended up with a team."""
+	emails = set(_get_signup_emails_past_grace_period())
+	teams = frappe.get_all("Team", filters={"user": ("in", list(emails))}, pluck="user") if emails else []
+	return {
+		"label": "Signups that never became a team",
+		"failed": len(emails - set(teams)),
+		"total": len(emails),
+		"ratio_threshold": INCOMPLETE_SIGNUP_RATIO_THRESHOLD,
+		"minimum_count": INCOMPLETE_SIGNUP_MINIMUM_COUNT,
+		"breakdown": {},
+		"link": frappe.utils.get_url("/app/account-request"),
+	}
+
+
+def _get_signup_emails_past_grace_period() -> list[str]:
+	"""Emails from signup requests old enough to have finished, but no older than the window.
+
+	Team invites are left out - a member joining an existing team is a different funnel.
+	"""
+	window_end = frappe.utils.add_to_date(None, hours=-SIGNUP_COMPLETION_GRACE_HOURS)
+	window_start = frappe.utils.add_to_date(window_end, hours=-SIGNUP_ALERT_WINDOW_HOURS)
+	return frappe.get_all(
+		"Account Request",
+		filters={
+			"creation": ("between", [window_start, window_end]),
+			"invited_by": ("is", "not set"),
+			"email": ("not like", TEST_SIGNUP_EMAIL_PATTERN),
+		},
+		pluck="email",
+	)
+
+
+def _breaches_signup_failure_threshold(rate: SignupFailureRate) -> bool:
+	if rate["total"] < rate["minimum_count"]:
+		return False
+	return rate["failed"] / rate["total"] > rate["ratio_threshold"]
+
+
+def _send_signup_failure_alert(rates: list[SignupFailureRate]) -> None:
+	lines = [f"**Signup Failure Alerts** - {len(rates)}", ""]
+	for rate in rates:
+		lines.append(_describe_signup_failure_rate(rate))
+		lines.extend(f"- {name}: {count}" for name, count in sorted(rate["breakdown"].items()))
+		lines.append("")
+
+	send_raven_message("\n".join(lines).strip(), RAVEN_SIGNUP_ALERTS_CHANNEL)
+
+
+def _describe_signup_failure_rate(rate: SignupFailureRate) -> str:
+	failure_ratio = rate["failed"] / rate["total"] * 100
+	return (
+		f"[{rate['label']}]({rate['link']}): {rate['failed']} of {rate['total']} "
+		f"({failure_ratio:.2f}%) in the last {SIGNUP_ALERT_WINDOW_HOURS}h, "
+		f"threshold {rate['ratio_threshold'] * 100:.0f}%"
+	)

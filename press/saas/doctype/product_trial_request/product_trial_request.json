@@ -23,6 +23,7 @@
 		"is_subscription_created",
 		"column_break_bvut",
 		"site_creation_completed_on",
+		"status_updated_on",
 		"is_site_accessible",
 		"errors_tab",
 		"error"
@@ -115,6 +116,12 @@
 			"label": "Is Standby Site"
 		},
 		{
+			"fieldname": "status_updated_on",
+			"fieldtype": "Datetime",
+			"label": "Status Updated On",
+			"read_only": 1
+		},
+		{
 			"default": "Not Checked",
 			"fieldname": "is_site_accessible",
 			"fieldtype": "Select",
@@ -139,7 +146,7 @@
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2025-09-22 14:10:22.140755",
+	"modified": "2026-09-08 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "SaaS",
 	"name": "Product Trial Request",

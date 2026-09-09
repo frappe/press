@@ -13,6 +13,7 @@ from press.press.doctype.agent_job.agent_job import AgentJob, process_job_update
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_activity.test_site_activity import create_test_site_activity
+from press.press.doctype.site_backup.site_backup import alert_if_backup_success_rate_is_low
 
 if TYPE_CHECKING:
 	from datetime import datetime
@@ -388,3 +389,53 @@ class TestSiteBackup(FrappeTestCase):
 
 		backup.reload()
 		self.assertEqual(backup.files_availability, "Unavailable")
+
+
+@patch("press.press.doctype.site_backup.site_backup.send_raven_message")
+class TestBackupSuccessRateAlert(FrappeTestCase):
+	def setUp(self):
+		self.site = create_test_site(subdomain="backuprate")
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _create_backups(self, successes: int, failures: int, hours_ago: float = 0):
+		creation = frappe.utils.add_to_date(None, hours=-hours_ago)
+		for _ in range(successes):
+			create_test_site_backup(site=self.site.name, creation=creation, status="Success")
+		for _ in range(failures):
+			create_test_site_backup(site=self.site.name, creation=creation, status="Failure")
+
+	def test_alert_sent_when_success_rate_is_below_threshold(self, mock_send_raven_message):
+		# 30 out of 31 backups succeeded, i.e. 96.77%
+		self._create_backups(successes=30, failures=1)
+
+		alert_if_backup_success_rate_is_low()
+
+		self.assertTrue(mock_send_raven_message.called)
+		message = mock_send_raven_message.call_args[0][0]
+		self.assertIn("96.77% success rate in the last hour", message)
+		self.assertIn(f"| {self.site.name} | 1 |", message)
+
+	def test_no_alert_when_success_rate_is_at_threshold(self, mock_send_raven_message):
+		# 34 out of 35 backups succeeded, i.e. 97.14%
+		self._create_backups(successes=34, failures=1)
+
+		alert_if_backup_success_rate_is_low()
+
+		mock_send_raven_message.assert_not_called()
+
+	def test_no_alert_when_there_are_no_completed_backups_in_the_last_hour(self, mock_send_raven_message):
+		self._create_backups(successes=0, failures=3, hours_ago=2)
+
+		alert_if_backup_success_rate_is_low()
+
+		mock_send_raven_message.assert_not_called()
+
+	def test_unfinished_backups_are_not_counted(self, mock_send_raven_message):
+		self._create_backups(successes=34, failures=1)
+		create_test_site_backup(site=self.site.name, status="Pending")
+
+		alert_if_backup_success_rate_is_low()
+
+		mock_send_raven_message.assert_not_called()
