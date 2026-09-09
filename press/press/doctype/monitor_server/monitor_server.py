@@ -157,7 +157,7 @@ class MonitorServer(BaseServer):
 					"private_ip": self.private_ip,
 					"grafana_password": self.get_password("grafana_password"),
 					"prometheus_username": self.prometheus_username,
-					"certificate_private_key": certificate.private_key,
+					"certificate_private_key": certificate.get_private_key(),
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 				},

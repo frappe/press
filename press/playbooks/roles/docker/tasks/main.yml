@@ -51,7 +51,7 @@
 
 - name: Setup Docker Metrics
   template:
-    src: daemon.json
+    src: daemon.json.j2
     dest: /etc/docker/daemon.json
 
 - name: Create Docker SystemD drop-in directory

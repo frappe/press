@@ -104,9 +104,13 @@ def get_account_request_for_product_signup():
 def setup_account(key: str, country: str | None = None):
 	ar = get_account_request_from_key(key)
 	if not ar:
-		frappe.throw("Invalid or Expired Key")
+		frappe.throw(
+			"This link is invalid or has expired. Please start the sign-up again to receive a new link."
+		)
 	if not ar.product_trial:
-		frappe.throw("Invalid Product Trial")
+		frappe.throw(
+			"This sign-up link isn't tied to a product trial. Please start again from the product's trial page."
+		)
 
 	if country:
 		ar.country = country

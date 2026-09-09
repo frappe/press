@@ -29,6 +29,7 @@
 		"message_rich_text",
 		"section_break_4",
 		"skip_sites_with_paid_plan",
+		"send_raw",
 		"send_after",
 		"send_after_payment",
 		"column_break_2",
@@ -120,6 +121,12 @@
 			"fieldname": "skip_sites_with_paid_plan",
 			"fieldtype": "Check",
 			"label": "Skip Sites With Paid Plan"
+		},
+		{
+			"default": "0",
+			"fieldname": "send_raw",
+			"fieldtype": "Check",
+			"label": "Send Raw (no template/title injection)"
 		},
 		{ "fieldname": "condition", "fieldtype": "Code", "label": "Condition" },
 		{

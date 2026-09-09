@@ -28,9 +28,9 @@
 	</div>
 </template>
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
-import ServerActionCell from './ServerActionCell.vue';
-import { getDocResource } from '../../utils/resource';
+import { getCachedDocumentResource } from 'frappe-ui'
+import { getDocResource } from '../../utils/resource'
+import ServerActionCell from './ServerActionCell.vue'
 
 export default {
 	name: 'ServerActions',
@@ -42,37 +42,37 @@ export default {
 				...this.$appServer.doc.actions,
 				...this.$dbServer.doc.actions,
 				...(this.$dbReplicaServer?.doc?.actions || []),
-			];
+			]
 
 			const groupedActions = totalActions.reduce((acc, action) => {
-				const group = action.group || `${action.server_doctype} Actions`;
+				const group = action.group || `${action.server_doctype} Actions`
 				if (!acc[group]) {
-					acc[group] = [];
+					acc[group] = []
 				}
-				acc[group].push(action);
-				return acc;
-			}, {});
+				acc[group].push(action)
+				return acc
+			}, {})
 
 			let groups = Object.keys(groupedActions).map((group) => {
 				return {
 					group,
 					actions: groupedActions[group],
-				};
-			});
+				}
+			})
 
 			// move dangerous actions to the bottom
 			const dangerousActions = groups.find(
 				(group) => group.group === 'Dangerous Actions',
-			);
+			)
 			if (dangerousActions) {
-				groups = groups.filter((group) => group.group !== 'Dangerous Actions');
-				groups.push(dangerousActions);
+				groups = groups.filter((group) => group.group !== 'Dangerous Actions')
+				groups.push(dangerousActions)
 			}
 
-			return groups;
+			return groups
 		},
 		$appServer() {
-			return getCachedDocumentResource('Server', this.server);
+			return getCachedDocumentResource('Server', this.server)
 		},
 		$dbServer() {
 			// Should mirror the whitelistedMethods in ServerOverview.vue
@@ -94,8 +94,11 @@ export default {
 					updateBinlogSizeLimit: 'update_binlog_size_limit',
 					getBinlogsInfo: 'get_binlogs_info',
 					purgeBinlogsForcefully: 'purge_binlogs_forcefully',
+					configureDatabaseAuditLog: 'configure_database_audit_log',
+					getAuditLogs: 'get_audit_logs',
+					getAuditLogDownloadLink: 'get_audit_log_download_link',
 				},
-			});
+			})
 		},
 		$dbReplicaServer() {
 			return getDocResource({
@@ -106,8 +109,8 @@ export default {
 					reboot: 'reboot',
 					rename: 'rename',
 				},
-			});
+			})
 		},
 	},
-};
+}
 </script>

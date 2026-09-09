@@ -10,17 +10,19 @@ from frappe.core.utils import find
 from frappe.utils import fmt_money, get_request_site_address
 
 from press.api.regional_payments.mpesa.utils import (
+	confirmed_by_mpesa,
 	create_invoice_partner_site,
 	create_payment_partner_transaction,
 	fetch_param_value,
+	get_business_shortcode,
 	get_details_from_request_log,
+	get_mpesa_connector,
 	get_mpesa_setup_for_team,
 	get_payment_gateway,
 	sanitize_mobile_number,
 	update_tax_id_or_phone_no,
 )
 from press.guards import role_guard
-from press.press.doctype.mpesa_setup.mpesa_connector import MpesaConnector
 from press.press.doctype.team.team import (
 	_enqueue_finalize_unpaid_invoices_for_team,
 	has_unsettled_invoices,
@@ -74,6 +76,60 @@ def upcoming_invoice():
 def get_balance_credit():
 	team = get_current_team(True)
 	return team.get_balance()
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def subscriptions():
+	"""Active subscriptions owned by the current team, grouped by type, for the
+	billing Subscriptions tab: sites, servers, and marketplace apps (with the
+	sites each app is installed on)."""
+	team = get_current_team()
+
+	rows = frappe.get_all(
+		"Subscription",
+		filters={
+			"team": team,
+			"enabled": 1,
+			"document_type": ("in", ["Site", "Server"]),
+		},
+		fields=["document_type", "document_name", "plan"],
+		order_by="document_name asc",
+	)
+	sites = [{"name": r.document_name, "plan": r.plan} for r in rows if r.document_type == "Site"]
+	servers = [{"name": r.document_name, "plan": r.plan} for r in rows if r.document_type == "Server"]
+
+	app_rows = frappe.get_all(
+		"Marketplace App Subscription",
+		filters={"team": team, "status": "Active"},
+		fields=["app", "plan", "site"],
+		order_by="app asc",
+	)
+	apps_by_name: dict[str, dict] = {}
+	for row in app_rows:
+		app = apps_by_name.setdefault(
+			row.app,
+			{"name": row.app, "title": None, "plan": row.plan, "sites": []},
+		)
+		if row.site:
+			app["sites"].append(row.site)
+
+	titles = dict(
+		frappe.get_all(
+			"Marketplace App",
+			filters={"name": ("in", list(apps_by_name))},
+			fields=["name", "title"],
+			as_list=True,
+		)
+	)
+	for name, app in apps_by_name.items():
+		app["title"] = titles.get(name) or name
+
+	return {
+		"sites": sites,
+		"servers": servers,
+		"marketplace_apps": list(apps_by_name.values()),
+	}
 
 
 @frappe.whitelist()
@@ -413,8 +469,6 @@ def change_payment_mode(mode):
 			{"enabled": 1, "erpnext_partner": 1, "partner_email": team.partner_email},
 			"name",
 		)
-	if team.billing_team and mode != "Paid By Partner":
-		team.billing_team = ""
 	team.save()
 	return
 
@@ -1003,20 +1057,11 @@ def generate_stk_push(**kwargs):
 		callback_url = (
 			get_request_site_address(True) + "/api/method/press.api.billing.verify_m_pesa_transaction"
 		)
-		env = "production" if not mpesa_setup.sandbox else "sandbox"
-		# for sandbox, business shortcode is same as till number
-		business_shortcode = (
-			mpesa_setup.business_shortcode if env == "production" else mpesa_setup.till_number
-		)
-		connector = MpesaConnector(
-			env=env,
-			app_key=mpesa_setup.consumer_key,
-			app_secret=mpesa_setup.get_password("consumer_secret"),
-		)
+		connector = get_mpesa_connector(mpesa_setup)
 
 		mobile_number = sanitize_mobile_number(args.sender)
 		response = connector.stk_push(
-			business_shortcode=business_shortcode,
+			business_shortcode=get_business_shortcode(mpesa_setup),
 			amount=args.amount_with_tax,
 			passcode=mpesa_setup.get_password("pass_key"),
 			callback_url=callback_url,
@@ -1065,7 +1110,14 @@ def handle_transaction_result(transaction_response, integration_request):
 	status = None
 	current_user = frappe.session.user
 
-	if result_code == 0:
+	if result_code == 0 and not confirmed_by_mpesa(integration_request):
+		status = "Failed"
+		create_mpesa_request_log(
+			transaction_response, "Host", "Mpesa Express", integration_request, None, status
+		)
+		frappe.log_error(f"Mpesa: Callback claimed success but Mpesa did not confirm {integration_request}")
+
+	elif result_code == 0:
 		try:
 			frappe.set_user("Administrator")  # To create BT and Invoice
 			status = "Completed"

@@ -39,9 +39,11 @@ class DowntimeAnalysis(Document):
 	def fetch_report(self):
 		frappe.only_for("Desk User")
 		if not (self.start_date and self.end_date):
-			frappe.throw("Start Date and End Date are required to fetch the report.")
+			frappe.throw("Please select both a start date and an end date to fetch the report.")
 		if self.start_date > self.end_date:
-			frappe.throw("Start Date cannot be greater than End Date.")
+			frappe.throw(
+				"The start date can't be after the end date. Please pick a start date that is on or before the end date."
+			)
 
 		if is_report_available(str(self.start_date), str(self.end_date)):
 			self.status = "Report Available"

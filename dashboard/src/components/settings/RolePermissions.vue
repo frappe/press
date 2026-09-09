@@ -79,29 +79,30 @@
 </template>
 
 <script setup lang="ts">
-import { Switch } from "frappe-ui";
-import { inject } from "vue";
+import { Switch } from 'frappe-ui'
+import { inject } from 'vue'
 
-const team = inject("team");
+const team = inject('team')
 
 const props = withDefaults(
 	defineProps<{
-		admin_access?: number;
-		all_servers?: number;
-		all_sites?: number;
-		all_release_groups?: number;
-		allow_bench_creation?: number;
-		allow_apps?: number;
-		allow_billing?: number;
-		allow_partner?: number;
-		allow_server_creation?: number;
-		allow_site_creation?: number;
-		allow_webhook_configuration?: number;
-		allow_dashboard?: number;
-		allow_customer?: number;
-		allow_leads?: number;
-		allow_contribution?: number;
-		disabled?: boolean;
+		admin_access?: number
+		all_servers?: number
+		all_sites?: number
+		all_release_groups?: number
+		allow_bench_creation?: number
+		allow_apps?: number
+		allow_billing?: number
+		allow_partner?: number
+		allow_server_creation?: number
+		allow_site_creation?: number
+		allow_webhook_configuration?: number
+		allow_dashboard?: number
+		allow_customer?: number
+		allow_leads?: number
+		allow_contribution?: number
+		allow_local_payment?: number
+		disabled?: boolean
 	}>(),
 	{
 		admin_access: 0,
@@ -119,83 +120,88 @@ const props = withDefaults(
 		allow_customer: 0,
 		allow_leads: 0,
 		allow_contribution: 0,
+		allow_local_payment: 0,
 		disabled: false,
 	},
-);
+)
 
 defineEmits<{
-	update: [key: string, value: boolean];
-}>();
+	update: [key: string, value: boolean]
+}>()
 
 const permissionsImportant = [
 	{
-		key: "admin_access",
-		label: "Administrator",
+		key: 'admin_access',
+		label: 'Administrator',
 	},
-];
+]
 
 const permissionsGeneral = [
 	{
-		key: "allow_server_creation",
-		label: "Create Servers",
+		key: 'allow_server_creation',
+		label: 'Create Servers',
 	},
 	{
-		key: "allow_site_creation",
-		label: "Create Sites",
+		key: 'allow_site_creation',
+		label: 'Create Sites',
 	},
 	{
-		key: "allow_bench_creation",
-		label: "Create Release Groups",
+		key: 'allow_bench_creation',
+		label: 'Create Release Groups',
 	},
 	{
-		key: "allow_apps",
-		label: "Marketplace",
+		key: 'allow_apps',
+		label: 'Marketplace',
 	},
 	{
-		key: "allow_webhook_configuration",
-		label: "Webhooks",
+		key: 'allow_webhook_configuration',
+		label: 'Webhooks',
 	},
 	{
-		key: "allow_billing",
-		label: "Billing",
+		key: 'allow_billing',
+		label: 'Billing',
 	},
 	{
-		key: "allow_partner",
-		label: "Partner Management",
+		key: 'allow_partner',
+		label: 'Partner Management',
 	},
-];
+]
 
 const permissionsResources = [
 	{
-		key: "all_servers",
-		label: "All Servers",
+		key: 'all_servers',
+		label: 'All Servers',
 	},
 	{
-		key: "all_sites",
-		label: "All Sites",
+		key: 'all_sites',
+		label: 'All Sites',
 	},
 	{
-		key: "all_release_groups",
-		label: "All Release Groups",
+		key: 'all_release_groups',
+		label: 'All Release Groups',
 	},
-];
+]
 
 const permissionsPartner = [
 	{
-		key: "allow_dashboard",
-		label: "Dashboard",
+		key: 'allow_dashboard',
+		label: 'Dashboard',
 	},
 	{
-		key: "allow_customer",
-		label: "Customer",
+		key: 'allow_customer',
+		label: 'Customer',
 	},
 	{
-		key: "allow_leads",
-		label: "Leads",
+		key: 'allow_leads',
+		label: 'Leads',
 	},
 	{
-		key: "allow_contribution",
-		label: "Contribution",
+		key: 'allow_contribution',
+		label: 'Contribution',
 	},
-];
+	{
+		key: 'allow_local_payment',
+		label: 'Local Payment',
+	},
+]
 </script>

@@ -22,6 +22,9 @@ from press.guards.role_guard.document import has_user_permission
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.server.server_monitoring import RAVEN_SERVER_ALERTS_CHANNEL
+from press.utils import docs
+from press.utils.raven import send_raven_message
 
 if TYPE_CHECKING:
 	from datetime import date
@@ -29,6 +32,10 @@ if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.site_update.site_update import SiteUpdate
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
+
+BACKUP_SUCCESS_RATE_THRESHOLD = 0.97
+BACKUP_FAILURE_ALERT_SITE_LIMIT = 20
 
 
 class SiteBackup(Document):
@@ -151,9 +158,13 @@ class SiteBackup(Document):
 
 	def validate(self):
 		if self.physical and self.with_files:
-			frappe.throw("Physical backups cannot be taken with files")
+			frappe.throw(
+				f"Physical backups already include site files, so the 'with files' option can't be used. Please clear that option and try again. {docs.doc_link(docs.BACKUPS)}."
+			)
 		if self.physical and self.offsite:
-			frappe.throw("Physical and offsite logical backups cannot be taken together")
+			frappe.throw(
+				f"A backup can't be both physical and offsite. Please choose either a physical backup or an offsite logical backup. {docs.doc_link(docs.BACKUPS)}."
+			)
 
 		if self.deactivate_site_during_backup and not self.physical:
 			frappe.throw("Site deactivation should be used for physical backups only")
@@ -164,7 +175,9 @@ class SiteBackup(Document):
 
 		if getattr(self, "force", False):
 			if self.physical:
-				frappe.throw("Physical backups cannot be forcefully triggered")
+				frappe.throw(
+					"Physical backups can't be force-triggered. Please take a regular backup, or wait for the scheduled physical backup to run."
+				)
 			return
 
 		# For backups, check if there are too many pending backups
@@ -212,7 +225,9 @@ class SiteBackup(Document):
 			site.sync_info()
 			site.reload()
 		if not site.database_name:
-			frappe.throw("Database name is missing in the site")
+			frappe.throw(
+				"This site doesn't have a database name set yet, so a physical backup can't be taken. Please try again once the site has finished provisioning, or contact support."
+			)
 		self.database_name = site.database_name
 		self.snapshot_request_key = frappe.generate_hash(length=32)
 
@@ -377,7 +392,9 @@ class SiteBackup(Document):
 
 		virtual_machine.create_snapshots(exclude_boot_volume=True, physical_backup=True)
 		if len(virtual_machine.flags.created_snapshots) == 0:
-			frappe.throw("Failed to create a snapshot for the database server")
+			frappe.throw(
+				"We couldn't create a disk snapshot for the database server, so the physical backup failed. Please retry, and contact support if it keeps failing."
+			)
 		frappe.db.set_value(
 			"Site Backup", self.name, "database_snapshot", virtual_machine.flags.created_snapshots[0]
 		)
@@ -935,3 +952,53 @@ def _has_reached_max_failed_backup_attempts(site_name: str) -> bool:
 	)
 
 	return backup_failures == max_backup_attempts
+
+
+def alert_if_backup_success_rate_is_low() -> None:
+	"""Alert on Raven when the site backup success rate for the last hour dips below the threshold."""
+	since = frappe.utils.add_to_date(None, hours=-1)
+	completed_backups = frappe.db.count(
+		"Site Backup", {"status": ("in", ["Success", "Failure"]), "creation": (">=", since)}
+	)
+	if not completed_backups:
+		return
+
+	failed_backups = frappe.db.count("Site Backup", {"status": "Failure", "creation": (">=", since)})
+	success_rate = (completed_backups - failed_backups) / completed_backups
+	if success_rate >= BACKUP_SUCCESS_RATE_THRESHOLD:
+		return
+
+	_send_backup_success_rate_alert(success_rate, completed_backups, failed_backups, since)
+
+
+def _send_backup_success_rate_alert(
+	success_rate: float,
+	completed_backups: int,
+	failed_backups: int,
+	since: str,
+) -> None:
+	failures_by_site = frappe.get_all(
+		"Site Backup",
+		filters={"status": "Failure", "creation": (">=", since)},
+		fields=["site", "count(name) as failures"],
+		group_by="site",
+		order_by="failures desc, site asc",
+		limit=BACKUP_FAILURE_ALERT_SITE_LIMIT,
+	)
+
+	lines = [
+		f"**Site Backup Failure Alert** - {success_rate * 100:.2f}% success rate in the last hour",
+		"",
+		f"Threshold: success rate >= {BACKUP_SUCCESS_RATE_THRESHOLD * 100:.0f}% in the last hour",
+		f"Completed backups: {completed_backups}, failed: {failed_backups}",
+		"",
+		"| Site | Failed Backups |",
+		"| --- | --- |",
+	]
+	lines.extend(f"| {row.site} | {row.failures} |" for row in failures_by_site)
+
+	listed_failures = sum(row.failures for row in failures_by_site)
+	if unlisted_failures := failed_backups - listed_failures:
+		lines.append(f"| ... | {unlisted_failures} more failures on other sites |")
+
+	send_raven_message("\n".join(lines).strip(), RAVEN_SERVER_ALERTS_CHANNEL)

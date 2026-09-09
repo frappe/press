@@ -3,6 +3,7 @@
 		v-if="$attrs.type === 'link'"
 		v-bind="$attrs"
 		class="min-w-[6rem]"
+    :openOnClick="true"
 	/>
 	<TabButtons
 		v-else-if="$attrs.type === 'tab'"

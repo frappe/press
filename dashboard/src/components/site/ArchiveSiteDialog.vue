@@ -70,6 +70,10 @@ const props = defineProps({
 		type: Object as PropType<DocumentResource>,
 		required: true,
 	},
+	onArchived: {
+		type: Function as PropType<() => void>,
+		required: false,
+	},
 });
 
 const router = useRouter();
@@ -107,6 +111,11 @@ const handleConfirm = async () => {
 		await archiveSite.submit();
 		toast.success('Site drop scheduled successfully');
 		showDialog.value = false;
+
+		if (props.onArchived) {
+			props.onArchived();
+			return;
+		}
 
 		const isLast = await isLastSite(props.site.doc?.team);
 		if (isLast) {

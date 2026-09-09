@@ -74,7 +74,9 @@ class AppReleaseApprovalRequest(Document):
 		)
 
 		if len(requests) > 0:
-			frappe.throw("An active request for this app release already exists!")
+			frappe.throw(
+				"This app release is already awaiting review. Please wait for the existing request to be processed, or cancel it, before submitting another."
+			)
 
 	def another_request_awaiting_approval(self):
 		request_source = frappe.db.get_value("App Release", self.app_release, "source")
@@ -90,7 +92,9 @@ class AppReleaseApprovalRequest(Document):
 
 		# A request for this source is already open
 		if request_source in sources_awaiting_approval:
-			frappe.throw("A previous release is already awaiting approval!")
+			frappe.throw(
+				"An earlier release of this app is already awaiting review. Please wait for it to be approved or rejected, or cancel its review request, before submitting a new one."
+			)
 
 	def update_release_status(self):
 		release: AppRelease = frappe.get_doc("App Release", self.app_release)

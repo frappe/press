@@ -32,9 +32,7 @@ frappe.ui.form.on('Cluster', {
 			[
 				__('Assign NAT Security Group'),
 				'assign_nat_security_group',
-				frm.doc.cloud_provider === 'AWS EC2' &&
-					frm.doc.status === 'Active' &&
-					!frm.doc.nat_security_group_id,
+				frm.doc.status === 'Active' && !frm.doc.nat_security_group_id,
 			],
 			[
 				__('Setup VPC Flow Logs'),

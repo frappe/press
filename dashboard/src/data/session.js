@@ -1,7 +1,7 @@
-import { computed, reactive } from 'vue';
-import { createResource } from 'frappe-ui';
-import { clear } from 'idb-keyval';
-import router from '../router';
+import { createResource } from 'frappe-ui'
+import { clear } from 'idb-keyval'
+import { computed, reactive } from 'vue'
+import router from '../router'
 
 export let session = reactive({
 	login: createResource({
@@ -10,37 +10,37 @@ export let session = reactive({
 			return {
 				usr: email,
 				pwd: password,
-			};
+			}
 		},
 	}),
 	logout: createResource({
 		url: 'logout',
 		async onSuccess() {
-			session.user = getSessionUser();
-			await router.replace({ name: 'Login' });
-			localStorage.removeItem('current_team');
+			session.user = getSessionUser()
+			await router.replace({ name: 'Login' })
+			localStorage.removeItem('current_team')
 			// On logout, reset posthog user identity and device id
 			if (window.posthog?.__loaded) {
-				posthog.reset(true);
+				posthog.reset(true)
 			}
 
 			// clear all cache from the session
-			clear();
+			clear()
 
-			window.location.reload();
+			window.location.reload()
 		},
 	}),
 	logoutWithoutReload: createResource({
 		url: 'logout',
 		async onSuccess() {
-			session.user = getSessionUser();
-			localStorage.removeItem('current_team');
+			session.user = getSessionUser()
+			localStorage.removeItem('current_team')
 			// On logout, reset posthog user identity and device id
 			if (window.posthog?.__loaded) {
-				posthog.reset(true);
+				posthog.reset(true)
 			}
 
-			clear();
+			clear()
 		},
 	}),
 	userPermissions: createResource({
@@ -61,6 +61,7 @@ export let session = reactive({
 			partner_leads: false,
 			partner_customer: false,
 			partner_contribution: false,
+			partner_local_payment: false,
 			site_creation: false,
 			bench_creation: false,
 			server_creation: false,
@@ -85,6 +86,9 @@ export let session = reactive({
 	hasPartnerContributionAccess: computed(
 		() => session.userPermissions.data.partner_contribution,
 	),
+	hasPartnerLocalPaymentAccess: computed(
+		() => session.userPermissions.data.partner_local_payment,
+	),
 	hasSiteCreationAccess: computed(
 		() => session.userPermissions.data.site_creation,
 	),
@@ -98,19 +102,19 @@ export let session = reactive({
 	userFullName: getSessionCookies().get('full_name') || '',
 	isLoggedIn: computed(() => !!session.user),
 	isSystemUser: getSessionCookies().get('system_user') === 'yes',
-});
+})
 
-export default session;
+export default session
 
 export function getSessionUser() {
-	let cookies = getSessionCookies();
-	let sessionUser = cookies.get('user_id');
+	let cookies = getSessionCookies()
+	let sessionUser = cookies.get('user_id')
 	if (!sessionUser || sessionUser === 'Guest') {
-		sessionUser = null;
+		sessionUser = null
 	}
-	return sessionUser;
+	return sessionUser
 }
 
 function getSessionCookies() {
-	return new URLSearchParams(document.cookie.split('; ').join('&'));
+	return new URLSearchParams(document.cookie.split('; ').join('&'))
 }

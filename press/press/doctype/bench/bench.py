@@ -39,6 +39,7 @@ from press.utils.webhook import create_webhook_event
 
 if TYPE_CHECKING:
 	from collections.abc import Generator, Iterable
+	from datetime import datetime
 
 	from frappe.types import DF
 
@@ -294,6 +295,11 @@ class Bench(Document):
 			self.port_offset = self.get_unused_port_offset()
 
 		config = {
+			# tells bench its state is owned by Press, so it can warn before
+			# commands that desync the container from the Bench/Site records.
+			# common_site_config is the only bench config bind-mounted into the
+			# container, so the marker has to live here.
+			"frappe_cloud": True,
 			"monitor": True,
 			"redis_cache": self.build_redis_uri(13000),
 			"redis_queue": self.build_redis_uri(11000),
@@ -1092,7 +1098,12 @@ class Bench(Document):
 	def check_ongoing_jobs(self):
 		frappe.db.commit()
 		if frappe.db.exists(
-			"Agent Job", {"bench": self.name, "status": ("in", ["Running", "Pending", "Undelivered"])}
+			"Agent Job",
+			{
+				"bench": self.name,
+				"creation": (">", frappe.utils.add_to_date(None, days=-2)),
+				"status": ("in", ["Running", "Pending", "Undelivered"]),
+			},
 		):
 			frappe.throw(
 				"Cannot archive bench because of ongoing jobs. Please retry after the job queue is cleared.",
@@ -1117,13 +1128,24 @@ class Bench(Document):
 				ArchiveBenchError,
 			)
 
+		sites = frappe.qb.DocType("Site")
 		fatal_site_updates = (
 			frappe.qb.from_(site_updates)
+			.join(sites)
+			.on(
+				(site_updates.site == sites.name)
+				& (
+					(sites.bench == site_updates.source_bench)
+					| (sites.bench == site_updates.destination_bench)
+				)
+			)
 			.select(site_updates.name)
 			.where((site_updates.source_bench == self.name) | (site_updates.destination_bench == self.name))
 			.where(
 				(site_updates.status == "Fatal")
 				& (site_updates.creation > frappe.utils.add_to_date(None, days=-EMPTY_BENCH_COURTESY_DAYS))
+				& (sites.status != "Archived")
+				& (site_updates.cause_of_failure_is_resolved == 0)
 			)
 			.limit(1)
 		).run()
@@ -1875,6 +1897,22 @@ def get_apps_in_bench(bench_name: str):
 		.select(BenchApp.app)
 		.run(pluck=True)
 	)
+
+
+def get_frappe_release_timestamp(bench: str | None) -> datetime | None:
+	"""When the frappe release running on this bench was published.
+
+	`timestamp` is the commit time, but it is unset on most releases, so fall
+	back to `creation`, the time Press recorded the release. Reading `timestamp`
+	alone leaves 37% of active sites without an age, and the banner silent.
+	"""
+	if not bench:
+		return None
+	release = frappe.db.get_value("Bench App", {"parent": bench, "app": "frappe"}, "release")
+	if not release:
+		return None
+	commit_time, recorded_at = frappe.db.get_value("App Release", release, ("timestamp", "creation"))
+	return commit_time or recorded_at
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")

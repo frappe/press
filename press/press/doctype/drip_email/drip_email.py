@@ -44,6 +44,7 @@ class DripEmail(Document):
 		send_after: DF.Int
 		send_after_payment: DF.Check
 		send_by_consultant: DF.Check
+		send_raw: DF.Check
 		sender: DF.Data
 		sender_name: DF.Data
 		skip_sites_with_paid_plan: DF.Check
@@ -87,23 +88,32 @@ class DripEmail(Document):
 		# build the message
 		message = frappe.render_template(self.message, context)
 		account_request = context.get("account_request", "")
-		app = frappe.db.get_value("Product Trial", self.product_trial, ["title", "logo"], as_dict=True)
 
-		# add to queue
-		frappe.sendmail(
+		kwargs = dict(
 			subject=self.subject,
 			recipients=[recipient],
 			sender=f"{self.sender_name} <{self.sender}>",
 			reply_to=self.reply_to,
 			reference_doctype="Drip Email",
 			reference_name=self.name,
-			unsubscribe_message="Unsubscribe",
-			unsubscribe_method="api/method/press.press.doctype.drip_email.drip_email.unsubscribe",
-			unsubscribe_params={"account_request": account_request.name},
 			attachments=self.get_setup_guides(account_request),
-			template="product_trial_email",
-			args={"message": message, "title": app.title, "logo": app.logo},
 		)
+
+		if self.send_raw:
+			kwargs["message"] = message
+		else:
+			if not self.product_trial:
+				frappe.throw(_("Product Trial is required when Send Raw is disabled"))
+			app = frappe.db.get_value("Product Trial", self.product_trial, ["title", "logo"], as_dict=True)
+			if not app:
+				frappe.throw(_("Product Trial {0} not found").format(self.product_trial))
+			kwargs["template"] = "product_trial_email"
+			kwargs["args"] = {"message": message, "title": app.title, "logo": app.logo}
+			kwargs["unsubscribe_message"] = "Unsubscribe"
+			kwargs["unsubscribe_method"] = "api/method/press.press.doctype.drip_email.drip_email.unsubscribe"
+			kwargs["unsubscribe_params"] = {"account_request": account_request.name}
+
+		frappe.sendmail(**kwargs)
 
 	@property
 	def message(self):
@@ -113,14 +123,14 @@ class DripEmail(Document):
 			return self.message_rich_text
 		return self.message_html
 
-	def evaluate_condition(self, site_name: str) -> bool:
+	def evaluate_condition(self, site_name: str | None) -> bool:
 		"""
 		Evaluate the condition to check if the email should be sent.
 		"""
 		if not self.condition:
 			return True
 
-		product_trial = frappe.get_doc("Product Trial", self.product_trial)
+		product_trial = frappe.get_doc("Product Trial", self.product_trial) if self.product_trial else None
 		site_account_request = frappe.db.get_value("Site", site_name, "account_request")
 		account_request = frappe.get_doc("Account Request", site_account_request)
 

@@ -381,7 +381,9 @@ class SiteAction(Document):
 		target_cluster = self.get_argument("cluster")
 		current_cluster = frappe.db.get_value("Server", self.site_doc.server, "cluster")
 		if target_cluster == current_cluster:
-			frappe.throw("Target cluster must be different from current cluster.")
+			frappe.throw(
+				"The site is already in the selected region. Please choose a different region to move it to."
+			)
 
 		# create the `Site Migration`
 		current_group = frappe.db.get_value("Site", self.site, "group")
@@ -540,7 +542,9 @@ class SiteAction(Document):
 
 	def validate(self):
 		if self.action_type == "Move From Private To Shared Bench":
-			frappe.throw("Move From Private To Shared Bench action is not available currently.")
+			frappe.throw(
+				"Moving a site from a private bench to a shared bench isn't available right now. Please contact support if you need to do this."
+			)
 
 	def on_update(self):
 		save_doc = False
@@ -626,7 +630,9 @@ class SiteAction(Document):
 	@dashboard_whitelist()
 	def cancel_action(self):
 		if self.status != "Scheduled":
-			frappe.throw("Only Scheduled actions can be cancelled.")
+			frappe.throw(
+				"Only scheduled actions can be cancelled. This action has already started or finished, so it can no longer be cancelled."
+			)
 			return
 
 		self.status = "Cancelled"
@@ -821,8 +827,11 @@ class SiteAction(Document):
 		rg_apps.discard("frappe")
 		site_apps.discard("frappe")
 		if diff := site_apps - rg_apps:
+			apps = ", ".join(frappe.bold(app) for app in diff)
+			install = "<a class='underline' href='https://docs.frappe.io/cloud/installing-an-app#bench-group'>install</a>"
+			remove = "<a class='underline' href='https://docs.frappe.io/cloud/how-to-uninstall-an-app-from-the-site'>remove</a>"
 			frappe.throw(
-				f"Site has following apps {', '.join(diff)} which are not present in the destination release group. Please install those apps in the destination release group or remove them from the site before moving.",
+				f"Site has following apps: {apps} which are not present in the destination release group. Please {install} those apps in the destination release group or {remove} them from the site before moving.",
 				frappe.ValidationError,
 			)
 

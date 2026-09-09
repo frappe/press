@@ -146,6 +146,12 @@ export default {
 						},
 					});
 				},
+				onError: (error) => {
+					this.$pulse?.capture('trial_create_site_failed', {
+						product: this.productId,
+						error: error?.messages?.join('\n') || error?.message,
+					});
+				},
 			};
 		},
 	},
@@ -166,6 +172,9 @@ export default {
 		this.$nextTick(() => {
 			this.$refs.subdomainInput?.focus();
 		});
+		this.$pulse?.capture('trial_setup_viewed', {
+			product: this.productId,
+		});
 		this.email = localStorage.getItem('login_email');
 		if (window.posthog?.__loaded) {
 			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
@@ -178,6 +187,9 @@ export default {
 	},
 	methods: {
 		async createSite() {
+			this.$pulse?.capture('trial_create_site_clicked', {
+				product: this.productId,
+			});
 			return this.$resources.createSite.submit();
 		},
 		redirectToLogin() {

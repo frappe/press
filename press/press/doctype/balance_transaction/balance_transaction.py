@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
+from frappe.query_builder.functions import Sum
 
 from press.overrides import get_permission_query_conditions_for_doctype
 
@@ -47,21 +48,23 @@ class BalanceTransaction(Document):
 
 	def validate(self):
 		if self.amount == 0:
-			frappe.throw("Amount cannot be 0")
+			frappe.throw("Please enter a non-zero amount for the balance transaction.")
 
 	def before_submit(self):
 		if self.type == "Partnership Fee":
 			# don't update ending balance or unallocated amount for partnership fee
 			return
 
-		last_balance = frappe.db.get_all(
-			"Balance Transaction",
-			filters={"team": self.team, "docstatus": 1, "type": ("!=", "Partnership Fee")},
-			fields=["sum(amount) as ending_balance"],
-			group_by="team",
-			pluck="ending_balance",
-		)
-		last_balance = last_balance[0] if last_balance else 0
+		BalanceTransaction = frappe.qb.DocType("Balance Transaction")
+		balances = (
+			frappe.qb.from_(BalanceTransaction)
+			.select(Sum(BalanceTransaction.amount))
+			.where(BalanceTransaction.team == self.team)
+			.where(BalanceTransaction.docstatus == 1)
+			.where(BalanceTransaction.type != "Partnership Fee")
+			.groupby(BalanceTransaction.team)
+		).run(pluck=True)
+		last_balance = balances[0] if balances else 0
 		if last_balance:
 			self.ending_balance = (last_balance or 0) + self.amount
 		else:
@@ -130,7 +133,9 @@ class BalanceTransaction(Document):
 			or []
 		)
 		if not unallocated_amounts:
-			frappe.throw("Cannot create transaction as no unallocated amount found")
+			frappe.throw(
+				"This team has no unallocated credit to draw from, so this transaction can't be created. Please add credits before allocating them."
+			)
 		if sum(unallocated_amounts) < abs(self.amount):
 			frappe.throw(
 				f"Cannot create transaction as unallocated amount {sum(unallocated_amounts)} is less than {self.amount}"

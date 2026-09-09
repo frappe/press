@@ -3,7 +3,7 @@
 
 from datetime import date
 from itertools import groupby
-from typing import List
+from typing import ClassVar
 
 import frappe
 from frappe.model.document import Document
@@ -21,6 +21,7 @@ class PayoutOrder(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
 
 		amended_from: DF.Link | None
@@ -43,7 +44,7 @@ class PayoutOrder(Document):
 		type: DF.Literal["Marketplace", "SaaS"]
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields: ClassVar = [
 		"period_end",
 		"team",
 		"mode_of_payment",
@@ -57,8 +58,7 @@ class PayoutOrder(Document):
 	@staticmethod
 	def get_list_query(query):
 		PayoutOrder = frappe.qb.DocType("Payout Order")
-		query = query.where((PayoutOrder.docstatus != 2))
-		return query
+		return query.where(PayoutOrder.docstatus != 2)
 
 	def validate(self):
 		self.validate_items()
@@ -149,15 +149,11 @@ class PayoutOrder(Document):
 
 	def before_submit(self):
 		if self.mode_of_payment == "Cash" and (not self.frappe_purchase_order):
-			frappe.throw(
-				"Frappe Purchase Order is required before marking this cash payout as Paid"
-			)
+			frappe.throw("Please enter the Frappe Purchase Order before marking this cash payout as Paid.")
 		self.status = "Paid"
 
 
-def get_invoice_item_for_po_item(
-	invoice_name: str, payout_order_item: PayoutOrderItem
-) -> InvoiceItem | None:
+def get_invoice_item_for_po_item(invoice_name: str, payout_order_item: PayoutOrderItem) -> InvoiceItem | None:
 	try:
 		if payout_order_item.invoice_item:
 			item = frappe.get_doc("Invoice Item", payout_order_item.invoice_item)
@@ -186,20 +182,17 @@ def get_invoice_item_for_po_item(
 
 def create_marketplace_payout_orders_monthly(period_start=None, period_end=None):
 	period_start, period_end = (
-		(period_start, period_end)
-		if period_start and period_end
-		else get_current_period_boundaries()
+		(period_start, period_end) if period_start and period_end else get_current_period_boundaries()
 	)
 	items = get_unaccounted_marketplace_invoice_items()
 
 	# Group by teams
-	for app_team, items in groupby(items, key=lambda x: x["app_team"]):
+	for app_team, group in groupby(items, key=lambda x: x["app_team"]):
+		group_items = list(group)
 		try:
-			item_names = [i.name for i in items]
+			item_names = [i.name for i in group_items]
 
-			po_exists = frappe.db.exists(
-				"Payout Order", {"team": app_team, "period_end": period_end}
-			)
+			po_exists = frappe.db.exists("Payout Order", {"team": app_team, "period_end": period_end})
 
 			if not po_exists:
 				create_payout_order_from_invoice_item_names(
@@ -221,7 +214,7 @@ def create_marketplace_payout_orders_monthly(period_start=None, period_end=None)
 				frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
-			log_error("Payout Order Creation Error", team=app_team, invoice_items=items)
+			log_error("Payout Order Creation Error", team=app_team, invoice_items=group_items)
 
 
 def get_current_period_boundaries():
@@ -257,7 +250,7 @@ def get_unaccounted_marketplace_invoice_items():
 	invoice_item = frappe.qb.DocType("Invoice Item")
 	marketplace_app = frappe.qb.DocType("Marketplace App")
 
-	items = (
+	return (
 		frappe.qb.from_(invoice_item)
 		.left_join(invoice)
 		.on(invoice_item.parent == invoice.name)
@@ -266,19 +259,15 @@ def get_unaccounted_marketplace_invoice_items():
 		.where(invoice.status == "Paid")
 		.where(invoice_item.document_type == "Marketplace App")
 		.where(invoice_item.has_marketplace_payout_completed == 0)
-		.select(
-			invoice_item.name, invoice_item.document_name, marketplace_app.team.as_("app_team")
-		)
+		.select(invoice_item.name, invoice_item.document_name, marketplace_app.team.as_("app_team"))
 		.distinct()
 		.run(as_dict=True)
 	)
 
-	return items
-
 
 @frappe.whitelist()
 def create_payout_order_from_invoice_items(
-	invoice_items: List[InvoiceItem],
+	invoice_items: list[InvoiceItem],
 	team: str,
 	period_start: date,
 	period_end: date,

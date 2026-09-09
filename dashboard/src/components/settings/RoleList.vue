@@ -14,13 +14,6 @@
 				@click="showCreateDialog = !showCreateDialog"
 			/>
 		</div>
-		<Switch
-			v-model="relaxedPermissions"
-			label="Relaxed Permissions"
-			description="Users without a role can access resources without restrictions if this feature is enabled.
-      Use with caution. This will be deprecated in the future and removed eventually. Please prefer creating roles and assigning users to them for better access control."
-			class="rounded px-5 py-4 bg-surface-amber-2"
-		/>
 		<div class="grid grid-cols-3 gap-4 text-base">
 			<RouterLink
 				v-for="role in roles.data"
@@ -104,10 +97,9 @@
 </template>
 
 <script setup lang="ts">
-import { createListResource, createResource, Switch } from 'frappe-ui'
-import { computed, onMounted, ref } from 'vue'
+import { createListResource, createResource } from 'frappe-ui'
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getTeam } from '../../data/team'
 import RoleCreateDialog from './RoleCreateDialog.vue'
 
 const showCreateDialog = ref(false)
@@ -120,17 +112,6 @@ onMounted(() => {
 		showCreateDialog.value = true
 		router.replace({ query: {} })
 	}
-})
-
-const team = getTeam()
-
-const relaxedPermissions = computed({
-	get() {
-		return Boolean(team.doc?.relaxed_permissions)
-	},
-	set(value: boolean) {
-		team.setValue.submit({ relaxed_permissions: value })
-	},
 })
 
 const roles = createListResource({

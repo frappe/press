@@ -18,6 +18,7 @@ from press.api.bench import (
 	deploy_and_update,
 	deploy_information,
 	get,
+	get_branches_for_marketplace_app,
 	new,
 	update_config,
 	update_dependencies,
@@ -25,8 +26,10 @@ from press.api.bench import (
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
+from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+from press.press.doctype.marketplace_app.test_marketplace_app import create_test_marketplace_app
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
@@ -188,6 +191,34 @@ class TestAPIBench(FrappeTestCase):
 				print("Waitng for container to respond", str(e))
 			time.sleep(0.5)
 
+	def test_marketplace_branch_list_leaves_out_a_branch_deleted_on_github(self):
+		app = create_test_app("insights", "Insights")
+		repository_url = "https://github.com/frappe/insights"
+		live_source = create_test_app_source(self.version, app, repository_url, "master", self.team.name)
+		deleted_source = create_test_app_source(
+			self.version, app, repository_url, "version-16", self.team.name
+		)
+		frappe.db.set_value(
+			"App Source",
+			deleted_source.name,
+			{
+				"last_github_poll_failed": 1,
+				"last_github_response": '{"message": "Branch not found"}',
+			},
+		)
+		marketplace_app = create_test_marketplace_app(
+			app.name,
+			self.team.name,
+			sources=[
+				{"version": self.version, "source": live_source.name},
+				{"version": self.version, "source": deleted_source.name},
+			],
+		)
+
+		branches = get_branches_for_marketplace_app(app.name, marketplace_app.name, live_source)
+
+		self.assertEqual(branches, [{"name": "master"}])
+
 
 class TestAPIBenchConfig(FrappeTestCase):
 	def setUp(self):
@@ -227,6 +258,24 @@ class TestAPIBenchConfig(FrappeTestCase):
 			},
 		)
 		self.assertEqual(new_bench_config, {"http_timeout": 120})
+
+	def test_json_config_key_rejects_a_value_that_isnt_json(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"is not valid JSON",
+			update_config,
+			self.rg.name,
+			[{"key": "limits", "value": "{limit: val}", "type": "JSON"}],
+		)
+
+	def test_json_config_key_rejects_a_json_scalar(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"must be a JSON object or array",
+			update_config,
+			self.rg.name,
+			[{"key": "limits", "value": '"val"', "type": "JSON"}],
+		)
 
 	def test_bench_config_is_updated_in_subsequent_benches(self):
 		bench = create_test_bench(group=self.rg)
@@ -304,7 +353,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 	def test_cannot_remove_dependencies(self):
 		self.assertRaisesRegex(
 			Exception,
-			"Need all required dependencies",
+			"Please provide a value for every dependency",
 			update_dependencies,
 			self.rg.name,
 			json.dumps(
@@ -320,7 +369,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 	def test_cannot_add_additional_invalid_dependencies(self):
 		self.assertRaisesRegex(
 			Exception,
-			"Need all required dependencies",
+			"Please provide a value for every dependency",
 			update_dependencies,
 			self.rg.name,
 			json.dumps(

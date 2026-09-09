@@ -34,6 +34,7 @@
 		</div>
 	</Header>
 	<div>
+		<PageBanner v-if="banner" v-bind="banner" />
 		<TabsWithRouter
 			v-if="!$resources.document.get.error && $resources.document.get.fetched"
 			:document="$resources.document?.doc"
@@ -74,6 +75,7 @@ import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
 import AccessRequestButton from '../components/AccessRequestButton.vue';
+import PageBanner from '../components/PageBanner.vue';
 
 let subscribed = {};
 
@@ -94,6 +96,7 @@ export default {
 		Header,
 		ActionButton,
 		TabsWithRouter,
+		PageBanner,
 		FBreadcrumbs: Breadcrumbs,
 	},
 	resources: {
@@ -153,6 +156,14 @@ export default {
 		badge() {
 			if (this.object.detail.statusBadge) {
 				return this.object.detail.statusBadge({
+					documentResource: this.$resources.document,
+				});
+			}
+			return null;
+		},
+		banner() {
+			if (this.object.detail.banner && this.$resources.document?.doc) {
+				return this.object.detail.banner({
 					documentResource: this.$resources.document,
 				});
 			}

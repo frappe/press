@@ -29,8 +29,9 @@ setup('authenticate into press dashboard', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Password (required)' }).fill(userPassword);
   await page.getByRole('button', { name: 'Log In' }).click();
 
-  // Wait for successful navigation
-  await page.waitForURL('**/dashboard/sites');
+  // Wait for successful navigation. Post-login route depends on how many
+  // sites the team has (e.g. /sites vs /quickstart), so match either.
+  await page.waitForURL(/\/dashboard\/(sites|quickstart)/);
 
   // Save storage state
   await page.context().storageState({ path: getSessionStorageStatePath() });

@@ -17,6 +17,7 @@ from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app.app import get_app_from_policies
 from press.press.doctype.app_patch.app_patch import create_app_patch
+from press.press.doctype.app_source.app_source import is_branch_deleted
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.deploy_candidate.deploy_candidate import RESTING_STATES, TRANSITORY_STATES
@@ -32,8 +33,10 @@ from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
+from press.press.doctype.site_config.site_config import parse_json_config_value
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import (
+	docs,
 	get_app_tag,
 	get_client_blacklisted_keys,
 	get_current_team,
@@ -56,12 +59,14 @@ def new(bench):
 		frappe.throw("You cannot create a new bench because your account is disabled")
 
 	if exists(bench["title"]):
-		frappe.throw("A bench exists with the same name")
+		frappe.throw("A bench group with this name already exists. Please choose a different name.")
 
 	if bench["server"] and not (
 		frappe.session.data.user_type == "System User"
 		or frappe.db.get_value("Server", bench["server"], "team") == team.name
 	):
+		# Keep this message generic — do not reveal anything about servers the
+		# requesting team doesn't own, to avoid server enumeration.
 		frappe.throw("You can only create benches on your servers")
 
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
@@ -221,6 +226,7 @@ def get_app_versions_list(only_frappe=False):
 		.select(
 			FrappeVersion.name.as_("version"),
 			FrappeVersion.status,
+			FrappeVersion.number,
 			FrappeVersion.default,
 			AppSource.name.as_("source"),
 			AppSource.app,
@@ -240,6 +246,7 @@ def get_app_versions_list(only_frappe=False):
 	rows = rows.run(as_dict=True)
 
 	version_list = unique(rows, lambda x: x.version)
+	version_list.sort(key=lambda x: (x.status == "Develop", -x.number))
 
 	return version_list, rows
 
@@ -277,7 +284,9 @@ def options():
 	clusters = Cluster.get_all_for_new_bench()
 
 	if not versions:
-		frappe.throw("Only enabled and public app sources will reflect here!")
+		frappe.throw(
+			f"Only enabled, public app sources appear here. To use a private app, add it to the bench from the Apps tab instead. {docs.doc_link(docs.CUSTOM_APP)}."
+		)
 
 	return {"versions": versions, "clusters": clusters}
 
@@ -350,7 +359,7 @@ def format_config_value(group: str, c: frappe._dict):
 	elif c.type == "Boolean":
 		c.value = bool(sbool(c.value))
 	elif c.type == "JSON":
-		c.value = frappe.parse_json(c.value)
+		c.value = parse_json_config_value(c.key, c.value)
 	elif c.type == "Password" and c.value == "*******":
 		c.value = frappe.get_value("Site Config", {"key": c.key, "parent": group}, "value")
 
@@ -387,7 +396,7 @@ def update_dependencies(name: str, dependencies: str):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 
 	if len(rg.dependencies) != len(dependencies_dict):
-		frappe.throw("Need all required dependencies")
+		frappe.throw("Please provide a value for every dependency before saving.")
 
 	if diff := set([d["key"] for d in dependencies_dict]) - set(d.dependency for d in rg.dependencies):
 		frappe.throw("Invalid dependencies: " + ", ".join(diff))
@@ -465,6 +474,7 @@ def apps(name):
 				"deployed": app.name in deployed_apps,
 				"update_available": bool(update_available),
 				"last_github_poll_failed": source.last_github_poll_failed,
+				"branch_deleted": source.branch_deleted,
 			}
 		)
 	return apps
@@ -491,7 +501,7 @@ def all_apps(name: str):
 	marketplace_apps = frappe.get_all(
 		"Marketplace App",
 		filters={"status": "Published", "app": ("not in", installed_apps)},
-		fields=["name", "title", "image", "app"],
+		fields=["name", "title", "image", "app", "description"],
 	)
 
 	if not marketplace_apps:
@@ -761,7 +771,9 @@ def deploy(name, apps):
 		frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
 
 	if rg.deploy_in_progress:
-		frappe.throw("A deploy for this bench is already in progress")
+		frappe.throw(
+			f"A deploy for this bench is already in progress. Please wait for it to finish, or stop the current deploy, before starting another. {docs.doc_link(docs.UPDATE_BENCH)}."
+		)
 
 	candidate = rg.create_deploy_candidate(apps)
 	deploy_candidate_build = candidate.schedule_build_and_deploy()
@@ -777,7 +789,9 @@ def validate_app_hashes(apps: list[dict[str, str]]):
 	hashes = []
 	for app in apps:
 		if not app.get("release") or not app.get("hash"):
-			frappe.throw("Each app must have a release and hash to run deploy and update!")
+			frappe.throw(
+				"Every app needs a selected release before you can deploy or update. Please pick a version for each app and try again."
+			)
 		else:
 			hashes.append(app.get("hash"))
 
@@ -967,31 +981,31 @@ def validate_branch(name: str, app: str, branch: str):
 
 def get_branches_for_marketplace_app(app: str, marketplace_app: str, app_source: AppSource) -> list[dict]:
 	"""Return list of branches allowed for this `marketplace` app"""
-	branch_set = set()
 	marketplace_app_doc: MarketplaceApp = frappe.get_doc("Marketplace App", marketplace_app)
+	source_names = {row.source for row in marketplace_app_doc.sources}
 
-	for marketplace_app_source in marketplace_app_doc.sources:
-		app_source = frappe.get_doc("App Source", marketplace_app_source.source)
-		branch_set.add(app_source.branch)
-
-	# Also, append public source branches
-	repo_owner = app_source.repository_owner
-	repo_name = app_source.repository
-
-	public_app_sources = frappe.get_all(
-		"App Source",
-		filters={
-			"app": app,
-			"repository_owner": repo_owner,
-			"repository": repo_name,
-			"public": True,
-		},
-		pluck="branch",
+	# Also, append public sources of the same repository
+	source_names.update(
+		frappe.get_all(
+			"App Source",
+			filters={
+				"app": app,
+				"repository_owner": app_source.repository_owner,
+				"repository": app_source.repository,
+				"public": True,
+			},
+			pluck="name",
+		)
 	)
-	branch_set.update(public_app_sources)
 
-	branch_list = sorted(list(branch_set))
-	return [{"name": b} for b in branch_list]
+	sources = frappe.get_all(
+		"App Source",
+		filters={"name": ("in", list(source_names))},
+		fields=["branch", "last_github_poll_failed", "last_github_response"],
+	)
+	branch_names = {source.branch for source in sources if not is_branch_deleted(source)}
+
+	return [{"name": branch} for branch in sorted(branch_names)]
 
 
 def belongs_to_current_team(app: str) -> bool:
@@ -1137,7 +1151,9 @@ def fail_build(dn: str):
 	failed = fail_remote_job(dn)
 
 	if not failed:
-		frappe.throw("No running job found!")
+		frappe.throw(
+			"There's no running build job to fail. It may have already finished or been stopped. Please refresh and check the build status."
+		)
 
 
 @frappe.whitelist()

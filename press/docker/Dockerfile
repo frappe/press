@@ -40,23 +40,29 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt apt-get update \
   libpangoft2-1.0-0 \
   libpangocairo-1.0-0 \
   # Chromium and dependencies
+  # Everything headless_shell links against (see deb.deps in the
+  # chrome-headless-shell archive). Sorted so it stays auditable.
   chromium-browser \
-  libnss3 \
-  libatk1.0-0 \
   fonts-liberation \
+  libasound2 \
   libatk-bridge2.0-0 \
-  ibatspi2.0-0 \
+  libatk1.0-0 \
+  libatspi2.0-0 \
+  libdbus-1-3 \
+  libexpat1 \
   libgbm1 \
+  libglib2.0-0 \
   libgtk-3-0 \
   libnspr4 \
-  xdg-utils \
+  libnss3 \
+  libudev1 \
   libvulkan1 \
   libxcomposite1 \
   libxdamage1 \
   libxfixes3 \
   libxkbcommon0 \
   libxrandr2 \
-  libasound2 \
+  xdg-utils \
   # wkhtmltopdf dependencies
   ca-certificates \
   fontconfig \
@@ -258,6 +264,36 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe
 COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
 COPY --chown=frappe:frappe .vimrc /home/frappe/.vimrc
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
+
+# Prebundle headless Chromium for the Chrome-based PDF generator
+# Frappe and print_designer both look for chromium/chrome-linux/headless_shell and
+# neither downloads it at print time, so fetch the archive here. Going through
+# `bench setup-chrome` would tie the image to a Frappe version that ships the
+# command, and a download at runtime lands in the container's writable layer,
+# which the next deploy throws away.
+# Bump CHROMIUM_URL together with the version Frappe pins in
+# frappe/utils/chromium/download.py.
+{% if is_arm_build %}
+# Chrome for Testing publishes no linux-arm64 build, so use Playwright's, as Frappe does.
+ARG CHROMIUM_URL=https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/1157/chromium-headless-shell-linux-arm64.zip
+{% else %}
+ARG CHROMIUM_URL=https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.35/linux64/chrome-headless-shell-linux64.zip
+{% endif %}
+RUN --mount=type=cache,sharing=locked,id=chromium-{% if is_arm_build %}arm64{% else %}x86_64{% endif %},target=/home/frappe/chromium-cache,uid=1000,gid=1000 \
+  if [ ! -f /home/frappe/chromium-cache/chrome-linux/headless_shell ]; then \
+  rm -rf /home/frappe/chromium-cache/chrome-linux /tmp/chromium-extract \
+  && wget -q -O /tmp/chromium.zip "$CHROMIUM_URL" \
+  && python${PYTHON_VERSION} -m zipfile -e /tmp/chromium.zip /tmp/chromium-extract \
+  && if [ -d /tmp/chromium-extract/chrome-linux ]; then \
+  mv /tmp/chromium-extract/chrome-linux /home/frappe/chromium-cache/chrome-linux; \
+  else mv /tmp/chromium-extract/chrome-headless-shell-* /home/frappe/chromium-cache/chrome-linux \
+  && mv /home/frappe/chromium-cache/chrome-linux/chrome-headless-shell /home/frappe/chromium-cache/chrome-linux/headless_shell; fi \
+  && rm -rf /tmp/chromium.zip /tmp/chromium-extract; fi \
+  && mkdir -p /home/frappe/frappe-bench/chromium \
+  && cp -a /home/frappe/chromium-cache/chrome-linux /home/frappe/frappe-bench/chromium/chrome-linux \
+  && chmod 0755 /home/frappe/frappe-bench/chromium/chrome-linux/headless_shell \
+  && /home/frappe/frappe-bench/chromium/chrome-linux/headless_shell --version \
+  `#stage-setup-chromium`
 
 # Install other apps
 {% for app in doc.apps %}

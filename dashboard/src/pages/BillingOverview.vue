@@ -1,7 +1,7 @@
 <template>
 	<div
 		v-if="team.doc"
-		class="flex flex-1 flex-col gap-8 overflow-y-auto px-60 pt-6"
+		class="flex flex-1 flex-col gap-8 overflow-y-auto px-5 pt-6 md:px-10 lg:px-60"
 	>
 		<BillingSummary />
 		<PaymentDetails />

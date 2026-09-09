@@ -398,7 +398,9 @@ PersistentKeepalive = 25
 		play = ansible.run()
 
 		if play.status != "Success":
-			frappe.throw("Failed to perform the final database sync.")
+			frappe.throw(
+				"Failed to perform the final database sync. Please check the database server logs and retry the failover."
+			)
 
 	def setup_and_configure_database_replica(self):
 		frappe.enqueue_doc(
@@ -421,7 +423,9 @@ PersistentKeepalive = 25
 		play = ansible.run()
 
 		if play.status != "Success":
-			frappe.throw("Failed to setup replica on the on-premise server.")
+			frappe.throw(
+				"Failed to set up the replica on the on-premise server. Please check the server logs and retry the failover."
+			)
 
 	def setup_app_server_replica(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_app_server_replica", timeout=3600, queue="long")
@@ -438,7 +442,9 @@ PersistentKeepalive = 25
 		play = ansible.run()
 
 		if play.status != "Success":
-			frappe.throw("Failed to setup App Server replica synchronization on the on-premise server.")
+			frappe.throw(
+				"Failed to set up App Server replica synchronization on the on-premise server. Please check the server logs and retry the failover."
+			)
 
 	def stop_replication_from_app_server(self):
 		frappe.enqueue_doc(
@@ -453,7 +459,9 @@ PersistentKeepalive = 25
 		)
 		play = ansible.run()
 		if play.status != "Success":
-			frappe.throw("Failed to stop replication on the App Server.")
+			frappe.throw(
+				"Failed to stop replication on the App Server. Please check the server logs and retry the failover."
+			)
 
 	def stop_replication_from_db_server(self):
 		frappe.enqueue_doc(
@@ -468,7 +476,9 @@ PersistentKeepalive = 25
 		)
 		play = ansible.run()
 		if play.status != "Success":
-			frappe.throw("Failed to stop replication on the Database Server.")
+			frappe.throw(
+				"Failed to stop replication on the Database Server. Please check the server logs and retry the failover."
+			)
 
 	# Internal methods
 

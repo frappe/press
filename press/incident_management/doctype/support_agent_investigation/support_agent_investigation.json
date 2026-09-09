@@ -6,6 +6,7 @@
 	"engine": "InnoDB",
 	"field_order": [
 		"site",
+		"incident_time",
 		"status",
 		"requested_by",
 		"column_break_status",
@@ -38,6 +39,12 @@
 			"options": "Site",
 			"read_only": 1,
 			"reqd": 1
+		},
+		{
+			"description": "Optional",
+			"fieldname": "incident_time",
+			"fieldtype": "Datetime",
+			"label": "Incident Time"
 		},
 		{
 			"default": "Queued",

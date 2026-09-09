@@ -1,8 +1,9 @@
 import { frappeRequest } from 'frappe-ui'
 
 const pollingGroups = new Set()
+const MAX_STUCK_RESTARTS = 10
 
-export function pollReleasePipelineValidationStatus(group) {
+export function pollReleasePipelineValidationStatus(group, stuckRestarts = 0) {
 	if (pollingGroups.has(group.doc.name)) return // already polling
 	if (!group.doc.deploy_information.has_running_release_pipeline) return
 
@@ -39,7 +40,16 @@ export function pollReleasePipelineValidationStatus(group) {
 						.then(() => {
 							pollingGroups.delete(group.doc.name)
 							if (group.doc.deploy_information.has_running_release_pipeline) {
-								pollReleasePipelineValidationStatus(group)
+								if (stuckRestarts >= MAX_STUCK_RESTARTS) {
+									console.warn(
+										`Release Group ${group.doc.name} still reports has_running_release_pipeline after deploy finished; giving up after ${MAX_STUCK_RESTARTS} retries.`,
+									)
+									return
+								}
+								setTimeout(
+									() => pollReleasePipelineValidationStatus(group, stuckRestarts + 1),
+									Math.min(2 ** stuckRestarts * 2000, 30000),
+								)
 							}
 						})
 						.catch(() => {

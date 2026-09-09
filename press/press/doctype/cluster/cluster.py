@@ -23,12 +23,13 @@ from hcloud import APIException, Client
 from hcloud.firewalls.domain import FirewallRule as HetznerFirewallRule
 from hcloud.networks.domain import NetworkSubnet
 from oci.config import validate_config
-from oci.core import VirtualNetworkClient
+from oci.core import ComputeClient, VirtualNetworkClient
 from oci.core.models import (
 	AddNetworkSecurityGroupSecurityRulesDetails,
 	AddSecurityRuleDetails,
 	CreateInternetGatewayDetails,
 	CreateNetworkSecurityGroupDetails,
+	CreateRouteTableDetails,
 	CreateSubnetDetails,
 	CreateVcnDetails,
 	PortRange,
@@ -36,6 +37,7 @@ from oci.core.models import (
 	TcpOptions,
 	UdpOptions,
 	UpdateRouteTableDetails,
+	UpdateVnicDetails,
 )
 from oci.identity import IdentityClient
 
@@ -100,6 +102,7 @@ class Cluster(Document):
 		monitoring_password: DF.Password | None
 		nat_security_group_id: DF.Data | None
 		network_acl_id: DF.Data | None
+		oci_nat_route_table_id: DF.Data | None
 		oci_private_key: DF.Password | None
 		oci_public_key: DF.Code | None
 		oci_tenancy: DF.Data | None
@@ -202,12 +205,16 @@ class Cluster(Document):
 			servers = client.servers.get_all()
 
 			if servers is None:
-				frappe.throw("API token does not have read access to the Hetzner Cloud.")
+				frappe.throw(
+					"This Hetzner Cloud API token doesn't have read access. Please generate a token with read and write permissions and enter it again."
+				)
 
 		except APIException as e:
 			# Handle specific API exceptions like unauthorized access
 			if e.code == "unauthorized":
-				frappe.throw("API token is invalid or does not have the correct permissions.")
+				frappe.throw(
+					"This Hetzner Cloud API token is invalid or lacks the required permissions. Please generate a new token with read and write access and enter it again."
+				)
 			else:
 				frappe.throw(f"An error occurred while validating the API token: {e}")
 
@@ -244,7 +251,9 @@ class Cluster(Document):
 				"Flush Table Execution Hour is required when Enable Periodic Flush Table is checked."
 			)
 		if not (0 <= self.flush_table_execution_hour <= 23):
-			frappe.throw("Flush Table Execution Hour must be between 0 and 23.")
+			frappe.throw(
+				"Please enter the flush table execution hour as a number between 0 and 23 (24-hour clock)."
+			)
 
 	def after_insert(self):
 		if self.cloud_provider == "AWS EC2":
@@ -458,7 +467,9 @@ class Cluster(Document):
 			)
 
 			if "id" not in firewall.get("firewall", {}):
-				frappe.throw("Failed to create Firewall on Digital Ocean.")
+				frappe.throw(
+					"Failed to create the firewall on DigitalOcean. Please check the DigitalOcean API token and retry."
+				)
 
 			self.security_group_id = firewall["firewall"]["id"]
 		except Exception as e:
@@ -967,6 +978,124 @@ class Cluster(Document):
 				f"Please verify Hetzner API access and firewall configuration. Error: {e!s}"
 			)
 
+	def create_nat_security_group_oci(self):
+		vcn_client = VirtualNetworkClient(self.get_oci_config())
+
+		# Reuse existing NSG if already created
+		if self.nat_security_group_id:
+			try:
+				return vcn_client.get_network_security_group(self.nat_security_group_id).data
+			except Exception:
+				pass
+
+		time.sleep(1)
+		nat_security_group = vcn_client.create_network_security_group(
+			CreateNetworkSecurityGroupDetails(
+				compartment_id=self.oci_tenancy,
+				display_name=f"Frappe Cloud - {self.name} - NAT - Security Group",
+				vcn_id=self.vpc_id,
+			)
+		).data
+		self.nat_security_group_id = nat_security_group.id
+
+		time.sleep(1)
+		vcn_client.add_network_security_group_security_rules(
+			self.nat_security_group_id,
+			AddNetworkSecurityGroupSecurityRulesDetails(
+				security_rules=[
+					AddSecurityRuleDetails(
+						description="Allow TCP from private network",
+						direction="INGRESS",
+						protocol="6",
+						source=self.subnet_cidr_block,
+						tcp_options=TcpOptions(destination_port_range=PortRange(min=1, max=65535)),
+					),
+					AddSecurityRuleDetails(
+						description="Allow UDP from private network",
+						direction="INGRESS",
+						protocol="17",
+						source=self.subnet_cidr_block,
+						udp_options=UdpOptions(destination_port_range=PortRange(min=1, max=65535)),
+					),
+					AddSecurityRuleDetails(
+						description="Allow ICMP from private network",
+						direction="INGRESS",
+						protocol="1",
+						source=self.subnet_cidr_block,
+					),
+				],
+			),
+		)
+
+		self.save()
+
+		return nat_security_group
+
+	def create_nat_route_table_oci(self, nat_vm_private_ip: str):
+		# Called when we create NAT VM
+		vcn_client = VirtualNetworkClient(self.get_oci_config())
+
+		private_ip = vcn_client.list_private_ips(
+			subnet_id=self.subnet_id,
+			ip_address=nat_vm_private_ip,
+		).data
+
+		if not private_ip:
+			frappe.throw(
+				f"Private IP {nat_vm_private_ip} not found. "
+				f"Please verify the private IP address and subnet configuration."
+			)
+
+		route_table = vcn_client.create_route_table(
+			CreateRouteTableDetails(
+				compartment_id=self.oci_tenancy,
+				vcn_id=self.vpc_id,
+				display_name=f"Frappe Cloud - {self.name} - NAT Route Table",
+				route_rules=[
+					RouteRule(
+						destination="0.0.0.0/0",
+						destination_type="CIDR_BLOCK",
+						network_entity_id=private_ip[0].id,
+					),
+				],
+			)
+		).data
+
+		self.oci_nat_route_table_id = route_table.id
+		self.save()
+
+		return route_table.id
+
+	def attach_route_table_to_instance_vnic_oci(self, instance: VirtualMachine, nat_route_table_id: str):
+		# Called when we create private instances or during IP removal process
+		# Used to attach/replace the default route table of the VNIC attached to the instance to the NAT route table
+		compute_client = ComputeClient(self.get_oci_config())
+		network_client = VirtualNetworkClient(self.get_oci_config())
+
+		vnic_attachments = compute_client.list_vnic_attachments(
+			compartment_id=self.oci_tenancy,
+			instance_id=instance.instance_id,
+		).data
+
+		if not vnic_attachments:
+			frappe.throw(
+				f"No VNIC attached to instance {instance.instance_id}. "
+				f"Please verify the instance configuration."
+			)
+
+		try:
+			network_client.update_vnic(
+				vnic_attachments[0].vnic_id,
+				UpdateVnicDetails(
+					route_table_id=nat_route_table_id,
+				),
+			)
+		except Exception as e:
+			frappe.throw(
+				f"Failed to attach NAT route table {nat_route_table_id} to VNIC {vnic_attachments[0].vnic_id}. "
+				f"Error: {e!s}"
+			)
+
 	def create_nat_security_group(self):
 		client = self.get_aws_client()
 		response = client.create_security_group(
@@ -1128,6 +1257,11 @@ class Cluster(Document):
 		self.proxy_security_group_id = proxy_security_group.id
 
 		time.sleep(1)
+
+		self.create_nat_security_group_oci()
+
+		time.sleep(1)
+
 		vcn_client.add_network_security_group_security_rules(  # noqa: B018
 			self.proxy_security_group_id,
 			AddNetworkSecurityGroupSecurityRulesDetails(
@@ -1276,8 +1410,13 @@ class Cluster(Document):
 
 	@frappe.whitelist()
 	def assign_nat_security_group(self):
-		self.create_nat_security_group()
-		self.save()
+		if self.cloud_provider == "AWS EC2":
+			self.create_nat_security_group()
+			self.save()
+		elif self.cloud_provider == "Hetzner":
+			self.create_nat_security_group_hetzner()
+		elif self.cloud_provider == "OCI":
+			self.create_nat_security_group_oci()
 
 	@frappe.whitelist()
 	def setup_vpc_flow_logs(self):
@@ -1816,20 +1955,20 @@ class Cluster(Document):
 				port, protocol = rule
 			else:
 				frappe.throw(
-					"Each firewall rule must be [port, protocol], for example: [['22', 'tcp'], ['51820', 'udp']]"
+					"Please provide each firewall rule as [port, protocol], for example: [['22', 'tcp'], ['51820', 'udp']]"
 				)
 
 			normalized_rules.append((port, self._normalize_firewall_protocol(protocol)))
 
 		if not normalized_rules:
-			frappe.throw("At least one firewall rule is required")
+			frappe.throw("Please provide at least one firewall rule.")
 
 		return normalized_rules
 
 	def _normalize_firewall_protocol(self, protocol: str) -> str:
 		protocol = (protocol or "tcp").lower().strip()
 		if protocol not in {"tcp", "udp"}:
-			frappe.throw("Firewall protocol must be one of: tcp, udp")
+			frappe.throw("Please use a supported firewall protocol: tcp or udp.")
 		return protocol
 
 	def _parse_port_range(self, port: str | int) -> tuple[int, int]:
@@ -2175,6 +2314,7 @@ class Cluster(Document):
 			"Frappe Compute",
 			"Hetzner",
 			"DigitalOcean",
+			"OCI",
 		):
 			nat_server = frappe.db.get_value(
 				"NAT Server",

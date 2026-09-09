@@ -4,15 +4,23 @@
 from __future__ import annotations
 
 import json
+import re
 import typing
 from typing import Any, TypedDict
 
 import frappe
-import requests
 from frappe.model.document import Document
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.utils.external_url import fetch_public_url
+
+# What every unified diff has and a JSON metadata document, an HTML error page
+# or a redirect body does not: a hunk header, under a header naming the file it
+# applies to. `git diff --binary` carries neither, so it is matched on its own.
+HUNK_HEADER = re.compile(r"^@@ -\d+(,\d+)? \+\d+(,\d+)? @@", re.MULTILINE)
+FILE_HEADER = re.compile(r"^(diff --git |--- |\+\+\+ )", re.MULTILINE)
+BINARY_PATCH = re.compile(r"^GIT binary patch$", re.MULTILINE)
 
 
 class PatchConfig(TypedDict):
@@ -186,11 +194,33 @@ def create_app_patch(
 
 
 def get_patch(patch_config: PatchConfig) -> str:
-	if patch := patch_config.get("patch"):
-		return patch
+	patch = patch_config.get("patch") or fetch_public_url(patch_config["patch_url"])
+	validate_patch(patch)
+	return patch
 
-	patch_url = patch_config["patch_url"]
-	return requests.get(patch_url).text
+
+def validate_patch(patch: str):
+	"""Refuse anything that is not a unified diff.
+
+	This is not what makes fetching a URL safe — `fetch_public_url` is. It
+	matters because that check resolves the host and then connects, and a name
+	that answers differently in between still lands wherever it likes. Whatever
+	comes back is stored in `patch`, which the dashboard reads back, so it is
+	worth making the body parse as a diff before it gets that far.
+
+	Read the text and nothing else. Handing it to `git apply --check` or
+	`patch --dry-run` to find out would be running untrusted input to validate
+	untrusted input.
+	"""
+	if BINARY_PATCH.search(patch):
+		return
+
+	if not (FILE_HEADER.search(patch) and HUNK_HEADER.search(patch)):
+		frappe.throw(
+			"This does not look like a patch. Expected a unified diff, "
+			"with a file header and at least one @@ hunk.",
+			frappe.ValidationError,
+		)
 
 
 def get_benches(release_group: str, patch_config: PatchConfig) -> list[str]:

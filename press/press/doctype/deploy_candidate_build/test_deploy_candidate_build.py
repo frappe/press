@@ -182,3 +182,29 @@ class TestDeployCandidateBuild(FrappeTestCase):
 				self.assertEqual(newly_created_build.name, build)
 			else:
 				self.assertEqual(deploy_candidate_build.name, build)
+
+	def test_dockerfile_installs_chromium_for_the_platform_being_built(self, _mock_commit):
+		build = self.deploy_candidate_build
+
+		build.platform = "x86_64"
+		intel_dockerfile = build._generate_dockerfile()
+		self.assertIn("chrome-headless-shell-linux64.zip", intel_dockerfile)
+		self.assertIn("id=chromium-x86_64", intel_dockerfile)
+
+		# Chrome for Testing publishes no linux-arm64 build, so ARM uses Playwright's.
+		build.platform = "arm64"
+		arm_dockerfile = build._generate_dockerfile()
+		self.assertIn("chromium-headless-shell-linux-arm64.zip", arm_dockerfile)
+		self.assertIn("id=chromium-arm64", arm_dockerfile)
+		self.assertNotIn("chrome-headless-shell-linux64.zip", arm_dockerfile)
+
+	def test_dockerfile_makes_the_bundled_chromium_executable(self, _mock_commit):
+		self.assertIn(
+			"chmod 0755 /home/frappe/frappe-bench/chromium/chrome-linux/headless_shell",
+			self.deploy_candidate_build._generate_dockerfile(),
+		)
+
+	def test_chromium_setup_shows_up_as_a_build_step(self, _mock_commit):
+		build = self.deploy_candidate_build
+		checkpoints = build._get_dockerfile_checkpoints(build._generate_dockerfile())
+		self.assertIn("setup-chromium", checkpoints)

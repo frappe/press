@@ -130,7 +130,9 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 
 		self.secondary_server = frappe.db.get_value("Server", self.primary_server, "secondary_server")
 		if not self.secondary_server:
-			frappe.throw("Primary server must have a secondary server to auto scale")
+			frappe.throw(
+				"Auto scaling needs a secondary server. Please add a secondary (replica) server to the primary before enabling auto scale."
+			)
 
 	def get_doc(self, doc):
 		doc.steps = self.get_steps_for_dashboard()
@@ -825,7 +827,7 @@ def is_secondary_ready_for_scale_down(server: Server) -> bool:
 	if not scale_down_thresholds:
 		return True
 
-	secondary_server_usage = get_cpu_and_memory_usage(server.secondary_server)
+	secondary_server_usage = get_cpu_and_memory_usage(server.secondary_server)  # type: ignore[arg-type]
 	secondary_server_cpu_usage = secondary_server_usage["vcpu"] * 100
 	secondary_server_memory_usage = secondary_server_usage["memory"] * 100
 

@@ -1,30 +1,63 @@
 <template>
 	<div class="flex flex-col gap-5 overflow-y-auto px-10 lg:px-80 py-6">
-		<div class="flex flex-col">
-			<div class="text-ink-gray-5">Welcome back!</div>
-			<div class="flex items-center gap-3">
-				<h1 class="text-3xl font-semibold">
-					{{ partnerDetails.data?.company_name }}
-				</h1>
-				<Badge
-					variant="subtle"
-					:label="team.doc.partner_status"
-					:theme="team.doc.partner_status == 'Active' ? 'green' : 'gray'"
+		<div class="flex items-center justify-between gap-4">
+			<div class="flex flex-col gap-1">
+				<div class="text-ink-gray-5">Welcome back!</div>
+				<div class="flex items-center gap-3">
+					<h1 class="text-3xl font-semibold">
+						{{ partnerDetails.data?.company_name }}
+					</h1>
+					<Badge
+						variant="subtle"
+						:label="team.doc.partner_status"
+						:theme="team.doc.partner_status == 'Active' ? 'green' : 'gray'"
+					/>
+				</div>
+			</div>
+			<div class="relative shrink-0 overflow-hidden rounded-[10px] border">
+				<Avatar
+					size="3xl"
+					shape="square"
+					:label="partnerDetails.data?.company_name"
+					:image="team.doc.company_logo"
 				/>
+				<FileUploader
+					fileTypes="image/*"
+					:upload-args="{
+						doctype: 'Team',
+						docname: team.doc.name,
+						method: 'press.api.partner.update_company_logo',
+					}"
+					@success="onLogoUpdated"
+					@failure="onLogoUploadFailed"
+				>
+					<template #default="{ openFileSelector, uploading }">
+						<button
+							class="absolute inset-0 grid place-items-center bg-black text-xs font-medium text-white opacity-0 transition hover:opacity-50 focus:opacity-50 focus:outline-none"
+							:class="{ 'opacity-50': uploading }"
+							@click="openFileSelector()"
+						>
+							{{ uploading ? 'Uploading...' : 'Edit' }}
+						</button>
+					</template>
+				</FileUploader>
 			</div>
 		</div>
 
 		<div class="rounded-lg text-base text-ink-gray-9 border">
-			<div class="flex flex-col gap-2.5 p-4">
-				<div class="flex">
-					<div class="flex items-center gap-0.5">
-						<FeatherIcon name="award" class="h-5 w-5 text-ink-gray-7" />
-						<h3 class="text-xl font-semibold">
-							{{ partnerDetails.data?.partner_type }} Tier
-						</h3>
+			<div class="flex flex-col gap-4 p-5">
+				<div class="flex items-center gap-2">
+					<div
+						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-gray-2"
+					>
+						<FeatherIcon name="award" class="h-4 w-4 text-ink-gray-7" />
 					</div>
+					<h3 class="text-lg font-semibold">
+						{{ partnerDetails.data?.partner_type }}
+						Tier
+					</h3>
 				</div>
-				<div class="pt-2">
+				<div>
 					<Progress
 						size="lg"
 						:value="tierProgressValue"
@@ -33,25 +66,26 @@
 					>
 						<template #hint>
 							<span class="text-base font-medium text-ink-gray-5">
-								{{ formatNumber(nextTierTarget) }} to reach {{ nextTier }}
+								{{ formatNumber(nextTierTarget) }}
+								to reach {{ nextTier }}
 							</span>
 						</template>
 					</Progress>
 				</div>
 
-				<div class="flex flex-col md:flex-row justify-between gap-4 mt-2">
-					<div class="flex-1 border rounded bg-surface-gray-1 p-4">
+				<div class="flex flex-col md:flex-row justify-between gap-4">
+					<div class="flex-1 rounded-md bg-surface-gray-1 p-4">
 						<div class="flex items-center justify-between">
 							<div class="text-sm text-ink-gray-6">
 								Current Month Contribution
 							</div>
 							<Button
-								class="hover:bg-surface-gray-4"
+								variant="ghost"
 								label="Details"
 								@click="showPartnerContributionDialog = true"
 							/>
 						</div>
-						<div class="text-xl font-semibold py-2">
+						<div class="text-2xl font-semibold py-2 text-ink-gray-9">
 							{{ formatCurrency(currentMonthContribution.data) || '0.0' }}
 						</div>
 						<div class="text-sm text-ink-gray-6">
@@ -61,58 +95,35 @@
 							>
 						</div>
 					</div>
-					<div class="flex-1 border rounded bg-surface-gray-1 p-4">
+					<div class="flex-1 rounded-md bg-surface-gray-1 p-4">
 						<div class="flex items-center justify-between">
 							<div class="text-sm text-ink-gray-6">Certified Members</div>
-							<Button label="View" @click="routeToCertification()" />
+							<Button
+								variant="ghost"
+								label="View"
+								@click="routeToCertification()"
+							/>
 						</div>
-						<div class="flex items-center">
-							<div class="text-xl font-semibold py-2">
-								{{
-									partnerDetails.data?.custom_number_of_certified_members || 0
-								}}
-							</div>
+						<div class="text-2xl font-semibold py-2 text-ink-gray-9">
+							{{ partnerDetails.data?.custom_number_of_certified_members || 0 }}
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<div class="flex flex-col md:flex-row justify-between gap-4">
-			<div class="rounded-lg text-base flex-1 text-ink-gray-9 p-4 border">
-				<div class="flex h-full flex-col justify-between gap-4">
-					<div class="flex">
-						<h3 class="font-medium text-normal">Partner Referral Code</h3>
-					</div>
-					<ClickToCopyField :textContent="team.doc?.partner_referral_code" />
+		<div class="rounded-lg text-base text-ink-gray-9 border p-4">
+			<div
+				class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+			>
+				<div class="flex flex-col gap-1">
+					<h3 class="font-medium text-normal">Partner Referral Code</h3>
 					<span class="text-sm text-ink-gray-6"
 						>Share code with customers to link with your account.</span
 					>
 				</div>
-			</div>
-			<div class="rounded-lg text-base flex-1 text-ink-gray-9 p-4 border">
-				<div class="flex h-full flex-col gap-4">
-					<div class="flex">
-						<h3 class="font-medium text-normal">Renewal Details</h3>
-					</div>
-					<div class="flex items-center justify-between">
-						<div class="flex flex-col gap-1">
-							<span class="text-xl font-semibold text-ink-gray-7">
-								{{ formatDate(partnerDetails.data?.end_date) }}
-							</span>
-							<span class="text-sm text-ink-gray-6"
-								>Renewal in {{ daysUntilRenewal }} days</span
-							>
-						</div>
-						<div v-if="isRenewalPeriod()">
-							<Button
-								label="Renew"
-								:disabled="false"
-								:variant="'solid'"
-								@click="partnerMRR.submit()"
-							/>
-						</div>
-					</div>
+				<div class="w-full sm:w-72">
+					<ClickToCopyField :textContent="team.doc?.partner_referral_code" />
 				</div>
 			</div>
 		</div>
@@ -126,124 +137,37 @@
 				<PartnerContribution :partnerEmail="team.doc.partner_email" />
 			</template>
 		</Dialog>
-
-		<Dialog
-			:show="showRenewalErrorDialog"
-			v-model="showRenewalErrorDialog"
-			:options="{
-				title: 'Renewal Eligibility',
-			}"
-		>
-			<template #body-content>
-				<p
-					class="text-base leading-relaxed align-center tracking-wide text-ink-gray-7"
-				>
-					<LucideAlertTriangle class="inline h-4 w-4 text-red-500" />
-					You do not meet the Partnership renewal criteria.
-				</p>
-				<div class="flex my-4 gap-4">
-					<div
-						class="flex-1 justify-center text-left p-5 rounded-md bg-surface-gray-1"
-					>
-						<div class="flex flex-col gap-2">
-							<p>
-								<span class="font-semibold text-3xl">{{
-									formatCurrency(mrr)
-								}}</span
-								><span class="text-base text-ink-gray-6">
-									/
-									{{
-										formatCurrency(team.doc.currency === 'USD' ? 100 : 10000)
-									}}</span
-								>
-							</p>
-							<div class="font-normal text-ink-gray-7 tracking-wide">MRR</div>
-						</div>
-					</div>
-					<div
-						class="flex-1 justify-center text-left p-5 rounded-md bg-surface-gray-1"
-					>
-						<div class="flex flex-col gap-2">
-							<p>
-								<span class="font-semibold text-3xl">{{
-									partnerDetails.data?.custom_number_of_certified_members || 0
-								}}</span
-								><span class="text-base text-ink-gray-6"> / 2</span>
-							</p>
-							<div class="font-normal text-ink-gray-7 tracking-wide">
-								Certifications
-							</div>
-						</div>
-					</div>
-				</div>
-				<Button
-					class="w-full"
-					label="Contact Support"
-					variant="outline"
-					size="md"
-					icon-right="external-link"
-					@click="openSupport"
-				/>
-			</template>
-		</Dialog>
-
-		<Dialog
-			:show="showRenewalConfirmationDialog"
-			v-model="showRenewalConfirmationDialog"
-			:options="{
-				title: 'Renewal Confirmation',
-				actions: [
-					{
-						label: 'I Agree',
-						variant: 'solid',
-						onClick: () => {
-							showRenewalConfirmationDialog = false;
-							partnerConsent.insert.submit({
-								agreed: true,
-								team: $team.doc?.name,
-							});
-						},
-					},
-				],
-			}"
-		>
-			<template #body-content>
-				<p class="text-base leading-6 text-ink-gray-7">
-					By clicking "I Agree", you confirm that you have read and accepted the
-					terms and conditions of the
-					<a
-						href="https://frappe.io/partners/terms"
-						target="_blank"
-						class="underline"
-						><strong>Frappe Partnership Agreement</strong></a
-					>.
-				</p>
-			</template>
-		</Dialog>
 	</div>
 </template>
 
 <script setup>
-import { computed, inject, ref, watch } from 'vue';
-import dayjs from '../../utils/dayjs';
 import {
-	FeatherIcon,
+	Avatar,
 	Button,
 	createResource,
-	Progress,
-	createListResource,
 	Dialog,
-} from 'frappe-ui';
-import PartnerContribution from './PartnerContribution.vue';
-import ClickToCopyField from '../ClickToCopyField.vue';
-import { toast } from 'vue-sonner';
-import router from '../../router';
+	FeatherIcon,
+	Progress,
+} from 'frappe-ui'
+import { inject, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
+import router from '../../router'
+import ClickToCopyField from '../ClickToCopyField.vue'
+import FileUploader from '../FileUploader.vue'
+import PartnerContribution from './PartnerContribution.vue'
 
-const team = inject('team');
+const team = inject('team')
 
-const showPartnerContributionDialog = ref(false);
-const showRenewalConfirmationDialog = ref(false);
-const showRenewalErrorDialog = ref(false);
+const showPartnerContributionDialog = ref(false)
+
+function onLogoUpdated() {
+	team.reload()
+	toast.success('Company logo updated')
+}
+
+function onLogoUploadFailed(error) {
+	toast.error(error || 'Error uploading company logo')
+}
 
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',
@@ -253,69 +177,12 @@ const partnerDetails = createResource({
 		partner_email: team.doc.partner_email,
 	},
 	onSuccess(data) {
-		calculateNextTier(data.partner_type);
+		calculateNextTier(data.partner_type)
 	},
-});
-
-const partnerConsent = createListResource({
-	doctype: 'Partner Consent',
-	onSuccess() {
-		toast.success('Partner consent recorded successfully');
-	},
-});
-
-let mrr = ref(0);
-const partnerMRR = createResource({
-	url: 'press.api.partner.get_partner_mrr',
-	cache: 'partnerContribution',
-	params: {
-		partner_email: team.doc.partner_email,
-		prev_month: true,
-	},
-	onSuccess(data) {
-		mrr.value = data[0]?.total_amount;
-		canRenew();
-	},
-});
-
-function canRenew() {
-	// Allow renewal if mrr is greater than $100 or 10000 INR
-	if (
-		((team.doc.currency === 'USD' && mrr.value >= 100) ||
-			(team.doc.currency === 'INR' && mrr.value >= 10000)) &&
-		partnerDetails.data?.custom_number_of_certified_members >= 2
-	) {
-		showRenewalConfirmationDialog.value = true;
-	} else {
-		showRenewalErrorDialog.value = true;
-	}
-}
+})
 
 function routeToCertification() {
-	router.push('/partners/certificates');
-}
-
-function openSupport() {
-	window.open('https://support.frappe.io/', '_blank');
-}
-
-const daysUntilRenewal = computed(() => {
-	const today = new Date();
-	const renewal = new Date(partnerDetails.data?.end_date);
-	if (renewal > today) {
-		return Math.ceil((renewal - today) / (1000 * 60 * 60 * 24));
-	} else {
-		return 0;
-	}
-});
-
-function isRenewalPeriod() {
-	// 30 days before and after renewal date
-	const renewal = dayjs(partnerDetails.data?.end_date);
-	const today = dayjs();
-	const daysDifference = renewal.diff(today, 'days');
-
-	return Boolean(daysDifference <= 30);
+	router.push('/partners/certificates')
 }
 
 const currentMonthContribution = createResource({
@@ -325,7 +192,7 @@ const currentMonthContribution = createResource({
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-});
+})
 
 const prevMonthContribution = createResource({
 	url: 'press.api.partner.get_prev_month_partner_contribution',
@@ -334,96 +201,88 @@ const prevMonthContribution = createResource({
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-});
+})
 
-const tierProgressValue = ref(0);
-const nextTier = ref('');
-const nextTierTarget = ref(0);
+const tierProgressValue = ref(0)
+const nextTier = ref('')
+const nextTierTarget = ref(0)
 
 function calculateTierProgress(next_tier_value) {
-	return Math.ceil((currentMonthContribution.data / next_tier_value) * 100);
+	return Math.ceil((currentMonthContribution.data / next_tier_value) * 100)
 }
 
 function calculateNextTier(tier) {
 	const target_inr = {
-		Gold: 575000,
-		Silver: 230000,
-		Bronze: 57500,
+		Gold: 630000,
+		Silver: 250000,
+		Bronze: 63000,
 		Emerging: 30000,
-	};
+	}
 	const target_usd = {
-		Gold: 6900,
-		Silver: 2875,
-		Bronze: 690,
+		Gold: 7500,
+		Silver: 3150,
+		Bronze: 750,
 		Emerging: 350,
-	};
+	}
 
-	const current_tier = partnerDetails.data?.partner_type;
-	let next_tier = '';
+	const current_tier = partnerDetails.data?.partner_type
+	let next_tier = ''
 	switch (current_tier) {
 		case 'Entry':
-			next_tier = 'Emerging';
+			next_tier = 'Emerging'
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Emerging : target_usd.Emerging;
-			break;
+				team.doc.currency === 'INR' ? target_inr.Emerging : target_usd.Emerging
+			break
 		case 'Emerging':
-			next_tier = 'Bronze';
+			next_tier = 'Bronze'
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Bronze : target_usd.Bronze;
-			break;
+				team.doc.currency === 'INR' ? target_inr.Bronze : target_usd.Bronze
+			break
 		case 'Bronze':
-			next_tier = 'Silver';
+			next_tier = 'Silver'
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Silver : target_usd.Silver;
-			break;
+				team.doc.currency === 'INR' ? target_inr.Silver : target_usd.Silver
+			break
 		case 'Silver':
-			next_tier = 'Gold';
+			next_tier = 'Gold'
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Gold : target_usd.Gold;
-			break;
+				team.doc.currency === 'INR' ? target_inr.Gold : target_usd.Gold
+			break
 		default:
-			next_tier = 'Gold';
+			next_tier = 'Gold'
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Gold : target_usd.Gold;
+				team.doc.currency === 'INR' ? target_inr.Gold : target_usd.Gold
 	}
-	nextTier.value = next_tier;
-	tierProgressValue.value = calculateTierProgress(nextTierTarget.value);
-	nextTierTarget.value = nextTierTarget.value - currentMonthContribution.data;
+	nextTier.value = next_tier
+	tierProgressValue.value = calculateTierProgress(nextTierTarget.value)
+	nextTierTarget.value = nextTierTarget.value - currentMonthContribution.data
 }
 
 watch(
 	() => partnerDetails.data,
 	(newData) => {
 		if (newData) {
-			calculateNextTier(newData.partner_type);
+			calculateNextTier(newData.partner_type)
 		}
 	},
 	{ deep: true },
-);
-
-const formatDate = (dateString) => {
-	return new Date(dateString).toLocaleDateString('en-US', {
-		year: 'numeric',
-		month: 'long',
-		day: 'numeric',
-	});
-};
+)
 
 const formatCurrency = (amount) => {
 	if (!amount) {
-		amount = 0;
+		amount = 0
 	}
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: team.doc.currency,
 		maximumFractionDigits: 1,
-	}).format(amount);
-};
+	}).format(amount)
+}
 
 const formatNumber = (value) => {
 	return new Intl.NumberFormat('en-US', {
 		notation: 'compact',
 		compactDisplay: 'short',
-	}).format(value);
-};
+	}).format(value)
+}
 </script>

@@ -3,7 +3,7 @@
 
 frappe.ui.form.on('Proxy Server', {
 	refresh: function (frm) {
-		[
+		;[
 			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
 			[__('Ping Ansible'), 'ping_ansible', true],
 			[__('Ping Ansible Unprepared'), 'ping_ansible_unprepared', true],
@@ -20,6 +20,19 @@ frappe.ui.form.on('Proxy Server', {
 				true,
 				frm.doc.is_server_setup,
 			],
+			[
+				__('Install Wazuh Agent'),
+				'install_wazuh_agent',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Uninstall Wazuh Agent'),
+				'uninstall_wazuh_agent',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
+			],
+			[__('Setup Auditd'), 'setup_auditd', true, frm.doc.is_server_setup],
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
 			[__('Get Static IP'), 'get_static_ip', false],
@@ -113,34 +126,34 @@ frappe.ui.form.on('Proxy Server', {
 								() =>
 									frm.call(method).then((r) => {
 										if (r.message) {
-											frappe.msgprint(r.message);
+											frappe.msgprint(r.message)
 										} else {
-											frm.refresh();
+											frm.refresh()
 										}
 									}),
-							);
+							)
 						} else {
 							frm.call(method).then((r) => {
 								if (r.message) {
-									frappe.msgprint(r.message);
+									frappe.msgprint(r.message)
 								} else {
-									frm.refresh();
+									frm.refresh()
 								}
-							});
+							})
 						}
 					},
 					__('Actions'),
-				);
+				)
 			}
-		});
+		})
 
 		if (frm.doc.is_server_setup) {
 			frm.add_custom_button(
 				__('Update Memory Limits'),
 				() => {
-					let process_options = ['', 'nginx', 'filebeat'];
-					frm.doc.is_proxysql_setup && process_options.push('proxysql');
-					frm.doc.is_ssh_proxy_setup && process_options.push('ssh');
+					let process_options = ['', 'nginx', 'filebeat']
+					frm.doc.is_proxysql_setup && process_options.push('proxysql')
+					frm.doc.is_ssh_proxy_setup && process_options.push('ssh')
 
 					const dialog = new frappe.ui.Dialog({
 						title: 'Set Memory Limits',
@@ -187,12 +200,12 @@ frappe.ui.form.on('Proxy Server', {
 							frm
 								.call('set_memory_limits', { limits: values.process_table })
 								.then((r) => {
-									frappe.show_alert(r.message);
-									dialog.hide();
-								});
+									frappe.show_alert(r.message)
+									dialog.hide()
+								})
 						},
-					});
-					dialog.show();
+					})
+					dialog.show()
 
 					frm.call('get_memory_limits').then((r) => {
 						if (r.message) {
@@ -201,18 +214,18 @@ frappe.ui.form.on('Proxy Server', {
 									process: limit.process,
 									memory_high: limit.memory_high,
 									memory_max: limit.memory_max,
-								});
-							});
+								})
+							})
 						}
-						dialog.fields_dict.process_table.grid.refresh();
-					});
+						dialog.fields_dict.process_table.grid.refresh()
+					})
 				},
 				__('Actions'),
-			);
+			)
 		}
 	},
 
 	hostname: function (frm) {
-		press.set_hostname_abbreviation(frm);
+		press.set_hostname_abbreviation(frm)
 	},
-});
+})

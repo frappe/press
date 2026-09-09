@@ -31,6 +31,7 @@ The only required input is a site name or site domain.
 Important fields:
 
 - `site`: Link to `Site`.
+- `incident_time`: Optional. When the site was having problems. Defaults to the time the investigation is created. See Investigation Window.
 - `status`: `Queued`, `Running`, `Completed`, `Failed`.
 - `requested_by`: User who created the investigation.
 - `started_at`, `completed_at`: Execution timestamps.
@@ -52,14 +53,14 @@ The feature exposes three narrow whitelisted entrypoints.
 
 Module-level functions (not controller methods):
 
-- `create_investigation(site: str, run_now: bool = True) -> str`
+- `create_investigation(site: str, run_now: bool = True, incident_time: str | None = None) -> str`
 - `get_investigation(name: str) -> dict`
 
 Controller method:
 
 - `SupportAgentInvestigation.start()`
 
-`get_investigation` returns: `name`, `site`, `status`, `summary`, `likely_cause`, `recommended_next_steps`, `confidence`, `evidence`, `timeline`, `errors`, `failure_reason`, `started_at`, `completed_at`.
+`get_investigation` returns: `name`, `site`, `incident_time`, `status`, `summary`, `likely_cause`, `recommended_next_steps`, `confidence`, `evidence`, `timeline`, `errors`, `failure_reason`, `started_at`, `completed_at`.
 
 All entrypoints validate site access before returning data or starting work.
 
@@ -73,6 +74,22 @@ A site can be investigated if:
 
 Site domains are resolved to their owning site before access validation.
 
+## Investigation Window
+
+Support tickets name a moment ("the site was down around 3pm"), not a trailing period, so the
+investigation window is centred on `incident_time` — 12 hours either side of it, 24 hours in total.
+`incident_time` is optional; leaving it empty means the site is having problems right now and the
+window is centred on the current time.
+
+`TimeWindow` in `collectors.py` owns the window and converts it for each backend: naive
+system-timezone datetimes for Frappe DB filters, UTC ISO strings for Elasticsearch `@timestamp`
+ranges, and Unix timestamps for Prometheus range queries. The window is included in the payload
+as `window` (`centre`, `start`, `end`).
+
+Three collectors can only report the present: site uptime (an instant Prometheus probe), bench
+process status (a live supervisor call), and the database processlist. The processlist is
+therefore skipped unless the window covers the present — see Collectors.
+
 ## Collectors
 
 Collectors return structured facts only. They intentionally avoid raw logs, raw agent output, request data, traceback, site database access, and customer-owned records.
@@ -83,14 +100,18 @@ Current collectors:
 - **Bench health**: bench status, worker configuration, deploy candidate/build, queue-related flags (`merge_all_rq_queues`, `merge_default_and_short_rq_queues`, `use_rq_workerpool`), and failure markers (`last_inplace_update_failed`, `resetting_bench`).
 - **App versions**: bench app, source, release, hash. Up to all apps on the bench, ordered by index.
 - **Deployment timeline**: 5 most recent `Site Update` records — safe status/timing fields only (`status`, `deploy_type`, `scheduled_time`, `update_start`, `update_end`, `update_duration`, `backup_type`, `skipped_backups`, `skipped_failing_patches`).
-- **Background jobs**: up to 10 recent `Agent Job` records in the last 24 hours, counts by status, excluding output/request/traceback fields.
+- **Background jobs**: up to 10 recent `Agent Job` records in the investigation window, counts by status, excluding output/request/traceback fields.
 - **Backups**: 5 most recent backup status and safe size/status metadata, excluding URLs.
 - **Domains**: total count, counts by status, and per-record `status`/`dns_type`/`redirect_to_primary` — no domain names or DNS response bodies.
 - **Platform incidents**: up to 5 active incident records matching the site's server or cluster (or-filter), excluding resolved/auto-resolved/press-resolved incidents.
-- **Error summary**: 24-hour window, aggregated failed job counts by job type, up to 10 recent failed jobs listed, excluding raw output and stack traces.
+- **Error summary**: investigation window, aggregated failed job counts by job type, up to 10 recent failed jobs listed, excluding raw output and stack traces.
 - **Bench process status**: Supervisor process list for the site's bench. Each entry records the process name, status, and message. Processes not in `Running` or `Starting` state are collected as `stopped_processes`. Collected via `Bench.supervisorctl_status()` — an agent call to the app server.
 - **Web error log**: Recent ERROR and CRITICAL entries from `web.error.log` on the site's app server. Only the gunicorn-level description and the final exception message line are captured — not full stack frames with local variables. All entries are redacted before being stored. Collects at most 10 error blocks from the last 500 log lines.
-- **Site performance summary**: Up to 20 slowest endpoints from Elasticsearch over the last 24 hours. Each endpoint includes average and peak duration, a `spike_detected` flag (peak ≥ 3× mean and peak > 2 s), and an `is_custom` flag indicating whether the endpoint belongs to a non-Frappe app. App origin is determined by checking `repository_owner` on the AppSource record — any owner other than `frappe` is treated as custom. Also includes a `has_custom_apps` flag indicating whether any non-Frappe apps are installed on the bench.
+- **Site performance summary**: Up to 20 slowest endpoints from Elasticsearch in the investigation window. Each endpoint includes average and peak duration, a `spike_detected` flag (peak ≥ 3× mean and peak > 2 s), and an `is_custom` flag indicating whether the endpoint belongs to a non-Frappe app. App origin is determined by checking `repository_owner` on the AppSource record — any owner other than `frappe` is treated as custom. Also includes a `has_custom_apps` flag indicating whether any non-Frappe apps are installed on the bench.
+- **Slow queries**: Top 5 normalized MariaDB slow queries for the site's database in the investigation window, from up to 500 slow log rows in Elasticsearch. Reuses `get_slow_query_logs` and `summarize_by_query` from the MariaDB Slow Queries report. Normalization replaces literals with `?` so the same query with different values collapses into one entry; only the normalized form is kept — the example query carries customer data and is dropped at the collector. Each entry has `count`, `total_duration_s`, `avg_duration_s`, `rows_examined`, `rows_sent`. Non-DQL statements (e.g. `SET`) are filtered out.
+- **Database processes** (conditional): Live `SHOW PROCESSLIST` for the site, fetched through `Agent.fetch_database_processes`. Collected only when the database server CPU spike is happening right now — that is, when a spike was detected *and* the investigation window covers the present. The processlist reflects the current moment, so it says nothing about an incident that has already passed. The 10 longest-running connections are kept, each with `command`, `seconds`, `state`, and a normalized `query`; connection identity (user, host, database) is dropped at the collector.
+- **App server request share** (conditional): Request time on the site's app server split by site, collected whenever an app-server CPU spike is detected. Reuses `get_request_by_(..., ResourceType.SERVER)` from `press/api/analytics.py`, which already groups requests by `json.site`. Returns the same shape as the database share plus `busiest_site_shares_bench` — whether the busiest site sits on this site's bench.
+- **Database slow-query share** (conditional): Slow-query time on the site's database server split by tenant, collected whenever a database CPU spike is detected. Reuses `get_slow_logs(..., ResourceType.SERVER)` from `press/api/analytics.py`, which already groups the slow log by `mysql.slowlog.current_user` and maps each database name back to a site. Durations are summed per site over the window; the chart's catch-all `Other` bucket is not counted as a tenant. Returns `target_site_share_percent`, `busiest_site`, `busiest_site_share_percent`, and `busiest_site_is_target`. This is the past-incident counterpart to the processlist.
 - **Site uptime**: Instant probe result from the Prometheus blackbox exporter — `probe_success` (up/down) and `probe_http_status_code` (most recent HTTP status code from the external probe). Collected only when a monitor server is configured.
 
 ## Performance Investigation
@@ -105,11 +126,44 @@ Performance tickets require a structured escalation path through platform-observ
 
 3. **If a spike is observed, check server advanced analytics.** Advanced analytics break down resource usage across all tenants sharing the server. This is the mechanism for ruling in or ruling out a noisy neighbor.
 
+4. **If the database server is the busy one, look at slow queries.** Busy database CPU comes from either too many queries or a few too-slow ones. It is the latter most of the time, so read the slow queries before concluding noisy neighbor.
+
+```mermaid
+flowchart TD
+	A[Performance ticket] --> B{Active incident on the server or cluster?}
+	B -- yes --> B1[Incident is the likely cause]
+	B -- no --> C{Spike on server charts?}
+	C -- none --> C1[Not infrastructure: check slow endpoints and slow queries]
+	C -- app server CPU --> D{Busiest site on this server}
+	D -- this site --> D1[The site's own traffic]
+	D -- neighbor on the same bench --> D2[Worker contention: split the bench]
+	D -- "neighbor, CPU 90%+" --> D3[Noisy neighbor confirmed]
+	D -- "neighbor, CPU under 90%" --> D4[Server had headroom: not a noisy neighbor]
+	C -- database server CPU --> E{Slowest query average}
+	E -- "1s or more" --> E1[A few too-slow queries: the usual case]
+	E -- "under 1s" --> E2[Query volume, not one heavy query]
+	E1 --> F[Advanced analytics to identify the tenant; remediation is manual]
+	E2 --> F
+	C -- "database server CPU, happening now" --> G[Dump the live processlist]
+	C -- "database server CPU, already over" --> H[Group slow-query time by site]
+	G --> I{Do the connections belong to this site?}
+	H --> I
+	I -- no --> I1[Noisy neighbor confirmed: move a tenant to a dedicated server]
+	I -- yes --> I2[The site's own workload]
+```
+
 ### Noisy neighbor context
 
 **App server — memory:** Bench containers on shared app servers run with memory limits enforced. Memory pressure from one tenant cannot directly starve another. Memory is not a useful noisy-neighbor signal on app servers.
 
 **App server — CPU:** Bench containers on shared app servers have no CPU limits. A CPU-heavy tenant can crowd out others. If app-server CPU charts show a spike and the site's own usage does not explain it, advanced analytics should be checked for other benches on the same server consuming the burst.
+
+A busier neighbor on the app server is only a problem in two cases, so the report only calls it a cause in those:
+
+1. **The neighbor is on this site's bench.** The two share gunicorn workers, so the contention is direct regardless of server CPU. Remediation is moving one site to its own bench.
+2. **The server CPU was very high (≥ 90 % peak).** Below that the server had headroom and every bench got served, so a larger neighbor is not the explanation — the report says so explicitly rather than staying silent.
+
+**Confirming a noisy neighbor on the database server:** Two collectors settle it. While the problem is happening, the live processlist names the site behind every connection (database names map to `Site.database_name`). Once it has passed, the slow log grouped by site says who was working the database over the window. Either way, if the busiest tenant is not this site, the site is the victim rather than the cause.
 
 **Database server:** MariaDB instances on shared database servers have no container-level CPU or memory isolation. There is currently no platform-side solution to noisy-neighbor problems on shared database servers. If DB-server CPU or I/O charts show a spike, advanced analytics can identify the contributing tenant, but remediation requires a manual decision (e.g. moving the site or the noisy tenant to a dedicated server).
 
@@ -122,7 +176,7 @@ Performance tickets require a structured escalation path through platform-observ
 ### Report signals to add
 
 - Spike on app-server CPU with no matching incident → suggest checking advanced analytics for noisy neighbor.
-- Spike on database-server CPU or I/O → note that shared DB servers have no isolation; advanced analytics can identify the tenant but there is no automatic fix.
+- Spike on database-server CPU or I/O → note that shared DB servers have no isolation; advanced analytics can identify the tenant but there is no automatic fix. Also report the shape of the slow queries: an average of 1 s or more on the slowest query means a few too-slow queries (the usual case), below that means query volume.
 - No spike on either server during the reported window → platform infrastructure is not the cause; redirect investigation to app-level slow queries or the customer's workload.
 
 ## Error Code Investigation Patterns
@@ -224,13 +278,20 @@ It flags signals such as:
 - inactive/broken/suspended site status,
 - non-active bench status,
 - fatally failed or cancelled site updates (`Fatal`, `Cancelled` are terminal failure states; `Failure` is transient — a recovery job is created shortly after and the update moves to `Recovering` → `Recovered` or `Fatal`),
-- recent failed agent jobs,
 - critical disk/database/CPU usage (≥120% flagged as a cause; ≥90% flagged as evidence),
 - broken site domains,
 - latest failed backup,
 - matching active platform incidents.
 
-Confidence is `High` if any blocking signal is present (non-Active site or bench, fatal deployment, failed jobs, or active incidents), `Medium` if other causes were found, and `Low` if no causes were found.
+Failed agent jobs are recorded as evidence but never as a likely cause, and they do not raise
+confidence. A job fails because of something else — the bench is down, the disk is full, a deploy
+went bad — so naming it as the cause just restates the symptom. The same instruction is given to
+the model in the AI analysis prompt.
+
+Slow queries are flagged as a cause when the top query examines at least 100 rows per row returned
+(a likely missing index) or burns at least 10 seconds of database time in the window.
+
+Confidence is `High` if any blocking signal is present (non-Active site or bench, fatal deployment, or active incidents), `Medium` if other causes were found, and `Low` if no causes were found.
 
 The report generator returns:
 
@@ -252,6 +313,11 @@ The model receives `payload_json` (already redacted) plus the deterministic repo
 Fields stripped from `site`: `name`, `bench`, `server`, `database_server`, `cluster`, `group`.
 
 Fields stripped from `bench`: `name`, `server`, `database_server`, `cluster`, `candidate`, `build`.
+
+Neighboring tenants are never named to the model: processlist rows keep `site` only when
+`is_target_site` is set, and `database_slow_query_share.busiest_site` is cleared unless the busiest
+tenant is the investigated site. The support agent still sees the real names on the investigation
+record — only the LLM payload is anonymized.
 
 No raw logs, no PII, and no customer documents are ever included. The redaction pipeline is the primary gate; the site name strip is an additional anonymizing step.
 

@@ -265,8 +265,7 @@ class TestClusterVPCFlowLogs(TestCluster):
 
 	@mock_aws
 	def test_setup_vpc_flow_logs_creates_flow_log_and_enables_flag(self):
-		# moto can't validate an S3 ARN that carries a key prefix (valid on real AWS),
-		# so stub the EC2 client and assert we call create_flow_logs correctly.
+		# Stub the EC2 client and assert we call create_flow_logs correctly.
 		cluster = self._active_aws_cluster_with_vpc()
 		client = MagicMock()
 		client.create_flow_logs.return_value = {"FlowLogIds": ["fl-123"], "Unsuccessful": []}
@@ -280,7 +279,7 @@ class TestClusterVPCFlowLogs(TestCluster):
 		self.assertEqual(kwargs["ResourceIds"], [cluster.vpc_id])
 		self.assertEqual(kwargs["TrafficType"], "ALL")
 		self.assertEqual(kwargs["LogDestinationType"], "s3")
-		self.assertEqual(kwargs["LogDestination"], "arn:aws:s3:::flow-logs-bucket/flow-logs/mumbai/")
+		self.assertEqual(kwargs["LogDestination"], "arn:aws:s3:::flow-logs-bucket")
 
 	@mock_aws
 	def test_setup_vpc_flow_logs_throws_when_bucket_not_set(self):

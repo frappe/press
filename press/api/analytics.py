@@ -127,6 +127,10 @@ MAX_NO_OF_PATHS: Final[int] = 10
 MAX_QUERIES: Final[int] = 25
 MAX_MAX_NO_OF_PATHS: Final[int] = 50
 
+# Elasticsearch groups slow queries by their raw text, and literals split one query
+# into many. Oversample, so that the top-N after normalization is not a set of duplicates.
+NORMALIZED_OVERSAMPLE: Final[int] = 10
+
 NICE_STEPS = [
 	1,
 	2,
@@ -167,6 +171,29 @@ def auto_timespan_timegrain(start: datetime, end: datetime, target_points: int =
 	interval = next((step for step in NICE_STEPS if step >= raw_interval), raw_interval)
 
 	return (total_seconds, interval)
+
+
+# All metrics relevant to the server charts (node_exporter, mariadb_exporter, ...)
+# are scraped every 60s, see press/playbooks/roles/prometheus/templates/prometheus.yml
+PROMETHEUS_SCRAPE_INTERVAL: Final[int] = 60
+
+
+def get_rate_interval(timegrain: int, scrape_interval: int = PROMETHEUS_SCRAPE_INTERVAL) -> int:
+	"""Lookback window to use inside rate()/increase() for range queries.
+
+	Prometheus' rate()/increase() need at least two samples within their window
+	to return a value. When the window is smaller than ~2x the scrape interval it
+	intermittently sees a single sample (depending on how the step grid aligns
+	with the scrape grid), so Prometheus returns no value for those steps. The
+	charts render the resulting gaps as spikes down to zero.
+
+	The step (timegrain) controls the chart resolution; this controls the rate()
+	window. Keeping them separate and ensuring the window always spans several
+	scrapes removes the gaps. This mirrors Grafana's ``$__rate_interval``.
+	"""
+	if timegrain <= 0:
+		return scrape_interval * 4
+	return max(timegrain + scrape_interval, scrape_interval * 4)
 
 
 def parse_iso_datetime(value: str | datetime) -> datetime:
@@ -234,13 +261,15 @@ class StackedGroupByChart:
 
 	def setup_search_aggs(self):
 		if not self.group_by_field:
-			frappe.throw("Group by field not set")
+			frappe.throw(
+				"No group-by field was set for this aggregation. Please choose a field to group by before running the query."
+			)
 		if AggType(self.agg_type) is AggType.COUNT:
 			self.search.aggs.bucket(
 				"method_path",
 				"terms",
 				field=self.group_by_field,
-				size=self.max_no_of_paths,
+				size=self.terms_size,
 				order={"path_count": "desc"},
 			).bucket("histogram_of_method", self.histogram_of_method())
 			self.search.aggs["method_path"].bucket("path_count", self.count_of_values())
@@ -250,7 +279,7 @@ class StackedGroupByChart:
 				"method_path",
 				"terms",
 				field=self.group_by_field,
-				size=self.max_no_of_paths,
+				size=self.terms_size,
 				order={"outside_sum": "desc"},
 			).bucket("histogram_of_method", self.histogram_of_method()).bucket(
 				"sum_of_duration", self.sum_of_duration()
@@ -262,12 +291,16 @@ class StackedGroupByChart:
 				"method_path",
 				"terms",
 				field=self.group_by_field,
-				size=self.max_no_of_paths,
+				size=self.terms_size,
 				order={"outside_avg": "desc"},
 			).bucket("histogram_of_method", self.histogram_of_method()).bucket(
 				"avg_of_duration", self.avg_of_duration()
 			)
 			self.search.aggs["method_path"].bucket("outside_avg", self.avg_of_duration())
+
+	@property
+	def terms_size(self) -> int:
+		return self.max_no_of_paths
 
 	def histogram_of_method(self):
 		return A(
@@ -350,11 +383,10 @@ class StackedGroupByChart:
 		for path_bucket in aggs.method_path.buckets:
 			datasets.append(self.get_histogram_chart(path_bucket, labels))
 
-		if len(datasets) >= self.max_no_of_paths:
-			datasets.append(self.get_other_bucket(datasets, labels))
-
 		if self.normalize_slow_logs:
-			datasets = normalize_datasets(datasets)
+			datasets = self.get_normalized_datasets(datasets, aggs, labels)
+		elif len(datasets) >= self.terms_size:
+			datasets.append(self.get_other_bucket(datasets, labels))
 
 		labels = [convert_utc_to_timezone(label, self.timezone).replace(tzinfo=None) for label in labels]
 		return {
@@ -465,7 +497,9 @@ class NginxRequestGroupByChart(StackedGroupByChart):
 				)
 			)
 		):
-			frappe.throw("Monitor server not set in Press Settings")
+			frappe.throw(
+				"The monitor server isn't configured in Press Settings. Please set it under Press Settings before viewing analytics, or contact your administrator."
+			)
 		self.search = self.search.exclude("match_phrase", source__ip=monitor_ip)
 		if ResourceType(self.resource_type) is ResourceType.SITE:
 			server = frappe.db.get_value("Site", self.name, "server")
@@ -496,8 +530,40 @@ class SlowLogGroupByChart(StackedGroupByChart):
 		*args,
 		**kwargs,
 	):
-		super().__init__(*args, **kwargs)
 		self.normalize_slow_logs = normalize_slow_logs
+		super().__init__(*args, **kwargs)
+
+	@property
+	def terms_size(self) -> int:
+		if self.normalize_slow_logs:
+			return self.max_no_of_paths * NORMALIZED_OVERSAMPLE
+		return self.max_no_of_paths
+
+	def setup_search_aggs(self):
+		"""Aggregate all queries next to the top ones. The result gives the Other bucket."""
+		super().setup_search_aggs()
+		if not self.normalize_slow_logs:
+			return
+		histogram = self.search.aggs.bucket("histogram_of_method", self.histogram_of_method())
+		histogram.bucket("sum_of_duration", self.sum_of_duration())
+		# ponytail: averages do not subtract, so an average chart clamps Other to zero
+		histogram.bucket("avg_of_duration", self.avg_of_duration())
+
+	def get_normalized_datasets(self, datasets: list[Dataset], aggs, labels) -> list[Dataset]:
+		"""Merge the oversampled queries by normalized form, then keep the largest ones.
+
+		Other is all queries minus the ones the chart shows. The base class instead
+		runs a second search that excludes each query it shows. This search needs one
+		clause for each query, and normalization asks for ten times as many queries.
+		"""
+		merged = sorted(normalize_datasets(datasets), key=dataset_total, reverse=True)
+		top = merged[: self.max_no_of_paths]
+
+		aggs.key = "Other"
+		other = self.get_histogram_chart(aggs, labels)
+		for dataset in top:
+			other["values"] = subtract_values(other["values"], dataset["values"])
+		return [*top, other] if dataset_total(other) else top
 
 	def sum_of_duration(self):
 		return A("sum", field="event.duration")
@@ -600,12 +666,16 @@ def get_metrics(
 	duration: str = "24h",
 ):
 	if not name:
-		frappe.throw("No release group found!")
+		frappe.throw(
+			"We couldn't find a bench group to load metrics for. Please open this page from a valid bench group."
+		)
 
 	benches = frappe.get_all("Bench", {"status": "Active", "group": name}, pluck="name")
 
 	if not benches:
-		frappe.throw("No active benches found!")
+		frappe.throw(
+			"This bench group has no active benches, so there are no metrics to show yet. Metrics appear once a bench is deployed and running."
+		)
 
 	benches = "|".join(benches)
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
@@ -615,7 +685,9 @@ def get_metrics(
 		datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
 		return {response_key: {"datasets": datasets, "labels": labels}}
 	except (ValueError, TypeError):
-		frappe.throw("Unable to fetch metrics")
+		frappe.throw(
+			"We couldn't fetch metrics right now. Please refresh the page in a few moments, and contact support if the problem persists."
+		)
 
 
 @frappe.whitelist()
@@ -784,114 +856,151 @@ def get_additional_duration_reports(
 
 @frappe.whitelist()
 @protected("Site")
-def get_advanced_analytics(
+def get_request_count_by_path(
 	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
 ):
 	start_dt = parse_iso_datetime(start)
 	end_dt = parse_iso_datetime(end)
 	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	return {
+		"request_count_by_path": get_request_by_(
+			name, "count", timezone, start_dt, end_dt, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+		)
+	}
 
-	job_data = get_usage(name, "job", timezone, start_dt, end_dt, timegrain)
 
+@frappe.whitelist()
+@protected("Site")
+def get_request_duration_by_path(
+	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
+):
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
 	request_duration_by_path = get_request_by_(
-		name,
-		"duration",
-		timezone,
-		start_dt,
-		end_dt,
-		timespan,
-		timegrain,
-		ResourceType.SITE,
-		max_no_of_paths,
+		name, "duration", timezone, start_dt, end_dt, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+	)
+	# The slow-path breakdowns depend on the top paths of this chart, so they are
+	# computed here (in this worker) rather than as a dependent second request.
+	return {"request_duration_by_path": request_duration_by_path} | get_additional_duration_reports(
+		request_duration_by_path, name, timezone, start_dt, end_dt, timespan, timegrain, max_no_of_paths
 	)
 
+
+@frappe.whitelist()
+@protected("Site")
+def get_average_request_duration_by_path(
+	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
+):
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	return {
+		"average_request_duration_by_path": get_request_by_(
+			name,
+			"average_duration",
+			timezone,
+			start_dt,
+			end_dt,
+			timespan,
+			timegrain,
+			ResourceType.SITE,
+			max_no_of_paths,
+		)
+	}
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_request_count_by_ip(
+	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
+):
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	return {
+		"request_count_by_ip": get_nginx_request_by_(
+			name, "count", timezone, start_dt, end_dt, timespan, timegrain, max_no_of_paths
+		)
+	}
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_background_job_count_by_method(
+	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
+):
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	return {
+		"background_job_count_by_method": get_background_job_by_(
+			name, "count", timezone, start_dt, end_dt, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+		)
+	}
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_background_job_duration_by_method(
+	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
+):
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
 	background_job_duration_by_method = get_background_job_by_(
+		name, "duration", timezone, start_dt, end_dt, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+	)
+	# The slow-job breakdowns depend on the top methods of this chart, so they are
+	# computed here (in this worker) rather than as a dependent second request.
+	return {
+		"background_job_duration_by_method": background_job_duration_by_method
+	} | get_additional_duration_reports(
+		background_job_duration_by_method,
 		name,
-		"duration",
 		timezone,
 		start_dt,
 		end_dt,
 		timespan,
 		timegrain,
-		ResourceType.SITE,
 		max_no_of_paths,
 	)
 
-	return (
-		{
-			"request_count_by_path": get_request_by_(
-				name,
-				"count",
-				timezone,
-				start_dt,
-				end_dt,
-				timespan,
-				timegrain,
-				ResourceType.SITE,
-				max_no_of_paths,
-			),
-			"request_duration_by_path": request_duration_by_path,
-			"average_request_duration_by_path": get_request_by_(
-				name,
-				"average_duration",
-				timezone,
-				start_dt,
-				end_dt,
-				timespan,
-				timegrain,
-				ResourceType.SITE,
-				max_no_of_paths,
-			),
-			"request_count_by_ip": get_nginx_request_by_(
-				name, "count", timezone, start_dt, end_dt, timespan, timegrain, max_no_of_paths
-			),
-			"background_job_count_by_method": get_background_job_by_(
-				name,
-				"count",
-				timezone,
-				start_dt,
-				end_dt,
-				timespan,
-				timegrain,
-				ResourceType.SITE,
-				max_no_of_paths,
-			),
-			"background_job_duration_by_method": background_job_duration_by_method,
-			"average_background_job_duration_by_method": get_background_job_by_(
-				name,
-				"average_duration",
-				timezone,
-				start_dt,
-				end_dt,
-				timespan,
-				timegrain,
-				ResourceType.SITE,
-				max_no_of_paths,
-			),
-			"job_count": [{"value": r.count, "date": r.date} for r in job_data],
-			"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
-		}
-		| get_additional_duration_reports(
-			request_duration_by_path,
+
+@frappe.whitelist()
+@protected("Site")
+def get_average_background_job_duration_by_method(
+	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
+):
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	return {
+		"average_background_job_duration_by_method": get_background_job_by_(
 			name,
+			"average_duration",
 			timezone,
 			start_dt,
 			end_dt,
 			timespan,
 			timegrain,
+			ResourceType.SITE,
 			max_no_of_paths,
 		)
-		| get_additional_duration_reports(
-			background_job_duration_by_method,
-			name,
-			timezone,
-			start_dt,
-			end_dt,
-			timespan,
-			timegrain,
-			max_no_of_paths,
-		)
-	)
+	}
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_background_job_usage(name: str, timezone: str, start: str, end: str):
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	_, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	job_data = get_usage(name, "job", timezone, start_dt, end_dt, timegrain)
+	return {
+		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
+		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
+	}
 
 
 @frappe.whitelist()
@@ -966,6 +1075,17 @@ def get_rounded_boundary(dt: datetime, timegrain: int = 60):
 	return datetime.fromtimestamp(floored_ts, tz=dt.tzinfo)
 
 
+def align_to_quarter_hour(start: datetime, end: datetime, timezone: str) -> tuple[datetime, datetime]:
+	"""Widen the range to the quarter-hour marks around it."""
+	local_start = start.astimezone(pytz_timezone(timezone))
+	local_end = end.astimezone(pytz_timezone(timezone))
+	return (
+		local_start.replace(minute=local_start.minute // 15 * 15, second=0, microsecond=0),
+		local_end.replace(minute=0, second=0, microsecond=0)
+		+ timedelta(minutes=(local_end.minute // 15 + 1) * 15),
+	)
+
+
 def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegrain: int):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
@@ -987,19 +1107,7 @@ def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegra
 	# if the difference is less than an hour, set timegrain to 1 min
 	elif int((end - start).total_seconds()) < 60 * 60:
 		timegrain = 60
-		local_end = end.astimezone(pytz_timezone(timezone))
-		# align end to next 15-minute interval if not already aligned
-		minutes = (local_end.minute // 15 + 1) * 15
-		if minutes == 60:
-			local_end = local_end.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-		else:
-			local_end = local_end.replace(minute=minutes, second=0, microsecond=0)
-		end = local_end
-		# align start to previous 15-minute interval if not already aligned
-		local_start = start.astimezone(pytz_timezone(timezone))
-		minutes = (local_start.minute // 15 - (1 if local_end.minute % 15 != 0 else 0)) * 15
-		local_start = local_end.replace(minute=minutes, second=0, microsecond=0)
-		start = local_start
+		start, end = align_to_quarter_hour(start, end, timezone)
 
 	query: dict[str, str | float] = {
 		"query": (
@@ -1027,6 +1135,14 @@ def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegra
 			)
 		)
 	return buckets
+
+
+def subtract_values(values: list, other: list) -> list:
+	return [max(flt(x) - flt(y), 0) for x, y in zip(values, other, strict=True)]
+
+
+def dataset_total(dataset: Dataset) -> float:
+	return sum(value for value in dataset["values"] if value)
 
 
 def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:

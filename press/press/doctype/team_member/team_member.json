@@ -32,12 +32,10 @@
 			"label": "Impersonate"
 		},
 		{
-			"default": "Developer",
 			"fieldname": "role",
 			"fieldtype": "Data",
 			"in_list_view": 1,
-			"label": "Role",
-			"reqd": 1
+			"label": "Role"
 		},
 		{
 			"fieldname": "section_break_vjdz",

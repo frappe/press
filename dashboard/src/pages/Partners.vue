@@ -26,9 +26,9 @@
 </template>
 
 <script>
-import Header from '../components/Header.vue';
-import { Breadcrumbs, Tabs } from 'frappe-ui';
-import TabsWithRouter from '../components/TabsWithRouter.vue';
+import { Breadcrumbs, Tabs } from 'frappe-ui'
+import Header from '../components/Header.vue'
+import TabsWithRouter from '../components/TabsWithRouter.vue'
 
 export default {
 	name: 'Partner',
@@ -58,8 +58,8 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-							this.$team.doc.partner_status === 'Active' &&
-							this.$session.hasPartnerDashboardAccess,
+								this.$team.doc.partner_status === 'Active' &&
+								this.$session.hasPartnerDashboardAccess,
 						),
 				},
 				{
@@ -68,8 +68,8 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-							this.$team.doc.partner_status === 'Active' &&
-							this.$session.hasPartnerCustomerAccess,
+								this.$team.doc.partner_status === 'Active' &&
+								this.$session.hasPartnerCustomerAccess,
 						),
 				},
 				{
@@ -78,8 +78,8 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-							this.$team.doc.partner_status === 'Active' &&
-							this.$session.hasPartnerLeadsAccess,
+								this.$team.doc.partner_status === 'Active' &&
+								this.$session.hasPartnerLeadsAccess,
 						),
 				},
 				{
@@ -88,7 +88,7 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-							this.$team.doc.partner_status === 'Active',
+								this.$team.doc.partner_status === 'Active',
 						),
 				},
 				{
@@ -97,7 +97,7 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-							this.$team.doc.partner_status === 'Active',
+								this.$team.doc.partner_status === 'Active',
 						),
 				},
 				{
@@ -106,8 +106,8 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-							this.$team.doc.partner_status === 'Active' &&
-							this.$session.hasPartnerContributionAccess,
+								this.$team.doc.partner_status === 'Active' &&
+								this.$session.hasPartnerContributionAccess,
 						),
 				},
 				{
@@ -116,7 +116,7 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-							this.$team.doc.partner_status === 'Active',
+								this.$team.doc.partner_status === 'Active',
 						),
 				},
 				{
@@ -125,9 +125,10 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.country === 'Kenya' &&
-							this.$team.doc.mpesa_enabled &&
-							this.$team.doc.erpnext_partner &&
-							this.$team.doc.partner_status === 'Active',
+								this.$team.doc.mpesa_enabled &&
+								this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active' &&
+								this.$session.hasPartnerLocalPaymentAccess,
 						),
 				},
 				{
@@ -136,11 +137,12 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.country === 'Kenya' &&
-							this.$team.doc.mpesa_enabled,
+								this.$team.doc.mpesa_enabled &&
+								this.$session.hasPartnerLocalPaymentAccess,
 						),
 				},
 			],
-		};
+		}
 	},
-};
+}
 </script>

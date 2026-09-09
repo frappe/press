@@ -27,6 +27,7 @@ class SupportAgentInvestigation(Document):
 		errors_json: DF.JSON | None
 		evidence_json: DF.JSON | None
 		failure_reason: DF.SmallText | None
+		incident_time: DF.Datetime | None
 		likely_cause: DF.SmallText | None
 		llm_model: DF.Data | None
 		llm_response: DF.LongText | None
@@ -44,6 +45,8 @@ class SupportAgentInvestigation(Document):
 	def before_insert(self):
 		self.status = self.status or "Queued"
 		self.requested_by = self.requested_by or frappe.session.user
+		# No time given means the site is having problems right now.
+		self.incident_time = self.incident_time or frappe.utils.now_datetime()
 
 	@frappe.whitelist(methods=["POST"])
 	def start(self):
@@ -89,7 +92,7 @@ class SupportAgentInvestigation(Document):
 		frappe.db.commit()
 
 		try:
-			payload = redact(collect_site_context(self.site))
+			payload = redact(collect_site_context(self.site, self.incident_time))
 			report = generate_report(payload)
 			self.status = "Completed"
 			self.completed_at = frappe.utils.now_datetime()
@@ -117,12 +120,13 @@ class SupportAgentInvestigation(Document):
 
 
 @frappe.whitelist(methods=["POST"])
-def create_investigation(site: str, run_now: bool = True) -> str:
+def create_investigation(site: str, run_now: bool = True, incident_time: str | None = None) -> str:
 	site = validate_site_access(site)
 	doc = frappe.get_doc(
 		{
 			"doctype": "Support Agent Investigation",
 			"site": site,
+			"incident_time": incident_time,
 			"status": "Queued",
 			"requested_by": frappe.session.user,
 		}
@@ -141,6 +145,7 @@ def get_investigation(name: str) -> dict:
 	return {
 		"name": doc.name,
 		"site": doc.site,
+		"incident_time": doc.incident_time,
 		"status": doc.status,
 		"summary": doc.summary,
 		"likely_cause": doc.likely_cause,

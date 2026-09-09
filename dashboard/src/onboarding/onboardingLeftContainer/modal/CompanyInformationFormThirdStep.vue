@@ -11,18 +11,12 @@ const props = defineProps<{
 const submitted = ref(false)
 
 // ideally this should be multi select.
+// cspell:ignore Odoo
 const partnershipOptions = [
 	{ label: 'SAP', value: 'SAP' },
 	{ label: 'Odoo', value: 'Odoo' },
 	{ label: 'Oracle', value: 'Oracle' },
 	{ label: 'Microsoft', value: 'Microsoft' },
-	// { label: 'Salesforce', value: 'Salesforce' },
-	// { label: 'Zendesk', value: 'Zendesk' },
-	// { label: 'Hubspot', value: 'Hubspot' },
-	// { label: 'Shopify', value: 'Shopify' },
-	// { label: 'BigCommerce', value: 'BigCommerce' },
-	// { label: 'WooCommerce', value: 'WooCommerce' },
-	// { label: 'Other ERP', value: 'Other ERP' },
 ]
 
 const implementationOptions = [
@@ -38,25 +32,39 @@ const errors = computed(() => {
 		incorporation_certificate: !props.form.incorporation_certificate,
 		due_diligence: !props.form.agreed_to_due_diligence,
 		partnership_agreement: !props.form.agreed_to_partnership_agreement,
+		company_logo: !props.form.company_logo,
 	}
 })
 
 const PARTNERSHIP_AGREEMENT_LINK = 'https://frappe.io/partners/terms'
 const documentFileTypes = ['application/pdf', 'image/*']
+const logoFileTypes = ['image/*']
 const incorporationCertificateHelp =
 	'Upload your certificate of incorporation or equivalent company registration document. This helps us verify your legal entity before partnership approval.'
+
+const companyLogoHelp =
+	'Upload your company logo. This will be displayed on the partner listing — use a square image that is not too large.'
 
 function validateDocument(file: File) {
 	const allowedType =
 		file.type === 'application/pdf' || file.type.startsWith('image/')
 	if (!allowedType) return 'Upload a PDF or image file.'
-	// can change if needed - some basic validation
 	if (file.size > 10 * 1024 * 1024) return 'File size must be under 10 MB.'
 	return null
 }
 
-function onUploadSuccess(file: { file_url?: string }) {
+function validateLogo(file: File) {
+	if (!file.type.startsWith('image/')) return 'Upload an image file.'
+	if (file.size > 5 * 1024 * 1024) return 'Logo must be under 5 MB.'
+	return null
+}
+
+function onCertificateUploadSuccess(file: { file_url?: string }) {
 	props.form.incorporation_certificate = file.file_url || ''
+}
+
+function onLogoUploadSuccess(file: { file_url?: string }) {
+	props.form.company_logo = file.file_url || ''
 }
 
 function validate() {
@@ -77,22 +85,22 @@ defineExpose({ tryContinue })
 		class="flex min-h-[360px] flex-col gap-5"
 		@submit.prevent="tryContinue"
 	>
-		<div class="flex flex-col gap-1">
-			<div class="flex items-center justify-between gap-2">
-				<span class="text-xs text-ink-gray-6">Existing Partnerships</span>
-				<span class="text-xs text-ink-gray-5">Optional</span>
-			</div>
-			<FormControl
-				v-model="props.form.existing_partnerships"
-				type="select"
-				size="sm"
-				variant="outline"
-				placeholder="Select"
-				:options="partnershipOptions"
-			/>
-		</div>
-
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+			<div class="flex flex-col gap-1">
+				<div class="flex items-center justify-between gap-2">
+					<span class="text-xs text-ink-gray-6">Existing Partnerships</span>
+					<span class="text-xs text-ink-gray-5">Optional</span>
+				</div>
+				<FormControl
+					v-model="props.form.existing_partnerships"
+					type="select"
+					size="sm"
+					variant="outline"
+					placeholder="Select"
+					:options="partnershipOptions"
+				/>
+			</div>
+
 			<div class="flex flex-col gap-1">
 				<div class="flex items-center justify-between gap-2">
 					<span class="text-xs text-ink-gray-6"
@@ -108,6 +116,52 @@ defineExpose({ tryContinue })
 					placeholder="Select"
 					:options="implementationOptions"
 				/>
+			</div>
+		</div>
+
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+			<div class="flex flex-col gap-1">
+				<div class="flex items-center justify-between gap-2">
+					<div class="flex items-center gap-1">
+						<span class="text-xs text-ink-gray-6">Company logo</span>
+						<Tooltip :text="companyLogoHelp">
+							<LucideHelpCircle class="size-3 text-ink-gray-5" />
+						</Tooltip>
+					</div>
+				</div>
+				<FileUploader
+					:fileTypes="logoFileTypes"
+					:validateFile="validateLogo"
+					:uploadArgs="{ private: false }"
+					@success="onLogoUploadSuccess"
+				>
+					<template #default="{ uploading, progress, openFileSelector, error }">
+						<Button
+							variant="outline"
+							class="w-full justify-start"
+							:loading="uploading"
+							@click="openFileSelector"
+						>
+							{{ uploading
+									? `Uploading ${progress}%`
+									: props.form.company_logo
+										? 'Replace logo'
+										: 'Upload logo' }}
+						</Button>
+						<p
+							v-if="props.form.company_logo"
+							class="mt-1 truncate text-xs text-ink-gray-6"
+						>
+							{{ props.form.company_logo }}
+						</p>
+						<p v-if="error" class="mt-1 text-sm text-ink-red-4">
+							{{ error }}
+						</p>
+					</template>
+				</FileUploader>
+				<p v-if="errors.company_logo" class="text-sm text-ink-red-4">
+					Company logo is required.
+				</p>
 			</div>
 
 			<div class="flex flex-col gap-1">
@@ -125,7 +179,7 @@ defineExpose({ tryContinue })
 					:fileTypes="documentFileTypes"
 					:validateFile="validateDocument"
 					:uploadArgs="{ private: true }"
-					@success="onUploadSuccess"
+					@success="onCertificateUploadSuccess"
 				>
 					<template #default="{ uploading, progress, openFileSelector, error }">
 						<Button

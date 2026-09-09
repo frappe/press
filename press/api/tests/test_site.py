@@ -16,6 +16,9 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.cluster.test_cluster import create_test_cluster
+from press.press.doctype.database_server.test_database_server import (
+	create_test_database_server,
+)
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
 )
@@ -31,6 +34,7 @@ from press.press.doctype.remote_file.remote_file import RemoteFile
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
@@ -864,8 +868,90 @@ erpnext 0.8.3	    HEAD
 	def test_update_config(self):
 		pass
 
-	def test_get_upload_link(self):
-		pass
+	def test_uploaded_backup_info_rejects_path_outside_team_prefix(self):
+		from press.api.site import uploaded_backup_info
+		from press.press.doctype.remote_file.remote_file import get_team_prefix
+
+		frappe.db.set_single_value("Press Settings", "remote_uploads_bucket", "test-remote-uploads")
+		frappe.set_user(self.team.user)
+
+		with self.assertRaises(frappe.PermissionError) as context:
+			uploaded_backup_info(
+				file="database.sql.gz",
+				path=f"{get_team_prefix('victim@example.com')}/1_2/database.sql.gz",
+				type="application/x-gzip",
+				size=1024,
+			)
+
+		self.assertIn("is not under this team's upload prefix", str(context.exception))
+
+	def test_uploaded_backup_info_accepts_path_under_own_prefix(self):
+		from press.api.site import uploaded_backup_info
+		from press.press.doctype.remote_file.remote_file import get_team_prefix
+
+		frappe.db.set_single_value("Press Settings", "remote_uploads_bucket", "test-remote-uploads")
+		frappe.set_user(self.team.user)
+
+		file_path = f"{get_team_prefix(self.team.name)}/1_2/database.sql.gz"
+		name = uploaded_backup_info(
+			file="database.sql.gz", path=file_path, type="application/x-gzip", size=1024
+		)
+
+		self.assertEqual(frappe.db.get_value("Remote File", name, "file_path"), file_path)
+
+	def test_new_site_rejects_backup_of_another_team_for_dashboard_user(self):
+		from press.api.site import validate_files_for_new_site
+
+		other_team = create_test_press_admin_team()
+		remote_file = create_test_remote_file(file_path="somewhere/database.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", other_team.name)
+
+		frappe.set_user(self.team.user)
+		with self.assertRaises(frappe.PermissionError) as context:
+			validate_files_for_new_site({"database": remote_file.name}, self.team.name)
+
+		self.assertIn("does not belong to site's team", str(context.exception))
+
+	def test_new_site_allows_backup_of_another_team_for_system_user(self):
+		"""Site Replication runs from desk, under the operator's own team."""
+		from press.api.site import validate_files_for_new_site
+
+		other_team = create_test_press_admin_team()
+		remote_file = create_test_remote_file(file_path="somewhere/database.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", other_team.name)
+
+		frappe.set_user("Administrator")
+		validate_files_for_new_site({"database": remote_file.name}, self.team.name)
+
+	def test_restore_rejects_remote_file_with_no_team(self):
+		"""A file with no team has no owner to check against."""
+		from press.api.site import restore
+
+		site = create_test_site(team=self.team.name)
+		remote_file = create_test_remote_file(file_path="somewhere/database.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", None)
+
+		frappe.set_user(self.team.user)
+		with self.assertRaises(frappe.PermissionError) as context:
+			restore(site.name, {"database": remote_file.name})
+
+		self.assertIn("does not belong to site's team", str(context.exception))
+		self.assertFalse(frappe.db.get_value("Site", site.name, "remote_database_file"))
+
+	def test_restore_rejects_remote_file_of_another_team(self):
+		from press.api.site import restore
+
+		other_team = create_test_press_admin_team()
+		site = create_test_site(team=self.team.name)
+		remote_file = create_test_remote_file(file_path="somewhere/database.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", other_team.name)
+
+		frappe.set_user(self.team.user)
+		with self.assertRaises(frappe.PermissionError) as context:
+			restore(site.name, {"database": remote_file.name})
+
+		self.assertIn("does not belong to site's team", str(context.exception))
+		self.assertFalse(frappe.db.get_value("Site", site.name, "remote_database_file"))
 
 	def test_archive_site_job_with_backup_step_failed_and_archive_skipped_doesnt_archive_site(self):
 		site = create_test_site()
@@ -1199,3 +1285,36 @@ class TestCheckWarrantyRestrictions(FrappeTestCase):
 			new_supported=False,
 			cooldown_active=True,
 		)
+
+
+class TestDedicatedServerPrice(FrappeTestCase):
+	"""The product-warranty plan gate compares a dedicated server's cost against
+	`minimum_server_price_usd`. That cost is the app server plan plus its paired
+	database server plan, not the app server plan alone."""
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _make_server(self, app_price, db_price=None):
+		app_plan = create_test_server_plan(server_type="Server")
+		frappe.db.set_value("Server Plan", app_plan.name, "price_usd", app_price)
+
+		database_server = create_test_database_server()
+		if db_price is not None:
+			db_plan = create_test_server_plan(server_type="Database Server")
+			frappe.db.set_value("Server Plan", db_plan.name, "price_usd", db_price)
+			frappe.db.set_value("Database Server", database_server.name, "plan", db_plan.name)
+
+		return create_test_server(plan=app_plan.name, database_server=database_server.name)
+
+	def test_price_is_sum_of_app_and_database_server_plans(self):
+		from press.api.site import get_dedicated_server_price
+
+		server = self._make_server(app_price=200, db_price=150)
+		self.assertEqual(get_dedicated_server_price(server.name), 350)
+
+	def test_price_falls_back_to_app_server_plan_when_database_has_no_plan(self):
+		from press.api.site import get_dedicated_server_price
+
+		server = self._make_server(app_price=200)
+		self.assertEqual(get_dedicated_server_price(server.name), 200)

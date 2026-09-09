@@ -1,20 +1,19 @@
 <script setup lang="ts">
 import {
-	createListResource,
-	createDocumentResource,
 	Badge,
-	Select,
 	Button,
+	createDocumentResource,
+	createListResource,
+	Select,
 	Tooltip,
 } from 'frappe-ui'
-import { date, duration } from '@/utils/format'
 import { defineAsyncComponent, h, ref, watch } from 'vue'
-import { toast } from 'vue-sonner'
-import { confirmDialog, renderDialog } from '@/utils/components'
 import { useRoute } from 'vue-router'
-import { getToastErrorMessage } from '@/utils/toast'
-import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline';
+import { toast } from 'vue-sonner'
 import Scrollbar from '@/components/common/Scrollbar.vue'
+import { renderDialog } from '@/utils/components'
+import { date, duration } from '@/utils/format'
+import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline'
 
 interface Props {
 	name?: string
@@ -39,7 +38,7 @@ const deployBuilds = createListResource({
 
 const pipelines = createListResource({
 	doctype: 'Release Pipeline',
-	fields: ['name', 'status', 'creation', 'team.user as team'],
+	fields: ['name', 'status', 'creation', 'owner'],
 	filters: {
 		release_group: props.name,
 	},
@@ -89,45 +88,26 @@ function handleDeploy() {
 		return toast.error('Deploy is in progress. Please wait for it to complete.')
 	}
 
-	if (group.doc?.deploy_information?.update_available) {
-		const UpdateReleaseGroupDialog = defineAsyncComponent(
-			() => import('@/components/group/UpdateReleaseGroupDialog.vue'),
-		)
-		renderDialog(
-			h(UpdateReleaseGroupDialog, {
-				bench: group.name,
-				lastDeploy: true,
-				onSuccess(candidate: string) {
-					group.doc.deploy_information.has_running_release_pipeline = true
-					group.doc.deploy_information.update_available = false
-					if (candidate) {
-						group.doc.deploy_information.last_deploy = { name: candidate }
-					}
-					pollReleasePipelineValidationStatus(group)
-				},
-			}),
-		)
+	const UpdateReleaseGroupDialog = defineAsyncComponent(
+		() => import('@/components/group/UpdateReleaseGroupDialog.vue'),
+	)
 
-		return
-	}
-
-	return confirmDialog({
-		title: 'Deploy without app updates?',
-		message:
-			'No app updates detected. Changes in dependencies and environment variables will be applied on deploying.',
-		onSuccess: ({ hide }: { hide: () => void }) => {
-			toast.promise(group.redeploy.submit(), {
-				loading: 'Deploying...',
-				success: () => {
-					hide()
-					pipelines.reload()
-					deployBuilds.reload()
-					return 'Changes Deployed'
-				},
-				error: (e: Error) => getToastErrorMessage(e),
-			})
-		},
-	})
+	renderDialog(
+		h(UpdateReleaseGroupDialog, {
+			bench: group.name,
+			lastDeploy: true,
+			onSuccess(candidate: string) {
+				group.doc.deploy_information.has_running_release_pipeline = true
+				group.doc.deploy_information.update_available = false
+				if (candidate) {
+					group.doc.deploy_information.last_deploy = { name: candidate }
+				}
+				pollReleasePipelineValidationStatus(group)
+				pipelines.reload()
+				deployBuilds.reload()
+			},
+		}),
+	)
 }
 </script>
 
@@ -159,7 +139,7 @@ function handleDeploy() {
 			<lucide-refresh-ccw class="size-4" />
 		</Button>
 
-		<Button @click="handleDeploy" v-if='mode == "older"'>
+		<Button @click="handleDeploy">
 			<template #prefix> <LucideRocket class="size-4" /></template>
 			Deploy
 		</Button>
@@ -179,7 +159,7 @@ function handleDeploy() {
 						<div class="table-cell rounded-r">Deployed By</div>
 					</template>
 
-					<div class="table-cell rounded-r" v-else>Team</div>
+					<div class="table-cell rounded-r" v-else>Deployed By</div>
 				</div>
 			</div>
 
@@ -216,7 +196,7 @@ function handleDeploy() {
 						</div>
 					</template>
 
-					<div role="cell" class="table-cell" v-else>{{ item.team }}</div>
+					<div role="cell" class="table-cell" v-else>{{ item.owner }}</div>
 				</router-link>
 			</div>
 		</div>

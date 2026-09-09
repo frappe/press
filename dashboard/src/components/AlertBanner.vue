@@ -1,44 +1,49 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 interface Props {
-	title?: string;
-	type?: string;
-	showIcon?: boolean;
-	isDismissible?: number;
+	title?: string
+	type?: string
+	showIcon?: boolean
+	isDismissible?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
 	showIcon: true,
 	type: 'info',
-});
+})
 
 const emit = defineEmits<{
-	(e: 'dismissBanner'): void;
-}>();
+	(e: 'dismissBanner'): void
+}>()
 
-const colors = {
+const colors: Record<string, { bg: string; text: string }> = {
 	info: { bg: 'bg-surface-blue-2', text: 'text-ink-blue-3' },
 	success: { bg: 'bg-surface-green-2', text: 'text-ink-green-3' },
 	error: { bg: 'bg-surface-red-2', text: 'text-ink-red-3' },
 	warning: { bg: 'bg-surface-amber-2', text: 'text-ink-amber-3' },
 	general: { bg: 'bg-surface-gray-2', text: 'text-ink-gray-3' },
-};
+}
+
+// An unknown type used to throw here and take the whole page down with it
+const color = computed(() => colors[props.type] ?? colors.general)
 </script>
 
 <template>
 	<div
 		class="flex items-center justify-between rounded-md p-2"
-		:class="colors[type].bg"
+		:class="color.bg"
 	>
 		<div class="flex items-center gap-2.5">
 			<lucide-alert-triangle
 				v-if="showIcon && (type === 'error' || type === 'warning')"
 				class="ml-1 size-4 shrink-0"
-				:class="colors[type].text"
+				:class="color.text"
 			/>
 			<lucide-info
 				v-if="showIcon && type === 'info'"
 				class="ml-1 size-4 shrink-0"
-				:class="colors[type].text"
+				:class="color.text"
 			/>
 			<div class="prose-sm font-medium text-ink-gray-8" v-html="title" />
 		</div>

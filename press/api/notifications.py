@@ -26,6 +26,7 @@ def get_notifications(
 			PressNotification.is_actionable,
 			PressNotification.document_type,
 			PressNotification.document_name,
+			PressNotification["class"],
 		)
 		.where(PressNotification.team == get_current_team())
 		.orderby(PressNotification.creation, order=frappe.qb.desc)

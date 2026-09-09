@@ -6,7 +6,7 @@ import frappe
 from frappe.tests.ui_test_helpers import create_test_user
 from frappe.tests.utils import FrappeTestCase
 
-from press.utils.user import is_beta_tester, is_desk_user, is_system_manager
+from press.utils.user import is_desk_user, is_system_manager
 
 
 class TestUserUtils(FrappeTestCase):
@@ -46,22 +46,6 @@ class TestUserUtils(FrappeTestCase):
 
 		frappe.set_user(email)
 		self.assertTrue(is_desk_user())
-
-	def test_is_beta_tester_returns_true_for_system_user(self):
-		email = frappe.mock("email")
-		create_test_user(email)
-		user = frappe.get_value("User", {"email": email}, "name")
-		frappe.db.set_value("User", user, "user_type", "System User")
-
-		self.assertTrue(is_beta_tester(email))
-
-	def test_is_beta_tester_returns_false_for_website_user(self):
-		email = frappe.mock("email")
-		create_test_user(email)
-		user = frappe.get_value("User", {"email": email}, "name")
-		frappe.db.set_value("User", user, "user_type", "Website User")
-
-		self.assertFalse(is_beta_tester(email))
 
 	def test_is_system_manager_returns_true_for_system_user(self):
 		email = frappe.mock("email")

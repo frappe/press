@@ -4,6 +4,12 @@ frappe.ui.form.on('Partner Onboarding', {
 			return
 		}
 
+		frm.dashboard.set_headline(
+			__(
+				'Use the Approve or Reject buttons to decide this request. Status cannot be changed manually.',
+			),
+		)
+
 		frm.add_custom_button(__('Approve'), () => {
 			frappe.confirm(__('Approve this partner onboarding request?'), () => {
 				frm.call('approve').then(() => frm.refresh())

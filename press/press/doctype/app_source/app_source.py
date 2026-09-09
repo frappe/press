@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -13,10 +14,13 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 
 from press.api.github import GithubFetchError, get_access_token, get_auth_headers
+from press.api.github import app as get_repo_app_info
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.app.app import parse_frappe_version
 from press.utils import get_current_team, log_error
 
 REQUIRED_APPS_PATTERN = re.compile(r"^\s*(?!#)\s*required_apps\s*=\s*\[(.*?)\]", re.DOTALL | re.MULTILINE)
+BRANCH_NOT_FOUND = "Branch not found"
 
 if TYPE_CHECKING:
 	from press.press.doctype.app_release.app_release import AppRelease
@@ -111,6 +115,29 @@ class AppSource(Document):
 
 	def add_version(self, version):
 		self.append("versions", {"version": version})
+		self.save()
+
+	@frappe.whitelist()
+	def sync_versions(self):
+		"""Replace `versions` with the Frappe versions the repo's pyproject.toml currently supports."""
+		if self.app == "frappe":
+			return
+		app_info = get_repo_app_info(
+			owner=self.repository_owner,
+			repository=self.repository,
+			branch=self.branch,
+			installation=self.github_installation_id,
+		)
+		supported_versions = parse_frappe_version(
+			app_info.get("frappe_version"), app_info.get("title"), ease_versioning_constrains=True
+		)
+		ordered_versions = frappe.get_all(
+			"Frappe Version",
+			{"name": ("in", list(supported_versions))},
+			pluck="name",
+			order_by="number",
+		)
+		self.set("versions", [{"version": version} for version in ordered_versions])
 		self.save()
 
 	def validate_source_signature(self):
@@ -209,7 +236,7 @@ class AppSource(Document):
 		).insert(ignore_permissions=True)
 		return app_release
 
-	def get_commit_info(self, commit_hash: None | str = None) -> tuple[str, dict, bool]:
+	def get_commit_info(self, commit_hash: str | None = None) -> tuple[str, dict, bool]:
 		"""
 		If `commit_hash` is not provided, `commit_info` is of the latest commit
 		on the branch pointed to by `self.hash`.
@@ -232,7 +259,7 @@ class AppSource(Document):
 		commit_info = data.get("commit", {}).get("commit", {})
 		return (commit_hash, commit_info, True)
 
-	def poll_github(self, commit_hash: None | str = None) -> requests.Response:
+	def poll_github(self, commit_hash: str | None = None) -> requests.Response:
 		headers = self.get_auth_headers()
 		url = f"https://api.github.com/repos/{self.repository_owner}/{self.repository}"
 
@@ -243,6 +270,10 @@ class AppSource(Document):
 			url = f"{url}/branches/{self.branch}"
 
 		return requests.get(url, headers=headers)
+
+	@property
+	def branch_deleted(self) -> bool:
+		return is_branch_deleted(self)
 
 	def set_poll_succeeded(self):
 		self.last_github_response = ""
@@ -260,9 +291,11 @@ class AppSource(Document):
 		*probably* means that FC hasn't been granted access to this particular
 		app by the user.
 
-		In this case the App Source is in an uninstalled state.
+		In this case the App Source is in an uninstalled state. A deleted branch
+		also answers 404, but there the repository is still reachable, so the
+		source is not uninstalled.
 		"""
-		self.uninstalled = response.status_code == 404
+		self.uninstalled = response.status_code == 404 and not self.branch_deleted
 
 		if response.status_code != 404:
 			log_error(
@@ -325,3 +358,18 @@ def get_timestamp_from_commit_info(commit_info: dict) -> str | None:
 
 	timestamp_str = timestamp_str.replace("Z", "+00:00")
 	return datetime.fromisoformat(timestamp_str).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def get_github_message(response_text: str | None) -> str:
+	try:
+		return json.loads(response_text or "{}").get("message", "")
+	except json.JSONDecodeError:
+		return ""
+
+
+def is_branch_deleted(source) -> bool:
+	"""GitHub answers a poll for a branch that no longer exists with a 404 that names the branch."""
+	if not source.last_github_poll_failed:
+		return False
+
+	return get_github_message(source.last_github_response) == BRANCH_NOT_FOUND

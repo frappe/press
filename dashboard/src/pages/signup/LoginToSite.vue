@@ -179,9 +179,9 @@ export default {
 		},
 		currentHelpText() {
 			const defaultHelpTexts = [
-				'Find anything with the Awesome bar!',
-				'All Frappe apps are open-source!',
-				'You can install more apps later!',
+				'Find anything with the Awesome bar',
+				'All Frappe apps are open-source',
+				'You can install more apps later',
 			];
 
 			const productHelpTexts = this.saasProduct?.help_texts
@@ -206,6 +206,10 @@ export default {
 			);
 		},
 		loginToSite() {
+			this.$pulse?.capture('trial_redirected_to_site', {
+				product: this.productId,
+				site: this.siteRequestDoc?.site,
+			});
 			this.$resources.siteRequest.getLoginSid.submit();
 		},
 	},

@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
@@ -42,7 +42,9 @@ class GitHubWebhookLog(Document):
 		secret = frappe.db.get_single_value("Press Settings", "github_webhook_secret")
 		digest = hmac.HMAC(secret.encode(), self.payload.encode(), hashlib.sha1)
 		if not hmac.compare_digest(digest.hexdigest(), self.signature):
-			frappe.throw("Invalid Signature")
+			frappe.throw(
+				"The webhook signature is invalid. Please verify the configured GitHub webhook secret matches."
+			)
 
 		payload = self.get_parsed_payload()
 		self.github_installation_id = payload.get("installation", {}).get("id")

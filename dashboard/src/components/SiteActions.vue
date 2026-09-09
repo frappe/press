@@ -20,6 +20,38 @@
 					View Documentation
 				</Button>
 			</AlertBanner>
+			<!-- Migration shortcuts: deep-link to the Migrations tab with the dialog
+			     opened and the right migration type preselected. -->
+			<template v-if="$site?.doc?.status !== 'Archived'">
+				<div
+					class="py-3 first:pt-0 last:pb-0"
+					v-for="shortcut in migrationShortcutsFor(group.group)"
+					:key="shortcut.action"
+				>
+					<div class="flex items-center justify-between gap-1">
+						<div>
+							<h3 class="text-base font-medium">{{ shortcut.label }}</h3>
+							<p class="mt-1 text-p-base text-ink-gray-6">
+								{{ shortcut.description }}
+							</p>
+						</div>
+						<Button
+							class="whitespace-nowrap"
+							@click="openMigration(shortcut.action)"
+						>
+							<p
+								:class="
+									group.group === 'Dangerous Actions'
+										? 'text-red-600'
+										: 'text-ink-gray-8'
+								"
+							>
+								{{ shortcut.buttonLabel }}
+							</p>
+						</Button>
+					</div>
+				</div>
+			</template>
 			<div
 				class="py-3 first:pt-0 last:pb-0"
 				v-for="row in group.actions"
@@ -38,41 +70,96 @@
 	</div>
 </template>
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
-import SiteActionCell from './SiteActionCell.vue';
-import AlertBanner from './AlertBanner.vue';
+import { getCachedDocumentResource } from 'frappe-ui'
+import { defineAsyncComponent, h } from 'vue'
+import { renderDialog } from '../utils/components'
+import AlertBanner from './AlertBanner.vue'
+import SiteActionCell from './SiteActionCell.vue'
 
 export default {
 	name: 'SiteActions',
 	props: ['site'],
 	components: { SiteActionCell, AlertBanner },
+	data() {
+		return {
+			// `action` matches the keys returned by Site.get_migration_options, which
+			// the migration dialog uses to preselect the migration type. `group`
+			// places the shortcut under the matching site action section.
+			migrationShortcuts: [
+				{
+					label: 'In-Place Migrate Site',
+					action: 'In-Place Migrate Site',
+					description:
+						'Run bench migrate on the current bench to apply pending patches and schema changes.',
+					buttonLabel: 'Migrate Site',
+					group: 'Dangerous Actions',
+				},
+				{
+					label: 'Move to a Different Server / Bench',
+					action: 'Move Site To Different Server / Bench',
+					description: 'Move this site to another private bench or server.',
+					buttonLabel: 'Move Site',
+					group: 'General Actions',
+				},
+				{
+					label: 'Move to a Different Region',
+					action: 'Move Site To Different Region',
+					description: 'Move this site to a bench in another region.',
+					buttonLabel: 'Move Site',
+					group: 'General Actions',
+				},
+			],
+		}
+	},
 	computed: {
 		$site() {
-			return getCachedDocumentResource('Site', this.site);
+			return getCachedDocumentResource('Site', this.site)
 		},
 		actions() {
 			const groupedActions = this.$site.doc.actions.reduce((acc, action) => {
-				const group = action.group || 'General Actions';
+				const group = action.group || 'General Actions'
 				if (!acc[group]) {
-					acc[group] = [];
+					acc[group] = []
 				}
-				acc[group].push(action);
-				return acc;
-			}, {});
+				acc[group].push(action)
+				return acc
+			}, {})
 
 			return Object.keys(groupedActions).map((group) => ({
 				group,
 				actions: groupedActions[group],
-			}));
+			}))
 		},
 	},
 	methods: {
+		migrationShortcutsFor(group) {
+			return this.migrationShortcuts.filter(
+				(shortcut) => shortcut.group === group,
+			)
+		},
 		openSiteMigrationsDoc() {
 			window.open(
 				'https://docs.frappe.io/cloud/site/site-migrations/introduction-to-site-migration',
 				'_blank',
-			);
+			)
+		},
+		openMigration(action) {
+			// Land the user on the Migrations tab, then open the migration dialog
+			// with the chosen migration type preselected.
+			this.$router
+				.push({
+					name: 'Site Detail Migrations',
+					params: { name: this.site },
+				})
+				.then(() => {
+					renderDialog(
+						h(
+							defineAsyncComponent(() => import('./site/SiteMigration.vue')),
+							{ site: this.site, defaultAction: action },
+						),
+					)
+				})
 		},
 	},
-};
+}
 </script>
