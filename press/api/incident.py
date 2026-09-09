@@ -1,5 +1,5 @@
 import frappe
-from frappe.query_builder.functions import Count, DistinctOptionFunction
+from frappe.query_builder.functions import Coalesce, Count, DistinctOptionFunction
 from pypika.enums import Order
 from pypika.terms import Field
 
@@ -78,15 +78,18 @@ def get_incidents(resolved: bool = False, limit: int = 20, offset: int = 0) -> l
 	Incident = frappe.qb.DocType("Incident")
 	Investigation = frappe.qb.DocType("Incident Investigator")
 	InvestigationAction = frappe.qb.DocType("Action Step")
+	Server = frappe.qb.DocType("Server")
 	query = (
 		frappe.qb.from_(Incident)
 		.left_join(Investigation)
 		.on(Incident.investigation == Investigation.name)
 		.left_join(InvestigationAction)
 		.on(Investigation.name == InvestigationAction.parent)
+		.left_join(Server)
+		.on(Incident.server == Server.name)
 		.select(
 			Incident.name,
-			Incident.server,
+			Coalesce(Server.title, Incident.server).as_("server"),
 			Incident.status,
 			Incident.creation,
 			Incident.confirmed_at,

@@ -34,11 +34,7 @@
 		</div>
 	</Header>
 	<div>
-		<AlertBanner
-			v-if="banner && $resources.document?.doc"
-			class="mx-5 mt-5"
-			v-bind="banner"
-		/>
+		<PageBanner v-if="banner" v-bind="banner" />
 		<TabsWithRouter
 			v-if="!$resources.document.get.error && $resources.document.get.fetched"
 			:document="$resources.document?.doc"
@@ -74,12 +70,12 @@
 <script>
 import Header from '../components/Header.vue';
 import ActionButton from '../components/ActionButton.vue';
-import AlertBanner from '../components/AlertBanner.vue';
 import DetailPageError from '../components/DetailPageError.vue';
 import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
 import AccessRequestButton from '../components/AccessRequestButton.vue';
+import PageBanner from '../components/PageBanner.vue';
 
 let subscribed = {};
 
@@ -99,8 +95,8 @@ export default {
 	components: {
 		Header,
 		ActionButton,
-		AlertBanner,
 		TabsWithRouter,
+		PageBanner,
 		FBreadcrumbs: Breadcrumbs,
 	},
 	resources: {
@@ -157,17 +153,17 @@ export default {
 			let doc = this.$resources.document?.doc;
 			return doc ? doc[this.object.detail.titleField || 'name'] : this.name;
 		},
-		banner() {
-			if (this.object.detail.banner && this.$resources.document?.doc) {
-				return this.object.detail.banner({
+		badge() {
+			if (this.object.detail.statusBadge) {
+				return this.object.detail.statusBadge({
 					documentResource: this.$resources.document,
 				});
 			}
 			return null;
 		},
-		badge() {
-			if (this.object.detail.statusBadge) {
-				return this.object.detail.statusBadge({
+		banner() {
+			if (this.object.detail.banner && this.$resources.document?.doc) {
+				return this.object.detail.banner({
 					documentResource: this.$resources.document,
 				});
 			}

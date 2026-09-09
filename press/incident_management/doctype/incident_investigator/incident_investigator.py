@@ -25,13 +25,13 @@ from press.runner import Ansible, StepHandler
 from press.runner import Status as StepStatus
 
 if typing.TYPE_CHECKING:
+	from press.incident_management.doctype.action_step.action_step import ActionStep
+	from press.incident_management.doctype.investigation_step.investigation_step import (
+		InvestigationStep,
+	)
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
-	from press.press.incident_management.doctype.action_step.action_step import ActionStep
-	from press.press.incident_management.doctype.investigation_step.investigation_step import (
-		InvestigationStep,
-	)
 
 
 INVESTIGATION_WINDOW = 5  # Use 5m timeframe
@@ -168,7 +168,7 @@ class PrometheusInvestigationHelper:
 		step.save()
 
 	def has_high_cpu_load(self, instance: str, step: "InvestigationStep"):
-		"""Check high cpu rate during window"""
+		"""Check high CPU rate during window"""
 		query = f'node_cpu_seconds_total{{instance="{instance}",mode="idle"}}'
 		assert self.investigation_window_start_time and self.investigation_window_end_time, (
 			"Investigation window not set"
@@ -192,7 +192,7 @@ class PrometheusInvestigationHelper:
 		step.save()
 
 	def has_high_memory_usage(self, instance: str, step: "InvestigationStep"):
-		"Determine high memory usage over a period of investigation window"
+		"Determined high memory usage over a period of investigation window"
 		query = f"""
 				(
 					1 - (

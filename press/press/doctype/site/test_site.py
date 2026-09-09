@@ -34,7 +34,9 @@ from press.press.doctype.site.site import (
 	NOTIFY_BEFORE_ARCHIVAL_DAYS,
 	Site,
 	archive_suspended_sites,
+	get_remove_step_status,
 	notify_sites_before_archival,
+	process_archive_site_job_update,
 	process_new_site_job_update,
 	process_rename_site_job_update,
 	suspend_sites_exceeding_disk_usage_for_last_14_days,
@@ -185,7 +187,35 @@ class TestSite(FrappeTestCase):
 	"""Tests for Site Document methods."""
 
 	def tearDown(self):
+		frappe.set_user("Administrator")
 		frappe.db.rollback()
+
+	def test_get_doc_reports_commit_time_of_the_frappe_release_on_the_bench(self):
+		site = create_test_site()
+		release = frappe.db.get_value("Bench App", {"parent": site.bench, "app": "frappe"}, "release")
+		commit_time = frappe.utils.add_days(frappe.utils.now_datetime(), -45)
+		frappe.db.set_value("App Release", release, "timestamp", commit_time)
+
+		doc = frappe._dict()
+		site.get_doc(doc)
+		self.assertEqual(doc.frappe_updated_on, commit_time)
+
+	def test_restore_site_from_files_rejects_remote_file_of_another_team(self):
+		from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
+		from press.press.doctype.team.test_team import create_test_team
+
+		team = create_test_team()
+		other_team = create_test_team()
+		site = create_test_site("testsubdomain", team=team.name)
+		remote_file = create_test_remote_file(file_path="somewhere/database.sql.gz")
+		frappe.db.set_value("Remote File", remote_file.name, "team", other_team.name)
+
+		with self.assertRaises(frappe.PermissionError) as context:
+			site.restore_site_from_files({"database": remote_file.name, "public": "", "private": ""})
+
+		self.assertIn("does not belong to site's team", str(context.exception))
+		site.reload()
+		self.assertFalse(site.remote_database_file)
 
 	def test_host_name_updates_perform_checks_on_host_name(self):
 		"""Ensure update of host name triggers verification of host_name."""
@@ -940,3 +970,320 @@ class TestSite(FrappeTestCase):
 		}
 		self.assertTrue(bahrain_files.isdisjoint(deleted_files))
 		self.assertTrue(other_files.issubset(set(deleted_files)))
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestSiteConfigJSONValidation(FrappeTestCase):
+	"""A JSON config value that isn't an object breaks every later save of the site."""
+
+	def setUp(self):
+		self.site = create_test_site("testsubdomain")
+		frappe.get_doc({"doctype": "Site Config Key", "key": "test_limits", "type": "JSON"}).insert()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_json_config_key_accepts_an_object(self):
+		self.site.update_config({"test_limits": {"space": 1}})
+		self.assertEqual(json.loads(self.site.config)["test_limits"], {"space": 1})
+
+	def test_json_config_key_accepts_an_array(self):
+		self.site.update_config({"test_limits": ["space"]})
+		self.assertEqual(json.loads(self.site.config)["test_limits"], ["space"])
+
+	def test_json_config_key_rejects_a_value_that_isnt_json(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"is not valid JSON",
+			self.site.update_config,
+			{"test_limits": "{space: 1}"},
+		)
+		self.site.reload()
+		self.assertNotIn("test_limits", json.loads(self.site.config))
+
+	def test_json_config_key_rejects_a_json_string(self):
+		"""A JSON string decodes to a scalar, gets stored as plain text and can't be read back."""
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"must be a JSON object or array",
+			self.site.update_config,
+			{"test_limits": '"abc"'},
+		)
+		self.site.reload()
+		self.assertNotIn("test_limits", json.loads(self.site.config))
+
+	def test_json_config_key_rejects_a_number(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"must be a JSON object or array",
+			self.site.update_config,
+			{"test_limits": 1},
+		)
+		self.site.reload()
+		self.assertNotIn("test_limits", json.loads(self.site.config))
+
+	def test_site_with_a_json_config_key_can_be_saved_again(self):
+		self.site.update_config({"test_limits": {"space": 1}})
+		self.site.reload()
+		self.site.save()
+
+	def _broken_site_with_fatal_update(
+		self, backup_type: str = "Logical", deploy_type: str = "Migrate"
+	) -> Site:
+		from press.press.doctype.site_update.test_site_update import create_test_site_update
+
+		site = create_test_site("fatalupdate")
+		site_update = create_test_site_update(
+			site.name, site.group, "Fatal", ignore_validate=True, deploy_type=deploy_type
+		)
+		site_update.db_set("backup_type", backup_type)
+		site.db_set("fatal_site_update", site_update.name)
+		site.db_set("status", "Broken")
+		site.reload()
+		return site
+
+	def test_restore_tables_is_rejected_when_site_has_no_fatal_update(self):
+		site = create_test_site("healthysite")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError, "no failed update to recover from", site.restore_tables
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_while_another_restore_runs(self):
+		site = self._site_with_a_running_table_restore()
+
+		self.assertRaisesRegex(frappe.ValidationError, "is already running on this site", site.restore_tables)
+		self.assertEqual(
+			frappe.db.count("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			1,
+			"The refused restore must not have created a second job",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=None))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_force_restore_tables_skips_the_checks_for_a_system_user(self):
+		# The operator can see things the checks cannot, so force skips them. Here the
+		# database server reports no metric, which normally refuses the restore.
+		site = self._broken_site_with_fatal_update()
+
+		site.restore_tables(force=True)
+
+		self.assertTrue(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"A forced restore should run even without proof that the database is up",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_force_restore_tables_still_refuses_while_another_restore_runs(self):
+		# Two restores against one database corrupt it, so force must not skip that check.
+		site = self._site_with_a_running_table_restore()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"is already running on this site",
+			lambda: site.restore_tables(force=True),
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=None))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_force_restore_tables_is_ignored_for_a_user_who_is_not_a_system_user(self):
+		site = self._broken_site_with_fatal_update()
+		team_user = frappe.db.get_value("Team", site.team, "user")
+		frappe.db.set_value("User", team_user, "user_type", "Website User")
+		frappe.clear_cache(doctype="User")
+		frappe.set_user(team_user)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"database server is not up",
+			lambda: site.restore_tables(force=True),
+		)
+
+	def _site_with_a_running_table_restore(self) -> Site:
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		site = self._broken_site_with_fatal_update()
+		running_restore = create_test_agent_job("Restore Site Tables", server=site.server, status="Running")
+		running_restore.db_set("site", site.name)
+		return site
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=None))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_when_database_reports_no_metrics(self):
+		# A database server that is down stops reporting mysql_up at all. Without a metric
+		# we cannot tell the database is back, so the one-shot restore must not be spent.
+		site = self._broken_site_with_fatal_update()
+
+		self.assertRaisesRegex(frappe.ValidationError, "database server is not up", site.restore_tables)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run without proof that the database is up",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_creates_restore_job_when_database_is_up(self):
+		site = self._broken_site_with_fatal_update()
+
+		site.restore_tables()
+
+		self.assertTrue(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables should run once the database reports itself up",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_when_the_failed_update_was_a_pull(self):
+		# A pull update takes no backup at all, so there is no dump to read.
+		site = self._broken_site_with_fatal_update(deploy_type="Pull")
+
+		self.assertRaisesRegex(frappe.ValidationError, "did not migrate the site", site.restore_tables)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run for an update that took no backup",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_force_restore_tables_still_refuses_an_update_that_was_a_pull(self):
+		# There is no dump to read, for any user.
+		site = self._broken_site_with_fatal_update(deploy_type="Pull")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"did not migrate the site",
+			lambda: site.restore_tables(force=True),
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_when_the_failed_update_used_a_physical_backup(self):
+		# A physical update restores from a snapshot, and its site stays on the destination
+		# bench. A table restore has no dump to read. A success activates the site and
+		# clears the fatal update.
+		site = self._broken_site_with_fatal_update("Physical")
+
+		self.assertRaisesRegex(frappe.ValidationError, "used a Physical backup", site.restore_tables)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run for an update that took a physical backup",
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_force_restore_tables_still_refuses_an_update_that_took_a_physical_backup(self):
+		# There is no dump to read, for any user.
+		site = self._broken_site_with_fatal_update("Physical")
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"used a Physical backup",
+			lambda: site.restore_tables(force=True),
+		)
+
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_restore_tables_is_rejected_when_a_newer_site_update_exists(self):
+		from press.press.doctype.site_update.test_site_update import create_test_site_update
+
+		# The newer update has to exist before the site is marked fatal — a fatal update
+		# blocks new ones.
+		site = create_test_site("newerupdate")
+		fatal_update = create_test_site_update(site.name, site.group, "Fatal", ignore_validate=True)
+		newer_update = create_test_site_update(site.name, site.group, "Success", ignore_validate=True)
+		site.db_set("fatal_site_update", fatal_update.name)
+		site.db_set("status", "Broken")
+		site.reload()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			f"Site Update {newer_update.name} ran after the failed one",
+			site.restore_tables,
+		)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run once a newer update has moved the site on",
+		)
+
+	def test_dedicated_server_plan_does_not_get_a_rate_limit(self):
+		"""Sites on a dedicated server must not be usage tracked, whatever the plan is named."""
+		plan = create_test_plan("Site", cpu_time=10, dedicated_server_plan=True)
+		site = Site({"doctype": "Site", "plan": plan.name})
+
+		self.assertEqual(site.get_plan_config()["rate_limit"], {})
+
+	def test_shared_server_plan_gets_a_rate_limit_from_cpu_time(self):
+		plan = create_test_plan("Site", cpu_time=10)
+		site = Site({"doctype": "Site", "plan": plan.name})
+
+		self.assertEqual(site.get_plan_config()["rate_limit"], {"limit": 36000, "window": 86400})
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestArchiveSiteJobUpdate(FrappeTestCase):
+	"""A skipped Archive Site step must not mark the site Archived."""
+
+	def setUp(self):
+		self.site = create_test_site("testsubdomain")
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _create_archive_jobs(self, archive_job_status: str) -> AgentJob:
+		"""Create the pair of jobs an archive runs, with the upstream one done."""
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		upstream_job = create_test_agent_job(
+			"Remove Site from Upstream", server=self.site.server, status="Success"
+		)
+		upstream_job.db_set("site", self.site.name)
+		self._set_step_status(upstream_job, "Remove Site File from Upstream Directory", "Success")
+
+		archive_job = create_test_agent_job(
+			"Archive Site", server=self.site.server, status=archive_job_status
+		)
+		archive_job.db_set("site", self.site.name)
+		return archive_job
+
+	def _set_step_status(self, job: AgentJob, step_name: str, status: str):
+		frappe.db.set_value(
+			"Agent Job Step", {"agent_job": job.name, "step_name": step_name}, "status", status
+		)
+
+	def test_archive_step_skipped_after_a_stuck_backup_marks_the_site_broken(self):
+		"""The job died while Backup Site was still running, so the site is still on the bench."""
+		archive_job = self._create_archive_jobs("Failure")
+		self._set_step_status(archive_job, "Backup Site", "Running")
+		self._set_step_status(archive_job, "Archive Site", "Skipped")
+
+		process_archive_site_job_update(archive_job)
+
+		self.site.reload()
+		self.assertEqual(self.site.status, "Broken")
+		self.assertTrue(self.site.archive_failed)
+
+	def test_archive_step_skipped_after_a_failed_backup_upload_marks_the_site_broken(self):
+		"""Backup Site succeeded, the upload failed, so Archive Site never ran."""
+		archive_job = self._create_archive_jobs("Failure")
+		self._set_step_status(archive_job, "Backup Site", "Success")
+		self._set_step_status(archive_job, "Upload Site Backup to S3", "Failure")
+		self._set_step_status(archive_job, "Archive Site", "Skipped")
+
+		process_archive_site_job_update(archive_job)
+
+		self.site.reload()
+		self.assertEqual(self.site.status, "Broken")
+		self.assertTrue(self.site.archive_failed)
+
+	def test_step_skipped_by_a_successful_job_still_counts_as_removed(self):
+		"""The agent skips a step it has no work for. That job succeeded, so nothing is left behind."""
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		job = create_test_agent_job("Remove Site from Upstream", server=self.site.server, status="Success")
+		self._set_step_status(job, "Remove Site File from Upstream Directory", "Skipped")
+
+		self.assertEqual(get_remove_step_status(job), "Skipped")
