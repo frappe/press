@@ -14,25 +14,53 @@
 		</div>
 
 		<ObjectList class="mt-4" :options="options" />
+
+		<SiteBackupAuditDayDialog
+			v-if="selectedDay"
+			:key="selectedDay.date"
+			:day="selectedDay"
+			:unconfirmed="history.unconfirmed"
+			@close="selectedDay = null"
+		/>
 	</div>
 </template>
 
 <script>
+import { Badge } from 'frappe-ui'
+import { h } from 'vue'
 import { toast } from 'vue-sonner'
+import {
+	backupType,
+	filesDetail,
+	filesTheme,
+	sizeIsFromRecord,
+	sizeLabel,
+	statusLabel,
+	statusTheme,
+} from '../../utils/backupAudit'
 import { downloadCSV } from '../../utils/csv'
 import dayjs from '../../utils/dayjs'
-import { bytes, date } from '../../utils/format'
+import { date } from '../../utils/format'
 import { getDocResource } from '../../utils/resource'
+import { showErrorToast } from '../../utils/toast'
 import ObjectList from '../ObjectList.vue'
+import SiteBackupAuditDayDialog from './SiteBackupAuditDayDialog.vue'
 
 const DEFAULT_RANGE_DAYS = 30
 // The build tells the page when it is done, so nothing is asked for on a timer
 const REALTIME_EVENT = 'backup_audit_trail_update'
 
+const SIZE_COLUMNS = [
+	{ label: 'Database', fieldname: 'database' },
+	{ label: 'Public files', fieldname: 'public' },
+	{ label: 'Private files', fieldname: 'private' },
+	{ label: 'Config', fieldname: 'config' },
+]
+
 export default {
 	name: 'SiteBackupAuditTrail',
 	props: ['name'],
-	components: { ObjectList },
+	components: { ObjectList, SiteBackupAuditDayDialog },
 	data() {
 		return {
 			// Set here, not in created: the resource fetches before the component's own
@@ -41,6 +69,7 @@ export default {
 				.subtract(DEFAULT_RANGE_DAYS, 'day')
 				.format('YYYY-MM-DD'),
 			endDate: dayjs().format('YYYY-MM-DD'),
+			selectedDay: null,
 		}
 	},
 	mounted() {
@@ -61,6 +90,9 @@ export default {
 					start_date: this.startDate,
 					end_date: this.endDate,
 					refresh: params?.refresh ? 1 : 0,
+					// Reading the answer to a finished build must not start another one,
+					// or the two keep waking each other up
+					build: params?.build === false ? 0 : 1,
 				}),
 				auto: true,
 				// The dates the pickers show follow the range the trail was built for,
@@ -69,6 +101,9 @@ export default {
 					if (data?.start_date) this.startDate = data.start_date
 					if (data?.end_date) this.endDate = data.end_date
 				},
+				// A rejected range is an error the server explains, and saying nothing
+				// leaves the page looking stuck on the old trail
+				onError: showErrorToast,
 			}
 		},
 	},
@@ -85,6 +120,9 @@ export default {
 		preparing() {
 			return this.history.status === 'Preparing'
 		},
+		broken() {
+			return this.history.status === 'Broken'
+		},
 		rows() {
 			// The API already returns one entry per day, ready to render
 			return (this.history.days || []).map((day) => ({
@@ -93,6 +131,16 @@ export default {
 			}))
 		},
 		banner() {
+			// A build that died has already said so, and nothing else will arrive
+			if (this.broken) {
+				return {
+					title:
+						"Couldn't put the trail together for this range. Try refresh, and check the error log if it keeps failing.",
+					type: 'warning',
+					id: `${this.name}-broken`,
+				}
+			}
+
 			// Records are a query, but the server answers from a queue and the buckets
 			// are someone else's network, so the trail is put together in the background
 			if (this.preparing) {
@@ -104,12 +152,13 @@ export default {
 				}
 			}
 
-			// The server has the last word on days nothing is stored for, so say when it
-			// could not be asked rather than letting those days read as no backup
+			// The server and the buckets have the last word on days nothing is stored
+			// for, so say when they could not be reached rather than letting those days
+			// read as no backup
 			if (this.history.unconfirmed) {
 				return {
 					title:
-						"Couldn't reach this site's server, so days showing Not Available aren't confirmed.",
+						"Couldn't reach this site's server or its backup storage, so days showing Unconfirmed aren't answered by anything.",
 					type: 'general',
 					dismissable: true,
 					id: `${this.name}-unconfirmed`,
@@ -117,15 +166,69 @@ export default {
 			}
 
 			const plan = this.site.doc?.current_plan
-			if (!plan || plan.offsite_backups) return
+			if (!plan || plan.offsite_backups) return this.retentionBanner
 			// Without offsite backups nothing was ever uploaded, so empty days are
 			// the plan working as sold rather than a backup that went missing
 			return {
-				title: `The ${plan.plan_title} plan doesn't store backups offsite, so most days will show Not Available.`,
+				title: `The ${plan.plan_title} plan doesn't store backups offsite, so most days will show No backup.`,
 				type: 'general',
 				dismissable: true,
 				id: `${this.name}-no-offsite`,
 			}
+		},
+		retentionBanner() {
+			if (!this.rows.some((row) => row.files === 'Deleted')) return
+			// A size against a day whose files are gone is a record, not a promise that
+			// the backup can still be restored
+			return {
+				title:
+					'Backups are deleted once their retention period ends. Sizes on those days are what Press recorded when the backup ran.',
+				type: 'general',
+				dismissable: true,
+				id: `${this.name}-retention`,
+			}
+		},
+		columns() {
+			return [
+				{
+					// Every row is a day, and a day recovered from the bucket has no
+					// clock time to show, so all of them read as one date
+					label: 'Date',
+					fieldname: 'date',
+					width: 0.9,
+					format: (value) => date(value, 'ddd, ll'),
+				},
+				{
+					label: 'Backup',
+					fieldname: 'status',
+					width: '130px',
+					align: 'center',
+					type: 'Badge',
+					format: (value, row) => statusLabel(row, this.history.unconfirmed),
+					theme: (value, row) =>
+						statusTheme(statusLabel(row, this.history.unconfirmed)),
+				},
+				...SIZE_COLUMNS.map((column) => ({
+					...column,
+					width: 0.6,
+					align: 'right',
+					type: 'Component',
+					component: ({ row }) => this.sizeCell(row, row[column.fieldname]),
+				})),
+				{
+					label: 'Files',
+					fieldname: 'files',
+					width: 1.1,
+					type: 'Component',
+					component: ({ row }) => this.filesCell(row),
+				},
+				{
+					label: 'Evidence',
+					fieldname: 'source',
+					width: 0.9,
+					format: (value) => value || 'None',
+				},
+			]
 		},
 		options() {
 			return {
@@ -133,53 +236,12 @@ export default {
 				isLoading: () => this.$resources.history.loading || this.preparing,
 				emptyStateMessage: this.preparing
 					? 'Putting the trail together'
-					: 'No backups stored for this range',
+					: this.broken
+						? 'Nothing to show'
+						: 'No backups stored for this range',
 				banner: () => this.banner,
-				columns: [
-					{
-						// Every row is a day, and a day recovered from the bucket has no
-						// clock time to show, so all of them read as one date
-						label: 'Timestamp',
-						fieldname: 'date',
-						width: 1,
-						format: (value) => date(value, 'ddd, ll'),
-					},
-					{
-						label: 'Status',
-						fieldname: 'status',
-						width: '150px',
-						align: 'center',
-						type: 'Badge',
-						theme: (value) =>
-							({ Success: 'green', Failure: 'red' })[value] || 'gray',
-					},
-					{
-						label: 'Database',
-						fieldname: 'database',
-						width: 0.5,
-						format: (value) => (value ? bytes(value) : ''),
-					},
-					{
-						label: 'Public Files',
-						fieldname: 'public',
-						width: 0.5,
-						format: (value) => (value ? bytes(value) : ''),
-					},
-					{
-						label: 'Private Files',
-						fieldname: 'private',
-						width: 0.5,
-						format: (value) => (value ? bytes(value) : ''),
-					},
-					{
-						// Often the only thing left on an old day, and then it is the
-						// whole basis for calling that day a backup
-						label: 'Config',
-						fieldname: 'config',
-						width: 0.5,
-						format: (value) => (value ? bytes(value) : ''),
-					},
-				],
+				onRowClick: (row) => (this.selectedDay = row),
+				columns: this.columns,
 				filterControls: () => [
 					{
 						type: 'date',
@@ -196,10 +258,11 @@ export default {
 						default: this.endDate,
 					},
 				],
+				// Picking dates only changes what will be asked for: an audit range is
+				// set two controls at a time, and each one would cost a build of its own
 				updateFilters: ({ startDate, endDate }) => {
 					if (startDate) this.startDate = this.clampToSiteAge(startDate)
 					if (endDate) this.endDate = this.clampToSiteAge(endDate)
-					this.$resources.history.fetch()
 				},
 				actions: () => [
 					{
@@ -218,6 +281,30 @@ export default {
 		},
 	},
 	methods: {
+		sizeCell(row, value) {
+			const label = sizeLabel(row, value)
+			return h(
+				'div',
+				{
+					class: [
+						'w-full truncate text-right text-base',
+						label === 'Not recorded' ? 'text-ink-gray-4' : 'text-ink-gray-7',
+					],
+					// The number is on record, the object it describes is gone
+					title: sizeIsFromRecord(row)
+						? 'Recorded when the backup ran. The files have since been deleted.'
+						: undefined,
+				},
+				label,
+			)
+		},
+		filesCell(row) {
+			const detail = filesDetail(row)
+			return h('div', { class: 'flex flex-col gap-0.5 py-1' }, [
+				h(Badge, { label: row.files, theme: filesTheme(row.files) }),
+				detail ? h('span', { class: 'text-xs text-ink-gray-5' }, detail) : null,
+			])
+		},
 		onTrailBuilt(data) {
 			if (data?.site !== this.name) return
 
@@ -225,7 +312,7 @@ export default {
 			// trims a start before the site existed and an end past today
 			const { start_date: start, end_date: end } = this.history
 			if (!start || (data.start_date === start && data.end_date === end)) {
-				this.$resources.history.fetch()
+				this.$resources.history.fetch({ build: false })
 			}
 		},
 		rebuild() {
@@ -239,17 +326,22 @@ export default {
 			return this.siteCreatedOn
 		},
 		exportCSV() {
-			// Built from the columns themselves, so the file always matches the screen
+			// Carries the deletion date and the evidence, so the file stands on its own
+			// once it leaves the dashboard
 			const rows = this.rows.map((row) => ({
 				Date: row.date,
+				Backup: statusLabel(row, this.history.unconfirmed),
 				...Object.fromEntries(
-					this.options.columns.map((column) => [
+					SIZE_COLUMNS.map((column) => [
 						column.label,
-						column.format
-							? column.format(row[column.fieldname], row)
-							: row[column.fieldname],
+						sizeLabel(row, row[column.fieldname]),
 					]),
 				),
+				Files: row.files,
+				'Deleted on': row.expired_on || '',
+				'Retention rule': row.rule || '',
+				Type: backupType(row),
+				Evidence: row.source || '',
 			}))
 			downloadCSV(
 				rows,

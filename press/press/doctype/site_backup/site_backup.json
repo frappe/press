@@ -12,6 +12,8 @@
 		"column_break_obsx",
 		"job",
 		"files_availability",
+		"files_expired_on",
+		"retention_rule",
 		"physical",
 		"for_site_update",
 		"with_files",
@@ -198,6 +200,20 @@
 			"in_standard_filter": 1,
 			"label": "Files Availability",
 			"options": "\nAvailable\nUnavailable",
+			"read_only": 1
+		},
+		{
+			"description": "When retention deleted the files. An audit asks for this long after the objects are gone.",
+			"fieldname": "files_expired_on",
+			"fieldtype": "Datetime",
+			"label": "Files Expired On",
+			"read_only": 1
+		},
+		{
+			"description": "The retention rule that deleted the files, for example Daily or Weekly.",
+			"fieldname": "retention_rule",
+			"fieldtype": "Data",
+			"label": "Retention Rule",
 			"read_only": 1
 		},
 		{ "fieldname": "column_break_wiuq", "fieldtype": "Column Break" },
