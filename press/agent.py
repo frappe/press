@@ -9,6 +9,7 @@ import re
 from contextlib import suppress
 from datetime import date
 from typing import TYPE_CHECKING, Any, Literal
+from urllib.parse import urlencode
 
 import frappe
 import frappe.utils
@@ -1208,6 +1209,21 @@ Response: {reason or getattr(result, "text", "Unknown")}
 	def cancel_job(self, id):
 		return self.post(f"jobs/{id}/cancel")
 
+	def fetch_site_backup_jobs(self, site: str, start: str, end: str):
+		"""Queue a read of this server's job database for the backup audit trail.
+
+		The range rides in the path because job deduplication keys off it, and two
+		ranges for one site are different questions.
+		"""
+		query = urlencode({"site": site, "start": start, "end": end})
+		return self.create_agent_job(
+			"Fetch Backup Jobs",
+			f"server/backup-jobs?{query}",
+			site=site,
+			reference_doctype="Site",
+			reference_name=site,
+		)
+
 	def get_site_sid(self, site, user=None):
 		if user:
 			data = {"user": user}
@@ -1648,6 +1664,24 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Upload Binlogs To S3",
 			"/database/binlogs/upload",
 			data={"binlogs": binlogs, "offsite": offsite_config},
+		)
+
+	def upload_audit_logs_to_s3(self, database_server: DatabaseServer):
+		if self.server_type != "Database Server":
+			return NotImplementedError("Only Database Server supports this method")
+
+		cluster = frappe.get_value("Database Server", self.server, "cluster")
+		# Binlogs use the bare server name as prefix, so audit logs get their own keyspace
+		offsite_config = self._get_offsite_backup_config(cluster, backups_path=f"{self.server}/audit")
+
+		return self.create_agent_job(
+			"Upload Audit Logs To S3",
+			"/database/audit-logs/upload",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"offsite": offsite_config,
+			},
 		)
 
 	def add_binlogs_to_indexer(self, binlogs):

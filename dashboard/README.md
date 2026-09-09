@@ -1,64 +1,61 @@
 # Dashboard
 
-Dashboard is a VueJS application that is the face of Frappe Cloud. This is what the end users (tenants) see and manage their FC stuff in. The tenants does not have access to the desk, so, this is their dashboard for managing sites, apps, updates etc.
+Dashboard is the Vue application that customers of Frappe Cloud use. They have
+no access to the desk, so this is where they manage their sites, apps, servers,
+updates, and billing.
 
-Technologies at the heart of dashboard:
+The application is built with these tools:
 
-1. [VueJS 3](https://vuejs.org/): The JavaScript framework of our choice.
-
-2. [TailwindCSS 3](https://tailwindcss.com/): We love it.
-
-3. [ViteJS](https://vitejs.dev/guide/): Build tooling for dev server and build command.
-
-4. [Feather Icons](https://feathericons.com/): Those Shiny & Crisp Open Source icons.
+1. [Vue 3](https://vuejs.org/) — the JavaScript framework
+2. [Frappe UI](https://github.com/frappe/frappe-ui) — the component library
+3. [Tailwind CSS 3](https://tailwindcss.com/) — the styles
+4. [Vite](https://vitejs.dev/guide/) — the dev server and the build
+5. [Lucide](https://lucide.dev/) — the icons
 
 ## Development
 
-We use the vite's development server, gives us super-fast hot reload and more.
-
-### Running the development server
-
-Run:
-
 ```bash
-yarn run dev
+yarn dev
 ```
 
-> Note: If you are getting `CSRFTokenError` in your local development machine, please add the following key value pair in your site_config.json
->
-> ```json
-> "ignore_csrf": 1
-> ```
+Vite gives a fast dev server with hot reload.
+
+NOTE: If you get a `CSRFTokenError` on your local machine, add `"ignore_csrf": 1`
+to `site_config.json`.
 
 ### Proxy
 
-While running the vite dev server, the requests to paths like `/app`, `/files` and `/api` are redirected to the actual site inside the bench. This makes sure these paths and other backend API keep working properly. You can check the [proxyOptions.js](./proxyOptions.js) files to check how the proxying happens. These options are then loaded and used in the [vite config](./vite.config.js) file.
+The `frappeui` plugin in [vite.config.ts](./vite.config.ts) sets `frappeProxy:
+true`. The dev server then sends requests for paths such as `/app`, `/files`,
+and `/api` to the site in your bench. The backend API continues to work while
+you develop the frontend.
+
+### Build
+
+```bash
+yarn build
+```
+
+The build writes to `press/public/dashboard`, and the page to
+`press/www/dashboard.html`. Frappe serves both.
 
 ## Testing
 
-There is a separate setup for testing the frontend.
-
-### The Stack
-
-1. [MSW](https://mswjs.io/)
-
-2. [Vitest](https://vitest.dev/)
-
-### Running the tests
+Unit tests use [Vitest](https://vitest.dev/) with [MSW](https://mswjs.io/) for
+the API mocks. CI runs them too.
 
 ```bash
-yarn run test
+yarn test
 ```
 
-The tests run in CI too.
+End-to-end tests use Playwright and live in `tests-e2e/`. Read
+[guide-to-ui-testing.md](../guide-to-ui-testing.md) for the setup.
 
-## Learning More
+## Learning more
 
-You can start by taking a look at the [main.js](./src/main.js) file. This is where the VueJS app is initialzed and the below things are attached (registered) to the instance:
+Start with [main.js](./src/main.js). This file starts the Vue application and
+registers the router, the plugins, the controllers, and the global components.
+Each part has its own file, which you can find through the imports.
 
-1. Vue Router
-2. Plugins
-3. Controllers
-4. Global Components
-
-The logic to register each of the above is in its own separate file, you can take a look at the imports as required. Till we have a more docs, you have to dig into some `js` and `vue` files. If you find something that you can add here, feel free to raise a PR!
+The documentation is not complete. You have to read some `js` and `vue` files.
+If you find something to add here, open a PR.

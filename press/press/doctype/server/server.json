@@ -33,6 +33,7 @@
 		"use_agent_job_callbacks",
 		"is_pyspy_setup",
 		"halt_agent_jobs",
+		"disable_agent_update",
 		"stop_deployments",
 		"is_for_recovery",
 		"is_monitoring_disabled",
@@ -47,6 +48,7 @@
 		"auto_increase_storage",
 		"auto_add_storage_min",
 		"auto_add_storage_max",
+		"storage_alert_threshold_percent",
 		"networking_section",
 		"ip",
 		"is_static_ip",
@@ -591,6 +593,14 @@
 			"non_negative": 1
 		},
 		{
+			"default": "90",
+			"description": "Notify the team when disk usage crosses this percentage of capacity",
+			"fieldname": "storage_alert_threshold_percent",
+			"fieldtype": "Int",
+			"label": "Storage Alert Threshold Percent",
+			"non_negative": 1
+		},
+		{
 			"fieldname": "mounts_section",
 			"fieldtype": "Section Break",
 			"label": "Mounts"
@@ -641,6 +651,13 @@
 			"fieldname": "halt_agent_jobs",
 			"fieldtype": "Check",
 			"label": "Halt Agent Jobs"
+		},
+		{
+			"default": "0",
+			"description": "Don't update the agent on this server",
+			"fieldname": "disable_agent_update",
+			"fieldtype": "Check",
+			"label": "Disable Agent Update"
 		},
 		{
 			"default": "x86_64",
@@ -844,7 +861,7 @@
 			"link_fieldname": "app_server"
 		}
 	],
-	"modified": "2026-06-18 10:49:09.702133",
+	"modified": "2026-09-08 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Server",

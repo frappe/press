@@ -19,7 +19,10 @@
 			/>
 		</div>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-			<AnalyticsCard title="Memory">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/bench-analytics"
+				title="Memory"
+			>
 				<LineChart
 					type="time"
 					title="Memory"
@@ -33,7 +36,10 @@
 					class="h-[15.55rem] p-2 pb-3"
 				/>
 			</AnalyticsCard>
-			<AnalyticsCard title="CPU">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/bench-analytics"
+				title="CPU"
+			>
 				<LineChart
 					type="time"
 					title="CPU"
@@ -49,7 +55,10 @@
 			</AnalyticsCard>
 		</div>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-			<AnalyticsCard title="Incoming Network">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/bench-analytics"
+				title="Incoming Network"
+			>
 				<LineChart
 					type="time"
 					title="Memory"
@@ -63,7 +72,10 @@
 					class="h-[15.55rem] p-2 pb-3"
 				/>
 			</AnalyticsCard>
-			<AnalyticsCard title="Outgoing Network">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/bench-analytics"
+				title="Outgoing Network"
+			>
 				<LineChart
 					type="time"
 					title="CPU"
@@ -79,7 +91,10 @@
 			</AnalyticsCard>
 		</div>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-			<AnalyticsCard title="Read Bytes">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/bench-analytics"
+				title="Read Bytes"
+			>
 				<LineChart
 					type="time"
 					title="Memory"
@@ -93,7 +108,10 @@
 					class="h-[15.55rem] p-2 pb-3"
 				/>
 			</AnalyticsCard>
-			<AnalyticsCard title="Write Bytes">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/bench-analytics"
+				title="Write Bytes"
+			>
 				<LineChart
 					type="time"
 					title="CPU"
@@ -112,10 +130,10 @@
 </template>
 
 <script>
-import LineChart from '@/components/charts/LineChart.vue';
-import BarChart from '@/components/charts/BarChart.vue';
-import AnalyticsCard from '../site/AnalyticsCard.vue';
-import dayjs from '../../utils/dayjs';
+import BarChart from '@/components/charts/BarChart.vue'
+import LineChart from '@/components/charts/LineChart.vue'
+import dayjs from '../../utils/dayjs'
+import AnalyticsCard from '../site/AnalyticsCard.vue'
 
 export default {
 	props: ['serverName'],
@@ -142,7 +160,7 @@ export default {
 				this.$theme.colors.gray[500],
 				this.$theme.colors.orange[500],
 			],
-		};
+		}
 	},
 	watch: {
 		chosenGroup() {
@@ -150,7 +168,7 @@ export default {
 				query: {
 					name: this.chosenGroup,
 				},
-			});
+			})
 		},
 	},
 	resources: {
@@ -163,7 +181,7 @@ export default {
 					duration: this.duration,
 				},
 				auto: true,
-			};
+			}
 		},
 		cpu() {
 			return {
@@ -174,7 +192,7 @@ export default {
 					duration: this.duration,
 				},
 				auto: true,
-			};
+			}
 		},
 		incomingNetwork() {
 			return {
@@ -185,7 +203,7 @@ export default {
 					duration: this.duration,
 				},
 				auto: true,
-			};
+			}
 		},
 		outgoingNetwork() {
 			return {
@@ -196,7 +214,7 @@ export default {
 					duration: this.duration,
 				},
 				auto: true,
-			};
+			}
 		},
 		readBytesFs() {
 			return {
@@ -207,7 +225,7 @@ export default {
 					duration: this.duration,
 				},
 				auto: true,
-			};
+			}
 		},
 		writeBytesFs() {
 			return {
@@ -218,7 +236,7 @@ export default {
 					duration: this.duration,
 				},
 				auto: true,
-			};
+			}
 		},
 		groups() {
 			return {
@@ -229,15 +247,15 @@ export default {
 					filters: { server: this.serverName, enabled: 1 },
 				},
 				auto: true,
-			};
+			}
 		},
 	},
 	computed: {
 		releaseGroupOptions() {
-			let groups = this.$resources.groups.data;
+			let groups = this.$resources.groups.data
 
 			if (!groups) {
-				return null;
+				return null
 			}
 
 			let filteredGroups = groups
@@ -245,81 +263,80 @@ export default {
 				.map((group) => ({
 					label: group.title,
 					value: group.name,
-				}));
+				}))
 
 			if (!this.chosenGroup) {
-				this.chosenGroup = filteredGroups[0].value;
+				this.chosenGroup = filteredGroups[0].value
 			}
 
-			return filteredGroups;
+			return filteredGroups
 		},
 		memoryData() {
-			let memory = this.$resources.memory.data?.memory;
-			if (!memory) return;
+			let memory = this.$resources.memory.data?.memory
+			if (!memory) return
 
-			return this.transformMultiLineChartData(memory);
+			return this.transformMultiLineChartData(memory)
 		},
 		cpuData() {
-			let cpu = this.$resources.cpu.data?.cpu;
-			if (!cpu) return;
+			let cpu = this.$resources.cpu.data?.cpu
+			if (!cpu) return
 
-			return this.transformMultiLineChartData(cpu);
+			return this.transformMultiLineChartData(cpu)
 		},
 		incomingNetwork() {
-			let traffic =
-				this.$resources.incomingNetwork.data?.network_traffic_inward;
-			if (!traffic) return;
+			let traffic = this.$resources.incomingNetwork.data?.network_traffic_inward
+			if (!traffic) return
 
-			return this.transformMultiLineChartData(traffic);
+			return this.transformMultiLineChartData(traffic)
 		},
 		outgoingNetwork() {
 			let network_traffic_outward =
-				this.$resources.outgoingNetwork.data?.network_traffic_outward;
-			if (!network_traffic_outward) return;
+				this.$resources.outgoingNetwork.data?.network_traffic_outward
+			if (!network_traffic_outward) return
 
-			return this.transformMultiLineChartData(network_traffic_outward);
+			return this.transformMultiLineChartData(network_traffic_outward)
 		},
 		readBytesFs() {
-			let read_bytes_fs = this.$resources.readBytesFs.data?.read_bytes_fs;
-			if (!read_bytes_fs) return;
+			let read_bytes_fs = this.$resources.readBytesFs.data?.read_bytes_fs
+			if (!read_bytes_fs) return
 
-			return this.transformMultiLineChartData(read_bytes_fs);
+			return this.transformMultiLineChartData(read_bytes_fs)
 		},
 		writeBytesFs() {
-			let write_bytes_fs = this.$resources.writeBytesFs.data?.write_bytes_fs;
-			if (!write_bytes_fs) return;
+			let write_bytes_fs = this.$resources.writeBytesFs.data?.write_bytes_fs
+			if (!write_bytes_fs) return
 
-			return this.transformMultiLineChartData(write_bytes_fs);
+			return this.transformMultiLineChartData(write_bytes_fs)
 		},
 	},
 	methods: {
 		transformMultiLineChartData(data, stack = null, percentage = false) {
-			if (!data.datasets?.length) return;
+			if (!data.datasets?.length) return
 
-			let total = [];
+			let total = []
 			if (percentage) {
 				// the sum of each cpu values tends to differ by few values
 				// so we need to calculate the total for each timestamp
 				for (let i = 0; i < data.datasets[0].values.length; i++) {
 					for (let j = 0; j < data.datasets.length; j++) {
-						if (!total[i]) total[i] = 0;
-						total[i] += data.datasets[j].values[i];
+						if (!total[i]) total[i] = 0
+						total[i] += data.datasets[j].values[i]
 					}
 				}
 			}
 			const datasets = data.datasets.map(({ name, values }) => {
-				let dataset = [];
+				let dataset = []
 				for (let i = 0; i < values.length; i++) {
 					dataset.push([
 						+new Date(data.labels[i]),
 						percentage ? (values[i] / total[i]) * 100 : values[i],
-					]);
+					])
 				}
-				return { name, dataset, stack };
-			});
+				return { name, dataset, stack }
+			})
 
-			return { datasets, yMax: percentage ? 100 : null };
+			return { datasets, yMax: percentage ? 100 : null }
 		},
 	},
-};
+}
 </script>

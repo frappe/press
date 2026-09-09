@@ -90,7 +90,6 @@ jinja = {
 
 # before_install = "press.install.before_install"
 after_install = "press.install.after_install"
-after_migrate = ["press.api.account.clear_country_list_cache", "press.sanity.checks"]
 
 # Desk Notifications
 # ------------------
@@ -182,6 +181,10 @@ doc_events = {
 		],
 	},
 	"Address": {"validate": "press.api.billing.validate_gst"},
+	"Country": {
+		"on_update": "press.api.account.clear_country_list_cache",
+		"on_trash": "press.api.account.clear_country_list_cache",
+	},
 	"Site": {
 		"before_insert": "press.press.doctype.team.team.validate_site_creation",
 		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
@@ -197,6 +200,10 @@ doc_events = {
 			"press.press.doctype.press_role.press_role.create_user_resource",
 			"press.press.doctype.server_firewall.server_firewall.from_server",
 		],
+		"on_update": "press.press.doctype.prometheus_alert_rule.prometheus_alert_rule.update_rules_on_storage_alert_threshold_change",
+	},
+	"Database Server": {
+		"on_update": "press.press.doctype.prometheus_alert_rule.prometheus_alert_rule.update_rules_on_storage_alert_threshold_change",
 	},
 }
 
@@ -208,11 +215,13 @@ scheduler_events = {
 	"daily": [
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
+		"press.press.doctype.site_version_audit.site_version_audit.record_audit",
 		"press.press.doctype.incident.incident.notify_ignored_servers",
 		"press.press.doctype.database_server.database_server.unindex_mariadb_binlogs",
 		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_disk",
 		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_s3",
 		"press.press.doctype.mariadb_binlog.mariadb_binlog.cleanup_old_records",
+		"press.press.doctype.mariadb_audit_log.mariadb_audit_log.delete_expired_audit_logs",
 		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
 		"press.press.doctype.team.team.check_budget_alerts",
 		"press.press.doctype.site.site.archive_creation_failed_sites",
@@ -236,7 +245,7 @@ scheduler_events = {
 		"press.press.doctype.tls_certificate.tls_certificate.notify_custom_tls_renewal",
 		"press.press.doctype.tls_certificate.tls_certificate.retrigger_pending_site_domain_callbacks",
 		"press.press.doctype.site.site.suspend_sites_exceeding_disk_usage_for_last_14_days",
-		"press.press.doctype.user_2fa.user_2fa.yearly_2fa_recovery_code_reminder",
+		"press.press.doctype.user_2fa.user_2fa.send_2fa_recovery_code_reminders",
 		"press.press.doctype.registry_server.registry_server.delete_old_images_from_registry",
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_daily",
@@ -244,6 +253,7 @@ scheduler_events = {
 		"press.press.doctype.site.site.notify_sites_before_archival",
 		"press.press.doctype.invoice.invoice.sync_paid_invoices_to_frappeio",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_card_invoices",
+		"press.press.doctype.cloud_usage_anomaly.cloud_usage_anomaly.run_daily_pipeline",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -264,7 +274,10 @@ scheduler_events = {
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 		"press.press.doctype.server.server.sync_wazuh_agent_status",
 		"press.press.doctype.incident_settings.incident_settings.alert_if_phone_call_alerts_disabled",
+		"press.press.doctype.server.server_monitoring.alert_on_failing_signups",
 		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",
+		"press.press.doctype.database_server.database_server.upload_audit_logs_to_s3",
+		"press.press.doctype.site_backup.site_backup.alert_if_backup_success_rate_is_low",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -273,7 +286,7 @@ scheduler_events = {
 		"press.press.doctype.server.server.scale_workers",
 		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
-		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
+		"press.press.doctype.invoice.invoice.create_invoices_for_next_month",
 		"press.press.doctype.invoice.invoice.finalize_razorpay_mandate_invoices",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
@@ -419,6 +432,9 @@ scheduler_events = {
 			"press.press.doctype.build_metric.build_metric.create_build_metric",
 			"press.saas.doctype.product_trial_request.product_trial_request.gather_weekly_stats",
 		],
+		"*/30 * 1 * *": [
+			"press.press.doctype.invoice.invoice.finalize_monthly_draft_invoices",
+		],
 	},
 }
 
@@ -436,6 +452,7 @@ fixtures = [
 	"Bench Dependency",
 	"Server Storage Plan",
 	"Server Snapshot Plan",
+	"S3 Storage Plan",
 	"Press Webhook Event",
 	"Site Plan",
 	"Server Plan",
@@ -498,6 +515,8 @@ __persistent_cache_keys = [
 	"one_time_login_key*",
 	"press-auth-logs",
 	"rl:*",
+	"press_otp:*",
+	"press_otp_sent:*",
 ]
 
 # `frappe.rename_doc` erases all caches, this hook preserves some of them.
@@ -545,4 +564,8 @@ persistent_cache_keys = [
 ]
 
 before_migrate = ["press.overrides.before_after_migrate"]
-after_migrate = ["press.overrides.before_after_migrate"]
+after_migrate = [
+	"press.overrides.before_after_migrate",
+	"press.api.account.clear_country_list_cache",
+	"press.sanity.checks",
+]

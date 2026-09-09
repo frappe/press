@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 import typing
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.core.utils import find
@@ -14,6 +14,9 @@ from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
 from press.agent import Agent
+from press.api.client import get_list
+from press.exceptions import ArchiveBenchError
+from press.overrides import before_request
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
@@ -24,17 +27,18 @@ from press.press.doctype.press_settings.test_press_settings import (
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.server import (
+	DEFAULT_STORAGE_ALERT_THRESHOLD,
 	BaseServer,
+	Server,
 	process_cleanup_unused_files_job_update,
 	sync_wazuh_agent_status,
 )
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
-from press.press.doctype.site.test_site import create_test_bench
-from press.press.doctype.team.test_team import create_test_team
+from press.press.doctype.site.test_site import create_test_bench, create_test_site
+from press.press.doctype.team.test_team import create_test_press_admin_team, create_test_team
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 
 if typing.TYPE_CHECKING:
-	from press.press.doctype.server.server import Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -461,6 +465,65 @@ class TestServer(FrappeTestCase):
 				}
 			).insert()
 
+	def test_storage_alert_threshold_above_the_allowed_maximum_is_rejected(self):
+		server = create_test_server()
+		server.storage_alert_threshold_percent = 96
+
+		self.assertRaisesRegex(
+			frappe.ValidationError, "Storage alert threshold must be between 50% and 95%", server.save
+		)
+
+	def test_storage_alert_threshold_below_the_allowed_minimum_is_rejected(self):
+		server = create_test_server()
+		server.storage_alert_threshold_percent = 30
+
+		self.assertRaisesRegex(
+			frappe.ValidationError, "Storage alert threshold must be between 50% and 95%", server.save
+		)
+
+	def test_storage_alert_threshold_defaults_to_90_and_accepts_a_custom_value(self):
+		server = create_test_server()
+		self.assertEqual(server.storage_alert_threshold_percent, DEFAULT_STORAGE_ALERT_THRESHOLD)
+
+		server.storage_alert_threshold_percent = 75
+		server.save()
+
+		self.assertEqual(frappe.db.get_value("Server", server.name, "storage_alert_threshold_percent"), 75)
+
+	def test_configure_auto_add_storage_sets_the_alert_threshold_on_the_target_server(self):
+		database_server = create_test_database_server()
+		server = create_test_server(database_server=database_server.name)
+
+		server.configure_auto_add_storage(
+			server=database_server.name, enabled=False, storage_alert_threshold=75
+		)
+
+		self.assertEqual(
+			frappe.db.get_value("Database Server", database_server.name, "storage_alert_threshold_percent"),
+			75,
+		)
+
+	def test_configure_auto_add_storage_keeps_the_alert_threshold_when_it_is_not_passed(self):
+		server = create_test_server()
+		server.storage_alert_threshold_percent = 70
+		server.save()
+
+		server.configure_auto_add_storage(server=server.name, enabled=True, min=25, max=250)
+
+		self.assertEqual(frappe.db.get_value("Server", server.name, "storage_alert_threshold_percent"), 70)
+
+	def test_configure_auto_add_storage_rejects_an_out_of_range_alert_threshold(self):
+		server = create_test_server()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Storage alert threshold must be between 50% and 95%",
+			server.configure_auto_add_storage,
+			server=server.name,
+			enabled=False,
+			storage_alert_threshold=20,
+		)
+
 	def test_disable_auto_storage_on_database_server_clears_db_flag_not_app_flag(self):
 		database_server = create_test_database_server()
 		frappe.db.set_value("Database Server", database_server.name, "auto_increase_storage", True)
@@ -779,7 +842,7 @@ class TestServer(FrappeTestCase):
 		settings = create_test_press_settings()
 		settings.wazuh_api_url = "https://wazuh.example.com:55000"
 		settings.wazuh_api_username = "user"
-		settings.wazuh_api_password = "pass"
+		settings.wazuh_api_password = "pass"  # pragma: allowlist secret
 		settings.wazuh_api_verify_tls = 0
 		settings.save()
 
@@ -801,7 +864,7 @@ class TestServer(FrappeTestCase):
 		settings = create_test_press_settings()
 		settings.wazuh_api_url = "https://wazuh.example.com:55000"
 		settings.wazuh_api_username = "user"
-		settings.wazuh_api_password = "pass"
+		settings.wazuh_api_password = "pass"  # pragma: allowlist secret
 		settings.wazuh_api_verify_tls = 0
 		settings.save()
 
@@ -815,3 +878,121 @@ class TestServer(FrappeTestCase):
 
 		methods = [call.args[0] for call in requests.request.call_args_list]
 		self.assertNotIn("DELETE", methods)
+
+
+@patch.object(BaseServer, "after_insert", new=Mock())
+class TestSSHCommand(FrappeTestCase):
+	def setUp(self):
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+
+		create_test_press_settings().db_set("domain", "fc.dev")
+		self.cluster = create_test_cluster(name="Mumbai").name
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_ssh_command_hops_through_press_server_and_proxy_server(self):
+		proxy_server = create_test_proxy_server(cluster=self.cluster)
+		server = create_test_server(proxy_server=proxy_server.name, cluster=self.cluster)
+		create_test_proxy_server(hostname="other", cluster=self.cluster)  # must not be picked
+
+		self.assertEqual(
+			server.get_ssh_command(),
+			f"ssh frappe@fc.dev -t 'ssh -J root@{proxy_server.name} root@{server.name}'",
+		)
+
+	def test_ssh_command_uses_ssh_user_and_port_of_server(self):
+		proxy_server = create_test_proxy_server(cluster=self.cluster)
+		server = create_test_server(proxy_server=proxy_server.name, cluster=self.cluster)
+		server.db_set({"ssh_user": "ubuntu", "ssh_port": 2222})
+		server.reload()
+
+		self.assertEqual(
+			server.get_ssh_command(),
+			f"ssh frappe@fc.dev -t 'ssh -J root@{proxy_server.name} ubuntu@{server.name} -p 2222'",
+		)
+
+
+@patch.object(BaseServer, "after_insert", new=Mock())
+class TestServerListSearch(FrappeTestCase):
+	"""The servers list must find a server by either of the labels it shows: title or name."""
+
+	def setUp(self):
+		self.team = create_test_press_admin_team()
+		self.server = create_test_server(team=self.team.name)
+		self.server.db_set("title", "Navi Mumbai Production")
+		self.other_server = create_test_server(team=self.team.name)
+		self.other_server.db_set("title", "Frankfurt Production")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def search(self, term: str) -> list[str]:
+		frappe.set_user(self.team.user)
+		before_request()  # puts the request-scoped team in place
+		return [row.name for row in get_list("Server", fields=["name"], filters={"_search": term})]
+
+	def test_part_of_the_title_finds_only_that_server(self):
+		self.assertEqual(self.search("navi mumbai"), [self.server.name])
+
+	def test_part_of_the_name_finds_only_that_server(self):
+		hostname = self.server.name.split(".")[0]
+
+		self.assertEqual(self.search(hostname), [self.server.name])
+
+	def test_a_server_without_a_title_is_still_found_by_its_name(self):
+		self.server.db_set("title", None)
+		hostname = self.server.name.split(".")[0]
+
+		self.assertEqual(self.search(hostname), [self.server.name])
+
+
+@patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
+@patch.object(BaseServer, "after_insert", new=Mock())
+class TestArchiveBenches(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_broken_bench_left_on_server_is_archived_instead_of_blocking_the_drop(self):
+		bench = create_test_bench()
+		bench.db_set("status", "Broken")
+		server = Server("Server", bench.server)
+
+		server.archive_benches()
+
+		self.assertEqual(frappe.db.get_value("Bench", bench.name, "status"), "Archived")
+
+	def test_ssh_user_of_archived_bench_is_removed_from_the_proxy(self):
+		bench = create_test_bench()
+		bench.db_set("is_ssh_proxy_setup", True)
+		server = Server("Server", bench.server)
+
+		with patch.object(Agent, "remove_ssh_user") as remove_ssh_user:
+			server.archive_benches()
+
+		self.assertEqual(remove_ssh_user.call_args.args[0].name, bench.name)
+
+	def test_bench_that_still_has_a_site_is_not_archived(self):
+		bench = create_test_bench()
+		create_test_site(bench=bench.name)
+		server = Server("Server", bench.server)
+
+		self.assertRaisesRegex(ArchiveBenchError, "unarchived sites", server.archive_benches)
+		self.assertEqual(frappe.db.get_value("Bench", bench.name, "status"), "Active")
+
+	def test_no_bench_is_archived_when_a_later_bench_still_has_a_site(self):
+		server = create_test_server()
+		empty_bench = create_test_bench(server=server.name)
+		bench_with_site = create_test_bench(server=server.name)
+		create_test_site(bench=bench_with_site.name)
+		# Benches are read in `modified desc` order, so pin the empty one first.
+		frappe.db.set_value("Bench", empty_bench.name, "modified", "2026-01-02", update_modified=False)
+		frappe.db.set_value("Bench", bench_with_site.name, "modified", "2026-01-01", update_modified=False)
+
+		self.assertRaisesRegex(
+			ArchiveBenchError, "unarchived sites", Server("Server", server.name).archive_benches
+		)
+
+		statuses = frappe.get_all("Bench", {"server": server.name}, pluck="status")
+		self.assertNotIn("Archived", statuses)

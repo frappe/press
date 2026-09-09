@@ -52,6 +52,7 @@ from press.press.doctype.telegram_message.telegram_message import TelegramMessag
 from press.runner import Ansible
 from press.utils import docs, fmt_timedelta, log_error
 from press.utils.raven import send_raven_message
+from press.utils.user import is_desk_user
 from press.wazuh import WazuhManager
 
 if typing.TYPE_CHECKING:
@@ -101,6 +102,9 @@ class AutoScaleTriggerRow(TypedDict):
 
 
 PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
+DEFAULT_STORAGE_ALERT_THRESHOLD = 90
+MIN_STORAGE_ALERT_THRESHOLD = 50
+MAX_STORAGE_ALERT_THRESHOLD = 95
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
 GLASS_FILE_SIZE = 200 * 1024 * 1024  # /root/glass, see glass_file.yml
@@ -119,6 +123,7 @@ class BaseServer(Document, TagHelpers):
 		"auto_add_storage_min",
 		"auto_add_storage_max",
 		"auto_increase_storage",
+		"storage_alert_threshold_percent",
 		"auto_purge_binlog_based_on_size",
 		"binlog_max_disk_usage_percent",
 		"is_monitoring_disabled",
@@ -130,6 +135,14 @@ class BaseServer(Document, TagHelpers):
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		Server = frappe.qb.DocType("Server")
+
+		# not a real field, so validate_filters strips it before it reaches the
+		# base query; the dashboard labels a server with its title but a server is
+		# addressed by its name (the hostname), so search both
+		search_term = filters.get("_search")
+		if search_term:
+			like_term = f"%{search_term}%"
+			query = query.where(Server.name.like(like_term) | Server.title.like(like_term))
 
 		status = filters.get("status")
 		if status == "Archived":
@@ -170,6 +183,7 @@ class BaseServer(Document, TagHelpers):
 	def get_doc(self, doc):  # noqa: C901
 		from press.api.client import get
 		from press.api.server import usage
+		from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import disk_full_servers
 
 		warn_at_storage_percentage = 0.8
 
@@ -213,6 +227,7 @@ class BaseServer(Document, TagHelpers):
 		)
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
+		doc.is_server_disk_full = self.name in disk_full_servers()
 
 		if not self.is_self_hosted:
 			doc.disk_size = self.get_data_disk_size()
@@ -283,7 +298,8 @@ class BaseServer(Document, TagHelpers):
 		current_disk_usage: int | None = None,
 	) -> None:
 		add_on_storage_log = None
-		storage_parameters = {
+		# untyped: the dict mixes value types and only feeds insert_addon_storage_log
+		storage_parameters: dict = {
 			"doctype": "Add On Storage Log",
 			"adding_storage": increment,
 			is_auto_triggered: is_auto_triggered,
@@ -373,16 +389,26 @@ class BaseServer(Document, TagHelpers):
 			)
 
 	@dashboard_whitelist()
-	def configure_auto_add_storage(self, server: str, enabled: bool, min: int = 0, max: int = 0) -> None:
+	def configure_auto_add_storage(
+		self,
+		server: str,
+		enabled: bool,
+		min: int = 0,
+		max: int = 0,
+		storage_alert_threshold: int | None = None,
+	) -> None:
 		# `self` is always the app server (the dashboard dispatches on $appServer);
 		# `server` identifies the actual target, which may be a Database Server.
-		# The dashboard API only team-checks `self`, and the disable path below writes via
-		# `set_value` (which skips permission hooks), so authorize the resolved target here.
+		# The dashboard API only team-checks `self`, so authorize the resolved target here.
 		server_doc = self if server == self.name else frappe.get_doc("Database Server", server)
 		server_doc.check_permission("write")
 
+		if storage_alert_threshold:
+			server_doc.storage_alert_threshold_percent = storage_alert_threshold
+
 		if not enabled:
-			frappe.db.set_value(server_doc.doctype, server_doc.name, "auto_increase_storage", False)
+			server_doc.auto_increase_storage = False
+			server_doc.save()
 			return
 
 		if min < 0 or max < 0:
@@ -426,7 +452,7 @@ class BaseServer(Document, TagHelpers):
 		actions = [
 			{
 				"action": "Manage On-Prem Replication",
-				"description": "Manage On-Prem Replication & Failover",
+				"description": "Manage On-Prem Replication &amp; Failover",
 				"button_label": "Manage",
 				"condition": self.status == "Active"
 				and self.doctype == "Server"
@@ -575,6 +601,19 @@ class BaseServer(Document, TagHelpers):
 			self._set_hostname_abbreviation()
 
 		self.validate_mounts()
+		self.validate_storage_alert_threshold()
+
+	def validate_storage_alert_threshold(self):
+		threshold = self.get("storage_alert_threshold_percent")
+		if threshold is None:
+			return
+
+		if not MIN_STORAGE_ALERT_THRESHOLD <= threshold <= MAX_STORAGE_ALERT_THRESHOLD:
+			frappe.throw(
+				_("Storage alert threshold must be between {0}% and {1}%").format(
+					MIN_STORAGE_ALERT_THRESHOLD, MAX_STORAGE_ALERT_THRESHOLD
+				)
+			)
 
 	def _set_hostname_abbreviation(self):
 		self.hostname_abbreviation = get_hostname_abbreviation(self.hostname)
@@ -1012,10 +1051,16 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def update_agent_ansible(self):
+		self.validate_agent_update_allowed()
 		# ponytail: 1h, not the long queue's 1500s — a busy rq worker's warm shutdown alone is 1500s
 		frappe.enqueue_doc(self.doctype, self.name, "_update_agent_ansible", queue="long", timeout=3600)
 
+	def validate_agent_update_allowed(self):
+		if self.disable_agent_update:
+			frappe.throw(f"Agent update is disabled on {self.name}")
+
 	def _update_agent_ansible(self, throw_on_failure: bool = False):
+		self.validate_agent_update_allowed()
 		try:
 			agent_branch = frappe.get_value("Press Settings", "Press Settings", "branch")
 			if not agent_branch:
@@ -1501,16 +1546,8 @@ class BaseServer(Document, TagHelpers):
 					"Cannot archive a server with sites on it. Please archive all the sites before performing the drop action."
 				)
 			)
-		if frappe.get_all(
-			"Bench",
-			filters={"server": self.name, "status": ("!=", "Archived")},
-			ignore_ifnull=True,
-		):
-			frappe.throw(
-				_(
-					"The server has a few benches on it. Please archive them from their respective dashboards before attempting a drop."
-				)
-			)
+
+		self.archive_benches()
 
 		if self.is_wazuh_agent_installed:
 			self.uninstall_wazuh_agent()
@@ -1538,6 +1575,37 @@ class BaseServer(Document, TagHelpers):
 			)
 		self.disable_subscription()
 		self.remove_from_release_groups()
+
+	def archive_benches(self):
+		"""Archive the bench records left on the server.
+
+		The server has no sites left and its machine is about to be terminated,
+		so nothing has to be removed from it. Asking the user to archive the
+		benches first only blocks the drop: a bench that never came up cannot be
+		archived through the agent, and the dashboard offers no archive action.
+		"""
+		from press.press.doctype.bench.bench import Bench
+
+		benches = [
+			Bench("Bench", name)
+			for name in frappe.get_all(
+				"Bench",
+				filters={"server": self.name, "status": ("!=", "Archived")},
+				pluck="name",
+				ignore_ifnull=True,
+			)
+		]
+
+		# Check every bench before archiving any. check_unarchived_sites commits,
+		# so a bench that fails the check halfway would leave the earlier ones
+		# archived while the server archive aborts.
+		for bench in benches:
+			bench.check_unarchived_sites()
+
+		for bench in benches:
+			if bench.is_ssh_proxy_setup:
+				bench.remove_ssh_user()
+			frappe.db.set_value("Bench", bench.name, "status", "Archived")
 
 	def _archive(self, reason=None):
 		self.run_press_job("Archive Server", arguments={"reason": reason})
@@ -2489,7 +2557,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 	def recommend_disk_increase(self, mountpoint: str):
 		"""
-		Send disk expansion email to users with disabled auto addon storage at 80% capacity
+		Send disk expansion email to users with disabled auto addon storage
 		Calculate the disk usage over a 30 hour period and take 25 percent of that
 		"""
 		server: Server | DatabaseServer = frappe.get_doc(self.doctype, self.name)  # type: ignore
@@ -2508,16 +2576,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		current_disk_usage_flt = round(current_disk_usage / 1024 / 1024 / 1024, 2)
 		disk_capacity_flt = round(disk_capacity / 1024 / 1024 / 1024, 2)
+		used_storage_percentage = round(current_disk_usage / disk_capacity * 100) if disk_capacity else 0
 
 		frappe.sendmail(
 			recipients=get_communication_info("Email", "Incident", self.doctype, self.name),
-			subject=f"Important: Server {server.name} has used 80% of the available space",
+			subject=f"Important: Server {server.name} has used {used_storage_percentage}% of the available space",
 			template="disabled_auto_disk_expansion",
 			args={
 				"server": server.name,
 				"current_disk_usage": f"{current_disk_usage_flt} Gib",
 				"available_disk_space": f"{disk_capacity_flt} GiB",
-				"used_storage_percentage": "80%",
+				"used_storage_percentage": f"{used_storage_percentage}%",
 				"increase_by": f"{recommended_increase} GiB",
 			},
 		)
@@ -2652,6 +2721,25 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if not hasattr(self, "ssh_port"):
 			return 22
 		return self.ssh_port or 22
+
+	@dashboard_whitelist()
+	def get_ssh_command(self):
+		"""SSH command that hops through the press server and the cluster's proxy."""
+		if not is_desk_user():
+			frappe.throw("Only system users can get the SSH command", frappe.PermissionError)
+
+		port = "" if self._ssh_port() == 22 else f" -p {self._ssh_port()}"
+		command = f"ssh{self._jump_through_proxy()} {self._ssh_user()}@{self.name}{port}"
+		return f"ssh frappe@{frappe.db.get_single_value('Press Settings', 'domain')} -t '{command}'"
+
+	def _jump_through_proxy(self):
+		"""Servers are reachable only through their proxy server."""
+		proxy = self.get("proxy_server") or frappe.db.get_value(
+			"Proxy Server", {"status": "Active", "cluster": self.cluster}, "name"
+		)
+		if not proxy or proxy == self.name:
+			return ""
+		return f" -J root@{proxy}"
 
 	def get_primary_frappe_public_key(self):
 		if primary_public_key := frappe.db.get_value(self.doctype, self.primary, "frappe_public_key"):
@@ -3065,6 +3153,7 @@ class Server(BaseServer):
 		database_server: DF.Link | None
 		db_healthcheck_token: DF.Password | None
 		disable_agent_job_auto_retry: DF.Check
+		disable_agent_update: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
 		enable_on_prem_failover_support: DF.Check
@@ -3130,6 +3219,7 @@ class Server(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		stop_deployments: DF.Check
 		stop_incident_actions: DF.Check
+		storage_alert_threshold_percent: DF.Int
 		stream_backups: DF.Check
 		supported_site_quota: DF.Int
 		tags: DF.Table[ResourceTag]

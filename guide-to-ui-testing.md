@@ -1,12 +1,17 @@
 # Guide to UI Testing (Playwright)
 
-Playwright e2e tests live in `dashboard/tests-e2e/`. They run against a real browser and a running bench server, but mock all API responses so they do not depend on real data.
+The Playwright e2e tests live in `dashboard/tests-e2e/`. They use a real browser
+and a local bench server. They mock all API responses, so they do not depend on
+real data.
 
 ## One-time setup
 
 ### 1. Create a dedicated test user
 
-Playwright needs a user with a team doc — not `Administrator`. The helper creates one with `FREE_ACCOUNT` and `SKIP_ONBOARDING` enabled, which prevents billing paywalls and the onboarding wizard from blocking tests.
+Playwright needs a user that has a Team document. `Administrator` does not work.
+The helper creates this user with `FREE_ACCOUNT` and `SKIP_ONBOARDING`. These
+two flags stop the billing paywall and the onboarding wizard, which block the
+tests.
 
 ```bash
 bench --site <site-name> execute \
@@ -16,7 +21,8 @@ bench --site <site-name> execute \
 bench --site <site-name> set-password "playwright@example.com" "playwright"
 ```
 
-If you prefer to do it manually: create a user, assign the Press User role, and enable `FREE_ACCOUNT` and `SKIP_ONBOARDING` on their Team.
+To do this manually, create a user and give the user the Press User role. Then
+enable `FREE_ACCOUNT` and `SKIP_ONBOARDING` on the Team of that user.
 
 ### 2. Create `dashboard/tests-e2e/.env`
 
@@ -26,7 +32,8 @@ PRESS_ADMIN_USER_EMAIL=playwright@example.com
 PRESS_ADMIN_USER_PASSWORD=playwright
 ```
 
-Use the site name (e.g. `frappe_cloud_local`) not `localhost`, and port `8080` for the Vite dev server.
+Use the site name, for example `frappe_cloud_local`. Do not use `localhost`.
+Use port `8080`, which is the port of the Vite dev server.
 
 ### 3. Start the bench and the dev server (two terminals)
 
@@ -67,9 +74,12 @@ npx playwright test tests-e2e/tests/dashboard/site-update-banner.test.ts --heade
 yarn test:e2e:report
 ```
 
-The first run also executes `auth.setup.ts`, which logs in once and saves the session to `tests-e2e/.auth/session.json`. All subsequent tests in the `chromium` project reuse that session and run in parallel — login does not repeat for each test file.
+The first run also executes `auth.setup.ts`. This file logs in one time and
+saves the session to `tests-e2e/.auth/session.json`. The tests in the `chromium`
+project use that session and run in parallel. The login does not occur again for
+each test file.
 
-To use a system Chromium instead of Playwright's bundled one:
+To use the Chromium of the system instead of the bundled browser:
 
 ```bash
 PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser yarn test:e2e:headed
@@ -77,25 +87,28 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser yarn test:e2e:head
 
 ## Test projects and file naming
 
-The Playwright config defines three projects, each matched by filename convention:
+The Playwright configuration defines three projects. The name of the file
+selects the project:
 
 | Pattern | Project | Purpose |
 |---|---|---|
-| `*.setup.ts` | `setup` | Runs first; creates session storage for the `chromium` project |
-| `*.test.ts` | `chromium` | Standard dashboard UI tests; depend on `setup` |
-| `*.cron.spec.ts` | `cron` | Scheduled tests triggered by Frappe's scheduler; run independently of setup |
+| `*.setup.ts` | `setup` | Runs first. Creates the session storage for the `chromium` project |
+| `*.test.ts` | `chromium` | Dashboard UI tests. They depend on `setup` |
+| `*.cron.spec.ts` | `cron` | Scheduled tests that the Frappe scheduler starts. They do not need `setup` |
 
-The `cron` project is invoked with:
+Start the `cron` project with:
 
 ```bash
 npm run test:e2e -- --project=cron
 ```
 
-This keeps scheduled smoke tests (e.g. signup flows, server status checks) separate from developer-facing dashboard tests.
+This keeps the scheduled smoke tests, such as the signup flow and the server
+status checks, separate from the dashboard tests for developers.
 
 ## Writing tests
 
-Tests live in `dashboard/tests-e2e/tests/dashboard/*.test.ts`. Import from the coverage fixture:
+Tests live in `dashboard/tests-e2e/tests/dashboard/*.test.ts`. Import from the
+coverage fixture:
 
 ```typescript
 import { expect, test } from './coverage.fixture'
@@ -103,7 +116,9 @@ import { expect, test } from './coverage.fixture'
 
 ### Mocking API calls
 
-Use **regex patterns**, not glob patterns. Glob patterns silently fail on URLs that contain a port (e.g. `http://frappe_cloud_local:8080/...`).
+Use **regex patterns**, not glob patterns. A glob pattern fails on a URL that
+contains a port, for example `http://frappe_cloud_local:8080/...`. It gives no
+error.
 
 ```typescript
 // Mock press.api.client.get — dispatches on doctype from query string
@@ -132,16 +147,24 @@ await page.route(/\/api\/method\/press\.api\.client\.get_list/, async (route) =>
 })
 ```
 
-frappe-ui sends POST requests with `Content-Type: application/json`, so `postDataJSON()` always works for the body. For `get`, the doctype is a **query parameter** on a GET-style URL, not in the body.
+frappe-ui sends POST requests with `Content-Type: application/json`, so
+`postDataJSON()` always works for the body. For `get`, the doctype is a **query
+parameter** on a GET-style URL, not in the body.
 
 ### Response format
 
-Wrap all mock responses in `{ message: ... }` — frappe-ui's `frappeRequest` unwraps the `message` field before passing data to resource callbacks.
+Put all mock responses in `{ message: ... }`. The `frappeRequest` function of
+frappe-ui removes the `message` field before it gives the data to the resource
+callbacks.
 
 ### Tips
 
-- Use `await expect(locator).toBeVisible()` — Playwright retries automatically until timeout.
-- To assert something is **absent**, first assert something that IS present (confirms the page finished loading), then assert the absence.
-- Set `current_plan: null` in the site mock to prevent the upsell banner from appearing unexpectedly in tests that don't need it.
+- Use `await expect(locator).toBeVisible()`. Playwright retries until the timeout.
+- To assert that an element is **absent**, first assert an element that is
+  present. This shows that the page is fully loaded. Then assert the absence.
+- Set `current_plan: null` in the site mock. This stops the upsell banner in
+  tests that do not need it.
 - Mock files (JSON fixtures) go in `dashboard/tests-e2e/mocks/<feature>/`.
-- Coverage collection is skipped automatically when running against the dev server (no production source maps). It runs in CI where the production build is present.
+- Playwright collects no coverage against the dev server, because the dev server
+  has no production source maps. Coverage runs in CI, where the production build
+  is present.

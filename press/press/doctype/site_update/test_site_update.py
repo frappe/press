@@ -16,12 +16,14 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.database_server.database_server import DatabaseServer
+from press.press.doctype.database_server.test_database_server import create_test_database_server
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
 )
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
+from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.site import (
 	DEFAULT_MAX_STATEMENT_TIME,
 	STATEMENT_TIME_INCREMENT,
@@ -39,12 +41,30 @@ from press.press.doctype.site_update.site_update import (
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 
 
+def make_deploy_type_migrate(candidate: str, app: str):
+	"""Site Update reads the app rows of the difference to tell a Pull from a Migrate."""
+	difference = frappe.get_last_doc("Deploy Candidate Difference", {"destination": candidate})
+	difference.append("apps", {"app": app, "deploy_type": "Migrate"})
+	difference.save()
+
+
 @patch.object(SiteUpdate, "start", new=Mock())
 def create_test_site_update(
-	site: str, destination_group: str, status: str, ignore_validate: bool = False
+	site: str,
+	destination_group: str,
+	status: str,
+	ignore_validate: bool = False,
+	deploy_type: str = "Migrate",
 ) -> SiteUpdate:
+	# validate() computes deploy_type itself, so it only holds when validation is skipped.
 	doc = frappe.get_doc(
-		dict(doctype="Site Update", site=site, destination_group=destination_group, status=status)
+		dict(
+			doctype="Site Update",
+			site=site,
+			destination_group=destination_group,
+			status=status,
+			deploy_type=deploy_type,
+		)
 	)
 	# Tests that only need a Site Update record in a given status (e.g. a Fatal update to
 	# recover from) can skip validation, which otherwise requires a real destination bench.
@@ -179,7 +199,7 @@ class TestSiteUpdate(FrappeTestCase):
 		self.assertGreater(bench2.background_workers, 1)
 
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_failed_recovery_should_set_site_update_status_to_fatal(self):
+	def test_failed_pull_before_move_site_marks_update_fatal_but_not_the_site(self):
 		app1 = create_test_app()  # frappe
 		app2 = create_test_app("app2", "App 2")
 		app3 = create_test_app("app3", "App 3")
@@ -199,7 +219,15 @@ class TestSiteUpdate(FrappeTestCase):
 
 		with fake_agent_job(
 			{
-				"Update Site Pull": {"status": "Failure"},
+				"Update Site Pull": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Enable Maintenance Mode", "status": "Success"},
+						{"name": "Wait for Enqueued Jobs", "status": "Failure"},
+						{"name": "Move Site", "status": "Pending"},
+						{"name": "Disable Maintenance Mode", "status": "Pending"},
+					],
+				},
 				"Recover Failed Site Update": {"status": "Failure"},
 			}
 		):
@@ -212,10 +240,166 @@ class TestSiteUpdate(FrappeTestCase):
 			"Fatal",
 			"Site Update status should be set to Fatal after failed recovery",
 		)
+		self.assertIsNone(
+			frappe.get_value("Site", site.name, "fatal_site_update"),
+			"The site never moved, so it should not be marked fatal",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_failed_pull_at_move_site_marks_site_fatal(self):
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		site = create_test_site(bench=bench1.name)
+
+		with fake_agent_job(
+			{
+				"Update Site Pull": {
+					"status": "Failure",
+					"steps": [{"name": "Move Site", "status": "Failure"}],
+				},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
 		self.assertEqual(
 			frappe.get_value("Site", site.name, "fatal_site_update"),
 			site_update,
-			"Site's fatal_site_update should be set to the last fatal Site Update",
+			"A failed move leaves the site half-moved, so it should be marked fatal",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_failed_migrate_before_backup_step_doesnt_mark_site_fatal(self):
+		site = self._migrate_site_with_difference()
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Enable Maintenance Mode", "status": "Success"},
+						{"name": "Wait for Enqueued Jobs", "status": "Failure"},
+						{"name": "Clear Backup Directory", "status": "Pending"},
+						{"name": "Backup Site Tables", "status": "Pending"},
+						{"name": "Move Site", "status": "Pending"},
+					],
+				},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		self.assertEqual(
+			frappe.get_value("Site Update", site_update, "status"),
+			"Fatal",
+			"Site Update status should be set to Fatal after failed recovery",
+		)
+		self.assertIsNone(
+			frappe.get_value("Site", site.name, "fatal_site_update"),
+			"The migration never ran, so the site should not be marked fatal",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_failed_backup_step_doesnt_mark_site_fatal(self):
+		# The job stops at the backup, so the site never moves and never migrates.
+		site = self._migrate_site_with_difference()
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Backup Site Tables", "status": "Failure"},
+						{"name": "Move Site", "status": "Pending"},
+						{"name": "Disable Maintenance Mode", "status": "Pending"},
+					],
+				},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		self.assertEqual(
+			frappe.get_value("Site Update", site_update, "status"),
+			"Fatal",
+			"Site Update status should be set to Fatal after failed recovery",
+		)
+		self.assertIsNone(
+			frappe.get_value("Site", site.name, "fatal_site_update"),
+			"A failed backup stops the job before the move, so the site should not be marked fatal",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_stale_job_cleanup_doesnt_mark_site_fatal_for_a_move_that_never_ran(self):
+		# fail_old_jobs and update_job_step_status stamp the job status on every step that is
+		# still Pending, so a Move Site that never ran can end up Failure or Delivery Failure.
+		site = self._migrate_site_with_difference()
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Backup Site Tables", "status": "Failure"},
+						{"name": "Move Site", "status": "Pending"},
+					],
+				},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		update_job = frappe.db.get_value("Site Update", site_update, "update_job")
+		for status in ("Failure", "Delivery Failure"):
+			frappe.db.set_value(
+				"Agent Job Step",
+				{"agent_job": update_job, "step_name": "Move Site"},
+				"status",
+				status,
+			)
+			self.assertFalse(
+				SiteUpdate("Site Update", site_update).should_mark_site_fatal(),
+				f"A Move Site step stamped {status} by cleanup has no start time, so the move"
+				" never ran and the site should not be blocked",
+			)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_failed_migrate_with_skipped_backup_step_marks_site_fatal(self):
+		# A physical backup skips the in-job backup step, but the migration still runs.
+		site = self._migrate_site_with_difference()
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Backup Site Tables", "status": "Skipped"},
+						{"name": "Move Site", "status": "Success"},
+						{"name": "Migrate Site", "status": "Failure"},
+					],
+				},
+				"Recover Failed Site Migrate": {"status": "Failure"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		self.assertEqual(
+			frappe.get_value("Site", site.name, "fatal_site_update"),
+			site_update,
+			"A migration that ran past the backup step should mark the site fatal",
 		)
 
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
@@ -421,259 +605,10 @@ class TestSiteUpdate(FrappeTestCase):
 		difference.save()
 		return create_test_site(bench=bench1.name)
 
-	@patch.object(DatabaseServer, "is_mariadb_up", new=Mock(return_value=True))
-	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_failed_migrate_recovery_restores_site_tables_and_resolves_fatal_update(self):
-		site = self._migrate_site_with_difference()
-
-		with fake_agent_job(
-			{
-				# Move Site succeeding moves the site to the destination bench, so its
-				# recovery is a "Recover Failed Site Migrate".
-				"Update Site Migrate": {
-					"status": "Failure",
-					"steps": [{"name": "Move Site", "status": "Success"}],
-				},
-				# Recovery moved the site back but its table restore hit a transient DB error,
-				# so the fallback runs.
-				"Recover Failed Site Migrate": {
-					"status": "Failure",
-					"data": {"output": "Lost connection to MySQL server during query"},
-					"steps": [{"name": "Move Site", "status": "Success"}],
-				},
-				"Restore Site Tables": {"status": "Success"},
-			}
-		):
-			site_update = site.schedule_update()
-			poll_pending_jobs()  # Update fails, migrate recovery created
-			poll_pending_jobs()  # Migrate recovery fails, Restore Site Tables triggered
-
-			restore_job = frappe.get_value(
-				"Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}, "name"
-			)
-			self.assertTrue(
-				restore_job,
-				"A failed migrate recovery should trigger a Restore Site Tables job",
-			)
-
-			poll_pending_jobs()  # Restore succeeds, site brought back up
-
-		# The update itself failed for good, so it stays Fatal — but with its cause of
-		# failure marked resolved, since the fallback restore brought the site back up.
-		self.assertEqual(
-			frappe.get_value("Site Update", site_update, "status"),
-			"Fatal",
-			"Site Update should stay Fatal after the fallback table restore",
-		)
-		self.assertTrue(
-			frappe.get_value("Site Update", site_update, "cause_of_failure_is_resolved"),
-			"Site Update's cause of failure should be marked resolved after the fallback restore succeeds",
-		)
-		self.assertEqual(
-			frappe.get_value("Site", site.name, "status"),
-			"Active",
-			"Site should be Active after the fallback table restore succeeds",
-		)
-		restore_comments = frappe.db.count(
-			"Comment",
-			{
-				"reference_doctype": "Site Update",
-				"reference_name": site_update,
-				"content": ("like", "%Restore Site Tables%"),
-			},
-		)
-		self.assertEqual(
-			restore_comments,
-			1,
-			"The fallback table restore job should be referenced in a comment on the Site Update",
-		)
-
-	@patch.object(DatabaseServer, "is_mariadb_up", new=Mock(return_value=True))
-	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_failed_migrate_recovery_then_failed_table_restore_goes_fatal(self):
-		site = self._migrate_site_with_difference()
-
-		with fake_agent_job(
-			{
-				"Update Site Migrate": {
-					"status": "Failure",
-					"steps": [{"name": "Move Site", "status": "Success"}],
-				},
-				"Recover Failed Site Migrate": {
-					"status": "Failure",
-					"data": {"output": "Lost connection to MySQL server during query"},
-					"steps": [{"name": "Move Site", "status": "Success"}],
-				},
-				"Restore Site Tables": {"status": "Failure"},
-			}
-		):
-			site_update = site.schedule_update()
-			poll_pending_jobs()  # Update fails, migrate recovery created
-			poll_pending_jobs()  # Migrate recovery fails, Restore Site Tables triggered
-			poll_pending_jobs()  # Table restore also fails, recovery gives up
-
-		self.assertEqual(
-			frappe.get_value("Site Update", site_update, "status"),
-			"Fatal",
-			"Site Update should be Fatal after the fallback table restore also fails",
-		)
-		self.assertEqual(
-			frappe.get_value("Site", site.name, "fatal_site_update"),
-			site_update,
-			"Site's fatal_site_update should be set after recovery gives up",
-		)
-
-	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_failed_migrate_recovery_before_move_site_does_not_restore_tables(self):
-		# If recovery fails at/before Move Site the site is still on the destination bench,
-		# so restoring tables would target the wrong bench — the fallback must not run, even
-		# though the error is transient.
-		site = self._migrate_site_with_difference()
-
-		with fake_agent_job(
-			{
-				"Update Site Migrate": {
-					"status": "Failure",
-					"steps": [{"name": "Move Site", "status": "Success"}],
-				},
-				"Recover Failed Site Migrate": {
-					"status": "Failure",
-					"data": {"output": "Lost connection to MySQL server during query"},
-					"steps": [{"name": "Move Site", "status": "Failure"}],
-				},
-			}
-		):
-			site_update = site.schedule_update()
-			poll_pending_jobs()  # Update fails, migrate recovery created
-			poll_pending_jobs()  # Migrate recovery fails before moving the site back
-
-		self.assertEqual(
-			frappe.get_value("Site Update", site_update, "status"),
-			"Fatal",
-			"Site Update should be Fatal when recovery fails before Move Site",
-		)
-		self.assertFalse(
-			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
-			"Restore Site Tables must not run when recovery failed before Move Site",
-		)
-
-	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_failed_migrate_recovery_with_non_transient_error_does_not_restore_tables(self):
-		# Only transient DB errors are safely retryable; a non-transient recovery failure
-		# should be left Fatal for manual attention, not auto-restored.
-		site = self._migrate_site_with_difference()
-
-		with fake_agent_job(
-			{
-				"Update Site Migrate": {
-					"status": "Failure",
-					"steps": [{"name": "Move Site", "status": "Success"}],
-				},
-				"Recover Failed Site Migrate": {
-					"status": "Failure",
-					"data": {"output": "Table 'tabFoo' doesn't exist"},
-					"steps": [{"name": "Move Site", "status": "Success"}],
-				},
-			}
-		):
-			site_update = site.schedule_update()
-			poll_pending_jobs()  # Update fails, migrate recovery created
-			poll_pending_jobs()  # Migrate recovery fails with a non-transient error
-
-		self.assertEqual(
-			frappe.get_value("Site Update", site_update, "status"),
-			"Fatal",
-			"Site Update should be Fatal after a non-transient recovery failure",
-		)
-		self.assertFalse(
-			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
-			"Restore Site Tables must not run for a non-transient recovery failure",
-		)
-
-	@patch.object(DatabaseServer, "is_mariadb_up", new=Mock(return_value=False))
-	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_failed_migrate_recovery_does_not_restore_tables_when_mariadb_is_down(self):
-		# The fallback restore only gets one shot, so it must not be spent on a MariaDB
-		# that hasn't come back up yet.
-		site = self._migrate_site_with_difference()
-
-		with fake_agent_job(
-			{
-				"Update Site Migrate": {
-					"status": "Failure",
-					"steps": [{"name": "Move Site", "status": "Success"}],
-				},
-				"Recover Failed Site Migrate": {
-					"status": "Failure",
-					"data": {"output": "Lost connection to MySQL server during query"},
-					"steps": [{"name": "Move Site", "status": "Success"}],
-				},
-			}
-		):
-			site_update = site.schedule_update()
-			poll_pending_jobs()  # Update fails, migrate recovery created
-			poll_pending_jobs()  # Migrate recovery fails, database still unreachable
-
-		self.assertFalse(
-			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
-			"Restore Site Tables must not run while MariaDB is down",
-		)
-		self.assertEqual(
-			frappe.get_value("Site Update", site_update, "status"),
-			"Fatal",
-			"Site Update should stay Fatal when the fallback restore is skipped",
-		)
-		self.assertTrue(
-			frappe.db.exists(
-				"Comment",
-				{
-					"reference_doctype": "Site Update",
-					"reference_name": site_update,
-					"content": ("like", "%MariaDB was down%"),
-				},
-			),
-			"Skipping the fallback restore should be recorded on the Site Update",
-		)
-
-	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_transient_error_in_update_job_does_not_restore_tables(self):
-		# The transient-error check looks at the recover job, not the failed update job. A
-		# transient error during the update must not, on its own, trigger the fallback.
-		site = self._migrate_site_with_difference()
-
-		with fake_agent_job(
-			{
-				"Update Site Migrate": {
-					"status": "Failure",
-					"data": {"output": "Lost connection to MySQL server during query"},
-					"steps": [{"name": "Move Site", "status": "Success"}],
-				},
-				# Recovery fails for an unrelated, non-transient reason.
-				"Recover Failed Site Migrate": {
-					"status": "Failure",
-					"data": {"output": "Table 'tabFoo' doesn't exist"},
-					"steps": [{"name": "Move Site", "status": "Success"}],
-				},
-			}
-		):
-			site_update = site.schedule_update()
-			poll_pending_jobs()  # Update fails with a transient error, migrate recovery created
-			poll_pending_jobs()  # Recovery fails for a non-transient reason
-
-		self.assertEqual(
-			frappe.get_value("Site Update", site_update, "status"),
-			"Fatal",
-		)
-		self.assertFalse(
-			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
-			"A transient error in the update job must not trigger Restore Site Tables",
-		)
-
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 	def test_skipped_backups_update_failure_goes_fatal_without_attempting_recovery(self):
 		# With backups skipped there is no backup to roll back to, so a failed update must
-		# go straight to Fatal — no recover job and, in particular, no Restore Site Tables
-		# fallback (there are no tables to restore).
+		# go straight to Fatal — no recover job and no table restore.
 		site = self._migrate_site_with_difference()
 
 		with fake_agent_job(
@@ -715,7 +650,8 @@ class TestSiteUpdate(FrappeTestCase):
 		site.save()
 
 		with fake_agent_job("Restore Site Tables", "Success"):
-			site.restore_tables()
+			# force: this test is about the callback, not the guards restore_tables applies
+			site.restore_tables(force=True)
 			poll_pending_jobs()
 
 		site.reload()
@@ -834,38 +770,6 @@ class TestSiteUpdate(FrappeTestCase):
 			"An unlimited max_statement_time must stay unlimited",
 		)
 
-	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_successful_migrate_recovery_does_not_restore_site_tables(self):
-		# When the recovery itself succeeds there is nothing left to restore, so the
-		# Restore Site Tables fallback must not run.
-		site = self._migrate_site_with_difference()
-
-		with fake_agent_job(
-			{
-				"Update Site Migrate": {
-					"status": "Failure",
-					"steps": [{"name": "Move Site", "status": "Success"}],
-				},
-				"Recover Failed Site Migrate": {
-					"status": "Success",
-					"steps": [{"name": "Move Site", "status": "Success"}],
-				},
-			}
-		):
-			site_update = site.schedule_update()
-			poll_pending_jobs()  # Update fails, migrate recovery created
-			poll_pending_jobs()  # Migrate recovery succeeds
-
-		self.assertEqual(
-			frappe.get_value("Site Update", site_update, "status"),
-			"Recovered",
-			"A successful recovery should leave the Site Update Recovered",
-		)
-		self.assertFalse(
-			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
-			"Restore Site Tables must not run when the recovery succeeds",
-		)
-
 	def test_skipped_backups_update_failure_notification_directs_user_to_ssh(self):
 		group = create_test_release_group([create_test_app()])
 		bench = create_test_bench(group=group)
@@ -898,11 +802,12 @@ class TestSiteUpdate(FrappeTestCase):
 		self.assertIn("SSH", details["message"])
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
-	def test_site_update_is_blocked_on_site_with_database_larger_than_100_gb(self):
+	def test_migrate_update_is_blocked_on_site_with_database_larger_than_100_gb(self):
 		group = create_test_release_group([create_test_app()])
 		bench1 = create_test_bench(group=group)
 		bench2 = create_test_bench(group=group, server=bench1.server)
 		create_test_deploy_candidate_differences(bench2.candidate)
+		make_deploy_type_migrate(bench2.candidate, "frappe")
 
 		site = create_test_site(bench=bench1.name)
 		# Site Usage sizes are in MB
@@ -913,6 +818,20 @@ class TestSiteUpdate(FrappeTestCase):
 			"too large to update without a physical backup",
 			site.schedule_update,
 		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_pull_update_is_allowed_on_site_with_database_larger_than_100_gb(self):
+		"""A Pull update takes no backup, so the size of the database doesn't matter."""
+		group = create_test_release_group([create_test_app()])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+
+		site = create_test_site(bench=bench1.name)
+		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
+
+		site_update = frappe.get_doc("Site Update", site.schedule_update())
+		self.assertEqual(site_update.deploy_type, "Pull")
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_site_update_is_allowed_on_site_with_database_smaller_than_100_gb(self):
@@ -931,7 +850,9 @@ class TestSiteUpdate(FrappeTestCase):
 		site = create_test_site()
 		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
 
-		site_update = frappe.new_doc("Site Update", site=site.name, backup_type="Logical Replication")
+		site_update = frappe.new_doc(
+			"Site Update", site=site.name, server=site.server, backup_type="Logical Replication"
+		)
 		site_update.validate_backup_type_for_large_database()  # shouldn't raise
 
 		site_update.backup_type = "Logical"
@@ -940,3 +861,21 @@ class TestSiteUpdate(FrappeTestCase):
 			"too large to update without a physical backup",
 			site_update.validate_backup_type_for_large_database,
 		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_site_update_is_allowed_on_large_site_of_non_aws_server(self):
+		"""Physical backup only works on AWS, so the size limit can't be worked around elsewhere."""
+		database_server = create_test_database_server()
+		frappe.db.set_value("Database Server", database_server.name, "provider", "OCI")
+		server = create_test_server(database_server=database_server.name, provider="OCI")
+
+		group = create_test_release_group([create_test_app()])
+		bench1 = create_test_bench(group=group, server=server.name)
+		bench2 = create_test_bench(group=group, server=server.name)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		make_deploy_type_migrate(bench2.candidate, "frappe")
+
+		site = create_test_site(bench=bench1.name)
+		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
+
+		self.assertTrue(site.schedule_update())

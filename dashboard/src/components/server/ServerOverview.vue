@@ -4,9 +4,23 @@
 			ctx_type="Server"
 			:ctx_name="[$appServer?.doc?.name, $appServer?.doc?.cluster]"
 		/>
+		<AlertBanner
+			v-if="$appServer?.doc?.is_server_disk_full"
+			class="mb-5"
+			type="error"
+			title="This server is out of disk space. Sites on it may stop responding until space is freed up."
+		>
+			<Button
+				class="ml-auto min-w-[7rem]"
+				variant="outline"
+				link="https://docs.frappe.io/cloud/storage-addons"
+			>
+				More Info
+			</Button>
+		</AlertBanner>
 		<div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
 			<div
-				v-for="server in servers" 
+				v-for="server in servers"
 				class="col-span-1 rounded-md border lg:col-span-2"
 			>
 				<div
@@ -30,9 +44,9 @@
 									class="mt-2 flex flex-col space-y-2"
 								>
 									<div class="flex items-center text-base text-ink-gray-7">
-										<span v-if="!$appServer?.doc?.is_unified_server">{{
-											d.label
-										}}</span>
+										<span v-if="!$appServer?.doc?.is_unified_server"
+											>{{ d.label }}</span
+										>
 										<span v-else>Unified Server Plan</span>
 										<Badge
 											v-if="
@@ -50,6 +64,18 @@
 									<div class="space-y-1">
 										<div class="flex items-center text-base text-ink-gray-9">
 											{{ d.value }}
+											<Tooltip
+												v-if="d.isShared && $team.doc?.is_desk_user"
+												text="A shared instance can have variable performance. We give only limited support for it."
+											>
+												<Badge
+													class="ml-2"
+													theme="orange"
+													size="sm"
+													variant="subtle"
+													label="Shared"
+												/>
+											</Tooltip>
 											<Tooltip v-if="d.isPremium" text="Premium Server">
 												<!-- this icon isn't available in unplugin package yet -->
 												<svg
@@ -70,7 +96,10 @@
 											</Tooltip>
 										</div>
 										<div class="flex space-x-1">
-											<div class="text-sm text-ink-gray-6" v-html="d.subValue" />
+											<div
+												class="text-sm text-ink-gray-6"
+												v-html="d.subValue"
+											/>
 											<Tooltip v-if="d.help" :text="d.help">
 												<lucide-info class="h-3.5 w-3.5 text-ink-gray-5" />
 											</Tooltip>
@@ -158,7 +187,9 @@
 
 			<div class="rounded-md border">
 				<div class="h-12 border-b px-5 py-4">
-					<h2 class="text-lg font-medium text-ink-gray-9">Server Information</h2>
+					<h2 class="text-lg font-medium text-ink-gray-9">
+						Server Information
+					</h2>
 				</div>
 				<div>
 					<div
@@ -178,18 +209,19 @@
 </template>
 
 <script>
-import { toast } from 'vue-sonner';
-import { h, defineAsyncComponent } from 'vue';
-import { getCachedDocumentResource, Progress } from 'frappe-ui';
-import { confirmDialog, renderDialog } from '../../utils/components';
-import StorageBreakdownDialog from './StorageBreakdownDialog.vue';
-import ServerPlansDialog from './ServerPlansDialog.vue';
-import { getToastErrorMessage } from '../../utils/toast';
-import ServerLoadAverage from './ServerLoadAverage.vue';
-import { getDocResource } from '../../utils/resource';
-import { createResource } from 'frappe-ui';
-import Badge from '../global/Badge.vue';
-import CustomAlerts from '../CustomAlerts.vue';
+import { createResource, getCachedDocumentResource, Progress } from 'frappe-ui'
+import { defineAsyncComponent, h } from 'vue'
+import { toast } from 'vue-sonner'
+import { confirmDialog, renderDialog } from '../../utils/components'
+import { getDocResource } from '../../utils/resource'
+import { isSharedPlanType } from '../../utils/serverPlanType'
+import { getToastErrorMessage } from '../../utils/toast'
+import AlertBanner from '../AlertBanner.vue'
+import CustomAlerts from '../CustomAlerts.vue'
+import Badge from '../global/Badge.vue'
+import ServerLoadAverage from './ServerLoadAverage.vue'
+import ServerPlansDialog from './ServerPlansDialog.vue'
+import StorageBreakdownDialog from './StorageBreakdownDialog.vue'
 
 export default {
 	props: ['server'],
@@ -200,28 +232,41 @@ export default {
 		ServerPlansDialog,
 		StorageBreakdownDialog,
 		CustomAlerts,
+		AlertBanner,
 	},
 	data() {
 		return {
 			startedScaleUp: false,
 			startedScaleDown: false,
 			autoscaleDiscount: null,
-		};
+			planTypes: {},
+		}
 	},
 	async mounted() {
 		const get = createResource({
 			url: 'press.api.server.get_autoscale_discount',
 			method: 'GET',
-		});
+		})
 
-		this.autoscaleDiscount = await get.fetch();
+		this.autoscaleDiscount = await get.fetch()
+
+		// Only support reads the shared badge, so only support pays for the call.
+		if (this.$team.doc?.is_desk_user) this.fetchPlanTypes()
 	},
 
 	methods: {
+		async fetchPlanTypes() {
+			const plans = createResource({ url: 'press.api.server.plans' })
+			const data = await plans.fetch({ name: 'Server' })
+			this.planTypes = data?.types ?? {}
+		},
+		isSharedPlan(plan) {
+			return isSharedPlanType(this.planTypes[plan?.plan_type]?.title)
+		},
 		showPlanChangeDialog(serverType) {
 			let ServerPlansDialog = defineAsyncComponent(
 				() => import('./ServerPlansDialog.vue'),
-			);
+			)
 			renderDialog(
 				h(ServerPlansDialog, {
 					server:
@@ -234,7 +279,7 @@ export default {
 									: null,
 					serverType,
 				}),
-			);
+			)
 		},
 		showStorageBreakdownDialog(serverType, ignoreUnifiedServer = false) {
 			if (
@@ -259,24 +304,24 @@ export default {
 						},
 					],
 					onSuccess: ({ values, hide }) => {
-						hide();
+						hide()
 						if (values.breakdownType === 'database') {
 							this.showStorageBreakdownDialog(
 								'Database Server',
 								(ignoreUnifiedServer = true),
-							);
+							)
 						} else {
 							this.showStorageBreakdownDialog(
 								'Server',
 								(ignoreUnifiedServer = true),
-							);
+							)
 						}
 					},
-				});
+				})
 			} else {
 				let StorageBreakdownDialog = defineAsyncComponent(
 					() => import('./StorageBreakdownDialog.vue'),
-				);
+				)
 				renderDialog(
 					h(StorageBreakdownDialog, {
 						server:
@@ -289,60 +334,60 @@ export default {
 										: null,
 						serverType,
 					}),
-				);
+				)
 			}
 		},
 		scaleUp() {
 			toast.promise(this.$appServer.scaleUp.submit({}), {
 				loading: () => {
-					this.startedScaleUp = true;
-					return 'Starting scale up…';
+					this.startedScaleUp = true
+					return 'Starting scale up…'
 				},
 				success: () => {
-					this.startedScaleUp = false;
+					this.startedScaleUp = false
 					this.$router.push({
 						path: this.$appServer.name,
 						path: 'auto-scale',
-					});
-					return 'Scale-up started. Please wait a few minutes.';
+					})
+					return 'Scale-up started. Please wait a few minutes.'
 				},
 				error: (e) => {
-					this.startedScaleUp = false;
+					this.startedScaleUp = false
 					if (Array.isArray(e.messages)) {
-						return e.messages.join(', ');
+						return e.messages.join(', ')
 					}
-					return e.message || 'Scale-up failed';
+					return e.message || 'Scale-up failed'
 				},
-			});
+			})
 		},
 		scaleDown() {
 			toast.promise(this.$appServer.scaleDown.submit({}), {
 				loading: () => {
-					this.startedScaleDown = true;
-					return 'Starting scale down…';
+					this.startedScaleDown = true
+					return 'Starting scale down…'
 				},
 				success: () => {
-					this.startedScaleDown = false;
+					this.startedScaleDown = false
 					this.$router.push({
 						path: this.$appServer.name,
 						path: 'auto-scale',
-					});
-					return 'Scale-down started. Please wait a few minutes.';
+					})
+					return 'Scale-down started. Please wait a few minutes.'
 				},
 				error: (e) => {
-					this.startedScaleDown = false;
+					this.startedScaleDown = false
 					if (Array.isArray(e.messages)) {
-						return e.messages.join(', ');
+						return e.messages.join(', ')
 					}
-					return e.message || 'Scale-down failed';
+					return e.message || 'Scale-down failed'
 				},
-			});
+			})
 		},
 		currentUsage(serverType) {
-			if (!this.$appServer?.doc) return [];
-			if (!this.$dbServer?.doc) return [];
+			if (!this.$appServer?.doc) return []
+			if (!this.$dbServer?.doc) return []
 
-			let formatBytes = (v) => this.$format.bytes(v, 0, 2);
+			let formatBytes = (v) => this.$format.bytes(v, 0, 2)
 
 			let doc =
 				serverType === 'Server'
@@ -353,37 +398,37 @@ export default {
 							? this.$dbServer.doc
 							: serverType === 'Replication Server'
 								? this.$dbReplicaServer?.doc
-								: null;
+								: null
 
-			if (!doc) return [];
+			if (!doc) return []
 
-			let currentPlan = doc.current_plan;
-			let currentUsage = doc.usage;
-			let diskSize = doc.disk_size;
-			let additionalStorage = diskSize - (currentPlan?.disk || 0);
+			let currentPlan = doc.current_plan
+			let currentUsage = doc.usage
+			let diskSize = doc.disk_size
+			let additionalStorage = diskSize - (currentPlan?.disk || 0)
 			let additionalStorageIncrementRecommendation =
-				doc.recommended_storage_increment;
-			let price = 0;
+				doc.recommended_storage_increment
+			let price = 0
 			// not using $format.planTitle cuz of manual calculation of add-on storage plan
 			let priceField =
-				this.$team.doc.currency === 'INR' ? 'price_inr' : 'price_usd';
+				this.$team.doc.currency === 'INR' ? 'price_inr' : 'price_usd'
 
-			let planDescription = '';
+			let planDescription = ''
 			if (!currentPlan?.name) {
-				planDescription = 'No plan selected';
+				planDescription = 'No plan selected'
 			} else if (currentPlan.price_usd > 0) {
-				price = currentPlan[priceField];
+				price = currentPlan[priceField]
 				if (serverType === 'App Secondary Server') {
 					planDescription = this.autoscaleDiscount
 						? `${this.$format.userCurrency(
 								this.$format.pricePerHour(price) * this.autoscaleDiscount,
 							)}/hour`
-						: '';
+						: ''
 				} else {
-					planDescription = `${this.$format.userCurrency(price, 0)}/mo`;
+					planDescription = `${this.$format.userCurrency(price, 0)}/mo`
 				}
 			} else {
-				planDescription = currentPlan.plan_title;
+				planDescription = currentPlan.plan_title
 			}
 
 			if (
@@ -396,6 +441,7 @@ export default {
 						value: planDescription,
 						type: 'header',
 						isPremium: !!currentPlan?.premium,
+						isShared: this.isSharedPlan(currentPlan),
 					},
 					{
 						label: 'CPU',
@@ -412,7 +458,7 @@ export default {
 						type: 'info',
 						value: 'Uses primary server storage configuration',
 					},
-				];
+				]
 			}
 
 			return [
@@ -435,6 +481,7 @@ export default {
 							: '',
 					type: 'header',
 					isPremium: !!currentPlan?.premium,
+					isShared: this.isSharedPlan(currentPlan),
 					help:
 						additionalStorage > 0
 							? `Server Plan: ${this.$format.userCurrency(
@@ -548,14 +595,14 @@ export default {
 															},
 															{
 																onSuccess: () => {
-																	hide();
+																	hide()
 																	this.$router.push({
 																		name: 'Server Detail Plays',
 																		params: { name: this.$appServer.name },
-																	});
+																	})
 																},
 																onError(e) {
-																	console.error(e);
+																	console.error(e)
 																},
 															},
 														),
@@ -568,9 +615,9 @@ export default {
 																	'Failed to increase disk size',
 																),
 														},
-													);
+													)
 												},
-											});
+											})
 										},
 									},
 									{
@@ -583,7 +630,7 @@ export default {
 												title: 'Configure Auto Increase Storage',
 												message: `<div class="rounded my-4 p-2 prose-sm prose bg-surface-gray-1 border">
 
-									This feature will automatically increases the storage as it reaches over <b>90%</b> of its capacity.
+									This feature will automatically increases the storage as it crosses the storage alert threshold below (<b>90%</b> by default).
 
 									<br><br>
 									With this feature disabled, disk capacity <strong>will not increase automatically</strong> in the event your server approaches or reaches its storage limit.
@@ -597,6 +644,9 @@ export default {
 										</li>
 										<li>
 											Storage can auto increase only once in <strong>6 hours</strong>.
+										</li>
+										<li>
+											We email you whenever storage usage crosses the threshold, even with this feature disabled.
 										</li>
 									</ul>
 `,
@@ -620,7 +670,7 @@ export default {
 															value: i * 5,
 														})),
 														condition: (values) => {
-															return values.auto_increase_storage;
+															return values.auto_increase_storage
 														},
 													},
 													{
@@ -635,8 +685,21 @@ export default {
 															value: i * 5,
 														})),
 														condition: (values) => {
-															return values.auto_increase_storage;
+															return values.auto_increase_storage
 														},
+													},
+													{
+														fieldname: 'storage_alert_threshold',
+														type: 'select',
+														default: String(doc.storage_alert_threshold_percent),
+														label: 'Alert Me At (% of storage used)',
+														variant: 'outline',
+														// options from 50% to 95% in steps of 5%
+														// values are strings so the select shows the current one
+														options: Array.from({ length: 10 }, (_, i) => ({
+															label: `${50 + i * 5}%`,
+															value: String(50 + i * 5),
+														})),
 													},
 												],
 												onSuccess: ({ hide, values }) => {
@@ -647,35 +710,38 @@ export default {
 																enabled: values.auto_increase_storage,
 																min: Number(values.min),
 																max: Number(values.max),
+																storage_alert_threshold: Number(
+																	values.storage_alert_threshold,
+																),
 															},
 															{
 																onSuccess: () => {
-																	hide();
+																	hide()
 
 																	if (doc.name === this.$appServer.name)
-																		this.$appServer.reload();
+																		this.$appServer.reload()
 																	else if (doc.name === this.$dbServer.name)
-																		this.$dbServer.reload();
+																		this.$dbServer.reload()
 																	else if (
 																		doc.name === this.$replicationServer.name
 																	)
-																		this.$replicationServer.reload();
+																		this.$replicationServer.reload()
 																},
 															},
 														),
 														{
-															loading: 'Configuring auto increase storage...',
-															success: 'Auto increase storage is configured',
+															loading: 'Updating storage settings...',
+															success: 'Storage settings are updated',
 															error: (err) => {
 																return err.messages.length
 																	? err.messages.join('/n')
 																	: err.message ||
-																			'Failed to configure auto increase storage';
+																			'Failed to update storage settings'
 															},
 														},
-													);
+													)
 												},
-											});
+											})
 										},
 									},
 									{
@@ -683,37 +749,35 @@ export default {
 										icon: 'pie-chart',
 										variant: 'ghost',
 										onClick: () => {
-											this.showStorageBreakdownDialog(serverType);
+											this.showStorageBreakdownDialog(serverType)
 										},
 									},
 								]
 									.filter((e) => e.hidden !== true)
 									.filter((e) => {
 										if (e.condition) {
-											return e.condition();
+											return e.condition()
 										}
-										return true;
+										return true
 									}),
 							},
 						]),
-			];
+			]
 		},
 	},
 	computed: {
-    servers() {
-      const list = ["Server"];
+		servers() {
+			const list = ['Server']
 
-      if (this.$appServer?.doc?.secondary_server) 
-        list.push("App Secondary Server");
+			if (this.$appServer?.doc?.secondary_server)
+				list.push('App Secondary Server')
 
-      if (!this.$appServer?.doc?.is_unified_server) 
-        list.push("Database Server");
+			if (!this.$appServer?.doc?.is_unified_server) list.push('Database Server')
 
-      if (this.$dbReplicaServer?.doc) 
-        list.push("Replication Server");
+			if (this.$dbReplicaServer?.doc) list.push('Replication Server')
 
-      return list;
-    },
+			return list
+		},
 
 		serverInformation() {
 			return [
@@ -753,16 +817,16 @@ export default {
 					label: 'Created on',
 					value: this.$format.date(this.$appServer.doc.creation),
 				},
-			].filter((d) => d.value);
+			].filter((d) => d.value)
 		},
 		$appServer() {
-			return getCachedDocumentResource('Server', this.server);
+			return getCachedDocumentResource('Server', this.server)
 		},
 		$appSecondaryServer() {
 			return getDocResource({
 				doctype: 'Server',
 				name: this.$appServer.doc.secondary_server,
-			});
+			})
 		},
 		$dbServer() {
 			// Should mirror the whitelistedMethods in ServerActions.vue
@@ -783,8 +847,11 @@ export default {
 					updateBinlogRetention: 'update_binlog_retention',
 					updateBinlogSizeLimit: 'update_binlog_size_limit',
 					getBinlogsInfo: 'get_binlogs_info',
+					configureDatabaseAuditLog: 'configure_database_audit_log',
+					getAuditLogs: 'get_audit_logs',
+					getAuditLogDownloadLink: 'get_audit_log_download_link',
 				},
-			});
+			})
 		},
 		$dbReplicaServer() {
 			return getDocResource({
@@ -795,8 +862,8 @@ export default {
 					reboot: 'reboot',
 					rename: 'rename',
 				},
-			});
+			})
 		},
 	},
-};
+}
 </script>
