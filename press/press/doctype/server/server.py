@@ -132,6 +132,14 @@ class BaseServer(Document, TagHelpers):
 	def get_list_query(query, filters=None, **list_args):
 		Server = frappe.qb.DocType("Server")
 
+		# not a real field, so validate_filters strips it before it reaches the
+		# base query; the dashboard labels a server with its title but a server is
+		# addressed by its name (the hostname), so search both
+		search_term = filters.get("_search")
+		if search_term:
+			like_term = f"%{search_term}%"
+			query = query.where(Server.name.like(like_term) | Server.title.like(like_term))
+
 		status = filters.get("status")
 		if status == "Archived":
 			query = query.where(Server.status == status)
