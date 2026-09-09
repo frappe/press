@@ -62,17 +62,16 @@ class UsageRecord(Document):
 			return
 		# Get a read lock on this invoice
 		# We're going to update the invoice and we don't want any other process to update it
-		invoice = team.get_upcoming_invoice(for_update=True)
+		invoice = team.get_upcoming_invoice(self.date, for_update=True)
 		if not invoice:
-			invoice = team.create_upcoming_invoice()
+			invoice = team.create_upcoming_invoice(self.date)
 
 		invoice.add_usage_record(self)
 
 	def remove_usage_from_invoice(self):
-		team = frappe.get_doc("Team", self.team)
-		invoice = team.get_upcoming_invoice()
-		if invoice:
-			invoice.remove_usage_record(self)
+		if not self.invoice:
+			return
+		frappe.get_doc("Invoice", self.invoice).remove_usage_record(self)
 
 	def validate_duplicate_usage_record(self):
 		# Can skip duplicate usage record check if this is a autoscale usage record

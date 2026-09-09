@@ -4,6 +4,20 @@
 			ctx_type="Server"
 			:ctx_name="[$appServer?.doc?.name, $appServer?.doc?.cluster]"
 		/>
+		<AlertBanner
+			v-if="$appServer?.doc?.is_server_disk_full"
+			class="mb-5"
+			type="error"
+			title="This server is out of disk space. Sites on it may stop responding until space is freed up."
+		>
+			<Button
+				class="ml-auto min-w-[7rem]"
+				variant="outline"
+				link="https://docs.frappe.io/cloud/storage-addons"
+			>
+				More Info
+			</Button>
+		</AlertBanner>
 		<div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
 			<div
 				v-for="server in servers"
@@ -50,6 +64,18 @@
 									<div class="space-y-1">
 										<div class="flex items-center text-base text-ink-gray-9">
 											{{ d.value }}
+											<Tooltip
+												v-if="d.isShared && $team.doc?.is_desk_user"
+												text="A shared instance can have variable performance. We give only limited support for it."
+											>
+												<Badge
+													class="ml-2"
+													theme="orange"
+													size="sm"
+													variant="subtle"
+													label="Shared"
+												/>
+											</Tooltip>
 											<Tooltip v-if="d.isPremium" text="Premium Server">
 												<!-- this icon isn't available in unplugin package yet -->
 												<svg
@@ -188,7 +214,9 @@ import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
 import { confirmDialog, renderDialog } from '../../utils/components'
 import { getDocResource } from '../../utils/resource'
+import { isSharedPlanType } from '../../utils/serverPlanType'
 import { getToastErrorMessage } from '../../utils/toast'
+import AlertBanner from '../AlertBanner.vue'
 import CustomAlerts from '../CustomAlerts.vue'
 import Badge from '../global/Badge.vue'
 import ServerLoadAverage from './ServerLoadAverage.vue'
@@ -204,12 +232,14 @@ export default {
 		ServerPlansDialog,
 		StorageBreakdownDialog,
 		CustomAlerts,
+		AlertBanner,
 	},
 	data() {
 		return {
 			startedScaleUp: false,
 			startedScaleDown: false,
 			autoscaleDiscount: null,
+			planTypes: {},
 		}
 	},
 	async mounted() {
@@ -219,9 +249,20 @@ export default {
 		})
 
 		this.autoscaleDiscount = await get.fetch()
+
+		// Only support reads the shared badge, so only support pays for the call.
+		if (this.$team.doc?.is_desk_user) this.fetchPlanTypes()
 	},
 
 	methods: {
+		async fetchPlanTypes() {
+			const plans = createResource({ url: 'press.api.server.plans' })
+			const data = await plans.fetch({ name: 'Server' })
+			this.planTypes = data?.types ?? {}
+		},
+		isSharedPlan(plan) {
+			return isSharedPlanType(this.planTypes[plan?.plan_type]?.title)
+		},
 		showPlanChangeDialog(serverType) {
 			let ServerPlansDialog = defineAsyncComponent(
 				() => import('./ServerPlansDialog.vue'),
@@ -400,6 +441,7 @@ export default {
 						value: planDescription,
 						type: 'header',
 						isPremium: !!currentPlan?.premium,
+						isShared: this.isSharedPlan(currentPlan),
 					},
 					{
 						label: 'CPU',
@@ -439,6 +481,7 @@ export default {
 							: '',
 					type: 'header',
 					isPremium: !!currentPlan?.premium,
+					isShared: this.isSharedPlan(currentPlan),
 					help:
 						additionalStorage > 0
 							? `Server Plan: ${this.$format.userCurrency(

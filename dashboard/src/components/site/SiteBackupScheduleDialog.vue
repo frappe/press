@@ -65,17 +65,17 @@
 </template>
 
 <script>
-import { getCachedDocumentResource, Switch } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import dayjs, { timeLocal, timeServer } from '../../utils/dayjs';
-import { getToastErrorMessage } from '../../utils/toast';
+import { getCachedDocumentResource, Switch } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import dayjs, { timeLocal, timeServer } from '../../utils/dayjs'
+import { getToastErrorMessage } from '../../utils/toast'
 
 // Backups fire on the hour, so offering minutes would promise precision the
 // scheduler doesn't have.
 const HOURS = Array.from({ length: 24 }, (_, hour) => ({
 	label: dayjs().hour(hour).minute(0).format('h:mm A'),
 	value: String(hour).padStart(2, '0'),
-}));
+}))
 
 export default {
 	props: ['site'],
@@ -92,51 +92,51 @@ export default {
 			// Saving before this is true would submit the defaults over whatever
 			// the site already has
 			loaded: false,
-		};
+		}
 	},
 	mounted() {
 		this.$site.getBackupSchedule.submit().then((schedule) => {
-			this.custom = schedule.custom;
-			this.times = schedule.times;
+			this.custom = schedule.custom
+			this.times = schedule.times
 			if (schedule.times.length) {
-				this.hour = timeLocal(schedule.times[0]).slice(0, 2);
+				this.hour = timeLocal(schedule.times[0]).slice(0, 2)
 			}
-			this.loaded = true;
-		});
+			this.loaded = true
+		})
 	},
 	computed: {
 		$site() {
-			return getCachedDocumentResource('Site', this.site);
+			return getCachedDocumentResource('Site', this.site)
 		},
 		managed() {
-			return this.times.length > 1;
+			return this.times.length > 1
 		},
 		managedTimes() {
 			return this.times
 				.map((time) => this.labelFor(timeLocal(time).slice(0, 2)))
-				.join(', ');
+				.join(', ')
 		},
 		timezone() {
-			return dayjs.tz.guess();
+			return dayjs.tz.guess()
 		},
 	},
 	methods: {
 		labelFor(hour) {
-			return HOURS.find((option) => option.value === hour)?.label;
+			return HOURS.find((option) => option.value === hour)?.label
 		},
 		save() {
 			let promise = this.$site.updateBackupSchedule.submit({
 				time: this.custom ? timeServer(`${this.hour}:00`) : null,
-			});
+			})
 			toast.promise(promise, {
 				loading: 'Saving backup schedule...',
 				success: () => {
-					this.show = false;
-					return 'Backup schedule saved.';
+					this.show = false
+					return 'Backup schedule saved.'
 				},
 				error: (e) => getToastErrorMessage(e),
-			});
+			})
 		},
 	},
-};
+}
 </script>

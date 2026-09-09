@@ -73,7 +73,7 @@
 							v-for="resource in resources"
 							class="text-base border rounded-xl px-2 py-2"
 						>
-							{{ resource.document_name }}
+							{{ resource.label }}
 						</div>
 					</div>
 				</div>

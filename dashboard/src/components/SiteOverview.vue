@@ -10,6 +10,21 @@
 			:ctx_name="[$site?.doc?.name, $site?.doc.server, $site?.doc?.cluster]"
 		/>
 		<AlertBanner
+			v-if="$site?.doc?.is_server_disk_full"
+			class="col-span-1 lg:col-span-2"
+			type="error"
+			title="This site's server is out of disk space. The site may stop responding until space is freed up."
+		>
+			<Button
+				class="ml-auto min-w-[7rem]"
+				variant="outline"
+				link="https://docs.frappe.io/cloud/storage-addons"
+			>
+				More Info
+			</Button>
+		</AlertBanner>
+
+		<AlertBanner
 			v-if="$site?.doc?.creation_failed"
 			class="col-span-1 lg:col-span-2"
 			type="error"
@@ -312,6 +327,7 @@
 							<component :is="d.prefix" />
 						</div>
 						<span> {{ d.value }} </span>
+						<component v-if="d.action" :is="d.action" />
 						<div v-if="d.suffix">
 							<component :is="d.suffix" />
 						</div>
@@ -363,6 +379,7 @@ import { renderDialog } from '../utils/components'
 import { trialDays } from '../utils/site'
 import { getToastErrorMessage } from '../utils/toast'
 import AlertBanner from './AlertBanner.vue'
+import BenchActionsDropdown from './BenchActionsDropdown.vue'
 import CustomAlerts from './CustomAlerts.vue'
 import DismissableBanner from './DismissableBanner.vue'
 import SiteDailyUsage from './SiteDailyUsage.vue'
@@ -529,6 +546,17 @@ export default {
 						alt: this.$site.doc?.cluster.title,
 						class: 'h-4 w-4',
 					}),
+				},
+				{
+					label: 'Bench',
+					value: this.$site.doc?.bench,
+					action: this.$team?.doc?.is_desk_user
+						? h(BenchActionsDropdown, {
+								bench: this.$site.doc?.bench,
+								releaseGroup: this.$site.doc?.group,
+								class: 'ml-auto',
+							})
+						: null,
 				},
 				{
 					label: 'Inbound IP',

@@ -235,6 +235,17 @@ def get_default_team_for_user(user):
 	return None
 
 
+def get_disabled_team_of_user(user):
+	"""Returns the account the user owns and disabled, whichever other teams they belong to
+
+	Child teams are not accounts, a partner owns one per customer.
+	"""
+	own_account = {"user": user, "parent_team": ("is", "not set")}
+	if frappe.db.exists("Team", own_account | {"enabled": 1}):
+		return None
+	return frappe.db.get_value("Team", own_account | {"enabled": 0}, "name")
+
+
 def chat_enabled():
 	if frappe.session.user == "Guest":
 		return False
@@ -545,12 +556,14 @@ def human_readable(num: int | float) -> str:
 
 
 def is_json(string):
-	if isinstance(string, str):
-		string = string.strip()
-		return string.startswith("{") and string.endswith("}")
 	if isinstance(string, (dict, list)):
 		return True
-	return None
+	if not isinstance(string, str):
+		return None
+	try:
+		return isinstance(json.loads(string), dict)
+	except ValueError:
+		return False
 
 
 def is_list(string):

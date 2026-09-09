@@ -2722,7 +2722,7 @@ class VirtualMachine(Document):
 			vnic_id = attachments[0].vnic_id
 			network_client.update_vnic(
 				vnic_id,
-				UpdateVnicDetails(network_security_group_ids=[*self.get_security_groups() + firewall_id]),
+				UpdateVnicDetails(network_security_group_ids=[*self.get_security_groups(), firewall_id]),
 			)
 
 		elif self.cloud_provider == "Hetzner":

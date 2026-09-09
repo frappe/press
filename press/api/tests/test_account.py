@@ -8,10 +8,12 @@ from frappe.tests.ui_test_helpers import create_test_user
 from press.api.account import (
 	accept_team_invite,
 	leave_team,
+	reactivate_account,
 	set_2fa_recovery_code_reminders,
 	signup,
 	validate_pincode,
 )
+from press.overrides import on_login
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.team.team import Team
 from press.press.doctype.team.team_members import get_invitations
@@ -20,6 +22,7 @@ from press.press.doctype.team.test_team import (
 	create_test_team,
 )
 from press.press.doctype.user_2fa.test_user_2fa import create_test_user_2fa
+from press.utils import get_disabled_team_of_user
 
 
 @contextmanager
@@ -473,4 +476,53 @@ class TestSet2FARecoveryCodeReminders(TestCase):
 				f"2FA is not enabled for {other_team.user}",
 				set_2fa_recovery_code_reminders,
 				True,
+			)
+
+
+class TestReactivateAccount(TestCase):
+	def setUp(self):
+		self.team = create_test_team()
+		self.team.db_set("enabled", 0)
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def is_enabled(self) -> int:
+		return frappe.db.get_value("Team", self.team.name, "enabled")
+
+	def test_logging_in_does_not_enable_a_disabled_account(self):
+		with user_context(self.team.user):
+			on_login(Mock(user=self.team.user))
+		self.assertEqual(self.is_enabled(), 0)
+
+	def test_reactivating_enables_the_account_the_user_disabled(self):
+		with user_context(self.team.user):
+			reactivate_account()
+		self.assertEqual(self.is_enabled(), 1)
+
+	def test_belonging_to_another_team_does_not_hide_the_disabled_account(self):
+		other_team = create_test_team()
+		other_team.append("team_members", {"user": self.team.user})
+		other_team.save()
+		self.assertEqual(get_disabled_team_of_user(self.team.user), self.team.name)
+
+	def test_a_child_team_is_never_mistaken_for_the_account(self):
+		frappe.get_doc(
+			{
+				"doctype": "Team",
+				"user": self.team.user,
+				"parent_team": self.team.name,
+				"country": self.team.country,
+				"enabled": 1,
+			}
+		).insert(ignore_permissions=True)
+		self.assertEqual(get_disabled_team_of_user(self.team.user), self.team.name)
+
+	def test_reactivating_an_enabled_account_throws(self):
+		self.team.db_set("enabled", 1)
+		with user_context(self.team.user):
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"You don't have a disabled account to reactivate.",
+				reactivate_account,
 			)

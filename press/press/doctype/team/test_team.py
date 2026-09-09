@@ -79,6 +79,29 @@ class TestTeam(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
+	def test_switching_to_card_payment_mode_moves_beginner_team_to_growth_tier(self):
+		team = create_test_team()
+		frappe.db.set_value(
+			"Team",
+			team.name,
+			{"apply_limits": 1, "tier": "Beginner", "spending_limit": 100, "payment_mode": "Prepaid Credits"},
+		)
+		frappe.get_doc(
+			{
+				"doctype": "Stripe Payment Method",
+				"team": team.name,
+				"stripe_customer_id": "cus_test123",
+				"stripe_payment_method_id": "pm_test123",
+			}
+		).insert(ignore_permissions=True)
+
+		team.reload()
+		team.payment_mode = "Card"
+		team.save()
+
+		self.assertEqual(frappe.db.get_value("Team", team.name, "tier"), "Growth")
+		self.assertEqual(frappe.db.get_value("Team", team.name, "spending_limit"), 250)
+
 	def test_create_new_method_works(self):
 		account_request = create_test_account_request("testsubdomain")
 		team_count_before = frappe.db.count("Team")
@@ -152,3 +175,51 @@ class TestTeam(FrappeTestCase):
 
 		total = team.total_subscribed_amount()
 		self.assertEqual(total, 50)
+
+	def test_get_upcoming_invoice_ignores_invoice_already_finalized_to_unpaid(self):
+		"""Once an invoice is finalized to Unpaid it may already have a Stripe/Razorpay
+		invoice created against it - get_upcoming_invoice must never return it for further
+		mutation, even though it's still docstatus=0 (not yet submitted)."""
+		team = create_test_team()
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=team.name,
+			period_start=frappe.utils.add_days(frappe.utils.today(), -10),
+			period_end=frappe.utils.add_days(frappe.utils.today(), 10),
+		).insert()
+		invoice.db_set("status", "Unpaid")
+
+		self.assertIsNone(team.get_upcoming_invoice())
+
+	def test_get_upcoming_invoice_matches_invoice_for_given_date_not_only_today(self):
+		team = create_test_team()
+		last_months_invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=team.name,
+			period_start=frappe.utils.add_days(frappe.utils.today(), -40),
+			period_end=frappe.utils.add_days(frappe.utils.today(), -10),
+		).insert()
+
+		backfilled_date = frappe.utils.add_days(frappe.utils.today(), -20)
+
+		self.assertEqual(team.get_upcoming_invoice(backfilled_date).name, last_months_invoice.name)
+		self.assertIsNone(team.get_upcoming_invoice())
+
+	def test_create_upcoming_invoice_uses_given_date_as_period_start(self):
+		team = create_test_team()
+		backfilled_date = frappe.utils.add_days(frappe.utils.today(), -20)
+
+		invoice = team.create_upcoming_invoice(backfilled_date)
+
+		self.assertEqual(frappe.utils.getdate(invoice.period_start), frappe.utils.getdate(backfilled_date))
+
+	def test_create_upcoming_invoice_returns_existing_invoice_on_race_duplicate(self):
+		"""If two callers race to create the invoice for the same date, the loser must get
+		back the winner's invoice instead of raising a DuplicateEntryError."""
+		team = create_test_team()
+		date = frappe.utils.today()
+		first = team.create_upcoming_invoice(date)
+
+		second = team.create_upcoming_invoice(date)
+
+		self.assertEqual(second.name, first.name)

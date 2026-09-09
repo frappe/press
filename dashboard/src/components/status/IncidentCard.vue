@@ -106,16 +106,10 @@ const props = defineProps<Props>();
 					<span class="text-sm font-semibold uppercase tracking-widest">
 						Investigation
 					</span>
+					<Badge :label="data.investigation.status" class="ml-auto" />
 				</div>
 
 				<div class="rounded-lg bg-surface-gray-1 px-4 py-3">
-					<div class="mb-2.5 flex items-center justify-between">
-						<span class="text-sm">
-							{{ data.investigation.name }}
-						</span>
-						<Badge :label="data.investigation.status" variant="solid" />
-					</div>
-
 					<details
 						v-for="group in data.investigation.groups"
 						:key="group.label"
