@@ -117,6 +117,8 @@ const archivedSites = createListResource({
 	pageLength: 1,
 	auto: false,
 	onSuccess: (data: any[]) => {
+		// A team with no site at all keeps the default list, where it can
+		// create the first site
 		if (!data?.length) return
 		showsArchivedFallback.value = true
 		selectStatuses(['Archived'])
