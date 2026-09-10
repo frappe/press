@@ -1,8 +1,11 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
+from collections import Counter
+from datetime import datetime
+
 import frappe
-from frappe.utils import rounded
+from frappe.utils import add_to_date, rounded
 
 from press.api.server import prometheus_query
 
@@ -24,7 +27,8 @@ RUNNING = ("Preparing", "Running")
 def execute(filters=None):
 	frappe.only_for("System Manager")
 	window = DURATIONS[(filters or {}).get("duration") or "1 hour"]
-	return get_columns(), get_data(window), get_cluster_loss(window), get_chart(window)
+	builds = get_builds(window)
+	return get_columns(), get_data(window, builds), get_cluster_loss(window), get_chart(window, builds)
 
 
 def get_columns():
@@ -64,19 +68,19 @@ def get_columns():
 	]
 
 
-def get_data(window):
+def get_data(window, builds):
 	servers = get_servers()
 	names = [server.name for server in servers]
-	builds = get_builds(window)
+	builds_by_server = group_by_server(builds)
 	active = get_active_builds()
 	pull = get_pull_seconds(window)
 	stats = get_fleet_stats(names, window)
 	disk = get_fleet_disk_usage(names)
 	rows = []
 	for server in servers:
-		server_builds = builds.get(server.name, [])
-		durations = [build.duration for build in server_builds if build.duration is not None]
-		waits = [build.wait for build in server_builds if build.wait is not None]
+		server_builds = builds_by_server.get(server.name, [])
+		durations = seconds_of(server_builds, "build_start", "build_end")
+		waits = seconds_of(server_builds, "pending_start", "build_start")
 		rows.append(
 			{
 				"server": server.name,
@@ -186,23 +190,31 @@ def percentile(values, fraction):
 
 
 def get_builds(window):
-	"""Builds started inside the window, by server, with their queue wait and run time."""
-	rows = frappe.db.sql(
-		"""
-		SELECT
-			build_server, status,
-			TIMESTAMPDIFF(SECOND, build_start, build_end) AS duration,
-			TIMESTAMPDIFF(SECOND, pending_start, build_start) AS wait
-		FROM `tabDeploy Candidate Build`
-		WHERE build_start >= NOW() - INTERVAL %s SECOND AND build_server IS NOT NULL
-		""",
-		window,
-		as_dict=True,
+	"""Builds that started inside the window."""
+	return frappe.get_all(
+		"Deploy Candidate Build",
+		{
+			"build_start": (">=", add_to_date(None, seconds=-window)),
+			"build_server": ("is", "set"),
+		},
+		["build_server", "status", "pending_start", "build_start", "build_end"],
 	)
-	builds = {}
-	for row in rows:
-		builds.setdefault(row.build_server, []).append(row)
-	return builds
+
+
+def group_by_server(builds):
+	grouped = {}
+	for build in builds:
+		grouped.setdefault(build.build_server, []).append(build)
+	return grouped
+
+
+def seconds_of(builds, start_field, end_field):
+	"""Seconds between two stamps of each build. A build that lacks either stamp drops out."""
+	spans = []
+	for build in builds:
+		if build.get(start_field) and build.get(end_field):
+			spans.append((build.get(end_field) - build.get(start_field)).total_seconds())
+	return spans
 
 
 def get_active_builds():
@@ -211,58 +223,48 @@ def get_active_builds():
 	Never bound to the window. A build that started before the window, or one still preparing,
 	uses the server all the same, and an operator who reads this column wants the true load.
 	"""
-	rows = frappe.db.sql(
-		"""
-		SELECT
-			build_server,
-			SUM(status IN %(queued)s) AS queued,
-			SUM(status IN %(running)s) AS running
-		FROM `tabDeploy Candidate Build`
-		WHERE status IN %(active)s AND build_server IS NOT NULL
-		GROUP BY build_server
-		""",
-		{"queued": QUEUED, "running": RUNNING, "active": QUEUED + RUNNING},
-		as_dict=True,
+	builds = frappe.get_all(
+		"Deploy Candidate Build",
+		{"status": ("in", QUEUED + RUNNING), "build_server": ("is", "set")},
+		["build_server", "status"],
 	)
-	return {row.build_server: row for row in rows}
+	active = {}
+	for build in builds:
+		counts = active.setdefault(build.build_server, {"queued": 0, "running": 0})
+		counts["queued" if build.status in QUEUED else "running"] += 1
+	return active
 
 
 def get_pull_seconds(window):
 	"""Median New Bench job. Every one pulls an image, so it tracks how fast the registry serves."""
-	rows = frappe.db.sql(
-		"""
-		SELECT TIMESTAMPDIFF(SECOND, `start`, `end`) AS duration
-		FROM `tabAgent Job`
-		WHERE job_type = 'New Bench' AND status = 'Success'
-			AND `end` >= NOW() - INTERVAL %s SECOND
-		""",
-		window,
+	jobs = frappe.get_all(
+		"Agent Job",
+		{
+			"job_type": "New Bench",
+			"status": "Success",
+			"end": (">=", add_to_date(None, seconds=-window)),
+		},
+		["start", "end"],
 	)
-	return percentile([row[0] for row in rows if row[0] is not None], 0.5)
+	return percentile(seconds_of(jobs, "start", "end"), 0.5)
 
 
-def get_chart(window):
+def get_chart(window, builds):
 	bucket = max(60, window // 12)  # about twelve bars, whatever the window
-	rows = frappe.db.sql(
-		"""
-		SELECT
-			FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(build_start) / %(bucket)s) * %(bucket)s) AS bucket,
-			COUNT(*) AS builds
-		FROM `tabDeploy Candidate Build`
-		WHERE build_start >= NOW() - INTERVAL %(window)s SECOND
-		GROUP BY bucket ORDER BY bucket
-		""",
-		{"bucket": bucket, "window": window},
-		as_dict=True,
-	)
+	counts = Counter(floor_to_bucket(build.build_start, bucket) for build in builds)
+	labels = sorted(counts)
 	return {
 		"title": f"Builds started per {bucket // 60} minutes",
 		"data": {
-			"labels": [row.bucket.strftime("%d %b %H:%M") for row in rows],
-			"datasets": [{"name": "Builds", "values": [row.builds for row in rows]}],
+			"labels": [label.strftime("%d %b %H:%M") for label in labels],
+			"datasets": [{"name": "Builds", "values": [counts[label] for label in labels]}],
 		},
 		"type": "bar",
 	}
+
+
+def floor_to_bucket(moment, bucket):
+	return datetime.fromtimestamp(moment.timestamp() // bucket * bucket)
 
 
 def get_cluster_loss(window):
