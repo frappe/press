@@ -146,9 +146,9 @@ class TestFrappeListedAsDependency(FrappeTestCase):
 		details = self.get_details(UV_FRAPPE_DEPENDENCY_OUTPUT)
 
 		self.assertTrue(details["is_actionable"])
-		self.assertIn("my_app", details["title"])
-		self.assertIn("lists frappe as a Python dependency", details["title"])
+		self.assertEqual(details["title"], "my_app lists frappe as a Python dependency")
 		self.assertIn("pyproject.toml", details["message"])
+		self.assertIn("Remove <code>frappe</code> from that list", details["message"])
 		self.assertEqual(
 			details["assistance_url"],
 			DOC_URLS["frappe-listed-as-a-python-dependency"],
