@@ -10,6 +10,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.account_request.test_account_request import create_test_account_request
+from press.press.doctype.server.server import BENCH_DATA_MNT_POINT
 from press.press.doctype.server.server_monitoring import (
 	DISK_FILL_HORIZON_HOURS,
 	SignupFailureRate,
@@ -284,6 +285,14 @@ class TestDiskFillMountpoints(FrappeTestCase):
 		server = create_test_server(use_for_build=True)
 
 		self.assertEqual(_disk_fill_mountpoints([server.name]), ["/"])
+
+	def test_a_data_volume_on_the_machine_counts_even_without_a_mount_row(self):
+		"""Server Mount and the volumes of the machine go out of sync."""
+		server = create_test_server(use_for_build=True, has_data_volume=True)
+		server.mounts = []
+		server.save()
+
+		self.assertEqual(_disk_fill_mountpoints([server.name]), ["/", BENCH_DATA_MNT_POINT])
 
 	def test_the_mounts_of_another_server_are_left_out(self):
 		server = create_test_server(use_for_build=True)

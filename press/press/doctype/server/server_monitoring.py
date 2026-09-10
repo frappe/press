@@ -700,10 +700,13 @@ def _disk_fill_mountpoints(servers: list[str]) -> list[str]:
 	"""Where the builds land on these servers.
 
 	Build servers keep their builds on different paths: /home/frappe/mnt/builds on one,
-	/mnt/volume_blr1_01 on another. Press already records each one, so read the mounts of
-	the server rather than a list in this file, which goes stale on the next volume.
+	/mnt/volume_blr1_01 on another. Press records a mount twice, the path in Server Mount
+	and the volume on the Virtual Machine, and the two go out of sync. Read both. An extra
+	path costs nothing, because Prometheus has no series for a path that nobody mounted.
 	The root filesystem is always in, because a server without a data volume builds there.
 	"""
+	from press.press.doctype.server.server import BENCH_DATA_MNT_POINT
+
 	mounts = frappe.get_all(
 		"Server Mount",
 		{"parent": ("in", servers), "parenttype": "Server", "mount_point": ("is", "set")},
@@ -714,7 +717,22 @@ def _disk_fill_mountpoints(servers: list[str]) -> list[str]:
 		{"name": ("in", servers), "docker_data_mountpoint": ("is", "set")},
 		pluck="docker_data_mountpoint",
 	)
-	return sorted({"/", *mounts, *registry_mounts})
+	mountpoints = {"/", *mounts, *registry_mounts}
+	if _a_machine_has_a_data_volume(servers):
+		mountpoints.add(BENCH_DATA_MNT_POINT)
+	return sorted(mountpoints)
+
+
+def _a_machine_has_a_data_volume(servers: list[str]) -> bool:
+	"""A machine with a second volume mounts it, whether or not Server Mount records it."""
+	machines = frappe.get_all("Server", {"name": ("in", servers)}, pluck="virtual_machine")
+	machines += frappe.get_all("Registry Server", {"name": ("in", servers)}, pluck="virtual_machine")
+	volumes = frappe.get_all(
+		"Virtual Machine Volume",
+		{"parent": ("in", [machine for machine in machines if machine]), "parenttype": "Virtual Machine"},
+		pluck="parent",
+	)
+	return len(volumes) > len(set(volumes))
 
 
 def _describe_filling_filesystems(
