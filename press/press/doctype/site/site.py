@@ -28,6 +28,7 @@ from frappe.utils import (
 	cstr,
 	flt,
 	get_datetime,
+	get_system_timezone,
 	get_url,
 	now_datetime,
 	sbool,
@@ -107,8 +108,6 @@ from press.utils import (
 from press.utils.dns import _change_dns_record, check_dns_cname_a, create_dns_record
 
 if TYPE_CHECKING:
-	from datetime import datetime
-
 	from frappe.types import DF
 	from frappe.types.DF import Table
 
@@ -145,6 +144,9 @@ TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
 DEFAULT_MAX_STATEMENT_TIME = 3600
 # How much to bump max_statement_time by (in seconds) each time — one hour.
 STATEMENT_TIME_INCREMENT = 3600
+
+# Picking a backup time is for plans from this price up. Ref: USD 25.
+MINIMUM_BACKUP_SCHEDULE_PLAN_PRICE_USD = 25
 
 # Conditions a site must satisfy for the agent to stream offsite backup
 # artifacts straight to S3 instead of uploading them after the dump finishes.
@@ -411,6 +413,7 @@ class Site(Document, TagHelpers):
 		doc.frappe_updated_on = get_frappe_release_timestamp(self.bench)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
+		doc.can_schedule_backups = self.plan_allows_backup_schedule()
 		doc.last_updated = self.last_updated
 		doc.creation_failure_retention_days = CREATION_FAILURE_RETENTION_DAYS
 		doc.has_scheduled_updates = bool(
@@ -462,6 +465,7 @@ class Site(Document, TagHelpers):
 			if self.status == "Suspended"
 			else None
 		)
+		doc.archival_details = self.get_archival_details() if self.status == "Archived" else None
 		doc.communication_infos = self.get_communication_infos()
 		if doc.owner == "Administrator":
 			doc.signup_by = frappe.db.get_value("Account Request", doc.account_request, "email")
@@ -474,6 +478,25 @@ class Site(Document, TagHelpers):
 			)[0]
 
 		return doc
+
+	def get_archival_details(self) -> dict | None:
+		"""Who dropped the site, when, and why."""
+		activity = frappe.db.get_value(
+			"Site Activity",
+			{"site": self.name, "action": "Archive"},
+			["owner", "creation", "reason"],
+			order_by="creation asc",  # a retried archive logs again; the first one holds the reason
+			as_dict=True,
+		)
+		if not activity:
+			return None
+
+		return {
+			# every scheduled archival runs as Administrator, which means nothing to a customer
+			"archived_by": "Frappe Cloud" if activity.owner == "Administrator" else activity.owner,
+			"archived_on": activity.creation,
+			"reason": activity.reason,
+		}
 
 	def site_action(allowed_status: list[str], disallowed_message: str | dict[str, str] | None = None):
 		def outer_wrapper(func):
@@ -751,6 +774,55 @@ class Site(Document, TagHelpers):
 				frappe.throw(
 					f"Multiple backups have been scheduled at following hour {h}:00:00. Please configure the newer custom backup hours to a different time of the day."
 				)
+
+	@dashboard_whitelist()
+	def get_backup_schedule(self) -> dict:
+		"""Times are on the server's clock, same as the scheduler reads them."""
+		return {
+			"custom": bool(self.schedule_logical_backup_at_custom_time),
+			"times": sorted(
+				frappe.utils.get_time(row.backup_time).strftime("%H:%M") for row in self.logical_backup_times
+			),
+		}
+
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def update_backup_schedule(self, time: str | None = None):
+		"""Move the site's backups to a time of its own. No time means back to the default schedule.
+
+		One time a day — each extra time is one more backup we pay for. We set up
+		more times than that for a site ourselves. Logical only — physical backups
+		deactivate the site while they run.
+		"""
+		self.validate_backup_schedule_is_editable()
+
+		self.logical_backup_times = []
+		if time:
+			self.append("logical_backup_times", {"backup_time": parse_backup_time(time)})
+		self.schedule_logical_backup_at_custom_time = bool(time)
+		self.save()
+
+	def validate_backup_schedule_is_editable(self):
+		if not self.plan_allows_backup_schedule():
+			frappe.throw(
+				"Your plan does not come with a backup schedule you can set. Change to a plan of USD 25 or more to select a backup time."
+			)
+		if len(self.logical_backup_times) > 1:
+			frappe.throw("We set up the backup times of your site. Write to support to change them.")
+
+	def plan_allows_backup_schedule(self) -> bool:
+		"""Entry-level plans stay on the default schedule.
+
+		Enterprise plans are priced at 0 and negotiated off the ladder, so the
+		cutoff only rules out the public plans under it. Offsite backups keep the
+		trial plans out, which are priced at 0 as well.
+		"""
+		if not self.plan:
+			return False
+		plan = frappe.get_cached_doc("Site Plan", self.plan)
+		if not plan.offsite_backups:
+			return False
+		return plan.price_usd == 0 or plan.price_usd >= MINIMUM_BACKUP_SCHEDULE_PLAN_PRICE_USD
 
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)
@@ -3007,6 +3079,17 @@ class Site(Document, TagHelpers):
 		validate_plan(self.server, self.name, plan)
 		self.change_plan(plan)
 
+	@dashboard_whitelist()
+	def last_plan_change(self):
+		"""Most recent plan change for this site, for showing 'last changed on' in the dashboard."""
+		return frappe.db.get_value(
+			"Site Plan Change",
+			{"site": self.name},
+			["from_plan", "to_plan", "type", "creation"],
+			order_by="creation desc",
+			as_dict=True,
+		)
+
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
 		self.reset_disk_usage_exceeded_status(save=False)
@@ -3346,6 +3429,9 @@ class Site(Document, TagHelpers):
 		release_group_names = []
 		host_on_shared_server = False
 		plan_name = self.get_plan_name()
+
+		if self.is_standby:
+			host_on_shared_server = True
 		if plan_name:
 			release_group_names = frappe.db.get_all(
 				"Site Plan Release Group",
@@ -3399,6 +3485,35 @@ class Site(Document, TagHelpers):
 			for_update=True,
 		):
 			frappe.throw("Database Access is already being enabled on this site. Please check after a while.")
+
+	@dashboard_whitelist()
+	def get_auto_update_window(self):
+		"""Tell when an automatic update of this site can start.
+
+		The dashboard shows this, because the user cannot see the update window
+		anywhere else.
+		"""
+		from press.press.doctype.site_update.site_update import (
+			DEFAULT_SITE_TIMEZONE,
+			get_deploy_hour_windows,
+		)
+
+		if self.only_update_at_specified_time:
+			# This schedule runs on the clock of the platform, not of the site.
+			return {
+				"timezone": get_system_timezone(),
+				"windows": None,
+				"frequency": self.update_trigger_frequency,
+				"time": self.update_trigger_time,
+				"weekday": self.update_on_weekday,
+				"day_of_month": self.update_on_day_of_month,
+				"end_of_month": self.update_end_of_month,
+			}
+
+		return {
+			"timezone": self.timezone or DEFAULT_SITE_TIMEZONE,
+			"windows": get_deploy_hour_windows(),
+		}
 
 	def get_auto_update_info(self):
 		fields = [
@@ -4628,6 +4743,14 @@ class Site(Document, TagHelpers):
 		if not d:
 			return None
 		return str(timedelta(seconds=round(d.total_seconds() * 2)))
+
+
+def parse_backup_time(time: str) -> str:
+	try:
+		parsed = datetime.strptime(time, "%H:%M")
+	except (TypeError, ValueError):
+		frappe.throw(f"{time} is not a valid backup time. Use HH:MM.")
+	return parsed.strftime("%H:%M:00")
 
 
 def get_inbound_ip(server: str) -> str | None:

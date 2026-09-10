@@ -9,10 +9,10 @@ import json
 from urllib.parse import urlparse
 
 import frappe
-import frappe.query_builder
-import frappe.query_builder.functions
 import requests
 from frappe.model.document import Document
+from frappe.query_builder import Case
+from frappe.query_builder.functions import Count, Sum
 
 from press.api.client import dashboard_whitelist
 from press.guards import role_guard
@@ -187,18 +187,30 @@ class PressWebhook(Document):
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")
 
 
+# Below this many delivery attempts in the window, a single transient failure
+# (a timeout, the endpoint briefly restarting, ...) would already exceed the
+# failure-rate threshold on its own. Most webhook events (site/bench status
+# changes) fire rarely enough that 1-2 attempts an hour is the common case,
+# so without this floor the check disables webhooks on isolated blips rather
+# than genuine, sustained delivery failure.
+MIN_ATTEMPTS_FOR_AUTO_DISABLE = 5
+
+
 def auto_disable_high_delivery_failure_webhooks():
 	# In past hour, if 70% of webhook deliveries has failed, disable the webhook and notify the user
-	data = frappe.db.sql(
-		"""
-SELECT `endpoint`
-FROM `tabPress Webhook Attempt`
-WHERE `creation` >= NOW() - INTERVAL 1 HOUR
-GROUP BY `endpoint`
-HAVING (COUNT(CASE WHEN `status` = 'Failed' THEN 1 END) / COUNT(*)) * 100 > 70;
-""",
-		as_dict=True,
+	PressWebhookAttempt = frappe.qb.DocType("Press Webhook Attempt")
+	total = Count("*")
+	failed = Sum(Case().when(PressWebhookAttempt.status == "Failed", 1).else_(0))
+	one_hour_ago = frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=-1)
+
+	query = (
+		frappe.qb.from_(PressWebhookAttempt)
+		.select(PressWebhookAttempt.endpoint)
+		.where(PressWebhookAttempt.creation >= one_hour_ago)
+		.groupby(PressWebhookAttempt.endpoint)
+		.having((total >= MIN_ATTEMPTS_FOR_AUTO_DISABLE) & ((failed / total) * 100 > 70))
 	)
+	data = query.run(as_dict=True)
 	endpoints = [row.endpoint for row in data]
 	doc_names = frappe.get_all("Press Webhook", filters={"endpoint": ("in", endpoints)}, pluck="name")
 	for doc_name in doc_names:

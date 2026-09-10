@@ -2025,13 +2025,14 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			reference_name=reference_name,
 		)
 
-	def update_nginx_access(self, ip_accept: list[str], ip_drop: list[str]) -> AgentJob:
+	def update_nginx_access(self, ip_accept: list[str], ip_drop: list[str], proxy_ip: str) -> AgentJob:
 		return self.create_agent_job(
 			"Update Nginx Access",
 			"/server/update-nginx-access",
 			data={
 				"ip_accept": ip_accept,
 				"ip_drop": ip_drop,
+				"proxy_ip": proxy_ip,
 			},
 		)
 
