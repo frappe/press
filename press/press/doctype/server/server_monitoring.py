@@ -34,7 +34,9 @@ INCOMPLETE_SIGNUP_MINIMUM_COUNT = 10
 DISK_FILL_HORIZON_HOURS = 1
 # A disk with room to spare can dip for a minute without meaning anything
 DISK_FILL_ALERT_MIN_FREE_RATIO = 0.3
-DISK_FILL_IGNORED_FILESYSTEMS = "tmpfs|squashfs|overlay|fuse.lxcfs"
+# Read-only or in-memory mounts. A build never fills these, and /boot/efi is small
+# enough that one kernel update looks like a disk that drains
+DISK_FILL_IGNORED_FILESYSTEMS = "tmpfs|squashfs|overlay|fuse.lxcfs|vfat|iso9660"
 
 
 class PublicServerHealthMetrics(TypedDict):
@@ -670,8 +672,7 @@ def _filesystems_filling_up(servers: list[str]) -> list[FillingFilesystem]:
 		return []
 	url, auth = prometheus_connection
 
-	instance_matcher = "|".join(_escape_prometheus_regex_literal(name) for name in servers)
-	selector = f'job="node", instance=~"^({instance_matcher})$", fstype!~"{DISK_FILL_IGNORED_FILESYSTEMS}"'
+	selector = _disk_fill_selector(servers)
 	horizon = DISK_FILL_HORIZON_HOURS * 3600
 
 	predicted_results = _query_prometheus_vector(
@@ -688,6 +689,18 @@ def _filesystems_filling_up(servers: list[str]) -> list[FillingFilesystem]:
 	return _describe_filling_filesystems(
 		_vector_by_filesystem(predicted_results), _vector_by_filesystem(free_results), horizon
 	)
+
+
+def _disk_fill_selector(servers: list[str]) -> str:
+	"""Every data mountpoint on these servers.
+
+	Build servers keep their builds on different paths: /home/frappe/mnt/builds on one,
+	/mnt/volume_blr1_01 on another, /opt/volumes/benches on a third. A list of paths goes
+	stale the day someone attaches a volume, and a disk that fills stops the builds
+	whichever path it holds. Read them all, and let the slope decide which one matters.
+	"""
+	instance_matcher = "|".join(_escape_prometheus_regex_literal(name) for name in servers)
+	return f'job="node", instance=~"^({instance_matcher})$", fstype!~"{DISK_FILL_IGNORED_FILESYSTEMS}"'
 
 
 def _describe_filling_filesystems(

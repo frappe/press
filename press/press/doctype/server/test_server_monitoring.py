@@ -15,6 +15,7 @@ from press.press.doctype.server.server_monitoring import (
 	SignupFailureRate,
 	_breaches_signup_failure_threshold,
 	_describe_filling_filesystems,
+	_disk_fill_selector,
 	_get_incomplete_signup_rate,
 	_get_trial_signup_failure_rate,
 	_send_disk_fill_alert,
@@ -262,6 +263,21 @@ class TestSignupFailureAlert(FrappeTestCase):
 
 
 GIGABYTE = 1024**3
+
+
+class TestDiskFillSelector(FrappeTestCase):
+	def test_selector_reads_every_mountpoint_of_the_named_servers(self):
+		selector = _disk_fill_selector(["f1.frappe.cloud", "registry.frappe.cloud"])
+
+		self.assertIn('instance=~"^(f1\\\\.frappe\\\\.cloud|registry\\\\.frappe\\\\.cloud)$"', selector)
+		self.assertNotIn("mountpoint", selector)
+
+	def test_selector_leaves_out_the_mounts_a_build_cannot_fill(self):
+		selector = _disk_fill_selector(["f1.frappe.cloud"])
+
+		for filesystem in ("tmpfs", "squashfs", "overlay", "vfat"):
+			self.assertIn(filesystem, selector)
+		self.assertIn("fstype!~", selector)
 
 
 class TestFillingFilesystems(FrappeTestCase):
