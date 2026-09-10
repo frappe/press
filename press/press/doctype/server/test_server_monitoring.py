@@ -11,11 +11,15 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.account_request.test_account_request import create_test_account_request
 from press.press.doctype.server.server_monitoring import (
+	DISK_FILL_HORIZON_HOURS,
 	SignupFailureRate,
 	_breaches_signup_failure_threshold,
+	_describe_filling_filesystems,
 	_get_incomplete_signup_rate,
 	_get_trial_signup_failure_rate,
+	_send_disk_fill_alert,
 	_send_signup_failure_alert,
+	alert_on_build_servers_filling_up,
 	alert_on_failing_signups,
 )
 from press.press.doctype.team.test_team import create_test_team
@@ -253,5 +257,88 @@ class TestSignupFailureAlert(FrappeTestCase):
 			incomplete=build_signup_failure_rate(failed=1, total=100, minimum_count=10, ratio_threshold=0.9),
 		):
 			alert_on_failing_signups()
+
+		send_raven_message.assert_not_called()
+
+
+GIGABYTE = 1024**3
+
+
+class TestFillingFilesystems(FrappeTestCase):
+	def test_a_disk_that_drains_to_empty_reports_the_minutes_it_has_left(self):
+		# 10 GB free now, 5 GB left after an hour, so it drains in two hours
+		filesystems = _describe_filling_filesystems(
+			{("f1.frappe.cloud", "/opt/volumes/docker"): 5 * GIGABYTE},
+			{("f1.frappe.cloud", "/opt/volumes/docker"): 10 * GIGABYTE},
+			DISK_FILL_HORIZON_HOURS * 3600,
+		)
+
+		self.assertEqual(len(filesystems), 1)
+		self.assertEqual(filesystems[0]["server"], "f1.frappe.cloud")
+		self.assertEqual(filesystems[0]["mountpoint"], "/opt/volumes/docker")
+		self.assertAlmostEqual(filesystems[0]["minutes_to_full"], 120)
+
+	def test_a_disk_that_gained_space_is_left_out(self):
+		filesystems = _describe_filling_filesystems(
+			{("f1.frappe.cloud", "/"): 20 * GIGABYTE},
+			{("f1.frappe.cloud", "/"): 10 * GIGABYTE},
+			DISK_FILL_HORIZON_HOURS * 3600,
+		)
+
+		self.assertEqual(filesystems, [])
+
+	def test_a_disk_without_a_current_reading_is_left_out(self):
+		filesystems = _describe_filling_filesystems(
+			{("f1.frappe.cloud", "/"): -1 * GIGABYTE}, {}, DISK_FILL_HORIZON_HOURS * 3600
+		)
+
+		self.assertEqual(filesystems, [])
+
+
+@patch("press.press.doctype.server.server_monitoring.send_raven_message")
+class TestDiskFillAlert(FrappeTestCase):
+	def test_alert_names_the_server_the_mountpoint_the_free_space_and_the_time_left(self, send_raven_message):
+		_send_disk_fill_alert(
+			[
+				{
+					"server": "f1.frappe.cloud",
+					"mountpoint": "/opt/volumes/docker",
+					"free_bytes": 4.5 * GIGABYTE,
+					"minutes_to_full": 23.4,
+				}
+			]
+		)
+
+		message = send_raven_message.call_args[0][0]
+		self.assertIn("**Build Server Disk Filling** - 1", message)
+		self.assertIn("f1.frappe.cloud", message)
+		self.assertIn("/opt/volumes/docker", message)
+		self.assertIn("4.5 GB", message)
+		self.assertIn("23 min", message)
+
+	def test_the_disk_with_the_least_time_left_comes_first(self, send_raven_message):
+		_send_disk_fill_alert(
+			[
+				{
+					"server": "f2.frappe.cloud",
+					"mountpoint": "/",
+					"free_bytes": GIGABYTE,
+					"minutes_to_full": 50,
+				},
+				{
+					"server": "f1.frappe.cloud",
+					"mountpoint": "/",
+					"free_bytes": GIGABYTE,
+					"minutes_to_full": 10,
+				},
+			]
+		)
+
+		message = send_raven_message.call_args[0][0]
+		self.assertLess(message.index("f1.frappe.cloud"), message.index("f2.frappe.cloud"))
+
+	def test_no_alert_when_no_disk_is_filling(self, send_raven_message):
+		with patch("press.press.doctype.server.server_monitoring._filesystems_filling_up", return_value=[]):
+			alert_on_build_servers_filling_up()
 
 		send_raven_message.assert_not_called()

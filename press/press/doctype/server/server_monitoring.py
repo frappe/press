@@ -31,6 +31,11 @@ TRIAL_SIGNUP_MINIMUM_COUNT = 5
 INCOMPLETE_SIGNUP_RATIO_THRESHOLD = 0.9
 INCOMPLETE_SIGNUP_MINIMUM_COUNT = 10
 
+DISK_FILL_HORIZON_HOURS = 1
+# A disk with room to spare can dip for a minute without meaning anything
+DISK_FILL_ALERT_MIN_FREE_RATIO = 0.3
+DISK_FILL_IGNORED_FILESYSTEMS = "tmpfs|squashfs|overlay|fuse.lxcfs"
+
 
 class PublicServerHealthMetrics(TypedDict):
 	available_memory_bytes: dict[str, float]
@@ -629,3 +634,114 @@ def _describe_signup_failure_rate(rate: SignupFailureRate) -> str:
 		f"({failure_ratio:.2f}%) in the last {SIGNUP_ALERT_WINDOW_HOURS}h, "
 		f"threshold {rate['ratio_threshold'] * 100:.0f}%"
 	)
+
+
+class FillingFilesystem(TypedDict):
+	server: str
+	mountpoint: str
+	free_bytes: float
+	minutes_to_full: float
+
+
+def alert_on_build_servers_filling_up() -> None:
+	"""Hourly. Name every build or registry disk that runs out within the horizon.
+
+	The Disk Full alert rule fires at 2% free, which on a build server is minutes of warning.
+	A build writes layers fast, so an operator needs the prediction, not the last percent.
+	"""
+	filesystems = _filesystems_filling_up(_build_and_registry_servers())
+	if filesystems:
+		_send_disk_fill_alert(filesystems)
+
+
+def _build_and_registry_servers() -> list[str]:
+	"""The servers that build images, and the registries they push them to."""
+	builders = frappe.get_all("Server", {"status": "Active", "use_for_build": True}, pluck="name")
+	registries = frappe.get_all("Registry Server", {"status": "Active"}, pluck="name")
+	return builders + registries
+
+
+def _filesystems_filling_up(servers: list[str]) -> list[FillingFilesystem]:
+	if not servers:
+		return []
+
+	prometheus_connection = _get_public_server_pool_prometheus_connection()
+	if not prometheus_connection:
+		return []
+	url, auth = prometheus_connection
+
+	instance_matcher = "|".join(_escape_prometheus_regex_literal(name) for name in servers)
+	selector = f'job="node", instance=~"^({instance_matcher})$", fstype!~"{DISK_FILL_IGNORED_FILESYSTEMS}"'
+	horizon = DISK_FILL_HORIZON_HOURS * 3600
+
+	predicted_results = _query_prometheus_vector(
+		f"predict_linear(node_filesystem_avail_bytes{{{selector}}}[1h], {horizon}) < 0"
+		f" and node_filesystem_avail_bytes{{{selector}}} / node_filesystem_size_bytes{{{selector}}}"
+		f" < {DISK_FILL_ALERT_MIN_FREE_RATIO}",
+		url,
+		auth,
+	)
+	if not predicted_results:
+		return []
+
+	free_results = _query_prometheus_vector(f"node_filesystem_avail_bytes{{{selector}}}", url, auth)
+	return _describe_filling_filesystems(
+		_vector_by_filesystem(predicted_results), _vector_by_filesystem(free_results), horizon
+	)
+
+
+def _describe_filling_filesystems(
+	predicted: dict[tuple[str, str], float],
+	free_bytes: dict[tuple[str, str], float],
+	horizon: int,
+) -> list[FillingFilesystem]:
+	filesystems: list[FillingFilesystem] = []
+	for filesystem, predicted_free in predicted.items():
+		free = free_bytes.get(filesystem)
+		if free is None:
+			continue
+		drain_per_second = (free - predicted_free) / horizon
+		if drain_per_second <= 0:
+			continue
+		server, mountpoint = filesystem
+		filesystems.append(
+			{
+				"server": server,
+				"mountpoint": mountpoint,
+				"free_bytes": free,
+				"minutes_to_full": free / drain_per_second / 60,
+			}
+		)
+	return filesystems
+
+
+def _vector_by_filesystem(results: list[dict] | None) -> dict[tuple[str, str], float]:
+	filesystems: dict[tuple[str, str], float] = {}
+	for result in results or []:
+		metric = result.get("metric", {})
+		instance, mountpoint = metric.get("instance"), metric.get("mountpoint")
+		if not instance or not mountpoint:
+			continue
+		with suppress(KeyError, TypeError, ValueError):
+			filesystems[(instance, mountpoint)] = float(result["value"][1])
+	return filesystems
+
+
+def _send_disk_fill_alert(filesystems: list[FillingFilesystem]) -> None:
+	lines = [
+		f"**Build Server Disk Filling** - {len(filesystems)}",
+		"",
+		f"These disks run out within {DISK_FILL_HORIZON_HOURS}h at the rate of the last hour.",
+		"",
+		"| Server | Mountpoint | Free | Full in |",
+		"| --- | --- | --- | --- |",
+	]
+	for filesystem in sorted(filesystems, key=lambda filesystem: filesystem["minutes_to_full"]):
+		lines.append(
+			f"| {_escape_markdown_table_cell(filesystem['server'])}"
+			f" | {_escape_markdown_table_cell(filesystem['mountpoint'])}"
+			f" | {filesystem['free_bytes'] / 1024**3:.1f} GB"
+			f" | {filesystem['minutes_to_full']:.0f} min |"
+		)
+
+	send_raven_message("\n".join(lines).strip(), RAVEN_SERVER_ALERTS_CHANNEL)
