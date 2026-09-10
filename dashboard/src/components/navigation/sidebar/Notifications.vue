@@ -214,6 +214,10 @@ const tabs = [
   { label: "Unread", icon: LucideMessageSquareDot },
 ];
   
+const stopIfLink = (event) => {
+  if (event.target.closest("a")) event.stopPropagation();
+};
+
 useRealtimeNotifs((data) => {
 	if (data.team === team.doc.name) resource.reload()
 })
@@ -274,7 +278,7 @@ useRealtimeNotifs((data) => {
         <Scrollbar ref="scrollRef" v-if="resource?.data?.length > 0" class='max-h-[67%] md:max-h-full'>
           <!-- notif tiles = icon + info -->
           <div v-for="x in resource.data"
-            class="[&_b]:font-semibold p-2 md:p-4 flex gap-4 items-center relative cursor-pointer border-b last:border-0 hover:bg-surface-gray-1"
+            class="[&_b]:font-semibold [&_a]:underline p-2 md:p-4 flex gap-4 items-center relative cursor-pointer border-b last:border-0 hover:bg-surface-gray-1"
             @click="markAsRead(x, togglePopover)" title="Click to mark as read">
             <!-- type icon -->
             <div class="size-8 flex-shrink-0 flex items-center p-2 rounded mb-auto mt-1 relative
@@ -287,7 +291,7 @@ useRealtimeNotifs((data) => {
 
             <!-- info -->
             <div class="text-base leading-relaxed flex flex-wrap gap-2 w-full min-w-0">
-              <p v-html="sanitizeHtml(x.message)" class="w-full [overflow-wrap:anywhere]" />
+              <p v-html="sanitizeHtml(x.message)" class="w-full [overflow-wrap:anywhere]" @click="stopIfLink" />
 
               <Badge class="text-xs mr-auto">
                 {{ x.title }}
