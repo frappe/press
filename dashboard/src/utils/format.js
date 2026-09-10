@@ -418,14 +418,23 @@ export function prettyDate(date, mini = false) {
 	}
 }
 
-// allow only bold tags
+const linkTag = (_, href, text) =>
+	/^https?:\/\//.test(href)
+		? `<a href="${href}" target="_blank">${text}</a>`
+		: text
+
+// allow only bold and link tags
 export const sanitizeHtml = (str) => {
 	if (!str) return ''
 
 	return str
+		.replace(/<a\b[^>]*href="([^"]*)"[^>]*>/g, '[a href="$1"]')
+		.replace(/<\/a>/g, '[/a]')
 		.replace(/\[b\]/g, '<b>')
 		.replace(/\[\/b\]/g, '</b>')
 		.replace(/<b[^>]*>/g, '<b>')
 		.replace(/<(?!\/?b\b)[^>]*>/g, '')
+		.replace(/\[a\b[^\]]*href="([^"]*)"[^\]]*\]([\s\S]*?)\[\/a\]/g, linkTag)
+		.replace(/\[\/?a\b[^\]]*\]/g, '')
 		.split('\n')[0]
 }
