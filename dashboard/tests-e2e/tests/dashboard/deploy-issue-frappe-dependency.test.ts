@@ -90,14 +90,12 @@ const buildMock = {
 // for a uv resolution failure where the app lists frappe under [project] dependencies.
 const notificationMock = {
 	name: 'notif-0001',
-	title: '[Action Required] my_app lists frappe as a Python dependency',
+	title: 'my_app lists frappe as a Python dependency',
 	message:
-		'<p><b>my_app</b> declares <code>frappe</code> under <code>[project] dependencies</code>' +
-		' in its <b>pyproject.toml</b>. Frappe and every Frappe app are installed from their git' +
-		' repositories, not from PyPI, so the dependency cannot be resolved and the app install' +
-		' fails.</p> <p>Remove <code>frappe</code> from the dependencies list of your app and' +
-		' deploy again. To declare which Frappe versions your app supports, use the' +
-		' <code>[tool.bench.frappe-dependencies]</code> section instead.</p>',
+		'<p><b>my_app</b> lists <code>frappe</code> under <code>[project] dependencies</code>' +
+		' in its <b>pyproject.toml</b>. Frappe apps are installed from git, not from PyPI, so' +
+		' the install fails.</p> <p>Remove <code>frappe</code> from that list and deploy' +
+		' again.</p>',
 	document_name: BUILD_NAME,
 	class: 'Error',
 	assistance_url: DOC_URL,
@@ -171,9 +169,7 @@ test('names the app that lists frappe as a dependency on a failed build', async 
 		page.getByText('my_app lists frappe as a Python dependency'),
 	).toBeVisible()
 	await expect(
-		page.getByText(
-			'Remove frappe from the dependencies list of your app and deploy again',
-		),
+		page.getByText('Remove frappe from that list and deploy again'),
 	).toBeVisible()
 	await expect(page.getByRole('link', { name: 'Go to docs' })).toHaveAttribute(
 		'href',

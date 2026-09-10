@@ -406,17 +406,14 @@ def update_with_frappe_listed_as_dependency(
 	if not (app_name := get_app_that_depends_on_frappe(dcb)):
 		return False
 
-	details["title"] = f"[Action Required] {app_name} lists frappe as a Python dependency"
+	details["title"] = f"{app_name} lists frappe as a Python dependency"
 
 	message = f"""
-	<p><b>{escape_html(app_name)}</b> declares <code>frappe</code> under
-	<code>[project] dependencies</code> in its <b>pyproject.toml</b>. Frappe and every Frappe
-	app are installed from their git repositories, not from PyPI, so the dependency cannot be
-	resolved and the app install fails.</p>
+	<p><b>{escape_html(app_name)}</b> lists <code>frappe</code> under
+	<code>[project] dependencies</code> in its <b>pyproject.toml</b>. Frappe apps are installed
+	from git, not from PyPI, so the install fails.</p>
 
-	<p>Remove <code>frappe</code> from the dependencies list of your app and deploy again. To
-	declare which Frappe versions your app supports, use the
-	<code>[tool.bench.frappe-dependencies]</code> section instead.</p>
+	<p>Remove <code>frappe</code> from that list and deploy again.</p>
 	"""
 
 	details["message"] = fmt(message)
