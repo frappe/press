@@ -24,7 +24,7 @@ RUNNING = ("Preparing", "Running")
 def execute(filters=None):
 	frappe.only_for("System Manager")
 	window = DURATIONS[(filters or {}).get("duration") or "1 hour"]
-	return get_columns(), get_data(window), None, get_chart(window)
+	return get_columns(), get_data(window), get_cluster_loss(window), get_chart(window)
 
 
 def get_columns():
@@ -263,3 +263,36 @@ def get_chart(window):
 		},
 		"type": "bar",
 	}
+
+
+def get_cluster_loss(window):
+	"""Packet loss per cluster, above the table. A bad region shows here before a server does."""
+	retransmit = latest_values(
+		f'avg by (cluster) (rate(node_netstat_Tcp_RetransSegs{{job="node"}}[{window}s])'
+		f' / rate(node_netstat_Tcp_OutSegs{{job="node"}}[{window}s])) * 100',
+		lambda metric: metric.get("cluster") or "No cluster",
+	)
+	drops = latest_values(
+		f'sum by (cluster) (rate(node_network_receive_drop_total{{job="node", device!="lo"}}[{window}s])'
+		f' + rate(node_network_transmit_drop_total{{job="node", device!="lo"}}[{window}s]))',
+		lambda metric: metric.get("cluster") or "No cluster",
+	)
+	rows = []
+	for cluster in sorted(retransmit.keys() | drops.keys(), key=lambda name: -retransmit.get(name, 0)):
+		rows.append(cluster_loss_row(cluster, retransmit.get(cluster, 0), drops.get(cluster, 0)))
+	if not rows:
+		return None
+	return (
+		"<b>Packet loss per cluster</b>"
+		"<table class='table table-bordered'><thead><tr>"
+		"<th>Cluster</th><th>TCP Retransmit (%)</th><th>Dropped Packets/s</th>"
+		"</tr></thead><tbody>" + "".join(rows) + "</tbody></table>"
+	)
+
+
+def cluster_loss_row(cluster, retransmit, drops):
+	red = "style='color: var(--red-600); font-weight: 600'" if retransmit >= 1 or drops > 0 else ""
+	return (
+		f"<tr {red}><td>{frappe.utils.escape_html(cluster)}</td>"
+		f"<td>{rounded(retransmit, 2)}</td><td>{rounded(drops, 2)}</td></tr>"
+	)
