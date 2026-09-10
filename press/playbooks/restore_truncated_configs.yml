@@ -1,0 +1,8 @@
+---
+- name: Restore Truncated Configs
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: restore_truncated_configs

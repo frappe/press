@@ -1,0 +1,69 @@
+---
+# A busy queue can start this play after the machine is already back. SSH then
+# never goes down, so do not fail the restore on a timeout here.
+- name: Wait for Server to Go Down
+  wait_for:
+    host: '{{ inventory_hostname }}'
+    port: '{{ ansible_port }}'
+    state: stopped
+    timeout: 300
+  delegate_to: localhost
+  become: no
+  failed_when: false
+  when: wait_for_reboot | default(false) | bool
+
+- name: Wait for Server to Come Back
+  wait_for_connection:
+    timeout: 600
+
+- name: Find Config Backups
+  find:
+    paths:
+      - /home/frappe/agent
+      - /home/frappe/benches
+    patterns:
+      - config.json.bak
+      - common_site_config.json.bak
+      - site_config.json.bak
+    depth: 4
+    recurse: yes
+  register: config_backups
+
+- name: Check Live Configs
+  command: 'python3 -m json.tool {{ item.path | regex_replace("\.bak$", "") }}'
+  loop: '{{ config_backups.files }}'
+  register: live_configs
+  changed_when: false
+  failed_when: false
+
+- name: Check Config Backups
+  command: 'python3 -m json.tool {{ item.path }}'
+  loop: '{{ config_backups.files }}'
+  register: readable_backups
+  changed_when: false
+  failed_when: false
+
+- name: Restore Unreadable Configs
+  copy:
+    src: '{{ item.path }}'
+    dest: '{{ item.path | regex_replace("\.bak$", "") }}'
+    remote_src: yes
+    owner: frappe
+    group: frappe
+    mode: preserve
+  loop: '{{ config_backups.files }}'
+  loop_control:
+    index_var: index
+  when:
+    - live_configs.results[index].rc != 0
+    - readable_backups.results[index].rc == 0
+
+# Fail the play when a config is still unreadable, so that the caller does not
+# restart the benches on top of it.
+- name: Verify Restored Configs
+  command: 'python3 -m json.tool {{ item.path | regex_replace("\.bak$", "") }}'
+  loop: '{{ config_backups.files }}'
+  loop_control:
+    index_var: index
+  changed_when: false
+  when: live_configs.results[index].rc != 0
