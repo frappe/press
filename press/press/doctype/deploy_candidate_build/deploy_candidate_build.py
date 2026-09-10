@@ -24,7 +24,7 @@ import semantic_version
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import now_datetime as now
-from frappe.utils import rounded
+from frappe.utils import rounded, sbool
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from press.agent import Agent
@@ -260,6 +260,12 @@ class DeployCandidateBuild(Document):
 		"team",
 		"deploy_candidate",
 	)
+
+	def get_doc(self, doc):
+		doc.is_cache_failure = self.status == Status.FAILURE.value and is_cache_related_failure(
+			self.build_output or ""
+		)
+		return doc
 
 	@cached_property
 	def candidate(self) -> DeployCandidate:
@@ -1220,7 +1226,7 @@ class DeployCandidateBuild(Document):
 		if not deploy_candidate:
 			return dict(error=True, message="Cannot create duplicate Deploy Candidate")
 
-		deploy_candidate_build_name = deploy_candidate.build_and_deploy(no_cache=no_cache)
+		deploy_candidate_build_name = deploy_candidate.build_and_deploy(no_cache=bool(sbool(no_cache)))
 		return dict(error=False, message=deploy_candidate_build_name)
 
 	@frappe.whitelist()
@@ -1273,7 +1279,7 @@ def fail_and_redeploy(dn: str):
 
 
 @frappe.whitelist()
-def redeploy(dn: str) -> dict[str, str | bool]:
+def redeploy(dn: str, no_cache: bool = False) -> dict[str, str | bool]:
 	"""Allow redeploy preserving app sources if the deploy is in terminal stage"""
 	deploy_candidate_build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn)
 
@@ -1283,7 +1289,7 @@ def redeploy(dn: str) -> dict[str, str | bool]:
 			frappe.ValidationError,
 		)
 
-	return deploy_candidate_build.redeploy()
+	return deploy_candidate_build.redeploy(no_cache=bool(sbool(no_cache)))
 
 
 def _mark_build_as_failed(dn: str) -> bool:
@@ -1335,6 +1341,24 @@ def fail_remote_job(dn: str) -> bool:
 		agent_job_doc.cancel_job()
 
 	return _mark_build_as_failed(dn)
+
+
+# Substrings that identify a failure as actually caused by a build cache being
+# stale or corrupt, as opposed to a failure that merely happened inside a
+# `--mount=type=cache` step (nearly every "apps" stage RUN uses that mount, so
+# its mere presence in the output says nothing about the cause of the failure).
+CACHE_FAILURE_MARKERS = (
+	# BuildKit couldn't resolve a cache key (e.g. a file a cache layer expects is missing).
+	"failed to compute cache key",
+	# yarn's local package cache has a corrupt/mismatched entry.
+	"Incorrect integrity when fetching from the cache",
+	# apt's package cache directory is locked by a concurrent process.
+	"Could not get lock /var/cache/apt/archives/lock",
+)
+
+
+def is_cache_related_failure(build_output: str) -> bool:
+	return any(marker in build_output for marker in CACHE_FAILURE_MARKERS)
 
 
 def should_build_retry_build_output(build_output: str):
