@@ -8,7 +8,11 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent
-from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import PrometheusAlertRule
+from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
+	PrometheusAlertRule,
+	storage_alert_rule_name,
+)
+from press.press.doctype.server.server import DEFAULT_STORAGE_ALERT_THRESHOLD
 from press.press.doctype.server.test_server import create_test_server
 
 DISK_EXPRESSION = (
@@ -47,6 +51,14 @@ def create_test_prometheus_alert_rule(
 class TestPrometheusAlertRule(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
+
+	def create_server_with_threshold(self, rule: PrometheusAlertRule, threshold: int):
+		"""A server on a custom threshold, with the rule sync the doc event would have enqueued."""
+		server = create_test_server()
+		server.storage_alert_threshold_percent = threshold
+		server.save()
+		rule.sync_and_push_storage_alert_rules()
+		return server
 
 	def create_disk_alert_rule(self) -> PrometheusAlertRule:
 		return create_test_prometheus_alert_rule(
@@ -98,33 +110,79 @@ class TestPrometheusAlertRule(FrappeTestCase):
 		self.assertIn('instance!=""', alert_rules[0]["expr"])
 		self.assertTrue(alert_rules[0]["expr"].endswith("> 90"))
 
-	def test_server_with_custom_threshold_gets_its_own_rule_and_is_excluded_from_the_default_one(self):
+	def test_server_with_custom_threshold_gets_a_rule_document_of_its_own(self):
 		rule = self.create_disk_alert_rule()
-		server = create_test_server()
-		server.storage_alert_threshold_percent = 75
-		server.save()
+		server = self.create_server_with_threshold(rule, 75)
 
-		default_rule, custom_rule = rule.get_alert_rules()
+		own_rule = frappe.get_doc("Prometheus Alert Rule", storage_alert_rule_name(rule.name, server.name))
 
-		self.assertIn(f'instance!~"{re.escape(server.name)}"', default_rule["expr"])
-		self.assertTrue(default_rule["expr"].endswith("> 90"))
-		self.assertIn(f'instance=~"{re.escape(server.name)}"', custom_rule["expr"])
-		self.assertTrue(custom_rule["expr"].endswith("> 75"))
+		self.assertIn(f'instance=~"{re.escape(server.name)}"', own_rule.expression)
+		self.assertTrue(own_rule.expression.endswith("> 75"))
 
-	def test_servers_sharing_a_threshold_share_one_rule(self):
+	def test_server_with_a_rule_of_its_own_is_excluded_from_the_shared_rule(self):
 		rule = self.create_disk_alert_rule()
-		servers = []
-		for _ in range(2):
-			server = create_test_server()
-			server.storage_alert_threshold_percent = 80
-			server.save()
-			servers.append(server)
+		server = self.create_server_with_threshold(rule, 75)
 
 		alert_rules = rule.get_alert_rules()
 
-		self.assertEqual(len(alert_rules), 2)
+		self.assertEqual(len(alert_rules), 1)
+		self.assertIn(f'instance!~"{re.escape(server.name)}"', alert_rules[0]["expr"])
+		self.assertTrue(alert_rules[0]["expr"].endswith("> 90"))
+
+	def test_servers_sharing_a_threshold_still_get_one_rule_each(self):
+		rule = self.create_disk_alert_rule()
+		servers = [self.create_server_with_threshold(rule, 80) for _ in range(2)]
+
 		for server in servers:
-			self.assertIn(re.escape(server.name), alert_rules[1]["expr"])
+			own_rule = frappe.get_doc(
+				"Prometheus Alert Rule", storage_alert_rule_name(rule.name, server.name)
+			)
+			self.assertIn(f'instance=~"{re.escape(server.name)}"', own_rule.expression)
+			self.assertTrue(own_rule.expression.endswith("> 80"))
+
+	def test_per_server_rule_inherits_the_reaction_of_the_shared_rule(self):
+		rule = self.create_disk_alert_rule()
+		server = self.create_server_with_threshold(rule, 70)
+
+		own_rule = frappe.get_doc("Prometheus Alert Rule", storage_alert_rule_name(rule.name, server.name))
+
+		self.assertEqual(own_rule.press_job_type, rule.press_job_type)
+		self.assertEqual(own_rule.severity, rule.severity)
+		self.assertEqual(own_rule.get("for"), rule.get("for"))
+		self.assertTrue(own_rule.enabled)
+
+	def test_per_server_rule_does_not_split_itself_again(self):
+		rule = self.create_disk_alert_rule()
+		server = self.create_server_with_threshold(rule, 70)
+
+		own_rule = frappe.get_doc("Prometheus Alert Rule", storage_alert_rule_name(rule.name, server.name))
+
+		self.assertFalse(own_rule.split_by_server_storage_threshold)
+		self.assertEqual(own_rule.get_alert_rules()[0]["expr"], own_rule.expression)
+
+	def test_per_server_rule_is_deleted_when_the_server_returns_to_the_default(self):
+		rule = self.create_disk_alert_rule()
+		server = self.create_server_with_threshold(rule, 70)
+		name = storage_alert_rule_name(rule.name, server.name)
+		self.assertTrue(frappe.db.exists("Prometheus Alert Rule", name))
+
+		server.storage_alert_threshold_percent = DEFAULT_STORAGE_ALERT_THRESHOLD
+		server.save()
+		rule.sync_and_push_storage_alert_rules()
+
+		self.assertFalse(frappe.db.exists("Prometheus Alert Rule", name))
+		self.assertNotIn(server.name, rule.get_alert_rules()[0]["expr"])
+
+	def test_per_server_rule_follows_a_later_threshold_change(self):
+		rule = self.create_disk_alert_rule()
+		server = self.create_server_with_threshold(rule, 70)
+
+		server.storage_alert_threshold_percent = 85
+		server.save()
+		rule.sync_and_push_storage_alert_rules()
+
+		own_rule = frappe.get_doc("Prometheus Alert Rule", storage_alert_rule_name(rule.name, server.name))
+		self.assertTrue(own_rule.expression.endswith("> 85"))
 
 	def test_server_holding_a_threshold_outside_the_range_stays_on_the_default_rule(self):
 		rule = self.create_disk_alert_rule()
@@ -138,13 +196,15 @@ class TestPrometheusAlertRule(FrappeTestCase):
 		self.assertTrue(alert_rules[0]["expr"].endswith("> 90"))
 		self.assertNotIn(server.name, alert_rules[0]["expr"])
 
-	def test_alert_name_stays_the_same_across_split_rules(self):
+	def test_alert_name_of_a_per_server_rule_is_the_document_that_reacts_to_it(self):
+		"""react_for_instance looks the firing alertname up as a Prometheus Alert Rule."""
 		rule = self.create_disk_alert_rule()
-		server = create_test_server()
-		server.storage_alert_threshold_percent = 70
-		server.save()
+		server = self.create_server_with_threshold(rule, 70)
+		name = storage_alert_rule_name(rule.name, server.name)
 
-		self.assertEqual([alert_rule["alert"] for alert_rule in rule.get_alert_rules()], [rule.name] * 2)
+		own_rule = frappe.get_doc("Prometheus Alert Rule", name)
+
+		self.assertEqual(own_rule.get_alert_rules()[0]["alert"], name)
 
 	def test_changing_a_server_threshold_pushes_rules_to_the_monitor_server(self):
 		rule = self.create_disk_alert_rule()
@@ -157,7 +217,7 @@ class TestPrometheusAlertRule(FrappeTestCase):
 		pushed_rules = [
 			call
 			for call in enqueue_doc.call_args_list
-			if call.args[:3] == ("Prometheus Alert Rule", rule.name, "push_rules_to_monitor_server")
+			if call.args[:3] == ("Prometheus Alert Rule", rule.name, "sync_and_push_storage_alert_rules")
 		]
 		self.assertEqual(len(pushed_rules), 1)
 
