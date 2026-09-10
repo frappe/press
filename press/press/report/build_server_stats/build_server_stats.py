@@ -16,7 +16,9 @@ DURATIONS = {
 	"12 hours": 12 * 60 * 60,
 	"24 hours": 24 * 60 * 60,
 }
-QUEUED = ("Scheduled", "Pending", "Preparing")
+QUEUED = ("Scheduled", "Pending")
+# Preparing already holds the build server, so it counts against capacity like Running does
+RUNNING = ("Preparing", "Running")
 
 
 def execute(filters=None):
@@ -66,7 +68,7 @@ def get_data(window):
 	servers = get_servers()
 	names = [server.name for server in servers]
 	builds = get_builds(window)
-	queue = get_queue()
+	active = get_active_builds()
 	pull = get_pull_seconds(window)
 	stats = get_fleet_stats(names, window)
 	disk = get_fleet_disk_usage(names)
@@ -84,8 +86,8 @@ def get_data(window):
 				"disk": disk[server.name],
 				"builds": len(server_builds),
 				"builds_per_hour": rounded(len(server_builds) / (window / 3600), 1),
-				"running_builds": len([build for build in server_builds if build.status == "Running"]),
-				"queued_builds": queue.get(server.name, 0),
+				"running_builds": active.get(server.name, {}).get("running", 0),
+				"queued_builds": active.get(server.name, {}).get("queued", 0),
 				"median_wait": percentile(waits, 0.5),
 				"median_build": percentile(durations, 0.5),
 				"p95_build": percentile(durations, 0.95),
@@ -203,19 +205,26 @@ def get_builds(window):
 	return builds
 
 
-def get_queue():
-	"""Builds waiting for a slot right now. Not bound to the window, a queue is always current."""
+def get_active_builds():
+	"""Builds holding or waiting for a server right now.
+
+	Never bound to the window. A build that started before the window, or one still preparing,
+	uses the server all the same, and an operator who reads this column wants the true load.
+	"""
 	rows = frappe.db.sql(
 		"""
-		SELECT build_server, COUNT(*) AS queued
+		SELECT
+			build_server,
+			SUM(status IN %(queued)s) AS queued,
+			SUM(status IN %(running)s) AS running
 		FROM `tabDeploy Candidate Build`
-		WHERE status IN %s AND build_server IS NOT NULL
+		WHERE status IN %(active)s AND build_server IS NOT NULL
 		GROUP BY build_server
 		""",
-		(QUEUED,),
+		{"queued": QUEUED, "running": RUNNING, "active": QUEUED + RUNNING},
 		as_dict=True,
 	)
-	return {row.build_server: row.queued for row in rows}
+	return {row.build_server: row for row in rows}
 
 
 def get_pull_seconds(window):
