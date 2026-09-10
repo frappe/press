@@ -287,7 +287,7 @@ useRealtimeNotifs((data) => {
 
             <!-- info -->
             <div class="text-base leading-relaxed flex flex-wrap gap-2 w-full min-w-0">
-              <p v-html="sanitizeHtml(x.message)" class="w-full" />
+              <p v-html="sanitizeHtml(x.message)" class="w-full [overflow-wrap:anywhere]" />
 
               <Badge class="text-xs mr-auto">
                 {{ x.title }}
