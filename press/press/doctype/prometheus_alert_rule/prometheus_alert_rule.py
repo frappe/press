@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import TYPE_CHECKING
 
 import frappe
@@ -13,18 +12,9 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.press.doctype.server.server import (
-	DEFAULT_STORAGE_ALERT_THRESHOLD,
-	MAX_STORAGE_ALERT_THRESHOLD,
-	MIN_STORAGE_ALERT_THRESHOLD,
-)
 
 if TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
-
-THRESHOLD_PLACEHOLDER = "{{ threshold }}"
-INSTANCES_PLACEHOLDER = "{{ instances }}"
-SERVER_TYPES_WITH_STORAGE_ALERT_THRESHOLD = ("Server", "Database Server")
 
 
 class PrometheusAlertRule(Document):
@@ -56,55 +46,13 @@ class PrometheusAlertRule(Document):
 		route_preview: DF.Code | None
 		severity: DF.Literal["Critical", "Warning", "Information"]
 		silent: DF.Check
-		split_by_server_storage_threshold: DF.Check
 	# end: auto-generated types
 
 	def validate(self):
+		self.alert_preview = yaml.dump(self.get_rule())
+		self.route_preview = yaml.dump(self.get_route())
 		if self.enabled and not self.expression:
 			frappe.throw("Please add an expression for this alert rule before enabling it.")
-
-		self.validate_split_placeholders()
-		self.alert_preview = yaml.dump(self.get_alert_rules())
-		self.route_preview = yaml.dump(self.get_route())
-
-	def validate_split_placeholders(self):
-		"""Without both placeholders a split rule repeats one hardcoded threshold, alerting twice."""
-		if not self.split_by_server_storage_threshold:
-			return
-
-		missing = [
-			placeholder
-			for placeholder in (THRESHOLD_PLACEHOLDER, INSTANCES_PLACEHOLDER)
-			if placeholder not in (self.expression or "")
-		]
-		if missing:
-			frappe.throw(
-				f"Splitting by storage alert threshold needs {' and '.join(missing)} in the expression."
-			)
-
-	def get_alert_rules(self) -> list[dict]:
-		"""One rule per storage alert threshold, so each server alerts at the level its team picked."""
-		if not self.split_by_server_storage_threshold:
-			return [self.get_rule()]
-
-		overrides = servers_by_storage_alert_threshold()
-		overridden_servers = [server for servers in overrides.values() for server in servers]
-
-		rules = [self.get_rule_for_threshold(DEFAULT_STORAGE_ALERT_THRESHOLD, overridden_servers, True)]
-		rules.extend(
-			self.get_rule_for_threshold(threshold, servers, False) for threshold, servers in overrides.items()
-		)
-		return rules
-
-	def get_rule_for_threshold(self, threshold: int, servers: list[str], exclude: bool) -> dict:
-		rule = self.get_rule()
-		expression: str = self.expression or ""
-		rule["expr"] = (
-			expression.replace(THRESHOLD_PLACEHOLDER, str(threshold))
-			.replace(INSTANCES_PLACEHOLDER, instance_matcher(servers, exclude))
-			.strip()
-		)
-		return rule
 
 	def get_rule(self):
 		labels = json.loads(self.labels)
@@ -131,9 +79,6 @@ class PrometheusAlertRule(Document):
 		}
 
 	def on_update(self):
-		self.push_rules_to_monitor_server()
-
-	def push_rules_to_monitor_server(self):
 		rules = yaml.dump(self.get_rules())
 		routes = yaml.dump(self.get_routes())
 
@@ -147,7 +92,7 @@ class PrometheusAlertRule(Document):
 		rules = frappe.get_all(self.doctype, {"enabled": True})
 		for rule in rules:
 			rule_doc = frappe.get_doc(self.doctype, rule.name)
-			rules_dict["groups"][0]["rules"].extend(rule_doc.get_alert_rules())
+			rules_dict["groups"][0]["rules"].append(rule_doc.get_rule())
 
 		return rules_dict
 
@@ -218,60 +163,3 @@ class PrometheusAlertRule(Document):
 				"arguments": json.dumps(arguments, indent=2, sort_keys=True),
 			}
 		).insert()
-
-
-def servers_by_storage_alert_threshold() -> dict[int, list[str]]:
-	"""Active servers that alert at something other than the default threshold, grouped by threshold."""
-	overrides: dict[int, list[str]] = {}
-	for doctype in SERVER_TYPES_WITH_STORAGE_ALERT_THRESHOLD:
-		servers = frappe.get_all(
-			doctype,
-			{
-				"status": "Active",
-				"storage_alert_threshold_percent": ("!=", DEFAULT_STORAGE_ALERT_THRESHOLD),
-			},
-			["name", "storage_alert_threshold_percent"],
-		)
-		for server in servers:
-			threshold = server.storage_alert_threshold_percent
-			if not MIN_STORAGE_ALERT_THRESHOLD <= threshold <= MAX_STORAGE_ALERT_THRESHOLD:
-				# never went through validation, so leave it on the default rule
-				# instead of alerting the server at, say, 0%
-				continue
-			overrides.setdefault(threshold, []).append(server.name)
-	return overrides
-
-
-def instance_matcher(servers: list[str], exclude: bool) -> str:
-	"""PromQL matcher selecting these instances, or every instance but these."""
-	if not servers:
-		return 'instance!=""'
-
-	pattern = "|".join(re.escape(server) for server in servers)
-	return f'instance!~"{pattern}"' if exclude else f'instance=~"{pattern}"'
-
-
-def update_rules_on_storage_alert_threshold_change(server, method=None):
-	"""Rebuild the split rules so the server starts alerting at its new threshold."""
-	previous = server.get_doc_before_save()
-	previous_threshold = (
-		previous.storage_alert_threshold_percent if previous else DEFAULT_STORAGE_ALERT_THRESHOLD
-	)
-	if previous_threshold == server.storage_alert_threshold_percent:
-		return
-
-	# Any split rule will do, pushing one rebuilds the rules of every enabled alert
-	rule = frappe.db.get_value(
-		"Prometheus Alert Rule", {"split_by_server_storage_threshold": 1, "enabled": 1}
-	)
-	if not rule:
-		return
-
-	frappe.enqueue_doc(
-		"Prometheus Alert Rule",
-		rule,
-		"push_rules_to_monitor_server",
-		enqueue_after_commit=True,
-		job_id="push_storage_alert_rules",
-		deduplicate=True,
-	)
