@@ -6,8 +6,10 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.deploy_candidate.deploy_notifications import (
+	DOC_URLS,
 	BuildValidationError,
 	check_if_app_updated,
+	get_details,
 )
 
 
@@ -107,3 +109,78 @@ class TestCheckIfAppUpdated(FrappeTestCase):
 		new_dc = make_dc("abc123", deps, env, packages=["wkhtmltopdf", "libmagic1"])
 
 		check_if_app_updated(old_build, new_dc)  # no raise
+
+
+UV_FRAPPE_DEPENDENCY_OUTPUT = """
+Installing my_app
+$ uv pip install --quiet -e /home/frappe/frappe-bench/apps/my_app
+  x Failed to resolve dependencies for `frappe` (v15.120.1)
+  |-> Package `pypika` was included as a URL dependency.
+      URL dependencies must be expressed as direct requirements or constraints.
+
+hint: `frappe` (v15.120.1) was included because `my_app` (v0.0.1) depends on `frappe`
+Error occured during app install: uv pip install --quiet -e /home/frappe/frappe-bench/apps/my_app
+"""
+
+
+def make_failed_build(build_output: str):
+	failed_step = frappe._dict(stage="Install Apps", step="my_app", stage_slug="apps", step_slug="my_app")
+	return frappe._dict(
+		build_output=build_output,
+		get_first_step=lambda *args: failed_step,
+	)
+
+
+class TestFrappeListedAsDependency(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def get_details(self, build_output: str):
+		return get_details(
+			deploy_candidate=frappe._dict(),
+			deploy_candidate_build=make_failed_build(build_output),
+			exc=Exception("Build failed"),
+		)
+
+	def test_uv_resolution_failure_names_the_app_that_depends_on_frappe(self):
+		details = self.get_details(UV_FRAPPE_DEPENDENCY_OUTPUT)
+
+		self.assertTrue(details["is_actionable"])
+		self.assertIn("my_app", details["title"])
+		self.assertIn("lists frappe as a Python dependency", details["title"])
+		self.assertIn("pyproject.toml", details["message"])
+		self.assertEqual(
+			details["assistance_url"],
+			DOC_URLS["frappe-listed-as-a-python-dependency"],
+		)
+
+	def test_uv_hint_is_matched_even_when_wrapped_across_lines(self):
+		wrapped = UV_FRAPPE_DEPENDENCY_OUTPUT.replace(
+			"was included because `my_app` (v0.0.1) depends on `frappe`",
+			"was included\nbecause `my_app` (v0.0.1)\ndepends on `frappe`",
+		)
+
+		details = self.get_details(wrapped)
+
+		self.assertTrue(details["is_actionable"])
+		self.assertIn("my_app", details["title"])
+
+	def test_falls_back_to_default_message_when_the_app_name_is_missing(self):
+		output = "hint: something depends on `frappe` but the app name is not printed"
+
+		details = self.get_details(output)
+
+		self.assertFalse(details["is_actionable"])
+		self.assertEqual(details["title"], "Build Failed")
+		self.assertEqual(
+			details["message"],
+			"Image build failed at step <b>Install Apps - my_app</b>.",
+		)
+		self.assertIsNone(details["assistance_url"])
+
+	def test_app_name_from_build_output_is_escaped_in_the_message(self):
+		output = UV_FRAPPE_DEPENDENCY_OUTPUT.replace("`my_app` (v0.0.1)", "`<img src=x>` (v0.0.1)")
+
+		details = self.get_details(output)
+
+		self.assertNotIn("<img", details["message"])
