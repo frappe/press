@@ -147,6 +147,7 @@ class DatabaseServer(BaseServer):
 		stalk_threshold: DF.Int
 		stalk_variable: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		storage_alert_threshold_percent: DF.Int
 		tags: DF.Table[ResourceTag]
 		tcmalloc_release_rate: DF.Int
 		team: DF.Link | None
