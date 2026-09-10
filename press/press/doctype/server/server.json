@@ -48,7 +48,6 @@
 		"auto_increase_storage",
 		"auto_add_storage_min",
 		"auto_add_storage_max",
-		"storage_alert_threshold_percent",
 		"networking_section",
 		"ip",
 		"is_static_ip",
@@ -593,14 +592,6 @@
 			"non_negative": 1
 		},
 		{
-			"default": "90",
-			"description": "Notify the team when disk usage crosses this percentage of capacity",
-			"fieldname": "storage_alert_threshold_percent",
-			"fieldtype": "Int",
-			"label": "Storage Alert Threshold Percent",
-			"non_negative": 1
-		},
-		{
 			"fieldname": "mounts_section",
 			"fieldtype": "Section Break",
 			"label": "Mounts"
@@ -861,7 +852,7 @@
 			"link_fieldname": "app_server"
 		}
 	],
-	"modified": "2026-09-08 12:00:00.000000",
+	"modified": "2026-08-13 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Server",
