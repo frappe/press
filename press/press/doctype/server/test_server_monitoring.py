@@ -15,6 +15,7 @@ from press.press.doctype.server.server_monitoring import (
 	SignupFailureRate,
 	_breaches_signup_failure_threshold,
 	_describe_filling_filesystems,
+	_disk_fill_mountpoints,
 	_disk_fill_selector,
 	_get_incomplete_signup_rate,
 	_get_trial_signup_failure_rate,
@@ -23,6 +24,7 @@ from press.press.doctype.server.server_monitoring import (
 	alert_on_build_servers_filling_up,
 	alert_on_failing_signups,
 )
+from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.team.test_team import create_test_team
 
 if TYPE_CHECKING:
@@ -265,19 +267,45 @@ class TestSignupFailureAlert(FrappeTestCase):
 GIGABYTE = 1024**3
 
 
-class TestDiskFillSelector(FrappeTestCase):
-	def test_selector_reads_every_mountpoint_of_the_named_servers(self):
-		selector = _disk_fill_selector(["f1.frappe.cloud", "registry.frappe.cloud"])
+class TestDiskFillMountpoints(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
 
-		self.assertIn('instance=~"^(f1\\\\.frappe\\\\.cloud|registry\\\\.frappe\\\\.cloud)$"', selector)
-		self.assertNotIn("mountpoint", selector)
+	def test_mountpoints_come_from_the_mounts_of_the_server(self):
+		server = create_test_server(use_for_build=True)
+		server.append(
+			"mounts", {"mount_point": "/home/frappe/mnt/builds", "mount_type": "Volume", "source": "/dev/vdb"}
+		)
+		server.save()
 
-	def test_selector_leaves_out_the_mounts_a_build_cannot_fill(self):
-		selector = _disk_fill_selector(["f1.frappe.cloud"])
+		self.assertEqual(_disk_fill_mountpoints([server.name]), ["/", "/home/frappe/mnt/builds"])
 
-		for filesystem in ("tmpfs", "squashfs", "overlay", "vfat"):
-			self.assertIn(filesystem, selector)
-		self.assertIn("fstype!~", selector)
+	def test_a_server_without_a_data_volume_still_reads_the_root_filesystem(self):
+		server = create_test_server(use_for_build=True)
+
+		self.assertEqual(_disk_fill_mountpoints([server.name]), ["/"])
+
+	def test_the_mounts_of_another_server_are_left_out(self):
+		server = create_test_server(use_for_build=True)
+		other = create_test_server(use_for_build=True)
+		other.append(
+			"mounts", {"mount_point": "/mnt/volume_blr1_01", "mount_type": "Volume", "source": "/dev/vdb"}
+		)
+		other.save()
+
+		self.assertNotIn("/mnt/volume_blr1_01", _disk_fill_mountpoints([server.name]))
+
+	def test_the_selector_names_the_servers_and_their_mountpoints(self):
+		server = create_test_server(use_for_build=True)
+		server.append(
+			"mounts", {"mount_point": "/opt/volumes/benches", "mount_type": "Volume", "source": "/dev/vdb"}
+		)
+		server.save()
+
+		selector = _disk_fill_selector([server.name])
+
+		self.assertIn(f'instance=~"^({server.name.replace(".", chr(92) * 2 + ".")})$"', selector)
+		self.assertIn('mountpoint=~"^(/|/opt/volumes/benches)$"', selector)
 
 
 class TestFillingFilesystems(FrappeTestCase):

@@ -34,9 +34,6 @@ INCOMPLETE_SIGNUP_MINIMUM_COUNT = 10
 DISK_FILL_HORIZON_HOURS = 1
 # A disk with room to spare can dip for a minute without meaning anything
 DISK_FILL_ALERT_MIN_FREE_RATIO = 0.3
-# Read-only or in-memory mounts. A build never fills these, and /boot/efi is small
-# enough that one kernel update looks like a disk that drains
-DISK_FILL_IGNORED_FILESYSTEMS = "tmpfs|squashfs|overlay|fuse.lxcfs|vfat|iso9660"
 
 
 class PublicServerHealthMetrics(TypedDict):
@@ -692,15 +689,32 @@ def _filesystems_filling_up(servers: list[str]) -> list[FillingFilesystem]:
 
 
 def _disk_fill_selector(servers: list[str]) -> str:
-	"""Every data mountpoint on these servers.
+	instance_matcher = "|".join(_escape_prometheus_regex_literal(name) for name in servers)
+	mountpoint_matcher = "|".join(
+		_escape_prometheus_regex_literal(mountpoint) for mountpoint in _disk_fill_mountpoints(servers)
+	)
+	return f'job="node", instance=~"^({instance_matcher})$", mountpoint=~"^({mountpoint_matcher})$"'
+
+
+def _disk_fill_mountpoints(servers: list[str]) -> list[str]:
+	"""Where the builds land on these servers.
 
 	Build servers keep their builds on different paths: /home/frappe/mnt/builds on one,
-	/mnt/volume_blr1_01 on another, /opt/volumes/benches on a third. A list of paths goes
-	stale the day someone attaches a volume, and a disk that fills stops the builds
-	whichever path it holds. Read them all, and let the slope decide which one matters.
+	/mnt/volume_blr1_01 on another. Press already records each one, so read the mounts of
+	the server rather than a list in this file, which goes stale on the next volume.
+	The root filesystem is always in, because a server without a data volume builds there.
 	"""
-	instance_matcher = "|".join(_escape_prometheus_regex_literal(name) for name in servers)
-	return f'job="node", instance=~"^({instance_matcher})$", fstype!~"{DISK_FILL_IGNORED_FILESYSTEMS}"'
+	mounts = frappe.get_all(
+		"Server Mount",
+		{"parent": ("in", servers), "parenttype": "Server", "mount_point": ("is", "set")},
+		pluck="mount_point",
+	)
+	registry_mounts = frappe.get_all(
+		"Registry Server",
+		{"name": ("in", servers), "docker_data_mountpoint": ("is", "set")},
+		pluck="docker_data_mountpoint",
+	)
+	return sorted({"/", *mounts, *registry_mounts})
 
 
 def _describe_filling_filesystems(
