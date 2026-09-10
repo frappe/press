@@ -12,6 +12,7 @@ from press.press.report.build_server_stats.build_server_stats import (
 	floor_to_bucket,
 	get_chart,
 	group_by_server,
+	last_number,
 	percentile,
 	seconds_of,
 )
@@ -53,6 +54,17 @@ class TestPercentile(FrappeTestCase):
 
 	def test_a_window_without_builds_reports_zero(self):
 		self.assertEqual(percentile([], 0.5), 0)
+
+
+class TestLastNumber(FrappeTestCase):
+	def test_the_last_point_of_a_series_is_the_value(self):
+		self.assertEqual(last_number([1.0, 2.0, 3.5]), 3.5)
+
+	def test_a_series_that_ends_in_a_nan_reads_as_zero(self):
+		self.assertEqual(last_number([1.0, float("nan")]), 0)
+
+	def test_a_series_without_points_reads_as_zero(self):
+		self.assertEqual(last_number([]), 0)
 
 
 class TestChart(FrappeTestCase):

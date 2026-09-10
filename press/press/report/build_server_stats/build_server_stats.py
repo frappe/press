@@ -1,6 +1,7 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
+import math
 from collections import Counter
 from datetime import datetime
 
@@ -162,8 +163,15 @@ def latest_values(query, key=lambda metric: metric.get("instance")):
 	values = {}
 	for dataset in datasets:
 		points = [point for point in dataset["values"] if point is not None]
-		values[dataset["name"]] = points[-1] if points and points[-1] == points[-1] else 0
+		values[dataset["name"]] = last_number(points)
 	return values
+
+
+def last_number(points):
+	"""A series with no points, and one that ends in a NaN, both read as zero."""
+	if not points or math.isnan(points[-1]):
+		return 0
+	return points[-1]
 
 
 def get_fleet_disk_usage(servers):
