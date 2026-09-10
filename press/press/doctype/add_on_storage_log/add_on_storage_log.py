@@ -33,6 +33,12 @@ class AddOnStorageLog(Document):
 		server: DF.Link | None
 	# end: auto-generated types
 
+	@property
+	def used_storage_percentage(self) -> int:
+		if not self.available_disk_space:
+			return 0
+		return round(self.current_disk_usage / self.available_disk_space * 100)
+
 	def send_notification(self):
 		"""Send add on storage notification / warning"""
 		server: BaseServer = frappe.get_cached_doc(
@@ -41,14 +47,14 @@ class AddOnStorageLog(Document):
 
 		frappe.sendmail(
 			recipients=get_communication_info("Email", "Server Activity", server.doctype, server.name),
-			subject=f"Important: Server {server.name} storage space at 90%",
+			subject=f"Important: Server {server.name} storage space at {self.used_storage_percentage}%",
 			template="enabled_auto_disk_expansion" if not self.is_warning else "disabled_auto_disk_expansion",
 			args={
 				"server": server.name,
 				"current_disk_usage": f"{self.current_disk_usage} GiB",
 				"available_disk_space": f"{self.available_disk_space} GiB",
 				"increase_by": f"{self.adding_storage} GiB",
-				"used_storage_percentage": "90%",
+				"used_storage_percentage": f"{self.used_storage_percentage}%",
 			},
 		)
 
