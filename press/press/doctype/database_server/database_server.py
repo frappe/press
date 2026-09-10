@@ -147,6 +147,7 @@ class DatabaseServer(BaseServer):
 		stalk_threshold: DF.Int
 		stalk_variable: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		storage_alert_threshold_percent: DF.Int
 		tags: DF.Table[ResourceTag]
 		tcmalloc_release_rate: DF.Int
 		team: DF.Link | None
@@ -1888,13 +1889,14 @@ class DatabaseServer(BaseServer):
 		)
 
 	def is_mariadb_up(self) -> bool:
-		"""Whether mysqld_exporter last scraped MariaDB as up; unknown counts as up."""
+		"""Whether mysqld_exporter last scraped MariaDB as up; without metrics, count it down."""
 		from press.api.server import prometheus_instant_value
 
 		try:
-			return prometheus_instant_value(f"""mysql_up{{instance="{self.name}",job="mariadb"}}""") != 0
+			value = prometheus_instant_value(f"""mysql_up{{instance="{self.name}",job="mariadb"}}""")
 		except MonitorServerDown:
-			return True
+			return False
+		return bool(value)
 
 	def get_stalks(self):
 		if self.agent.should_skip_requests():

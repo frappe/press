@@ -105,6 +105,34 @@ class TestReleaseGroup(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
+	def test_get_doc_reports_commit_time_of_frappe_on_the_newest_active_bench(self):
+		from press.press.doctype.site.test_site import create_test_bench
+
+		now = frappe.utils.now_datetime()
+		group = create_test_release_group([create_test_app()])
+		older_bench = create_test_bench(group=group, creation=frappe.utils.add_days(now, -10))
+		newer_bench = create_test_bench(group=group, creation=now)
+
+		self.set_frappe_commit_time(older_bench.name, -90)
+		commit_time = self.set_frappe_commit_time(newer_bench.name, -45)
+
+		doc = frappe._dict()
+		group.get_doc(doc)
+		self.assertEqual(doc.frappe_updated_on, commit_time)
+
+	def test_get_doc_reports_no_commit_time_when_group_has_no_active_bench(self):
+		group = create_test_release_group([create_test_app()])
+
+		doc = frappe._dict()
+		group.get_doc(doc)
+		self.assertIsNone(doc.frappe_updated_on)
+
+	def set_frappe_commit_time(self, bench: str, days_ago: int):
+		release = frappe.db.get_value("Bench App", {"parent": bench, "app": "frappe"}, "release")
+		commit_time = frappe.utils.add_days(frappe.utils.now_datetime(), days_ago)
+		frappe.db.set_value("App Release", release, "timestamp", commit_time)
+		return commit_time
+
 	def test_create_release_group(self):
 		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(

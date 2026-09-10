@@ -11,15 +11,69 @@ import router from '../router'
 import { getRunningJobs } from '../utils/agentJob'
 import { confirmDialog, icon, renderDialog } from '../utils/components'
 import { isMobile } from '../utils/device'
-import { date } from '../utils/format'
+import { date, escapeHtml } from '../utils/format'
 import { getDocResource } from '../utils/resource'
 import { getToastErrorMessage } from '../utils/toast'
-import { getUpsellBanner } from './common'
+import { getFrappeUpdateBanner, getUpsellBanner } from './common'
 import { getAppsTab } from './common/apps'
 import { getBackupsTab } from './site/backups'
 
 // prefilled so only the ticket id has to be typed; on its own it is not a reason
 const LOGIN_REASON_PREFIX = 'Investigating '
+
+// A scheduled action runs as Administrator, which means nothing to a customer.
+// Site.get_archival_details does the same for the banner.
+function getActorName(owner) {
+	return owner === 'Administrator' ? 'Frappe Cloud' : owner
+}
+
+// The banner names who and when; the Activity tab carries the reason and the rest.
+function getArchivalMessage(site) {
+	const details = site.archival_details
+	if (!details) return 'This site is archived. It cannot be used again.'
+
+	return `Archived by ${escapeHtml(details.archived_by)} on ${date(
+		details.archived_on,
+		'LLL',
+	)}`
+}
+
+function jobLink(site, job, text) {
+	if (!job) return text
+	return `<a href="/dashboard/sites/${site.doc.name}/insights/jobs/${job}" class="underline" target="_blank">${text}</a>`
+}
+
+function canRestoreTables(site) {
+	// Only a logical backup of a migrate update makes the dump that the restore reads
+	return (
+		site.doc?.fatal_site_update &&
+		site.doc?.status === 'Broken' &&
+		site.doc?.fatal_update?.deploy_type === 'Migrate' &&
+		site.doc?.fatal_update?.backup_type === 'Logical'
+	)
+}
+
+function confirmRestoreTables(site) {
+	confirmDialog({
+		title: 'Restore Tables',
+		message: `The ${jobLink(site, site.doc?.fatal_update?.update_job, 'last update')} failed and the ${jobLink(site, site.doc?.fatal_update?.recover_job, 'automatic recovery')} could not restore the tables.<br><br>Re-attempt the recovery manually?<br><br>The site database goes back to <b>${date(site.doc?.fatal_update?.update_start, 'lll')}</b>, when the last update started. <b>Any data written to the site after that time is lost.</b> You cannot undo this.`,
+		primaryAction: {
+			label: 'Restore Tables',
+			theme: 'red',
+		},
+		onSuccess({ hide }) {
+			if (site.restoreTables.loading) return
+			toast.promise(site.restoreTables.submit(), {
+				loading: 'Starting table restore...',
+				success: () => {
+					hide()
+					return 'Table restore started'
+				},
+				error: (e) => getToastErrorMessage(e),
+			})
+		},
+	})
+}
 
 export default {
 	doctype: 'Site',
@@ -41,6 +95,7 @@ export default {
 		loginAsTeam: 'login_as_team',
 		isSetupWizardComplete: 'is_setup_wizard_complete',
 		reinstall: 'reinstall',
+		restoreTables: 'restore_tables',
 		removeDomain: 'remove_domain',
 		redirectToPrimary: 'set_redirect',
 		removeRedirect: 'unset_redirect',
@@ -59,6 +114,8 @@ export default {
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
 		getBackupDownloadLink: 'get_backup_download_link',
+		getBackupSchedule: 'get_backup_schedule',
+		updateBackupSchedule: 'update_backup_schedule',
 		fetchDatabaseTableSchemas: 'fetch_database_table_schemas',
 		fetchSitesDataForExport: 'fetch_sites_data_for_export',
 	},
@@ -72,6 +129,26 @@ export default {
 		route: '/sites/:name',
 		statusBadge({ documentResource: site }) {
 			return { label: site.doc.status }
+		},
+		banner({ documentResource: site }) {
+			if (canRestoreTables(site)) {
+				return {
+					title:
+						'The last update failed and the tables could not be restored. The site stays broken until you <b>Restore Tables</b>.',
+					type: 'error',
+				}
+			}
+			if (site.doc.fatal_site_update && site.doc.status === 'Broken') {
+				return {
+					title:
+						'The last update failed and the site could not be recovered. Contact support to bring it back.',
+					type: 'error',
+				}
+			}
+			if (site.doc.status === 'Archived') {
+				return { title: getArchivalMessage(site.doc), type: 'info' }
+			}
+			return getFrappeUpdateBanner(site.doc, 'This site')
 		},
 		breadcrumbs({ items, documentResource: site }) {
 			let breadcrumbs = []
@@ -982,7 +1059,6 @@ export default {
 				icon: icon('activity'),
 				route: 'activity',
 				type: 'list',
-				condition: (site) => site.doc?.status !== 'Archived',
 				list: {
 					doctype: 'Site Activity',
 					filters: (site) => {
@@ -1007,7 +1083,7 @@ export default {
 								if (action == 'Create') {
 									action = 'Site created'
 								}
-								return `${action} by ${row.owner}`
+								return `${action} by ${getActorName(row.owner)}`
 							},
 						},
 						{
@@ -1168,6 +1244,15 @@ export default {
 							params: { name: site.name },
 						})
 					},
+				},
+				{
+					label: 'Restore Tables',
+					variant: 'solid',
+					slots: {
+						prefix: icon('database'),
+					},
+					condition: () => canRestoreTables(site),
+					onClick: () => confirmRestoreTables(site),
 				},
 				{
 					label: 'Enable Monitoring',
