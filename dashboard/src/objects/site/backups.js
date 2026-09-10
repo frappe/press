@@ -1,4 +1,4 @@
-import { createResource } from 'frappe-ui'
+import { createResource, Tooltip } from 'frappe-ui'
 import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
 import router from '../../router'
@@ -431,6 +431,27 @@ export function backupRecordsOptions() {
 								site: site.name,
 								onScheduleBackupSuccess: () => backups.reload(),
 							},
+						),
+					)
+				},
+			}
+		},
+		secondaryAction({ documentResource: site }) {
+			if (site.doc?.status !== 'Active') return null
+			if (!site.doc?.can_schedule_backups) return null
+			return {
+				label: 'Backup Schedule',
+				slots: {
+					icon: () => h(Tooltip, { text: 'Backup Schedule' }, icon('settings')),
+				},
+				onClick() {
+					renderDialog(
+						h(
+							defineAsyncComponent(
+								() =>
+									import('../../components/site/SiteBackupScheduleDialog.vue'),
+							),
+							{ site: site.name },
 						),
 					)
 				},
