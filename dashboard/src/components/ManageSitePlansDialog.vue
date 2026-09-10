@@ -35,6 +35,12 @@
 					:isDedicatedServerSite="$site.doc.is_dedicated_server"
 					:selectedProvider="$site.doc.server_provider"
 				/>
+				<AlertBanner
+					v-if="showDowngradeLockNotice"
+					class="mt-4"
+					type="warning"
+					title="Plans priced $50/mo or above can't be downgraded for 30 days from the date of upgrade."
+				/>
 				<div class="mt-4 text-xs text-ink-gray-7">
 					<div
 						class="flex items-center rounded bg-surface-gray-1 p-2 text-p-base font-medium text-ink-gray-8"
@@ -161,6 +167,10 @@ import { date } from '../utils/format';
 import CardForm from './billing/CardForm.vue';
 import BillingDetails from './billing/BillingDetails.vue';
 import PrepaidCreditsForm from './billing/PrepaidCreditsForm.vue';
+import AlertBanner from './AlertBanner.vue';
+
+// Plans priced at or above this (USD/mo) are locked from downgrading for 30 days.
+const DOWNGRADE_LOCK_PRICE_USD = 50;
 
 export default {
 	name: 'ManageSitePlansDialog',
@@ -170,6 +180,7 @@ export default {
 		SitePlansCards,
 		BillingDetails,
 		PrepaidCreditsForm,
+		AlertBanner,
 	},
 	props: {
 		site: {
@@ -296,6 +307,14 @@ export default {
 	computed: {
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
+		},
+		showDowngradeLockNotice() {
+			// Warn when upgrading to a $50/mo-or-above plan (locked from downgrade for 30 days).
+			const selectedPrice = this.plan?.price_usd || 0;
+			const currentPrice = this.$site?.doc?.current_plan?.price_usd || 0;
+			return (
+				selectedPrice >= DOWNGRADE_LOCK_PRICE_USD && selectedPrice > currentPrice
+			);
 		},
 		lastPlanChange() {
 			return this.$resources.planChange?.data?.message || null;
