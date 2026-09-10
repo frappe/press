@@ -11,9 +11,13 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.report.build_server_stats.build_server_stats import (
 	floor_to_bucket,
 	get_chart,
+<<<<<<< HEAD
 	get_period,
 	group_by_server,
 	last_number,
+=======
+	group_by_server,
+>>>>>>> c381056 (fix(report): Read the builds with the database API)
 	percentile,
 	seconds_of,
 )
@@ -57,6 +61,7 @@ class TestPercentile(FrappeTestCase):
 		self.assertEqual(percentile([], 0.5), 0)
 
 
+<<<<<<< HEAD
 class TestLastNumber(FrappeTestCase):
 	def test_the_last_point_of_a_series_is_the_value(self):
 		self.assertEqual(last_number([1.0, 2.0, 3.5]), 3.5)
@@ -68,6 +73,8 @@ class TestLastNumber(FrappeTestCase):
 		self.assertEqual(last_number([]), 0)
 
 
+=======
+>>>>>>> c381056 (fix(report): Read the builds with the database API)
 class TestChart(FrappeTestCase):
 	def test_builds_in_the_same_bucket_share_one_bar(self):
 		builds = [
@@ -91,6 +98,7 @@ class TestChart(FrappeTestCase):
 
 		self.assertEqual(floored.minute, 5)
 		self.assertEqual(floored.second, 0)
+<<<<<<< HEAD
 
 
 class TestPeriod(FrappeTestCase):
@@ -130,3 +138,5 @@ class TestPeriod(FrappeTestCase):
 		)
 
 		self.assertEqual(period.seconds, 300)
+=======
+>>>>>>> c381056 (fix(report): Read the builds with the database API)
