@@ -4,67 +4,105 @@
 frappe.ui.form.on('Proxy Server', {
 	refresh: function (frm) {
 		;[
-			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
-			[__('Ping Ansible'), 'ping_ansible', true],
-			[__('Ping Ansible Unprepared'), 'ping_ansible_unprepared', true],
-			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
+			[
+				__('Ping Agent'),
+				'ping_agent',
+				false,
+				frm.doc.is_server_setup,
+				__('Ping'),
+			],
+			[__('Ping Ansible'), 'ping_ansible', true, undefined, __('Ping')],
+			[
+				__('Ping Ansible Unprepared'),
+				'ping_ansible_unprepared',
+				true,
+				undefined,
+				__('Ping'),
+			],
+			[
+				__('Update Agent'),
+				'update_agent',
+				true,
+				frm.doc.is_server_setup,
+				__('Agent'),
+			],
 			[
 				__('Update Agent Ansible'),
 				'update_agent_ansible',
 				true,
 				frm.doc.is_server_setup,
-			],
-			[
-				__('Install Filebeat'),
-				'install_filebeat',
-				true,
-				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
 				__('Install Wazuh Agent'),
 				'install_wazuh_agent',
 				true,
 				frm.doc.is_server_setup,
+				__('Setup'),
 			],
 			[
 				__('Uninstall Wazuh Agent'),
 				'uninstall_wazuh_agent',
 				true,
 				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
+				__('Setup'),
 			],
-			[__('Setup Auditd'), 'setup_auditd', true, frm.doc.is_server_setup],
-			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
-			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
-			[__('Get Static IP'), 'get_static_ip', false],
+			[
+				__('Setup Auditd'),
+				'setup_auditd',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Set Additional Config'),
+				'set_additional_config',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Prepare Server'),
+				'prepare_server',
+				true,
+				!frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Setup Server'),
+				'setup_server',
+				true,
+				!frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[__('Get Static IP'), 'get_static_ip', false, undefined, __('Network')],
 			[
 				__('Setup SSH Proxy'),
 				'setup_ssh_proxy',
 				true,
 				frm.doc.ssh_certificate_authority && !frm.doc.is_ssh_proxy_setup,
+				__('Setup'),
 			],
 			[
 				__('Setup ProxySQL'),
 				'setup_proxysql',
 				true,
 				!frm.doc.is_proxysql_setup,
+				__('Setup'),
 			],
 			[
 				__('Setup ProxySQL Monitor'),
 				'setup_proxysql_monitor',
 				true,
 				frm.doc.is_proxysql_setup,
-			],
-			[
-				__('Setup Wildcard Hosts'),
-				'setup_wildcard_hosts',
-				true,
-				frm.doc.is_server_setup,
+				__('Setup'),
 			],
 			[
 				__('Show Agent Password'),
 				'show_agent_password',
 				false,
 				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
 				__('Fetch Keys'),
@@ -72,9 +110,22 @@ frappe.ui.form.on('Proxy Server', {
 				false,
 				frm.doc.is_server_setup &&
 					(!frm.doc.frappe_public_key || !frm.doc.root_public_key),
+				__('Setup'),
 			],
-			[__('Update TLS Certificate'), 'update_tls_certificate', true],
-			[__('Reload NGINX'), 'reload_nginx', true, frm.doc.is_server_setup],
+			[
+				__('Update TLS Certificate'),
+				'update_tls_certificate',
+				true,
+				undefined,
+				__('Network'),
+			],
+			[
+				__('Reload NGINX'),
+				'reload_nginx',
+				true,
+				frm.doc.is_server_setup,
+				__('Network'),
+			],
 			[__('Create Image'), 'create_image', true, frm.doc.status == 'Active'],
 			[
 				__('Setup Replication'),
@@ -83,12 +134,14 @@ frappe.ui.form.on('Proxy Server', {
 				frm.doc.is_server_setup &&
 					!frm.doc.is_primary &&
 					!frm.doc.is_replication_setup,
+				__('Replication'),
 			],
 			[
 				__('Execute Pre Failover Tasks'),
 				'pre_failover_tasks',
 				true,
 				frm.doc.is_server_setup && !frm.doc.is_primary,
+				__('Replication'),
 			],
 			[
 				__('Trigger Failover'),
@@ -97,12 +150,37 @@ frappe.ui.form.on('Proxy Server', {
 				frm.doc.is_server_setup &&
 					!frm.doc.is_primary &&
 					frm.doc.is_replication_setup,
+				__('Replication'),
 			],
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
-			[__('Setup Fail2ban'), 'setup_fail2ban', true, frm.doc.is_server_setup],
-			[__('Remove Fail2ban'), 'remove_fail2ban', true, frm.doc.is_server_setup],
-			[__('Setup Wireguard'), 'setup_wireguard', true],
-			[__('Reload Wireguard'), 'reload_wireguard', true],
+			[
+				__('Setup Fail2ban'),
+				'setup_fail2ban',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Remove Fail2ban'),
+				'remove_fail2ban',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Setup Wireguard'),
+				'setup_wireguard',
+				true,
+				undefined,
+				__('Network'),
+			],
+			[
+				__('Reload Wireguard'),
+				'reload_wireguard',
+				true,
+				undefined,
+				__('Network'),
+			],
 			[
 				__('Reboot with serial console'),
 				'reboot_with_serial_console',
@@ -114,8 +192,9 @@ frappe.ui.form.on('Proxy Server', {
 				'setup_user_ssh_certificate',
 				true,
 				frm.doc.is_server_setup,
+				__('Setup'),
 			],
-		].forEach(([label, method, confirm, condition]) => {
+		].forEach(([label, method, confirm, condition, group]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
 					label,
@@ -142,7 +221,7 @@ frappe.ui.form.on('Proxy Server', {
 							})
 						}
 					},
-					__('Actions'),
+					__(group || 'Actions'),
 				)
 			}
 		})

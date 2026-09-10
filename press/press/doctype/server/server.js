@@ -62,18 +62,19 @@ frappe.ui.form.on('Server', {
 		}
 
 		;[
-			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
 			[
-				__('Install Filebeat'),
-				'install_filebeat',
+				__('Update Agent'),
+				'update_agent',
 				true,
 				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
 				__('Update Agent Ansible'),
 				'update_agent_ansible',
 				true,
 				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
 				__('Copy SSH Command'),
@@ -83,7 +84,7 @@ frappe.ui.form.on('Server', {
 						.then((r) => frappe.utils.copy_to_clipboard(r.message)),
 				false,
 			],
-			[__('Get Static IP'), 'get_static_ip', false],
+			[__('Get Static IP'), 'get_static_ip', false, undefined, __('Network')],
 			[
 				__('Add public IP'),
 				() => {
@@ -136,33 +137,49 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup &&
 					frm.doc.provider === 'Hetzner' &&
 					!frm.doc.ip,
+				__('Network'),
 			],
-			[__('Update DNS Record'), 'create_dns_record', true],
-			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
+			[
+				__('Update DNS Record'),
+				'create_dns_record',
+				true,
+				undefined,
+				__('Network'),
+			],
 			[
 				__('Setup PySpy'),
 				'setup_pyspy',
 				false,
 				frm.doc.is_server_setup && !frm.doc.is_pyspy_setup,
+				__('Setup'),
 			],
 			[
 				__('Prepare Server'),
 				'prepare_server',
 				true,
 				!frm.doc.is_server_prepared,
+				__('Setup'),
 			],
-			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
+			[
+				__('Setup Server'),
+				'setup_server',
+				true,
+				!frm.doc.is_server_setup,
+				__('Setup'),
+			],
 			[
 				__('Setup Unified Server'),
 				'setup_unified_server',
 				true,
 				frm.doc.is_unified_server,
+				__('Setup'),
 			],
 			[
 				__('Add to Proxy'),
 				'add_upstream_to_proxy',
 				true,
 				frm.doc.is_server_setup && !frm.doc.is_upstream_setup,
+				__('Network'),
 			],
 			[
 				__('Setup Replication'),
@@ -171,6 +188,7 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup &&
 					!frm.doc.is_primary &&
 					!frm.doc.is_replication_setup,
+				__('Setup'),
 			],
 			[
 				__('Setup Rename'),
@@ -179,6 +197,7 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup &&
 					frm.doc.is_server_prepared &&
 					!frm.doc.is_server_renamed,
+				__('Setup'),
 			],
 			[
 				__('Fetch Keys'),
@@ -186,8 +205,15 @@ frappe.ui.form.on('Server', {
 				false,
 				frm.doc.is_server_setup &&
 					(!frm.doc.frappe_public_key || !frm.doc.root_public_key),
+				__('Setup'),
 			],
-			[__('Update TLS Certificate'), 'update_tls_certificate', true],
+			[
+				__('Update TLS Certificate'),
+				'update_tls_certificate',
+				true,
+				undefined,
+				__('Network'),
+			],
 			[
 				__('Auto Scale Workers'),
 				'auto_scale_workers',
@@ -205,28 +231,25 @@ frappe.ui.form.on('Server', {
 			[__('Create Image'), 'create_image', true, frm.doc.status == 'Active'],
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
 			[
-				__('Setup MySQLdump'),
-				'setup_mysqldump',
-				true,
-				frm.doc.is_server_setup && frm.doc.status == 'Active',
-			],
-			[
 				__('Whitelist Server'),
 				'whitelist_ipaddress',
 				false,
 				frm.doc.is_server_setup,
+				__('Network'),
 			],
 			[
 				__('Agent Setup Proxy IP'),
 				'agent_set_proxy_ip',
 				false,
 				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
 				__('Setup Agent Sentry'),
 				'setup_agent_sentry',
 				false,
 				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
 				__('Start Active Benches'),
@@ -239,12 +262,14 @@ frappe.ui.form.on('Server', {
 				'show_agent_password',
 				false,
 				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
 				__('Show Agent Version'),
 				'show_agent_version',
 				false,
 				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
 				__('Setup Standalone'),
@@ -253,6 +278,7 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup &&
 					frm.doc.is_standalone &&
 					!frm.doc.is_standalone_setup,
+				__('Setup'),
 			],
 			[
 				__('Fetch Security Updates'),
@@ -265,6 +291,7 @@ frappe.ui.form.on('Server', {
 				'configure_ssh_logging',
 				false,
 				frm.doc.is_server_setup,
+				__('Setup'),
 			],
 			[
 				__('Reset Usage for all sites'),
@@ -291,12 +318,6 @@ frappe.ui.form.on('Server', {
 				frm.doc.virtual_machine,
 			],
 			[
-				__('Set Swappiness and SysRq'),
-				'set_swappiness',
-				false,
-				frm.doc.is_server_setup,
-			],
-			[
 				__('Mount Volumes'),
 				'mount_volumes',
 				true,
@@ -317,39 +338,58 @@ frappe.ui.form.on('Server', {
 				'install_wazuh_agent',
 				true,
 				frm.doc.is_server_setup,
+				__('Setup'),
 			],
 			[
 				__('Uninstall Wazuh Agent'),
 				'uninstall_wazuh_agent',
 				true,
 				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
+				__('Setup'),
 			],
-			[__('Setup Auditd'), 'setup_auditd', true, frm.doc.is_server_setup],
+			[
+				__('Setup Auditd'),
+				'setup_auditd',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Set Additional Config'),
+				'set_additional_config',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
 			[
 				__('Setup Wildcard Hosts'),
 				'setup_wildcard_hosts',
 				true,
 				frm.doc.is_server_setup && frm.doc.is_standalone_setup,
+				__('Network'),
 			],
 			[
 				__('Install NAT iptables'),
 				'install_nat_iptables',
 				true,
 				frm.doc.is_server_setup && frm.doc.nat_server,
+				__('Network'),
 			],
 			[
 				__('Remove NAT iptables'),
 				'remove_nat_iptables',
 				true,
 				frm.doc.is_server_setup && !frm.doc.nat_server,
+				__('Network'),
 			],
 			[
 				__('Migrate to Cgroup V2'),
 				'migrate_to_cgroup_v2',
 				true,
 				frm.doc.is_server_setup,
+				__('Setup'),
 			],
-		].forEach(([label, method, confirm, condition]) => {
+		].forEach(([label, method, confirm, condition, group]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
 					label,
@@ -380,7 +420,7 @@ frappe.ui.form.on('Server', {
 							})
 						}
 					},
-					__('Actions'),
+					__(group || 'Actions'),
 				)
 			}
 		})
