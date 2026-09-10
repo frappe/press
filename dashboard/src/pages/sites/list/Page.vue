@@ -13,6 +13,8 @@ import {
 } from 'frappe-ui'
 import { unparse } from 'papaparse'
 import { defineAsyncComponent, h, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import AlertBanner from '@/components/AlertBanner.vue'
 import BillingAlerts from '@/components/BillingAlerts.vue'
 import LinkControl from '@/components/LinkControl.vue'
 import Scrollbar from '@/components/common/Scrollbar.vue'
@@ -36,9 +38,22 @@ const statusOptions = [
 }))
 const regionOptions = clusterOptions.filter(Boolean)
 
+const route = useRoute()
+const router = useRouter()
+
+const liveStatuses = statusOptions
+	.filter((o) => o.value !== 'Archived')
+	.map((o) => o.value)
+
+// A shared link can ask for a status, for example /sites?status=Archived
+const requestedStatuses = String(route.query.status ?? '')
+	.split(',')
+	.filter((value) => statusOptions.some((o) => o.value === value))
+
 const selectedStatuses = ref<string[]>(
-	statusOptions.filter((o) => o.value !== 'Archived').map((o) => o.value),
+	requestedStatuses.length ? requestedStatuses : liveStatuses,
 )
+const showsArchivedFallback = ref(false)
 
 const initialFilters = { status: ['in', selectedStatuses.value] }
 
@@ -73,11 +88,49 @@ const sitesCount = createListResource({
 	orderBy: 'creation desc',
 	pageLength: 100000,
 	auto: true,
+	onSuccess: (data: any[]) => showArchivedSitesIfTeamHasNoLiveSites(data),
 })
 
-const applyStatusFilter = (value: string[]) => {
+const selectStatuses = (value: string[]) => {
 	selectedStatuses.value = value
+	router.replace({
+		query: {
+			...route.query,
+			status: value.length ? value.join(',') : undefined,
+		},
+	})
 	applyFilter('status', value.length ? ['in', value] : undefined)
+}
+
+const applyStatusFilter = (value: string[]) => {
+	showsArchivedFallback.value = false
+	selectStatuses(value)
+}
+
+const archivedSites = createListResource({
+	doctype: 'Site',
+	fields: ['name'],
+	filters: { status: 'Archived' },
+	pageLength: 1,
+	auto: false,
+	onSuccess: (data: any[]) => {
+		if (!data?.length) return
+		showsArchivedFallback.value = true
+		selectStatuses(['Archived'])
+	},
+})
+
+let checkedForLiveSites = false
+
+// A team that dropped all of its sites gets an empty list and no next step.
+// Show the archived sites instead, because they are the only sites left.
+// `sitesCount` carries the same filters as `sites`, and it has no shared cache,
+// so its first result is a reliable count of the live sites of the team.
+const showArchivedSitesIfTeamHasNoLiveSites = (liveSites: any[]) => {
+	if (checkedForLiveSites) return
+	checkedForLiveSites = true
+	if (requestedStatuses.length || liveSites?.length) return
+	archivedSites.reload()
 }
 
 const moreActions = [
@@ -201,6 +254,13 @@ const exportCSV = () => {
 
 		<div class="px-5 pt-4">
 			<BillingAlerts ctx-type="List Page" />
+		</div>
+
+		<div v-if="showsArchivedFallback" class="px-5 pt-4">
+			<AlertBanner
+				title="Your team has no live sites. This page shows your archived sites."
+				type="info"
+			/>
 		</div>
 
 		<div class="flex items-center gap-2 px-5 pb-3 overflow-auto">
