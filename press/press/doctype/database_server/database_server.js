@@ -9,56 +9,98 @@ frappe.ui.form.on('Database Server', {
 		)
 
 		;[
-			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
-			[__('Ping Ansible'), 'ping_ansible', true, frm.doc.is_server_prepared],
+			[
+				__('Ping Agent'),
+				'ping_agent',
+				false,
+				frm.doc.is_server_setup,
+				__('Ping'),
+			],
+			[
+				__('Ping Ansible'),
+				'ping_ansible',
+				true,
+				frm.doc.is_server_prepared,
+				__('Ping'),
+			],
 			[
 				__('Ping Ansible Unprepared'),
 				'ping_ansible_unprepared',
 				true,
 				!frm.doc.is_server_prepared,
+				__('Ping'),
 			],
-			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
+			[
+				__('Update Agent'),
+				'update_agent',
+				true,
+				frm.doc.is_server_setup,
+				__('Agent'),
+			],
 			[
 				__('Update Agent Ansible'),
 				'update_agent_ansible',
 				true,
 				frm.doc.is_server_setup,
-			],
-			[
-				__('Install Filebeat'),
-				'install_filebeat',
-				true,
-				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
 				__('Install Wazuh Agent'),
 				'install_wazuh_agent',
 				true,
 				frm.doc.is_server_setup,
+				__('Setup'),
 			],
 			[
 				__('Uninstall Wazuh Agent'),
 				'uninstall_wazuh_agent',
 				true,
 				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
+				__('Setup'),
 			],
-			[__('Setup Auditd'), 'setup_auditd', true, frm.doc.is_server_setup],
-			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
+			[
+				__('Setup Auditd'),
+				'setup_auditd',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Set Additional Config'),
+				'set_additional_config',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
 			[
 				__('Fetch Keys'),
 				'fetch_keys',
 				true,
 				frm.doc.is_server_setup &&
 					(!frm.doc.frappe_public_key || !frm.doc.root_public_key),
+				__('Setup'),
 			],
 			[
 				__('Prepare Server'),
 				'prepare_server',
 				true,
 				!frm.doc.is_server_prepared,
+				__('Setup'),
 			],
-			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
-			[__('Update DNS Record', 'create_dns_record', true)],
+			[
+				__('Setup Server'),
+				'setup_server',
+				true,
+				!frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Update DNS Record'),
+				'create_dns_record',
+				true,
+				undefined,
+				__('Network'),
+			],
 			[
 				__('Setup Rename'),
 				'rename_server',
@@ -66,12 +108,14 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup &&
 					frm.doc.is_server_prepared &&
 					!frm.doc.is_server_renamed,
+				__('Setup'),
 			],
 			[
 				__('Convert From Frappe Server'),
 				'convert_from_frappe_server',
 				true,
 				frm.doc.is_server_setup,
+				__('Setup'),
 			],
 			[
 				__('Setup Replication'),
@@ -80,6 +124,7 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup &&
 					!frm.doc.is_primary &&
 					!frm.doc.is_replication_setup,
+				__('Replication'),
 			],
 			[
 				__('Trigger Failover'),
@@ -88,83 +133,112 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup &&
 					!frm.doc.is_primary &&
 					frm.doc.is_replication_setup,
+				__('Replication'),
 			],
 			[
 				__('Reset Root Password'),
 				'reset_root_password',
 				true,
 				frm.doc.is_server_setup,
+				__('MariaDB'),
 			],
 			[
 				__('Enable Performance Schema'),
 				'enable_performance_schema',
 				true,
 				frm.doc.is_server_setup && !frm.doc.is_performance_schema_enabled,
+				__('MariaDB'),
 			],
 			[
 				__('Disable Performance Schema'),
 				'disable_performance_schema',
 				true,
 				frm.doc.is_server_setup && frm.doc.is_performance_schema_enabled,
+				__('MariaDB'),
 			],
 			[
 				__('Toggle Read-Only Mode'),
 				'toggle_read_only_mode',
 				true,
 				frm.doc.is_server_setup,
+				__('MariaDB'),
 			],
-			[__('Restart MariaDB'), 'restart_mariadb', true, frm.doc.is_server_setup],
-			[__('Stop MariaDB'), 'stop_mariadb', true, frm.doc.is_server_setup],
+			[
+				__('Restart MariaDB'),
+				'restart_mariadb',
+				true,
+				frm.doc.is_server_setup,
+				__('MariaDB'),
+			],
+			[
+				__('Stop MariaDB'),
+				'stop_mariadb',
+				true,
+				frm.doc.is_server_setup,
+				__('MariaDB'),
+			],
 			[
 				__('Run Upgrade MariaDB Job'),
 				'run_upgrade_mariadb_job',
 				true,
 				frm.doc.is_server_setup,
+				__('MariaDB'),
 			],
-			[__('Update MariaDB'), 'update_mariadb', true, frm.doc.is_server_setup],
+			[
+				__('Update MariaDB'),
+				'update_mariadb',
+				true,
+				frm.doc.is_server_setup,
+				__('MariaDB'),
+			],
 			[
 				__('Upgrade MariaDB Patched'),
 				'upgrade_mariadb_patched',
 				true,
 				frm.doc.is_server_setup,
+				__('MariaDB'),
 			],
 			[
 				__('Reconfigure MariaDB Exporter'),
 				'reconfigure_mariadb_exporter',
 				true,
 				frm.doc.is_server_setup,
+				__('MariaDB'),
 			],
 			[
 				__('Setup Deadlock Logger'),
 				'setup_deadlock_logger',
 				true,
 				frm.doc.is_server_setup,
+				__('MariaDB'),
 			],
 			[
 				__('Setup Percona Stalk'),
 				'setup_pt_stalk',
 				true,
 				frm.doc.is_server_setup,
+				__('MariaDB'),
 			],
 			[
 				__('Fetch MariaDB Stalks'),
 				'fetch_stalks',
 				true,
 				frm.doc.is_server_setup && frm.doc.is_stalk_setup,
+				__('MariaDB'),
 			],
 			[
-				__('Fetch Keys'),
-				'fetch_keys',
-				false,
-				frm.doc.is_server_setup &&
-					(!frm.doc.frappe_public_key || !frm.doc.root_public_key),
+				__('Update TLS Certificate'),
+				'update_tls_certificate',
+				true,
+				undefined,
+				__('Network'),
 			],
-			[__('Update TLS Certificate'), 'update_tls_certificate', true],
 			[
 				__('Adjust Memory Config'),
 				'adjust_memory_config',
 				true,
 				frm.doc.status === 'Active',
+				__('MariaDB'),
 			],
 			[__('Create Image'), 'create_image', true, frm.doc.status == 'Active'],
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
@@ -179,6 +253,7 @@ frappe.ui.form.on('Database Server', {
 				'setup_essentials',
 				true,
 				frm.doc.is_self_hosted,
+				__('Setup'),
 			],
 			[
 				__('Mount Volumes'),
@@ -191,65 +266,73 @@ frappe.ui.form.on('Database Server', {
 				'get_binlog_summary',
 				true,
 				frm.doc.is_server_setup,
+				__('MariaDB'),
 			],
-			['Sync Binlogs Info', 'sync_binlogs_info', true, frm.doc.is_server_setup],
+			[
+				'Sync Binlogs Info',
+				'sync_binlogs_info',
+				true,
+				frm.doc.is_server_setup,
+				__('MariaDB'),
+			],
 			[
 				'Sync Replication Config',
 				'sync_replication_config',
 				true,
 				frm.doc.is_server_setup,
-			],
-			[
-				'Provide Frappe User DU and Find Permission',
-				'provide_frappe_user_du_and_find_permission',
-				true,
-				frm.doc.is_server_setup,
-			],
-			[
-				'Provide Frappe User Mariadb Table Usage Permission',
-				'provide_frappe_user_mariadb_table_usage_permission',
-				true,
-				frm.doc.is_server_setup,
+				__('Replication'),
 			],
 			[
 				'Trigger Schema Size Sync',
 				'update_database_schema_sizes',
 				false,
 				frm.doc.is_server_setup,
+				__('MariaDB'),
 			],
-			['Trigger Flush Tables', 'flush_tables', true, frm.doc.is_server_setup],
+			[
+				'Trigger Flush Tables',
+				'flush_tables',
+				true,
+				frm.doc.is_server_setup,
+				__('MariaDB'),
+			],
 			[
 				__('Install NAT iptables'),
 				'install_nat_iptables',
 				true,
 				frm.doc.is_server_setup && frm.doc.nat_server,
+				__('Network'),
 			],
-			[__('Get Static IP'), 'get_static_ip', false],
+			[__('Get Static IP'), 'get_static_ip', false, undefined, __('Network')],
 			[
 				__('Remove NAT iptables'),
 				'remove_nat_iptables',
 				true,
 				frm.doc.is_server_setup && !frm.doc.nat_server,
+				__('Network'),
 			],
 			[
 				__('Migrate to Cgroup V2'),
 				'migrate_to_cgroup_v2',
 				true,
 				frm.doc.is_server_setup,
+				__('Setup'),
 			],
 			[
 				__('Setup MariaDB Monitor'),
 				'setup_mariadb_monitor',
 				true,
 				frm.doc.is_server_setup,
+				__('MariaDB'),
 			],
 			[
 				__('Uninstall MariaDB Monitor'),
 				'uninstall_mariadb_monitor',
 				true,
 				frm.doc.is_server_setup && frm.doc.is_mariadb_monitor_installed,
+				__('MariaDB'),
 			],
-		].forEach(([label, method, confirm, condition]) => {
+		].forEach(([label, method, confirm, condition, group]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
 					label,
@@ -276,7 +359,7 @@ frappe.ui.form.on('Database Server', {
 							})
 						}
 					},
-					__('Actions'),
+					__(group || 'Actions'),
 				)
 			}
 		})
