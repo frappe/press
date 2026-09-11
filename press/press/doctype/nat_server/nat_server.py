@@ -25,6 +25,7 @@ class NATServer(BaseServer):
 		ip: DF.Data | None
 		is_server_setup: DF.Check
 		is_static_ip: DF.Check
+		is_wazuh_agent_installed: DF.Check
 		private_ip: DF.Data | None
 		provider: DF.Literal["AWS EC2", "Frappe Compute", "Hetzner", "DigitalOcean", "OCI"]
 		root_public_key: DF.Code | None
@@ -33,6 +34,7 @@ class NATServer(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
+		wazuh_agent_status: DF.Data | None
 	# end: auto-generated types
 
 	def validate(self):

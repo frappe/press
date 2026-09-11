@@ -9,6 +9,12 @@
     enabled: no
   failed_when: false
 
+# apt refuses to remove a held package. Tolerate an agent that is not installed.
+- name: Unhold Wazuh Agent
+  command: apt-mark unhold wazuh-agent
+  changed_when: false
+  failed_when: false
+
 - name: Uninstall Wazuh Agent
   apt:
     name: wazuh-agent

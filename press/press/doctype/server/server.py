@@ -7,6 +7,7 @@ import contextlib
 import datetime
 import ipaddress
 import json
+import random
 import shlex
 import typing
 from contextlib import suppress
@@ -927,24 +928,27 @@ class BaseServer(Document, TagHelpers):
 			log_error("Filebeat Install Exception", server=self.as_dict())
 
 	def install_wazuh_agent_if_configured(self):
-		if frappe.db.get_single_value("Press Settings", "wazuh_server"):
+		if is_wazuh_configured():
 			self.install_wazuh_agent()
 
 	@frappe.whitelist()
 	def install_wazuh_agent(self):
-		wazuh_server = frappe.get_value("Press Settings", "Press Settings", "wazuh_server")
-		if not wazuh_server:
-			frappe.throw("Please configure Wazuh Server in Press Settings")
+		if not is_wazuh_configured():
+			frappe.throw("Please configure Wazuh Server and Wazuh Agent Version in Press Settings")
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"_install_wazuh_agent",
-			wazuh_server=wazuh_server,
+			wazuh_server=frappe.db.get_single_value("Press Settings", "wazuh_server"),
+			wazuh_agent_version=frappe.db.get_single_value("Press Settings", "wazuh_agent_version"),
 			queue="long",
 			timeout=1200,
+			# The hourly reconcile must not queue a second play while one is still running
+			job_id=f"wazuh_install:{self.doctype}:{self.name}",
+			deduplicate=True,
 		)
 
-	def _install_wazuh_agent(self, wazuh_server: str):
+	def _install_wazuh_agent(self, wazuh_server: str, wazuh_agent_version: str):
 		try:
 			ansible = Ansible(
 				playbook="wazuh_agent_install.yml",
@@ -954,6 +958,7 @@ class BaseServer(Document, TagHelpers):
 				variables={
 					"wazuh_manager": wazuh_server,
 					"wazuh_agent_name": self.name,
+					"wazuh_agent_version": wazuh_agent_version,
 				},
 			)
 			play = ansible.run()
@@ -4543,6 +4548,48 @@ def process_cleanup_unused_files_job_update(job):
 	frappe.get_doc(job.server_type, job.server).restore_glass_file()
 
 
+WAZUH_SERVER_TYPES = (
+	"Server",
+	"Database Server",
+	"Proxy Server",
+	"Monitor Server",
+	"Log Server",
+	"Registry Server",
+	"Analytics Server",
+	"Trace Server",
+	"NAT Server",
+	"NFS Server",
+)
+WAZUH_INSTALL_BATCH_SIZE = 20
+
+
+def is_wazuh_configured() -> bool:
+	return bool(
+		frappe.db.get_single_value("Press Settings", "wazuh_server")
+		and frappe.db.get_single_value("Press Settings", "wazuh_agent_version")
+	)
+
+
+def install_missing_wazuh_agents():
+	"""Install the Wazuh agent on a random batch of active servers that do not have it."""
+	if not is_wazuh_configured():
+		return
+	# Random, so servers whose install keeps failing cannot take every batch
+	servers = servers_missing_wazuh_agent()
+	for server_type, name in random.sample(servers, min(len(servers), WAZUH_INSTALL_BATCH_SIZE)):
+		frappe.get_doc(server_type, name).install_wazuh_agent()
+
+
+def servers_missing_wazuh_agent() -> list[tuple[str, str]]:
+	servers = []
+	for server_type in WAZUH_SERVER_TYPES:
+		filters = {"status": "Active", "is_server_setup": 1, "is_wazuh_agent_installed": 0}
+		if frappe.get_meta(server_type).has_field("is_self_hosted"):
+			filters["is_self_hosted"] = 0
+		servers += [(server_type, name) for name in frappe.get_all(server_type, filters, pluck="name")]
+	return servers
+
+
 def sync_wazuh_agent_status():
 	"""Reconcile each server's Wazuh agent connection status from the manager."""
 	if not frappe.db.get_single_value("Press Settings", "wazuh_api_url"):
@@ -4552,7 +4599,7 @@ def sync_wazuh_agent_status():
 	except Exception:
 		log_error("Wazuh Agent Status Sync Exception")
 		return
-	for server_type in ("Server", "Database Server", "Proxy Server"):
+	for server_type in WAZUH_SERVER_TYPES:
 		filters = {"is_wazuh_agent_installed": 1, "status": ("!=", "Archived")}
 		for name in frappe.get_all(server_type, filters, pluck="name"):
 			frappe.db.set_value(server_type, name, "wazuh_agent_status", statuses.get(name, "unknown"))
