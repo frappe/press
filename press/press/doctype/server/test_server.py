@@ -699,6 +699,43 @@ class TestServer(FrappeTestCase):
 				server.set_auditd_setup_from_base_playbook()
 				self.assertFalse(server.is_auditd_setup)
 
+	def test_backup_streaming_enabled_after_rclone_play_succeeds(self):
+		server = create_test_server()
+		self.assertFalse(server.stream_backups)
+
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server.enable_backup_streaming()
+
+		server.reload()
+		self.assertTrue(server.stream_backups)
+
+	def test_backup_streaming_stays_disabled_when_rclone_play_fails(self):
+		"""The agent rejects a streamed backup when rclone is missing."""
+		server = create_test_server()
+
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Failure")
+			server.enable_backup_streaming()
+
+		server.reload()
+		self.assertFalse(server.stream_backups)
+
+	def test_backup_streaming_stays_disabled_when_rclone_play_errors_out(self):
+		"""An unreachable server logs the failure instead of raising."""
+		server = create_test_server()
+
+		with (
+			patch("press.press.doctype.server.server.Ansible") as Ansible,
+			patch("press.press.doctype.server.server.log_error") as log_error,
+		):
+			Ansible.return_value.run.side_effect = Exception("Connection refused")
+			server.enable_backup_streaming()
+
+		log_error.assert_called_once()
+		server.reload()
+		self.assertFalse(server.stream_backups)
+
 	@patch.object(BaseServer, "_archive", new=Mock())
 	@patch.object(BaseServer, "disable_subscription", new=Mock())
 	def test_archival_uninstalls_wazuh_agent_when_installed(self):

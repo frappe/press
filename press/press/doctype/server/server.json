@@ -532,7 +532,7 @@
 		},
 		{
 			"default": "0",
-			"description": "Stream backups directly to offsite storage instead of staging them on the server",
+			"description": "Stream backups directly to offsite storage instead of staging them on the server. Set during provisioning once rclone is installed",
 			"fieldname": "stream_backups",
 			"fieldtype": "Check",
 			"label": "Stream Backups"
