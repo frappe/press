@@ -162,31 +162,19 @@ class ReleaseGroup(Document, TagHelpers):
 	def get_list_query(query, filters, **list_args):
 		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
 		ReleaseGroup = frappe.qb.DocType("Release Group")
-		Bench = frappe.qb.DocType("Bench")
-		Site = frappe.qb.DocType("Site")
-
-		site_count = (
-			frappe.qb.from_(Site)
-			.select(frappe.query_builder.functions.Count("*"))
-			.where(Site.group == ReleaseGroup.name)
-			.where(Site.status != "Archived")
-		)
-
-		active_benches = (
-			frappe.qb.from_(Bench)
-			.select(frappe.query_builder.functions.Count("*"))
-			.where(Bench.group == ReleaseGroup.name)
-			.where(Bench.status == "Active")
-		)
+		server = filters.get("server")
 
 		query = (
 			query.where(ReleaseGroup.team == frappe.local.team().name)
 			.where(ReleaseGroup.enabled == 1)
 			.where(ReleaseGroup.public == 0)
-			.select(site_count.as_("site_count"), active_benches.as_("active_benches"))
+			.select(
+				site_count_query(server).as_("site_count"),
+				active_bench_count_query(server).as_("active_benches"),
+			)
 		)
 
-		if server := filters.get("server"):
+		if server:
 			query = (
 				query.inner_join(ReleaseGroupServer)
 				.on(ReleaseGroupServer.parent == ReleaseGroup.name)
@@ -2086,6 +2074,34 @@ class ReleaseGroup(Document, TagHelpers):
 			f"New release group <a href='{new_group.get_url()}' target='_blank'>{new_group.title}</a> created and deployed successfully!"
 		)
 		return new_group
+
+
+def site_count_query(server: str | None):
+	"""Count the sites of a group, on one server when the list is filtered by server."""
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	Site = frappe.qb.DocType("Site")
+
+	query = (
+		frappe.qb.from_(Site)
+		.select(Count("*"))
+		.where(Site.group == ReleaseGroup.name)
+		.where(Site.status != "Archived")
+	)
+	return query.where(Site.server == server) if server else query
+
+
+def active_bench_count_query(server: str | None):
+	"""Count the active benches of a group, on one server when the list is filtered by server."""
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	Bench = frappe.qb.DocType("Bench")
+
+	query = (
+		frappe.qb.from_(Bench)
+		.select(Count("*"))
+		.where(Bench.group == ReleaseGroup.name)
+		.where(Bench.status == "Active")
+	)
+	return query.where(Bench.server == server) if server else query
 
 
 @redis_cache(ttl=60)
