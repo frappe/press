@@ -17,7 +17,10 @@ from press.press.doctype.app.app import parse_frappe_version
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
-from press.press.doctype.deploy_candidate.test_deploy_candidate import create_test_deploy_candidate
+from press.press.doctype.deploy_candidate.test_deploy_candidate import (
+	create_test_deploy_candidate,
+	create_test_deploy_candidate_build,
+)
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.release_pipeline.release_pipeline import (
@@ -521,6 +524,64 @@ class TestReleasePipeline(FrappeTestCase):
 
 		self.assertEqual(
 			[app.app for app in deploy_candidate.reload().apps], ["frappe", "helpdesk", "telephony"]
+		)
+
+	def create_running_pipeline(self):
+		"""Release pipeline with one build in progress, owned by a non-admin team.
+
+		Builds its own release group instead of reusing `self.test_release_group`,
+		since other tests' tearDown wipes App/App Source between tests.
+		"""
+		app = self.create_app_with_release("frappe")
+		release_group = create_test_release_group(
+			apps=[app], frappe_version="Version 15", servers=[self.server.name]
+		)
+		team = create_test_team()
+		deploy_candidate = create_test_deploy_candidate(release_group)
+		build = create_test_deploy_candidate_build(deploy_candidate, no_build=True, status="Scheduled")
+		with patch.object(DeployCandidateBuild, "after_insert", Mock()):
+			build.insert(ignore_permissions=True)
+		frappe.db.set_value("Deploy Candidate Build", build.name, "status", "Running")
+
+		release_pipeline: ReleasePipeline = frappe.get_doc(
+			{
+				"doctype": "Release Pipeline",
+				"release_group": release_group.name,
+				"team": team.name,
+			}
+		).insert(ignore_permissions=True)
+		release_pipeline.add_build_to_pipeline(build.name)
+
+		frappe.set_user(team.user)
+		return release_pipeline, build, team.user
+
+	@patch.object(ReleasePipeline, "send_failure_notification", Mock())
+	@patch("press.press.doctype.release_pipeline.release_pipeline.fail_remote_job")
+	def test_force_fail_cancels_build_as_administrator_and_restores_user(self, mock_fail_remote_job):
+		session_user_during_call = []
+		mock_fail_remote_job.side_effect = lambda build: session_user_during_call.append(frappe.session.user)
+
+		release_pipeline, build, team_user = self.create_running_pipeline()
+		release_pipeline.force_fail()
+
+		mock_fail_remote_job.assert_called_once_with(build.name)
+		self.assertEqual(session_user_during_call, ["Administrator"])
+		self.assertEqual(frappe.session.user, team_user)
+
+	@patch.object(ReleasePipeline, "send_failure_notification", Mock())
+	@patch("press.press.doctype.release_pipeline.release_pipeline.fail_remote_job")
+	def test_force_fail_restores_user_when_cancellation_raises(self, mock_fail_remote_job):
+		mock_fail_remote_job.side_effect = frappe.PermissionError("no access")
+
+		release_pipeline, _build, team_user = self.create_running_pipeline()
+		release_pipeline.force_fail()  # must swallow the exception, not raise
+
+		self.assertEqual(frappe.session.user, team_user)
+		self.assertTrue(
+			frappe.db.exists(
+				"Error Log",
+				{"reference_doctype": "Release Pipeline", "reference_name": release_pipeline.name},
+			)
 		)
 
 	@classmethod
