@@ -231,21 +231,27 @@ class ReleasePipeline(WorkflowBuilder):
 		self._cancel_running_builds()
 
 	def _cancel_running_builds(self):
-		for pipeline_build in self.pipeline_builds:
-			if (
-				frappe.db.get_value("Deploy Candidate Build", pipeline_build.build, "status")
-				not in DeployCandidateBuildStatus.intermediate()
-			):
-				continue
+		current_user = frappe.session.user
+		frappe.set_user("Administrator")
+		try:
+			for pipeline_build in self.pipeline_builds:
+				self._cancel_build_if_running(pipeline_build.build)
+		finally:
+			frappe.set_user(current_user)
 
-			try:
-				fail_remote_job(pipeline_build.build)
-			except Exception:
-				frappe.log_error(
-					f"Failed to cancel Deploy Candidate Build {pipeline_build.build} on pipeline force fail",
-					reference_doctype=self.doctype,
-					reference_name=self.name,
-				)
+	def _cancel_build_if_running(self, build: str):
+		status = frappe.db.get_value("Deploy Candidate Build", build, "status")
+		if status not in DeployCandidateBuildStatus.intermediate():
+			return
+
+		try:
+			fail_remote_job(build)
+		except Exception:
+			frappe.log_error(
+				f"Failed to cancel Deploy Candidate Build {build} on pipeline force fail",
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
 
 	def add_build_to_pipeline(self, build: str):
 		"""Attach a build to the pipeline if not present"""
