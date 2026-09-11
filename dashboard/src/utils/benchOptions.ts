@@ -172,19 +172,19 @@ export const getBenchOptions = ({
 				}),
 		},
 		{
-			label: 'Archive Bench',
+			label: 'Drop Bench',
 			condition: () => true,
 			onClick: () =>
 				confirmBenchMethod({
 					bench,
-					title: 'Archive Bench',
-					message: `Are you sure you want to archive the bench <b>${bench}</b>?`,
-					label: 'Archive',
+					title: 'Drop Bench',
+					message: `Are you sure you want to drop the bench <b>${bench}</b>?`,
+					label: 'Drop',
 					theme: 'red',
 					method: 'archive',
-					loading: 'Scheduling bench for archival...',
-					success: 'Bench is scheduled for archival',
-					error: 'Failed to archive bench',
+					loading: 'Scheduling bench to be dropped...',
+					success: 'Bench is scheduled to be dropped',
+					error: 'Failed to drop bench',
 				}),
 		},
 		{

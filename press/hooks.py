@@ -211,6 +211,7 @@ scheduler_events = {
 	"daily": [
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
+		"press.press.doctype.site_version_audit.site_version_audit.record_audit",
 		"press.press.doctype.incident.incident.notify_ignored_servers",
 		"press.press.doctype.database_server.database_server.unindex_mariadb_binlogs",
 		"press.press.doctype.database_server.database_server.remove_uploaded_binlogs_from_disk",
@@ -268,9 +269,12 @@ scheduler_events = {
 		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 		"press.press.doctype.server.server.sync_wazuh_agent_status",
+		"press.press.doctype.server.server.install_missing_wazuh_agents",
 		"press.press.doctype.incident_settings.incident_settings.alert_if_phone_call_alerts_disabled",
+		"press.press.doctype.server.server_monitoring.alert_on_failing_signups",
 		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",
 		"press.press.doctype.database_server.database_server.upload_audit_logs_to_s3",
+		"press.press.doctype.site_backup.site_backup.alert_if_backup_success_rate_is_low",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -279,7 +283,7 @@ scheduler_events = {
 		"press.press.doctype.server.server.scale_workers",
 		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
-		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
+		"press.press.doctype.invoice.invoice.create_invoices_for_next_month",
 		"press.press.doctype.invoice.invoice.finalize_razorpay_mandate_invoices",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
@@ -288,7 +292,8 @@ scheduler_events = {
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_oci_virtual_machines",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_hetzner_virtual_machines",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_internal_virtual_machines",
-		"press.press.doctype.virtual_machine.virtual_machine.snapshot_frappe_compute_virtual_machines",
+		# Disabled: snapshots on Frappe Compute (bare metal) fail and flood the error log
+		# "press.press.doctype.virtual_machine.virtual_machine.snapshot_frappe_compute_virtual_machines",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
@@ -425,6 +430,9 @@ scheduler_events = {
 			"press.press.doctype.build_metric.build_metric.create_build_metric",
 			"press.saas.doctype.product_trial_request.product_trial_request.gather_weekly_stats",
 		],
+		"*/30 * 1 * *": [
+			"press.press.doctype.invoice.invoice.finalize_monthly_draft_invoices",
+		],
 	},
 }
 
@@ -505,6 +513,8 @@ __persistent_cache_keys = [
 	"one_time_login_key*",
 	"press-auth-logs",
 	"rl:*",
+	"press_otp:*",
+	"press_otp_sent:*",
 ]
 
 # `frappe.rename_doc` erases all caches, this hook preserves some of them.

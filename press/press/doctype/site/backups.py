@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import functools
 from collections import deque
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from functools import wraps
 from itertools import groupby
 from time import time
@@ -270,14 +270,10 @@ class ScheduledBackupJob:
 		else:
 			self.sites_without_offsite = []
 
-	def take_offsite(self, site: frappe._dict, day: datetime.date) -> bool:
-		return (
-			self.offsite_setup
-			and site.name not in self.sites_without_offsite
-			and not SiteBackup.offsite_backup_exists(site.name, day)
-		)
+	def take_offsite(self, site: frappe._dict, day: date) -> bool:
+		return should_take_offsite_backup(site.name, day, self.offsite_setup, self.sites_without_offsite)
 
-	def get_site_time(self, site: dict[str, str]) -> datetime:
+	def get_site_time(self, site: frappe._dict) -> datetime:
 		timezone = site.timezone or "Asia/Kolkata"
 		site_timezone = pytz.timezone(timezone)
 		return self.server_time.astimezone(site_timezone)
@@ -349,6 +345,18 @@ class ScheduledBackupJob:
 		except Exception:
 			log_error("Site Backup Exception", site=site)
 			frappe.db.rollback()
+			return False
+
+
+def should_take_offsite_backup(
+	site: str, day: date, offsite_setup: bool, sites_without_offsite: list[str]
+) -> bool:
+	"""Offsite backups go out once a day, and only on plans that include them."""
+	return (
+		offsite_setup
+		and site not in sites_without_offsite
+		and not SiteBackup.offsite_backup_exists(site, day)
+	)
 
 
 def schedule_logical_backups_for_sites_with_backup_time():
@@ -358,9 +366,20 @@ def schedule_logical_backups_for_sites_with_backup_time():
 	Run this hourly only
 	"""
 	sites = Site.get_sites_with_backup_time("Logical")
+	if not sites:
+		return
+
+	day = frappe.utils.getdate()
+	offsite_setup = PressSettings.is_offsite_setup()
+	sites_without_offsite = Subscription.get_sites_without_offsite_backups()
 	for site in sites:
+		offsite = should_take_offsite_backup(site.name, day, offsite_setup, sites_without_offsite)
 		site_doc: Site = frappe.get_doc("Site", site.name)
-		site_doc.backup(with_files=True, offsite=True, physical=False)
+		site_doc.backup(
+			with_files=offsite or not SiteBackup.file_backup_exists(site.name, day),
+			offsite=offsite,
+			physical=False,
+		)
 		frappe.db.commit()
 
 

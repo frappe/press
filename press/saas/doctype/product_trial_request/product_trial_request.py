@@ -55,6 +55,7 @@ class ProductTrialRequest(Document):
 			"Error",
 			"Expired",
 		]
+		status_updated_on: DF.Datetime | None
 		team: DF.Link | None
 		tracked_agent_jobs: DF.Code | None
 	# end: auto-generated types
@@ -281,6 +282,12 @@ class ProductTrialRequest(Document):
 			self.site_creation_completed_on = now_datetime()
 		self.save(ignore_permissions=True)
 		return True
+
+	def before_save(self):
+		if self.has_value_changed("status"):
+			# `modified` moves on every later write - a subscription flag, an accessibility
+			# check at login - so anything asking when a request settled needs its own stamp
+			self.status_updated_on = now_datetime()
 
 	def after_insert(self):
 		self.capture_posthog_event("product_trial_request_created")
@@ -556,8 +563,7 @@ def expire_long_pending_trial_requests():
 	frappe.db.set_value(
 		"Product Trial Request",
 		{"status": "Pending", "creation": ("<", add_to_date(now_datetime(), hours=-6))},
-		"status",
-		"Expired",
+		{"status": "Expired", "status_updated_on": now_datetime()},
 		update_modified=False,
 	)
 

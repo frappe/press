@@ -7,6 +7,7 @@ import contextlib
 import datetime
 import ipaddress
 import json
+import random
 import shlex
 import typing
 from contextlib import suppress
@@ -131,6 +132,14 @@ class BaseServer(Document, TagHelpers):
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		Server = frappe.qb.DocType("Server")
+
+		# not a real field, so validate_filters strips it before it reaches the
+		# base query; the dashboard labels a server with its title but a server is
+		# addressed by its name (the hostname), so search both
+		search_term = filters.get("_search")
+		if search_term:
+			like_term = f"%{search_term}%"
+			query = query.where(Server.name.like(like_term) | Server.title.like(like_term))
 
 		status = filters.get("status")
 		if status == "Archived":
@@ -918,24 +927,27 @@ class BaseServer(Document, TagHelpers):
 			log_error("Filebeat Install Exception", server=self.as_dict())
 
 	def install_wazuh_agent_if_configured(self):
-		if frappe.db.get_single_value("Press Settings", "wazuh_server"):
+		if is_wazuh_configured():
 			self.install_wazuh_agent()
 
 	@frappe.whitelist()
 	def install_wazuh_agent(self):
-		wazuh_server = frappe.get_value("Press Settings", "Press Settings", "wazuh_server")
-		if not wazuh_server:
-			frappe.throw("Please configure Wazuh Server in Press Settings")
+		if not is_wazuh_configured():
+			frappe.throw("Please configure Wazuh Server and Wazuh Agent Version in Press Settings")
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"_install_wazuh_agent",
-			wazuh_server=wazuh_server,
+			wazuh_server=frappe.db.get_single_value("Press Settings", "wazuh_server"),
+			wazuh_agent_version=frappe.db.get_single_value("Press Settings", "wazuh_agent_version"),
 			queue="long",
 			timeout=1200,
+			# The hourly reconcile must not queue a second play while one is still running
+			job_id=f"wazuh_install:{self.doctype}:{self.name}",
+			deduplicate=True,
 		)
 
-	def _install_wazuh_agent(self, wazuh_server: str):
+	def _install_wazuh_agent(self, wazuh_server: str, wazuh_agent_version: str):
 		try:
 			ansible = Ansible(
 				playbook="wazuh_agent_install.yml",
@@ -945,6 +957,7 @@ class BaseServer(Document, TagHelpers):
 				variables={
 					"wazuh_manager": wazuh_server,
 					"wazuh_agent_name": self.name,
+					"wazuh_agent_version": wazuh_agent_version,
 				},
 			)
 			play = ansible.run()
@@ -1510,16 +1523,8 @@ class BaseServer(Document, TagHelpers):
 					"Cannot archive a server with sites on it. Please archive all the sites before performing the drop action."
 				)
 			)
-		if frappe.get_all(
-			"Bench",
-			filters={"server": self.name, "status": ("!=", "Archived")},
-			ignore_ifnull=True,
-		):
-			frappe.throw(
-				_(
-					"The server has a few benches on it. Please archive them from their respective dashboards before attempting a drop."
-				)
-			)
+
+		self.archive_benches()
 
 		if self.is_wazuh_agent_installed:
 			self.uninstall_wazuh_agent()
@@ -1547,6 +1552,37 @@ class BaseServer(Document, TagHelpers):
 			)
 		self.disable_subscription()
 		self.remove_from_release_groups()
+
+	def archive_benches(self):
+		"""Archive the bench records left on the server.
+
+		The server has no sites left and its machine is about to be terminated,
+		so nothing has to be removed from it. Asking the user to archive the
+		benches first only blocks the drop: a bench that never came up cannot be
+		archived through the agent, and the dashboard offers no archive action.
+		"""
+		from press.press.doctype.bench.bench import Bench
+
+		benches = [
+			Bench("Bench", name)
+			for name in frappe.get_all(
+				"Bench",
+				filters={"server": self.name, "status": ("!=", "Archived")},
+				pluck="name",
+				ignore_ifnull=True,
+			)
+		]
+
+		# Check every bench before archiving any. check_unarchived_sites commits,
+		# so a bench that fails the check halfway would leave the earlier ones
+		# archived while the server archive aborts.
+		for bench in benches:
+			bench.check_unarchived_sites()
+
+		for bench in benches:
+			if bench.is_ssh_proxy_setup:
+				bench.remove_ssh_user()
+			frappe.db.set_value("Bench", bench.name, "status", "Archived")
 
 	def _archive(self, reason=None):
 		self.run_press_job("Archive Server", arguments={"reason": reason})
@@ -3455,7 +3491,7 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def setup_rclone(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_rclone")
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_rclone", queue="long", timeout=1200)
 
 	@frappe.whitelist()
 	def install_nfs_common(self):
@@ -3486,7 +3522,7 @@ class Server(BaseServer):
 		except Exception:
 			log_error("Install and ncdu Setup Exception", server=self.as_dict())
 
-	def _setup_rclone(self):
+	def _setup_rclone(self) -> AnsiblePlay | None:
 		try:
 			ansible = Ansible(
 				playbook="install_rclone.yml",
@@ -3494,9 +3530,20 @@ class Server(BaseServer):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			ansible.run()
+			return ansible.run()
 		except Exception:
 			log_error("Install Rclone Exception", server=self.as_dict())
+			return None
+
+	def enable_backup_streaming(self):
+		"""Install rclone, then let this server stream offsite backups.
+
+		The agent rejects a streamed backup when rclone is missing, so the flag
+		must not be set until the play has actually succeeded.
+		"""
+		play = self._setup_rclone()
+		if play and play.status == "Success":
+			self.db_set("stream_backups", True)
 
 	@frappe.whitelist()
 	def add_upstream_to_proxy(self):
@@ -4496,6 +4543,48 @@ def process_cleanup_unused_files_job_update(job):
 	frappe.get_doc(job.server_type, job.server).restore_glass_file()
 
 
+WAZUH_SERVER_TYPES = (
+	"Server",
+	"Database Server",
+	"Proxy Server",
+	"Monitor Server",
+	"Log Server",
+	"Registry Server",
+	"Analytics Server",
+	"Trace Server",
+	"NAT Server",
+	"NFS Server",
+)
+WAZUH_INSTALL_BATCH_SIZE = 20
+
+
+def is_wazuh_configured() -> bool:
+	return bool(
+		frappe.db.get_single_value("Press Settings", "wazuh_server")
+		and frappe.db.get_single_value("Press Settings", "wazuh_agent_version")
+	)
+
+
+def install_missing_wazuh_agents():
+	"""Install the Wazuh agent on a random batch of active servers that do not have it."""
+	if not is_wazuh_configured():
+		return
+	# Random, so servers whose install keeps failing cannot take every batch
+	servers = servers_missing_wazuh_agent()
+	for server_type, name in random.sample(servers, min(len(servers), WAZUH_INSTALL_BATCH_SIZE)):
+		frappe.get_doc(server_type, name).install_wazuh_agent()
+
+
+def servers_missing_wazuh_agent() -> list[tuple[str, str]]:
+	servers = []
+	for server_type in WAZUH_SERVER_TYPES:
+		filters = {"status": "Active", "is_server_setup": 1, "is_wazuh_agent_installed": 0}
+		if frappe.get_meta(server_type).has_field("is_self_hosted"):
+			filters["is_self_hosted"] = 0
+		servers += [(server_type, name) for name in frappe.get_all(server_type, filters, pluck="name")]
+	return servers
+
+
 def sync_wazuh_agent_status():
 	"""Reconcile each server's Wazuh agent connection status from the manager."""
 	if not frappe.db.get_single_value("Press Settings", "wazuh_api_url"):
@@ -4505,7 +4594,7 @@ def sync_wazuh_agent_status():
 	except Exception:
 		log_error("Wazuh Agent Status Sync Exception")
 		return
-	for server_type in ("Server", "Database Server", "Proxy Server"):
+	for server_type in WAZUH_SERVER_TYPES:
 		filters = {"is_wazuh_agent_installed": 1, "status": ("!=", "Archived")}
 		for name in frappe.get_all(server_type, filters, pluck="name"):
 			frappe.db.set_value(server_type, name, "wazuh_agent_status", statuses.get(name, "unknown"))

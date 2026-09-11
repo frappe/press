@@ -186,6 +186,7 @@ class Team(Document):
 		"receive_budget_alerts",
 		"monthly_alert_threshold",
 		"company_name",
+		"company_logo",
 		"hybrid_servers_enabled",
 		"relaxed_permissions",
 		"upi_autopay_enabled",
@@ -810,6 +811,12 @@ class Team(Document):
 
 		return unpaid_invoices
 
+	def has_unpaid_invoices(self):
+		"""Two or more unpaid subscription invoices blocks new sites and servers, matching the New Site and New Server forms."""
+		return (
+			frappe.db.count("Invoice", {"team": self.name, "status": "Unpaid", "type": "Subscription"}) >= 2
+		)
+
 	def create_stripe_customer(self):
 		if not self.stripe_customer_id:
 			stripe = get_stripe()
@@ -1306,6 +1313,14 @@ class Team(Document):
 			why = "You cannot create a new site as your account is disabled"
 			return (False, why)
 
+		if self.has_unpaid_invoices():
+			why = "Please settle your outstanding invoices to create new sites"
+			return (False, why)
+
+		if self.apply_limits and self.spending_limit <= self.total_subscribed_amount():
+			why = "You have exceeded your spending limit. Please contact support to increase your limits."
+			return (False, why)
+
 		if self.free_account or self.parent_team or self.billing_team:
 			return allow
 
@@ -1365,6 +1380,9 @@ class Team(Document):
 		"""
 		if not self.enabled:
 			frappe.throw("You cannot create a new server because your account is disabled")
+
+		if self.has_unpaid_invoices():
+			frappe.throw("Please settle your outstanding invoices to create a new server")
 
 		if not self.billing_address:
 			frappe.throw(
@@ -1604,17 +1622,18 @@ class Team(Document):
 			except Exception:
 				log_error("Failed to remove subscription config in trial sites")
 
-	def get_upcoming_invoice(self, for_update=False):
-		# get the current period's invoice
-		today = frappe.utils.today()
+	def get_upcoming_invoice(self, date=None, for_update=False):
+		# only Draft counts - a finalized invoice may already have a Stripe/Razorpay
+		# invoice created against it and must never be mutated further
+		date = date or frappe.utils.today()
 		result = frappe.db.get_all(
 			"Invoice",
 			filters={
 				"status": "Draft",
 				"team": self.name,
 				"type": "Subscription",
-				"period_start": ("<=", today),
-				"period_end": (">=", today),
+				"period_start": ("<=", date),
+				"period_end": (">=", date),
 			},
 			order_by="creation desc",
 			limit=1,
@@ -1624,11 +1643,23 @@ class Team(Document):
 			return frappe.get_doc("Invoice", result[0], for_update=for_update)
 		return None
 
-	def create_upcoming_invoice(self):
-		today = frappe.utils.today()
-		return frappe.get_doc(
-			doctype="Invoice", team=self.name, period_start=today, type="Subscription"
-		).insert()
+	def create_upcoming_invoice(self, date=None):
+		date = date or frappe.utils.today()
+		try:
+			return frappe.get_doc(
+				doctype="Invoice", team=self.name, period_start=date, type="Subscription"
+			).insert()
+		except frappe.DuplicateEntryError:
+			# another process created the invoice for this period first
+			invoice = self.get_upcoming_invoice(date)
+			if not invoice:
+				# the period is already owned by a finalized (no longer Draft) invoice
+				frappe.throw(
+					f"Cannot create an invoice for {self.name} on {date}: a finalized invoice "
+					"already covers this period",
+					frappe.ValidationError,
+				)
+			return invoice
 
 	@frappe.whitelist()
 	def send_telegram_alert_for_failed_payment(self, invoice):
@@ -1670,6 +1701,24 @@ class Team(Document):
 				"requested_amount": f"{requested_amount:,.0f}",
 				"confirmed_amount": f"{confirmed_amount:,.0f}",
 				"upi_autopay_link": frappe.utils.get_url("/dashboard/billing/upi-autopay"),
+			},
+		)
+
+	def send_email_for_invalid_payment_method(self, invoice):
+		if isinstance(invoice, str):
+			invoice = frappe.get_doc("Invoice", invoice)
+
+		email = get_communication_info("Email", "Billing", "Team", self.name) or [self.user]
+		subject = "Card on Frappe Cloud could not be charged"
+
+		frappe.sendmail(
+			recipients=email,
+			subject=subject,
+			template="payment_method_invalid",
+			args={
+				"subject": subject,
+				"amount": invoice.get_formatted("amount_due_with_tax"),
+				"billing_link": frappe.utils.get_url("/dashboard/billing"),
 			},
 		)
 

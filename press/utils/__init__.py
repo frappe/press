@@ -556,12 +556,14 @@ def human_readable(num: int | float) -> str:
 
 
 def is_json(string):
-	if isinstance(string, str):
-		string = string.strip()
-		return string.startswith("{") and string.endswith("}")
 	if isinstance(string, (dict, list)):
 		return True
-	return None
+	if not isinstance(string, str):
+		return None
+	try:
+		return isinstance(json.loads(string), dict)
+	except ValueError:
+		return False
 
 
 def is_list(string):

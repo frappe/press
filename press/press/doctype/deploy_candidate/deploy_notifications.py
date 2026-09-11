@@ -86,6 +86,7 @@ DOC_URLS = {
 	"vite-not-found": "https://docs.frappe.io/cloud/common-issues/vite-not-found",
 	"invalid-project-structure": "https://docs.frappe.io/framework/user/en/tutorial/create-an-app#app-directory-structure",
 	"frappe-not-found": "https://pip.pypa.io/en/stable/news/#v25-3",
+	"frappe-listed-as-a-python-dependency": "https://docs.frappe.io/cloud/private-benches/common-issues/frappe-listed-as-a-python-dependency",
 	"no-python-dependency-file-found": "https://packaging.python.org/en/latest/guides/writing-pyproject-toml/",
 	"build-might-fail": "https://docs.frappe.io/cloud/common-issues/build-might-fail",
 }
@@ -231,6 +232,11 @@ def handlers():
 		(
 			"pip._vendor.packaging.version.InvalidVersion: Invalid version",
 			update_with_error_on_pip_install,
+			check_if_app_updated,
+		),
+		(
+			"depends on `frappe`",
+			update_with_frappe_listed_as_dependency,
 			check_if_app_updated,
 		),
 		# Below three are catch all fallback handlers for `yarn build`,
@@ -387,7 +393,41 @@ def update_with_frappe_installed_from_pypi(
 	"""
 
 	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["frappe-listed-as-a-python-dependency"]
 	return True
+
+
+def update_with_frappe_listed_as_dependency(
+	details: "Details",
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	exc: BaseException,
+):
+	if not (app_name := get_app_that_depends_on_frappe(dcb)):
+		return False
+
+	details["title"] = f"{app_name} lists frappe as a Python dependency"
+
+	message = f"""
+	<p><b>{escape_html(app_name)}</b> declares <code>frappe</code> under
+	<code>[project] dependencies</code> in its <b>pyproject.toml</b>.</p>
+
+	<p>Please <b>remove</b> <code>frappe</code> from the dependencies list of your app and
+	deploy again. To declare which Frappe versions your app supports, use the
+	<code>[tool.bench.frappe-dependencies]</code> section instead.</p>
+	"""
+
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["frappe-listed-as-a-python-dependency"]
+	return True
+
+
+def get_app_that_depends_on_frappe(dcb: "DeployCandidateBuild") -> str:
+	"""App name from uv's hint: `frappe` (v15.x) was included because `app` (v0.0.1) depends on `frappe`"""
+	# uv wraps the hint at the terminal width, so match on the unwrapped output.
+	output = re.sub(r"\s+", " ", dcb.build_output)
+	match = re.search(r"was included because `([^`]+)`[^`]*depends on `frappe`", output)
+	return match.group(1) if match else ""
 
 
 def update_with_unsupported_init_file(
@@ -1199,8 +1239,12 @@ def check_if_app_updated(old_dcb: "DeployCandidateBuild", new_dc: "DeployCandida
 
 
 def build_inputs_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
-	"""Whether any dependency version or app commit hash differs between the two candidates."""
-	return dependencies_changed(old_dc, new_dc) or apps_changed(old_dc, new_dc)
+	"""Whether any dependency, app commit hash or package differs between the two candidates."""
+	return (
+		dependencies_changed(old_dc, new_dc)
+		or apps_changed(old_dc, new_dc)
+		or packages_changed(old_dc, new_dc)
+	)
 
 
 def dependencies_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
@@ -1213,6 +1257,15 @@ def apps_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
 	old = {app.app: app.hash or app.pullable_hash for app in old_dc.apps}
 	new = {app.app: app.hash or app.pullable_hash for app in new_dc.apps}
 	return old != new
+
+
+def packages_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
+	"""If anything in the package manager changes we should allow a redeploy"""
+	return get_packages(old_dc) != get_packages(new_dc)
+
+
+def get_packages(dc: "DeployCandidate") -> set[tuple[str, str, str, str]]:
+	return {(p.package_manager, p.package, p.package_prerequisites, p.after_install) for p in dc.packages}
 
 
 def get_dc_app(dc: "DeployCandidate", app_name: str) -> "DeployCandidateApp | None":

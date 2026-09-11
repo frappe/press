@@ -14,10 +14,11 @@ from press.api.client import (
 	ALLOWED_DOCTYPES,
 	check_document_access,
 	check_document_write_access,
-	fields_being_set,
 	get,
 	get_list,
 	set_value,
+	values_being_set,
+	writable_values,
 )
 from press.overrides import before_request
 from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
@@ -314,12 +315,27 @@ class TestEditableFields(FrappeTestCase):
 
 		self.assertEqual(getattr(get_controller("Subscription"), "dashboard_editable_fields", ()), ())
 
-	def test_fields_being_set_reads_every_calling_convention(self):
-		self.assertEqual(fields_being_set({"plan": "x", "team": "y"}, None), ["plan", "team"])
-		self.assertEqual(fields_being_set("plan", "x"), ["plan"])
-		self.assertEqual(fields_being_set('{"plan": "x"}', None), ["plan"])
+	def test_values_being_set_reads_every_calling_convention(self):
+		self.assertEqual(values_being_set({"plan": "x", "team": "y"}, None), {"plan": "x", "team": "y"})
+		self.assertEqual(values_being_set("plan", "x"), {"plan": "x"})
+		self.assertEqual(values_being_set('{"plan": "x"}', None), {"plan": "x"})
 		# A bare fieldname is not JSON, and frappe treats it as one field set to ""
-		self.assertEqual(fields_being_set("plan", None), ["plan"])
+		self.assertEqual(values_being_set("plan", None), {"plan": ""})
+
+	def test_writable_values_drops_the_fields_a_dashboard_save_carries_along(self):
+		values = {
+			"owner": "someone@example.com",
+			"creation": "2026-08-26 21:51:49.591602",
+			"modified": "2026-08-26 21:51:49.591602",
+			"modified_by": "someone@example.com",
+			"docstatus": 1,
+			"idx": 0,
+			"tabs_access": {},
+			"actions_access": {},
+			"enabled": 0,
+		}
+
+		self.assertEqual(writable_values(values), {"enabled": 0})
 
 
 @patch("frappe.sendmail", new=Mock())

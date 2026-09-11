@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 import typing
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.core.utils import find
@@ -14,6 +14,9 @@ from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
 from press.agent import Agent
+from press.api.client import get_list
+from press.exceptions import ArchiveBenchError
+from press.overrides import before_request
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
@@ -24,17 +27,19 @@ from press.press.doctype.press_settings.test_press_settings import (
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.server import (
+	WAZUH_SERVER_TYPES,
 	BaseServer,
+	Server,
+	install_missing_wazuh_agents,
 	process_cleanup_unused_files_job_update,
 	sync_wazuh_agent_status,
 )
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
-from press.press.doctype.site.test_site import create_test_bench
-from press.press.doctype.team.test_team import create_test_team
+from press.press.doctype.site.test_site import create_test_bench, create_test_site
+from press.press.doctype.team.test_team import create_test_press_admin_team, create_test_team
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 
 if typing.TYPE_CHECKING:
-	from press.press.doctype.server.server import Server
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -609,9 +614,21 @@ class TestServer(FrappeTestCase):
 			create_test_proxy_server(),
 		]
 
-	def test_wazuh_agent_installed_during_setup_when_manager_configured(self):
+	def _configure_wazuh(self, server="wazuh.example.com", version="4.12.0-1"):
 		create_test_press_settings()
-		frappe.db.set_single_value("Press Settings", "wazuh_server", "wazuh.example.com")
+		frappe.db.set_single_value("Press Settings", "wazuh_server", server)
+		frappe.db.set_single_value("Press Settings", "wazuh_agent_version", version)
+
+	def _servers_given_wazuh_installs(self, batch_size=10_000):
+		with (
+			patch("press.press.doctype.server.server.WAZUH_INSTALL_BATCH_SIZE", batch_size),
+			patch.object(BaseServer, "install_wazuh_agent", autospec=True) as install_wazuh_agent,
+		):
+			install_missing_wazuh_agents()
+		return {call.args[0].name for call in install_wazuh_agent.call_args_list}
+
+	def test_wazuh_agent_installed_during_setup_when_manager_configured(self):
+		self._configure_wazuh()
 
 		for server in self._one_server_of_each_type():
 			with self.subTest(server_type=server.doctype):
@@ -619,9 +636,66 @@ class TestServer(FrappeTestCase):
 					server.install_wazuh_agent_if_configured()
 				install_wazuh_agent.assert_called_once()
 
+	def test_wazuh_agent_not_installed_during_setup_when_agent_version_unset(self):
+		self._configure_wazuh(version="")
+		server = create_test_server()
+		with patch.object(BaseServer, "install_wazuh_agent") as install_wazuh_agent:
+			server.install_wazuh_agent_if_configured()
+		install_wazuh_agent.assert_not_called()
+
+	def test_install_wazuh_agent_raises_when_agent_version_unset(self):
+		self._configure_wazuh(version="")
+		server = create_test_server()
+		with self.assertRaisesRegex(frappe.ValidationError, "Wazuh Agent Version"):
+			server.install_wazuh_agent()
+
+	def test_install_passes_pinned_wazuh_agent_version_to_playbook(self):
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._install_wazuh_agent("wazuh.example.com", "4.12.0-1")
+		self.assertEqual(Ansible.call_args.kwargs["variables"]["wazuh_agent_version"], "4.12.0-1")
+
+	def test_reconcile_installs_wazuh_agent_only_on_active_set_up_servers_without_it(self):
+		self._configure_wazuh()
+		missing = create_test_server()
+		missing.db_set("is_server_setup", 1)
+		installed = create_test_server()
+		installed.db_set({"is_server_setup": 1, "is_wazuh_agent_installed": 1})
+		not_set_up = create_test_server()
+		not_set_up.db_set("is_server_setup", 0)
+		broken = create_test_server()
+		broken.db_set({"is_server_setup": 1, "status": "Broken"})
+		self_hosted = create_test_server(is_self_hosted=True)
+		self_hosted.db_set("is_server_setup", 1)
+
+		installed_on = self._servers_given_wazuh_installs()
+
+		self.assertIn(missing.name, installed_on)
+		skipped = {installed.name, not_set_up.name, broken.name, self_hosted.name}
+		self.assertTrue(installed_on.isdisjoint(skipped), installed_on & skipped)
+
+	def test_reconcile_skips_wazuh_install_when_agent_version_unset(self):
+		self._configure_wazuh(version="")
+		create_test_server().db_set("is_server_setup", 1)
+		self.assertEqual(self._servers_given_wazuh_installs(), set())
+
+	def test_reconcile_installs_at_most_one_batch_of_wazuh_agents_per_run(self):
+		self._configure_wazuh()
+		for _ in range(2):
+			create_test_server().db_set("is_server_setup", 1)
+		self.assertEqual(len(self._servers_given_wazuh_installs(batch_size=1)), 1)
+
+	def test_every_wazuh_server_type_has_wazuh_agent_fields(self):
+		"""BaseServer.archive and the Wazuh jobs read these fields on every server type."""
+		for server_type in WAZUH_SERVER_TYPES:
+			with self.subTest(server_type=server_type):
+				meta = frappe.get_meta(server_type)
+				self.assertTrue(meta.has_field("is_wazuh_agent_installed"))
+				self.assertTrue(meta.has_field("wazuh_agent_status"))
+
 	def test_wazuh_agent_not_installed_during_setup_when_manager_unconfigured(self):
-		create_test_press_settings()
-		frappe.db.set_single_value("Press Settings", "wazuh_server", "")
+		self._configure_wazuh(server="")
 
 		for server in self._one_server_of_each_type():
 			with self.subTest(server_type=server.doctype):
@@ -634,7 +708,7 @@ class TestServer(FrappeTestCase):
 			with self.subTest(server_type=server.doctype):
 				with patch("press.press.doctype.server.server.Ansible") as Ansible:
 					Ansible.return_value.run.return_value = Mock(status="Success")
-					server._install_wazuh_agent("wazuh.example.com")
+					server._install_wazuh_agent("wazuh.example.com", "4.12.0-1")
 				server.reload()
 				self.assertTrue(server.is_wazuh_agent_installed)
 
@@ -695,6 +769,43 @@ class TestServer(FrappeTestCase):
 				server.is_auditd_setup = False
 				server.set_auditd_setup_from_base_playbook()
 				self.assertFalse(server.is_auditd_setup)
+
+	def test_backup_streaming_enabled_after_rclone_play_succeeds(self):
+		server = create_test_server()
+		self.assertFalse(server.stream_backups)
+
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server.enable_backup_streaming()
+
+		server.reload()
+		self.assertTrue(server.stream_backups)
+
+	def test_backup_streaming_stays_disabled_when_rclone_play_fails(self):
+		"""The agent rejects a streamed backup when rclone is missing."""
+		server = create_test_server()
+
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Failure")
+			server.enable_backup_streaming()
+
+		server.reload()
+		self.assertFalse(server.stream_backups)
+
+	def test_backup_streaming_stays_disabled_when_rclone_play_errors_out(self):
+		"""An unreachable server logs the failure instead of raising."""
+		server = create_test_server()
+
+		with (
+			patch("press.press.doctype.server.server.Ansible") as Ansible,
+			patch("press.press.doctype.server.server.log_error") as log_error,
+		):
+			Ansible.return_value.run.side_effect = Exception("Connection refused")
+			server.enable_backup_streaming()
+
+		log_error.assert_called_once()
+		server.reload()
+		self.assertFalse(server.stream_backups)
 
 	@patch.object(BaseServer, "_archive", new=Mock())
 	@patch.object(BaseServer, "disable_subscription", new=Mock())
@@ -779,7 +890,7 @@ class TestServer(FrappeTestCase):
 		settings = create_test_press_settings()
 		settings.wazuh_api_url = "https://wazuh.example.com:55000"
 		settings.wazuh_api_username = "user"
-		settings.wazuh_api_password = "pass"
+		settings.wazuh_api_password = "pass"  # pragma: allowlist secret
 		settings.wazuh_api_verify_tls = 0
 		settings.save()
 
@@ -801,7 +912,7 @@ class TestServer(FrappeTestCase):
 		settings = create_test_press_settings()
 		settings.wazuh_api_url = "https://wazuh.example.com:55000"
 		settings.wazuh_api_username = "user"
-		settings.wazuh_api_password = "pass"
+		settings.wazuh_api_password = "pass"  # pragma: allowlist secret
 		settings.wazuh_api_verify_tls = 0
 		settings.save()
 
@@ -848,3 +959,88 @@ class TestSSHCommand(FrappeTestCase):
 			server.get_ssh_command(),
 			f"ssh frappe@fc.dev -t 'ssh -J root@{proxy_server.name} ubuntu@{server.name} -p 2222'",
 		)
+
+
+@patch.object(BaseServer, "after_insert", new=Mock())
+class TestServerListSearch(FrappeTestCase):
+	"""The servers list must find a server by either of the labels it shows: title or name."""
+
+	def setUp(self):
+		self.team = create_test_press_admin_team()
+		self.server = create_test_server(team=self.team.name)
+		self.server.db_set("title", "Navi Mumbai Production")
+		self.other_server = create_test_server(team=self.team.name)
+		self.other_server.db_set("title", "Frankfurt Production")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def search(self, term: str) -> list[str]:
+		frappe.set_user(self.team.user)
+		before_request()  # puts the request-scoped team in place
+		return [row.name for row in get_list("Server", fields=["name"], filters={"_search": term})]
+
+	def test_part_of_the_title_finds_only_that_server(self):
+		self.assertEqual(self.search("navi mumbai"), [self.server.name])
+
+	def test_part_of_the_name_finds_only_that_server(self):
+		hostname = self.server.name.split(".")[0]
+
+		self.assertEqual(self.search(hostname), [self.server.name])
+
+	def test_a_server_without_a_title_is_still_found_by_its_name(self):
+		self.server.db_set("title", None)
+		hostname = self.server.name.split(".")[0]
+
+		self.assertEqual(self.search(hostname), [self.server.name])
+
+
+@patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
+@patch.object(BaseServer, "after_insert", new=Mock())
+class TestArchiveBenches(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_broken_bench_left_on_server_is_archived_instead_of_blocking_the_drop(self):
+		bench = create_test_bench()
+		bench.db_set("status", "Broken")
+		server = Server("Server", bench.server)
+
+		server.archive_benches()
+
+		self.assertEqual(frappe.db.get_value("Bench", bench.name, "status"), "Archived")
+
+	def test_ssh_user_of_archived_bench_is_removed_from_the_proxy(self):
+		bench = create_test_bench()
+		bench.db_set("is_ssh_proxy_setup", True)
+		server = Server("Server", bench.server)
+
+		with patch.object(Agent, "remove_ssh_user") as remove_ssh_user:
+			server.archive_benches()
+
+		self.assertEqual(remove_ssh_user.call_args.args[0].name, bench.name)
+
+	def test_bench_that_still_has_a_site_is_not_archived(self):
+		bench = create_test_bench()
+		create_test_site(bench=bench.name)
+		server = Server("Server", bench.server)
+
+		self.assertRaisesRegex(ArchiveBenchError, "unarchived sites", server.archive_benches)
+		self.assertEqual(frappe.db.get_value("Bench", bench.name, "status"), "Active")
+
+	def test_no_bench_is_archived_when_a_later_bench_still_has_a_site(self):
+		server = create_test_server()
+		empty_bench = create_test_bench(server=server.name)
+		bench_with_site = create_test_bench(server=server.name)
+		create_test_site(bench=bench_with_site.name)
+		# Benches are read in `modified desc` order, so pin the empty one first.
+		frappe.db.set_value("Bench", empty_bench.name, "modified", "2026-01-02", update_modified=False)
+		frappe.db.set_value("Bench", bench_with_site.name, "modified", "2026-01-01", update_modified=False)
+
+		self.assertRaisesRegex(
+			ArchiveBenchError, "unarchived sites", Server("Server", server.name).archive_benches
+		)
+
+		statuses = frappe.get_all("Bench", {"server": server.name}, pluck="status")
+		self.assertNotIn("Archived", statuses)

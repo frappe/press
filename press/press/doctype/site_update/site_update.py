@@ -44,6 +44,14 @@ LARGE_DATABASE_SIZE_MB = 100 * 1024
 # Well below LARGE_DATABASE_SIZE_MB above, which gates a different thing — read both.
 STATEMENT_TIME_BUMP_SIZE_MB = 2 * 1024
 
+# Where an update stops being harmless: after this the site is on the destination bench,
+# and the migration runs there. Everything before it, the backup included, leaves the site
+# untouched — if the backup fails, the job stops and never gets here.
+POINT_OF_NO_RETURN_STEP = "Move Site"
+
+# The scheduler falls back to this when the agent did not report a timezone yet.
+DEFAULT_SITE_TIMEZONE = "Asia/Kolkata"
+
 
 class SiteUpdate(Document):
 	# begin: auto-generated types
@@ -156,9 +164,7 @@ class SiteUpdate(Document):
 		self.validate_apps()
 		self.validate_pending_updates()
 		self.validate_past_failed_updates()
-		self.set_physical_backup_mode_if_eligible()
-		self.set_logical_replication_backup_mode_if_eligible()
-		self.validate_backup_type_for_large_database()
+		self.set_backup_type()
 
 	def validate_destination_bench(self, differences):
 		if not self.destination_bench:
@@ -216,6 +222,22 @@ class SiteUpdate(Document):
 	def use_logical_replication_backup(self):
 		return self.backup_type == "Logical Replication" and not self.skipped_backups
 
+	def should_mark_site_fatal(self) -> bool:
+		"""An update that failed before it moved the site left nothing for an operator to resolve.
+
+		A step gets a start time only when the agent runs it. Stale job cleanup overwrites the
+		status of steps that never ran, so the start time is the only reliable signal. A missing
+		step gets the site blocked. A move that started but failed also gets the site blocked:
+		the agent doesn't say how far it got, so we assume the worst.
+		"""
+		move_site = frappe.db.get_value(
+			"Agent Job Step",
+			{"agent_job": self.update_job, "step_name": POINT_OF_NO_RETURN_STEP},
+			"start",
+			as_dict=True,
+		)
+		return not move_site or bool(move_site.start)
+
 	def validate_past_failed_updates(self):
 		if getattr(self, "ignore_past_failures", False):
 			return
@@ -260,19 +282,32 @@ class SiteUpdate(Document):
 		database_server = frappe.get_value("Server", self.server, "database_server")
 		return database_server and frappe.get_value("Database Server", database_server, "provider")
 
+	def set_backup_type(self):
+		"""Only a Migrate update on an AWS database server takes a backup worth a choice.
+
+		A Pull update just moves the site to the new bench, and the agent takes no backup
+		for it. Physical and Logical Replication backups need AWS EBS snapshots.
+		"""
+		if self.skipped_backups or self.deploy_type != "Migrate":
+			return
+
+		# No provider also means no database server, as with a configured RDS server.
+		if self.database_server_provider != "AWS EC2":
+			return
+
+		self.set_physical_backup_mode_if_eligible()
+		self.set_logical_replication_backup_mode_if_eligible()
+		self.validate_backup_type_for_large_database()
+
 	def validate_backup_type_for_large_database(self):
 		"""A logical backup of a huge database takes too long and often fails mid-update.
 
 		Physical and Logical Replication backups don't take a full dump, so they're fine.
 		"""
-		if self.skipped_backups or self.backup_type in ("Physical", "Logical Replication"):
+		if self.backup_type in ("Physical", "Logical Replication"):
 			return
 
 		if self.database_size <= LARGE_DATABASE_SIZE_MB:
-			return
-
-		# Physical backup needs AWS EBS snapshots. Elsewhere support can't help either.
-		if self.database_server_provider != "AWS EC2":
 			return
 
 		frappe.throw(
@@ -281,32 +316,18 @@ class SiteUpdate(Document):
 			frappe.ValidationError,
 		)
 
-	def set_physical_backup_mode_if_eligible(self):  # noqa: C901
-		if self.skipped_backups:
-			return
-
-		if self.deploy_type != "Migrate":
-			return
-
+	def set_physical_backup_mode_if_eligible(self):
 		# Check if physical backup is disabled globally from Press Settings
 		if frappe.utils.cint(frappe.get_value("Press Settings", None, "disable_physical_backup")):
 			return
 
 		database_server = frappe.get_value("Server", self.server, "database_server")
-		if not database_server:
-			# It might be the case of configured RDS server and no self hosted database server
-			return
 
 		# Check if physical backup is enabled on the database server
 		enable_physical_backup = frappe.get_value(
 			"Database Server", database_server, "enable_physical_backup"
 		)
 		if not enable_physical_backup:
-			return
-
-		# Sanity check - Provider should be AWS EC2
-		provider = frappe.get_value("Database Server", database_server, "provider")
-		if provider != "AWS EC2":
 			return
 
 		# In case of ebs encryption don't proceed with physical backup
@@ -334,22 +355,6 @@ class SiteUpdate(Document):
 			self.backup_type = "Physical"
 
 	def set_logical_replication_backup_mode_if_eligible(self):
-		if self.skipped_backups:
-			return
-
-		if self.deploy_type != "Migrate":
-			return
-
-		database_server = frappe.get_value("Server", self.server, "database_server")
-		if not database_server:
-			# It might be the case of configured RDS server and no self hosted database server
-			return
-
-		# Sanity check - Provider should be AWS EC2
-		provider = frappe.get_value("Database Server", database_server, "provider")
-		if provider != "AWS EC2":
-			return
-
 		if not frappe.get_value("Server", self.server, "enable_logical_replication_during_site_update"):
 			return
 
@@ -1063,7 +1068,7 @@ def is_site_in_deploy_hours(site: Site):
 	if site.is_standby:
 		return True
 	server_time = datetime.now()
-	timezone = site.timezone or "Asia/Kolkata"
+	timezone = site.timezone or DEFAULT_SITE_TIMEZONE
 	site_timezone = pytz.timezone(timezone)
 	site_time = server_time.astimezone(site_timezone)
 	deploy_hours = frappe.get_hooks("deploy_hours")
@@ -1071,6 +1076,21 @@ def is_site_in_deploy_hours(site: Site):
 	if site_time.hour in deploy_hours:
 		return True
 	return False
+
+
+def get_deploy_hour_windows() -> list[list[int]]:
+	"""Group the `deploy_hours` hook into `[start_hour, end_hour]` windows.
+
+	The hours are hours of the day in the timezone of the site. An end hour of
+	24 is midnight. The dashboard shows these windows to the user.
+	"""
+	windows: list[list[int]] = []
+	for hour in sorted(set(frappe.get_hooks("deploy_hours"))):
+		if windows and windows[-1][1] == hour:
+			windows[-1][1] = hour + 1
+		else:
+			windows.append([hour, hour + 1])
+	return windows
 
 
 def process_physical_backup_restoration_status_update(name: str):
@@ -1233,47 +1253,6 @@ def process_update_site_job_update(job: AgentJob):
 			handle_failure(job, site_update)
 
 
-# Database errors a retry can recover from — the server dropping the connection, not a
-# genuine data/migration problem.
-TRANSIENT_DB_ERRORS = ["MySQL server has gone away", "Lost connection to MySQL server"]
-
-
-def failed_due_to_transient_db_error(job: "AgentJob") -> bool:
-	for error in TRANSIENT_DB_ERRORS:
-		if error in (job.output or "") or error in (job.traceback or ""):
-			return True
-		if frappe.db.exists("Agent Job Step", {"agent_job": job.name, "output": ("like", f"%{error}%")}):
-			return True
-	return False
-
-
-def restore_tables_after_failed_recovery(failed_job: "AgentJob", site_update_name: str) -> bool:
-	# Only a transient DB hiccup (e.g. the server dropping the connection mid-restore) is
-	# safely retryable; other failures need manual attention, so leave the site Fatal.
-	if not failed_due_to_transient_db_error(failed_job):
-		return False
-	site_update = frappe.get_doc("Site Update", site_update_name)
-	site = frappe.get_doc("Site", site_update.site)
-	# The restore only has one shot, so don't spend it on a database that is still down.
-	# ponytail: no wait-and-retry — if this proves too eager, poll before giving up.
-	database_server = frappe.get_doc("Database Server", site.database_server_name)
-	if not database_server.is_mariadb_up():
-		site_update.add_comment(
-			text="MariaDB was down after the failed recovery; skipped the automatic table restore."
-		)
-		return False
-	# The failed recovery already moved the site back, so re-running it would fail at the
-	# non-idempotent "Move Site"; just re-issue the leftover table restore (linked below).
-	restore_job = site.restore_tables()
-	site_update.add_comment(
-		text=(
-			f"Recover job <a href='/app/agent-job/{failed_job.name}'>{failed_job.name}</a> failed; "
-			f"triggered <a href='/app/agent-job/{restore_job}'>Restore Site Tables</a> to recover the site."
-		)
-	)
-	return True
-
-
 def process_update_site_recover_job_update(job: AgentJob):
 	updated_status = {
 		"Pending": "Recovering",
@@ -1302,17 +1281,9 @@ def process_update_site_recover_job_update(job: AgentJob):
 			site_update.restore_max_statement_time()
 		elif updated_status == "Fatal":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
-			frappe.db.set_value("Site", job.site, "fatal_site_update", site_update.name)
-			# Site is back on the source bench but its table restore failed; re-issue just that
-			# (it stays Fatal, cause resolved on success).
-			fallback_triggered = (
-				job.job_type == "Recover Failed Site Migrate"
-				and move_site_step_status == "Success"
-				and restore_tables_after_failed_recovery(job, site_update.name)
-			)
-			# The fallback restore needs the bumped timeout, so leave the revert to its callback.
-			if not fallback_triggered:
-				site_update.restore_max_statement_time()
+			if site_update.should_mark_site_fatal():
+				frappe.db.set_value("Site", job.site, "fatal_site_update", site_update.name)
+			site_update.restore_max_statement_time()
 
 
 def mark_stuck_updates_as_fatal():
