@@ -811,6 +811,12 @@ class Team(Document):
 
 		return unpaid_invoices
 
+	def has_unpaid_invoices(self):
+		"""Two or more unpaid subscription invoices blocks new sites and servers, matching the New Site and New Server forms."""
+		return (
+			frappe.db.count("Invoice", {"team": self.name, "status": "Unpaid", "type": "Subscription"}) >= 2
+		)
+
 	def create_stripe_customer(self):
 		if not self.stripe_customer_id:
 			stripe = get_stripe()
@@ -1307,6 +1313,14 @@ class Team(Document):
 			why = "You cannot create a new site as your account is disabled"
 			return (False, why)
 
+		if self.has_unpaid_invoices():
+			why = "Please settle your outstanding invoices to create new sites"
+			return (False, why)
+
+		if self.apply_limits and self.spending_limit <= self.total_subscribed_amount():
+			why = "You have exceeded your spending limit. Please contact support to increase your limits."
+			return (False, why)
+
 		if self.free_account or self.parent_team or self.billing_team:
 			return allow
 
@@ -1366,6 +1380,9 @@ class Team(Document):
 		"""
 		if not self.enabled:
 			frappe.throw("You cannot create a new server because your account is disabled")
+
+		if self.has_unpaid_invoices():
+			frappe.throw("Please settle your outstanding invoices to create a new server")
 
 		if not self.billing_address:
 			frappe.throw(
