@@ -161,6 +161,17 @@ class TestTeam(FrappeTestCase):
 		with self.assertRaisesRegex(frappe.ValidationError, "Please settle your outstanding invoices"):
 			team.validate_can_create_server()
 
+	def test_can_create_site_blocks_team_that_has_exceeded_its_spending_limit(self):
+		team = create_test_team()
+		team.db_set({"apply_limits": 1, "spending_limit": 100})
+		with patch.object(Team, "total_subscribed_amount", return_value=100):
+			allow, why = team.can_create_site()
+
+		self.assertFalse(allow)
+		self.assertEqual(
+			why, "You have exceeded your spending limit. Please contact support to increase your limits."
+		)
+
 	def test_total_subscribed_amount_skips_legacy_subscriptions_with_null_plan_fields(self):
 		team = create_test_team()
 		plan = frappe.get_doc(
