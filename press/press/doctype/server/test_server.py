@@ -27,8 +27,10 @@ from press.press.doctype.press_settings.test_press_settings import (
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.server import (
+	WAZUH_SERVER_TYPES,
 	BaseServer,
 	Server,
+	install_missing_wazuh_agents,
 	process_cleanup_unused_files_job_update,
 	sync_wazuh_agent_status,
 )
@@ -612,9 +614,21 @@ class TestServer(FrappeTestCase):
 			create_test_proxy_server(),
 		]
 
-	def test_wazuh_agent_installed_during_setup_when_manager_configured(self):
+	def _configure_wazuh(self, server="wazuh.example.com", version="4.12.0-1"):
 		create_test_press_settings()
-		frappe.db.set_single_value("Press Settings", "wazuh_server", "wazuh.example.com")
+		frappe.db.set_single_value("Press Settings", "wazuh_server", server)
+		frappe.db.set_single_value("Press Settings", "wazuh_agent_version", version)
+
+	def _servers_given_wazuh_installs(self, batch_size=10_000):
+		with (
+			patch("press.press.doctype.server.server.WAZUH_INSTALL_BATCH_SIZE", batch_size),
+			patch.object(BaseServer, "install_wazuh_agent", autospec=True) as install_wazuh_agent,
+		):
+			install_missing_wazuh_agents()
+		return {call.args[0].name for call in install_wazuh_agent.call_args_list}
+
+	def test_wazuh_agent_installed_during_setup_when_manager_configured(self):
+		self._configure_wazuh()
 
 		for server in self._one_server_of_each_type():
 			with self.subTest(server_type=server.doctype):
@@ -622,9 +636,66 @@ class TestServer(FrappeTestCase):
 					server.install_wazuh_agent_if_configured()
 				install_wazuh_agent.assert_called_once()
 
+	def test_wazuh_agent_not_installed_during_setup_when_agent_version_unset(self):
+		self._configure_wazuh(version="")
+		server = create_test_server()
+		with patch.object(BaseServer, "install_wazuh_agent") as install_wazuh_agent:
+			server.install_wazuh_agent_if_configured()
+		install_wazuh_agent.assert_not_called()
+
+	def test_install_wazuh_agent_raises_when_agent_version_unset(self):
+		self._configure_wazuh(version="")
+		server = create_test_server()
+		with self.assertRaisesRegex(frappe.ValidationError, "Wazuh Agent Version"):
+			server.install_wazuh_agent()
+
+	def test_install_passes_pinned_wazuh_agent_version_to_playbook(self):
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._install_wazuh_agent("wazuh.example.com", "4.12.0-1")
+		self.assertEqual(Ansible.call_args.kwargs["variables"]["wazuh_agent_version"], "4.12.0-1")
+
+	def test_reconcile_installs_wazuh_agent_only_on_active_set_up_servers_without_it(self):
+		self._configure_wazuh()
+		missing = create_test_server()
+		missing.db_set("is_server_setup", 1)
+		installed = create_test_server()
+		installed.db_set({"is_server_setup": 1, "is_wazuh_agent_installed": 1})
+		not_set_up = create_test_server()
+		not_set_up.db_set("is_server_setup", 0)
+		broken = create_test_server()
+		broken.db_set({"is_server_setup": 1, "status": "Broken"})
+		self_hosted = create_test_server(is_self_hosted=True)
+		self_hosted.db_set("is_server_setup", 1)
+
+		installed_on = self._servers_given_wazuh_installs()
+
+		self.assertIn(missing.name, installed_on)
+		skipped = {installed.name, not_set_up.name, broken.name, self_hosted.name}
+		self.assertTrue(installed_on.isdisjoint(skipped), installed_on & skipped)
+
+	def test_reconcile_skips_wazuh_install_when_agent_version_unset(self):
+		self._configure_wazuh(version="")
+		create_test_server().db_set("is_server_setup", 1)
+		self.assertEqual(self._servers_given_wazuh_installs(), set())
+
+	def test_reconcile_installs_at_most_one_batch_of_wazuh_agents_per_run(self):
+		self._configure_wazuh()
+		for _ in range(2):
+			create_test_server().db_set("is_server_setup", 1)
+		self.assertEqual(len(self._servers_given_wazuh_installs(batch_size=1)), 1)
+
+	def test_every_wazuh_server_type_has_wazuh_agent_fields(self):
+		"""BaseServer.archive and the Wazuh jobs read these fields on every server type."""
+		for server_type in WAZUH_SERVER_TYPES:
+			with self.subTest(server_type=server_type):
+				meta = frappe.get_meta(server_type)
+				self.assertTrue(meta.has_field("is_wazuh_agent_installed"))
+				self.assertTrue(meta.has_field("wazuh_agent_status"))
+
 	def test_wazuh_agent_not_installed_during_setup_when_manager_unconfigured(self):
-		create_test_press_settings()
-		frappe.db.set_single_value("Press Settings", "wazuh_server", "")
+		self._configure_wazuh(server="")
 
 		for server in self._one_server_of_each_type():
 			with self.subTest(server_type=server.doctype):
@@ -637,7 +708,7 @@ class TestServer(FrappeTestCase):
 			with self.subTest(server_type=server.doctype):
 				with patch("press.press.doctype.server.server.Ansible") as Ansible:
 					Ansible.return_value.run.return_value = Mock(status="Success")
-					server._install_wazuh_agent("wazuh.example.com")
+					server._install_wazuh_agent("wazuh.example.com", "4.12.0-1")
 				server.reload()
 				self.assertTrue(server.is_wazuh_agent_installed)
 
