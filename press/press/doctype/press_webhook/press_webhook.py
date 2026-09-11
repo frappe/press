@@ -17,7 +17,7 @@ from frappe.query_builder.functions import Count, Sum
 from press.api.client import dashboard_whitelist
 from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.utils import docs, is_valid_hostname
+from press.utils import docs, is_valid_hostname, ssrf
 
 
 class PressWebhook(Document):
@@ -117,7 +117,7 @@ class PressWebhook(Document):
 		response_status_code = 0
 		payload = {"event": "Webhook Validate", "data": {}}
 		try:
-			req = requests.post(
+			req = ssrf.post(
 				self.endpoint,
 				timeout=5,
 				json=payload,
@@ -125,6 +125,8 @@ class PressWebhook(Document):
 			)
 			response = req.text or ""
 			response_status_code = req.status_code
+		except ssrf.SSRFError as e:
+			response = str(e)
 		except requests.exceptions.ConnectionError:
 			response = "Failed to connect to the webhook endpoint"
 		except requests.exceptions.SSLError:
