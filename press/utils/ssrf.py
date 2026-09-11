@@ -61,6 +61,12 @@ def _is_public(ip: str) -> bool:
 	return address.is_global
 
 
+def _authority(host: str, port: int | None) -> str:
+	"""Format host and port as a URL authority, bracketing an IPv6 literal."""
+	host = f"[{host}]" if ":" in host else host
+	return f"{host}:{port}" if port else host
+
+
 class _PinnedIPAdapter(HTTPAdapter):
 	"""Connect to a pre-validated IP while keeping the Host header and the TLS
 	certificate check bound to the original hostname, so the name cannot resolve
@@ -75,10 +81,10 @@ class _PinnedIPAdapter(HTTPAdapter):
 	def send(self, request, **kwargs):
 		parts = urlsplit(request.url)
 		self.is_https = parts.scheme == "https"
-		request.headers["Host"] = parts.netloc
-		host = f"[{self.ip}]" if ":" in self.ip else self.ip
-		netloc = f"{host}:{parts.port}" if parts.port else host
-		request.url = urlunsplit(parts._replace(netloc=netloc))
+		# Build both authorities from host and port only. parts.netloc can carry
+		# userinfo (user:password@host), which must not leak into the Host header.
+		request.headers["Host"] = _authority(parts.hostname, parts.port)
+		request.url = urlunsplit(parts._replace(netloc=_authority(self.ip, parts.port)))
 		return super().send(request, **kwargs)
 
 	def get_connection_with_tls_context(self, request, verify, proxies=None, cert=None):
