@@ -722,12 +722,17 @@ class TestServer(FrappeTestCase):
 		self.assertFalse(server.stream_backups)
 
 	def test_backup_streaming_stays_disabled_when_rclone_play_errors_out(self):
+		"""An unreachable server logs the failure instead of raising."""
 		server = create_test_server()
 
-		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+		with (
+			patch("press.press.doctype.server.server.Ansible") as Ansible,
+			patch("press.press.doctype.server.server.log_error") as log_error,
+		):
 			Ansible.return_value.run.side_effect = Exception("Connection refused")
 			server.enable_backup_streaming()
 
+		log_error.assert_called_once()
 		server.reload()
 		self.assertFalse(server.stream_backups)
 
