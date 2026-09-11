@@ -7,6 +7,7 @@ import contextlib
 import datetime
 import ipaddress
 import json
+import random
 import shlex
 import typing
 from contextlib import suppress
@@ -4565,10 +4566,12 @@ def is_wazuh_configured() -> bool:
 
 
 def install_missing_wazuh_agents():
-	"""Install the Wazuh agent on a batch of active servers that do not have it."""
+	"""Install the Wazuh agent on a random batch of active servers that do not have it."""
 	if not is_wazuh_configured():
 		return
-	for server_type, name in servers_missing_wazuh_agent()[:WAZUH_INSTALL_BATCH_SIZE]:
+	# Random, so servers whose install keeps failing cannot take every batch
+	servers = servers_missing_wazuh_agent()
+	for server_type, name in random.sample(servers, min(len(servers), WAZUH_INSTALL_BATCH_SIZE)):
 		frappe.get_doc(server_type, name).install_wazuh_agent()
 
 
