@@ -1317,6 +1317,10 @@ class Team(Document):
 			why = "Please settle your outstanding invoices to create new sites"
 			return (False, why)
 
+		if self.apply_limits and self.spending_limit <= self.total_subscribed_amount():
+			why = "You have exceeded your spending limit. Please contact support to increase your limits."
+			return (False, why)
+
 		if self.free_account or self.parent_team or self.billing_team:
 			return allow
 
