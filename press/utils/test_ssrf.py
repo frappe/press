@@ -4,6 +4,7 @@
 import socket
 from unittest.mock import patch
 
+import requests
 from frappe.tests.utils import FrappeTestCase
 
 from press.utils import ssrf
@@ -71,3 +72,26 @@ class TestSSRF(FrappeTestCase):
 	def test_post_to_url_without_host_is_rejected(self):
 		with self.assertRaisesRegex(ssrf.SSRFError, "no host"):
 			ssrf.post("/latest/meta-data/", timeout=5)
+
+	def test_basic_auth_url_keeps_credentials_out_of_host_header(self):
+		# user:password@host must land in the Authorization header, never in Host,
+		# and the request must still be pinned to the resolved IP.
+		captured = {}
+
+		def capture(self, request, **kwargs):
+			captured["host"] = request.headers.get("Host")
+			captured["authorization"] = request.headers.get("Authorization")
+			captured["url"] = request.url
+			response = requests.Response()
+			response.status_code = 200
+			return response
+
+		with (
+			patch("press.utils.ssrf.socket.getaddrinfo", return_value=resolve_to("93.184.216.34")),
+			patch("requests.adapters.HTTPAdapter.send", capture),
+		):
+			ssrf.post("http://user:password@example.com:8080/hook", timeout=5)  # pragma: allowlist secret
+
+		self.assertEqual(captured["host"], "example.com:8080")
+		self.assertTrue(captured["authorization"].startswith("Basic "))
+		self.assertTrue(captured["url"].startswith("http://93.184.216.34:8080/"))
