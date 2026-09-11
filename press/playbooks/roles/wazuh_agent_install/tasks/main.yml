@@ -39,25 +39,27 @@
   apt:
     update_cache: yes
 
-# A held package blocks the install when the pinned version changes.
-- name: Unhold Agent
-  command: apt-mark unhold wazuh-agent
-  changed_when: false
+- name: Install Pinned Agent
+  block:
+    # A held package blocks the install when the pinned version changes.
+    - name: Unhold Agent
+      command: apt-mark unhold wazuh-agent
+      changed_when: false
 
-- name: Install Agent
-  apt:
-    name: "wazuh-agent={{ wazuh_agent_version }}"
-    state: present
-    force: yes
-  environment:
-    WAZUH_MANAGER: "{{ wazuh_manager }}"
-    WAZUH_AGENT_NAME: "{{ wazuh_agent_name }}"
-
-# Stop apt upgrade from moving the agent ahead of the manager.
-- name: Hold Agent
-  dpkg_selections:
-    name: wazuh-agent
-    selection: hold
+    - name: Install Agent
+      apt:
+        name: "wazuh-agent={{ wazuh_agent_version }}"
+        state: present
+        force: yes
+      environment:
+        WAZUH_MANAGER: "{{ wazuh_manager }}"
+        WAZUH_AGENT_NAME: "{{ wazuh_agent_name }}"
+  always:
+    # Stop apt upgrade from moving the agent ahead of the manager, even after a failed install.
+    - name: Hold Agent
+      dpkg_selections:
+        name: wazuh-agent
+        selection: hold
 
 - name: Enable and Start Agent
   service:
