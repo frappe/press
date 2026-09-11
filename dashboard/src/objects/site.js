@@ -1217,6 +1217,7 @@ export default {
 					},
 					condition() {
 						return (
+							!canRestoreTables(site) &&
 							!site.doc?.has_scheduled_updates &&
 							site.doc.update_information?.update_available &&
 							['Active', 'Inactive', 'Suspended', 'Broken'].includes(
