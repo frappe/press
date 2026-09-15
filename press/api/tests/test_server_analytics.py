@@ -16,6 +16,7 @@ from press.api.analytics import (
 	auto_timespan_timegrain,
 	get_rate_interval,
 	get_rounded_boundary,
+	prometheus_timegrain,
 )
 
 
@@ -45,6 +46,28 @@ class TestAutoTimespanTimegrain(FrappeTestCase):
 		start = datetime(2024, 1, 1, 1, 0, 0)
 		with self.assertRaises(ValueError):
 			auto_timespan_timegrain(start, start - timedelta(hours=1))
+
+
+class TestPrometheusTimegrain(FrappeTestCase):
+	def test_step_never_goes_below_the_scrape_interval(self):
+		# 500 points over an hour would be a 10s step, but node_exporter only
+		# has a sample every 60s, so a finer step just repeats each value.
+		start = datetime(2024, 1, 1, 13, 0, 0)
+		self.assertEqual(prometheus_timegrain(start, start + timedelta(hours=1)), PROMETHEUS_SCRAPE_INTERVAL)
+
+	def test_fifteen_days_gets_an_hourly_step_not_eight_hours(self):
+		# 60 points gave an 8h step and an 8h rate window, which flattened every
+		# spike that Grafana's node exporter dashboard shows for the same range.
+		start = datetime(2024, 1, 1, 0, 0, 0)
+		self.assertEqual(prometheus_timegrain(start, start + timedelta(days=15)), 3600)
+
+	def test_step_keeps_the_range_under_the_prometheus_point_cap(self):
+		# Prometheus refuses range queries with more than 11000 points per series.
+		start = datetime(2024, 1, 1, 0, 0, 0)
+		for days in (1, 7, 15, 30, 90):
+			end = start + timedelta(days=days)
+			timegrain = prometheus_timegrain(start, end)
+			self.assertLessEqual((end - start).total_seconds() / timegrain, 11000, f"{days}d")
 
 
 class TestRateInterval(FrappeTestCase):
