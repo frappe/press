@@ -1061,6 +1061,21 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 			"The refused restore must not have created a second job",
 		)
 
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(
+		Site, "ping", new=Mock(return_value=Mock(status_code=200, json=lambda: {"message": "pong"}))
+	)
+	def test_restore_tables_is_rejected_when_site_responds_to_ping(self):
+		# The user may have activated the site by hand. A restore would overwrite the
+		# data they entered since.
+		site = self._broken_site_with_fatal_update()
+
+		self.assertRaisesRegex(frappe.ValidationError, "may already be active", site.restore_tables)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"The refused restore must not have created a job",
+		)
+
 	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=None))
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_force_restore_tables_skips_the_checks_for_a_system_user(self):
