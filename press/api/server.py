@@ -19,6 +19,7 @@ from press.api.analytics import (
 	get_rate_interval,
 	get_rounded_boundaries,
 	get_rounded_boundary,
+	prometheus_timegrain,
 )
 from press.api.bench import all as all_benches
 from press.api.site import protected
@@ -454,7 +455,7 @@ def analytics(name, query, timezone, start, end, server_type=None):
 	mount_point = get_mount_point(name, server_type)
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
-	_, timegrain = auto_timespan_timegrain(start, end)
+	timegrain = prometheus_timegrain(start, end)
 	# Window for rate()/increase() must span several scrapes, otherwise the charts
 	# spike to zero on steps where the rate window saw fewer than two samples.
 	rate_interval = get_rate_interval(timegrain)

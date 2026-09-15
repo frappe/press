@@ -178,6 +178,18 @@ def auto_timespan_timegrain(start: datetime, end: datetime, target_points: int =
 PROMETHEUS_SCRAPE_INTERVAL: Final[int] = 60
 
 
+def prometheus_timegrain(start: datetime, end: datetime, max_points: int = 500) -> int:
+	"""Step for a Prometheus range query, computed the way Grafana does.
+
+	Grafana sizes the step by the panel width in pixels (one point per pixel)
+	and never goes below the scrape interval. With only 60 points a 15 day
+	range gets an 8 hour step, and the rate() window that follows the step
+	averages every spike away. 500 points is about the width of a chart card.
+	"""
+	_, timegrain = auto_timespan_timegrain(start, end, max_points)
+	return max(timegrain, PROMETHEUS_SCRAPE_INTERVAL)
+
+
 def get_rate_interval(timegrain: int, scrape_interval: int = PROMETHEUS_SCRAPE_INTERVAL) -> int:
 	"""Lookback window to use inside rate()/increase() for range queries.
 
