@@ -3,10 +3,9 @@
 
 frappe.ui.form.on('Agent Job', {
 	refresh: function (frm) {
-		frm.add_web_link(
-			`https://${frm.doc.server}/agent/jobs/${frm.doc.job_id}`,
-			__('Visit Agent Endpoint'),
-		);
+		frm
+			.call('get_agent_endpoint')
+			.then((r) => frm.add_web_link(r.message, __('Visit Agent Endpoint')));
 		frm.add_web_link(
 			frm.doc.site
 				? `/dashboard/sites/${frm.doc.site}/insights/jobs/${frm.doc.name}`

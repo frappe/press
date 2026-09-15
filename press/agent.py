@@ -936,7 +936,7 @@ class Agent:
 		return self.request("DELETE", path, data, raises=raises)
 
 	def _make_req(self, method, path, data, files, agent_job_id):
-		url = self._get_request_url(path)
+		url = self.get_request_url(path)
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
 
@@ -1039,7 +1039,7 @@ class Agent:
 			frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
 
 	def raw_request(self, method, path, data=None, raises=True, timeout=None):
-		url = self._get_request_url(path)
+		url = self.get_request_url(path)
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}"}
 		timeout = timeout or (10, 30)
@@ -1049,7 +1049,7 @@ class Agent:
 			response.raise_for_status()
 		return json_response
 
-	def _get_request_url(self, path):
+	def get_request_url(self, path):
 		if self.server_type in ("Server", "Database Server"):
 			proxy = None
 			server_ip, server_private_ip, server_cluster = frappe.db.get_value(
