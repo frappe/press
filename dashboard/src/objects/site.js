@@ -1295,7 +1295,8 @@ export default {
 						prefix: icon('external-link'),
 					},
 					condition: () =>
-						site.doc.status !== 'Archived' && site.doc?.setup_wizard_complete,
+						site.doc.status === 'Broken' ||
+						(site.doc.status !== 'Archived' && site.doc?.setup_wizard_complete),
 					onClick() {
 						let siteURL = `https://${site.name}`
 						if (
