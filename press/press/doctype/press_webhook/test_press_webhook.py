@@ -1,6 +1,7 @@
 # Copyright (c) 2024, Frappe and Contributors
 # See license.txt
 
+import socket
 from unittest.mock import patch
 
 import frappe
@@ -16,7 +17,7 @@ def create_test_webhook(team: str, endpoint: str) -> "frappe.model.document.Docu
 			"doctype": "Press Webhook",
 			"team": team,
 			"endpoint": endpoint,
-			"secret": "test-secret",
+			"secret": "test-secret",  # pragma: allowlist secret
 			"enabled": 1,
 			"events": [{"event": "Site Status Update"}],
 		}
@@ -74,6 +75,19 @@ class TestPressWebhook(FrappeTestCase):
 			1,
 			"A single transient failure on a low-volume webhook should not auto-disable it",
 		)
+
+	def test_validate_endpoint_refuses_host_resolving_to_internal_address(self):
+		# A hostname passes the format check but resolves to the cloud metadata IP.
+		# The request must be refused instead of proxied, and no response leaked back.
+		team = create_test_press_admin_team()
+		webhook = create_test_webhook(team.name, "https://metadata.attacker.com/hook")
+
+		addresses = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("169.254.169.254", 0))]
+		with patch("press.utils.ssrf.socket.getaddrinfo", return_value=addresses):
+			result = webhook.validate_endpoint()
+
+		self.assertFalse(result.success)
+		self.assertIn("private or internal address", result.response)
 
 	@patch("frappe.sendmail")
 	def test_majority_failed_attempts_disables_high_volume_webhook(self, mock_sendmail):

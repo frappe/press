@@ -29,6 +29,7 @@ import {
 	nextTick,
 	onBeforeUnmount,
 } from 'vue'
+import { useRouter } from 'vue-router'
 import { confirmDialog, renderDialog } from '@/utils/components'
 import { getTeam } from '@/data/team'
 
@@ -36,6 +37,7 @@ import { secsToDuration, date, duration, sanitizeHtml } from '@/utils/format'
 
 const team = getTeam()
 const socket = window.$socket
+const router = useRouter()
 
 interface Props {
 	deployview: boolean
@@ -435,6 +437,48 @@ const stopPipeline = () => {
 		},
 	})
 }
+
+const isCacheFailure = computed(
+	() => builds.value[activeBuildId.value]?.doc?.is_cache_failure,
+)
+
+const redeployWithoutCache = () => {
+	const deploy = builds.value[activeBuildId.value]?.doc
+
+	confirmDialog({
+		title: 'Redeploy Without Cache',
+		message: `
+				This deploy failed due to a build cache issue.<br><br>
+				<div class="text-bg-base bg-surface-gray-2 p-2 rounded-md">
+				This will start a <strong>fresh build with the Docker build cache disabled</strong>,
+				which can take significantly longer than a cached build.
+				</div>
+				`,
+		primaryAction: {
+			label: 'Redeploy Without Cache',
+			variant: 'solid',
+			theme: 'red',
+			onClick({ hide }) {
+				createResource({
+					url: 'press.api.bench.redeploy',
+					params: { name: props.name, dc_name: deploy.name, no_cache: true },
+				})
+					.fetch()
+					.then((newBuild) => {
+						hide()
+						router.push({
+							name: 'Deploy Candidate',
+							params: { id: newBuild, name: props.name },
+						})
+					})
+					.catch(() => {
+						hide()
+						toast.error('Unable to redeploy without cache')
+					})
+			},
+		},
+	})
+}
 </script>
 
 <template>
@@ -486,6 +530,14 @@ const stopPipeline = () => {
 				theme="red"
 			>
 				Stop Deploy
+			</Button>
+
+			<Button
+				@click="redeployWithoutCache"
+				v-if="!deployview && pipeline?.doc?.status === 'Failure' && isCacheFailure"
+				theme="red"
+			>
+				Redeploy Without Cache
 			</Button>
 
 			<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">

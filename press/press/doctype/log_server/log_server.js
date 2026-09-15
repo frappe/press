@@ -3,7 +3,7 @@
 
 frappe.ui.form.on('Log Server', {
 	refresh: function (frm) {
-		[
+		;[
 			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
 			[__('Ping Ansible'), 'ping_ansible', true],
 			[__('Ping Ansible Unprepared'), 'ping_ansible_unprepared', true],
@@ -25,6 +25,18 @@ frappe.ui.form.on('Log Server', {
 				frm.doc.is_server_setup,
 			],
 			[__('Update TLS Certificate'), 'update_tls_certificate', true],
+			[
+				__('Install Wazuh Agent'),
+				'install_wazuh_agent',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Uninstall Wazuh Agent'),
+				'uninstall_wazuh_agent',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -36,25 +48,25 @@ frappe.ui.form.on('Log Server', {
 								() =>
 									frm.call(method).then((r) => {
 										if (r.message) {
-											frappe.msgprint(r.message);
+											frappe.msgprint(r.message)
 										} else {
-											frm.refresh();
+											frm.refresh()
 										}
 									}),
-							);
+							)
 						} else {
 							frm.call(method).then((r) => {
 								if (r.message) {
-									frappe.msgprint(r.message);
+									frappe.msgprint(r.message)
 								} else {
-									frm.refresh();
+									frm.refresh()
 								}
-							});
+							})
 						}
 					},
 					__('Actions'),
-				);
+				)
 			}
-		});
+		})
 	},
-});
+})

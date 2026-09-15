@@ -29,6 +29,7 @@ class AnalyticsServer(BaseServer):
 		hostname: DF.Data
 		ip: DF.Data
 		is_server_setup: DF.Check
+		is_wazuh_agent_installed: DF.Check
 		monitoring_password: DF.Password | None
 		plausible_mail_login: DF.Data | None
 		plausible_mail_password: DF.Password | None
@@ -43,6 +44,7 @@ class AnalyticsServer(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
+		wazuh_agent_status: DF.Data | None
 	# end: auto-generated types
 
 	def validate(self):

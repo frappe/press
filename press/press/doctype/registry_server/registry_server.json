@@ -14,6 +14,8 @@
 		"provider",
 		"virtual_machine",
 		"is_server_setup",
+		"is_wazuh_agent_installed",
+		"wazuh_agent_status",
 		"is_mirror",
 		"networking_section",
 		"ip",
@@ -70,6 +72,19 @@
 			"options": "Root Domain",
 			"read_only": 1,
 			"set_only_once": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_wazuh_agent_installed",
+			"fieldtype": "Check",
+			"label": "Is Wazuh Agent Installed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "wazuh_agent_status",
+			"fieldtype": "Data",
+			"label": "Wazuh Agent Status",
+			"read_only": 1
 		},
 		{
 			"default": "0",
@@ -248,7 +263,7 @@
 		}
 	],
 	"links": [{ "link_doctype": "Ansible Play", "link_fieldname": "server" }],
-	"modified": "2025-11-22 15:50:08.907789",
+	"modified": "2026-09-11 13:26:41.047658",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Registry Server",

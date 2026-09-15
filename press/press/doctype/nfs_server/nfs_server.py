@@ -29,6 +29,7 @@ class NFSServer(BaseServer):
 		ip: DF.Data
 		is_server_prepared: DF.Check
 		is_server_setup: DF.Check
+		is_wazuh_agent_installed: DF.Check
 		monitoring_password: DF.Password | None
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
@@ -40,6 +41,7 @@ class NFSServer(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
+		wazuh_agent_status: DF.Data | None
 	# end: auto-generated types
 
 	def validate(self):

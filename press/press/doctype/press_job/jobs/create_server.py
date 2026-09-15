@@ -50,6 +50,10 @@ class CreateServerJob(PressJob):
 		# wazuh, ...) - they'd still be running when the reboot lands
 		self.set_docker_mtu_hetzner()
 
+		# Before set_additional_config, so provisioning waits for rclone instead of
+		# racing the apt plays that step enqueues
+		self.enable_backup_streaming()
+
 		self.set_additional_config()
 
 		if self.is_fs_server:
@@ -293,6 +297,13 @@ class CreateServerJob(PressJob):
 			return
 
 		self.server_doc.start_replication()
+
+	@task(queue="long", timeout=1200)
+	def enable_backup_streaming(self):
+		if self.server_type != "Server":
+			return
+
+		self.server_doc.enable_backup_streaming()
 
 	@task
 	def set_additional_config(self):

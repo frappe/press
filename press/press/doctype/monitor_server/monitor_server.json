@@ -15,6 +15,8 @@
 		"provider",
 		"virtual_machine",
 		"is_server_setup",
+		"is_wazuh_agent_installed",
+		"wazuh_agent_status",
 		"networking_section",
 		"ip",
 		"column_break_9",
@@ -81,6 +83,19 @@
 			"label": "Provider",
 			"options": "Generic\nScaleway\nAWS EC2\nOCI",
 			"set_only_once": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_wazuh_agent_installed",
+			"fieldtype": "Check",
+			"label": "Is Wazuh Agent Installed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "wazuh_agent_status",
+			"fieldtype": "Data",
+			"label": "Wazuh Agent Status",
+			"read_only": 1
 		},
 		{
 			"default": "0",
@@ -279,7 +294,7 @@
 			"link_fieldname": "server"
 		}
 	],
-	"modified": "2026-06-19 12:16:29.159355",
+	"modified": "2026-09-11 13:26:41.047658",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Monitor Server",

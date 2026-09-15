@@ -3,7 +3,7 @@
 
 frappe.ui.form.on('NFS Server', {
 	refresh(frm) {
-		[
+		;[
 			[
 				__('Prepare Server'),
 				'prepare_server',
@@ -11,6 +11,18 @@ frappe.ui.form.on('NFS Server', {
 				!frm.doc.is_server_prepared,
 			],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
+			[
+				__('Install Wazuh Agent'),
+				'install_wazuh_agent',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Uninstall Wazuh Agent'),
+				'uninstall_wazuh_agent',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -22,26 +34,26 @@ frappe.ui.form.on('NFS Server', {
 								() =>
 									frm.call(method).then((r) => {
 										if (r.message) {
-											frappe.msgprint(r.message);
+											frappe.msgprint(r.message)
 										} else {
-											frm.refresh();
+											frm.refresh()
 										}
 									}),
-							);
+							)
 						} else {
 							frm.call(method).then((r) => {
 								if (r.message) {
-									frappe.msgprint(r.message);
+									frappe.msgprint(r.message)
 								} else {
-									frm.refresh();
+									frm.refresh()
 								}
-							});
+							})
 						}
 					},
 					__('Actions'),
-				);
+				)
 			}
-		});
+		})
 		if (frm.doc.status === 'Active') {
 			frm.add_custom_button('Add Mount Enabled Server', () => {
 				frappe.prompt(
@@ -60,11 +72,11 @@ frappe.ui.form.on('NFS Server', {
 								server: server,
 							})
 							.then((r) => {
-								frm.refresh();
-							});
+								frm.refresh()
+							})
 					},
-				);
-			});
+				)
+			})
 
 			frm.add_custom_button('Remove Mount Enabled Server', () => {
 				frappe.prompt(
@@ -83,11 +95,11 @@ frappe.ui.form.on('NFS Server', {
 								server: server,
 							})
 							.then((r) => {
-								frm.refresh();
-							});
+								frm.refresh()
+							})
 					},
-				);
-			});
+				)
+			})
 		}
 	},
-});
+})
