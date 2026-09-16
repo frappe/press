@@ -557,6 +557,17 @@ class TestSite(FrappeTestCase):
 		with patch.object(Server, "free_space", new=Mock(return_value=0)):
 			self.assertRaises(InsufficientSpaceOnServer, site.restore_site)
 
+	@patch.object(BaseServer, "guess_data_disk_mountpoint", new=Mock(return_value="/"))
+	@patch.object(BaseServer, "calculated_increase_disk_size")
+	def test_disk_increase_passes_shortfall_as_positive_whole_gb(self, mock_increase_disk_size: Mock):
+		site = create_test_site()
+		server = frappe.get_doc("Server", site.server)
+		server.public = True
+		gb = 1024 * 1024 * 1024
+		with patch.object(BaseServer, "free_space", new=Mock(return_value=10 * gb)):
+			site.check_and_increase_disk(server, int(13.2 * gb))
+		mock_increase_disk_size.assert_called_once_with(mountpoint="/", additional=4)
+
 	def test_user_cannot_disable_auto_update_if_site_in_public_release_group(self):
 		rg = create_test_release_group([create_test_app()], public=True)
 		bench = create_test_bench(group=rg)
