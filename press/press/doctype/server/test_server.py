@@ -686,6 +686,49 @@ class TestServer(FrappeTestCase):
 			create_test_server().db_set("is_server_setup", 1)
 		self.assertEqual(len(self._servers_given_wazuh_installs(batch_size=1)), 1)
 
+	def test_reconcile_retries_servers_the_wazuh_manager_has_never_seen(self):
+		"""A play can succeed without the agent enrolling. The flag alone must not excuse a server."""
+		self._configure_wazuh()
+		never_connected = create_test_server()
+		never_connected.db_set(
+			{
+				"is_server_setup": 1,
+				"is_wazuh_agent_installed": 1,
+				"wazuh_agent_status": "never_connected",
+			}
+		)
+		connected = create_test_server()
+		connected.db_set(
+			{"is_server_setup": 1, "is_wazuh_agent_installed": 1, "wazuh_agent_status": "active"}
+		)
+
+		installed_on = self._servers_given_wazuh_installs()
+
+		self.assertIn(never_connected.name, installed_on)
+		self.assertNotIn(connected.name, installed_on)
+
+	def test_reconcile_installs_rest_of_batch_when_one_server_cannot_be_enqueued(self):
+		"""One overloaded queue or broken server must not cost the other servers their turn."""
+		self._configure_wazuh()
+		servers = [create_test_server() for _ in range(3)]
+		for server in servers:
+			server.db_set("is_server_setup", 1)
+		failing = servers[0].name
+
+		def install(self):
+			if self.name == failing:
+				raise frappe.QueueOverloaded("Too many queued background jobs")
+
+		with (
+			patch.object(BaseServer, "install_wazuh_agent", autospec=True, side_effect=install) as called,
+			patch("press.press.doctype.server.server.log_error") as log_error,
+		):
+			install_missing_wazuh_agents()
+
+		attempted = {call.args[0].name for call in called.call_args_list}
+		self.assertEqual(attempted, {server.name for server in servers})
+		log_error.assert_called_once()
+
 	def test_every_wazuh_server_type_has_wazuh_agent_fields(self):
 		"""BaseServer.archive and the Wazuh jobs read these fields on every server type."""
 		for server_type in WAZUH_SERVER_TYPES:
@@ -712,6 +755,19 @@ class TestServer(FrappeTestCase):
 				server.reload()
 				self.assertTrue(server.is_wazuh_agent_installed)
 
+	def test_install_marks_wazuh_agent_installed_even_when_the_server_fails_validation(self):
+		"""A save() here would let an unrelated validation error hide a successful play."""
+		server = create_test_server()
+		# Any full save of this server now raises "Please select Managed Database Service"
+		server.db_set("is_managed_database", 1)
+
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._install_wazuh_agent("wazuh.example.com", "4.12.0-1")
+
+		server.reload()
+		self.assertTrue(server.is_wazuh_agent_installed)
+
 	def test_uninstall_clears_wazuh_agent_installed_flag_and_status(self):
 		for server in self._one_server_of_each_type():
 			with self.subTest(server_type=server.doctype):
@@ -724,7 +780,7 @@ class TestServer(FrappeTestCase):
 				self.assertFalse(server.is_wazuh_agent_installed)
 				self.assertIsNone(server.wazuh_agent_status)
 
-	def test_uninstall_reloads_before_save_to_preserve_concurrent_writes(self):
+	def test_uninstall_does_not_clobber_writes_made_during_the_play(self):
 		"""The long play window must not clobber edits made concurrently (e.g. archival)."""
 		server = create_test_server()
 		server.db_set("is_wazuh_agent_installed", True)
