@@ -686,8 +686,25 @@ class TestServer(FrappeTestCase):
 			create_test_server().db_set("is_server_setup", 1)
 		self.assertEqual(len(self._servers_given_wazuh_installs(batch_size=1)), 1)
 
-	def test_reconcile_retries_servers_the_wazuh_manager_has_never_seen(self):
-		"""A play can succeed without the agent enrolling. The flag alone must not excuse a server."""
+	def test_reconcile_retries_servers_the_wazuh_manager_has_no_record_of(self):
+		"""A play can succeed without the agent registering. The flag alone must not excuse a server."""
+		self._configure_wazuh()
+		unregistered = create_test_server()
+		unregistered.db_set(
+			{"is_server_setup": 1, "is_wazuh_agent_installed": 1, "wazuh_agent_status": "unknown"}
+		)
+		connected = create_test_server()
+		connected.db_set(
+			{"is_server_setup": 1, "is_wazuh_agent_installed": 1, "wazuh_agent_status": "active"}
+		)
+
+		installed_on = self._servers_given_wazuh_installs()
+
+		self.assertIn(unregistered.name, installed_on)
+		self.assertNotIn(connected.name, installed_on)
+
+	def test_reconcile_leaves_registered_but_unreachable_wazuh_agents_alone(self):
+		"""A re-install cannot repair a registered agent that cannot reach the manager."""
 		self._configure_wazuh()
 		never_connected = create_test_server()
 		never_connected.db_set(
@@ -697,15 +714,20 @@ class TestServer(FrappeTestCase):
 				"wazuh_agent_status": "never_connected",
 			}
 		)
-		connected = create_test_server()
-		connected.db_set(
-			{"is_server_setup": 1, "is_wazuh_agent_installed": 1, "wazuh_agent_status": "active"}
-		)
+		self.assertNotIn(never_connected.name, self._servers_given_wazuh_installs())
 
-		installed_on = self._servers_given_wazuh_installs()
-
-		self.assertIn(never_connected.name, installed_on)
-		self.assertNotIn(connected.name, installed_on)
+	def test_install_forces_enrollment_only_when_the_manager_has_no_record_of_the_agent(self):
+		"""A stale key on disk would otherwise make the repair play skip agent-auth."""
+		for status, forced in (("unknown", True), ("never_connected", False), (None, False)):
+			with self.subTest(wazuh_agent_status=status):
+				server = create_test_server()
+				server.db_set("wazuh_agent_status", status)
+				server.reload()
+				with patch("press.press.doctype.server.server.Ansible") as Ansible:
+					Ansible.return_value.run.return_value = Mock(status="Success")
+					server._install_wazuh_agent("wazuh.example.com", "4.12.0-1")
+				variables = Ansible.call_args.kwargs["variables"]
+				self.assertEqual(variables["wazuh_force_enrollment"], forced)
 
 	def test_reconcile_installs_rest_of_batch_when_one_server_cannot_be_enqueued(self):
 		"""One overloaded queue or broken server must not cost the other servers their turn."""

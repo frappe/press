@@ -62,7 +62,8 @@
         selection: hold
 
 # apt is a no-op when the pinned version is already installed, so the postinst never re-reads
-# WAZUH_MANAGER. Register with the manager explicitly when the agent holds no key.
+# WAZUH_MANAGER. Register explicitly when the agent holds no key, or when Press says the manager
+# has dropped it and the key on disk is stale.
 - name: Check Enrollment
   stat:
     path: /var/ossec/etc/client.keys
@@ -70,7 +71,10 @@
 
 - name: Enroll Agent
   command: /var/ossec/bin/agent-auth -m {{ wazuh_manager }} -A {{ wazuh_agent_name }}
-  when: not wazuh_client_keys.stat.exists or wazuh_client_keys.stat.size == 0
+  when: >
+    wazuh_force_enrollment | default(false) | bool
+    or not wazuh_client_keys.stat.exists
+    or wazuh_client_keys.stat.size == 0
   notify: restart wazuh-agent
 
 - name: Enable and Start Agent
