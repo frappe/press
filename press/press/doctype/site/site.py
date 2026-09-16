@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import math
 from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime, timedelta
@@ -1223,8 +1224,9 @@ class Site(Document, TagHelpers):
 
 	def try_increasing_disk(self, server: "BaseServer", mountpoint: str, diff: int, err_msg: str):
 		try:
+			diff = abs(diff)
 			server.calculated_increase_disk_size(
-				mountpoint=mountpoint, additional=cint(diff / 1024 / 1024 // 1024)
+				mountpoint=mountpoint, additional=math.ceil(diff / 1024 / 1024 / 1024)
 			)
 		except VolumeResizeLimitError:
 			frappe.throw(
