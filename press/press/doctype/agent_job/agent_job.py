@@ -293,6 +293,10 @@ class AgentJob(Document):
 		frappe.db.commit()
 
 	@frappe.whitelist()
+	def get_agent_endpoint(self):
+		return Agent(self.server, server_type=self.server_type).get_request_url(f"jobs/{self.job_id}")
+
+	@frappe.whitelist()
 	def get_status(self):
 		agent = Agent(self.server, server_type=self.server_type)
 
