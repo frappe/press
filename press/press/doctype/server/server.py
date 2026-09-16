@@ -961,10 +961,9 @@ class BaseServer(Document, TagHelpers):
 				},
 			)
 			play = ansible.run()
-			self.reload()
 			if play.status == "Success":
-				self.is_wazuh_agent_installed = True
-				self.save()
+				# Not save(), so an unrelated validation error cannot hide a successful play
+				frappe.db.set_value(self.doctype, self.name, "is_wazuh_agent_installed", True)
 		except Exception:
 			log_error("Wazuh Agent Install Exception", server=self.as_dict())
 
@@ -989,11 +988,12 @@ class BaseServer(Document, TagHelpers):
 				port=self._ssh_port(),
 			)
 			play = ansible.run()
-			self.reload()
 			if play.status == "Success":
-				self.is_wazuh_agent_installed = False
-				self.wazuh_agent_status = None
-				self.save()
+				frappe.db.set_value(
+					self.doctype,
+					self.name,
+					{"is_wazuh_agent_installed": False, "wazuh_agent_status": None},
+				)
 		except Exception:
 			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())
 
@@ -4556,6 +4556,8 @@ WAZUH_SERVER_TYPES = (
 	"NFS Server",
 )
 WAZUH_INSTALL_BATCH_SIZE = 20
+# The manager has never seen an agent in one of these states, so the install did not enroll it
+UNENROLLED_WAZUH_AGENT_STATUSES = ("never_connected", "unknown")
 
 
 def is_wazuh_configured() -> bool:
@@ -4566,22 +4568,32 @@ def is_wazuh_configured() -> bool:
 
 
 def install_missing_wazuh_agents():
-	"""Install the Wazuh agent on a random batch of active servers that do not have it."""
+	"""Install the Wazuh agent on a random batch of active servers that do not have a working one."""
 	if not is_wazuh_configured():
 		return
 	# Random, so servers whose install keeps failing cannot take every batch
-	servers = servers_missing_wazuh_agent()
+	servers = servers_needing_wazuh_agent()
 	for server_type, name in random.sample(servers, min(len(servers), WAZUH_INSTALL_BATCH_SIZE)):
-		frappe.get_doc(server_type, name).install_wazuh_agent()
+		try:
+			frappe.get_doc(server_type, name).install_wazuh_agent()
+		except Exception:
+			# A full queue or one broken server must not take the rest of the batch with it
+			log_error("Wazuh Agent Enqueue Exception", server_type=server_type, server=name)
 
 
-def servers_missing_wazuh_agent() -> list[tuple[str, str]]:
+def servers_needing_wazuh_agent() -> list[tuple[str, str]]:
+	"""Active servers with no agent, and those the manager has never seen despite the flag."""
+	or_filters = {
+		"is_wazuh_agent_installed": 0,
+		"wazuh_agent_status": ("in", UNENROLLED_WAZUH_AGENT_STATUSES),
+	}
 	servers = []
 	for server_type in WAZUH_SERVER_TYPES:
-		filters = {"status": "Active", "is_server_setup": 1, "is_wazuh_agent_installed": 0}
+		filters = {"status": "Active", "is_server_setup": 1}
 		if frappe.get_meta(server_type).has_field("is_self_hosted"):
 			filters["is_self_hosted"] = 0
-		servers += [(server_type, name) for name in frappe.get_all(server_type, filters, pluck="name")]
+		names = frappe.get_all(server_type, filters, or_filters=or_filters, pluck="name")
+		servers += [(server_type, name) for name in names]
 	return servers
 
 
