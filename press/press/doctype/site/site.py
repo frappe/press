@@ -1451,6 +1451,14 @@ class Site(Document, TagHelpers):
 		database_server = frappe.get_doc("Database Server", self.database_server_name)
 		if not database_server.is_mariadb_up():
 			frappe.throw("The database server is not up. Wait for it to come back, then try again.")
+		# A site that answers is out of maintenance mode. Someone activated it by hand,
+		# and a restore now would overwrite the data they have entered since.
+		if self.is_responsive():
+			frappe.throw(
+				"This site responds to requests, so it may already be active. A table "
+				"restore would overwrite its current data. If the site is still broken, "
+				"contact support."
+			)
 
 	@property
 	def database_size(self) -> int:
