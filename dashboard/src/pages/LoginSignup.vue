@@ -163,6 +163,12 @@
 									variant="outline"
 									required
 								/>
+								<p
+									v-if="emailHasCapitalLetters"
+									class="mt-2 text-sm text-yellow-700"
+								>
+									The email you entered has capital letters
+								</p>
 								<!-- OAuth Authentication -->
 								<template v-if="isOauthLogin && !usePassword">
 									<Button class="mt-4" variant="solid" type="submit">
@@ -913,6 +919,9 @@ export default {
 		},
 		emailDomain() {
 			return this.email?.includes('@') ? this.email?.split('@').pop() : '';
+		},
+		emailHasCapitalLetters() {
+			return /[A-Z]/.test(this.email || '');
 		},
 		isOauthLogin() {
 			return (
