@@ -162,3 +162,28 @@ test('shows the empty state when the CPU chart has no data', async ({
 	// The empty CPU card surfaces the no-data message rather than a 0-line chart.
 	await expect(cpuCard(page).getByText('No usage yet')).toBeVisible()
 })
+
+test('draws the CPU chart series with 1px lines', async ({ page }) => {
+	await mockServerDoc(page)
+	await mockAnalytics(page, { cpu: cpuData() })
+
+	await gotoAnalytics(page)
+
+	const chart = cpuCard(page).locator('.chart svg')
+	await expect(chart).toBeVisible({ timeout: 15000 })
+
+	// The series lines are the stroked, unfilled paths. echarts drops the
+	// stroke-width attribute when it is the SVG default of 1, so read the
+	// computed value. The echarts default line width is 2 — we want 1.
+	const strokeWidths = () =>
+		chart
+			.locator('path[fill="none"][stroke]')
+			.evaluateAll((paths) =>
+				paths.map((p) => parseFloat(getComputedStyle(p).strokeWidth)),
+			)
+	// One path per CPU mode (8) plus grid lines -> at least the 8 series.
+	await expect
+		.poll(async () => (await strokeWidths()).length, { timeout: 15000 })
+		.toBeGreaterThanOrEqual(8)
+	expect(Math.max(...(await strokeWidths()))).toBe(1)
+})
