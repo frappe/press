@@ -958,6 +958,8 @@ class BaseServer(Document, TagHelpers):
 					"wazuh_manager": wazuh_server,
 					"wazuh_agent_name": self.name,
 					"wazuh_agent_version": wazuh_agent_version,
+					# Re-register even if a stale key is left over, the manager has dropped us
+					"wazuh_force_enrollment": self.wazuh_agent_status == UNREGISTERED_WAZUH_AGENT_STATUS,
 				},
 			)
 			play = ansible.run()
@@ -4556,8 +4558,9 @@ WAZUH_SERVER_TYPES = (
 	"NFS Server",
 )
 WAZUH_INSTALL_BATCH_SIZE = 20
-# The manager has never seen an agent in one of these states, so the install did not enroll it
-UNENROLLED_WAZUH_AGENT_STATUSES = ("never_connected", "unknown")
+# The manager holds no record of the agent, so the install never registered it. A "never_connected"
+# agent is registered and simply cannot reach the manager, which no re-install repairs.
+UNREGISTERED_WAZUH_AGENT_STATUS = "unknown"
 
 
 def is_wazuh_configured() -> bool:
@@ -4582,10 +4585,10 @@ def install_missing_wazuh_agents():
 
 
 def servers_needing_wazuh_agent() -> list[tuple[str, str]]:
-	"""Active servers with no agent, and those the manager has never seen despite the flag."""
+	"""Active servers with no agent, and those the manager has no record of despite the flag."""
 	or_filters = {
 		"is_wazuh_agent_installed": 0,
-		"wazuh_agent_status": ("in", UNENROLLED_WAZUH_AGENT_STATUSES),
+		"wazuh_agent_status": UNREGISTERED_WAZUH_AGENT_STATUS,
 	}
 	servers = []
 	for server_type in WAZUH_SERVER_TYPES:
