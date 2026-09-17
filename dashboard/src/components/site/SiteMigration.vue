@@ -459,7 +459,10 @@ export default {
 		showSpaceCleanupHelp() {
 			// Shown before the retry, not only after it fails. Only for dedicated
 			// servers — shared servers auto-extend and lack these actions.
-			return this.isDedicatedServerMove && this.hasRecentFailedMigration
+			return (
+				this.isDedicatedServerMove &&
+				this.recentFailedMigrationServers.includes(this.cleanupTargetServer)
+			)
 		},
 		isDedicatedServerMove() {
 			if (
@@ -508,8 +511,8 @@ export default {
 				}))
 				.filter((e) => !this.migrationOptions[e.value].hidden)
 		},
-		hasRecentFailedMigration() {
-			return this.migrationOptions?.has_recent_failed_migration ?? false
+		recentFailedMigrationServers() {
+			return this.migrationOptions?.recent_failed_migration_servers ?? []
 		},
 		selectedMigrationChoiceDetails() {
 			return this.migrationOptions[this.selectedMigrationMode]
