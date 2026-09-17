@@ -68,6 +68,7 @@ async function mockServer(
 	page: Page,
 	provider: string,
 	isUnifiedServer: 0 | 1,
+	rootDiskSize: number = currentPlan.disk,
 ) {
 	await page.route(
 		/\/api\/method\/press\.api\.client\.get\b/,
@@ -94,6 +95,7 @@ async function mockServer(
 					message: {
 						plans: [currentPlan, sameDiskPlan, biggerDiskPlan],
 						types: planTypes,
+						current_root_disk_size: rootDiskSize,
 					},
 				}),
 			})
@@ -207,6 +209,22 @@ test('asks for a disk upgrade when the plan has a bigger disk', async ({
 	expect(await changePlan).toMatchObject({
 		plan: biggerDiskPlan.name,
 		upgrade_disk: true,
+	})
+})
+
+test('measures a disk upgrade against the machine, not against its plan', async ({
+	page,
+}) => {
+	// The volume was expanded on its own, so the machine has more disk than its plan
+	await mockServer(page, 'Hetzner', 1, 320)
+	const changePlan = captureChangePlan(page)
+
+	await openPlanDialog(page)
+	await selectPlan(page, biggerDiskPlan.instance_type)
+
+	expect(await changePlan).toMatchObject({
+		plan: biggerDiskPlan.name,
+		upgrade_disk: false,
 	})
 })
 

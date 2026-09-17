@@ -222,6 +222,7 @@ export default {
 				initialData: {
 					plans: [],
 					types: {},
+					current_root_disk_size: null,
 				},
 			}
 		},
@@ -301,10 +302,18 @@ export default {
 				this.cpu_and_memory_only_resize = value
 			},
 		},
+		currentDiskSize() {
+			// The machine's root disk, which is what the resize grows from. It can differ
+			// from the plan's disk when the volume was expanded on its own.
+			return (
+				this.$resources.serverPlansdata?.data?.current_root_disk_size ??
+				this.$server?.doc?.current_plan?.disk
+			)
+		},
 		upgradesDisk() {
 			// A plan with the same disk has nothing to upgrade, and the resize rejects the request
 			if (this.cpuAndMemoryOnlyResize) return false
-			return this.plan?.disk > this.$server?.doc?.current_plan?.disk
+			return this.plan?.disk > this.currentDiskSize
 		},
 		serverPlans() {
 			return this.$resources.serverPlansdata?.data?.plans || []
