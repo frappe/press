@@ -17,6 +17,7 @@
 		"is_server_setup",
 		"is_wazuh_agent_installed",
 		"wazuh_agent_status",
+		"wazuh_install_last_attempt",
 		"networking_section",
 		"ip",
 		"column_break_9",
@@ -73,6 +74,12 @@
 			"fieldname": "wazuh_agent_status",
 			"fieldtype": "Data",
 			"label": "Wazuh Agent Status",
+			"read_only": 1
+		},
+		{
+			"fieldname": "wazuh_install_last_attempt",
+			"fieldtype": "Datetime",
+			"label": "Wazuh Install Last Attempt",
 			"read_only": 1
 		},
 		{
@@ -216,7 +223,7 @@
 		{ "link_doctype": "NFS Volume Attachment", "link_fieldname": "nfs_server" },
 		{ "link_doctype": "NFS Volume Detachment", "link_fieldname": "nfs_server" }
 	],
-	"modified": "2026-09-11 13:26:41.047658",
+	"modified": "2026-09-17 14:45:12.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "NFS Server",

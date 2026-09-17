@@ -32,6 +32,7 @@ from press.press.doctype.server.server import (
 	Server,
 	install_missing_wazuh_agents,
 	process_cleanup_unused_files_job_update,
+	servers_needing_wazuh_agent,
 	sync_wazuh_agent_status,
 )
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
@@ -758,6 +759,42 @@ class TestServer(FrappeTestCase):
 				meta = frappe.get_meta(server_type)
 				self.assertTrue(meta.has_field("is_wazuh_agent_installed"))
 				self.assertTrue(meta.has_field("wazuh_agent_status"))
+				self.assertTrue(meta.has_field("wazuh_install_last_attempt"))
+
+	def test_reconcile_offers_the_longest_waiting_servers_first(self):
+		"""Round robin. A server that keeps failing must not outrank one never tried.
+
+		The waiting order must hold across server types too, not just within one, so the
+		"Server" at the head of WAZUH_SERVER_TYPES is the one attempted most recently.
+		"""
+		self._configure_wazuh()
+		# Created newest-attempt first, so creation order cannot pass for wait order
+		recent = create_test_server()
+		recent.db_set({"is_server_setup": 1, "wazuh_install_last_attempt": "2026-09-17 12:00:00"})
+		stale = create_test_server()
+		stale.db_set({"is_server_setup": 1, "wazuh_install_last_attempt": "2026-09-10 12:00:00"})
+		never = create_test_database_server()
+		never.db_set("is_server_setup", 1)
+
+		with patch("press.press.doctype.server.server.WAZUH_INSTALL_BATCH_SIZE", 10_000):
+			order = [name for _, name in servers_needing_wazuh_agent()]
+
+		self.assertLess(order.index(never.name), order.index(stale.name))
+		self.assertLess(order.index(stale.name), order.index(recent.name))
+
+	def test_install_records_the_attempt_even_when_the_enqueue_fails(self):
+		"""An unqueueable server must still yield its turn, or it blocks the head of the queue."""
+		self._configure_wazuh()
+		server = create_test_server()
+
+		with (
+			patch("frappe.enqueue_doc", side_effect=frappe.QueueOverloaded),
+			self.assertRaises(frappe.QueueOverloaded),
+		):
+			server.install_wazuh_agent()
+
+		server.reload()
+		self.assertIsNotNone(server.wazuh_install_last_attempt)
 
 	def test_wazuh_agent_not_installed_during_setup_when_manager_unconfigured(self):
 		self._configure_wazuh(server="")
