@@ -122,11 +122,25 @@ def verify_otp(account_request: str, otp: str) -> str:
 	return account_request_doc.ensure_request_key()
 
 
+def canonical_login_email(email: str) -> str:
+	"""The address as signup stored it: stripped and lowercased.
+
+	Signup writes `email.strip().lower()`, so the login path must derive the same
+	form or the OTP, keyed by the raw email, lands under a key the verify step
+	never reads. Guest callers can send any JSON type, so reject a non-string
+	before normalising rather than raising AttributeError on `.strip()`.
+	"""
+	if not email or not isinstance(email, str):
+		frappe.throw(_("Invalid Email"))
+	return email.strip().lower()
+
+
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
 def verify_otp_and_login(email: str, otp: str):
 	from frappe.auth import get_login_attempt_tracker
 
+	email = canonical_login_email(email)
 	ip_tracker = get_login_attempt_tracker(frappe.local.request_ip)
 	code = OneTimePassword(otp_purpose.LOGIN, email)
 
@@ -161,6 +175,7 @@ def resend_otp(account_request: str):
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60)
 def send_otp(email: str, for_2fa_keys: bool = False):
+	email = canonical_login_email(email)
 	# Logging in asks whether the account exists, not how it came to. Requiring an
 	# Account Request locked out everyone whose signup record was never written or
 	# had since been cleaned up.
