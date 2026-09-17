@@ -34,7 +34,8 @@ class ResizeServerJob(PressJob):
 		self.start_agent_jobs()
 		self.set_additional_config()
 		self.increase_disk_size()
-		self.restore_truncated_configs()
+		# TODO: Enable after a manual trial with the button on Server
+		# self.restore_truncated_configs()
 
 	@task
 	def halt_agent_jobs(self):

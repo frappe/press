@@ -1028,6 +1028,10 @@ class BaseServer(Document, TagHelpers):
 			log_error("Server Ping Exception", server=self.as_dict())
 			return None
 
+	@frappe.whitelist()
+	def restore_truncated_configs_ansible(self):
+		frappe.enqueue_doc(self.doctype, self.name, "restore_truncated_configs", queue="long", timeout=1200)
+
 	def restore_truncated_configs(self, wait_for_reboot: bool = False) -> AnsiblePlay:
 		"""Restore the config files that a truncated write left unreadable."""
 		ansible = Ansible(
@@ -2020,14 +2024,15 @@ class BaseServer(Document, TagHelpers):
 		console.save()
 		console.reload()
 		console.run_sysrq()
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"restore_truncated_configs",
-			wait_for_reboot=True,
-			queue="long",
-			timeout=1200,
-		)
+		# TODO: Enable after a manual trial with the button on Server
+		# frappe.enqueue_doc(
+		# self.doctype,
+		# self.name,
+		# "restore_truncated_configs",
+		# wait_for_reboot=True,
+		# queue="long",
+		# timeout=1200,
+		# )
 
 	@dashboard_whitelist()
 	def reboot(self):
@@ -2041,14 +2046,15 @@ class BaseServer(Document, TagHelpers):
 			raise NotImplementedError
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.reboot()
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"restore_truncated_configs",
-			wait_for_reboot=True,
-			queue="long",
-			timeout=1200,
-		)
+		# TODO: Enable after a manual trial with the button on Server
+		# frappe.enqueue_doc(
+		# self.doctype,
+		# self.name,
+		# "restore_truncated_configs",
+		# wait_for_reboot=True,
+		# queue="long",
+		# timeout=1200,
+		# )
 
 	@dashboard_whitelist()
 	def rename(self, title):

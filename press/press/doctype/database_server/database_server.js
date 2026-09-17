@@ -45,6 +45,13 @@ frappe.ui.form.on('Database Server', {
 				__('Agent'),
 			],
 			[
+				__('Restore Truncated Configs'),
+				'restore_truncated_configs_ansible',
+				true,
+				frm.doc.is_server_setup,
+				__('Actions'),
+			],
+			[
 				__('Install Wazuh Agent'),
 				'install_wazuh_agent',
 				true,

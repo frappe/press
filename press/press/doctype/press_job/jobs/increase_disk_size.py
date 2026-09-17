@@ -20,7 +20,8 @@ class IncreaseDiskSizeJob(PressJob):
 			self.wait_for_server_to_be_accessible_oci()
 			self.add_glass_file_oci()
 
-		self.restore_truncated_configs()
+		# TODO: Enable after a manual trial with the button on Server
+		# self.restore_truncated_configs()
 
 		if self.server_type == "Server":
 			self.restart_active_benches()
