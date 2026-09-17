@@ -19,7 +19,6 @@
 - name: Find Config Backups
   find:
     paths:
-      - /home/frappe/agent
       - /home/frappe/benches
     patterns:
       - config.json.bak
