@@ -53,6 +53,7 @@
 		<AddPrepaidCreditsDialog
 			v-if="showAddPrepaidCreditsDialog"
 			v-model="showAddPrepaidCreditsDialog"
+			:unpaidAmount="unpaidAmount.data"
 			@success="
 				() => {
 					upcomingInvoice.reload();
