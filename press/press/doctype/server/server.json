@@ -22,6 +22,7 @@
 		"is_server_setup",
 		"is_wazuh_agent_installed",
 		"wazuh_agent_status",
+		"wazuh_install_last_attempt",
 		"is_auditd_setup",
 		"is_server_prepared",
 		"is_server_renamed",
@@ -170,6 +171,12 @@
 			"fieldname": "wazuh_agent_status",
 			"fieldtype": "Data",
 			"label": "Wazuh Agent Status",
+			"read_only": 1
+		},
+		{
+			"fieldname": "wazuh_install_last_attempt",
+			"fieldtype": "Datetime",
+			"label": "Wazuh Install Last Attempt",
 			"read_only": 1
 		},
 		{
@@ -852,7 +859,7 @@
 			"link_fieldname": "app_server"
 		}
 	],
-	"modified": "2026-08-13 12:00:00.000000",
+	"modified": "2026-09-17 14:45:12.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Server",

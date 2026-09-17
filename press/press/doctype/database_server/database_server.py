@@ -155,6 +155,7 @@ class DatabaseServer(BaseServer):
 		uploaded_binlogs_retention_days: DF.Int
 		virtual_machine: DF.Link | None
 		wazuh_agent_status: DF.Data | None
+		wazuh_install_last_attempt: DF.Datetime | None
 	# end: auto-generated types
 
 	"""
