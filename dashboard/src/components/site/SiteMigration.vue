@@ -492,7 +492,11 @@ export default {
 		},
 		migrationChoices() {
 			return Object.keys(this.migrationOptions)
-				.filter((e) => typeof this.migrationOptions[e] === 'object' && this.migrationOptions[e]  != null)
+				.filter(
+					(e) =>
+						typeof this.migrationOptions[e] === 'object' &&
+						this.migrationOptions[e] != null,
+				)
 				.map((e) => ({
 					label: e,
 					value: e,
@@ -550,12 +554,12 @@ export default {
 		},
 		customDomainWarning() {
 			if (!this.selectedMigrationChoiceOptions?.has_domain_with_a_record)
-				return '';
+				return ''
 			const region = this.availableRegionsToMoveSiteTo.find(
 				(e) => e.name === this.selectedRegion,
-			);
-			if (!region?.inbound_ip) return '';
-			return `This site has custom domains pointing to an A record. After the migration, update them to <strong>${region.inbound_ip}</strong>, or switch them to a CNAME record pointing to <strong>${this.site}</strong>. Until then those domains will not resolve. <a href="https://docs.frappe.io/cloud/sites/custom-domains" target="_blank" class="underline">Read more</a>`;
+			)
+			if (!region?.inbound_ip) return ''
+			return `This site has custom domains pointing to an A record. After the migration, update them to <strong>${region.inbound_ip}</strong>, or switch them to a CNAME record pointing to <strong>${this.site}</strong>. Until then those domains will not resolve. <a href="https://docs.frappe.io/cloud/sites/custom-domains" target="_blank" class="underline">Read more</a>`
 		},
 		warningMessage() {
 			return {
