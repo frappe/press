@@ -226,6 +226,7 @@ const options = ref({
 			},
 			lineStyle: {
 				color: chartTheme.value[i],
+				width: 1,
 			},
 			itemStyle: {
 				color: chartTheme.value[i],
