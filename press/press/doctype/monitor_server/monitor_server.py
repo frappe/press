@@ -69,6 +69,7 @@ class MonitorServer(BaseServer):
 		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
 		wazuh_agent_status: DF.Data | None
+		wazuh_install_last_attempt: DF.Datetime | None
 		webhook_token: DF.Data | None
 	# end: auto-generated types
 

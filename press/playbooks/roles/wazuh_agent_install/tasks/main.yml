@@ -44,6 +44,10 @@
     -o Dir::Etc::sourcelist=sources.list.d/wazuh.list
     -o Dir::Etc::sourceparts=-
     -o APT::Get::List-Cleanup=0
+  register: wazuh_repository_update
+  until: wazuh_repository_update.rc == 0
+  retries: 5
+  delay: 10
   changed_when: false
 
 - name: Install Pinned Agent
