@@ -39,7 +39,17 @@ const migrationOptionsMock = {
 			allow_scheduling: false,
 			button_label: 'Move Site',
 			options: {
-				available_release_groups: [],
+				available_release_groups: [
+					{
+						name: 'bench-existing',
+						title: 'Private Bench',
+						public: 0,
+						servers: [
+							{ name: SERVER_NAME, title: 'My Server', public: 0 },
+							{ name: 'f2-mumbai.fc.frappe.dev', title: 'Shared', public: 1 },
+						],
+					},
+				],
 				dedicated_servers_for_new_release_group: [
 					{ name: SERVER_NAME, title: 'My Server' },
 				],
@@ -134,7 +144,7 @@ test('shows cleanup-actions banner when a server-move migration retry fails for 
 
 	// Banner explains the failed attempt and offers add-storage + the cleanup actions
 	await expect(
-		dialog.getByText('The previous migration used up some storage'),
+		dialog.getByText('A recent migration failed and may have left files'),
 	).toBeVisible({ timeout: 10000 })
 	await expect(
 		dialog.getByRole('link', { name: 'Add more storage' }),
@@ -163,6 +173,7 @@ test('shows cleanup-actions banner when a server-move migration retry fails for 
 		page.waitForEvent('popup'),
 		dialog.getByRole('button', { name: 'Cleanup Server' }).click(),
 	])
+	await cleanupTab.waitForLoadState()
 	const cleanupUrl = new URL(cleanupTab.url())
 	expect(cleanupUrl.pathname).toContain(`/servers/${SERVER_NAME}/actions`)
 	expect(cleanupUrl.searchParams.get('action')).toBe('Cleanup Server')
@@ -172,6 +183,7 @@ test('shows cleanup-actions banner when a server-move migration retry fails for 
 		page.waitForEvent('popup'),
 		dialog.getByRole('button', { name: 'Forcefully Purge Binlogs' }).click(),
 	])
+	await purgeTab.waitForLoadState()
 	const purgeUrl = new URL(purgeTab.url())
 	expect(purgeUrl.pathname).toContain(`/servers/${SERVER_NAME}/actions`)
 	expect(purgeUrl.searchParams.get('action')).toBe('Forcefully Purge Binlogs')
@@ -180,5 +192,57 @@ test('shows cleanup-actions banner when a server-move migration retry fails for 
 	// Optional hold so the banner can be eyeballed during a headed demo run
 	if (process.env.PLAYWRIGHT_BANNER_PAUSE) {
 		await page.waitForTimeout(Number(process.env.PLAYWRIGHT_BANNER_PAUSE))
+	}
+})
+
+test('shows cleanup-actions banner before the retry when moving to a dedicated server on an existing bench', async ({
+	page,
+}) => {
+	await mockSite(page)
+	await page.route(
+		/\/api\/method\/press\.api\.client\.run_doc_method/,
+		async (route) => {
+			if (docMethod(route) === 'get_migration_options') {
+				await route.fulfill({
+					status: 200,
+					contentType: 'application/json',
+					body: JSON.stringify(migrationOptionsMock),
+				})
+			} else {
+				await route.continue()
+			}
+		},
+	)
+
+	await page.goto(`/dashboard/sites/${SITE_NAME}/migrations`)
+	const dialog = page.getByRole('dialog', { name: 'Migrate Site' })
+	const comboboxes = dialog.getByRole('combobox')
+	const banner = dialog.getByText(
+		'A recent migration failed and may have left files',
+	)
+	await page.getByRole('button', { name: 'Trigger Migration' }).click()
+	await comboboxes.nth(0).click() // migration type
+	await page
+		.getByRole('option', { name: 'Move Site To Different Server / Bench' })
+		.click()
+	await dialog.getByText('Existing Bench', { exact: true }).click()
+	const popups = dialog.getByRole('button', { name: 'Show popup' })
+	await popups.nth(0).click() // bench
+	await page.getByRole('option', { name: 'Private Bench' }).click()
+
+	// Shared server: no banner, shared servers auto-extend their disk
+	await popups.nth(1).click() // server
+	await page.getByRole('option', { name: /Shared/ }).click()
+	await expect(banner).toBeHidden()
+
+	// Dedicated server: banner shows without a submit
+	await popups.nth(1).click()
+	await page.getByRole('option', { name: /My Server/ }).click()
+	await expect(banner).toBeVisible()
+	await expect(
+		dialog.getByRole('button', { name: 'Cleanup Server' }),
+	).toBeVisible()
+	if (process.env.PLAYWRIGHT_BANNER_SHOT) {
+		await dialog.screenshot({ path: process.env.PLAYWRIGHT_BANNER_SHOT })
 	}
 })
