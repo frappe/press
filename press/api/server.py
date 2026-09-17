@@ -906,6 +906,8 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 	return {
 		"plans": plans,
 		"types": server_plan_types,
+		# The disk a resize grows from, so the caller knows which plans offer a bigger one
+		"current_root_disk_size": current_root_disk_size,
 	}
 
 
