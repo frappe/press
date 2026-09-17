@@ -13,7 +13,7 @@
 					plan?.name === $server?.doc.plan ||
 					(($server?.doc?.provider === 'Hetzner' ||
 						$server?.doc?.provider === 'DigitalOcean') &&
-						cpu_and_memory_only_resize &&
+						cpuAndMemoryOnlyResize &&
 						plan?.instance_type ===
 							$server?.doc?.current_plan?.instance_type),
 				},
@@ -69,26 +69,24 @@
 				"
 				class="flex flex-col overflow-hidden rounded text-left w-full p-3 mb-4 cursor-pointer gap-3"
 				:class="{
-					'border-amber-300 bg-amber-100 border-2': !cpu_and_memory_only_resize,
-					'border-blue-300 bg-blue-100 border-2': cpu_and_memory_only_resize,
+					'border-amber-300 bg-amber-100 border-2': !cpuAndMemoryOnlyResize,
+					'border-blue-300 bg-blue-100 border-2': cpuAndMemoryOnlyResize,
 				}"
-				@click.prevent="
-					cpu_and_memory_only_resize = !cpu_and_memory_only_resize
-				"
+				@click.prevent="cpuAndMemoryOnlyResize = !cpuAndMemoryOnlyResize"
 			>
 				<Checkbox
 					class="cursor-pointer"
 					size="sm"
-					v-model="cpu_and_memory_only_resize"
+					v-model="cpuAndMemoryOnlyResize"
 					label="CPU and Memory only resize"
 				/>
 
-				<p class="text-base leading-relaxed" v-if="!cpu_and_memory_only_resize">
+				<p class="text-base leading-relaxed" v-if="!cpuAndMemoryOnlyResize">
 					<b>Note :</b>
 					You won't be able to downgrade this server to a plan with a smaller
 					disk size.<br />
 					If you only want to upgrade CPU and memory without changing the disk
-					size, keep this option checked.
+					size, check this option.
 				</p>
 				<p v-else class="text-base leading-relaxed">
 					To view plans that include disk upgrades, uncheck this option.
@@ -188,7 +186,8 @@ export default {
 			plan: null,
 			planType: 'Standard',
 			serverPlanType: '',
-			cpu_and_memory_only_resize: true,
+			// Untouched until the user picks; the default depends on the server
+			cpu_and_memory_only_resize: null,
 		}
 	},
 	watch: {
@@ -203,7 +202,7 @@ export default {
 				}
 			},
 		},
-		cpu_and_memory_only_resize(value) {
+		cpuAndMemoryOnlyResize() {
 			if (!this.$resources?.serverPlansdata) return
 			this.$resources?.serverPlansdata.submit()
 		},
@@ -217,7 +216,7 @@ export default {
 					cluster: this.$server.doc.cluster,
 					platform: this.$server.doc.current_plan.platform,
 					resource_name: this.$server.doc.name,
-					cpu_and_memory_only_resize: this.cpu_and_memory_only_resize,
+					cpu_and_memory_only_resize: this.cpuAndMemoryOnlyResize,
 				},
 				auto: true,
 				initialData: {
@@ -265,7 +264,7 @@ export default {
 			return this.$server.changePlan.submit(
 				{
 					plan: this.plan.name,
-					upgrade_disk: !this.cpu_and_memory_only_resize,
+					upgrade_disk: this.upgradesDisk,
 				},
 				{
 					onSuccess: () => {
@@ -288,6 +287,24 @@ export default {
 	computed: {
 		$server() {
 			return getCachedDocumentResource(this.cleanedServerType, this.server)
+		},
+		isUnifiedHetznerServer() {
+			const doc = this.$server?.doc
+			return doc?.provider === 'Hetzner' && !!doc?.is_unified_server
+		},
+		cpuAndMemoryOnlyResize: {
+			get() {
+				// A unified Hetzner server opens on the full plan list, the rest keep their disk
+				return this.cpu_and_memory_only_resize ?? !this.isUnifiedHetznerServer
+			},
+			set(value) {
+				this.cpu_and_memory_only_resize = value
+			},
+		},
+		upgradesDisk() {
+			// A plan with the same disk has nothing to upgrade, and the resize rejects the request
+			if (this.cpuAndMemoryOnlyResize) return false
+			return this.plan?.disk > this.$server?.doc?.current_plan?.disk
 		},
 		serverPlans() {
 			return this.$resources.serverPlansdata?.data?.plans || []
