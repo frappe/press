@@ -7,7 +7,6 @@ import contextlib
 import datetime
 import ipaddress
 import json
-import random
 import shlex
 import typing
 from contextlib import suppress
@@ -935,6 +934,10 @@ class BaseServer(Document, TagHelpers):
 	def install_wazuh_agent(self):
 		if not is_wazuh_configured():
 			frappe.throw("Please configure Wazuh Server and Wazuh Agent Version in Press Settings")
+		# Stamped before the enqueue, so a server we cannot even queue still yields its turn
+		frappe.db.set_value(
+			self.doctype, self.name, "wazuh_install_last_attempt", frappe.utils.now_datetime()
+		)
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
@@ -3206,6 +3209,7 @@ class Server(BaseServer):
 		is_upstream_setup: DF.Check
 		is_wazuh_agent_installed: DF.Check
 		wazuh_agent_status: DF.Data | None
+		wazuh_install_last_attempt: DF.Datetime | None
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]
@@ -4612,12 +4616,10 @@ def is_wazuh_configured() -> bool:
 
 
 def install_missing_wazuh_agents():
-	"""Install the Wazuh agent on a random batch of active servers that do not have a working one."""
+	"""Install the Wazuh agent on the active servers that have waited longest for a working one."""
 	if not is_wazuh_configured():
 		return
-	# Random, so servers whose install keeps failing cannot take every batch
-	servers = servers_needing_wazuh_agent()
-	for server_type, name in random.sample(servers, min(len(servers), WAZUH_INSTALL_BATCH_SIZE)):
+	for server_type, name in servers_needing_wazuh_agent()[:WAZUH_INSTALL_BATCH_SIZE]:
 		try:
 			frappe.get_doc(server_type, name).install_wazuh_agent()
 		except Exception:
@@ -4626,19 +4628,33 @@ def install_missing_wazuh_agents():
 
 
 def servers_needing_wazuh_agent() -> list[tuple[str, str]]:
-	"""Active servers with no agent, and those the manager has no record of despite the flag."""
+	"""Active servers with no agent, and those the manager has no record of despite the flag.
+
+	Longest wait first, so a server that keeps failing cannot outrank one never tried.
+	"""
 	or_filters = {
 		"is_wazuh_agent_installed": 0,
 		"wazuh_agent_status": UNREGISTERED_WAZUH_AGENT_STATUS,
 	}
-	servers = []
+	candidates = []
 	for server_type in WAZUH_SERVER_TYPES:
 		filters = {"status": "Active", "is_server_setup": 1}
 		if frappe.get_meta(server_type).has_field("is_self_hosted"):
 			filters["is_self_hosted"] = 0
-		names = frappe.get_all(server_type, filters, or_filters=or_filters, pluck="name")
-		servers += [(server_type, name) for name in names]
-	return servers
+		candidates += [
+			(server.wazuh_install_last_attempt, server_type, server.name)
+			for server in frappe.get_all(
+				server_type,
+				filters=filters,
+				or_filters=or_filters,
+				fields=["name", "wazuh_install_last_attempt"],
+				order_by="wazuh_install_last_attempt asc",
+				limit=WAZUH_INSTALL_BATCH_SIZE,
+			)
+		]
+	# Never attempted first, then the longest wait. None does not compare to a datetime.
+	candidates.sort(key=lambda candidate: (candidate[0] is not None, candidate[0]))
+	return [(server_type, name) for _, server_type, name in candidates]
 
 
 def sync_wazuh_agent_status():
@@ -4652,7 +4668,7 @@ def sync_wazuh_agent_status():
 		return
 	for server_type in WAZUH_SERVER_TYPES:
 		filters = {"is_wazuh_agent_installed": 1, "status": ("!=", "Archived")}
-		for name in frappe.get_all(server_type, filters, pluck="name"):
+		for name in frappe.get_all(server_type, filters=filters, pluck="name"):
 			frappe.db.set_value(server_type, name, "wazuh_agent_status", statuses.get(name, "unknown"))
 
 
