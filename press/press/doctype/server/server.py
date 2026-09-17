@@ -1029,6 +1029,24 @@ class BaseServer(Document, TagHelpers):
 			return None
 
 	@frappe.whitelist()
+	def restore_truncated_configs_ansible(self):
+		frappe.enqueue_doc(self.doctype, self.name, "restore_truncated_configs", queue="long", timeout=1200)
+
+	def restore_truncated_configs(self, wait_for_reboot: bool = False) -> AnsiblePlay:
+		"""Restore the config files that a truncated write left unreadable."""
+		ansible = Ansible(
+			playbook="restore_truncated_configs.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+			variables={"wait_for_reboot": wait_for_reboot},
+		)
+		play = ansible.run()
+		if play.status != "Success":
+			frappe.throw(f"Failed to restore truncated configs on server: {self.name}")
+		return play
+
+	@frappe.whitelist()
 	def update_agent_ansible(self):
 		self.validate_agent_update_allowed()
 		# ponytail: 1h, not the long queue's 1500s — a busy rq worker's warm shutdown alone is 1500s
@@ -2006,6 +2024,15 @@ class BaseServer(Document, TagHelpers):
 		console.save()
 		console.reload()
 		console.run_sysrq()
+		# TODO: Enable after a manual trial with the button on Server
+		# frappe.enqueue_doc(
+		# self.doctype,
+		# self.name,
+		# "restore_truncated_configs",
+		# wait_for_reboot=True,
+		# queue="long",
+		# timeout=1200,
+		# )
 
 	@dashboard_whitelist()
 	def reboot(self):
@@ -2019,6 +2046,15 @@ class BaseServer(Document, TagHelpers):
 			raise NotImplementedError
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.reboot()
+		# TODO: Enable after a manual trial with the button on Server
+		# frappe.enqueue_doc(
+		# self.doctype,
+		# self.name,
+		# "restore_truncated_configs",
+		# wait_for_reboot=True,
+		# queue="long",
+		# timeout=1200,
+		# )
 
 	@dashboard_whitelist()
 	def rename(self, title):
