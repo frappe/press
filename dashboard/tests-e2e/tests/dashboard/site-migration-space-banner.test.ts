@@ -33,7 +33,7 @@ const siteMock = {
 // `data.message`. Mirror that shape.
 const migrationOptionsMock = {
 	message: {
-		has_recent_failed_migration: true,
+		recent_failed_migration_servers: [SERVER_NAME],
 		'Move Site To Different Server / Bench': {
 			hidden: false,
 			allow_scheduling: false,
@@ -47,6 +47,11 @@ const migrationOptionsMock = {
 						servers: [
 							{ name: SERVER_NAME, title: 'My Server', public: 0 },
 							{ name: 'f2-mumbai.fc.frappe.dev', title: 'Shared', public: 1 },
+							{
+								name: 'f3-mumbai.fc.frappe.dev',
+								title: 'Other Private',
+								public: 0,
+							},
 						],
 					},
 				],
@@ -235,7 +240,12 @@ test('shows cleanup-actions banner before the retry when moving to a dedicated s
 	await page.getByRole('option', { name: /Shared/ }).click()
 	await expect(banner).toBeHidden()
 
-	// Dedicated server: banner shows without a submit
+	// Dedicated server the failed move did not touch: no banner either
+	await popups.nth(1).click()
+	await page.getByRole('option', { name: /Other Private/ }).click()
+	await expect(banner).toBeHidden()
+
+	// Dedicated server the failed move landed on: banner shows without a submit
 	await popups.nth(1).click()
 	await page.getByRole('option', { name: /My Server/ }).click()
 	await expect(banner).toBeVisible()
