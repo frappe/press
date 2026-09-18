@@ -4558,10 +4558,11 @@ class Server(BaseServer):
 		return teams
 
 	def check_duplicate_dispatch_within_days(self, team: str, subject: str, days: int) -> frappe._dict | None:
-		"""Return the most recent matching notice queued to the team within `days`, else None.
+		"""Return the most recent successfully dispatched notice to the team within `days`, else None.
 
 		Keyed on the subject, which is deterministic from the parameters, so re-running with
 		the same details is a no-op while a changed deadline (a new subject) sends again.
+		Only sent or in-flight rows count; a failed ("Error") send does not suppress a retry.
 		"""
 		since = frappe.utils.add_days(frappe.utils.now_datetime(), -days)
 		dispatches = frappe.get_all(
@@ -4570,6 +4571,7 @@ class Server(BaseServer):
 				"reference_doctype": "Team",
 				"reference_name": team,
 				"subject": subject,
+				"status": ("in", ["Not Sent", "Sending", "Sent", "Partially Sent"]),
 				"creation": (">", since),
 			},
 			fields=["name", "creation"],
