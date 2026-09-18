@@ -782,6 +782,20 @@ class TestServer(FrappeTestCase):
 		self.assertLess(order.index(never.name), order.index(stale.name))
 		self.assertLess(order.index(stale.name), order.index(recent.name))
 
+	def test_reconcile_does_not_let_one_server_type_take_every_batch(self):
+		"""Every server starts untried, and those ties must not resolve by WAZUH_SERVER_TYPES order."""
+		self._configure_wazuh()
+		app_server = create_test_server()
+		app_server.db_set("is_server_setup", 1)
+		database_server = create_test_database_server()
+		database_server.db_set("is_server_setup", 1)
+
+		# Reversing stands in for the shuffle: ties must follow it, not the doctype order
+		with patch("press.press.doctype.server.server.random.shuffle", lambda seq: seq.reverse()):
+			order = [name for _, name in servers_needing_wazuh_agent()]
+
+		self.assertLess(order.index(database_server.name), order.index(app_server.name))
+
 	def test_install_records_the_attempt_even_when_the_enqueue_fails(self):
 		"""An unqueueable server must still yield its turn, or it blocks the head of the queue."""
 		self._configure_wazuh()
