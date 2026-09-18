@@ -1,0 +1,51 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white from-markdown">
+		<p class="mb-4 font-bold">
+			We're moving your {{ "sites" if site_count and site_count > 1 else "site" }} off
+			{{ server }} to a new server
+		</p>
+		<p class="mb-6">
+			Hi,<br /><br />
+
+			Your {{ "sites" if site_count and site_count > 1 else "site" }}
+			<strong>{{ site_name }}</strong>
+			{{ "are" if site_count and site_count > 1 else "is" }} hosted on our shared server
+			<strong>{{ server }}</strong>. {{ reason }} As a result, this server will be
+			<strong>decommissioned</strong>.<br /><br />
+
+			You can move your {{ "sites" if site_count and site_count > 1 else "site" }} to another
+			server yourself, at a time that suits you, right from your dashboard.{% if recommended_destination %}
+			We recommend moving to the <strong>{{ recommended_destination }}</strong> region.{% endif %}
+			Our step-by-step guide walks you through it:
+			<a href="https://docs.frappe.io/cloud/site/site-migrations/move-site-to-different-region" target="_blank"><b>Move
+			your site to a different region</b></a>.
+		</p>
+
+		{{ utils.button("Migrate my site", action_url) }}
+
+		<p class="mb-6 mt-6">
+			<strong>If you don't move {{ "them" if site_count and site_count > 1 else "it" }} yourself</strong><br />
+			We'll migrate your {{ "sites" if site_count and site_count > 1 else "site" }} for you on
+			<strong>{{ migration_window }}</strong>, starting at <strong>{{ migration_start_time }}</strong>.
+			Expect a short interruption during the move: your
+			{{ "sites" if site_count and site_count > 1 else "site" }} may be unavailable for
+			<strong>{{ expected_downtime }}</strong>, depending on size.<br /><br />
+
+			To choose your own time and avoid the interruption, migrate before {{ deadline }}.<br /><br />
+
+			<strong>Need help?</strong><br />
+			If you have any questions or would like help with the migration, reach us at
+			<a href="https://support.frappe.io/helpdesk/" target="_blank"><b>Frappe Cloud Support</b></a>.
+		</p>
+
+		{{ utils.separator() }}
+		{{ utils.signature() }}
+	</div>
+</td>
+
+{% endblock %}
