@@ -1311,7 +1311,7 @@ class TestServerDecommissionNotice(FrappeTestCase):
 
 		printed = " ".join(str(call.args[0]) for call in mock_print.call_args_list)
 		self.assertIn(server.name, printed)
-		self.assertIn(team, printed)
+		self.assertIn(team.name, printed)
 
 	def test_notify_teams_before_decommission_is_silent_without_verbose(self):
 		server = create_test_server()
