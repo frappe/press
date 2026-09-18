@@ -4544,6 +4544,54 @@ class Server(BaseServer):
 		# Return the next server plan document
 		return frappe.get_doc("Server Plan", next_plan)
 
+	def teams_with_active_sites(self) -> dict[str, list[str]]:
+		"""Map each team to the names of its non-archived sites on this server."""
+		sites = frappe.get_all(
+			"Site",
+			filters={"server": self.name, "status": ("!=", "Archived")},
+			fields=["name", "team"],
+		)
+		teams: dict[str, list[str]] = {}
+		for site in sites:
+			if site.team:
+				teams.setdefault(site.team, []).append(site.name)
+		return teams
+
+	def notify_teams_before_decommission(
+		self,
+		deadline: str,
+		migration_window: str,
+		migration_start_time: str,
+		expected_downtime: str,
+		action_url: str = "https://cloud.frappe.io/dashboard",
+	):
+		"""Email every team with active sites here that this server is being decommissioned.
+
+		Meant to be run from the console for a shared server that is going away, so that
+		customers can migrate their sites before the automatic migration window.
+		"""
+		for team, sites in self.teams_with_active_sites().items():
+			recipients = get_communication_info("Email", "General", "Team", team)
+			if not recipients:
+				continue
+			frappe.sendmail(
+				recipients=recipients,
+				subject=f"Action needed: migrate your site off {self.name} before {deadline}",
+				template="server_decommission_migration",
+				args={
+					"server": self.name,
+					"site_name": ", ".join(sites),
+					"site_count": len(sites),
+					"action_url": action_url,
+					"deadline": deadline,
+					"migration_window": migration_window,
+					"migration_start_time": migration_start_time,
+					"expected_downtime": expected_downtime,
+				},
+				reference_doctype="Team",
+				reference_name=team,
+			)
+
 
 def scale_workers(now=False):
 	servers = frappe.get_all("Server", {"status": "Active", "is_primary": True})
