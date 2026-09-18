@@ -1165,7 +1165,7 @@ class TestServerDecommissionNotice(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_teams_with_active_sites_groups_sites_by_team_and_excludes_archived_and_suspended(self):
+	def test_teams_with_active_sites_excludes_archived_but_includes_suspended(self):
 		server = create_test_server()
 		bench = create_test_bench(server=server.name)
 		team_one = create_test_team()
@@ -1175,16 +1175,19 @@ class TestServerDecommissionNotice(FrappeTestCase):
 		site_three = create_test_site(bench=bench.name, team=team_two.name)
 		archived_site = create_test_site(bench=bench.name, team=team_one.name)
 		archived_site.db_set("status", "Archived")
+		# Suspended sites still live on the server, so their teams must be notified.
 		suspended_site = create_test_site(bench=bench.name, team=team_one.name)
 		suspended_site.db_set("status", "Suspended")
 
 		teams = Server("Server", server.name).teams_with_active_sites()
 
 		self.assertEqual(set(teams), {team_one.name, team_two.name})
-		self.assertEqual(sorted(teams[team_one.name]), sorted([site_one.name, site_two.name]))
+		self.assertEqual(
+			sorted(teams[team_one.name]), sorted([site_one.name, site_two.name, suspended_site.name])
+		)
 		self.assertEqual(teams[team_two.name], [site_three.name])
 		self.assertNotIn(archived_site.name, teams[team_one.name])
-		self.assertNotIn(suspended_site.name, teams[team_one.name])
+		self.assertIn(suspended_site.name, teams[team_one.name])
 
 	def test_teams_with_active_sites_ignores_sites_on_other_servers(self):
 		server = create_test_server()

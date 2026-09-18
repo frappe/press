@@ -4545,13 +4545,15 @@ class Server(BaseServer):
 		return frappe.get_doc("Server Plan", next_plan)
 
 	def teams_with_active_sites(self) -> dict[str, list[str]]:
-		"""Map each team to the names of its active sites on this server.
+		"""Map each team to the names of its non-archived sites on this server.
 
-		Archived and suspended sites are excluded, since neither should be asked to migrate.
+		Suspended sites are included: suspending only disables a site, its files and database
+		stay on the server, so it is lost when the server is decommissioned unless it is moved
+		or archived first. Only archived sites (already dropped from the server) are excluded.
 		"""
 		sites = frappe.get_all(
 			"Site",
-			filters={"server": self.name, "status": ("not in", ["Archived", "Suspended"])},
+			filters={"server": self.name, "status": ("!=", "Archived")},
 			fields=["name", "team"],
 		)
 		teams: dict[str, list[str]] = {}
