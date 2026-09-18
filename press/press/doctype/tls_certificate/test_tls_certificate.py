@@ -120,6 +120,37 @@ class TestTLSCertificate(FrappeTestCase):
 		self.assertEqual(set(stored), {"*"})
 		self.assertEqual(get_decrypted_password("TLS Certificate", cert.name, "private_key"), private_key)
 
+	def test_wildcard_renewal_does_not_target_servers_in_a_nested_root_domain(self):
+		"""A wildcard cert for a parent domain must not be pushed to servers whose
+		own root domain is nested inside it.
+
+		`*.fc.dev` does not cover `n2.internal.fc.dev` -- a wildcard matches a
+		single label -- so pushing it there replaces a valid certificate with one
+		that fails hostname verification, breaking agent communication.
+		"""
+		parent_domain = create_test_root_domain("fc3.dev")
+		create_test_root_domain("internal.fc3.dev")
+
+		outer = create_test_proxy_server(
+			"n1", domain=parent_domain.name, domains=[{"domain": parent_domain.name}]
+		)
+		nested = create_test_proxy_server(
+			"n2", domain="internal.fc3.dev", domains=[{"domain": "internal.fc3.dev"}]
+		)
+
+		# The nested server's name still ends with the parent domain, which is
+		# what the previous `name LIKE '%.<domain>'` filter matched on.
+		self.assertTrue(nested.name.endswith(f".{parent_domain.name}"))
+
+		cert = create_test_tls_certificate(parent_domain.name, wildcard=True)
+
+		with patch("press.press.doctype.tls_certificate.tls_certificate.frappe.enqueue") as mock_enqueue:
+			cert.trigger_server_tls_setup_callback()
+
+		targeted = {call.kwargs["server"].name for call in mock_enqueue.call_args_list}
+		self.assertIn(outer.name, targeted)
+		self.assertNotIn(nested.name, targeted)
+
 	def test_renewal_of_primary_domain_calls_update_tls_certificates(self):
 		# Use a diffferent domain to avoid any chance of
 		# Reusing same non wildcard domain in tests
