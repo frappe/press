@@ -1159,3 +1159,91 @@ class TestArchiveBenches(FrappeTestCase):
 
 		statuses = frappe.get_all("Bench", {"server": server.name}, pluck="status")
 		self.assertNotIn("Archived", statuses)
+
+
+class TestServerDecommissionNotice(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_teams_with_active_sites_groups_sites_by_team_and_excludes_archived(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team_one = create_test_team()
+		team_two = create_test_team()
+		site_one = create_test_site(bench=bench.name, team=team_one.name)
+		site_two = create_test_site(bench=bench.name, team=team_one.name)
+		site_three = create_test_site(bench=bench.name, team=team_two.name)
+		archived_site = create_test_site(bench=bench.name, team=team_one.name)
+		archived_site.db_set("status", "Archived")
+
+		teams = Server("Server", server.name).teams_with_active_sites()
+
+		self.assertEqual(set(teams), {team_one.name, team_two.name})
+		self.assertEqual(sorted(teams[team_one.name]), sorted([site_one.name, site_two.name]))
+		self.assertEqual(teams[team_two.name], [site_three.name])
+		self.assertNotIn(archived_site.name, teams[team_one.name])
+
+	def test_teams_with_active_sites_ignores_sites_on_other_servers(self):
+		server = create_test_server()
+		other_server = create_test_server()
+		team = create_test_team()
+		create_test_site(bench=create_test_bench(server=server.name).name, team=team.name)
+		other_site = create_test_site(bench=create_test_bench(server=other_server.name).name, team=team.name)
+
+		teams = Server("Server", server.name).teams_with_active_sites()
+
+		self.assertNotIn(other_site.name, teams[team.name])
+
+	def test_notify_teams_before_decommission_sends_one_email_per_team_with_migration_details(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team_one = create_test_team()
+		team_two = create_test_team()
+		create_test_site(bench=bench.name, team=team_one.name)
+		create_test_site(bench=bench.name, team=team_one.name)
+		create_test_site(bench=bench.name, team=team_two.name)
+
+		with patch.object(frappe, "sendmail") as sendmail:
+			Server("Server", server.name).notify_teams_before_decommission(
+				deadline="October 10",
+				migration_window="Saturday-Sunday, October 10-11",
+				migration_start_time="1:00 AM IST",
+				expected_downtime="about an hour or more",
+				recommended_destination="Mumbai, India",
+			)
+
+		self.assertEqual(sendmail.call_count, 2)
+		calls_by_team = {call.kwargs["reference_name"]: call.kwargs for call in sendmail.call_args_list}
+		self.assertEqual(set(calls_by_team), {team_one.name, team_two.name})
+
+		team_one_call = calls_by_team[team_one.name]
+		self.assertTrue(team_one_call["recipients"])
+		self.assertEqual(team_one_call["template"], "server_decommission_migration")
+		self.assertEqual(team_one_call["args"]["server"], server.name)
+		self.assertEqual(team_one_call["args"]["site_count"], 2)
+		self.assertEqual(team_one_call["args"]["deadline"], "October 10")
+		self.assertEqual(team_one_call["args"]["action_url"], "https://cloud.frappe.io/dashboard")
+		self.assertEqual(team_one_call["args"]["recommended_destination"], "Mumbai, India")
+		self.assertEqual(calls_by_team[team_two.name]["args"]["site_count"], 1)
+
+	def test_notify_teams_before_decommission_skips_teams_without_recipients(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team = create_test_team()
+		create_test_site(bench=bench.name, team=team.name)
+
+		with (
+			patch(
+				"press.press.doctype.server.server.get_communication_info",
+				return_value=[],
+			),
+			patch.object(frappe, "sendmail") as sendmail,
+		):
+			Server("Server", server.name).notify_teams_before_decommission(
+				deadline="October 10",
+				migration_window="Saturday-Sunday, October 10-11",
+				migration_start_time="1:00 AM IST",
+				expected_downtime="about an hour or more",
+			)
+
+		sendmail.assert_not_called()
