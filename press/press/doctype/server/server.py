@@ -7,6 +7,7 @@ import contextlib
 import datetime
 import ipaddress
 import json
+import random
 import shlex
 import typing
 from contextlib import suppress
@@ -4647,6 +4648,9 @@ def servers_needing_wazuh_agent() -> list[tuple[str, str]]:
 				limit=WAZUH_INSTALL_BATCH_SIZE,
 			)
 		]
+	# Every server starts with no attempt recorded, and a stable sort would leave those ties in
+	# WAZUH_SERVER_TYPES order, letting "Server" take every batch until it runs out.
+	random.shuffle(candidates)
 	# Never attempted first, then the longest wait. None does not compare to a datetime.
 	candidates.sort(key=lambda candidate: (candidate[0] is not None, candidate[0]))
 	return [(server_type, name) for _, server_type, name in candidates]
