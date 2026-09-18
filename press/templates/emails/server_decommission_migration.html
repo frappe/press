@@ -6,8 +6,8 @@
 <td class="text-base leading-6 text-gray-900">
 	<div class="p-8 bg-white from-markdown">
 		<p class="mb-4 font-bold">
-			Action needed: migrate your {{ "sites" if site_count and site_count > 1 else "site" }}
-			off {{ server }} before {{ deadline }}
+			We're moving your {{ "sites" if site_count and site_count > 1 else "site" }} off
+			{{ server }} to a new server
 		</p>
 		<p class="mb-6">
 			Hi,<br /><br />
@@ -29,14 +29,14 @@
 		{{ utils.button("Migrate my site", action_url) }}
 
 		<p class="mb-6 mt-6">
-			<strong>If you don't migrate in time</strong><br />
-			Any site still on this server will be automatically migrated over
+			<strong>If you don't move {{ "them" if site_count and site_count > 1 else "it" }} yourself</strong><br />
+			We'll migrate your {{ "sites" if site_count and site_count > 1 else "site" }} for you on
 			<strong>{{ migration_window }}</strong>, starting at <strong>{{ migration_start_time }}</strong>.
-			During this window your site may be down for <strong>{{ expected_downtime }}</strong>,
-			depending on its size.<br /><br />
+			Expect a short interruption during the move: your
+			{{ "sites" if site_count and site_count > 1 else "site" }} may be unavailable for
+			<strong>{{ expected_downtime }}</strong>, depending on size.<br /><br />
 
-			To avoid any unplanned downtime, we recommend migrating on your own schedule before
-			{{ deadline }}.<br /><br />
+			To choose your own time and avoid the interruption, migrate before {{ deadline }}.<br /><br />
 
 			<strong>Need help?</strong><br />
 			If you have any questions or would like help with the migration, reach us at

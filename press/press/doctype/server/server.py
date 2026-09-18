@@ -4609,7 +4609,7 @@ class Server(BaseServer):
 		within duplicate_window_days: a team already sent the same notice in that window is skipped.
 		Pass verbose=True to print progress per team.
 		"""
-		subject = f"Action needed: migrate your site off {self.name} before {deadline}"
+		subject = f"We're moving your site off {self.name} to a new server"
 		args = {
 			"server": self.name,
 			"action_url": action_url,
