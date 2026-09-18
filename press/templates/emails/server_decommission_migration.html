@@ -1,0 +1,49 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white from-markdown">
+		<p class="mb-4 font-bold">
+			Action needed: migrate your {{ "sites" if site_count and site_count > 1 else "site" }}
+			off {{ server }} before {{ deadline }}
+		</p>
+		<p class="mb-6">
+			Hi,<br /><br />
+
+			Your {{ "sites" if site_count and site_count > 1 else "site" }}
+			<strong>{{ site_name }}</strong>
+			{{ "are" if site_count and site_count > 1 else "is" }} hosted on our shared server
+			<strong>{{ server }}</strong>. This server runs on DigitalOcean, has reached its disk
+			capacity limits, and will be <strong>decommissioned</strong>.<br /><br />
+
+			You can move your {{ "sites" if site_count and site_count > 1 else "site" }} to another
+			server yourself, at a time that suits you, right from your dashboard. It only takes a few
+			clicks.
+		</p>
+
+		{{ utils.button("Migrate my site", action_url) }}
+
+		<p class="mb-6 mt-6">
+			<strong>If you don't migrate in time</strong><br />
+			Any site still on this server will be automatically migrated over
+			<strong>{{ migration_window }}</strong>, starting at <strong>{{ migration_start_time }}</strong>.
+			During this window your site may be down for <strong>{{ expected_downtime }}</strong>,
+			depending on its size.<br /><br />
+
+			To avoid any unplanned downtime, we recommend migrating on your own schedule before
+			{{ deadline }}.<br /><br />
+
+			<strong>Need help?</strong><br />
+			If you have any questions or would like help with the migration, just reply to this email
+			or reach us at <a href="https://support.frappe.io/helpdesk/" target="_blank"><b>Frappe Cloud
+			Support</b></a>.
+		</p>
+
+		{{ utils.separator() }}
+		{{ utils.signature() }}
+	</div>
+</td>
+
+{% endblock %}
