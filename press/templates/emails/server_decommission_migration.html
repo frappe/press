@@ -19,8 +19,11 @@
 			capacity limits, and will be <strong>decommissioned</strong>.<br /><br />
 
 			You can move your {{ "sites" if site_count and site_count > 1 else "site" }} to another
-			server yourself, at a time that suits you, right from your dashboard. It only takes a few
-			clicks.
+			server yourself, at a time that suits you, right from your dashboard.{% if recommended_destination %}
+			We recommend moving to the <strong>{{ recommended_destination }}</strong> region.{% endif %}
+			Our step-by-step guide walks you through it:
+			<a href="https://docs.frappe.io/cloud/site/site-migrations/move-site-to-different-region" target="_blank"><b>Move
+			your site to a different region</b></a>.
 		</p>
 
 		{{ utils.button("Migrate my site", action_url) }}

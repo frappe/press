@@ -4558,6 +4558,7 @@ class Server(BaseServer):
 		migration_window: str,
 		migration_start_time: str,
 		expected_downtime: str,
+		recommended_destination: str | None = None,
 		action_url: str = "https://cloud.frappe.io/dashboard",
 	):
 		"""Email every team with active sites here that this server is being decommissioned.
@@ -4582,6 +4583,7 @@ class Server(BaseServer):
 					"migration_window": migration_window,
 					"migration_start_time": migration_start_time,
 					"expected_downtime": expected_downtime,
+					"recommended_destination": recommended_destination,
 				},
 				reference_doctype="Team",
 				reference_name=team,
