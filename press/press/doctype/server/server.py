@@ -4565,15 +4565,22 @@ class Server(BaseServer):
 		expected_downtime: str,
 		recommended_destination: str | None = None,
 		action_url: str = "https://cloud.frappe.io/dashboard",
+		verbose: bool = False,
 	):
 		"""Email every team with active sites here that this server is being decommissioned.
 
 		Meant to be run from the console for a shared server that is going away, so that
-		customers can migrate their sites before the automatic migration window.
+		customers can migrate their sites before the automatic migration window. Pass
+		verbose=True to print progress per team.
 		"""
-		for team, sites in self.teams_with_active_sites().items():
+		teams = self.teams_with_active_sites()
+		if verbose:
+			print(f"Notifying {len(teams)} team(s) with active sites on {self.name}")
+		for team, sites in teams.items():
 			recipients = get_communication_info("Email", "General", "Team", team)
 			if not recipients:
+				if verbose:
+					print(f"  skipped {team}: no recipients for {len(sites)} site(s)")
 				continue
 			frappe.sendmail(
 				recipients=recipients,
@@ -4593,6 +4600,8 @@ class Server(BaseServer):
 				reference_doctype="Team",
 				reference_name=team,
 			)
+			if verbose:
+				print(f"  queued {team}: {len(sites)} site(s) -> {', '.join(recipients)}")
 
 
 def scale_workers(now=False):
