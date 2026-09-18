@@ -1224,7 +1224,27 @@ class TestServerDecommissionNotice(FrappeTestCase):
 		self.assertEqual(team_one_call["args"]["deadline"], "October 10")
 		self.assertEqual(team_one_call["args"]["action_url"], "https://cloud.frappe.io/dashboard")
 		self.assertEqual(team_one_call["args"]["recommended_destination"], "Mumbai, India")
+		self.assertIn("disk capacity", team_one_call["args"]["reason"])
 		self.assertEqual(calls_by_team[team_two.name]["args"]["site_count"], 1)
+
+	def test_notify_teams_before_decommission_uses_custom_reason(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		create_test_site(bench=bench.name, team=create_test_team().name)
+
+		with patch.object(frappe, "sendmail") as sendmail:
+			Server("Server", server.name).notify_teams_before_decommission(
+				deadline="October 10",
+				migration_window="the weekend of October 10-11",
+				migration_start_time="1:00 AM IST",
+				expected_downtime="about an hour or more",
+				reason="It is being retired as part of a hardware refresh.",
+			)
+
+		self.assertEqual(
+			sendmail.call_args.kwargs["args"]["reason"],
+			"It is being retired as part of a hardware refresh.",
+		)
 
 	def test_notify_teams_before_decommission_falls_back_to_team_user_without_communication_info(self):
 		server = create_test_server()

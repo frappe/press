@@ -15,8 +15,8 @@
 			Your {{ "sites" if site_count and site_count > 1 else "site" }}
 			<strong>{{ site_name }}</strong>
 			{{ "are" if site_count and site_count > 1 else "is" }} hosted on our shared server
-			<strong>{{ server }}</strong>. This server runs on DigitalOcean, has reached its disk
-			capacity limits, and will be <strong>decommissioned</strong>.<br /><br />
+			<strong>{{ server }}</strong>. {{ reason }} As a result, this server will be
+			<strong>decommissioned</strong>.<br /><br />
 
 			You can move your {{ "sites" if site_count and site_count > 1 else "site" }} to another
 			server yourself, at a time that suits you, right from your dashboard.{% if recommended_destination %}
@@ -39,9 +39,8 @@
 			{{ deadline }}.<br /><br />
 
 			<strong>Need help?</strong><br />
-			If you have any questions or would like help with the migration, just reply to this email
-			or reach us at <a href="https://support.frappe.io/helpdesk/" target="_blank"><b>Frappe Cloud
-			Support</b></a>.
+			If you have any questions or would like help with the migration, reach us at
+			<a href="https://support.frappe.io/helpdesk/" target="_blank"><b>Frappe Cloud Support</b></a>.
 		</p>
 
 		{{ utils.separator() }}
