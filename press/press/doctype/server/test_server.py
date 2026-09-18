@@ -1327,3 +1327,94 @@ class TestServerDecommissionNotice(FrappeTestCase):
 			)
 
 		mock_print.assert_not_called()
+
+	def _insert_decommission_email_queue(self, team: str, subject: str):
+		return frappe.get_doc(
+			{
+				"doctype": "Email Queue",
+				"sender": "notifications@frappe.io",
+				"message": "sent",
+				"status": "Sent",
+				"reference_doctype": "Team",
+				"reference_name": team,
+				"subject": subject,
+			}
+		).insert(ignore_permissions=True)
+
+	def test_check_duplicate_dispatch_within_days_detects_recent_send(self):
+		server = create_test_server()
+		team = create_test_team()
+		subject = f"Action needed: migrate your site off {server.name} before October 10"
+		email_queue = self._insert_decommission_email_queue(team.name, subject)
+
+		duplicate = Server("Server", server.name).check_duplicate_dispatch_within_days(team.name, subject, 15)
+
+		self.assertIsNotNone(duplicate)
+		self.assertEqual(duplicate.name, email_queue.name)
+
+	def test_check_duplicate_dispatch_within_days_ignores_send_older_than_window(self):
+		server = create_test_server()
+		team = create_test_team()
+		subject = f"Action needed: migrate your site off {server.name} before October 10"
+		email_queue = self._insert_decommission_email_queue(team.name, subject)
+		email_queue.db_set(
+			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -20), update_modified=False
+		)
+
+		self.assertIsNone(
+			Server("Server", server.name).check_duplicate_dispatch_within_days(team.name, subject, 15)
+		)
+
+	def test_check_duplicate_dispatch_within_days_ignores_different_subject(self):
+		server = create_test_server()
+		team = create_test_team()
+		subject = f"Action needed: migrate your site off {server.name} before October 10"
+		self._insert_decommission_email_queue(
+			team.name, f"Action needed: migrate your site off {server.name} before October 25"
+		)
+
+		self.assertIsNone(
+			Server("Server", server.name).check_duplicate_dispatch_within_days(team.name, subject, 15)
+		)
+
+	def test_notify_teams_before_decommission_skips_team_notified_within_duplicate_window(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team = create_test_team()
+		create_test_site(bench=bench.name, team=team.name)
+		subject = f"Action needed: migrate your site off {server.name} before October 10"
+		self._insert_decommission_email_queue(team.name, subject)
+
+		with patch.object(frappe, "sendmail") as sendmail:
+			Server("Server", server.name).notify_teams_before_decommission(
+				deadline="October 10",
+				migration_window="the weekend of October 10-11",
+				migration_start_time="1:00 AM IST",
+				expected_downtime="about an hour or more",
+			)
+
+		sendmail.assert_not_called()
+
+	def test_notify_teams_before_decommission_verbose_reports_duplicate_with_date_and_link(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team = create_test_team()
+		create_test_site(bench=bench.name, team=team.name)
+		subject = f"Action needed: migrate your site off {server.name} before October 10"
+		email_queue = self._insert_decommission_email_queue(team.name, subject)
+
+		with (
+			patch.object(frappe, "sendmail", new=Mock()),
+			patch("builtins.print") as mock_print,
+		):
+			Server("Server", server.name).notify_teams_before_decommission(
+				deadline="October 10",
+				migration_window="the weekend of October 10-11",
+				migration_start_time="1:00 AM IST",
+				expected_downtime="about an hour or more",
+				verbose=True,
+			)
+
+		printed = " ".join(str(call.args[0]) for call in mock_print.call_args_list)
+		self.assertIn("not sending this as already sent on", printed)
+		self.assertIn(email_queue.name, printed)
