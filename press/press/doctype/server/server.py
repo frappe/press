@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime
+import hashlib
 import ipaddress
 import json
 import shlex
@@ -4557,20 +4558,29 @@ class Server(BaseServer):
 				teams.setdefault(site.team, []).append(site.name)
 		return teams
 
-	def check_duplicate_dispatch_within_days(self, team: str, subject: str, days: int) -> frappe._dict | None:
-		"""Return the most recent successfully dispatched notice to the team within `days`, else None.
+	def decommission_notice_message_id(self, team: str, args: dict) -> str:
+		"""Deterministic Message-Id for the notice, unique per team and set of parameters.
 
-		Keyed on the subject, which is deterministic from the parameters, so re-running with
-		the same details is a no-op while a changed deadline (a new subject) sends again.
-		Only sent or in-flight rows count; a failed ("Error") send does not suppress a retry.
+		Used as the idempotency key: the same notice with the same parameters to the same team
+		yields the same id, so a re-run finds the earlier Email Queue row and skips, while any
+		changed parameter (e.g. a new deadline) yields a new id that sends again.
+		"""
+		payload = json.dumps({"team": team, **args}, sort_keys=True, default=str)
+		digest = hashlib.sha256(payload.encode()).hexdigest()[:24]
+		return f"decommission-notice-{digest}@frappecloud.com"
+
+	def check_duplicate_dispatch_within_days(self, message_id: str, days: int) -> frappe._dict | None:
+		"""Return the most recent dispatch of this exact notice within `days`, else None.
+
+		Keyed on the Message-Id (a real, queryable Email Queue column that we set), so the
+		match is exact. Only sent or in-flight rows count; a failed ("Error") send does not
+		suppress a retry.
 		"""
 		since = frappe.utils.add_days(frappe.utils.now_datetime(), -days)
 		dispatches = frappe.get_all(
 			"Email Queue",
 			filters={
-				"reference_doctype": "Team",
-				"reference_name": team,
-				"subject": subject,
+				"message_id": message_id,
 				"status": ("in", ["Not Sent", "Sending", "Sent", "Partially Sent"]),
 				"creation": (">", since),
 			},
@@ -4600,11 +4610,22 @@ class Server(BaseServer):
 		Pass verbose=True to print progress per team.
 		"""
 		subject = f"Action needed: migrate your site off {self.name} before {deadline}"
+		args = {
+			"server": self.name,
+			"action_url": action_url,
+			"deadline": deadline,
+			"migration_window": migration_window,
+			"migration_start_time": migration_start_time,
+			"expected_downtime": expected_downtime,
+			"reason": reason,
+			"recommended_destination": recommended_destination,
+		}
 		teams = self.teams_with_active_sites()
 		if verbose:
 			print(f"Notifying {len(teams)} team(s) with active sites on {self.name}")
 		for team, sites in teams.items():
-			duplicate = self.check_duplicate_dispatch_within_days(team, subject, duplicate_window_days)
+			message_id = self.decommission_notice_message_id(team, args)
+			duplicate = self.check_duplicate_dispatch_within_days(message_id, duplicate_window_days)
 			if duplicate:
 				if verbose:
 					sent_on = frappe.utils.formatdate(duplicate.creation)
@@ -4620,20 +4641,10 @@ class Server(BaseServer):
 				recipients=recipients,
 				subject=subject,
 				template="server_decommission_migration",
-				args={
-					"server": self.name,
-					"site_name": ", ".join(sites),
-					"site_count": len(sites),
-					"action_url": action_url,
-					"deadline": deadline,
-					"migration_window": migration_window,
-					"migration_start_time": migration_start_time,
-					"expected_downtime": expected_downtime,
-					"reason": reason,
-					"recommended_destination": recommended_destination,
-				},
+				args={**args, "site_name": ", ".join(sites), "site_count": len(sites)},
 				reference_doctype="Team",
 				reference_name=team,
+				message_id=message_id,
 			)
 			if verbose:
 				print(f"  queued {team}: {len(sites)} site(s) -> {', '.join(recipients)}")

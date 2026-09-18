@@ -1331,26 +1331,60 @@ class TestServerDecommissionNotice(FrappeTestCase):
 
 		mock_print.assert_not_called()
 
-	def _insert_decommission_email_queue(self, team: str, subject: str, status: str = "Sent"):
+	# The parameters the notify tests pass, matching notify_teams_before_decommission defaults.
+	NOTICE_KWARGS: typing.ClassVar[dict] = {
+		"deadline": "October 10",
+		"migration_window": "the weekend of October 10-11",
+		"migration_start_time": "1:00 AM IST",
+		"expected_downtime": "about an hour or more",
+	}
+
+	def _notice_args(self, server_name: str) -> dict:
+		return {
+			"server": server_name,
+			"action_url": "https://cloud.frappe.io/dashboard",
+			"reason": "It runs on DigitalOcean and has reached its disk capacity limits.",
+			"recommended_destination": None,
+			**self.NOTICE_KWARGS,
+		}
+
+	def _notice_message_id(self, server_name: str, team: str) -> str:
+		return Server("Server", server_name).decommission_notice_message_id(
+			team, self._notice_args(server_name)
+		)
+
+	def _insert_decommission_email_queue(self, message_id: str, status: str = "Sent"):
 		return frappe.get_doc(
 			{
 				"doctype": "Email Queue",
 				"sender": "notifications@frappe.io",
 				"message": "sent",
 				"status": status,
-				"reference_doctype": "Team",
-				"reference_name": team,
-				"subject": subject,
+				"message_id": message_id,
 			}
 		).insert(ignore_permissions=True)
+
+	def test_decommission_notice_message_id_changes_with_parameters(self):
+		server = create_test_server()
+		team = create_test_team()
+		base = self._notice_args(server.name)
+		server_doc = Server("Server", server.name)
+
+		same = server_doc.decommission_notice_message_id(team.name, base)
+		changed = server_doc.decommission_notice_message_id(team.name, {**base, "deadline": "October 25"})
+		other_team = server_doc.decommission_notice_message_id(create_test_team().name, base)
+
+		self.assertEqual(same, server_doc.decommission_notice_message_id(team.name, base))
+		self.assertNotEqual(same, changed)
+		self.assertNotEqual(same, other_team)
 
 	def test_check_duplicate_dispatch_within_days_detects_recent_send(self):
 		server = create_test_server()
 		team = create_test_team()
-		subject = f"Action needed: migrate your site off {server.name} before October 10"
-		email_queue = self._insert_decommission_email_queue(team.name, subject)
+		message_id = self._notice_message_id(server.name, team.name)
+		email_queue = self._insert_decommission_email_queue(message_id)
 
-		duplicate = Server("Server", server.name).check_duplicate_dispatch_within_days(team.name, subject, 15)
+		duplicate = Server("Server", server.name).check_duplicate_dispatch_within_days(message_id, 15)
 
 		self.assertIsNotNone(duplicate)
 		self.assertEqual(duplicate.name, email_queue.name)
@@ -1358,53 +1392,41 @@ class TestServerDecommissionNotice(FrappeTestCase):
 	def test_check_duplicate_dispatch_within_days_ignores_send_older_than_window(self):
 		server = create_test_server()
 		team = create_test_team()
-		subject = f"Action needed: migrate your site off {server.name} before October 10"
-		email_queue = self._insert_decommission_email_queue(team.name, subject)
+		message_id = self._notice_message_id(server.name, team.name)
+		email_queue = self._insert_decommission_email_queue(message_id)
 		email_queue.db_set(
 			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -20), update_modified=False
 		)
 
-		self.assertIsNone(
-			Server("Server", server.name).check_duplicate_dispatch_within_days(team.name, subject, 15)
-		)
+		self.assertIsNone(Server("Server", server.name).check_duplicate_dispatch_within_days(message_id, 15))
 
-	def test_check_duplicate_dispatch_within_days_ignores_different_subject(self):
+	def test_check_duplicate_dispatch_within_days_ignores_different_message_id(self):
 		server = create_test_server()
-		team = create_test_team()
-		subject = f"Action needed: migrate your site off {server.name} before October 10"
-		self._insert_decommission_email_queue(
-			team.name, f"Action needed: migrate your site off {server.name} before October 25"
-		)
+		self._insert_decommission_email_queue("decommission-notice-other@frappecloud.com")
 
 		self.assertIsNone(
-			Server("Server", server.name).check_duplicate_dispatch_within_days(team.name, subject, 15)
+			Server("Server", server.name).check_duplicate_dispatch_within_days(
+				self._notice_message_id(server.name, create_test_team().name), 15
+			)
 		)
 
 	def test_check_duplicate_dispatch_within_days_ignores_failed_send(self):
 		server = create_test_server()
 		team = create_test_team()
-		subject = f"Action needed: migrate your site off {server.name} before October 10"
-		self._insert_decommission_email_queue(team.name, subject, status="Error")
+		message_id = self._notice_message_id(server.name, team.name)
+		self._insert_decommission_email_queue(message_id, status="Error")
 
-		self.assertIsNone(
-			Server("Server", server.name).check_duplicate_dispatch_within_days(team.name, subject, 15)
-		)
+		self.assertIsNone(Server("Server", server.name).check_duplicate_dispatch_within_days(message_id, 15))
 
 	def test_notify_teams_before_decommission_resends_after_failed_dispatch(self):
 		server = create_test_server()
 		bench = create_test_bench(server=server.name)
 		team = create_test_team()
 		create_test_site(bench=bench.name, team=team.name)
-		subject = f"Action needed: migrate your site off {server.name} before October 10"
-		self._insert_decommission_email_queue(team.name, subject, status="Error")
+		self._insert_decommission_email_queue(self._notice_message_id(server.name, team.name), status="Error")
 
 		with patch.object(frappe, "sendmail") as sendmail:
-			Server("Server", server.name).notify_teams_before_decommission(
-				deadline="October 10",
-				migration_window="the weekend of October 10-11",
-				migration_start_time="1:00 AM IST",
-				expected_downtime="about an hour or more",
-			)
+			Server("Server", server.name).notify_teams_before_decommission(**self.NOTICE_KWARGS)
 
 		sendmail.assert_called_once()
 
@@ -1413,16 +1435,10 @@ class TestServerDecommissionNotice(FrappeTestCase):
 		bench = create_test_bench(server=server.name)
 		team = create_test_team()
 		create_test_site(bench=bench.name, team=team.name)
-		subject = f"Action needed: migrate your site off {server.name} before October 10"
-		self._insert_decommission_email_queue(team.name, subject)
+		self._insert_decommission_email_queue(self._notice_message_id(server.name, team.name))
 
 		with patch.object(frappe, "sendmail") as sendmail:
-			Server("Server", server.name).notify_teams_before_decommission(
-				deadline="October 10",
-				migration_window="the weekend of October 10-11",
-				migration_start_time="1:00 AM IST",
-				expected_downtime="about an hour or more",
-			)
+			Server("Server", server.name).notify_teams_before_decommission(**self.NOTICE_KWARGS)
 
 		sendmail.assert_not_called()
 
@@ -1431,20 +1447,13 @@ class TestServerDecommissionNotice(FrappeTestCase):
 		bench = create_test_bench(server=server.name)
 		team = create_test_team()
 		create_test_site(bench=bench.name, team=team.name)
-		subject = f"Action needed: migrate your site off {server.name} before October 10"
-		email_queue = self._insert_decommission_email_queue(team.name, subject)
+		email_queue = self._insert_decommission_email_queue(self._notice_message_id(server.name, team.name))
 
 		with (
 			patch.object(frappe, "sendmail", new=Mock()),
 			patch("builtins.print") as mock_print,
 		):
-			Server("Server", server.name).notify_teams_before_decommission(
-				deadline="October 10",
-				migration_window="the weekend of October 10-11",
-				migration_start_time="1:00 AM IST",
-				expected_downtime="about an hour or more",
-				verbose=True,
-			)
+			Server("Server", server.name).notify_teams_before_decommission(verbose=True, **self.NOTICE_KWARGS)
 
 		printed = " ".join(str(call.args[0]) for call in mock_print.call_args_list)
 		self.assertIn("not sending this as already sent on", printed)
