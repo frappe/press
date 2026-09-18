@@ -4555,6 +4555,27 @@ class Server(BaseServer):
 				teams.setdefault(site.team, []).append(site.name)
 		return teams
 
+	def check_duplicate_dispatch_within_days(self, team: str, subject: str, days: int) -> frappe._dict | None:
+		"""Return the most recent matching notice queued to the team within `days`, else None.
+
+		Keyed on the subject, which is deterministic from the parameters, so re-running with
+		the same details is a no-op while a changed deadline (a new subject) sends again.
+		"""
+		since = frappe.utils.add_days(frappe.utils.now_datetime(), -days)
+		dispatches = frappe.get_all(
+			"Email Queue",
+			filters={
+				"reference_doctype": "Team",
+				"reference_name": team,
+				"subject": subject,
+				"creation": (">", since),
+			},
+			fields=["name", "creation"],
+			order_by="creation desc",
+			limit=1,
+		)
+		return dispatches[0] if dispatches else None
+
 	def notify_teams_before_decommission(
 		self,
 		deadline: str,
@@ -4564,18 +4585,28 @@ class Server(BaseServer):
 		reason: str = "It runs on DigitalOcean and has reached its disk capacity limits.",
 		recommended_destination: str | None = None,
 		action_url: str = "https://cloud.frappe.io/dashboard",
+		duplicate_window_days: int = 15,
 		verbose: bool = False,
 	):
 		"""Email every team with active sites here that this server is being decommissioned.
 
 		Meant to be run from the console for a shared server that is going away, so that
-		customers can migrate their sites before the automatic migration window. Pass
-		verbose=True to print progress per team.
+		customers can migrate their sites before the automatic migration window. Idempotent
+		within duplicate_window_days: a team already sent the same notice in that window is skipped.
+		Pass verbose=True to print progress per team.
 		"""
+		subject = f"Action needed: migrate your site off {self.name} before {deadline}"
 		teams = self.teams_with_active_sites()
 		if verbose:
 			print(f"Notifying {len(teams)} team(s) with active sites on {self.name}")
 		for team, sites in teams.items():
+			duplicate = self.check_duplicate_dispatch_within_days(team, subject, duplicate_window_days)
+			if duplicate:
+				if verbose:
+					sent_on = frappe.utils.formatdate(duplicate.creation)
+					link = frappe.utils.get_url_to_form("Email Queue", duplicate.name)
+					print(f"  {team}: not sending this as already sent on ({sent_on}) [{link}]")
+				continue
 			recipients = get_communication_info("Email", "General", "Team", team)
 			if not recipients:
 				if verbose:
@@ -4583,7 +4614,7 @@ class Server(BaseServer):
 				continue
 			frappe.sendmail(
 				recipients=recipients,
-				subject=f"Action needed: migrate your site off {self.name} before {deadline}",
+				subject=subject,
 				template="server_decommission_migration",
 				args={
 					"server": self.name,
