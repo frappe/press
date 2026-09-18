@@ -56,13 +56,13 @@
     path: /var/lib/mysql
     mode: 0755
 
+# A drop-in survives package upgrades, which rewrite the unit file.
 - name: Set Open Files Count Limit for MariaDB
-  lineinfile:
-    dest: /lib/systemd/system/mariadb.service
-    regexp: '^LimitNOFILE(\s*)=(\s*)\d+'
-    line: "LimitNOFILE = infinity"
-    insertafter: '\[Service\]'
-    state: present
+  copy:
+    dest: /etc/systemd/system/mariadb.service.d/limits.conf
+    content: |
+      [Service]
+      LimitNOFILE=infinity
 
 - name: Force Systemd to Reread Configuration
   systemd:
@@ -110,6 +110,14 @@
     master_port: "{{ primary_db_port }}"
     master_password: "{{ mariadb_root_password }}"
     master_use_gtid: slave_pos
+
+# MariaDB 11.4+ verifies the primary's TLS cert by default. Our primaries have no TLS.
+- name: Disable TLS on the replication connection
+  mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_port: "{{ db_port }}"
+    query: CHANGE MASTER TO MASTER_SSL=0, MASTER_SSL_VERIFY_SERVER_CERT=0
 
 - name: Start MariaDB Secondary Thread
   mysql_replication:
