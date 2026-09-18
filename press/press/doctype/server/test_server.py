@@ -1247,3 +1247,43 @@ class TestServerDecommissionNotice(FrappeTestCase):
 			)
 
 		sendmail.assert_not_called()
+
+	def test_notify_teams_before_decommission_prints_progress_when_verbose(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team = create_test_team()
+		create_test_site(bench=bench.name, team=team.name)
+
+		with (
+			patch.object(frappe, "sendmail", new=Mock()),
+			patch("builtins.print") as mock_print,
+		):
+			Server("Server", server.name).notify_teams_before_decommission(
+				deadline="October 10",
+				migration_window="Saturday-Sunday, October 10-11",
+				migration_start_time="1:00 AM IST",
+				expected_downtime="about an hour or more",
+				verbose=True,
+			)
+
+		printed = " ".join(str(call.args[0]) for call in mock_print.call_args_list)
+		self.assertIn(server.name, printed)
+		self.assertIn(team, printed)
+
+	def test_notify_teams_before_decommission_is_silent_without_verbose(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		create_test_site(bench=bench.name, team=create_test_team().name)
+
+		with (
+			patch.object(frappe, "sendmail", new=Mock()),
+			patch("builtins.print") as mock_print,
+		):
+			Server("Server", server.name).notify_teams_before_decommission(
+				deadline="October 10",
+				migration_window="Saturday-Sunday, October 10-11",
+				migration_start_time="1:00 AM IST",
+				expected_downtime="about an hour or more",
+			)
+
+		mock_print.assert_not_called()
