@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime
+import hashlib
 import ipaddress
 import json
 import random
@@ -4544,6 +4545,115 @@ class Server(BaseServer):
 
 		# Return the next server plan document
 		return frappe.get_doc("Server Plan", next_plan)
+
+	def teams_with_active_sites(self) -> dict[str, list[str]]:
+		"""Map each team to the names of its non-archived sites on this server.
+
+		Suspended sites are included: suspending only disables a site, its files and database
+		stay on the server, so it is lost when the server is decommissioned unless it is moved
+		or archived first. Only archived sites (already dropped from the server) are excluded.
+		"""
+		sites = frappe.get_all(
+			"Site",
+			filters={"server": self.name, "status": ("!=", "Archived")},
+			fields=["name", "team"],
+		)
+		teams: dict[str, list[str]] = {}
+		for site in sites:
+			if site.team:
+				teams.setdefault(site.team, []).append(site.name)
+		return teams
+
+	def decommission_notice_message_id(self, team: str, args: dict) -> str:
+		"""Deterministic Message-Id for the notice, unique per team and set of parameters.
+
+		Used as the idempotency key: the same notice with the same parameters to the same team
+		yields the same id, so a re-run finds the earlier Email Queue row and skips, while any
+		changed parameter (e.g. a new deadline) yields a new id that sends again.
+		"""
+		payload = json.dumps({"team": team, **args}, sort_keys=True, default=str)
+		digest = hashlib.sha256(payload.encode()).hexdigest()[:24]
+		return f"decommission-notice-{digest}@frappecloud.com"
+
+	def check_duplicate_dispatch_within_days(self, message_id: str, days: int) -> frappe._dict | None:
+		"""Return the most recent dispatch of this exact notice within `days`, else None.
+
+		Keyed on the Message-Id (a real, queryable Email Queue column that we set), so the
+		match is exact. Only sent or in-flight rows count; a failed ("Error") send does not
+		suppress a retry.
+		"""
+		since = frappe.utils.add_days(frappe.utils.now_datetime(), -days)
+		dispatches = frappe.get_all(
+			"Email Queue",
+			filters={
+				"message_id": message_id,
+				"status": ("in", ["Not Sent", "Sending", "Sent", "Partially Sent"]),
+				"creation": (">", since),
+			},
+			fields=["name", "creation"],
+			order_by="creation desc",
+			limit=1,
+		)
+		return dispatches[0] if dispatches else None
+
+	def notify_teams_before_decommission(
+		self,
+		deadline: str,
+		migration_window: str,
+		migration_start_time: str,
+		expected_downtime: str,
+		reason: str = "It runs on DigitalOcean and has reached its disk capacity limits.",
+		recommended_destination: str | None = None,
+		action_url: str = "https://cloud.frappe.io/dashboard",
+		duplicate_window_days: int = 15,
+		verbose: bool = False,
+	):
+		"""Email every team with active sites here that this server is being decommissioned.
+
+		Meant to be run from the console for a shared server that is going away, so that
+		customers can migrate their sites before the automatic migration window. Idempotent
+		within duplicate_window_days: a team already sent the same notice in that window is skipped.
+		Pass verbose=True to print progress per team.
+		"""
+		subject = f"We're moving your site off {self.name} to a new server"
+		args = {
+			"server": self.name,
+			"action_url": action_url,
+			"deadline": deadline,
+			"migration_window": migration_window,
+			"migration_start_time": migration_start_time,
+			"expected_downtime": expected_downtime,
+			"reason": reason,
+			"recommended_destination": recommended_destination,
+		}
+		teams = self.teams_with_active_sites()
+		if verbose:
+			print(f"Notifying {len(teams)} team(s) with active sites on {self.name}")
+		for team, sites in teams.items():
+			message_id = self.decommission_notice_message_id(team, args)
+			duplicate = self.check_duplicate_dispatch_within_days(message_id, duplicate_window_days)
+			if duplicate:
+				if verbose:
+					sent_on = frappe.utils.formatdate(duplicate.creation)
+					link = frappe.utils.get_url_to_form("Email Queue", duplicate.name)
+					print(f"  {team}: not sending this as already sent on ({sent_on}) [{link}]")
+				continue
+			recipients = get_communication_info("Email", "General", "Team", team)
+			if not recipients:
+				if verbose:
+					print(f"  skipped {team}: no recipients for {len(sites)} site(s)")
+				continue
+			frappe.sendmail(
+				recipients=recipients,
+				subject=subject,
+				template="server_decommission_migration",
+				args={**args, "site_name": ", ".join(sites), "site_count": len(sites)},
+				reference_doctype="Team",
+				reference_name=team,
+				message_id=message_id,
+			)
+			if verbose:
+				print(f"  queued {team}: {len(sites)} site(s) -> {', '.join(recipients)}")
 
 
 def scale_workers(now=False):
