@@ -1226,6 +1226,23 @@ class TestServerDecommissionNotice(FrappeTestCase):
 		self.assertEqual(team_one_call["args"]["recommended_destination"], "Mumbai, India")
 		self.assertEqual(calls_by_team[team_two.name]["args"]["site_count"], 1)
 
+	def test_notify_teams_before_decommission_falls_back_to_team_user_without_communication_info(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team = create_test_team()
+		create_test_site(bench=bench.name, team=team.name)
+
+		with patch.object(frappe, "sendmail") as sendmail:
+			Server("Server", server.name).notify_teams_before_decommission(
+				deadline="October 10",
+				migration_window="the weekend of October 10-11",
+				migration_start_time="1:00 AM IST",
+				expected_downtime="about an hour or more",
+			)
+
+		team_user = frappe.db.get_value("Team", team.name, "user")
+		self.assertEqual(sendmail.call_args.kwargs["recipients"], [team_user])
+
 	def test_notify_teams_before_decommission_skips_teams_without_recipients(self):
 		server = create_test_server()
 		bench = create_test_bench(server=server.name)
