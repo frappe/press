@@ -76,14 +76,13 @@
   delay: 120
   when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
 
+# A drop-in survives package upgrades, which rewrite the unit file.
 - name: Set Open Files Count Limit for MariaDB
-  ansible.builtin.lineinfile:
-    dest: /lib/systemd/system/mariadb.service
-    regexp: '^LimitNOFILE(\s*)=(\s*)\d+'
-    line: 'LimitNOFILE = infinity'
-    insertafter: '\[Service\]'
-    state: present
-  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
+  copy:
+    dest: /etc/systemd/system/mariadb.service.d/limits.conf
+    content: |
+      [Service]
+      LimitNOFILE=infinity
 
 - name: Start MariaDB Service
   ansible.builtin.systemd:
