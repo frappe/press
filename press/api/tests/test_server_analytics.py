@@ -107,6 +107,7 @@ class TestServerAnalyticsQuery(FrappeTestCase):
 
 		def fake_prometheus_query(query, function, *args, **kwargs):
 			captured["query"] = query
+			captured["function"] = function
 			return {"datasets": [], "labels": []}
 
 		# strip the whitelist/protected/redis_cache layers to call the real function
@@ -122,7 +123,19 @@ class TestServerAnalyticsQuery(FrappeTestCase):
 				start.isoformat(),
 				end.isoformat(),
 			)
+		self.captured = captured
 		return captured["query"]
+
+	def test_iops_query_has_a_read_and_a_write_series_per_device(self):
+		start = datetime(2024, 1, 1, 0, 0, 0)
+
+		query = self._capture_query(start, start + timedelta(hours=1), "iops")
+
+		self.assertIn("node_disk_reads_completed_total", query)
+		self.assertIn("node_disk_writes_completed_total", query)
+		label = self.captured["function"]
+		self.assertEqual(label({"device": "nvme0n1", "op": "read"}), "nvme0n1 read")
+		self.assertEqual(label({"device": "nvme0n1", "op": "write"}), "nvme0n1 write")
 
 	def test_cpu_query_uses_widened_rate_window_for_one_hour(self):
 		start = datetime(2024, 1, 1, 13, 0, 0)
