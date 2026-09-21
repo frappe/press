@@ -936,10 +936,9 @@ class BaseServer(Document, TagHelpers):
 	def install_wazuh_agent(self):
 		if not is_wazuh_configured():
 			frappe.throw("Please configure Wazuh Server and Wazuh Agent Version in Press Settings")
-		# Stamped before the enqueue, so a server we cannot even queue still yields its turn
-		frappe.db.set_value(
-			self.doctype, self.name, "wazuh_install_last_attempt", frappe.utils.now_datetime()
-		)
+		# Stamped before the enqueue, so a server we cannot even queue still yields its turn.
+		# db_set, not frappe.db.set_value, so a later self.save() sees the new modified
+		self.db_set("wazuh_install_last_attempt", frappe.utils.now_datetime())
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
