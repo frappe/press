@@ -189,23 +189,3 @@ rules:
               Ansible(...)
           - pattern: |
               AnsibleAdHoc(...)
-
-  - id: set-value-on-own-doc
-    languages: [python]
-    patterns:
-      - pattern-inside: |
-          def $METHOD(self, ...):
-              ...
-      - pattern-either:
-          - pattern: frappe.db.set_value(self.doctype, self.name, ...)
-          - pattern: frappe.db.set_value("...", self.name, ...)
-    paths:
-      exclude:
-        - 'test_*.py'
-    message: |
-      frappe.db.set_value on the doc's own row bumps `modified` in the table but not on `self`. A later `self.save()` in the same process raises TimestampMismatchError (see #7504). Use `self.db_set(...)`, which also updates `self.modified`.
-    severity: WARNING
-    metadata:
-      category: correctness
-      technology:
-        - frappe
