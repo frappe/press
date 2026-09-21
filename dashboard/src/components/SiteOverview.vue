@@ -23,6 +23,34 @@
 				More Info
 			</Button>
 		</AlertBanner>
+		<AlertBanner
+			v-if="$site?.doc?.is_database_io_high"
+			class="col-span-1 lg:col-span-2"
+			type="warning"
+			title="The database server of this site waits on the disk for more than half of its time. With more memory, it can serve more queries from memory."
+		>
+			<Button
+				class="ml-auto min-w-[7rem]"
+				variant="outline"
+				link="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan"
+			>
+				More Info
+			</Button>
+		</AlertBanner>
+		<AlertBanner
+			v-if="$site?.doc?.is_database_cpu_high"
+			class="col-span-1 lg:col-span-2"
+			type="warning"
+			title="The CPU of the database server of this site is busy for more than half of its time. Slow queries are the usual cause. Examine the slow query report of this site."
+		>
+			<Button
+				class="ml-auto min-w-[7rem]"
+				variant="outline"
+				link="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
+			>
+				More Info
+			</Button>
+		</AlertBanner>
 
 		<AlertBanner
 			v-if="$site?.doc?.creation_failed"

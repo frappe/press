@@ -12,6 +12,8 @@ from frappe.utils.data import add_to_date
 from press.api.client import get
 from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import (
 	BANNER_ALERT_WINDOW_HOURS,
+	DATABASE_HIGH_CPU_ALERT,
+	DATABASE_HIGH_IO_ALERT,
 	DISK_FULL_ALERT,
 	app_servers_with_alert,
 )
@@ -174,3 +176,45 @@ class TestDiskFullServers(FrappeTestCase):
 		frappe.set_user(frappe.db.get_value("Team", site.team, "user"))
 
 		self.assertFalse(get("Site", site.name).is_server_disk_full)
+
+
+class TestDatabaseLoadBanners(FrappeTestCase):
+	def setUp(self):
+		self.server = create_test_server()
+		self.site = create_test_site(server=self.server.name)
+		frappe.set_user(frappe.db.get_value("Team", self.site.team, "user"))
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def fire_on_database_server(self, alert: str):
+		rule = create_test_prometheus_alert_rule(name=alert)
+		create_test_alertmanager_webhook_log(
+			alert=rule, instance=self.server.database_server, status="firing"
+		)
+
+	def test_high_io_on_database_server_shows_on_the_site_and_the_app_server(self):
+		self.fire_on_database_server(DATABASE_HIGH_IO_ALERT)
+		self.assertTrue(get("Site", self.site.name).is_database_io_high)
+		self.assertTrue(get("Server", self.server.name).is_database_io_high)
+		self.assertFalse(get("Site", self.site.name).is_database_cpu_high)
+
+	def test_high_cpu_on_database_server_shows_on_the_site_and_the_app_server(self):
+		self.fire_on_database_server(DATABASE_HIGH_CPU_ALERT)
+		self.assertTrue(get("Site", self.site.name).is_database_cpu_high)
+		self.assertTrue(get("Server", self.server.name).is_database_cpu_high)
+		self.assertFalse(get("Site", self.site.name).is_database_io_high)
+
+	def test_site_on_shared_hosting_is_not_told_about_database_load(self):
+		frappe.set_user("Administrator")
+		shared_server = create_test_server(public=True)
+		site = create_test_site(server=shared_server.name)
+		for alert in (DATABASE_HIGH_IO_ALERT, DATABASE_HIGH_CPU_ALERT):
+			rule = create_test_prometheus_alert_rule(name=alert)
+			create_test_alertmanager_webhook_log(alert=rule, instance=shared_server.database_server)
+
+		frappe.set_user(frappe.db.get_value("Team", site.team, "user"))
+
+		self.assertFalse(get("Site", site.name).is_database_io_high)
+		self.assertFalse(get("Site", site.name).is_database_cpu_high)
