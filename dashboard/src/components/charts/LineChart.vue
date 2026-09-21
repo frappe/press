@@ -216,7 +216,6 @@ const options = ref({
 			showSymbol: false,
 			data: dataset.dataset || dataset,
 			markLine: data.value.markLine,
-			connectNulls: true,
 			emphasis: {
 				itemStyle: {
 					shadowBlur: 10,
