@@ -470,8 +470,9 @@ def analytics(name, query, timezone, start, end, server_type=None):
 			lambda x: x["device"],
 		),
 		"iops": (
-			f"""rate(node_disk_reads_completed_total{{instance="{name}", job="node"}}[{rate_interval}s])""",
-			lambda x: x["device"],
+			# rate() drops __name__, so tag each side before the union
+			f"""label_replace(rate(node_disk_reads_completed_total{{instance="{name}", job="node"}}[{rate_interval}s]), "op", "read", "", "") or label_replace(rate(node_disk_writes_completed_total{{instance="{name}", job="node"}}[{rate_interval}s]), "op", "write", "", "")""",
+			lambda x: f"{x['device']} {x['op']}",
 		),
 		"space": (
 			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}})""",
