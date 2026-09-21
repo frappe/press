@@ -11,9 +11,9 @@ from frappe.utils.data import add_to_date
 
 from press.api.client import get
 from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import (
+	BANNER_ALERT_WINDOW_HOURS,
 	DISK_FULL_ALERT,
-	DISK_FULL_ALERT_WINDOW_HOURS,
-	disk_full_servers,
+	app_servers_with_alert,
 )
 from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import (
 	create_test_prometheus_alert_rule,
@@ -113,16 +113,16 @@ class TestDiskFullServers(FrappeTestCase):
 
 	def test_alert_on_app_server_reports_that_server(self):
 		self.disk_full_alert(self.server.name, "firing")
-		self.assertEqual(disk_full_servers(), {self.server.name})
+		self.assertEqual(app_servers_with_alert(DISK_FULL_ALERT), {self.server.name})
 
 	def test_alert_on_database_server_reports_the_app_server_it_serves(self):
 		self.disk_full_alert(self.server.database_server, "firing")
-		self.assertEqual(disk_full_servers(), {self.server.name})
+		self.assertEqual(app_servers_with_alert(DISK_FULL_ALERT), {self.server.name})
 
 	def test_resolved_alert_stops_reporting_the_server(self):
 		self.disk_full_alert(self.server.name, "firing")
 		self.disk_full_alert(self.server.name, "resolved")
-		self.assertEqual(disk_full_servers(), set())
+		self.assertEqual(app_servers_with_alert(DISK_FULL_ALERT), set())
 
 	def test_resolved_alert_keeps_reporting_the_servers_still_out_of_space(self):
 		other_server = create_test_server()
@@ -131,7 +131,7 @@ class TestDiskFullServers(FrappeTestCase):
 
 		self.disk_full_alert(self.server.name, "resolved")
 
-		self.assertEqual(disk_full_servers(), {other_server.name})
+		self.assertEqual(app_servers_with_alert(DISK_FULL_ALERT), {other_server.name})
 
 	def test_unified_server_is_reported_once(self):
 		frappe.db.set_value(
@@ -140,7 +140,7 @@ class TestDiskFullServers(FrappeTestCase):
 
 		self.disk_full_alert(self.server.name, "firing")
 
-		self.assertEqual(disk_full_servers(), {self.server.name})
+		self.assertEqual(app_servers_with_alert(DISK_FULL_ALERT), {self.server.name})
 
 	def test_alert_we_have_not_heard_about_for_a_while_is_ignored(self):
 		log = self.disk_full_alert(self.server.name, "firing")
@@ -148,15 +148,15 @@ class TestDiskFullServers(FrappeTestCase):
 			log.doctype,
 			log.name,
 			"creation",
-			add_to_date(frappe.utils.now(), hours=-(DISK_FULL_ALERT_WINDOW_HOURS + 1)),
+			add_to_date(frappe.utils.now(), hours=-(BANNER_ALERT_WINDOW_HOURS + 1)),
 			update_modified=False,
 		)
 
-		self.assertEqual(disk_full_servers(), set())
+		self.assertEqual(app_servers_with_alert(DISK_FULL_ALERT), set())
 
 	def test_alert_on_an_unknown_instance_is_ignored(self):
 		self.disk_full_alert("some-server-we-do-not-own.frappe.cloud", "firing")
-		self.assertEqual(disk_full_servers(), set())
+		self.assertEqual(app_servers_with_alert(DISK_FULL_ALERT), set())
 
 	def test_site_dashboard_on_a_dedicated_server_is_told_the_disk_is_full(self):
 		site = create_test_site(server=self.server.name)
