@@ -47,7 +47,7 @@ import { session } from './data/session.js'
 import { getTeam } from './data/team'
 import { dialogs } from './utils/components'
 
-import "@/styles/global.css"
+import '@/styles/global.css'
 
 const AppSidebar = defineAsyncComponent(
 	() => import('./components/navigation/sidebar/Sidebar.vue'),
