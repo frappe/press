@@ -31,6 +31,7 @@ from press.press.doctype.server.server import (
 	BaseServer,
 	Server,
 	install_missing_wazuh_agents,
+	install_missing_yara,
 	process_cleanup_unused_files_job_update,
 	servers_needing_wazuh_agent,
 	sync_wazuh_agent_status,
@@ -804,6 +805,73 @@ class TestServer(FrappeTestCase):
 			order = [name for _, name in servers_needing_wazuh_agent()]
 
 		self.assertLess(order.index(database_server.name), order.index(app_server.name))
+
+	def _servers_given_yara_installs(self, batch_size=10_000):
+		with (
+			patch("press.press.doctype.server.server.WAZUH_INSTALL_BATCH_SIZE", batch_size),
+			patch.object(BaseServer, "install_yara", autospec=True) as install_yara,
+		):
+			install_missing_yara()
+		return {call.args[0].name for call in install_yara.call_args_list}
+
+	def test_yara_installed_only_on_servers_already_reporting_to_the_manager(self):
+		"""YARA writes into ossec.conf, so it is meaningless without the agent."""
+		self._configure_wazuh()
+		enrolled = create_test_server()
+		enrolled.db_set({"is_server_setup": 1, "is_wazuh_agent_installed": 1})
+		no_agent = create_test_server()
+		no_agent.db_set({"is_server_setup": 1, "is_wazuh_agent_installed": 0})
+		already_scanning = create_test_server()
+		already_scanning.db_set({"is_server_setup": 1, "is_wazuh_agent_installed": 1, "is_yara_installed": 1})
+
+		installed_on = self._servers_given_yara_installs()
+
+		self.assertIn(enrolled.name, installed_on)
+		skipped = {no_agent.name, already_scanning.name}
+		self.assertTrue(installed_on.isdisjoint(skipped), installed_on & skipped)
+
+	def test_install_yara_raises_without_the_wazuh_agent(self):
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", 0)
+		server.reload()
+		with self.assertRaisesRegex(frappe.ValidationError, "Wazuh agent"):
+			server.install_yara()
+
+	def test_install_marks_yara_installed_on_successful_play(self):
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", 1)
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._install_yara()
+		self.assertEqual(Ansible.call_args.kwargs["playbook"], "wazuh_yara_install.yml")
+		server.reload()
+		self.assertTrue(server.is_yara_installed)
+
+	def test_install_leaves_yara_uninstalled_on_failed_play(self):
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", 1)
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Failure")
+			server._install_yara()
+		server.reload()
+		self.assertFalse(server.is_yara_installed)
+
+	def test_uninstalling_the_wazuh_agent_clears_yara(self):
+		"""The YARA config lives in ossec.conf, so removing the agent removes it too."""
+		server = create_test_server()
+		server.db_set({"is_wazuh_agent_installed": True, "is_yara_installed": True})
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._uninstall_wazuh_agent()
+		server.reload()
+		self.assertFalse(server.is_yara_installed)
+
+	def test_every_wazuh_server_type_has_yara_fields(self):
+		for server_type in WAZUH_SERVER_TYPES:
+			with self.subTest(server_type=server_type):
+				meta = frappe.get_meta(server_type)
+				self.assertTrue(meta.has_field("is_yara_installed"))
+				self.assertTrue(meta.has_field("yara_install_last_attempt"))
 
 	def test_install_records_the_attempt_even_when_the_enqueue_fails(self):
 		"""An unqueueable server must still yield its turn, or it blocks the head of the queue."""
