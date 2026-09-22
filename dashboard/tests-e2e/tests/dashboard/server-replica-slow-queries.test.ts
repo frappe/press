@@ -78,6 +78,17 @@ async function mockServerPage(page: Page) {
 				slowLogChart(['site-a.frappe.cloud', 'site-b.frappe.cloud']),
 			),
 	)
+	await page.route(
+		/\/api\/method\/press\.api\.server\.get_slow_logs_by_query/,
+		(route) =>
+			fulfill(
+				route,
+				slowLogChart([
+					'select * from `tabSales Invoice` where name = ?',
+					'select count(*) from `tabGL Entry`',
+				]),
+			),
+	)
 }
 
 /** The `name` param of every request to the endpoint, in order. */
@@ -109,4 +120,36 @@ test('the replica shows the advanced database charts', async ({ page }) => {
 
 	await expect.poll(() => requested.length).toBeGreaterThanOrEqual(2)
 	expect(requested.every((name) => name === REPLICA_SERVER)).toBe(true)
+})
+
+test('the per-query charts show the queries of the chosen host', async ({
+	page,
+}) => {
+	test.slow()
+	await mockServerPage(page)
+	const requested = slowLogRequests(page, 'get_slow_logs_by_query')
+
+	await page.goto(
+		`/dashboard/servers/${APP_SERVER}/analytics?server=${DATABASE_SERVER}`,
+	)
+
+	const byQuery = page.locator('#frequent-slow-queries-by-query')
+	await expect(byQuery).toBeVisible({ timeout: 30000 })
+	await expect(page.locator('#slowest-queries-by-query')).toBeVisible()
+
+	// Query text, not a site name, is the legend of the per-query chart
+	await expect(byQuery.getByText('tabGL Entry', { exact: false })).toBeVisible({
+		timeout: 15000,
+	})
+
+	await expect.poll(() => requested.length).toBeGreaterThanOrEqual(2)
+	expect(requested.every((name) => name === DATABASE_SERVER)).toBe(true)
+
+	// Switching to the replica asks for the replica's own slow log. The
+	// Server control is a reka-ui select, not a <select>.
+	await page.getByRole('combobox').first().click()
+	await page.getByRole('option', { name: 'Replication Server' }).click()
+	await expect
+		.poll(() => requested.filter((name) => name === REPLICA_SERVER).length)
+		.toBeGreaterThanOrEqual(2)
 })
