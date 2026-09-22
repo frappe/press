@@ -1392,16 +1392,19 @@ export default {
 		{
 			name: 'Site Backup Audit Trail',
 			path: 'backups/audit-trail',
+			meta: { title: 'Backup Audit Trail' },
 			component: () => import('../components/site/SiteBackupAuditTrail.vue'),
 		},
 		{
 			name: 'Site Update',
 			path: 'updates/:id',
+			meta: { title: 'Update' },
 			component: () => import('../pages/SiteUpdate.vue'),
 		},
 		{
 			name: 'Site Migration',
 			path: 'migrations/:id',
+			meta: { title: 'Migration' },
 			component: () => import('../pages/SiteMigration.vue'),
 		},
 	],
