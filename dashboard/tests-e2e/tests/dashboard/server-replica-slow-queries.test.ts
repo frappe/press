@@ -56,7 +56,7 @@ async function fulfill(
 	})
 }
 
-async function mockServerPage(page: Page) {
+async function mockServerPage(page: Page, doc = serverDoc) {
 	await page.setViewportSize({ width: 1440, height: 900 })
 
 	await page.route(
@@ -64,7 +64,7 @@ async function mockServerPage(page: Page) {
 		async (route) => {
 			const url = new URL(route.request().url())
 			if (url.searchParams.get('doctype') !== 'Server') return route.continue()
-			await fulfill(route, serverDoc)
+			await fulfill(route, doc)
 		},
 	)
 	await page.route(/\/api\/method\/press\.api\.server\.analytics/, (route) =>
@@ -120,6 +120,27 @@ test('the replica shows the advanced database charts', async ({ page }) => {
 
 	await expect.poll(() => requested.length).toBeGreaterThanOrEqual(2)
 	expect(requested.every((name) => name === REPLICA_SERVER)).toBe(true)
+})
+
+test('the replica of a unified server shows the database charts', async ({
+	page,
+}) => {
+	test.slow()
+	// isServerType maps every type to Unified Server here, so a label check
+	// on the chosen option is what finds the replica
+	await mockServerPage(page, {
+		...serverDoc,
+		is_unified_server: 1,
+		database_server: null,
+	})
+
+	await page.goto(
+		`/dashboard/servers/${APP_SERVER}/analytics?server=${REPLICA_SERVER}`,
+	)
+
+	await expect(page.locator('#frequent-slow-queries')).toBeVisible({
+		timeout: 30000,
+	})
 })
 
 test('the per-query charts show the queries of the chosen host', async ({

@@ -1238,9 +1238,14 @@ export default {
 			return { datasets, yMax: percentage ? 100 : null }
 		},
 		isDatabaseServer() {
+			// Not isServerType: on a unified server it maps every type to Unified
+			// Server, so a chosen replica would never match
+			const chosen = this.serverOptions.find(
+				(s) => s.value === this.chosenServer,
+			)
 			return (
-				this.isServerType('Database Server') ||
-				this.isServerType('Replication Server')
+				chosen?.label === 'Replication Server' ||
+				this.isServerType('Database Server')
 			)
 		},
 		isServerType(type) {
