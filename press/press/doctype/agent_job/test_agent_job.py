@@ -543,6 +543,39 @@ class TestAgentJobNotifications(FrappeTestCase):
 		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_UPDATE])
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_error_raised_by_frappe_db_layer_blames_the_app_that_called_it(self):
+		site, bench = self.site_with_app("dummy_app")
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/modules/patch_handler.py", line 90, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/database/database.py", line 230, in sql\n'
+			"pymysql.err.OperationalError: (1054, \"Unknown column 'rate' in 'field list'\")",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertEqual(details["title"], "Update failed because of the dummy_app app")
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_DEBUG])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_traceback_with_only_frappe_frames_gets_no_banner(self):
+		site, bench = self.site_with_app("dummy_app")
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/migrate.py", line 120, in run\n'
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/database/database.py", line 230, in sql\n'
+			"pymysql.err.OperationalError: (2013, 'Lost connection')",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertFalse(details["is_actionable"])
+		self.assertEqual(details["title"], "Site Migrate")
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_app_name_with_digits_is_not_skipped(self):
 		site, bench = self.site_with_app("dummy_app2")
 		job = self.update_job(
