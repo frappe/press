@@ -118,6 +118,13 @@
   poll: 15
   when: mariadb_10_11_to_10_6_requires_change | bool
 
+- name: Create MariaDB Systemd Drop-In Directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/mariadb.service.d
+    state: directory
+    mode: 0755
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
 # A drop-in survives package upgrades, which rewrite the unit file.
 - name: Set open files count limit for MariaDB
   ansible.builtin.copy:
