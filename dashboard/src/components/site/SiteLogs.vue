@@ -3,10 +3,10 @@
 </template>
 
 <script>
-import { h } from 'vue';
-import LucideSparkleIcon from '~icons/lucide/sparkle';
-import { date } from '../../utils/format';
-import ObjectList from '../ObjectList.vue';
+import { h } from 'vue'
+import LucideSparkleIcon from '~icons/lucide/sparkle'
+import { date } from '../../utils/format'
+import ObjectList from '../ObjectList.vue'
 
 export default {
 	name: 'SiteLogs',
@@ -33,7 +33,7 @@ export default {
 				auto: true,
 				initialData: [],
 				cache: ['ObjectList', 'press.api.site.logs', this.name],
-			};
+			}
 		},
 	},
 	computed: {
@@ -45,18 +45,18 @@ export default {
 				'pdf',
 				'wkhtmltopdf',
 				'ipython',
-			];
+			]
 
 			if (this.type && !knownTypes.includes(this.type)) {
 				return this.$resources.logs.data.filter(
 					(d) => !knownTypes.includes(d.name.split('.')[0]),
-				);
+				)
 			}
 
 			// logs of a particular type
 			return this.$resources.logs.data.filter(
 				(d) => d.name.split('.')[0] === this.type,
-			);
+			)
 		},
 		logsOptions() {
 			if (this.type) {
@@ -66,7 +66,7 @@ export default {
 						return {
 							name: 'Site Log',
 							params: { logName: row.name },
-						};
+						}
 					},
 					columns: [
 						{
@@ -78,14 +78,14 @@ export default {
 							fieldname: 'size',
 							class: 'text-ink-gray-6',
 							format(value) {
-								return `${value} kB`;
+								return `${value} kB`
 							},
 						},
 						{
 							label: 'Modified On',
 							fieldname: 'modified',
 							format(value) {
-								return value ? date(value, 'lll') : '';
+								return value ? date(value, 'lll') : ''
 							},
 						},
 					],
@@ -99,7 +99,7 @@ export default {
 								this.$router.push({
 									name: 'Log Browser',
 									params: { mode: 'site', docName: this.name },
-								});
+								})
 							},
 						},
 						{
@@ -109,7 +109,7 @@ export default {
 							onClick: () => this.$resources.logs.reload(),
 						},
 					],
-				};
+				}
 			} else {
 				return {
 					route: (row) => row.route,
@@ -202,13 +202,13 @@ export default {
 								this.$router.push({
 									name: 'Log Browser',
 									params: { mode: 'site', docName: this.name },
-								});
+								})
 							},
 						},
 					],
-				};
+				}
 			}
 		},
 	},
-};
+}
 </script>

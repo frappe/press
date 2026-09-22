@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { h, defineAsyncComponent, computed } from 'vue'
-import { Button, Tooltip, Dropdown, createListResource } from 'frappe-ui'
-
-import { renderDialog } from '@/utils/components'
+import { Button, createListResource, Dropdown, Tooltip } from 'frappe-ui'
+import { computed, defineAsyncComponent, h } from 'vue'
 import { getTeam } from '@/data/team'
+import { renderDialog } from '@/utils/components'
 import { userCurrency } from '@/utils/format'
-import { onDropServer } from './utils'
-import ServerIcon from './ServerIcon.vue'
-
 import BenchRow from './BenchRow.vue'
+import ServerIcon from './ServerIcon.vue'
+import { onDropServer } from './utils'
 
 interface Props {
 	data: any
@@ -79,7 +77,9 @@ const serverActions = (server) => [
 			<div class="flex flex-wrap gap-1.5 items-center">
 				<Tooltip text="Go to server dashboard">
 					<router-link :to="`/servers/${data.name}`" class="hover:underline">
-						<span class="font-medium text-lg">{{ data?.title || data?.name }}</span>
+						<span class="font-medium text-lg"
+							>{{ data?.title || data?.name }}</span
+						>
 					</router-link>
 				</Tooltip>
 
@@ -98,9 +98,13 @@ const serverActions = (server) => [
 						</span>
 						<template #content>
 							<div class="flex flex-col gap-0.5">
-								<span>App server: {{ planPrice(data.price_usd, data.price_inr) }}</span>
+								<span
+									>App server:
+									{{ planPrice(data.price_usd, data.price_inr) }}</span
+								>
 								<span v-if="data.db_plan"
-									>DB server: {{ planPrice(data.db_plan.price_usd, data.db_plan.price_inr) }}</span
+									>DB server:
+									{{ planPrice(data.db_plan.price_usd, data.db_plan.price_inr) }}</span
 								>
 							</div>
 						</template>
@@ -156,7 +160,7 @@ const serverActions = (server) => [
 		>
 			<Button
 				@click="benches.next()"
-        class='ml-auto'
+				class="ml-auto"
 				:loading="benches.list?.loading"
 			>
 				Load more

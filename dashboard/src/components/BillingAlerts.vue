@@ -6,13 +6,27 @@ import dayjs from '@/utils/dayjs'
 
 withDefaults(defineProps<{ ctxType?: string }>(), { ctxType: 'List Page' })
 
-const AlertAddPaymentMode = defineAsyncComponent(() => import('./AlertAddPaymentMode.vue'))
-const AlertCardExpired = defineAsyncComponent(() => import('./AlertCardExpired.vue'))
-const AlertAddressDetails = defineAsyncComponent(() => import('./AlertAddressDetails.vue'))
-const AlertMandateInfo = defineAsyncComponent(() => import('./AlertMandateInfo.vue'))
-const AlertUnpaidInvoices = defineAsyncComponent(() => import('./AlertUnpaidInvoices.vue'))
-const AlertCardPaymentFailed = defineAsyncComponent(() => import('./AlertCardPaymentFailed.vue'))
-const AlertBudgetThreshold = defineAsyncComponent(() => import('./AlertBudgetThreshold.vue'))
+const AlertAddPaymentMode = defineAsyncComponent(
+	() => import('./AlertAddPaymentMode.vue'),
+)
+const AlertCardExpired = defineAsyncComponent(
+	() => import('./AlertCardExpired.vue'),
+)
+const AlertAddressDetails = defineAsyncComponent(
+	() => import('./AlertAddressDetails.vue'),
+)
+const AlertMandateInfo = defineAsyncComponent(
+	() => import('./AlertMandateInfo.vue'),
+)
+const AlertUnpaidInvoices = defineAsyncComponent(
+	() => import('./AlertUnpaidInvoices.vue'),
+)
+const AlertCardPaymentFailed = defineAsyncComponent(
+	() => import('./AlertCardPaymentFailed.vue'),
+)
+const AlertBudgetThreshold = defineAsyncComponent(
+	() => import('./AlertBudgetThreshold.vue'),
+)
 const CustomAlerts = defineAsyncComponent(() => import('./CustomAlerts.vue'))
 
 const team = getTeam()
@@ -22,18 +36,31 @@ const isCardExpired = computed(() => {
 	const expiry = team.doc?.payment_method
 	if (!expiry) return false
 	if (expiry.expiry_year < dayjs().year()) return true
-	return expiry.expiry_year == dayjs().year() && expiry.expiry_month < dayjs().month() + 1
+	return (
+		expiry.expiry_year == dayjs().year() &&
+		expiry.expiry_month < dayjs().month() + 1
+	)
 })
-const isMandateNotSet = computed(() => !team.doc?.payment_method?.stripe_mandate_id)
+const isMandateNotSet = computed(
+	() => !team.doc?.payment_method?.stripe_mandate_id,
+)
 
-const getAmountDue = createResource({ url: 'press.api.billing.total_unpaid_amount', auto: true })
+const getAmountDue = createResource({
+	url: 'press.api.billing.total_unpaid_amount',
+	auto: true,
+})
 const hasUnpaidInvoices = computed(() => getAmountDue.data)
 
 const getUnpaidInvoices = createResource({
 	url: 'press.api.client.get_list',
 	params: {
 		doctype: 'Invoice',
-		fields: ['name', 'stripe_invoice_url', 'stripe_payment_failed', 'stripe_payment_error'],
+		fields: [
+			'name',
+			'stripe_invoice_url',
+			'stripe_payment_failed',
+			'stripe_payment_error',
+		],
 		filters: { status: 'Unpaid', type: 'Subscription' },
 		order_by: 'creation desc',
 		limit: 1,
@@ -47,7 +74,9 @@ const cardPaymentFailure = computed(() => {
 		invoices.find((inv: any) => {
 			if (!inv.stripe_payment_failed || !inv.stripe_invoice_url) return false
 			const error = (inv.stripe_payment_error || '').toLowerCase()
-			return error.includes('insufficient fund') || error.includes('mandate amount')
+			return (
+				error.includes('insufficient fund') || error.includes('mandate amount')
+			)
 		}) || null
 	)
 })
@@ -64,15 +93,22 @@ const displayBudgetAlert = computed(() => {
 		team.doc.monthly_alert_threshold <= 0
 	)
 		return 0
-	const difference = getCurrentBillingAmount.data - team.doc.monthly_alert_threshold
+	const difference =
+		getCurrentBillingAmount.data - team.doc.monthly_alert_threshold
 	return difference > 0 ? difference.toFixed(2) : 0
 })
 </script>
 
 <template>
 	<template v-if="team.doc">
-		<AlertAddPaymentMode class="mb-5" v-if="!team.doc.payment_mode && !team.doc.parent_team" />
-		<AlertCardExpired class="mb-5" v-if="isCardExpired && team.doc?.payment_mode == 'Card'" />
+		<AlertAddPaymentMode
+			class="mb-5"
+			v-if="!team.doc.payment_mode && !team.doc.parent_team"
+		/>
+		<AlertCardExpired
+			class="mb-5"
+			v-if="isCardExpired && team.doc?.payment_mode == 'Card'"
+		/>
 		<AlertAddressDetails
 			class="mb-5"
 			v-if="!team.doc?.billing_details?.name && team.doc.payment_mode"
