@@ -500,11 +500,7 @@ export default {
 		},
 		migrationChoices() {
 			return Object.keys(this.migrationOptions)
-				.filter(
-					(e) =>
-						typeof this.migrationOptions[e] === 'object' &&
-						this.migrationOptions[e] != null,
-				)
+				.filter((e) => this.migrationOptions[e]?.button_label)
 				.map((e) => ({
 					label: e,
 					value: e,
