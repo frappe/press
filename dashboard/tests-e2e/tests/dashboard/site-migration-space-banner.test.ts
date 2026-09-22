@@ -256,3 +256,35 @@ test('shows cleanup-actions banner before the retry when moving to a dedicated s
 		await dialog.screenshot({ path: process.env.PLAYWRIGHT_BANNER_SHOT })
 	}
 })
+
+test('lists only migration types in the type dropdown, not the other keys of the options payload', async ({
+	page,
+}) => {
+	await mockSite(page)
+	await page.route(
+		/\/api\/method\/press\.api\.client\.run_doc_method/,
+		async (route) => {
+			if (docMethod(route) === 'get_migration_options') {
+				await route.fulfill({
+					status: 200,
+					contentType: 'application/json',
+					body: JSON.stringify(migrationOptionsMock),
+				})
+			} else {
+				await route.continue()
+			}
+		},
+	)
+
+	await page.goto(`/dashboard/sites/${SITE_NAME}/migrations`)
+	const dialog = page.getByRole('dialog', { name: 'Migrate Site' })
+	await page.getByRole('button', { name: 'Trigger Migration' }).click()
+	await dialog.getByRole('combobox').nth(0).click()
+
+	await expect(
+		page.getByRole('option', { name: 'Move Site To Different Server / Bench' }),
+	).toBeVisible()
+	await expect(
+		page.getByRole('option', { name: 'recent_failed_migration_servers' }),
+	).toBeHidden()
+})
