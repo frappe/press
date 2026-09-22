@@ -137,3 +137,25 @@ class TestServerSlowQueryGrouping(FrappeTestCase):
 		chart = self.chart(group_by_query=False)
 		chart.resource_type = ResourceType.SITE
 		self.assertFalse(chart.groups_by_site)
+
+
+class TestSlowQueriesWithoutLogServer(FrappeTestCase):
+	def test_chart_is_empty_when_no_log_server_is_set(self):
+		"""__init__ returns before it sets the filters, and run() used to read them"""
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		frappe.db.set_single_value("Press Settings", "log_server", "")
+		try:
+			chart = SlowLogGroupByChart(
+				False,
+				"m1.example.com",
+				AggType.COUNT,
+				TIMEZONE,
+				datetime(2026, 8, 24, 10, 0),
+				datetime(2026, 8, 24, 11, 0),
+				3600,
+				900,
+				ResourceType.SERVER,
+			)
+			self.assertEqual(chart.run(), {"datasets": [], "labels": []})
+		finally:
+			frappe.db.set_single_value("Press Settings", "log_server", log_server)
