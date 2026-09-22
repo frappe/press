@@ -75,9 +75,65 @@ def create_test_team(
 	return team
 
 
+def create_paid_invoice(team: Team):
+	invoice = frappe.get_doc({"doctype": "Invoice", "team": team.name, "type": "Prepaid Credits"}).insert(
+		ignore_permissions=True
+	)
+	invoice.db_set({"status": "Paid", "amount_paid": 100})
+
+
+def add_card(team: Team):
+	team.db_set({"payment_mode": "Card", "default_payment_method": "pm-test", "billing_address": "addr-test"})
+
+
+def subscribe_to_server_plan(team: Team, price_usd: float):
+	from press.press.doctype.server.test_server import create_test_server
+	from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
+	from press.press.doctype.subscription.test_subscription import create_test_subscription
+
+	plan = create_test_server_plan()
+	plan.db_set("price_usd", price_usd)
+	server = create_test_server(team=team.name)
+	create_test_subscription(server.name, plan.name, team.name, "Server", "Server Plan")
+
+
 class TestTeam(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
+
+	def test_new_team_cannot_skip_ssh_wait_with_card_and_paid_trial_site_plan(self):
+		from press.press.doctype.site.test_site import create_test_site
+		from press.press.doctype.site_plan.test_site_plan import create_test_plan
+		from press.press.doctype.subscription.test_subscription import create_test_subscription
+
+		team = create_test_team()
+		add_card(team)
+		plan = create_test_plan("Site", price_usd=10, is_trial_plan=True)
+		site = create_test_site(team=team.name)
+		create_test_subscription(site.name, plan.name, team.name)
+		self.assertFalse(team.can_skip_ssh_wait())
+
+	def test_new_team_can_skip_ssh_wait_after_buying_credits(self):
+		team = create_test_team()
+		create_paid_invoice(team)
+		self.assertTrue(team.can_skip_ssh_wait())
+
+	def test_new_team_can_skip_ssh_wait_with_card_and_paid_server_plan(self):
+		team = create_test_team()
+		add_card(team)
+		subscribe_to_server_plan(team, price_usd=200)
+		self.assertTrue(team.can_skip_ssh_wait())
+
+	def test_new_team_cannot_skip_ssh_wait_with_card_but_only_free_plan(self):
+		team = create_test_team()
+		add_card(team)
+		subscribe_to_server_plan(team, price_usd=0)
+		self.assertFalse(team.can_skip_ssh_wait())
+
+	def test_new_team_cannot_skip_ssh_wait_with_paid_plan_but_no_payment_method(self):
+		team = create_test_team()
+		subscribe_to_server_plan(team, price_usd=200)
+		self.assertFalse(team.can_skip_ssh_wait())
 
 	def test_switching_to_card_payment_mode_moves_beginner_team_to_growth_tier(self):
 		team = create_test_team()

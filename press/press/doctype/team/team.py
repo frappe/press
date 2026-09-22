@@ -1400,9 +1400,28 @@ class Team(Document):
 		if self.free_account or self.billing_team or self.payment_mode:
 			return True
 
+		return self.has_paid_invoice()
+
+	def can_skip_ssh_wait(self):
+		return self.has_paid_invoice() or (self.is_payment_mode_set() and self.has_paid_subscription())
+
+	def has_paid_invoice(self):
 		return bool(
 			frappe.db.exists("Invoice", {"team": self.name, "amount_paid": (">", 0), "status": "Paid"})
 		)
+
+	def has_paid_subscription(self):
+		paid_plan_filters = {
+			"Site Plan": {"price_usd": (">", 0), "is_trial_plan": 0},
+			"Server Plan": {"price_usd": (">", 0)},
+		}
+		for plan_type, filters in paid_plan_filters.items():
+			plans = frappe.get_all(
+				"Subscription", {"team": self.name, "enabled": 1, "plan_type": plan_type}, pluck="plan"
+			)
+			if plans and frappe.db.exists(plan_type, {"name": ("in", plans), **filters}):
+				return True
+		return False
 
 	def billing_info(self):
 		micro_debit_charge_field = (
