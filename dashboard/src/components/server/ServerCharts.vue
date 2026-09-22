@@ -489,6 +489,46 @@
 					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
+
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
+				v-if="isDatabaseServer()"
+				class="sm:col-span-2"
+				title="Frequent Slow queries by query"
+			>
+				<BarChart
+					title="Frequent Slow queries by query"
+					:key="slowQueriesCountData"
+					:data="slowQueriesCountData"
+					unit="queries"
+					:chartTheme="chartColors"
+					:loading="$resources.slowQueriesCount.loading"
+					:error="$resources.slowQueriesCount.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
+				v-if="isDatabaseServer()"
+				class="sm:col-span-2"
+				title="Slowest queries by query"
+			>
+				<BarChart
+					title="Slowest queries by query"
+					:key="slowQueriesDurationData"
+					:data="slowQueriesDurationData"
+					unit="seconds"
+					:chartTheme="chartColors"
+					:loading="$resources.slowQueriesDuration.loading"
+					:error="$resources.slowQueriesDuration.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
+				/>
+			</AnalyticsCard>
 		</div>
 	</div>
 </template>
@@ -754,6 +794,32 @@ export default {
 		slowLogsDuration() {
 			return {
 				url: 'press.api.server.get_slow_logs_by_site',
+				params: {
+					name: this.chosenServer,
+					query: 'duration',
+					timezone: this.localTimezone,
+					start: this.startTime,
+					end: this.endTime,
+				},
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
+			}
+		},
+		slowQueriesCount() {
+			return {
+				url: 'press.api.server.get_slow_logs_by_query',
+				params: {
+					name: this.chosenServer,
+					query: 'count',
+					timezone: this.localTimezone,
+					start: this.startTime,
+					end: this.endTime,
+				},
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
+			}
+		},
+		slowQueriesDuration() {
+			return {
+				url: 'press.api.server.get_slow_logs_by_query',
 				params: {
 					name: this.chosenServer,
 					query: 'duration',
@@ -1030,6 +1096,13 @@ export default {
 			if (!slowLogs) return
 
 			return slowLogs
+		},
+		slowQueriesCountData() {
+			// null before the first response; BarChart wants an object or undefined
+			return this.$resources.slowQueriesCount.data ?? undefined
+		},
+		slowQueriesDurationData() {
+			return this.$resources.slowQueriesDuration.data ?? undefined
 		},
 		databaseUptimeData() {
 			const uptime = this.$resources.databaseUptime.data
