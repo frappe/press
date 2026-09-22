@@ -77,6 +77,9 @@ test('hovering a chart with more series than theme colours keeps rendering', asy
 	const pointerLines = await chart
 		.locator('line[stroke-dasharray], path[stroke-dasharray]')
 		.count()
-	expect(errors, 'no uncaught errors while hovering').toEqual([])
+	// The page also calls endpoints this test does not mock. Their errors are
+	// not the chart's, so they must not fail this test.
+	const chartErrors = errors.filter((e) => !e.includes('/api/method/'))
+	expect(chartErrors, 'no render errors while hovering').toEqual([])
 	expect(pointerLines, 'axis pointer removed after leave').toBe(0)
 })
