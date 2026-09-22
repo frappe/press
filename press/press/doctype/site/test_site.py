@@ -233,9 +233,9 @@ class TestSite(FrappeTestCase):
 		self.assertEqual(site.db_server_restore_space(app, unified_db, db_required=100, app_required=30), 130)
 		self.assertEqual(site.db_server_restore_space(app, split_db, db_required=100, app_required=30), 100)
 
-	def test_has_recent_failed_migration_only_true_for_a_recent_failure(self):
+	def test_recent_failed_migration_servers_lists_only_recent_failure_destinations(self):
 		site = create_test_site("testsubdomain")
-		self.assertFalse(site.has_recent_failed_migration())
+		self.assertEqual(site.recent_failed_migration_servers(), [])
 
 		bench = create_test_bench()
 		with patch.object(SiteMigration, "after_insert"):
@@ -244,12 +244,12 @@ class TestSite(FrappeTestCase):
 			).insert()
 
 		frappe.db.set_value("Site Migration", migration.name, "status", "Failure")
-		self.assertTrue(site.has_recent_failed_migration())
+		self.assertEqual(site.recent_failed_migration_servers(), [bench.server])
 
 		frappe.db.set_value(
 			"Site Migration", migration.name, "creation", frappe.utils.add_to_date(None, days=-2)
 		)
-		self.assertFalse(site.has_recent_failed_migration())
+		self.assertEqual(site.recent_failed_migration_servers(), [])
 
 	def test_site_has_default_site_domain_on_create(self):
 		"""Ensure site has default site domain on create."""
