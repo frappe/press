@@ -110,8 +110,14 @@
     master_port: "{{ primary_db_port }}"
     master_password: "{{ mariadb_root_password }}"
     master_use_gtid: slave_pos
-    # MariaDB 11.4+ verifies the primary's TLS cert by default. Our primaries have no TLS.
-    master_ssl: false
+
+# MariaDB 11.4+ verifies the primary's TLS cert by default. Our primaries have no TLS.
+- name: Disable TLS on the replication connection
+  mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_port: "{{ db_port }}"
+    query: CHANGE MASTER TO MASTER_SSL=0, MASTER_SSL_VERIFY_SERVER_CERT=0
 
 - name: Start MariaDB Secondary Thread
   mysql_replication:
