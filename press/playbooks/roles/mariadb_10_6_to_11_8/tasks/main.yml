@@ -76,6 +76,12 @@
   delay: 120
   when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
 
+- name: Create MariaDB Systemd Drop-In Directory
+  file:
+    path: /etc/systemd/system/mariadb.service.d
+    state: directory
+    mode: 0755
+
 # A drop-in survives package upgrades, which rewrite the unit file.
 - name: Set Open Files Count Limit for MariaDB
   copy:

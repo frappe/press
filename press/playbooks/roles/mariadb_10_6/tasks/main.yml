@@ -40,6 +40,12 @@
       - libmariadbclient18
     state: latest
 
+- name: Create MariaDB Systemd Drop-In Directory
+  file:
+    path: /etc/systemd/system/mariadb.service.d
+    state: directory
+    mode: 0755
+
 # A drop-in survives package upgrades, which rewrite the unit file.
 - name: Set Open Files Count Limit for MariaDB
   copy:
