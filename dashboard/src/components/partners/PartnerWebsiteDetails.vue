@@ -104,13 +104,15 @@
 import { Button, createResource, Dialog } from 'frappe-ui'
 import { computed, inject, ref } from 'vue'
 
+import { teamCache } from '@/data/currentTeam'
+
 const team = inject('team')
 const showUpdateWebsiteInfo = ref(false)
 
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',
 	auto: true,
-	cache: 'partnerDetails',
+	cache: teamCache('partnerDetails'),
 	params: {
 		partner_email: team.doc.partner_email,
 	},

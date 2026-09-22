@@ -29,6 +29,7 @@
 	</div>
 </template>
 <script>
+import { teamCache } from '@/data/currentTeam'
 export default {
 	name: 'HomeSummary',
 	resources: {
@@ -36,7 +37,7 @@ export default {
 			if (!this.$team.doc?.name) return
 			return {
 				url: 'press.api.client.run_doc_method',
-				cache: ['home_data', this.$team.doc.name],
+				cache: teamCache('home_data', this.$team.doc.name),
 				makeParams() {
 					return {
 						dt: 'Team',

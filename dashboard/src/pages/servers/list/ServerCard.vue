@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Button, createListResource, Dropdown, Tooltip } from 'frappe-ui'
 import { computed, defineAsyncComponent, h } from 'vue'
+import { teamCache } from '@/data/currentTeam'
 import { getTeam } from '@/data/team'
 import { renderDialog } from '@/utils/components'
 import { userCurrency } from '@/utils/format'
@@ -27,7 +28,7 @@ const benches = createListResource({
 	auto: true,
 	fields: ['name', 'title', 'version', 'active_benches', 'site_count'],
 	filters: { server: props.data.name },
-	cache: ['benchesRes', props.data.name],
+	cache: teamCache('benchesRes', props.data.name),
 	orderBy: 'creation desc',
 })
 

@@ -98,11 +98,11 @@
 	/>
 </template>
 <script>
+import { teamCache } from '@/data/currentTeam'
 import PayPalLogo from '../../src/logo/PayPalLogo.vue'
 import RazorpayLogo from '../../src/logo/RazorpayLogo.vue'
 import BuyPrepaidCreditsRazorpay from './BuyPrepaidCreditsRazorpay.vue'
 import BuyPrepaidCreditsStripe from './BuyPrepaidCreditsStripe.vue'
-
 export default {
 	name: 'BuyPrepaidCreditsForm',
 	components: {
@@ -121,7 +121,7 @@ export default {
 		paypalEnabled() {
 			return {
 				url: 'press.api.billing.is_paypal_enabled',
-				cache: 'paypalEnabled',
+				cache: teamCache('paypalEnabled'),
 				auto: true,
 			}
 		},

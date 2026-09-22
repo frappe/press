@@ -166,6 +166,7 @@ import {
 	Tooltip,
 } from 'frappe-ui'
 import { reactive, ref } from 'vue'
+import { teamCache } from '@/data/currentTeam'
 import { throttle } from '../utils/throttle'
 import ActionButton from './ActionButton.vue'
 import AlertBanner from './AlertBanner.vue'
@@ -249,11 +250,11 @@ export default {
 			}
 			return {
 				type: 'list',
-				cache: [
+				cache: teamCache(
 					'ObjectList',
 					this.options.doctype || this.options.url,
 					this.options.filters,
-				],
+				),
 				url: this.options.url || null,
 				doctype: this.options.doctype,
 				pageLength: this.options.pageLength || 20,

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { createResource } from 'frappe-ui'
 import { computed, defineAsyncComponent } from 'vue'
+import { teamCache } from '@/data/currentTeam'
 import { getTeam } from '@/data/team'
 import dayjs from '@/utils/dayjs'
 
@@ -84,7 +85,7 @@ const cardPaymentFailure = computed(() => {
 const getCurrentBillingAmount = createResource({
 	url: 'press.api.billing.get_current_billing_amount',
 	auto: true,
-	cache: 'Current Billing Amount',
+	cache: teamCache('Current Billing Amount'),
 })
 const displayBudgetAlert = computed(() => {
 	if (

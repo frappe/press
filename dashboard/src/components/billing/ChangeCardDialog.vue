@@ -82,6 +82,7 @@ import {
 } from 'frappe-ui'
 import { ref } from 'vue'
 import { toast } from 'vue-sonner'
+import { teamCache } from '@/data/currentTeam'
 import { cardBrandIcon, confirmDialog } from '../../utils/components'
 
 const emit = defineEmits(['success', 'addCard'])
@@ -90,7 +91,7 @@ const show = defineModel()
 
 const cards = createResource({
 	url: 'press.api.billing.get_payment_methods',
-	cache: 'cards',
+	cache: teamCache('cards'),
 	auto: true,
 })
 

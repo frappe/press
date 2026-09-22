@@ -131,6 +131,7 @@
 <script setup>
 import { Button, createResource, FormControl } from 'frappe-ui'
 import { computed, inject, onMounted, ref, watch } from 'vue'
+import { teamCache } from '@/data/currentTeam'
 import PayPalLogo from '../../logo/PayPalLogo.vue'
 import RazorpayLogo from '../../logo/RazorpayLogo.vue'
 import StripeLogo from '../../logo/StripeLogo.vue'
@@ -158,13 +159,13 @@ const props = defineProps({
 
 const paypalEnabled = createResource({
 	url: 'press.api.billing.is_paypal_enabled',
-	cache: 'paypalEnabled',
+	cache: teamCache('paypalEnabled'),
 	auto: true,
 })
 
 const totalUnpaidAmount = createResource({
 	url: 'press.api.billing.total_unpaid_amount',
-	cache: 'totalUnpaidAmount',
+	cache: teamCache('totalUnpaidAmount'),
 	auto: true,
 })
 

@@ -61,6 +61,7 @@
 </template>
 
 <script>
+import { teamCache } from '@/data/currentTeam'
 export default {
 	props: {
 		mode: String,
@@ -81,7 +82,7 @@ export default {
 					bench: this.bench,
 				},
 				auto: this.mode === 'bench' && this.bench,
-				cache: ['BenchLogs', this.bench],
+				cache: teamCache('BenchLogs', this.bench),
 			}
 		},
 		siteLogs() {
@@ -91,7 +92,7 @@ export default {
 					name: this.site,
 				},
 				auto: this.mode === 'site' && this.site,
-				cache: ['SiteLogs', this.site],
+				cache: teamCache('SiteLogs', this.site),
 			}
 		},
 	},

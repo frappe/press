@@ -85,6 +85,7 @@ import {
 	FormControl,
 	getCachedDocumentResource,
 } from 'frappe-ui'
+import { teamCache } from '@/data/currentTeam'
 
 export default {
 	name: 'ConfigEditorDialog',
@@ -128,7 +129,7 @@ export default {
 		standardKeys() {
 			return {
 				url: 'press.api.site.get_site_config_standard_keys',
-				cache: 'Site Config Standard Keys',
+				cache: teamCache('Site Config Standard Keys'),
 				initialData: [],
 				auto: true,
 			}

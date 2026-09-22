@@ -1,7 +1,7 @@
+import { teamCache } from '@/data/currentTeam'
 import { icon } from '../../../utils/components'
 import { date } from '../../../utils/format'
 import { Tab } from '../../common/types'
-
 export function getLogsTab(forSite: boolean) {
 	const childRoute = forSite ? 'Site Log' : 'Bench Log'
 	const url = forSite ? 'press.api.site.logs' : 'press.api.bench.logs'
@@ -24,7 +24,7 @@ export function getLogsTab(forSite: boolean) {
 					},
 					url,
 					auto: true,
-					cache: ['ObjectList', url, res.name],
+					cache: teamCache('ObjectList', url, res.name),
 				}
 			},
 			route(row) {

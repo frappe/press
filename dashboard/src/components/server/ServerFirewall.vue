@@ -97,6 +97,7 @@
 <script setup lang="ts">
 import { createDocumentResource, Switch } from 'frappe-ui'
 import { ref } from 'vue'
+import { teamCache } from '@/data/currentTeam'
 import ObjectList from '../../components/ObjectList.vue'
 import ServerFirewallDialog from './ServerFirewallDialog.vue'
 
@@ -110,6 +111,6 @@ const firewall = createDocumentResource({
 	doctype: 'Server Firewall',
 	name: props.id,
 	auto: true,
-	cache: ['Server', 'Firewall', props.id],
+	cache: teamCache('Server', 'Firewall', props.id),
 })
 </script>

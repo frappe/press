@@ -86,13 +86,14 @@
 <script setup>
 import { AxisChart, createResource, DonutChart, NumberChart } from 'frappe-ui'
 import { computed, inject } from 'vue'
+import { teamCache } from '@/data/currentTeam'
 
 const team = inject('team')
 
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',
 	auto: true,
-	cache: 'partnerDetails',
+	cache: teamCache('partnerDetails'),
 	params: {
 		partner_email: team.doc.partner_email,
 	},
@@ -101,7 +102,7 @@ const partnerDetails = createResource({
 const currentMonthContribution = createResource({
 	url: 'press.api.partner.get_current_month_partner_contribution',
 	auto: true,
-	cache: 'currentMonthContribution',
+	cache: teamCache('currentMonthContribution'),
 	params: {
 		partner_email: team.doc.partner_email,
 	},
@@ -110,7 +111,7 @@ const currentMonthContribution = createResource({
 let partnerInvoices = createResource({
 	url: 'press.api.partner.get_partner_mrr',
 	auto: true,
-	cache: 'partnerInvoices',
+	cache: teamCache('partnerInvoices'),
 	params: {
 		partner_email: team.doc.partner_email,
 	},
@@ -127,7 +128,7 @@ let axisConfigData = computed(
 let dashboardStats = createResource({
 	url: 'press.api.partner.get_dashboard_stats',
 	auto: true,
-	cache: 'dashboardStats',
+	cache: teamCache('dashboardStats'),
 })
 
 let sitePlanData = computed(
@@ -141,7 +142,7 @@ let sitePlanData = computed(
 let partnerCustomerDistribution = createResource({
 	url: 'press.api.partner.get_partner_contribution_list',
 	auto: true,
-	cache: 'partnerCustomerDistribution',
+	cache: teamCache('partnerCustomerDistribution'),
 	params: {
 		partner_email: team.doc.partner_email,
 	},

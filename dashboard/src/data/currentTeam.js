@@ -26,6 +26,17 @@ export function getSelectedTeam() {
 	return window.default_team || null
 }
 
+/**
+ * Namespaces a resource cache key to the tab's team.
+ *
+ * frappe-ui keeps one IndexedDB store for the whole origin and hydrates a
+ * resource from it the moment the component mounts. Two tabs on different
+ * teams would otherwise read each other's rows, so every key carries a team.
+ */
+export function teamCache(...parts) {
+	return [getCurrentTeam(), ...parts]
+}
+
 /** True when the tab is showing a team the user is not a part of. */
 export function isImpersonating() {
 	const team = getCurrentTeam()

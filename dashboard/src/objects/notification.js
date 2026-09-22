@@ -1,6 +1,7 @@
 import { frappeRequest, Tooltip } from 'frappe-ui'
 import { h } from 'vue'
 import { toast } from 'vue-sonner'
+import { teamCache } from '@/data/currentTeam'
 import { unreadNotificationsCount } from '../data/notifications'
 import { getTeam } from '../data/team'
 import router from '../router'
@@ -31,7 +32,7 @@ export default {
 				filters: {
 					read: 'Unread',
 				},
-				cache: ['Notifications'],
+				cache: teamCache('Notifications'),
 			}
 		},
 		route: '/notifications',

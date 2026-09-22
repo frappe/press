@@ -73,6 +73,7 @@ import {
 } from 'frappe-ui'
 import { computed, inject } from 'vue'
 
+import { teamCache } from '@/data/currentTeam'
 export default {
 	name: 'BillingForecast',
 	components: {
@@ -87,7 +88,7 @@ export default {
 
 		const forecastResource = createResource({
 			url: 'press.api.billing.billing_forecast',
-			cache: 'forecastResource',
+			cache: teamCache('forecastResource'),
 			auto: true,
 		})
 

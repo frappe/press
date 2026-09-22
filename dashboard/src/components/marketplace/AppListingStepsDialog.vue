@@ -30,8 +30,8 @@
 
 <script>
 import { getCachedDocumentResource } from 'frappe-ui'
+import { teamCache } from '@/data/currentTeam'
 import ObjectList from '../ObjectList.vue'
-
 export default {
 	props: ['app'],
 	components: {
@@ -49,7 +49,7 @@ export default {
 				params: {
 					name: this.app,
 				},
-				cache: ['Marketplace App Review Steps', this.app],
+				cache: teamCache('Marketplace App Review Steps', this.app),
 				auto: true,
 				initialData: [],
 			}

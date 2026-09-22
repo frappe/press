@@ -4,10 +4,10 @@
 
 <script>
 import { h } from 'vue'
+import { teamCache } from '@/data/currentTeam'
 import LucideSparkleIcon from '~icons/lucide/sparkle'
 import { date } from '../../utils/format'
 import ObjectList from '../ObjectList.vue'
-
 export default {
 	name: 'SiteLogs',
 	props: {
@@ -32,7 +32,7 @@ export default {
 				},
 				auto: true,
 				initialData: [],
-				cache: ['ObjectList', 'press.api.site.logs', this.name],
+				cache: teamCache('ObjectList', 'press.api.site.logs', this.name),
 			}
 		},
 	},

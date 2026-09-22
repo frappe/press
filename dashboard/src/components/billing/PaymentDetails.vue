@@ -192,6 +192,7 @@
 <script setup>
 import { Button, createResource, Dropdown, FeatherIcon } from 'frappe-ui'
 import { computed, defineAsyncComponent, h, inject, ref } from 'vue'
+import { teamCache } from '@/data/currentTeam'
 import router from '../../router'
 import {
 	cardBrandIcon,
@@ -223,7 +224,7 @@ const currency = computed(() => (team.doc.currency == 'INR' ? '₹' : '$'))
 
 const billingDetails = createResource({
 	url: 'press.api.account.get_billing_information',
-	cache: 'billingDetails',
+	cache: teamCache('billingDetails'),
 	auto: true,
 })
 

@@ -41,6 +41,7 @@ import {
 } from 'frappe-ui'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
+import { teamCache } from '@/data/currentTeam'
 import { DashboardError } from '../../utils/error'
 
 const leadInfo = ref({
@@ -78,7 +79,7 @@ const domainList = computed(() => {
 const _leadTypeList = createListResource({
 	doctype: 'Partner Lead Type',
 	fields: ['name'],
-	cache: 'leadTypeList',
+	cache: teamCache('leadTypeList'),
 	auto: true,
 })
 const leadTypeList = computed(() => {
@@ -90,7 +91,7 @@ const leadTypeList = computed(() => {
 
 const _countryList = createResource({
 	url: 'press.api.account.country_list',
-	cache: 'countryList',
+	cache: teamCache('countryList'),
 	auto: true,
 })
 

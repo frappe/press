@@ -19,6 +19,7 @@ import BillingAlerts from '@/components/BillingAlerts.vue'
 import Scrollbar from '@/components/common/Scrollbar.vue'
 import Header from '@/components/Header.vue'
 import LinkControl from '@/components/LinkControl.vue'
+import { teamCache } from '@/data/currentTeam'
 import { getTeam } from '@/data/team'
 import { clusterOptions } from '@/objects/common'
 import { renderDialog } from '@/utils/components'
@@ -81,7 +82,7 @@ const sites = createListResource({
 	orderBy: 'creation desc',
 	pageLength: 20,
 	auto: true,
-	cache: ['Site', 'list'],
+	cache: teamCache('Site', 'list'),
 })
 
 const sitesCount = createListResource({

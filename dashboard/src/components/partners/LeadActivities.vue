@@ -169,6 +169,7 @@
 import { Button, call, createResource, FeatherIcon, Tooltip } from 'frappe-ui'
 import { computed, h, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { teamCache } from '@/data/currentTeam'
 import { session } from '../../data/session'
 import { getTeam } from '../../data/team'
 import { startCase, timeAgo } from '../../utils/format'
@@ -188,7 +189,7 @@ const all_activities = createResource({
 			name: route.params.leadId,
 		}
 	},
-	cache: ['all_activities', route.params.leadId],
+	cache: teamCache('all_activities', route.params.leadId),
 	auto: true,
 	transform: (versions) => {
 		return { versions }

@@ -13,6 +13,7 @@ import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import Scrollbar from '@/components/common/Scrollbar.vue'
 import SupportAccessDialog from '@/components/SupportAccessDialog.vue'
+import { teamCache } from '@/data/currentTeam'
 import {
 	unreadNotificationsCount,
 	unreadSupportNotificationsCount,
@@ -47,7 +48,7 @@ const resource = createListResource({
 	doctype: 'Press Notification',
 	url: 'press.api.notifications.get_notifications',
 	auto: true,
-	cache: ['Notifications'],
+	cache: teamCache('Notifications'),
 	start: 0,
 	pageLength: 10,
 })

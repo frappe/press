@@ -5,7 +5,6 @@ import {
 	resourcesPlugin,
 	setConfig,
 } from 'frappe-ui'
-import { clear, get, set } from 'idb-keyval'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import App from './App.vue'
@@ -48,8 +47,7 @@ let app
 let pinia
 let socket
 
-getInitialData().then(async () => {
-	await dropCacheOfOtherTeam()
+getInitialData().then(() => {
 	pinia = createPinia()
 	app = createApp(App)
 	app.use(pinia)
@@ -186,16 +184,6 @@ getInitialData().then(async () => {
 		addChatBubble()
 	}
 })
-
-// frappe-ui keeps one IndexedDB cache for the whole origin, and its keys carry
-// no team. Drop it when the tab that wrote it was on another team, so a tab
-// never paints one team's data into another team's page.
-async function dropCacheOfOtherTeam() {
-	const currentTeam = getCurrentTeam()
-	if ((await get('cached_team')) === currentTeam) return
-	await clear()
-	await set('cached_team', currentTeam)
-}
 
 function getInitialData() {
 	if (import.meta.env.DEV) {

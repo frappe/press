@@ -68,6 +68,7 @@
 <script setup>
 import { Button, createResource } from 'frappe-ui'
 import { computed, inject, ref } from 'vue'
+import { teamCache } from '@/data/currentTeam'
 import router from '../../router'
 import { confirmDialog } from '../../utils/components'
 import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue'
@@ -84,7 +85,7 @@ const currency = computed(() => (team.doc.currency == 'INR' ? '₹' : '$'))
 
 const unpaidAmount = createResource({
 	url: 'press.api.billing.total_unpaid_amount',
-	cache: 'unpaidAmount',
+	cache: teamCache('unpaidAmount'),
 	auto: true,
 })
 

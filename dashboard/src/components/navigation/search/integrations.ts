@@ -1,6 +1,7 @@
 import { createListResource } from 'frappe-ui'
 import { reactive, watch } from 'vue'
 
+import { teamCache } from '@/data/currentTeam'
 export const integrations = reactive({
 	Sites: {
 		icon: LucidePanelTopInactive,
@@ -22,7 +23,7 @@ export const addIntegrations = () => {
 	let siteList = createListResource({
 		auto: true,
 		doctype: 'Site',
-		cache: ['ObjectList', 'Site'],
+		cache: teamCache('ObjectList', 'Site'),
 		fields: ['name', 'status'],
 		pageLength: 10000,
 		onSuccess(data) {
@@ -42,7 +43,7 @@ export const addIntegrations = () => {
 	let benches = createListResource({
 		auto: true,
 		doctype: 'Release Group',
-		cache: ['ObjectList', 'Release Group'],
+		cache: teamCache('ObjectList', 'Release Group'),
 		fields: ['name', 'status', 'title', 'sites'],
 		pageLength: 10000,
 		onSuccess(data) {
@@ -60,7 +61,7 @@ export const addIntegrations = () => {
 	let serverList = createListResource({
 		auto: true,
 		doctype: 'Server',
-		cache: ['ObjectList', 'Server'],
+		cache: teamCache('ObjectList', 'Server'),
 		fields: ['name', 'status', 'title', 'sites'],
 		pageLength: 10000,
 		onSuccess(data) {

@@ -34,6 +34,7 @@ import { createResource, FormControl } from 'frappe-ui'
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { toast } from 'vue-sonner'
+import { teamCache } from '@/data/currentTeam'
 import { DashboardError } from '../../utils/error'
 
 const emit = defineEmits(['success'])
@@ -74,7 +75,7 @@ const probability = computed(() => {
 
 const _countryList = createResource({
 	url: 'press.api.account.country_list',
-	cache: 'countryList',
+	cache: teamCache('countryList'),
 	auto: true,
 	onSuccess: () => {
 		let leadCountry = leadInfo.value.country
@@ -97,7 +98,7 @@ const countryList = computed(() => {
 const _planList = createResource({
 	url: 'press.api.partner.get_fc_plans',
 	auto: true,
-	cache: 'planList',
+	cache: teamCache('planList'),
 })
 
 const planList = computed(() => {

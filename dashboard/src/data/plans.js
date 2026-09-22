@@ -1,8 +1,9 @@
 import { createResource } from 'frappe-ui'
 
+import { teamCache } from '@/data/currentTeam'
 export let plans = createResource({
 	url: 'press.api.site.get_site_plans',
-	cache: 'site.plans',
+	cache: teamCache('site.plans'),
 	initialData: [],
 })
 

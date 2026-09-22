@@ -3,6 +3,7 @@ import { Autocomplete, createResource, FormControl, Tooltip } from 'frappe-ui'
 import { computed, inject, onMounted, ref, useTemplateRef, watch } from 'vue'
 import EmailInput from '@/components/EmailInput.vue'
 import PhoneInput from '@/components/PhoneInput.vue'
+import { teamCache } from '@/data/currentTeam'
 import PostRegistrationMessage from '@/onboarding/modal/PostRegistrationMessage.vue'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
 import { indianStates } from '@/utils/billing.js'
@@ -23,7 +24,7 @@ const onboarding = usePartnerOnboarding(team as any)
 
 const countryListResource = createResource({
 	url: 'press.api.account.get_countries_with_isd_codes',
-	cache: 'partnerOnboardingCountries',
+	cache: teamCache('partnerOnboardingCountries'),
 	auto: true,
 })
 

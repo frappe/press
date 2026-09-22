@@ -50,6 +50,7 @@
 <script setup>
 import { createResource } from 'frappe-ui'
 import { defineProps, h, ref, watch } from 'vue'
+import { teamCache } from '@/data/currentTeam'
 import LucideSparkleIcon from '~icons/lucide/sparkle'
 import router from '../../router'
 import { date } from '../../utils/format'
@@ -113,7 +114,7 @@ const listOptions = ref({
 					bench: props.bench,
 				}
 			},
-			cache: ['BenchLogs', props.bench],
+			cache: teamCache('BenchLogs', props.bench),
 			auto: true,
 		}
 	},

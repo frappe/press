@@ -2,6 +2,7 @@ import { createDocumentResource, frappeRequest } from 'frappe-ui'
 import {
 	clearImpersonatedTeam,
 	getCurrentTeam,
+	getImpersonatedTeam,
 	setImpersonatedTeam,
 	setSelectedTeam,
 } from './currentTeam'
@@ -71,6 +72,15 @@ export async function isLastSite(team) {
 	})
 	return Boolean(count === 1)
 }
+
+// Another tab switched the team the user is acting as. This tab is still
+// showing the old team's data while its next request would carry the new one,
+// so reload. Tabs pinned to a team of their own are left alone.
+window.addEventListener('storage', (event) => {
+	if (event.key !== 'current_team' || !event.newValue) return
+	if (getImpersonatedTeam()) return
+	window.location.reload()
+})
 
 window.switchToTeam = switchToTeam
 window.impersonateTeam = impersonateTeam

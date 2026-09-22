@@ -151,6 +151,7 @@ import {
 } from 'frappe-ui'
 import { inject, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
+import { teamCache } from '@/data/currentTeam'
 import router from '../../router'
 import ClickToCopyField from '../ClickToCopyField.vue'
 import FileUploader from '../FileUploader.vue'
@@ -172,7 +173,7 @@ function onLogoUploadFailed(error) {
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',
 	auto: true,
-	cache: 'partnerDetails',
+	cache: teamCache('partnerDetails'),
 	params: {
 		partner_email: team.doc.partner_email,
 	},
@@ -188,7 +189,7 @@ function routeToCertification() {
 const currentMonthContribution = createResource({
 	url: 'press.api.partner.get_current_month_partner_contribution',
 	auto: true,
-	cache: 'currentMonthContribution',
+	cache: teamCache('currentMonthContribution'),
 	params: {
 		partner_email: team.doc.partner_email,
 	},
@@ -197,7 +198,7 @@ const currentMonthContribution = createResource({
 const prevMonthContribution = createResource({
 	url: 'press.api.partner.get_prev_month_partner_contribution',
 	auto: true,
-	cache: 'prevMonthContribution',
+	cache: teamCache('prevMonthContribution'),
 	params: {
 		partner_email: team.doc.partner_email,
 	},

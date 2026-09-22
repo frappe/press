@@ -2,13 +2,14 @@
 import { Button, createListResource, Spinner, TextInput } from 'frappe-ui'
 import Header from '@/components/Header.vue'
 import LinkControl from '@/components/LinkControl.vue'
+import { teamCache } from '@/data/currentTeam'
 import BenchRow from './BenchRow.vue'
 
 const groups = createListResource({
 	doctype: 'Release Group',
 	auto: true,
 	pageLength: 20,
-	cache: 'bench-list-groups',
+	cache: teamCache('bench-list-groups'),
 	fields: [
 		'name',
 		'title',

@@ -91,6 +91,7 @@ import {
 } from 'frappe-ui'
 import { computed, inject, onMounted, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
+import { teamCache } from '@/data/currentTeam'
 import PoweredByStripeLogo from '../../logo/PoweredByStripeLogo.vue'
 import { currency } from '../../utils/format'
 import NewAddressForm from './NewAddressForm.vue'
@@ -175,7 +176,7 @@ const getPublishedKeyAndSetupIntent = createResource({
 
 const countryList = createResource({
 	url: 'press.api.account.country_list',
-	cache: 'countryList',
+	cache: teamCache('countryList'),
 	auto: true,
 })
 

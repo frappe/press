@@ -43,6 +43,7 @@
 import { createResource, ErrorMessage, FormControl } from 'frappe-ui'
 import { computed, inject, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
+import { teamCache } from '@/data/currentTeam'
 import { DashboardError } from '../../utils/error'
 
 const emit = defineEmits(['success'])
@@ -135,7 +136,7 @@ const _indianStates = [
 
 const _countryList = createResource({
 	url: 'press.api.account.country_list',
-	cache: 'countryList',
+	cache: teamCache('countryList'),
 	auto: true,
 	onSuccess: () => {
 		let userCountry = team.doc?.country
