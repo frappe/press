@@ -1,3 +1,4 @@
+import { getCurrentTeam } from '@/data/currentTeam'
 import router from '@/router'
 
 export default async function call(method, args) {
@@ -11,7 +12,7 @@ export default async function call(method, args) {
 		'X-Frappe-Site-Name': window.location.hostname,
 	}
 
-	let team = localStorage.getItem('current_team') || null
+	let team = getCurrentTeam()
 	if (team) {
 		headers['X-Press-Team'] = team
 	}

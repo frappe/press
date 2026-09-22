@@ -1,5 +1,10 @@
 import { createDocumentResource, frappeRequest } from 'frappe-ui'
-import { clear } from 'idb-keyval'
+import {
+	clearImpersonatedTeam,
+	getCurrentTeam,
+	setImpersonatedTeam,
+	setSelectedTeam,
+} from './currentTeam'
 
 let team
 
@@ -7,7 +12,7 @@ export function getTeam() {
 	if (!team) {
 		team = createDocumentResource({
 			doctype: 'Team',
-			name: getCurrentTeam(),
+			name: isLoggedIn() ? getCurrentTeam() : null,
 			whitelistedMethods: {
 				getTeamMembers: 'get_team_members',
 				inviteTeamMember: 'invite_team_member',
@@ -19,44 +24,42 @@ export function getTeam() {
 	return team
 }
 
-function getCurrentTeam() {
-	if (
-		document.cookie.includes('user_id=Guest') ||
-		!document.cookie.includes('user_id')
-	) {
-		return null
-	}
-	let currentTeam = localStorage.getItem('current_team')
-	if (
-		!currentTeam ||
-		(currentTeam !== window.default_team &&
-			!window.valid_teams.map((t) => t.name).includes(currentTeam) &&
-			!window.is_system_user)
-	) {
-		currentTeam = window.default_team
-		if (currentTeam) localStorage.setItem('current_team', currentTeam)
-	}
-	return currentTeam
+function isLoggedIn() {
+	return (
+		document.cookie.includes('user_id') &&
+		!document.cookie.includes('user_id=Guest')
+	)
 }
 
+/** Switches the team in every tab. Use it for teams the user is a part of. */
 export async function switchToTeam(team) {
-	let canSwitch = false
+	if (!(await canSwitchToTeam(team))) return
+	setSelectedTeam(team)
+	window.location.reload()
+}
+
+/** Switches the team in this tab alone, so the other tabs keep theirs. */
+export async function impersonateTeam(team) {
+	if (!(await canSwitchToTeam(team))) return
+	setImpersonatedTeam(team)
+	window.location.reload()
+}
+
+/** Returns this tab to the team the user picked for themselves. */
+export function stopImpersonating() {
+	clearImpersonatedTeam()
+	window.location.reload()
+}
+
+async function canSwitchToTeam(team) {
 	try {
-		canSwitch = await frappeRequest({
+		return await frappeRequest({
 			url: '/api/method/press.api.account.can_switch_to_team',
 			params: { team },
 		})
 	} catch (error) {
 		console.log(error)
-		canSwitch = false
-	}
-	if (canSwitch) {
-		localStorage.setItem('current_team', team)
-
-		// clear all cache from previous team session
-		clear()
-
-		window.location.reload()
+		return false
 	}
 }
 
@@ -70,3 +73,4 @@ export async function isLastSite(team) {
 }
 
 window.switchToTeam = switchToTeam
+window.impersonateTeam = impersonateTeam

@@ -2,7 +2,7 @@ import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
 import LucideAppWindow from '~icons/lucide/app-window'
 import ServerActions from '../components/server/ServerActions.vue'
-import { getTeam } from '../data/team'
+import { getTeam, impersonateTeam } from '../data/team'
 import router from '../router'
 import { confirmDialog, icon, renderDialog } from '../utils/components'
 import { isMobile } from '../utils/device'
@@ -80,7 +80,7 @@ export default {
 					condition: () =>
 						$team.doc?.is_desk_user && server.doc.team !== $team.name,
 					onClick() {
-						switchToTeam(server.doc.team)
+						impersonateTeam(server.doc.team)
 					},
 				},
 				{

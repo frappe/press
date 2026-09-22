@@ -461,6 +461,7 @@ import { h } from 'vue'
 import { toast } from 'vue-sonner'
 import GoogleIcon from '@/components/icons/GoogleIcon.vue'
 import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue'
+import { setSelectedTeam } from '@/data/currentTeam'
 import { getAnonymousId } from '@/telemetry/pulse.js'
 import LoginBox from '../components/auth/LoginBox.vue'
 import CustomToast from '../components/CustomToast.vue'
@@ -685,7 +686,7 @@ export default {
 			return {
 				url: 'press.api.account.reactivate_account',
 				onSuccess(team) {
-					localStorage.setItem('current_team', team)
+					setSelectedTeam(team)
 					window.location.href = '/dashboard'
 				},
 			}

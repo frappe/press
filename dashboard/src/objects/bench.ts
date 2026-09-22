@@ -2,7 +2,7 @@ import { Tooltip } from 'frappe-ui'
 import type { VNode } from 'vue'
 import { defineAsyncComponent, h } from 'vue'
 import LucideAppWindow from '~icons/lucide/app-window'
-import { getTeam, switchToTeam } from '../data/team'
+import { getTeam, impersonateTeam } from '../data/team'
 import { icon } from '../utils/components'
 import {
 	clusterOptions,
@@ -66,7 +66,7 @@ function getDetail() {
 							),
 							condition: () => window.is_system_user ?? false,
 							onClick() {
-								switchToTeam(res.doc.team)
+								impersonateTeam(res.doc.team)
 							},
 						},
 					],

@@ -5,10 +5,12 @@ import {
 	resourcesPlugin,
 	setConfig,
 } from 'frappe-ui'
+import { clear, get, set } from 'idb-keyval'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import App from './App.vue'
 import registerGlobalComponents from './components/global/register'
+import { getCurrentTeam } from './data/currentTeam.js'
 import {
 	unreadNotificationsCount,
 	unreadSupportNotificationsCount,
@@ -28,8 +30,7 @@ const DISABLE_SENTRY = true
 const request = (options) => {
 	const _options = options || {}
 	_options.headers = options.headers || {}
-	const currentTeam =
-		localStorage.getItem('current_team') || window.default_team
+	const currentTeam = getCurrentTeam()
 	if (currentTeam) {
 		_options.headers['X-Press-Team'] = currentTeam
 	}
@@ -47,7 +48,8 @@ let app
 let pinia
 let socket
 
-getInitialData().then(() => {
+getInitialData().then(async () => {
+	await dropCacheOfOtherTeam()
 	pinia = createPinia()
 	app = createApp(App)
 	app.use(pinia)
@@ -148,7 +150,7 @@ getInitialData().then(() => {
 			logErrors: true,
 		})
 
-		Sentry.setTag('team', localStorage.getItem('current_team'))
+		Sentry.setTag('team', getCurrentTeam())
 	}
 
 	if (
@@ -184,6 +186,16 @@ getInitialData().then(() => {
 		addChatBubble()
 	}
 })
+
+// frappe-ui keeps one IndexedDB cache for the whole origin, and its keys carry
+// no team. Drop it when the tab that wrote it was on another team, so a tab
+// never paints one team's data into another team's page.
+async function dropCacheOfOtherTeam() {
+	const currentTeam = getCurrentTeam()
+	if ((await get('cached_team')) === currentTeam) return
+	await clear()
+	await set('cached_team', currentTeam)
+}
 
 function getInitialData() {
 	if (import.meta.env.DEV) {
@@ -251,12 +263,12 @@ window.addEventListener('chatwoot:ready', function () {
 		})
 		window.$chatwoot.setCustomAttributes({
 			url_path: pathname,
-			current_team: localStorage.getItem('current_team') || window.default_team,
+			current_team: getCurrentTeam(),
 			default_team: window.default_team,
 		})
 		window.$chatwoot.setConversationCustomAttributes({
 			url_path: pathname,
-			current_team: localStorage.getItem('current_team') || window.default_team,
+			current_team: getCurrentTeam(),
 			default_team: window.default_team,
 		})
 	}
