@@ -38,7 +38,7 @@
 			</div>
 		</div>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-			<AnalyticsCard title="Uptime" v-if="isServerType('Database Server')">
+			<AnalyticsCard title="Uptime" v-if="isDatabaseServer()">
 				<LineChart
 					type="time"
 					title="Uptime"
@@ -299,7 +299,7 @@
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				title="Queries"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -328,7 +328,7 @@
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				title="DB Connections"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -351,7 +351,7 @@
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				title="Average Row Lock Time"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -371,7 +371,7 @@
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#very-high-database-server-memory-usage"
 				title="Buffer Pool Size"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -391,7 +391,7 @@
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#very-high-database-server-memory-usage"
 				title="Buffer Pool Size of Total Ram"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -422,7 +422,7 @@
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#very-high-database-server-memory-usage"
 				title="Buffer Pool Miss Percent"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -452,7 +452,7 @@
 
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 				class="sm:col-span-2"
 				title="Frequent Slow queries"
 			>
@@ -472,7 +472,7 @@
 
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 				class="sm:col-span-2"
 				title="Slowest queries"
 			>
@@ -748,9 +748,7 @@ export default {
 					start: this.startTime,
 					end: this.endTime,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					!this.isServerType('Application Server'),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 		slowLogsDuration() {
@@ -763,9 +761,7 @@ export default {
 					start: this.startTime,
 					end: this.endTime,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					!this.isServerType('Application Server'),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 		databaseUptime() {
@@ -781,9 +777,7 @@ export default {
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
-				auto:
-					this.isServerType('Database Server') ||
-					this.isServerType('Replication Server'),
+				auto: this.isDatabaseServer(),
 			}
 		},
 		databaseCommandsCount() {
@@ -799,10 +793,7 @@ export default {
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 		databaseConnections() {
@@ -818,10 +809,7 @@ export default {
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 		innodbBufferPoolSize() {
@@ -837,10 +825,7 @@ export default {
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 		innodbBufferPoolSizeOfTotalRam() {
@@ -856,10 +841,7 @@ export default {
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 		innodbBufferPoolMissPercentage() {
@@ -875,10 +857,7 @@ export default {
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 		innodbAvgRowLockTime() {
@@ -894,10 +873,7 @@ export default {
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 	},
@@ -1187,6 +1163,12 @@ export default {
 			})
 
 			return { datasets, yMax: percentage ? 100 : null }
+		},
+		isDatabaseServer() {
+			return (
+				this.isServerType('Database Server') ||
+				this.isServerType('Replication Server')
+			)
 		},
 		isServerType(type) {
 			// Show all analytics for Unified Server
