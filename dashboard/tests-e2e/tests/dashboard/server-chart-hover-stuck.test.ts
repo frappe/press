@@ -11,7 +11,9 @@ const serverDoc = {
 	replication_server: null,
 }
 
-/** Two disks, read and write each: four series on a chart themed for two. */
+/** Three disks, read and write each: six series, more than the four colours. */
+const DISKS = ['nvme0n1', 'nvme1n1', 'nvme2n1']
+
 function iopsPayload() {
 	const start = new Date('2026-08-19T00:00:00')
 	const labels = Array.from({ length: 36 }, (_, i) =>
@@ -20,19 +22,13 @@ function iopsPayload() {
 			.slice(0, 19)
 			.replace('T', ' '),
 	)
-	const series = (name: string, base: number) => ({
-		name,
-		values: labels.map((_, i) => base + (i % 5)),
-	})
-	return {
-		labels,
-		datasets: [
-			series('nvme0n1 read', 10),
-			series('nvme0n1 write', 20),
-			series('nvme1n1 read', 30),
-			series('nvme1n1 write', 40),
-		],
-	}
+	const datasets = DISKS.flatMap((disk, d) =>
+		['read', 'write'].map((operation, o) => ({
+			name: `${disk} ${operation}`,
+			values: labels.map((_, i) => 10 * (2 * d + o + 1) + (i % 5)),
+		})),
+	)
+	return { labels, datasets }
 }
 
 test('hovering a chart with more series than theme colours keeps rendering', async ({
@@ -67,7 +63,7 @@ test('hovering a chart with more series than theme colours keeps rendering', asy
 		.poll(() => chart.locator('path[fill="none"][stroke]').count(), {
 			timeout: 30000,
 		})
-		.toBeGreaterThanOrEqual(4)
+		.toBeGreaterThanOrEqual(DISKS.length * 2)
 
 	const box = (await chart.boundingBox())!
 	const y = box.y + box.height / 2
