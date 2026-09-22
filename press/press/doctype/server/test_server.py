@@ -650,6 +650,15 @@ class TestServer(FrappeTestCase):
 		with self.assertRaisesRegex(frappe.ValidationError, "Wazuh Agent Version"):
 			server.install_wazuh_agent()
 
+	def test_install_wazuh_agent_stamp_does_not_break_a_later_save_of_the_same_doc(self):
+		"""Create Server's set_additional_config saves the doc right after this step."""
+		self._configure_wazuh()
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.frappe.enqueue_doc"):
+			server.install_wazuh_agent()
+		server.save()
+		self.assertIsNotNone(server.wazuh_install_last_attempt)
+
 	def test_install_passes_pinned_wazuh_agent_version_to_playbook(self):
 		server = create_test_server()
 		with patch("press.press.doctype.server.server.Ansible") as Ansible:
