@@ -828,17 +828,20 @@ export default {
 		{
 			name: 'Deploy Candidate',
 			path: 'deploys/:id',
+			meta: { title: 'Deploy' },
 			component: () => import('../components/benches/pipeline/Details.vue'),
 			props: { deployview: true },
 		},
 		{
 			name: 'Release Pipeline',
 			path: 'pipeline/:id',
+			meta: { title: 'Pipeline' },
 			component: () => import('../components/benches/pipeline/Details.vue'),
 		},
 		{
 			name: 'Release Group Job',
 			path: 'jobs/:id',
+			meta: { title: 'Job' },
 			component: () => import('../pages/JobPage.vue'),
 		},
 	],
