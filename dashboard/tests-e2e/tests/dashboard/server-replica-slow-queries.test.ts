@@ -115,6 +115,8 @@ test('the replica shows the advanced database charts', async ({ page }) => {
 	await expect(page.locator('#frequent-slow-queries')).toBeVisible({
 		timeout: 30000,
 	})
+	// Advanced Analytics is below the fold, and toBeVisible does not scroll
+	await page.locator('#frequent-slow-queries').scrollIntoViewIfNeeded()
 	await expect(page.locator('#slowest-queries')).toBeVisible()
 	await expect(page.locator('#queries')).toBeVisible()
 
@@ -156,6 +158,7 @@ test('the per-query charts show the queries of the chosen host', async ({
 
 	const byQuery = page.locator('#frequent-slow-queries-by-query')
 	await expect(byQuery).toBeVisible({ timeout: 30000 })
+	await byQuery.scrollIntoViewIfNeeded()
 	await expect(page.locator('#slowest-queries-by-query')).toBeVisible()
 
 	// Query text, not a site name, is the legend of the per-query chart
