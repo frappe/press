@@ -190,7 +190,12 @@
 					:key="iopsData"
 					:data="iopsData"
 					unit="IOps"
-					:chartTheme="[$theme.colors.purple[500], $theme.colors.blue[500]]"
+					:chartTheme="[
+						$theme.colors.purple[500],
+						$theme.colors.blue[500],
+						$theme.colors.pink[500],
+						$theme.colors.cyan[500],
+					]"
 					:loading="$resources.iops.loading"
 					:error="$resources.iops.error"
 					:showCard="false"
