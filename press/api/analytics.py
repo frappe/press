@@ -1072,7 +1072,6 @@ def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC")
 	return rounded_time(start, timegrain), rounded_time(end, timegrain)
 
 
-@redis_cache(ttl=15 * 60)
 def get_rounded_boundary(dt: datetime, timegrain: int = 60):
 	"""
 	Floor a datetime to the previous interval boundary.
