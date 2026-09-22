@@ -187,6 +187,7 @@
 
 <script>
 import { Breadcrumbs, debounce } from 'frappe-ui';
+import { pageTitle } from '../utils/title';
 import Header from '../components/Header.vue';
 import PlansCards from '../components/PlansCards.vue';
 import { DashboardError } from '../utils/error';
@@ -201,9 +202,7 @@ export default {
 		},
 	},
 	pageMeta() {
-		return {
-			title: `Install ${this.appDoc.title} - Frappe Cloud`,
-		};
+		return { title: pageTitle(`Install ${this.appDoc.title}`) };
 	},
 	components: {
 		FBreadcrumbs: Breadcrumbs,

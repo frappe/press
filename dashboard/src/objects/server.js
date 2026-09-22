@@ -1046,11 +1046,13 @@ export default {
 		{
 			name: 'Server Job',
 			path: 'jobs/:id',
+			meta: { title: 'Job' },
 			component: () => import('../pages/JobPage.vue'),
 		},
 		{
 			name: 'Server Play',
 			path: 'plays/:id',
+			meta: { title: 'Play' },
 			component: () => import('../pages/PlayPage.vue'),
 		},
 		{
