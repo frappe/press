@@ -84,6 +84,11 @@
       [Service]
       LimitNOFILE=infinity
 
+# Unguarded: an already-upgraded host still needs systemd to read the repaired drop-in.
+- name: Reload Systemd Configuration
+  ansible.builtin.systemd:
+    daemon_reload: true
+
 - name: Start MariaDB Service
   ansible.builtin.systemd:
     daemon_reload: true
