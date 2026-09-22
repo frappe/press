@@ -38,7 +38,7 @@
 
 - name: Add MariaDB Repository
   ansible.builtin.apt_repository:
-    repo: deb https://mirror.rackspace.com/mariadb/repo/11.8/ubuntu {{ ansible_distribution_release }} main
+    repo: deb https://archive.mariadb.org/repo/11.8/ubuntu {{ ansible_distribution_release }} main
     state: present
     update_cache: true
   when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
