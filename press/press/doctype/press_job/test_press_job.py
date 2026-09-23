@@ -63,7 +63,18 @@ class TestCalculatedIncreaseDiskSize(FrappeTestCase):
 		mock_increase.assert_not_called()
 
 	def test_returns_true_when_disk_increased(self, mock_increase: Mock):
-		server = create_test_server(auto_increase_storage=True)
+		server = create_test_server(auto_increase_storage=True, provider="AWS EC2")
 
 		self.assertTrue(server.calculated_increase_disk_size(mountpoint="/"))
 		mock_increase.assert_called_once()
+
+	def test_returns_false_and_names_provider_when_auto_increase_enabled_on_generic_server(
+		self, mock_increase: Mock
+	):
+		server = create_test_server(auto_increase_storage=True, provider="Generic")
+
+		with patch.object(TelegramMessage, "enqueue") as mock_telegram:
+			self.assertFalse(server.calculated_increase_disk_size(mountpoint="/"))
+
+		mock_increase.assert_not_called()
+		self.assertIn("Press can't resize disks on provider Generic", mock_telegram.call_args.args[0])
