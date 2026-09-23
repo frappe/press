@@ -19,7 +19,7 @@
   until: apt_result.failed == false
   retries: 5
   delay: 120
-    
+
 - name: Add SSL Proxy for TLS
   template:
     src: ssl.conf

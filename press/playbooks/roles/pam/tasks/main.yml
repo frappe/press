@@ -52,7 +52,7 @@
       lineinfile:
         path: /etc/pam.d/common-auth
         state: present
-        line: "auth\trequired\tpam_faillock.so preauth audit silent" 
+        line: "auth\trequired\tpam_faillock.so preauth audit silent"
         insertafter: '^#?auth ?'
 
     - name: Add success and default settings to pam_unix.so

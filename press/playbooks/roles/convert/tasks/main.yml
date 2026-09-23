@@ -17,7 +17,7 @@
     group: root
     mode: 0644
 
-- name: Get All Users 
+- name: Get All Users
   mysql_query:
     login_user: root
     login_password: "{{ mariadb_root_password }}"
