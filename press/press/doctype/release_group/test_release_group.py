@@ -723,3 +723,31 @@ class TestReleaseGroup(FrappeTestCase):
 
 		self.assertEqual(counts_on(first_server), (1, 1))
 		self.assertEqual(counts_on(second_server), (2, 2))
+
+
+class TestReleaseGroupBlacklistedConfig(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		frappe.get_doc({"doctype": "Site Config Key Blacklist", "key": "blacklisted_test_key"}).insert()
+		self.group = create_test_release_group([create_test_app()])
+		self.group.append(
+			"common_site_config_table", {"key": "blacklisted_test_key", "value": "0", "type": "Boolean"}
+		)
+		self.group.save()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def blacklisted_rows(self):
+		self.group.reload()
+		return [r for r in self.group.common_site_config_table if r.key == "blacklisted_test_key"]
+
+	def test_update_config_keeps_one_copy_of_a_blacklisted_key(self):
+		self.group.update_config({"max_file_size": 1234})
+		self.group.update_config({"max_file_size": 5678})
+		self.assertEqual(len(self.blacklisted_rows()), 1)
+
+	def test_delete_config_keeps_one_copy_of_a_blacklisted_key(self):
+		self.group.update_config({"max_file_size": 1234})
+		self.group.delete_config("max_file_size")
+		self.assertEqual(len(self.blacklisted_rows()), 1)

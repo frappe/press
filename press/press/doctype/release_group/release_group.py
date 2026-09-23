@@ -539,12 +539,13 @@ class ReleaseGroup(Document, TagHelpers):
 	def delete_config(self, key):
 		"""Deletes a key from the common_site_config_table"""
 
-		if key in get_client_blacklisted_keys():
+		blacklisted_keys = get_client_blacklisted_keys()
+		if key in blacklisted_keys:
 			return
 
 		updated_common_site_config = []
 		for row in self.common_site_config_table:
-			if row.key != key and not row.internal:
+			if row.key != key and row.key not in blacklisted_keys:
 				updated_common_site_config.append({"key": row.key, "value": row.value, "type": row.type})
 
 		# using a tuple to avoid updating bench_config
@@ -553,8 +554,12 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def update_config(self, config):
+		blacklisted_keys = get_client_blacklisted_keys()
+		# update_config_in_release_group keeps the blacklisted rows itself
 		sanitized_common_site_config = [
-			{"key": c.key, "type": c.type, "value": c.value} for c in self.common_site_config_table
+			{"key": c.key, "type": c.type, "value": c.value}
+			for c in self.common_site_config_table
+			if c.key not in blacklisted_keys
 		]
 		sanitized_bench_config = []
 		bench_config_keys = ["http_timeout"]
@@ -562,7 +567,7 @@ class ReleaseGroup(Document, TagHelpers):
 		config = frappe.parse_json(config)
 
 		for key, value in config.items():
-			if key in get_client_blacklisted_keys():
+			if key in blacklisted_keys:
 				frappe.throw(_(f"The key <b>{key}</b> is blacklisted or is internal and cannot be updated"))
 
 			config_type = get_config_type(value)
