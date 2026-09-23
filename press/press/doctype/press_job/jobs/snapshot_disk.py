@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from typing import TYPE_CHECKING
 
 import frappe
@@ -86,7 +85,10 @@ class SnapshotDiskJob(PressJob):
 		)
 
 	def _resume_services(self) -> ServerSnapshot:
-		snapshot = frappe.get_doc("Server Snapshot", self.arguments_dict.get("server_snapshot"))
+		# Lock the row so the sibling job sees this job's snapshot link and status
+		snapshot = frappe.get_doc(
+			"Server Snapshot", self.arguments_dict.get("server_snapshot"), for_update=True
+		)
 		if self.server_type == "Server":
 			snapshot.resume_app_server_services()
 		elif self.server_type == "Database Server":
@@ -96,11 +98,13 @@ class SnapshotDiskJob(PressJob):
 
 	def on_press_job_success(self, workflow):
 		snapshot = self._resume_services()
+		if snapshot.status == "Failure":
+			# The sibling job failed, so the disk snapshot this job took is of no use
+			snapshot.delete_disk_snapshots()
+			return
 		snapshot.sync(now=False)
 
 	def on_press_job_failure(self, workflow):
 		snapshot = self._resume_services()
 		frappe.db.set_value("Server Snapshot", snapshot.name, "status", "Failure", update_modified=False)
-		for s in snapshot.snapshots:
-			with suppress(Exception):
-				frappe.get_doc("Virtual Disk Snapshot", s).delete_snapshot(ignore_validation=True)
+		snapshot.delete_disk_snapshots()
