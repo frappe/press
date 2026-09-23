@@ -2,6 +2,10 @@
 - name: Install MariaBackup
   apt:
     pkg: mariadb-backup
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Create Directory for Database Dump
   file:

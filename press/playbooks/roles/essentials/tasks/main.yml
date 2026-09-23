@@ -2,6 +2,10 @@
 - name: Update APT Cache
   apt:
     update_cache: yes
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Install Essential Packages
   apt:
@@ -23,3 +27,7 @@
       - vim
       - acl
       - zlib1g-dev
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120

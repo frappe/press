@@ -26,12 +26,20 @@
   apt_repository:
     repo: deb https://artifacts.elastic.co/packages/7.x/apt stable main
     state: present
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Remove new Elasticsearch Repository
   apt_repository:
     repo: deb https://artifacts.elastic.co/packages/8.x/apt stable main
     state: absent
     update_cache: true
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Uninstall newer version of Filebeat
   apt:

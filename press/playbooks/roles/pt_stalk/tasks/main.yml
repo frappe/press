@@ -4,10 +4,18 @@
     pkg:
       - net-tools # Needed for netstat
     state: present
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Install Percona Toolkit
   apt:
     deb: https://downloads.percona.com/downloads/percona-toolkit/3.5.7/binary/debian/{{ ansible_distribution_release }}/x86_64/percona-toolkit_3.5.7-1.{{ ansible_distribution_release }}_amd64.deb
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Fix a bug in pt-stalk
   ansible.builtin.replace:

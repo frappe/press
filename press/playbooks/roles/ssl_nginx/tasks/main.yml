@@ -2,6 +2,10 @@
 - name: Update APT Cache
   apt:
     update_cache: yes
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Install NGINX
   apt:
@@ -11,6 +15,10 @@
       - apache2-utils
       - libpcre3-dev
     state: present
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
     
 - name: Add SSL Proxy for TLS
   template:

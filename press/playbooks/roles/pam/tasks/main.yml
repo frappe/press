@@ -4,11 +4,19 @@
     name: libpam-modules
     state: latest
     update_cache: yes
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Install PAM module to perform password quality checking
   package:
     name: libpam-pwquality
     state: present
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Ensure password creation requirements are configured
   lineinfile:

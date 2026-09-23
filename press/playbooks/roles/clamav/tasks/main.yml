@@ -1,6 +1,10 @@
 - name: Update APT Cache
   apt:
     update_cache: yes
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Install ClamAV and related packages
   apt:
@@ -9,6 +13,10 @@
       - clamav-base
     state:
       latest
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Configure freshclam
   replace:

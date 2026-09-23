@@ -9,6 +9,10 @@
     name: iptables-persistent
     state: present
     update_cache: no
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Save IP Table Change
   shell: iptables-save -t filter > /etc/iptables/rules.v4

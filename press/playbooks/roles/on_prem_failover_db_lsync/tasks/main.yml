@@ -27,6 +27,10 @@
     pkg:
       - lsyncd
       - rsync
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Create Lsyncd Directory
   file:

@@ -3,6 +3,10 @@
   ansible.builtin.apt:
     name: ufw
     state: present
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
   become: true
 
 - name: Check if ufw-docker exists

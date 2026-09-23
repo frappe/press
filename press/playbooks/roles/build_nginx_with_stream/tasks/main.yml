@@ -29,6 +29,10 @@
       - zlib1g-dev
       - libssl-dev
     state: present
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
   when: nginx_stream_check.rc != 0
 
 - name: Create build directory

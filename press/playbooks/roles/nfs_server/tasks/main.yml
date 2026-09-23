@@ -8,6 +8,10 @@
   apt:
     name: nfs-kernel-server
     state: present
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Enable and start NFS Server
   service:

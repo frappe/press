@@ -3,6 +3,10 @@
   apt:
     pkg: fail2ban
     state: present
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Enable Fail2Ban
   service:

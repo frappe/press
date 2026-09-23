@@ -4,6 +4,10 @@
     pkg:
       - python3-mysqldb
     state: present
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Add MariaDB Configuration File
   template:

@@ -9,6 +9,10 @@
       - docker.io
       - containerd
       - runc
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Install Docker Dependencies
   apt:
@@ -19,6 +23,10 @@
       - ca-certificates
       - curl
       - software-properties-common
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Add Docker Repository Key
   apt_key:
@@ -36,11 +44,19 @@
     repo: deb https://download.docker.com/linux/ubuntu focal stable
     state: present
     update_cache: true
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Install Docker
   apt:
     name: docker-ce
     state: present
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Add Frappe User to docker Group
   user:

@@ -20,3 +20,7 @@
     name: wazuh-agent
     state: absent
     purge: yes
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120

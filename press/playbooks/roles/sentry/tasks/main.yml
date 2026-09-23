@@ -2,11 +2,19 @@
 - name: Update APT Cache
   apt:
     update_cache: yes
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Install Docker Compose
   apt:
     name: docker-compose-plugin
     state: latest
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Download Sentry Self Hosting Archive
   become: yes

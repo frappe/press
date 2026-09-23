@@ -3,6 +3,10 @@
   package:
       name: auditd
       state: present
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
   notify: restart auditd
 
 - name: "Ensure auditd service is enabled and running"

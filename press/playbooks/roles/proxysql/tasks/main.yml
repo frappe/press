@@ -41,6 +41,10 @@
 - name: Update APT Cache
   apt:
     update_cache: yes
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Install MariaDB Client
   apt:
@@ -48,6 +52,10 @@
       - mariadb-client
       - python3-mysqldb
     state: present
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Enable ProxySQL Auditing
   mysql_query:

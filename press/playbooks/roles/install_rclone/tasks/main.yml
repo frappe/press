@@ -30,6 +30,10 @@
 - name: Install Rclone Package
   apt:
     deb: "/tmp/rclone-v{{ rclone_version }}-linux-{{ rclone_arch }}.deb"
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
   when: rclone_install_required
 
 - name: Remove Downloaded Rclone Package

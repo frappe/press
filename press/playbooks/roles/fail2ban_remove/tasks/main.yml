@@ -8,3 +8,7 @@
   apt:
     pkg: fail2ban
     state: absent
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
