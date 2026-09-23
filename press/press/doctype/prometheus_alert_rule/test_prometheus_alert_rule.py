@@ -35,17 +35,17 @@ class TestPrometheusAlertRule(FrappeTestCase):
 	pass
 
 
-def create_disk_warning_log(server: str):
+def create_disk_warning_log(server: str, mountpoint: str = "/"):
 	return frappe.get_doc(
-		{"doctype": "Add On Storage Log", "server": server, "mountpoint": "/", "is_warning": True}
+		{"doctype": "Add On Storage Log", "server": server, "mountpoint": mountpoint, "is_warning": True}
 	).insert(ignore_permissions=True)
 
 
 @patch.object(PressJob, "after_insert", new=Mock())
 class TestIncreaseDiskSizeReaction(FrappeTestCase):
-	def react(self, server: str):
+	def react(self, server: str, mountpoint: str = "/"):
 		rule = create_test_prometheus_alert_rule()
-		return rule.run_press_job("Increase Disk Size", "Server", server, labels={"mountpoint": "/"})
+		return rule.run_press_job("Increase Disk Size", "Server", server, labels={"mountpoint": mountpoint})
 
 	def test_skips_job_when_auto_increase_disabled_and_team_already_warned(self):
 		server = create_test_server(auto_increase_storage=False)
@@ -58,6 +58,13 @@ class TestIncreaseDiskSizeReaction(FrappeTestCase):
 		server = create_test_server(auto_increase_storage=False)
 
 		job = self.react(server.name)
+		self.assertEqual(job.job_type, "Increase Disk Size")
+
+	def test_warning_on_one_mountpoint_does_not_suppress_another(self):
+		server = create_test_server(auto_increase_storage=False)
+		create_disk_warning_log(server.name, mountpoint="/opt/volumes/benches")
+
+		job = self.react(server.name, mountpoint="/opt/volumes/mariadb")
 		self.assertEqual(job.job_type, "Increase Disk Size")
 
 	def test_creates_job_when_auto_increase_enabled(self):

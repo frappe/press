@@ -19,16 +19,19 @@ WARNING_INTERVAL_HOURS = 24
 class IncreaseDiskSizeJob(PressJob):
 	@classmethod
 	def should_react_to_alert(cls, server: Server | DatabaseServer, labels: dict) -> bool:
-		if server.can_auto_increase_storage(labels.get("mountpoint")):
+		mountpoint = labels.get("mountpoint")
+		if server.can_auto_increase_storage(mountpoint):
 			return True
 
 		# Without auto increase the job only warns the team, so do that once a day
-		# instead of on every re-fire of the alert.
+		# per mountpoint instead of on every re-fire of the alert.
 		link_field = "server" if server.doctype == "Server" else "database_server"
 		return not frappe.db.exists(
 			"Add On Storage Log",
 			{
 				link_field: server.name,
+				# Same fallback the warning log is written with
+				"mountpoint": mountpoint or server.guess_data_disk_mountpoint(),
 				"is_warning": True,
 				"creation": (">", add_to_date(None, hours=-WARNING_INTERVAL_HOURS)),
 			},
