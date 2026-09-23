@@ -279,7 +279,7 @@ def _set_product_trial_site_host_name(site_name: str, domain: str):
 	site.set_redirect(auto_generated_domain)
 =======
 	if job.status in ["Success", "Failure", "Delivery Failure"] and (
-		request := frappe.db.get_value("Product Trial Request", {"domain": domain})
+		request := frappe.db.get_value("Product Trial Request", {"site": job.site})
 	):
 		error = None if job.status == "Success" else job.data
 		frappe.get_doc("Product Trial Request", request).update_status_from_agent_jobs(error)
