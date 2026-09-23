@@ -229,6 +229,7 @@ class Site(Document, TagHelpers):
 		site_usage_exceeded_on: DF.Datetime | None
 		skip_auto_updates: DF.Check
 		skip_failing_patches: DF.Check
+		skip_offsite_backups: DF.Check
 		skip_scheduled_logical_backups: DF.Check
 		skip_scheduled_physical_backups: DF.Check
 		staging: DF.Check
@@ -414,7 +415,9 @@ class Site(Document, TagHelpers):
 		doc.frappe_updated_on = get_frappe_release_timestamp(self.bench)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
-		doc.can_schedule_backups = self.plan_allows_backup_schedule()
+		doc.can_manage_backup_schedule = (
+			self.offsite_backups_available() or self.plan_allows_backup_schedule()
+		)
 		doc.last_updated = self.last_updated
 		doc.creation_failure_retention_days = CREATION_FAILURE_RETENTION_DAYS
 		doc.has_scheduled_updates = bool(
@@ -784,7 +787,24 @@ class Site(Document, TagHelpers):
 			"times": sorted(
 				frappe.utils.get_time(row.backup_time).strftime("%H:%M") for row in self.logical_backup_times
 			),
+			"can_set_time": self.plan_allows_backup_schedule(),
+			"can_set_offsite": self.offsite_backups_available(),
+			"offsite": not self.skip_offsite_backups,
 		}
+
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def update_offsite_backups(self, enabled: bool):
+		"""Turn the daily offsite copy of the backup on or off.
+
+		Off leaves the backup on the server, where the bench deletes it within a
+		day. Backups that run for an archive or a migration still go offsite.
+		"""
+		if enabled and not self.offsite_backups_available():
+			frappe.throw(
+				"This site takes no offsite backups. Change to a plan that includes them, then turn them on again."
+			)
+		self.db_set("skip_offsite_backups", not enabled)
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
@@ -824,6 +844,18 @@ class Site(Document, TagHelpers):
 		if not plan.offsite_backups:
 			return False
 		return plan.price_usd == 0 or plan.price_usd >= MINIMUM_BACKUP_SCHEDULE_PLAN_PRICE_USD
+
+	def offsite_backups_available(self) -> bool:
+		"""Whether the scheduler would send this site offsite, if it has not turned it off.
+
+		The scheduler drops a site by its subscription plan, not by `plan`, and a
+		site with no subscription keeps its offsite backups. Read the same rows,
+		or the dashboard hides the switch from sites that do take offsite backups.
+		"""
+		plans = frappe.get_all(
+			"Subscription", {"document_type": "Site", "document_name": self.name}, pluck="plan"
+		)
+		return all(frappe.get_cached_value("Site Plan", plan, "offsite_backups") for plan in plans if plan)
 
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)

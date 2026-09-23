@@ -3,17 +3,15 @@
 		v-model="show"
 		:options="{
 			title: 'Backup Schedule',
-			actions: managed
-				? []
-				: [
-						{
-							label: 'Save',
-							variant: 'solid',
-							disabled: !loaded,
-							loading: $site?.updateBackupSchedule?.loading,
-							onClick: save,
-						},
-					],
+			actions: [
+				{
+					label: 'Save',
+					variant: 'solid',
+					disabled: !loaded,
+					loading: saving,
+					onClick: save,
+				},
+			],
 		}"
 	>
 		<template #body-content>
@@ -25,40 +23,55 @@
 				<LoadingIndicator v-else class="h-5 w-5 text-ink-gray-5" />
 			</div>
 
-			<p v-else-if="managed" class="text-base leading-5 text-ink-gray-7">
-				Your site backs up at {{ managedTimes }} every day. We set that up for
-				you — write to support to change it.
-			</p>
-
 			<div v-else class="flex flex-col gap-5">
 				<Switch
-					v-model="custom"
-					label="Backup site at custom time"
+					v-if="canSetOffsite"
+					v-model="offsite"
+					label="Offsite backups"
 					:description="
-						custom
-							? 'Backups run once a day, at the hour below'
-							: 'Backups run every 6 hours, whenever that falls'
+						offsite
+							? 'A copy of the daily backup goes to our offsite storage'
+							: 'Backups stay on the server, and your bench drops them within a day'
 					"
 				/>
 
-				<!-- Laid out like the Switch above: label and description left, control right -->
-				<div v-if="custom" class="flex items-center justify-between">
-					<div class="flex flex-col gap-1">
-						<span class="text-base font-medium leading-normal text-ink-gray-8">
-							Backup time
-						</span>
-						<span class="text-p-sm text-ink-gray-7">
-							Starts within this hour ({{ timezone }})
-						</span>
-					</div>
-					<FormControl
-						class="w-32"
-						type="select"
-						variant="outline"
-						:options="hourOptions"
-						v-model="hour"
+				<p v-if="managed" class="text-base leading-5 text-ink-gray-7">
+					Your site backs up at {{ managedTimes }} every day. We set that up for
+					you — write to support to change it.
+				</p>
+
+				<template v-else-if="canSetTime">
+					<Switch
+						v-model="custom"
+						label="Backup site at custom time"
+						:description="
+							custom
+								? 'Backups run once a day, at the hour below'
+								: 'Backups run every 6 hours, whenever that falls'
+						"
 					/>
-				</div>
+
+					<!-- Laid out like the Switch above: label and description left, control right -->
+					<div v-if="custom" class="flex items-center justify-between">
+						<div class="flex flex-col gap-1">
+							<span
+								class="text-base font-medium leading-normal text-ink-gray-8"
+							>
+								Backup time
+							</span>
+							<span class="text-p-sm text-ink-gray-7">
+								Starts within this hour ({{ timezone }})
+							</span>
+						</div>
+						<FormControl
+							class="w-32"
+							type="select"
+							variant="outline"
+							:options="hourOptions"
+							v-model="hour"
+						/>
+					</div>
+				</template>
 			</div>
 		</template>
 	</Dialog>
@@ -83,9 +96,14 @@ export default {
 	data() {
 		return {
 			show: true,
+			offsite: true,
+			// Only a site the scheduler would send offsite can turn that off
+			canSetOffsite: false,
 			custom: false,
 			hour: '02',
 			hourOptions: HOURS,
+			// Only plans above the cutoff pick their own backup time
+			canSetTime: false,
 			// Times we set up for the site ourselves. A site can't give itself more
 			// than one backup a day, so it can't edit those times either.
 			times: [],
@@ -96,7 +114,10 @@ export default {
 	},
 	mounted() {
 		this.$site.getBackupSchedule.submit().then((schedule) => {
+			this.offsite = schedule.offsite
+			this.canSetOffsite = schedule.can_set_offsite
 			this.custom = schedule.custom
+			this.canSetTime = schedule.can_set_time
 			this.times = schedule.times
 			if (schedule.times.length) {
 				this.hour = timeLocal(schedule.times[0]).slice(0, 2)
@@ -119,16 +140,32 @@ export default {
 		timezone() {
 			return dayjs.tz.guess()
 		},
+		saving() {
+			return (
+				this.$site?.updateBackupSchedule?.loading ||
+				this.$site?.updateOffsiteBackups?.loading
+			)
+		},
 	},
 	methods: {
 		labelFor(hour) {
 			return HOURS.find((option) => option.value === hour)?.label
 		},
 		save() {
-			let promise = this.$site.updateBackupSchedule.submit({
-				time: this.custom ? timeServer(`${this.hour}:00`) : null,
-			})
-			toast.promise(promise, {
+			let requests = []
+			if (this.canSetOffsite) {
+				requests.push(
+					this.$site.updateOffsiteBackups.submit({ enabled: this.offsite }),
+				)
+			}
+			if (this.canSetTime && !this.managed) {
+				requests.push(
+					this.$site.updateBackupSchedule.submit({
+						time: this.custom ? timeServer(`${this.hour}:00`) : null,
+					}),
+				)
+			}
+			toast.promise(Promise.all(requests), {
 				loading: 'Saving backup schedule...',
 				success: () => {
 					this.show = false
