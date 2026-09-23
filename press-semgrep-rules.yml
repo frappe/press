@@ -142,22 +142,58 @@ rules:
       - yaml
     patterns:
       - pattern-either:
-          - pattern: |
-              apt: $ARGS
-          - pattern: |
-              dpkg_selections: $ARGS
           - patterns:
               - pattern: |
-                  command: $CMD
+                  name: $NAME
+                  ...
+                  $MODULE: $ARGS
               - metavariable-regex:
-                  metavariable: $CMD
-                  regex: ^apt-mark
-      - pattern-inside: |
-          name: $NAME
-          ...
+                  metavariable: $MODULE
+                  regex: ^(ansible\.builtin\.)?(apt|package|dpkg_selections)$
+          - patterns:
+              - pattern: |
+                  name: $NAME
+                  ...
+                  $MODULE: $ARGS
+              - metavariable-regex:
+                  metavariable: $MODULE
+                  regex: ^(ansible\.builtin\.)?apt_repository$
+              - pattern-not: |
+                  name: $NAME
+                  ...
+                  $MODULE:
+                    ...
+                    update_cache: no
+                    ...
+              - pattern-not: |
+                  name: $NAME
+                  ...
+                  $MODULE:
+                    ...
+                    update_cache: false
+                    ...
+          - patterns:
+              - pattern: |
+                  name: $NAME
+                  ...
+                  $MODULE: $ARGS
+              - metavariable-regex:
+                  metavariable: $MODULE
+                  regex: ^(ansible\.builtin\.)?(command|shell)$
+              - metavariable-regex:
+                  metavariable: $ARGS
+                  regex: ^(apt-mark|apt-get|apt install|dpkg -i)
       - pattern-not-inside: |
           retries: $RETRIES
           ...
+      # A task that tolerates failure does not need to wait out the lock.
+      - pattern-not-inside: |
+          ignore_errors: $IGNORE
+          ...
+      - pattern-not-inside: |
+          failed_when: $FAILED
+          ...
+      - focus-metavariable: $MODULE
 
     paths:
       include:
