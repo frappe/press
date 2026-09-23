@@ -117,7 +117,6 @@ export default {
 		getBackupDownloadLink: 'get_backup_download_link',
 		getBackupSchedule: 'get_backup_schedule',
 		updateBackupSchedule: 'update_backup_schedule',
-		updateOffsiteBackups: 'update_offsite_backups',
 		fetchDatabaseTableSchemas: 'fetch_database_table_schemas',
 		fetchSitesDataForExport: 'fetch_sites_data_for_export',
 	},

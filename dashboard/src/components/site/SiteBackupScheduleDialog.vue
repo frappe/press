@@ -141,10 +141,7 @@ export default {
 			return dayjs.tz.guess()
 		},
 		saving() {
-			return (
-				this.$site?.updateBackupSchedule?.loading ||
-				this.$site?.updateOffsiteBackups?.loading
-			)
+			return this.$site?.updateBackupSchedule?.loading
 		},
 	},
 	methods: {
@@ -152,20 +149,15 @@ export default {
 			return HOURS.find((option) => option.value === hour)?.label
 		},
 		save() {
-			let requests = []
-			if (this.canSetOffsite) {
-				requests.push(
-					this.$site.updateOffsiteBackups.submit({ enabled: this.offsite }),
-				)
-			}
+			// One request for both controls: two would race on the same Site row
+			let payload = { offsite: this.offsite }
+			// Leave the time out when the dialog shows no time control, so that the
+			// site keeps the schedule it has
 			if (this.canSetTime && !this.managed) {
-				requests.push(
-					this.$site.updateBackupSchedule.submit({
-						time: this.custom ? timeServer(`${this.hour}:00`) : null,
-					}),
-				)
+				payload.time = this.custom ? timeServer(`${this.hour}:00`) : null
 			}
-			toast.promise(Promise.all(requests), {
+			let promise = this.$site.updateBackupSchedule.submit(payload)
+			toast.promise(promise, {
 				loading: 'Saving backup schedule...',
 				success: () => {
 					this.show = false
