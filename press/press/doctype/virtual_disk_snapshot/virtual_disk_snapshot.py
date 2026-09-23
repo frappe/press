@@ -498,6 +498,50 @@ def delete_expired_snapshots():
 			frappe.db.rollback()
 
 
+def delete_orphaned_dedicated_snapshots():
+	snapshots = frappe.get_all(
+		"Virtual Disk Snapshot",
+		filters={
+			"status": ("!=", "Unavailable"),
+			"dedicated_snapshot": True,
+			"creation": ("<=", frappe.utils.add_days(None, -4)),
+		},
+		pluck="name",
+		order_by="creation asc",
+		limit=500,
+	)
+	in_use = get_snapshots_in_use_by_server_snapshots(snapshots)
+	for snapshot in snapshots:
+		if has_job_timeout_exceeded():
+			return
+		if snapshot in in_use:
+			continue
+		try:
+			frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot(ignore_validation=True)
+			frappe.db.commit()
+		except (SnapshotLockedError, SnapshotInUseError):
+			pass
+		except Exception:
+			log_error("Orphaned Dedicated Snapshot Delete Error", snapshot=snapshot)
+			frappe.db.rollback()
+
+
+def get_snapshots_in_use_by_server_snapshots(snapshots: list[str]) -> set[str]:
+	if not snapshots:
+		return set()
+
+	in_use = set()
+	for field in ("app_server_snapshot", "database_server_snapshot"):
+		in_use.update(
+			frappe.get_all(
+				"Server Snapshot",
+				filters={field: ("in", snapshots), "status": ("in", ("Pending", "Processing", "Completed"))},
+				pluck=field,
+			)
+		)
+	return in_use
+
+
 def sync_all_snapshots_from_aws():
 	regions = frappe.get_all("Cloud Region", {"provider": "AWS EC2"}, pluck="name")
 	for region in regions:
