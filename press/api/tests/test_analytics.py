@@ -10,7 +10,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from pytz import timezone as pytz_timezone
 
-from press.api.analytics import AggType, SlowLogGroupByChart, align_to_quarter_hour
+from press.api.analytics import AggType, ResourceType, SlowLogGroupByChart, align_to_quarter_hour
 
 TIMEZONE = "Asia/Kolkata"
 
@@ -114,3 +114,48 @@ class TestNormalizedSlowQueries(FrappeTestCase):
 		chart = self.chart(max_no_of_paths=25)
 		chart.normalize_slow_logs = False
 		self.assertEqual(chart.terms_size, 25)
+
+
+class TestServerSlowQueryGrouping(FrappeTestCase):
+	"""A server chart groups by database, so a reader sees which site is slow.
+	The per-query variant groups by query text, so a reader can compare the
+	queries a primary and its read replica get."""
+
+	def chart(self, group_by_query: bool) -> SlowLogGroupByChart:
+		chart = SlowLogGroupByChart.__new__(SlowLogGroupByChart)
+		chart.resource_type = ResourceType.SERVER
+		chart.group_by_query = group_by_query
+		return chart
+
+	def test_server_chart_groups_by_database_by_default(self):
+		self.assertTrue(self.chart(group_by_query=False).groups_by_site)
+
+	def test_server_chart_groups_by_query_when_asked(self):
+		self.assertFalse(self.chart(group_by_query=True).groups_by_site)
+
+	def test_site_chart_never_groups_by_site(self):
+		chart = self.chart(group_by_query=False)
+		chart.resource_type = ResourceType.SITE
+		self.assertFalse(chart.groups_by_site)
+
+
+class TestSlowQueriesWithoutLogServer(FrappeTestCase):
+	def test_chart_is_empty_when_no_log_server_is_set(self):
+		"""__init__ returns before it sets the filters, and run() used to read them"""
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		frappe.db.set_single_value("Press Settings", "log_server", "")
+		try:
+			chart = SlowLogGroupByChart(
+				False,
+				"m1.example.com",
+				AggType.COUNT,
+				TIMEZONE,
+				datetime(2026, 8, 24, 10, 0),
+				datetime(2026, 8, 24, 11, 0),
+				3600,
+				900,
+				ResourceType.SERVER,
+			)
+			self.assertEqual(chart.run(), {"datasets": [], "labels": []})
+		finally:
+			frappe.db.set_single_value("Press Settings", "log_server", log_server)

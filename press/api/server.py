@@ -583,6 +583,32 @@ def get_slow_logs_by_site(name, query, timezone, start, end):
 	return get_slow_logs(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
 
 
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+@redis_cache(ttl=10 * 60)
+def get_slow_logs_by_query(name, query, timezone, start, end):
+	"""Slow queries of one host. A replica gets its own slow log, so pick the host to compare primary and replica."""
+	from press.api.analytics import MAX_QUERIES, ResourceType, get_slow_logs
+
+	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
+	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
+	timespan, timegrain = auto_timespan_timegrain(start, end)
+
+	return get_slow_logs(
+		name,
+		query,
+		timezone,
+		start,
+		end,
+		timespan,
+		timegrain,
+		ResourceType.SERVER,
+		normalize=True,
+		max_no_of_paths=MAX_QUERIES,
+		group_by_query=True,
+	)
+
+
 def prometheus_instant_value(query: str) -> float | None:
 	"""Latest scraped value, or None when there is no monitoring data.
 

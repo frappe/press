@@ -540,9 +540,12 @@ class SlowLogGroupByChart(StackedGroupByChart):
 		self,
 		normalize_slow_logs=False,
 		*args,
+		group_by_query=False,
 		**kwargs,
 	):
 		self.normalize_slow_logs = normalize_slow_logs
+		# A server chart groups by database (site) unless asked for the queries
+		self.group_by_query = group_by_query
 		super().__init__(*args, **kwargs)
 
 	@property
@@ -583,13 +586,14 @@ class SlowLogGroupByChart(StackedGroupByChart):
 	def avg_of_duration(self):
 		return A("avg", field="event.duration")
 
+	@property
+	def groups_by_site(self) -> bool:
+		return ResourceType(self.resource_type) is ResourceType.SERVER and not self.group_by_query
+
 	def exclude_top_k_data(self, datasets):
-		if ResourceType(self.resource_type) is ResourceType.SITE:
-			for path in list(map(lambda x: x["path"], datasets)):
-				self.search = self.search.exclude("match_phrase", mysql__slowlog__query=path)
-		elif ResourceType(self.resource_type) is ResourceType.SERVER:
-			for path in list(map(lambda x: x["path"], datasets)):
-				self.search = self.search.exclude("match_phrase", mysql__slowlog__current_user=path)
+		field = self.group_by_field.replace(".", "__")
+		for path in list(map(lambda x: x["path"], datasets)):
+			self.search = self.search.exclude("match_phrase", **{field: path})
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
@@ -601,16 +605,18 @@ class SlowLogGroupByChart(StackedGroupByChart):
 			self.database_name = frappe.db.get_value("Site", self.name, "database_name")
 			if self.database_name:
 				self.search = self.search.filter("match", mysql__slowlog__current_user=self.database_name)
-			self.group_by_field = "mysql.slowlog.query"
 		elif ResourceType(self.resource_type) is ResourceType.SERVER:
 			self.search = self.search.filter("match", agent__name=self.name)
-			self.group_by_field = "mysql.slowlog.current_user"
+		self.group_by_field = "mysql.slowlog.current_user" if self.groups_by_site else "mysql.slowlog.query"
 
 	def run(self):
+		# Without a log server __init__ returns early and sets no filters
+		if not self.log_server:
+			return {"datasets": [], "labels": []}
 		if not self.database_name and ResourceType(self.resource_type) is ResourceType.SITE:
 			return {"datasets": [], "labels": []}
 		res = super().run()
-		if ResourceType(self.resource_type) is not ResourceType.SERVER:
+		if not self.groups_by_site:
 			return res
 		for path_data in res["datasets"]:
 			site_name = frappe.db.get_value(
@@ -1066,7 +1072,6 @@ def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC")
 	return rounded_time(start, timegrain), rounded_time(end, timegrain)
 
 
-@redis_cache(ttl=15 * 60)
 def get_rounded_boundary(dt: datetime, timegrain: int = 60):
 	"""
 	Floor a datetime to the previous interval boundary.
@@ -1280,6 +1285,7 @@ def get_slow_logs(
 	resource_type: ResourceType = ResourceType.SITE,
 	normalize: bool = False,
 	max_no_of_paths: int = MAX_NO_OF_PATHS,
+	group_by_query: bool = False,
 ):
 	return SlowLogGroupByChart(
 		normalize,
@@ -1292,6 +1298,7 @@ def get_slow_logs(
 		timegrain,
 		resource_type,
 		max_no_of_paths,
+		group_by_query=group_by_query,
 	).run()
 
 
