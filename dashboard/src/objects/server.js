@@ -9,7 +9,7 @@ import { isMobile } from '../utils/device';
 import { date, duration, planTitle, userCurrency } from '../utils/format';
 import { getQueryParam, setQueryParam } from '../utils/index';
 import {
-	planChange,
+	planChangeCell,
 	planPrice,
 	serverPlanCpu,
 	serverPlanMemory,
@@ -997,33 +997,28 @@ export default {
 								return value || '—';
 							},
 						},
-						// Both columns are read off the plan documents the row carries, so
+						// Every column is drawn from the plan documents the row carries, so
 						// the fieldname only has to be unique for the column key.
 						{
 							label: 'Price',
 							fieldname: 'price',
+							type: 'Component',
 							width: 1.1,
-							format(value, row) {
-								return planChange(row, planPrice);
-							},
+							component: planChangeCell(planPrice),
 						},
 						{
 							label: 'vCPU',
 							fieldname: 'vcpu',
-							class: 'text-ink-gray-6',
+							type: 'Component',
 							width: 0.8,
-							format(value, row) {
-								return planChange(row, serverPlanCpu);
-							},
+							component: planChangeCell(serverPlanCpu),
 						},
 						{
 							label: 'Memory',
 							fieldname: 'memory',
-							class: 'text-ink-gray-6',
+							type: 'Component',
 							width: 0.9,
-							format(value, row) {
-								return planChange(row, serverPlanMemory);
-							},
+							component: planChangeCell(serverPlanMemory),
 						},
 						{
 							label: 'Type',

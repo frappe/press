@@ -13,7 +13,7 @@ import { confirmDialog, icon, renderDialog } from '../utils/components'
 import { isMobile } from '../utils/device'
 import { date, escapeHtml } from '../utils/format'
 import {
-	planChange,
+	planChangeCell,
 	planPrice,
 	sitePlanCompute,
 	sitePlanStorage,
@@ -1154,33 +1154,28 @@ export default {
 					fields: ['from_plan', 'to_plan', 'type', 'timestamp', 'owner'],
 					orderBy: 'timestamp desc',
 					columns: [
-						// Every column is read off the plan documents the row carries, so
+						// Every column is drawn from the plan documents the row carries, so
 						// the fieldname only has to be unique for the column key.
 						{
 							label: 'Price',
 							fieldname: 'price',
+							type: 'Component',
 							width: 1.2,
-							format(value, row) {
-								return planChange(row, planPrice)
-							},
+							component: planChangeCell(planPrice),
 						},
 						{
 							label: 'Compute',
 							fieldname: 'compute',
-							class: 'text-ink-gray-6',
+							type: 'Component',
 							width: 1.3,
-							format(value, row) {
-								return planChange(row, sitePlanCompute)
-							},
+							component: planChangeCell(sitePlanCompute),
 						},
 						{
 							label: 'Storage',
 							fieldname: 'storage',
-							class: 'text-ink-gray-6',
+							type: 'Component',
 							width: 1.2,
-							format(value, row) {
-								return planChange(row, sitePlanStorage)
-							},
+							component: planChangeCell(sitePlanStorage),
 						},
 						{
 							label: 'Type',

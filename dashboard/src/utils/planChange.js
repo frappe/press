@@ -1,22 +1,37 @@
+import { h } from 'vue'
 import { getTeam } from '../data/team'
 import { bytes, plural, userCurrency } from './format'
 
 // A plan name says nothing about what the plan gives you, so the plan history
 // lists show the price and the resources instead. `get_list_query` on Plan
 // Change and Site Plan Change puts the two plans on the row for that.
-export function planChange(row, describe) {
-	const toPlan = row?.to_plan_details
-	if (!toPlan) return '—'
+//
+// The old value is dimmed and the arrow is dimmer still, so the eye lands on
+// the value the change moved to.
+export function planChangeCell(describe) {
+	return ({ row }) => {
+		const toPlan = row?.to_plan_details
+		if (!toPlan) return value('—', true)
 
-	const fromPlan = row?.from_plan_details
-	if (!fromPlan) return describe(toPlan)
+		const fromPlan = row?.from_plan_details
+		const after = describe(toPlan)
+		if (!fromPlan) return value(after)
 
-	// A price change does not have to change the size, and the other way round.
-	const before = describe(fromPlan)
-	const after = describe(toPlan)
-	if (before === after) return after
+		// A price change does not have to change the size, and the other way round.
+		const before = describe(fromPlan)
+		if (before === after) return value(after)
 
-	return `${before} → ${after}`
+		return h('div', { class: 'flex items-center gap-1.5 truncate text-base' }, [
+			value(before, true),
+			h('span', { class: 'shrink-0 text-ink-gray-4' }, '→'),
+			value(after),
+		])
+	}
+}
+
+function value(text, dim = false) {
+	const tone = dim ? 'text-ink-gray-5' : 'text-ink-gray-8'
+	return h('span', { class: `truncate text-base ${tone}` }, text)
 }
 
 export function planPrice(plan) {
