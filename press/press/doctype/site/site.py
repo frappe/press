@@ -2780,7 +2780,9 @@ class Site(Document, TagHelpers):
 			)
 
 	def check_render_safe_exec_on_public_bench(self, key: str):
-		if key == "disable_render_safe_exec" and self.is_group_public:
+		if key == "disable_render_safe_exec" and (
+			self.is_group_public or frappe.get_cached_value("Release Group", self.group, "central_bench")
+		):
 			frappe.throw(
 				f"You cannot set <b>disable_render_safe_exec</b> on a public bench. Move the site to a <a class='underline' href='{PRIVATE_BENCH_DOC}'>private bench</a>, then set the key in the bench config."
 			)

@@ -1349,6 +1349,16 @@ class TestSiteRenderSafeExecConfig(FrappeTestCase):
 		site.reload()
 		self.assertNotIn("disable_render_safe_exec", json.loads(site.config))
 
+	def test_site_on_central_bench_cannot_set_disable_render_safe_exec(self):
+		site = self.site_on_group(public=False)
+		frappe.db.set_value("Release Group", site.group, "central_bench", 1)
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"cannot set <b>disable_render_safe_exec</b> on a public bench",
+			site.update_config,
+			{"disable_render_safe_exec": 1},
+		)
+
 	def test_site_on_private_bench_can_set_disable_render_safe_exec(self):
 		site = self.site_on_group(public=False)
 		site.update_config({"disable_render_safe_exec": 1})
