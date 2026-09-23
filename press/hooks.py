@@ -354,7 +354,6 @@ scheduler_events = {
 			"press.press.doctype.server.server.archive_servers_with_unpaid_invoices",
 		],
 		"*/15 * * * *": [
-			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_orphaned_dedicated_snapshots",
 			"press.press.doctype.site_update.site_update.schedule_updates",
 			"press.press.doctype.site.backups.schedule_logical_backups",
 			"press.press.doctype.site.backups.schedule_physical_backups",
@@ -367,6 +366,7 @@ scheduler_events = {
 			"press.infrastructure.doctype.virtual_disk_resize.virtual_disk_resize.run_scheduled_resizes",
 		],
 		"*/5 * * * *": [
+			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.enqueue_delete_orphaned_dedicated_snapshots",
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
 			"press.press.doctype.site_replication.site_replication.update_from_site",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
