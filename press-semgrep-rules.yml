@@ -137,6 +137,38 @@ rules:
         - https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_loops.html#retrying-a-task-until-a-condition-is-met
         - https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-community-changelogs
 
+  - id: apt-without-retries
+    languages:
+      - yaml
+    patterns:
+      - pattern-either:
+          - pattern: |
+              apt: $ARGS
+          - pattern: |
+              dpkg_selections: $ARGS
+          - patterns:
+              - pattern: |
+                  command: $CMD
+              - metavariable-regex:
+                  metavariable: $CMD
+                  regex: ^apt-mark
+      - pattern-inside: |
+          name: $NAME
+          ...
+      - pattern-not-inside: |
+          retries: $RETRIES
+          ...
+
+    paths:
+      include:
+        - 'press/playbooks/**/*.yml'
+    message: apt task has no retries. Unattended upgrades can hold the dpkg lock and fail it. Add register, until, retries and delay.
+    severity: ERROR
+    metadata:
+      category: correctness
+      references:
+        - https://github.com/frappe/press/commit/28aad3d13005614465625cd86900028dd9a56abd
+
   - id: frappe-exceptions-in-press-job-type
     languages:
       - generic
