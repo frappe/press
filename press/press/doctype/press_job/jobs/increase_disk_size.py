@@ -9,7 +9,10 @@ from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 class IncreaseDiskSizeJob(PressJob):
 	@flow
 	def execute(self):
-		self.increase_disk_size()
+		if not self.increase_disk_size():
+			# Nothing was resized, so skip the partition wait and avoid restarting
+			# every bench, which would interrupt running jobs and backups.
+			return
 
 		provider = self.server_doc.provider
 		if provider == "AWS EC2":
@@ -27,12 +30,9 @@ class IncreaseDiskSizeJob(PressJob):
 			self.restart_active_benches()
 
 	@task
-	def increase_disk_size(self):
+	def increase_disk_size(self) -> bool:
 		mountpoint = self.arguments_dict.labels.get("mountpoint")
-		self.server_doc.calculated_increase_disk_size(mountpoint=mountpoint)
-
-		if not frappe.db.get_value(self.server_type, self.server, "auto_increase_storage"):
-			return
+		return self.server_doc.calculated_increase_disk_size(mountpoint=mountpoint)
 
 	@task
 	def wait_for_partition_to_resize_for_aws_ec2(self):
