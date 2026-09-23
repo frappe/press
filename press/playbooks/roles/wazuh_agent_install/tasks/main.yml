@@ -5,6 +5,10 @@
       - gnupg
       - apt-transport-https
     state: present
+  register: wazuh_dependencies
+  until: wazuh_dependencies.failed == false
+  retries: 5
+  delay: 120
 
 - name: Download Key
   get_url:
@@ -47,7 +51,7 @@
   register: wazuh_repository_update
   until: wazuh_repository_update.rc == 0
   retries: 5
-  delay: 10
+  delay: 120
   changed_when: false
 
 - name: Install Pinned Agent
@@ -56,6 +60,10 @@
     - name: Unhold Agent
       command: apt-mark unhold wazuh-agent
       changed_when: false
+      register: wazuh_unhold
+      until: wazuh_unhold.failed == false
+      retries: 5
+      delay: 120
 
     - name: Install Agent
       apt:
@@ -65,12 +73,20 @@
       environment:
         WAZUH_MANAGER: "{{ wazuh_manager }}"
         WAZUH_AGENT_NAME: "{{ wazuh_agent_name }}"
+      register: wazuh_install
+      until: wazuh_install.failed == false
+      retries: 5
+      delay: 120
   always:
     # Stop apt upgrade from moving the agent ahead of the manager, even after a failed install.
     - name: Hold Agent
       dpkg_selections:
         name: wazuh-agent
         selection: hold
+      register: wazuh_hold
+      until: wazuh_hold.failed == false
+      retries: 5
+      delay: 120
 
 # apt is a no-op when the pinned version is already installed, so the postinst never re-reads
 # WAZUH_MANAGER. Register explicitly when the agent holds no key, or when Press says the manager
