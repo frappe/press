@@ -7,7 +7,18 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from press.utils.plan_change import attach_plan_details
 from press.utils.webhook import create_webhook_event
+
+# What the dashboard reads to describe a site plan: its price and its limits.
+SITE_PLAN_FIELDS = (
+	"plan_title",
+	"price_inr",
+	"price_usd",
+	"cpu_time_per_day",
+	"max_storage_usage",
+	"dedicated_server_plan",
+)
 
 
 class SitePlanChange(Document):
@@ -28,6 +39,12 @@ class SitePlanChange(Document):
 	# end: auto-generated types
 
 	dashboard_fields = ("from_plan", "to_plan", "type", "site", "timestamp")
+
+	@staticmethod
+	def get_list_query(query, **list_args):
+		rows = query.run(as_dict=True)
+		attach_plan_details(rows, "Site Plan", SITE_PLAN_FIELDS)
+		return rows
 
 	def validate(self):
 		if not self.from_plan and self.to_plan:

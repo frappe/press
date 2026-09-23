@@ -8,6 +8,12 @@ import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { isMobile } from '../utils/device';
 import { date, duration, planTitle, userCurrency } from '../utils/format';
 import { getQueryParam, setQueryParam } from '../utils/index';
+import {
+	planChange,
+	planPrice,
+	serverPlanCpu,
+	serverPlanMemory,
+} from '../utils/planChange';
 import { trialDays } from '../utils/site';
 import { getJobsTab } from './common/jobs';
 import { tagTab } from './common/tags';
@@ -984,23 +990,40 @@ export default {
 						{
 							label: 'Server Type',
 							fieldname: 'document_type',
+							width: 0.9,
 							format(value) {
 								if (value === 'Server') return 'Application Server';
 								if (value === 'Database Server') return 'Database Server';
 								return value || '—';
 							},
 						},
+						// Both columns are read off the plan documents the row carries, so
+						// the fieldname only has to be unique for the column key.
 						{
-							label: 'Changed From',
-							fieldname: 'from_plan',
-							class: 'text-gray-600',
-							format(value) {
-								return value || '—';
+							label: 'Price',
+							fieldname: 'price',
+							width: 1.1,
+							format(value, row) {
+								return planChange(row, planPrice);
 							},
 						},
 						{
-							label: 'Changed To',
-							fieldname: 'to_plan',
+							label: 'vCPU',
+							fieldname: 'vcpu',
+							class: 'text-ink-gray-6',
+							width: 0.8,
+							format(value, row) {
+								return planChange(row, serverPlanCpu);
+							},
+						},
+						{
+							label: 'Memory',
+							fieldname: 'memory',
+							class: 'text-ink-gray-6',
+							width: 0.9,
+							format(value, row) {
+								return planChange(row, serverPlanMemory);
+							},
 						},
 						{
 							label: 'Type',
@@ -1016,12 +1039,16 @@ export default {
 							label: 'Changed By',
 							fieldname: 'owner',
 							class: 'text-gray-600',
+							// An email is the widest thing in the row, and the grid sizes a
+							// column to its content, so it needs a share of its own.
+							width: 1.2,
 						},
 						{
 							label: 'Date',
 							fieldname: 'timestamp',
 							type: 'Timestamp',
 							align: 'right',
+							width: 0.8,
 						},
 					],
 					filterControls() {

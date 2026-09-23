@@ -5,6 +5,11 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from press.utils.plan_change import attach_plan_details
+
+# What the dashboard reads to describe a server plan: its price and its size.
+SERVER_PLAN_FIELDS = ("title", "price_inr", "price_usd", "vcpu", "memory")
+
 
 class PlanChange(Document):
 	dashboard_fields = ("from_plan", "to_plan", "type", "timestamp", "document_type", "document_name")
@@ -25,6 +30,12 @@ class PlanChange(Document):
 		to_plan: DF.Link
 		type: DF.Literal["", "Initial Plan", "Upgrade", "Downgrade"]
 	# end: auto-generated types
+
+	@staticmethod
+	def get_list_query(query, **list_args):
+		rows = query.run(as_dict=True)
+		attach_plan_details(rows, "Server Plan", SERVER_PLAN_FIELDS)
+		return rows
 
 	def validate(self):
 		self.team = frappe.db.get_value(self.document_type, self.document_name, "team")
