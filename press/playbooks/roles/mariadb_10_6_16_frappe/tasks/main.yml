@@ -23,10 +23,18 @@
     repo: deb https://packages.frappe.cloud/mariadb/10.6 focal main
     state: present
     update_cache: true
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Update APT Cache
   apt:
     update_cache: yes
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Use Debian Unattended Package Installation Mode
   shell: export DEBIAN_FRONTEND=noninteractive
@@ -41,6 +49,10 @@
       - mariadb-client-core-10.6
       - libmariadbclient18
     state: latest
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Create MariaDB Systemd Drop-In Directory
   file:

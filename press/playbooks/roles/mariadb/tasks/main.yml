@@ -8,10 +8,18 @@
     repo: deb https://mirror.rackspace.com/mariadb/repo/10.6/ubuntu {{ ansible_distribution_release }} main
     state: present
     update_cache: true
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Update APT Cache
   apt:
     update_cache: yes
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Use Debian Unattended Package Installation Mode
   shell: export DEBIAN_FRONTEND=noninteractive
@@ -24,12 +32,20 @@
       - mariadb-client
       - libmariadbclient18
     state: present
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Install MySQLdb Python Package
   apt:
     pkg:
       - python3-mysqldb
     state: present
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Add MariaDB Configuration File
   template:

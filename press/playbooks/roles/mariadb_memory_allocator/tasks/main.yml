@@ -11,6 +11,10 @@
       - google-perftools
     state: present
     update_cache: yes
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
   when: allocator != "system"
 
 - name: Find Memory Allocator Library

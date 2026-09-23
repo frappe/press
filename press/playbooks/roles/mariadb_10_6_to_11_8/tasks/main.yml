@@ -41,11 +41,19 @@
     repo: deb https://archive.mariadb.org/repo/11.8/ubuntu {{ ansible_distribution_release }} main
     state: present
     update_cache: true
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
   when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
 
 - name: Update APT Cache
   ansible.builtin.apt:
     update_cache: true
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
   environment:
     DEBIAN_FRONTEND: noninteractive
   when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')

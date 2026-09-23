@@ -4,6 +4,10 @@
     repo: deb https://packages.frappe.cloud/mariadb/10.6 focal main/debug
     state: present
     update_cache: true
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Use Debian Unattended Package Installation Mode
   shell: export DEBIAN_FRONTEND=noninteractive
@@ -13,3 +17,7 @@
   apt:
     package: mariadb-server-core-10.6-dbgsym
     state: latest
+  register: apt_result
+  until: apt_result.failed == false
+  retries: 5
+  delay: 120
