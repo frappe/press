@@ -25,6 +25,7 @@ from press.press.doctype.release_group.release_group import (
 )
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.team.test_team import create_test_team
+from press.utils import get_client_blacklisted_keys
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.app.app import App
@@ -729,6 +730,7 @@ class TestReleaseGroupBlacklistedConfig(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 		frappe.get_doc({"doctype": "Site Config Key Blacklist", "key": "blacklisted_test_key"}).insert()
+		get_client_blacklisted_keys.clear_cache()
 		self.group = create_test_release_group([create_test_app()])
 		self.group.append(
 			"common_site_config_table", {"key": "blacklisted_test_key", "value": "0", "type": "Boolean"}
@@ -737,6 +739,7 @@ class TestReleaseGroupBlacklistedConfig(FrappeTestCase):
 
 	def tearDown(self):
 		frappe.db.rollback()
+		get_client_blacklisted_keys.clear_cache()
 
 	def blacklisted_rows(self):
 		self.group.reload()
