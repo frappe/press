@@ -129,6 +129,7 @@ class PressSettings(Document):
 		disable_database_audit_service: DF.Check
 		disable_frappe_auth: DF.Check
 		disable_physical_backup: DF.Check
+		disable_press_job_failure_alerts: DF.Check
 		disallow_disposable_emails: DF.Check
 		docker_registry_namespace: DF.Data | None
 		docker_registry_password: DF.Data | None
