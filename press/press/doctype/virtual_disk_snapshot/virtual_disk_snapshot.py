@@ -17,6 +17,7 @@ from frappe.utils.data import cint
 from hcloud import Client as HetznerClient
 from hcloud.images.domain import Image as HetznerImage
 from oci.core import BlockstorageClient
+from pypika.terms import ExistsCriterion
 
 from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.utils import log_error
@@ -360,6 +361,10 @@ class SnapshotLockedError(Exception):
 	pass
 
 
+def on_doctype_update():
+	frappe.db.add_index("Virtual Disk Snapshot", ["dedicated_snapshot", "status", "creation"])
+
+
 def sync_snapshots():
 	snapshots = frappe.get_all(
 		"Virtual Disk Snapshot", {"status": "Pending", "physical_backup": 0, "rolling_snapshot": 0}
@@ -499,23 +504,9 @@ def delete_expired_snapshots():
 
 
 def delete_orphaned_dedicated_snapshots():
-	snapshots = frappe.get_all(
-		"Virtual Disk Snapshot",
-		filters={
-			"status": ("!=", "Unavailable"),
-			"dedicated_snapshot": True,
-			"creation": ("<=", frappe.utils.add_days(None, -4)),
-		},
-		pluck="name",
-		order_by="creation asc",
-		limit=500,
-	)
-	in_use = get_snapshots_in_use_by_server_snapshots(snapshots)
-	for snapshot in snapshots:
+	for snapshot in get_orphaned_dedicated_snapshots():
 		if has_job_timeout_exceeded():
 			return
-		if snapshot in in_use:
-			continue
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot(ignore_validation=True)
 			frappe.db.commit()
@@ -526,20 +517,37 @@ def delete_orphaned_dedicated_snapshots():
 			frappe.db.rollback()
 
 
-def get_snapshots_in_use_by_server_snapshots(snapshots: list[str]) -> set[str]:
-	if not snapshots:
-		return set()
-
-	in_use = set()
-	for field in ("app_server_snapshot", "database_server_snapshot"):
-		in_use.update(
-			frappe.get_all(
-				"Server Snapshot",
-				filters={field: ("in", snapshots), "status": ("in", ("Pending", "Processing", "Completed"))},
-				pluck=field,
-			)
+def get_orphaned_dedicated_snapshots() -> list[str]:
+	# Filter out in-use snapshots in SQL, else they fill every batch and nothing gets deleted
+	VirtualDiskSnapshot = frappe.qb.DocType("Virtual Disk Snapshot")
+	return (
+		frappe.qb.from_(VirtualDiskSnapshot)
+		.select(VirtualDiskSnapshot.name)
+		.where(
+			VirtualDiskSnapshot.status.isin(("Pending", "Completed", "Error", "Recovering", "Recoverable"))
+			& (VirtualDiskSnapshot.dedicated_snapshot == 1)
+			& (VirtualDiskSnapshot.creation <= frappe.utils.add_days(None, -4))
+			& ExistsCriterion(server_snapshots_using(VirtualDiskSnapshot, "app_server_snapshot")).negate()
+			& ExistsCriterion(
+				server_snapshots_using(VirtualDiskSnapshot, "database_server_snapshot")
+			).negate()
 		)
-	return in_use
+		.orderby(VirtualDiskSnapshot.creation)
+		.limit(100)
+		.run(pluck=True)
+	)
+
+
+def server_snapshots_using(VirtualDiskSnapshot, field: str):
+	ServerSnapshot = frappe.qb.DocType("Server Snapshot")
+	return (
+		frappe.qb.from_(ServerSnapshot)
+		.select(ServerSnapshot.name)
+		.where(
+			(ServerSnapshot[field] == VirtualDiskSnapshot.name)
+			& ServerSnapshot.status.isin(("Pending", "Processing", "Completed"))
+		)
+	)
 
 
 def sync_all_snapshots_from_aws():
