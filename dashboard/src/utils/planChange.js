@@ -6,12 +6,12 @@ import { bytes, plural, userCurrency } from './format'
 // lists show the price and the resources instead. `get_list_query` on Plan
 // Change and Site Plan Change puts the two plans on the row for that.
 //
-// The old value is dimmed and the arrow is dimmer still, so the eye lands on
-// the value the change moved to.
+// Both values keep the ink of the row. Only the arrow between them is dimmed,
+// so it separates the two values without competing with them.
 export function planChangeCell(describe) {
 	return ({ row }) => {
 		const toPlan = row?.to_plan_details
-		if (!toPlan) return value('—', true)
+		if (!toPlan) return value('—')
 
 		const fromPlan = row?.from_plan_details
 		const after = describe(toPlan)
@@ -22,16 +22,15 @@ export function planChangeCell(describe) {
 		if (before === after) return value(after)
 
 		return h('div', { class: 'flex items-center gap-1.5 truncate text-base' }, [
-			value(before, true),
+			value(before),
 			h('span', { class: 'shrink-0 text-ink-gray-4' }, '→'),
 			value(after),
 		])
 	}
 }
 
-function value(text, dim = false) {
-	const tone = dim ? 'text-ink-gray-5' : 'text-ink-gray-8'
-	return h('span', { class: `truncate text-base ${tone}` }, text)
+function value(text) {
+	return h('span', { class: 'truncate text-base' }, text)
 }
 
 export function planPrice(plan) {
