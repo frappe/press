@@ -252,12 +252,11 @@ def process_add_domain_to_upstream_job_update(job):
 		# `frappe.conf.domains` and reports opened on them fail PDF generation.
 		if updated_status == "Active":
 			frappe.get_doc("Site", job.site).add_domain_to_config(domain)
-<<<<<<< HEAD
 
 	if updated_status == "Active" and job.site:
 		_set_product_trial_site_host_name(job.site, domain)
 
-	if request := frappe.db.get_value("Product Trial Request", {"domain": domain}):
+	if request := frappe.db.get_value("Product Trial Request", {"site": job.site}):
 		product_trial_request = frappe.get_doc("Product Trial Request", request)
 		if job.status == "Success":
 			product_trial_request.update_status_from_agent_jobs()
@@ -277,13 +276,6 @@ def _set_product_trial_site_host_name(site_name: str, domain: str):
 	site.host_name = domain
 	site.save()
 	site.set_redirect(auto_generated_domain)
-=======
-	if job.status in ["Success", "Failure", "Delivery Failure"] and (
-		request := frappe.db.get_value("Product Trial Request", {"site": job.site})
-	):
-		error = None if job.status == "Success" else job.data
-		frappe.get_doc("Product Trial Request", request).update_status_from_agent_jobs(error)
->>>>>>> 1b8b498 (fix(product-trial): Wait for proxy upstream before marking site created)
 
 
 def update_dns_type():
