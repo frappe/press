@@ -296,7 +296,6 @@ scheduler_events = {
 		# "press.press.doctype.virtual_machine.virtual_machine.snapshot_frappe_compute_virtual_machines",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
-		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_orphaned_dedicated_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_hourly_stats",
@@ -355,6 +354,7 @@ scheduler_events = {
 			"press.press.doctype.server.server.archive_servers_with_unpaid_invoices",
 		],
 		"*/15 * * * *": [
+			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_orphaned_dedicated_snapshots",
 			"press.press.doctype.site_update.site_update.schedule_updates",
 			"press.press.doctype.site.backups.schedule_logical_backups",
 			"press.press.doctype.site.backups.schedule_physical_backups",
