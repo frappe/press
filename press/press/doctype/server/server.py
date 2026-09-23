@@ -2613,9 +2613,10 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		self,
 		mountpoint: str,
 		additional: int = 0,
-	):
+	) -> bool:
 		"""
 		Calculate required disk increase for servers and handle notifications accordingly.
+		Returns True if the disk was increased, False if it was left as is.
 				- For servers with `auto_increase_storage` enabled:
 					- Compute the required storage increase.
 					- Automatically apply the increase.
@@ -2654,7 +2655,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				server=server.name if server.name[0] == "f" else None,
 			)
 
-			return
+			return False
 
 		TelegramMessage.enqueue(
 			f"Increasing disk (mount point {mountpoint}) on "
@@ -2670,6 +2671,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			is_auto_triggered=True,
 			current_disk_usage=current_disk_usage,
 		)
+		return True
 
 	def prune_docker_system(self):
 		frappe.enqueue_doc(
