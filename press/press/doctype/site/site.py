@@ -5803,6 +5803,7 @@ def create_subscription_for_trial_sites():
 		.left_join(ProductTrial)
 		.on(ProductTrialRequest.product_trial == ProductTrial.name)
 		.where(ProductTrialRequest.is_subscription_created == 0)
+		.where(ProductTrialRequest.site != "")
 		.where(SitePlanChange.name.isnull())
 		.where(ProductTrialRequest.status == "Site Created")
 		.limit(25)
