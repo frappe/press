@@ -503,6 +503,16 @@ def delete_expired_snapshots():
 			frappe.db.rollback()
 
 
+def enqueue_delete_orphaned_dedicated_snapshots():
+	frappe.enqueue(
+		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_orphaned_dedicated_snapshots",
+		queue="long",
+		timeout=900,
+		deduplicate=True,
+		job_id="delete_orphaned_dedicated_snapshots",
+	)
+
+
 def delete_orphaned_dedicated_snapshots():
 	for snapshot in get_orphaned_dedicated_snapshots():
 		if has_job_timeout_exceeded():
@@ -534,7 +544,7 @@ def get_orphaned_dedicated_snapshots() -> list[str]:
 			).negate()
 		)
 		.orderby(VirtualDiskSnapshot.creation)
-		.limit(100)
+		.limit(50)
 		.run(pluck=True)
 	)
 
