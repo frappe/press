@@ -246,7 +246,6 @@ class ProductTrial(Document):
 				{
 					"agent_job": add_domain_to_upstream_job,
 					"purpose": "Add Domain to Upstream",
-					"required_for_completion": False,
 				}
 			)
 		if add_domain_job := site.add_domain_to_config(site_domain):

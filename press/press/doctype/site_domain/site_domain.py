@@ -252,10 +252,11 @@ def process_add_domain_to_upstream_job_update(job):
 		# `frappe.conf.domains` and reports opened on them fail PDF generation.
 		if updated_status == "Active":
 			frappe.get_doc("Site", job.site).add_domain_to_config(domain)
-	if job.status in ["Failure", "Delivery Failure"] and (
+	if job.status in ["Success", "Failure", "Delivery Failure"] and (
 		request := frappe.db.get_value("Product Trial Request", {"domain": domain})
 	):
-		frappe.get_doc("Product Trial Request", request).update_status_from_agent_jobs(job.data)
+		error = None if job.status == "Success" else job.data
+		frappe.get_doc("Product Trial Request", request).update_status_from_agent_jobs(error)
 
 
 def update_dns_type():
