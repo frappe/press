@@ -527,6 +527,7 @@ def get_orphaned_dedicated_snapshots() -> list[str]:
 			VirtualDiskSnapshot.status.isin(("Pending", "Completed", "Error", "Recovering", "Recoverable"))
 			& (VirtualDiskSnapshot.dedicated_snapshot == 1)
 			& (VirtualDiskSnapshot.creation <= frappe.utils.add_days(None, -4))
+			& VirtualDiskSnapshot.cluster.notin(("Bahrain", "UAE"))
 			& ExistsCriterion(server_snapshots_using(VirtualDiskSnapshot, "app_server_snapshot")).negate()
 			& ExistsCriterion(
 				server_snapshots_using(VirtualDiskSnapshot, "database_server_snapshot")
