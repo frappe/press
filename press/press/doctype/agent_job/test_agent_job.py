@@ -15,7 +15,13 @@ from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days
 
 from press.agent import Agent
-from press.press.doctype.agent_job.agent_job import AgentJob, fail_old_jobs, lock_doc_updated_by_job
+from press.overrides import before_request
+from press.press.doctype.agent_job.agent_job import (
+	AgentJob,
+	cancel_job_from_dashboard,
+	fail_old_jobs,
+	lock_doc_updated_by_job,
+)
 from press.press.doctype.agent_job.agent_job_notifications import DOC_URLS, JobErr, get_details
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
@@ -391,6 +397,105 @@ class TestCancelJob(FrappeTestCase):
 			"backups skipped",
 			job.validate_dashboard_cancellation,
 		)
+
+
+class TestCancelJobFromDashboard(FrappeTestCase):
+	"""Two teams, each holding the Press User role and nothing else.
+
+	A job always names a server, a bench sometimes and a site sometimes. The
+	endpoint answers only to the team that owns the site the job belongs to.
+	"""
+
+	def setUp(self):
+		self.team = create_test_press_admin_team()
+		self.other_team = create_test_press_admin_team()
+		self.mine = self.jobs_of(self.team)
+		self.theirs = self.jobs_of(self.other_team)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def sign_in_as(self, team):
+		"""Put the request-scoped team in place the way `before_request` does."""
+		frappe.set_user(team.user)
+		before_request()
+
+	def jobs_of(self, team) -> dict[str, AgentJob]:
+		"""One running backup of each shape a job comes in."""
+		bench = create_test_bench()
+		frappe.db.set_value("Bench", bench.name, "team", team.name)
+		site = create_test_site(bench=bench.name, team=team.name)
+
+		def backup(**fields) -> AgentJob:
+			job = create_test_agent_job(job_type="Backup Site", server=bench.server, job_id=42)
+			job.db_set({"status": "Running", **fields})
+			return job
+
+		return {
+			"server": backup(),
+			"bench": backup(bench=bench.name),
+			"site": backup(bench=bench.name, site=site.name),
+		}
+
+	def test_a_team_cancels_the_running_backup_of_its_own_site(self):
+		self.sign_in_as(self.team)
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			cancel_job_from_dashboard(self.mine["site"].name)
+
+		cancel_job.assert_called_once_with(42)
+
+	def test_a_team_cannot_cancel_the_backup_of_another_teams_site(self):
+		self.sign_in_as(self.team)
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			self.assertRaisesRegex(
+				frappe.PermissionError,
+				"Not permitted",
+				cancel_job_from_dashboard,
+				self.theirs["site"].name,
+			)
+
+		cancel_job.assert_not_called()
+		self.assertEqual(frappe.db.get_value("Agent Job", self.theirs["site"].name, "status"), "Running")
+
+	def test_a_job_that_names_no_site_belongs_to_nobody(self):
+		"""The endpoint asks the site who owns the job, so a job without one is
+		refused to its own team as well."""
+		self.sign_in_as(self.team)
+
+		for shape in ("server", "bench"):
+			for owner, jobs in (("mine", self.mine), ("theirs", self.theirs)):
+				with self.subTest(shape=shape, owner=owner):
+					with patch.object(Agent, "cancel_job") as cancel_job:
+						self.assertRaises(frappe.PermissionError, cancel_job_from_dashboard, jobs[shape].name)
+
+					cancel_job.assert_not_called()
+
+	def test_a_team_cannot_cancel_a_job_type_that_has_no_failure_path(self):
+		self.sign_in_as(self.team)
+		self.mine["site"].db_set("job_type", "Migrate Site")
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"Migrate Site jobs can't be cancelled",
+				cancel_job_from_dashboard,
+				self.mine["site"].name,
+			)
+
+		cancel_job.assert_not_called()
+
+	def test_a_team_reads_no_job_of_another_team(self):
+		"""Agent Job grants a dashboard user nothing, so `get` refuses every shape."""
+		from press.api.client import get
+
+		self.sign_in_as(self.team)
+
+		for shape, job in self.theirs.items():
+			with self.subTest(shape=shape):
+				self.assertRaises(frappe.PermissionError, get, "Agent Job", job.name)
 
 
 class TestAgentJobNotifications(FrappeTestCase):
