@@ -367,6 +367,31 @@ def get_site_url_and_sid(key, app=None):
 
 	name = frappe.db.get_value("Site", {"subdomain": account_request.subdomain, "domain": domain})
 	site: "Site" = frappe.get_doc("Site", name)
+
+	# The key mints a login session, so spend it; lock the row so a replay can't race the first use.
+	key_details = frappe.db.get_value(
+		"Account Request",
+		account_request.name,
+		["request_key", "request_key_expiration_time"],
+		as_dict=True,
+		for_update=True,
+	)
+	if (
+		not key_details.request_key
+		or key_details.request_key != account_request.request_key
+		or (
+			key_details.request_key_expiration_time
+			and key_details.request_key_expiration_time < frappe.utils.now_datetime()
+		)
+	):
+		frappe.throw("Invalid or Expired Key")  # nosemgrep
+	frappe.db.set_value(
+		"Account Request",
+		account_request.name,
+		{"request_key": "", "request_key_expiration_time": None},
+		update_modified=False,
+	)
+
 	if site.additional_system_user_created:
 		return site.login_as_team()
 	return site.login_as_admin()
