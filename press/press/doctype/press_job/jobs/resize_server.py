@@ -4,7 +4,9 @@ from contextlib import suppress
 from typing import TYPE_CHECKING
 
 import frappe
+import requests
 
+from press.agent import AgentRequestSkippedException
 from press.press.doctype.agent_job.agent_job import Agent, handle_polled_jobs, poll_random_jobs
 from press.press.doctype.press_job.press_job import PressJob
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
@@ -62,7 +64,18 @@ class ResizeServerJob(PressJob):
 
 		agent = Agent(self.server_doc.name, server_type=self.server_type)
 		pending_ids = [j.job_id for j in pending_jobs]
-		if not (polled_jobs := poll_random_jobs(agent, pending_ids)):
+
+		try:
+			polled_jobs = poll_random_jobs(agent, pending_ids)
+		except (AgentRequestSkippedException, requests.RequestException):
+			# Agent is down. Retry a few times, then skip the wait and resize anyway.
+			failures = (self.kv.get("agent_poll_failures") or 0) + 1
+			self.kv.set("agent_poll_failures", failures)
+			if failures < 5:
+				self.defer_current_task()
+			return
+
+		if not polled_jobs:
 			self.defer_current_task()
 
 		handle_polled_jobs(polled_jobs, pending_jobs)
