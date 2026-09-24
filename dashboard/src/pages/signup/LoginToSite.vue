@@ -162,6 +162,7 @@ export default {
 					},
 					isSiteReachable: {
 						method: 'is_site_reachable',
+						onError() {},
 					},
 					getLoginSid: {
 						method: 'get_login_sid',
@@ -216,7 +217,10 @@ export default {
 				site: this.siteRequestDoc?.site,
 			})
 			for (let attempt = 0; attempt < 30; attempt++) {
-				if (await this.$resources.siteRequest.isSiteReachable.submit()) break
+				const reachable = await this.$resources.siteRequest.isSiteReachable
+					.submit()
+					.catch(() => false)
+				if (reachable) break
 				await new Promise((resolve) => setTimeout(resolve, 3000))
 			}
 			this.$resources.siteRequest.getLoginSid.submit()
