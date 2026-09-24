@@ -1262,17 +1262,9 @@ class ReleaseGroup(Document, TagHelpers):
 	@dashboard_whitelist()
 	@action_guard(ReleaseGroupActions.SSHAccess)
 	def generate_certificate(self):
-		# Check if team has access to SSH
-		team = get_current_team(get_doc=True)
-		if team and not team.ssh_access_enabled:
-			if team.creation > add_to_date(None, days=-7):
-				frappe.throw(
-					"SSH access is unavailable because your team was created less than 7 days ago.\nIf you need urgent access, please create a support ticket at support.frappe.io using your team email ID."
-				)
-			else:
-				frappe.throw(
-					"SSH access is not enabled for your team.\nTo request access, please open a ticket at support.frappe.io using your team email ID."
-				)
+		if reason := self.ssh_access_denied_reason():
+			frappe.throw(reason)  # nosemgrep
+		self.enable_ssh_access_for_team()
 
 		ssh_key = frappe.get_all(
 			"User SSH Key",
@@ -1297,6 +1289,28 @@ class ReleaseGroup(Document, TagHelpers):
 				"validity": "6h",
 			}
 		).insert()
+
+	def enable_ssh_access_for_team(self):
+		team = get_current_team(get_doc=True)
+		if team and not team.ssh_access_enabled:
+			team.db_set("ssh_access_enabled", 1)
+
+	def ssh_access_denied_reason(self) -> str | None:
+		team = get_current_team(get_doc=True)
+		if not team or team.ssh_access_enabled or team.can_skip_ssh_wait():
+			return None
+		if team.creation > add_to_date(None, days=-7):
+			unlock_date = frappe.utils.format_date(add_to_date(team.creation, days=7), "MMM d, YYYY")
+			return (
+				"SSH access is not available for the first 7 days after a team is created. "
+				f"Your team gets access on or after {unlock_date}. "
+				"To get immediate access, buy credits, or add a card and move a site or server to a paid plan. "
+				"For any assistance, open a ticket at support.frappe.io from your team email."
+			)
+		return (
+			"SSH access is not enabled for your team. "
+			"To request access, open a ticket at support.frappe.io from your team email."
+		)
 
 	@dashboard_whitelist()
 	def get_certificate(self):
