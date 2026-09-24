@@ -40,7 +40,7 @@
 						<Button
 							v-if="canCancel"
 							@click="confirmCancel"
-							:loading="$resources.job.cancelJob.loading"
+							:loading="$resources.cancelJob.loading"
 							theme="red"
 						>
 							Cancel Job
@@ -128,7 +128,6 @@ export default {
 				type: 'document',
 				doctype: 'Agent Job',
 				name: this.id,
-				whitelistedMethods: { cancelJob: 'cancel_job' },
 				transform(job) {
 					for (let step of job.steps) {
 						step.title = step.step_name
@@ -161,6 +160,12 @@ export default {
 				fields: ['skipped_backups'],
 				filters: { update_job: this.id },
 				limit: 1,
+			}
+		},
+		cancelJob() {
+			return {
+				url: 'press.press.doctype.agent_job.agent_job.cancel_job_from_dashboard',
+				makeParams: () => ({ name: this.id }),
 			}
 		},
 		errors() {
@@ -262,7 +267,7 @@ export default {
 					variant: 'solid',
 					theme: 'red',
 					onClick: ({ hide }) => {
-						toast.promise(this.$resources.job.cancelJob.submit(), {
+						toast.promise(this.$resources.cancelJob.submit(), {
 							loading: 'Cancelling job...',
 							success: () => {
 								hide()
