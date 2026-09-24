@@ -73,6 +73,7 @@ class ResizeServerJob(PressJob):
 			self.kv.set("agent_poll_failures", failures)
 			if failures < 5:
 				self.defer_current_task()
+			print(f"Agent unreachable after {failures} attempts, skipping wait\n{frappe.get_traceback()}")
 			return
 
 		if not polled_jobs:
