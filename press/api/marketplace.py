@@ -917,15 +917,24 @@ def get_apps_with_plans(apps: list[str], release_group: str):
 
 @frappe.whitelist()
 def change_app_plan(subscription: str, new_plan: str):
-	is_free = frappe.db.get_value("Marketplace App Plan", new_plan, "price_usd") <= 0
-	if not is_free:
-		team = get_current_team(get_doc=True)
-		if not team.can_install_paid_apps():
-			frappe.throw(
-				"You cannot upgrade to paid plan on Free Credits. Please buy credits before trying to upgrade plan."
-			)
-
+	team = get_current_team(get_doc=True)
 	subscription_doc = frappe.get_doc("Subscription", subscription)
+	if subscription_doc.team != team.name and frappe.session.data.user_type != "System User":
+		frappe.throw("Not Permitted", frappe.PermissionError)
+
+	plan = frappe.db.get_value("Marketplace App Plan", new_plan, ["app", "price_usd"], as_dict=True)
+	if (
+		not plan
+		or subscription_doc.document_type != "Marketplace App"
+		or plan.app != subscription_doc.document_name
+	):
+		frappe.throw("Invalid plan for this subscription")
+
+	if plan.price_usd > 0 and not team.can_install_paid_apps():
+		frappe.throw(
+			"You cannot upgrade to paid plan on Free Credits. Please buy credits before trying to upgrade plan."
+		)
+
 	subscription_doc.enabled = 1
 	subscription_doc.plan = new_plan
 	subscription_doc.save(ignore_permissions=True)
