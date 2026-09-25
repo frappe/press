@@ -154,3 +154,19 @@ class TestDripEmail(FrappeTestCase):
 			send_welcome_email()
 
 		send_welcome_mail.assert_called()
+
+	def test_product_trial_email_embeds_logo_when_set(self):
+		html = frappe.render_template(
+			"press/templates/emails/product_trial_email.html",
+			{"title": "Frappe CRM", "logo": "/files/crm.png", "message": "hi"},
+		)
+		self.assertIn('embed="/files/crm.png"', html)
+		self.assertIn("Frappe CRM", html)
+
+	def test_product_trial_email_renders_without_logo(self):
+		html = frappe.render_template(
+			"press/templates/emails/product_trial_email.html",
+			{"title": "Frappe CRM", "logo": None, "message": "hi"},
+		)
+		self.assertNotIn("<img", html)
+		self.assertIn("Frappe CRM", html)
