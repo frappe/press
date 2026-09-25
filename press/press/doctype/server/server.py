@@ -995,13 +995,49 @@ class BaseServer(Document, TagHelpers):
 			)
 			play = ansible.run()
 			if play.status == "Success":
+				# The YARA config lives in ossec.conf, so it goes with the agent
 				frappe.db.set_value(
 					self.doctype,
 					self.name,
-					{"is_wazuh_agent_installed": False, "wazuh_agent_status": None},
+					{
+						"is_wazuh_agent_installed": False,
+						"wazuh_agent_status": None,
+						"is_yara_installed": False,
+					},
 				)
 		except Exception:
 			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def install_yara(self):
+		"""Scan files the Wazuh agent reports as changed against a YARA ruleset."""
+		if not self.is_wazuh_agent_installed:
+			frappe.throw("Install the Wazuh agent before YARA scanning")
+		# Stamped before the enqueue, so a server we cannot even queue still yields its turn
+		frappe.db.set_value(self.doctype, self.name, "yara_install_last_attempt", frappe.utils.now_datetime())
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_install_yara",
+			queue="long",
+			timeout=1200,
+			job_id=f"yara_install:{self.doctype}:{self.name}",
+			deduplicate=True,
+		)
+
+	def _install_yara(self):
+		try:
+			ansible = Ansible(
+				playbook="wazuh_yara_install.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			play = ansible.run()
+			if play.status == "Success":
+				frappe.db.set_value(self.doctype, self.name, "is_yara_installed", True)
+		except Exception:
+			log_error("YARA Install Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def deregister_wazuh_agent(self):
@@ -3208,6 +3244,8 @@ class Server(BaseServer):
 		is_wazuh_agent_installed: DF.Check
 		wazuh_agent_status: DF.Data | None
 		wazuh_install_last_attempt: DF.Datetime | None
+		is_yara_installed: DF.Check
+		yara_install_last_attempt: DF.Datetime | None
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]
@@ -4735,27 +4773,56 @@ def install_missing_wazuh_agents():
 
 
 def servers_needing_wazuh_agent() -> list[tuple[str, str]]:
-	"""Active servers with no agent, and those the manager has no record of despite the flag.
+	"""Active servers with no agent, and those the manager has no record of despite the flag."""
+	return longest_waiting_servers(
+		"wazuh_install_last_attempt",
+		or_filters={
+			"is_wazuh_agent_installed": 0,
+			"wazuh_agent_status": UNREGISTERED_WAZUH_AGENT_STATUS,
+		},
+	)
+
+
+def install_missing_yara():
+	"""Install YARA scanning on the enrolled servers that have waited longest for it."""
+	if not is_wazuh_configured():
+		return
+	for server_type, name in servers_needing_yara()[:WAZUH_INSTALL_BATCH_SIZE]:
+		try:
+			frappe.get_doc(server_type, name).install_yara()
+		except Exception:
+			# A full queue or one broken server must not take the rest of the batch with it
+			log_error("YARA Enqueue Exception", server_type=server_type, server=name)
+
+
+def servers_needing_yara() -> list[tuple[str, str]]:
+	"""Servers already reporting to the manager but with no ruleset to scan against."""
+	return longest_waiting_servers(
+		"yara_install_last_attempt",
+		filters={"is_wazuh_agent_installed": 1, "is_yara_installed": 0},
+	)
+
+
+def longest_waiting_servers(
+	attempt_field: str, filters: dict | None = None, or_filters: dict | None = None
+) -> list[tuple[str, str]]:
+	"""Active servers matching the filters, the ones waiting longest for their turn first.
 
 	Longest wait first, so a server that keeps failing cannot outrank one never tried.
 	"""
-	or_filters = {
-		"is_wazuh_agent_installed": 0,
-		"wazuh_agent_status": UNREGISTERED_WAZUH_AGENT_STATUS,
-	}
 	candidates = []
 	for server_type in WAZUH_SERVER_TYPES:
-		filters = {"status": "Active", "is_server_setup": 1}
+		server_filters = {"status": "Active", "is_server_setup": 1} | (filters or {})
 		if frappe.get_meta(server_type).has_field("is_self_hosted"):
-			filters["is_self_hosted"] = 0
+			server_filters["is_self_hosted"] = 0
 		candidates += [
-			(server.wazuh_install_last_attempt, server_type, server.name)
+			(server.get(attempt_field), server_type, server.name)
 			for server in frappe.get_all(
 				server_type,
-				filters=filters,
+				filters=server_filters,
 				or_filters=or_filters,
-				fields=["name", "wazuh_install_last_attempt"],
-				order_by="wazuh_install_last_attempt asc",
+				fields=["name", attempt_field],
+				order_by=f"{attempt_field} asc",
 				limit=WAZUH_INSTALL_BATCH_SIZE,
 			)
 		]

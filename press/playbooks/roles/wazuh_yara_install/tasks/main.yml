@@ -1,0 +1,36 @@
+---
+- name: Install YARA
+  apt:
+    name:
+      - yara
+      # The active response script reads the syscheck path out of the alert JSON
+      - jq
+    state: present
+
+- name: Install Scan Script
+  copy:
+    src: yara_scan.sh
+    dest: /var/ossec/active-response/bin/yara_scan.sh
+    owner: root
+    group: wazuh
+    mode: '0750'
+
+# Not realtime, and restricted to script extensions. An app server carries
+# hundreds of sites worth of uploads, and watching all of them exhausts inotify.
+- name: Watch Bench Directories For Dropped Scripts
+  blockinfile:
+    path: /var/ossec/etc/ossec.conf
+    marker: "<!-- {mark} ANSIBLE MANAGED BLOCK: yara -->"
+    block: |
+      <ossec_config>
+        <syscheck>
+          <directories check_all="yes" report_changes="yes" recursion_level="6"
+                       restrict="\.(php|py|sh|bash|pl|cgi|phar)$">/home/frappe/benches</directories>
+          <frequency>3600</frequency>
+        </syscheck>
+        <localfile>
+          <log_format>syslog</log_format>
+          <location>/var/ossec/logs/active-responses.log</location>
+        </localfile>
+      </ossec_config>
+  notify: restart wazuh-agent
