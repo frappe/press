@@ -2609,6 +2609,10 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			},
 		)
 
+	def can_auto_increase_storage(self, mountpoint: str | None) -> bool:
+		"""Whether a disk alert on this mountpoint should resize it without asking the team"""
+		return bool(self.auto_increase_storage or (self.has_data_volume and mountpoint == "/"))
+
 	def calculated_increase_disk_size(
 		self,
 		mountpoint: str,
@@ -2633,7 +2637,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		current_disk_usage = round((disk_capacity - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2)
 
-		if not server.auto_increase_storage and (not server.has_data_volume or mountpoint != "/"):
+		if not server.can_auto_increase_storage(mountpoint):
 			TelegramMessage.enqueue(
 				f"Not increasing disk (mount point {mountpoint}) on "
 				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
