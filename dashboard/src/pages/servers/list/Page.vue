@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Button, createListResource, TextInput, Combobox } from 'frappe-ui'
-import Header from '@/components/Header.vue'
+import { Button, Combobox, createListResource, TextInput } from 'frappe-ui'
 import { ref } from 'vue'
-
-import ServerCard from './ServerCard.vue'
+import Header from '@/components/Header.vue'
+import { teamCache } from '@/data/currentTeam'
 import Loader from './Loader.vue'
+import ServerCard from './ServerCard.vue'
 
 const sortBy = ref('desc')
 
@@ -12,7 +12,7 @@ const servers = createListResource({
 	doctype: 'Server',
 	auto: true,
 	pageLength: 10,
-	cache: 'servers list',
+	cache: teamCache('servers list'),
 	fields: [
 		'name',
 		'title',

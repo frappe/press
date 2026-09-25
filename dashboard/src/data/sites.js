@@ -1,5 +1,7 @@
 import { createListResource } from 'frappe-ui'
 
+import { teamCache } from '@/data/currentTeam'
+
 let sites
 
 export function getActiveSites() {
@@ -21,7 +23,7 @@ export function getActiveSites() {
 			],
 			pageLength: 3,
 			auto: false,
-			cache: 'active-sites',
+			cache: teamCache('active-sites'),
 		})
 	}
 	return sites

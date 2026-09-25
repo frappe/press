@@ -3,22 +3,23 @@ import {
 	Badge,
 	Button,
 	Combobox,
-	Dropdown,
-	MultiSelect,
-	TextInput,
-	Tooltip,
-  Spinner,
 	createDocumentResource,
 	createListResource,
+	Dropdown,
+	MultiSelect,
+	Spinner,
+	TextInput,
+	Tooltip,
 } from 'frappe-ui'
 import { unparse } from 'papaparse'
 import { defineAsyncComponent, h, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BillingAlerts from '@/components/BillingAlerts.vue'
-import LinkControl from '@/components/LinkControl.vue'
 import Scrollbar from '@/components/common/Scrollbar.vue'
 import Header from '@/components/Header.vue'
+import LinkControl from '@/components/LinkControl.vue'
+import { teamCache } from '@/data/currentTeam'
 import { getTeam } from '@/data/team'
 import { clusterOptions } from '@/objects/common'
 import { renderDialog } from '@/utils/components'
@@ -81,7 +82,7 @@ const sites = createListResource({
 	orderBy: 'creation desc',
 	pageLength: 20,
 	auto: true,
-	cache: ['Site', 'list'],
+	cache: teamCache('Site', 'list'),
 })
 
 const sitesCount = createListResource({
@@ -420,7 +421,7 @@ const exportCSV = () => {
 							</Badge>
 						</td>
 
-						<td> {{ sitePlan(site) }} </td>
+						<td>{{ sitePlan(site) }} </td>
 
 						<td>
 							<span class="flex gap-1.5 items-center">
@@ -436,7 +437,7 @@ const exportCSV = () => {
 						<td>
 							{{ site.group_public ? 'Shared' : site.group_title }}
 						</td>
-						<td> {{ site.version }}</td>
+						<td>{{ site.version }}</td>
 
 						<td class="w-px">
 							<div class="flex justify-end">

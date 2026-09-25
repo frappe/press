@@ -2,6 +2,7 @@ import { createResource } from 'frappe-ui'
 import { clear } from 'idb-keyval'
 import { computed, reactive } from 'vue'
 import router from '../router'
+import { forgetTeams, getCurrentTeam } from './currentTeam'
 
 export let session = reactive({
 	login: createResource({
@@ -18,7 +19,7 @@ export let session = reactive({
 		async onSuccess() {
 			session.user = getSessionUser()
 			await router.replace({ name: 'Login' })
-			localStorage.removeItem('current_team')
+			forgetTeams()
 			// On logout, reset posthog user identity and device id
 			if (window.posthog?.__loaded) {
 				posthog.reset(true)
@@ -34,7 +35,7 @@ export let session = reactive({
 		url: 'logout',
 		async onSuccess() {
 			session.user = getSessionUser()
-			localStorage.removeItem('current_team')
+			forgetTeams()
 			// On logout, reset posthog user identity and device id
 			if (window.posthog?.__loaded) {
 				posthog.reset(true)
@@ -45,11 +46,7 @@ export let session = reactive({
 	}),
 	userPermissions: createResource({
 		url: 'press.api.account.user_permissions',
-		cache: [
-			'userPermissions',
-			localStorage.getItem('current_team'),
-			getSessionUser(),
-		],
+		cache: ['userPermissions', getCurrentTeam(), getSessionUser()],
 		initialData: {
 			owner: false,
 			admin: false,

@@ -1,6 +1,8 @@
 <template>
 	<div class="flex flex-col gap-4">
-		<div class="flex flex-col rounded-lg text-base text-ink-gray-9 shadow dark:border">
+		<div
+			class="flex flex-col rounded-lg text-base text-ink-gray-9 shadow dark:border"
+		>
 			<div class="flex flex-col gap-2.5 px-4 py-3">
 				<div class="flex items-center justify-between">
 					<div class="flex flex-col gap-1.5">
@@ -64,49 +66,50 @@
 	</div>
 </template>
 <script setup>
-import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue';
-import UpcomingInvoiceDialog from './UpcomingInvoiceDialog.vue';
-import { Button, createResource } from 'frappe-ui';
-import { ref, computed, inject } from 'vue';
-import { confirmDialog } from '../../utils/components';
-import router from '../../router';
+import { Button, createResource } from 'frappe-ui'
+import { computed, inject, ref } from 'vue'
+import { teamCache } from '@/data/currentTeam'
+import router from '../../router'
+import { confirmDialog } from '../../utils/components'
+import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue'
+import UpcomingInvoiceDialog from './UpcomingInvoiceDialog.vue'
 
-const team = inject('team');
+const team = inject('team')
 const { currentBillingAmount, upcomingInvoice, unpaidInvoices } =
-	inject('billing');
+	inject('billing')
 
-const showAddPrepaidCreditsDialog = ref(false);
-const showInvoiceDialog = ref(false);
+const showAddPrepaidCreditsDialog = ref(false)
+const showInvoiceDialog = ref(false)
 
-const currency = computed(() => (team.doc.currency == 'INR' ? '₹' : '$'));
+const currency = computed(() => (team.doc.currency == 'INR' ? '₹' : '$'))
 
 const unpaidAmount = createResource({
 	url: 'press.api.billing.total_unpaid_amount',
-	cache: 'unpaidAmount',
+	cache: teamCache('unpaidAmount'),
 	auto: true,
-});
+})
 
 const currentMonthEnd = () => {
-	const date = new Date();
-	const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+	const date = new Date()
+	const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0)
 	return lastDay.toLocaleDateString('en-US', {
 		day: 'numeric',
 		month: 'short',
 		year: 'numeric',
-	});
-};
+	})
+}
 
 function payNow() {
 	team.doc.payment_mode == 'Prepaid Credits'
 		? (showAddPrepaidCreditsDialog.value = true)
-		: payUnpaidInvoices();
+		: payUnpaidInvoices()
 }
 
 function payUnpaidInvoices() {
-	let _unpaidInvoices = unpaidInvoices.data;
+	let _unpaidInvoices = unpaidInvoices.data
 	if (_unpaidInvoices.length > 1) {
 		if (team.doc.payment_mode === 'Prepaid Credits') {
-			showAddPrepaidCreditsDialog.value = true;
+			showAddPrepaidCreditsDialog.value = true
 		} else {
 			confirmDialog({
 				title: 'Multiple unpaid invoices',
@@ -116,14 +119,14 @@ function payUnpaidInvoices() {
 					label: 'Go to invoices',
 					variant: 'solid',
 					onClick: ({ hide }) => {
-						router.push({ name: 'BillingInvoices' });
-						hide();
+						router.push({ name: 'BillingInvoices' })
+						hide()
 					},
 				},
-			});
+			})
 		}
 	} else {
-		let invoice = _unpaidInvoices[0];
+		let invoice = _unpaidInvoices[0]
 		if (
 			invoice &&
 			invoice.stripe_invoice_url &&
@@ -131,9 +134,9 @@ function payUnpaidInvoices() {
 		) {
 			window.open(
 				`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`,
-			);
+			)
 		} else {
-			showAddPrepaidCreditsDialog.value = true;
+			showAddPrepaidCreditsDialog.value = true
 		}
 	}
 }

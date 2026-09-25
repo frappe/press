@@ -4,6 +4,7 @@
 import { Breadcrumbs } from 'frappe-ui'
 import { computed, inject, onMounted } from 'vue'
 import Header from '@/components/Header.vue'
+import { getCurrentTeam } from '@/data/currentTeam'
 import OnboardingLeftContainer from '@/onboarding/onboardingLeftContainer/OnboardingLeftContainer.vue'
 import OnboardingRightSidebarLayout from '@/onboarding/onboardingRightContainer/OnboardingRightSidebarLayout.vue'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
@@ -12,11 +13,7 @@ import { useSocketEvent } from '@/utils/useSocketEvent'
 const team = inject('team')
 const onboarding = usePartnerOnboarding(team as any)
 const teamName = computed(
-	() =>
-		(team as any)?.doc?.name ||
-		localStorage.getItem('current_team') ||
-		(window as any).default_team ||
-		'',
+	() => (team as any)?.doc?.name || getCurrentTeam() || '',
 )
 
 useSocketEvent('partner_onboarding_certificates_updated', (data: any) => {

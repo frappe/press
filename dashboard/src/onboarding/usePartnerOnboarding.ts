@@ -1,5 +1,6 @@
 import { createResource } from 'frappe-ui'
 import { computed, reactive, ref } from 'vue'
+import { getCurrentTeam, teamCache } from '@/data/currentTeam'
 
 type TeamResource = {
 	doc?: Record<string, any>
@@ -202,12 +203,7 @@ function detailsFromForm() {
 }
 
 function getTeamName(team?: TeamResource) {
-	return (
-		team?.doc?.name ||
-		localStorage.getItem('current_team') ||
-		(window as any).default_team ||
-		''
-	)
+	return team?.doc?.name || getCurrentTeam() || ''
 }
 
 function getCertificateStatusResource(team?: TeamResource) {
@@ -219,7 +215,7 @@ function getCertificateStatusResource(team?: TeamResource) {
 			cacheKey,
 			createResource({
 				url: `${baseUrl}.get_certificate_link_status`,
-				cache: cacheKey,
+				cache: teamCache(cacheKey),
 				auto: false,
 				onSuccess: (status: PartnerCertificateLinkStatus) => {
 					certificateStatus.value = status
@@ -240,7 +236,7 @@ function getMRRStatusResource(team?: TeamResource) {
 			cacheKey,
 			createResource({
 				url: `${baseUrl}.get_mrr_status`,
-				cache: cacheKey,
+				cache: teamCache(cacheKey),
 				auto: false,
 				onSuccess: (status: PartnerMRRStatus) => {
 					mrrStatus.value = status

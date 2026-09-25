@@ -182,11 +182,13 @@
 import { Badge, createResource, ErrorMessage, Spinner } from 'frappe-ui'
 import { computed, inject } from 'vue'
 
+import { teamCache } from '@/data/currentTeam'
+
 const team = inject('team')
 
 const teamTiers = createResource({
 	url: 'press.api.billing.team_tiers',
-	cache: 'teamTiers',
+	cache: teamCache('teamTiers'),
 	auto: true,
 })
 

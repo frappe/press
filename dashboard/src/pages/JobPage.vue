@@ -103,6 +103,7 @@
 <script>
 import { FeatherIcon, Tooltip } from 'frappe-ui'
 import { toast } from 'vue-sonner'
+import { teamCache } from '@/data/currentTeam'
 import AlertAddressableError from '../components/AlertAddressableError.vue'
 import JobStep from '../components/JobStep.vue'
 import { getObject } from '../objects'
@@ -166,7 +167,7 @@ export default {
 		errors() {
 			return {
 				type: 'list',
-				cache: ['Press Notification', 'Error', 'Agent Job', this.id],
+				cache: teamCache('Press Notification', 'Error', 'Agent Job', this.id),
 				doctype: 'Press Notification',
 				auto: true,
 				fields: ['title', 'name'],

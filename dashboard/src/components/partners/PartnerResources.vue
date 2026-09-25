@@ -7,11 +7,13 @@
 	</div>
 </template>
 <script setup>
-import { createResource } from 'frappe-ui';
+import { createResource } from 'frappe-ui'
+
+import { teamCache } from '@/data/currentTeam'
 
 const resourceURL = createResource({
 	url: 'press.api.partner.get_resource_url',
 	auto: true,
-	cache: true,
-});
+	cache: teamCache('partnerResources'),
+})
 </script>

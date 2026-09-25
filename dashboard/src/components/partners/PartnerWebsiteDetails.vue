@@ -32,9 +32,7 @@
 						<div class="flex-1 flex-col">
 							<div class="text-sm text-ink-gray-6">Foundation Date</div>
 							<div class="text-base font-medium text-ink-gray-7 py-2">
-								{{
-									formatDate(partnerDetails.data?.custom_foundation_date) || '-'
-								}}
+								{{ formatDate(partnerDetails.data?.custom_foundation_date) || '-' }}
 							</div>
 						</div>
 						<div class="flex-1 flex-col">
@@ -46,9 +44,7 @@
 						<div class="flex-1 flex-col">
 							<div class="text-sm text-ink-gray-6">Successfull Projects</div>
 							<div class="text-base font-medium text-ink-gray-7 py-2">
-								{{
-									partnerDetails.data?.custom_successful_projects_count || '-'
-								}}
+								{{ partnerDetails.data?.custom_successful_projects_count || '-' }}
 							</div>
 						</div>
 					</div>
@@ -105,30 +101,32 @@
 	</div>
 </template>
 <script setup>
-import { ref, inject, computed } from 'vue';
-import { createResource, Button, Dialog } from 'frappe-ui';
+import { Button, createResource, Dialog } from 'frappe-ui'
+import { computed, inject, ref } from 'vue'
 
-const team = inject('team');
-const showUpdateWebsiteInfo = ref(false);
+import { teamCache } from '@/data/currentTeam'
+
+const team = inject('team')
+const showUpdateWebsiteInfo = ref(false)
 
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',
 	auto: true,
-	cache: 'partnerDetails',
+	cache: teamCache('partnerDetails'),
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-});
+})
 
 const customerList = computed(
 	() => partnerDetails?.data?.customers?.split(',') || [],
-);
+)
 
 const formatDate = (dateString) => {
 	return new Date(dateString).toLocaleDateString('en-US', {
 		year: 'numeric',
 		month: 'long',
 		day: 'numeric',
-	});
-};
+	})
+}
 </script>

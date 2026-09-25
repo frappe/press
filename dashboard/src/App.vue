@@ -19,6 +19,7 @@
 				to access dashboard.
 			</div>
 
+			<ImpersonationBanner v-if="$session.user && $team?.doc" />
 			<router-view />
 		</div>
 	</div>
@@ -39,6 +40,7 @@
 import { computed, defineAsyncComponent, provide, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Toaster } from 'vue-sonner'
+import ImpersonationBanner from '@/components/ImpersonationBanner.vue'
 import SearchModal from '@/components/navigation/search/Popup.vue'
 import { useSearch } from '@/components/navigation/search/utils'
 import { partnerRegistrationModalOpen, searchModalOpen } from '@/data/ui'
@@ -47,7 +49,7 @@ import { session } from './data/session.js'
 import { getTeam } from './data/team'
 import { dialogs } from './utils/components'
 
-import "@/styles/global.css"
+import '@/styles/global.css'
 
 const AppSidebar = defineAsyncComponent(
 	() => import('./components/navigation/sidebar/Sidebar.vue'),

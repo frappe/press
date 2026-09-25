@@ -29,9 +29,9 @@
 </template>
 
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
-import ObjectList from '../ObjectList.vue';
-
+import { getCachedDocumentResource } from 'frappe-ui'
+import { teamCache } from '@/data/currentTeam'
+import ObjectList from '../ObjectList.vue'
 export default {
 	props: ['app'],
 	components: {
@@ -40,7 +40,7 @@ export default {
 	data() {
 		return {
 			show: true,
-		};
+		}
 	},
 	resources: {
 		reviewSteps() {
@@ -49,15 +49,15 @@ export default {
 				params: {
 					name: this.app,
 				},
-				cache: ['Marketplace App Review Steps', this.app],
+				cache: teamCache('Marketplace App Review Steps', this.app),
 				auto: true,
 				initialData: [],
-			};
+			}
 		},
 	},
 	computed: {
 		appDoc() {
-			return getCachedDocumentResource('Marketplace App', this.app);
+			return getCachedDocumentResource('Marketplace App', this.app)
 		},
 		listOptions() {
 			return {
@@ -75,7 +75,7 @@ export default {
 						width: 0.3,
 						align: 'center',
 						Icon(value) {
-							return value ? 'check' : '';
+							return value ? 'check' : ''
 						},
 					},
 					{
@@ -84,19 +84,19 @@ export default {
 						width: 0.2,
 						align: 'right',
 						Button: ({ row }) => {
-							let route = `/apps/${this.app}/`;
-							route += row.step.includes('Publish') ? 'versions' : 'listing';
+							let route = `/apps/${this.app}/`
+							route += row.step.includes('Publish') ? 'versions' : 'listing'
 
 							return {
 								label: 'View',
 								variant: 'ghost',
 								route,
-							};
+							}
 						},
 					},
 				],
-			};
+			}
 		},
 	},
-};
+}
 </script>

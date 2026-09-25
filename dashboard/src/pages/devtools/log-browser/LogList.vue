@@ -61,6 +61,7 @@
 </template>
 
 <script>
+import { teamCache } from '@/data/currentTeam'
 export default {
 	props: {
 		mode: String,
@@ -70,7 +71,7 @@ export default {
 		return {
 			searchLogQuery: '',
 			logId: this.$route.params.logId,
-		};
+		}
 	},
 	resources: {
 		benchLogs() {
@@ -81,8 +82,8 @@ export default {
 					bench: this.bench,
 				},
 				auto: this.mode === 'bench' && this.bench,
-				cache: ['BenchLogs', this.bench],
-			};
+				cache: teamCache('BenchLogs', this.bench),
+			}
 		},
 		siteLogs() {
 			return {
@@ -91,17 +92,17 @@ export default {
 					name: this.site,
 				},
 				auto: this.mode === 'site' && this.site,
-				cache: ['SiteLogs', this.site],
-			};
+				cache: teamCache('SiteLogs', this.site),
+			}
 		},
 	},
 	computed: {
 		logs() {
-			let logs = [];
+			let logs = []
 			if (this.mode === 'bench') {
-				logs = this.$resources.benchLogs?.data || [];
+				logs = this.$resources.benchLogs?.data || []
 			} else if (this.mode === 'site') {
-				logs = this.$resources.siteLogs?.data || [];
+				logs = this.$resources.siteLogs?.data || []
 			}
 
 			// filter out rotated logs that ends with .1, .2, .3, etc
@@ -111,23 +112,23 @@ export default {
 			if (this.searchLogQuery) {
 				logs = logs.filter((log) =>
 					log.name.toLowerCase().includes(this.searchLogQuery.toLowerCase()),
-				);
+				)
 			}
 
-			return logs;
+			return logs
 		},
 		bench() {
 			if (this.mode === 'bench') {
-				return this.docName;
+				return this.docName
 			}
-			return null;
+			return null
 		},
 		site() {
 			if (this.mode === 'site') {
-				return this.docName;
+				return this.docName
 			}
-			return null;
+			return null
 		},
 	},
-};
+}
 </script>

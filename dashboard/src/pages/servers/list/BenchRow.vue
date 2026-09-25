@@ -18,8 +18,8 @@ import {
 	watch,
 } from 'vue'
 import Collapsable from '@/components/common/Collapsable.vue'
+import { teamCache } from '@/data/currentTeam'
 import { renderDialog } from '@/utils/components'
-
 import { dayjsLocal } from '@/utils/dayjs'
 import { getSiteStatusBadge } from '@/utils/site'
 import { dropBench } from './utils'
@@ -45,7 +45,7 @@ const sites = createListResource({
 	},
 	orderBy: 'creation desc',
 	pageLength: 5,
-	cache: ['sitesRes', props.data.name, props.server.name],
+	cache: teamCache('sitesRes', props.data.name, props.server.name),
 	auto: true,
 })
 

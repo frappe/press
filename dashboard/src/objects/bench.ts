@@ -1,8 +1,9 @@
 import { Tooltip } from 'frappe-ui'
 import type { VNode } from 'vue'
 import { defineAsyncComponent, h } from 'vue'
+import { teamCache } from '@/data/currentTeam'
 import LucideAppWindow from '~icons/lucide/app-window'
-import { getTeam, switchToTeam } from '../data/team'
+import { getTeam, impersonateTeam } from '../data/team'
 import { icon } from '../utils/components'
 import {
 	clusterOptions,
@@ -26,7 +27,6 @@ import type {
 	Tab,
 } from './common/types'
 import { getLogsTab } from './tabs/site/logs'
-
 export default {
 	doctype: 'Bench',
 	whitelistedMethods: {},
@@ -66,7 +66,7 @@ function getDetail() {
 							),
 							condition: () => window.is_system_user ?? false,
 							onClick() {
-								switchToTeam(res.doc.team)
+								impersonateTeam(res.doc.team)
 							},
 						},
 					],
@@ -317,7 +317,7 @@ export function getProcessesTab() {
 					},
 					url,
 					auto: true,
-					cache: ['ObjectList', url, res.name],
+					cache: teamCache('ObjectList', url, res.name),
 				}
 			},
 			columns: getProcessesColumns(),

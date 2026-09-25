@@ -8,7 +8,7 @@ import LucideRocket from '~icons/lucide/rocket'
 import AddAppDialog from '../components/group/AddAppDialog.vue'
 import ChangeAppBranchDialog from '../components/group/ChangeAppBranchDialog.vue'
 import PatchAppDialog from '../components/group/PatchAppDialog.vue'
-import { getTeam, switchToTeam } from '../data/team'
+import { getTeam, impersonateTeam } from '../data/team'
 import router from '../router'
 import { confirmDialog, icon, renderDialog } from '../utils/components'
 import { getToastErrorMessage } from '../utils/toast'
@@ -784,7 +784,7 @@ export default {
 					condition: () =>
 						team.doc?.is_desk_user && group.doc.team !== team.name,
 					onClick() {
-						switchToTeam(group.doc.team)
+						impersonateTeam(group.doc.team)
 					},
 				},
 				{

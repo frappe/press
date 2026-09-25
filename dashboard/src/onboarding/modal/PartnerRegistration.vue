@@ -3,6 +3,7 @@ import { Autocomplete, createResource, FormControl, Tooltip } from 'frappe-ui'
 import { computed, inject, onMounted, ref, useTemplateRef, watch } from 'vue'
 import EmailInput from '@/components/EmailInput.vue'
 import PhoneInput from '@/components/PhoneInput.vue'
+import { teamCache } from '@/data/currentTeam'
 import PostRegistrationMessage from '@/onboarding/modal/PostRegistrationMessage.vue'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
 import { indianStates } from '@/utils/billing.js'
@@ -23,7 +24,7 @@ const onboarding = usePartnerOnboarding(team as any)
 
 const countryListResource = createResource({
 	url: 'press.api.account.get_countries_with_isd_codes',
-	cache: 'partnerOnboardingCountries',
+	cache: teamCache('partnerOnboardingCountries'),
 	auto: true,
 })
 
@@ -39,15 +40,11 @@ const indianStateOptions = indianStates.map((state) => ({
 	value: state,
 }))
 
-const isIndia = computed(
-	() => onboarding.form.registered_country === 'India',
-)
+const isIndia = computed(() => onboarding.form.registered_country === 'India')
 
 type AutocompleteOption = { label: string; value: string }
 
-function optionValue(
-	option: AutocompleteOption | string | null | undefined,
-) {
+function optionValue(option: AutocompleteOption | string | null | undefined) {
 	if (!option) return ''
 	return typeof option === 'string' ? option : option.value || ''
 }
@@ -147,9 +144,7 @@ const handleSubmit = async (event?: Event) => {
 	// so browsers treat it as submit. Only Proceed (form="registration-form")
 	// should flip validation into the dirty/error state.
 	const submitter =
-		event && 'submitter' in event
-			? (event as SubmitEvent).submitter
-			: null
+		event && 'submitter' in event ? (event as SubmitEvent).submitter : null
 	if (
 		submitter instanceof HTMLElement &&
 		submitter.getAttribute('form') !== 'registration-form'
@@ -204,11 +199,9 @@ function stripHtmlTags(value: string) {
 		@submit.prevent="handleSubmit"
 	>
 		<p class="text-p-base text-ink-gray-6">
-			{{
-				props.editMode
+			{{ props.editMode
 					? 'Update your company registration details'
-					: 'Register your company to become a partner'
-			}}
+					: 'Register your company to become a partner' }}
 		</p>
 
 		<FormControl

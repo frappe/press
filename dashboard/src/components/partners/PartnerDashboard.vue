@@ -84,36 +84,38 @@
 	</div>
 </template>
 <script setup>
-import { inject, computed } from 'vue';
-import { createResource, NumberChart, AxisChart, DonutChart } from 'frappe-ui';
-const team = inject('team');
+import { AxisChart, createResource, DonutChart, NumberChart } from 'frappe-ui'
+import { computed, inject } from 'vue'
+import { teamCache } from '@/data/currentTeam'
+
+const team = inject('team')
 
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',
 	auto: true,
-	cache: 'partnerDetails',
+	cache: teamCache('partnerDetails'),
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-});
+})
 
 const currentMonthContribution = createResource({
 	url: 'press.api.partner.get_current_month_partner_contribution',
 	auto: true,
-	cache: 'currentMonthContribution',
+	cache: teamCache('currentMonthContribution'),
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-});
+})
 
 let partnerInvoices = createResource({
 	url: 'press.api.partner.get_partner_mrr',
 	auto: true,
-	cache: 'partnerInvoices',
+	cache: teamCache('partnerInvoices'),
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-});
+})
 
 let axisConfigData = computed(
 	() =>
@@ -121,13 +123,13 @@ let axisConfigData = computed(
 			date: d.due_date,
 			amount: d.total_amount || 0,
 		})) || [],
-);
+)
 
 let dashboardStats = createResource({
 	url: 'press.api.partner.get_dashboard_stats',
 	auto: true,
-	cache: 'dashboardStats',
-});
+	cache: teamCache('dashboardStats'),
+})
 
 let sitePlanData = computed(
 	() =>
@@ -135,16 +137,16 @@ let sitePlanData = computed(
 			plans: d.plan,
 			count: d.count,
 		})) || [],
-);
+)
 
 let partnerCustomerDistribution = createResource({
 	url: 'press.api.partner.get_partner_contribution_list',
 	auto: true,
-	cache: 'partnerCustomerDistribution',
+	cache: teamCache('partnerCustomerDistribution'),
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-});
+})
 
 let partnerCustomerData = computed(
 	() =>
@@ -152,5 +154,5 @@ let partnerCustomerData = computed(
 			team: d.customer_name,
 			amount: d.partner_total || 0,
 		})) || [],
-);
+)
 </script>
