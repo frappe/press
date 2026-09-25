@@ -4,7 +4,7 @@
 {% block content %}
 <td class="text-base leading-6 text-gray-900">
     <div class="p-8 bg-white from-markdown">
-        <p>Your request for support access has been {{ status.lower() }}.</p>
+        <p>{{ message }}</p>
         <div class="mb-4 space-y-2">
             <div class="font-semibold">Resources:</div>
             {% for resource in resources %}

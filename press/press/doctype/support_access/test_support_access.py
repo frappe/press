@@ -91,6 +91,20 @@ class IntegrationTestSupportAccess(IntegrationTestCase):
 		expire_pending_requests()
 		self.assertEqual(self.status_of(access), "Expired")
 
+	def test_expired_request_notifies_the_requesting_team(self):
+		access = self.create_support_access(days_old=8)
+		expire_pending_requests()
+		self.assertTrue(
+			frappe.db.exists(
+				"Press Notification",
+				{
+					"document_name": access.name,
+					"team": self.team.name,
+					"title": "Access Request Expired",
+				},
+			)
+		)
+
 	def test_pending_request_younger_than_seven_days_stays_pending(self):
 		access = self.create_support_access(days_old=6)
 		expire_pending_requests()
