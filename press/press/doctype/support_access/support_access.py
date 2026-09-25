@@ -249,6 +249,10 @@ class SupportAccess(Document):
 	def on_update(self):
 		self.notify_on_status_change()
 
+	def expire(self):
+		self.db_set("status", "Expired")
+		self.notify_on_status_change()
+
 	def notify_on_status_change(self):
 		if not self.has_value_changed("status"):
 			return
@@ -261,13 +265,16 @@ class SupportAccess(Document):
 			message = "Support access has been forfieted."
 			recipient = self.target_team
 
+		if self.status == "Expired":
+			message = "Your request for support access has expired without a response."
+
 		frappe.sendmail(
 			subject=title,
 			message=message,
 			recipients=recipient,
 			template="access_request_update",
 			args={
-				"status": self.status,
+				"message": message,
 				"resources": self.resources,
 			},
 		)
@@ -330,18 +337,11 @@ class SupportAccess(Document):
 
 
 def expire_pending_requests():
-	frappe.db.set_value(
-		"Support Access",
-		{
-			"status": "Pending",
-			"creation": (
-				"<",
-				frappe.utils.add_to_date(frappe.utils.now_datetime(), days=-PENDING_REQUEST_EXPIRY_DAYS),
-			),
-		},
-		"status",
-		"Expired",
-	)
+	"""Expire requests left pending for more than `PENDING_REQUEST_EXPIRY_DAYS` and notify the requester."""
+	cutoff = frappe.utils.add_to_date(frappe.utils.now_datetime(), days=-PENDING_REQUEST_EXPIRY_DAYS)
+	names = frappe.get_all("Support Access", {"status": "Pending", "creation": ("<", cutoff)}, pluck="name")
+	for name in names:
+		SupportAccess("Support Access", name).expire()
 
 
 def has_permission(doc, user=None, permission_type=None) -> bool:
