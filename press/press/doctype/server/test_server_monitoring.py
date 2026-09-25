@@ -17,7 +17,11 @@ from press.press.doctype.server.server_monitoring import (
 	_get_trial_signup_failure_rate,
 	_send_signup_failure_alert,
 	alert_on_failing_signups,
+	alert_on_sites_with_all_backup_attempts_failed,
 )
+from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_team
 
 if TYPE_CHECKING:
@@ -255,3 +259,67 @@ class TestSignupFailureAlert(FrappeTestCase):
 			alert_on_failing_signups()
 
 		send_raven_message.assert_not_called()
+
+
+@patch("press.press.doctype.server.server_monitoring.send_raven_message")
+class TestAllBackupAttemptsFailedAlert(FrappeTestCase):
+	def setUp(self):
+		frappe.db.set_single_value("Press Settings", "max_failed_backup_attempts_in_a_day", 3)
+		plan = create_test_plan("Site", price_usd=25.0)
+		self.site = create_test_site(subdomain="allbackupsfailed", plan=plan.name)
+		self.other_site = create_test_site(subdomain="allbackupsfailed2", plan=plan.name)
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _create_backups(self, site: str, count: int, status: str = "Failure", hours_ago: float = 0):
+		creation = frappe.utils.add_to_date(None, hours=-hours_ago)
+		for _ in range(count):
+			create_test_site_backup(site=site, status=status, creation=creation, offsite=False)
+
+	def test_one_message_lists_every_site_that_hit_the_limit(self, send_raven_message):
+		self._create_backups(self.site.name, 3)
+		self._create_backups(self.other_site.name, 5)
+
+		alert_on_sites_with_all_backup_attempts_failed()
+
+		send_raven_message.assert_called_once()
+		message = send_raven_message.call_args[0][0]
+		self.assertIn("**Sites With All Backup Attempts Failed** - 2", message)
+		team_email = frappe.db.get_value("Team", self.site.team, "user")
+		self.assertIn(f"| {self.site.server} | $25/mo | {team_email} | 3 | Never |", message)
+		self.assertIn(f"| {self.other_site.server} | $25/mo | {team_email} | 5 | Never |", message)
+
+	def test_dedicated_server_plan_is_shown_as_dedicated(self, send_raven_message):
+		frappe.db.set_value("Site Plan", self.site.plan, "dedicated_server_plan", 1)
+		self._create_backups(self.site.name, 3)
+
+		alert_on_sites_with_all_backup_attempts_failed()
+
+		self.assertIn("| Dedicated |", send_raven_message.call_args[0][0])
+
+	def test_sites_below_the_limit_are_not_listed(self, send_raven_message):
+		self._create_backups(self.site.name, 3)
+		self._create_backups(self.other_site.name, 2)
+
+		alert_on_sites_with_all_backup_attempts_failed()
+
+		message = send_raven_message.call_args[0][0]
+		self.assertIn("**Sites With All Backup Attempts Failed** - 1", message)
+		self.assertNotIn(self.other_site.name, message)
+
+	def test_failures_older_than_a_day_are_not_counted(self, send_raven_message):
+		self._create_backups(self.site.name, 3, hours_ago=25)
+
+		alert_on_sites_with_all_backup_attempts_failed()
+
+		send_raven_message.assert_not_called()
+
+	def test_last_successful_backup_is_shown(self, send_raven_message):
+		self._create_backups(self.site.name, 1, status="Success", hours_ago=30)
+		self._create_backups(self.site.name, 3)
+
+		alert_on_sites_with_all_backup_attempts_failed()
+
+		message = send_raven_message.call_args[0][0]
+		self.assertNotIn("Never", message)
