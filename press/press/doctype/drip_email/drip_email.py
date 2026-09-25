@@ -10,6 +10,7 @@ import rq
 import rq.exceptions
 import rq.timeouts
 from frappe import _
+from frappe.email.email_body import get_filecontent_from_path
 from frappe.model.document import Document
 from frappe.rate_limiter import rate_limit
 from frappe.utils.make_random import get_random
@@ -110,13 +111,12 @@ class DripEmail(Document):
 			args = {"message": message, "title": app.title}
 			inline_images = []
 			if app.logo:
-				logo_name = app.logo[1:]
-				args["logo_name"] = logo_name
-				try:
-					with open(frappe.utils.get_site_path("public", logo_name), "rb") as logo_file:
-						inline_images.append({"filename": logo_name, "filecontent": logo_file.read()})
-				except Exception as ex:
-					log_error("Error reading logo for inline images in drip email", data=ex)
+				# get_filecontent_from_path resolves the path and guards against traversal.
+				logo_content = get_filecontent_from_path(app.logo)
+				if logo_content:
+					logo_name = app.logo[1:]
+					args["logo_name"] = logo_name
+					inline_images.append({"filename": logo_name, "filecontent": logo_content})
 			kwargs["template"] = "product_trial_email"
 			kwargs["args"] = args
 			kwargs["inline_images"] = inline_images

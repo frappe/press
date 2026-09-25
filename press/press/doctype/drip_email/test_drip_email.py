@@ -176,12 +176,8 @@ class TestDripEmail(FrappeTestCase):
 		test_app = create_test_app("wiki", "Wiki")
 		test_product_trial = create_test_product_trial(test_app)
 
-		logo_path = frappe.utils.get_site_path("public", "files", "test_trial_logo.png")
-		os.makedirs(os.path.dirname(logo_path), exist_ok=True)
-		with open(logo_path, "wb") as logo_file:
-			logo_file.write(b"\x89PNG\r\n")
-		frappe.db.set_value("Product Trial", test_product_trial.name, "logo", "/files/test_trial_logo.png")
-
+		logo_filename = f"test_trial_logo_{frappe.generate_hash(length=8)}.png"
+		logo_path = frappe.utils.get_site_path("public", "files", logo_filename)
 		drip_email = create_test_drip_email(0, product_trial=test_product_trial.name)
 		drip_email.content_type = "HTML"
 		drip_email.message_html = "<p>hi</p>"
@@ -191,14 +187,20 @@ class TestDripEmail(FrappeTestCase):
 		)
 
 		try:
+			os.makedirs(os.path.dirname(logo_path), exist_ok=True)
+			with open(logo_path, "wb") as logo_file:
+				logo_file.write(b"\x89PNG\r\n")
+			frappe.db.set_value("Product Trial", test_product_trial.name, "logo", f"/files/{logo_filename}")
+
 			with patch("frappe.sendmail") as sendmail:
 				drip_email.send_mail(
 					context={"account_request": account_request}, recipient="user@example.com"
 				)
 		finally:
-			os.remove(logo_path)
+			if os.path.exists(logo_path):
+				os.remove(logo_path)
 
 		kwargs = sendmail.call_args.kwargs
-		self.assertEqual(kwargs["args"]["logo_name"], "files/test_trial_logo.png")
+		self.assertEqual(kwargs["args"]["logo_name"], f"files/{logo_filename}")
 		self.assertEqual(len(kwargs["inline_images"]), 1)
-		self.assertEqual(kwargs["inline_images"][0]["filename"], "files/test_trial_logo.png")
+		self.assertEqual(kwargs["inline_images"][0]["filename"], f"files/{logo_filename}")
