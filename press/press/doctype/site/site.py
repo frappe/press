@@ -149,6 +149,10 @@ STATEMENT_TIME_INCREMENT = 3600
 # Picking a backup time is for plans from this price up. Ref: USD 25.
 MINIMUM_BACKUP_SCHEDULE_PLAN_PRICE_USD = 25
 
+# A caller that leaves the backup time out keeps the schedule the site has. No
+# JSON value can reach this, so it cannot collide with a time the caller sends.
+KEEP_BACKUP_TIME: Any = object()
+
 # Conditions a site must satisfy for the agent to stream offsite backup
 # artifacts straight to S3 instead of uploading them after the dump finishes.
 STREAMING_BACKUP_REQUIREMENTS = {
@@ -229,6 +233,7 @@ class Site(Document, TagHelpers):
 		site_usage_exceeded_on: DF.Datetime | None
 		skip_auto_updates: DF.Check
 		skip_failing_patches: DF.Check
+		skip_offsite_backups: DF.Check
 		skip_scheduled_logical_backups: DF.Check
 		skip_scheduled_physical_backups: DF.Check
 		staging: DF.Check
@@ -414,7 +419,9 @@ class Site(Document, TagHelpers):
 		doc.frappe_updated_on = get_frappe_release_timestamp(self.bench)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
-		doc.can_schedule_backups = self.plan_allows_backup_schedule()
+		doc.can_manage_backup_schedule = (
+			self.offsite_backups_available() or self.plan_allows_backup_schedule()
+		)
 		doc.last_updated = self.last_updated
 		doc.creation_failure_retention_days = CREATION_FAILURE_RETENTION_DAYS
 		doc.has_scheduled_updates = bool(
@@ -781,27 +788,67 @@ class Site(Document, TagHelpers):
 		"""Times are on the server's clock, same as the scheduler reads them."""
 		return {
 			"custom": bool(self.schedule_logical_backup_at_custom_time),
-			"times": sorted(
-				frappe.utils.get_time(row.backup_time).strftime("%H:%M") for row in self.logical_backup_times
-			),
+			"times": self.backup_times(),
+			"can_set_time": self.plan_allows_backup_schedule(),
+			"can_set_offsite": self.offsite_backups_available(),
+			"offsite": not self.skip_offsite_backups,
 		}
+
+	def backup_times(self) -> list[str]:
+		return sorted(
+			frappe.utils.get_time(row.backup_time).strftime("%H:%M") for row in self.logical_backup_times
+		)
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def update_backup_schedule(self, time: str | None = None):
+	def update_backup_schedule(self, time: str | None = KEEP_BACKUP_TIME, offsite: bool = True):
+		"""Write both controls of the Backup Schedule dialog in one save.
+
+		One request for each control would race. The save below writes back every
+		field it read, and that undoes the change the other request made.
+
+		Leave `time` out to keep the schedule. The dialog leaves it out for a site
+		that shows no time control, where `None` would read as "back to default".
+		"""
+		changed = [self.set_offsite_backups(offsite)]
+		if time is not KEEP_BACKUP_TIME:
+			changed.append(self.set_backup_time(time))
+		if any(changed):
+			self.save()
+
+	def set_backup_time(self, time: str | None) -> bool:
 		"""Move the site's backups to a time of its own. No time means back to the default schedule.
 
-		One time a day — each extra time is one more backup we pay for. We set up
-		more times than that for a site ourselves. Logical only — physical backups
-		deactivate the site while they run.
+		One time a day, because each extra time is one more backup we pay for. We
+		set up more times than that for a site ourselves. Logical only, because
+		physical backups deactivate the site while they run.
 		"""
-		self.validate_backup_schedule_is_editable()
+		if self.backup_times() == ([time] if time else []):
+			return False
 
+		self.validate_backup_schedule_is_editable()
 		self.logical_backup_times = []
 		if time:
 			self.append("logical_backup_times", {"backup_time": parse_backup_time(time)})
 		self.schedule_logical_backup_at_custom_time = bool(time)
-		self.save()
+		return True
+
+	def set_offsite_backups(self, offsite: bool) -> bool:
+		"""Off leaves the backup on the server, where the bench deletes it within a day.
+
+		A backup that runs for an archive or a migration still goes offsite,
+		because a restore needs it.
+		"""
+		skip = not offsite
+		if bool(self.skip_offsite_backups) == skip:
+			return False
+
+		if offsite and not self.offsite_backups_available():
+			frappe.throw(
+				"This site takes no offsite backups. Change to a plan that includes them, then turn them on again."
+			)
+		self.skip_offsite_backups = skip
+		return True
 
 	def validate_backup_schedule_is_editable(self):
 		if not self.plan_allows_backup_schedule():
@@ -824,6 +871,18 @@ class Site(Document, TagHelpers):
 		if not plan.offsite_backups:
 			return False
 		return plan.price_usd == 0 or plan.price_usd >= MINIMUM_BACKUP_SCHEDULE_PLAN_PRICE_USD
+
+	def offsite_backups_available(self) -> bool:
+		"""Whether the scheduler would send this site offsite, if it has not turned it off.
+
+		The scheduler drops a site by its subscription plan, not by `plan`, and a
+		site with no subscription keeps its offsite backups. Read the same rows,
+		or the dashboard hides the switch from sites that do take offsite backups.
+		"""
+		plans = frappe.get_all(
+			"Subscription", {"document_type": "Site", "document_name": self.name}, pluck="plan"
+		)
+		return all(frappe.get_cached_value("Site Plan", plan, "offsite_backups") for plan in plans if plan)
 
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)
