@@ -30,6 +30,7 @@ TRIAL_SIGNUP_MINIMUM_COUNT = 5
 # stall means signups are broken rather than merely abandoned
 INCOMPLETE_SIGNUP_RATIO_THRESHOLD = 0.9
 INCOMPLETE_SIGNUP_MINIMUM_COUNT = 10
+ALL_BACKUPS_FAILED_ALERT_SITE_LIMIT = 50
 
 
 class PublicServerHealthMetrics(TypedDict):
@@ -629,3 +630,92 @@ def _describe_signup_failure_rate(rate: SignupFailureRate) -> str:
 		f"({failure_ratio:.2f}%) in the last {SIGNUP_ALERT_WINDOW_HOURS}h, "
 		f"threshold {rate['ratio_threshold'] * 100:.0f}%"
 	)
+
+
+def alert_on_sites_with_all_backup_attempts_failed() -> None:
+	"""Daily Raven digest of sites that hit the daily failed backup limit, the same limit that emails the team."""
+	from press.press.doctype.site_backup.site_backup import get_max_failed_backup_attempts
+
+	max_attempts = get_max_failed_backup_attempts()
+	failures_by_site = frappe.get_all(
+		"Site Backup",
+		filters={
+			"status": ("in", ["Failure", "Delivery Failure"]),
+			"creation": (">=", frappe.utils.add_days(None, -1)),
+		},
+		fields=["site", "count(name) as failures"],
+		group_by="site",
+		order_by="failures desc, site asc",
+	)
+	failed_sites = [row for row in failures_by_site if row.failures >= max_attempts]
+	if failed_sites:
+		_send_all_backup_attempts_failed_alert(failed_sites, max_attempts)
+
+
+def _send_all_backup_attempts_failed_alert(failed_sites: list[frappe._dict], max_attempts: int) -> None:
+	listed_sites = failed_sites[:ALL_BACKUPS_FAILED_ALERT_SITE_LIMIT]
+	site_names = [row.site for row in listed_sites]
+	site_details = {
+		site.name: site
+		for site in frappe.get_all("Site", {"name": ("in", site_names)}, ["name", "server", "team", "plan"])
+	}
+	plans = {
+		plan.name: plan
+		for plan in frappe.get_all(
+			"Site Plan",
+			{"name": ("in", list({site.plan for site in site_details.values() if site.plan}))},
+			["name", "price_usd", "dedicated_server_plan"],
+		)
+	}
+	team_emails = dict(
+		frappe.get_all(
+			"Team",
+			{"name": ("in", list({site.team for site in site_details.values() if site.team}))},
+			["name", "user"],
+			as_list=True,
+		)
+	)
+	last_successes = dict(
+		frappe.get_all(
+			"Site Backup",
+			filters={"site": ("in", site_names), "status": "Success"},
+			fields=["site", "max(creation) as last_success"],
+			group_by="site",
+			as_list=True,
+		)
+	)
+
+	lines = [
+		f"**Sites With All Backup Attempts Failed** - {len(failed_sites)}",
+		"",
+		f"Sites with {max_attempts} or more failed backups in the last 24h",
+		"",
+		"| Site | Server | Plan | Team Email | Failed Backups | Last Successful Backup |",
+		"| --- | --- | --- | --- | --- | --- |",
+	]
+	for row in listed_sites:
+		site = site_details.get(row.site) or frappe._dict()
+		link = frappe.utils.get_url(f"/app/site-backup?site={row.site}&status=Failure")
+		last_success = last_successes.get(row.site)
+		cells = [
+			f"[{_escape_markdown_table_cell(row.site)}]({link})",
+			_escape_markdown_table_cell(site.server or "-"),
+			_describe_site_plan(plans.get(site.plan)),
+			_escape_markdown_table_cell(team_emails.get(site.team) or "-"),
+			str(row.failures),
+			last_success.strftime("%Y-%m-%d %H:%M") if last_success else "Never",
+		]
+		lines.append(f"| {' | '.join(cells)} |")
+
+	if unlisted_sites := len(failed_sites) - len(listed_sites):
+		lines.append(f"| ... | {unlisted_sites} more sites | | | | |")
+
+	send_raven_message("\n".join(lines), RAVEN_SERVER_ALERTS_CHANNEL)
+
+
+def _describe_site_plan(plan: frappe._dict | None) -> str:
+	if not plan:
+		return "-"
+	if plan.dedicated_server_plan:
+		return "Dedicated"
+	return f"${float(plan.price_usd):g}/mo"
