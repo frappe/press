@@ -94,6 +94,8 @@ class UsagePoint(TypedDict):
 	count: float
 	duration: float
 	max: float
+	worker_wait: float
+	delayed_count: int
 
 
 class RequestLogData(TypedDict, total=False):
@@ -124,6 +126,8 @@ TIMESPAN_TIMEGRAIN_MAP: Final[dict[str, tuple[int, int]]] = {
 }
 
 MAX_NO_OF_PATHS: Final[int] = 10
+# Waits (µs) for a free web worker below this are nginx→gunicorn overhead, not contention
+WORKER_WAIT_THRESHOLD: Final[int] = 20_000
 MAX_QUERIES: Final[int] = 25
 MAX_MAX_NO_OF_PATHS: Final[int] = 50
 
@@ -812,6 +816,8 @@ def get(name: str, timezone: str, start: str, end: str):
 		"usage_counter": [{"value": r.max, "date": r.date} for r in request_data],
 		"request_count": [{"value": r.count, "date": r.date} for r in request_data],
 		"request_cpu_time": [{"value": r.duration, "date": r.date} for r in request_data],
+		"request_worker_wait": [{"value": r.worker_wait, "date": r.date} for r in request_data],
+		"delayed_request_count": [{"value": r.delayed_count, "date": r.date} for r in request_data],
 		"uptime": uptime_data,
 		"plan_limit": plan_limit,
 		"timegrain": timegrain,
@@ -1486,6 +1492,10 @@ def get_usage(site: str, type: str, timezone: str, start: datetime, end: datetim
 					"duration": {"sum": {"field": "json.duration"}},
 					"count": {"value_count": {"field": "json.duration"}},
 					"max": {"max": {"field": "json.request.counter"}},
+					"worker_wait": {
+						"filter": {"range": {"json.request.wait": {"gt": WORKER_WAIT_THRESHOLD}}},
+						"aggs": {"total": {"sum": {"field": "json.request.wait"}}},
+					},
 				},
 			}
 		},
@@ -1526,6 +1536,8 @@ def get_usage(site: str, type: str, timezone: str, start: datetime, end: datetim
 					"count": bucket["count"]["value"],
 					"duration": bucket["duration"]["value"],
 					"max": bucket["max"]["value"],
+					"worker_wait": bucket["worker_wait"]["total"]["value"],
+					"delayed_count": bucket["worker_wait"]["doc_count"],
 				}
 			)
 		)
