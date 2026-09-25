@@ -65,7 +65,7 @@
 			"in_list_view": 1,
 			"in_standard_filter": 1,
 			"label": "Status",
-			"options": "Pending\nAccepted\nRejected\nForfeited\nRevoked"
+			"options": "Pending\nAccepted\nRejected\nForfeited\nRevoked\nExpired"
 		},
 		{ "fieldname": "section_break_lwpm", "fieldtype": "Section Break" },
 		{
@@ -132,7 +132,7 @@
 	],
 	"grid_page_length": 50,
 	"links": [],
-	"modified": "2026-01-30 11:08:43.613337",
+	"modified": "2026-09-25 12:00:00.000000",
 	"modified_by": "hello@ssiyad.com",
 	"module": "Press",
 	"name": "Support Access",
@@ -178,6 +178,7 @@
 	"states": [
 		{ "color": "Gray", "title": "Pending" },
 		{ "color": "Green", "title": "Accepted" },
-		{ "color": "Red", "title": "Rejected" }
+		{ "color": "Red", "title": "Rejected" },
+		{ "color": "Gray", "title": "Expired" }
 	]
 }
