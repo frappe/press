@@ -2779,6 +2779,14 @@ class Site(Document, TagHelpers):
 				f"You <a class='underline' href='https://docs.frappe.io/cloud/enable-server-script'>cannot enable server scripts</a> on public benches. Please move to a <a class='underline' href='{PRIVATE_BENCH_DOC}'>private bench</a>."
 			)
 
+	def check_render_safe_exec_on_public_bench(self, key: str):
+		if key == "disable_render_safe_exec" and (
+			self.is_group_public or frappe.get_cached_value("Release Group", self.group, "central_bench")
+		):
+			frappe.throw(
+				f"You cannot set <b>disable_render_safe_exec</b> on a public bench. Move the site to a <a class='underline' href='{PRIVATE_BENCH_DOC}'>private bench</a>, then set the key in the bench config."
+			)
+
 	def validate_encryption_key(self, key: str, value: Any):
 		if key != "encryption_key" or key != "backup_encryption_key":
 			return
@@ -2816,6 +2824,7 @@ class Site(Document, TagHelpers):
 					_(f"The key <b>{key}</b> is blacklisted or internal and cannot be updated")
 				)  # nosemgrep
 			self.check_server_script_enabled_on_public_bench(key)
+			self.check_render_safe_exec_on_public_bench(key)
 			self.validate_encryption_key(key, value)
 
 			_type = self._site_config_key_type(key, value)

@@ -172,3 +172,4 @@ press.patches.v0_8_0.set_team_on_remote_file
 press.patches.v0_8_0.add_disk_full_alert_rule
 press.patches.v0_8_0.unset_rate_limit_for_dedicated_server_sites
 press.patches.v0_8_0.backfill_site_version_audits
+press.patches.v0_8_0.clean_up_render_safe_exec_config
