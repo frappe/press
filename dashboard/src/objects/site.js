@@ -12,6 +12,12 @@ import { getRunningJobs } from '../utils/agentJob'
 import { confirmDialog, icon, renderDialog } from '../utils/components'
 import { isMobile } from '../utils/device'
 import { date, escapeHtml } from '../utils/format'
+import {
+	planChangeCell,
+	planPrice,
+	sitePlanCompute,
+	sitePlanStorage,
+} from '../utils/planChange'
 import { getDocResource } from '../utils/resource'
 import { getToastErrorMessage } from '../utils/toast'
 import { getFrappeUpdateBanner, getUpsellBanner } from './common'
@@ -1148,17 +1154,28 @@ export default {
 					fields: ['from_plan', 'to_plan', 'type', 'timestamp', 'owner'],
 					orderBy: 'timestamp desc',
 					columns: [
+						// Every column is drawn from the plan documents the row carries, so
+						// the fieldname only has to be unique for the column key.
 						{
-							label: 'Changed From',
-							fieldname: 'from_plan',
-							class: 'text-ink-gray-6',
-							format(value) {
-								return value || '—'
-							},
+							label: 'Price',
+							fieldname: 'price',
+							type: 'Component',
+							width: 1.2,
+							component: planChangeCell(planPrice),
 						},
 						{
-							label: 'Changed To',
-							fieldname: 'to_plan',
+							label: 'Compute',
+							fieldname: 'compute',
+							type: 'Component',
+							width: 1.3,
+							component: planChangeCell(sitePlanCompute),
+						},
+						{
+							label: 'Storage',
+							fieldname: 'storage',
+							type: 'Component',
+							width: 1.2,
+							component: planChangeCell(sitePlanStorage),
 						},
 						{
 							label: 'Type',
@@ -1174,12 +1191,16 @@ export default {
 							label: 'Changed By',
 							fieldname: 'owner',
 							class: 'text-ink-gray-6',
+							// An email is the widest thing in the row, and the grid sizes a
+							// column to its content, so it needs a share of its own.
+							width: 1.2,
 						},
 						{
 							label: 'Date',
 							fieldname: 'timestamp',
 							type: 'Timestamp',
 							align: 'right',
+							width: 0.8,
 						},
 					],
 				},
