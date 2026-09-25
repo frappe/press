@@ -107,6 +107,7 @@ export default {
 		scheduleUpdate: 'schedule_update',
 		editScheduledUpdate: 'edit_scheduled_update',
 		cancelUpdate: 'cancel_scheduled_update',
+		getAutoUpdateWindow: 'get_auto_update_window',
 		setPlan: 'set_plan',
 		updateConfig: 'update_config',
 		deleteConfig: 'delete_config',
