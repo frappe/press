@@ -107,9 +107,19 @@ class DripEmail(Document):
 			app = frappe.db.get_value("Product Trial", self.product_trial, ["title", "logo"], as_dict=True)
 			if not app:
 				frappe.throw(_("Product Trial {0} not found").format(self.product_trial))
-			logo = frappe.utils.get_url(app.logo) if app.logo else None
+			args = {"message": message, "title": app.title}
+			inline_images = []
+			if app.logo:
+				logo_name = app.logo[1:]
+				args["logo_name"] = logo_name
+				try:
+					with open(frappe.utils.get_site_path("public", logo_name), "rb") as logo_file:
+						inline_images.append({"filename": logo_name, "filecontent": logo_file.read()})
+				except Exception as ex:
+					log_error("Error reading logo for inline images in drip email", data=ex)
 			kwargs["template"] = "product_trial_email"
-			kwargs["args"] = {"message": message, "title": app.title, "logo": logo}
+			kwargs["args"] = args
+			kwargs["inline_images"] = inline_images
 			kwargs["unsubscribe_message"] = "Unsubscribe"
 			kwargs["unsubscribe_method"] = "api/method/press.press.doctype.drip_email.drip_email.unsubscribe"
 			kwargs["unsubscribe_params"] = {"account_request": account_request.name}
