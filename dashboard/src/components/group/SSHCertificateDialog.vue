@@ -14,6 +14,12 @@
 
 				<ClickToCopyField :textContent="fullCommand" />
 
+				<p class="text-sm text-ink-gray-5">
+					If your private key isn't at
+					<code class="text-ink-gray-7">{{ keyPath }}</code>, change both paths
+					in the command to your key's path.
+				</p>
+
 				<div class="flex items-center gap-2.5 rounded bg-surface-gray-2 p-3">
 					<lucide-alert-triangle class="size-4 shrink-0 mb-auto mt-0.5" />
 					<div class="text-sm leading-relaxed">
@@ -139,15 +145,18 @@ export default {
 		certificate() {
 			return this.$releaseGroup.getCertificate.data
 		},
+		keyPath() {
+			if (!this.certificate) return null
+			return `~/.ssh/id_${this.certificate.key_type}`
+		},
 		sshCommand() {
-			if (!this.$bench.doc) return
-			return `ssh ${this.$bench.doc.name}@${this.$bench.doc.proxy_server} -p 2222`
+			if (!this.$bench.doc || !this.keyPath) return
+			// Offer only this key (and its cert); agent keys otherwise hit MaxAuthTries
+			return `ssh -o IdentitiesOnly=yes -i ${this.keyPath} ${this.$bench.doc.name}@${this.$bench.doc.proxy_server} -p 2222`
 		},
 		certificateCommand() {
 			if (this.certificate) {
-				return `echo '${this.certificate.ssh_certificate?.trim()}' > ~/.ssh/id_${
-					this.certificate.key_type
-				}-cert.pub`
+				return `echo '${this.certificate.ssh_certificate?.trim()}' > ${this.keyPath}-cert.pub`
 			}
 			return null
 		},
