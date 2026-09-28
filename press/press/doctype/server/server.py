@@ -1013,7 +1013,10 @@ class BaseServer(Document, TagHelpers):
 	def install_yara(self):
 		"""Scan files the Wazuh agent reports as changed against a YARA ruleset."""
 		if not self.is_wazuh_agent_installed:
-			frappe.throw("Install the Wazuh agent before YARA scanning")
+			frappe.throw(
+				"YARA scanning reads the Wazuh agent's file integrity events. "
+				"Please install the Wazuh agent on this server first."
+			)
 		# Stamped before the enqueue, so a server we cannot even queue still yields its turn
 		frappe.db.set_value(self.doctype, self.name, "yara_install_last_attempt", frappe.utils.now_datetime())
 		frappe.enqueue_doc(
