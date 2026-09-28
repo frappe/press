@@ -2385,11 +2385,13 @@ def site_config(name):
 def update_config(name, config):
 	config = frappe.parse_json(config)
 	config = [frappe._dict(c) for c in config]
+	site = frappe.get_doc("Site", name)
 
 	sanitized_config = []
 	for c in config:
 		if c.key in get_client_blacklisted_keys():
 			continue
+		site.check_render_safe_exec_on_public_bench(c.key)
 		if frappe.db.exists("Site Config Key", c.key):
 			c.type = frappe.db.get_value("Site Config Key", c.key, "type")
 		if c.type == "Number":
@@ -2402,7 +2404,6 @@ def update_config(name, config):
 			c.value = frappe.get_value("Site Config", {"key": c.key, "parent": name}, "value")
 		sanitized_config.append(c)
 
-	site = frappe.get_doc("Site", name)
 	site.update_site_config(sanitized_config)
 	return list(filter(lambda x: not x.internal, site.configuration))
 
