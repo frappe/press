@@ -42,6 +42,10 @@ def create_test_press_settings():
 	settings.eff_registration_email = frappe.mock("email")
 	settings.max_concurrent_physical_restorations = 2
 	settings.minimum_rebuild_memory = 2
+	# Offsite backups read these on every Site Backup insert. Without them
+	# get_password raises, which fails any test that creates a backup.
+	settings.offsite_backups_access_key_id = frappe.mock("password")
+	settings.offsite_backups_secret_access_key = frappe.mock("password")
 	settings.save()
 	return settings
 
