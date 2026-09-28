@@ -24,7 +24,7 @@
     block: |
       <ossec_config>
         <syscheck>
-          <directories check_all="yes" report_changes="yes" recursion_level="6"
+          <directories check_all="yes" recursion_level="6"
                        restrict="\.(php|py|sh|bash|pl|cgi|phar)$">/home/frappe/benches</directories>
           <frequency>3600</frequency>
         </syscheck>
