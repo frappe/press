@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from base64 import urlsafe_b64decode, urlsafe_b64encode
+from base64 import b64encode, urlsafe_b64decode, urlsafe_b64encode
 from datetime import datetime
 from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlencode, urlparse
@@ -9,6 +9,23 @@ from urllib.parse import parse_qs, urlencode, urlparse
 import frappe
 from frappe.tests.ui_test_helpers import create_test_user
 from frappe.tests.utils import FrappeTestCase
+
+
+class TestCompatibleFrappeVersionFromPyproject(FrappeTestCase):
+	def test_pyproject_without_frappe_dependency_is_rejected(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "Could not find a compatible Frappe version"):
+			self._get_compatible_frappe_version('[project]\nname = "app"\n')
+
+	def test_pyproject_with_frappe_dependency_returns_version_spec(self):
+		pyproject = '[tool.bench.frappe-dependencies]\nfrappe = ">=15.0.0,<16.0.0-dev"\n'
+		self.assertEqual(self._get_compatible_frappe_version(pyproject), ">=15.0.0,<16.0.0-dev")
+
+	def _get_compatible_frappe_version(self, pyproject: str) -> str:
+		from press.api.github import _get_compatible_frappe_version_from_pyproject
+
+		with patch("press.api.github.requests.get") as get:
+			get.return_value.json.return_value = {"content": b64encode(pyproject.encode()).decode()}
+			return _get_compatible_frappe_version_from_pyproject("owner", "app", {"name": "develop"}, {})
 
 
 class TestGitHubAuthorization(FrappeTestCase):
