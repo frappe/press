@@ -32,7 +32,10 @@ for name in frappe.get_all("Root Domain", {"dns_provider": "AWS Route 53"}, pluc
 		for record in page["ResourceRecordSets"]:
 			if record["Type"] != "CNAME" or record.get("TTL") in (None, NEW_TTL):
 				continue
-			if not record["Name"].endswith(f".{name}.") or record["Name"].rstrip(".") in proxies:
+			if not record["Name"].endswith(f".{name}."):
+				continue
+			if record["Name"].rstrip(".") in proxies:
+				print(record["Name"], "SKIPPED: proxy server")
 				continue
 			value = record["ResourceRecords"][0]["Value"].rstrip(".")
 			if value not in targets:
