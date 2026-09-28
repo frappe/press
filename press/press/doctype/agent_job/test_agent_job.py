@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 
 import frappe
 import responses
+from frappe.handler import run_doc_method as frappe_run_doc_method
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days
@@ -413,6 +414,8 @@ class TestCancelJobFromDashboard(FrappeTestCase):
 		self.theirs = self.jobs_of(self.other_team)
 
 	def tearDown(self):
+		if hasattr(frappe.local, "request"):
+			del frappe.local.request
 		frappe.set_user("Administrator")
 		frappe.db.rollback()
 
@@ -483,6 +486,32 @@ class TestCancelJobFromDashboard(FrappeTestCase):
 				"Migrate Site jobs can't be cancelled",
 				cancel_job_from_dashboard,
 				self.mine["site"].name,
+			)
+
+		cancel_job.assert_not_called()
+
+	def test_an_operator_cancels_a_job_from_the_desk_form(self):
+		"""The desk button calls `frm.call('cancel_job')`, so the method stays
+		whitelisted. Only the dashboard route moved to the endpoint."""
+		frappe.set_user("Administrator")
+		frappe.local.request = frappe._dict(method="POST", headers=frappe._dict())
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			frappe_run_doc_method("cancel_job", dt="Agent Job", dn=self.mine["site"].name)
+
+		cancel_job.assert_called_once_with(42)
+
+	def test_the_endpoint_refuses_a_name_that_is_not_a_string(self):
+		"""`frappe.get_doc` reads a dict as a new document, and frappe validates
+		the annotation only in a request."""
+		self.sign_in_as(self.team)
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"must be a string",
+				cancel_job_from_dashboard,
+				{"status": "Running"},
 			)
 
 		cancel_job.assert_not_called()
