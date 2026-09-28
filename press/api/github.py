@@ -446,7 +446,7 @@ def _get_compatible_frappe_version_from_pyproject(
 	owner: str, repository: str, branch_info: dict, headers: dict[str, str]
 ) -> str:
 	"""Get frappe version from pyproject.toml file."""
-	compatible_frappe_version = None
+	compatible_frappe_version: str | None = None
 	pyproject = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/contents/pyproject.toml",
 		params={"ref": branch_info["name"]},
