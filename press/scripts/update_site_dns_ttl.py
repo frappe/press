@@ -10,7 +10,8 @@ from press.press.doctype.root_domain.root_domain import RootDomain
 DRY_RUN = True
 NEW_TTL = 900
 
-targets = set(frappe.get_all("Proxy Server", pluck="name"))
+proxies = set(frappe.get_all("Proxy Server", pluck="name"))
+targets = set(proxies)
 targets.update(frappe.get_all("Server", {"is_standalone": 1}, pluck="name"))
 
 # No functions or comprehensions: pasted into bench console, they can't see top-level names
@@ -31,7 +32,7 @@ for name in frappe.get_all("Root Domain", {"dns_provider": "AWS Route 53"}, pluc
 		for record in page["ResourceRecordSets"]:
 			if record["Type"] != "CNAME" or record.get("TTL") in (None, NEW_TTL):
 				continue
-			if not record["Name"].endswith(f".{name}."):
+			if not record["Name"].endswith(f".{name}.") or record["Name"].rstrip(".") in proxies:
 				continue
 			value = record["ResourceRecords"][0]["Value"].rstrip(".")
 			if value not in targets:
