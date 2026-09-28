@@ -694,9 +694,13 @@ class ReleaseGroup(Document, TagHelpers):
 		Only the group's own sources are checked. Apps not being updated carry
 		their source over from the last deployed bench, which can be a source
 		the group has since moved off — blocking on that leaves no way out.
+
+		A source with no known versions is let through: an empty list means
+		"we could not tell", not "incompatible".
 		"""
 		app_source = frappe.get_doc("App Source", source)
-		if all(row.version != self.version for row in app_source.versions):
+		versions = app_source.versions
+		if versions and all(row.version != self.version for row in versions):
 			branch, repo = frappe.db.get_values("App Source", source, ("branch", "repository"))[0]
 			msg = f"{repo.rsplit('/')[-1] or repo.rsplit('/')[-2]}:{branch} branch is no longer compatible with bench of {self.version}"
 			frappe.throw(msg, frappe.ValidationError)
