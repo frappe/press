@@ -11,16 +11,15 @@ authors = [
 ]
 readme = "README.md"
 license = {text = "AGPL-3.0"}
-requires-python = ">=3.10"
+# Frappe 16 requires >=3.14,<3.15, so the previous floor of 3.10 understated what
+# actually installs. No upper bound: that is a statement about which Frappe
+# version to target, and v16 is a floor rather than a ceiling.
+requires-python = ">=3.14"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: GNU Affero General Public License v3",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
