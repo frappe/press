@@ -1,11 +1,11 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
+from press.utils import get_random_names
 
 
 def sync_setup_wizard_status():
-	sites = frappe.get_all(
+	sites = get_random_names(
 		"Site",
 		{
 			"status": "Active",
@@ -13,8 +13,6 @@ def sync_setup_wizard_status():
 			"is_standby": False,
 			"domain": ("in", ("erpnext.com", "frappe.cloud", "frappehr.com", "frappedesk.com")),
 		},
-		pluck="name",
-		order_by="RAND()",
 		limit=20,
 	)
 
