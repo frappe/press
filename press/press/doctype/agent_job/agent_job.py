@@ -334,6 +334,7 @@ class AgentJob(Document):
 	def process_job_updates(self):
 		process_job_updates(self.name)
 
+	@frappe.whitelist()
 	def cancel_job(self):
 		if self.status not in ("Pending", "Running"):
 			frappe.throw(f"Can't cancel a job that is {self.status}")
@@ -1412,7 +1413,13 @@ def cancel_job_from_dashboard(name: str):
 	the read that `run_doc_method` does before it calls the method. The team
 	check runs here instead, against the site the job belongs to, and the
 	cancel itself runs as Administrator.
+
+	`frappe.get_doc` reads a dict as a new document, so the name is checked here
+	rather than left to the annotation, which frappe validates only in a request.
 	"""
+	if not isinstance(name, str):
+		frappe.throw("Job name must be a string", frappe.ValidationError)
+
 	job: AgentJob = frappe.get_doc("Agent Job", name)
 	if not has_support_access("Site", job.site):
 		is_owned_by_team("Site", job.site, raise_exception=True)
