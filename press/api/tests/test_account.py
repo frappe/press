@@ -495,11 +495,6 @@ class TestReactivateAccount(TestCase):
 			on_login(Mock(user=self.team.user))
 		self.assertEqual(self.is_enabled(), 0)
 
-	def test_reactivating_enables_the_account_the_user_disabled(self):
-		with user_context(self.team.user):
-			reactivate_account()
-		self.assertEqual(self.is_enabled(), 1)
-
 	def test_belonging_to_another_team_does_not_hide_the_disabled_account(self):
 		other_team = create_test_team()
 		other_team.append("team_members", {"user": self.team.user})

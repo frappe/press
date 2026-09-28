@@ -2,6 +2,7 @@
 # See license.txt
 import frappe
 
+from press.press.doctype.team.team import Team
 from press.press.doctype.team.test_team import create_test_team
 from press.tests.dashboard_request import DashboardRequestTestCase
 
@@ -32,3 +33,18 @@ class TestAcceptTeamInviteRequest(DashboardRequestTestCase):
 		self.assertTrue(frappe.db.exists("Team Member", {"parent": self.team.name, "user": self.invitee}))
 		self.assertStillLoggedIn(self.invitee)
 
+
+class TestReactivateAccountRequest(DashboardRequestTestCase):
+	def setUp(self):
+		super().setUp()
+		Team("Team", self.team.name).db_set("enabled", 0)
+		frappe.db.commit()
+
+	def test_user_is_still_logged_in_after_reactivating_the_disabled_account(self):
+		self.login()
+
+		# the login page calls this before the dashboard picks a team
+		self.assertSucceeded(self.send("press.api.account.reactivate_account"))
+
+		self.assertEqual(frappe.db.get_value("Team", self.team.name, "enabled"), 1)
+		self.assertStillLoggedIn()
