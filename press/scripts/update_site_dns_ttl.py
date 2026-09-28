@@ -9,15 +9,15 @@ from press.press.doctype.root_domain.root_domain import RootDomain
 
 DRY_RUN = True
 NEW_TTL = 900
-ROOT_DOMAIN = ""  # One root domain for each run, for example "frappe.cloud"
-
-assert frappe.db.exists("Root Domain", {"name": ROOT_DOMAIN, "dns_provider": "AWS Route 53"}), ROOT_DOMAIN
 
 targets = set(frappe.get_all("Proxy Server", pluck="name"))
 targets.update(frappe.get_all("Server", {"is_standalone": 1}, pluck="name"))
 
 # No functions or comprehensions: pasted into bench console, they can't see top-level names
-for name in [ROOT_DOMAIN]:
+for name in frappe.get_all("Root Domain", {"dns_provider": "AWS Route 53"}, pluck="name"):
+	# Ask before the read, so that no records go stale while the prompt waits
+	if input(f"{name}: update? [y/N] ") != "y":
+		continue
 	domain = RootDomain("Root Domain", name)
 	try:
 		zone = domain.hosted_zone
