@@ -6,6 +6,7 @@
 	"engine": "InnoDB",
 	"field_order": [
 		"status",
+		"disable_agent_update",
 		"hostname",
 		"domain",
 		"tls_certificate_renewal_failed",
@@ -57,6 +58,13 @@
 			"options": "Pending\nInstalling\nActive\nBroken\nArchived",
 			"read_only": 1,
 			"reqd": 1
+		},
+		{
+			"default": "0",
+			"description": "Don't update the agent on this server",
+			"fieldname": "disable_agent_update",
+			"fieldtype": "Check",
+			"label": "Disable Agent Update"
 		},
 		{
 			"fieldname": "hostname",
@@ -301,7 +309,7 @@
 			"link_fieldname": "server"
 		}
 	],
-	"modified": "2026-09-17 14:45:12.000000",
+	"modified": "2026-09-20 18:30:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Monitor Server",
