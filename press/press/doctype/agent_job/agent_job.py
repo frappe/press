@@ -34,6 +34,7 @@ from press.press.doctype.site_migration.site_migration import (
 )
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error, timer
+from press.utils.user import as_administrator
 
 AGENT_LOG_KEY = "agent-jobs"
 AGENT_JOB_TIMEOUT_HOURS = 4
@@ -1416,9 +1417,5 @@ def cancel_job_from_dashboard(name: str):
 
 	job.validate_dashboard_cancellation()
 
-	user = frappe.session.user
-	frappe.set_user("Administrator")
-	try:
+	with as_administrator():
 		job.cancel_job()
-	finally:
-		frappe.set_user(user)
