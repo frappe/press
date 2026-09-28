@@ -12,3 +12,11 @@ export const unreadSupportNotificationsCount = createResource({
 	params: { type: 'Support Access' },
 	initialData: 0,
 });
+
+export const markAllNotificationsAsRead = createResource({
+	url: 'press.api.notifications.mark_all_notifications_as_read',
+	onSuccess: () => {
+		unreadNotificationsCount.reload();
+		unreadSupportNotificationsCount.reload();
+	},
+});
