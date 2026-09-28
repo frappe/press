@@ -2,6 +2,23 @@ from press.api.account import get_frappe_io_auth_url
 
 from . import __version__ as app_version
 
+
+def _get_frappe_io_auth_url() -> str:
+	"""Resolve the frappe.io OAuth URL that the login redirect points at.
+
+	Only the site-less case falls back to "/"; other failures surface.
+	"""
+	try:
+		return get_frappe_io_auth_url() or "/"
+	except RuntimeError as e:
+		# Raised by frappe's local proxy when no site is bound.
+		if "object is not bound" not in str(e):
+			raise
+		return "/"
+
+
+_frappe_io_auth_url = _get_frappe_io_auth_url()
+
 app_name = "press"
 app_title = "Press"
 app_publisher = "Frappe"
@@ -69,7 +86,7 @@ website_route_rules = [
 ]
 
 website_redirects = [
-	{"source": "/dashboard/f-login", "target": get_frappe_io_auth_url() or "/"},
+	{"source": "/dashboard/f-login", "target": _frappe_io_auth_url},
 	{
 		"source": "/suspended-site",
 		"target": "/api/method/press.api.handle_suspended_site_redirection",
