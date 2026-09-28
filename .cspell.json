@@ -818,6 +818,12 @@
 		"notif",
 		"smallbtn",
 		"Unblended",
-		"recognised"
+		"recognised",
+		"nocase",
+		"ossec",
+		"popen",
+		"syscheck",
+		"yara",
+		"yarac"
 	]
 }
