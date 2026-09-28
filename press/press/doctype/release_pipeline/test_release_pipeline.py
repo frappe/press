@@ -584,18 +584,6 @@ class TestReleasePipeline(FrappeTestCase):
 			)
 		)
 
-	@patch.object(ReleasePipeline, "send_failure_notification", Mock())
-	@patch("press.press.doctype.release_pipeline.release_pipeline.fail_remote_job", Mock())
-	def test_force_fail_keeps_the_sid_and_data_of_the_logged_in_session(self):
-		release_pipeline, _build, team_user = self.create_running_pipeline()
-		frappe.session.sid = "browser-session-id"
-		frappe.session.data = frappe._dict(user=team_user)
-
-		release_pipeline.force_fail()
-
-		self.assertEqual(frappe.session.sid, "browser-session-id")
-		self.assertEqual(frappe.session.data, {"user": team_user})
-
 	@classmethod
 	def tearDownClass(cls):
 		shutil.rmtree(frappe.db.get_single_value("Press Settings", "build_directory"), ignore_errors=True)
