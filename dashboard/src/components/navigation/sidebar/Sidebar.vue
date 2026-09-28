@@ -7,6 +7,7 @@ import { getTeam } from '@/data/team'
 import { mobileNav, partnerRegistrationModalOpen } from '@/data/ui'
 import { isMobile } from '@/utils/device'
 import { setTheme } from '@/utils/useTheme'
+import LucideTriangleAlert from '~icons/lucide/alert-triangle'
 import LucideBookText from '~icons/lucide/book-text'
 import LucideChevronDown from '~icons/lucide/chevron-down'
 import LucideGlobe from '~icons/lucide/globe'
@@ -62,6 +63,10 @@ const docs = () => {
 	window.open('https://docs.frappe.io/cloud', '_blank')
 }
 
+const recentIssues = () => {
+	window.open('https://docs.frappe.io/cloud/recent-issues', '_blank')
+}
+
 const feedback = () => {
 	window.open('https://frappecloud.com/frappe-cloud-feedback/new', '_blank')
 }
@@ -110,6 +115,7 @@ const userDropdownOptions = [
 
 const helpDropdownOptions = [
 	{ label: 'Docs', icon: LucideBookText, onClick: docs },
+	{ label: 'Recent Issues', icon: LucideTriangleAlert, onClick: recentIssues },
 	{ label: 'Get Support', icon: LucideSupport, onClick: support },
 	{ label: 'Share Feedback', icon: LucideMessageSquareCode, onClick: feedback },
 	{ label: 'Find a Partner', icon: LucideGlobe, onClick: findPartner },
