@@ -13,16 +13,10 @@ except ImportError:
 class _MCPUnavailable:
 	"""No-op stand-in used when the optional `frappe-mcp` extra is absent.
 
-	`frappe-mcp` is an extra rather than a required dependency: it pins
-	pydantic<2.12, whose pydantic-core cannot be built on Python 3.14, and
-	Frappe 16 requires Python 3.14.
-
-	Tool modules bind `@press_mcp.tool()` at import time. With no server to
-	register against, registration degrades to a no-op and the decorated
-	functions stay plain callables, so every module in this package remains
-	importable. That matters beyond MCP itself: the incident support agent
-	imports `press.mcp.tools.telemetry.clients`, and importing that submodule
-	runs this module first.
+	`frappe-mcp` is an extra because it pins pydantic<2.12, which cannot be
+	built on Python 3.14. Tool modules bind `@press_mcp.tool()` at import time,
+	so with no server to register against the decorated functions must stay
+	plain callables for every module here to remain importable.
 	"""
 
 	def __init__(self, name):
