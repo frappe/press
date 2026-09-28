@@ -6,7 +6,7 @@ import frappe
 from frappe.tests.ui_test_helpers import create_test_user
 from frappe.tests.utils import FrappeTestCase
 
-from press.utils.user import is_desk_user, is_system_manager
+from press.utils.user import as_administrator, is_desk_user, is_system_manager
 
 
 class TestUserUtils(FrappeTestCase):
@@ -82,3 +82,17 @@ class TestUserUtils(FrappeTestCase):
 
 		frappe.set_user(email)
 		self.assertTrue(is_system_manager())
+
+	def test_as_administrator_restores_the_user_sid_and_data_of_the_session(self):
+		email = frappe.mock("email")
+		create_test_user(email)
+		frappe.set_user(email)
+		frappe.session.sid = "browser-session-id"
+		frappe.session.data = frappe._dict(user=email)
+
+		with as_administrator():
+			self.assertEqual(frappe.session.user, "Administrator")
+
+		self.assertEqual(frappe.session.user, email)
+		self.assertEqual(frappe.session.sid, "browser-session-id")
+		self.assertEqual(frappe.session.data, {"user": email})
