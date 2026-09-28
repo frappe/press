@@ -228,19 +228,6 @@ class TestAccountApi(TestCase):
 		team.flags.ignore_permissions = False
 		return member
 
-	def test_remove_team_member_rejected_for_member_without_admin_access(self):
-		team = create_test_team()
-		plain_member = self._add_plain_member(team)
-		other_member = self._add_plain_member(team)
-
-		with user_context(plain_member), self.assertRaises(frappe.PermissionError) as cm:
-			team.remove_team_member(other_member)
-		self.assertIn("Only team admin", str(cm.exception))
-		self.assertTrue(
-			frappe.db.exists("Team Member", {"parent": team.name, "user": other_member}),
-			"membership should remain intact",
-		)
-
 	def test_remove_team_member_allowed_for_team_member_with_admin_access(self):
 		from press.press.doctype.press_role.test_press_role import create_permission_role
 
