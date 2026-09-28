@@ -16,7 +16,9 @@ for failover in frappe.get_all(
 	failing_over.update((failover.primary, failover.secondary))
 
 # No functions or comprehensions: pasted into bench console, they can't see top-level names
-for proxy in frappe.get_all("Proxy Server", {"status": ("!=", "Archived")}, ["name", "domain"]):
+proxies = frappe.get_all("Proxy Server", {"status": ("!=", "Archived")}, ["name", "domain"])
+print(len(proxies), "proxies")
+for proxy in proxies:
 	if proxy.name in failing_over:
 		print(proxy.name, "SKIPPED: failover in progress")
 		continue
@@ -35,6 +37,7 @@ for proxy in frappe.get_all("Proxy Server", {"status": ("!=", "Archived")}, ["na
 		continue
 	record = records[0]
 	if record.get("TTL") in (None, NEW_TTL):
+		print(proxy.name, "OK:", record.get("TTL"))
 		continue
 	print(proxy.name, record["ResourceRecords"], record["TTL"], "->", NEW_TTL)
 	record["TTL"] = NEW_TTL
