@@ -13,13 +13,6 @@ NEW_TTL = 900
 targets = set(frappe.get_all("Proxy Server", pluck="name"))
 targets.update(frappe.get_all("Server", {"is_standalone": 1}, pluck="name"))
 
-# Failover lowers the TTL to 60 on purpose, so skip sites on proxies in an unfinished failover
-failing_over: set[str] = set()
-for failover in frappe.get_all(
-	"Proxy Failover", {"status": ("in", ["Pending", "Running"])}, ["primary", "secondary"]
-):
-	failing_over.update((failover.primary, failover.secondary))
-
 # No functions or comprehensions: pasted into bench console, they can't see top-level names
 for name in frappe.get_all("Root Domain", {"dns_provider": "AWS Route 53"}, pluck="name"):
 	domain = RootDomain("Root Domain", name)
@@ -29,7 +22,6 @@ for name in frappe.get_all("Root Domain", {"dns_provider": "AWS Route 53"}, pluc
 		print(name, "SKIPPED: no hosted zone")
 		continue
 	counts_by_old_ttl: Counter = Counter()
-	skipped = 0
 	paginator = domain.boto3_client.get_paginator("list_resource_record_sets")
 	for page in paginator.paginate(HostedZoneId=zone):
 		changes = []
@@ -41,9 +33,6 @@ for name in frappe.get_all("Root Domain", {"dns_provider": "AWS Route 53"}, pluc
 			value = record["ResourceRecords"][0]["Value"].rstrip(".")
 			if value not in targets:
 				continue
-			if value in failing_over:
-				skipped += 1
-				continue
 			counts_by_old_ttl[record["TTL"]] += 1
 			record["TTL"] = NEW_TTL
 			changes.append({"Action": "UPSERT", "ResourceRecordSet": record})
@@ -51,4 +40,4 @@ for name in frappe.get_all("Root Domain", {"dns_provider": "AWS Route 53"}, pluc
 			domain.boto3_client.change_resource_record_sets(
 				HostedZoneId=zone, ChangeBatch={"Changes": changes}
 			)
-	print(name, "old TTLs:", dict(counts_by_old_ttl), "skipped for failover:", skipped)
+	print(name, "old TTLs:", dict(counts_by_old_ttl))
