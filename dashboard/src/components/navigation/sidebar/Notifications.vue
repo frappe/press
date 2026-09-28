@@ -3,7 +3,6 @@ import {
   Badge,
   Button,
   createListResource,
-  frappeRequest,
   Tabs,
   Tooltip,
   Popover,
@@ -21,6 +20,7 @@ import Scrollbar from "@/components/common/Scrollbar.vue";
 import SupportAccessDialog from "@/components/SupportAccessDialog.vue";
 
 import {
+  markAllNotificationsAsRead,
   unreadNotificationsCount,
   unreadSupportNotificationsCount,
 } from "@/data/notifications";
@@ -96,9 +96,7 @@ const markAsRead = (row, togglePopover) => {
 
 const markAllAsRead = (togglePopover) => {
   toast.promise(
-    frappeRequest({
-      url: "/api/method/press.api.notifications.mark_all_notifications_as_read",
-    }),
+    markAllNotificationsAsRead.submit(),
     {
       success: () => {
         resource.reload();
