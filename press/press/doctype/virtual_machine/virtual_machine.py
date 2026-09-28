@@ -48,6 +48,7 @@ from press.press.doctype.server_activity.server_activity import log_server_activ
 from press.runner import Ansible
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
+from press.utils.random_names import get_random_names
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.virtual_machine_migration.virtual_machine_migration import (
@@ -3454,7 +3455,7 @@ def snapshot_aws_servers():
 	vms_with_snapshot = frappe.get_all(
 		"Server", {"name": ("in", servers_with_snapshot)}, pluck="virtual_machine"
 	)
-	machines = frappe.get_all(
+	machines = get_random_names(
 		"Virtual Machine",
 		{
 			"name": ("not in", vms_with_snapshot),
@@ -3464,9 +3465,7 @@ def snapshot_aws_servers():
 			"series": "f",
 			"disable_server_snapshot": 0,
 		},
-		order_by="RAND()",
-		pluck="name",
-		limit_page_length=50,
+		limit=50,
 	)
 	for machine in machines:
 		if has_job_timeout_exceeded():
