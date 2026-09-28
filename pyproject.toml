@@ -55,12 +55,25 @@ dependencies = [
     "playwright==1.49.1",
     "prometheus-api-client==0.6.0",
     "pydo==0.24.0",
-    "semgrep==1.159.0",
-    "frappe-mcp @ git+https://github.com/frappe/mcp",
     "setuptools==80.9.0",
 ]
 
 [project.optional-dependencies]
+# The MCP endpoint is opt-in (Press Settings.enable_mcp). It is kept out of the
+# required dependencies because frappe-mcp pins pydantic<2.12, whose
+# pydantic-core has no Python 3.14 build -- and Frappe 16 requires Python 3.14.
+# Install with `pip install -e .[mcp]` on a Python that can build it.
+mcp = [
+    "frappe-mcp @ git+https://github.com/frappe/mcp",
+]
+# Semgrep is only ever invoked as a CLI subprocess by the marketplace app audit,
+# never imported, and semgrep requires urllib3>=2 which collides with the
+# urllib3<2 pin that python-telegram-bot 13.15 needs. The audit prefers a
+# dedicated bench via `Marketplace Settings -> audit_bench_path` and already
+# reports a clear `semgrep_unavailable` result when no binary is found.
+audit = [
+    "semgrep==1.159.0",
+]
 dev = [
     "pre-commit",
     "ruff==0.14.2",
