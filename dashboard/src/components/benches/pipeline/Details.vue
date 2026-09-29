@@ -438,14 +438,10 @@ const stopPipeline = () => {
 	})
 }
 
-const isCacheFailure = computed(
-	() => builds.value[activeBuildId.value]?.doc?.is_cache_failure,
-)
+const activeBuild = computed(() => builds.value[activeBuildId.value]?.doc)
 
-const redeployWithoutCache = () => {
-	const deploy = builds.value[activeBuildId.value]?.doc
-
-	confirmDialog({
+const redeployDialogs = {
+	cache: {
 		title: 'Redeploy Without Cache',
 		message: `
 				This deploy failed due to a build cache issue.<br><br>
@@ -454,14 +450,31 @@ const redeployWithoutCache = () => {
 				which can take significantly longer than a cached build.
 				</div>
 				`,
+	},
+	retry: {
+		title: 'Redeploy',
+		message:
+			'This will run the build again with the same app releases.<br><br>Use this if the build failed for a temporary reason, like a network timeout. If an app caused the failure, push a fix and deploy the new release instead.',
+	},
+}
+
+const redeploy = (noCache: boolean) => {
+	const dialog = redeployDialogs[noCache ? 'cache' : 'retry']
+
+	confirmDialog({
+		...dialog,
 		primaryAction: {
-			label: 'Redeploy Without Cache',
+			label: dialog.title,
 			variant: 'solid',
 			theme: 'red',
 			onClick({ hide }) {
 				createResource({
 					url: 'press.api.bench.redeploy',
-					params: { name: props.name, dc_name: deploy.name, no_cache: true },
+					params: {
+						name: props.name,
+						dc_name: activeBuild.value.name,
+						no_cache: noCache,
+					},
 				})
 					.fetch()
 					.then((newBuild) => {
@@ -473,7 +486,7 @@ const redeployWithoutCache = () => {
 					})
 					.catch(() => {
 						hide()
-						toast.error('Unable to redeploy without cache')
+						toast.error(`Unable to ${dialog.title.toLowerCase()}`)
 					})
 			},
 		},
@@ -533,11 +546,10 @@ const redeployWithoutCache = () => {
 			</Button>
 
 			<Button
-				@click="redeployWithoutCache"
-				v-if="!deployview && pipeline?.doc?.status === 'Failure' && isCacheFailure"
-				theme="red"
+				@click="redeploy(activeBuild.is_cache_failure)"
+				v-if="!deployview && activeBuild?.status === 'Failure'"
 			>
-				Redeploy Without Cache
+				{{ activeBuild.is_cache_failure ? 'Redeploy Without Cache' : 'Redeploy' }}
 			</Button>
 
 			<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
