@@ -547,7 +547,7 @@ const redeploy = (noCache: boolean) => {
 
 			<Button
 				@click="redeploy(activeBuild.is_cache_failure)"
-				v-if="!deployview && activeBuild?.status === 'Failure'"
+				v-if="!deployview && activeBuild && !['Draft', 'Preparing', 'Running', 'Pending'].includes(activeBuild.status)"
 			>
 				{{ activeBuild.is_cache_failure ? 'Redeploy Without Cache' : 'Redeploy' }}
 			</Button>
