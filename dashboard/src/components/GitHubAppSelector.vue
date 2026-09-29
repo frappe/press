@@ -67,7 +67,7 @@
 		<span class="text-sm text-ink-gray-6">
 			Don't see your organization?
 			<Link :href="installationLink" class="font-medium">
-				Add from GitHub
+				Connect another account
 			</Link>
 		</span>
 		<FormControl
@@ -103,7 +103,7 @@
 		<p v-if="selectedGithubUserData" class="!mt-2 text-sm text-ink-gray-6">
 			Don't see your repository here?
 			<Link :href="selectedGithubUserData.url" class="font-medium">
-				Add from GitHub
+				Edit repo access
 			</Link>
 		</p>
 
