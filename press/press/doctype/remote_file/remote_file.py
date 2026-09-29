@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import pprint
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
 import frappe
@@ -18,6 +19,9 @@ from press.press.doctype.site_activity.site_activity import log_site_activity
 
 if TYPE_CHECKING:
 	from press.press.doctype.backup_bucket.backup_bucket import BackupBucket
+
+# Remote Files are created when the backup job finishes, and an agent job runs for 24h at most
+UNTRACKED_FILE_MINIMUM_AGE = timedelta(hours=48)
 
 
 def get_team_prefix(team: str) -> str:
@@ -110,9 +114,9 @@ def poll_file_statuses_from_bucket(bucket):
 		region_name=bucket["region"],
 	)
 
-	available_files = set()
+	available_files = {}
 	for s3_object in s3.Bucket(bucket["name"]).objects.all():
-		available_files.add(s3_object.key)
+		available_files[s3_object.key] = s3_object.last_modified
 
 	doctype = "Remote File"
 	remote_files = frappe.get_all(
@@ -142,11 +146,19 @@ def poll_file_statuses_from_bucket(bucket):
 	for files in chunk(set_to_available, 1000):
 		frappe.db.set_value(doctype, {"name": ("in", files)}, "status", "Available")
 
-	# Delete s3 files that are not tracked with Remote Files
 	remote_file_paths = set(file["file_path"] for file in remote_files)
-	file_only_on_s3 = available_files - remote_file_paths
-	delete_s3_files({bucket["name"]: list(file_only_on_s3)})
+	delete_s3_files({bucket["name"]: get_untracked_files_to_delete(available_files, remote_file_paths)})
 	frappe.db.commit()
+
+
+def get_untracked_files_to_delete(available_files: dict[str, datetime], tracked_paths: set[str]) -> list[str]:
+	"""S3 files with no Remote File, old enough that no running backup job can still record them."""
+	cutoff = datetime.now(timezone.utc) - UNTRACKED_FILE_MINIMUM_AGE
+	return [
+		path
+		for path, last_modified in available_files.items()
+		if path not in tracked_paths and last_modified < cutoff
+	]
 
 
 def delete_remote_backup_objects(remote_files):

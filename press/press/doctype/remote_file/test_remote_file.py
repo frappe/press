@@ -3,18 +3,25 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch
 
+import boto3
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from moto import mock_aws
 
-from press.press.doctype.remote_file.remote_file import RemoteFile, get_remote_key, get_team_prefix
-
-if TYPE_CHECKING:
-	from datetime import datetime
+from press.press.doctype.remote_file.remote_file import (
+	RemoteFile,
+	get_remote_key,
+	get_team_prefix,
+	get_untracked_files_to_delete,
+	poll_file_statuses_from_bucket,
+)
+from press.tests.before_test import freeze_time
 
 UPLOADS_BUCKET = "test-remote-uploads"
+SWEEP_BUCKET = "test-sweep-backups"
 
 
 def create_test_remote_file(
@@ -237,3 +244,40 @@ class TestRemoteFile(FrappeTestCase):
 			backup.remote_config_file,
 		):
 			self.assertEqual(frappe.db.get_value("Remote File", remote_file, "team"), team.name)
+
+	def test_untracked_files_are_deleted_only_once_older_than_any_running_backup_job(self):
+		now = datetime.now(timezone.utc)
+		available_files = {
+			"old-untracked.sql.gz": now - timedelta(days=3),
+			"fresh-untracked.sql.gz": now - timedelta(hours=1),
+			"old-tracked.sql.gz": now - timedelta(days=3),
+		}
+
+		to_delete = get_untracked_files_to_delete(available_files, {"old-tracked.sql.gz"})
+
+		self.assertEqual(to_delete, ["old-untracked.sql.gz"])
+
+	@mock_aws
+	def test_bucket_poll_deletes_only_old_untracked_files_and_keeps_in_flight_backups(self):
+		s3 = boto3.client("s3", region_name="us-east-1")
+		s3.create_bucket(Bucket=SWEEP_BUCKET)
+		with freeze_time(datetime.now(timezone.utc) - timedelta(days=9), is_utc=True):
+			s3.put_object(Bucket=SWEEP_BUCKET, Key="site/old/orphan-database.sql.gz", Body=b"backup")
+			s3.put_object(Bucket=SWEEP_BUCKET, Key="site/old/tracked-database.sql.gz", Body=b"backup")
+		# Uploaded by a backup job that hasn't finished, so it has no Remote File yet
+		s3.put_object(Bucket=SWEEP_BUCKET, Key="site/today/in-flight-database.sql.gz", Body=b"backup")
+		create_test_remote_file(bucket=SWEEP_BUCKET, file_path="site/old/tracked-database.sql.gz")
+		bucket = {
+			"name": SWEEP_BUCKET,
+			"region": "us-east-1",
+			"access_key_id": "test",
+			"secret_access_key": "test",  # pragma: allowlist secret
+		}
+
+		with patch.object(frappe.db, "commit", new=Mock()):
+			poll_file_statuses_from_bucket(bucket)
+
+		remaining = {obj["Key"] for obj in s3.list_objects_v2(Bucket=SWEEP_BUCKET)["Contents"]}
+		self.assertEqual(
+			remaining, {"site/old/tracked-database.sql.gz", "site/today/in-flight-database.sql.gz"}
+		)
