@@ -272,6 +272,7 @@ scheduler_events = {
 		"press.press.doctype.server.server.install_missing_wazuh_agents",
 		"press.press.doctype.server.server.sync_wazuh_agent_status",
 		"press.press.doctype.server.server.install_missing_yara",
+		"press.press.doctype.scheduled_deploy_settings.scheduled_deploy_settings.deploy_scheduled_release_groups",
 		"press.press.doctype.server.server_monitoring.alert_on_failing_signups",
 		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",
 		"press.press.doctype.database_server.database_server.upload_audit_logs_to_s3",

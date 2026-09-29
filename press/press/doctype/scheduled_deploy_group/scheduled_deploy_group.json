@@ -1,0 +1,99 @@
+{
+	"actions": [],
+	"allow_rename": 1,
+	"creation": "2026-09-29 12:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"release_group",
+		"hour",
+		"column_break_days",
+		"monday",
+		"tuesday",
+		"wednesday",
+		"thursday",
+		"friday",
+		"saturday",
+		"sunday"
+	],
+	"fields": [
+		{
+			"fieldname": "release_group",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Release Group",
+			"options": "Release Group",
+			"reqd": 1
+		},
+		{
+			"description": "0 to 23, in the system timezone",
+			"fieldname": "hour",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Hour",
+			"reqd": 1
+		},
+		{ "fieldname": "column_break_days", "fieldtype": "Column Break" },
+		{
+			"default": "0",
+			"fieldname": "monday",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"label": "Monday"
+		},
+		{
+			"default": "0",
+			"fieldname": "tuesday",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"label": "Tuesday"
+		},
+		{
+			"default": "0",
+			"fieldname": "wednesday",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"label": "Wednesday"
+		},
+		{
+			"default": "0",
+			"fieldname": "thursday",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"label": "Thursday"
+		},
+		{
+			"default": "0",
+			"fieldname": "friday",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"label": "Friday"
+		},
+		{
+			"default": "0",
+			"fieldname": "saturday",
+			"fieldtype": "Check",
+			"label": "Saturday"
+		},
+		{
+			"default": "0",
+			"fieldname": "sunday",
+			"fieldtype": "Check",
+			"label": "Sunday"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"istable": 1,
+	"links": [],
+	"modified": "2026-09-29 12:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Scheduled Deploy Group",
+	"owner": "Administrator",
+	"permissions": [],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
+}
