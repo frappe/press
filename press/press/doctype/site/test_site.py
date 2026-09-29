@@ -12,6 +12,7 @@ import responses
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
+from press.agent import MINIMUM_RESTORE_TIMEOUT, Agent
 from press.exceptions import InsufficientSpaceOnServer
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.app.test_app import create_test_app
@@ -557,29 +558,43 @@ class TestSite(FrappeTestCase):
 		with patch.object(Server, "free_space", new=Mock(return_value=0)):
 			self.assertRaises(InsufficientSpaceOnServer, site.restore_site)
 
-	def _restore_job_timeout(self, site: Site) -> int:
+	def _timeout_sent_by(self, restore: typing.Callable[[Site], AgentJob], site: Site) -> int:
 		with (
 			patch.object(TelegramMessage, "enqueue", new=Mock()),
 			patch.object(BaseServer, "disk_capacity", new=Mock(return_value=100)),
 			patch.object(BaseServer, "free_space", new=Mock(return_value=500 * 1024 * 1024 * 1024)),
 			patch.object(RemoteFile, "download_link", new="http://test.com"),
-			patch.object(RemoteFile, "exists", lambda _: True),
 		):
-			job = site.restore_site()
-		return json.loads(frappe.db.get_value("Agent Job", job, "request_data"))["agent_job_timeout"]
+			job = restore(site)
+		return json.loads(job.request_data)["agent_job_timeout"]
 
 	def test_restore_job_uses_backup_timeout_of_the_site_the_backup_was_taken_from(self):
 		origin_site = create_test_site(backup_timeout=54321)
-		site = create_test_site(backup_timeout=100)
+		site = create_test_site(backup_timeout=20000)
 		site.remote_database_file = create_test_remote_file(site=origin_site.name).name
 
-		self.assertEqual(self._restore_job_timeout(site), 54321)
+		self.assertEqual(self._timeout_sent_by(Agent(site.server).restore_site, site), 54321)
 
 	def test_restore_job_falls_back_to_own_backup_timeout_for_uploaded_backup(self):
-		site = create_test_site(backup_timeout=12345)
+		site = create_test_site(backup_timeout=43210)
 		site.remote_database_file = create_test_remote_file().name
 
-		self.assertEqual(self._restore_job_timeout(site), 12345)
+		self.assertEqual(self._timeout_sent_by(Agent(site.server).restore_site, site), 43210)
+
+	def test_restore_job_gets_at_least_agent_default_timeout_when_backup_timeout_is_lower(self):
+		site = create_test_site(backup_timeout=600)
+		site.remote_database_file = create_test_remote_file(site=site.name).name
+
+		self.assertEqual(
+			self._timeout_sent_by(Agent(site.server).restore_site, site), MINIMUM_RESTORE_TIMEOUT
+		)
+
+	def test_new_site_from_backup_job_uses_backup_timeout_of_the_site_the_backup_was_taken_from(self):
+		origin_site = create_test_site(backup_timeout=54321)
+		site = create_test_site(backup_timeout=20000)
+		site.remote_database_file = create_test_remote_file(site=origin_site.name).name
+
+		self.assertEqual(self._timeout_sent_by(Agent(site.server).new_site_from_backup, site), 54321)
 
 	@patch.object(BaseServer, "guess_data_disk_mountpoint", new=Mock(return_value="/"))
 	@patch.object(BaseServer, "calculated_increase_disk_size")
