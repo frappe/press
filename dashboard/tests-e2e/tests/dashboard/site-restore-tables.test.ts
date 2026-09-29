@@ -29,9 +29,7 @@ const siteMock = {
 	},
 }
 
-test('hides Update Available while Restore Tables is the only way forward', async ({
-	page,
-}) => {
+async function mockBrokenSite(page: Parameters<typeof test>[1]['page']) {
 	await page.route(
 		/\/api\/method\/press\.api\.client\.get\b/,
 		async (route) => {
@@ -57,7 +55,12 @@ test('hides Update Available while Restore Tables is the only way forward', asyn
 			})
 		},
 	)
+}
 
+test('hides Update Available while Restore Tables is the only way forward', async ({
+	page,
+}) => {
+	await mockBrokenSite(page)
 	await page.goto(`/dashboard/sites/${SITE_NAME}`)
 
 	await expect(
@@ -66,4 +69,25 @@ test('hides Update Available while Restore Tables is the only way forward', asyn
 	await expect(
 		page.getByRole('button', { name: 'Update Available' }),
 	).not.toBeVisible()
+})
+
+test('confirms the restore with a black button, the same as every other confirm dialog', async ({
+	page,
+}) => {
+	await mockBrokenSite(page)
+	await page.goto(`/dashboard/sites/${SITE_NAME}`)
+
+	await page.getByRole('button', { name: 'Restore Tables' }).click()
+	const dialog = page.getByRole('dialog', { name: 'Restore Tables' })
+	const confirm = dialog.getByRole('button', { name: 'Restore Tables' })
+	await expect(confirm).toBeVisible()
+
+	// Optional capture for docs/PR screenshots
+	if (process.env.PLAYWRIGHT_DIALOG_SHOT) {
+		await dialog.screenshot({ path: process.env.PLAYWRIGHT_DIALOG_SHOT })
+	}
+
+	// frappe-ui paints a solid button by theme: gray is near-black, red is red
+	await expect(confirm).toHaveClass(/bg-surface-gray-7/)
+	await expect(confirm).not.toHaveClass(/bg-surface-red-5/)
 })
