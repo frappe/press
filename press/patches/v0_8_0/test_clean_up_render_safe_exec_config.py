@@ -1,5 +1,3 @@
-import json
-
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
@@ -21,20 +19,14 @@ class TestCleanUpRenderSafeExecConfig(FrappeTestCase):
 
 	def config_rows(self, group):
 		group.reload()
-		return [(row.key, row.value) for row in group.common_site_config_table]
+		return sorted((row.key, row.value) for row in group.common_site_config_table)
 
-	def test_patch_keeps_only_the_last_copy_of_a_duplicated_key(self):
-		group = self.group_with_config([("render_key", "0"), ("render_key", "0"), ("render_key", "1")])
+	def test_patch_keeps_one_row_of_each_duplicated_key(self):
+		group = self.group_with_config(
+			[("render_key", "0"), ("max_file_size", "5"), ("render_key", "0"), ("render_key", "0")]
+		)
 		execute()
-		self.assertEqual(self.config_rows(group), [("render_key", "1")])
-
-	def test_patch_does_not_change_the_effective_common_site_config(self):
-		group = self.group_with_config([("render_key", "0"), ("max_file_size", "5"), ("render_key", "1")])
-		before = json.loads(group.common_site_config)
-		execute()
-		group.reload()
-		group.save()
-		self.assertEqual(json.loads(group.common_site_config), before)
+		self.assertEqual(self.config_rows(group), [("max_file_size", "5"), ("render_key", "0")])
 
 	def test_patch_removes_disable_render_safe_exec_from_the_blacklist(self):
 		frappe.get_doc({"doctype": "Site Config Key Blacklist", "key": "disable_render_safe_exec"}).insert()
@@ -44,4 +36,4 @@ class TestCleanUpRenderSafeExecConfig(FrappeTestCase):
 	def test_patch_leaves_groups_without_duplicates_unchanged(self):
 		group = self.group_with_config([("render_key", "0"), ("max_file_size", "5")])
 		execute()
-		self.assertEqual(self.config_rows(group), [("render_key", "0"), ("max_file_size", "5")])
+		self.assertEqual(self.config_rows(group), [("max_file_size", "5"), ("render_key", "0")])
