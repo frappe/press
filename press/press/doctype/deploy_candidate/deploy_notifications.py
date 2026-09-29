@@ -848,7 +848,7 @@ def check_incompatible_node(old_dcb: "DeployCandidateBuild", new_dc: "DeployCand
 	frappe.throw(
 		f"The previous build failed because of an incompatible Node version. The Node version is still"
 		f" <b>{escape_html(new_node)}</b>. <b>Set a compatible Node version</b> in Bench Group &gt; Config &gt;"
-		' Dependencies. To build without a change, select <b>"I understand, run deploy anyway"</b>. '
+		" Dependencies. To build without a change, open the failed deploy and click <b>Redeploy</b>. "
 		+ doc_link(DOC_URLS["incompatible-node-version"]),
 		BuildValidationError,
 	)
@@ -890,8 +890,8 @@ def check_incompatible_python(old_dcb: "DeployCandidateBuild", new_dc: "DeployCa
 	frappe.throw(
 		f"The previous build failed because of an incompatible Python version. The Python version is"
 		f" still <b>{escape_html(new_python)}</b>. <b>Set a compatible Python version</b> in Bench Group"
-		" &gt; Config &gt; Dependencies. To build without a change, select"
-		' <b>"I understand, run deploy anyway"</b>. ' + doc_link(DOC_URLS["incompatible-dependency-version"]),
+		" &gt; Config &gt; Dependencies. To build without a change, open the"
+		" failed deploy and click <b>Redeploy</b>. " + doc_link(DOC_URLS["incompatible-dependency-version"]),
 		BuildValidationError,
 	)
 
@@ -1240,7 +1240,7 @@ def check_if_app_updated(old_dcb: "DeployCandidateBuild", new_dc: "DeployCandida
 	frappe.throw(
 		f"App <b>{escape_html(title)}</b> failed in the previous build. The app is still on release"
 		f" <b>{escape_html(new_hash[:10])}</b>. <b>Push a fix to the app, then fetch the new release.</b>"
-		' To build without a change, select <b>"I understand, run deploy anyway"</b>. '
+		" To build without a change, open the failed deploy and click <b>Redeploy</b>. "
 		+ doc_link(DOC_URLS["build-might-fail"]),
 		BuildValidationError,
 	)
