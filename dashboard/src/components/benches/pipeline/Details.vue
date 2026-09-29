@@ -468,7 +468,7 @@ const redeploy = (noCache: boolean) => {
 			variant: 'solid',
 			theme: 'red',
 			onClick({ hide }) {
-				createResource({
+				return createResource({
 					url: 'press.api.bench.redeploy',
 					params: {
 						name: props.name,
