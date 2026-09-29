@@ -797,3 +797,88 @@ class TestIncident(FrappeTestCase):
 			incident.resource, frappe.get_value("Server", incident.server, "database_server")
 		)  # database is checked first because history
 		self.assertEqual(incident.resource_type, "Database Server")
+
+	def get_incident_logs(self, incident: Incident, reason: str) -> list[str]:
+		return frappe.get_all(
+			"Server Activity",
+			{
+				"action": "Incident",
+				"reason": reason,
+				"document_name": ("in", [incident.server, incident.database_server]),
+			},
+			pluck="name",
+		)
+
+	def test_confirmation_of_incident_is_logged_on_server(self):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+
+		incident.status = "Confirmed"
+		incident.save()
+
+		self.assertEqual(len(self.get_incident_logs(incident, "Sites Down reported")), 1)
+
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("busy").create,
+	)  # nobody picks up, so the incident stays Confirmed and humans are called on every run
+	def test_repeated_scheduler_runs_do_not_log_the_same_incident_again(self, mock_calls_create):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+		investigator = frappe.get_last_doc("Incident Investigator")
+		investigator.db_set("status", "Completed")
+
+		incident.status = "Confirmed"
+		incident.save()
+		incident.db_set(
+			"creation",
+			incident.creation
+			- timedelta(seconds=CONFIRMATION_THRESHOLD_SECONDS_NIGHT + CALL_THRESHOLD_SECONDS_NIGHT + 10),
+		)  # time to call for help; humans get called on every run from now on
+
+		resolve_incidents()
+		resolve_incidents()
+
+		incident.reload()
+		self.assertEqual(incident.status, "Confirmed")
+		self.assertEqual(len(self.get_incident_logs(incident, "Sites Down reported")), 1)
+
+	def test_resolution_of_confirmed_incident_is_logged_on_server_once(self):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+
+		incident.status = "Confirmed"
+		incident.save()
+		incident.resolve()
+
+		self.assertEqual(incident.status, "Resolved")
+		self.assertEqual(len(self.get_incident_logs(incident, "Sites Down resolved")), 1)
+
+	def test_reopened_incident_is_not_logged_on_server_again(self):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+
+		incident.status = "Confirmed"
+		incident.save()
+		incident.resolve()
+
+		incident.status = "Confirmed"  # reopened by hand because the sites went down again
+		incident.save()
+		incident.resolve()
+
+		self.assertEqual(len(self.get_incident_logs(incident, "Sites Down reported")), 1)
+		self.assertEqual(len(self.get_incident_logs(incident, "Sites Down resolved")), 1)
+
+	def test_incident_that_was_never_confirmed_is_not_logged_on_server(self):
+		site = create_test_site()
+		alert = create_test_prometheus_alert_rule()
+		create_test_alertmanager_webhook_log(site=site, alert=alert, status="firing")
+		incident: Incident = frappe.get_last_doc("Incident")
+
+		create_test_alertmanager_webhook_log(site=site, alert=alert, status="resolved")
+		resolve_incidents()
+
+		incident.reload()
+		self.assertEqual(incident.status, "Auto-Resolved")
+		self.assertEqual(self.get_incident_logs(incident, "Sites Down resolved"), [])
+		self.assertEqual(self.get_incident_logs(incident, "Sites Down reported"), [])
