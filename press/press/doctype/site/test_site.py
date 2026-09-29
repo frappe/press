@@ -557,6 +557,30 @@ class TestSite(FrappeTestCase):
 		with patch.object(Server, "free_space", new=Mock(return_value=0)):
 			self.assertRaises(InsufficientSpaceOnServer, site.restore_site)
 
+	def _restore_job_timeout(self, site: Site) -> int:
+		with (
+			patch.object(TelegramMessage, "enqueue", new=Mock()),
+			patch.object(BaseServer, "disk_capacity", new=Mock(return_value=100)),
+			patch.object(BaseServer, "free_space", new=Mock(return_value=500 * 1024 * 1024 * 1024)),
+			patch.object(RemoteFile, "download_link", new="http://test.com"),
+			patch.object(RemoteFile, "exists", lambda _: True),
+		):
+			job = site.restore_site()
+		return json.loads(frappe.db.get_value("Agent Job", job, "request_data"))["agent_job_timeout"]
+
+	def test_restore_job_uses_backup_timeout_of_the_site_the_backup_was_taken_from(self):
+		origin_site = create_test_site(backup_timeout=54321)
+		site = create_test_site(backup_timeout=100)
+		site.remote_database_file = create_test_remote_file(site=origin_site.name).name
+
+		self.assertEqual(self._restore_job_timeout(site), 54321)
+
+	def test_restore_job_falls_back_to_own_backup_timeout_for_uploaded_backup(self):
+		site = create_test_site(backup_timeout=12345)
+		site.remote_database_file = create_test_remote_file().name
+
+		self.assertEqual(self._restore_job_timeout(site), 12345)
+
 	@patch.object(BaseServer, "guess_data_disk_mountpoint", new=Mock(return_value="/"))
 	@patch.object(BaseServer, "calculated_increase_disk_size")
 	def test_disk_increase_passes_shortfall_as_positive_whole_gb(self, mock_increase_disk_size: Mock):

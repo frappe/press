@@ -139,6 +139,14 @@ class Agent:
 			as_dict=True,
 		)
 
+	def _get_restore_timeout(self, site: "Site") -> int:
+		"""Backup timeout of the site the backup was taken from, falling back to this site's."""
+		origin_site = site.remote_database_file and frappe.db.get_value(
+			"Remote File", site.remote_database_file, "site"
+		)
+		origin_timeout = origin_site and frappe.db.get_value("Site", origin_site, "backup_timeout")
+		return origin_timeout or site.backup_timeout
+
 	def new_site(self, site, create_user: dict | None = None):
 		apps = [app.app for app in site.apps]
 
@@ -200,6 +208,7 @@ class Agent:
 			"sanitized_config_content": sanitized_config_content,
 			"skip_failing_patches": skip_failing_patches,
 			"managed_database_config": self._get_managed_db_config(site),
+			"agent_job_timeout": self._get_restore_timeout(site),
 		}
 
 		return self.create_agent_job(
@@ -309,6 +318,7 @@ class Agent:
 			"private": private_link,
 			"skip_failing_patches": skip_failing_patches,
 			"managed_database_config": self._get_managed_db_config(site),
+			"agent_job_timeout": self._get_restore_timeout(site),
 		}
 
 		return self.create_agent_job(
