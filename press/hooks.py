@@ -269,9 +269,13 @@ scheduler_events = {
 		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 		"press.press.doctype.incident_settings.incident_settings.alert_if_phone_call_alerts_disabled",
+<<<<<<< HEAD
 		"press.press.doctype.server.server.install_missing_wazuh_agents",
 		"press.press.doctype.server.server.sync_wazuh_agent_status",
 		"press.press.doctype.server.server.install_missing_yara",
+=======
+		"press.press.doctype.scheduled_deploy_settings.scheduled_deploy_settings.deploy_scheduled_release_groups",
+>>>>>>> 09e01b8 (feat(release-group): Deploy bench groups on a schedule from settings)
 		"press.press.doctype.server.server_monitoring.alert_on_failing_signups",
 		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",
 		"press.press.doctype.database_server.database_server.upload_audit_logs_to_s3",
