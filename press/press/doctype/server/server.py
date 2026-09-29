@@ -128,6 +128,7 @@ class BaseServer(Document, TagHelpers):
 		"is_provisioning_press_job_completed",
 		"is_unified_server",
 		"enable_on_prem_failover_support",
+		"has_data_volume",
 	)
 
 	@staticmethod

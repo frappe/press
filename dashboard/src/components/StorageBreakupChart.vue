@@ -67,6 +67,12 @@
 						<b>assets</b> – static files such as images, stylesheets, or
 						compiled assets
 					</li>
+					<li>
+						<b>reserved space</b> – disk space that the file system keeps back
+					</li>
+					<li v-if="data.includesOperatingSystem">
+						<b>operating system</b> – system files, logs, and swap
+					</li>
 				</ul>
 				In addition, only Docker images and active containers are considered in
 				the size calculation, while other Docker overhead is ignored.

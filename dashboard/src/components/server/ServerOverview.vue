@@ -331,6 +331,8 @@ export default {
 										? this.$dbReplicaServer?.name
 										: null,
 						serverType,
+						diskUsed: this.$appServer.doc.usage?.disk,
+						hasDataVolume: this.$appServer.doc.has_data_volume,
 					}),
 				)
 			}

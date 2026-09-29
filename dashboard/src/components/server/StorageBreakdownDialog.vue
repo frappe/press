@@ -123,6 +123,8 @@ export default {
 			type: String,
 			required: true,
 		},
+		diskUsed: Number,
+		hasDataVolume: Boolean,
 	},
 	data() {
 		return {
@@ -214,8 +216,12 @@ export default {
 				return transformed;
 			};
 
+			// match the Storage card: df "Used" leaves out the reserved blocks
+			const usedSize = this.diskUsed
+				? this.diskUsed * 1024 ** 3
+				: message.total.size;
 			const additionalUsage = (
-				(message.total.size - (message.benches.size + message.docker.size)) /
+				(usedSize - (message.benches.size + message.docker.size)) /
 				1024 ** 3
 			).toFixed(2);
 			const totalCalculatedSize = (
@@ -227,6 +233,7 @@ export default {
 				name: 'server-storage',
 				label: `Server Storage Breakdown (${totalCalculatedSize} GB)`,
 				additionalUsage: `${additionalUsage} GB`,
+				includesOperatingSystem: !this.hasDataVolume,
 				children: [],
 			};
 
