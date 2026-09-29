@@ -438,7 +438,12 @@ const stopPipeline = () => {
 	})
 }
 
-const activeBuild = computed(() => builds.value[activeBuildId.value]?.doc)
+const activeBuild = computed(
+	() =>
+		builds.value[activeBuildId.value]?.doc ??
+		getCachedDocumentResource('Release Group', props.name)?.doc
+			?.deploy_information?.last_deploy,
+)
 
 const redeployDialogs = {
 	cache: {
