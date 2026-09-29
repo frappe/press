@@ -1,12 +1,7 @@
 from __future__ import annotations
 
 import json
-<<<<<<< HEAD
-from base64 import urlsafe_b64decode, urlsafe_b64encode
-=======
 from base64 import b64encode, urlsafe_b64decode, urlsafe_b64encode
-from datetime import datetime
->>>>>>> fc56f58 (fix(github): Reject apps without a frappe dependency in pyproject)
 from unittest.mock import Mock, patch
 from urllib.parse import urlencode
 
