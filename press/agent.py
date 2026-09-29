@@ -40,6 +40,8 @@ if TYPE_CHECKING:
 
 
 APPS_LIST_REGEX = re.compile(r"\[.*\]")
+# The agent's default job timeout, which restores got before they sent their own
+MINIMUM_RESTORE_TIMEOUT = 4 * 3600
 
 
 class Agent:
@@ -145,7 +147,7 @@ class Agent:
 			"Remote File", site.remote_database_file, "site"
 		)
 		origin_timeout = origin_site and frappe.db.get_value("Site", origin_site, "backup_timeout")
-		return origin_timeout or site.backup_timeout
+		return max(origin_timeout or site.backup_timeout or 0, MINIMUM_RESTORE_TIMEOUT)
 
 	def new_site(self, site, create_user: dict | None = None):
 		apps = [app.app for app in site.apps]
