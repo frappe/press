@@ -1,0 +1,81 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+{% set plural = site_count and site_count > 1 %}
+
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white from-markdown">
+		<p class="mb-4 font-bold">
+			{% if over_limit %}
+			Your {{ "sites have" if plural else "site has" }} gone over the plan's storage limit
+			{% else %}
+			Your {{ "sites are" if plural else "site is" }} close to the plan's storage limit
+			{% endif %}
+		</p>
+		<p class="mb-6">
+			Hi,<br /><br />
+
+			{% if over_limit %}
+			{{ "Some of your sites are" if plural else "Your site is" }} now using more storage than
+			{{ "their plans allow" if plural else "its plan allows" }}.
+			{% else %}
+			{{ "Your sites are" if plural else "Your site is" }} using more than {{ threshold }}% of the
+			storage included in {{ "their plans" if plural else "its plan" }}.
+			{% endif %}
+			Here's where things stand:
+		</p>
+
+		<ul class="mb-6">
+			{% for site in sites %}
+			<li>
+				<strong>{{ site.name }}</strong> ({{ site.plan }} plan)<br />
+				{% if (site.current_disk_usage or 0) > threshold %}
+				File storage: <strong>{{ site.current_disk_usage }}%</strong> of the limit<br />
+				{% endif %}
+				{% if (site.current_database_usage or 0) > threshold %}
+				Database: <strong>{{ site.current_database_usage }}%</strong> of the limit<br />
+				{% endif %}
+			</li>
+			{% endfor %}
+		</ul>
+
+		<p class="mb-6">
+			{% if over_limit %}
+			Please act soon to keep your {{ "sites" if plural else "site" }} running smoothly.
+			{% else %}
+			Nothing is broken yet, but acting now keeps your {{ "sites" if plural else "site" }} from
+			running out of space.
+			{% endif %}
+			You have two options:<br /><br />
+
+			<strong>1. Upgrade the plan</strong><br />
+			Pick a plan with more storage from your site's dashboard. The change applies right away. See
+			<a href="https://docs.frappe.io/cloud/how-to-change-a-site-plan" target="_blank"><b>how to
+			change a site's plan</b></a>.<br /><br />
+
+			<strong>2. Free up space</strong><br />
+			- Find the tables using the most space with the
+			<a href="https://docs.frappe.io/cloud/database-analyzer" target="_blank"><b>Database Analyzer</b></a>.<br />
+			- Clear old logs such as Error Log, Activity Log, Email Queue and Version. Our
+			<a href="https://docs.frappe.io/cloud/faq/site#clearing-logs" target="_blank"><b>guide on clearing
+			logs</b></a> shows which ones are safe to clear.<br />
+			- Delete attachments and files you no longer need from the File list.<br /><br />
+
+			Usage figures refresh every few hours, so your dashboard will show the change soon after you clean up.
+		</p>
+
+		{{ utils.button("Open dashboard", action_url) }}
+
+		<p class="mb-6 mt-6">
+			<strong>Need help?</strong><br />
+			If you have any questions, reach us at
+			<a href="https://support.frappe.io/helpdesk/" target="_blank"><b>Frappe Cloud Support</b></a>.
+		</p>
+
+		{{ utils.separator() }}
+		{{ utils.signature() }}
+	</div>
+</td>
+
+{% endblock %}

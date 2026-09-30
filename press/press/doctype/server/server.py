@@ -4608,30 +4608,10 @@ class Server(BaseServer):
 		yields the same id, so a re-run finds the earlier Email Queue row and skips, while any
 		changed parameter (e.g. a new deadline) yields a new id that sends again.
 		"""
-		payload = json.dumps({"team": team, **args}, sort_keys=True, default=str)
-		digest = hashlib.sha256(payload.encode()).hexdigest()[:24]
-		return f"decommission-notice-{digest}@frappecloud.com"
+		return notice_message_id("decommission-notice", team, args)
 
 	def check_duplicate_dispatch_within_days(self, message_id: str, days: int) -> frappe._dict | None:
-		"""Return the most recent dispatch of this exact notice within `days`, else None.
-
-		Keyed on the Message-Id (a real, queryable Email Queue column that we set), so the
-		match is exact. Only sent or in-flight rows count; a failed ("Error") send does not
-		suppress a retry.
-		"""
-		since = frappe.utils.add_days(frappe.utils.now_datetime(), -days)
-		dispatches = frappe.get_all(
-			"Email Queue",
-			filters={
-				"message_id": message_id,
-				"status": ("in", ["Not Sent", "Sending", "Sent", "Partially Sent"]),
-				"creation": (">", since),
-			},
-			fields=["name", "creation"],
-			order_by="creation desc",
-			limit=1,
-		)
-		return dispatches[0] if dispatches else None
+		return find_recent_notice_dispatch(message_id, days)
 
 	def notify_teams_before_decommission(
 		self,
@@ -4691,6 +4671,31 @@ class Server(BaseServer):
 			)
 			if verbose:
 				print(f"  queued {team}: {len(sites)} site(s) -> {', '.join(recipients)}")
+
+
+def notice_message_id(kind: str, team: str, args: dict) -> str:
+	"""Deterministic Message-Id for a console-sent notice, unique per kind, team and parameters."""
+	payload = json.dumps({"team": team, **args}, sort_keys=True, default=str)
+	digest = hashlib.sha256(payload.encode()).hexdigest()[:24]
+	return f"{kind}-{digest}@frappecloud.com"
+
+
+def find_recent_notice_dispatch(message_id: str, days: int) -> frappe._dict | None:
+	"""Most recent sent or in-flight Email Queue row with this Message-Id within `days`, else None.
+	A failed ("Error") send does not count, so it doesn't suppress a retry."""
+	since = frappe.utils.add_days(frappe.utils.now_datetime(), -days)
+	dispatches = frappe.get_all(
+		"Email Queue",
+		filters={
+			"message_id": message_id,
+			"status": ("in", ["Not Sent", "Sending", "Sent", "Partially Sent"]),
+			"creation": (">", since),
+		},
+		fields=["name", "creation"],
+		order_by="creation desc",
+		limit=1,
+	)
+	return dispatches[0] if dispatches else None
 
 
 def scale_workers(now=False):
