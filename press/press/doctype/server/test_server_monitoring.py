@@ -17,8 +17,7 @@ from press.press.doctype.server.server_monitoring import (
 	_get_trial_signup_failure_rate,
 	_send_signup_failure_alert,
 	alert_on_failing_signups,
-	alert_on_sites_with_all_backup_attempts_failed,
-	alert_on_sites_without_backup_attempts,
+	alert_on_sites_with_missing_backups,
 )
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_activity.site_activity import log_site_activity
@@ -264,12 +263,17 @@ class TestSignupFailureAlert(FrappeTestCase):
 
 
 @patch("press.press.doctype.server.server_monitoring.send_raven_message")
-class TestAllBackupAttemptsFailedAlert(FrappeTestCase):
+class TestMissingBackupsAlert(FrappeTestCase):
 	def setUp(self):
 		frappe.db.set_single_value("Press Settings", "max_failed_backup_attempts_in_a_day", 3)
 		plan = create_test_plan("Site", price_usd=25.0)
+		# Sites created in the last 24h are not due a scheduled backup yet
 		self.site = create_test_site(subdomain="allbackupsfailed", plan=plan.name)
 		self.other_site = create_test_site(subdomain="allbackupsfailed2", plan=plan.name)
+		self.idle_site = create_test_site(
+			subdomain="nobackupattempt", plan=plan.name, creation=frappe.utils.add_to_date(None, hours=-25)
+		)
+		self.team_email = frappe.db.get_value("Team", self.site.team, "user")
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -279,102 +283,99 @@ class TestAllBackupAttemptsFailedAlert(FrappeTestCase):
 		for _ in range(count):
 			create_test_site_backup(site=site, status=status, creation=creation, offsite=False)
 
-	def test_one_message_lists_every_site_that_hit_the_limit(self, send_raven_message):
+	def _alert_message(self, send_raven_message) -> str:
+		alert_on_sites_with_missing_backups()
+		return send_raven_message.call_args[0][0] if send_raven_message.called else ""
+
+	def _failed_row(self, site, failures: int, last_success: str = "Never") -> str:
+		link = frappe.utils.get_url(f"/app/site-backup?site={site.name}&status=Failure")
+		return f"| [{site.name}]({link}) | {site.server} | $25/mo | {self.team_email} | {failures} | {last_success} |"
+
+	def _missed_row(self, site, last_success: str = "Never") -> str:
+		link = frappe.utils.get_url(f"/app/site/{site.name}")
+		return f"| [{site.name}]({link}) | {site.server} | $25/mo | {self.team_email} | {last_success} |"
+
+	def test_failed_and_never_attempted_sites_are_separate_tables_in_one_message(self, send_raven_message):
 		self._create_backups(self.site.name, 3)
 		self._create_backups(self.other_site.name, 5)
 
-		alert_on_sites_with_all_backup_attempts_failed()
+		message = self._alert_message(send_raven_message)
 
 		send_raven_message.assert_called_once()
-		message = send_raven_message.call_args[0][0]
-		self.assertIn("**Sites With All Backup Attempts Failed** - 2", message)
-		team_email = frappe.db.get_value("Team", self.site.team, "user")
-		self.assertIn(f"| {self.site.server} | $25/mo | {team_email} | 3 | Never |", message)
-		self.assertIn(f"| {self.other_site.server} | $25/mo | {team_email} | 5 | Never |", message)
+		failed_table, missed_table = message.split("**Sites Without Any Backup Attempt**")
+		self.assertIn("**Sites With All Backup Attempts Failed**", failed_table)
+		self.assertIn(self._failed_row(self.site, 3), failed_table)
+		self.assertIn(self._failed_row(self.other_site, 5), failed_table)
+		self.assertIn(self._missed_row(self.idle_site), missed_table)
+
+	@patch("press.press.doctype.server.server_monitoring.BACKUP_DIGEST_SITE_LIMIT", 1)
+	def test_each_table_is_capped_at_the_site_limit_on_its_own(self, send_raven_message):
+		self._create_backups(self.site.name, 3)
+		self._create_backups(self.other_site.name, 5)
+		create_test_site(
+			subdomain="nobackupattempt2",
+			plan=self.site.plan,
+			creation=frappe.utils.add_to_date(None, hours=-25),
+		)
+
+		failed_table, missed_table = self._alert_message(send_raven_message).split(
+			"**Sites Without Any Backup Attempt**"
+		)
+
+		self.assertIn("| ... | 1 more sites | | | | |", failed_table)
+		self.assertRegex(missed_table, r"\| \.\.\. \| \d+ more sites \| \| \| \|")
 
 	def test_dedicated_server_plan_is_shown_as_dedicated(self, send_raven_message):
 		frappe.db.set_value("Site Plan", self.site.plan, "dedicated_server_plan", 1)
 		self._create_backups(self.site.name, 3)
 
-		alert_on_sites_with_all_backup_attempts_failed()
+		self.assertIn("| Dedicated |", self._alert_message(send_raven_message))
 
-		self.assertIn("| Dedicated |", send_raven_message.call_args[0][0])
-
-	def test_sites_below_the_limit_are_not_listed(self, send_raven_message):
+	def test_sites_below_the_failed_backup_limit_are_not_listed(self, send_raven_message):
 		self._create_backups(self.site.name, 3)
 		self._create_backups(self.other_site.name, 2)
 
-		alert_on_sites_with_all_backup_attempts_failed()
-
-		message = send_raven_message.call_args[0][0]
-		self.assertIn("**Sites With All Backup Attempts Failed** - 1", message)
-		self.assertNotIn(self.other_site.name, message)
+		self.assertNotIn(self.other_site.name, self._alert_message(send_raven_message))
 
 	def test_failures_older_than_a_day_are_not_counted(self, send_raven_message):
 		self._create_backups(self.site.name, 3, hours_ago=25)
 
-		alert_on_sites_with_all_backup_attempts_failed()
-
-		send_raven_message.assert_not_called()
+		self.assertNotIn(self.site.name, self._alert_message(send_raven_message))
 
 	def test_last_successful_backup_is_shown(self, send_raven_message):
 		self._create_backups(self.site.name, 1, status="Success", hours_ago=30)
 		self._create_backups(self.site.name, 3)
 
-		alert_on_sites_with_all_backup_attempts_failed()
-
-		message = send_raven_message.call_args[0][0]
-		self.assertNotIn("Never", message)
-
-
-@patch("press.press.doctype.server.server_monitoring.send_raven_message")
-class TestSitesWithoutBackupAttemptsAlert(FrappeTestCase):
-	def setUp(self):
-		plan = create_test_plan("Site", price_usd=25.0)
-		self.site = create_test_site(
-			subdomain="nobackupattempt", plan=plan.name, creation=frappe.utils.add_to_date(None, hours=-25)
-		)
-
-	def tearDown(self):
-		frappe.db.rollback()
-
-	def _alert_message(self, send_raven_message) -> str:
-		alert_on_sites_without_backup_attempts()
-		return send_raven_message.call_args[0][0] if send_raven_message.called else ""
-
-	def test_site_with_no_backup_attempt_in_the_last_day_is_listed(self, send_raven_message):
 		message = self._alert_message(send_raven_message)
 
-		self.assertIn("**Sites Without Any Backup Attempt**", message)
-		team_email = frappe.db.get_value("Team", self.site.team, "user")
-		self.assertIn(f"{self.site.name}) | {self.site.server} | $25/mo | {team_email} | Never |", message)
+		self.assertIn(f"| [{self.site.name}](", message)
+		self.assertNotIn(self._failed_row(self.site, 3), message)
 
-	def test_site_with_only_failed_backups_is_left_to_the_failed_backups_digest(self, send_raven_message):
-		create_test_site_backup(site=self.site.name, status="Failure", offsite=False)
+	def test_site_with_a_backup_attempt_in_the_last_day_is_not_listed_as_never_attempted(
+		self, send_raven_message
+	):
+		self._create_backups(self.idle_site.name, 1)
 
-		self.assertNotIn(self.site.name, self._alert_message(send_raven_message))
+		self.assertNotIn(self.idle_site.name, self._alert_message(send_raven_message))
 
-	def test_site_created_within_the_last_day_is_not_listed(self, send_raven_message):
-		self.site.db_set("creation", frappe.utils.add_to_date(None, hours=-2))
+	def test_site_activated_within_the_last_day_is_not_listed_as_never_attempted(self, send_raven_message):
+		log_site_activity(self.idle_site.name, "Activate Site")
 
-		self.assertNotIn(self.site.name, self._alert_message(send_raven_message))
+		self.assertNotIn(self.idle_site.name, self._alert_message(send_raven_message))
 
-	def test_site_activated_within_the_last_day_is_not_listed(self, send_raven_message):
-		log_site_activity(self.site.name, "Activate Site")
+	def test_site_on_server_with_scheduled_backups_skipped_is_not_listed_as_never_attempted(
+		self, send_raven_message
+	):
+		frappe.db.set_value("Server", self.idle_site.server, "skip_scheduled_backups", True)
 
-		self.assertNotIn(self.site.name, self._alert_message(send_raven_message))
+		self.assertNotIn(self.idle_site.name, self._alert_message(send_raven_message))
 
-	def test_site_on_server_with_scheduled_backups_skipped_is_not_listed(self, send_raven_message):
-		frappe.db.set_value("Server", self.site.server, "skip_scheduled_backups", True)
-
-		self.assertNotIn(self.site.name, self._alert_message(send_raven_message))
-
-	def test_last_successful_backup_older_than_a_day_is_shown(self, send_raven_message):
-		create_test_site_backup(
-			site=self.site.name, creation=frappe.utils.add_to_date(None, hours=-30), offsite=False
-		)
+	def test_last_successful_backup_older_than_a_day_is_shown_for_never_attempted_site(
+		self, send_raven_message
+	):
+		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=30)
 
 		message = self._alert_message(send_raven_message)
 
-		site_row = next(line for line in message.splitlines() if self.site.name in line)
-		self.assertFalse(site_row.endswith("| Never |"))
+		self.assertIn(f"| [{self.idle_site.name}](", message)
+		self.assertNotIn(self._missed_row(self.idle_site), message)
