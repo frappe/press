@@ -117,11 +117,11 @@ class TestPeriod(FrappeTestCase):
 		self.assertLess((datetime.now() - period.end).total_seconds(), 60)
 
 	def test_a_from_after_the_to_is_rejected(self):
-		with self.assertRaisesRegex(frappe.ValidationError, "From must be at least 5 minutes before To"):
+		with self.assertRaisesRegex(frappe.ValidationError, "The period must be at least 5 minutes long"):
 			get_period(frappe._dict(from_datetime="2026-09-10 12:00:00", to_datetime="2026-09-10 10:00:00"))
 
 	def test_a_period_too_short_for_two_prometheus_scrapes_is_rejected(self):
-		with self.assertRaisesRegex(frappe.ValidationError, "From must be at least 5 minutes before To"):
+		with self.assertRaisesRegex(frappe.ValidationError, "The period must be at least 5 minutes long"):
 			get_period(frappe._dict(from_datetime="2026-09-10 12:00:00", to_datetime="2026-09-10 12:00:01"))
 
 	def test_a_period_of_exactly_five_minutes_is_accepted(self):
