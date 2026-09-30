@@ -126,4 +126,6 @@ class TestScheduledDeploySettings(FrappeTestCase):
 			deploy_release_group(self.group_a)
 
 		mock_get_bench_update.assert_called_once_with(self.group_a, apps, ignore_permissions=True)
-		mock_get_bench_update.return_value.deploy.assert_called_once_with(ignore_permissions=True)
+		mock_get_bench_update.return_value.deploy.assert_called_once_with(
+			run_will_fail_check=True, ignore_permissions=True
+		)
