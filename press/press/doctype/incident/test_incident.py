@@ -882,3 +882,68 @@ class TestIncident(FrappeTestCase):
 		self.assertEqual(incident.status, "Auto-Resolved")
 		self.assertEqual(self.get_incident_logs(incident, "Sites Down resolved"), [])
 		self.assertEqual(self.get_incident_logs(incident, "Sites Down reported"), [])
+
+	def test_ignoring_incident_without_a_reason_is_rejected(self):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+
+		with self.assertRaisesRegex(
+			frappe.ValidationError, "Please give a reason for ignoring this incident."
+		):
+			incident.ignore("   ")
+		self.assertFalse(frappe.db.get_value("Incident", incident.name, "ignored"))
+
+	def test_ignored_incident_is_never_confirmed_but_auto_resolves_when_alert_clears(self):
+		site = create_test_site()
+		alert = create_test_prometheus_alert_rule()
+		create_test_alertmanager_webhook_log(site=site, alert=alert, status="firing")
+		incident: Incident = frappe.get_last_doc("Incident")
+		incident.ignore("Customer stopped their own database")
+
+		incident.db_set("creation", frappe.utils.add_to_date(frappe.utils.now(), minutes=-30))
+		validate_incidents()
+		self.assertEqual(frappe.db.get_value("Incident", incident.name, "status"), "Validating")
+
+		create_test_alertmanager_webhook_log(site=site, alert=alert, status="resolved")
+		resolve_incidents()
+		self.assertEqual(frappe.db.get_value("Incident", incident.name, "status"), "Auto-Resolved")
+
+	def test_ignored_incident_keeps_new_incidents_from_opening_while_alert_fires(self):
+		site = create_test_site()
+		create_test_alertmanager_webhook_log(site=site)
+		incident: Incident = frappe.get_last_doc("Incident")
+		incident.ignore("Customer stopped their own benches")
+		incident_count = frappe.db.count("Incident")
+
+		create_test_alertmanager_webhook_log(site=site)
+		self.assertEqual(frappe.db.count("Incident"), incident_count)
+
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("completed").create,
+	)
+	def test_ignored_incident_does_not_call_humans_even_when_calls_are_due(self, mock_calls_create):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+		frappe.get_last_doc("Incident Investigator").db_set("status", "Completed")
+		incident.db_set("status", "Acknowledged")
+		incident.ignore("Customer stopped their own benches")
+		incident.reload()
+		incident.db_set(
+			"modified",
+			incident.modified - timedelta(seconds=CALL_REPEAT_INTERVAL_NIGHT + 10),
+			update_modified=False,
+		)
+
+		resolve_incidents()
+		incident.call_humans()  # a call that was queued before the incident was ignored
+		mock_calls_create.assert_not_called()
+
+	@patch.object(Incident, "send_email_notification")
+	def test_ignored_incident_sends_no_email_when_resolved(self, mock_send_email_notification: Mock):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+		incident.ignore("Customer stopped their own benches")
+
+		incident.resolve()
+		mock_send_email_notification.assert_not_called()
