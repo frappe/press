@@ -147,6 +147,8 @@ class Bench(Document):
 
 	@staticmethod
 	def get_list_query(query):
+		from press.press.doctype.cluster.cluster import archived_clusters
+
 		Bench = frappe.qb.DocType("Bench")
 		Server = frappe.qb.DocType("Server")
 		Site = frappe.qb.DocType("Site")
@@ -166,6 +168,8 @@ class Bench(Document):
 				Server.public.as_("on_public_server"),
 			)
 			.where(Bench.status != "Archived")
+			# A bench in an archived region cannot be reached, so the dashboard omits it.
+			.where(Bench.cluster.notin(archived_clusters()))
 			.join(Server)
 			.on(Server.name == Bench.server)
 			.run(as_dict=1)

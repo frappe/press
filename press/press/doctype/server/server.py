@@ -132,6 +132,8 @@ class BaseServer(Document, TagHelpers):
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
+		from press.press.doctype.cluster.cluster import archived_clusters
+
 		Server = frappe.qb.DocType("Server")
 
 		# not a real field, so validate_filters strips it before it reaches the
@@ -153,6 +155,8 @@ class BaseServer(Document, TagHelpers):
 			)
 
 		query = query.where(Server.is_for_recovery != 1).where(Server.team == frappe.local.team().name)
+		# A server in an archived region cannot be reached, so the dashboard omits it.
+		query = query.where(Server.cluster.notin(archived_clusters()))
 		results = query.run(as_dict=True)
 
 		for result in results:

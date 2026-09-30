@@ -168,6 +168,7 @@ class ReleaseGroup(Document, TagHelpers):
 			query.where(ReleaseGroup.team == frappe.local.team().name)
 			.where(ReleaseGroup.enabled == 1)
 			.where(ReleaseGroup.public == 0)
+			.where(outside_archived_clusters())
 			.select(
 				site_count_query(server).as_("site_count"),
 				active_bench_count_query(server).as_("active_benches"),
@@ -2116,6 +2117,29 @@ def active_bench_count_query(server: str | None):
 		.where(Bench.status == "Active")
 	)
 	return query.where(Bench.server == server) if server else query
+
+
+def outside_archived_clusters():
+	"""A group is listed unless every one of its servers sits in an archived region.
+
+	A group that still has a server elsewhere keeps working there, so only a group
+	that is entirely in archived regions goes. A group with no servers yet stays.
+	"""
+	from press.press.doctype.cluster.cluster import archived_clusters
+
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
+	Server = frappe.qb.DocType("Server")
+
+	with_any_server = frappe.qb.from_(ReleaseGroupServer).select(ReleaseGroupServer.parent)
+	with_a_reachable_server = (
+		frappe.qb.from_(ReleaseGroupServer)
+		.join(Server)
+		.on(Server.name == ReleaseGroupServer.server)
+		.select(ReleaseGroupServer.parent)
+		.where(Server.cluster.notin(archived_clusters()))
+	)
+	return ReleaseGroup.name.notin(with_any_server) | ReleaseGroup.name.isin(with_a_reachable_server)
 
 
 @redis_cache(ttl=60)
