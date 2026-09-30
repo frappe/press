@@ -1063,6 +1063,60 @@ class TestServer(FrappeTestCase):
 
 		self.assertEqual(frappe.db.get_value("Server", server.name, "wazuh_agent_status"), "active")
 
+	def _wazuh_api_configured(self):
+		create_test_press_settings()
+		frappe.db.set_single_value("Press Settings", "wazuh_api_url", "https://wazuh.example.com:55000")
+		frappe.cache.delete_value("wazuh_alert_sent")
+
+	def test_unreachable_manager_alerts_on_raven(self):
+		"""Eight days of silent failures is what this exists to prevent."""
+		self._wazuh_api_configured()
+		with (
+			patch("press.press.doctype.server.server.WazuhManager", side_effect=Exception("boom")),
+			patch("press.press.doctype.server.server.log_error"),
+			patch("press.press.doctype.server.server.send_raven_message") as send,
+		):
+			sync_wazuh_agent_status()
+		send.assert_called_once()
+		self.assertIn("Cannot reach the Wazuh manager", send.call_args.args[0])
+
+	def test_repeated_failures_alert_only_once_per_cooldown(self):
+		"""A broken manager breaks all 24 runs a day. One message, not twenty-four."""
+		self._wazuh_api_configured()
+		with (
+			patch("press.press.doctype.server.server.WazuhManager", side_effect=Exception("boom")),
+			patch("press.press.doctype.server.server.log_error"),
+			patch("press.press.doctype.server.server.send_raven_message") as send,
+		):
+			for _ in range(3):
+				sync_wazuh_agent_status()
+		send.assert_called_once()
+
+	def test_silent_fleet_alerts_even_though_the_manager_answers(self):
+		self._wazuh_api_configured()
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", 1)
+		with (
+			patch("press.press.doctype.server.server.WazuhManager") as WazuhManager,
+			patch("press.press.doctype.server.server.send_raven_message") as send,
+		):
+			WazuhManager.return_value.agent_statuses.return_value = {server.name: "disconnected"}
+			sync_wazuh_agent_status()
+		send.assert_called_once()
+		self.assertIn("not reporting", send.call_args.args[0])
+
+	def test_healthy_fleet_does_not_alert(self):
+		self._wazuh_api_configured()
+		server = create_test_server()
+		server.db_set("is_wazuh_agent_installed", 1)
+		with (
+			patch("press.press.doctype.server.server.WazuhManager") as WazuhManager,
+			patch("press.press.doctype.server.server.send_raven_message") as send,
+		):
+			WazuhManager.return_value.agent_statuses.return_value = {server.name: "active"}
+			sync_wazuh_agent_status()
+		send.assert_not_called()
+
 	def test_sync_wazuh_agent_status_marks_missing_agents_unknown(self):
 		create_test_press_settings()
 		frappe.db.set_single_value("Press Settings", "wazuh_api_url", "https://wazuh.example.com:55000")

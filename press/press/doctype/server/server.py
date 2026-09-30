@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import collections
 import contextlib
 import datetime
 import hashlib
@@ -4754,6 +4755,10 @@ WAZUH_INSTALL_BATCH_SIZE = 20
 # The manager holds no record of the agent, so the install never registered it. A "never_connected"
 # agent is registered and simply cannot reach the manager, which no re-install repairs.
 UNREGISTERED_WAZUH_AGENT_STATUS = "unknown"
+# A manager outage breaks all 24 runs a day, so alert on the first and then stay quiet
+WAZUH_ALERT_COOLDOWN_KEY = "wazuh_alert_sent"
+WAZUH_ALERT_COOLDOWN = 6 * 60 * 60
+SILENT_AGENT_ALERT_RATIO = 0.2
 
 
 def is_wazuh_configured() -> bool:
@@ -4845,11 +4850,42 @@ def sync_wazuh_agent_status():
 		statuses = WazuhManager().agent_statuses()
 	except Exception:
 		log_error("Wazuh Agent Status Sync Exception")
+		alert_about_wazuh(
+			"Cannot reach the Wazuh manager, so every agent status below is stale. "
+			"The fleet may be unmonitored. See the Error Log for the traceback."
+		)
 		return
+	synced = collections.Counter()
 	for server_type in WAZUH_SERVER_TYPES:
 		filters = {"is_wazuh_agent_installed": 1, "status": ("!=", "Archived")}
 		for name in frappe.get_all(server_type, filters=filters, pluck="name"):
-			frappe.db.set_value(server_type, name, "wazuh_agent_status", statuses.get(name, "unknown"))
+			status = statuses.get(name, "unknown")
+			frappe.db.set_value(server_type, name, "wazuh_agent_status", status)
+			synced[status] += 1
+	alert_if_agents_stopped_reporting(synced)
+
+
+def alert_if_agents_stopped_reporting(synced: collections.Counter):
+	"""A healthy manager whose agents have all gone quiet looks exactly like a healthy fleet."""
+	total = sum(synced.values())
+	if not total:
+		return
+	silent = total - synced["active"]
+	if silent / total < SILENT_AGENT_ALERT_RATIO:
+		return
+	alert_about_wazuh(
+		f"{silent} of {total} Wazuh agents are not reporting: "
+		f"{synced['disconnected']} disconnected, {synced['never_connected']} never connected, "
+		f"{synced['unknown']} unknown to the manager."
+	)
+
+
+def alert_about_wazuh(message: str):
+	"""Once per cooldown at most. A broken manager breaks every hourly run, not just one."""
+	if frappe.cache.get_value(WAZUH_ALERT_COOLDOWN_KEY):
+		return
+	frappe.cache.set_value(WAZUH_ALERT_COOLDOWN_KEY, 1, expires_in_sec=WAZUH_ALERT_COOLDOWN)
+	send_raven_message(f"⚠️ Wazuh: {message}", RAVEN_SERVER_ALERTS_CHANNEL)
 
 
 def process_running_benches_on_server():
