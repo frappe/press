@@ -190,6 +190,9 @@ class Bench(Document):
 			"User SSH Key", {"user": frappe.session.user, "is_default": 1}, limit=1
 		)
 		doc.user_ssh_key = bool(user_ssh_key)
+		doc.ssh_access_denied_reason = frappe.get_cached_doc(
+			"Release Group", self.group
+		).ssh_access_denied_reason()
 		doc.proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 
 		group = frappe.db.get_value(

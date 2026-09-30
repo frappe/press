@@ -37,7 +37,11 @@
 
 			<div class="space-y-2 text-base text-ink-gray-7 leading-relaxed" v-else>
 				<p>
-					<template v-if="!$bench.doc.user_ssh_key">
+					<template v-if="$bench.doc.ssh_access_denied_reason">
+						{{ $bench.doc.ssh_access_denied_reason }}
+					</template>
+
+					<template v-else-if="!$bench.doc.user_ssh_key">
 						It looks like you haven't added your SSH public key. Go to
 						<router-link
 							:to="{ name: 'SettingsDeveloper' }"
@@ -80,6 +84,7 @@
 			#actions
 			v-if="
 				!certificate &&
+				!$bench.doc?.ssh_access_denied_reason &&
 				$bench.doc?.is_ssh_proxy_setup &&
 				$bench.doc?.user_ssh_key
 			"
