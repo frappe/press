@@ -3,10 +3,12 @@
 
 import math
 from collections import Counter
-from datetime import datetime
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import frappe
-from frappe.utils import add_to_date, rounded
+from frappe.utils import add_to_date, get_datetime, get_system_timezone, now_datetime, rounded
 
 from press.api.server import prometheus_query
 
@@ -25,11 +27,37 @@ QUEUED = ("Scheduled", "Pending")
 RUNNING = ("Preparing", "Running")
 
 
+@dataclass
+class Period:
+	start: datetime
+	end: datetime
+
+	@property
+	def seconds(self):
+		return int((self.end - self.start).total_seconds())
+
+
 def execute(filters=None):
 	frappe.only_for("System Manager")
-	window = DURATIONS[(filters or {}).get("duration") or "1 hour"]
-	builds = get_builds(window)
-	return get_columns(), get_data(window, builds), get_cluster_loss(window), get_chart(window, builds)
+	period = get_period(frappe._dict(filters or {}))
+	builds = get_builds(period)
+	return (
+		get_columns(),
+		get_data(period, builds),
+		get_cluster_loss(period),
+		get_chart(period.seconds, builds),
+	)
+
+
+def get_period(filters):
+	"""From and To win over Duration. Without a From, Duration counts back from To, or from now."""
+	end = get_datetime(filters.to_datetime or now_datetime())
+	start = get_datetime(
+		filters.from_datetime or add_to_date(end, seconds=-DURATIONS[filters.duration or "1 hour"])
+	)
+	if start >= end:
+		frappe.throw("From must be before To")
+	return Period(start, end)
 
 
 def get_columns():
@@ -69,14 +97,14 @@ def get_columns():
 	]
 
 
-def get_data(window, builds):
+def get_data(period, builds):
 	servers = get_servers()
 	names = [server.name for server in servers]
 	builds_by_server = group_by_server(builds)
 	active = get_active_builds()
-	pull = get_pull_seconds(window)
-	stats = get_fleet_stats(names, window)
-	disk = get_fleet_disk_usage(names)
+	pull = get_pull_seconds(period)
+	stats = get_fleet_stats(names, period)
+	disk = get_fleet_disk_usage(names, period.end)
 	rows = []
 	for server in servers:
 		server_builds = builds_by_server.get(server.name, [])
@@ -90,7 +118,7 @@ def get_data(window, builds):
 				"status": server.status,
 				"disk": disk[server.name],
 				"builds": len(server_builds),
-				"builds_per_hour": rounded(len(server_builds) / (window / 3600), 1),
+				"builds_per_hour": rounded(len(server_builds) / (period.seconds / 3600), 1),
 				"running_builds": active.get(server.name, {}).get("running", 0),
 				"queued_builds": active.get(server.name, {}).get("queued", 0),
 				"median_wait": percentile(waits, 0.5),
@@ -116,11 +144,12 @@ def get_servers():
 	return servers
 
 
-def get_fleet_stats(servers, window):
-	"""CPU, memory and network, averaged over the window, for every server in one query each.
+def get_fleet_stats(servers, period):
+	"""CPU, memory and network, averaged over the period, for every server in one query each.
 
 	Loss slows every image push and pull, so the network metrics matter as much as the CPU ones.
 	"""
+	window = period.seconds
 	node = f'job="node", instance=~"{instances(servers)}"'
 	interface = f'{node}, device!="lo"'
 	memory = f"1 - node_memory_MemAvailable_bytes{{{node}}} / node_memory_MemTotal_bytes{{{node}}}"
@@ -139,7 +168,7 @@ def get_fleet_stats(servers, window):
 	}
 	stats = {server: dict.fromkeys(queries, 0) for server in servers}
 	for name, query in queries.items():
-		for server, value in latest_values(query).items():
+		for server, value in latest_values(query, period.end).items():
 			if server in stats:
 				stats[server][name] = value
 	return stats
@@ -153,13 +182,16 @@ def instances(servers):
 	return "|".join(server.replace(".", r"\\.") for server in servers)
 
 
-def latest_values(query, key=lambda metric: metric.get("instance")):
-	"""Last point of every series, keyed by label. A gap and a NaN both read as zero.
+def latest_values(query, end, key=lambda metric: metric.get("instance")):
+	"""Last point of every series up to `end`, keyed by label. A gap and a NaN both read as zero.
 
 	The window lives inside the query, so ask Prometheus for a short range only. A range as
 	long as the window rounds to whole window boundaries and hides the last several minutes.
 	"""
-	datasets = prometheus_query(query, key, "Asia/Kolkata", 120, 60)["datasets"]
+	end = end.replace(tzinfo=ZoneInfo(get_system_timezone()))  # Prometheus reads epoch seconds
+	datasets = prometheus_query(
+		query, key, "Asia/Kolkata", 120, 60, use_timestamps=True, start=end - timedelta(seconds=120), end=end
+	)["datasets"]
 	values = {}
 	for dataset in datasets:
 		points = [point for point in dataset["values"] if point is not None]
@@ -174,12 +206,13 @@ def last_number(points):
 	return points[-1]
 
 
-def get_fleet_disk_usage(servers):
+def get_fleet_disk_usage(servers, end):
 	"""Used percent of every real mountpoint, as "/ 41%, /opt/volumes/docker 88%"."""
 	filesystem = f'job="node", instance=~"{instances(servers)}", fstype!~"tmpfs|squashfs|overlay|fuse.lxcfs"'
 	used = latest_values(
 		f"100 * (1 - node_filesystem_avail_bytes{{{filesystem}}}"
 		f" / node_filesystem_size_bytes{{{filesystem}}})",
+		end,
 		lambda metric: (metric.get("instance"), metric.get("mountpoint")),
 	)
 	mountpoints = {server: [] for server in servers}
@@ -197,12 +230,12 @@ def percentile(values, fraction):
 	return values[min(int(len(values) * fraction), len(values) - 1)]
 
 
-def get_builds(window):
-	"""Builds that started inside the window."""
+def get_builds(period):
+	"""Builds that started inside the period."""
 	return frappe.get_all(
 		"Deploy Candidate Build",
 		{
-			"build_start": (">=", add_to_date(None, seconds=-window)),
+			"build_start": ("between", (period.start, period.end)),
 			"build_server": ("is", "set"),
 		},
 		["build_server", "status", "pending_start", "build_start", "build_end"],
@@ -243,14 +276,14 @@ def get_active_builds():
 	return active
 
 
-def get_pull_seconds(window):
+def get_pull_seconds(period):
 	"""Median New Bench job. Every one pulls an image, so it tracks how fast the registry serves."""
 	jobs = frappe.get_all(
 		"Agent Job",
 		{
 			"job_type": "New Bench",
 			"status": "Success",
-			"end": (">=", add_to_date(None, seconds=-window)),
+			"end": ("between", (period.start, period.end)),
 		},
 		["start", "end"],
 	)
@@ -275,16 +308,19 @@ def floor_to_bucket(moment, bucket):
 	return datetime.fromtimestamp(moment.timestamp() // bucket * bucket)
 
 
-def get_cluster_loss(window):
+def get_cluster_loss(period):
 	"""Packet loss per cluster, above the table. A bad region shows here before a server does."""
+	window = period.seconds
 	retransmit = latest_values(
 		f'avg by (cluster) (rate(node_netstat_Tcp_RetransSegs{{job="node"}}[{window}s])'
 		f' / rate(node_netstat_Tcp_OutSegs{{job="node"}}[{window}s])) * 100',
+		period.end,
 		lambda metric: metric.get("cluster") or "No cluster",
 	)
 	drops = latest_values(
 		f'sum by (cluster) (rate(node_network_receive_drop_total{{job="node", device!="lo"}}[{window}s])'
 		f' + rate(node_network_transmit_drop_total{{job="node", device!="lo"}}[{window}s]))',
+		period.end,
 		lambda metric: metric.get("cluster") or "No cluster",
 	)
 	rows = []
