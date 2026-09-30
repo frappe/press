@@ -70,7 +70,7 @@ def callback(code: str | None = None, state: str | None = None):  # noqa: C901
 
 	team_name, team_enabled = frappe.db.get_value("Team", {"user": email}, ["name", "enabled"]) or [0, 0]
 
-	if team_name and not team_enabled:
+	if team_name and not team_enabled and product_trial:
 		frappe.throw(_("Account {0} has been deactivated").format(email))
 		return None
 
@@ -91,9 +91,13 @@ def callback(code: str | None = None, state: str | None = None):  # noqa: C901
 
 		# login to existing account
 		frappe.local.login_manager.login_as(email)
-		team = frappe.get_doc("Team", team_name)
 		frappe.local.response.type = "redirect"
-		frappe.local.response.location = f"/dashboard{team.get_route_on_login()}"
+		if not team_enabled:
+			# route lookup fails for a disabled team, the dashboard asks them to reactivate
+			frappe.local.response.location = "/dashboard"
+		else:
+			team = frappe.get_doc("Team", team_name)
+			frappe.local.response.location = f"/dashboard{team.get_route_on_login()}"
 		return None
 
 	# create account request

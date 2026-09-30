@@ -107,6 +107,23 @@ class TestLoginOtp(FrappeTestCase):
 
 		self.assertEqual(frappe.session.user, self.team.user)
 
+	def test_login_canonicalises_mixed_case_and_whitespace_across_both_steps(self, send_otp_mail):
+		"""Signup stores the address lowercased, so login must key its OTP off the
+		same canonical form. The code is requested under one non-canonical spelling
+		and verified under a different one: it only matches if send_otp and
+		verify_otp_and_login strip and lowercase to the same key."""
+		send_otp(f"  {self.team.user.upper()}  ")
+
+		verify_otp_and_login(self.team.user.title(), code_that_was_mailed(send_otp_mail))
+
+		self.assertEqual(frappe.session.user, self.team.user)
+
+	def test_send_otp_refuses_a_non_string_email(self, send_otp_mail):
+		"""Guest callers can send any JSON type. A list must be rejected at the
+		boundary, not reach .strip() and raise an internal AttributeError."""
+		with self.assertRaisesRegex(Exception, "Invalid Email"):
+			send_otp(["someone@example.com"])
+
 	def test_send_otp_still_refuses_an_address_with_no_user(self, send_otp_mail):
 		with self.assertRaisesRegex(Exception, "Please sign up first"):
 			send_otp("no-such-person@example.com")

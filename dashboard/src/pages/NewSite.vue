@@ -904,29 +904,22 @@ export default {
 		localisationAppCountries() {
 			if (!this.selectedVersionApps || !this.selectedVersion) return []
 
-			// Get the bench_app_sources for the selected version
-			const versionAppSources =
-				this.selectedVersion?.group?.bench_app_sources || []
+			const sources = (this.selectedVersion.group?.bench_app_sources || [])
+				.join('\n')
+				.toLowerCase()
 
-			// Get all localisation app details from selected apps
-			const localisationAppDetails = this.selectedVersionApps.flatMap(
-				(app) => app.localisation_apps,
+			const countries = new Set(
+				this.selectedVersionApps
+					.flatMap((app) => app.localisation_apps)
+					.filter((app) =>
+						sources.includes(app?.marketplace_app?.toLowerCase()),
+					)
+					.map((app) => app.country),
 			)
 
-			// Filter to only include countries whose localisation app is available in the selected version
-			return localisationAppDetails
-				.filter((app) => {
-					if (!app?.marketplace_app) return false
-					// Check if this localisation app has a source in the selected version's bench_app_sources
-					return versionAppSources.some((source) =>
-						source.toLowerCase().includes(app.marketplace_app.toLowerCase()),
-					)
-				})
-				.map((app) => ({
-					label: app?.country,
-					value: app?.country,
-				}))
-				.sort((a, b) => a.label.localeCompare(b.label))
+			return [...countries]
+				.sort((a, b) => a.localeCompare(b))
+				.map((country) => ({ label: country, value: country }))
 		},
 		selectedPlan() {
 			if (!plans?.data?.length) return

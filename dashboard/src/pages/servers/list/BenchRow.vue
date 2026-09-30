@@ -2,28 +2,27 @@
 import {
 	Badge,
 	Button,
+	createDocumentResource,
+	createListResource,
 	Dropdown,
 	Spinner,
 	Tooltip,
-	createDocumentResource,
-	createListResource,
 } from 'frappe-ui'
-
-import { renderDialog } from '@/utils/components'
 import {
-	h,
-	ref,
-	defineAsyncComponent,
-	onBeforeUnmount,
 	computed,
+	defineAsyncComponent,
+	h,
+	onBeforeUnmount,
 	reactive,
+	ref,
 	watch,
 } from 'vue'
-import { dropBench } from './utils'
+import Collapsable from '@/components/common/Collapsable.vue'
+import { renderDialog } from '@/utils/components'
 
 import { dayjsLocal } from '@/utils/dayjs'
 import { getSiteStatusBadge } from '@/utils/site'
-import Collapsable from '@/components/common/Collapsable.vue'
+import { dropBench } from './utils'
 
 interface Props {
 	data: any
@@ -40,12 +39,13 @@ const sites = createListResource({
 	fields: ['name', 'status', 'bench', 'creation', 'host_name'],
 	filters: {
 		group: props.data.name,
+		server: props.server.name,
 		host_name: ['is', 'set'],
 		skip_team_filter_for_system_user_and_support_agent: true,
 	},
 	orderBy: 'creation desc',
 	pageLength: 5,
-	cache: ['sitesRes', props.data.name],
+	cache: ['sitesRes', props.data.name, props.server.name],
 	auto: true,
 })
 
@@ -128,7 +128,13 @@ const addSite = (e, bench) => {
 	const AddSiteDialog = defineAsyncComponent(
 		() => import('./AddSiteDialog.vue'),
 	)
-	renderDialog(h(AddSiteDialog, { bench, onSiteCreated: () => sites.reload() }))
+	renderDialog(
+		h(AddSiteDialog, {
+			bench,
+			server: props.server,
+			onSiteCreated: () => sites.reload(),
+		}),
+	)
 }
 
 const benchOptions = (bench) => [
@@ -140,7 +146,10 @@ const benchOptions = (bench) => [
 	{ label: 'App Marketplace', route: '/apps', icon: LucideStore },
 	{
 		label: 'Bench Actions',
-		route: { name: 'Release Group Detail Actions', params: { name: bench.name } },
+		route: {
+			name: 'Release Group Detail Actions',
+			params: { name: bench.name },
+		},
 		icon: LucideSlidersVertical,
 	},
 	{
@@ -223,7 +232,7 @@ onBeforeUnmount(() => {
 		<template #header="{ opened, toggle }">
 			<div
 				:class="[
-					'row-grid px-4 py-2 cursor-pointer items-center',
+					'row-grid mx-4 py-2 cursor-pointer items-center',
 					(totalLength - 1 == bench_i && opened) || bench_i != totalLength - 1
 						? 'bordered'
 						: '',
@@ -317,7 +326,7 @@ onBeforeUnmount(() => {
 
 		<div
 			v-if="sites?.data?.length > 0"
-			class="row-grid px-4 py-2 items-center text-sm text-ink-gray-5"
+			class="row-grid mx-4 py-2 items-center text-sm text-ink-gray-5"
 		>
 			<span />
 			<span class="ml-6">Site</span>
@@ -328,7 +337,7 @@ onBeforeUnmount(() => {
 
 		<div
 			v-else-if="!sites?.list?.loading"
-			class="row-grid px-4 py-2"
+			class="row-grid mx-4 py-2"
 			:class="[bench_i != totalLength - 1 ? 'bordered' : '']"
 		>
 			<span />
@@ -348,7 +357,7 @@ onBeforeUnmount(() => {
 			v-for="(site, site_i) in sites?.data"
 			:key="site.name"
 			:class="[
-				'row-grid px-4 py-2 items-center',
+				'row-grid mx-4 py-2 items-center',
 				site_i != sites?.data?.length - 1 || bench_i != totalLength - 1
 					? 'bordered'
 					: '',
@@ -388,9 +397,11 @@ onBeforeUnmount(() => {
 				{{ site.status }}
 			</Badge>
 
-			<span class="text-ink-gray-8"
-				>{{ dayjsLocal(site.creation).fromNow() }}</span
-			>
+			<Tooltip :text="dayjsLocal(site.creation).format('LLLL')">
+				<span class="text-ink-gray-8"
+					>{{ dayjsLocal(site.creation).fromNow() }}</span
+				>
+			</Tooltip>
 			<Dropdown :options="siteOptions(site)">
 				<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
 			</Dropdown>
@@ -398,7 +409,7 @@ onBeforeUnmount(() => {
 
 		<div
 			v-if="sites.hasNextPage"
-			class="px-4 py-2 border-t dark:border-outline-gray-2"
+			class="mx-4 py-2 border-t dark:border-outline-gray-2"
 		>
 			<Button
 				variant="ghost"

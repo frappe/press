@@ -229,7 +229,7 @@ function requirementsFor(tier, idx) {
 	if (!tier.paying_user_since && !tier.last_invoice_amount) {
 		return [
 			{
-				text: 'Payment method added or prepaid credits available',
+				text: 'Payment method not added or prepaid credits available',
 				met: !!m.has_payment_method,
 			},
 		]

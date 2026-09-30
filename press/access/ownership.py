@@ -29,6 +29,7 @@ GLOBAL_DOCTYPES = frozenset(
 		"Partner Tier",
 		"Press Settings",
 		"Product Trial",
+		"S3 Storage Plan",
 		"Server Plan",
 		"Site Plan",
 	}

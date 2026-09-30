@@ -3,13 +3,25 @@
 
 frappe.ui.form.on('NAT Server', {
 	refresh(frm) {
-		[
+		;[
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
 			[__('Ping Ansible'), 'ping_ansible', true, frm.doc.is_server_setup],
 			[__('Archive Server'), 'archive', true, frm.doc.is_server_setup],
 			[__('Get Static IP'), 'get_static_ip', true, !frm.doc.is_static_ip],
 			[__('Attach NAT Security Group'), 'attach_nat_security_group', true],
+			[
+				__('Install Wazuh Agent'),
+				'install_wazuh_agent',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Uninstall Wazuh Agent'),
+				'uninstall_wazuh_agent',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

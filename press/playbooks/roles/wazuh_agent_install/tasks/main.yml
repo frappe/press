@@ -34,19 +34,59 @@
     repo: "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main"
     state: present
     filename: wazuh
+    update_cache: no
 
-- name: Update Packages
-  apt:
-    update_cache: yes
+# Read only the Wazuh list. A full update fails on any stale third-party repo the server
+# carries, and a dead MariaDB mirror must not stop us from installing the agent.
+- name: Update Wazuh Repository
+  command: >
+    apt-get update
+    -o Dir::Etc::sourcelist=sources.list.d/wazuh.list
+    -o Dir::Etc::sourceparts=-
+    -o APT::Get::List-Cleanup=0
+  register: wazuh_repository_update
+  until: wazuh_repository_update.rc == 0
+  retries: 5
+  delay: 10
+  changed_when: false
 
-- name: Install Agent
-  apt:
-    name: wazuh-agent
-    state: present
-    force: yes
-  environment:
-    WAZUH_MANAGER: "{{ wazuh_manager }}"
-    WAZUH_AGENT_NAME: "{{ wazuh_agent_name }}"
+- name: Install Pinned Agent
+  block:
+    # A held package blocks the install when the pinned version changes.
+    - name: Unhold Agent
+      command: apt-mark unhold wazuh-agent
+      changed_when: false
+
+    - name: Install Agent
+      apt:
+        name: "wazuh-agent={{ wazuh_agent_version }}"
+        state: present
+        force: yes
+      environment:
+        WAZUH_MANAGER: "{{ wazuh_manager }}"
+        WAZUH_AGENT_NAME: "{{ wazuh_agent_name }}"
+  always:
+    # Stop apt upgrade from moving the agent ahead of the manager, even after a failed install.
+    - name: Hold Agent
+      dpkg_selections:
+        name: wazuh-agent
+        selection: hold
+
+# apt is a no-op when the pinned version is already installed, so the postinst never re-reads
+# WAZUH_MANAGER. Register explicitly when the agent holds no key, or when Press says the manager
+# has dropped it and the key on disk is stale.
+- name: Check Enrollment
+  stat:
+    path: /var/ossec/etc/client.keys
+  register: wazuh_client_keys
+
+- name: Enroll Agent
+  command: /var/ossec/bin/agent-auth -m {{ wazuh_manager }} -A {{ wazuh_agent_name }}
+  when: >
+    wazuh_force_enrollment | default(false) | bool
+    or not wazuh_client_keys.stat.exists
+    or wazuh_client_keys.stat.size == 0
+  notify: restart wazuh-agent
 
 - name: Enable and Start Agent
   service:

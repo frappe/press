@@ -1,7 +1,9 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
+from __future__ import annotations
+
+import frappe
 from frappe.model.document import Document
 
 
@@ -24,4 +26,22 @@ class BackupBucket(Document):
 		replication_region: DF.Data | None
 	# end: auto-generated types
 
-	pass
+
+def get_replication_target(bucket_name: str) -> dict | None:
+	"""Where reads go once a bucket replicates, or None when it doesn't.
+
+	Backups are written to the primary and replicated out, so the replica is what still
+	holds an object the primary's lifecycle rules have already expired.
+	"""
+	if not frappe.db.exists("Backup Bucket", bucket_name):
+		return None
+
+	bucket: BackupBucket = frappe.get_doc("Backup Bucket", bucket_name)
+	if not bucket.replication_enabled:
+		return None
+
+	return {
+		"name": bucket.replication_bucket,
+		"region": bucket.replication_region,
+		"endpoint_url": bucket.replication_endpoint_url,
+	}

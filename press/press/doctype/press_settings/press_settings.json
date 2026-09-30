@@ -262,6 +262,7 @@
 		"realtime_job_updates",
 		"disable_agent_job_deduplication",
 		"disable_binlog_indexer_service",
+		"disable_database_audit_service",
 		"enable_mcp",
 		"column_break_rdlr",
 		"disable_auto_retry",
@@ -292,6 +293,7 @@
 		"tls_renewal_queue_size",
 		"security_tab",
 		"wazuh_server",
+		"wazuh_agent_version",
 		"wazuh_api_url",
 		"wazuh_api_username",
 		"wazuh_api_password",
@@ -1615,6 +1617,12 @@
 			"label": "Wazuh Server"
 		},
 		{
+			"description": "Exact apt version of wazuh-agent to install, e.g. 4.12.0-1. Must not be newer than the manager.",
+			"fieldname": "wazuh_agent_version",
+			"fieldtype": "Data",
+			"label": "Wazuh Agent Version"
+		},
+		{
 			"fieldname": "wazuh_api_url",
 			"fieldtype": "Data",
 			"label": "Wazuh API URL"
@@ -1656,6 +1664,12 @@
 			"fieldname": "disable_binlog_indexer_service",
 			"fieldtype": "Check",
 			"label": "Disable Binlog Indexer Service"
+		},
+		{
+			"default": "0",
+			"fieldname": "disable_database_audit_service",
+			"fieldtype": "Check",
+			"label": "Disable Database Audit Service"
 		},
 		{
 			"fieldname": "default_server_plan_type",
@@ -1889,7 +1903,7 @@
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-07-16 16:22:28.209775",
+	"modified": "2026-09-11 13:26:41.047658",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",

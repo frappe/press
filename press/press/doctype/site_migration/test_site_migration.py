@@ -269,7 +269,19 @@ class TestSiteMigration(FrappeTestCase):
 
 		with fake_agent_job(
 			{
-				"Update Site Pull": {"status": "Failure"},
+				# Only a failure at or past the move marks the site fatal.
+				"Update Site Pull": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Enable Maintenance Mode", "status": "Success"},
+						{"name": "Wait for Enqueued Jobs", "status": "Success"},
+						{"name": "Move Site", "status": "Failure"},
+						{"name": "Bench Setup NGINX", "status": "Skipped"},
+						{"name": "Bench Setup NGINX Target", "status": "Skipped"},
+						{"name": "Reload NGINX", "status": "Skipped"},
+						{"name": "Disable Maintenance Mode", "status": "Skipped"},
+					],
+				},
 				"Recover Failed Site Update": {"status": "Failure"},
 			}
 		):

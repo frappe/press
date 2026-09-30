@@ -29,6 +29,7 @@ import {
 	nextTick,
 	onBeforeUnmount,
 } from 'vue'
+import { useRouter } from 'vue-router'
 import { confirmDialog, renderDialog } from '@/utils/components'
 import { getTeam } from '@/data/team'
 
@@ -36,6 +37,7 @@ import { secsToDuration, date, duration, sanitizeHtml } from '@/utils/format'
 
 const team = getTeam()
 const socket = window.$socket
+const router = useRouter()
 
 interface Props {
 	deployview: boolean
@@ -435,6 +437,66 @@ const stopPipeline = () => {
 		},
 	})
 }
+
+const activeBuild = computed(
+	() =>
+		builds.value[activeBuildId.value]?.doc ??
+		getCachedDocumentResource('Release Group', props.name)?.doc
+			?.deploy_information?.last_deploy,
+)
+
+const redeployDialogs = {
+	cache: {
+		title: 'Redeploy Without Cache',
+		message: `
+				This deploy failed due to a build cache issue.<br><br>
+				<div class="text-bg-base bg-surface-gray-2 p-2 rounded-md">
+				This will start a <strong>fresh build with the Docker build cache disabled</strong>,
+				which can take significantly longer than a cached build.
+				</div>
+				`,
+	},
+	retry: {
+		title: 'Redeploy',
+		message:
+			'This will run the build again with the same app releases.<br><br>Use this if the build failed for a temporary reason, like a network timeout. If an app caused the failure, push a fix and deploy the new release instead.',
+	},
+}
+
+const redeploy = (noCache: boolean) => {
+	const dialog = redeployDialogs[noCache ? 'cache' : 'retry']
+
+	confirmDialog({
+		...dialog,
+		primaryAction: {
+			label: dialog.title,
+			variant: 'solid',
+			theme: 'red',
+			onClick({ hide }) {
+				return createResource({
+					url: 'press.api.bench.redeploy',
+					params: {
+						name: props.name,
+						dc_name: activeBuild.value.name,
+						no_cache: noCache,
+					},
+				})
+					.fetch()
+					.then((newBuild) => {
+						hide()
+						router.push({
+							name: 'Deploy Candidate',
+							params: { id: newBuild, name: props.name },
+						})
+					})
+					.catch(() => {
+						hide()
+						toast.error(`Unable to ${dialog.title.toLowerCase()}`)
+					})
+			},
+		},
+	})
+}
 </script>
 
 <template>
@@ -486,6 +548,13 @@ const stopPipeline = () => {
 				theme="red"
 			>
 				Stop Deploy
+			</Button>
+
+			<Button
+				@click="redeploy(activeBuild.is_cache_failure)"
+				v-if="!deployview && activeBuild && !['Draft', 'Preparing', 'Running', 'Pending'].includes(activeBuild.status)"
+			>
+				{{ activeBuild.is_cache_failure ? 'Redeploy Without Cache' : 'Redeploy' }}
 			</Button>
 
 			<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">

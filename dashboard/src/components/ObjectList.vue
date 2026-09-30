@@ -292,6 +292,8 @@ export default {
 		if (this.$list?.list) {
 			const filters = this.$list.list?.params?.filters || {}
 			for (let control of this.filterControls) {
+				// A local control drives the page, not the query, so nothing syncs it back
+				if (control.local) continue
 				if (control.value !== filters[control.fieldname]) {
 					control.value = filters[control.fieldname]
 				}
@@ -361,8 +363,14 @@ export default {
 					label: '',
 					key: '__actions',
 					type: 'Actions',
-					width: '100px',
+					width: '32px',
 					align: 'right',
+					headerClass: 'sticky right-0 -mr-2 pr-2 rounded-r bg-surface-gray-2',
+					cellClass: [
+						'sticky right-0 -mr-2 pr-2 rounded-r bg-surface-white',
+						(this.options.onRowClick || this.options.route) &&
+							'group-hover/row:bg-surface-menu-bar',
+					],
 					actions: (row) => this.options.rowActions({ ...this.context, row }),
 				})
 			}
@@ -481,7 +489,8 @@ export default {
 			}
 		},
 		isLoading() {
-			if (this.options.data) return false
+			if (this.options.data)
+				return this.options.isLoading?.(this.context) || false
 			return this.$list?.list?.loading || this.$list?.loading
 		},
 		totalCount() {
@@ -548,6 +557,12 @@ export default {
 			// If you provide `updateFilters` function to options, it will be called with the updated filters
 			// This is useful, when we are not using any standard resource and still want to update filters
 
+			// A local control changes what the page shows, so it never reaches the resource
+			if (control.local) {
+				this.options.updateFilters?.({ [control.fieldname]: control.value })
+				return
+			}
+
 			if (this.options.resource && !this.$list.filters) {
 				const params = {
 					...this.$list.params,
@@ -568,6 +583,7 @@ export default {
 
 			let filters = { ...this.$list.filters }
 			for (let c of this.filterControls) {
+				if (c.local) continue
 				filters[c.fieldname] = c.value
 			}
 			this.$list.update({

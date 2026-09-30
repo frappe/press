@@ -36,6 +36,13 @@ class ServerFirewall(Document):
 		"rules",
 	)
 
+	# The firewall page is an editor: it flips the switch and rewrites the rules
+	# table, then saves both through `set_value`.
+	dashboard_editable_fields = (
+		"enabled",
+		"rules",
+	)
+
 	def before_validate(self):
 		self.deduplicate_rules()
 
@@ -113,10 +120,13 @@ class ServerFirewall(Document):
 
 	def _sync_nginx(self):
 		"""Update Nginx access rules with allowed and denied IPs."""
+		server = self.server
 		ip_accept = self.get_allowed_ips_for_nginx()
 		ip_drop = [rule.source for rule in self.rules if rule.action == "Deny" and rule.source]
 		try:
-			return self.server.agent.update_nginx_access(ip_accept, ip_drop)
+			# The proxy IP travels with the rules: nginx needs it to read the
+			# visitor's address off X-Real-IP instead of matching the proxy.
+			return server.agent.update_nginx_access(ip_accept, ip_drop, server.get_proxy_ip())
 		except Exception:
 			log_error("Failed to sync nginx access rules", doc=self)
 

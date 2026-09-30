@@ -47,6 +47,12 @@
 			<p><a href="{{ upi_autopay_link }}">Manage UPI Autopay</a></p>
 			<p><a href="{{ billing_link }}">Pay Now</a></p>
 
+		{% elif error_reason == "TOKEN_NOT_CONFIRMED" %}
+			<p>Your UPI Autopay token was never confirmed for recurring payments, so we were unable to auto-debit <strong>{{ amount }}</strong>{% if upi_vpa %} from your UPI account (<strong>{{ upi_vpa }}</strong>){% endif %}.</p>
+			<p>We have cancelled this mandate and switched your payment mode to <strong>Prepaid Credits</strong> so that your sites are not interrupted. Please set up a new UPI Autopay mandate or add credits to your account.</p>
+			<p><a href="{{ upi_autopay_link }}">Set Up UPI Autopay</a></p>
+			<p><a href="{{ billing_link }}">Add Credits</a></p>
+
 		{% elif error_reason == "MANDATE_CANCELLED" %}
 			<p>Your UPI Autopay mandate has been <strong>cancelled</strong>. Your account currently has no active payment method.</p>
 			<p>To ensure uninterrupted service and avoid site suspension, please set up a new UPI Autopay mandate or update your billing details with a valid payment method.</p>

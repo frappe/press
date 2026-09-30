@@ -91,7 +91,7 @@ const toggleSort = () => {
 		<TextInput
 			placeholder="Search server"
 			:debounce="500"
-			@update:modelValue="v => applyFilters('title', ['like', `%${v.toLowerCase()}%`])"
+			@update:modelValue="v => applyFilters('_search', v || undefined)"
 		>
 			<template #prefix>
 				<lucide-search class="size-4 text-ink-gray-5" />

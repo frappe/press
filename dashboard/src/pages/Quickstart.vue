@@ -35,6 +35,11 @@ const canCreateProductTrial = computed(
 	() => product && !existingProductSite.value,
 )
 
+const productTrialName = computed(() => {
+	const name = productTrial.data?.product_trial?.title || product
+	return /frappe/i.test(name) ? name : `Frappe ${name}`
+})
+
 const sitePlan = (site) =>
 	site.trial_end_date ? trialDays(site.trial_end_date) : null
 
@@ -158,9 +163,7 @@ onMounted(() => {
 			class="w-full mt-3 capitalize"
 			:route="{ name: 'SignupSetup', params: { productId: product } }"
 		>
-			Start Frappe
-			{{ productTrial.data?.product_trial?.title || product }}
-			Trial
+			Start {{ productTrialName }} Trial
 		</Button>
 
 		<Button :route="{ name: 'Site List' }" class="w-full mt-2">

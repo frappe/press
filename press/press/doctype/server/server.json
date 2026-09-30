@@ -22,6 +22,9 @@
 		"is_server_setup",
 		"is_wazuh_agent_installed",
 		"wazuh_agent_status",
+		"wazuh_install_last_attempt",
+		"is_yara_installed",
+		"yara_install_last_attempt",
 		"is_auditd_setup",
 		"is_server_prepared",
 		"is_server_renamed",
@@ -33,6 +36,7 @@
 		"use_agent_job_callbacks",
 		"is_pyspy_setup",
 		"halt_agent_jobs",
+		"disable_agent_update",
 		"stop_deployments",
 		"is_for_recovery",
 		"is_monitoring_disabled",
@@ -169,6 +173,25 @@
 			"fieldname": "wazuh_agent_status",
 			"fieldtype": "Data",
 			"label": "Wazuh Agent Status",
+			"read_only": 1
+		},
+		{
+			"fieldname": "wazuh_install_last_attempt",
+			"fieldtype": "Datetime",
+			"label": "Wazuh Install Last Attempt",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_yara_installed",
+			"fieldtype": "Check",
+			"label": "Is YARA Installed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "yara_install_last_attempt",
+			"fieldtype": "Datetime",
+			"label": "YARA Install Last Attempt",
 			"read_only": 1
 		},
 		{
@@ -531,7 +554,7 @@
 		},
 		{
 			"default": "0",
-			"description": "Stream backups directly to offsite storage instead of staging them on the server",
+			"description": "Stream backups directly to offsite storage instead of staging them on the server. Set during provisioning once rclone is installed",
 			"fieldname": "stream_backups",
 			"fieldtype": "Check",
 			"label": "Stream Backups"
@@ -641,6 +664,13 @@
 			"fieldname": "halt_agent_jobs",
 			"fieldtype": "Check",
 			"label": "Halt Agent Jobs"
+		},
+		{
+			"default": "0",
+			"description": "Don't update the agent on this server",
+			"fieldname": "disable_agent_update",
+			"fieldtype": "Check",
+			"label": "Disable Agent Update"
 		},
 		{
 			"default": "x86_64",
@@ -844,7 +874,7 @@
 			"link_fieldname": "app_server"
 		}
 	],
-	"modified": "2026-06-18 10:49:09.702133",
+	"modified": "2026-09-21 12:05:33.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Server",

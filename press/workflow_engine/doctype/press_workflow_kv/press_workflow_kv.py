@@ -115,6 +115,6 @@ class PressWorkflowKV(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		type: DF.Literal["int", "float", "string", "tuple", "list", "dict", "object"]
+		type: DF.Literal["bool", "int", "float", "string", "tuple", "list", "dict", "object"]
 		value: DF.Data | None
 	# end: auto-generated types

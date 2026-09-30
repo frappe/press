@@ -70,12 +70,6 @@ def on_login(login_manager):
 	):
 		frappe.throw("Please re-login to verify your identity.")
 
-	if not frappe.db.exists("Team", {"user": frappe.session.user, "enabled": 1}) and frappe.db.exists(
-		"Team", {"user": frappe.session.user, "enabled": 0}
-	):
-		frappe.db.set_value("Team", {"user": frappe.session.user, "enabled": 0}, "enabled", 1)
-		frappe.db.commit()
-
 
 def before_job():
 	frappe.local._current_team = None

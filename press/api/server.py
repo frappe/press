@@ -14,7 +14,13 @@ from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
 from press.api.account import is_limits_exceeded
-from press.api.analytics import auto_timespan_timegrain, get_rounded_boundaries, get_rounded_boundary
+from press.api.analytics import (
+	auto_timespan_timegrain,
+	get_rate_interval,
+	get_rounded_boundaries,
+	get_rounded_boundary,
+	prometheus_timegrain,
+)
 from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.exceptions import MonitorServerDown
@@ -449,20 +455,24 @@ def analytics(name, query, timezone, start, end, server_type=None):
 	mount_point = get_mount_point(name, server_type)
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
-	_, timegrain = auto_timespan_timegrain(start, end)
+	timegrain = prometheus_timegrain(start, end)
+	# Window for rate()/increase() must span several scrapes, otherwise the charts
+	# spike to zero on steps where the rate window saw fewer than two samples.
+	rate_interval = get_rate_interval(timegrain)
 
 	query_map = {
 		"cpu": (
-			f"""sum by (mode)(rate(node_cpu_seconds_total{{instance="{name}", job="node"}}[{timegrain}s])) * 100""",
+			f"""sum by (mode)(rate(node_cpu_seconds_total{{instance="{name}", job="node"}}[{rate_interval}s])) * 100""",
 			lambda x: x["mode"],
 		),
 		"network": (
-			f"""rate(node_network_receive_bytes_total{{instance="{name}", job="node", device=~"ens.*"}}[{timegrain}s]) * 8""",
+			f"""rate(node_network_receive_bytes_total{{instance="{name}", job="node", device=~"ens.*"}}[{rate_interval}s]) * 8""",
 			lambda x: x["device"],
 		),
 		"iops": (
-			f"""rate(node_disk_reads_completed_total{{instance="{name}", job="node"}}[{timegrain}s])""",
-			lambda x: x["device"],
+			# rate() drops __name__, so tag each side before the union
+			f"""label_replace(rate(node_disk_reads_completed_total{{instance="{name}", job="node"}}[{rate_interval}s]), "op", "read", "", "") or label_replace(rate(node_disk_writes_completed_total{{instance="{name}", job="node"}}[{rate_interval}s]), "op", "write", "", "")""",
+			lambda x: f"{x['device']} {x['op']}",
 		),
 		"space": (
 			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}})""",
@@ -476,12 +486,17 @@ def analytics(name, query, timezone, start, end, server_type=None):
 			f"""node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}} - (node_memory_Cached_bytes{{instance="{name}",job="node"}} + node_memory_Buffers_bytes{{instance="{name}",job="node"}})""",
 			lambda x: "Used",
 		),
+		"oom_kills": (
+			f"""round(increase(node_vmstat_oom_kill{{instance="{name}", job="node"}}[{rate_interval}s]))""",
+			lambda x: "OOM Kills",
+		),
 		"database_uptime": (
-			f"""mysql_up{{instance="{name}",job="mariadb"}}""",
+			# avg over the bucket, else a short outage between steps is invisible on long timespans
+			f"""avg_over_time(mysql_up{{instance="{name}",job="mariadb"}}[{timegrain}s]) * 100""",
 			lambda x: "Uptime",
 		),
 		"database_commands_count": (
-			f"""sum(round(increase(mysql_global_status_commands_total{{instance='{name}', command=~"select|update|insert|delete|begin|commit|rollback"}}[{timegrain}s]))) by (command)""",
+			f"""sum(round(increase(mysql_global_status_commands_total{{instance='{name}', command=~"select|update|insert|delete|begin|commit|rollback"}}[{rate_interval}s]))) by (command)""",
 			lambda x: x["command"],
 		),
 		"database_connections": (
@@ -503,15 +518,15 @@ def analytics(name, query, timezone, start, end, server_type=None):
 		"innodb_bp_miss_percent": (
 			f"""
 avg by (instance) (
-		rate(mysql_global_status_innodb_buffer_pool_reads{{instance=~"{name}"}}[{timegrain}s])
+		rate(mysql_global_status_innodb_buffer_pool_reads{{instance=~"{name}"}}[{rate_interval}s])
 		/
-		rate(mysql_global_status_innodb_buffer_pool_read_requests{{instance=~"{name}"}}[{timegrain}s])
+		rate(mysql_global_status_innodb_buffer_pool_read_requests{{instance=~"{name}"}}[{rate_interval}s])
 )
 """,
 			lambda x: "Buffer Pool Miss Percentage",
 		),
 		"innodb_avg_row_lock_time": (
-			f"""(rate(mysql_global_status_innodb_row_lock_time{{instance="{name}"}}[{timegrain}s]) / 1000)/rate(mysql_global_status_innodb_row_lock_waits{{instance="{name}"}}[{timegrain}s])""",
+			f"""(rate(mysql_global_status_innodb_row_lock_time{{instance="{name}"}}[{rate_interval}s]) / 1000)/rate(mysql_global_status_innodb_row_lock_waits{{instance="{name}"}}[{rate_interval}s])""",
 			lambda x: "Avg Row Lock Time",
 		),
 	}
@@ -557,16 +572,62 @@ def get_background_job_by_site(name, query, timezone, start, end):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 @redis_cache(ttl=10 * 60)
-def get_slow_logs_by_site(name, query, timezone, start, end, normalize=False):
+def get_slow_logs_by_site(name, query, timezone, start, end):
 	from press.api.analytics import ResourceType, get_slow_logs
 
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
 	timespan, timegrain = auto_timespan_timegrain(start, end)
 
+	# Not normalized: this chart groups by database name, not by query text
+	return get_slow_logs(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+@redis_cache(ttl=10 * 60)
+def get_slow_logs_by_query(name, query, timezone, start, end):
+	"""Slow queries of one host. A replica gets its own slow log, so pick the host to compare primary and replica."""
+	from press.api.analytics import MAX_QUERIES, ResourceType, get_slow_logs
+
+	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
+	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
+	timespan, timegrain = auto_timespan_timegrain(start, end)
+
 	return get_slow_logs(
-		name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER, normalize
+		name,
+		query,
+		timezone,
+		start,
+		end,
+		timespan,
+		timegrain,
+		ResourceType.SERVER,
+		normalize=True,
+		max_no_of_paths=MAX_QUERIES,
+		group_by_query=True,
 	)
+
+
+def prometheus_instant_value(query: str) -> float | None:
+	"""Latest scraped value, or None when there is no monitoring data.
+
+	Instant, unlike ``prometheus_query``, whose range samples can be a timegrain stale.
+	"""
+	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+	if not monitor_server:
+		return None
+
+	url = f"https://{monitor_server}/prometheus/api/v1/query"
+	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
+	try:
+		response = requests.get(url, params={"query": query}, auth=("frappe", str(password))).json()
+	except requests.exceptions.RequestException:
+		frappe.throw("Unable to connect to monitor server", MonitorServerDown)
+
+	# An error payload ({"status": "error", ...}) carries no data — treat it as no data.
+	result = response.get("data", {}).get("result", [])
+	return flt(result[0]["value"][1]) if result else None
 
 
 def prometheus_query(
@@ -781,15 +842,17 @@ def secondary_server_plans(
 
 def has_similar_enabled_plans(server_type: str, platform: str, cluster: str) -> bool:
 	"""Check if non-legacy enabled plans exist for the given server type, platform and cluster"""
-	return frappe.db.exists(
-		"Server Plan",
-		{
-			"enabled": 1,
-			"server_type": server_type,
-			"platform": platform,
-			"cluster": cluster,
-			"legacy_plan": False,
-		},
+	return bool(
+		frappe.db.exists(
+			"Server Plan",
+			{
+				"enabled": 1,
+				"server_type": server_type,
+				"platform": platform,
+				"cluster": cluster,
+				"legacy_plan": False,
+			},
+		)
 	)
 
 
@@ -809,21 +872,18 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 	if resource_name:
 		current_plan = frappe.db.get_value(name, resource_name, "plan")
 		if current_plan:
-			legacy_plan, plan_cluster, plan_platform = frappe.db.get_value(
-				"Server Plan", current_plan, ["legacy_plan", "cluster", "platform"]
+			plan = frappe.db.get_value(
+				"Server Plan", current_plan, ["legacy_plan", "cluster", "platform"], as_dict=True
 			)
-			if legacy_plan:
-				effective_cluster = cluster or plan_cluster
-				effective_platform = platform or plan_platform
+			# A server never moves across platforms, so only offer plans of its own platform
+			filters.update({"platform": plan.platform})
+			if plan.legacy_plan:
 				# Cluster is never dropped: a plan from another region can't be resized to.
-				# Only platform falls back, e.g. to offer arm64 when no x86_64 upgrade exists.
+				effective_cluster = cluster or plan.cluster
 				if effective_cluster:
 					filters.update({"cluster": effective_cluster})
-				if has_similar_enabled_plans(name, effective_platform, effective_cluster):
-					if effective_platform:
-						filters.update({"platform": effective_platform})
-				else:
-					filters.pop("platform", None)
+				has_enabled_plans = has_similar_enabled_plans(name, plan.platform, effective_cluster)
+				filters.update({"legacy_plan": not has_enabled_plans})
 			else:
 				filters.update({"legacy_plan": False})
 

@@ -10,6 +10,7 @@ import rq
 import rq.exceptions
 import rq.timeouts
 from frappe import _
+from frappe.email.email_body import get_filecontent_from_path
 from frappe.model.document import Document
 from frappe.rate_limiter import rate_limit
 from frappe.utils.make_random import get_random
@@ -107,8 +108,18 @@ class DripEmail(Document):
 			app = frappe.db.get_value("Product Trial", self.product_trial, ["title", "logo"], as_dict=True)
 			if not app:
 				frappe.throw(_("Product Trial {0} not found").format(self.product_trial))
+			args = {"message": message, "title": app.title}
+			inline_images = []
+			if app.logo:
+				# get_filecontent_from_path resolves the path and guards against traversal.
+				logo_content = get_filecontent_from_path(app.logo)
+				if logo_content:
+					logo_name = app.logo[1:]
+					args["logo_name"] = logo_name
+					inline_images.append({"filename": logo_name, "filecontent": logo_content})
 			kwargs["template"] = "product_trial_email"
-			kwargs["args"] = {"message": message, "title": app.title, "logo": app.logo}
+			kwargs["args"] = args
+			kwargs["inline_images"] = inline_images
 			kwargs["unsubscribe_message"] = "Unsubscribe"
 			kwargs["unsubscribe_method"] = "api/method/press.press.doctype.drip_email.drip_email.unsubscribe"
 			kwargs["unsubscribe_params"] = {"account_request": account_request.name}

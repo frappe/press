@@ -14,10 +14,11 @@ from press.api.client import (
 	ALLOWED_DOCTYPES,
 	check_document_access,
 	check_document_write_access,
-	fields_being_set,
 	get,
 	get_list,
 	set_value,
+	values_being_set,
+	writable_values,
 )
 from press.overrides import before_request
 from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
@@ -314,12 +315,27 @@ class TestEditableFields(FrappeTestCase):
 
 		self.assertEqual(getattr(get_controller("Subscription"), "dashboard_editable_fields", ()), ())
 
-	def test_fields_being_set_reads_every_calling_convention(self):
-		self.assertEqual(fields_being_set({"plan": "x", "team": "y"}, None), ["plan", "team"])
-		self.assertEqual(fields_being_set("plan", "x"), ["plan"])
-		self.assertEqual(fields_being_set('{"plan": "x"}', None), ["plan"])
+	def test_values_being_set_reads_every_calling_convention(self):
+		self.assertEqual(values_being_set({"plan": "x", "team": "y"}, None), {"plan": "x", "team": "y"})
+		self.assertEqual(values_being_set("plan", "x"), {"plan": "x"})
+		self.assertEqual(values_being_set('{"plan": "x"}', None), {"plan": "x"})
 		# A bare fieldname is not JSON, and frappe treats it as one field set to ""
-		self.assertEqual(fields_being_set("plan", None), ["plan"])
+		self.assertEqual(values_being_set("plan", None), {"plan": ""})
+
+	def test_writable_values_drops_the_fields_a_dashboard_save_carries_along(self):
+		values = {
+			"owner": "someone@example.com",
+			"creation": "2026-08-26 21:51:49.591602",
+			"modified": "2026-08-26 21:51:49.591602",
+			"modified_by": "someone@example.com",
+			"docstatus": 1,
+			"idx": 0,
+			"tabs_access": {},
+			"actions_access": {},
+			"enabled": 0,
+		}
+
+		self.assertEqual(writable_values(values), {"enabled": 0})
 
 
 @patch("frappe.sendmail", new=Mock())
@@ -372,3 +388,79 @@ class TestSetValue(FrappeTestCase):
 			set_value("Subscription", subscription.name, {"enabled": 0})
 
 		self.assertEqual(frappe.db.get_value("Subscription", subscription.name, "enabled"), 1)
+
+
+class TestSupportAgentTeamFilter(FrappeTestCase):
+	"""The dashboard shows a support agent a page it must also fill with data.
+
+	A support agent reads another team's agent job, but `get_list` pins every
+	doctype with a `team` field to the agent's own team. The error banner above
+	the job page stayed empty until the agent impersonated the customer.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_press_admin_team()
+		self.other_team = create_test_press_admin_team()
+		self.notification = self.create_notification_for(self.other_team)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def create_notification_for(self, team):
+		return frappe.get_doc(
+			{
+				"doctype": "Press Notification",
+				"team": team.name,
+				"type": "Agent Job Failure",
+				"document_type": "Agent Job",
+				"document_name": create_test_agent_job().name,
+				"class": "Error",
+				"is_actionable": True,
+				"title": "Server out of memory error",
+			}
+		).insert(ignore_permissions=True)
+
+	def make_support_agent(self, team):
+		frappe.get_doc("User", team.user).add_roles("Press Support Agent")
+
+	def banner_filters(self, skip_team_filter):
+		return {
+			"document_type": "Agent Job",
+			"document_name": self.notification.document_name,
+			"is_actionable": True,
+			"class": "Error",
+			"skip_team_filter_for_system_user_and_support_agent": skip_team_filter,
+		}
+
+	def test_support_agent_reads_the_notification_of_another_team(self):
+		self.make_support_agent(self.team)
+
+		sign_in_as(self.team)
+		names = [
+			row.name
+			for row in get_list("Press Notification", fields=["name"], filters=self.banner_filters(True))
+		]
+
+		self.assertEqual(names, [self.notification.name])
+
+	def test_support_agent_reads_nothing_without_the_skip_filter(self):
+		self.make_support_agent(self.team)
+
+		sign_in_as(self.team)
+		names = [
+			row.name
+			for row in get_list("Press Notification", fields=["name"], filters=self.banner_filters(False))
+		]
+
+		self.assertEqual(names, [])
+
+	def test_plain_user_reads_nothing_even_with_the_skip_filter(self):
+		sign_in_as(self.team)
+		names = [
+			row.name
+			for row in get_list("Press Notification", fields=["name"], filters=self.banner_filters(True))
+		]
+
+		self.assertEqual(names, [])

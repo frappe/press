@@ -7,9 +7,11 @@ import typing
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
+from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
 	DeployCandidateBuild,
@@ -365,6 +367,58 @@ class TestSiteAction(FrappeTestCase):
 			self.fail("Expected validation error for unavailable action type")
 		except frappe.ValidationError as e:
 			self.assertIn("isn't available", str(e).lower())
+
+	@patch.object(SiteMigration, "start", new=Mock())
+	def test_actionable_error_of_failed_migration_is_shown_on_action(self):
+		"""An OOM on the destination server should surface on the action, not just on the agent job"""
+		source_bench: Bench = create_test_bench(public_server=False)
+		source_site: Site = create_test_site(bench=source_bench.name)
+		destination_bench: Bench = create_test_bench()
+
+		migration: SiteMigration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": source_site.name,
+				"destination_bench": destination_bench.name,
+			}
+		).insert()
+
+		restore_job = create_test_agent_job(
+			"New Site from Backup", server=migration.destination_server, status="Failure"
+		)
+		restore_job.db_set(
+			"traceback", "AgentException: Command 'bench restore' returned non-zero exit status 137."
+		)
+		restore_step = find(
+			migration.steps, lambda step: step.method_name == "restore_site_on_destination_server"
+		)
+		restore_step.status = "Failure"
+		restore_step.step_job = restore_job.name
+		migration.status = "Failure"
+		migration.save()
+		migration.send_fail_notification()
+
+		action: SiteAction = frappe.get_doc(
+			{
+				"doctype": "Site Action",
+				"site": source_site.name,
+				"action_type": "Move Site To Different Server / Bench",
+				"team": source_site.team,
+				"arguments": frappe.as_json({"destination_server": destination_bench.server}),
+			}
+		).insert()
+
+		failed_step = find(action.steps, lambda step: step.method == "move_site_to_bench_group")
+		failed_step.status = "Failure"
+		failed_step.reference_doctype = "Site Migration"
+		failed_step.reference_name = migration.name
+		action.status = "Failure"
+		action.save()
+
+		self.assertEqual(
+			[notification["title"] for notification in action.get_press_error_notifications()],
+			["Server out of memory error"],
+		)
 
 	def test_cancel_action_raises_when_not_scheduled(self):
 		"""Cancel should raise when action is not in Scheduled state"""

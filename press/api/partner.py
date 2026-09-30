@@ -116,6 +116,26 @@ def get_partner_details(partner_email: str) -> dict | None:
 
 @frappe.whitelist()
 @role_guard.api("partner")
+def update_company_logo() -> None:
+	team = get_current_team()
+	_file = frappe.get_doc(
+		{
+			"doctype": "File",
+			"attached_to_doctype": "Team",
+			"attached_to_name": team,
+			"attached_to_field": "company_logo",
+			"folder": "Home/Attachments",
+			"file_name": frappe.local.uploaded_filename,
+			"is_private": 0,
+			"content": frappe.local.uploaded_file,
+		}
+	)
+	_file.save(ignore_permissions=True)
+	frappe.db.set_value("Team", team, "company_logo", _file.file_url)
+
+
+@frappe.whitelist()
+@role_guard.api("partner")
 def send_link_certificate_request(user_email: str, certificate_type: str) -> None:
 	from press.partner.doctype.certificate_link_request.certificate_link_request import (
 		CertificateLinkRequest,

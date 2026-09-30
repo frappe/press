@@ -37,6 +37,10 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 )
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
+from press.press.doctype.site_config.site_config import (
+	decode_json_config_value,
+	parse_json_config_value,
+)
 from press.utils import (
 	fmt_timedelta,
 	get_app_tag,
@@ -158,31 +162,19 @@ class ReleaseGroup(Document, TagHelpers):
 	def get_list_query(query, filters, **list_args):
 		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
 		ReleaseGroup = frappe.qb.DocType("Release Group")
-		Bench = frappe.qb.DocType("Bench")
-		Site = frappe.qb.DocType("Site")
-
-		site_count = (
-			frappe.qb.from_(Site)
-			.select(frappe.query_builder.functions.Count("*"))
-			.where(Site.group == ReleaseGroup.name)
-			.where(Site.status != "Archived")
-		)
-
-		active_benches = (
-			frappe.qb.from_(Bench)
-			.select(frappe.query_builder.functions.Count("*"))
-			.where(Bench.group == ReleaseGroup.name)
-			.where(Bench.status == "Active")
-		)
+		server = filters.get("server")
 
 		query = (
 			query.where(ReleaseGroup.team == frappe.local.team().name)
 			.where(ReleaseGroup.enabled == 1)
 			.where(ReleaseGroup.public == 0)
-			.select(site_count.as_("site_count"), active_benches.as_("active_benches"))
+			.select(
+				site_count_query(server).as_("site_count"),
+				active_bench_count_query(server).as_("active_benches"),
+			)
 		)
 
-		if server := filters.get("server"):
+		if server:
 			query = (
 				query.inner_join(ReleaseGroupServer)
 				.on(ReleaseGroupServer.parent == ReleaseGroup.name)
@@ -192,6 +184,8 @@ class ReleaseGroup(Document, TagHelpers):
 		return query
 
 	def get_doc(self, doc):
+		from press.press.doctype.bench.bench import get_frappe_release_timestamp
+
 		doc.deploy_information = self.deploy_information()
 		doc.status = self.status
 		doc.actions = self.get_actions()
@@ -203,6 +197,10 @@ class ReleaseGroup(Document, TagHelpers):
 			order_by="name desc",
 			pluck="name",
 		)
+		last_deployed_bench = frappe.db.get_value(
+			"Bench", {"group": self.name, "status": "Active"}, "name", order_by="creation desc"
+		)
+		doc.frappe_updated_on = get_frappe_release_timestamp(last_deployed_bench)
 
 		if len(self.servers) == 1:
 			server = frappe.db.get_value("Server", self.servers[0].server, ["team", "title"], as_dict=True)
@@ -519,7 +517,7 @@ class ReleaseGroup(Document, TagHelpers):
 			elif key_type == "Boolean":
 				key_value = row.value if isinstance(row.value, bool) else bool(json.loads(cstr(row.value)))
 			elif key_type == "JSON":
-				key_value = json.loads(cstr(row.value))
+				key_value = decode_json_config_value(row.key, row.value)
 			else:
 				key_value = row.value
 
@@ -1264,17 +1262,9 @@ class ReleaseGroup(Document, TagHelpers):
 	@dashboard_whitelist()
 	@action_guard(ReleaseGroupActions.SSHAccess)
 	def generate_certificate(self):
-		# Check if team has access to SSH
-		team = get_current_team(get_doc=True)
-		if team and not team.ssh_access_enabled:
-			if team.creation > add_to_date(None, days=-7):
-				frappe.throw(
-					"SSH access is unavailable because your team was created less than 7 days ago.\nIf you need urgent access, please create a support ticket at support.frappe.io using your team email ID."
-				)
-			else:
-				frappe.throw(
-					"SSH access is not enabled for your team.\nTo request access, please open a ticket at support.frappe.io using your team email ID."
-				)
+		if reason := self.ssh_access_denied_reason():
+			frappe.throw(reason)  # nosemgrep
+		self.enable_ssh_access_for_team()
 
 		ssh_key = frappe.get_all(
 			"User SSH Key",
@@ -1299,6 +1289,28 @@ class ReleaseGroup(Document, TagHelpers):
 				"validity": "6h",
 			}
 		).insert()
+
+	def enable_ssh_access_for_team(self):
+		team = get_current_team(get_doc=True)
+		if team and not team.ssh_access_enabled:
+			team.db_set("ssh_access_enabled", 1)
+
+	def ssh_access_denied_reason(self) -> str | None:
+		team = get_current_team(get_doc=True)
+		if not team or team.ssh_access_enabled or team.can_skip_ssh_wait():
+			return None
+		if team.creation > add_to_date(None, days=-7):
+			unlock_date = frappe.utils.format_date(add_to_date(team.creation, days=7), "MMM d, YYYY")
+			return (
+				"SSH access is not available for the first 7 days after a team is created. "
+				f"Your team gets access on or after {unlock_date}. "
+				"To get immediate access, buy credits, or add a card and move a site or server to a paid plan. "
+				"For any assistance, open a ticket at support.frappe.io from your team email."
+			)
+		return (
+			"SSH access is not enabled for your team. "
+			"To request access, open a ticket at support.frappe.io from your team email."
+		)
 
 	@dashboard_whitelist()
 	def get_certificate(self):
@@ -2078,6 +2090,34 @@ class ReleaseGroup(Document, TagHelpers):
 		return new_group
 
 
+def site_count_query(server: str | None):
+	"""Count the sites of a group, on one server when the list is filtered by server."""
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	Site = frappe.qb.DocType("Site")
+
+	query = (
+		frappe.qb.from_(Site)
+		.select(Count("*"))
+		.where(Site.group == ReleaseGroup.name)
+		.where(Site.status != "Archived")
+	)
+	return query.where(Site.server == server) if server else query
+
+
+def active_bench_count_query(server: str | None):
+	"""Count the active benches of a group, on one server when the list is filtered by server."""
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	Bench = frappe.qb.DocType("Bench")
+
+	query = (
+		frappe.qb.from_(Bench)
+		.select(Count("*"))
+		.where(Bench.group == ReleaseGroup.name)
+		.where(Bench.status == "Active")
+	)
+	return query.where(Bench.server == server) if server else query
+
+
 @redis_cache(ttl=60)
 def are_builds_suspended() -> bool:
 	return is_suspended()
@@ -2262,7 +2302,7 @@ def get_formatted_config_value(config_type: str, value: Any, key: str, name: str
 		return bool(sbool(value))
 
 	if config_type == "JSON":
-		return frappe.parse_json(value)
+		return parse_json_config_value(key, value)
 
 	if config_type == "Password" and value == "*******":
 		return frappe.get_value("Site Config", {"key": key, "parent": name}, "value")

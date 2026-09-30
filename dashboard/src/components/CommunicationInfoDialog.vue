@@ -69,10 +69,10 @@
 </template>
 
 <script>
-import { h } from 'vue'
 import { Select, TextInput } from 'frappe-ui'
-import GenericList from './GenericList.vue'
+import { h } from 'vue'
 import AlertBanner from './AlertBanner.vue'
+import GenericList from './GenericList.vue'
 
 export default {
 	name: 'CommunicationInfoDialog',
@@ -267,6 +267,7 @@ export default {
 				'Server Activity',
 				'Site Activity',
 				'Marketplace',
+				'Sales',
 			]
 		},
 	},

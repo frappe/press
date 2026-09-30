@@ -35,6 +35,7 @@ class ProxyServer(BaseServer):
 		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
+		disable_agent_update: DF.Check
 		domain: DF.Link | None
 		domains: DF.Table[ProxyServerDomain]
 		enabled_default_routing: DF.Check
@@ -55,6 +56,9 @@ class ProxyServer(BaseServer):
 		is_static_ip: DF.Check
 		is_wazuh_agent_installed: DF.Check
 		wazuh_agent_status: DF.Data | None
+		wazuh_install_last_attempt: DF.Datetime | None
+		is_yara_installed: DF.Check
+		yara_install_last_attempt: DF.Datetime | None
 		is_wireguard_setup: DF.Check
 		mem_limits: DF.Code | None
 		plan: DF.Link | None

@@ -255,10 +255,13 @@
 					<DateTimeControl v-model="scheduledTime" :hideLabel="true" />
 				</div>
 
-				<!-- Error Message (the space banner below replaces it with a friendlier one) -->
-				<ErrorMessage v-if="!showSpaceCleanupHelp" :message="errorMessage" />
+				<!-- Error Message (the space banner below replaces the out-of-space one) -->
+				<ErrorMessage
+					v-if="!(showSpaceCleanupHelp && isInsufficientSpaceError)"
+					:message="errorMessage"
+				/>
 
-				<!-- Previous attempt ran out of disk space: explain and offer the cleanup actions -->
+				<!-- A recent move failed: its leftover files eat space on the dedicated server -->
 				<div
 					v-if="showSpaceCleanupHelp"
 					class="flex flex-col gap-3 rounded-md bg-surface-amber-2 p-3"
@@ -268,7 +271,8 @@
 							class="mt-0.5 size-4 shrink-0 text-ink-amber-3"
 						/>
 						<p class="text-p-base text-ink-gray-8">
-							The previous migration used up some storage.
+							A recent migration failed and may have left files on the server.
+							Free up space first, or the move can fail again.
 							<a
 								:href="storageAddonsDocUrl"
 								target="_blank"
@@ -276,7 +280,7 @@
 								class="underline"
 								>Add more storage</a
 							>
-							or use the actions below, then try again.
+							or use the actions below.
 						</p>
 					</div>
 					<div class="flex flex-wrap items-center gap-x-4 gap-y-2 pl-6">
@@ -453,20 +457,24 @@ export default {
 			return /Insufficient estimated space/i.test(text)
 		},
 		showSpaceCleanupHelp() {
-			// Only after a prior migration actually left files behind, and only for
-			// dedicated servers — shared servers auto-extend and lack these actions.
+			// Shown before the retry, not only after it fails. Only for dedicated
+			// servers — shared servers auto-extend and lack these actions.
 			return (
-				this.isInsufficientSpaceError &&
 				this.isDedicatedServerMove &&
-				this.hasRecentFailedMigration
+				this.recentFailedMigrationServers.includes(this.cleanupTargetServer)
 			)
 		},
 		isDedicatedServerMove() {
-			return (
-				this.selectedMigrationMode ===
-					'Move Site To Different Server / Bench' &&
-				this.selectedServerType === 'Dedicated Server'
+			if (
+				this.selectedMigrationMode !== 'Move Site To Different Server / Bench'
 			)
+				return false
+			if (this.benchMovementType === 'Create A New Bench')
+				return this.selectedServerType === 'Dedicated Server'
+			const server = this.availableServersForSelectedReleaseGroup.find(
+				(e) => e.name === this.selectedServerToMoveTo,
+			)
+			return Boolean(server) && !server.public
 		},
 		cleanupTargetServer() {
 			return this.selectedServerToMoveTo || this.$site?.doc?.server
@@ -492,15 +500,15 @@ export default {
 		},
 		migrationChoices() {
 			return Object.keys(this.migrationOptions)
-				.filter((e) => typeof this.migrationOptions[e] === 'object' && this.migrationOptions[e]  != null)
+				.filter((e) => this.migrationOptions[e]?.button_label)
 				.map((e) => ({
 					label: e,
 					value: e,
 				}))
 				.filter((e) => !this.migrationOptions[e.value].hidden)
 		},
-		hasRecentFailedMigration() {
-			return this.migrationOptions?.has_recent_failed_migration ?? false
+		recentFailedMigrationServers() {
+			return this.migrationOptions?.recent_failed_migration_servers ?? []
 		},
 		selectedMigrationChoiceDetails() {
 			return this.migrationOptions[this.selectedMigrationMode]
@@ -550,12 +558,12 @@ export default {
 		},
 		customDomainWarning() {
 			if (!this.selectedMigrationChoiceOptions?.has_domain_with_a_record)
-				return '';
+				return ''
 			const region = this.availableRegionsToMoveSiteTo.find(
 				(e) => e.name === this.selectedRegion,
-			);
-			if (!region?.inbound_ip) return '';
-			return `This site has custom domains pointing to an A record. After the migration, update them to <strong>${region.inbound_ip}</strong>, or switch them to a CNAME record pointing to <strong>${this.site}</strong>. Until then those domains will not resolve. <a href="https://docs.frappe.io/cloud/sites/custom-domains" target="_blank" class="underline">Read more</a>`;
+			)
+			if (!region?.inbound_ip) return ''
+			return `This site has custom domains pointing to an A record. After the migration, update them to <strong>${region.inbound_ip}</strong>, or switch them to a CNAME record pointing to <strong>${this.site}</strong>. Until then those domains will not resolve. <a href="https://docs.frappe.io/cloud/sites/custom-domains" target="_blank" class="underline">Read more</a>`
 		},
 		warningMessage() {
 			return {

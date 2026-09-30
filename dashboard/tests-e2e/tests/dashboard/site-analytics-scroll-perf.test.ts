@@ -72,16 +72,15 @@ async function measureScroll(page: Page): Promise<ScrollStats> {
 	})
 }
 
-/** Open the tab with a 15-day range and wait for every chart to be painted. */
-async function openAdvancedAnalytics(page: Page) {
+/** Load the tab with a 15-day range and wait for every chart to be painted. */
+async function loadAnalyticsPage(page: Page) {
 	await page.setViewportSize({ width: 1440, height: 900 })
 	await mockAnalytics(page)
 
 	const query = `?start=${RANGE_START.toISOString()}&end=${RANGE_END.toISOString()}`
 	await page.goto(`/dashboard/sites/${SITE_NAME}/insights/analytics${query}`)
 
-	await page.getByText('Advanced Analytics').click()
-
+	// The advanced section is open by default, so no click is necessary.
 	// 14 advanced bar charts plus 5 base line charts must be painted before
 	// measuring, otherwise we time an empty page.
 	await expect
@@ -94,7 +93,7 @@ test('advanced analytics leaves the main thread idle once charts are painted', a
 	page,
 }) => {
 	test.slow()
-	await openAdvancedAnalytics(page)
+	await loadAnalyticsPage(page)
 
 	// Guards the echarts feedback loop: a `finished` handler that dispatches an
 	// action re-triggers `finished`, so the charts re-render forever and the tab
@@ -124,7 +123,7 @@ test('advanced analytics scrolls smoothly with a full 15-day dataset', async ({
 	page,
 }) => {
 	test.slow()
-	await openAdvancedAnalytics(page)
+	await loadAnalyticsPage(page)
 
 	const stats = await measureScroll(page)
 	console.log('scroll stats:', JSON.stringify(stats))

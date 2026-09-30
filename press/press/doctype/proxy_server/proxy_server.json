@@ -19,11 +19,15 @@
 		"is_server_setup",
 		"is_wazuh_agent_installed",
 		"wazuh_agent_status",
+		"wazuh_install_last_attempt",
+		"is_yara_installed",
+		"yara_install_last_attempt",
 		"is_auditd_setup",
 		"is_self_hosted",
 		"team",
 		"public",
 		"halt_agent_jobs",
+		"disable_agent_update",
 		"exclude_from_auto_selection",
 		"storage_section",
 		"auto_add_storage_min",
@@ -126,6 +130,25 @@
 			"fieldname": "wazuh_agent_status",
 			"fieldtype": "Data",
 			"label": "Wazuh Agent Status",
+			"read_only": 1
+		},
+		{
+			"fieldname": "wazuh_install_last_attempt",
+			"fieldtype": "Datetime",
+			"label": "Wazuh Install Last Attempt",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_yara_installed",
+			"fieldtype": "Check",
+			"label": "Is YARA Installed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "yara_install_last_attempt",
+			"fieldtype": "Datetime",
+			"label": "YARA Install Last Attempt",
 			"read_only": 1
 		},
 		{
@@ -441,6 +464,13 @@
 		},
 		{
 			"default": "0",
+			"description": "Don't update the agent on this server",
+			"fieldname": "disable_agent_update",
+			"fieldtype": "Check",
+			"label": "Disable Agent Update"
+		},
+		{
+			"default": "0",
 			"fieldname": "tls_certificate_renewal_failed",
 			"fieldtype": "Check",
 			"label": "TLS Certificate Renewal Failed",
@@ -499,7 +529,7 @@
 		}
 	],
 	"links": [],
-	"modified": "2026-03-15 19:01:43.557830",
+	"modified": "2026-09-21 12:05:33.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Proxy Server",

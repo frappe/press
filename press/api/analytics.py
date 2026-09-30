@@ -127,6 +127,10 @@ MAX_NO_OF_PATHS: Final[int] = 10
 MAX_QUERIES: Final[int] = 25
 MAX_MAX_NO_OF_PATHS: Final[int] = 50
 
+# Elasticsearch groups slow queries by their raw text, and literals split one query
+# into many. Oversample, so that the top-N after normalization is not a set of duplicates.
+NORMALIZED_OVERSAMPLE: Final[int] = 10
+
 NICE_STEPS = [
 	1,
 	2,
@@ -167,6 +171,41 @@ def auto_timespan_timegrain(start: datetime, end: datetime, target_points: int =
 	interval = next((step for step in NICE_STEPS if step >= raw_interval), raw_interval)
 
 	return (total_seconds, interval)
+
+
+# All metrics relevant to the server charts (node_exporter, mariadb_exporter, ...)
+# are scraped every 60s, see press/playbooks/roles/prometheus/templates/prometheus.yml
+PROMETHEUS_SCRAPE_INTERVAL: Final[int] = 60
+
+
+def prometheus_timegrain(start: datetime, end: datetime, max_points: int = 500) -> int:
+	"""Step for a Prometheus range query, computed the way Grafana does.
+
+	Grafana sizes the step by the panel width in pixels (one point per pixel)
+	and never goes below the scrape interval. With only 60 points a 15 day
+	range gets an 8 hour step, and the rate() window that follows the step
+	averages every spike away. 500 points is about the width of a chart card.
+	"""
+	_, timegrain = auto_timespan_timegrain(start, end, max_points)
+	return max(timegrain, PROMETHEUS_SCRAPE_INTERVAL)
+
+
+def get_rate_interval(timegrain: int, scrape_interval: int = PROMETHEUS_SCRAPE_INTERVAL) -> int:
+	"""Lookback window to use inside rate()/increase() for range queries.
+
+	Prometheus' rate()/increase() need at least two samples within their window
+	to return a value. When the window is smaller than ~2x the scrape interval it
+	intermittently sees a single sample (depending on how the step grid aligns
+	with the scrape grid), so Prometheus returns no value for those steps. The
+	charts render the resulting gaps as spikes down to zero.
+
+	The step (timegrain) controls the chart resolution; this controls the rate()
+	window. Keeping them separate and ensuring the window always spans several
+	scrapes removes the gaps. This mirrors Grafana's ``$__rate_interval``.
+	"""
+	if timegrain <= 0:
+		return scrape_interval * 4
+	return max(timegrain + scrape_interval, scrape_interval * 4)
 
 
 def parse_iso_datetime(value: str | datetime) -> datetime:
@@ -242,7 +281,7 @@ class StackedGroupByChart:
 				"method_path",
 				"terms",
 				field=self.group_by_field,
-				size=self.max_no_of_paths,
+				size=self.terms_size,
 				order={"path_count": "desc"},
 			).bucket("histogram_of_method", self.histogram_of_method())
 			self.search.aggs["method_path"].bucket("path_count", self.count_of_values())
@@ -252,7 +291,7 @@ class StackedGroupByChart:
 				"method_path",
 				"terms",
 				field=self.group_by_field,
-				size=self.max_no_of_paths,
+				size=self.terms_size,
 				order={"outside_sum": "desc"},
 			).bucket("histogram_of_method", self.histogram_of_method()).bucket(
 				"sum_of_duration", self.sum_of_duration()
@@ -264,12 +303,16 @@ class StackedGroupByChart:
 				"method_path",
 				"terms",
 				field=self.group_by_field,
-				size=self.max_no_of_paths,
+				size=self.terms_size,
 				order={"outside_avg": "desc"},
 			).bucket("histogram_of_method", self.histogram_of_method()).bucket(
 				"avg_of_duration", self.avg_of_duration()
 			)
 			self.search.aggs["method_path"].bucket("outside_avg", self.avg_of_duration())
+
+	@property
+	def terms_size(self) -> int:
+		return self.max_no_of_paths
 
 	def histogram_of_method(self):
 		return A(
@@ -352,11 +395,10 @@ class StackedGroupByChart:
 		for path_bucket in aggs.method_path.buckets:
 			datasets.append(self.get_histogram_chart(path_bucket, labels))
 
-		if len(datasets) >= self.max_no_of_paths:
-			datasets.append(self.get_other_bucket(datasets, labels))
-
 		if self.normalize_slow_logs:
-			datasets = normalize_datasets(datasets)
+			datasets = self.get_normalized_datasets(datasets, aggs, labels)
+		elif len(datasets) >= self.terms_size:
+			datasets.append(self.get_other_bucket(datasets, labels))
 
 		labels = [convert_utc_to_timezone(label, self.timezone).replace(tzinfo=None) for label in labels]
 		return {
@@ -498,10 +540,45 @@ class SlowLogGroupByChart(StackedGroupByChart):
 		self,
 		normalize_slow_logs=False,
 		*args,
+		group_by_query=False,
 		**kwargs,
 	):
-		super().__init__(*args, **kwargs)
 		self.normalize_slow_logs = normalize_slow_logs
+		# A server chart groups by database (site) unless asked for the queries
+		self.group_by_query = group_by_query
+		super().__init__(*args, **kwargs)
+
+	@property
+	def terms_size(self) -> int:
+		if self.normalize_slow_logs:
+			return self.max_no_of_paths * NORMALIZED_OVERSAMPLE
+		return self.max_no_of_paths
+
+	def setup_search_aggs(self):
+		"""Aggregate all queries next to the top ones. The result gives the Other bucket."""
+		super().setup_search_aggs()
+		if not self.normalize_slow_logs:
+			return
+		histogram = self.search.aggs.bucket("histogram_of_method", self.histogram_of_method())
+		histogram.bucket("sum_of_duration", self.sum_of_duration())
+		# ponytail: averages do not subtract, so an average chart clamps Other to zero
+		histogram.bucket("avg_of_duration", self.avg_of_duration())
+
+	def get_normalized_datasets(self, datasets: list[Dataset], aggs, labels) -> list[Dataset]:
+		"""Merge the oversampled queries by normalized form, then keep the largest ones.
+
+		Other is all queries minus the ones the chart shows. The base class instead
+		runs a second search that excludes each query it shows. This search needs one
+		clause for each query, and normalization asks for ten times as many queries.
+		"""
+		merged = sorted(normalize_datasets(datasets), key=dataset_total, reverse=True)
+		top = merged[: self.max_no_of_paths]
+
+		aggs.key = "Other"
+		other = self.get_histogram_chart(aggs, labels)
+		for dataset in top:
+			other["values"] = subtract_values(other["values"], dataset["values"])
+		return [*top, other] if dataset_total(other) else top
 
 	def sum_of_duration(self):
 		return A("sum", field="event.duration")
@@ -509,13 +586,14 @@ class SlowLogGroupByChart(StackedGroupByChart):
 	def avg_of_duration(self):
 		return A("avg", field="event.duration")
 
+	@property
+	def groups_by_site(self) -> bool:
+		return ResourceType(self.resource_type) is ResourceType.SERVER and not self.group_by_query
+
 	def exclude_top_k_data(self, datasets):
-		if ResourceType(self.resource_type) is ResourceType.SITE:
-			for path in list(map(lambda x: x["path"], datasets)):
-				self.search = self.search.exclude("match_phrase", mysql__slowlog__query=path)
-		elif ResourceType(self.resource_type) is ResourceType.SERVER:
-			for path in list(map(lambda x: x["path"], datasets)):
-				self.search = self.search.exclude("match_phrase", mysql__slowlog__current_user=path)
+		field = self.group_by_field.replace(".", "__")
+		for path in list(map(lambda x: x["path"], datasets)):
+			self.search = self.search.exclude("match_phrase", **{field: path})
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
@@ -527,16 +605,18 @@ class SlowLogGroupByChart(StackedGroupByChart):
 			self.database_name = frappe.db.get_value("Site", self.name, "database_name")
 			if self.database_name:
 				self.search = self.search.filter("match", mysql__slowlog__current_user=self.database_name)
-			self.group_by_field = "mysql.slowlog.query"
 		elif ResourceType(self.resource_type) is ResourceType.SERVER:
 			self.search = self.search.filter("match", agent__name=self.name)
-			self.group_by_field = "mysql.slowlog.current_user"
+		self.group_by_field = "mysql.slowlog.current_user" if self.groups_by_site else "mysql.slowlog.query"
 
 	def run(self):
+		# Without a log server __init__ returns early and sets no filters
+		if not self.log_server:
+			return {"datasets": [], "labels": []}
 		if not self.database_name and ResourceType(self.resource_type) is ResourceType.SITE:
 			return {"datasets": [], "labels": []}
 		res = super().run()
-		if ResourceType(self.resource_type) is not ResourceType.SERVER:
+		if not self.groups_by_site:
 			return res
 		for path_data in res["datasets"]:
 			site_name = frappe.db.get_value(
@@ -992,7 +1072,6 @@ def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC")
 	return rounded_time(start, timegrain), rounded_time(end, timegrain)
 
 
-@redis_cache(ttl=15 * 60)
 def get_rounded_boundary(dt: datetime, timegrain: int = 60):
 	"""
 	Floor a datetime to the previous interval boundary.
@@ -1011,6 +1090,17 @@ def get_rounded_boundary(dt: datetime, timegrain: int = 60):
 	floored_ts = ts - (ts % timegrain)
 
 	return datetime.fromtimestamp(floored_ts, tz=dt.tzinfo)
+
+
+def align_to_quarter_hour(start: datetime, end: datetime, timezone: str) -> tuple[datetime, datetime]:
+	"""Widen the range to the quarter-hour marks around it."""
+	local_start = start.astimezone(pytz_timezone(timezone))
+	local_end = end.astimezone(pytz_timezone(timezone))
+	return (
+		local_start.replace(minute=local_start.minute // 15 * 15, second=0, microsecond=0),
+		local_end.replace(minute=0, second=0, microsecond=0)
+		+ timedelta(minutes=(local_end.minute // 15 + 1) * 15),
+	)
 
 
 def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegrain: int):
@@ -1034,19 +1124,7 @@ def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegra
 	# if the difference is less than an hour, set timegrain to 1 min
 	elif int((end - start).total_seconds()) < 60 * 60:
 		timegrain = 60
-		local_end = end.astimezone(pytz_timezone(timezone))
-		# align end to next 15-minute interval if not already aligned
-		minutes = (local_end.minute // 15 + 1) * 15
-		if minutes == 60:
-			local_end = local_end.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-		else:
-			local_end = local_end.replace(minute=minutes, second=0, microsecond=0)
-		end = local_end
-		# align start to previous 15-minute interval if not already aligned
-		local_start = start.astimezone(pytz_timezone(timezone))
-		minutes = (local_start.minute // 15 - (1 if local_end.minute % 15 != 0 else 0)) * 15
-		local_start = local_end.replace(minute=minutes, second=0, microsecond=0)
-		start = local_start
+		start, end = align_to_quarter_hour(start, end, timezone)
 
 	query: dict[str, str | float] = {
 		"query": (
@@ -1074,6 +1152,14 @@ def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegra
 			)
 		)
 	return buckets
+
+
+def subtract_values(values: list, other: list) -> list:
+	return [max(flt(x) - flt(y), 0) for x, y in zip(values, other, strict=True)]
+
+
+def dataset_total(dataset: Dataset) -> float:
+	return sum(value for value in dataset["values"] if value)
 
 
 def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
@@ -1199,6 +1285,7 @@ def get_slow_logs(
 	resource_type: ResourceType = ResourceType.SITE,
 	normalize: bool = False,
 	max_no_of_paths: int = MAX_NO_OF_PATHS,
+	group_by_query: bool = False,
 ):
 	return SlowLogGroupByChart(
 		normalize,
@@ -1211,6 +1298,7 @@ def get_slow_logs(
 		timegrain,
 		resource_type,
 		max_no_of_paths,
+		group_by_query=group_by_query,
 	).run()
 
 

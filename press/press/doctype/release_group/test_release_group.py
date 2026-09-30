@@ -13,6 +13,7 @@ from frappe.tests.utils import FrappeTestCase
 from press.agent import Agent
 from press.api.bench import deploy_information
 from press.api.client import get_list
+from press.overrides import before_request
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
@@ -103,7 +104,36 @@ class TestReleaseGroup(FrappeTestCase):
 		self.team = create_test_team().name
 
 	def tearDown(self):
+		frappe.set_user("Administrator")
 		frappe.db.rollback()
+
+	def test_get_doc_reports_commit_time_of_frappe_on_the_newest_active_bench(self):
+		from press.press.doctype.site.test_site import create_test_bench
+
+		now = frappe.utils.now_datetime()
+		group = create_test_release_group([create_test_app()])
+		older_bench = create_test_bench(group=group, creation=frappe.utils.add_days(now, -10))
+		newer_bench = create_test_bench(group=group, creation=now)
+
+		self.set_frappe_commit_time(older_bench.name, -90)
+		commit_time = self.set_frappe_commit_time(newer_bench.name, -45)
+
+		doc = frappe._dict()
+		group.get_doc(doc)
+		self.assertEqual(doc.frappe_updated_on, commit_time)
+
+	def test_get_doc_reports_no_commit_time_when_group_has_no_active_bench(self):
+		group = create_test_release_group([create_test_app()])
+
+		doc = frappe._dict()
+		group.get_doc(doc)
+		self.assertIsNone(doc.frappe_updated_on)
+
+	def set_frappe_commit_time(self, bench: str, days_ago: int):
+		release = frappe.db.get_value("Bench App", {"parent": bench, "app": "frappe"}, "release")
+		commit_time = frappe.utils.add_days(frappe.utils.now_datetime(), days_ago)
+		frappe.db.set_value("App Release", release, "timestamp", commit_time)
+		return commit_time
 
 	def test_create_release_group(self):
 		app = create_test_app("frappe", "Frappe Framework")
@@ -663,3 +693,33 @@ class TestReleaseGroup(FrappeTestCase):
 		create_test_bench(group=test_release_group)
 
 		test_release_group.check_app_server_storage()
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	# The second bench of a group makes the storage precheck ask the agent for the size of
+	# the last deployed image. Nothing is really deployed here, so skip the precheck rather
+	# than fake a size for it.
+	@patch.object(ReleaseGroup, "check_app_server_storage", new=Mock())
+	def test_counts_of_a_group_on_two_servers_are_scoped_to_the_filtered_server(self):
+		"""A group runs on two servers. Each server card must count only its own benches and sites."""
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.site.test_site import create_test_bench, create_test_site
+
+		app = create_test_app()
+		user = frappe.get_value("Team", self.team, "user")
+		first_server = create_test_server(team=self.team).name
+		second_server = create_test_server(team=self.team).name
+		group = create_test_release_group([app], user=user, servers=[first_server, second_server])
+
+		create_test_site(bench=create_test_bench(group=group, server=first_server).name, team=self.team)
+		for _ in range(2):
+			create_test_site(bench=create_test_bench(group=group, server=second_server).name, team=self.team)
+
+		frappe.set_user(user)
+		before_request()
+
+		def counts_on(server):
+			[fetched] = get_list("Release Group", fields=["name"], filters={"server": server})
+			return fetched.active_benches, fetched.site_count
+
+		self.assertEqual(counts_on(first_server), (1, 1))
+		self.assertEqual(counts_on(second_server), (2, 2))

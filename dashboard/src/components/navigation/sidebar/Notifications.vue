@@ -3,7 +3,6 @@ import {
   Badge,
   Button,
   createListResource,
-  frappeRequest,
   Tabs,
   Tooltip,
   Popover,
@@ -21,6 +20,7 @@ import Scrollbar from "@/components/common/Scrollbar.vue";
 import SupportAccessDialog from "@/components/SupportAccessDialog.vue";
 
 import {
+  markAllNotificationsAsRead,
   unreadNotificationsCount,
   unreadSupportNotificationsCount,
 } from "@/data/notifications";
@@ -96,9 +96,7 @@ const markAsRead = (row, togglePopover) => {
 
 const markAllAsRead = (togglePopover) => {
   toast.promise(
-    frappeRequest({
-      url: "/api/method/press.api.notifications.mark_all_notifications_as_read",
-    }),
+    markAllNotificationsAsRead.submit(),
     {
       success: () => {
         resource.reload();
@@ -171,6 +169,25 @@ const iconCss = {
   },
 };
 
+const classCss = {
+  Error: {
+    txt: "text-ink-red-4",
+    bg: "bg-surface-red-1",
+  },
+  Warning: {
+    txt: "text-ink-amber-3",
+    bg: "bg-surface-amber-1",
+  },
+};
+
+const tileCss = (notification) => ({
+  icon: LucideCircleAlert,
+  txt: "text-ink-gray-6",
+  bg: "bg-surface-gray-1",
+  ...iconCss[notification.type],
+  ...classCss[notification.class],
+});
+
 // Reload resource on tab switch
 const activeTab = ref(0);
 
@@ -195,6 +212,10 @@ const tabs = [
   { label: "Unread", icon: LucideMessageSquareDot },
 ];
   
+const stopIfLink = (event) => {
+  if (event.target.closest("a")) event.stopPropagation();
+};
+
 useRealtimeNotifs((data) => {
 	if (data.team === team.doc.name) resource.reload()
 })
@@ -255,21 +276,20 @@ useRealtimeNotifs((data) => {
         <Scrollbar ref="scrollRef" v-if="resource?.data?.length > 0" class='max-h-[67%] md:max-h-full'>
           <!-- notif tiles = icon + info -->
           <div v-for="x in resource.data"
-            class="[&_b]:font-semibold p-2 md:p-4 flex gap-4 items-center relative cursor-pointer border-b last:border-0 hover:bg-surface-gray-1"
+            class="[&_b]:font-semibold [&_a]:underline p-2 md:p-4 flex gap-4 items-center relative cursor-pointer border-b last:border-0 hover:bg-surface-gray-1"
             @click="markAsRead(x, togglePopover)" title="Click to mark as read">
             <!-- type icon -->
             <div class="size-8 flex-shrink-0 flex items-center p-2 rounded mb-auto mt-1 relative
-              dark:bg-surface-gray-1" :class="[iconCss[x.type].bg || 'bg-surface-gray-1']">
+              dark:bg-surface-gray-1" :class="tileCss(x).bg">
               <span v-if="x.read == 0"
                 class="p-0.5 ring-outline-gray-2 ring-2 bg-surface-gray-7 absolute rounded top-0 left-0" />
-              <component :is="iconCss[x.type].icon || LucideCircleAlert" class="size-4"
-                :class="iconCss[x.type].txt || 'text-ink-gray-6'" />
+              <component :is="tileCss(x).icon" class="size-4" :class="tileCss(x).txt" />
             </div>
 
 
             <!-- info -->
             <div class="text-base leading-relaxed flex flex-wrap gap-2 w-full min-w-0">
-              <p v-html="sanitizeHtml(x.message)" class="w-full" />
+              <p v-html="sanitizeHtml(x.message)" class="w-full [overflow-wrap:anywhere]" @click="stopIfLink" />
 
               <Badge class="text-xs mr-auto">
                 {{ x.title }}
@@ -280,9 +300,11 @@ useRealtimeNotifs((data) => {
                 </Tooltip>
               </Badge>
 
-              <span class="text-ink-gray-5 text-xs">
-                {{ dayjsLocal(x.creation).fromNow() }}
-              </span>
+              <Tooltip :text="dayjsLocal(x.creation).format('LLLL')">
+                <span class="text-ink-gray-5 text-xs">
+                  {{ dayjsLocal(x.creation).fromNow() }}
+                </span>
+              </Tooltip>
             </div>
           </div>
         </Scrollbar>

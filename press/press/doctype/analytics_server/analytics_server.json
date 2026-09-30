@@ -13,6 +13,11 @@
 		"provider",
 		"virtual_machine",
 		"is_server_setup",
+		"is_wazuh_agent_installed",
+		"wazuh_agent_status",
+		"wazuh_install_last_attempt",
+		"is_yara_installed",
+		"yara_install_last_attempt",
 		"networking_section",
 		"ip",
 		"column_break_10",
@@ -83,6 +88,38 @@
 			"label": "Virtual Machine",
 			"mandatory_depends_on": "eval:doc.provider === \"AWS EC2\"",
 			"options": "Virtual Machine"
+		},
+		{
+			"default": "0",
+			"fieldname": "is_wazuh_agent_installed",
+			"fieldtype": "Check",
+			"label": "Is Wazuh Agent Installed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "wazuh_agent_status",
+			"fieldtype": "Data",
+			"label": "Wazuh Agent Status",
+			"read_only": 1
+		},
+		{
+			"fieldname": "wazuh_install_last_attempt",
+			"fieldtype": "Datetime",
+			"label": "Wazuh Install Last Attempt",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_yara_installed",
+			"fieldtype": "Check",
+			"label": "Is YARA Installed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "yara_install_last_attempt",
+			"fieldtype": "Datetime",
+			"label": "YARA Install Last Attempt",
+			"read_only": 1
 		},
 		{
 			"default": "0",
@@ -241,7 +278,7 @@
 	],
 	"grid_page_length": 50,
 	"links": [{ "link_doctype": "Ansible Play", "link_fieldname": "server" }],
-	"modified": "2025-09-02 16:43:53.162616",
+	"modified": "2026-09-21 12:05:33.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Analytics Server",

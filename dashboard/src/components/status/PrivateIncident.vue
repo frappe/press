@@ -168,7 +168,6 @@ const incidentTrees = computed(() =>
 				return acc;
 			}, {});
 			investigation = {
-				name: incident.investigation_name,
 				status: incident.investigation_status,
 				groups: Object.entries(grouped).map(([label, steps]) => ({
 					label,

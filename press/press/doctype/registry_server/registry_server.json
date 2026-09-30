@@ -14,6 +14,11 @@
 		"provider",
 		"virtual_machine",
 		"is_server_setup",
+		"is_wazuh_agent_installed",
+		"wazuh_agent_status",
+		"wazuh_install_last_attempt",
+		"is_yara_installed",
+		"yara_install_last_attempt",
 		"is_mirror",
 		"networking_section",
 		"ip",
@@ -70,6 +75,38 @@
 			"options": "Root Domain",
 			"read_only": 1,
 			"set_only_once": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_wazuh_agent_installed",
+			"fieldtype": "Check",
+			"label": "Is Wazuh Agent Installed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "wazuh_agent_status",
+			"fieldtype": "Data",
+			"label": "Wazuh Agent Status",
+			"read_only": 1
+		},
+		{
+			"fieldname": "wazuh_install_last_attempt",
+			"fieldtype": "Datetime",
+			"label": "Wazuh Install Last Attempt",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_yara_installed",
+			"fieldtype": "Check",
+			"label": "Is YARA Installed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "yara_install_last_attempt",
+			"fieldtype": "Datetime",
+			"label": "YARA Install Last Attempt",
+			"read_only": 1
 		},
 		{
 			"default": "0",
@@ -248,7 +285,7 @@
 		}
 	],
 	"links": [{ "link_doctype": "Ansible Play", "link_fieldname": "server" }],
-	"modified": "2025-11-22 15:50:08.907789",
+	"modified": "2026-09-21 12:05:33.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Registry Server",

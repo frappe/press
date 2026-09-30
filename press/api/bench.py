@@ -32,6 +32,7 @@ from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
+from press.press.doctype.site_config.site_config import parse_json_config_value
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import (
 	docs,
@@ -224,6 +225,7 @@ def get_app_versions_list(only_frappe=False):
 		.select(
 			FrappeVersion.name.as_("version"),
 			FrappeVersion.status,
+			FrappeVersion.number,
 			FrappeVersion.default,
 			AppSource.name.as_("source"),
 			AppSource.app,
@@ -243,6 +245,7 @@ def get_app_versions_list(only_frappe=False):
 	rows = rows.run(as_dict=True)
 
 	version_list = unique(rows, lambda x: x.version)
+	version_list.sort(key=lambda x: (x.status == "Develop", -x.number))
 
 	return version_list, rows
 
@@ -355,7 +358,7 @@ def format_config_value(group: str, c: frappe._dict):
 	elif c.type == "Boolean":
 		c.value = bool(sbool(c.value))
 	elif c.type == "JSON":
-		c.value = frappe.parse_json(c.value)
+		c.value = parse_json_config_value(c.key, c.value)
 	elif c.type == "Password" and c.value == "*******":
 		c.value = frappe.get_value("Site Config", {"key": c.key, "parent": group}, "value")
 
@@ -1201,8 +1204,8 @@ def show_app_versions(name: str, dc_name: str) -> list[dict[str, Any]]:
 
 @frappe.whitelist()
 @protected("Release Group")
-def redeploy(name: str, dc_name: str) -> str:
-	response = redeploy_candidate(dc_name)
+def redeploy(name: str, dc_name: str, no_cache: bool = False) -> str:
+	response = redeploy_candidate(dc_name, no_cache=bool(sbool(no_cache)))
 
 	if response["error"]:
 		frappe.throw("Unable to redeploy this build!", frappe.ValidationError)

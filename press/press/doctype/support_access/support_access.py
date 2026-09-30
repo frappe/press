@@ -11,6 +11,8 @@ from frappe.query_builder.functions import Count
 
 from press.utils import get_current_team
 
+PENDING_REQUEST_EXPIRY_DAYS = 7
+
 
 class SupportAccess(Document):
 	# begin: auto-generated types
@@ -33,7 +35,7 @@ class SupportAccess(Document):
 		resources: DF.Table[SupportAccessResource]
 		site_domains: DF.Check
 		site_release_group: DF.Check
-		status: DF.Literal["Pending", "Accepted", "Rejected", "Forfeited", "Revoked"]
+		status: DF.Literal["Pending", "Accepted", "Rejected", "Forfeited", "Revoked", "Expired"]
 		target_team: DF.Link | None
 	# end: auto-generated types
 
@@ -177,7 +179,7 @@ class SupportAccess(Document):
 		"""
 		current_team = get_current_team()
 		if self.flags.ignore_permissions:
-			return ["Pending", "Accepted", "Rejected", "Forfeited", "Revoked"]
+			return ["Pending", "Accepted", "Rejected", "Forfeited", "Revoked", "Expired"]
 		if self.target_team == current_team:
 			return ["Accepted", "Rejected", "Revoked"]
 		if self.requested_team == current_team:
@@ -189,11 +191,12 @@ class SupportAccess(Document):
 		Checks if status can be changed from `status_from` to `status_to`.
 		"""
 		return status_to in {
-			"Pending": ["Accepted", "Rejected"],
+			"Pending": ["Accepted", "Rejected", "Expired"],
 			"Accepted": ["Revoked", "Forfeited"],
 			"Rejected": [],
 			"Forfeited": [],
 			"Revoked": [],
+			"Expired": [],
 		}.get(status_from, [])
 
 	def validate_status_change(self):
@@ -246,6 +249,10 @@ class SupportAccess(Document):
 	def on_update(self):
 		self.notify_on_status_change()
 
+	def expire(self):
+		self.db_set("status", "Expired")
+		self.notify_on_status_change()
+
 	def notify_on_status_change(self):
 		if not self.has_value_changed("status"):
 			return
@@ -258,13 +265,16 @@ class SupportAccess(Document):
 			message = "Support access has been forfieted."
 			recipient = self.target_team
 
+		if self.status == "Expired":
+			message = "Your request for support access has expired without a response."
+
 		frappe.sendmail(
 			subject=title,
 			message=message,
 			recipients=recipient,
 			template="access_request_update",
 			args={
-				"status": self.status,
+				"message": message,
 				"resources": self.resources,
 			},
 		)
@@ -324,6 +334,14 @@ class SupportAccess(Document):
 				"team": self.target_team,
 			},
 		)
+
+
+def expire_pending_requests():
+	"""Expire requests left pending for more than `PENDING_REQUEST_EXPIRY_DAYS` and notify the requester."""
+	cutoff = frappe.utils.add_to_date(frappe.utils.now_datetime(), days=-PENDING_REQUEST_EXPIRY_DAYS)
+	names = frappe.get_all("Support Access", {"status": "Pending", "creation": ("<", cutoff)}, pluck="name")
+	for name in names:
+		SupportAccess("Support Access", name).expire()
 
 
 def has_permission(doc, user=None, permission_type=None) -> bool:

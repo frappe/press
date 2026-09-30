@@ -27,6 +27,7 @@
 			<NoDataMsg v-else />
 		</div>
 		<VChart
+			ref="chartRef"
 			v-else
 			autoresize
 			class="chart"
@@ -39,9 +40,11 @@
 <script setup>
 import { LineChart } from 'echarts/charts'
 import {
+	DataZoomComponent,
 	GridComponent,
 	LegendComponent,
 	MarkLineComponent,
+	ToolboxComponent,
 	TooltipComponent,
 } from 'echarts/components'
 import { graphic, use } from 'echarts/core'
@@ -50,9 +53,11 @@ import { DateTime } from 'luxon'
 import { ref, toRefs } from 'vue'
 import VChart from 'vue-echarts'
 import NoDataMsg from '@/components/common/NoDataMsg.vue'
+import dayjs from '../../utils/dayjs'
 import { bytes, escapeHtml, getUnit } from '../../utils/format'
 import { theme } from '../../utils/theme'
 import Card from '../global/Card.vue'
+import { useDataZoom } from './useDataZoom'
 
 const props = defineProps({
 	showCard: {
@@ -113,6 +118,8 @@ use([
 	LineChart,
 	TooltipComponent,
 	MarkLineComponent,
+	DataZoomComponent,
+	ToolboxComponent,
 ])
 
 const initOptions = {
@@ -126,6 +133,13 @@ const options = ref({
 		right: 20,
 		bottom: data.value.datasets.length > 1 ? 60 : 30, // if there's legend show more space for it
 	},
+	toolbox: {
+		feature: {
+			dataZoom: {
+				yAxisIndex: false,
+			},
+		},
+	},
 	tooltip: {
 		trigger: 'axis',
 		formatter: (params) => {
@@ -135,13 +149,13 @@ const options = ref({
 			).toLocaleString(DateTime.DATETIME_MED)}</p>`
 
 			params.forEach(({ value, seriesName }, i) => {
-				if (!value || !value[1]) return
+				if (!value || value[1] == null) return
 				let colorSpan = (color) =>
 					'<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:' +
 					color +
 					'"></span>'
 
-				tooltip += `<p>${colorSpan(chartTheme.value[i])}  ${getUnit(
+				tooltip += `<p>${colorSpan(chartTheme.value[i % chartTheme.value.length])}  ${getUnit(
 					value[1],
 					unit.value,
 				)} ${
@@ -165,6 +179,8 @@ const options = ref({
 	yAxis: {
 		type: 'value',
 		max: data.value.yMax,
+		// opt-in: keeps the axis off zero so small dips stay readable
+		scale: data.value.yScale ?? false,
 		axisLabel: {
 			formatter: (value) => {
 				if (unit.value === '%') {
@@ -193,6 +209,9 @@ const options = ref({
 		show: data.value.datasets.length > 1,
 	},
 	series: data.value.datasets.map((dataset, i) => {
+		// More series than colours breaks the area gradient: zrender can't
+		// animate an undefined stop colour, and the chart freezes on hover.
+		const color = chartTheme.value[i % chartTheme.value.length]
 		return {
 			name: dataset.name || unit,
 			type: 'line',
@@ -200,7 +219,6 @@ const options = ref({
 			showSymbol: false,
 			data: dataset.dataset || dataset,
 			markLine: data.value.markLine,
-			connectNulls: true,
 			emphasis: {
 				itemStyle: {
 					shadowBlur: 10,
@@ -209,16 +227,17 @@ const options = ref({
 				},
 			},
 			lineStyle: {
-				color: chartTheme.value[i],
+				color,
+				width: 1,
 			},
 			itemStyle: {
-				color: chartTheme.value[i],
+				color,
 			},
 			areaStyle: {
 				color: new graphic.LinearGradient(0, 0, 0, 1, [
 					{
 						offset: 0,
-						color: chartTheme.value[i],
+						color,
 					},
 					{
 						offset: 1,
@@ -230,4 +249,20 @@ const options = ref({
 		}
 	}),
 })
+
+const chartRef = ref(null)
+const emits = defineEmits(['datazoom'])
+
+// A time axis reports the zoomed range as timestamps, a category axis as
+// indexes into the labels.
+const axisValueToDate = (value) =>
+	type.value === 'time'
+		? new Date(value)
+		: dayjs(
+				data.value.labels[value],
+				'YYYY-MM-DD HH:mm:ss',
+				dayjs.tz.guess(),
+			).toDate()
+
+useDataZoom(chartRef, axisValueToDate, emits)
 </script>

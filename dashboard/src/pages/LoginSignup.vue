@@ -163,6 +163,12 @@
 									variant="outline"
 									required
 								/>
+								<p
+									v-if="emailHasCapitalLetters"
+									class="mt-2 text-sm text-yellow-700"
+								>
+									The email you entered has capital letters
+								</p>
 								<!-- OAuth Authentication -->
 								<template v-if="isOauthLogin && !usePassword">
 									<Button class="mt-4" variant="solid" type="submit">
@@ -427,6 +433,36 @@
 
 			</LoginBox>
 		</div>
+
+		<Dialog
+			v-model="showReactivateAccountDialog"
+			:options="{ title: 'Reactivate Account', size :'sm' }"
+			@close="cancelReactivation"
+		>
+			<template v-slot:body-content>
+				<p class="text-p-base text-ink-gray-7">
+					This account is disabled. Reactivating restores your account and
+					resumes billing.
+				</p>
+				<ErrorMessage
+					class="mt-2"
+					:message="$resources.reactivateAccount.error"
+				/>
+			</template>
+
+			<template v-slot:actions>
+				<div class="flex justify-end gap-2">
+					<Button @click="cancelReactivation">Cancel</Button>
+					<Button
+						variant="solid"
+						:loading="$resources.reactivateAccount.loading"
+						@click="$resources.reactivateAccount.submit()"
+					>
+						Reactivate
+					</Button>
+				</div>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
@@ -460,6 +496,7 @@ export default {
 			otpResendCountdown: 0,
 			resetPasswordEmailSent: false,
 			on2FARecovery: false,
+			showReactivateAccountDialog: Boolean(window.account_disabled),
 		};
 	},
 	mounted() {
@@ -655,6 +692,15 @@ export default {
 				url: 'press.api.account.is_2fa_enabled',
 			};
 		},
+		reactivateAccount() {
+			return {
+				url: 'press.api.account.reactivate_account',
+				onSuccess(team) {
+					localStorage.setItem('current_team', team);
+					window.location.href = '/dashboard';
+				},
+			};
+		},
 		verify2FA() {
 			return {
 				url: 'press.api.account.verify_2fa',
@@ -819,6 +865,10 @@ export default {
 				},
 			);
 		},
+		cancelReactivation() {
+			this.showReactivateAccountDialog = false;
+			this.$session.logoutWithoutReload.submit();
+		},
 		async afterLogin() {
 			localStorage.setItem('login_email', this.email);
 
@@ -869,6 +919,9 @@ export default {
 		},
 		emailDomain() {
 			return this.email?.includes('@') ? this.email?.split('@').pop() : '';
+		},
+		emailHasCapitalLetters() {
+			return /[A-Z]/.test(this.email || '');
 		},
 		isOauthLogin() {
 			return (

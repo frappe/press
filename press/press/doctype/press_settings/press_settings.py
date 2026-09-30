@@ -126,6 +126,7 @@ class PressSettings(Document):
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check
 		disable_binlog_indexer_service: DF.Check
+		disable_database_audit_service: DF.Check
 		disable_frappe_auth: DF.Check
 		disable_physical_backup: DF.Check
 		disallow_disposable_emails: DF.Check
@@ -267,6 +268,7 @@ class PressSettings(Document):
 		use_new_deploy_flow: DF.Check
 		use_staging_ca: DF.Check
 		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]
+		wazuh_agent_version: DF.Data | None
 		wazuh_api_password: DF.Password | None
 		wazuh_api_url: DF.Data | None
 		wazuh_api_username: DF.Data | None
