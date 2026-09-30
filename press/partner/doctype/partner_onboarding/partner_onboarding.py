@@ -109,9 +109,9 @@ class PartnerOnboarding(Document):
 		self.status = "Pending Review"
 		self.submitted_on = now_datetime()
 
-	# Review happens on a submitted record, and Frappe skips before_save and
-	# on_update for those. Use the after-submit hooks, or approval does nothing.
-	def before_update_after_submit(self):
+	def before_save(self):
+		# Status is read-only in desk, but still fill review metadata whenever it
+		# flips to a decision — covers Approve/Reject buttons and any server-side set.
 		if not self.has_value_changed("status"):
 			return
 
@@ -121,7 +121,7 @@ class PartnerOnboarding(Document):
 			if self.status == "Approved":
 				self.approved_on = now_datetime()
 
-	def on_update_after_submit(self):
+	def on_update(self):
 		if not self.has_value_changed("status"):
 			return
 

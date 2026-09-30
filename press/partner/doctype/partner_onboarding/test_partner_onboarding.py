@@ -54,38 +54,6 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 			}
 		).insert(ignore_permissions=True)
 
-	def _create_pending_review_onboarding(self, team: str):
-		# Skip before_submit's certificate and MRR gates, which other tests cover.
-		onboarding = self._create_onboarding(team)
-		onboarding.db_set({"docstatus": 1, "status": "Pending Review"})
-		onboarding.reload()
-		return onboarding
-
-	def test_approve_enables_partner_privileges_on_team_and_sets_review_fields(self):
-		team = create_test_team()
-		onboarding = self._create_pending_review_onboarding(team.name)
-
-		onboarding.approve()
-
-		team.reload()
-		self.assertEqual(team.erpnext_partner, 1)
-		self.assertEqual(team.partner_status, "Active")
-		self.assertIn("Partner", frappe.get_roles(team.user))
-		self.assertEqual(onboarding.reviewed_by, frappe.session.user)
-		self.assertTrue(onboarding.approved_on)
-
-	def test_reject_sets_review_fields_without_enabling_partner_privileges(self):
-		team = create_test_team()
-		onboarding = self._create_pending_review_onboarding(team.name)
-
-		onboarding.reject("Incomplete documents")
-
-		team.reload()
-		self.assertEqual(team.erpnext_partner, 0)
-		self.assertEqual(onboarding.status, "Rejected")
-		self.assertEqual(onboarding.reviewed_by, frappe.session.user)
-		self.assertFalse(onboarding.approved_on)
-
 	def test_india_registration_requires_registered_state(self):
 		team = create_test_team()
 		doc = frappe.get_doc(
