@@ -252,6 +252,7 @@ class Ansible:
 
 	def run(self) -> AnsiblePlay:
 		_ansible_local.current = self
+		frappe.log_error(title=f"Running Ansible playbook: {self.playbook_path}", message=f"Server: {self.server.name} ({self.host})")
 		try:
 			self.executor = PlaybookExecutor(
 				playbooks=[self.playbook_path],
@@ -268,6 +269,7 @@ class Ansible:
 			self.executor.run()
 			return frappe.get_doc("Ansible Play", self.play)
 		except Exception:
+			frappe.log_error(title=f"Ansible play failed: {self.playbook} on {self.server.name}", message=frappe.get_traceback(with_context=True))
 			self.log_run_failure()
 			frappe.log_error(title=f"Ansible play failed:", message=frappe.get_traceback(with_context=True))
 			raise
