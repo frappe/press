@@ -741,6 +741,31 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			str(e.exception),
 		)
 
+	def test_force_archive_does_not_drop_a_bench_a_site_is_migrating_to(self):
+		"""The site still points at its source bench, so the site check cannot see it."""
+		bench = self._bench_with_a_recent_archive_failure()
+		with fake_agent_job("New Bench", "Success"):
+			source_bench = create_test_bench()
+			poll_pending_jobs()
+		site = create_test_site(bench=source_bench.name, fake_agent_jobs=True)
+		frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": site.name,
+				"destination_bench": bench.name,
+				"scheduled_time": frappe.utils.add_days(None, 1),
+			}
+		).insert()
+
+		with self.assertRaises(ArchiveBenchError) as e:
+			bench.archive(force=True)
+		self.assertIn(
+			f"There are pending site migrations on bench {bench.name}.",
+			str(e.exception),
+		)
+		bench.reload()
+		self.assertEqual(bench.status, "Active")
+
 	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
 	def test_force_archive_does_not_drop_a_bench_that_still_has_sites(self):
 		bench = self._bench_with_a_recent_archive_failure()

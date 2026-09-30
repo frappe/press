@@ -1211,11 +1211,19 @@ class Bench(Document):
 			)
 
 	def check_work_in_progress(self):
-		"""Refuse the archive while the bench is still busy. Force skips these."""
+		"""Refuse the archive while the bench is busy. Force skips these."""
 		self.check_scaled_up_server()
 		self.check_bench_resetting()
 		self.check_last_archive()
 		self.check_ongoing_jobs()
+
+	def check_sites_in_flight(self):
+		"""Refuse the archive while a site is on its way to or from this bench.
+
+		Force never skips these. An unfinished update, migration or upgrade still
+		points the site at its source bench, so check_unarchived_sites sees nothing
+		on the destination while the agent restores the site there.
+		"""
 		self.check_ongoing_site_updates()
 		self.check_pending_site_operations()
 
@@ -1223,12 +1231,13 @@ class Bench(Document):
 		"""Raise unless the bench can be archived.
 
 		``force`` skips the checks that are judgement calls, for a system user who can
-		see more than the checks can. It never skips the running-archive-job check, nor
-		the check for sites still on the bench.
+		see more than the checks can. It never skips a running archive job, a site on
+		its way to this bench, or a site still on it.
 		"""
 		if not force:
 			self.check_work_in_progress()
 		self.check_archive_jobs()
+		self.check_sites_in_flight()
 		self.check_unarchived_sites()
 
 	def update_apps_after_inplace_update(

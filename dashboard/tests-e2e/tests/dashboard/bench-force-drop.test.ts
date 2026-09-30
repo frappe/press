@@ -157,7 +157,7 @@ test('a system user drops the same bench past the checks', async ({ page }) => {
 
 	await expect(dialog.getByText('are skipped for system users')).toBeVisible()
 	await expect(
-		dialog.getByText('Sites still on the bench block the drop.'),
+		dialog.getByText('A site on the bench, or one moving to it, still blocks'),
 	).toBeVisible()
 
 	const archiveRequest: Promise<Request> = page.waitForRequest(

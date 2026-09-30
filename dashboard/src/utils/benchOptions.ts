@@ -91,13 +91,14 @@ const confirmBenchMethod = (options: {
 const isSystemUser = () => window.is_system_user ?? false
 
 // A system user drops a bench the checks refuse: a recent failed archive, a running
-// job, an unfinished site update. Sites still on the bench block the drop for everyone.
+// job, a server that is scaling. A site on the bench, or one moving to it, blocks the
+// drop for everyone.
 const confirmDropBench = (bench: string) =>
 	confirmBenchMethod({
 		bench,
 		title: 'Drop Bench',
 		message: isSystemUser()
-			? `Are you sure you want to drop the bench <b>${bench}</b>?<br><br>The checks for a recent failed archive and for ongoing jobs are skipped for system users. Sites still on the bench block the drop.`
+			? `Are you sure you want to drop the bench <b>${bench}</b>?<br><br>The checks for a recent failed archive and for ongoing jobs are skipped for system users. A site on the bench, or one moving to it, still blocks the drop.`
 			: `Are you sure you want to drop the bench <b>${bench}</b>?`,
 		label: 'Drop',
 		theme: 'red',
