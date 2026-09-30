@@ -40,6 +40,7 @@ class ScheduledDeploySettings(Document):
 
 
 def deploy_scheduled_release_groups():
+	"""Deploy every group due this hour. A failing group is logged and the rest still run."""
 	settings = ScheduledDeploySettings("Scheduled Deploy Settings")
 	if not settings.enabled:
 		return
@@ -57,6 +58,7 @@ def deploy_scheduled_release_groups():
 
 
 def deploy_release_group(name: str):
+	"""Deploy all app updates of a release group, if it has any."""
 	group = ReleaseGroup("Release Group", name)
 	if not group.deploy_information().update_available:
 		return
