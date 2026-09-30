@@ -43,7 +43,10 @@ def get_incident_count(resolved: bool = False) -> int:
 
 	Incident = frappe.qb.DocType("Incident")
 	query = (
-		frappe.qb.from_(Incident).select(Count(Incident.name)).where(Incident.server.isin(all_user_servers))
+		frappe.qb.from_(Incident)
+		.select(Count(Incident.name))
+		.where(Incident.server.isin(all_user_servers))
+		.where(Incident.ignored == 0)
 	)
 	query = (
 		query.where((Incident.status == "Resolved") | (Incident.status == "Auto-Resolved"))
@@ -110,6 +113,7 @@ def get_incidents(resolved: bool = False, limit: int = 20, offset: int = 0) -> l
 			).as_("investigation_action_steps_status"),
 		)
 		.where(Incident.server.isin(all_user_servers))
+		.where(Incident.ignored == 0)
 	)
 
 	return (

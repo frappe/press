@@ -99,6 +99,8 @@ class Incident(WebsiteGenerator):
 		confirmed_at: DF.Datetime | None
 		corrective_suggestions: DF.Table[IncidentSuggestion]
 		description: DF.TextEditor | None
+		ignore_reason: DF.SmallText | None
+		ignored: DF.Check
 		investigation: DF.Link | None
 		likely_cause: DF.Text | None
 		phone_call: DF.Check
@@ -159,7 +161,7 @@ class Incident(WebsiteGenerator):
 		self.identify_affected_resource()
 
 	def on_update(self):
-		if self.has_value_changed("status"):
+		if self.has_value_changed("status") and not self.ignored:
 			current_datetime = frappe.utils.now_datetime()
 			self.send_email_notification()
 			if self.status == "Resolved" or self.status == "Auto-Resolved":
@@ -455,6 +457,17 @@ class Incident(WebsiteGenerator):
 		self.save()
 
 	@frappe.whitelist()
+	def ignore(self, reason: str):
+		"""Mute the incident and hide it from customers, e.g. when a user error caused it"""
+		if not (reason := reason.strip()):
+			frappe.throw("Please give a reason for ignoring this incident.")
+		self.ignored = True
+		self.ignore_reason = reason
+		self.show_in_website = False
+		self.save()
+		self.add_comment("Comment", f"Ignored incident: {reason}")
+
+	@frappe.whitelist()
 	def cancel_stuck_jobs(self):
 		"""
 		During db reboot/upgrade some jobs tend to get stuck. This is a hack to cancel those jobs
@@ -644,7 +657,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		return acknowledged
 
 	def _call_humans(self):
-		if not self.phone_call or not self.global_phone_call_enabled:
+		if self.ignored or not self.phone_call or not self.global_phone_call_enabled:
 			return
 		if (
 			ignore_till := frappe.db.get_value("Server", self.server, "ignore_incidents_till")
@@ -756,7 +769,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		)
 
 	def _call_customers(self):
-		if not self.phone_call:
+		if self.ignored or not self.phone_call:
 			return
 
 		phone_nos = get_communication_info("Phone Call", "Incident", "Server", self.server)
@@ -971,6 +984,7 @@ def validate_incidents():
 		"Incident",
 		filters={
 			"status": "Validating",
+			"ignored": False,
 		},
 		fields=["name", "creation"],
 	)
@@ -991,6 +1005,7 @@ def resolve_incidents():
 		pluck="name",
 	)
 	for incident_name in ongoing_incidents:
+<<<<<<< HEAD
 		try:
 			incident = Incident("Incident", incident_name)
 			incident.check_resolved()
@@ -1001,6 +1016,16 @@ def resolve_incidents():
 				frappe.db.commit()
 		except Exception:
 			log_error(f"Error while resolving incident {incident_name}")
+=======
+		incident = Incident("Incident", incident_name)
+		incident.check_resolved()
+		if incident.ignored:
+			continue
+		if (
+			incident.time_to_call_for_help or incident.time_to_call_for_help_again
+		) and incident.waited_enough_for_investigator_reactions:
+			incident.call_humans()
+>>>>>>> 5c1c320 (feat(incident): Add ignore incident action with a required reason)
 
 
 def notify_ignored_servers():
