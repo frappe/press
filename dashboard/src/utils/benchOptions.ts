@@ -5,6 +5,7 @@ import BenchAppVersionsDialog from '../components/group/BenchAppVersionsDialog.v
 import SSHCertificateDialog from '../components/group/SSHCertificateDialog.vue'
 import { getTeam } from '../data/team'
 import { confirmDialog, renderDialog } from './components'
+import { escapeHtml } from './format'
 import { getToastErrorMessage } from './toast'
 
 export type BenchRow = {
@@ -93,13 +94,14 @@ const isSystemUser = () => window.is_system_user ?? false
 // A system user drops a bench the checks refuse: a recent failed archive, a running
 // job, a server that is scaling. A site on the bench, or one moving to it, blocks the
 // drop for everyone.
-const confirmDropBench = (bench: string) =>
-	confirmBenchMethod({
+const confirmDropBench = (bench: string) => {
+	const name = escapeHtml(bench)
+	return confirmBenchMethod({
 		bench,
 		title: 'Drop Bench',
 		message: isSystemUser()
-			? `Are you sure you want to drop the bench <b>${bench}</b>?<br><br>The checks for a recent failed archive and for ongoing jobs are skipped for system users. A site on the bench, or one moving to it, still blocks the drop.`
-			: `Are you sure you want to drop the bench <b>${bench}</b>?`,
+			? `Are you sure you want to drop the bench <b>${name}</b>?<br><br>The checks for a recent failed archive and for ongoing jobs are skipped for system users. A site on the bench, or one moving to it, still blocks the drop.`
+			: `Are you sure you want to drop the bench <b>${name}</b>?`,
 		label: 'Drop',
 		theme: 'red',
 		method: 'archive',
@@ -108,6 +110,7 @@ const confirmDropBench = (bench: string) =>
 		success: 'Bench is scheduled to be dropped',
 		error: 'Failed to drop bench',
 	})
+}
 
 const supportsRebuild = (version?: string) => {
 	if (!version) return false

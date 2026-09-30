@@ -1192,18 +1192,34 @@ class Bench(Document):
 				ArchiveBenchError,
 			)
 
-	def check_scheduled_version_upgrades(self):
+	def is_upgrade_destination(self) -> bool:
+		"""Whether a cross-group Site Update would land on this bench.
+
+		validate_destination_bench takes the newest active bench of the group on the
+		server, so that is the one a scheduled upgrade cannot lose.
+		"""
+		return self.name == frappe.db.get_value(
+			"Bench",
+			{"group": self.group, "server": self.server, "status": "Active"},
+			"name",
+			order_by="creation desc",
+		)
+
+	def check_scheduled_version_upgrades(self, force: bool = False):
 		"""Refuse the archive while an upgrade to this bench's group is scheduled.
 
-		Force skips this one. The query matches the group and the server, not the
-		bench, so it holds every bench of the group on that server. Once the upgrade
-		starts it has a Site Update, which names the bench, and check_ongoing_site_updates
-		blocks on that instead.
+		The query matches the group and the server, not a bench, so it holds every
+		bench of the group there. Force narrows it to the bench the upgrade would
+		land on: dropping that one leaves the upgrade with no destination, and it
+		fails when it starts.
 		"""
-		if get_scheduled_version_upgrades(self):
-			frappe.throw(
-				"Version upgrade is in progress. Please try again after some time.", ArchiveBenchError
-			)
+		if not get_scheduled_version_upgrades(self):
+			return
+
+		if force and not self.is_upgrade_destination():
+			return
+
+		frappe.throw("Version upgrade is in progress. Please try again after some time.", ArchiveBenchError)
 
 	def check_pending_site_operations(self):
 		"""Both of these name this bench as the destination."""
@@ -1225,7 +1241,6 @@ class Bench(Document):
 		self.check_bench_resetting()
 		self.check_last_archive()
 		self.check_ongoing_jobs()
-		self.check_scheduled_version_upgrades()
 
 	def check_sites_in_flight(self):
 		"""Refuse the archive while a site is on its way to or from this bench.
@@ -1242,11 +1257,12 @@ class Bench(Document):
 
 		``force`` skips the checks that are judgement calls, for a system user who can
 		see more than the checks can. It never skips a running archive job, a site on
-		its way to this bench, or a site still on it.
+		its way to this bench, a site still on it, or an upgrade that would land here.
 		"""
 		if not force:
 			self.check_work_in_progress()
 		self.check_archive_jobs()
+		self.check_scheduled_version_upgrades(force)
 		self.check_sites_in_flight()
 		self.check_unarchived_sites()
 
