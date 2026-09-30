@@ -36,6 +36,7 @@ from press.press.doctype.site_update.site_update import (
 	SiteUpdate,
 	is_site_in_deploy_hours,
 	run_scheduled_updates,
+	schedule_updates_server,
 	sites_with_available_update,
 )
 from press.press.doctype.subscription.test_subscription import create_test_subscription
@@ -551,6 +552,61 @@ class TestSiteUpdate(FrappeTestCase):
 		self.assertFalse(site_update.skipped_backups)
 		agent_job = frappe.get_doc("Agent Job", site_update.update_job)
 		self.assertFalse(json.loads(agent_job.request_data)["skip_backups"])
+
+	def _sites_on_bench_with_update(
+		self, standby: int, customer: int, queue_size: int = 10
+	) -> tuple[list[str], list[str]]:
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+
+		standby_sites = [create_test_site(bench=bench1.name).name for _ in range(standby)]
+		for site in standby_sites:
+			frappe.db.set_value("Site", site, "is_standby", 1)
+		customer_sites = [create_test_site(bench=bench1.name).name for _ in range(customer)]
+		frappe.db.set_single_value("Press Settings", "auto_update_queue_size", queue_size)
+		return standby_sites, customer_sites
+
+	@patch.object(SiteUpdate, "start", new=Mock())
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	def test_all_standby_sites_on_a_bench_are_scheduled_in_one_run_but_customer_sites_one_per_bench(
+		self,
+	):
+		standby_sites, customer_sites = self._sites_on_bench_with_update(standby=3, customer=3)
+		server = frappe.db.get_value("Site", standby_sites[0], "server")
+
+		with patch("press.press.doctype.site_update.site_update.is_site_in_deploy_hours", return_value=True):
+			schedule_updates_server(server)
+
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", standby_sites)}), 3)
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", customer_sites)}), 1)
+
+	@patch.object(SiteUpdate, "start", new=Mock())
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	def test_customer_sites_wait_for_deploy_hours_while_standby_sites_move(self):
+		standby_sites, customer_sites = self._sites_on_bench_with_update(standby=2, customer=2)
+		server = frappe.db.get_value("Site", standby_sites[0], "server")
+
+		with patch("press.press.doctype.site_update.site_update.is_site_in_deploy_hours", return_value=False):
+			schedule_updates_server(server)
+
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", standby_sites)}), 2)
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", customer_sites)}), 0)
+
+	@patch.object(SiteUpdate, "start", new=Mock())
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	def test_full_customer_update_queue_does_not_hold_back_standby_sites(self):
+		standby_sites, customer_sites = self._sites_on_bench_with_update(standby=1, customer=2, queue_size=0)
+		server = frappe.db.get_value("Site", standby_sites[0], "server")
+		frappe.get_doc("Site", customer_sites[0]).schedule_update()  # stays Pending
+
+		with patch("press.press.doctype.site_update.site_update.is_site_in_deploy_hours", return_value=True):
+			schedule_updates_server(server)
+
+		self.assertEqual(frappe.db.count("Site Update", {"site": standby_sites[0]}), 1)
+		self.assertEqual(frappe.db.count("Site Update", {"site": customer_sites[1]}), 0)
 
 	def test_standby_site_is_updated_even_outside_deploy_hours(self):
 		"""A standby site must bypass the deploy-hours filter; regression for is_standby not being fetched."""
