@@ -5,6 +5,8 @@ import frappe
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
+from press.api.github import filter_installations
+from press.guards.role_guard import repository as repository_guard
 from press.press.doctype.team.test_team import create_test_team
 
 
@@ -118,6 +120,87 @@ class TestPressRole(FrappeTestCase):
 
 		self.perm_role.reload()
 		self.assertFalse(any(r.document_name == site_name for r in self.perm_role.resources))
+
+	def test_add_repositories_skips_duplicates_and_rejects_bad_names(self):
+		self.perm_role.add_repositories(["frappe/erpnext", "Frappe/ERPNext", "frappe/hrms"])
+		self.perm_role.reload()
+		self.assertEqual(
+			sorted((r.repository_owner, r.repository) for r in self.perm_role.repositories),
+			[("frappe", "erpnext"), ("frappe", "hrms")],
+		)
+		self.assertRaises(frappe.ValidationError, self.perm_role.add_repositories, ["not-a-repo"])
+
+		self.perm_role.remove_repository("FRAPPE", "hrms")
+		self.perm_role.reload()
+		self.assertEqual([r.repository for r in self.perm_role.repositories], ["erpnext"])
+		self.assertRaises(frappe.ValidationError, self.perm_role.remove_repository, "frappe", "hrms")
+
+	def test_repository_restriction_off_allows_every_repository(self):
+		self.perm_role.add_user(self.team_member.name)
+		self.perm_role.add_repositories(["frappe/hrms"])
+
+		frappe.set_user(self.team_member.name)
+		self.assertIsNone(repository_guard.allowed_repositories(self.team.name))
+		repository_guard.check(self.team.name, "frappe", "erpnext")
+
+	def test_repository_restriction_limits_member_to_role_repositories(self):
+		self.perm_role.add_user(self.team_member.name)
+		self.perm_role.add_repositories(["frappe/hrms"])
+		frappe.db.set_value("Team", self.team.name, "restrict_repository_access", 1)
+
+		frappe.set_user(self.team_member.name)
+		self.assertEqual(repository_guard.allowed_repositories(self.team.name), {("frappe", "hrms")})
+		repository_guard.check(self.team.name, "Frappe", "HRMS")
+		repository_guard.check_url(self.team.name, "https://github.com/frappe/hrms.git")
+		self.assertRaises(frappe.PermissionError, repository_guard.check, self.team.name, "frappe", "erpnext")
+		self.assertRaises(frappe.PermissionError, repository_guard.check_url, self.team.name, "not a url")
+
+	def test_repository_restriction_without_roles_allows_nothing(self):
+		frappe.db.delete("Press Role", {"team": self.team.name})
+		frappe.db.set_value("Team", self.team.name, "restrict_repository_access", 1)
+
+		frappe.set_user(self.team_member.name)
+		self.assertEqual(repository_guard.allowed_repositories(self.team.name), set())
+
+	def test_repository_restriction_skips_admins(self):
+		self.admin_perm_role.admin_access = 1
+		self.admin_perm_role.save()
+		self.admin_perm_role.add_user(self.team_member.name)
+		frappe.db.set_value("Team", self.team.name, "restrict_repository_access", 1)
+
+		frappe.set_user(self.team_member.name)
+		self.assertIsNone(repository_guard.allowed_repositories(self.team.name))
+
+	def test_add_source_rejects_repository_outside_role(self):
+		self.perm_role.add_user(self.team_member.name)
+		frappe.db.set_value("Team", self.team.name, "restrict_repository_access", 1)
+
+		frappe.set_user(self.team_member.name)
+		with self.assertRaises(frappe.PermissionError):
+			frappe.new_doc("App").add_source(
+				repository_url="https://github.com/frappe/erpnext",
+				branch="develop",
+				frappe_version="Version 15",
+				team=self.team.name,
+				github_installation_id="12345",
+			)
+
+	def test_member_cannot_toggle_repository_restriction(self):
+		frappe.set_user(self.team_member.name)
+		team = frappe.get_doc("Team", self.team.name)
+		team.restrict_repository_access = 1
+		self.assertRaises(frappe.PermissionError, team.perm_relaxed_roles)
+
+	def test_filter_installations_keeps_only_allowed_repositories(self):
+		installations = [
+			{"login": "frappe", "repos": [{"name": "erpnext"}, {"name": "hrms"}]},
+			{"login": "acme", "repos": [{"name": "internal"}]},
+		]
+		self.assertEqual(filter_installations(installations, None), installations)
+		self.assertEqual(
+			filter_installations(installations, {("frappe", "hrms")}),
+			[{"login": "frappe", "repos": [{"name": "hrms"}]}],
+		)
 
 
 # utils

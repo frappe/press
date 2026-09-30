@@ -71,6 +71,12 @@ class App(Document):
 		public=False,
 		repository_owner=None,
 	) -> "AppSource":
+		from press.guards.role_guard import repository as repository_guard
+
+		# Only token-backed (installation) repos fall under the team's restriction.
+		if github_installation_id:
+			repository_guard.check_url(team, repository_url)
+
 		# Ensure no .git suffix when looking for existing sources
 		supported_frappe_versions = parse_frappe_version(frappe_version, self.title)
 		repository_url = repository_url.removesuffix(".git")

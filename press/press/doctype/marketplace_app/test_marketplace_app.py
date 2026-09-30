@@ -104,7 +104,7 @@ class TestMarketplaceApp(FrappeTestCase):
 			)
 		self.assertIn("No app source found for frappe/erpnext", str(context.exception))
 
-	@patch("press.press.doctype.marketplace_app.marketplace_app.app")
+	@patch("press.press.doctype.marketplace_app.marketplace_app.fetch_app_info")
 	def test_validate_frappe_version_skips_a_branch_that_declares_no_frappe_version(self, github_app: Mock):
 		"""Regression: `api.github.app` returns frappe_version=None for the framework itself,
 		which used to crash with AttributeError inside map_frappe_version."""
@@ -120,7 +120,7 @@ class TestMarketplaceApp(FrappeTestCase):
 			)
 		)
 
-	@patch("press.press.doctype.marketplace_app.marketplace_app.app")
+	@patch("press.press.doctype.marketplace_app.marketplace_app.fetch_app_info")
 	def test_validate_frappe_version_rejects_a_branch_that_does_not_support_the_version(
 		self, github_app: Mock
 	):

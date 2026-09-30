@@ -2,6 +2,13 @@
 	<div v-if="$resources.options.loading" class="mt-2 flex justify-center">
 		<LoadingText />
 	</div>
+	<div
+		v-else-if="noAllowedRepositories"
+		class="pt-2 text-center text-p-sm text-ink-gray-6"
+	>
+		Your role doesn't allow any of the team's GitHub repositories. Ask a team
+		admin to add them to your role.
+	</div>
 	<div class="pt-2" v-else-if="!options?.authorized">
 		<div v-if="!!needsAuthorization" class="flex justify-center">
 			<Button
@@ -100,7 +107,13 @@
 			</template>
 		</FormControl>
 
-		<p v-if="selectedGithubUserData" class="!mt-2 text-sm text-ink-gray-6">
+		<p
+			v-if="selectedGithubUserData && options.restricted"
+			class="!mt-2 text-sm text-ink-gray-6"
+		>
+			Only the repositories your role allows are listed.
+		</p>
+		<p v-else-if="selectedGithubUserData" class="!mt-2 text-sm text-ink-gray-6">
 			Don't see your repository here?
 			<Link :href="selectedGithubUserData.url" class="font-medium">
 				Add from GitHub
@@ -237,6 +250,13 @@ export default {
 			if (!this.selectedGithubUser) return null
 			return this.options.installations.find(
 				(i) => i.id === Number(this.selectedGithubUser.id),
+			)
+		},
+		noAllowedRepositories() {
+			return (
+				this.options?.authorized &&
+				this.options.restricted &&
+				this.options.installations.length === 0
 			)
 		},
 		needsAuthorization() {
