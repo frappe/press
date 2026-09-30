@@ -1,5 +1,12 @@
 <template>
+<<<<<<< HEAD
 	<DateRangePicker :modelValue="pickerValue" @update:modelValue="onPick">
+=======
+	<DateRangePicker
+		:modelValue="modelValue"
+		@update:modelValue="(value) => $emit('update:modelValue', value)"
+	>
+>>>>>>> 7096d03 (feat(dashboard): Add a date filter to site jobs)
 		<template #target="{ togglePopover }">
 			<Dropdown :options="dropdownOptions(togglePopover)">
 				<Button class="w-full justify-between">
@@ -17,10 +24,16 @@
 
 <script>
 import { Button, DateRangePicker, Dropdown } from 'frappe-ui';
+<<<<<<< HEAD
 import dayjs, { dayjsIST, dayjsLocal } from '../utils/dayjs';
 
 const DATE = 'YYYY-MM-DD';
 const SERVER_DATETIME = 'YYYY-MM-DD HH:mm:ss.SSS';
+=======
+import dayjs from '../utils/dayjs';
+
+const FORMAT = 'YYYY-MM-DD';
+>>>>>>> 7096d03 (feat(dashboard): Add a date filter to site jobs)
 
 // Each preset ends today, so its range moves forward with the calendar
 const PRESETS = [
@@ -31,6 +44,7 @@ const PRESETS = [
 	{ label: 'Last 90 days', days: 90 },
 ];
 
+<<<<<<< HEAD
 // The user picks days in their own timezone, but the server stores
 // datetimes in Asia/Calcutta. Convert the bounds of each day.
 function dayStart(date) {
@@ -52,13 +66,23 @@ function presetStart(preset) {
 // A preset has no upper bound, so the jobs from after midnight still show
 function presetFilter(preset) {
 	return ['>=', presetStart(preset)];
+=======
+function presetValue(days) {
+	const today = dayjs();
+	const from = today.subtract(days - 1, 'day');
+	return `${from.format(FORMAT)},${today.format(FORMAT)}`;
+>>>>>>> 7096d03 (feat(dashboard): Add a date filter to site jobs)
 }
 
 export default {
 	name: 'DateRangeFilter',
 	props: {
+<<<<<<< HEAD
 		// A `between` or `>=` filter on a datetime field
 		modelValue: { type: [Array, String], default: '' },
+=======
+		modelValue: { type: String, default: '' },
+>>>>>>> 7096d03 (feat(dashboard): Add a date filter to site jobs)
 		placeholder: { type: String, default: 'Date' },
 	},
 	emits: ['update:modelValue'],
@@ -67,6 +91,7 @@ export default {
 		DateRangePicker,
 		Dropdown,
 	},
+<<<<<<< HEAD
 	data() {
 		return { activePreset: null };
 	},
@@ -127,14 +152,34 @@ export default {
 			const [from, to] = value.split(',');
 			this.$emit('update:modelValue', ['between', [dayStart(from), dayEnd(to)]]);
 		},
+=======
+	computed: {
+		label() {
+			if (!this.modelValue) return this.placeholder;
+			const preset = PRESETS.find(
+				(p) => presetValue(p.days) === this.modelValue,
+			);
+			if (preset) return preset.label;
+			const [from, to] = this.modelValue.split(',');
+			if (from === to) return dayjs(from).format('D MMM YYYY');
+			return `${dayjs(from).format('D MMM')} – ${dayjs(to).format('D MMM YYYY')}`;
+		},
+	},
+	methods: {
+>>>>>>> 7096d03 (feat(dashboard): Add a date filter to site jobs)
 		dropdownOptions(togglePopover) {
 			return [
 				...PRESETS.map((preset) => ({
 					label: preset.label,
+<<<<<<< HEAD
 					onClick: () => {
 						this.activePreset = preset;
 						this.$emit('update:modelValue', presetFilter(preset));
 					},
+=======
+					onClick: () =>
+						this.$emit('update:modelValue', presetValue(preset.days)),
+>>>>>>> 7096d03 (feat(dashboard): Add a date filter to site jobs)
 				})),
 				{
 					label: 'Custom range',
