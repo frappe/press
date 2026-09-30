@@ -265,9 +265,6 @@ class SiteUpdate(Document):
 		site: "Site" = frappe.get_doc("Site", self.site)
 		site.check_move_scheduled()
 		site.check_fatal_site_update()
-		if site.is_standby:
-			# A standby site holds no customer data, so there is nothing to back up.
-			self.skipped_backups = True
 
 	def after_insert(self):
 		if not self.scheduled_time:
@@ -290,6 +287,10 @@ class SiteUpdate(Document):
 		for it. Physical and Logical Replication backups need AWS EBS snapshots.
 		"""
 		if self.skipped_backups or self.deploy_type != "Migrate":
+			return
+
+		# A standby site skips its backup at start, so it needs no snapshot.
+		if frappe.db.get_value("Site", self.site, "is_standby"):
 			return
 
 		# No provider also means no database server, as with a configured RDS server.
@@ -393,12 +394,20 @@ class SiteUpdate(Document):
 
 			return
 
+		self.skip_backups_for_standby_site()
 		if self.use_physical_backup:
 			self.deactivate_site()
 		elif self.use_logical_replication_backup:
 			self.create_logical_replication_backup_record()
 		else:
 			self.create_update_site_agent_request()
+
+	def skip_backups_for_standby_site(self):
+		"""Skip the backup of a site still in the standby pool once its move has started."""
+		# Checked at start, not insert, since a site can leave the pool in between.
+		if not self.skipped_backups and frappe.db.get_value("Site", self.site, "is_standby"):
+			self.skipped_backups = True
+			self.save()
 
 	def fail_with_notification(self, reason: str):
 		frappe.db.set_value("Site Update", self.name, "status", "Cancelled")
