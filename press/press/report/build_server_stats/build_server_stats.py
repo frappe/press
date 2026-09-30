@@ -55,8 +55,9 @@ def get_period(filters):
 	start = get_datetime(
 		filters.from_datetime or add_to_date(end, seconds=-DURATIONS[filters.duration or "1 hour"])
 	)
-	if start >= end:
-		frappe.throw("From must be before To")
+	# A shorter period holds fewer than two scrapes, so every rate reads zero
+	if (end - start).total_seconds() < DURATIONS["5 minutes"]:
+		frappe.throw("From must be at least 5 minutes before To")
 	return Period(start, end)
 
 
