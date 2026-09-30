@@ -13,6 +13,7 @@ import frappe.utils
 import pytz
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.query_builder.functions import Count
 from frappe.utils import convert_utc_to_system_timezone
 from frappe.utils.caching import site_cache
 from frappe.utils.data import cint
@@ -971,22 +972,36 @@ def schedule_updates():
 
 
 def schedule_updates_server(server):
-	# Prevent flooding the queue
 	queue_size = frappe.db.get_single_value("Press Settings", "auto_update_queue_size")
-	pending_update_count = frappe.db.count(
-		"Site Update",
-		{
-			"status": ("in", ("Pending", "Running")),
-			"server": server,
-			"creation": (">", frappe.utils.add_to_date(None, hours=-4)),
-		},
-	)
-	if pending_update_count > queue_size:
-		return
-
 	sites = sites_with_available_update(server)
-	sites = list(filter(is_site_in_deploy_hours, sites))
 
+	# Standby sites hold no customer data, so every one of them can move in the same run.
+	if count_pending_updates(server, is_standby=True) <= queue_size:
+		standby_sites = [site for site in sites if site.is_standby]
+		schedule_site_updates(standby_sites, queue_size, one_per_bench=False)
+
+	if count_pending_updates(server, is_standby=False) <= queue_size:
+		customer_sites = [site for site in sites if not site.is_standby and is_site_in_deploy_hours(site)]
+		schedule_site_updates(customer_sites, queue_size, one_per_bench=True)
+
+
+def count_pending_updates(server: str, is_standby: bool) -> int:
+	SiteUpdate = frappe.qb.DocType("Site Update")
+	Site = frappe.qb.DocType("Site")
+	return (
+		frappe.qb.from_(SiteUpdate)
+		.join(Site)
+		.on(Site.name == SiteUpdate.site)
+		.select(Count("*"))
+		.where(SiteUpdate.status.isin(["Pending", "Running"]))
+		.where(SiteUpdate.server == server)
+		.where(SiteUpdate.creation > frappe.utils.add_to_date(None, hours=-4))
+		.where(Site.is_standby == is_standby)
+		.run()[0][0]
+	)
+
+
+def schedule_site_updates(sites: list, queue_size: int, one_per_bench: bool):
 	# If a site can't be updated for some reason, then we shouldn't get stuck
 	# Shuffle sites list, to achieve this
 	random.shuffle(sites)
@@ -994,7 +1009,7 @@ def schedule_updates_server(server):
 	benches = {}
 	update_triggered_count = 0
 	for site in sites:
-		if site.bench in benches:
+		if one_per_bench and site.bench in benches:
 			continue
 		if update_triggered_count > queue_size:
 			break
