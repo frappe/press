@@ -529,6 +529,29 @@ class TestSiteUpdate(FrappeTestCase):
 		self.assertEqual(frappe.get_value("Site Update", site_update_name, "status"), "Cancelled")
 		self.assertTrue(frappe.db.exists("Press Notification", {"type": "Site Update", "team": site.team}))
 
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_migrate_update_of_standby_site_skips_backups(self):
+		site = self._migrate_site_with_difference()
+		frappe.db.set_value("Site", site.name, "is_standby", 1)
+
+		site_update = frappe.get_doc("Site Update", site.schedule_update())
+
+		self.assertEqual(site_update.deploy_type, "Migrate")
+		self.assertTrue(site_update.skipped_backups)
+		agent_job = frappe.get_doc("Agent Job", site_update.update_job)
+		self.assertTrue(json.loads(agent_job.request_data)["skip_backups"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_migrate_update_of_customer_site_still_takes_backups(self):
+		site = self._migrate_site_with_difference()
+
+		site_update = frappe.get_doc("Site Update", site.schedule_update())
+
+		self.assertEqual(site_update.deploy_type, "Migrate")
+		self.assertFalse(site_update.skipped_backups)
+		agent_job = frappe.get_doc("Agent Job", site_update.update_job)
+		self.assertFalse(json.loads(agent_job.request_data)["skip_backups"])
+
 	def test_standby_site_is_updated_even_outside_deploy_hours(self):
 		"""A standby site must bypass the deploy-hours filter; regression for is_standby not being fetched."""
 		app = create_test_app()
