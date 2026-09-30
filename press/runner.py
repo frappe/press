@@ -266,13 +266,40 @@ class Ansible:
 			self.callback.play = self.play
 			self.callback.tasks = self.tasks
 			self.callback.task_list = self.task_list
-			self.executor.run()
-			return frappe.get_doc("Ansible Play", self.play)
+			return_code = self.executor.run()
+			play = frappe.get_doc("Ansible Play", self.play)
+			# Ansible reports failed and unreachable tasks through its return code, not an exception
+			if play.status != "Success":
+				self.log_failed_tasks(play, return_code)
+			return play
 		except Exception:
-			frappe.log_error(title=f"Ansible play failed: {self.playbook} on {self.server.name}", message=frappe.get_traceback(with_context=True))
 			self.log_run_failure()
-			frappe.log_error(title=f"Ansible play failed:", message=frappe.get_traceback(with_context=True))
 			raise
+
+	def log_failed_tasks(self, play, return_code):
+		failed_tasks = frappe.get_all(
+			"Ansible Task",
+			filters={"play": play.name, "status": ("in", ("Failure", "Unreachable"))},
+			fields=["name", "task", "role", "status", "exception", "error", "output", "result"],
+		)
+		details = [
+			f"Task: {task.role} / {task.task} [{task.status}]\n"
+			f"Exception: {task.exception}\nStderr: {task.error}\nStdout: {task.output}\nResult: {task.result}"
+			for task in failed_tasks
+		]
+		frappe.log_error(
+			title=f"Ansible play {play.status}: {self.playbook} on {self.server.name}",
+			message="\n\n".join(
+				[
+					f"Server: {self.server.doctype} {self.server.name} ({self.host})",
+					f"Return code: {return_code}",
+					f"Failures: {play.failures}, Unreachable: {play.unreachable}",
+					*(details or ["No failed task recorded. The play may have stopped before running any task."]),
+				]
+			),
+			reference_doctype="Ansible Play",
+			reference_name=play.name,
+		)
 
 	def log_run_failure(self):
 		# Variable values may hold secrets, so only their names are logged
