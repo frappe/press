@@ -37,4 +37,5 @@ class ScheduledDeployGroup(Document):
 	# end: auto-generated types
 
 	def is_due(self, now: datetime) -> bool:
+		"""Tell whether this group deploys at the hour and on the weekday of `now`."""
 		return self.hour == now.hour and bool(self.get(WEEKDAYS[now.weekday()]))
