@@ -106,7 +106,6 @@ class TestCreateMarketplaceAppSubscription(FrappeTestCase):
 	def setUp(self):
 		self.version = "Version 14"
 		self.team = create_test_press_admin_team()
-		frappe.set_user(self.team.user)
 
 		self.frappe_app = create_test_app()
 		self.frappe_source = create_test_app_source(self.version, self.frappe_app)
@@ -125,7 +124,6 @@ class TestCreateMarketplaceAppSubscription(FrappeTestCase):
 		self.plan = create_test_marketplace_app_plan(self.app.name, price_inr=1000, price_usd=12)
 
 	def tearDown(self):
-		frappe.set_user("Administrator")
 		frappe.db.rollback()
 
 	def _create_site_with_app_source(self, source):
