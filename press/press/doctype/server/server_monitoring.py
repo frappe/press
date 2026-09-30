@@ -30,7 +30,7 @@ TRIAL_SIGNUP_MINIMUM_COUNT = 5
 # stall means signups are broken rather than merely abandoned
 INCOMPLETE_SIGNUP_RATIO_THRESHOLD = 0.9
 INCOMPLETE_SIGNUP_MINIMUM_COUNT = 10
-ALL_BACKUPS_FAILED_ALERT_SITE_LIMIT = 50
+BACKUP_DIGEST_SITE_LIMIT = 50
 
 
 class PublicServerHealthMetrics(TypedDict):
@@ -653,9 +653,91 @@ def alert_on_sites_with_all_backup_attempts_failed() -> None:
 
 
 def _send_all_backup_attempts_failed_alert(failed_sites: list[frappe._dict], max_attempts: int) -> None:
-	listed_sites = failed_sites[:ALL_BACKUPS_FAILED_ALERT_SITE_LIMIT]
-	site_names = [row.site for row in listed_sites]
-	site_details = {
+	listed_sites = failed_sites[:BACKUP_DIGEST_SITE_LIMIT]
+	site_details = _get_backup_digest_site_details([row.site for row in listed_sites])
+
+	lines = [
+		f"**Sites With All Backup Attempts Failed** - {len(failed_sites)}",
+		"",
+		f"Sites with {max_attempts} or more failed backups in the last 24h",
+		"",
+		"| Site | Server | Plan | Team Email | Failed Backups | Last Successful Backup |",
+		"| --- | --- | --- | --- | --- | --- |",
+	]
+	for row in listed_sites:
+		site = site_details[row.site]
+		link = frappe.utils.get_url(f"/app/site-backup?site={row.site}&status=Failure")
+		cells = [
+			f"[{_escape_markdown_table_cell(row.site)}]({link})",
+			site.server,
+			site.plan,
+			site.team_email,
+			str(row.failures),
+			site.last_success,
+		]
+		lines.append(f"| {' | '.join(cells)} |")
+
+	if unlisted_sites := len(failed_sites) - len(listed_sites):
+		lines.append(f"| ... | {unlisted_sites} more sites | | | | |")
+
+	send_raven_message("\n".join(lines), RAVEN_SERVER_ALERTS_CHANNEL)
+
+
+def alert_on_sites_without_backup_attempts() -> None:
+	"""Daily Raven digest of sites due a scheduled backup that got no backup attempt in the last 24h."""
+	from press.press.doctype.site.site import Site
+
+	sites_due = [site.name for site in Site.get_sites_for_backup(24)]
+	if not sites_due:
+		return
+
+	since = frappe.utils.add_days(None, -1)
+	attempted_sites = frappe.get_all(
+		"Site Backup", {"site": ("in", sites_due), "creation": (">=", since)}, pluck="site"
+	)
+	# A site deactivated for part of the day was never due a backup
+	activated_sites = frappe.get_all(
+		"Site Activity",
+		{"site": ("in", sites_due), "action": "Activate Site", "creation": (">=", since)},
+		pluck="site",
+	)
+	if missed_sites := sorted(set(sites_due) - set(attempted_sites) - set(activated_sites)):
+		_send_sites_without_backup_attempts_alert(missed_sites)
+
+
+def _send_sites_without_backup_attempts_alert(missed_sites: list[str]) -> None:
+	listed_sites = missed_sites[:BACKUP_DIGEST_SITE_LIMIT]
+	site_details = _get_backup_digest_site_details(listed_sites)
+
+	lines = [
+		f"**Sites Without Any Backup Attempt** - {len(missed_sites)}",
+		"",
+		"Sites due a scheduled backup with no backup attempt in the last 24h",
+		"",
+		"| Site | Server | Plan | Team Email | Last Successful Backup |",
+		"| --- | --- | --- | --- | --- |",
+	]
+	for name in listed_sites:
+		site = site_details[name]
+		link = frappe.utils.get_url(f"/app/site/{name}")
+		cells = [
+			f"[{_escape_markdown_table_cell(name)}]({link})",
+			site.server,
+			site.plan,
+			site.team_email,
+			site.last_success,
+		]
+		lines.append(f"| {' | '.join(cells)} |")
+
+	if unlisted_sites := len(missed_sites) - len(listed_sites):
+		lines.append(f"| ... | {unlisted_sites} more sites | | | |")
+
+	send_raven_message("\n".join(lines), RAVEN_SERVER_ALERTS_CHANNEL)
+
+
+def _get_backup_digest_site_details(site_names: list[str]) -> dict[str, frappe._dict]:
+	"""Table cells for the server, plan, team email and last successful backup of each site."""
+	sites = {
 		site.name: site
 		for site in frappe.get_all("Site", {"name": ("in", site_names)}, ["name", "server", "team", "plan"])
 	}
@@ -663,14 +745,14 @@ def _send_all_backup_attempts_failed_alert(failed_sites: list[frappe._dict], max
 		plan.name: plan
 		for plan in frappe.get_all(
 			"Site Plan",
-			{"name": ("in", list({site.plan for site in site_details.values() if site.plan}))},
+			{"name": ("in", list({site.plan for site in sites.values() if site.plan}))},
 			["name", "price_usd", "dedicated_server_plan"],
 		)
 	}
 	team_emails = dict(
 		frappe.get_all(
 			"Team",
-			{"name": ("in", list({site.team for site in site_details.values() if site.team}))},
+			{"name": ("in", list({site.team for site in sites.values() if site.team}))},
 			["name", "user"],
 			as_list=True,
 		)
@@ -685,32 +767,17 @@ def _send_all_backup_attempts_failed_alert(failed_sites: list[frappe._dict], max
 		)
 	)
 
-	lines = [
-		f"**Sites With All Backup Attempts Failed** - {len(failed_sites)}",
-		"",
-		f"Sites with {max_attempts} or more failed backups in the last 24h",
-		"",
-		"| Site | Server | Plan | Team Email | Failed Backups | Last Successful Backup |",
-		"| --- | --- | --- | --- | --- | --- |",
-	]
-	for row in listed_sites:
-		site = site_details.get(row.site) or frappe._dict()
-		link = frappe.utils.get_url(f"/app/site-backup?site={row.site}&status=Failure")
-		last_success = last_successes.get(row.site)
-		cells = [
-			f"[{_escape_markdown_table_cell(row.site)}]({link})",
-			_escape_markdown_table_cell(site.server or "-"),
-			_describe_site_plan(plans.get(site.plan)),
-			_escape_markdown_table_cell(team_emails.get(site.team) or "-"),
-			str(row.failures),
-			last_success.strftime("%Y-%m-%d %H:%M") if last_success else "Never",
-		]
-		lines.append(f"| {' | '.join(cells)} |")
-
-	if unlisted_sites := len(failed_sites) - len(listed_sites):
-		lines.append(f"| ... | {unlisted_sites} more sites | | | | |")
-
-	send_raven_message("\n".join(lines), RAVEN_SERVER_ALERTS_CHANNEL)
+	details = {}
+	for name in site_names:
+		site = sites.get(name) or frappe._dict()
+		last_success = last_successes.get(name)
+		details[name] = frappe._dict(
+			server=_escape_markdown_table_cell(site.server or "-"),
+			plan=_describe_site_plan(plans.get(site.plan)),
+			team_email=_escape_markdown_table_cell(team_emails.get(site.team) or "-"),
+			last_success=last_success.strftime("%Y-%m-%d %H:%M") if last_success else "Never",
+		)
+	return details
 
 
 def _describe_site_plan(plan: frappe._dict | None) -> str:
