@@ -81,6 +81,14 @@ def reconnect_on_failure():
 class AnsibleCallback(CallbackBase):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
+		# Kept in memory because update_task skips tasks outside a role, like Gathering Facts
+		self.failed_results = []
+
+	def record_failure(self, status, result):
+		self.failed_results.append(
+			f"[{status}] {result._task.get_name()} on {result._host.get_name()}\n"
+			f"{json.dumps(result._result, indent=4, default=str)}"
+		)
 
 	@reconnect_on_failure()
 	def process_task_success(self, result):
@@ -99,12 +107,14 @@ class AnsibleCallback(CallbackBase):
 		self.process_task_success(result)
 
 	def v2_runner_on_failed(self, result, *args, **kwargs):
+		self.record_failure("Failure", result)
 		self.update_task("Failure", result)
 
 	def v2_runner_on_skipped(self, result):
 		self.update_task("Skipped", result)
 
 	def v2_runner_on_unreachable(self, result):
+		self.record_failure("Unreachable", result)
 		self.update_task("Unreachable", result)
 
 	def v2_playbook_on_task_start(self, task, is_conditional):
@@ -294,7 +304,8 @@ class Ansible:
 					f"Server: {self.server.doctype} {self.server.name} ({self.host})",
 					f"Return code: {return_code}",
 					f"Failures: {play.failures}, Unreachable: {play.unreachable}",
-					*(details or ["No failed task recorded. The play may have stopped before running any task."]),
+					*details,
+					*self.callback.failed_results,
 				]
 			),
 			reference_doctype="Ansible Play",
