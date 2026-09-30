@@ -150,7 +150,7 @@ class AppSource(Document):
 				"repository_url": self.repository_url,
 				"branch": self.branch,
 				"team": self.team,
-				"enabled": 1,
+				"enabled": self.enabled,
 			},
 		):
 			frappe.throw(
