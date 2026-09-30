@@ -11,6 +11,7 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.report.build_server_stats.build_server_stats import (
 	floor_to_bucket,
 	get_chart,
+	get_period,
 	group_by_server,
 	last_number,
 	percentile,
@@ -90,3 +91,31 @@ class TestChart(FrappeTestCase):
 
 		self.assertEqual(floored.minute, 5)
 		self.assertEqual(floored.second, 0)
+
+
+class TestPeriod(FrappeTestCase):
+	def test_from_and_to_set_the_period_and_the_duration_is_ignored(self):
+		period = get_period(
+			frappe._dict(
+				from_datetime="2026-09-10 10:00:00", to_datetime="2026-09-10 12:30:00", duration="1 hour"
+			)
+		)
+
+		self.assertEqual(period.start, datetime(2026, 9, 10, 10, 0, 0))
+		self.assertEqual(period.end, datetime(2026, 9, 10, 12, 30, 0))
+		self.assertEqual(period.seconds, 9000)
+
+	def test_a_to_without_a_from_counts_the_duration_back_from_to(self):
+		period = get_period(frappe._dict(to_datetime="2026-09-10 12:00:00", duration="3 hours"))
+
+		self.assertEqual(period.start, datetime(2026, 9, 10, 9, 0, 0))
+
+	def test_without_from_or_to_the_duration_ends_now(self):
+		period = get_period(frappe._dict(duration="15 minutes"))
+
+		self.assertEqual(period.seconds, 15 * 60)
+		self.assertLess((datetime.now() - period.end).total_seconds(), 60)
+
+	def test_a_from_after_the_to_is_rejected(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "From must be before To"):
+			get_period(frappe._dict(from_datetime="2026-09-10 12:00:00", to_datetime="2026-09-10 10:00:00"))
