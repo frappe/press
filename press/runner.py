@@ -252,20 +252,44 @@ class Ansible:
 
 	def run(self) -> AnsiblePlay:
 		_ansible_local.current = self
-		self.executor = PlaybookExecutor(
-			playbooks=[self.playbook_path],
-			inventory=self.inventory,
-			variable_manager=self.variable_manager,
-			loader=self.loader,
-			passwords=self.passwords,
+		try:
+			self.executor = PlaybookExecutor(
+				playbooks=[self.playbook_path],
+				inventory=self.inventory,
+				variable_manager=self.variable_manager,
+				loader=self.loader,
+				passwords=self.passwords,
+			)
+			# Use AnsibleCallback so we can receive updates for tasks execution
+			self.executor._tqm._stdout_callback = self.callback
+			self.callback.play = self.play
+			self.callback.tasks = self.tasks
+			self.callback.task_list = self.task_list
+			self.executor.run()
+			return frappe.get_doc("Ansible Play", self.play)
+		except Exception:
+			self.log_run_failure()
+			frappe.log_error(title=f"Ansible play failed:", message=frappe.get_traceback(with_context=True))
+			raise
+
+	def log_run_failure(self):
+		# Variable values may hold secrets, so only their names are logged
+		frappe.log_error(
+			title=f"Ansible play failed: {self.playbook} on {self.server.name}",
+			message="\n".join(
+				[
+					f"Server: {self.server.doctype} {self.server.name} ({self.host})",
+					f"Playbook: {self.playbook_path}",
+					f"Ansible Play: {getattr(self, 'play', None)}",
+					f"Variable names: {sorted(self.variables)}",
+					f"Tasks: {len(getattr(self, 'task_list', []))}",
+					"",
+					frappe.get_traceback(with_context=True),
+				]
+			),
+			reference_doctype="Ansible Play" if getattr(self, "play", None) else None,
+			reference_name=getattr(self, "play", None),
 		)
-		# Use AnsibleCallback so we can receive updates for tasks execution
-		self.executor._tqm._stdout_callback = self.callback
-		self.callback.play = self.play
-		self.callback.tasks = self.tasks
-		self.callback.task_list = self.task_list
-		self.executor.run()
-		return frappe.get_doc("Ansible Play", self.play)
 
 	def create_ansible_play(self):
 		# Parse the playbook and create Ansible Tasks so we can show how many tasks are pending
