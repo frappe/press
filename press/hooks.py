@@ -270,17 +270,21 @@ scheduler_events = {
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 		"press.press.doctype.incident_settings.incident_settings.alert_if_phone_call_alerts_disabled",
 <<<<<<< HEAD
+<<<<<<< HEAD
 		"press.press.doctype.server.server.install_missing_wazuh_agents",
 		"press.press.doctype.server.server.sync_wazuh_agent_status",
 		"press.press.doctype.server.server.install_missing_yara",
 =======
 		"press.press.doctype.scheduled_deploy_settings.scheduled_deploy_settings.deploy_scheduled_release_groups",
 >>>>>>> 09e01b8 (feat(release-group): Deploy bench groups on a schedule from settings)
+=======
+>>>>>>> 674b64b (fix(release-group): Run scheduled deploys on the long queue)
 		"press.press.doctype.server.server_monitoring.alert_on_failing_signups",
 		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",
 		"press.press.doctype.database_server.database_server.upload_audit_logs_to_s3",
 	],
 	"hourly_long": [
+		"press.press.doctype.scheduled_deploy_settings.scheduled_deploy_settings.deploy_scheduled_release_groups",
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
 		"press.press.doctype.server.server_monitoring.monitor_server_and_refresh_new_bench_and_site_server_pool",
 		"press.press.doctype.release_group.release_group.add_public_servers_to_public_groups",
