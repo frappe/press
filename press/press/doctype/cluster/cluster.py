@@ -2327,3 +2327,9 @@ class Cluster(Document):
 				)
 			return nat_server
 		return None
+
+
+def archived_clusters():
+	"""Subquery of the regions that are retired, or that we can no longer reach."""
+	Cluster = frappe.qb.DocType("Cluster")
+	return frappe.qb.from_(Cluster).select(Cluster.name).where(Cluster.status == "Archived")

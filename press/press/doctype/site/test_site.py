@@ -1023,6 +1023,54 @@ class TestSite(FrappeTestCase):
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
+@patch("frappe.sendmail", new=Mock())
+class TestSiteInArchivedCluster(FrappeTestCase):
+	"""An archived region is hidden from customers, so we must not charge for it either."""
+
+	def setUp(self):
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.team.test_team import create_test_press_admin_team
+
+		self.team = create_test_press_admin_team()
+		self.cluster = create_test_cluster(name="Bahrain")
+		server = create_test_server(cluster=self.cluster.name)
+		self.site = create_test_site("hiddenregionsite", server=server.name, team=self.team.name)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def archive_the_region(self):
+		frappe.db.set_value("Cluster", self.cluster.name, "status", "Archived")
+
+	def test_site_is_charged_while_its_region_is_active(self):
+		self.assertTrue(self.site.can_charge_for_subscription())
+
+	def test_site_is_not_charged_once_its_region_is_archived(self):
+		self.archive_the_region()
+
+		self.assertFalse(self.site.can_charge_for_subscription())
+
+	def test_subscription_creates_no_usage_record_for_a_site_in_an_archived_region(self):
+		from press.press.doctype.subscription.test_subscription import create_test_subscription
+
+		plan = create_test_plan("Site")
+		subscription = create_test_subscription(self.site.name, plan.name, self.team.name)
+		self.archive_the_region()
+
+		self.assertIsNone(subscription.create_usage_record())
+
+	def test_site_in_an_active_region_is_not_marked_archived(self):
+		self.assertFalse(self.site.in_archived_cluster)
+
+	def test_site_in_an_archived_region_is_marked_archived(self):
+		self.archive_the_region()
+
+		self.assertTrue(self.site.in_archived_cluster)
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestSiteConfigJSONValidation(FrappeTestCase):
 	"""A JSON config value that isn't an object breaks every later save of the site."""
 
