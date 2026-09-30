@@ -543,6 +543,21 @@ class TestSiteUpdate(FrappeTestCase):
 		self.assertTrue(json.loads(agent_job.request_data)["skip_backups"])
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_site_handed_out_from_pool_before_its_update_starts_takes_backups(self):
+		site = self._migrate_site_with_difference()
+		frappe.db.set_value("Site", site.name, "is_standby", 1)
+		later = frappe.utils.add_to_date(None, hours=1)
+		site_update = frappe.get_doc("Site Update", site.schedule_update(scheduled_time=later))
+
+		frappe.db.set_value("Site", site.name, "is_standby", 0)
+		site_update.start()
+
+		site_update.reload()
+		self.assertFalse(site_update.skipped_backups)
+		agent_job = frappe.get_doc("Agent Job", site_update.update_job)
+		self.assertFalse(json.loads(agent_job.request_data)["skip_backups"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_migrate_update_of_customer_site_still_takes_backups(self):
 		site = self._migrate_site_with_difference()
 
