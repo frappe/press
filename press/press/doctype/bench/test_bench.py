@@ -741,6 +741,32 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			str(e.exception),
 		)
 
+	@patch("press.utils.jobs.stop_background_job", new=Mock(return_value=True))
+	def test_force_archive_ignores_a_version_upgrade_scheduled_for_another_bench(self):
+		"""The upgrade query matches the group and the server, not the bench."""
+		group = create_test_release_group(apps=[create_test_app()], public=False)
+		with fake_agent_job("New Bench", "Success"):
+			bench = create_test_bench(group=group, creation=frappe.utils.add_days(None, -10))
+			poll_pending_jobs()
+
+		with fake_agent_job("New Bench", "Success"):
+			other_bench = create_test_bench(server=bench.server)  # same server, other group
+			poll_pending_jobs()
+
+		site = create_test_site(bench=other_bench.name, fake_agent_jobs=True)
+		group.append("servers", {"server": bench.server, "default": False})
+		group.save()
+		create_test_version_upgrade(site.name, group.name)
+
+		with self.assertRaises(ArchiveBenchError) as e:
+			bench.archive()
+		self.assertIn("Version upgrade is in progress.", str(e.exception))
+
+		bench.archive(force=True)
+
+		bench.reload()
+		self.assertEqual(bench.status, "Pending")
+
 	def test_force_archive_does_not_drop_a_bench_a_site_is_migrating_to(self):
 		"""The site still points at its source bench, so the site check cannot see it."""
 		bench = self._bench_with_a_recent_archive_failure()

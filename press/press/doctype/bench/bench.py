@@ -1192,12 +1192,21 @@ class Bench(Document):
 				ArchiveBenchError,
 			)
 
-	def check_pending_site_operations(self):
+	def check_scheduled_version_upgrades(self):
+		"""Refuse the archive while an upgrade to this bench's group is scheduled.
+
+		Force skips this one. The query matches the group and the server, not the
+		bench, so it holds every bench of the group on that server. Once the upgrade
+		starts it has a Site Update, which names the bench, and check_ongoing_site_updates
+		blocks on that instead.
+		"""
 		if get_scheduled_version_upgrades(self):
 			frappe.throw(
 				"Version upgrade is in progress. Please try again after some time.", ArchiveBenchError
 			)
 
+	def check_pending_site_operations(self):
+		"""Both of these name this bench as the destination."""
 		if get_unfinished_site_migrations(self):
 			frappe.throw(
 				f"There are pending site migrations on bench {self.name}. Please try after the site migrations are done.",
@@ -1216,11 +1225,12 @@ class Bench(Document):
 		self.check_bench_resetting()
 		self.check_last_archive()
 		self.check_ongoing_jobs()
+		self.check_scheduled_version_upgrades()
 
 	def check_sites_in_flight(self):
 		"""Refuse the archive while a site is on its way to or from this bench.
 
-		Force never skips these. An unfinished update, migration or upgrade still
+		Force never skips these. An unfinished update, migration or action still
 		points the site at its source bench, so check_unarchived_sites sees nothing
 		on the destination while the agent restores the site there.
 		"""
