@@ -62,4 +62,6 @@ def deploy_release_group(name: str):
 		return
 
 	apps = group.get_apps_to_update(apps_to_update=None)
-	get_bench_update(name, apps, ignore_permissions=True).deploy(ignore_permissions=True)
+	get_bench_update(name, apps, ignore_permissions=True).deploy(
+		run_will_fail_check=True, ignore_permissions=True
+	)
