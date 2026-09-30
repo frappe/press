@@ -41,6 +41,7 @@ from press.press.doctype.site.test_site import create_test_bench, create_test_si
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.site_update.test_site_update import create_test_site_update
 from press.press.doctype.subscription.test_subscription import create_test_subscription
+from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.press.doctype.version_upgrade.test_version_upgrade import (
 	create_test_version_upgrade,
 )
@@ -692,6 +693,67 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 				str(e.exception),
 			)
 
+		self.assertEqual(site.status, "Active")
+
+	def _bench_with_a_recent_archive_failure(self) -> Bench:
+		with fake_agent_job("New Bench", "Success"):
+			group = create_test_release_group(apps=[create_test_app()], public=False)
+			bench = create_test_bench(group=group, creation=frappe.utils.add_days(None, -10))
+			poll_pending_jobs()
+
+		bench.db_set("last_archive_failure", frappe.utils.now_datetime())
+		bench.reload()
+		return bench
+
+	def test_archive_is_blocked_by_an_archive_failure_in_the_last_24_hours(self):
+		bench = self._bench_with_a_recent_archive_failure()
+
+		with self.assertRaises(ArchiveBenchError) as e:
+			bench.archive()
+		self.assertIn(
+			"A previous archive job executed in the last 24 hours has failed.",
+			str(e.exception),
+		)
+		bench.reload()
+		self.assertEqual(bench.status, "Active")
+
+	@patch("press.utils.jobs.stop_background_job", new=Mock(return_value=True))
+	def test_system_user_forces_the_archive_past_a_recent_archive_failure(self):
+		bench = self._bench_with_a_recent_archive_failure()
+
+		bench.archive(force=True)
+
+		bench.reload()
+		self.assertEqual(bench.status, "Pending")
+
+	def test_force_archive_is_ignored_for_a_user_who_is_not_a_system_user(self):
+		bench = self._bench_with_a_recent_archive_failure()
+		team = create_test_press_admin_team()
+		frappe.db.set_value("User", team.user, "user_type", "Website User")
+		frappe.clear_cache(doctype="User")
+		self.addCleanup(frappe.set_user, "Administrator")
+		frappe.set_user(team.user)
+
+		with self.assertRaises(ArchiveBenchError) as e:
+			bench.archive(force=True)
+		self.assertIn(
+			"A previous archive job executed in the last 24 hours has failed.",
+			str(e.exception),
+		)
+
+	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
+	def test_force_archive_does_not_drop_a_bench_that_still_has_sites(self):
+		bench = self._bench_with_a_recent_archive_failure()
+		site = create_test_site(bench=bench.name, fake_agent_jobs=True)
+
+		with self.assertRaises(ArchiveBenchError) as e:
+			bench.archive(force=True)
+		self.assertIn(
+			"Cannot archive bench due to unarchived sites on bench.",
+			str(e.exception),
+		)
+
+		site.reload()
 		self.assertEqual(site.status, "Active")
 
 	def test_if_any_ongoing_jobs_are_running_on_bench(self):

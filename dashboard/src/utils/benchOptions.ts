@@ -36,11 +36,16 @@ const showProcesses = (bench: string) => {
 	renderDialog(h(SupervisorProcessesDialog, { bench }))
 }
 
-const runBenchMethod = (bench: string, method: string) =>
+const runBenchMethod = (
+	bench: string,
+	method: string,
+	args?: Record<string, unknown>,
+) =>
 	createResource({ url: 'press.api.client.run_doc_method' }).submit({
 		dt: 'Bench',
 		dn: bench,
 		method,
+		args,
 	})
 
 const confirmBenchMethod = (options: {
@@ -50,6 +55,7 @@ const confirmBenchMethod = (options: {
 	label: string
 	theme: string
 	method: string
+	args?: Record<string, unknown>
 	loading: string
 	success: string
 	error: string
@@ -62,22 +68,45 @@ const confirmBenchMethod = (options: {
 			variant: 'solid',
 			theme: options.theme,
 			onClick: ({ hide }) => {
-				toast.promise(runBenchMethod(options.bench, options.method), {
-					loading: options.loading,
-					success: () => {
-						hide()
-						return options.success
+				toast.promise(
+					runBenchMethod(options.bench, options.method, options.args),
+					{
+						loading: options.loading,
+						success: () => {
+							hide()
+							return options.success
+						},
+						error: (e: unknown) => {
+							hide()
+							return getToastErrorMessage(e, options.error)
+						},
+						duration: 1000,
 					},
-					error: (e: unknown) => {
-						hide()
-						return getToastErrorMessage(e, options.error)
-					},
-					duration: 1000,
-				})
+				)
 			},
 		},
 	})
 }
+
+const isSystemUser = () => window.is_system_user ?? false
+
+// A system user drops a bench the checks refuse: a recent failed archive, a running
+// job, an unfinished site update. Sites still on the bench block the drop for everyone.
+const confirmDropBench = (bench: string) =>
+	confirmBenchMethod({
+		bench,
+		title: 'Drop Bench',
+		message: isSystemUser()
+			? `Are you sure you want to drop the bench <b>${bench}</b>?<br><br>The checks for a recent failed archive and for ongoing jobs are skipped for system users. Sites still on the bench block the drop.`
+			: `Are you sure you want to drop the bench <b>${bench}</b>?`,
+		label: 'Drop',
+		theme: 'red',
+		method: 'archive',
+		args: { force: isSystemUser() },
+		loading: 'Scheduling bench to be dropped...',
+		success: 'Bench is scheduled to be dropped',
+		error: 'Failed to drop bench',
+	})
 
 const supportsRebuild = (version?: string) => {
 	if (!version) return false
@@ -174,18 +203,7 @@ export const getBenchOptions = ({
 		{
 			label: 'Drop Bench',
 			condition: () => true,
-			onClick: () =>
-				confirmBenchMethod({
-					bench,
-					title: 'Drop Bench',
-					message: `Are you sure you want to drop the bench <b>${bench}</b>?`,
-					label: 'Drop',
-					theme: 'red',
-					method: 'archive',
-					loading: 'Scheduling bench to be dropped...',
-					success: 'Bench is scheduled to be dropped',
-					error: 'Failed to drop bench',
-				}),
+			onClick: () => confirmDropBench(bench),
 		},
 		{
 			label: 'View Processes',
