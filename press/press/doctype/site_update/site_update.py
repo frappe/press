@@ -264,6 +264,9 @@ class SiteUpdate(Document):
 		site: "Site" = frappe.get_doc("Site", self.site)
 		site.check_move_scheduled()
 		site.check_fatal_site_update()
+		if site.is_standby:
+			# A standby site holds no customer data, so there is nothing to back up.
+			self.skipped_backups = True
 
 	def after_insert(self):
 		if not self.scheduled_time:
