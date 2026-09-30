@@ -19,13 +19,7 @@
 	/>
 	<DateRangeFilter
 		v-else-if="$attrs.type === 'daterange'"
-		v-bind="{
-			...$attrs,
-			type: undefined,
-			modelValue: toRangeString($attrs.modelValue),
-			'onUpdate:modelValue': (value) =>
-				$attrs['onUpdate:modelValue']?.(toBetween(value)),
-		}"
+		v-bind="{ ...$attrs, type: undefined }"
 	/>
 	<div
 		v-else-if="$attrs.type === 'checkbox'"
@@ -48,17 +42,4 @@
 import { DatePicker, TabButtons, DateTimePicker, FormControl } from 'frappe-ui';
 import DateRangeFilter from './DateRangeFilter.vue';
 import LinkControl from './LinkControl.vue';
-
-// A date range filter is stored as a `between` filter. The bounds cover the
-// whole of both days, because `between` compares datetimes as they are.
-function toBetween(value) {
-	if (!value) return '';
-	const [from, to] = value.split(',');
-	return ['between', [`${from} 00:00:00`, `${to} 23:59:59.999999`]];
-}
-
-function toRangeString(value) {
-	if (!Array.isArray(value)) return '';
-	return value[1].map((bound) => bound.split(' ')[0]).join(',');
-}
 </script>
