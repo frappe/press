@@ -67,6 +67,13 @@ DYNAMICALLY_LINKED_OWNERS: dict[str, tuple[str, str]] = {
 	"Ansible Play": ("server", "server_type"),
 }
 
+# Where a `LINKED_OWNERS` doctype goes when its link is empty. A job with no
+# bench, such as "Cleanup Unused Files", ran on the server itself and belongs to
+# whoever owns that server.
+DYNAMICALLY_LINKED_FALLBACKS: dict[str, tuple[str, str]] = {
+	"Agent Job": ("server", "server_type"),
+}
+
 # Doctypes whose `get_list_query` does the scoping itself, because a job or play
 # can hang off a site, a bench, a group or a server and no single join covers
 # all four. Both refuse to list anything unless the caller names one it owns.
@@ -122,12 +129,17 @@ def has_parent_access(doctype: str, name: str) -> bool:
 def has_linked_access(doctype: str, name: str) -> bool:
 	link_field, linked_doctype = LINKED_OWNERS[doctype]
 	linked_name = frappe.db.get_value(doctype, name, link_field)
+	if linked_name:
+		return has_document_access(linked_doctype, linked_name)
 
-	return bool(linked_name) and has_document_access(linked_doctype, linked_name)
+	if doctype in DYNAMICALLY_LINKED_FALLBACKS:
+		return has_dynamically_linked_access(doctype, name, DYNAMICALLY_LINKED_FALLBACKS[doctype])
+
+	return False
 
 
-def has_dynamically_linked_access(doctype: str, name: str) -> bool:
-	link_field, doctype_field = DYNAMICALLY_LINKED_OWNERS[doctype]
+def has_dynamically_linked_access(doctype: str, name: str, fields: tuple[str, str] | None = None) -> bool:
+	link_field, doctype_field = fields or DYNAMICALLY_LINKED_OWNERS[doctype]
 	link = frappe.db.get_value(doctype, name, [link_field, doctype_field], as_dict=True)
 	if not (link and link[link_field] and link[doctype_field]):
 		return False

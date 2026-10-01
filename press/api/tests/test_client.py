@@ -255,6 +255,26 @@ class TestJobAndPlayAccess(FrappeTestCase):
 		with self.assertRaises(frappe.PermissionError):
 			get("Agent Job", job.name)
 
+	def test_agent_job_without_a_bench_belongs_to_whoever_owns_its_server(self):
+		"""Server jobs like "Cleanup Unused Files" have no bench, and their own team got a 403."""
+		server = create_test_server(team=self.other_team.name)
+		job = create_test_agent_job(server=server.name)
+		self.assertFalse(job.bench)
+
+		sign_in_as(self.team)
+		self.assertFalse(ownership.has_document_access("Agent Job", job.name))
+
+		sign_in_as(self.other_team)
+		self.assertTrue(ownership.has_document_access("Agent Job", job.name))
+
+	def test_agent_job_on_a_bench_ignores_who_owns_the_server(self):
+		"""A bench job on another team's server stays with the bench owner."""
+		_, job = self.create_job_on_bench_of(self.other_team)
+		frappe.db.set_value("Server", job.server, "team", self.team.name)
+
+		sign_in_as(self.team)
+		self.assertFalse(ownership.has_document_access("Agent Job", job.name))
+
 	def test_ansible_play_belongs_to_whoever_owns_the_server_it_ran_on(self):
 		server = create_test_server(team=self.other_team.name)
 		play = create_test_ansible_play("Set mysqld variable", "mysqld.yml", "Server", server.name)
