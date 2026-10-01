@@ -39,6 +39,7 @@ from press.utils import otp as otp_purpose
 from press.utils import user as user_utils
 from press.utils.otp import OneTimePassword
 from press.utils.telemetry import capture
+from press.utils.user import as_administrator
 
 if TYPE_CHECKING:
 	from press.press.doctype.account_request.account_request import AccountRequest
@@ -328,12 +329,8 @@ def accept_team_invite(key: str):
 	# setup_account. This elevation was dropped in f1a0e80ba in favour of
 	# ignore_permissions, but that only covers the Team and User saves, not
 	# those side effects.
-	current_user = frappe.session.user
-	try:
-		frappe.set_user("Administrator")
+	with as_administrator():
 		add_invited_member_to_team(account_request)
-	finally:
-		frappe.set_user(current_user)
 
 	account_request.db_set("request_key", None)
 
@@ -460,12 +457,8 @@ def reactivate_account():
 	# The team is disabled, so get_current_team throws for this session and every
 	# permission check on the team and its sites fails. Run as Administrator,
 	# mirroring setup_account.
-	current_user = frappe.session.user
-	try:
-		frappe.set_user("Administrator")
+	with as_administrator():
 		Team("Team", team_name).enable_account()
-	finally:
-		frappe.set_user(current_user)
 
 	return team_name
 
