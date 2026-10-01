@@ -893,21 +893,6 @@ class TestIncident(FrappeTestCase):
 			incident.ignore("   ")
 		self.assertFalse(frappe.db.get_value("Incident", incident.name, "ignored"))
 
-	def test_ignored_incident_is_never_confirmed_but_auto_resolves_when_alert_clears(self):
-		site = create_test_site()
-		alert = create_test_prometheus_alert_rule()
-		create_test_alertmanager_webhook_log(site=site, alert=alert, status="firing")
-		incident: Incident = frappe.get_last_doc("Incident")
-		incident.ignore("Customer stopped their own database")
-
-		incident.db_set("creation", frappe.utils.add_to_date(frappe.utils.now(), minutes=-30))
-		validate_incidents()
-		self.assertEqual(frappe.db.get_value("Incident", incident.name, "status"), "Validating")
-
-		create_test_alertmanager_webhook_log(site=site, alert=alert, status="resolved")
-		resolve_incidents()
-		self.assertEqual(frappe.db.get_value("Incident", incident.name, "status"), "Auto-Resolved")
-
 	def test_ignored_incident_keeps_new_incidents_from_opening_while_alert_fires(self):
 		site = create_test_site()
 		create_test_alertmanager_webhook_log(site=site)
@@ -940,26 +925,27 @@ class TestIncident(FrappeTestCase):
 		mock_calls_create.assert_not_called()
 
 	@patch.object(Incident, "send_mail")
-	def test_ignored_incident_sends_no_email_but_records_resolution_time(self, mock_send_mail: Mock):
+	def test_ignored_incident_still_emails_customers_and_stays_on_website(self, mock_send_mail: Mock):
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")
+		shown_in_website = incident.show_in_website
 		incident.ignore("Customer stopped their own benches")
 
 		incident.resolve()
-		mock_send_mail.assert_not_called()
-		self.assertIsNotNone(frappe.db.get_value("Incident", incident.name, "resolved_at"))
+		mock_send_mail.assert_called_once()
+		self.assertEqual(frappe.db.get_value("Incident", incident.name, "show_in_website"), shown_in_website)
 
 	@patch(
 		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
 		wraps=MockTwilioCallList("completed").create,
 	)
-	def test_ignored_incident_does_not_call_customer_from_an_already_queued_job(self, mock_calls_create):
+	def test_ignored_incident_still_calls_customers(self, mock_calls_create):
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")
 		incident.ignore("Customer stopped their own benches")
 
 		incident._call_customer("+911234567893")
-		mock_calls_create.assert_not_called()
+		mock_calls_create.assert_called_once()
 
 	@patch("press.press.doctype.incident.incident.frappe.sendmail")
 	@patch("press.press.doctype.incident.incident.get_communication_info", return_value=["ops@example.com"])

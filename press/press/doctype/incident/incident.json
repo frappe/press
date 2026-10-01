@@ -202,7 +202,7 @@
 		},
 		{
 			"default": "0",
-			"description": "Set with the Ignore Incident button. Stops calls, texts and emails, and hides the incident from customers.",
+			"description": "Set with the Ignore Incident button. Stops phone calls to the Frappe Cloud team only. Customers still see the incident and get its emails and calls.",
 			"fieldname": "ignored",
 			"fieldtype": "Check",
 			"label": "Ignored",
