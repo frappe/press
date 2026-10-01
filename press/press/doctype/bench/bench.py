@@ -14,6 +14,7 @@ import pytz
 from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
+from frappe.permissions import is_system_user
 from frappe.utils import get_system_timezone
 
 from press.agent import Agent
@@ -506,8 +507,8 @@ class Bench(Document):
 		frappe.db.commit()
 
 	@dashboard_whitelist()
-	def archive(self, retry_new_bench: bool = False):
-		self.ready_to_archive()
+	def archive(self, retry_new_bench: bool = False, force: bool = False):
+		self.ready_to_archive(force and is_system_user())
 		self.status = "Pending"
 		self.save()  # lock 1
 
@@ -1191,22 +1192,40 @@ class Bench(Document):
 				ArchiveBenchError,
 			)
 
-	def ready_to_archive(self):
-		self.check_scaled_up_server()
-		self.check_bench_resetting()
-		self.check_last_archive()
-		self.check_archive_jobs()
-		self.check_ongoing_jobs()
-		self.check_ongoing_site_updates()
-		self.check_unarchived_sites()
-		if get_scheduled_version_upgrades(self):
-			frappe.throw(
-				"Version upgrade is in progress. Please try again after some time.", ArchiveBenchError
-			)
+	def is_upgrade_destination(self) -> bool:
+		"""Whether a cross-group Site Update would land on this bench.
 
+		validate_destination_bench takes the newest active bench of the group on the
+		server, so that is the one a scheduled upgrade cannot lose.
+		"""
+		return self.name == frappe.db.get_value(
+			"Bench",
+			{"group": self.group, "server": self.server, "status": "Active"},
+			"name",
+			order_by="creation desc",
+		)
+
+	def check_scheduled_version_upgrades(self, force: bool = False):
+		"""Refuse the archive while an upgrade to this bench's group is scheduled.
+
+		The query matches the group and the server, not a bench, so it holds every
+		bench of the group there. Force narrows it to the bench the upgrade would
+		land on: dropping that one leaves the upgrade with no destination, and it
+		fails when it starts.
+		"""
+		if not get_scheduled_version_upgrades(self):
+			return
+
+		if force and not self.is_upgrade_destination():
+			return
+
+		frappe.throw("Version upgrade is in progress. Please try again after some time.", ArchiveBenchError)
+
+	def check_pending_site_operations(self):
+		"""Both of these name this bench as the destination."""
 		if get_unfinished_site_migrations(self):
 			frappe.throw(
-				"There are pending site migrations on bench {self.name}. Please try after the site migrations are done.",
+				f"There are pending site migrations on bench {self.name}. Please try after the site migrations are done.",
 				ArchiveBenchError,
 			)
 
@@ -1215,6 +1234,37 @@ class Bench(Document):
 				"There seems to be some pending actions on the site. Please finish them before attempting to archive the bench.",
 				ArchiveBenchError,
 			)
+
+	def check_work_in_progress(self):
+		"""Refuse the archive while the bench is busy. Force skips these."""
+		self.check_scaled_up_server()
+		self.check_bench_resetting()
+		self.check_last_archive()
+		self.check_ongoing_jobs()
+
+	def check_sites_in_flight(self):
+		"""Refuse the archive while a site is on its way to or from this bench.
+
+		Force never skips these. An unfinished update, migration or action still
+		points the site at its source bench, so check_unarchived_sites sees nothing
+		on the destination while the agent restores the site there.
+		"""
+		self.check_ongoing_site_updates()
+		self.check_pending_site_operations()
+
+	def ready_to_archive(self, force: bool = False):
+		"""Raise unless the bench can be archived.
+
+		``force`` skips the checks that are judgement calls, for a system user who can
+		see more than the checks can. It never skips a running archive job, a site on
+		its way to this bench, a site still on it, or an upgrade that would land here.
+		"""
+		if not force:
+			self.check_work_in_progress()
+		self.check_archive_jobs()
+		self.check_scheduled_version_upgrades(force)
+		self.check_sites_in_flight()
+		self.check_unarchived_sites()
 
 	def update_apps_after_inplace_update(
 		self,
