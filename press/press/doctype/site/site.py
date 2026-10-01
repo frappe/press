@@ -3480,7 +3480,7 @@ class Site(Document, TagHelpers):
 				"from_plan": "",
 				"to_plan": plan,
 				"type": "Initial Plan",
-				"timestamp": self.creation,
+				"timestamp": self.signup_time or self.creation,
 			}
 		).insert(ignore_permissions=True)
 
