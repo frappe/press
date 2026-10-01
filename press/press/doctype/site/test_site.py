@@ -1167,6 +1167,26 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 			lambda: site.restore_tables(force=True),
 		)
 
+	def test_transfer_request_from_another_team_names_the_owning_team_in_the_error(self):
+		site = create_test_site()
+		frappe.set_user(create_test_team().user)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			f"You don't seem to be a member of {site.team}\\.",
+			lambda: site.send_change_team_request("someone@example.com", ""),
+		)
+
+	def test_deactivate_on_a_trial_plan_names_the_site_in_the_error(self):
+		site = create_test_site()
+		site.db_set("plan", create_test_plan("Site", is_trial_plan=True).name)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			f"The site {site.name} is currently on a trial plan",
+			site.deactivate,
+		)
+
 	def _site_with_a_running_table_restore(self) -> Site:
 		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 
