@@ -12,7 +12,9 @@ import {
 	createListResource,
 } from 'frappe-ui'
 import { unparse } from 'papaparse'
-import { defineAsyncComponent, h, ref } from 'vue'
+import { defineAsyncComponent, h, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import AlertBanner from '@/components/AlertBanner.vue'
 import BillingAlerts from '@/components/BillingAlerts.vue'
 import LinkControl from '@/components/LinkControl.vue'
 import Scrollbar from '@/components/common/Scrollbar.vue'
@@ -36,9 +38,25 @@ const statusOptions = [
 }))
 const regionOptions = clusterOptions.filter(Boolean)
 
+const route = useRoute()
+const router = useRouter()
+
+const liveStatuses = statusOptions
+	.filter((o) => o.value !== 'Archived')
+	.map((o) => o.value)
+
+// A shared link can ask for a status, for example /sites?status=Archived
+const statusesInQuery = (query: unknown) =>
+	String(query ?? '')
+		.split(',')
+		.filter((value) => statusOptions.some((o) => o.value === value))
+
+const requestedStatuses = statusesInQuery(route.query.status)
+
 const selectedStatuses = ref<string[]>(
-	statusOptions.filter((o) => o.value !== 'Archived').map((o) => o.value),
+	requestedStatuses.length ? requestedStatuses : liveStatuses,
 )
+const showsArchivedFallback = ref(false)
 
 const initialFilters = { status: ['in', selectedStatuses.value] }
 
@@ -73,12 +91,70 @@ const sitesCount = createListResource({
 	orderBy: 'creation desc',
 	pageLength: 100000,
 	auto: true,
+	onSuccess: (data: any[]) => showArchivedSitesIfTeamHasNoLiveSites(data),
 })
 
-const applyStatusFilter = (value: string[]) => {
+const selectStatuses = (value: string[]) => {
 	selectedStatuses.value = value
+	router.replace({
+		query: {
+			...route.query,
+			status: value.length ? value.join(',') : undefined,
+		},
+	})
 	applyFilter('status', value.length ? ['in', value] : undefined)
 }
+
+const applyStatusFilter = (value: string[]) => {
+	showsArchivedFallback.value = false
+	selectStatuses(value)
+}
+
+const archivedSites = createListResource({
+	doctype: 'Site',
+	fields: ['name'],
+	filters: { status: 'Archived' },
+	pageLength: 1,
+	auto: false,
+	onSuccess: (data: any[]) => {
+		// A team with no site at all keeps the default list, where it can
+		// create the first site
+		if (!data?.length) return
+		showsArchivedFallback.value = true
+		selectStatuses(['Archived'])
+	},
+})
+
+// The check runs on the first load, and again after the user archives a site.
+// It must not run on an unrelated filter change, or a filter with no result
+// would move the user to the archived sites.
+let checkLiveSitesOnNextCount = !requestedStatuses.length
+
+// A team that dropped all of its sites gets an empty list and no next step.
+// Show the archived sites instead, because they are the only sites left.
+// `sitesCount` carries the same filters as `sites`, and it has no shared cache,
+// so its result is a reliable count of the live sites of the team.
+const showArchivedSitesIfTeamHasNoLiveSites = (liveSites: any[]) => {
+	if (!checkLiveSitesOnNextCount) return
+	checkLiveSitesOnNextCount = false
+	if (liveSites?.length) return
+	archivedSites.reload()
+}
+
+// Vue keeps this page when only the query changes, for example on the back
+// button. Read the new status from the URL and apply it.
+watch(
+	() => route.query.status,
+	(query) => {
+		const statuses = statusesInQuery(query)
+		const value = statuses.length ? statuses : liveStatuses
+		if (value.join() === selectedStatuses.value.join()) return
+		showsArchivedFallback.value = false
+		checkLiveSitesOnNextCount = !statuses.length
+		selectedStatuses.value = value
+		applyFilter('status', ['in', value])
+	},
+)
 
 const moreActions = [
 	{ label: 'Export as CSV', icon: 'download', onClick: () => exportCSV() },
@@ -123,7 +199,13 @@ const dropSite = (site: any) => {
 		h(ArchiveSiteDialog, {
 			site: siteResource,
 			modelValue: true,
-			onArchived: () => sites.reload(),
+			onArchived: () => {
+				// The user can archive the last live site from this page
+				checkLiveSitesOnNextCount =
+					selectedStatuses.value.join() === liveStatuses.join()
+				sites.reload()
+				sitesCount.reload()
+			},
 		}),
 	)
 }
@@ -201,6 +283,13 @@ const exportCSV = () => {
 
 		<div class="px-5 pt-4">
 			<BillingAlerts ctx-type="List Page" />
+		</div>
+
+		<div v-if="showsArchivedFallback" class="px-5 pt-4">
+			<AlertBanner
+				title="Your team has no live sites. This page shows your archived sites."
+				type="info"
+			/>
 		</div>
 
 		<div class="flex items-center gap-2 px-5 pb-3 overflow-auto">
