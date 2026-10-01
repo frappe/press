@@ -38,7 +38,7 @@
 
 - name: Add MariaDB Repository
   ansible.builtin.apt_repository:
-    repo: deb https://mirror.rackspace.com/mariadb/repo/11.8/ubuntu {{ ansible_distribution_release }} main
+    repo: deb https://archive.mariadb.org/repo/11.8/ubuntu {{ ansible_distribution_release }} main
     state: present
     update_cache: true
   when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
@@ -76,14 +76,24 @@
   delay: 120
   when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
 
+- name: Create MariaDB Systemd Drop-In Directory
+  file:
+    path: /etc/systemd/system/mariadb.service.d
+    state: directory
+    mode: 0755
+
+# A drop-in survives package upgrades, which rewrite the unit file.
 - name: Set Open Files Count Limit for MariaDB
-  ansible.builtin.lineinfile:
-    dest: /lib/systemd/system/mariadb.service
-    regexp: '^LimitNOFILE(\s*)=(\s*)\d+'
-    line: 'LimitNOFILE = infinity'
-    insertafter: '\[Service\]'
-    state: present
-  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
+  copy:
+    dest: /etc/systemd/system/mariadb.service.d/limits.conf
+    content: |
+      [Service]
+      LimitNOFILE=infinity
+
+# Unguarded: an already-upgraded host still needs systemd to read the repaired drop-in.
+- name: Reload Systemd Configuration
+  ansible.builtin.systemd:
+    daemon_reload: true
 
 - name: Start MariaDB Service
   ansible.builtin.systemd:
