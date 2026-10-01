@@ -23,6 +23,7 @@
     - role: additional_process_hardening
     - role: warning_banners
     - role: auditd
+    - role: atop
     - role: sshd_hardening
     - role: pam
     - role: user_ssh_certificate
