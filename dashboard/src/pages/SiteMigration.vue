@@ -25,6 +25,13 @@
 				<Badge class="ml-2" :label="siteAction.status" />
 				<div class="ml-auto space-x-2">
 					<Button
+						v-if="siteAction.status === 'Running'"
+						theme="red"
+						@click="confirmStop"
+					>
+						Stop Migration
+					</Button>
+					<Button
 						@click="$resources.siteAction.reload()"
 						:loading="$resources.siteAction.loading"
 					>
@@ -55,8 +62,8 @@
 							v-if="destinationReleaseGroupName"
 							style="cursor: pointer"
 						>
-							{{ destinationReleaseGroupName || '-'
-							}}<span class='ml-1'>&#8599;&#65038;</span>
+							{{ destinationReleaseGroupName || '-' }}
+							<span class="ml-1">&#8599;&#65038;</span>
 						</div>
 						<div class="mt-2 text-sm text-ink-gray-9" v-else>-</div>
 					</div>
@@ -70,7 +77,8 @@
 							v-if="destinationServerName"
 							style="cursor: pointer"
 						>
-							{{ destinationServerName || '-' }}<span class='ml-1'>&#8599;&#65038;</span>
+							{{ destinationServerName || '-' }}
+							<span class="ml-1">&#8599;&#65038;</span>
 						</div>
 						<div class="mt-2 text-sm text-ink-gray-9" v-else>-</div>
 					</div>
@@ -89,19 +97,15 @@
 					<div>
 						<div class="text-sm font-medium text-ink-gray-5">Duration</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
-							{{
-								siteAction.duration
+							{{ siteAction.duration
 									? this.format_seconds(siteAction.duration)
-									: '-'
-							}}
+									: '-' }}
 						</div>
 					</div>
 					<div>
 						<div class="text-sm font-medium text-ink-gray-5">Start</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
-							{{
-								siteAction.start ? $format.date(siteAction.start, 'lll') : '-'
-							}}
+							{{ siteAction.start ? $format.date(siteAction.start, 'lll') : '-' }}
 						</div>
 					</div>
 					<div>
@@ -121,11 +125,13 @@
 	</div>
 </template>
 <script>
-import { createResource } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import JobStep from '../components/JobStep.vue';
-import AlertAddressableError from '../components/AlertAddressableError.vue';
-import AlertBanner from '../components/AlertBanner.vue';
+import { createResource } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import AlertAddressableError from '../components/AlertAddressableError.vue'
+import AlertBanner from '../components/AlertBanner.vue'
+import JobStep from '../components/JobStep.vue'
+import { confirmDialog } from '../utils/components'
+import { getToastErrorMessage } from '../utils/toast'
 
 export default {
 	name: 'SiteAction',
@@ -137,7 +143,7 @@ export default {
 	},
 	resources: {
 		siteAction() {
-			if (!this.id) return;
+			if (!this.id) return
 			return {
 				type: 'document',
 				doctype: 'Site Action',
@@ -151,30 +157,30 @@ export default {
 							output: step.output || 'No Output',
 							status: step.status,
 							isOpen: false,
-						};
-					});
+						}
+					})
 				},
 				onSuccess: (data) => {
 					if (
 						!['Success', 'Failure', 'Recovered', 'Fatal'].includes(data.status)
 					) {
 						setTimeout(() => {
-							this.$resources.siteAction.reload();
-						}, 5000);
+							this.$resources.siteAction.reload()
+						}, 5000)
 					}
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		siteAction() {
-			return this.$resources.siteAction?.doc ?? {};
+			return this.$resources.siteAction?.doc ?? {}
 		},
 		steps() {
-			return this.$resources.siteAction?.doc?.steps || [];
+			return this.$resources.siteAction?.doc?.steps || []
 		},
 		errors() {
-			return this.$resources.siteAction?.doc?.errors || [];
+			return this.$resources.siteAction?.doc?.errors || []
 		},
 		dropdownOptions() {
 			return [
@@ -186,7 +192,7 @@ export default {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/site-action/${this.id}`,
 							'_blank',
-						);
+						)
 					},
 				},
 				{
@@ -201,18 +207,18 @@ export default {
 									dt: 'Site Action',
 									dn: this.siteAction.name,
 									method: 'start_now',
-								};
+								}
 							},
-						});
+						})
 
 						toast.promise(startNowAction.submit(), {
 							loading: 'Starting migration...',
 							success: () => {
-								this.$resources.siteAction.reload();
-								return 'Site migration started';
+								this.$resources.siteAction.reload()
+								return 'Site migration started'
 							},
 							error: 'Failed to start migration',
-						});
+						})
 					},
 				},
 				{
@@ -227,58 +233,90 @@ export default {
 									dt: 'Site Action',
 									dn: this.siteAction.name,
 									method: 'cancel_action',
-								};
+								}
 							},
-						});
+						})
 
 						toast.promise(cancelAction.submit(), {
 							loading: 'Cancelling migration...',
 							success: () => {
-								this.$resources.siteAction.reload();
-								return 'Site migration cancelled';
+								this.$resources.siteAction.reload()
+								return 'Site migration cancelled'
 							},
 							error: 'Failed to cancel migration',
-						});
+						})
 					},
 				},
-			].filter((option) => option.condition?.() ?? true);
+			].filter((option) => option.condition?.() ?? true)
 		},
 		destinationServerName() {
-			let server_name = this.siteAction.arguments_dict?.destination_server;
-			if (!server_name) return null;
+			let server_name = this.siteAction.arguments_dict?.destination_server
+			if (!server_name) return null
 			try {
-				return server_name.split('.')[0];
+				return server_name.split('.')[0]
 			} catch (e) {
-				console.error('Error parsing destination server:', e);
-				return null;
+				console.error('Error parsing destination server:', e)
+				return null
 			}
 		},
 		destinationServerFullName() {
-			return this.siteAction.arguments_dict?.destination_server;
+			return this.siteAction.arguments_dict?.destination_server
 		},
 		destinationReleaseGroupName() {
-			return this.siteAction.arguments_dict?.destination_release_group;
+			return this.siteAction.arguments_dict?.destination_release_group
 		},
 	},
 	methods: {
+		confirmStop() {
+			confirmDialog({
+				title: 'Stop Migration',
+				message:
+					"Are you sure you want to stop this migration?<br><br>The site stays on its current bench, the work done so far is <b>discarded</b>, and you will need to trigger a fresh migration.<br><br>Use this if the migration is stuck or is taking unusually long. Once the site itself starts moving, the migration can't be stopped.",
+				primaryAction: {
+					label: 'Stop Migration',
+					variant: 'solid',
+					theme: 'red',
+					onClick: ({ hide }) => {
+						const stopAction = createResource({
+							url: 'press.api.client.run_doc_method',
+							makeParams: () => ({
+								dt: 'Site Action',
+								dn: this.siteAction.name,
+								method: 'stop_action',
+							}),
+						})
+
+						return toast.promise(stopAction.submit(), {
+							loading: 'Stopping migration...',
+							success: () => {
+								hide()
+								this.$resources.siteAction.reload()
+								return 'Site migration stopped'
+							},
+							error: (e) => getToastErrorMessage(e, 'Failed to stop migration'),
+						})
+					},
+				},
+			})
+		},
 		format_seconds(seconds) {
 			if (seconds === null) {
-				return '-';
+				return '-'
 			}
 			if (seconds < 60) {
-				return `${Math.ceil(seconds)}s`;
+				return `${Math.ceil(seconds)}s`
 			}
-			const minutes = Math.floor(seconds / 60);
-			const remainingSeconds = Math.ceil(seconds % 60);
-			return `${minutes}m ${remainingSeconds}s`;
+			const minutes = Math.floor(seconds / 60)
+			const remainingSeconds = Math.ceil(seconds % 60)
+			return `${minutes}m ${remainingSeconds}s`
 		},
 		openDestinationServerPage() {
 			if (this.destinationServerFullName) {
 				const route = this.$router.resolve({
 					name: 'Server Detail',
 					params: { name: this.destinationServerFullName },
-				});
-				window.open(route.href, '_blank');
+				})
+				window.open(route.href, '_blank')
 			}
 		},
 		openDestinationBenchPage() {
@@ -286,10 +324,10 @@ export default {
 				const route = this.$router.resolve({
 					name: 'Release Group Detail',
 					params: { name: this.destinationReleaseGroupName },
-				});
-				window.open(route.href, '_blank');
+				})
+				window.open(route.href, '_blank')
 			}
 		},
 	},
-};
+}
 </script>

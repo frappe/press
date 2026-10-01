@@ -16,7 +16,10 @@ from rq.timeouts import JobTimeoutException
 
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
+	create_platform_build_and_deploy,
+	stop_and_fail,
+)
 from press.press.doctype.site_migration.site_migration import get_ongoing_migration
 from press.utils.jobs import has_job_timeout_exceeded
 
@@ -634,6 +637,53 @@ class SiteAction(Document):
 				frappe.delete_doc("Site Migration", site_migration_name, ignore_permissions=True)
 
 		self.save(ignore_version=True)
+
+	@dashboard_whitelist()
+	def stop_action(self):
+		"""Fail a running action and stop the work its running step started."""
+		if self.status != "Running":
+			frappe.throw(
+				"Only a running migration can be stopped. This one is either waiting to start or has already finished."
+			)
+
+		step = self.current_running_step
+		if step:
+			self.stop_step(step)
+			step.status = StepStatus.Failure
+			step.error_message = f"Migration stopped by {frappe.session.user}"
+			step.end = now_datetime()
+
+		self._archive_newly_created_release_group()
+		self.fail()
+
+	def stop_step(self, step: SiteActionStep) -> None:
+		"""Stop whatever the step started, so nothing lands on the site after the action fails."""
+		if not step.reference_name:
+			return
+
+		if step.reference_doctype == "Deploy Candidate Build":
+			stop_and_fail(step.reference_name)
+			return
+
+		self.drop_scheduled_move(step)
+
+	def drop_scheduled_move(self, step: SiteActionStep) -> None:
+		"""Drop the move the step scheduled. Once it starts, the site is mid-move and has to finish."""
+		status = frappe.db.get_value(step.reference_doctype, step.reference_name, "status", for_update=True)
+		if status != "Scheduled":
+			frappe.throw(
+				f"The site is already being moved by {step.reference_doctype} {frappe.bold(step.reference_name)}. "
+				"Stopping it now would leave the site between two benches. Wait for it to finish."
+			)
+
+		if step.reference_doctype == "Site Update":
+			# Not "Failure", which `has_pending_updates` counts and which would block the next update
+			frappe.db.set_value("Site Update", step.reference_name, "status", "Cancelled")
+			return
+
+		migration: SiteMigration = frappe.get_doc("Site Migration", step.reference_name)
+		migration.set_pending_steps_to_skipped()
+		migration.db_set("status", "Failure")
 
 	@frappe.whitelist()
 	def execute(self):
