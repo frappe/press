@@ -150,7 +150,12 @@ export default {
 		},
 		save() {
 			// One request for both controls: two would race on the same Site row
-			let payload = { offsite: this.offsite }
+			let payload = {}
+			// Leave the switch out when the dialog hides it, so that the site keeps
+			// the offsite configuration it has
+			if (this.canSetOffsite) {
+				payload.offsite = this.offsite
+			}
 			// Leave the time out when the dialog shows no time control, so that the
 			// site keeps the schedule it has
 			if (this.canSetTime && !this.managed) {

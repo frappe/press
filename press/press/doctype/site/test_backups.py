@@ -441,6 +441,18 @@ class TestBackupSchedule(FrappeTestCase):
 		self.assertTrue(site.skip_offsite_backups)
 		self.assertEqual(site.get_backup_schedule()["times"], ["02:00"])
 
+	def test_moving_the_backup_time_keeps_offsite_backups_off(self):
+		"""A caller that sends only the time must not turn offsite backups back on."""
+		site = self._create_site()
+		site.update_backup_schedule(offsite=False)
+		site.reload()
+
+		site.update_backup_schedule("02:00")
+
+		site.reload()
+		self.assertTrue(site.skip_offsite_backups)
+		self.assertEqual(site.get_backup_schedule()["times"], ["02:00"])
+
 	def test_a_site_with_the_times_we_set_up_can_still_turn_offsite_backups_off(self):
 		"""The dialog sends no time for such a site, and that must not clear the times."""
 		site = self._create_site()

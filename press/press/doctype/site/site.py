@@ -801,7 +801,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def update_backup_schedule(self, time: str | None = KEEP_BACKUP_TIME, offsite: bool = True):
+	def update_backup_schedule(self, time: str | None = KEEP_BACKUP_TIME, offsite: bool | None = None):
 		"""Write both controls of the Backup Schedule dialog in one save.
 
 		One request for each control would race. The save below writes back every
@@ -809,8 +809,12 @@ class Site(Document, TagHelpers):
 
 		Leave `time` out to keep the schedule. The dialog leaves it out for a site
 		that shows no time control, where `None` would read as "back to default".
+		Leave `offsite` out to keep the switch as it is, so that a caller that only
+		moves the time cannot turn offsite backups back on.
 		"""
-		changed = [self.set_offsite_backups(offsite)]
+		changed = []
+		if offsite is not None:
+			changed.append(self.set_offsite_backups(offsite))
 		if time is not KEEP_BACKUP_TIME:
 			changed.append(self.set_backup_time(time))
 		if any(changed):
