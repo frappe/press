@@ -106,7 +106,7 @@
 </template>
 
 <script>
-import { Spinner, createResource } from 'frappe-ui';
+import { Spinner } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import router from '../../router';
 import { getToastErrorMessage } from '../../utils/toast';
@@ -182,19 +182,9 @@ export default {
 		},
 		async showOngoingCleanupToast(error, toastId) {
 			const server = this.server.doc.name;
-			const jobs = await createResource({
-				url: 'press.api.client.get_list',
-				params: {
-					doctype: 'Agent Job',
-					fields: ['name'],
-					filters: { server, job_type: 'Cleanup Unused Files' },
-					order_by: 'creation desc',
-					limit: 1,
-				},
-			})
-				.fetch()
-				.catch(() => []);
-			const job = jobs?.[0]?.name;
+			const job = await this.server.runningCleanupJob
+				.submit()
+				.catch(() => null);
 
 			// The dialog overlay blocks clicks on the toast, so close it first.
 			this.show = false;

@@ -1151,17 +1151,24 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def cleanup_unused_files(self, force: bool = True):
 		# User-triggered cleanup forces; the scheduled sweep passes force=False.
+		if self.running_cleanup_job():
+			frappe.throw(
+				"A cleanup job is already running on this server. Please wait for it to finish before starting another.",
+				OngoingAgentJob,
+			)
+
+		self._cleanup_unused_files(force=force)
+
+	@dashboard_whitelist()
+	def running_cleanup_job(self) -> str | None:
+		"""The cleanup job that blocks a new cleanup. The dashboard links to it."""
 		with suppress(frappe.DoesNotExistError):
 			cleanup_job: "AgentJob" = frappe.get_last_doc(
 				"Agent Job", {"server": self.name, "job_type": "Cleanup Unused Files"}
 			)
 			if cleanup_job.status in ["Running", "Pending"]:
-				frappe.throw(
-					"A cleanup job is already running on this server. Please wait for it to finish before starting another.",
-					OngoingAgentJob,
-				)
-
-		self._cleanup_unused_files(force=force)
+				return cleanup_job.name
+		return None
 
 	def is_build_server(self) -> bool:
 		# Not a field in all subclasses
