@@ -82,6 +82,11 @@ def _init_jobs_registry() -> None:
 	}
 
 
+def get_job_class(job_type: str) -> type[PressJob]:
+	_init_jobs_registry()
+	return _JOBS_REGISTRY.get(job_type, PressJob)
+
+
 class PressJob(WorkflowBuilder):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -102,6 +107,11 @@ class PressJob(WorkflowBuilder):
 		status: DF.Literal["Pending", "Running", "Skipped", "Success", "Failure"]
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
+
+	@classmethod
+	def should_react_to_alert(cls, server: "Server | DatabaseServer", labels: dict) -> bool:
+		"""Alert reactions skip creating the job when this returns False"""
+		return True
 
 	@cached_property
 	def arguments_dict(self) -> "frappe._dict":
