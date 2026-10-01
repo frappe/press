@@ -328,7 +328,6 @@ def get_domain_status(site_name: str) -> dict[str, Any]:
 def get_platform_incidents(site: frappe._dict) -> list[dict[str, Any]]:
 	filters = {
 		"status": ("not in", ["Resolved", "Auto-Resolved", "Press-Resolved"]),
-		"ignored": False,
 	}
 	conditions = []
 	if site.server:

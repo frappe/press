@@ -458,12 +458,11 @@ class Incident(WebsiteGenerator):
 
 	@frappe.whitelist()
 	def ignore(self, reason: str):
-		"""Mute the incident and hide it from customers, e.g. when a user error caused it"""
+		"""Stop calling the team for this incident; customers see and hear about it as usual"""
 		if not (reason := reason.strip()):
 			frappe.throw("Please give a reason for ignoring this incident.")
 		self.ignored = True
 		self.ignore_reason = reason
-		self.show_in_website = False
 		self.save()
 		self.add_comment("Comment", f"Ignored incident: {reason}")
 
@@ -735,7 +734,7 @@ Likely due to insufficient balance or incorrect credentials""",
 			log_error("Incident Notification Email Failed")
 
 	def send_email_notification(self):
-		if self.ignored or not self.global_email_alerts_enabled:
+		if not self.global_email_alerts_enabled:
 			return
 
 		if self.status == "Investigating":
@@ -780,7 +779,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		)
 
 	def _call_customers(self):
-		if self.ignored or not self.phone_call:
+		if not self.phone_call:
 			return
 
 		phone_nos = get_communication_info("Phone Call", "Incident", "Server", self.server)
@@ -804,8 +803,6 @@ Likely due to insufficient balance or incorrect credentials""",
 		self.save()
 
 	def _call_customer(self, phone_no: str):
-		if self.ignored:
-			return
 		twilio_client = self.twilio_client
 		if not twilio_client:
 			return
@@ -991,7 +988,6 @@ def validate_incidents():
 		"Incident",
 		filters={
 			"status": "Validating",
-			"ignored": False,
 		},
 		fields=["name", "creation"],
 	)
