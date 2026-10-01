@@ -99,6 +99,8 @@ class Incident(WebsiteGenerator):
 		confirmed_at: DF.Datetime | None
 		corrective_suggestions: DF.Table[IncidentSuggestion]
 		description: DF.TextEditor | None
+		ignore_reason: DF.SmallText | None
+		ignored: DF.Check
 		investigation: DF.Link | None
 		likely_cause: DF.Text | None
 		phone_call: DF.Check
@@ -455,6 +457,36 @@ class Incident(WebsiteGenerator):
 		self.save()
 
 	@frappe.whitelist()
+	def ignore(self, reason: str):
+		"""Stop calling the team for this incident; customers see and hear about it as usual"""
+		if not (reason := reason.strip()):
+			frappe.throw("Please give a reason for ignoring this incident.")
+		self.ignored = True
+		self.ignore_reason = reason
+		self.save()
+		self.add_comment("Comment", f"Ignored incident: {reason}")
+
+	@frappe.whitelist()
+	def stop_ignoring(self, reason: str):
+		"""Resume calling the team for this incident"""
+		if not (reason := reason.strip()):
+			frappe.throw("Please give a reason for no longer ignoring this incident.")
+		if not self.ignored:
+			frappe.throw("This incident is not being ignored.")
+		self.ignored = False
+		self.ignore_reason = None
+		self.save()
+		self.add_comment("Comment", f"Stopped ignoring incident: {reason}")
+
+	@frappe.whitelist()
+	def send_custom_email(self, subject: str, message: str):
+		"""Email a hand-written update to the server's incident contacts"""
+		if not get_communication_info("Email", "Server Activity", "Server", self.server):
+			frappe.throw("No one is set up to receive emails for this server.")
+		self.send_mail(subject, message, raise_exception=True)
+		self.add_comment("Comment", f"Sent email <b>{frappe.utils.escape_html(subject)}</b><br>{message}")
+
+	@frappe.whitelist()
 	def cancel_stuck_jobs(self):
 		"""
 		During db reboot/upgrade some jobs tend to get stuck. This is a hack to cancel those jobs
@@ -644,7 +676,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		return acknowledged
 
 	def _call_humans(self):
-		if not self.phone_call or not self.global_phone_call_enabled:
+		if self.ignored or not self.phone_call or not self.global_phone_call_enabled:
 			return
 		if (
 			ignore_till := frappe.db.get_value("Server", self.server, "ignore_incidents_till")
@@ -692,7 +724,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		"""
 		self.send_mail(subject, message)
 
-	def send_mail(self, subject: str, message: str):
+	def send_mail(self, subject: str, message: str, raise_exception: bool = False):
 		try:
 			frappe.sendmail(
 				recipients=get_communication_info("Email", "Server Activity", "Server", self.server),
@@ -708,6 +740,8 @@ Likely due to insufficient balance or incorrect credentials""",
 			)
 
 		except Exception:
+			if raise_exception:
+				raise
 			# Swallow the exception to avoid breaking the Incident creation
 			log_error("Incident Notification Email Failed")
 
@@ -726,6 +760,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		message = self.get_email_message()
 		self.send_mail(subject, message)
 
+	@frappe.whitelist()
 	def get_email_subject(self):
 		title = str(frappe.db.get_value("Server", self.server, "title"))
 		name = title.removesuffix(" - Application") or self.server
@@ -987,6 +1022,8 @@ def resolve_incidents():
 	for incident_name in ongoing_incidents:
 		incident = Incident("Incident", incident_name)
 		incident.check_resolved()
+		if incident.ignored:
+			continue
 		if (
 			incident.time_to_call_for_help or incident.time_to_call_for_help_again
 		) and incident.waited_enough_for_investigator_reactions:
