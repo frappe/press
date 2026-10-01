@@ -15,8 +15,9 @@ from moto import mock_aws
 
 from press.agent import Agent
 from press.api.client import get_list
-from press.exceptions import ArchiveBenchError
+from press.exceptions import ArchiveBenchError, OngoingAgentJob
 from press.overrides import before_request
+from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
@@ -569,6 +570,26 @@ class TestServer(FrappeTestCase):
 		with patch.object(BaseServer, "_cleanup_unused_files") as inner:
 			server.cleanup_unused_files()
 		inner.assert_called_once_with(force=True)
+
+	def test_user_triggered_cleanup_raises_ongoing_agent_job_while_one_is_running(self):
+		server = create_test_server()
+		with (
+			patch("frappe.get_last_doc", return_value=Mock(status="Running")),
+			patch.object(BaseServer, "_cleanup_unused_files") as inner,
+			self.assertRaises(OngoingAgentJob),
+		):
+			server.cleanup_unused_files()
+		inner.assert_not_called()
+
+	def test_running_cleanup_job_names_the_job_that_blocks_a_new_cleanup(self):
+		server = create_test_server()
+		self.assertIsNone(server.running_cleanup_job())
+
+		job = create_test_agent_job("Cleanup Unused Files", server=server.name, status="Running")
+		self.assertEqual(server.running_cleanup_job(), job.name)
+
+		job.db_set("status", "Success")
+		self.assertIsNone(server.running_cleanup_job())
 
 	def test_glass_file_restored_only_after_a_forced_cleanup_completes(self):
 		server = create_test_server()
