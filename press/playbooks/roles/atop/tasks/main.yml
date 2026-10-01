@@ -1,0 +1,29 @@
+---
+- name: Install Atop
+  apt:
+    name: atop
+    state: present
+    update_cache: no
+
+  register: result
+  until: result.failed == false
+  retries: 5
+  delay: 120
+
+- name: Set Atop Snapshot Interval
+  lineinfile:
+    path: /etc/default/atop
+    regexp: '^LOGINTERVAL='
+    line: 'LOGINTERVAL={{ atop_interval }}'
+
+- name: Set Atop Log Retention
+  lineinfile:
+    path: /etc/default/atop
+    regexp: '^LOGGENERATIONS='
+    line: 'LOGGENERATIONS={{ atop_retention_days }}'
+
+- name: Restart Atop
+  systemd:
+    name: atop
+    enabled: yes
+    state: restarted

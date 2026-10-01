@@ -362,6 +362,13 @@ frappe.ui.form.on('Server', {
 				__('Setup'),
 			],
 			[
+				__('Setup Atop'),
+				'setup_atop',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
 				__('Set Additional Config'),
 				'set_additional_config',
 				true,

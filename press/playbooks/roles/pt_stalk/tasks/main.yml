@@ -21,6 +21,22 @@
     regexp: '-ex "thread apply all bt" \\'
     replace: '-ex "set print frame-arguments all" -ex "thread apply all bt full" \\'
 
+- name: Create Stalk Config Directory
+  file:
+    path: /etc/pt-stalk
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Create Stalk CPU Trigger
+  template:
+    src: cpu_usage.sh
+    dest: /etc/pt-stalk/cpu_usage.sh
+    owner: root
+    group: root
+    mode: 0644
+
 - name: Create Stalk Systemd Service File
   template:
     src: pt_stalk.service

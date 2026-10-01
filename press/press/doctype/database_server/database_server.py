@@ -935,6 +935,8 @@ class DatabaseServer(BaseServer):
 			self.status = "Broken"
 			log_error("Database Server Setup Exception", server=self.as_dict())
 		self.save()
+		if self.status == "Active" and not self.is_self_hosted:
+			self.setup_pt_stalk()
 
 	def _get_config(self):
 		certificate_name = frappe.db.get_value(

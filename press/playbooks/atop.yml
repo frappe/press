@@ -1,0 +1,7 @@
+---
+- name: Setup Atop
+  hosts: all
+  become: yes
+  become_user: root
+  roles:
+    - role: atop
