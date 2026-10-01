@@ -31,7 +31,7 @@ from frappe.utils.user import is_system_user
 from press.agent import Agent
 from press.api.account import is_limits_exceeded
 from press.api.client import dashboard_whitelist
-from press.exceptions import VolumeResizeLimitError
+from press.exceptions import OngoingAgentJob, VolumeResizeLimitError
 from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.add_on_storage_log.add_on_storage_log import (
@@ -1157,7 +1157,8 @@ class BaseServer(Document, TagHelpers):
 			)
 			if cleanup_job.status in ["Running", "Pending"]:
 				frappe.throw(
-					"A cleanup job is already running on this server. Please wait for it to finish before starting another."
+					"A cleanup job is already running on this server. Please wait for it to finish before starting another.",
+					OngoingAgentJob,
 				)
 
 		self._cleanup_unused_files(force=force)

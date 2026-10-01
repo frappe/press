@@ -15,7 +15,7 @@ from moto import mock_aws
 
 from press.agent import Agent
 from press.api.client import get_list
-from press.exceptions import ArchiveBenchError
+from press.exceptions import ArchiveBenchError, OngoingAgentJob
 from press.overrides import before_request
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
@@ -569,6 +569,16 @@ class TestServer(FrappeTestCase):
 		with patch.object(BaseServer, "_cleanup_unused_files") as inner:
 			server.cleanup_unused_files()
 		inner.assert_called_once_with(force=True)
+
+	def test_user_triggered_cleanup_raises_ongoing_agent_job_while_one_is_running(self):
+		server = create_test_server()
+		with (
+			patch("frappe.get_last_doc", return_value=Mock(status="Running")),
+			patch.object(BaseServer, "_cleanup_unused_files") as inner,
+			self.assertRaises(OngoingAgentJob),
+		):
+			server.cleanup_unused_files()
+		inner.assert_not_called()
 
 	def test_glass_file_restored_only_after_a_forced_cleanup_completes(self):
 		server = create_test_server()

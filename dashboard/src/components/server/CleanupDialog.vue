@@ -106,8 +106,10 @@
 </template>
 
 <script>
-import { Spinner } from 'frappe-ui';
+import { Spinner, createResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
+import router from '../../router';
+import { getToastErrorMessage } from '../../utils/toast';
 
 export default {
 	name: 'CleanupDialog',
@@ -160,22 +162,57 @@ export default {
 			if (valueInGB > 1) return `${valueInGB.toFixed(2)}GB`;
 			return `${(valueInGB * 1024).toFixed(2)}MB`;
 		},
-		onCleanup() {
-			toast.promise(
-				this.server.cleanup.submit({
+		async onCleanup() {
+			const toastId = toast.loading('Starting cleanup...');
+			try {
+				await this.server.cleanup.submit({
 					force: true,
-				}),
-				{
-					loading: 'Starting cleanup...',
-					success: () => {
-						this.show = false;
-						return 'Cleanup started';
-					},
-					error: (err) => {
-						return 'Failed to start cleanup';
-					},
+				});
+				this.show = false;
+				toast.success('Cleanup started', { id: toastId });
+			} catch (error) {
+				if (error?.exc_type === 'OngoingAgentJob') {
+					this.showOngoingCleanupToast(error, toastId);
+					return;
+				}
+				toast.error(getToastErrorMessage(error, 'Failed to start cleanup'), {
+					id: toastId,
+				});
+			}
+		},
+		async showOngoingCleanupToast(error, toastId) {
+			const server = this.server.doc.name;
+			const jobs = await createResource({
+				url: 'press.api.client.get_list',
+				params: {
+					doctype: 'Agent Job',
+					fields: ['name'],
+					filters: { server, job_type: 'Cleanup Unused Files' },
+					order_by: 'creation desc',
+					limit: 1,
 				},
-			);
+			})
+				.fetch()
+				.catch(() => []);
+			const job = jobs?.[0]?.name;
+
+			// The dialog overlay blocks clicks on the toast, so close it first.
+			this.show = false;
+			toast.error(getToastErrorMessage(error), {
+				id: toastId,
+				duration: 10000,
+				action: job
+					? {
+							label: 'View Job',
+							onClick: () => {
+								router.push({
+									name: 'Server Job',
+									params: { name: server, id: job },
+								});
+							},
+						}
+					: undefined,
+			});
 		},
 	},
 };
