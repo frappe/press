@@ -146,6 +146,25 @@
 					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
+
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#site-analytics"
+				title="Web Worker Wait Time"
+				@share-card="shareDashboard"
+			>
+				<LineChart
+					type="time"
+					title="Web Worker Wait Time"
+					:key="requestWorkerWaitData"
+					:data="requestWorkerWaitData"
+					unit="seconds"
+					:chartTheme="[$theme.colors.red[500]]"
+					:loading="$resources.analytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
+				/>
+			</AnalyticsCard>
 		</div>
 
 		<div
@@ -842,6 +861,16 @@ export default {
 			return {
 				datasets: [
 					requestCpuTime.map((d) => [+new Date(d.date), d.value / 1000000]),
+				],
+			}
+		},
+		requestWorkerWaitData() {
+			let workerWait = this.$resources.analytics.data?.request_worker_wait
+			if (!workerWait) return
+
+			return {
+				datasets: [
+					workerWait.map((d) => [+new Date(d.date), d.value / 1000000]),
 				],
 			}
 		},
