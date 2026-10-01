@@ -1,0 +1,277 @@
+{
+	"actions": [],
+	"allow_rename": 0,
+	"autoname": "hash",
+	"creation": "2026-08-18 10:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 0,
+	"engine": "InnoDB",
+	"field_order": [
+		"series_key",
+		"status",
+		"verdict",
+		"column_break_head",
+		"changed_on",
+		"detector",
+		"detected_on",
+		"section_break_summary",
+		"summary",
+		"section_break_series",
+		"provider",
+		"account",
+		"service",
+		"usage_type",
+		"column_break_series",
+		"region",
+		"metric",
+		"unit",
+		"currency",
+		"section_break_change",
+		"baseline_value",
+		"current_value",
+		"change_percent",
+		"column_break_change",
+		"driver",
+		"driver_change_percent",
+		"section_break_impact",
+		"daily_cost_impact",
+		"column_break_impact",
+		"monthly_cost_impact",
+		"section_break_contributors",
+		"contributors"
+	],
+	"fields": [
+		{
+			"description": "The series that moved, as service / usage type / region.",
+			"fieldname": "series_key",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Series",
+			"read_only": 1,
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"default": "Open",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Status",
+			"options": "Open\nAcknowledged\nResolved\nFalse Positive"
+		},
+		{
+			"description": "Inorganic means the driver behind this series did not grow with it.",
+			"fieldname": "verdict",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Verdict",
+			"options": "Inorganic\nOrganic\nNo Driver",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_head",
+			"fieldtype": "Column Break"
+		},
+		{
+			"description": "The day the series changed level. This is the answer to when it started.",
+			"fieldname": "changed_on",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"label": "Changed On",
+			"read_only": 1
+		},
+		{
+			"fieldname": "detector",
+			"fieldtype": "Select",
+			"in_standard_filter": 1,
+			"label": "Detector",
+			"options": "Spike\nLevel Shift",
+			"read_only": 1
+		},
+		{
+			"fieldname": "detected_on",
+			"fieldtype": "Date",
+			"label": "Detected On",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_summary",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "summary",
+			"fieldtype": "Small Text",
+			"label": "Summary",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_series",
+			"fieldtype": "Section Break",
+			"label": "Series"
+		},
+		{
+			"fieldname": "provider",
+			"fieldtype": "Select",
+			"label": "Provider",
+			"options": "AWS EC2\nOCI\nHetzner\nDigitalOcean",
+			"in_standard_filter": 1,
+			"read_only": 1
+		},
+		{
+			"fieldname": "account",
+			"fieldtype": "Data",
+			"label": "Account",
+			"read_only": 1
+		},
+		{
+			"fieldname": "service",
+			"fieldtype": "Data",
+			"in_standard_filter": 1,
+			"label": "Service",
+			"read_only": 1
+		},
+		{
+			"fieldname": "usage_type",
+			"fieldtype": "Data",
+			"label": "Usage Type",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_series",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "region",
+			"fieldtype": "Data",
+			"label": "Region",
+			"read_only": 1
+		},
+		{
+			"description": "Usage quantity is preferred over cost, so a price change is never mistaken for a consumption change.",
+			"fieldname": "metric",
+			"fieldtype": "Select",
+			"label": "Metric",
+			"options": "Usage\nCost",
+			"read_only": 1
+		},
+		{
+			"fieldname": "unit",
+			"fieldtype": "Data",
+			"label": "Unit",
+			"read_only": 1
+		},
+		{
+			"fieldname": "currency",
+			"fieldtype": "Link",
+			"label": "Currency",
+			"options": "Currency",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_change",
+			"fieldtype": "Section Break",
+			"label": "Change"
+		},
+		{
+			"fieldname": "baseline_value",
+			"fieldtype": "Float",
+			"label": "Baseline Value",
+			"precision": "3",
+			"read_only": 1
+		},
+		{
+			"fieldname": "current_value",
+			"fieldtype": "Float",
+			"label": "Current Value",
+			"precision": "3",
+			"read_only": 1
+		},
+		{
+			"fieldname": "change_percent",
+			"fieldtype": "Percent",
+			"in_list_view": 1,
+			"label": "Change",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_change",
+			"fieldtype": "Column Break"
+		},
+		{
+			"description": "The business measure this series is expected to track.",
+			"fieldname": "driver",
+			"fieldtype": "Data",
+			"label": "Driver",
+			"read_only": 1
+		},
+		{
+			"fieldname": "driver_change_percent",
+			"fieldtype": "Percent",
+			"label": "Driver Change",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_impact",
+			"fieldtype": "Section Break",
+			"label": "Impact"
+		},
+		{
+			"fieldname": "daily_cost_impact",
+			"fieldtype": "Currency",
+			"label": "Daily Cost Impact",
+			"read_only": 1,
+			"options": "currency"
+		},
+		{
+			"fieldname": "column_break_impact",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "monthly_cost_impact",
+			"fieldtype": "Currency",
+			"in_list_view": 1,
+			"label": "Monthly Cost Impact",
+			"read_only": 1,
+			"options": "currency"
+		},
+		{
+			"fieldname": "section_break_contributors",
+			"fieldtype": "Section Break",
+			"label": "Contributors"
+		},
+		{
+			"description": "The Press records holding the largest share of this series on the day it changed.",
+			"fieldname": "contributors",
+			"fieldtype": "Text Editor",
+			"label": "Contributors",
+			"read_only": 1
+		}
+	],
+	"index_web_pages_for_search": 0,
+	"links": [],
+	"modified": "2026-08-18 10:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Cloud Usage Anomaly",
+	"naming_rule": "Random",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "series_key"
+}
