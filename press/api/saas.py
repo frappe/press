@@ -46,9 +46,10 @@ def account_request(
 		frappe.throw(f"Subdomain {subdomain} is already taken. Please try with some other subdomain.")
 
 	all_countries = frappe.db.get_all("Country", pluck="name")
-	country = find(all_countries, lambda x: x.lower() == country.lower())
-	if not country:
-		frappe.throw("{country} is not a valid country. Please choose the correct country value.")
+	country_name = find(all_countries, lambda x: x.lower() == country.lower())
+	if not country_name:
+		frappe.throw(f"{country} is not a valid country. Please choose the correct country value.")
+	country = country_name
 
 	team = frappe.db.get_value("Team", {"user": email})
 	if team and frappe.db.exists("Invoice", {"team": team, "status": "Unpaid", "type": "Subscription"}):

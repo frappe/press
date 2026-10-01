@@ -2229,7 +2229,7 @@ class Site(Document, TagHelpers):
 
 		if self.team != get_current_team():
 			frappe.throw(
-				"You don't seem to be a member of {self.team}. You should be a member of the team owning the site to initiate a site ownership transfer. Please verify with your team admin and retry."
+				f"You don't seem to be a member of {self.team}. You should be a member of the team owning the site to initiate a site ownership transfer. Please verify with your team admin and retry."
 			)
 
 		if not frappe.db.exists("Team", {"user": team_mail_id, "enabled": 1}):
@@ -2349,7 +2349,7 @@ class Site(Document, TagHelpers):
 				frappe.throw(f"User {user} does not exist in the site", frappe.ValidationError)  # nosemgrep
 			elif "certificate has expired" in str(e):
 				frappe.throw(
-					"SSL certificate for the {self.name} has expired. Please reach out to us at <a href='https://support.frappe.io/'>support.frappe.io</a> if it is not automatically generated in a few minutes.",
+					f"SSL certificate for the {self.name} has expired. Please reach out to us at <a href='https://support.frappe.io/'>support.frappe.io</a> if it is not automatically generated in a few minutes.",
 					frappe.ValidationError,
 				)
 			elif "no space left on device" in str(e):
@@ -3170,8 +3170,8 @@ class Site(Document, TagHelpers):
 		if self.plan and plan.is_trial_plan:
 			frappe.throw(
 				_(
-					"The site {self.name} is currently on a trial plan. Cannot <b>deactivate site on a trial plan</b>"
-				)
+					"The site {0} is currently on a trial plan. Cannot <b>deactivate site on a trial plan</b>"
+				).format(self.name)
 			)
 
 		if self.plan and plan.is_frappe_plan:
