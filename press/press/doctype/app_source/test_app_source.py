@@ -36,11 +36,23 @@ def create_test_app_source(
 	return app.add_source(repository_url=repository_url, branch=branch, frappe_version=version, team=team)
 
 
+def github_not_found_response(message: str) -> Mock:
+	return Mock(status_code=404, text=f'{{"message": "{message}"}}')
+
+
 class TestAppSource(FrappeTestCase):
 	def create_app(self, name: str, title: str):
 		app: App = frappe.get_doc({"doctype": "App", "name": name, "title": title})
 		app.insert(ignore_if_duplicate=True)
 		return app
+
+	def create_hrms_source(self) -> AppSource:
+		return self.create_app("hrms", "HRMS").add_source(
+			frappe_version="Nightly",
+			repository_url="https://github.com/frappe/hrms",
+			branch="develop",
+			team=create_test_team().name,
+		)
 
 	@patch.object(AppSource, "after_insert", new=Mock())
 	def test_validate_dependant_apps(self):
@@ -76,3 +88,29 @@ class TestAppSource(FrappeTestCase):
 			source.sync_versions()
 
 		self.assertEqual([row.version for row in source.versions], ["Version 15"])
+
+	@patch.object(AppSource, "after_insert", new=Mock())
+	def test_poll_of_deleted_branch_sets_branch_deleted_and_leaves_source_installed(self):
+		source = self.create_hrms_source()
+
+		source.set_poll_failed(github_not_found_response("Branch not found"))
+
+		self.assertTrue(source.branch_deleted)
+		self.assertFalse(source.uninstalled)
+
+	@patch.object(AppSource, "after_insert", new=Mock())
+	def test_poll_of_inaccessible_repository_sets_uninstalled_and_not_branch_deleted(self):
+		source = self.create_hrms_source()
+
+		source.set_poll_failed(github_not_found_response("Not Found"))
+
+		self.assertFalse(source.branch_deleted)
+		self.assertTrue(source.uninstalled)
+
+	@patch.object(AppSource, "after_insert", new=Mock())
+	def test_branch_deleted_is_false_while_the_last_poll_succeeded(self):
+		source = self.create_hrms_source()
+		source.last_github_response = '{"message": "Branch not found"}'
+		source.last_github_poll_failed = False
+
+		self.assertFalse(source.branch_deleted)
