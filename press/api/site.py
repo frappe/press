@@ -28,6 +28,7 @@ from press.press.doctype.app.app import get_app_from_policies
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	get_total_installs_by_app,
+	is_marketplace_app_source,
 )
 from press.press.doctype.remote_file.remote_file import get_remote_key, validate_files_belong_to_team
 from press.press.doctype.root_domain.root_domain import get_matching_domain
@@ -234,7 +235,7 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 	)
 
 	if app_plans and len(app_plans) > 0:
-		subscription_docs = get_app_subscriptions(app_plans, team.name)
+		subscription_docs = get_app_subscriptions(app_plans, team.name, group)
 
 		# Set the secret keys for subscription in config
 		secret_keys = {f"sk_{s.document_name}": s.secret_key for s in subscription_docs}
@@ -631,11 +632,12 @@ def create_site_on_private_bench(
 	}
 
 
-def get_app_subscriptions(app_plans, team_name: str):
+def get_app_subscriptions(app_plans, team_name: str, group: str):
 	subscriptions = []
 	team: Team | None = None
 
 	for app_name, plan_name in app_plans.items():
+		validate_marketplace_app_on_group(app_name, group)
 		is_free = frappe.db.get_value("Marketplace App Plan", plan_name, "is_free")
 		if not is_free:
 			if not team:
@@ -660,6 +662,18 @@ def get_app_subscriptions(app_plans, team_name: str):
 		subscriptions.append(new_subscription)
 
 	return subscriptions
+
+
+def validate_marketplace_app_on_group(app_name: str, group: str):
+	"""Reject a marketplace plan for an app not sourced from the marketplace.
+
+	A custom app on a private bench can share an id with a published Marketplace
+	App. The App Source on the group is what tells them apart, so the plan is
+	allowed only when that source is a registered marketplace source.
+	"""
+	source = frappe.db.get_value("Release Group App", {"parent": group, "app": app_name}, "source")
+	if not is_marketplace_app_source(source):
+		frappe.throw(f"{app_name} on bench group {group} is not a Marketplace App. It cannot have a plan.")
 
 
 @frappe.whitelist()
@@ -2061,10 +2075,6 @@ def available_apps(name):
 			available_sources.append(source)
 
 	return sorted(available_sources, key=lambda x: bench_sources.index(x.name))
-
-
-def is_marketplace_app_source(app_source_name):
-	return frappe.db.exists("Marketplace App Version", {"source": app_source_name})
 
 
 def is_prepaid_marketplace_app(app):
