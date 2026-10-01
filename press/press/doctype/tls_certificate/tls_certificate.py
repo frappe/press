@@ -204,7 +204,11 @@ class TLSCertificate(Document):
 				server_doctype,
 				filters={
 					"status": ("not in", ["Archived", "Installing"]),
-					"name": ("like", f"%.{self.domain}"),
+					# Match the domain exactly. A `name LIKE '%.<domain>'` pattern also
+					# matches servers in a nested root domain, because SQL `%` matches
+					# dots -- e.g. `%.fc.dev` matches `n2.internal.fc.dev`. This mirrors
+					# BaseServer.get_certificate(), which resolves the reverse mapping.
+					"domain": self.domain,
 				},
 				fields=["name", "status"],
 			)
