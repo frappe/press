@@ -67,7 +67,7 @@ frappe.ui.form.on('Incident', {
 						fieldtype: 'Small Text',
 						label: __('Reason'),
 						description: __(
-							'Calls, texts and emails stop, and customers no longer see this incident.',
+							'Only stops phone calls to the Frappe Cloud team. Nothing changes for customers: they still see this incident and get its emails and calls.',
 						),
 						reqd: 1,
 					},
