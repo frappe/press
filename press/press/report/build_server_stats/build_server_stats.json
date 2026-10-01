@@ -7,6 +7,15 @@
 	"doctype": "Report",
 	"filters": [
 		{
+			"default": "Builds Started",
+			"fieldname": "chart",
+			"fieldtype": "Select",
+			"label": "Chart",
+			"mandatory": 0,
+			"options": "Builds Started\nBuild Failures by Cluster\nNew Bench Failures by Cluster\nRemote Builder Failures by Build Server",
+			"wildcard_filter": 0
+		},
+		{
 			"default": "1 hour",
 			"fieldname": "duration",
 			"fieldtype": "Select",
@@ -32,7 +41,7 @@
 	],
 	"idx": 0,
 	"is_standard": "Yes",
-	"modified": "2026-09-30 12:00:00.000000",
+	"modified": "2026-10-01 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Build Server Stats",
