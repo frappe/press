@@ -33,6 +33,7 @@ from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 if typing.TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.site.site import Site
+	from press.press.doctype.site_action_step.site_action_step import SiteActionStep
 
 
 def process_bench_build_and_deploy(self: DeployCandidateBuild):
@@ -436,3 +437,98 @@ class TestSiteAction(FrappeTestCase):
 
 		with self.assertRaises(frappe.ValidationError):
 			action.cancel_action()
+
+	def test_stop_action_fails_the_build_it_started(self):
+		"""Stopping a migration that is still building the destination bench fails that build"""
+		source_bench: Bench = create_test_bench(public_server=True)
+		source_site: Site = create_test_site(bench=source_bench.name)
+		action = self.create_running_action(source_site)
+		build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", source_bench.build)
+		build.db_set("status", "Running")
+		step = self.set_step_reference(action, "clone_and_create_bench_group", build)
+
+		action.stop_action()
+
+		self.assertEqual(frappe.db.get_value("Deploy Candidate Build", build.name, "status"), "Failure")
+		self.assertEqual(action.get_step(step.name).status, "Failure")
+		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Failure")
+
+	@patch.object(SiteMigration, "start", new=Mock())
+	def test_stop_action_fails_the_site_migration_it_scheduled(self):
+		"""Stopping before the site moves fails the scheduled Site Migration, so nothing moves later"""
+		source_site: Site = create_test_site(bench=create_test_bench(public_server=False).name)
+		action = self.create_running_action(source_site)
+		migration: SiteMigration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": source_site.name,
+				"destination_bench": create_test_bench().name,
+				"status": "Scheduled",
+			}
+		).insert()
+		self.set_step_reference(action, "move_site_to_bench_group", migration)
+
+		action.stop_action()
+
+		migration.reload()
+		self.assertEqual(migration.status, "Failure")
+		self.assertTrue(all(step.status == "Skipped" for step in migration.steps))
+		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Failure")
+
+	@patch.object(SiteMigration, "start", new=Mock())
+	def test_stop_action_refuses_once_the_site_has_started_moving(self):
+		"""A migration that is already moving the site has to finish, or the site is left mid-move"""
+		source_site: Site = create_test_site(bench=create_test_bench(public_server=False).name)
+		action = self.create_running_action(source_site)
+		migration: SiteMigration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": source_site.name,
+				"destination_bench": create_test_bench().name,
+				"status": "Running",
+			}
+		).insert()
+		self.set_step_reference(action, "move_site_to_bench_group", migration)
+
+		with self.assertRaises(frappe.ValidationError) as context:
+			action.stop_action()
+
+		self.assertIn("already being moved", str(context.exception))
+		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Running")
+
+	def test_stop_action_refuses_a_scheduled_action(self):
+		"""A scheduled action is cancelled, not stopped, so the button should not reach stop_action"""
+		source_site: Site = create_test_site(bench=create_test_bench(public_server=True).name)
+		action_name = source_site.create_migration_plan(
+			type="Move Site To Different Server / Bench",
+			new_group_name="Test Group",
+		)
+		action: SiteAction = frappe.get_doc("Site Action", action_name)
+
+		with self.assertRaises(frappe.ValidationError) as context:
+			action.stop_action()
+
+		self.assertIn("Only a running migration can be stopped", str(context.exception))
+		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Scheduled")
+
+	def create_running_action(self, site: Site) -> SiteAction:
+		action: SiteAction = frappe.get_doc(
+			{
+				"doctype": "Site Action",
+				"site": site.name,
+				"action_type": "Move Site To Different Server / Bench",
+				"team": site.team,
+				"arguments": frappe.as_json({"destination_server": site.server}),
+			}
+		).insert()
+		action.status = "Running"
+		action.save()
+		return action
+
+	def set_step_reference(self, action: SiteAction, method: str, reference) -> SiteActionStep:
+		step = action.get_step_by_method(method)
+		step.status = "Running"
+		step.reference_doctype = reference.doctype
+		step.reference_name = reference.name
+		action.save()
+		return step
