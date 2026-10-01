@@ -49,6 +49,9 @@ STATEMENT_TIME_BUMP_SIZE_MB = 2 * 1024
 # untouched — if the backup fails, the job stops and never gets here.
 POINT_OF_NO_RETURN_STEP = "Move Site"
 
+# The scheduler falls back to this when the agent did not report a timezone yet.
+DEFAULT_SITE_TIMEZONE = "Asia/Kolkata"
+
 
 class SiteUpdate(Document):
 	# begin: auto-generated types
@@ -1061,7 +1064,7 @@ def is_site_in_deploy_hours(site: Site):
 	if site.is_standby:
 		return True
 	server_time = datetime.now()
-	timezone = site.timezone or "Asia/Kolkata"
+	timezone = site.timezone or DEFAULT_SITE_TIMEZONE
 	site_timezone = pytz.timezone(timezone)
 	site_time = server_time.astimezone(site_timezone)
 	deploy_hours = frappe.get_hooks("deploy_hours")
@@ -1069,6 +1072,21 @@ def is_site_in_deploy_hours(site: Site):
 	if site_time.hour in deploy_hours:
 		return True
 	return False
+
+
+def get_deploy_hour_windows() -> list[list[int]]:
+	"""Group the `deploy_hours` hook into `[start_hour, end_hour]` windows.
+
+	The hours are hours of the day in the timezone of the site. An end hour of
+	24 is midnight. The dashboard shows these windows to the user.
+	"""
+	windows: list[list[int]] = []
+	for hour in sorted(set(frappe.get_hooks("deploy_hours"))):
+		if windows and windows[-1][1] == hour:
+			windows[-1][1] = hour + 1
+		else:
+			windows.append([hour, hour + 1])
+	return windows
 
 
 def process_physical_backup_restoration_status_update(name: str):
