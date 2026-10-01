@@ -449,6 +449,19 @@ class TestCancelJobFromDashboard(FrappeTestCase):
 
 		cancel_job.assert_called_once_with(42)
 
+	@responses.activate
+	def test_a_dashboard_cancel_reaches_the_agent_and_records_the_team_user(self):
+		"""The agent call runs as Administrator, and the comment names the caller."""
+		job = self.mine["site"]
+		responses.post(re.compile(rf".*/agent/jobs/{job.job_id}/cancel"), json={})
+		self.sign_in_as(self.team)
+
+		cancel_job_from_dashboard(job.name)
+
+		self.assertEqual(len(responses.calls), 1)
+		comment = frappe.get_last_doc("Comment", {"reference_name": job.name, "comment_type": "Info"})
+		self.assertEqual((comment.content, comment.owner), ("Cancelled the job", self.team.user))
+
 	def test_a_team_cannot_cancel_the_backup_of_another_teams_site(self):
 		self.sign_in_as(self.team)
 
