@@ -161,7 +161,7 @@ class Incident(WebsiteGenerator):
 		self.identify_affected_resource()
 
 	def on_update(self):
-		if self.has_value_changed("status") and not self.ignored:
+		if self.has_value_changed("status"):
 			current_datetime = frappe.utils.now_datetime()
 			self.send_email_notification()
 			if self.status == "Resolved" or self.status == "Auto-Resolved":
@@ -468,6 +468,14 @@ class Incident(WebsiteGenerator):
 		self.add_comment("Comment", f"Ignored incident: {reason}")
 
 	@frappe.whitelist()
+	def send_custom_email(self, subject: str, message: str):
+		"""Email a hand-written update to the server's incident contacts"""
+		if not get_communication_info("Email", "Server Activity", "Server", self.server):
+			frappe.throw("No one is set up to receive emails for this server.")
+		self.send_mail(subject, message, raise_exception=True)
+		self.add_comment("Comment", f"Sent email <b>{frappe.utils.escape_html(subject)}</b><br>{message}")
+
+	@frappe.whitelist()
 	def cancel_stuck_jobs(self):
 		"""
 		During db reboot/upgrade some jobs tend to get stuck. This is a hack to cancel those jobs
@@ -705,7 +713,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		"""
 		self.send_mail(subject, message)
 
-	def send_mail(self, subject: str, message: str):
+	def send_mail(self, subject: str, message: str, raise_exception: bool = False):
 		try:
 			frappe.sendmail(
 				recipients=get_communication_info("Email", "Server Activity", "Server", self.server),
@@ -721,11 +729,13 @@ Likely due to insufficient balance or incorrect credentials""",
 			)
 
 		except Exception:
+			if raise_exception:
+				raise
 			# Swallow the exception to avoid breaking the Incident creation
 			log_error("Incident Notification Email Failed")
 
 	def send_email_notification(self):
-		if not self.global_email_alerts_enabled:
+		if self.ignored or not self.global_email_alerts_enabled:
 			return
 
 		if self.status == "Investigating":
@@ -739,6 +749,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		message = self.get_email_message()
 		self.send_mail(subject, message)
 
+	@frappe.whitelist()
 	def get_email_subject(self):
 		title = str(frappe.db.get_value("Server", self.server, "title"))
 		name = title.removesuffix(" - Application") or self.server
@@ -793,6 +804,8 @@ Likely due to insufficient balance or incorrect credentials""",
 		self.save()
 
 	def _call_customer(self, phone_no: str):
+		if self.ignored:
+			return
 		twilio_client = self.twilio_client
 		if not twilio_client:
 			return
