@@ -224,6 +224,15 @@ class TestSite(FrappeTestCase):
 		site.host_name = "balu.codes"  # domain that doesn't exist
 		self.assertRaises(frappe.exceptions.ValidationError, site.save)
 
+	def test_deactivate_on_trial_plan_names_the_site_in_the_error(self):
+		site = create_test_site("trial-site")
+		site.db_set("plan", create_test_plan("Site", is_trial_plan=True).name)
+
+		with self.assertRaises(frappe.ValidationError) as context:
+			site.deactivate()
+
+		self.assertIn(f"The site {site.name} is currently on a trial plan", str(context.exception))
+
 	def test_db_server_restore_space_includes_app_space_on_unified_server(self):
 		"""On a unified server (shared disk) the db requirement must include app space."""
 		site = frappe.new_doc("Site")

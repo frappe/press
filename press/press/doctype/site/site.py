@@ -3170,8 +3170,8 @@ class Site(Document, TagHelpers):
 		if self.plan and plan.is_trial_plan:
 			frappe.throw(
 				_(
-					"The site {self.name} is currently on a trial plan. Cannot <b>deactivate site on a trial plan</b>"
-				)
+					"The site {0} is currently on a trial plan. Cannot <b>deactivate site on a trial plan</b>"
+				).format(self.name)
 			)
 
 		if self.plan and plan.is_frappe_plan:
