@@ -32,7 +32,9 @@
 		"section_break_zdiv",
 		"users",
 		"section_break_wcgd",
-		"resources"
+		"resources",
+		"section_break_repo",
+		"repositories"
 	],
 	"fields": [
 		{
@@ -164,6 +166,17 @@
 			"options": "Press Role Resource"
 		},
 		{
+			"fieldname": "section_break_repo",
+			"fieldtype": "Section Break"
+		},
+		{
+			"description": "GitHub repositories this role can access when the team restricts repository access.",
+			"fieldname": "repositories",
+			"fieldtype": "Table",
+			"label": "Repositories",
+			"options": "Press Role Repository"
+		},
+		{
 			"default": "0",
 			"fieldname": "all_servers",
 			"fieldtype": "Check",
@@ -187,8 +200,8 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-02-18 18:52:22.107986",
-	"modified_by": "hello@ssiyad.com",
+	"modified": "2026-10-01 12:00:00.000000",
+	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Role",
 	"naming_rule": "Random",

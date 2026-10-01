@@ -1189,7 +1189,7 @@ def subscriptions():
 @protected("App Source")
 @frappe.whitelist()
 def branches(name: str):
-	from press.api.github import branches as git_branches
+	from press.api.github import fetch_branches as git_branches
 
 	app_source = frappe.db.get_value(
 		"App Source",

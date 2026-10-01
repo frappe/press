@@ -67,6 +67,10 @@
 					value: 'resources',
 				},
 				{
+					label: 'Repositories',
+					value: 'repositories',
+				},
+				{
 					label: 'Permissions',
 					value: 'permissions',
 				},
@@ -101,6 +105,19 @@
 					document_type,
 					document_name,
 				})
+		"
+	/>
+	<RoleRepositories
+		v-else-if="tab === 'repositories'"
+		:role-id="props.id"
+		:repositories="role.doc?.repositories"
+		:restricted="Boolean(team.doc?.restrict_repository_access)"
+		:admin-access="Boolean(role.doc?.admin_access)"
+		:disabled="!(session.userPermissions.data.owner || session.isTeamAdmin)"
+		:add="(repositories) => role.add_repositories.submit({ repositories })"
+		:remove="
+			(repository_owner, repository) =>
+				role.remove_repository.submit({ repository_owner, repository })
 		"
 	/>
 	<RolePermissions
@@ -142,6 +159,7 @@ import { confirmDialog } from '../../utils/components'
 import { getToastErrorMessage } from '../../utils/toast'
 import RoleMembers from './RoleMembers.vue'
 import RolePermissions from './RolePermissions.vue'
+import RoleRepositories from './RoleRepositories.vue'
 import RoleResources from './RoleResources.vue'
 
 const props = defineProps<{
@@ -150,7 +168,9 @@ const props = defineProps<{
 
 const team = getTeam()
 const user = getSessionUser()
-const tab = ref<'members' | 'resources' | 'permissions'>('members')
+const tab = ref<'members' | 'resources' | 'repositories' | 'permissions'>(
+	'members',
+)
 
 const role = createDocumentResource({
 	doctype: 'Press Role',
@@ -161,6 +181,8 @@ const role = createDocumentResource({
 		remove_user: 'remove_user',
 		add_resource: 'add_resource',
 		remove_resource: 'remove_resource',
+		add_repositories: 'add_repositories',
+		remove_repository: 'remove_repository',
 	},
 })
 

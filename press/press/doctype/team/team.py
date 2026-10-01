@@ -133,6 +133,7 @@ class Team(Document):
 		receive_budget_alerts: DF.Check
 		referrer_id: DF.Data | None
 		relaxed_permissions: DF.Check
+		restrict_repository_access: DF.Check
 		security_portal_enabled: DF.Check
 		self_hosted_servers_enabled: DF.Check
 		send_notifications: DF.Check
@@ -189,6 +190,7 @@ class Team(Document):
 		"company_logo",
 		"hybrid_servers_enabled",
 		"relaxed_permissions",
+		"restrict_repository_access",
 		"upi_autopay_enabled",
 		"default_razorpay_mandate",
 		"tier",
@@ -203,6 +205,7 @@ class Team(Document):
 		"monthly_alert_threshold",
 		"receive_budget_alerts",
 		"relaxed_permissions",
+		"restrict_repository_access",
 		"servers_enabled",
 	)
 
@@ -287,21 +290,24 @@ class Team(Document):
 
 	def perm_relaxed_roles(self):
 		"""
-		Prevent unauthorized users from changing relaxed permissions. Only team
-		owner or admins can change relaxed permissions as it can lead to
-		security implications.
+		Prevent unauthorized users from changing relaxed permissions or the
+		repository access restriction. Only team owner or admins can change
+		them as they can lead to security implications.
 		"""
 		if self.flags.ignore_permissions:
 			return
 		if self.is_new():
 			return
-		if not self.has_value_changed("relaxed_permissions"):
+		if not (
+			self.has_value_changed("relaxed_permissions")
+			or self.has_value_changed("restrict_repository_access")
+		):
 			return
 		if is_system_manager() or self.is_team_owner() or self.is_admin_user():
 			return
 		frappe.throw(
 			_(
-				"Only team owner or admins can make changes to relaxed permissions. Please contact your team admin for the same."
+				"Only team owner or admins can make changes to role permissions. Please contact your team admin for the same."
 			),
 			frappe.PermissionError,
 		)
