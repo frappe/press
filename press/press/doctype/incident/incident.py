@@ -467,6 +467,18 @@ class Incident(WebsiteGenerator):
 		self.add_comment("Comment", f"Ignored incident: {reason}")
 
 	@frappe.whitelist()
+	def stop_ignoring(self, reason: str):
+		"""Resume calling the team for this incident"""
+		if not (reason := reason.strip()):
+			frappe.throw("Please give a reason for no longer ignoring this incident.")
+		if not self.ignored:
+			frappe.throw("This incident is not being ignored.")
+		self.ignored = False
+		self.ignore_reason = None
+		self.save()
+		self.add_comment("Comment", f"Stopped ignoring incident: {reason}")
+
+	@frappe.whitelist()
 	def send_custom_email(self, subject: str, message: str):
 		"""Email a hand-written update to the server's incident contacts"""
 		if not get_communication_info("Email", "Server Activity", "Server", self.server):

@@ -40,6 +40,24 @@ frappe.ui.form.on('Incident', {
 					__('Ignore'),
 				)
 			})
+		} else {
+			frm.add_custom_button(__('Stop Ignoring'), () => {
+				frappe.prompt(
+					{
+						fieldname: 'reason',
+						fieldtype: 'Small Text',
+						label: __('Reason'),
+						description: __(
+							'Phone calls to the Frappe Cloud team resume for this incident.',
+						),
+						reqd: 1,
+					},
+					({ reason }) =>
+						frm.call('stop_ignoring', { reason }).then(() => frm.reload_doc()),
+					__('Why stop ignoring this incident?'),
+					__('Stop Ignoring'),
+				)
+			})
 		}
 		frm.add_custom_button(__('Send Email'), () => {
 			frm.call('get_email_subject').then(({ message: subject }) => {

@@ -893,6 +893,44 @@ class TestIncident(FrappeTestCase):
 			incident.ignore("   ")
 		self.assertFalse(frappe.db.get_value("Incident", incident.name, "ignored"))
 
+	def test_stop_ignoring_clears_ignore_and_comments_the_reason(self):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+		incident.ignore("Customer stopped their own benches")
+
+		incident.stop_ignoring("Benches are running again but sites are still down")
+
+		ignored, ignore_reason = frappe.db.get_value("Incident", incident.name, ["ignored", "ignore_reason"])
+		self.assertFalse(ignored)
+		self.assertIsNone(ignore_reason)
+		self.assertTrue(
+			frappe.db.exists(
+				"Comment",
+				{
+					"reference_name": incident.name,
+					"content": "Stopped ignoring incident: Benches are running again but sites are still down",
+				},
+			)
+		)
+
+	def test_stop_ignoring_without_a_reason_is_rejected(self):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+		incident.ignore("Customer stopped their own benches")
+
+		with self.assertRaisesRegex(
+			frappe.ValidationError, "Please give a reason for no longer ignoring this incident."
+		):
+			incident.stop_ignoring("  ")
+		self.assertTrue(frappe.db.get_value("Incident", incident.name, "ignored"))
+
+	def test_stop_ignoring_an_incident_that_is_not_ignored_is_rejected(self):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+
+		with self.assertRaisesRegex(frappe.ValidationError, "This incident is not being ignored."):
+			incident.stop_ignoring("Calls should resume")
+
 	def test_ignored_incident_keeps_new_incidents_from_opening_while_alert_fires(self):
 		site = create_test_site()
 		create_test_alertmanager_webhook_log(site=site)
