@@ -41,9 +41,11 @@ def execute(filters=None):
 	frappe.only_for("System Manager")
 	period = get_period(frappe._dict(filters or {}))
 	builds = get_builds(period)
+	servers = get_servers()
+	disk = DiskUsage([server.name for server in servers], period.end)
 	return (
-		get_columns(),
-		get_data(period, builds),
+		get_columns(disk),
+		get_data(period, builds, servers, disk),
 		get_cluster_loss(period),
 		get_chart(period.seconds, builds),
 	)
@@ -63,7 +65,7 @@ def get_period(filters):
 	return Period(start, end)
 
 
-def get_columns():
+def get_columns(disk):
 	return [
 		{
 			"fieldname": "server",
@@ -84,7 +86,7 @@ def get_columns():
 		{"fieldname": "iowait", "label": "IO Wait (%)", "fieldtype": "Float", "width": 110},
 		{"fieldname": "cpu_used", "label": "CPU Used (%)", "fieldtype": "Float", "width": 110},
 		{"fieldname": "memory_used", "label": "Memory Used (%)", "fieldtype": "Float", "width": 130},
-		{"fieldname": "disk", "label": "Disk Used (% per mountpoint)", "fieldtype": "Data", "width": 320},
+		*disk.columns(),
 		{"fieldname": "retransmit", "label": "TCP Retransmit (%)", "fieldtype": "Float", "width": 140},
 		{"fieldname": "drops", "label": "Dropped Packets/s", "fieldtype": "Float", "width": 140},
 		{"fieldname": "receive", "label": "Net In (Mbps)", "fieldtype": "Float", "width": 120},
@@ -100,14 +102,12 @@ def get_columns():
 	]
 
 
-def get_data(period, builds):
-	servers = get_servers()
+def get_data(period, builds, servers, disk):
 	names = [server.name for server in servers]
 	builds_by_server = group_by_server(builds)
 	active = get_active_builds()
 	pull = get_pull_seconds(period)
 	stats = get_fleet_stats(names, period)
-	disk = get_fleet_disk_usage(names, period.end)
 	rows = []
 	for server in servers:
 		server_builds = builds_by_server.get(server.name, [])
@@ -119,7 +119,7 @@ def get_data(period, builds):
 				"server_type": server.server_type,
 				"cluster": server.cluster,
 				"status": server.status,
-				"disk": disk[server.name],
+				**disk.cells(server.name),
 				"builds": len(server_builds),
 				"builds_per_hour": rounded(len(server_builds) / (period.seconds / 3600), 1),
 				"running_builds": active.get(server.name, {}).get("running", 0),
@@ -209,20 +209,60 @@ def last_number(points):
 	return points[-1]
 
 
+class DiskUsage:
+	"""Used percent per mountpoint. A mountpoint on two or more servers gets its own column."""
+
+	def __init__(self, servers, end):
+		self.used = get_fleet_disk_usage(servers, end)
+		counts = Counter(mountpoint for mounts in self.used.values() for mountpoint in mounts)
+		self.common = sorted(mountpoint for mountpoint, count in counts.items() if count > 1)
+
+	def columns(self):
+		columns = [
+			{"fieldname": disk_fieldname(mountpoint), "label": f"Disk {mountpoint} (%)", "fieldtype": "Float"}
+			for mountpoint in self.common
+		]
+		other = {
+			"fieldname": "disk",
+			"label": "Other Disk (% per mountpoint)",
+			"fieldtype": "Data",
+			"width": 320,
+		}
+		return [*columns, other]
+
+	def cells(self, server):
+		mounts = self.used[server]
+		cells = {disk_fieldname(mountpoint): mounts.get(mountpoint) for mountpoint in self.common}
+		others = [
+			f"{mountpoint} {percent}%"
+			for mountpoint, percent in mounts.items()
+			if mountpoint not in self.common
+		]
+		return {**cells, "disk": ", ".join(others)}
+
+
+def disk_fieldname(mountpoint):
+	return "disk_" + (mountpoint.strip("/").replace("/", "_").replace("-", "_") or "root")
+
+
 def get_fleet_disk_usage(servers, end):
-	"""Used percent of every real mountpoint, as "/ 41%, /opt/volumes/docker 88%"."""
-	filesystem = f'job="node", instance=~"{instances(servers)}", fstype!~"tmpfs|squashfs|overlay|fuse.lxcfs"'
+	"""Used percent of every real mountpoint, as {server: {mountpoint: percent}}."""
+	# A buildkit mount is a bind of the builds volume. It repeats that volume's percent.
+	filesystem = (
+		f'job="node", instance=~"{instances(servers)}", fstype!~"tmpfs|squashfs|overlay|fuse.lxcfs",'
+		' mountpoint!~".*/buildkit-mount[0-9]+"'
+	)
 	used = latest_values(
 		f"100 * (1 - node_filesystem_avail_bytes{{{filesystem}}}"
 		f" / node_filesystem_size_bytes{{{filesystem}}})",
 		end,
 		lambda metric: (metric.get("instance"), metric.get("mountpoint")),
 	)
-	mountpoints = {server: [] for server in servers}
+	mountpoints = {server: {} for server in servers}
 	for (server, mountpoint), percent in sorted(used.items()):
 		if percent and server in mountpoints:
-			mountpoints[server].append(f"{mountpoint} {rounded(percent, 1)}%")
-	return {server: ", ".join(mounts) for server, mounts in mountpoints.items()}
+			mountpoints[server][mountpoint] = rounded(percent, 1)
+	return mountpoints
 
 
 def percentile(values, fraction):
