@@ -211,6 +211,9 @@ const dropSite = (site: any) => {
 	)
 }
 
+// Site.archive refuses these statuses, the same as TRANSITORY_STATES in site.py
+const transitoryStatuses = ['Pending', 'Installing', 'Updating', 'Recovering']
+
 const siteOptions = (site: any) => {
 	return [
 		{
@@ -223,6 +226,7 @@ const siteOptions = (site: any) => {
 			theme: 'red',
 			variant: 'subtle',
 			icon: 'trash-2',
+			condition: () => !transitoryStatuses.includes(site.status),
 			onClick: () => dropSite(site),
 		},
 	]
