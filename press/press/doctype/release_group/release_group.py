@@ -5,7 +5,7 @@ import json
 from contextlib import suppress
 from functools import cached_property
 from itertools import chain
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, TypedDict, cast
 from urllib.parse import urlparse
 
 import frappe
@@ -24,7 +24,7 @@ from press.access.actions import ReleaseGroupActions
 from press.access.decorators import action_guard
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
-from press.api.github import get_frappe_branch_major_version
+from press.api.github import check_installation, fetch_frappe_branch_major_version
 from press.exceptions import ImageNotFoundInRegistry, InsufficientSpaceOnServer, VolumeResizeLimitError
 from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -1748,9 +1748,9 @@ class ReleaseGroup(Document, TagHelpers):
 	def _validate_frappe_branch_matches_bench_version(
 		self, current_app_source: AppSource, to_branch: str
 	) -> None:
-		target_major_version = get_frappe_branch_major_version(
-			current_app_source.repository_owner,
-			current_app_source.repository,
+		target_major_version = fetch_frappe_branch_major_version(
+			cast("str", current_app_source.repository_owner),
+			cast("str", current_app_source.repository),
 			to_branch,
 			current_app_source.github_installation_id,
 		)
@@ -1918,6 +1918,8 @@ class ReleaseGroup(Document, TagHelpers):
 	def add_app(self, app, is_update: bool = False):
 		if isinstance(app, str):
 			app = json.loads(app)
+
+		check_installation(self.team, app.get("github_installation_id"))
 
 		if not (name := app.get("name")):
 			return
