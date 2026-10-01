@@ -9,11 +9,14 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.press.doctype.server.test_server import create_test_server
 from press.press.report.build_server_stats.build_server_stats import (
 	DiskUsage,
 	floor_to_bucket,
+	get_build_failure_chart,
 	get_chart,
 	get_period,
+	get_selected_chart,
 	group_by_server,
 	last_number,
 	percentile,
@@ -93,6 +96,74 @@ class TestChart(FrappeTestCase):
 
 		self.assertEqual(floored.minute, 5)
 		self.assertEqual(floored.second, 0)
+
+
+class TestFailureChart(FrappeTestCase):
+	def test_failed_builds_are_stacked_by_the_cluster_of_their_build_server_and_successes_are_left_out(self):
+		servers = [
+			frappe._dict(name="f1.frappe.cloud", cluster="Mumbai"),
+			frappe._dict(name="f2.frappe.cloud", cluster="Default"),
+		]
+		start = datetime(2026, 9, 10, 10, 0, 10)
+		builds = [
+			build("f1.frappe.cloud", status="Failure", build_start=start),
+			build("f1.frappe.cloud", status="Failure", build_start=start),
+			build("f2.frappe.cloud", status="Failure", build_start=datetime(2026, 9, 10, 10, 6, 0)),
+			build("f2.frappe.cloud", status="Success", build_start=start),
+			build("gone.frappe.cloud", status="Failure", build_start=start),
+		]
+
+		datasets = get_build_failure_chart(3600, builds, servers)["data"]["datasets"]
+
+		self.assertEqual(
+			{dataset["name"]: dataset["values"] for dataset in datasets},
+			{"Default": [0, 1], "Mumbai": [2, 0], "No cluster": [1, 0]},
+		)
+
+
+class TestAgentJobFailureCharts(FrappeTestCase):
+	def setUp(self):
+		self.period = get_period(
+			frappe._dict(from_datetime="2026-09-10 10:00:00", to_datetime="2026-09-10 11:00:00")
+		)
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def job(self, server, job_type, status, creation="2026-09-10 10:01:00"):
+		frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"server_type": "Server",
+				"server": server,
+				"job_type": job_type,
+				"status": status,
+				"creation": creation,
+			}
+		).db_insert()
+
+	def datasets(self, chart):
+		chart = get_selected_chart(chart, self.period, [], [])
+		return {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
+
+	def test_failed_and_undelivered_new_bench_jobs_are_stacked_by_the_cluster_of_their_server(self):
+		mumbai = create_test_server(cluster="Mumbai").name
+		self.job(mumbai, "New Bench", "Failure")
+		self.job(mumbai, "New Bench", "Delivery Failure")
+		self.job(mumbai, "New Bench", "Success")
+		self.job(mumbai, "New Bench", "Failure", creation="2026-09-10 09:00:00")
+
+		self.assertEqual(self.datasets("New Bench Failures by Cluster"), {"Mumbai": [2]})
+
+	def test_failed_remote_builder_jobs_are_stacked_by_build_server_and_other_job_types_are_left_out(self):
+		self.job("f1.frappe.cloud", "Run Remote Builder", "Failure")
+		self.job("f2.frappe.cloud", "Run Remote Builder", "Failure")
+		self.job("f2.frappe.cloud", "New Bench", "Failure")
+
+		self.assertEqual(
+			self.datasets("Remote Builder Failures by Build Server"),
+			{"f1.frappe.cloud": [1], "f2.frappe.cloud": [1]},
+		)
 
 
 class TestPeriod(FrappeTestCase):

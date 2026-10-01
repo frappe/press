@@ -39,7 +39,8 @@ class Period:
 
 def execute(filters=None):
 	frappe.only_for("System Manager")
-	period = get_period(frappe._dict(filters or {}))
+	filters = frappe._dict(filters or {})
+	period = get_period(filters)
 	builds = get_builds(period)
 	servers = get_servers()
 	disk = DiskUsage([server.name for server in servers], period.end)
@@ -47,7 +48,7 @@ def execute(filters=None):
 		get_columns(disk),
 		get_data(period, builds, servers, disk),
 		get_cluster_loss(period),
-		get_chart(period.seconds, builds),
+		get_selected_chart(filters.chart, period, builds, servers),
 	)
 
 
@@ -344,6 +345,68 @@ def get_chart(window, builds):
 			"datasets": [{"name": "Builds", "values": [counts[label] for label in labels]}],
 		},
 		"type": "bar",
+	}
+
+
+def get_selected_chart(chart, period, builds, servers):
+	if chart == "Build Failures by Cluster":
+		return get_build_failure_chart(period.seconds, builds, servers)
+	if chart == "New Bench Failures by Cluster":
+		return get_new_bench_failure_chart(period)
+	if chart == "Remote Builder Failures by Build Server":
+		events = [(job.creation, job.server) for job in get_failed_jobs("Run Remote Builder", period)]
+		return stacked_chart("Failed Run Remote Builder jobs", period.seconds, events)
+	return get_chart(period.seconds, builds)
+
+
+def get_new_bench_failure_chart(period):
+	jobs = get_failed_jobs("New Bench", period)
+	servers = {job.server for job in jobs}
+	cluster_of = dict(frappe.get_all("Server", {"name": ("in", servers)}, ["name", "cluster"], as_list=True))
+	events = [(job.creation, cluster_of.get(job.server)) for job in jobs]
+	return stacked_chart("Failed New Bench jobs", period.seconds, events)
+
+
+def get_build_failure_chart(window, builds, servers):
+	# ponytail: a build on a server that is no longer active reads as "No cluster"
+	cluster_of = {server.name: server.cluster for server in servers}
+	events = [
+		(build.build_start, cluster_of.get(build.build_server))
+		for build in builds
+		if build.status == "Failure"
+	]
+	return stacked_chart("Failed builds", window, events)
+
+
+def get_failed_jobs(job_type, period):
+	"""A Delivery Failure counts too. The agent on that server did not answer."""
+	return frappe.get_all(
+		"Agent Job",
+		{
+			"job_type": job_type,
+			"status": ("in", ("Failure", "Delivery Failure")),
+			"creation": ("between", (period.start, period.end)),
+		},
+		["server", "creation"],
+	)
+
+
+def stacked_chart(title, window, events):
+	"""Events per bucket, one stacked series per group. An event is a (moment, group) pair."""
+	bucket = max(60, window // 12)
+	counts = Counter((floor_to_bucket(moment, bucket), group or "No cluster") for moment, group in events)
+	labels = sorted({moment for moment, _ in counts})
+	groups = sorted({group for _, group in counts})
+	return {
+		"title": f"{title} per {bucket // 60} minutes",
+		"data": {
+			"labels": [label.strftime("%d %b %H:%M") for label in labels],
+			"datasets": [
+				{"name": group, "values": [counts[(label, group)] for label in labels]} for group in groups
+			],
+		},
+		"type": "bar",
+		"barOptions": {"stacked": 1},
 	}
 
 
