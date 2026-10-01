@@ -632,11 +632,19 @@ def _describe_signup_failure_rate(rate: SignupFailureRate) -> str:
 	)
 
 
-def alert_on_sites_with_all_backup_attempts_failed() -> None:
-	"""Daily Raven digest of sites that hit the daily failed backup limit, the same limit that emails the team."""
+def alert_on_sites_with_missing_backups() -> None:
+	"""Daily Raven digest of sites that hit the daily failed backup limit or got no backup attempt at all."""
 	from press.press.doctype.site_backup.site_backup import get_max_failed_backup_attempts
 
 	max_attempts = get_max_failed_backup_attempts()
+	failed_sites = _get_sites_with_all_backup_attempts_failed(max_attempts)
+	missed_sites = _get_sites_without_backup_attempts()
+	if failed_sites or missed_sites:
+		_send_missing_backups_alert(failed_sites, missed_sites, max_attempts)
+
+
+def _get_sites_with_all_backup_attempts_failed(max_attempts: int) -> list[frappe._dict]:
+	"""Sites that hit the daily failed backup limit, the same limit that emails the team."""
 	failures_by_site = frappe.get_all(
 		"Site Backup",
 		filters={
@@ -647,12 +655,42 @@ def alert_on_sites_with_all_backup_attempts_failed() -> None:
 		group_by="site",
 		order_by="failures desc, site asc",
 	)
-	failed_sites = [row for row in failures_by_site if row.failures >= max_attempts]
+	return [row for row in failures_by_site if row.failures >= max_attempts]
+
+
+def _get_sites_without_backup_attempts() -> list[str]:
+	"""Sites due a scheduled backup that have no backup record of any status in the last 24h."""
+	from press.press.doctype.site.site import Site
+
+	sites_due = [site.name for site in Site.get_sites_for_backup(24)]
+	if not sites_due:
+		return []
+
+	since = frappe.utils.add_days(None, -1)
+	attempted_sites = frappe.get_all(
+		"Site Backup", {"site": ("in", sites_due), "creation": (">=", since)}, pluck="site"
+	)
+	# A site deactivated for part of the day was never due a backup
+	activated_sites = frappe.get_all(
+		"Site Activity",
+		{"site": ("in", sites_due), "action": "Activate Site", "creation": (">=", since)},
+		pluck="site",
+	)
+	return sorted(set(sites_due) - set(attempted_sites) - set(activated_sites))
+
+
+def _send_missing_backups_alert(
+	failed_sites: list[frappe._dict], missed_sites: list[str], max_attempts: int
+) -> None:
+	tables = []
 	if failed_sites:
-		_send_all_backup_attempts_failed_alert(failed_sites, max_attempts)
+		tables.append(_get_failed_backups_table(failed_sites, max_attempts))
+	if missed_sites:
+		tables.append(_get_missed_backups_table(missed_sites))
+	send_raven_message("\n\n".join(tables), RAVEN_SERVER_ALERTS_CHANNEL)
 
 
-def _send_all_backup_attempts_failed_alert(failed_sites: list[frappe._dict], max_attempts: int) -> None:
+def _get_failed_backups_table(failed_sites: list[frappe._dict], max_attempts: int) -> str:
 	listed_sites = failed_sites[:BACKUP_DIGEST_SITE_LIMIT]
 	site_details = _get_backup_digest_site_details([row.site for row in listed_sites])
 
@@ -679,33 +717,10 @@ def _send_all_backup_attempts_failed_alert(failed_sites: list[frappe._dict], max
 
 	if unlisted_sites := len(failed_sites) - len(listed_sites):
 		lines.append(f"| ... | {unlisted_sites} more sites | | | | |")
-
-	send_raven_message("\n".join(lines), RAVEN_SERVER_ALERTS_CHANNEL)
-
-
-def alert_on_sites_without_backup_attempts() -> None:
-	"""Daily Raven digest of sites due a scheduled backup that got no backup attempt in the last 24h."""
-	from press.press.doctype.site.site import Site
-
-	sites_due = [site.name for site in Site.get_sites_for_backup(24)]
-	if not sites_due:
-		return
-
-	since = frappe.utils.add_days(None, -1)
-	attempted_sites = frappe.get_all(
-		"Site Backup", {"site": ("in", sites_due), "creation": (">=", since)}, pluck="site"
-	)
-	# A site deactivated for part of the day was never due a backup
-	activated_sites = frappe.get_all(
-		"Site Activity",
-		{"site": ("in", sites_due), "action": "Activate Site", "creation": (">=", since)},
-		pluck="site",
-	)
-	if missed_sites := sorted(set(sites_due) - set(attempted_sites) - set(activated_sites)):
-		_send_sites_without_backup_attempts_alert(missed_sites)
+	return "\n".join(lines)
 
 
-def _send_sites_without_backup_attempts_alert(missed_sites: list[str]) -> None:
+def _get_missed_backups_table(missed_sites: list[str]) -> str:
 	listed_sites = missed_sites[:BACKUP_DIGEST_SITE_LIMIT]
 	site_details = _get_backup_digest_site_details(listed_sites)
 
@@ -731,8 +746,7 @@ def _send_sites_without_backup_attempts_alert(missed_sites: list[str]) -> None:
 
 	if unlisted_sites := len(missed_sites) - len(listed_sites):
 		lines.append(f"| ... | {unlisted_sites} more sites | | | |")
-
-	send_raven_message("\n".join(lines), RAVEN_SERVER_ALERTS_CHANNEL)
+	return "\n".join(lines)
 
 
 def _get_backup_digest_site_details(site_names: list[str]) -> dict[str, frappe._dict]:
