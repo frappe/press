@@ -26,6 +26,7 @@ import { userCurrency } from '@/utils/format'
 import { getSiteStatusBadge, trialDays } from '@/utils/site'
 
 const statusOptions = [
+	'Pending',
 	'Installing',
 	'Active',
 	'Inactive',
