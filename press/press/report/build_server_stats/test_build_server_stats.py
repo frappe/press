@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 from datetime import datetime
+from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.report.build_server_stats.build_server_stats import (
+	DiskUsage,
 	floor_to_bucket,
 	get_chart,
 	get_period,
@@ -130,3 +132,36 @@ class TestPeriod(FrappeTestCase):
 		)
 
 		self.assertEqual(period.seconds, 300)
+
+
+class TestDiskUsage(FrappeTestCase):
+	def disk_usage(self, used):
+		with patch(
+			"press.press.report.build_server_stats.build_server_stats.get_fleet_disk_usage", return_value=used
+		):
+			return DiskUsage(list(used), datetime(2026, 9, 10))
+
+	def test_a_mountpoint_on_two_servers_gets_its_own_column_and_a_lone_one_stays_in_other(self):
+		disk = self.disk_usage(
+			{
+				"f1.frappe.cloud": {"/": 40.0, "/opt/volumes/docker": 88.0},
+				"f2.frappe.cloud": {"/": 55.0, "/home/registry": 70.0},
+			}
+		)
+
+		self.assertEqual([column["fieldname"] for column in disk.columns()], ["disk_root", "disk"])
+		self.assertEqual(
+			disk.cells("f1.frappe.cloud"), {"disk_root": 40.0, "disk": "/opt/volumes/docker 88.0%"}
+		)
+		self.assertEqual(disk.cells("f2.frappe.cloud"), {"disk_root": 55.0, "disk": "/home/registry 70.0%"})
+
+	def test_a_server_without_a_common_mountpoint_leaves_its_cell_blank(self):
+		disk = self.disk_usage(
+			{
+				"f1.frappe.cloud": {"/data": 10.0},
+				"f2.frappe.cloud": {"/data": 20.0},
+				"r1.frappe.cloud": {"/": 30.0},
+			}
+		)
+
+		self.assertEqual(disk.cells("r1.frappe.cloud"), {"disk_data": None, "disk": "/ 30.0%"})
