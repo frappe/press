@@ -2780,6 +2780,7 @@ class VirtualMachine(Document):
 				{
 					"status": ("not in", ("Terminated", "Draft")),
 					"cloud_provider": "AWS EC2",
+					"skip_sync": False,
 				},
 				group_by="cluster",
 			)
@@ -2790,6 +2791,7 @@ class VirtualMachine(Document):
 				{
 					"status": ("not in", ("Terminated", "Draft")),
 					"cloud_provider": "AWS EC2",
+					"skip_sync": False,
 				},
 				group_by="cluster",
 			)
@@ -2951,6 +2953,7 @@ class VirtualMachine(Document):
 					"cloud_provider": "Hetzner",
 					"cluster": cluster_name,
 					"instance_id": ("is", "set"),
+					"skip_sync": False,
 				},
 				pluck="name",
 				limit=1,
@@ -2979,6 +2982,7 @@ class VirtualMachine(Document):
 					"cloud_provider": "Hetzner",
 					"cluster": cluster.name,
 					"instance_id": ("is", "set"),
+					"skip_sync": False,
 				},
 				pluck="instance_id",
 			)
