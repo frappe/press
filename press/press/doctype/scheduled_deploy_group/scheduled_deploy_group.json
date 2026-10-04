@@ -15,7 +15,8 @@
 		"thursday",
 		"friday",
 		"saturday",
-		"sunday"
+		"sunday",
+		"deploy_now"
 	],
 	"fields": [
 		{
@@ -81,12 +82,20 @@
 			"fieldname": "sunday",
 			"fieldtype": "Check",
 			"label": "Sunday"
+		},
+		{
+			"columns": 1,
+			"description": "Deploys this group's app updates right away, with the same checks as a scheduled deploy.",
+			"fieldname": "deploy_now",
+			"fieldtype": "Button",
+			"in_list_view": 1,
+			"label": "Deploy Now"
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"istable": 1,
 	"links": [],
-	"modified": "2026-09-29 12:00:00.000000",
+	"modified": "2026-10-05 16:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Scheduled Deploy Group",
