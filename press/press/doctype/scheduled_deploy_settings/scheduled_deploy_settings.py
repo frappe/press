@@ -38,6 +38,13 @@ class ScheduledDeploySettings(Document):
 				frappe.throw(f"Row {row.idx}: {row.release_group} is listed more than once")
 			seen.add(row.release_group)
 
+	@frappe.whitelist()
+	def deploy_now(self, release_group: str) -> str | None:
+		"""Deploy a listed group right away, with the same checks as a scheduled deploy."""
+		if release_group not in {row.release_group for row in self.groups}:
+			frappe.throw(f"{release_group} is not listed in Scheduled Deploy Settings")
+		return deploy_release_group(release_group)
+
 
 def deploy_scheduled_release_groups():
 	"""Deploy every group due this hour. A failing group is logged and the rest still run."""
@@ -57,13 +64,13 @@ def deploy_scheduled_release_groups():
 			log_error("Scheduled Deploy Error", release_group=row.release_group)
 
 
-def deploy_release_group(name: str):
-	"""Deploy all app updates of a release group, if it has any."""
+def deploy_release_group(name: str) -> str | None:
+	"""Deploy all app updates of a release group, if it has any, and return the build started."""
 	group = ReleaseGroup("Release Group", name)
 	if not group.deploy_information().update_available:
-		return
+		return None
 
 	apps = group.get_apps_to_update(apps_to_update=None)
-	get_bench_update(name, apps, ignore_permissions=True).deploy(
+	return get_bench_update(name, apps, ignore_permissions=True).deploy(
 		run_will_fail_check=True, ignore_permissions=True
 	)
