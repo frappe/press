@@ -766,8 +766,9 @@ def update_with_app_not_fetchable(
 		message = f"""
 		<p><b>{app_name}</b> could not be fetched from GitHub.</p>
 
-		<p>This may have been due to an invalid installation id or due
-		to an invalid repository URL.</p>
+		<p>This may have been due to an invalid installation id, an
+		invalid repository URL, or a private repository that is not
+		connected through the GitHub App.</p>
 
 		<p>For a possible solutions, please follow the steps mentioned
 		in <i>Help</i>.</p>
@@ -778,8 +779,9 @@ def update_with_app_not_fetchable(
 		message = f"""
 		<p>{app_str}could not be fetched from GitHub.</p>
 
-		<p>This may have been due to an invalid installation id or due
-		to an invalid repository URL.</p>
+		<p>This may have been due to an invalid installation id, an
+		invalid repository URL, or a private repository that is not
+		connected through the GitHub App.</p>
 
 		<p>For a possible solutions, please follow the steps mentioned
 		in <i>Help</i>.</p>
