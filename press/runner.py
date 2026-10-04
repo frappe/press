@@ -20,9 +20,9 @@ from ansible.plugins.callback import CallbackBase
 from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
-from frappe.utils import cstr
 from frappe.utils import now_datetime as now
 
+from press.ansible_setup import use_callback
 from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 
 if typing.TYPE_CHECKING:
@@ -50,12 +50,12 @@ def _patched_action_module_run(*args, **kwargs):
 	return result
 
 
-def _patched_poll_async_result(executor, result, templar, task_vars=None):
+def _patched_poll_async_result(executor, utr, templar, task_vars):
 	current_ansible = _get_current_ansible()
 	if current_ansible:
 		task = executor._task
-		current_ansible.callback.on_async_start(task._role.get_name(), task.name, result["ansible_job_id"])
-	return _poll_async_result_orig(executor, result, templar, task_vars=task_vars)
+		current_ansible.callback.on_async_start(task._role.get_name(), task.name, utr.async_job_id)
+	return _poll_async_result_orig(executor, utr=utr, templar=templar, task_vars=task_vars)
 
 
 _action_module_run_orig = ActionModule.run
@@ -86,13 +86,13 @@ class AnsibleCallback(CallbackBase):
 
 	def record_failure(self, status, result):
 		self.failed_results.append(
-			f"[{status}] {result._task.get_name()} on {result._host.get_name()}\n"
-			f"{json.dumps(result._result, indent=4, default=str)}"
+			f"[{status}] {result.task.get_name()} on {result.host.get_name()}\n"
+			f"{json.dumps(result.result, indent=4, default=str)}"
 		)
 
 	@reconnect_on_failure()
 	def process_task_success(self, result):
-		result, action = frappe._dict(result._result), result._task.action
+		result, action = frappe._dict(result.result), result.task.action
 		if action == "user":
 			server_type, server = frappe.db.get_value("Ansible Play", self.play, ["server_type", "server"])
 			server = frappe.get_doc(server_type, server)
@@ -149,7 +149,7 @@ class AnsibleCallback(CallbackBase):
 	@reconnect_on_failure()
 	def update_task(self, status, result=None, task=None):
 		if result:
-			if not result._task._role:
+			if not result.task._role:
 				return
 			task_name, result = self.parse_result(result)
 		else:
@@ -184,9 +184,9 @@ class AnsibleCallback(CallbackBase):
 		)
 
 	def parse_result(self, result):
-		task = result._task.name
-		role = result._task._role.get_name()
-		return self.tasks[role][task], frappe._dict(result._result)
+		task = result.task.name
+		role = result.task._role.get_name()
+		return self.tasks[role][task], frappe._dict(result.result)
 
 	@reconnect_on_failure()
 	def on_async_start(self, role, task, job_id):
@@ -221,8 +221,8 @@ class Ansible:
 			become_method="sudo",
 			check=False,
 			connection="ssh",
-			# This is the only way to pass variables that preserves newlines
-			extra_vars=[f"{cstr(key)}='{cstr(value)}'" for key, value in self.variables.items()],
+			# JSON keeps newlines and types; strings would make every conditional non-boolean
+			extra_vars=[json.dumps(self.variables, default=str)],
 			remote_user=user,
 			start_at_task=None,
 			syntax=False,
@@ -262,7 +262,10 @@ class Ansible:
 
 	def run(self) -> AnsiblePlay:
 		_ansible_local.current = self
-		frappe.log_error(title=f"Running Ansible playbook: {self.playbook_path}", message=f"Server: {self.server.name} ({self.host})")
+		frappe.log_error(
+			title=f"Running Ansible playbook: {self.playbook_path}",
+			message=f"Server: {self.server.name} ({self.host})",
+		)
 		try:
 			self.executor = PlaybookExecutor(
 				playbooks=[self.playbook_path],
@@ -272,7 +275,7 @@ class Ansible:
 				passwords=self.passwords,
 			)
 			# Use AnsibleCallback so we can receive updates for tasks execution
-			self.executor._tqm._stdout_callback = self.callback
+			use_callback(self.executor._tqm, self.callback)
 			self.callback.play = self.play
 			self.callback.tasks = self.tasks
 			self.callback.task_list = self.task_list

@@ -26,7 +26,7 @@
                 via: {{ nat_gateway_ip }}
   when:
     - nat_gateway_ip is defined
-    - nat_gateway_ip
+    - nat_gateway_ip is truthy
     - cloud_provider in ["AWS EC2", "Frappe Compute"]
 
 # DigitalOcean
@@ -44,7 +44,7 @@
                 via: {{ nat_gateway_ip }}
   when:
     - nat_gateway_ip is defined
-    - nat_gateway_ip
+    - nat_gateway_ip is truthy
     - cloud_provider == "DigitalOcean"
 
 # Hetzner
@@ -71,8 +71,8 @@
     - cloud_provider == "Hetzner"
     - network_gateway is defined
     - nat_gateway_ip is defined
-    - nat_gateway_ip
-    - network_gateway
+    - nat_gateway_ip is truthy
+    - network_gateway is truthy
 
 # Frappe Compute specific
 - name: Configure private interface (Frappe Compute specific)
@@ -89,17 +89,17 @@
                 - 4.4.4.4
   when:
     - is_frappe_compute is defined
-    - is_frappe_compute
+    - is_frappe_compute is truthy
 
 - name: Move original netplan (Frappe Compute specific)
   command: mv /etc/netplan/50-cloud-init.yaml /etc/netplan/50-cloud-init.yaml.bkp
   when:
     - is_frappe_compute is defined
-    - is_frappe_compute
+    - is_frappe_compute is truthy
 
 - name: Apply Netplan
   command: netplan apply
   when:
     - nat_gateway_ip is defined
-    - nat_gateway_ip
+    - nat_gateway_ip is truthy
     - cloud_provider != "OCI"

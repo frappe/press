@@ -11,6 +11,7 @@ from ansible.executor.task_queue_manager import TaskQueueManager
 from ansible.playbook.play import Play
 from frappe.model.document import Document
 
+from press.ansible_setup import use_callback
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc, AnsibleCallback
 from press.utils import reconnect_on_failure
 
@@ -264,9 +265,9 @@ class SSHAdHoc(AnsibleAdHoc):
 			variable_manager=self.variable_manager,
 			loader=self.loader,
 			passwords=self.passwords,
-			stdout_callback=self.callback,
 			forks=16,
 		)
+		use_callback(tqm, self.callback)
 
 		try:
 			tqm.run(self.play)
@@ -314,8 +315,8 @@ class SSHCallback(AnsibleCallback):
 			self.hosts[host] = {"host": host, "status": status}
 
 	def parse_result(self, result):
-		host = result._host.get_name()
-		_result = result._result
+		host = result.host.get_name()
+		_result = result.result
 		return host, _result.get("results")
 
 
