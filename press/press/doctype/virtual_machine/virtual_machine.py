@@ -1221,6 +1221,8 @@ class VirtualMachine(Document):
 			frappe.db.get_value(self.doctype, self.name, "status", for_update=True)
 		except frappe.QueryTimeoutError:  # lock wait timeout
 			return None
+		if self.skip_sync:
+			return None
 		if self.cloud_provider == "AWS EC2":
 			return self._sync_aws(*args, **kwargs)
 		if self.cloud_provider == "OCI":
