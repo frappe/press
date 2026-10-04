@@ -309,12 +309,6 @@ class AppSource(Document):
 	def get_auth_headers(self) -> dict:
 		return get_auth_headers(self.github_installation_id)
 
-	def get_access_token(self) -> str | None:
-		if self.github_installation_id:
-			return get_access_token(self.github_installation_id)
-
-		return frappe.get_value("Press Settings", None, "github_access_token")
-
 	def get_repo_url(self) -> str:
 		token = self.get_clone_token()
 		if not token:
