@@ -1334,6 +1334,7 @@ def run_scheduled_updates():
 def on_doctype_update():
 	frappe.db.add_index("Site Update", ["site", "source_candidate", "destination_candidate"])
 	frappe.db.add_index("Site Update", ["server", "status"])
+	frappe.db.add_index("Site Update", ["destination_candidate", "status"])
 
 
 def process_callback_from_logical_replication_backup(backup: "LogicalReplicationBackup"):  # noqa: C901

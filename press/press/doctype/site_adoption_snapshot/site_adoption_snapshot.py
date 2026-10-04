@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import create_batch
 
 if TYPE_CHECKING:
 	from datetime import datetime
@@ -95,9 +96,10 @@ def count_sites_by_group(groups: list[str] | None = None) -> dict[str, frappe._d
 	"""Count current and behind sites of each group, with why the behind ones have not moved."""
 	benches = get_active_benches(groups)
 	newest = {bench.name for bench in newest_by_server(benches).values()}
-	blocked = get_blocked_sites()
+	sites = get_active_sites(groups)
+	blocked = get_blocked_sites([site.name for site in sites if site.bench not in newest])
 	counts: dict[str, frappe._dict] = {}
-	for site in get_active_sites(groups):
+	for site in sites:
 		group_counts = counts.setdefault(site.group, new_counts())
 		if site.bench in newest:
 			group_counts.current_sites += 1
@@ -165,16 +167,18 @@ def get_active_sites(groups: list[str] | None = None) -> list[frappe._dict]:
 	return query.run(as_dict=True)
 
 
-def get_blocked_sites() -> dict[str, str]:
-	"""Sites the auto-update scheduler skips because of an unfinished or a failed update."""
+def get_blocked_sites(sites: list[str]) -> dict[str, str]:
+	"""Which of the sites the auto-update scheduler skips for an unfinished or a failed update."""
 	blocked: dict[str, str] = {}
-	for update in frappe.get_all(
-		"Site Update",
-		{"status": ("in", ("Failure", "Pending", "Running", "Scheduled"))},
-		["site", "status"],
-	):
-		if blocked.get(update.site) != "Failed Update":
-			blocked[update.site] = "Failed Update" if update.status == "Failure" else "Updating"
+	# Filtered by site so the lookup uses the site index of the large Site Update table
+	for batch in create_batch(sites, 500):
+		for update in frappe.get_all(
+			"Site Update",
+			{"site": ("in", batch), "status": ("in", ("Failure", "Pending", "Running", "Scheduled"))},
+			["site", "status"],
+		):
+			if blocked.get(update.site) != "Failed Update":
+				blocked[update.site] = "Failed Update" if update.status == "Failure" else "Updating"
 	return blocked
 
 

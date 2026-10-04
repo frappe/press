@@ -27,12 +27,15 @@ def get_rows(filters: frappe._dict) -> list[frappe._dict]:
 	groups = [filters.release_group] if filters.release_group else None
 	newest = get_newest_benches(groups)
 	newest_names = {bench.name for bench in newest.values()}
-	blocked = get_blocked_sites()
+	behind = [
+		site
+		for site in get_active_sites(groups)
+		if site.bench not in newest_names and (not filters.server or site.server == filters.server)
+	]
+	blocked = get_blocked_sites([site.name for site in behind])
 
 	rows = []
-	for site in get_active_sites(groups):
-		if site.bench in newest_names or (filters.server and site.server != filters.server):
-			continue
+	for site in behind:
 		target = newest.get((site.group, site.server))
 		rows.append(
 			frappe._dict(
