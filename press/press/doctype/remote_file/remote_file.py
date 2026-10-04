@@ -314,11 +314,11 @@ class RemoteFile(Document):
 		self.delete_remote_object()
 
 	@frappe.whitelist()
-	def get_download_link(self, expires_in: int | None = None):
+	def get_download_link(self, expires_in: int | None = None, log_activity: bool = True):
 		# The `site` field is not set during the upload & restore of files.
 		# Not gonna play with the code here.
 		# Also, it doesn't make sense to log access while restoring.
-		if self.site:
+		if self.site and log_activity:
 			log_site_activity(site=self.site, action="Access Offsite Backups")
 			frappe.db.commit()
 

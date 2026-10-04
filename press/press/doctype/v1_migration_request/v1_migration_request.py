@@ -22,6 +22,7 @@ from frappe.utils import (
 
 from press.press.doctype.remote_file.remote_file import RemoteFile
 from press.press.doctype.site.site import Site
+from press.press.doctype.site_activity.site_activity import log_site_activity
 
 PENDING_MINUTES = 10
 APPROVED_HOURS = 12
@@ -89,6 +90,8 @@ class V1MigrationRequest(Document):
 		self.expires_at = add_to_date(self.approved_at, hours=APPROVED_HOURS)
 		self.save(ignore_permissions=True)
 		frappe.cache.delete_value(self.code_cache_key)
+		reason = f"Pilot at {self.requester_ip} can access the backups for {APPROVED_HOURS} hours."
+		log_site_activity(self.site, "Authorize Backup Access", reason=reason)
 
 	def reject_code(self) -> None:
 		self.failed_attempts += 1
@@ -159,8 +162,13 @@ class V1MigrationRequest(Document):
 			as_dict=True,
 			filters=self.downloadable_backup_filters,
 		)
+		log_site_activity(
+			self.site, "Access Offsite Backups", reason=f"Pilot downloaded the backup {backup}."
+		)
 		return {
-			part: RemoteFile("Remote File", remote_file).get_download_link(DOWNLOAD_LINK_SECONDS)
+			part: RemoteFile("Remote File", remote_file).get_download_link(
+				DOWNLOAD_LINK_SECONDS, log_activity=False
+			)
 			for part in BACKUP_PARTS
 			if (remote_file := files[f"remote_{part}_file"])
 		}
