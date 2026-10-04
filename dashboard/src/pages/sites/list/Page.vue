@@ -3,20 +3,21 @@ import {
 	Badge,
 	Button,
 	Combobox,
-	Dropdown,
-	MultiSelect,
-	TextInput,
-	Tooltip,
-  Spinner,
 	createDocumentResource,
 	createListResource,
+	Dropdown,
+	MultiSelect,
+	Spinner,
+	TextInput,
+	Tooltip,
 } from 'frappe-ui'
 import { unparse } from 'papaparse'
 import { defineAsyncComponent, h, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import BillingAlerts from '@/components/BillingAlerts.vue'
-import LinkControl from '@/components/LinkControl.vue'
 import Scrollbar from '@/components/common/Scrollbar.vue'
 import Header from '@/components/Header.vue'
+import LinkControl from '@/components/LinkControl.vue'
 import { getTeam } from '@/data/team'
 import { clusterOptions } from '@/objects/common'
 import { renderDialog } from '@/utils/components'
@@ -35,6 +36,20 @@ const statusOptions = [
 	value: label,
 }))
 const regionOptions = clusterOptions.filter(Boolean)
+
+const route = useRoute()
+
+// Pilot links here with a backup access request to approve.
+if (route.query['v1-migration']) {
+	const V1MigrationApprovalDialog = defineAsyncComponent(
+		() => import('@/components/site/V1MigrationApprovalDialog.vue'),
+	)
+	renderDialog(
+		h(V1MigrationApprovalDialog, {
+			requestName: String(route.query['v1-migration']),
+		}),
+	)
+}
 
 const selectedStatuses = ref<string[]>(
 	statusOptions.filter((o) => o.value !== 'Archived').map((o) => o.value),
@@ -331,7 +346,7 @@ const exportCSV = () => {
 							</Badge>
 						</td>
 
-						<td> {{ sitePlan(site) }} </td>
+						<td>{{ sitePlan(site) }} </td>
 
 						<td>
 							<span class="flex gap-1.5 items-center">
@@ -347,7 +362,7 @@ const exportCSV = () => {
 						<td>
 							{{ site.group_public ? 'Shared' : site.group_title }}
 						</td>
-						<td> {{ site.version }}</td>
+						<td>{{ site.version }}</td>
 
 						<td class="w-px">
 							<div class="flex justify-end">
