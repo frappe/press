@@ -277,6 +277,7 @@ scheduler_events = {
 		"press.press.doctype.database_server.database_server.upload_audit_logs_to_s3",
 	],
 	"hourly_long": [
+		"press.press.doctype.scheduled_deploy_settings.scheduled_deploy_settings.deploy_scheduled_release_groups",
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
 		"press.press.doctype.server.server_monitoring.monitor_server_and_refresh_new_bench_and_site_server_pool",
 		"press.press.doctype.release_group.release_group.add_public_servers_to_public_groups",

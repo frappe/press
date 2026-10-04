@@ -288,6 +288,10 @@ class SiteUpdate(Document):
 		if self.skipped_backups or self.deploy_type != "Migrate":
 			return
 
+		# A standby site skips its backup at start, so it needs no snapshot.
+		if frappe.db.get_value("Site", self.site, "is_standby"):
+			return
+
 		# No provider also means no database server, as with a configured RDS server.
 		if self.database_server_provider != "AWS EC2":
 			return
@@ -389,12 +393,20 @@ class SiteUpdate(Document):
 
 			return
 
+		self.skip_backups_for_standby_site()
 		if self.use_physical_backup:
 			self.deactivate_site()
 		elif self.use_logical_replication_backup:
 			self.create_logical_replication_backup_record()
 		else:
 			self.create_update_site_agent_request()
+
+	def skip_backups_for_standby_site(self):
+		"""Skip the backup of a site still in the standby pool once its move has started."""
+		# Checked at start, not insert, since a site can leave the pool in between.
+		if not self.skipped_backups and frappe.db.get_value("Site", self.site, "is_standby"):
+			self.skipped_backups = True
+			self.save()
 
 	def fail_with_notification(self, reason: str):
 		frappe.db.set_value("Site Update", self.name, "status", "Cancelled")
@@ -965,9 +977,24 @@ def schedule_updates():
 
 
 def schedule_updates_server(server):
-	# Prevent flooding the queue
 	queue_size = frappe.db.get_single_value("Press Settings", "auto_update_queue_size")
-	pending_update_count = frappe.db.count(
+	if count_pending_updates(server) > queue_size:
+		return
+
+	sites = sites_with_available_update(server)
+	# One budget per server, as large as before: queue_size + 1 new updates a run.
+	# Standby sites spend it first, customer sites get what is left.
+	limit = queue_size + 1
+	standby_sites = [site for site in sites if site.is_standby]
+	limit -= schedule_site_updates(standby_sites, limit, one_per_bench=False)
+
+	customer_sites = [site for site in sites if not site.is_standby and is_site_in_deploy_hours(site)]
+	schedule_site_updates(customer_sites, limit, one_per_bench=True)
+
+
+def count_pending_updates(server: str) -> int:
+	"""Count the updates on a server that are still waiting or running."""
+	return frappe.db.count(
 		"Site Update",
 		{
 			"status": ("in", ("Pending", "Running")),
@@ -975,19 +1002,20 @@ def schedule_updates_server(server):
 			"creation": (">", frappe.utils.add_to_date(None, hours=-4)),
 		},
 	)
-	if pending_update_count > queue_size:
-		return
 
-	sites = sites_with_available_update(server)
-	sites = list(filter(is_site_in_deploy_hours, sites))
 
+def schedule_site_updates(sites: list, limit: int, one_per_bench: bool) -> int:
+	"""Schedule updates for up to `limit` of the sites and return how many were scheduled."""
 	# If a site can't be updated for some reason, then we shouldn't get stuck
 	# Shuffle sites list, to achieve this
 	random.shuffle(sites)
 
+	benches = {}
 	update_triggered_count = 0
 	for site in sites:
-		if update_triggered_count > queue_size:
+		if one_per_bench and site.bench in benches:
+			continue
+		if update_triggered_count >= limit:
 			break
 		if not should_try_update(site) or frappe.db.exists(
 			"Site Update",
@@ -1005,9 +1033,12 @@ def schedule_updates_server(server):
 			site.schedule_update()
 			update_triggered_count += 1
 			frappe.db.commit()
+			benches[site.bench] = True
 		except Exception:
 			log_error("Site Update Exception", site=site)
 			frappe.db.rollback()
+
+	return update_triggered_count
 
 
 def should_try_update(site: Site):
