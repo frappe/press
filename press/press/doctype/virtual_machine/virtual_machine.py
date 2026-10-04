@@ -1858,7 +1858,7 @@ class VirtualMachine(Document):
 					response = client.primary_ips.create(
 						type="ipv4",
 						name=f"{self.name}-ipv4",
-						datacenter=server_instance.datacenter,
+						assignee_type="server",
 						assignee_id=server_instance.id,
 						auto_delete=False,
 					)
