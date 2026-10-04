@@ -7,6 +7,7 @@
 	"engine": "InnoDB",
 	"field_order": [
 		"release_group",
+		"release_group_title",
 		"hour",
 		"column_break_days",
 		"monday",
@@ -20,6 +21,7 @@
 	],
 	"fields": [
 		{
+			"columns": 1,
 			"fieldname": "release_group",
 			"fieldtype": "Link",
 			"in_list_view": 1,
@@ -28,6 +30,16 @@
 			"reqd": 1
 		},
 		{
+			"columns": 2,
+			"fetch_from": "release_group.title",
+			"fieldname": "release_group_title",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Title",
+			"read_only": 1
+		},
+		{
+			"columns": 1,
 			"description": "0 to 23, in the system timezone",
 			"fieldname": "hour",
 			"fieldtype": "Int",
@@ -95,7 +107,7 @@
 	"index_web_pages_for_search": 1,
 	"istable": 1,
 	"links": [],
-	"modified": "2026-10-05 16:00:00.000000",
+	"modified": "2026-10-05 18:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Scheduled Deploy Group",

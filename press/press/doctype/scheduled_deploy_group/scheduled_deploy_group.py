@@ -29,6 +29,7 @@ class ScheduledDeployGroup(Document):
 		parentfield: DF.Data
 		parenttype: DF.Data
 		release_group: DF.Link
+		release_group_title: DF.Data | None
 		saturday: DF.Check
 		sunday: DF.Check
 		thursday: DF.Check

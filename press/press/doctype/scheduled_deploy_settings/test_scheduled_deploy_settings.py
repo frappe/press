@@ -49,6 +49,12 @@ class TestScheduledDeploySettings(FrappeTestCase):
 		self.assertFalse(row.is_due(WEDNESDAY_7PM.replace(hour=18)))
 		self.assertFalse(row.is_due(datetime(2026, 10, 1, 19, 0)))  # Thursday
 
+	def test_row_shows_the_title_of_its_release_group(self):
+		settings = self._save_settings([{"release_group": self.group_a, "hour": 19, "wednesday": 1}])
+
+		title = frappe.db.get_value("Release Group", self.group_a, "title")
+		self.assertEqual(settings.groups[0].release_group_title, title)
+
 	def test_validate_rejects_hour_outside_0_to_23(self):
 		with self.assertRaisesRegex(frappe.ValidationError, "Hour must be between 0 and 23"):
 			self._save_settings([{"release_group": self.group_a, "hour": 24, "monday": 1}])
