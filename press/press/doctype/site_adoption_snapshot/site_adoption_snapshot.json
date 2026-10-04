@@ -1,0 +1,157 @@
+{
+	"actions": [],
+	"creation": "2026-10-05 12:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"timestamp",
+		"tier",
+		"column_break_scope",
+		"group_type",
+		"release_group",
+		"section_break_sites",
+		"current_sites",
+		"behind_sites",
+		"standby_behind",
+		"old_benches",
+		"column_break_reasons",
+		"fatal_update",
+		"failed_update",
+		"updating",
+		"auto_updates_off",
+		"own_schedule",
+		"waiting"
+	],
+	"fields": [
+		{
+			"fieldname": "timestamp",
+			"fieldtype": "Datetime",
+			"in_list_view": 1,
+			"label": "Timestamp",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"description": "Hourly rows cover each signup, public and central group and are kept for 30 days. Daily rows cover the whole fleet by group type and are kept for good.",
+			"fieldname": "tier",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Tier",
+			"options": "Hourly\nDaily",
+			"reqd": 1
+		},
+		{ "fieldname": "column_break_scope", "fieldtype": "Column Break" },
+		{
+			"fieldname": "group_type",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Group Type",
+			"options": "Signup\nCentral\nPublic\nPrivate",
+			"reqd": 1
+		},
+		{
+			"description": "Set on hourly rows only.",
+			"fieldname": "release_group",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Release Group",
+			"options": "Release Group",
+			"search_index": 1
+		},
+		{
+			"fieldname": "section_break_sites",
+			"fieldtype": "Section Break",
+			"label": "Sites"
+		},
+		{
+			"description": "Sites on the newest active bench of their group on their server.",
+			"fieldname": "current_sites",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Current Sites"
+		},
+		{
+			"description": "Sites on an older bench. The fields on the right split them by why they have not moved.",
+			"fieldname": "behind_sites",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Behind Sites"
+		},
+		{
+			"description": "Standby sites among the sites behind.",
+			"fieldname": "standby_behind",
+			"fieldtype": "Int",
+			"label": "Standby Behind"
+		},
+		{
+			"description": "Active benches that are not the newest of their group on their server.",
+			"fieldname": "old_benches",
+			"fieldtype": "Int",
+			"label": "Old Benches"
+		},
+		{ "fieldname": "column_break_reasons", "fieldtype": "Column Break" },
+		{
+			"fieldname": "fatal_update",
+			"fieldtype": "Int",
+			"label": "Fatal Update"
+		},
+		{
+			"description": "A failed Site Update blocks auto updates until it is resolved.",
+			"fieldname": "failed_update",
+			"fieldtype": "Int",
+			"label": "Failed Update"
+		},
+		{
+			"description": "An update is scheduled, pending or running.",
+			"fieldname": "updating",
+			"fieldtype": "Int",
+			"label": "Updating"
+		},
+		{
+			"fieldname": "auto_updates_off",
+			"fieldtype": "Int",
+			"label": "Auto Updates Off"
+		},
+		{
+			"description": "The site updates on its own schedule instead of in the deploy hours.",
+			"fieldname": "own_schedule",
+			"fieldtype": "Int",
+			"label": "Own Update Schedule"
+		},
+		{
+			"description": "Nothing blocks the move. The site waits for its deploy hours or for room in the update queue.",
+			"fieldname": "waiting",
+			"fieldtype": "Int",
+			"label": "Waiting"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-10-05 12:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Site Adoption Snapshot",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "timestamp",
+	"sort_order": "DESC",
+	"states": []
+}
