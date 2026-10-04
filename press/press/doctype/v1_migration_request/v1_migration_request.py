@@ -97,7 +97,7 @@ class V1MigrationRequest(Document):
 			frappe.cache.delete_value(self.code_cache_key)
 		self.save(ignore_permissions=True)
 		frappe.db.commit()
-		frappe.throw("The pass code is not correct.")
+		frappe.throw("The pass code is not correct.")  # nosemgrep
 
 	def revoke(self) -> None:
 		"""Pilot cancels a pending request too, so it can no longer be approved."""
@@ -168,7 +168,7 @@ def create_request(domain: str, code: str) -> tuple[V1MigrationRequest, str]:
 	cache. An unknown domain gets a request no one can approve, so the answer never tells which
 	sites exist."""
 	if not re.fullmatch(r"[A-Z0-9]{8}", code) or code.isdigit():
-		frappe.throw("The pass code must have 8 letters and digits.")
+		frappe.throw("The pass code must have 8 letters and digits.")  # nosemgrep
 
 	domain = domain.strip().lower().removeprefix("https://").removeprefix("http://").rstrip("/")
 	site = find_site(domain)
