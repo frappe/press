@@ -519,6 +519,7 @@ __persistent_cache_keys = [
 	"rl:*",
 	"press_otp:*",
 	"press_otp_sent:*",
+	"v1_migration_request||*",
 ]
 
 # `frappe.rename_doc` erases all caches, this hook preserves some of them.

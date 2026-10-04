@@ -314,7 +314,7 @@ class RemoteFile(Document):
 		self.delete_remote_object()
 
 	@frappe.whitelist()
-	def get_download_link(self):
+	def get_download_link(self, expires_in: int | None = None):
 		# The `site` field is not set during the upload & restore of files.
 		# Not gonna play with the code here.
 		# Also, it doesn't make sense to log access while restoring.
@@ -331,7 +331,9 @@ class RemoteFile(Document):
 		return self.url or self.s3_client.generate_presigned_url(
 			"get_object",
 			Params={"Bucket": bucket, "Key": self.file_path},
-			ExpiresIn=frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600,
+			ExpiresIn=expires_in
+			or frappe.db.get_single_value("Press Settings", "remote_link_expiry")
+			or 3600,
 		)
 
 	def get_content(self):
