@@ -108,13 +108,7 @@ class V1MigrationRequest(Document):
 	def get_backups(self, start: int = 0) -> list[dict]:
 		backups = frappe.get_all(
 			"Site Backup",
-			filters={
-				"site": self.site,
-				"status": "Success",
-				"offsite": 1,
-				"with_files": 1,
-				"files_availability": ("!=", "Unavailable"),
-			},
+			filters=self.downloadable_backup_filters,
 			fields=["name", "creation", "database_size", "public_size", "private_size"],
 			order_by="creation desc",
 			limit_start=start,
@@ -128,6 +122,18 @@ class V1MigrationRequest(Document):
 			}
 			for backup in backups
 		]
+
+	@property
+	def downloadable_backup_filters(self) -> dict:
+		"""The backups Pilot may list and download. Rotation and archival keep some files of
+		an unavailable backup, so its links must not be issued either."""
+		return {
+			"site": self.site,
+			"status": "Success",
+			"offsite": 1,
+			"with_files": 1,
+			"files_availability": ("!=", "Unavailable"),
+		}
 
 	def get_running_backup(self) -> str | None:
 		return frappe.db.get_value(
@@ -147,16 +153,21 @@ class V1MigrationRequest(Document):
 		return {"status": values.status, "job_url": job_url or None}
 
 	def get_download_links(self, backup: str) -> dict[str, str]:
-		files = self.get_site_backup(backup, [f"remote_{part}_file" for part in BACKUP_PARTS], as_dict=True)
+		files = self.get_site_backup(
+			backup,
+			[f"remote_{part}_file" for part in BACKUP_PARTS],
+			as_dict=True,
+			filters=self.downloadable_backup_filters,
+		)
 		return {
 			part: RemoteFile("Remote File", remote_file).get_download_link(DOWNLOAD_LINK_SECONDS)
 			for part in BACKUP_PARTS
 			if (remote_file := files[f"remote_{part}_file"])
 		}
 
-	def get_site_backup(self, backup: str, fields, as_dict: bool = False):
+	def get_site_backup(self, backup: str, fields, as_dict: bool = False, filters: dict | None = None):
 		values = frappe.db.get_value(
-			"Site Backup", {"name": backup, "site": self.site}, fields, as_dict=as_dict
+			"Site Backup", {**(filters or {"site": self.site}), "name": backup}, fields, as_dict=as_dict
 		)
 		if not values:
 			frappe.throw("The backup does not exist.", frappe.DoesNotExistError)
