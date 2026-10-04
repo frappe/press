@@ -48,3 +48,15 @@ class TestRolloutProgress(FrappeTestCase):
 
 		self.assertEqual(rows[0].moved, 2)
 		self.assertEqual(chart["data"]["datasets"][0]["values"][-1], 2)
+
+	def test_server_whose_new_bench_is_still_installing_has_nothing_behind_yet(self):
+		fixture = create_group_with_sites_behind()
+		frappe.db.set_value("Bench", fixture.new_bench.name, "status", "Installing")
+
+		_, rows, _, _, summary = execute({"deploy_candidate": fixture.new_bench.candidate})
+
+		self.assertEqual(
+			(rows[0].bench_status, rows[0].behind, rows[0].percent_on_bench), ("Installing", None, None)
+		)
+		values = {card["label"]: card["value"] for card in summary}
+		self.assertEqual(values["Sites Behind"], 0)

@@ -32,7 +32,7 @@ def get_rows(filters: frappe._dict) -> list[frappe._dict]:
 		for site in get_active_sites(groups)
 		if site.bench not in newest_names and (not filters.server or site.server == filters.server)
 	]
-	blocked = get_blocked_sites([site.name for site in behind])
+	blocked = get_blocked_sites(behind, newest)
 
 	rows = []
 	for site in behind:

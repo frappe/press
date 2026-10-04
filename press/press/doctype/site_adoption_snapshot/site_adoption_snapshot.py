@@ -19,6 +19,8 @@ REASON_FIELDS = {
 	"Fatal Update": "fatal_update",
 	"Failed Update": "failed_update",
 	"Updating": "updating",
+	"Missing App": "missing_app",
+	"Earlier Failure": "earlier_failure",
 	"Auto Updates Off": "auto_updates_off",
 	"Own Update Schedule": "own_schedule",
 	"Waiting": "waiting",
@@ -38,9 +40,11 @@ class SiteAdoptionSnapshot(Document):
 		auto_updates_off: DF.Int
 		behind_sites: DF.Int
 		current_sites: DF.Int
+		earlier_failure: DF.Int
 		failed_update: DF.Int
 		fatal_update: DF.Int
 		group_type: DF.Literal["Signup", "Central", "Public", "Private"]
+		missing_app: DF.Int
 		old_benches: DF.Int
 		own_schedule: DF.Int
 		release_group: DF.Link | None
@@ -95,9 +99,10 @@ def insert_snapshot(timestamp: datetime, tier: str, counts: frappe._dict, releas
 def count_sites_by_group(groups: list[str] | None = None) -> dict[str, frappe._dict]:
 	"""Count current and behind sites of each group, with why the behind ones have not moved."""
 	benches = get_active_benches(groups)
-	newest = {bench.name for bench in newest_by_server(benches).values()}
+	newest_benches = newest_by_server(benches)
+	newest = {bench.name for bench in newest_benches.values()}
 	sites = get_active_sites(groups)
-	blocked = get_blocked_sites([site.name for site in sites if site.bench not in newest])
+	blocked = get_blocked_sites([site for site in sites if site.bench not in newest], newest_benches)
 	counts: dict[str, frappe._dict] = {}
 	for site in sites:
 		group_counts = counts.setdefault(site.group, new_counts())
@@ -138,7 +143,7 @@ def get_active_benches(groups: list[str] | None = None) -> list[frappe._dict]:
 	Bench = frappe.qb.DocType("Bench")
 	query = (
 		frappe.qb.from_(Bench)
-		.select(Bench.name, Bench.group, Bench.server, Bench.creation)
+		.select(Bench.name, Bench.group, Bench.server, Bench.candidate, Bench.creation)
 		.where(Bench.status == "Active")
 	)
 	if groups is not None:
@@ -167,18 +172,85 @@ def get_active_sites(groups: list[str] | None = None) -> list[frappe._dict]:
 	return query.run(as_dict=True)
 
 
-def get_blocked_sites(sites: list[str]) -> dict[str, str]:
-	"""Which of the sites the auto-update scheduler skips for an unfinished or a failed update."""
+def get_blocked_sites(
+	sites: list[frappe._dict], newest: dict[tuple[str, str], frappe._dict]
+) -> dict[str, str]:
+	"""Why the auto-update scheduler skips each of the sites, for the ones it skips."""
 	blocked: dict[str, str] = {}
-	# Filtered by site so the lookup uses the site index of the large Site Update table
+	# Looked up by site, in batches, so the large Site Update table is read through its site index
 	for batch in create_batch(sites, 500):
+		blocked.update(get_earlier_failure_sites(batch, newest))
+		blocked.update(get_missing_app_sites(batch, newest))
+		blocked.update(get_open_update_sites(batch))
+	return blocked
+
+
+def get_open_update_sites(sites: list[frappe._dict]) -> dict[str, str]:
+	"""Sites with an update in progress, or a failed one the scheduler waits on."""
+	blocked: dict[str, str] = {}
+	for update in frappe.get_all(
+		"Site Update",
+		{
+			"site": ("in", [site.name for site in sites]),
+			"status": ("in", ("Failure", "Pending", "Running", "Scheduled")),
+		},
+		["site", "status"],
+	):
+		if blocked.get(update.site) != "Failed Update":
+			blocked[update.site] = "Failed Update" if update.status == "Failure" else "Updating"
+	return blocked
+
+
+def get_missing_app_sites(
+	sites: list[frappe._dict], newest: dict[tuple[str, str], frappe._dict]
+) -> dict[str, str]:
+	"""Sites with an app that the newest bench on their server does not have."""
+	targets = {site.name: newest.get((site.group, site.server)) for site in sites}
+	bench_apps = get_apps("Bench App", [target.name for target in targets.values() if target])
+	site_apps = get_apps("Site App", [site.name for site in sites])
+	return {
+		site: "Missing App"
+		for site, target in targets.items()
+		if target and site_apps.get(site, set()) - bench_apps.get(target.name, set())
+	}
+
+
+def get_apps(doctype: str, parents: list[str]) -> dict[str, set[str]]:
+	apps: dict[str, set[str]] = {}
+	for row in frappe.get_all(doctype, {"parent": ("in", parents or [""])}, ["parent", "app"]):
+		apps.setdefault(row.parent, set()).add(row.app)
+	return apps
+
+
+def get_earlier_failure_sites(
+	sites: list[frappe._dict], newest: dict[tuple[str, str], frappe._dict]
+) -> dict[str, str]:
+	"""Sites whose earlier update for the same move did not succeed and is not marked resolved."""
+	candidates = dict(
+		frappe.get_all(
+			"Bench",
+			{"name": ("in", list({site.bench for site in sites}))},
+			["name", "candidate"],
+			as_list=True,
+		)
+	)
+	earlier_moves = {
+		(update.site, update.source_candidate, update.destination_candidate)
 		for update in frappe.get_all(
 			"Site Update",
-			{"site": ("in", batch), "status": ("in", ("Failure", "Pending", "Running", "Scheduled"))},
-			["site", "status"],
-		):
-			if blocked.get(update.site) != "Failed Update":
-				blocked[update.site] = "Failed Update" if update.status == "Failure" else "Updating"
+			{
+				"site": ("in", [site.name for site in sites]),
+				"cause_of_failure_is_resolved": 0,
+				"status": ("!=", "Success"),
+			},
+			["site", "source_candidate", "destination_candidate"],
+		)
+	}
+	blocked = {}
+	for site in sites:
+		target = newest.get((site.group, site.server))
+		if target and (site.name, candidates.get(site.bench), target.candidate) in earlier_moves:
+			blocked[site.name] = "Earlier Failure"
 	return blocked
 
 
@@ -196,7 +268,11 @@ def behind_reason(site: frappe._dict, blocked: dict[str, str]) -> str:
 
 
 def get_signup_groups() -> set[str]:
-	return set(frappe.get_all("Product Trial", {"release_group": ("is", "set")}, pluck="release_group"))
+	return set(
+		frappe.get_all(
+			"Product Trial", {"published": 1, "release_group": ("is", "set")}, pluck="release_group"
+		)
+	)
 
 
 def get_shared_groups() -> list[str]:

@@ -13,11 +13,13 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_adoption_snapshot.site_adoption_snapshot import (
+	get_signup_groups,
 	new_counts,
 	record_daily_snapshot,
 	record_hourly_snapshot,
 )
 from press.press.doctype.site_update.test_site_update import create_test_site_update
+from press.saas.doctype.product_trial.test_product_trial import create_test_product_trial
 
 MODULE = "press.press.doctype.site_adoption_snapshot.site_adoption_snapshot"
 
@@ -90,6 +92,14 @@ class TestSiteAdoptionSnapshot(FrappeTestCase):
 
 		self.assertFalse(frappe.db.exists("Site Adoption Snapshot", old))
 		self.assertTrue(frappe.db.exists("Site Adoption Snapshot", recent))
+
+	def test_only_published_trials_make_their_group_a_signup_group(self):
+		trial = create_test_product_trial(create_test_app("trialapp", "Trial App"))
+		frappe.db.set_value("Product Trial", trial.name, "published", 1)
+		self.assertIn(trial.release_group, get_signup_groups())
+
+		frappe.db.set_value("Product Trial", trial.name, "published", 0)
+		self.assertNotIn(trial.release_group, get_signup_groups())
 
 	def insert_hourly_row(self, timestamp) -> str:
 		return (
