@@ -123,9 +123,25 @@ class TestScheduledDeploySettings(FrappeTestCase):
 			),
 			patch.object(ReleaseGroup, "get_apps_to_update", return_value=apps),
 		):
-			deploy_release_group(self.group_a)
+			build = deploy_release_group(self.group_a)
 
+		self.assertEqual(build, mock_get_bench_update.return_value.deploy.return_value)
 		mock_get_bench_update.assert_called_once_with(self.group_a, apps, ignore_permissions=True)
 		mock_get_bench_update.return_value.deploy.assert_called_once_with(
 			run_will_fail_check=True, ignore_permissions=True
 		)
+
+	@patch(f"{MODULE}.deploy_release_group", return_value="build-1")
+	def test_deploy_now_deploys_a_listed_group_and_returns_its_build(self, mock_deploy):
+		settings = self._save_settings([{"release_group": self.group_a, "hour": 19, "wednesday": 1}])
+
+		self.assertEqual(settings.deploy_now(self.group_a), "build-1")
+		mock_deploy.assert_called_once_with(self.group_a)
+
+	@patch(f"{MODULE}.deploy_release_group")
+	def test_deploy_now_refuses_a_group_that_is_not_listed(self, mock_deploy):
+		settings = self._save_settings([{"release_group": self.group_a, "hour": 19, "wednesday": 1}])
+
+		with self.assertRaisesRegex(frappe.ValidationError, "is not listed in Scheduled Deploy Settings"):
+			settings.deploy_now(self.group_b)
+		mock_deploy.assert_not_called()
