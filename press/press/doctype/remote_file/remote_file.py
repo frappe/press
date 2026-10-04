@@ -314,7 +314,11 @@ class RemoteFile(Document):
 		self.delete_remote_object()
 
 	@frappe.whitelist()
-	def get_download_link(self, expires_in: int | None = None, log_activity: bool = True):
+	def get_download_link(self):
+		return self.make_download_link()
+
+	def make_download_link(self, expires_in: int | None = None, log_activity: bool = True) -> str:
+		"""Not whitelisted: a caller over the API must not skip the activity log or extend the expiry."""
 		# The `site` field is not set during the upload & restore of files.
 		# Not gonna play with the code here.
 		# Also, it doesn't make sense to log access while restoring.

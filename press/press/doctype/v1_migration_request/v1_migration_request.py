@@ -166,7 +166,7 @@ class V1MigrationRequest(Document):
 			self.site, "Access Offsite Backups", reason=f"Pilot downloaded the backup {backup}."
 		)
 		return {
-			part: RemoteFile("Remote File", remote_file).get_download_link(
+			part: RemoteFile("Remote File", remote_file).make_download_link(
 				DOWNLOAD_LINK_SECONDS, log_activity=False
 			)
 			for part in BACKUP_PARTS
