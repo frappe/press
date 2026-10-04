@@ -11,6 +11,7 @@ from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.site_adoption_snapshot.test_site_adoption_snapshot import (
 	create_group_with_sites_behind,
 )
+from press.press.doctype.site_update.test_site_update import create_test_site_update
 from press.press.report.update_laggards.update_laggards import execute
 
 
@@ -55,3 +56,31 @@ class TestUpdateLaggards(FrappeTestCase):
 		_, rows, *_ = execute({"release_group": fixture.group})
 
 		self.assertTrue(all(row.days_behind == 2 for row in rows))
+
+	def test_site_with_an_app_the_new_bench_lacks_is_missing_app_not_waiting(self):
+		fixture = create_group_with_sites_behind()
+		frappe.db.delete("Bench App", {"parent": fixture.new_bench.name})
+
+		_, rows, *_ = execute({"release_group": fixture.group})
+
+		reasons = {row.site: row.reason for row in rows}
+		self.assertEqual(reasons[fixture.sites.waiting], "Missing App")
+		self.assertEqual(reasons[fixture.sites.failed], "Failed Update")
+
+	def test_site_whose_earlier_try_at_the_same_move_was_rolled_back_is_earlier_failure(self):
+		fixture = create_group_with_sites_behind()
+		update = create_test_site_update(
+			fixture.sites.waiting, fixture.group, "Recovered", ignore_validate=True
+		)
+		frappe.db.set_value(
+			"Site Update",
+			update.name,
+			{
+				"source_candidate": fixture.old_bench.candidate,
+				"destination_candidate": fixture.new_bench.candidate,
+			},
+		)
+
+		_, rows, *_ = execute({"release_group": fixture.group, "reason": "Earlier Failure"})
+
+		self.assertEqual([row.site for row in rows], [fixture.sites.waiting])

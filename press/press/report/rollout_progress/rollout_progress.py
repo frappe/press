@@ -25,7 +25,8 @@ def get_rows(candidate: str) -> list[frappe._dict]:
 	rows = []
 	for bench in get_candidate_benches(candidate):
 		on_bench = count_sites({"bench": bench.name})
-		behind = count_sites({"bench": ("in", get_older_benches(group, bench))})
+		# Sites can only move to an active bench, so nothing counts as behind one that is not
+		behind = count_sites({"bench": ("in", get_older_benches(group, bench))}) if is_active(bench) else None
 		rows.append(
 			frappe._dict(
 				server=bench.server,
@@ -35,7 +36,7 @@ def get_rows(candidate: str) -> list[frappe._dict]:
 				moved=moves.get(bench.server, 0),
 				on_bench=on_bench,
 				behind=behind,
-				percent_on_bench=percent(on_bench, on_bench + behind),
+				percent_on_bench=percent(on_bench, on_bench + behind) if behind is not None else None,
 			)
 		)
 	return rows
@@ -48,10 +49,17 @@ def get_candidate_benches(candidate: str) -> list[frappe._dict]:
 		["name", "server", "status", "creation"],
 		order_by="creation desc",
 	)
-	newest_per_server: dict[str, frappe._dict] = {}
+	# Newest first, but an active bench wins over a newer one still installing or broken
+	chosen: dict[str, frappe._dict] = {}
 	for bench in benches:
-		newest_per_server.setdefault(bench.server, bench)
-	return sorted(newest_per_server.values(), key=lambda bench: bench.server)
+		current = chosen.get(bench.server)
+		if not current or (is_active(bench) and not is_active(current)):
+			chosen[bench.server] = bench
+	return sorted(chosen.values(), key=lambda bench: bench.server)
+
+
+def is_active(bench: frappe._dict) -> bool:
+	return bench.status == "Active"
 
 
 def get_older_benches(group: str, bench: frappe._dict) -> list[str]:
@@ -123,9 +131,10 @@ def get_columns() -> list[dict]:
 
 
 def get_summary(rows: list[frappe._dict]) -> list[dict]:
-	on_bench = sum(row.on_bench for row in rows)
-	behind = sum(row.behind for row in rows)
-	active = sum(row.bench_status == "Active" for row in rows)
+	active_rows = [row for row in rows if row.behind is not None]
+	on_bench = sum(row.on_bench for row in active_rows)
+	behind = sum(row.behind for row in active_rows)
+	active = len(active_rows)
 	return [
 		{
 			"value": percent(on_bench, on_bench + behind),

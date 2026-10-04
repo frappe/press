@@ -26,7 +26,7 @@ frappe.query_reports['Update Laggards'] = {
 			label: __('Reason'),
 			fieldtype: 'Select',
 			options:
-				'\nFatal Update\nFailed Update\nUpdating\nAuto Updates Off\nOwn Update Schedule\nWaiting',
+				'\nFatal Update\nFailed Update\nUpdating\nMissing App\nEarlier Failure\nAuto Updates Off\nOwn Update Schedule\nWaiting',
 		},
 	],
 }
