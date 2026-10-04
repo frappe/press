@@ -13,7 +13,7 @@
 			v-if="$site?.doc?.is_server_disk_full"
 			class="col-span-1 lg:col-span-2"
 			type="error"
-			title="This site's server is out of disk space. The site may stop responding until space is freed up."
+			title="This site's server is out of disk space. Until space is freed up, the site may stop responding and backups may fail, leaving your data unprotected."
 		>
 			<Button
 				class="ml-auto min-w-[7rem]"
@@ -35,7 +35,7 @@
 			v-if="$site?.doc?.status === 'Suspended' && $site?.doc?.suspension_reason"
 			class="col-span-1 lg:col-span-2"
 			type="error"
-			:title="`Suspension Reason : ${$site?.doc?.suspension_reason || 'Not Specified'}`"
+			:title="`Suspension Reason: ${$site?.doc?.suspension_reason || 'Not Specified'}`"
 		>
 			<Button
 				class="ml-auto min-w-[7rem]"

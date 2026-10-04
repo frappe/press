@@ -163,9 +163,12 @@ class Incident(WebsiteGenerator):
 			current_datetime = frappe.utils.now_datetime()
 			self.send_email_notification()
 			if self.status == "Resolved" or self.status == "Auto-Resolved":
+				if self.confirmed_at and not self.resolved_at:  # reopened incidents resolve only once
+					self.create_log_for_server(is_resolved=True)
 				self.db_set("resolved_at", current_datetime)
 			elif self.status == "Confirmed" and not self.confirmed_at:
 				self.db_set("confirmed_at", current_datetime)
+				self.create_log_for_server()
 				if not self.called_customer:
 					self.call_customers()
 
@@ -853,7 +856,6 @@ Likely due to insufficient balance or incorrect credentials""",
 			return
 		else:
 			if not last_resolved.is_enough_firing:
-				self.create_log_for_server(is_resolved=True)
 				self.resolve()
 
 	def resolve(self):
@@ -988,7 +990,6 @@ def resolve_incidents():
 		if (
 			incident.time_to_call_for_help or incident.time_to_call_for_help_again
 		) and incident.waited_enough_for_investigator_reactions:
-			incident.create_log_for_server()
 			incident.call_humans()
 
 

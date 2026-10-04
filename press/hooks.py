@@ -222,6 +222,7 @@ scheduler_events = {
 		"press.press.doctype.team.team.check_budget_alerts",
 		"press.press.doctype.site.site.archive_creation_failed_sites",
 		"press.press.doctype.server.server.process_running_benches_on_server",
+		"press.press.doctype.server.server_monitoring.alert_on_sites_with_missing_backups",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -259,6 +260,7 @@ scheduler_events = {
 		"press.press.doctype.site.backups.schedule_physical_backups_for_sites_with_backup_time",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.saas.doctype.product_trial_request.product_trial_request.expire_long_pending_trial_requests",
+		"press.press.doctype.support_access.support_access.expire_pending_requests",
 		"press.overrides.cleanup_ansible_tmp_files",
 		"press.press.doctype.site.site.archive_suspended_sites",
 		"press.press.doctype.site.site.send_warning_mail_regarding_sites_exceeding_disk_usage",
@@ -270,6 +272,7 @@ scheduler_events = {
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 		"press.press.doctype.server.server.sync_wazuh_agent_status",
 		"press.press.doctype.server.server.install_missing_wazuh_agents",
+		"press.press.doctype.server.server.install_missing_yara",
 		"press.press.doctype.incident_settings.incident_settings.alert_if_phone_call_alerts_disabled",
 		"press.press.doctype.server.server_monitoring.alert_on_failing_signups",
 		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",

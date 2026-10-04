@@ -932,8 +932,8 @@ def delete_backups_for_archived_sites_after_retention():
 	frappe.db.commit()
 
 
-def _has_reached_max_failed_backup_attempts(site_name: str) -> bool:
-	max_backup_attempts = (
+def get_max_failed_backup_attempts() -> int:
+	return (
 		frappe.get_cached_value(
 			"Press Settings",
 			"Press Settings",
@@ -941,6 +941,10 @@ def _has_reached_max_failed_backup_attempts(site_name: str) -> bool:
 		)
 		or 6
 	)
+
+
+def _has_reached_max_failed_backup_attempts(site_name: str) -> bool:
+	max_backup_attempts = get_max_failed_backup_attempts()
 
 	backup_failures = frappe.db.count(
 		"Site Backup",
