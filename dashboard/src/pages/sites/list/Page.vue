@@ -13,6 +13,7 @@ import {
 } from 'frappe-ui'
 import { unparse } from 'papaparse'
 import { defineAsyncComponent, h, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import BillingAlerts from '@/components/BillingAlerts.vue'
 import Scrollbar from '@/components/common/Scrollbar.vue'
 import Header from '@/components/Header.vue'
@@ -36,10 +37,7 @@ const statusOptions = [
 }))
 const regionOptions = clusterOptions.filter(Boolean)
 
-<<<<<<< HEAD
-=======
 const route = useRoute()
-const router = useRouter()
 
 // Pilot links here with a backup access request to approve.
 if (route.query['v1-migration']) {
@@ -53,19 +51,6 @@ if (route.query['v1-migration']) {
 	)
 }
 
-const liveStatuses = statusOptions
-	.filter((o) => o.value !== 'Archived')
-	.map((o) => o.value)
-
-// A shared link can ask for a status, for example /sites?status=Archived
-const statusesInQuery = (query: unknown) =>
-	String(query ?? '')
-		.split(',')
-		.filter((value) => statusOptions.some((o) => o.value === value))
-
-const requestedStatuses = statusesInQuery(route.query.status)
-
->>>>>>> d8e89e5 (feat(pilot-migration): Let Pilot copy site backups after team approval)
 const selectedStatuses = ref<string[]>(
 	statusOptions.filter((o) => o.value !== 'Archived').map((o) => o.value),
 )
