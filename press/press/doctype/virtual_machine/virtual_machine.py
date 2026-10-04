@@ -102,7 +102,6 @@ class VirtualMachine(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.cluster.cluster import Cluster
 		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import (
 			VirtualMachineTemporaryVolume,
 		)
@@ -138,6 +137,7 @@ class VirtualMachine(Document):
 		security_group_id: DF.Data | None
 		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs", "nat"]
 		skip_automated_snapshot: DF.Check
+		skip_sync: DF.Check
 		ssh_key: DF.Link
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
 		subnet_cidr_block: DF.Data | None
@@ -2780,6 +2780,7 @@ class VirtualMachine(Document):
 				{
 					"status": ("not in", ("Terminated", "Draft")),
 					"cloud_provider": "AWS EC2",
+					"skip_sync": False,
 				},
 				group_by="cluster",
 			)
@@ -2790,6 +2791,7 @@ class VirtualMachine(Document):
 				{
 					"status": ("not in", ("Terminated", "Draft")),
 					"cloud_provider": "AWS EC2",
+					"skip_sync": False,
 				},
 				group_by="cluster",
 			)
@@ -2862,6 +2864,7 @@ class VirtualMachine(Document):
 				"Virtual Machine",
 				filters={
 					"status": ("not in", ("Terminated", "Draft")),
+					"skip_sync": False,
 					"cloud_provider": "OCI",
 					"cluster": cluster,
 					"instance_id": ("is", "set"),
@@ -2894,6 +2897,7 @@ class VirtualMachine(Document):
 				"Virtual Machine",
 				filters={
 					"status": ("not in", ("Terminated", "Draft")),
+					"skip_sync": False,
 					"cloud_provider": "OCI",
 					"cluster": cluster.name,
 					"instance_id": ("is", "set"),
@@ -2949,6 +2953,7 @@ class VirtualMachine(Document):
 					"cloud_provider": "Hetzner",
 					"cluster": cluster_name,
 					"instance_id": ("is", "set"),
+					"skip_sync": False,
 				},
 				pluck="name",
 				limit=1,
@@ -2977,6 +2982,7 @@ class VirtualMachine(Document):
 					"cloud_provider": "Hetzner",
 					"cluster": cluster.name,
 					"instance_id": ("is", "set"),
+					"skip_sync": False,
 				},
 				pluck="instance_id",
 			)
