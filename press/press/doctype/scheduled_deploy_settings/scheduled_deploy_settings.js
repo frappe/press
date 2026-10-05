@@ -7,12 +7,13 @@ frappe.ui.form.on('Scheduled Deploy Group', {
 		if (!release_group) return
 
 		frappe.confirm(__('Deploy {0} now?', [release_group]), () =>
-			frm.call('deploy_now', { release_group }).then(({ message: build }) =>
+			frm.call('deploy_now', { release_group }).then(() =>
 				frappe.show_alert({
-					message: build
-						? __('Deploy of {0} started: {1}', [release_group, build])
-						: __('{0} has no app updates to deploy', [release_group]),
-					indicator: build ? 'green' : 'orange',
+					message: __(
+						'Deploy of {0} queued. A new Deploy Candidate shows up once it starts, or an Error Log if a check stops it.',
+						[release_group],
+					),
+					indicator: 'blue',
 				}),
 			),
 		)
