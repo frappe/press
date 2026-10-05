@@ -201,6 +201,13 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 
 		self.assertEqual(self.datasets("Remote Builder Failures by Build Server"), {"f1.frappe.cloud": [1]})
 
+	def test_a_job_that_waited_two_days_before_it_failed_still_counts_when_it_ended(self):
+		self.job(
+			"f1.frappe.cloud", "Run Remote Builder", "Failure", "2026-09-08 10:30:00", "2026-09-10 10:20:00"
+		)
+
+		self.assertEqual(self.datasets("Remote Builder Failures by Build Server"), {"f1.frappe.cloud": [1]})
+
 
 class TestPeriod(FrappeTestCase):
 	def test_from_and_to_set_the_period_and_the_duration_is_ignored(self):
