@@ -161,6 +161,13 @@ frappe.ui.form.on('Server', {
 				__('Setup'),
 			],
 			[
+				__('Setup Agent Volume'),
+				'setup_agent_volume',
+				true,
+				frm.doc.is_server_setup && !frm.doc.has_data_volume,
+				__('Setup'),
+			],
+			[
 				__('Prepare Server'),
 				'prepare_server',
 				true,

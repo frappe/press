@@ -2881,6 +2881,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		self.setup_ncdu()
 		self.setup_iptables()
 		self.install_cadvisor()
+		if not self.has_data_volume:
+			self.setup_agent_volume()
 		self.setup_logrotate()  # Logrotate monitor json
 
 		# Database Server specific config
@@ -2932,6 +2934,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 			if self.has_data_volume:
 				self.setup_archived_folder()
+			else:
+				self.setup_agent_volume()
 
 			self.install_cadvisor()
 
@@ -3574,6 +3578,22 @@ class Server(BaseServer):
 	@frappe.whitelist()
 	def setup_ncdu(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu")
+
+	@frappe.whitelist()
+	def setup_agent_volume(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_volume", queue="long", timeout=3600)
+
+	def _setup_agent_volume(self):
+		try:
+			ansible = Ansible(
+				playbook="agent_volume.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Agent Volume Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def setup_rclone(self):
