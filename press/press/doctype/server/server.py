@@ -3596,6 +3596,23 @@ class Server(BaseServer):
 			log_error("Agent Volume Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def resize_agent_volume(self, size: int):
+		frappe.enqueue_doc(self.doctype, self.name, "_resize_agent_volume", size=int(size))
+
+	def _resize_agent_volume(self, size: int):
+		try:
+			ansible = Ansible(
+				playbook="resize_agent_volume.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={"agent_volume_size": size},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Agent Volume Resize Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def setup_rclone(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_rclone", queue="long", timeout=1200)
 

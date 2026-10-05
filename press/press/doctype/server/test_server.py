@@ -41,6 +41,7 @@ from press.press.doctype.server_plan.test_server_plan import create_test_server_
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team, create_test_team
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
+from press.utils.test import foreground_enqueue_doc
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.server_plan.server_plan import ServerPlan
@@ -1597,3 +1598,13 @@ class TestAgentVolume(FrappeTestCase):
 			server._setup_agent_volume()
 		self.assertEqual(Ansible.call_args.kwargs["playbook"], "agent_volume.yml")
 		Ansible.return_value.run.assert_called_once()
+
+	def test_resize_agent_volume_passes_size_from_dialog_to_playbook_as_gigabytes(self):
+		server = create_test_server()
+		with (
+			patch("press.press.doctype.server.server.frappe.enqueue_doc", new=foreground_enqueue_doc),
+			patch("press.press.doctype.server.server.Ansible") as Ansible,
+		):
+			server.resize_agent_volume("12")
+		self.assertEqual(Ansible.call_args.kwargs["playbook"], "resize_agent_volume.yml")
+		self.assertEqual(Ansible.call_args.kwargs["variables"], {"agent_volume_size": 12})

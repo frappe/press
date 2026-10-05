@@ -1,0 +1,26 @@
+---
+# Grows the agent volume while it stays mounted, so the agent keeps running
+- name: Find Agent Volume Loop Device
+  command: findmnt -n -o SOURCE /home/frappe/agent
+  register: agent_volume_device
+  changed_when: false
+
+- name: Get Agent Volume Image Size
+  stat:
+    path: /home/frappe/agent.img
+  register: agent_volume_image
+
+# Shrinking needs an unmount, which stops supervisor and nginx (BindsTo)
+- name: Refuse To Shrink Agent Volume
+  assert:
+    that: (agent_volume_size | int) * 1073741824 >= agent_volume_image.stat.size
+    fail_msg: 'The agent volume is {{ (agent_volume_image.stat.size / 1073741824) | round(1) }}G. It can only grow.'
+
+- name: Grow Agent Volume Image
+  command: fallocate -l {{ agent_volume_size }}G /home/frappe/agent.img
+
+- name: Refresh Loop Device Size
+  command: losetup -c {{ agent_volume_device.stdout }}
+
+- name: Grow Agent Volume Filesystem
+  command: resize2fs {{ agent_volume_device.stdout }}
