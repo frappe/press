@@ -415,6 +415,7 @@ export function backupRecordsOptions() {
 			]
 		},
 		primaryAction({ listResource: backups, documentResource: site }) {
+			if (site.doc?.status === 'Archived') return null
 			return {
 				label: 'Take Backup',
 				slots: {
