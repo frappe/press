@@ -388,8 +388,8 @@ def get_failed_jobs(job_type, period):
 		.select(job.server, Coalesce(job.end, job.creation).as_("failed_at"))
 		.where(job.job_type == job_type)
 		.where(job.status.isin(("Failure", "Delivery Failure")))
-		# ponytail: bound on creation so the index applies. A job that ran over a day drops out.
-		.where(job.creation >= add_to_date(period.start, days=-1))
+		# fail_old_jobs ends every job within 2 days. A day more covers its lag, and keeps the index.
+		.where(job.creation >= add_to_date(period.start, days=-3))
 		.where(Coalesce(job.end, job.creation)[period.start : period.end])
 		.run(as_dict=True)
 	)
