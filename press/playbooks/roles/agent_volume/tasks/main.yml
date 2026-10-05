@@ -1,0 +1,97 @@
+---
+# Agent gets its own filesystem, so a full root disk does not stop it
+- name: Check For Bench Data Volume
+  command: mountpoint -q /opt/volumes/benches
+  register: bench_volume
+  changed_when: false
+  failed_when: false
+
+- name: Check For Agent Volume
+  command: mountpoint -q /home/frappe/agent
+  register: agent_volume
+  changed_when: false
+  failed_when: false
+
+- name: Move Agent To Its Own Volume
+  when: bench_volume.rc != 0 and agent_volume.rc != 0
+  block:
+    - name: Allocate Agent Volume Image
+      command: fallocate -l 8G /home/frappe/agent.img
+      args:
+        creates: /home/frappe/agent.img
+
+    - name: Restrict Agent Volume Image Permissions
+      file:
+        path: /home/frappe/agent.img
+        mode: '0600'
+
+    - name: Format Agent Volume Image
+      filesystem:
+        fstype: ext4
+        dev: /home/frappe/agent.img
+
+    - name: Create Staging Mount Point
+      file:
+        path: /mnt/agent
+        state: directory
+
+    # Workers finish their running jobs first, while redis is still up
+    - name: Stop Agent
+      shell: |
+        supervisorctl stop $(supervisorctl status | awk '/agent:worker/{print $1}')
+        supervisorctl stop agent:*
+
+    # One task, because Press does not track tasks in a nested block or in always
+    - name: Copy Agent Directory To Agent Volume
+      shell: |
+        mount -o loop /home/frappe/agent.img /mnt/agent || exit 1
+        cp -a /home/frappe/agent/. /mnt/agent/
+        status=$?
+        umount /mnt/agent
+        exit $status
+
+    - name: Move Old Agent Directory Aside
+      command: mv /home/frappe/agent /home/frappe/agent.old
+
+    - name: Mount Agent Volume
+      ansible.posix.mount:
+        src: /home/frappe/agent.img
+        path: /home/frappe/agent
+        fstype: ext4
+        opts: loop
+        state: mounted
+
+    - name: Create Drop-In Directories
+      file:
+        path: /etc/systemd/system/{{ item }}.service.d
+        state: directory
+      loop: [supervisor, nginx]
+
+    - name: Set Supervisor and NGINX to depend on Agent Volume
+      template:
+        src: mounts.conf
+        dest: /etc/systemd/system/{{ item }}.service.d/mounts.conf
+        owner: root
+        group: root
+        mode: 0644
+      loop: [supervisor, nginx]
+
+    - name: Reload Systemd
+      systemd:
+        daemon_reload: true
+
+    - name: Remove Old Agent Directory
+      file:
+        path: /home/frappe/agent.old
+        state: absent
+
+    - name: Reload NGINX
+      service:
+        name: nginx
+        state: reloaded
+
+# Outside the block, so a retry after a failed run starts the agent again
+- name: Start Agent
+  supervisorctl:
+    name: 'agent:'
+    state: started
