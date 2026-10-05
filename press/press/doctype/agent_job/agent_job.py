@@ -341,8 +341,9 @@ class AgentJob(Document):
 		if not frappe.local.system_user():
 			self.validate_dashboard_cancellation()
 
-		agent = Agent(self.server, server_type=self.server_type)
-		agent.cancel_job(self.job_id)
+		with as_administrator():
+			Agent(self.server, server_type=self.server_type).cancel_job(self.job_id)
+		self.add_comment("Info", "Cancelled the job")
 
 	def validate_dashboard_cancellation(self):
 		if self.job_type not in DASHBOARD_CANCELLABLE_JOB_TYPES:
@@ -1416,6 +1417,4 @@ def cancel_job_from_dashboard(name: str):
 		is_owned_by_team("Site", job.site, raise_exception=True)
 
 	job.validate_dashboard_cancellation()
-
-	with as_administrator():
-		job.cancel_job()
+	job.cancel_job()
