@@ -16,6 +16,20 @@
     that: (agent_volume_size | int) * 1073741824 >= agent_volume_image.stat.size
     fail_msg: 'The agent volume is {{ (agent_volume_image.stat.size / 1073741824) | round(1) }}G. It can only grow.'
 
+- name: Get Root Disk Space
+  command: df -B1 --output=size,avail /home/frappe/agent.img
+  register: root_disk
+  changed_when: false
+
+- name: Refuse To Leave Less Than 10% Of Root Disk Free
+  vars:
+    root_size: '{{ root_disk.stdout_lines[1].split()[0] | int }}'
+    root_free: '{{ root_disk.stdout_lines[1].split()[1] | int }}'
+    growth: '{{ (agent_volume_size | int) * 1073741824 - agent_volume_image.stat.size }}'
+  assert:
+    that: (root_free | int) - (growth | int) >= (root_size | int) * 0.1
+    fail_msg: 'The root disk has {{ ((root_free | int) / 1073741824) | round(1) }}G free. A {{ agent_volume_size }}G agent volume leaves less than 10% of it free.'
+
 - name: Grow Agent Volume Image
   command: fallocate -l {{ agent_volume_size }}G /home/frappe/agent.img
 
