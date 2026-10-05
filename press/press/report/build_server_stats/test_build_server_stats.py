@@ -130,7 +130,7 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def job(self, server, job_type, status, creation="2026-09-10 10:01:00"):
+	def job(self, server, job_type, status, creation="2026-09-10 10:01:00", end=None):
 		frappe.get_doc(
 			{
 				"doctype": "Agent Job",
@@ -139,6 +139,7 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 				"job_type": job_type,
 				"status": status,
 				"creation": creation,
+				"end": end,
 			}
 		).db_insert()
 
@@ -164,6 +165,16 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 			self.datasets("Remote Builder Failures by Build Server"),
 			{"f1.frappe.cloud": [1], "f2.frappe.cloud": [1]},
 		)
+
+	def test_a_failed_job_counts_when_it_ended_not_when_it_was_created(self):
+		self.job(
+			"f1.frappe.cloud", "Run Remote Builder", "Failure", "2026-09-10 09:30:00", "2026-09-10 10:20:00"
+		)
+		self.job(
+			"f2.frappe.cloud", "Run Remote Builder", "Failure", "2026-09-10 10:50:00", "2026-09-10 11:40:00"
+		)
+
+		self.assertEqual(self.datasets("Remote Builder Failures by Build Server"), {"f1.frappe.cloud": [1]})
 
 
 class TestPeriod(FrappeTestCase):

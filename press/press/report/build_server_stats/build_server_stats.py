@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import frappe
+from frappe.query_builder.functions import Coalesce
 from frappe.utils import add_to_date, get_datetime, get_system_timezone, now_datetime, rounded
 
 from press.api.server import prometheus_query
@@ -354,7 +355,7 @@ def get_selected_chart(chart, period, builds, servers):
 	if chart == "New Bench Failures by Cluster":
 		return get_new_bench_failure_chart(period)
 	if chart == "Remote Builder Failures by Build Server":
-		events = [(job.creation, job.server) for job in get_failed_jobs("Run Remote Builder", period)]
+		events = [(job.failed_at, job.server) for job in get_failed_jobs("Run Remote Builder", period)]
 		return stacked_chart("Failed Run Remote Builder jobs", period.seconds, events)
 	return get_chart(period.seconds, builds)
 
@@ -363,7 +364,7 @@ def get_new_bench_failure_chart(period):
 	jobs = get_failed_jobs("New Bench", period)
 	servers = {job.server for job in jobs}
 	cluster_of = dict(frappe.get_all("Server", {"name": ("in", servers)}, ["name", "cluster"], as_list=True))
-	events = [(job.creation, cluster_of.get(job.server)) for job in jobs]
+	events = [(job.failed_at, cluster_of.get(job.server)) for job in jobs]
 	return stacked_chart("Failed New Bench jobs", period.seconds, events)
 
 
@@ -379,15 +380,17 @@ def get_build_failure_chart(window, builds, servers):
 
 
 def get_failed_jobs(job_type, period):
-	"""A Delivery Failure counts too. The agent on that server did not answer."""
-	return frappe.get_all(
-		"Agent Job",
-		{
-			"job_type": job_type,
-			"status": ("in", ("Failure", "Delivery Failure")),
-			"creation": ("between", (period.start, period.end)),
-		},
-		["server", "creation"],
+	"""Failed jobs, at the time they ended. A Delivery Failure has no end, so its creation counts."""
+	job = frappe.qb.DocType("Agent Job")
+	return (
+		frappe.qb.from_(job)
+		.select(job.server, Coalesce(job.end, job.creation).as_("failed_at"))
+		.where(job.job_type == job_type)
+		.where(job.status.isin(("Failure", "Delivery Failure")))
+		# ponytail: bound on creation so the index applies. A job that ran over a day drops out.
+		.where(job.creation >= add_to_date(period.start, days=-1))
+		.where(Coalesce(job.end, job.creation)[period.start : period.end])
+		.run(as_dict=True)
 	)
 
 
