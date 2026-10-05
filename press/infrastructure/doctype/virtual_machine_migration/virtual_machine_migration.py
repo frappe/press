@@ -614,10 +614,13 @@ class VirtualMachineMigration(Document):
 			self.succeed()
 			return
 
+		# Steps like a recursive chown of the benches dir outlast the default queue's 5 minute timeout
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"execute_step",
+			queue="long",
+			timeout=3600,
 			step_name=next_step.name,
 			enqueue_after_commit=True,
 			at_front=True,

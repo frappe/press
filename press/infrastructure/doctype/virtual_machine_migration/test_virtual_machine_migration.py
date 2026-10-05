@@ -55,3 +55,25 @@ class TestVirtualMachineMigration(FrappeTestCase):
 		)
 		self.assertIn("chown -R frappe:frappe /opt/volumes/benches/home/frappe/benches", commands)
 		self.assertIn("chown -R mysql:mysql /opt/volumes/mariadb/var/lib/mysql", commands)
+
+	def test_steps_run_on_long_queue_with_extended_timeout(self):
+		migration = frappe.get_doc(
+			{
+				"doctype": "Virtual Machine Migration",
+				"steps": [
+					{
+						"step": "Update bind mount permissions",
+						"method": "update_bind_mount_permissions",
+						"status": "Pending",
+					}
+				],
+			}
+		)
+		with (
+			patch.object(VirtualMachineMigration, "save"),
+			patch("frappe.enqueue_doc") as enqueue_doc,
+		):
+			migration.next()
+		kwargs = enqueue_doc.call_args.kwargs
+		self.assertEqual(kwargs["queue"], "long")
+		self.assertGreater(kwargs["timeout"], 300)
