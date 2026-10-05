@@ -204,10 +204,10 @@
 		},
 		{
 			"default": "0",
-			"description": "Scan uploaded site files with ClamAV every day",
+			"description": "Scan uploaded site files with ClamAV every day. ClamAV is installed on every server, this turns on the scan.",
 			"fieldname": "enable_malware_scan",
 			"fieldtype": "Check",
-			"label": "Enable Malware Scan"
+			"label": "Enable ClamAV Scan"
 		},
 		{
 			"default": "0",

@@ -3364,6 +3364,14 @@ class Server(BaseServer):
 		if self.is_new() and is_dedicated_server(self.name):
 			self.set_dedicated_server_site_warranty_quota_and_cooldown()
 
+		if self.has_value_changed("enable_malware_scan") and self.enable_malware_scan:
+			self.scan_for_malware()
+
+	def scan_for_malware(self):
+		if frappe.db.exists("Malware Scan", {"server": self.name, "status": ("in", ("Pending", "Running"))}):
+			return
+		frappe.get_doc({"doctype": "Malware Scan", "server_type": self.doctype, "server": self.name}).insert()
+
 	def update_db_server(self):
 		if not self.database_server:
 			return
