@@ -3371,7 +3371,9 @@ class Server(BaseServer):
 			self.scan_for_malware()
 
 	def scan_for_malware(self):
-		if frappe.db.exists("Malware Scan", {"server": self.name, "status": ("in", ("Pending", "Running"))}):
+		from press.press.doctype.malware_scan.malware_scan import is_scan_active
+
+		if is_scan_active(self.name):
 			return
 		frappe.get_doc({"doctype": "Malware Scan", "server_type": self.doctype, "server": self.name}).insert()
 
