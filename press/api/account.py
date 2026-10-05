@@ -176,15 +176,15 @@ def resend_otp(account_request: str):
 @rate_limit(limit=5, seconds=60)
 def send_otp(email: str, for_2fa_keys: bool = False):
 	email = canonical_login_email(email)
-	# Logging in asks whether the account exists, not how it came to. Requiring an
-	# Account Request locked out everyone whose signup record was never written or
-	# had since been cleaned up.
-	if not frappe.db.exists("User", email):
-		frappe.throw("Please sign up first")
-
 	purpose = otp_purpose.TWO_FACTOR_RECOVERY if for_2fa_keys else otp_purpose.LOGIN
 	code = OneTimePassword(purpose, email)
 	throttle_otp(code)
+
+	# Answer an unknown address the same way, throttle included, so the response
+	# does not tell a caller which addresses have accounts.
+	if not frappe.db.exists("User", email):
+		code.hold_resend()
+		return
 
 	send_otp_mail(email, code.generate(), for_login=not for_2fa_keys)
 
@@ -357,8 +357,9 @@ def add_invited_member_to_team(account_request):
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
 def send_login_link(email):
+	# Silent for an unknown address, so the response does not reveal accounts.
 	if not frappe.db.exists("User", email):
-		frappe.throw("No registered account with this email address")
+		return
 
 	key = frappe.generate_hash("Login Link", 20)
 	minutes = 10
