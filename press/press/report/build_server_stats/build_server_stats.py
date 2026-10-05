@@ -221,8 +221,8 @@ class DiskUsage:
 
 	def columns(self):
 		columns = [
-			{"fieldname": disk_fieldname(mountpoint), "label": f"Disk {mountpoint} (%)", "fieldtype": "Float"}
-			for mountpoint in self.common
+			{"fieldname": f"disk_{index}", "label": f"Disk {mountpoint} (%)", "fieldtype": "Float"}
+			for index, mountpoint in enumerate(self.common)
 		]
 		other = {
 			"fieldname": "disk",
@@ -234,17 +234,13 @@ class DiskUsage:
 
 	def cells(self, server):
 		mounts = self.used[server]
-		cells = {disk_fieldname(mountpoint): mounts.get(mountpoint) for mountpoint in self.common}
+		cells = {f"disk_{index}": mounts.get(mountpoint) for index, mountpoint in enumerate(self.common)}
 		others = [
 			f"{mountpoint} {percent}%"
 			for mountpoint, percent in mounts.items()
 			if mountpoint not in self.common
 		]
 		return {**cells, "disk": ", ".join(others)}
-
-
-def disk_fieldname(mountpoint):
-	return "disk_" + (mountpoint.strip("/").replace("/", "_").replace("-", "_") or "root")
 
 
 def get_fleet_disk_usage(servers, end):
