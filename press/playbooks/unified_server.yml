@@ -21,7 +21,6 @@
     - role: mysqld_exporter
     - role: deadlock_logger
     - role: filebeat
-    - role: clamav
     - role: gpg_config
     - role: aide
     - role: additional_process_hardening
