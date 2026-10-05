@@ -21,7 +21,6 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
-from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
@@ -1557,34 +1556,6 @@ class TestAgentVolume(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def _jobs_enqueued_by_create_server(self, has_data_volume, is_unified_server=False):
-		# The Virtual Machine syncs has_data_volume back on insert, so set it on the doc
-		server = create_test_server()
-		server.has_data_volume = has_data_volume
-		server.is_unified_server = is_unified_server
-		with (
-			patch("press.press.doctype.server.server.frappe.enqueue_doc") as enqueue_doc,
-			patch.object(MariaDBVariable, "set_on_server"),
-		):
-			server.set_additional_config()
-		return [call.args[2] for call in enqueue_doc.call_args_list]
-
-	def test_create_server_sets_up_agent_volume_on_app_server_without_data_volume(self):
-		jobs = self._jobs_enqueued_by_create_server(has_data_volume=False)
-		self.assertIn("_setup_agent_volume", jobs)
-
-	def test_create_server_skips_agent_volume_on_app_server_with_data_volume(self):
-		jobs = self._jobs_enqueued_by_create_server(has_data_volume=True)
-		self.assertNotIn("_setup_agent_volume", jobs)
-
-	def test_create_server_sets_up_agent_volume_on_unified_server_without_data_volume(self):
-		jobs = self._jobs_enqueued_by_create_server(has_data_volume=False, is_unified_server=True)
-		self.assertIn("_setup_agent_volume", jobs)
-
-	def test_create_server_skips_agent_volume_on_unified_server_with_data_volume(self):
-		jobs = self._jobs_enqueued_by_create_server(has_data_volume=True, is_unified_server=True)
-		self.assertNotIn("_setup_agent_volume", jobs)
-
 	def test_agent_volume_job_timeout_outlasts_agent_worker_stop_wait(self):
 		"""Workers get up to 1500 seconds (stopwaitsecs) to finish their running jobs."""
 		server = create_test_server()
@@ -1595,9 +1566,17 @@ class TestAgentVolume(FrappeTestCase):
 	def test_setup_agent_volume_runs_agent_volume_playbook(self):
 		server = create_test_server()
 		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
 			server._setup_agent_volume()
 		self.assertEqual(Ansible.call_args.kwargs["playbook"], "agent_volume.yml")
-		Ansible.return_value.run.assert_called_once()
+
+	def test_setup_agent_volume_raises_with_play_name_when_play_fails(self):
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Failure")
+			Ansible.return_value.run.return_value.name = "play-1"  # Mock(name=) only sets the repr
+			with self.assertRaisesRegex(Exception, "agent_volume.yml failed .* See Ansible Play play-1"):
+				server._setup_agent_volume()
 
 	def test_resize_agent_volume_passes_size_from_dialog_to_playbook_as_gigabytes(self):
 		server = create_test_server()
@@ -1605,6 +1584,7 @@ class TestAgentVolume(FrappeTestCase):
 			patch("press.press.doctype.server.server.frappe.enqueue_doc", new=foreground_enqueue_doc),
 			patch("press.press.doctype.server.server.Ansible") as Ansible,
 		):
+			Ansible.return_value.run.return_value = Mock(status="Success")
 			server.resize_agent_volume("12")
 		self.assertEqual(Ansible.call_args.kwargs["playbook"], "resize_agent_volume.yml")
 		self.assertEqual(Ansible.call_args.kwargs["variables"], {"agent_volume_size": 12})

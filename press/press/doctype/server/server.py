@@ -2881,8 +2881,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		self.setup_ncdu()
 		self.setup_iptables()
 		self.install_cadvisor()
-		if not self.has_data_volume:
-			self.setup_agent_volume()
 		self.setup_logrotate()  # Logrotate monitor json
 
 		# Database Server specific config
@@ -2934,8 +2932,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 			if self.has_data_volume:
 				self.setup_archived_folder()
-			else:
-				self.setup_agent_volume()
 
 			self.install_cadvisor()
 
@@ -3584,33 +3580,26 @@ class Server(BaseServer):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_volume", queue="long", timeout=3600)
 
 	def _setup_agent_volume(self):
-		try:
-			ansible = Ansible(
-				playbook="agent_volume.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-			)
-			ansible.run()
-		except Exception:
-			log_error("Agent Volume Setup Exception", server=self.as_dict())
+		self._run_agent_volume_play("agent_volume.yml")
 
 	@frappe.whitelist()
 	def resize_agent_volume(self, size: int):
 		frappe.enqueue_doc(self.doctype, self.name, "_resize_agent_volume", size=int(size))
 
 	def _resize_agent_volume(self, size: int):
-		try:
-			ansible = Ansible(
-				playbook="resize_agent_volume.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-				variables={"agent_volume_size": size},
-			)
-			ansible.run()
-		except Exception:
-			log_error("Agent Volume Resize Exception", server=self.as_dict())
+		self._run_agent_volume_play("resize_agent_volume.yml", {"agent_volume_size": size})
+
+	def _run_agent_volume_play(self, playbook: str, variables: dict | None = None):
+		# Raises, so the Create Server job and the enqueued job both fail with the play
+		play = Ansible(
+			playbook=playbook,
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+			variables=variables,
+		).run()
+		if play.status != "Success":
+			raise Exception(f"{playbook} failed on {self.name}. See Ansible Play {play.name}.")
 
 	@frappe.whitelist()
 	def setup_rclone(self):
