@@ -21,6 +21,7 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
+from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
@@ -1549,3 +1550,50 @@ class TestServerDecommissionNotice(FrappeTestCase):
 		printed = " ".join(str(call.args[0]) for call in mock_print.call_args_list)
 		self.assertIn("not sending this as already sent on", printed)
 		self.assertIn(email_queue.name, printed)
+
+
+class TestAgentVolume(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _jobs_enqueued_by_create_server(self, has_data_volume, is_unified_server=False):
+		# The Virtual Machine syncs has_data_volume back on insert, so set it on the doc
+		server = create_test_server()
+		server.has_data_volume = has_data_volume
+		server.is_unified_server = is_unified_server
+		with (
+			patch("press.press.doctype.server.server.frappe.enqueue_doc") as enqueue_doc,
+			patch.object(MariaDBVariable, "set_on_server"),
+		):
+			server.set_additional_config()
+		return [call.args[2] for call in enqueue_doc.call_args_list]
+
+	def test_create_server_sets_up_agent_volume_on_app_server_without_data_volume(self):
+		jobs = self._jobs_enqueued_by_create_server(has_data_volume=False)
+		self.assertIn("_setup_agent_volume", jobs)
+
+	def test_create_server_skips_agent_volume_on_app_server_with_data_volume(self):
+		jobs = self._jobs_enqueued_by_create_server(has_data_volume=True)
+		self.assertNotIn("_setup_agent_volume", jobs)
+
+	def test_create_server_sets_up_agent_volume_on_unified_server_without_data_volume(self):
+		jobs = self._jobs_enqueued_by_create_server(has_data_volume=False, is_unified_server=True)
+		self.assertIn("_setup_agent_volume", jobs)
+
+	def test_create_server_skips_agent_volume_on_unified_server_with_data_volume(self):
+		jobs = self._jobs_enqueued_by_create_server(has_data_volume=True, is_unified_server=True)
+		self.assertNotIn("_setup_agent_volume", jobs)
+
+	def test_agent_volume_job_timeout_outlasts_agent_worker_stop_wait(self):
+		"""Workers get up to 1500 seconds (stopwaitsecs) to finish their running jobs."""
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.frappe.enqueue_doc") as enqueue_doc:
+			server.setup_agent_volume()
+		self.assertGreater(enqueue_doc.call_args.kwargs["timeout"], 1500)
+
+	def test_setup_agent_volume_runs_agent_volume_playbook(self):
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			server._setup_agent_volume()
+		self.assertEqual(Ansible.call_args.kwargs["playbook"], "agent_volume.yml")
+		Ansible.return_value.run.assert_called_once()
