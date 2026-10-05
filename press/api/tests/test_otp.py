@@ -143,10 +143,20 @@ class TestLoginOtp(FrappeTestCase):
 
 		self.assertIsNone(frappe.cache.get(OneTimePassword(otp_purpose.LOGIN, email).key))
 
-	@patch("press.api.account.frappe.sendmail")
-	def test_send_login_link_answers_an_unknown_address_silently(self, sendmail, send_otp_mail):
+	@patch("press.api.account.send_mail_in_background")
+	def test_send_login_link_answers_an_unknown_address_silently(self, send_mail, send_otp_mail):
 		self.assertIsNone(send_login_link("no-such-person@example.com"))
+		send_mail.assert_not_called()
+
+	@patch("press.api.account.frappe.enqueue")
+	@patch("press.api.account.frappe.sendmail")
+	def test_send_login_link_delivers_mail_outside_the_request(self, sendmail, enqueue, send_otp_mail):
+		"""Delivering in the request makes a known address measurably slower to answer."""
+		send_login_link(self.team.user)
+
 		sendmail.assert_not_called()
+		self.assertEqual(enqueue.call_args.args[0], "press.api.account.send_mail_now")
+		self.assertEqual(enqueue.call_args.kwargs["recipients"], self.team.user)
 
 	def test_a_second_code_within_thirty_seconds_is_refused(self, send_otp_mail):
 		send_otp(self.team.user)

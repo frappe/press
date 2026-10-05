@@ -211,13 +211,16 @@ def send_otp_mail(email: str, otp: str, for_login: bool = True):
 		template = "2fa_recovery_codes_otp"
 		subject = f"{otp} - OTP to view 2FA recovery codes for Frappe Cloud"
 
-	frappe.sendmail(
-		recipients=email,
-		subject=subject,
-		template=template,
-		args={"otp": otp},
-		now=True,
-	)
+	send_mail_in_background(recipients=email, subject=subject, template=template, args={"otp": otp})
+
+
+def send_mail_in_background(**kwargs):
+	"""Keep delivery off the request, or how long it takes reveals that the account exists."""
+	frappe.enqueue("press.api.account.send_mail_now", queue="short", enqueue_after_commit=True, **kwargs)
+
+
+def send_mail_now(**kwargs):
+	frappe.sendmail(**kwargs, now=True)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -373,12 +376,11 @@ def send_login_link(email):
 		print(link)
 		print()
 
-	frappe.sendmail(
+	send_mail_in_background(
 		subject="Login to Frappe Cloud",
 		recipients=email,
 		template="one_time_login_link",
 		args={"link": link, "minutes": minutes},
-		now=True,
 	)
 
 
