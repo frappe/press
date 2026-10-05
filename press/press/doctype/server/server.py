@@ -108,6 +108,8 @@ PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
 GLASS_FILE_SIZE = 200 * 1024 * 1024  # /root/glass, see glass_file.yml
+# clamscan holds about 1 GB of signatures in memory, too much for small servers
+MALWARE_SCAN_MIN_RAM = 8192  # MB
 
 
 class BaseServer(Document, TagHelpers):
@@ -3309,6 +3311,7 @@ class Server(BaseServer):
 		super().validate()
 		self.set_db_healthcheck_token()
 		self.validate_managed_database_service()
+		self.validate_malware_scan_ram()
 
 	def set_db_healthcheck_token(self):
 		if not self.db_healthcheck_token:
@@ -3321,6 +3324,11 @@ class Server(BaseServer):
 			self.database_server = ""
 		else:
 			self.managed_database_service = ""
+
+	def validate_malware_scan_ram(self):
+		turned_on = self.has_value_changed("enable_malware_scan") and self.enable_malware_scan
+		if turned_on and (self.ram or 0) < MALWARE_SCAN_MIN_RAM:
+			frappe.throw(_("Malware scan needs a server with at least 8 GB of RAM"))
 
 	def on_update(self):  # noqa: C901
 		# If Database Server is changed for the server then change it for all the benches

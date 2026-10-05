@@ -204,7 +204,7 @@
 		},
 		{
 			"default": "0",
-			"description": "Scan uploaded site files with ClamAV every day. ClamAV is installed on every server, this turns on the scan.",
+			"description": "Scan uploaded site files with ClamAV every day. Needs at least 8 GB of RAM. Alerts go through a Webhook on Malware Scan.",
 			"fieldname": "enable_malware_scan",
 			"fieldtype": "Check",
 			"label": "Enable ClamAV Scan"
