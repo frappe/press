@@ -26,6 +26,7 @@
 		"is_yara_installed",
 		"yara_install_last_attempt",
 		"is_auditd_setup",
+		"enable_malware_scan",
 		"is_server_prepared",
 		"is_server_renamed",
 		"is_provisioning_press_job_completed",
@@ -200,6 +201,13 @@
 			"fieldtype": "Check",
 			"label": "Is Auditd Setup",
 			"read_only": 1
+		},
+		{
+			"default": "0",
+			"description": "Scan uploaded site files with ClamAV every day",
+			"fieldname": "enable_malware_scan",
+			"fieldtype": "Check",
+			"label": "Enable Malware Scan"
 		},
 		{
 			"default": "0",
@@ -874,7 +882,7 @@
 			"link_fieldname": "app_server"
 		}
 	],
-	"modified": "2026-09-21 12:05:33.000000",
+	"modified": "2026-10-05 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Server",

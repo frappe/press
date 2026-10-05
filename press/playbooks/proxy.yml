@@ -14,4 +14,3 @@
     - role: user_ssh_certificate
     - role: filebeat
     - role: auditd
-    - role: clamav

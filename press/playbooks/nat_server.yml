@@ -12,5 +12,4 @@
     - role: configure_secondary_private_ip
     - role: nat
     - role: node_exporter
-    - role: clamav
     - role: auditd

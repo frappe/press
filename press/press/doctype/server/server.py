@@ -3220,6 +3220,7 @@ class Server(BaseServer):
 		disable_agent_update: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
+		enable_malware_scan: DF.Check
 		enable_on_prem_failover_support: DF.Check
 		exclude_for_scheduling: DF.Check
 		frappe_public_key: DF.Code | None
