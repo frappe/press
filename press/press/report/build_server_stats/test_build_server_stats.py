@@ -231,11 +231,9 @@ class TestDiskUsage(FrappeTestCase):
 			}
 		)
 
-		self.assertEqual([column["fieldname"] for column in disk.columns()], ["disk_root", "disk"])
-		self.assertEqual(
-			disk.cells("f1.frappe.cloud"), {"disk_root": 40.0, "disk": "/opt/volumes/docker 88.0%"}
-		)
-		self.assertEqual(disk.cells("f2.frappe.cloud"), {"disk_root": 55.0, "disk": "/home/registry 70.0%"})
+		self.assertEqual([column["fieldname"] for column in disk.columns()], ["disk_0", "disk"])
+		self.assertEqual(disk.cells("f1.frappe.cloud"), {"disk_0": 40.0, "disk": "/opt/volumes/docker 88.0%"})
+		self.assertEqual(disk.cells("f2.frappe.cloud"), {"disk_0": 55.0, "disk": "/home/registry 70.0%"})
 
 	def test_a_server_without_a_common_mountpoint_leaves_its_cell_blank(self):
 		disk = self.disk_usage(
@@ -246,4 +244,4 @@ class TestDiskUsage(FrappeTestCase):
 			}
 		)
 
-		self.assertEqual(disk.cells("r1.frappe.cloud"), {"disk_data": None, "disk": "/ 30.0%"})
+		self.assertEqual(disk.cells("r1.frappe.cloud"), {"disk_0": None, "disk": "/ 30.0%"})
