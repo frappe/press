@@ -3262,5 +3262,29 @@
 				"step_name": "Upload Audit Logs To S3"
 			}
 		]
+	},
+	{
+		"disabled_auto_retry": 0,
+		"docstatus": 0,
+		"doctype": "Agent Job Type",
+		"max_retry_count": 3,
+		"modified": "2026-10-05 12:00:00.000000",
+		"name": "Fix global search",
+		"request_method": "POST",
+		"request_path": "/benches/{bench}/sites/{site}/fix_global_search",
+		"steps": [
+			{
+				"parent": "Fix global search",
+				"parentfield": "steps",
+				"parenttype": "Agent Job Type",
+				"step_name": "Truncate Global Search Table"
+			},
+			{
+				"parent": "Fix global search",
+				"parentfield": "steps",
+				"parenttype": "Agent Job Type",
+				"step_name": "Rebuild global search"
+			}
+		]
 	}
 ]
