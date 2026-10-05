@@ -453,6 +453,19 @@ class TestReleaseGroup(FrappeTestCase):
 			self.assertNotIn(env.key, internal_environment_variables_keys)
 			self.assertIn(env.key, non_internal_environment_variables_keys)
 
+	def test_update_environment_variable_rejects_a_newline_in_the_value(self):
+		rg = create_test_release_group([create_test_app()])
+		with self.assertRaisesRegex(frappe.ValidationError, "must not contain newlines"):
+			rg.update_environment_variable({"MY_VAR": "foo\nRUN touch /tmp/pwned"})
+		rg.reload()
+		self.assertEqual(rg.environment_variables, [])
+
+	def test_release_group_save_rejects_a_newline_in_the_key(self):
+		rg = create_test_release_group([create_test_app()])
+		rg.append("environment_variables", {"key": "MY_VAR\nRUN id", "value": "foo"})
+		with self.assertRaisesRegex(frappe.ValidationError, "must not contain newlines"):
+			rg.save()
+
 	def test_add_environment_variable(self):
 		rg = create_test_release_group([create_test_app()])
 		rg.update_environment_variable({"test_key": "test_value"})
