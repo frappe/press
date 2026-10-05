@@ -627,7 +627,9 @@ export default {
 				onSuccess() {
 					this.otpSent = true;
 					this.otpResendCountdown = 30;
-					toast.success('Verification code sent to your email');
+					toast.success(
+						'If an account exists for this email, we sent it a verification code',
+					);
 				},
 				onError(err) {
 					toast.error(
