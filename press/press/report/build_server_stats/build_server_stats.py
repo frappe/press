@@ -244,21 +244,26 @@ class DiskUsage:
 
 
 def get_fleet_disk_usage(servers, end):
-	"""Used percent of every real mountpoint, as {server: {mountpoint: percent}}."""
-	# A buildkit mount is a bind of the builds volume. It repeats that volume's percent.
-	filesystem = (
-		f'job="node", instance=~"{instances(servers)}", fstype!~"tmpfs|squashfs|overlay|fuse.lxcfs",'
-		' mountpoint!~".*/buildkit-mount[0-9]+"'
-	)
+	"""Used percent of every real disk and volume, as {server: {mountpoint: percent}}."""
+	filesystem = f'job="node", instance=~"{instances(servers)}", fstype!~"tmpfs|squashfs|overlay|fuse.lxcfs"'
 	used = latest_values(
 		f"100 * (1 - node_filesystem_avail_bytes{{{filesystem}}}"
 		f" / node_filesystem_size_bytes{{{filesystem}}})",
 		end,
-		lambda metric: (metric.get("instance"), metric.get("mountpoint")),
+		lambda metric: (metric.get("instance"), metric.get("device"), metric.get("mountpoint")),
 	)
+	return one_mountpoint_per_device(used, servers)
+
+
+def one_mountpoint_per_device(used, servers):
+	"""A bind mount shares its device with the volume. Keep the shortest path of each device."""
 	mountpoints = {server: {} for server in servers}
-	for (server, mountpoint), percent in sorted(used.items()):
-		if percent and server in mountpoints:
+	seen = set()
+	for (server, device, mountpoint), percent in sorted(
+		used.items(), key=lambda item: (len(item[0][2]), item[0][2])
+	):
+		if percent and server in mountpoints and (server, device) not in seen:
+			seen.add((server, device))
 			mountpoints[server][mountpoint] = rounded(percent, 1)
 	return mountpoints
 

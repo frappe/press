@@ -19,6 +19,7 @@ from press.press.report.build_server_stats.build_server_stats import (
 	get_selected_chart,
 	group_by_server,
 	last_number,
+	one_mountpoint_per_device,
 	percentile,
 	seconds_of,
 )
@@ -118,6 +119,30 @@ class TestFailureChart(FrappeTestCase):
 		self.assertEqual(
 			{dataset["name"]: dataset["values"] for dataset in datasets},
 			{"Default": [0, 1], "Mumbai": [2, 0], "No cluster": [1, 0]},
+		)
+
+
+class TestOneMountpointPerDevice(FrappeTestCase):
+	def test_bind_mounts_of_a_volume_drop_out_and_the_volume_shows_once_under_its_shortest_path(self):
+		used = {
+			("f1.frappe.cloud", "/dev/sda1", "/"): 55.0,
+			("f1.frappe.cloud", "/dev/sdb", "/home/frappe/mnt/builds"): 87.5,
+			("f1.frappe.cloud", "/dev/sdb", "/home/frappe/mnt/builds/tmp/buildkit-mount1085636546"): 87.6,
+			("f1.frappe.cloud", "/dev/sdc", "/opt/volumes/benches"): 71.3,
+			("f1.frappe.cloud", "/dev/sdc", "/home/frappe/benches"): 71.3,
+		}
+
+		self.assertEqual(
+			one_mountpoint_per_device(used, ["f1.frappe.cloud"]),
+			{"f1.frappe.cloud": {"/": 55.0, "/home/frappe/benches": 71.3, "/home/frappe/mnt/builds": 87.5}},
+		)
+
+	def test_the_same_device_name_on_two_servers_is_two_disks(self):
+		used = {("f1.frappe.cloud", "/dev/sda1", "/"): 40.0, ("f2.frappe.cloud", "/dev/sda1", "/"): 60.0}
+
+		self.assertEqual(
+			one_mountpoint_per_device(used, ["f1.frappe.cloud", "f2.frappe.cloud"]),
+			{"f1.frappe.cloud": {"/": 40.0}, "f2.frappe.cloud": {"/": 60.0}},
 		)
 
 
