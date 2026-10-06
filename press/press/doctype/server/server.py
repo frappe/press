@@ -108,6 +108,8 @@ PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
 GLASS_FILE_SIZE = 200 * 1024 * 1024  # /root/glass, see glass_file.yml
+# clamscan holds about 1 GB of signatures in memory, too much for small servers
+MALWARE_SCAN_MIN_RAM = 8192  # MB
 
 
 class BaseServer(Document, TagHelpers):
@@ -3220,6 +3222,7 @@ class Server(BaseServer):
 		disable_agent_update: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
+		enable_malware_scan: DF.Check
 		enable_on_prem_failover_support: DF.Check
 		exclude_for_scheduling: DF.Check
 		frappe_public_key: DF.Code | None
@@ -3308,6 +3311,7 @@ class Server(BaseServer):
 		super().validate()
 		self.set_db_healthcheck_token()
 		self.validate_managed_database_service()
+		self.validate_malware_scan_ram()
 
 	def set_db_healthcheck_token(self):
 		if not self.db_healthcheck_token:
@@ -3320,6 +3324,11 @@ class Server(BaseServer):
 			self.database_server = ""
 		else:
 			self.managed_database_service = ""
+
+	def validate_malware_scan_ram(self):
+		turned_on = self.has_value_changed("enable_malware_scan") and self.enable_malware_scan
+		if turned_on and (self.ram or 0) < MALWARE_SCAN_MIN_RAM:
+			frappe.throw(_("Malware scan needs a server with at least 8 GB of RAM"))
 
 	def on_update(self):  # noqa: C901
 		# If Database Server is changed for the server then change it for all the benches
@@ -3362,6 +3371,16 @@ class Server(BaseServer):
 
 		if self.is_new() and is_dedicated_server(self.name):
 			self.set_dedicated_server_site_warranty_quota_and_cooldown()
+
+		if self.has_value_changed("enable_malware_scan") and self.enable_malware_scan:
+			self.scan_for_malware()
+
+	def scan_for_malware(self):
+		from press.press.doctype.malware_scan.malware_scan import is_scan_active
+
+		if is_scan_active(self.name):
+			return
+		frappe.get_doc({"doctype": "Malware Scan", "server_type": self.doctype, "server": self.name}).insert()
 
 	def update_db_server(self):
 		if not self.database_server:
