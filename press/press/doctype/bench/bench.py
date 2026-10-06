@@ -1206,7 +1206,7 @@ class Bench(Document):
 
 		if get_unfinished_site_migrations(self):
 			frappe.throw(
-				"There are pending site migrations on bench {self.name}. Please try after the site migrations are done.",
+				f"There are pending site migrations on bench {self.name}. Please try after the site migrations are done.",
 				ArchiveBenchError,
 			)
 

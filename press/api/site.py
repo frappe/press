@@ -2205,7 +2205,7 @@ def clear_cache(name):
 def restore(name, files, skip_failing_patches=False):
 	if not files.get("database") and not files.get("public") and not files.get("private"):
 		frappe.throw(
-			"At least one file must be provided for restoration. Please provide either of database, public or private file to begin restoration of the site {name}."
+			f"At least one file must be provided for restoration. Please provide either of database, public or private file to begin restoration of the site {name}."
 		)
 
 	validate_files_belong_to_team(files, frappe.db.get_value("Site", name, "team"))
