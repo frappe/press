@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import typing
+from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -174,3 +175,36 @@ class TestDiskFullServers(FrappeTestCase):
 		frappe.set_user(frappe.db.get_value("Team", site.team, "user"))
 
 		self.assertFalse(get("Site", site.name).is_server_disk_full)
+
+
+@patch("press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log.enqueue_doc")
+class TestRavenNotification(FrappeTestCase):
+	def setUp(self):
+		self.rule = create_test_prometheus_alert_rule()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def raven_jobs(self, enqueue_doc) -> list:
+		return [c for c in enqueue_doc.call_args_list if c.args[2] == "send_raven_notification"]
+
+	def test_alert_is_not_sent_to_raven_when_the_rule_does_not_ask_for_it(self, enqueue_doc):
+		create_test_alertmanager_webhook_log(alert=self.rule)
+		self.assertEqual(self.raven_jobs(enqueue_doc), [])
+
+	def test_alert_is_sent_to_raven_when_the_rule_asks_for_it(self, enqueue_doc):
+		frappe.db.set_value(self.rule.doctype, self.rule.name, "send_to_raven", True)
+		create_test_alertmanager_webhook_log(alert=self.rule)
+		self.assertEqual(len(self.raven_jobs(enqueue_doc)), 1)
+
+	def test_silent_rule_is_not_sent_to_raven(self, enqueue_doc):
+		frappe.db.set_value(self.rule.doctype, self.rule.name, {"send_to_raven": True, "silent": True})
+		create_test_alertmanager_webhook_log(alert=self.rule)
+		self.assertEqual(self.raven_jobs(enqueue_doc), [])
+
+	@patch("press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log.send_raven_message")
+	def test_raven_message_goes_to_the_alerts_channel(self, send_raven_message, enqueue_doc):
+		create_test_alertmanager_webhook_log(alert=self.rule).send_raven_notification()
+		message, channel = send_raven_message.call_args.args
+		self.assertEqual(channel, "alerts")
+		self.assertIn(self.rule.name, message)
