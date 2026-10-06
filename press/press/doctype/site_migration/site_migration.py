@@ -177,6 +177,11 @@ class SiteMigration(Document):
 
 	@frappe.whitelist()
 	def start(self):
+		# Hold the row for the rest of this transaction, so a stop cannot read "no job yet" and
+		# fail the migration between the save below and the first step job
+		if frappe.db.get_value("Site Migration", self.name, "status", for_update=True) == "Failure":
+			return
+
 		self.check_for_ongoing_agent_jobs()  # has to be before setting state to pending so it gets retried
 		previous_status = self.status
 		self.status = "Pending"

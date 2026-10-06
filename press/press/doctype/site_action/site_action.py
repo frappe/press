@@ -671,7 +671,7 @@ class SiteAction(Document):
 		"""End the move the step scheduled. The status alone says nothing: both a Site Update and a
 		Site Migration sit at Pending from the moment `start()` is called until the first job goes
 		out, and `start()` can leave them there without dispatching anything."""
-		move: SiteMigration | SiteUpdate = frappe.get_doc(step.reference_doctype, step.reference_name)
+		move: SiteMigration | SiteUpdate = self.lock_move(step)
 		if move.has_started_moving_site():
 			frappe.throw(
 				f"The site is already being moved by {step.reference_doctype} {frappe.bold(move.name)}. "
@@ -679,6 +679,21 @@ class SiteAction(Document):
 			)
 
 		move.fail_with_notification(f"a stop requested by {frappe.session.user}")
+
+	def lock_move(self, step: SiteActionStep) -> SiteMigration | SiteUpdate:
+		"""Take the row `start()` holds while it dispatches, so the two cannot interleave. Never
+		wait for it: a held row means `start()` is underway, which is already an answer."""
+		try:
+			frappe.db.get_value(
+				step.reference_doctype, step.reference_name, "status", for_update=True, wait=False
+			)
+		except (frappe.QueryTimeoutError, frappe.QueryDeadlockError):
+			frappe.throw(
+				f"{step.reference_doctype} {frappe.bold(step.reference_name)} is starting right now. "
+				"Reload the page to get the latest status."
+			)
+
+		return frappe.get_doc(step.reference_doctype, step.reference_name)
 
 	@frappe.whitelist()
 	def execute(self):

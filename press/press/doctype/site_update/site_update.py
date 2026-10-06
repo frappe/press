@@ -362,6 +362,11 @@ class SiteUpdate(Document):
 
 	@dashboard_whitelist()
 	def start(self):
+		# Hold the row for the rest of this transaction, so a stop cannot read "no job yet" and
+		# cancel the update between the save below and the agent request at the end
+		if frappe.db.get_value("Site Update", self.name, "status", for_update=True) == "Cancelled":
+			return
+
 		previous_status = self.status
 
 		self.status = "Pending"

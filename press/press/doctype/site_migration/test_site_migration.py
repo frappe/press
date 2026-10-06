@@ -303,3 +303,26 @@ class TestSiteMigration(FrappeTestCase):
 			r".*Site has encountered a fatal error during last update*",
 			site_migration.insert,
 		)
+
+	def test_a_failed_migration_does_not_start_and_dispatch_a_job(self):
+		"""A stop that wins the row must not be undone by the `start()` it was racing"""
+		with patch.object(Site, "after_insert"), patch.object(Site, "on_update"):
+			site = create_test_site()
+
+		# Scheduled, so `after_insert` does not start it before the stop below gets a chance to
+		site_migration: SiteMigration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": site.name,
+				"destination_bench": create_test_bench().name,
+				"scheduled_time": frappe.utils.add_to_date(minutes=30),
+			}
+		).insert()
+		site_migration.db_set("status", "Failure")
+		site_migration.reload()
+
+		site_migration.start()
+
+		site_migration.reload()
+		self.assertEqual(site_migration.status, "Failure")
+		self.assertTrue(all(not step.step_job for step in site_migration.steps))
