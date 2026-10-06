@@ -228,6 +228,7 @@ scheduler_events = {
 		"press.press.doctype.site_adoption_snapshot.site_adoption_snapshot.record_daily_snapshot",
 		"press.press.audit.check_bench_fields",
 		"press.press.audit.check_offsite_backups",
+		"press.press.doctype.malware_scan.malware_scan.scan_opted_in_servers",
 		"press.press.audit.plan_audit",
 		"press.press.audit.check_app_server_replica_benches",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_prepaid_credit_invoices",
