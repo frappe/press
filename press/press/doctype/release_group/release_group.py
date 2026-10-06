@@ -49,6 +49,7 @@ from press.utils import (
 	get_last_doc,
 	log_error,
 )
+from press.utils.environment_variable import validate_environment_variable
 
 if TYPE_CHECKING:
 	from datetime import datetime
@@ -265,6 +266,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_max_min_workers()
 		self.validate_feature_flags()
 		self.validate_dependencies()
+		self.validate_environment_variables()
 		if not self.redis_password:
 			self.set_redis_password()
 
@@ -741,6 +743,10 @@ class ReleaseGroup(Document, TagHelpers):
 				"Max Background Workers can't be less than Min Background Workers",
 				frappe.ValidationError,
 			)
+
+	def validate_environment_variables(self) -> None:
+		for variable in self.environment_variables:
+			validate_environment_variable(variable.key, variable.value)
 
 	def validate_feature_flags(self) -> None:
 		if self.use_app_cache and not self.can_use_get_app_cache():
