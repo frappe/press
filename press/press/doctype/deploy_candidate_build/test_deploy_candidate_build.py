@@ -209,6 +209,14 @@ class TestDeployCandidateBuild(FrappeTestCase):
 			self.deploy_candidate_build._generate_dockerfile(),
 		)
 
+	def test_dockerfile_generation_refuses_a_stored_variable_with_a_newline(self, _mock_commit):
+		self.deploy_candidate.append(
+			"environment_variables", {"key": "MY_VAR", "value": "foo\nRUN touch /tmp/pwned"}
+		)
+		self.deploy_candidate.save()
+		with self.assertRaisesRegex(frappe.ValidationError, "must not contain newlines"):
+			self.deploy_candidate_build._generate_dockerfile()
+
 	def test_chromium_setup_shows_up_as_a_build_step(self, _mock_commit):
 		build = self.deploy_candidate_build
 		checkpoints = build._get_dockerfile_checkpoints(build._generate_dockerfile())
