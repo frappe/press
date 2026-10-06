@@ -467,6 +467,16 @@ class SiteMigration(Document):
 			return  # callback will trigger fail
 		self.fail(*args, **kwargs)
 
+	def has_started_moving_site(self) -> bool:
+		"""True once a step has dispatched its agent job, so the site is on its way to the destination."""
+		return any(step.step_job for step in self.steps)
+
+	def fail_with_notification(self, reason: str):
+		"""End a migration that has not dispatched a job yet. Failure, as there is no Cancelled status."""
+		self.set_pending_steps_to_skipped()
+		self.db_set("status", "Failure")
+		self.send_fail_notification(reason)
+
 	def fail(self, reason: str | None = None, force_activate: bool = False):
 		self.status = "Failure"
 		self.save()

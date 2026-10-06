@@ -665,25 +665,20 @@ class SiteAction(Document):
 			stop_and_fail(step.reference_name)
 			return
 
-		self.drop_scheduled_move(step)
+		self.stop_pending_move(step)
 
-	def drop_scheduled_move(self, step: SiteActionStep) -> None:
-		"""Drop the move the step scheduled. Once it starts, the site is mid-move and has to finish."""
-		status = frappe.db.get_value(step.reference_doctype, step.reference_name, "status", for_update=True)
-		if status != "Scheduled":
+	def stop_pending_move(self, step: SiteActionStep) -> None:
+		"""End the move the step scheduled. The status alone says nothing: both a Site Update and a
+		Site Migration sit at Pending from the moment `start()` is called until the first job goes
+		out, and `start()` can leave them there without dispatching anything."""
+		move: SiteMigration | SiteUpdate = frappe.get_doc(step.reference_doctype, step.reference_name)
+		if move.has_started_moving_site():
 			frappe.throw(
-				f"The site is already being moved by {step.reference_doctype} {frappe.bold(step.reference_name)}. "
+				f"The site is already being moved by {step.reference_doctype} {frappe.bold(move.name)}. "
 				"Stopping it now would leave the site between two benches. Wait for it to finish."
 			)
 
-		if step.reference_doctype == "Site Update":
-			# Not "Failure", which `has_pending_updates` counts and which would block the next update
-			frappe.db.set_value("Site Update", step.reference_name, "status", "Cancelled")
-			return
-
-		migration: SiteMigration = frappe.get_doc("Site Migration", step.reference_name)
-		migration.set_pending_steps_to_skipped()
-		migration.db_set("status", "Failure")
+		move.fail_with_notification(f"a stop requested by {frappe.session.user}")
 
 	@frappe.whitelist()
 	def execute(self):
@@ -702,7 +697,8 @@ class SiteAction(Document):
 		# frappe.set_user(self.owner)
 		# frappe.local._current_team = frappe.get_cached_doc("Team", self.team)
 
-		if self.status == "Cancelled":
+		# A step enqueued before the action was cancelled or stopped must not run it anyway
+		if self.is_finished:
 			return
 
 		step = self.get_step(step_name)
@@ -790,7 +786,7 @@ class SiteAction(Document):
 		) and not self.is_preparation_steps_pending_or_running():
 			return
 
-		if self.status == "Cancelled":
+		if self.is_finished:
 			return
 
 		frappe.enqueue_doc(
@@ -802,6 +798,10 @@ class SiteAction(Document):
 			job_id=f"site_action||execute_step||{self.name}",
 			deduplicate=True,
 		)
+
+	@property
+	def is_finished(self) -> bool:
+		return self.status in ("Cancelled", "Failure", "Success")
 
 	@property
 	def current_running_step(self) -> SiteActionStep | None:

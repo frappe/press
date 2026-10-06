@@ -28,6 +28,7 @@ from press.press.doctype.site_action.site_action import (
 )
 from press.press.doctype.site_migration.site_migration import SiteMigration
 from press.press.doctype.site_update.site_update import SiteUpdate
+from press.press.doctype.site_update.test_site_update import create_test_site_update
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 if typing.TYPE_CHECKING:
@@ -454,8 +455,8 @@ class TestSiteAction(FrappeTestCase):
 		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Failure")
 
 	@patch.object(SiteMigration, "start", new=Mock())
-	def test_stop_action_fails_the_site_migration_it_scheduled(self):
-		"""Stopping before the site moves fails the scheduled Site Migration, so nothing moves later"""
+	def test_stop_action_fails_a_pending_site_migration_that_has_dispatched_no_job(self):
+		"""`start()` leaves a migration Pending before its first job, and that is still stoppable"""
 		source_site: Site = create_test_site(bench=create_test_bench(public_server=False).name)
 		action = self.create_running_action(source_site)
 		migration: SiteMigration = frappe.get_doc(
@@ -463,7 +464,7 @@ class TestSiteAction(FrappeTestCase):
 				"doctype": "Site Migration",
 				"site": source_site.name,
 				"destination_bench": create_test_bench().name,
-				"status": "Scheduled",
+				"status": "Pending",
 			}
 		).insert()
 		self.set_step_reference(action, "move_site_to_bench_group", migration)
@@ -475,9 +476,25 @@ class TestSiteAction(FrappeTestCase):
 		self.assertTrue(all(step.status == "Skipped" for step in migration.steps))
 		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Failure")
 
+	@patch.object(SiteUpdate, "start", new=Mock())
+	def test_stop_action_cancels_a_pending_site_update_that_has_dispatched_no_job(self):
+		"""Cancelled, not Failure, so a stopped update doesn't count as a pending one later"""
+		source_bench: Bench = create_test_bench(public_server=False)
+		source_site: Site = create_test_site(bench=source_bench.name)
+		action = self.create_running_action(source_site)
+		update = create_test_site_update(
+			source_site.name, source_bench.group, "Pending", ignore_validate=True
+		)
+		self.set_step_reference(action, "move_site_to_bench_group", update)
+
+		action.stop_action()
+
+		self.assertEqual(frappe.db.get_value("Site Update", update.name, "status"), "Cancelled")
+		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Failure")
+
 	@patch.object(SiteMigration, "start", new=Mock())
 	def test_stop_action_refuses_once_the_site_has_started_moving(self):
-		"""A migration that is already moving the site has to finish, or the site is left mid-move"""
+		"""A migration whose first job is out has to finish, or the site is left between benches"""
 		source_site: Site = create_test_site(bench=create_test_bench(public_server=False).name)
 		action = self.create_running_action(source_site)
 		migration: SiteMigration = frappe.get_doc(
@@ -485,9 +502,11 @@ class TestSiteAction(FrappeTestCase):
 				"doctype": "Site Migration",
 				"site": source_site.name,
 				"destination_bench": create_test_bench().name,
-				"status": "Running",
+				"status": "Pending",
 			}
 		).insert()
+		migration.steps[0].step_job = create_test_agent_job("Deactivate Site").name
+		migration.save()
 		self.set_step_reference(action, "move_site_to_bench_group", migration)
 
 		with self.assertRaises(frappe.ValidationError) as context:
@@ -495,6 +514,24 @@ class TestSiteAction(FrappeTestCase):
 
 		self.assertIn("already being moved", str(context.exception))
 		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Running")
+
+	@patch.object(SiteMigration, "start", new=Mock())
+	def test_a_step_enqueued_before_the_stop_does_not_run_after_it(self):
+		"""The move step creates the Site Migration when it runs, so a stopped action must not run it"""
+		source_bench: Bench = create_test_bench(public_server=False)
+		source_site: Site = create_test_site(bench=source_bench.name)
+		action = self.create_running_action(source_site)
+		step = action.get_step_by_method("move_site_to_bench_group")
+		step.status = "Running"
+		action.set_argument("destination_bench", create_test_bench().name)
+		action.save()
+
+		action.stop_action()
+		action.execute_step(step.name)
+
+		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Failure")
+		self.assertFalse(frappe.db.exists("Site Migration", {"site": source_site.name}))
+		self.assertFalse(frappe.db.exists("Site Update", {"site": source_site.name}))
 
 	def test_stop_action_refuses_a_scheduled_action(self):
 		"""A scheduled action is cancelled, not stopped, so the button should not reach stop_action"""

@@ -399,6 +399,12 @@ class SiteUpdate(Document):
 		else:
 			self.create_update_site_agent_request()
 
+	def has_started_moving_site(self) -> bool:
+		"""True once a job has been dispatched against the site, to back it up or to update it."""
+		return bool(
+			self.update_job or self.deactivate_site_job or self.site_backup or self.logical_replication_backup
+		)
+
 	def fail_with_notification(self, reason: str):
 		frappe.db.set_value("Site Update", self.name, "status", "Cancelled")
 		site = frappe.get_cached_doc("Site", self.site)
