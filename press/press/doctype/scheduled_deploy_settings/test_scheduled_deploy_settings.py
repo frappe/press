@@ -131,17 +131,26 @@ class TestScheduledDeploySettings(FrappeTestCase):
 			run_will_fail_check=True, ignore_permissions=True
 		)
 
-	@patch(f"{MODULE}.deploy_release_group", return_value="build-1")
-	def test_deploy_now_deploys_a_listed_group_and_returns_its_build(self, mock_deploy):
+	@patch(f"{MODULE}.frappe.enqueue")
+	def test_deploy_now_queues_a_deploy_of_a_listed_group_on_the_long_queue(self, mock_enqueue):
 		settings = self._save_settings([{"release_group": self.group_a, "hour": 19, "wednesday": 1}])
 
-		self.assertEqual(settings.deploy_now(self.group_a), "build-1")
-		mock_deploy.assert_called_once_with(self.group_a)
+		settings.deploy_now(self.group_a)
 
-	@patch(f"{MODULE}.deploy_release_group")
-	def test_deploy_now_refuses_a_group_that_is_not_listed(self, mock_deploy):
+		mock_enqueue.assert_called_once_with(
+			deploy_release_group,
+			queue="long",
+			timeout=60 * 60,
+			job_id=f"deploy_now:{self.group_a}",
+			deduplicate=True,
+			enqueue_after_commit=True,
+			name=self.group_a,
+		)
+
+	@patch(f"{MODULE}.frappe.enqueue")
+	def test_deploy_now_refuses_a_group_that_is_not_listed(self, mock_enqueue):
 		settings = self._save_settings([{"release_group": self.group_a, "hour": 19, "wednesday": 1}])
 
 		with self.assertRaisesRegex(frappe.ValidationError, "is not listed in Scheduled Deploy Settings"):
 			settings.deploy_now(self.group_b)
-		mock_deploy.assert_not_called()
+		mock_enqueue.assert_not_called()

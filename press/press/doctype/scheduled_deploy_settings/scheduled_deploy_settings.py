@@ -39,11 +39,20 @@ class ScheduledDeploySettings(Document):
 			seen.add(row.release_group)
 
 	@frappe.whitelist()
-	def deploy_now(self, release_group: str) -> str | None:
-		"""Deploy a listed group right away, with the same checks as a scheduled deploy."""
+	def deploy_now(self, release_group: str):
+		"""Queue a deploy of a listed group, with the same checks as a scheduled deploy."""
 		if release_group not in {row.release_group for row in self.groups}:
 			frappe.throw(f"{release_group} is not listed in Scheduled Deploy Settings")
-		return deploy_release_group(release_group)
+		# Preparing a build for a big group outlasts the web request timeout, so it runs on a worker
+		frappe.enqueue(
+			deploy_release_group,
+			queue="long",
+			timeout=60 * 60,
+			job_id=f"deploy_now:{release_group}",
+			deduplicate=True,
+			enqueue_after_commit=True,
+			name=release_group,
+		)
 
 
 def deploy_scheduled_release_groups():
