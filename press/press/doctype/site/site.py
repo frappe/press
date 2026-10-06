@@ -388,7 +388,12 @@ class Site(Document, TagHelpers):
 
 	def get_doc(self, doc):
 		from press.api.client import get
-		from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import disk_full_servers
+		from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import (
+			DATABASE_HIGH_CPU_ALERT,
+			DATABASE_HIGH_IO_ALERT,
+			DISK_FULL_ALERT,
+			app_servers_with_alert,
+		)
 		from press.press.doctype.bench.bench import get_frappe_release_timestamp
 
 		group = frappe.db.get_value(
@@ -452,8 +457,11 @@ class Site(Document, TagHelpers):
 		doc.server_provider = server.provider
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
-		# on shared hosting the disk is ours to free up, not the site owner's
-		doc.is_server_disk_full = doc.is_dedicated_server and self.server in disk_full_servers()
+		# on shared hosting the server is ours to look after, not the site owner's
+		if doc.is_dedicated_server:
+			doc.is_server_disk_full = self.server in app_servers_with_alert(DISK_FULL_ALERT)
+			doc.is_database_io_high = self.server in app_servers_with_alert(DATABASE_HIGH_IO_ALERT)
+			doc.is_database_cpu_high = self.server in app_servers_with_alert(DATABASE_HIGH_CPU_ALERT)
 
 		if doc.is_dedicated_server:
 			doc.next_allowed_dedicated_product_warranty_change_date = (

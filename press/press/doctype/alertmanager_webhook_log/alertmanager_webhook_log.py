@@ -32,9 +32,11 @@ if TYPE_CHECKING:
 	)
 
 DISK_FULL_ALERT = "Disk Full"
-# Alertmanager re-sends a firing alert every repeat interval (1h for this rule), so an
+DATABASE_HIGH_IO_ALERT = "Database High IO"
+DATABASE_HIGH_CPU_ALERT = "Database High CPU"
+# Alertmanager re-sends a firing alert every repeat interval (1h for these rules), so an
 # alert we haven't heard about in this long has either resolved or stopped being reported.
-DISK_FULL_ALERT_WINDOW_HOURS = 6
+BANNER_ALERT_WINDOW_HOURS = 6
 
 TELEGRAM_NOTIFICATION_TEMPLATE = """
 *{{ status }}* - *{{ severity }}*: {{ rule.name }} on {{ combined_alerts }} instances
@@ -334,17 +336,17 @@ def instances_in_payload(payload: str) -> set[str]:
 	return {alert["labels"]["instance"] for alert in json.loads(payload)["alerts"]}
 
 
-def disk_full_servers() -> set[str]:
-	"""App servers whose disk is currently full, as of the alerts we've been sent.
+def app_servers_with_alert(alert: str) -> set[str]:
+	"""App servers on which the alert fires, from the alerts that Alertmanager sent us.
 
 	Derived from the webhook log on every read instead of kept as state, so a
-	dropped resolved alert can't leave a server marked full forever.
+	dropped resolved alert cannot leave a server flagged forever.
 	"""
 	logs = frappe.get_all(
 		"Alertmanager Webhook Log",
 		filters={
-			"alert": DISK_FULL_ALERT,
-			"creation": (">", add_to_date(frappe.utils.now(), hours=-DISK_FULL_ALERT_WINDOW_HOURS)),
+			"alert": alert,
+			"creation": (">", add_to_date(frappe.utils.now(), hours=-BANNER_ALERT_WINDOW_HOURS)),
 		},
 		fields=["status", "payload"],
 		order_by="creation asc",
