@@ -8,7 +8,6 @@ from frappe.model.document import Document
 
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.press.doctype.release_group.release_group import ReleaseGroup
-from press.press.doctype.release_pipeline.release_pipeline import ReleasePipeline
 from press.press.doctype.scheduled_deploy_group.scheduled_deploy_group import WEEKDAYS
 from press.utils import log_error
 
@@ -44,10 +43,12 @@ class ScheduledDeploySettings(Document):
 		"""Queue a deploy of a listed group, with the same checks as a scheduled deploy."""
 		if release_group not in {row.release_group for row in self.groups}:
 			frappe.throw(f"{release_group} is not listed in Scheduled Deploy Settings")
-		# Runs on a worker, since preparing a big group's build outlasts the web request timeout.
-		# Same queue as Release Pipeline: build (own workers) in production, default in development.
+		# Imported here: loading release_pipeline reads frappe.conf, so it needs a site context
+		from press.press.doctype.release_pipeline.release_pipeline import ReleasePipeline
+
+		# Queued by path, so the worker imports this module only after it has connected to the site
 		frappe.enqueue(
-			deploy_release_group,
+			"press.press.doctype.scheduled_deploy_settings.scheduled_deploy_settings.deploy_release_group",
 			queue=ReleasePipeline._get_task_execution_queue(),
 			timeout=60 * 60,
 			job_id=f"deploy_now:{release_group}",
