@@ -26,6 +26,7 @@ DURATIONS = {
 QUEUED = ("Scheduled", "Pending")
 # Preparing already holds the build server, so it counts against capacity like Running does
 RUNNING = ("Preparing", "Running")
+VOLUMES = "/opt/volumes/"
 
 
 @dataclass
@@ -256,16 +257,21 @@ def get_fleet_disk_usage(servers, end):
 
 
 def one_mountpoint_per_device(used, servers):
-	"""A bind mount shares its device with the volume. Keep the shortest path of each device."""
+	"""A bind mount shares its device with the volume. Keep the volume, else the shortest path."""
 	mountpoints = {server: {} for server in servers}
 	seen = set()
 	for (server, device, mountpoint), percent in sorted(
-		used.items(), key=lambda item: (len(item[0][2]), item[0][2])
+		used.items(), key=lambda item: mount_rank(item[0][2])
 	):
 		if percent and server in mountpoints and (server, device) not in seen:
 			seen.add((server, device))
 			mountpoints[server][mountpoint] = rounded(percent, 1)
 	return mountpoints
+
+
+def mount_rank(mountpoint):
+	"""/home/frappe/benches is as long as /opt/volumes/benches, and /var/lib/docker is shorter."""
+	return (not mountpoint.startswith(VOLUMES), len(mountpoint), mountpoint)
 
 
 def percentile(values, fraction):
