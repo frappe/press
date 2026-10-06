@@ -14,7 +14,6 @@ from press.api.client import get
 from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import (
 	DISK_FULL_ALERT,
 	DISK_FULL_ALERT_WINDOW_HOURS,
-	RAVEN_ALERTS_CHANNEL,
 	disk_full_servers,
 )
 from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import (
@@ -207,5 +206,5 @@ class TestRavenNotification(FrappeTestCase):
 	def test_raven_message_goes_to_the_alerts_channel(self, send_raven_message, enqueue_doc):
 		create_test_alertmanager_webhook_log(alert=self.rule).send_raven_notification()
 		message, channel = send_raven_message.call_args.args
-		self.assertEqual(channel, RAVEN_ALERTS_CHANNEL)
+		self.assertEqual(channel, "alerts")
 		self.assertIn(self.rule.name, message)
