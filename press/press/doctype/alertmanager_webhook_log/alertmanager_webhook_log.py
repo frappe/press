@@ -25,12 +25,14 @@ from press.press.doctype.incident.incident import (
 )
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
+from press.utils.raven import send_raven_message
 
 if TYPE_CHECKING:
 	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
 		PrometheusAlertRule,
 	)
 
+RAVEN_ALERTS_CHANNEL = "alerts"
 DISK_FULL_ALERT = "Disk Full"
 # Alertmanager re-sends a firing alert every repeat interval (1h for this rule), so an
 # alert we haven't heard about in this long has either resolved or stopped being reported.
@@ -128,6 +130,9 @@ class AlertmanagerWebhookLog(Document):
 			send_email_notifs = frappe.db.get_single_value("Press Settings", "send_email_notifications")
 			if send_email_notifs:
 				enqueue_doc(self.doctype, self.name, "send_email_notification", enqueue_after_commit=True)
+
+			if frappe.get_cached_value("Prometheus Alert Rule", self.alert, "send_to_raven"):
+				enqueue_doc(self.doctype, self.name, "send_raven_notification", enqueue_after_commit=True)
 
 		if self.status == "Firing" and frappe.get_cached_value(
 			"Prometheus Alert Rule", self.alert, "press_job_type"
@@ -275,6 +280,9 @@ class AlertmanagerWebhookLog(Document):
 	def send_telegram_notification(self):
 		message = self.generate_telegram_message()
 		TelegramMessage.enqueue(message=message, topic=self.severity)
+
+	def send_raven_notification(self):
+		send_raven_message(self.generate_telegram_message(), RAVEN_ALERTS_CHANNEL)
 
 	def send_email_notification(self):
 		message = self.generate_telegram_message()
