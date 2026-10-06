@@ -6,6 +6,8 @@ from unittest.mock import Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils.background_jobs import create_job_id
+from rq.job import JobStatus
 
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
@@ -131,12 +133,17 @@ class TestScheduledDeploySettings(FrappeTestCase):
 			run_will_fail_check=True, ignore_permissions=True
 		)
 
+	@patch(f"{MODULE}.get_job", return_value=None)
 	@patch(f"{MODULE}.frappe.enqueue")
-	def test_deploy_now_queues_a_deploy_of_a_listed_group_on_the_build_queue(self, mock_enqueue):
+	def test_deploy_now_queues_a_deploy_of_a_listed_group_on_the_build_queue(self, mock_enqueue, _):
 		settings = self._save_settings([{"release_group": self.group_a, "hour": 19, "wednesday": 1}])
 
 		with patch.dict(frappe.conf, {"developer_mode": 0}):
-			settings.deploy_now(self.group_a)
+			result = settings.deploy_now(self.group_a)
+
+		self.assertEqual(
+			result, {"job": create_job_id(f"deploy_now:{self.group_a}"), "already_queued": False}
+		)
 
 		mock_enqueue.assert_called_once_with(
 			"press.press.doctype.scheduled_deploy_settings.scheduled_deploy_settings.deploy_release_group",
@@ -148,14 +155,27 @@ class TestScheduledDeploySettings(FrappeTestCase):
 			name=self.group_a,
 		)
 
+	@patch(f"{MODULE}.get_job", return_value=None)
 	@patch(f"{MODULE}.frappe.enqueue")
-	def test_deploy_now_uses_the_default_queue_in_developer_mode(self, mock_enqueue):
+	def test_deploy_now_uses_the_default_queue_in_developer_mode(self, mock_enqueue, _):
 		settings = self._save_settings([{"release_group": self.group_a, "hour": 19, "wednesday": 1}])
 
 		with patch.dict(frappe.conf, {"developer_mode": 1}):
 			settings.deploy_now(self.group_a)
 
 		self.assertEqual(mock_enqueue.call_args.kwargs["queue"], "default")
+
+	@patch(f"{MODULE}.get_job")
+	@patch(f"{MODULE}.frappe.enqueue")
+	def test_deploy_now_does_not_queue_a_second_deploy_while_one_is_queued(self, mock_enqueue, mock_get_job):
+		mock_get_job.return_value.get_status.return_value = JobStatus.QUEUED
+		settings = self._save_settings([{"release_group": self.group_a, "hour": 19, "wednesday": 1}])
+
+		result = settings.deploy_now(self.group_a)
+
+		self.assertTrue(result["already_queued"])
+		self.assertEqual(result["job"], create_job_id(f"deploy_now:{self.group_a}"))
+		mock_enqueue.assert_not_called()
 
 	@patch(f"{MODULE}.frappe.enqueue")
 	def test_deploy_now_refuses_a_group_that_is_not_listed(self, mock_enqueue):
