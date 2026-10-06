@@ -139,7 +139,7 @@ class TestScheduledDeploySettings(FrappeTestCase):
 			settings.deploy_now(self.group_a)
 
 		mock_enqueue.assert_called_once_with(
-			deploy_release_group,
+			"press.press.doctype.scheduled_deploy_settings.scheduled_deploy_settings.deploy_release_group",
 			queue="build",
 			timeout=60 * 60,
 			job_id=f"deploy_now:{self.group_a}",
