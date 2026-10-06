@@ -123,18 +123,19 @@ class TestFailureChart(FrappeTestCase):
 
 
 class TestOneMountpointPerDevice(FrappeTestCase):
-	def test_bind_mounts_of_a_volume_drop_out_and_the_volume_shows_once_under_its_shortest_path(self):
+	def test_bind_mounts_drop_out_and_a_disk_shows_under_its_volume_path_else_its_shortest(self):
 		used = {
 			("f1.frappe.cloud", "/dev/sda1", "/"): 55.0,
 			("f1.frappe.cloud", "/dev/sdb", "/home/frappe/mnt/builds"): 87.5,
 			("f1.frappe.cloud", "/dev/sdb", "/home/frappe/mnt/builds/tmp/buildkit-mount1085636546"): 87.6,
 			("f1.frappe.cloud", "/dev/sdc", "/opt/volumes/benches"): 71.3,
 			("f1.frappe.cloud", "/dev/sdc", "/home/frappe/benches"): 71.3,
+			("f1.frappe.cloud", "/dev/sdc", "/var/lib/docker"): 71.3,
 		}
 
 		self.assertEqual(
 			one_mountpoint_per_device(used, ["f1.frappe.cloud"]),
-			{"f1.frappe.cloud": {"/": 55.0, "/home/frappe/benches": 71.3, "/home/frappe/mnt/builds": 87.5}},
+			{"f1.frappe.cloud": {"/": 55.0, "/opt/volumes/benches": 71.3, "/home/frappe/mnt/builds": 87.5}},
 		)
 
 	def test_the_same_device_name_on_two_servers_is_two_disks(self):
