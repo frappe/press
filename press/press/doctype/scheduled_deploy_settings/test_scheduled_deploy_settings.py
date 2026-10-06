@@ -132,20 +132,30 @@ class TestScheduledDeploySettings(FrappeTestCase):
 		)
 
 	@patch(f"{MODULE}.frappe.enqueue")
-	def test_deploy_now_queues_a_deploy_of_a_listed_group_on_the_long_queue(self, mock_enqueue):
+	def test_deploy_now_queues_a_deploy_of_a_listed_group_on_the_build_queue(self, mock_enqueue):
 		settings = self._save_settings([{"release_group": self.group_a, "hour": 19, "wednesday": 1}])
 
-		settings.deploy_now(self.group_a)
+		with patch.dict(frappe.conf, {"developer_mode": 0}):
+			settings.deploy_now(self.group_a)
 
 		mock_enqueue.assert_called_once_with(
 			deploy_release_group,
-			queue="long",
+			queue="build",
 			timeout=60 * 60,
 			job_id=f"deploy_now:{self.group_a}",
 			deduplicate=True,
 			enqueue_after_commit=True,
 			name=self.group_a,
 		)
+
+	@patch(f"{MODULE}.frappe.enqueue")
+	def test_deploy_now_uses_the_default_queue_in_developer_mode(self, mock_enqueue):
+		settings = self._save_settings([{"release_group": self.group_a, "hour": 19, "wednesday": 1}])
+
+		with patch.dict(frappe.conf, {"developer_mode": 1}):
+			settings.deploy_now(self.group_a)
+
+		self.assertEqual(mock_enqueue.call_args.kwargs["queue"], "default")
 
 	@patch(f"{MODULE}.frappe.enqueue")
 	def test_deploy_now_refuses_a_group_that_is_not_listed(self, mock_enqueue):
