@@ -11,6 +11,7 @@ from frappe.tests.utils import FrappeTestCase
 from prometheus_api_client import PrometheusConnect
 
 from press.incident_management.doctype.incident_investigator.incident_investigator import (
+	DatabaseInvestigationActions,
 	IncidentInvestigator,
 )
 from press.incident_management.doctype.incident_investigator.utils.incident_pattern_detector import (
@@ -534,6 +535,15 @@ class TestIncidentInvestigator(FrappeTestCase):
 		self.assertEqual(
 			incident_pattern._get_upgrade_target_name(), f"{self.server.database_server} (Database Server)"
 		)
+
+	@patch("press.incident_management.doctype.incident_investigator.incident_investigator.Ansible", Mock())
+	def test_restarting_benches_after_database_reboot_logs_bench_restart_in_server_activity(self):
+		investigator = Mock(server=self.server.name)
+		DatabaseInvestigationActions(investigator).restart_benches(Mock())
+		activity = frappe.get_last_doc(
+			"Server Activity", {"document_name": self.server.name, "action": "Bench Restart"}
+		)
+		self.assertIn("after it was rebooted", activity.reason)
 
 	@classmethod
 	def tearDownClass(cls):

@@ -962,6 +962,7 @@ export default {
 									'Terminated',
 									'Incident',
 									'Disk Size Change',
+									'Bench Restart',
 								],
 							},
 						]

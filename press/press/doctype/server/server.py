@@ -48,7 +48,7 @@ from press.press.doctype.communication_info.communication_info import (
 )
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server_monitoring import RAVEN_SERVER_ALERTS_CHANNEL
-from press.press.doctype.server_activity.server_activity import log_server_activity
+from press.press.doctype.server_activity.server_activity import ServerActivityAction, log_server_activity
 from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
@@ -176,7 +176,7 @@ class BaseServer(Document, TagHelpers):
 	def _series(self):
 		return self.name[0]
 
-	def create_log(self, action: str, reason: str):
+	def create_log(self, action: ServerActivityAction, reason: str):
 		"""Helper to log server activity"""
 		log_server_activity(self._series, self.name, action, reason)
 
@@ -2381,13 +2381,19 @@ class BaseServer(Document, TagHelpers):
 			log_error("NAT Iptables Removal Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def start_active_benches(self):
+	def start_active_benches(self, reason: str | None = None):
 		benches = frappe.get_all("Bench", {"server": self.name, "status": "Active"}, pluck="name")
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_start_active_benches", benches=benches, queue="long", timeout=3600
+			self.doctype,
+			self.name,
+			"_start_active_benches",
+			benches=benches,
+			reason=reason,
+			queue="long",
+			timeout=3600,
 		)
 
-	def _start_active_benches(self, benches: list[str]):
+	def _start_active_benches(self, benches: list[str], reason: str | None = None):
 		try:
 			ansible = Ansible(
 				playbook="start_benches.yml",
@@ -2396,9 +2402,13 @@ class BaseServer(Document, TagHelpers):
 				port=self._ssh_port(),
 				variables={"benches": " ".join(benches)},
 			)
-			ansible.run()
+			play = ansible.run()
 		except Exception:
 			log_error("Start Benches Exception", server=self.as_dict())
+			return
+
+		if play.status == "Success":
+			self.create_log("Bench Restart", reason or "All active benches on this server were restarted")
 
 	def _stop_active_benches(self):
 		try:

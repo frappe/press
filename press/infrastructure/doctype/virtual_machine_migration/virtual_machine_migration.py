@@ -356,7 +356,7 @@ class VirtualMachineMigration(Document):
 	def start_active_benches(self) -> StepStatus:
 		"""Start active benches on the server"""
 		server: Server = frappe.get_doc("Server", self.machine.name)
-		server.start_active_benches()
+		server.start_active_benches(reason="Benches were restarted after the server was migrated")
 		return StepStatus.Success
 
 	def update_partition_labels(self) -> StepStatus:
