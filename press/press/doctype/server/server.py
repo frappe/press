@@ -999,52 +999,13 @@ class BaseServer(Document, TagHelpers):
 			)
 			play = ansible.run()
 			if play.status == "Success":
-				# The YARA config lives in ossec.conf, so it goes with the agent
 				frappe.db.set_value(
 					self.doctype,
 					self.name,
-					{
-						"is_wazuh_agent_installed": False,
-						"wazuh_agent_status": None,
-						"is_yara_installed": False,
-					},
+					{"is_wazuh_agent_installed": False, "wazuh_agent_status": None},
 				)
 		except Exception:
 			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())
-
-	@frappe.whitelist()
-	def install_yara(self):
-		"""Scan files the Wazuh agent reports as changed against a YARA ruleset."""
-		if not self.is_wazuh_agent_installed:
-			frappe.throw(
-				"YARA scanning reads the Wazuh agent's file integrity events. "
-				"Please install the Wazuh agent on this server first."
-			)
-		# Stamped before the enqueue, so a server we cannot even queue still yields its turn
-		frappe.db.set_value(self.doctype, self.name, "yara_install_last_attempt", frappe.utils.now_datetime())
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_install_yara",
-			queue="long",
-			timeout=1200,
-			job_id=f"yara_install:{self.doctype}:{self.name}",
-			deduplicate=True,
-		)
-
-	def _install_yara(self):
-		try:
-			ansible = Ansible(
-				playbook="wazuh_yara_install.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-			)
-			play = ansible.run()
-			if play.status == "Success":
-				frappe.db.set_value(self.doctype, self.name, "is_yara_installed", True)
-		except Exception:
-			log_error("YARA Install Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def deregister_wazuh_agent(self):
@@ -3256,8 +3217,6 @@ class Server(BaseServer):
 		is_wazuh_agent_installed: DF.Check
 		wazuh_agent_status: DF.Data | None
 		wazuh_install_last_attempt: DF.Datetime | None
-		is_yara_installed: DF.Check
-		yara_install_last_attempt: DF.Datetime | None
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]
@@ -4827,26 +4786,6 @@ def servers_needing_wazuh_agent() -> list[tuple[str, str]]:
 			"is_wazuh_agent_installed": 0,
 			"wazuh_agent_status": UNREGISTERED_WAZUH_AGENT_STATUS,
 		},
-	)
-
-
-def install_missing_yara():
-	"""Install YARA scanning on the enrolled servers that have waited longest for it."""
-	if not is_wazuh_configured():
-		return
-	for server_type, name in servers_needing_yara()[:WAZUH_INSTALL_BATCH_SIZE]:
-		try:
-			frappe.get_doc(server_type, name).install_yara()
-		except Exception:
-			# A full queue or one broken server must not take the rest of the batch with it
-			log_error("YARA Enqueue Exception", server_type=server_type, server=name)
-
-
-def servers_needing_yara() -> list[tuple[str, str]]:
-	"""Servers already reporting to the manager but with no ruleset to scan against."""
-	return longest_waiting_servers(
-		"yara_install_last_attempt",
-		filters={"is_wazuh_agent_installed": 1, "is_yara_installed": 0},
 	)
 
 
