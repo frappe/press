@@ -118,7 +118,7 @@ def document(
 			bound_args.apply_defaults()
 			t = document_type(bound_args.arguments)
 			n = document_name(bound_args.arguments)
-			r = (not roles_enabled()) or (skip_roles()) or utils_user.is_system_manager() or check(t, n)
+			r = permits(t, n)
 			if not r and default_value:
 				return default_value(bound_args.arguments)
 			if not r:
@@ -129,6 +129,19 @@ def document(
 		return inner
 
 	return wrapper
+
+
+def permits(document_type: str, document_name: str) -> bool:
+	"""
+	Check whether the Press Roles of the current user allow access to the
+	document. Teams without roles allow everything.
+	"""
+	return (
+		(not roles_enabled())
+		or skip_roles()
+		or utils_user.is_system_manager()
+		or bool(check(document_type, document_name))
+	)
 
 
 def base_query() -> QueryBuilder:

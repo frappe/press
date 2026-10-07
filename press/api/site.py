@@ -96,14 +96,19 @@ def protected(doctypes):
 
 		current_team = get_current_team()
 		for doctype in doctypes:
-			document_team = frappe.db.get_value(doctype, docname, "team")
-			if document_team == current_team or has_support_access(doctype, docname):
+			if has_protected_access(doctype, docname, current_team):
 				return wrapped(*args, **kwargs)
 
 		frappe.throw("Not Permitted", frappe.PermissionError)  # nosemgrep
 		return None
 
 	return wrapper
+
+
+def has_protected_access(doctype: str, docname: str, team: str) -> bool:
+	if frappe.db.get_value(doctype, docname, "team") == team:
+		return role_guard.permits(doctype, docname)
+	return has_support_access(doctype, docname)
 
 
 def get_protected_doctype_name(args: list, kwargs: dict, doctypes: list[str]):
