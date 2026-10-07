@@ -23,8 +23,6 @@
 		"is_wazuh_agent_installed",
 		"wazuh_agent_status",
 		"wazuh_install_last_attempt",
-		"is_yara_installed",
-		"yara_install_last_attempt",
 		"is_auditd_setup",
 		"enable_malware_scan",
 		"is_server_prepared",
@@ -180,19 +178,6 @@
 			"fieldname": "wazuh_install_last_attempt",
 			"fieldtype": "Datetime",
 			"label": "Wazuh Install Last Attempt",
-			"read_only": 1
-		},
-		{
-			"default": "0",
-			"fieldname": "is_yara_installed",
-			"fieldtype": "Check",
-			"label": "Is YARA Installed",
-			"read_only": 1
-		},
-		{
-			"fieldname": "yara_install_last_attempt",
-			"fieldtype": "Datetime",
-			"label": "YARA Install Last Attempt",
 			"read_only": 1
 		},
 		{
@@ -882,7 +867,7 @@
 			"link_fieldname": "app_server"
 		}
 	],
-	"modified": "2026-10-05 12:00:00.000000",
+	"modified": "2026-10-07 13:40:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Server",
