@@ -46,8 +46,6 @@ class AnalyticsServer(BaseServer):
 		virtual_machine: DF.Link | None
 		wazuh_agent_status: DF.Data | None
 		wazuh_install_last_attempt: DF.Datetime | None
-		is_yara_installed: DF.Check
-		yara_install_last_attempt: DF.Datetime | None
 	# end: auto-generated types
 
 	def validate(self):
