@@ -19,10 +19,14 @@ class TestAPISaas(FrappeTestCase):
 		frappe.set_user("Administrator")
 		frappe.db.rollback()
 
-	def get_url(self, key):
+	def get_url(self, key, domain_side_effect=None):
 		frappe.set_user("Guest")
 		with (
-			patch("press.api.saas.get_erpnext_domain", return_value=self.site.domain),
+			patch(
+				"press.api.saas.get_erpnext_domain",
+				return_value=self.site.domain,
+				side_effect=domain_side_effect,
+			),
 			patch.object(Site, "login_as_admin", return_value="https://site/app?sid=x"),
 		):
 			return get_site_url_and_sid(key)
@@ -40,3 +44,12 @@ class TestAPISaas(FrappeTestCase):
 
 		with self.assertRaises(frappe.ValidationError):
 			self.get_url(self.account_request.request_key)
+
+	def test_setup_key_spent_by_concurrent_request_is_rejected(self):
+		def spend_key_concurrently():
+			# Another request spends the key after this one's lookup but before the locked re-check
+			frappe.db.set_value("Account Request", self.account_request.name, "request_key", "")
+			return self.site.domain
+
+		with self.assertRaises(frappe.ValidationError):
+			self.get_url(self.account_request.request_key, domain_side_effect=spend_key_concurrently)
