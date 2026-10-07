@@ -26,6 +26,7 @@ def get_notifications(
 			PressNotification.is_actionable,
 			PressNotification.document_type,
 			PressNotification.document_name,
+			PressNotification.reference_name,
 			PressNotification["class"],
 		)
 		.where(PressNotification.team == get_current_team())
@@ -59,6 +60,8 @@ def assign_notification_route(notification):
 		)
 	elif notification.document_type == "Support Access":
 		notification.route = "access-requests"
+	elif notification.document_type == "Malware Scan":
+		notification.route = f"servers/{notification.reference_name}/security"
 	else:
 		notification.route = None
 
