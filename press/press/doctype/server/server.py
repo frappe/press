@@ -256,6 +256,7 @@ class BaseServer(Document, TagHelpers):
 		if self.doctype == "Server":
 			doc.secondary_server = self.secondary_server
 			doc.scaled_up = self.scaled_up
+			doc.malware_scan = self.get_malware_scan_summary()
 
 		return doc
 
@@ -3381,6 +3382,25 @@ class Server(BaseServer):
 		if is_scan_active(self.name):
 			return
 		frappe.get_doc({"doctype": "Malware Scan", "server_type": self.doctype, "server": self.name}).insert()
+
+	@dashboard_whitelist()
+	def toggle_malware_scan(self, enable: bool):
+		self.enable_malware_scan = enable
+		self.save()
+
+	def get_malware_scan_summary(self) -> dict:
+		last_scan = frappe.db.get_value(
+			"Malware Scan",
+			{"server": self.name},
+			["status", "modified", "scanned_files"],
+			as_dict=True,
+			order_by="creation desc",
+		)
+		return {
+			"enabled": self.enable_malware_scan,
+			"has_enough_ram": (self.ram or 0) >= MALWARE_SCAN_MIN_RAM,
+			"last_scan": last_scan,
+		}
 
 	def update_db_server(self):
 		if not self.database_server:
