@@ -40,6 +40,7 @@ class PressNotification(Document):
 			"Downtime/Performance",
 			"Support Access",
 			"Auto Scale",
+			"Malware Scan",
 		]
 	# end: auto-generated types
 
@@ -68,6 +69,10 @@ class PressNotification(Document):
 
 		if self.type == "Bench Deploy":
 			self.send_bench_deploy_failed(get_communication_info("Email", "General", "Team", self.team))
+		elif self.type == "Malware Scan":
+			self.send_malware_found(
+				get_communication_info("Email", "Server Activity", "Server", self.reference_name)
+			)
 
 	def send_bench_deploy_failed(self, mails: list[str]):
 		"""Skip emails in case of warning"""
@@ -84,6 +89,19 @@ class PressNotification(Document):
 			args={
 				"message": self.title,
 				"link": f"dashboard/groups/{group_name}/deploys/{self.document_name}",
+			},
+		)
+
+	def send_malware_found(self, mails: list[str]):
+		scan = frappe.get_doc("Malware Scan", self.document_name)
+		frappe.sendmail(
+			recipients=mails,
+			subject=self.title,
+			template="malware_scan_infected",
+			args={
+				"server": self.reference_name,
+				"files": scan.flagged_files(),
+				"link": f"dashboard/servers/{self.reference_name}/security",
 			},
 		)
 
