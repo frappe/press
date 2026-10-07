@@ -134,8 +134,6 @@
 		"is_wazuh_agent_installed",
 		"wazuh_agent_status",
 		"wazuh_install_last_attempt",
-		"is_yara_installed",
-		"yara_install_last_attempt",
 		"is_auditd_setup",
 		"section_break_uzkb",
 		"is_external_healthcheck_enabled",
@@ -914,19 +912,6 @@
 		},
 		{
 			"default": "0",
-			"fieldname": "is_yara_installed",
-			"fieldtype": "Check",
-			"label": "Is YARA Installed",
-			"read_only": 1
-		},
-		{
-			"fieldname": "yara_install_last_attempt",
-			"fieldtype": "Datetime",
-			"label": "YARA Install Last Attempt",
-			"read_only": 1
-		},
-		{
-			"default": "0",
 			"fieldname": "is_auditd_setup",
 			"fieldtype": "Check",
 			"label": "Is Auditd Setup",
@@ -974,7 +959,7 @@
 			"link_fieldname": "database_server"
 		}
 	],
-	"modified": "2026-09-21 12:05:33.000000",
+	"modified": "2026-10-07 13:40:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Database Server",
