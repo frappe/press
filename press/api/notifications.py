@@ -6,8 +6,8 @@ from press.utils import get_current_team
 @frappe.whitelist()
 def get_notifications(
 	filters: dict | None = None,
-	limit_start=0,
-	limit_page_length=20,
+	limit_start: int = 0,
+	limit_page_length: int = 20,
 ):
 	if not filters:
 		filters = {}

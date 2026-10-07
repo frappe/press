@@ -848,33 +848,6 @@ def domains(name):
 
 
 @frappe.whitelist()
-def activities(filters=None, order_by=None, limit_start=None, limit_page_length=None):
-	# get all site activity except Backup by Administrator
-	SiteActivity = frappe.qb.DocType("Site Activity")
-	activities = (
-		frappe.qb.from_(SiteActivity)
-		.select(
-			SiteActivity.action,
-			SiteActivity.reason,
-			SiteActivity.creation,
-			SiteActivity.owner,
-		)
-		.where(SiteActivity.site == filters["site"])
-		.where((SiteActivity.action != "Backup") | (SiteActivity.owner != "Administrator"))
-		.orderby(SiteActivity.creation, order=frappe.qb.desc)
-		.offset(limit_start)
-		.limit(limit_page_length)
-		.run(as_dict=True)
-	)
-
-	for activity in activities:
-		if activity.action == "Create":
-			activity.action = "Site Created"
-
-	return activities
-
-
-@frappe.whitelist()
 def app_details_for_new_public_site():
 	fields = [
 		"name",
