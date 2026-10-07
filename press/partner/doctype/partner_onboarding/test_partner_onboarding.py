@@ -73,7 +73,7 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 				"first_name": "Partner Reviewer",
 				"user_type": "System User",
 				"send_welcome_email": 0,
-				"roles": [{"role": "Partner Manager"}],
+				"roles": [{"role": "Press User"}, {"role": "Partner Manager"}],
 			}
 		).insert(ignore_permissions=True)
 
