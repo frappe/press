@@ -109,5 +109,6 @@ class IncreaseDiskSizeJob(PressJob):
 					"status": "Active",
 				},
 				pluck="name",
-			)
+			),
+			reason="Benches were restarted after the disk was resized",
 		)

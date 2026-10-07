@@ -378,6 +378,10 @@ class DatabaseInvestigationActions:
 				variables={"benches": " ".join(benches)},
 			)
 			self.investigator.handle_ansible_play(step, ansible)
+			server.create_log(
+				"Bench Restart",
+				"Benches were restarted to reconnect to the database server after it was rebooted",
+			)
 		except Exception as e:
 			self.investigator._fail_ansible_step(step, ansible, e)
 

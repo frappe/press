@@ -6,6 +6,10 @@ from typing import Literal
 import frappe
 from frappe.model.document import Document
 
+ServerActivityAction = Literal[
+	"Created", "Reboot", "Volume", "Terminated", "Disk Size Change", "Incident", "Bench Restart"
+]
+
 
 class ServerActivity(Document):
 	# begin: auto-generated types
@@ -23,6 +27,7 @@ class ServerActivity(Document):
 			"Disk Size Change",
 			"Terminated",
 			"Incident",
+			"Bench Restart",
 		]
 		document_name: DF.DynamicLink
 		document_type: DF.Link
@@ -36,7 +41,7 @@ class ServerActivity(Document):
 def log_server_activity(
 	series: Literal["f", "m", "u"],
 	server: str,
-	action: Literal["Created", "Reboot", "Volume", "Terminated", "Disk Size Change"],
+	action: ServerActivityAction,
 	reason: str | None = None,
 ) -> None:
 	"""Create a log of server activity"""

@@ -856,6 +856,25 @@ class TestServer(FrappeTestCase):
 		server.reload()
 		self.assertFalse(server.is_yara_installed)
 
+	def test_starting_active_benches_logs_bench_restart_with_reason_in_server_activity(self):
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._start_active_benches([], reason="Benches were restarted after the disk was resized")
+		activity = frappe.get_last_doc(
+			"Server Activity", {"document_name": server.name, "action": "Bench Restart"}
+		)
+		self.assertEqual(activity.reason, "Benches were restarted after the disk was resized")
+
+	def test_failed_start_benches_play_logs_no_bench_restart_in_server_activity(self):
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Failure")
+			server._start_active_benches([])
+		self.assertFalse(
+			frappe.db.exists("Server Activity", {"document_name": server.name, "action": "Bench Restart"})
+		)
+
 	def test_uninstalling_the_wazuh_agent_clears_yara(self):
 		"""The YARA config lives in ossec.conf, so removing the agent removes it too."""
 		server = create_test_server()
