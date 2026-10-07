@@ -747,6 +747,7 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
+		frappe.only_for(["Partner Manager", "System Manager"], message=True)
 		self.erpnext_partner = 1
 		if not self.partner_email:
 			self.partner_email = self.user
@@ -755,7 +756,9 @@ class Team(Document):
 		self.partner_status = "Active"
 		self.save(ignore_permissions=True)
 		self.create_partner_referral_code()
-		frappe.get_doc("User", self.user).add_roles("Partner")
+		user = frappe.get_doc("User", self.user)
+		user.append_roles("Partner")
+		user.save(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
