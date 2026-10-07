@@ -44,6 +44,7 @@ class PrometheusAlertRule(Document):
 		press_job_type: DF.Link | None
 		repeat_interval: DF.Data
 		route_preview: DF.Code | None
+		send_to_raven: DF.Check
 		severity: DF.Literal["Critical", "Warning", "Information"]
 		silent: DF.Check
 	# end: auto-generated types
