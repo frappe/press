@@ -620,7 +620,8 @@
 			"fieldtype": "Column Break"
 		},
 		{
-			"default": "status",
+			"default": "/etc/pt-stalk/cpu_usage.sh",
+			"description": "status, processlist, or the path of a trigger plugin file",
 			"fieldname": "stalk_function",
 			"fieldtype": "Data",
 			"label": "Stalk Function"
@@ -632,7 +633,7 @@
 			"label": "Stalk Variable"
 		},
 		{
-			"default": "25",
+			"default": "90",
 			"fieldname": "stalk_threshold",
 			"fieldtype": "Int",
 			"label": "Stalk Threshold"
@@ -654,7 +655,7 @@
 			"label": "Stalk Cycles"
 		},
 		{
-			"default": "300",
+			"default": "900",
 			"fieldname": "stalk_sleep",
 			"fieldtype": "Int",
 			"label": "Stalk Sleep"
@@ -974,7 +975,7 @@
 			"link_fieldname": "database_server"
 		}
 	],
-	"modified": "2026-09-21 12:05:33.000000",
+	"modified": "2026-10-01 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Database Server",

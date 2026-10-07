@@ -869,6 +869,8 @@ class BaseServer(Document, TagHelpers):
 
 		self.save()
 		database_server.save()
+		if database_server.status == "Active":
+			database_server.setup_pt_stalk()
 
 	@frappe.whitelist()
 	def setup_server(self):
@@ -2040,6 +2042,21 @@ class BaseServer(Document, TagHelpers):
 				self.save()
 		except Exception:
 			log_error("Auditd Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def setup_atop(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_atop", queue="long", timeout=1200)
+
+	def _setup_atop(self):
+		try:
+			Ansible(
+				playbook="atop.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			).run()
+		except Exception:
+			log_error("Atop Setup Exception", server=self.as_dict())
 
 	def set_auditd_setup_from_base_playbook(self):
 		"""The base setup playbooks (server/database/proxy/unified) bundle the auditd
