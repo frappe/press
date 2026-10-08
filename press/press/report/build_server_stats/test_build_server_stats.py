@@ -159,7 +159,7 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def job(self, server, job_type, status, creation="2026-09-10 10:01:00", end=None):
+	def job(self, server, job_type, status, creation="2026-09-10 10:01:00", end=None, start=None):
 		frappe.get_doc(
 			{
 				"doctype": "Agent Job",
@@ -168,6 +168,7 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 				"job_type": job_type,
 				"status": status,
 				"creation": creation,
+				"start": start,
 				"end": end,
 			}
 		).db_insert()
@@ -257,6 +258,25 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 		self.assertEqual(
 			self.datasets("Build Failures by Build Server"), {"f1.frappe.cloud": [1], "f2.frappe.cloud": [1]}
 		)
+
+	def test_successful_new_bench_jobs_that_ended_in_the_period_fall_into_minute_bins_by_cluster(self):
+		mumbai = create_test_server(cluster="Mumbai").name
+		frankfurt = create_test_server(cluster=create_test_cluster("Frankfurt", "eu-central-1").name).name
+		for server, status, start, end in [
+			(mumbai, "Success", "2026-09-10 10:00:00", "2026-09-10 10:02:30"),
+			(mumbai, "Success", "2026-09-10 10:10:00", "2026-09-10 10:22:00"),
+			(frankfurt, "Success", "2026-09-10 10:00:00", "2026-09-10 10:03:00"),
+			(frankfurt, "Failure", "2026-09-10 10:00:00", "2026-09-10 10:01:00"),
+			(frankfurt, "Success", "2026-09-10 09:00:00", "2026-09-10 09:05:00"),
+		]:
+			self.job(server, "New Bench", status, start, end=end, start=start)
+
+		chart = get_selected_chart("New Bench Duration by Cluster", self.period, [], [])
+
+		self.assertEqual(chart["data"]["labels"][:2], ["0-1 min", "1-2 min"])
+		datasets = {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
+		self.assertEqual(datasets["Mumbai"], [0, 0, 1] + [0] * 9 + [1])
+		self.assertEqual(datasets["Frankfurt"], [0, 0, 0, 1] + [0] * 9)
 
 	def test_docker_and_registry_prune_plays_are_stacked_by_server_and_other_plays_are_left_out(self):
 		for server, playbook, creation in [
