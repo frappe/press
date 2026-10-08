@@ -36,6 +36,7 @@ CHARTS = (
 	"Build Duration by Build Server",
 	"New Bench Jobs by Status",
 	"New Bench Jobs by Cluster",
+	"New Bench Duration by Cluster",
 	"Prune Jobs by Server",
 	"Build Failures by Cluster",
 	"New Bench Failures by Cluster",
@@ -390,6 +391,7 @@ def get_selected_chart(chart, period, builds, servers):
 		"Build Failures by Build Server": get_failed_builds_by_server_chart,
 		"New Bench Jobs by Status": get_new_bench_jobs_chart,
 		"New Bench Jobs by Cluster": get_new_bench_jobs_by_cluster_chart,
+		"New Bench Duration by Cluster": get_new_bench_duration_chart,
 		"Prune Jobs by Server": get_prune_chart,
 	}
 	if chart in charts_of_period:
@@ -456,23 +458,43 @@ def get_new_bench_jobs_chart(period):
 
 
 def get_build_duration_chart(builds):
-	"""Histogram of successful build minutes, about twelve bins, stacked by build server."""
 	spans = [
 		((build.build_end - build.build_start).total_seconds(), build.build_server)
 		for build in builds
 		if build.status == "Success" and build.build_end
 	]
+	return duration_histogram("Successful builds by duration", spans)
+
+
+def get_new_bench_duration_chart(period):
+	"""Successful New Bench jobs that ended in the period, like the Median Image Pull column."""
+	jobs = frappe.get_all(
+		"Agent Job",
+		{"job_type": "New Bench", "status": "Success", "end": ("between", (period.start, period.end))},
+		["start", "end", "server"],
+	)
+	cluster_of = get_cluster_of({job.server for job in jobs})
+	spans = [
+		((job.end - job.start).total_seconds(), cluster_of.get(job.server) or "No cluster")
+		for job in jobs
+		if job.start
+	]
+	return duration_histogram("Successful New Bench jobs by duration", spans)
+
+
+def duration_histogram(title, spans):
+	"""Spans are (seconds, group) pairs, counted in about twelve whole-minute bins, stacked by group."""
 	longest = max((seconds for seconds, _ in spans), default=0)
-	width = max(60, math.ceil(longest / 12 / 60) * 60)  # whole minutes
-	counts = Counter((int(seconds // width), server) for seconds, server in spans)
+	width = max(60, math.ceil(longest / 12 / 60) * 60)
+	counts = Counter((int(seconds // width), group) for seconds, group in spans)
 	bins = range(max((index for index, _ in counts), default=-1) + 1)
-	servers = sorted({server for _, server in counts})
+	groups = sorted({group for _, group in counts})
 	return {
-		"title": "Successful builds by duration",
+		"title": title,
 		"data": {
 			"labels": [f"{index * width // 60}-{(index + 1) * width // 60} min" for index in bins],
 			"datasets": [
-				{"name": server, "values": [counts[(index, server)] for index in bins]} for server in servers
+				{"name": group, "values": [counts[(index, group)] for index in bins]} for group in groups
 			],
 		},
 		"type": "bar",
