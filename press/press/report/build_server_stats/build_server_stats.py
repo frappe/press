@@ -367,22 +367,26 @@ def get_chart(window, builds):
 
 
 def get_selected_chart(chart, period, builds, servers):
+	charts_of_period = {
+		"New Bench Failures by Cluster": get_new_bench_failure_chart,
+		"Remote Builder Failures by Build Server": get_remote_builder_failure_chart,
+		"Build Failures by Build Server": get_failed_builds_by_server_chart,
+		"New Bench Jobs by Status": get_new_bench_jobs_chart,
+		"New Bench Jobs by Cluster": get_new_bench_jobs_by_cluster_chart,
+		"Prune Jobs by Server": get_prune_chart,
+	}
+	if chart in charts_of_period:
+		return charts_of_period[chart](period)
 	if chart == "Build Failures by Cluster":
 		return get_build_failure_chart(period.seconds, builds, servers)
-	if chart == "New Bench Failures by Cluster":
-		return get_new_bench_failure_chart(period)
-	if chart == "Remote Builder Failures by Build Server":
-		events = [(job.failed_at, job.server) for job in get_failed_jobs("Run Remote Builder", period)]
-		return stacked_chart("Failed Run Remote Builder jobs", period.seconds, events)
-	if chart == "Build Failures by Build Server":
-		return get_failed_builds_by_server_chart(period)
 	if chart == "Build Duration by Build Server":
 		return get_build_duration_chart(builds)
-	if chart == "New Bench Jobs by Status":
-		return get_new_bench_jobs_chart(period)
-	if chart == "Prune Jobs by Server":
-		return get_prune_chart(period)
 	return get_chart(period.seconds, builds)
+
+
+def get_remote_builder_failure_chart(period):
+	events = [(job.failed_at, job.server) for job in get_failed_jobs("Run Remote Builder", period)]
+	return stacked_chart("Failed Run Remote Builder jobs", period.seconds, events)
 
 
 def get_prune_chart(period):
@@ -407,12 +411,27 @@ def get_failed_builds_by_server_chart(period):
 	return stacked_chart("Failed builds by creation", period.seconds, events)
 
 
-def get_new_bench_jobs_chart(period):
-	jobs = frappe.get_all(
+def get_new_bench_jobs(period):
+	return frappe.get_all(
 		"Agent Job",
 		{"job_type": "New Bench", "creation": ("between", (period.start, period.end))},
-		["creation", "status"],
+		["creation", "status", "server"],
 	)
+
+
+def get_new_bench_jobs_by_cluster_chart(period):
+	jobs = get_new_bench_jobs(period)
+	cluster_of = get_cluster_of({job.server for job in jobs})
+	events = [(job.creation, cluster_of.get(job.server)) for job in jobs]
+	return stacked_chart("New Bench jobs", period.seconds, events)
+
+
+def get_cluster_of(servers):
+	return dict(frappe.get_all("Server", {"name": ("in", servers)}, ["name", "cluster"], as_list=True))
+
+
+def get_new_bench_jobs_chart(period):
+	jobs = get_new_bench_jobs(period)
 	chart = stacked_chart("New Bench jobs", period.seconds, [(job.creation, job.status) for job in jobs])
 	colors = {"Success": "green", "Failure": "red", "Delivery Failure": "orange", "Running": "blue"}
 	chart["colors"] = [colors.get(dataset["name"], "grey") for dataset in chart["data"]["datasets"]]
@@ -446,8 +465,7 @@ def get_build_duration_chart(builds):
 
 def get_new_bench_failure_chart(period):
 	jobs = get_failed_jobs("New Bench", period)
-	servers = {job.server for job in jobs}
-	cluster_of = dict(frappe.get_all("Server", {"name": ("in", servers)}, ["name", "cluster"], as_list=True))
+	cluster_of = get_cluster_of({job.server for job in jobs})
 	events = [(job.failed_at, cluster_of.get(job.server)) for job in jobs]
 	return stacked_chart("Failed New Bench jobs", period.seconds, events)
 

@@ -9,6 +9,7 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.server.test_server import create_test_server
 from press.press.report.build_server_stats.build_server_stats import (
 	DiskUsage,
@@ -217,6 +218,17 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 		self.job("f1.frappe.cloud", "Archive Bench", "Success")
 
 		self.assertEqual(self.datasets("New Bench Jobs by Status"), {"Failure": [1], "Success": [2]})
+
+	def test_new_bench_jobs_of_every_status_are_stacked_by_the_cluster_of_their_server(self):
+		mumbai = create_test_server(cluster="Mumbai").name
+		frankfurt = create_test_server(cluster=create_test_cluster("Frankfurt", "eu-central-1").name).name
+		self.job(mumbai, "New Bench", "Success")
+		self.job(mumbai, "New Bench", "Failure")
+		self.job(frankfurt, "New Bench", "Running")
+		self.job(frankfurt, "New Bench", "Success", creation="2026-09-10 09:00:00")
+		self.job(frankfurt, "Archive Bench", "Success")
+
+		self.assertEqual(self.datasets("New Bench Jobs by Cluster"), {"Frankfurt": [1], "Mumbai": [2]})
 
 	def test_failed_builds_are_stacked_by_build_server_at_their_creation(self):
 		for server, status, creation in [
