@@ -671,6 +671,31 @@ class TestSite(FrappeTestCase):
 		self.assertEqual(site.apps[1].app, "erpnext")
 		self.assertEqual(site.apps[2].app, "crm")
 
+	def _bench_locks_taken_by_validate_bench(self, site) -> list[str]:
+		site.load_doc_before_save()  # save() does this before validate
+		with patch.object(frappe.db, "get_value", wraps=frappe.db.get_value) as get_value:
+			site.validate_bench()
+		return [
+			call.args[1]
+			for call in get_value.call_args_list
+			if call.args[0] == "Bench" and call.kwargs.get("for_update")
+		]
+
+	def test_saving_a_site_that_stays_on_its_bench_does_not_lock_the_bench(self):
+		site = create_test_site()
+		site.reload()
+
+		self.assertEqual(self._bench_locks_taken_by_validate_bench(site), [])
+
+	def test_moving_a_site_to_another_bench_locks_the_destination_bench(self):
+		site = create_test_site()
+		site.reload()
+		group = frappe.get_doc("Release Group", site.group)
+		destination = create_test_bench(group=group, server=site.server)
+		site.bench = destination.name
+
+		self.assertEqual(self._bench_locks_taken_by_validate_bench(site), [destination.name])
+
 	@patch("press.press.doctype.site.site.frappe.db.commit", new=Mock())
 	@patch("press.press.doctype.site.site.frappe.db.rollback", new=Mock())
 	@patch("frappe.sendmail", new=Mock())

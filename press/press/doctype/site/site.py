@@ -588,9 +588,12 @@ class Site(Document, TagHelpers):
 			self.admin_password = frappe.generate_hash(length=16)
 
 	def validate_bench(self):
+		# Lock the bench only when a site lands on it, to race Bench.archive. Locking on
+		# every save queues all saves on a bench behind any long transaction touching it.
+		lands_on_bench = self.is_new() or self.has_value_changed("bench")
 		if (
 			self.status not in ("Broken", "Archived")
-			and frappe.db.get_value("Bench", self.bench, "status", for_update=True) == "Archived"
+			and frappe.db.get_value("Bench", self.bench, "status", for_update=lands_on_bench) == "Archived"
 		):
 			frappe.throw(
 				f"Bench {self.bench} is in an inactive state. Please <a style='text-decoration: underline;' href='https://docs.frappe.io/cloud/benches/create-new'>deploy a new bench</a> to perform these actions or reach out to the support team for help with 'Broken' bench."
