@@ -22,6 +22,9 @@ DURATIONS = {
 	"6 hours": 6 * 60 * 60,
 	"12 hours": 12 * 60 * 60,
 	"24 hours": 24 * 60 * 60,
+	"3 days": 3 * 24 * 60 * 60,
+	"7 days": 7 * 24 * 60 * 60,
+	"15 days": 15 * 24 * 60 * 60,
 }
 QUEUED = ("Scheduled", "Pending")
 # Preparing already holds the build server, so it counts against capacity like Running does

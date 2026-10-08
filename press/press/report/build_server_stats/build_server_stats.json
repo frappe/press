@@ -21,7 +21,7 @@
 			"fieldtype": "Select",
 			"label": "Duration",
 			"mandatory": 0,
-			"options": "5 minutes\n15 minutes\n30 minutes\n1 hour\n3 hours\n6 hours\n12 hours\n24 hours",
+			"options": "5 minutes\n15 minutes\n30 minutes\n1 hour\n3 hours\n6 hours\n12 hours\n24 hours\n3 days\n7 days\n15 days",
 			"wildcard_filter": 0
 		},
 		{
@@ -41,7 +41,7 @@
 	],
 	"idx": 0,
 	"is_standard": "Yes",
-	"modified": "2026-10-01 12:00:00.000000",
+	"modified": "2026-10-08 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Build Server Stats",
