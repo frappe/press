@@ -15,6 +15,7 @@ export default function generateRoutes() {
 				props: (route) => {
 					return { objectType, ...route.params }
 				},
+				meta: { title: object.list.title },
 			})
 		}
 		if (object.detail) {
@@ -30,6 +31,8 @@ export default function generateRoutes() {
 						props: (route) => {
 							return { objectType, ...route.params }
 						},
+						// A nested route stays on its tab, so it reads as that tab
+						meta: { title: tab.label, ...route.meta },
 					})
 				}
 
@@ -50,6 +53,7 @@ export default function generateRoutes() {
 							})
 						: null,
 					children: nestedChildren,
+					meta: { title: tab.label },
 				}
 			})
 			if (object.routes) {
@@ -61,6 +65,7 @@ export default function generateRoutes() {
 						props: (route) => {
 							return { objectType, ...route.params, ...staticProps }
 						},
+						meta: { title: route.name, ...route.meta },
 					})
 				}
 			}
@@ -75,6 +80,9 @@ export default function generateRoutes() {
 				},
 				redirect: children.length ? { name: children[0].name } : null,
 				children,
+				// The document name until the document loads and DetailPage swaps in
+				// its title
+				meta: { title: (route) => route.params.name },
 			})
 		}
 	}

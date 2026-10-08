@@ -3,22 +3,22 @@ import {
 	Badge,
 	Button,
 	Combobox,
-	Dropdown,
-	MultiSelect,
-	TextInput,
-	Tooltip,
-  Spinner,
 	createDocumentResource,
 	createListResource,
+	Dropdown,
+	MultiSelect,
+	Spinner,
+	TextInput,
+	Tooltip,
 } from 'frappe-ui'
 import { unparse } from 'papaparse'
 import { defineAsyncComponent, h, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BillingAlerts from '@/components/BillingAlerts.vue'
-import LinkControl from '@/components/LinkControl.vue'
 import Scrollbar from '@/components/common/Scrollbar.vue'
 import Header from '@/components/Header.vue'
+import LinkControl from '@/components/LinkControl.vue'
 import { getTeam } from '@/data/team'
 import { clusterOptions } from '@/objects/common'
 import { renderDialog } from '@/utils/components'
@@ -52,6 +52,18 @@ const statusesInQuery = (query: unknown) =>
 		.filter((value) => statusOptions.some((o) => o.value === value))
 
 const requestedStatuses = statusesInQuery(route.query.status)
+
+// Pilot links here with a backup access request to approve.
+if (route.query['v1-migration']) {
+	const V1MigrationApprovalDialog = defineAsyncComponent(
+		() => import('@/components/site/V1MigrationApprovalDialog.vue'),
+	)
+	renderDialog(
+		h(V1MigrationApprovalDialog, {
+			requestName: String(route.query['v1-migration']),
+		}),
+	)
+}
 
 const selectedStatuses = ref<string[]>(
 	requestedStatuses.length ? requestedStatuses : liveStatuses,
@@ -420,7 +432,7 @@ const exportCSV = () => {
 							</Badge>
 						</td>
 
-						<td> {{ sitePlan(site) }} </td>
+						<td>{{ sitePlan(site) }} </td>
 
 						<td>
 							<span class="flex gap-1.5 items-center">
@@ -436,7 +448,7 @@ const exportCSV = () => {
 						<td>
 							{{ site.group_public ? 'Shared' : site.group_title }}
 						</td>
-						<td> {{ site.version }}</td>
+						<td>{{ site.version }}</td>
 
 						<td class="w-px">
 							<div class="flex justify-end">

@@ -2,6 +2,7 @@
 # See license.txt
 
 import frappe
+from frappe.exceptions import FrappeTypeError
 from frappe.tests.utils import FrappeTestCase
 
 from press.api.notifications import get_notifications, get_unread_count
@@ -59,3 +60,12 @@ class TestPressNotification(FrappeTestCase):
 		self.assertEqual(get_unread_count(), 1)
 		self.assertEqual(get_unread_count("Site Update"), 1)
 		self.assertEqual(len(get_notifications(filters={"type": "Site Update"})), 1)
+
+	def test_get_notifications_rejects_sql_in_pagination_arguments(self):
+		with self.assertRaisesRegex(FrappeTypeError, "Argument 'limit_start'.*should be of type 'int'"):
+			get_notifications(limit_start="0; SELECT SLEEP(10)-- -")
+		with self.assertRaisesRegex(FrappeTypeError, "Argument 'limit_page_length'.*should be of type 'int'"):
+			get_notifications(limit_page_length="20; SELECT SLEEP(10)-- -")
+
+	def test_get_notifications_accepts_numeric_strings_for_pagination(self):
+		self.assertEqual(get_notifications(limit_start="0", limit_page_length="20"), [])

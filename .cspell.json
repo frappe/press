@@ -143,6 +143,7 @@
 		"ddebs",
 		"ddl",
 		"dearmor",
+		"desync",
 		"devscripts",
 		"devtmpfs",
 		"dffx",
@@ -381,6 +382,7 @@
 		"lsetxattr",
 		"lucasb",
 		"Lumpur",
+		"lxcfs",
 		"luxon",
 		"Maarten",
 		"Madhya",
@@ -554,6 +556,7 @@
 		"removexattr",
 		"reqd",
 		"Rerunnability",
+		"retrans",
 		"rerunnable",
 		"Réunion",
 		"Rhiv",
@@ -817,6 +820,12 @@
 		"notif",
 		"smallbtn",
 		"Unblended",
-		"recognised"
+		"recognised",
+		"nocase",
+		"ossec",
+		"popen",
+		"syscheck",
+		"yara",
+		"yarac"
 	]
 }

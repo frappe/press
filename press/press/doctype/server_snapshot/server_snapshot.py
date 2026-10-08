@@ -404,6 +404,11 @@ class ServerSnapshot(Document):
 		if self.locked:
 			frappe.throw("Snapshot is locked. Unlock the snapshot before deleting.")
 
+		self.delete_disk_snapshots()
+		self.status = "Unavailable"
+		self.save()
+
+	def delete_disk_snapshots(self):
 		for s in self.snapshots:
 			frappe.enqueue_doc(
 				"Virtual Disk Snapshot",
@@ -412,9 +417,6 @@ class ServerSnapshot(Document):
 				enqueue_after_commit=True,
 				ignore_validation=True,
 			)
-
-		self.status = "Unavailable"
-		self.save()
 
 	@dashboard_whitelist()
 	def lock(self, now: bool | None = False):

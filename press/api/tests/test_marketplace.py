@@ -207,14 +207,37 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.assertIsNotNone(get_marketplace_subscriptions_for_site(site.name))
 
 	def test_change_app_plan(self):
-		subscription = create_test_marketplace_app_subscription()
-		new_plan = create_test_marketplace_app_plan()
+		subscription = create_test_marketplace_app_subscription(app="frappe")
+		new_plan = create_test_marketplace_app_plan(price_usd=0)
+		frappe.set_user(frappe.db.get_value("Team", subscription.team, "user"))
 		change_app_plan(subscription.name, new_plan.name)
 
 		self.assertEqual(
 			new_plan.name,
 			frappe.db.get_value("Subscription", subscription.name, "plan"),
 		)
+
+	def test_change_app_plan_blocked_for_other_team(self):
+		subscription = create_test_marketplace_app_subscription(app="frappe")
+		new_plan = create_test_marketplace_app_plan(price_usd=0)
+		frappe.set_user(create_test_press_admin_team().user)
+
+		with self.assertRaises(frappe.PermissionError):
+			change_app_plan(subscription.name, new_plan.name)
+
+		self.assertEqual(
+			subscription.plan,
+			frappe.db.get_value("Subscription", subscription.name, "plan"),
+		)
+
+	def test_change_app_plan_rejects_plan_of_another_app(self):
+		subscription = create_test_marketplace_app_subscription(app="frappe")
+		other_app = create_test_app(frappe.mock("name"), frappe.mock("name"))
+		other_plan = create_test_marketplace_app_plan(other_app.name, price_usd=0)
+		frappe.set_user(frappe.db.get_value("Team", subscription.team, "user"))
+
+		with self.assertRaises(frappe.ValidationError):
+			change_app_plan(subscription.name, other_plan.name)
 
 	def test_get_subscription_list(self):
 		self.assertEqual([], get_subscriptions_list("frappe"))

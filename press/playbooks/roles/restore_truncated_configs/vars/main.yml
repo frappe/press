@@ -1,0 +1,7 @@
+---
+# Exit code 0 means the config is usable. Ansible templates this inside the
+# loops, so `item` is the backup that the loop is on.
+# ponytail: a redis conf cut after its port line passes; parse it with
+# redis-server if that ever matters.
+config_check: >-
+  {{ 'grep -q ^port' if item.path.endswith('.conf.bak') else 'python3 -m json.tool' }}

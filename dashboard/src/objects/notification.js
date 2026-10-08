@@ -1,8 +1,13 @@
 import { h } from 'vue';
 import router from '../router';
 import { getDocResource } from '../utils/resource';
-import { unreadNotificationsCount } from '../data/notifications';
-import { Tooltip, frappeRequest } from 'frappe-ui';
+
+import {
+	markAllNotificationsAsRead,
+	unreadNotificationsCount,
+} from '../data/notifications';
+
+import { Tooltip } from 'frappe-ui';
 import { icon } from '../utils/components';
 import { getTeam } from '../data/team';
 import { toast } from 'vue-sonner';
@@ -65,9 +70,7 @@ export default {
 					},
 					async onClick() {
 						toast.promise(
-							frappeRequest({
-								url: '/api/method/press.api.notifications.mark_all_notifications_as_read',
-							}),
+							markAllNotificationsAsRead.submit(),
 							{
 								success: () => {
 									notifications.reload();

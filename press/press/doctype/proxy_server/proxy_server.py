@@ -56,6 +56,7 @@ class ProxyServer(BaseServer):
 		is_static_ip: DF.Check
 		is_wazuh_agent_installed: DF.Check
 		wazuh_agent_status: DF.Data | None
+		wazuh_install_last_attempt: DF.Datetime | None
 		is_wireguard_setup: DF.Check
 		mem_limits: DF.Code | None
 		plan: DF.Link | None

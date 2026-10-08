@@ -25,6 +25,7 @@ from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
 	Status as DeployCandidateBuildStatus,
 )
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import fail_remote_job
+from press.utils.user import as_administrator
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 
@@ -231,21 +232,23 @@ class ReleasePipeline(WorkflowBuilder):
 		self._cancel_running_builds()
 
 	def _cancel_running_builds(self):
-		for pipeline_build in self.pipeline_builds:
-			if (
-				frappe.db.get_value("Deploy Candidate Build", pipeline_build.build, "status")
-				not in DeployCandidateBuildStatus.intermediate()
-			):
-				continue
+		with as_administrator():
+			for pipeline_build in self.pipeline_builds:
+				self._cancel_build_if_running(pipeline_build.build)
 
-			try:
-				fail_remote_job(pipeline_build.build)
-			except Exception:
-				frappe.log_error(
-					f"Failed to cancel Deploy Candidate Build {pipeline_build.build} on pipeline force fail",
-					reference_doctype=self.doctype,
-					reference_name=self.name,
-				)
+	def _cancel_build_if_running(self, build: str):
+		status = frappe.db.get_value("Deploy Candidate Build", build, "status")
+		if status not in DeployCandidateBuildStatus.intermediate():
+			return
+
+		try:
+			fail_remote_job(build)
+		except Exception:
+			frappe.log_error(
+				f"Failed to cancel Deploy Candidate Build {build} on pipeline force fail",
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
 
 	def add_build_to_pipeline(self, build: str):
 		"""Attach a build to the pipeline if not present"""

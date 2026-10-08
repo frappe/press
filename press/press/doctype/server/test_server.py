@@ -27,10 +27,12 @@ from press.press.doctype.press_settings.test_press_settings import (
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.server import (
-	DEFAULT_STORAGE_ALERT_THRESHOLD,
+	WAZUH_SERVER_TYPES,
 	BaseServer,
 	Server,
+	install_missing_wazuh_agents,
 	process_cleanup_unused_files_job_update,
+	servers_needing_wazuh_agent,
 	sync_wazuh_agent_status,
 )
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
@@ -465,65 +467,6 @@ class TestServer(FrappeTestCase):
 				}
 			).insert()
 
-	def test_storage_alert_threshold_above_the_allowed_maximum_is_rejected(self):
-		server = create_test_server()
-		server.storage_alert_threshold_percent = 96
-
-		self.assertRaisesRegex(
-			frappe.ValidationError, "Storage alert threshold must be between 50% and 95%", server.save
-		)
-
-	def test_storage_alert_threshold_below_the_allowed_minimum_is_rejected(self):
-		server = create_test_server()
-		server.storage_alert_threshold_percent = 30
-
-		self.assertRaisesRegex(
-			frappe.ValidationError, "Storage alert threshold must be between 50% and 95%", server.save
-		)
-
-	def test_storage_alert_threshold_defaults_to_90_and_accepts_a_custom_value(self):
-		server = create_test_server()
-		self.assertEqual(server.storage_alert_threshold_percent, DEFAULT_STORAGE_ALERT_THRESHOLD)
-
-		server.storage_alert_threshold_percent = 75
-		server.save()
-
-		self.assertEqual(frappe.db.get_value("Server", server.name, "storage_alert_threshold_percent"), 75)
-
-	def test_configure_auto_add_storage_sets_the_alert_threshold_on_the_target_server(self):
-		database_server = create_test_database_server()
-		server = create_test_server(database_server=database_server.name)
-
-		server.configure_auto_add_storage(
-			server=database_server.name, enabled=False, storage_alert_threshold=75
-		)
-
-		self.assertEqual(
-			frappe.db.get_value("Database Server", database_server.name, "storage_alert_threshold_percent"),
-			75,
-		)
-
-	def test_configure_auto_add_storage_keeps_the_alert_threshold_when_it_is_not_passed(self):
-		server = create_test_server()
-		server.storage_alert_threshold_percent = 70
-		server.save()
-
-		server.configure_auto_add_storage(server=server.name, enabled=True, min=25, max=250)
-
-		self.assertEqual(frappe.db.get_value("Server", server.name, "storage_alert_threshold_percent"), 70)
-
-	def test_configure_auto_add_storage_rejects_an_out_of_range_alert_threshold(self):
-		server = create_test_server()
-
-		self.assertRaisesRegex(
-			frappe.ValidationError,
-			"Storage alert threshold must be between 50% and 95%",
-			server.configure_auto_add_storage,
-			server=server.name,
-			enabled=False,
-			storage_alert_threshold=20,
-		)
-
 	def test_disable_auto_storage_on_database_server_clears_db_flag_not_app_flag(self):
 		database_server = create_test_database_server()
 		frappe.db.set_value("Database Server", database_server.name, "auto_increase_storage", True)
@@ -672,9 +615,21 @@ class TestServer(FrappeTestCase):
 			create_test_proxy_server(),
 		]
 
-	def test_wazuh_agent_installed_during_setup_when_manager_configured(self):
+	def _configure_wazuh(self, server="wazuh.example.com", version="4.12.0-1"):
 		create_test_press_settings()
-		frappe.db.set_single_value("Press Settings", "wazuh_server", "wazuh.example.com")
+		frappe.db.set_single_value("Press Settings", "wazuh_server", server)
+		frappe.db.set_single_value("Press Settings", "wazuh_agent_version", version)
+
+	def _servers_given_wazuh_installs(self, batch_size=10_000):
+		with (
+			patch("press.press.doctype.server.server.WAZUH_INSTALL_BATCH_SIZE", batch_size),
+			patch.object(BaseServer, "install_wazuh_agent", autospec=True) as install_wazuh_agent,
+		):
+			install_missing_wazuh_agents()
+		return {call.args[0].name for call in install_wazuh_agent.call_args_list}
+
+	def test_wazuh_agent_installed_during_setup_when_manager_configured(self):
+		self._configure_wazuh()
 
 		for server in self._one_server_of_each_type():
 			with self.subTest(server_type=server.doctype):
@@ -682,9 +637,190 @@ class TestServer(FrappeTestCase):
 					server.install_wazuh_agent_if_configured()
 				install_wazuh_agent.assert_called_once()
 
+	def test_wazuh_agent_not_installed_during_setup_when_agent_version_unset(self):
+		self._configure_wazuh(version="")
+		server = create_test_server()
+		with patch.object(BaseServer, "install_wazuh_agent") as install_wazuh_agent:
+			server.install_wazuh_agent_if_configured()
+		install_wazuh_agent.assert_not_called()
+
+	def test_install_wazuh_agent_raises_when_agent_version_unset(self):
+		self._configure_wazuh(version="")
+		server = create_test_server()
+		with self.assertRaisesRegex(frappe.ValidationError, "Wazuh Agent Version"):
+			server.install_wazuh_agent()
+
+	def test_install_wazuh_agent_stamp_does_not_break_a_later_save_of_the_same_doc(self):
+		"""Create Server's set_additional_config saves the doc right after this step."""
+		self._configure_wazuh()
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.frappe.enqueue_doc"):
+			server.install_wazuh_agent()
+		server.save()
+		self.assertIsNotNone(server.wazuh_install_last_attempt)
+
+	def test_install_passes_pinned_wazuh_agent_version_to_playbook(self):
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._install_wazuh_agent("wazuh.example.com", "4.12.0-1")
+		self.assertEqual(Ansible.call_args.kwargs["variables"]["wazuh_agent_version"], "4.12.0-1")
+
+	def test_reconcile_installs_wazuh_agent_only_on_active_set_up_servers_without_it(self):
+		self._configure_wazuh()
+		missing = create_test_server()
+		missing.db_set("is_server_setup", 1)
+		installed = create_test_server()
+		installed.db_set({"is_server_setup": 1, "is_wazuh_agent_installed": 1})
+		not_set_up = create_test_server()
+		not_set_up.db_set("is_server_setup", 0)
+		broken = create_test_server()
+		broken.db_set({"is_server_setup": 1, "status": "Broken"})
+		self_hosted = create_test_server(is_self_hosted=True)
+		self_hosted.db_set("is_server_setup", 1)
+
+		installed_on = self._servers_given_wazuh_installs()
+
+		self.assertIn(missing.name, installed_on)
+		skipped = {installed.name, not_set_up.name, broken.name, self_hosted.name}
+		self.assertTrue(installed_on.isdisjoint(skipped), installed_on & skipped)
+
+	def test_reconcile_skips_wazuh_install_when_agent_version_unset(self):
+		self._configure_wazuh(version="")
+		create_test_server().db_set("is_server_setup", 1)
+		self.assertEqual(self._servers_given_wazuh_installs(), set())
+
+	def test_reconcile_installs_at_most_one_batch_of_wazuh_agents_per_run(self):
+		self._configure_wazuh()
+		for _ in range(2):
+			create_test_server().db_set("is_server_setup", 1)
+		self.assertEqual(len(self._servers_given_wazuh_installs(batch_size=1)), 1)
+
+	def test_reconcile_retries_servers_the_wazuh_manager_has_no_record_of(self):
+		"""A play can succeed without the agent registering. The flag alone must not excuse a server."""
+		self._configure_wazuh()
+		unregistered = create_test_server()
+		unregistered.db_set(
+			{"is_server_setup": 1, "is_wazuh_agent_installed": 1, "wazuh_agent_status": "unknown"}
+		)
+		connected = create_test_server()
+		connected.db_set(
+			{"is_server_setup": 1, "is_wazuh_agent_installed": 1, "wazuh_agent_status": "active"}
+		)
+
+		installed_on = self._servers_given_wazuh_installs()
+
+		self.assertIn(unregistered.name, installed_on)
+		self.assertNotIn(connected.name, installed_on)
+
+	def test_reconcile_leaves_registered_but_unreachable_wazuh_agents_alone(self):
+		"""A re-install cannot repair a registered agent that cannot reach the manager."""
+		self._configure_wazuh()
+		never_connected = create_test_server()
+		never_connected.db_set(
+			{
+				"is_server_setup": 1,
+				"is_wazuh_agent_installed": 1,
+				"wazuh_agent_status": "never_connected",
+			}
+		)
+		self.assertNotIn(never_connected.name, self._servers_given_wazuh_installs())
+
+	def test_install_forces_enrollment_only_when_the_manager_has_no_record_of_the_agent(self):
+		"""A stale key on disk would otherwise make the repair play skip agent-auth."""
+		for status, forced in (("unknown", True), ("never_connected", False), (None, False)):
+			with self.subTest(wazuh_agent_status=status):
+				server = create_test_server()
+				server.db_set("wazuh_agent_status", status)
+				server.reload()
+				with patch("press.press.doctype.server.server.Ansible") as Ansible:
+					Ansible.return_value.run.return_value = Mock(status="Success")
+					server._install_wazuh_agent("wazuh.example.com", "4.12.0-1")
+				variables = Ansible.call_args.kwargs["variables"]
+				self.assertEqual(variables["wazuh_force_enrollment"], forced)
+
+	def test_reconcile_installs_rest_of_batch_when_one_server_cannot_be_enqueued(self):
+		"""One overloaded queue or broken server must not cost the other servers their turn."""
+		self._configure_wazuh()
+		servers = [create_test_server() for _ in range(3)]
+		for server in servers:
+			server.db_set("is_server_setup", 1)
+		failing = servers[0].name
+
+		def install(self):
+			if self.name == failing:
+				raise frappe.QueueOverloaded("Too many queued background jobs")
+
+		with (
+			patch.object(BaseServer, "install_wazuh_agent", autospec=True, side_effect=install) as called,
+			patch("press.press.doctype.server.server.log_error") as log_error,
+		):
+			install_missing_wazuh_agents()
+
+		attempted = {call.args[0].name for call in called.call_args_list}
+		self.assertEqual(attempted, {server.name for server in servers})
+		log_error.assert_called_once()
+
+	def test_every_wazuh_server_type_has_wazuh_agent_fields(self):
+		"""BaseServer.archive and the Wazuh jobs read these fields on every server type."""
+		for server_type in WAZUH_SERVER_TYPES:
+			with self.subTest(server_type=server_type):
+				meta = frappe.get_meta(server_type)
+				self.assertTrue(meta.has_field("is_wazuh_agent_installed"))
+				self.assertTrue(meta.has_field("wazuh_agent_status"))
+				self.assertTrue(meta.has_field("wazuh_install_last_attempt"))
+
+	def test_reconcile_offers_the_longest_waiting_servers_first(self):
+		"""Round robin. A server that keeps failing must not outrank one never tried.
+
+		The waiting order must hold across server types too, not just within one, so the
+		"Server" at the head of WAZUH_SERVER_TYPES is the one attempted most recently.
+		"""
+		self._configure_wazuh()
+		# Created newest-attempt first, so creation order cannot pass for wait order
+		recent = create_test_server()
+		recent.db_set({"is_server_setup": 1, "wazuh_install_last_attempt": "2026-09-17 12:00:00"})
+		stale = create_test_server()
+		stale.db_set({"is_server_setup": 1, "wazuh_install_last_attempt": "2026-09-10 12:00:00"})
+		never = create_test_database_server()
+		never.db_set("is_server_setup", 1)
+
+		with patch("press.press.doctype.server.server.WAZUH_INSTALL_BATCH_SIZE", 10_000):
+			order = [name for _, name in servers_needing_wazuh_agent()]
+
+		self.assertLess(order.index(never.name), order.index(stale.name))
+		self.assertLess(order.index(stale.name), order.index(recent.name))
+
+	def test_reconcile_does_not_let_one_server_type_take_every_batch(self):
+		"""Every server starts untried, and those ties must not resolve by WAZUH_SERVER_TYPES order."""
+		self._configure_wazuh()
+		app_server = create_test_server()
+		app_server.db_set("is_server_setup", 1)
+		database_server = create_test_database_server()
+		database_server.db_set("is_server_setup", 1)
+
+		# Reversing stands in for the shuffle: ties must follow it, not the doctype order
+		with patch("press.press.doctype.server.server.random.shuffle", lambda seq: seq.reverse()):
+			order = [name for _, name in servers_needing_wazuh_agent()]
+
+		self.assertLess(order.index(database_server.name), order.index(app_server.name))
+
+	def test_install_records_the_attempt_even_when_the_enqueue_fails(self):
+		"""An unqueueable server must still yield its turn, or it blocks the head of the queue."""
+		self._configure_wazuh()
+		server = create_test_server()
+
+		with (
+			patch("frappe.enqueue_doc", side_effect=frappe.QueueOverloaded),
+			self.assertRaises(frappe.QueueOverloaded),
+		):
+			server.install_wazuh_agent()
+
+		server.reload()
+		self.assertIsNotNone(server.wazuh_install_last_attempt)
+
 	def test_wazuh_agent_not_installed_during_setup_when_manager_unconfigured(self):
-		create_test_press_settings()
-		frappe.db.set_single_value("Press Settings", "wazuh_server", "")
+		self._configure_wazuh(server="")
 
 		for server in self._one_server_of_each_type():
 			with self.subTest(server_type=server.doctype):
@@ -697,9 +833,22 @@ class TestServer(FrappeTestCase):
 			with self.subTest(server_type=server.doctype):
 				with patch("press.press.doctype.server.server.Ansible") as Ansible:
 					Ansible.return_value.run.return_value = Mock(status="Success")
-					server._install_wazuh_agent("wazuh.example.com")
+					server._install_wazuh_agent("wazuh.example.com", "4.12.0-1")
 				server.reload()
 				self.assertTrue(server.is_wazuh_agent_installed)
+
+	def test_install_marks_wazuh_agent_installed_even_when_the_server_fails_validation(self):
+		"""A save() here would let an unrelated validation error hide a successful play."""
+		server = create_test_server()
+		# Any full save of this server now raises "Please select Managed Database Service"
+		server.db_set("is_managed_database", 1)
+
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._install_wazuh_agent("wazuh.example.com", "4.12.0-1")
+
+		server.reload()
+		self.assertTrue(server.is_wazuh_agent_installed)
 
 	def test_uninstall_clears_wazuh_agent_installed_flag_and_status(self):
 		for server in self._one_server_of_each_type():
@@ -713,7 +862,7 @@ class TestServer(FrappeTestCase):
 				self.assertFalse(server.is_wazuh_agent_installed)
 				self.assertIsNone(server.wazuh_agent_status)
 
-	def test_uninstall_reloads_before_save_to_preserve_concurrent_writes(self):
+	def test_uninstall_does_not_clobber_writes_made_during_the_play(self):
 		"""The long play window must not clobber edits made concurrently (e.g. archival)."""
 		server = create_test_server()
 		server.db_set("is_wazuh_agent_installed", True)
@@ -758,6 +907,43 @@ class TestServer(FrappeTestCase):
 				server.is_auditd_setup = False
 				server.set_auditd_setup_from_base_playbook()
 				self.assertFalse(server.is_auditd_setup)
+
+	def test_backup_streaming_enabled_after_rclone_play_succeeds(self):
+		server = create_test_server()
+		self.assertFalse(server.stream_backups)
+
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server.enable_backup_streaming()
+
+		server.reload()
+		self.assertTrue(server.stream_backups)
+
+	def test_backup_streaming_stays_disabled_when_rclone_play_fails(self):
+		"""The agent rejects a streamed backup when rclone is missing."""
+		server = create_test_server()
+
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Failure")
+			server.enable_backup_streaming()
+
+		server.reload()
+		self.assertFalse(server.stream_backups)
+
+	def test_backup_streaming_stays_disabled_when_rclone_play_errors_out(self):
+		"""An unreachable server logs the failure instead of raising."""
+		server = create_test_server()
+
+		with (
+			patch("press.press.doctype.server.server.Ansible") as Ansible,
+			patch("press.press.doctype.server.server.log_error") as log_error,
+		):
+			Ansible.return_value.run.side_effect = Exception("Connection refused")
+			server.enable_backup_streaming()
+
+		log_error.assert_called_once()
+		server.reload()
+		self.assertFalse(server.stream_backups)
 
 	@patch.object(BaseServer, "_archive", new=Mock())
 	@patch.object(BaseServer, "disable_subscription", new=Mock())
@@ -996,3 +1182,302 @@ class TestArchiveBenches(FrappeTestCase):
 
 		statuses = frappe.get_all("Bench", {"server": server.name}, pluck="status")
 		self.assertNotIn("Archived", statuses)
+
+
+class TestServerDecommissionNotice(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_teams_with_active_sites_excludes_archived_but_includes_suspended(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team_one = create_test_team()
+		team_two = create_test_team()
+		site_one = create_test_site(bench=bench.name, team=team_one.name)
+		site_two = create_test_site(bench=bench.name, team=team_one.name)
+		site_three = create_test_site(bench=bench.name, team=team_two.name)
+		archived_site = create_test_site(bench=bench.name, team=team_one.name)
+		archived_site.db_set("status", "Archived")
+		# Suspended sites still live on the server, so their teams must be notified.
+		suspended_site = create_test_site(bench=bench.name, team=team_one.name)
+		suspended_site.db_set("status", "Suspended")
+
+		teams = Server("Server", server.name).teams_with_active_sites()
+
+		self.assertEqual(set(teams), {team_one.name, team_two.name})
+		self.assertEqual(
+			sorted(teams[team_one.name]), sorted([site_one.name, site_two.name, suspended_site.name])
+		)
+		self.assertEqual(teams[team_two.name], [site_three.name])
+		self.assertNotIn(archived_site.name, teams[team_one.name])
+		self.assertIn(suspended_site.name, teams[team_one.name])
+
+	def test_teams_with_active_sites_ignores_sites_on_other_servers(self):
+		server = create_test_server()
+		other_server = create_test_server()
+		team = create_test_team()
+		create_test_site(bench=create_test_bench(server=server.name).name, team=team.name)
+		other_site = create_test_site(bench=create_test_bench(server=other_server.name).name, team=team.name)
+
+		teams = Server("Server", server.name).teams_with_active_sites()
+
+		self.assertNotIn(other_site.name, teams[team.name])
+
+	def test_notify_teams_before_decommission_sends_one_email_per_team_with_migration_details(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team_one = create_test_team()
+		team_two = create_test_team()
+		create_test_site(bench=bench.name, team=team_one.name)
+		create_test_site(bench=bench.name, team=team_one.name)
+		create_test_site(bench=bench.name, team=team_two.name)
+
+		with patch.object(frappe, "sendmail") as sendmail:
+			Server("Server", server.name).notify_teams_before_decommission(
+				deadline="October 10",
+				migration_window="Saturday-Sunday, October 10-11",
+				migration_start_time="1:00 AM IST",
+				expected_downtime="about an hour or more",
+				recommended_destination="Mumbai, India",
+			)
+
+		self.assertEqual(sendmail.call_count, 2)
+		calls_by_team = {call.kwargs["reference_name"]: call.kwargs for call in sendmail.call_args_list}
+		self.assertEqual(set(calls_by_team), {team_one.name, team_two.name})
+
+		team_one_call = calls_by_team[team_one.name]
+		self.assertTrue(team_one_call["recipients"])
+		self.assertEqual(team_one_call["template"], "server_decommission_migration")
+		self.assertEqual(team_one_call["args"]["server"], server.name)
+		self.assertEqual(team_one_call["args"]["site_count"], 2)
+		self.assertEqual(team_one_call["args"]["deadline"], "October 10")
+		self.assertEqual(team_one_call["args"]["action_url"], "https://cloud.frappe.io/dashboard")
+		self.assertEqual(team_one_call["args"]["recommended_destination"], "Mumbai, India")
+		self.assertIn("disk capacity", team_one_call["args"]["reason"])
+		self.assertEqual(calls_by_team[team_two.name]["args"]["site_count"], 1)
+
+	def test_notify_teams_before_decommission_uses_custom_reason(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		create_test_site(bench=bench.name, team=create_test_team().name)
+
+		with patch.object(frappe, "sendmail") as sendmail:
+			Server("Server", server.name).notify_teams_before_decommission(
+				deadline="October 10",
+				migration_window="the weekend of October 10-11",
+				migration_start_time="1:00 AM IST",
+				expected_downtime="about an hour or more",
+				reason="It is being retired as part of a hardware refresh.",
+			)
+
+		self.assertEqual(
+			sendmail.call_args.kwargs["args"]["reason"],
+			"It is being retired as part of a hardware refresh.",
+		)
+
+	def test_notify_teams_before_decommission_falls_back_to_team_user_without_communication_info(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team = create_test_team()
+		create_test_site(bench=bench.name, team=team.name)
+
+		with patch.object(frappe, "sendmail") as sendmail:
+			Server("Server", server.name).notify_teams_before_decommission(
+				deadline="October 10",
+				migration_window="the weekend of October 10-11",
+				migration_start_time="1:00 AM IST",
+				expected_downtime="about an hour or more",
+			)
+
+		team_user = frappe.db.get_value("Team", team.name, "user")
+		self.assertEqual(sendmail.call_args.kwargs["recipients"], [team_user])
+
+	def test_notify_teams_before_decommission_skips_teams_without_recipients(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team = create_test_team()
+		create_test_site(bench=bench.name, team=team.name)
+
+		with (
+			patch(
+				"press.press.doctype.server.server.get_communication_info",
+				return_value=[],
+			),
+			patch.object(frappe, "sendmail") as sendmail,
+		):
+			Server("Server", server.name).notify_teams_before_decommission(
+				deadline="October 10",
+				migration_window="Saturday-Sunday, October 10-11",
+				migration_start_time="1:00 AM IST",
+				expected_downtime="about an hour or more",
+			)
+
+		sendmail.assert_not_called()
+
+	def test_notify_teams_before_decommission_prints_progress_when_verbose(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team = create_test_team()
+		create_test_site(bench=bench.name, team=team.name)
+
+		with (
+			patch.object(frappe, "sendmail", new=Mock()),
+			patch("builtins.print") as mock_print,
+		):
+			Server("Server", server.name).notify_teams_before_decommission(
+				deadline="October 10",
+				migration_window="Saturday-Sunday, October 10-11",
+				migration_start_time="1:00 AM IST",
+				expected_downtime="about an hour or more",
+				verbose=True,
+			)
+
+		printed = " ".join(str(call.args[0]) for call in mock_print.call_args_list)
+		self.assertIn(server.name, printed)
+		self.assertIn(team.name, printed)
+
+	def test_notify_teams_before_decommission_is_silent_without_verbose(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		create_test_site(bench=bench.name, team=create_test_team().name)
+
+		with (
+			patch.object(frappe, "sendmail", new=Mock()),
+			patch("builtins.print") as mock_print,
+		):
+			Server("Server", server.name).notify_teams_before_decommission(
+				deadline="October 10",
+				migration_window="Saturday-Sunday, October 10-11",
+				migration_start_time="1:00 AM IST",
+				expected_downtime="about an hour or more",
+			)
+
+		mock_print.assert_not_called()
+
+	# The parameters the notify tests pass, matching notify_teams_before_decommission defaults.
+	NOTICE_KWARGS: typing.ClassVar[dict] = {
+		"deadline": "October 10",
+		"migration_window": "the weekend of October 10-11",
+		"migration_start_time": "1:00 AM IST",
+		"expected_downtime": "about an hour or more",
+	}
+
+	def _notice_args(self, server_name: str) -> dict:
+		return {
+			"server": server_name,
+			"action_url": "https://cloud.frappe.io/dashboard",
+			"reason": "It runs on DigitalOcean and has reached its disk capacity limits.",
+			"recommended_destination": None,
+			**self.NOTICE_KWARGS,
+		}
+
+	def _notice_message_id(self, server_name: str, team: str) -> str:
+		return Server("Server", server_name).decommission_notice_message_id(
+			team, self._notice_args(server_name)
+		)
+
+	def _insert_decommission_email_queue(self, message_id: str, status: str = "Sent"):
+		return frappe.get_doc(
+			{
+				"doctype": "Email Queue",
+				"sender": "notifications@frappe.io",
+				"message": "sent",
+				"status": status,
+				"message_id": message_id,
+			}
+		).insert(ignore_permissions=True)
+
+	def test_decommission_notice_message_id_changes_with_parameters(self):
+		server = create_test_server()
+		team = create_test_team()
+		base = self._notice_args(server.name)
+		server_doc = Server("Server", server.name)
+
+		same = server_doc.decommission_notice_message_id(team.name, base)
+		changed = server_doc.decommission_notice_message_id(team.name, {**base, "deadline": "October 25"})
+		other_team = server_doc.decommission_notice_message_id(create_test_team().name, base)
+
+		self.assertEqual(same, server_doc.decommission_notice_message_id(team.name, base))
+		self.assertNotEqual(same, changed)
+		self.assertNotEqual(same, other_team)
+
+	def test_check_duplicate_dispatch_within_days_detects_recent_send(self):
+		server = create_test_server()
+		team = create_test_team()
+		message_id = self._notice_message_id(server.name, team.name)
+		email_queue = self._insert_decommission_email_queue(message_id)
+
+		duplicate = Server("Server", server.name).check_duplicate_dispatch_within_days(message_id, 15)
+
+		self.assertIsNotNone(duplicate)
+		self.assertEqual(duplicate.name, email_queue.name)
+
+	def test_check_duplicate_dispatch_within_days_ignores_send_older_than_window(self):
+		server = create_test_server()
+		team = create_test_team()
+		message_id = self._notice_message_id(server.name, team.name)
+		email_queue = self._insert_decommission_email_queue(message_id)
+		email_queue.db_set(
+			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -20), update_modified=False
+		)
+
+		self.assertIsNone(Server("Server", server.name).check_duplicate_dispatch_within_days(message_id, 15))
+
+	def test_check_duplicate_dispatch_within_days_ignores_different_message_id(self):
+		server = create_test_server()
+		self._insert_decommission_email_queue("decommission-notice-other@frappecloud.com")
+
+		self.assertIsNone(
+			Server("Server", server.name).check_duplicate_dispatch_within_days(
+				self._notice_message_id(server.name, create_test_team().name), 15
+			)
+		)
+
+	def test_check_duplicate_dispatch_within_days_ignores_failed_send(self):
+		server = create_test_server()
+		team = create_test_team()
+		message_id = self._notice_message_id(server.name, team.name)
+		self._insert_decommission_email_queue(message_id, status="Error")
+
+		self.assertIsNone(Server("Server", server.name).check_duplicate_dispatch_within_days(message_id, 15))
+
+	def test_notify_teams_before_decommission_resends_after_failed_dispatch(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team = create_test_team()
+		create_test_site(bench=bench.name, team=team.name)
+		self._insert_decommission_email_queue(self._notice_message_id(server.name, team.name), status="Error")
+
+		with patch.object(frappe, "sendmail") as sendmail:
+			Server("Server", server.name).notify_teams_before_decommission(**self.NOTICE_KWARGS)
+
+		sendmail.assert_called_once()
+
+	def test_notify_teams_before_decommission_skips_team_notified_within_duplicate_window(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team = create_test_team()
+		create_test_site(bench=bench.name, team=team.name)
+		self._insert_decommission_email_queue(self._notice_message_id(server.name, team.name))
+
+		with patch.object(frappe, "sendmail") as sendmail:
+			Server("Server", server.name).notify_teams_before_decommission(**self.NOTICE_KWARGS)
+
+		sendmail.assert_not_called()
+
+	def test_notify_teams_before_decommission_verbose_reports_duplicate_with_date_and_link(self):
+		server = create_test_server()
+		bench = create_test_bench(server=server.name)
+		team = create_test_team()
+		create_test_site(bench=bench.name, team=team.name)
+		email_queue = self._insert_decommission_email_queue(self._notice_message_id(server.name, team.name))
+
+		with (
+			patch.object(frappe, "sendmail", new=Mock()),
+			patch("builtins.print") as mock_print,
+		):
+			Server("Server", server.name).notify_teams_before_decommission(verbose=True, **self.NOTICE_KWARGS)
+
+		printed = " ".join(str(call.args[0]) for call in mock_print.call_args_list)
+		self.assertIn("not sending this as already sent on", printed)
+		self.assertIn(email_queue.name, printed)

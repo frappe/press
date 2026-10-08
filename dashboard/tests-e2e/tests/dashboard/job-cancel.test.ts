@@ -83,10 +83,9 @@ test('cancels a running restore job from the job page', async ({ page }) => {
 
 	let cancelled = false
 	await page.route(
-		/\/api\/method\/press\.api\.client\.run_doc_method/,
+		/\/api\/method\/press\.press\.doctype\.agent_job\.agent_job\.cancel_job_from_dashboard/,
 		async (route) => {
-			const body = route.request().postDataJSON()
-			if (body?.dt === 'Agent Job' && body?.method === 'cancel_job') {
+			if (route.request().postDataJSON()?.name === JOB_NAME) {
 				cancelled = true
 			}
 			await fulfill(route, {})

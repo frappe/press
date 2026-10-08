@@ -14,6 +14,8 @@ class StopAndStartServerJob(PressJob):
 		self.wait_for_virtual_machine_to_start()
 
 		self.wait_for_server_to_be_accessible()
+		# TODO: Enable after a manual trial with the button on Server
+		# self.restore_truncated_configs()
 
 	@task
 	def stop_virtual_machine(self):
@@ -60,3 +62,7 @@ class StopAndStartServerJob(PressJob):
 		play = self.server_doc.ping_ansible()
 		if not play or play.status != "Success":
 			self.defer_current_task()
+
+	@task(queue="long", timeout=900)
+	def restore_truncated_configs(self):
+		self.server_doc.restore_truncated_configs()

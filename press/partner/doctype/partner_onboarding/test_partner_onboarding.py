@@ -12,7 +12,7 @@ from press.partner.doctype.partner_onboarding.partner_onboarding import (
 	has_partner_onboarding,
 )
 from press.press.doctype.invoice.invoice import Invoice
-from press.press.doctype.team.test_team import create_test_team
+from press.press.doctype.team.test_team import create_test_press_admin_team, create_test_team
 from press.tests.before_test import freeze_time
 
 # On IntegrationTestCase, the doctype test records and all
@@ -53,6 +53,68 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 				"contact": "+919876543210",
 			}
 		).insert(ignore_permissions=True)
+
+	def _create_pending_review_onboarding(self, team: str):
+		# Skip before_submit's certificate and MRR gates, which other tests cover.
+		onboarding = self._create_onboarding(team)
+		onboarding.db_set({"docstatus": 1, "status": "Pending Review"})
+		onboarding.reload()
+		return onboarding
+
+	def test_partner_manager_without_user_write_access_can_approve_and_grant_partner_privileges(self):
+		team = create_test_team()
+		frappe.get_doc("User", team.user).remove_roles("Partner")
+		self.assertNotIn("Partner", frappe.get_roles(team.user))
+		onboarding = self._create_pending_review_onboarding(team.name)
+		reviewer = frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": frappe.mock("email"),
+				"first_name": "Partner Reviewer",
+				"user_type": "System User",
+				"send_welcome_email": 0,
+				"roles": [{"role": "Press User"}, {"role": "Partner Manager"}],
+			}
+		).insert(ignore_permissions=True)
+
+		with self.set_user(reviewer.name):
+			self.assertNotIn("System Manager", frappe.get_roles())
+			self.assertFalse(frappe.has_permission("User", "write", doc=team.user))
+			onboarding.approve()
+
+		team.reload()
+		onboarding.reload()
+		self.assertEqual(onboarding.status, "Approved")
+		self.assertEqual(team.erpnext_partner, 1)
+		self.assertEqual(team.partner_status, "Active")
+		self.assertIn("Partner", frappe.get_roles(team.user))
+		self.assertEqual(onboarding.reviewed_by, reviewer.name)
+		self.assertTrue(onboarding.approved_on)
+
+	def test_press_user_cannot_enable_partner_privileges_directly(self):
+		team = create_test_press_admin_team()
+
+		with (
+			self.set_user(team.user),
+			self.assertRaisesRegex(frappe.PermissionError, "This action is only allowed for"),
+		):
+			team.enable_erpnext_partner_privileges()
+
+		team.reload()
+		self.assertFalse(team.erpnext_partner)
+		self.assertNotIn("Partner", frappe.get_roles(team.user))
+
+	def test_reject_sets_review_fields_without_enabling_partner_privileges(self):
+		team = create_test_team()
+		onboarding = self._create_pending_review_onboarding(team.name)
+
+		onboarding.reject("Incomplete documents")
+
+		team.reload()
+		self.assertEqual(team.erpnext_partner, 0)
+		self.assertEqual(onboarding.status, "Rejected")
+		self.assertEqual(onboarding.reviewed_by, frappe.session.user)
+		self.assertFalse(onboarding.approved_on)
 
 	def test_india_registration_requires_registered_state(self):
 		team = create_test_team()

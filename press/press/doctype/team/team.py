@@ -747,6 +747,7 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
+		frappe.only_for(["Partner Manager", "System Manager"], message=True)
 		self.erpnext_partner = 1
 		if not self.partner_email:
 			self.partner_email = self.user
@@ -755,7 +756,9 @@ class Team(Document):
 		self.partner_status = "Active"
 		self.save(ignore_permissions=True)
 		self.create_partner_referral_code()
-		frappe.get_doc("User", self.user).add_roles("Partner")
+		user = frappe.get_doc("User", self.user)
+		user.append_roles("Partner")
+		user.save(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
@@ -810,6 +813,12 @@ class Team(Document):
 			return False
 
 		return unpaid_invoices
+
+	def has_unpaid_invoices(self):
+		"""Two or more unpaid subscription invoices blocks new sites and servers, matching the New Site and New Server forms."""
+		return (
+			frappe.db.count("Invoice", {"team": self.name, "status": "Unpaid", "type": "Subscription"}) >= 2
+		)
 
 	def create_stripe_customer(self):
 		if not self.stripe_customer_id:
@@ -1307,6 +1316,14 @@ class Team(Document):
 			why = "You cannot create a new site as your account is disabled"
 			return (False, why)
 
+		if self.has_unpaid_invoices():
+			why = "Please settle your outstanding invoices to create new sites"
+			return (False, why)
+
+		if self.apply_limits and self.spending_limit <= self.total_subscribed_amount():
+			why = "You have exceeded your spending limit. Please contact support to increase your limits."
+			return (False, why)
+
 		if self.free_account or self.parent_team or self.billing_team:
 			return allow
 
@@ -1367,6 +1384,9 @@ class Team(Document):
 		if not self.enabled:
 			frappe.throw("You cannot create a new server because your account is disabled")
 
+		if self.has_unpaid_invoices():
+			frappe.throw("Please settle your outstanding invoices to create a new server")
+
 		if not self.billing_address:
 			frappe.throw(
 				"You don't have billing details added. Please add billing details from settings to continue."
@@ -1383,9 +1403,28 @@ class Team(Document):
 		if self.free_account or self.billing_team or self.payment_mode:
 			return True
 
+		return self.has_paid_invoice()
+
+	def can_skip_ssh_wait(self):
+		return self.has_paid_invoice() or (self.is_payment_mode_set() and self.has_paid_subscription())
+
+	def has_paid_invoice(self):
 		return bool(
 			frappe.db.exists("Invoice", {"team": self.name, "amount_paid": (">", 0), "status": "Paid"})
 		)
+
+	def has_paid_subscription(self):
+		paid_plan_filters = {
+			"Site Plan": {"price_usd": (">", 0), "is_trial_plan": 0},
+			"Server Plan": {"price_usd": (">", 0)},
+		}
+		for plan_type, filters in paid_plan_filters.items():
+			plans = frappe.get_all(
+				"Subscription", {"team": self.name, "enabled": 1, "plan_type": plan_type}, pluck="plan"
+			)
+			if plans and frappe.db.exists(plan_type, {"name": ("in", plans), **filters}):
+				return True
+		return False
 
 	def billing_info(self):
 		micro_debit_charge_field = (

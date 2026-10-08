@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import math
 from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime, timedelta
@@ -1223,8 +1224,9 @@ class Site(Document, TagHelpers):
 
 	def try_increasing_disk(self, server: "BaseServer", mountpoint: str, diff: int, err_msg: str):
 		try:
+			diff = abs(diff)
 			server.calculated_increase_disk_size(
-				mountpoint=mountpoint, additional=cint(diff / 1024 / 1024 // 1024)
+				mountpoint=mountpoint, additional=math.ceil(diff / 1024 / 1024 / 1024)
 			)
 		except VolumeResizeLimitError:
 			frappe.throw(
@@ -1449,6 +1451,14 @@ class Site(Document, TagHelpers):
 		database_server = frappe.get_doc("Database Server", self.database_server_name)
 		if not database_server.is_mariadb_up():
 			frappe.throw("The database server is not up. Wait for it to come back, then try again.")
+		# A site that answers is out of maintenance mode. Someone activated it by hand,
+		# and a restore now would overwrite the data they have entered since.
+		if self.is_responsive():
+			frappe.throw(
+				"This site responds to requests, so it may already be active. A table "
+				"restore would overwrite its current data. If the site is still broken, "
+				"contact support."
+			)
 
 	@property
 	def database_size(self) -> int:
@@ -3470,7 +3480,7 @@ class Site(Document, TagHelpers):
 				"from_plan": "",
 				"to_plan": plan,
 				"type": "Initial Plan",
-				"timestamp": self.creation,
+				"timestamp": self.signup_time or self.creation,
 			}
 		).insert(ignore_permissions=True)
 
@@ -4622,7 +4632,7 @@ class Site(Document, TagHelpers):
 			region.inbound_ip = self.inbound_ip_in_cluster(region.name)
 
 		return {
-			"has_recent_failed_migration": self.has_recent_failed_migration(),
+			"recent_failed_migration_servers": self.recent_failed_migration_servers(),
 			"In-Place Migrate Site": {
 				"hidden": False,
 				"allow_scheduling": False,
@@ -4651,15 +4661,17 @@ class Site(Document, TagHelpers):
 			},
 		}
 
-	def has_recent_failed_migration(self) -> bool:
-		# A failed move leaves restore files behind, so a retry hits the space pre-check.
-		return frappe.db.exists(
+	def recent_failed_migration_servers(self) -> list[str]:
+		# A failed move leaves restore files on its destination, so a retry there hits the space pre-check.
+		return frappe.get_all(
 			"Site Migration",
-			{
+			filters={
 				"site": self.name,
 				"status": "Failure",
 				"creation": (">", frappe.utils.add_to_date(frappe.utils.now(), days=-1)),
 			},
+			pluck="destination_server",
+			distinct=True,
 		)
 
 	@property
@@ -5791,6 +5803,7 @@ def create_subscription_for_trial_sites():
 		.left_join(ProductTrial)
 		.on(ProductTrialRequest.product_trial == ProductTrial.name)
 		.where(ProductTrialRequest.is_subscription_created == 0)
+		.where(ProductTrialRequest.site != "")
 		.where(SitePlanChange.name.isnull())
 		.where(ProductTrialRequest.status == "Site Created")
 		.limit(25)

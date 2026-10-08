@@ -1,13 +1,31 @@
 from __future__ import annotations
 
 import json
-from base64 import urlsafe_b64decode, urlsafe_b64encode
+from base64 import b64encode, urlsafe_b64decode, urlsafe_b64encode
+from datetime import datetime
 from unittest.mock import Mock, patch
-from urllib.parse import urlencode
+from urllib.parse import parse_qs, urlencode, urlparse
 
 import frappe
 from frappe.tests.ui_test_helpers import create_test_user
 from frappe.tests.utils import FrappeTestCase
+
+
+class TestCompatibleFrappeVersionFromPyproject(FrappeTestCase):
+	def test_pyproject_without_frappe_dependency_is_rejected(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "Could not find a compatible Frappe version"):
+			self._get_compatible_frappe_version('[project]\nname = "app"\n')
+
+	def test_pyproject_with_frappe_dependency_returns_version_spec(self):
+		pyproject = '[tool.bench.frappe-dependencies]\nfrappe = ">=15.0.0,<16.0.0-dev"\n'
+		self.assertEqual(self._get_compatible_frappe_version(pyproject), ">=15.0.0,<16.0.0-dev")
+
+	def _get_compatible_frappe_version(self, pyproject: str) -> str:
+		from press.api.github import _get_compatible_frappe_version_from_pyproject
+
+		with patch("press.api.github.requests.get") as get:
+			get.return_value.json.return_value = {"content": b64encode(pyproject.encode()).decode()}
+			return _get_compatible_frappe_version_from_pyproject("owner", "app", {"name": "develop"}, {})
 
 
 class TestGitHubAuthorization(FrappeTestCase):
@@ -105,6 +123,69 @@ class TestGitHubAuthorization(FrappeTestCase):
 		self.assertNotIn("code", log_error.call_args.kwargs)
 		self.assertEqual(frappe.flags.redirect_location, frappe.utils.get_url("/dashboard"))
 
+	def test_get_context_starts_user_authorization_when_install_callback_has_no_code(self):
+		from press.api.github import GITHUB_OAUTH_AUTHORIZE_URL
+
+		state = self._encode_github_oauth_state(self.team.name, "/dashboard/sites")
+		self._set_form_dict(state=state, installation_id="123", setup_action="install")
+
+		with (
+			self.assertRaises(frappe.Redirect),
+			patch(
+				"press.api.github.frappe.db.get_single_value",
+				return_value="client-id",
+			),
+			patch("press.www.github.authorize.obtain_access_token") as obtain_access_token,
+		):
+			self._get_context()(None)
+
+		obtain_access_token.assert_not_called()
+		self.assertTrue(frappe.flags.redirect_location.startswith(GITHUB_OAUTH_AUTHORIZE_URL))
+		self.assertIn("client_id=client-id", frappe.flags.redirect_location)
+		reissued_state = parse_qs(urlparse(frappe.flags.redirect_location).query)["state"][0]
+		self.assertEqual(self._decode_state_payload(reissued_state)["team"], self.team.name)
+
+	def test_get_context_reissues_state_so_oauth_leg_gets_fresh_expiry_window(self):
+		from press.api.github import GITHUB_OAUTH_AUTHORIZE_URL
+
+		# Mint a state that is still valid but already nine minutes into its
+		# ten-minute window, simulating a slow install wizard.
+		aged_state, aged_payload = self._make_aged_state(self.team.name, "/dashboard/sites", age_seconds=540)
+		self._set_form_dict(state=aged_state, installation_id="123", setup_action="install")
+
+		with (
+			self.assertRaises(frappe.Redirect),
+			patch("press.api.github.frappe.db.get_single_value", return_value="client-id"),
+		):
+			self._get_context()(None)
+
+		self.assertTrue(frappe.flags.redirect_location.startswith(GITHUB_OAUTH_AUTHORIZE_URL))
+		reissued_state = parse_qs(urlparse(frappe.flags.redirect_location).query)["state"][0]
+		self.assertNotEqual(reissued_state, aged_state)
+
+		reissued_payload = self._decode_state_payload(reissued_state)
+		self.assertEqual(reissued_payload["team"], self.team.name)
+		self.assertEqual(reissued_payload["redirect_url"], "/dashboard/sites")
+		self.assertGreater(reissued_payload["issued_at"], aged_payload["issued_at"])
+
+	def test_get_context_does_not_start_authorization_when_user_denied_install(self):
+		state = self._encode_github_oauth_state(self.team.name, "/dashboard/sites")
+		self._set_form_dict(state=state, error="access_denied")
+
+		with self.assertRaises(frappe.Redirect):
+			self._get_context()(None)
+
+		self.assertEqual(frappe.flags.redirect_location, frappe.utils.get_url("/dashboard"))
+
+	def test_get_github_callback_login_redirect_preserves_state_without_code(self):
+		from press.api.github import get_github_callback_login_redirect
+
+		state = self._encode_github_oauth_state(self.team.name, "/dashboard/sites")
+		callback_url = f"/github/authorize?{urlencode({'state': state})}"
+		expected = frappe.utils.get_url(f"/dashboard/login?{urlencode({'redirect': callback_url})}")
+
+		self.assertEqual(get_github_callback_login_redirect(None, state), expected)
+
 	def test_obtain_access_token_redacts_oauth_code_and_token_from_logs(self):
 		response = {
 			"access_token": "secret-token",
@@ -140,6 +221,22 @@ class TestGitHubAuthorization(FrappeTestCase):
 				"token_type": "bearer",
 			},
 		)
+
+	def _make_aged_state(self, team: str, redirect_url: str, age_seconds: int) -> tuple[str, dict]:
+		from press.api.github import (
+			_encode_github_state_payload,
+			_sign_github_oauth_state,
+			get_safe_github_redirect_url,
+		)
+
+		payload = {
+			"issued_at": int(datetime.now().timestamp()) - age_seconds,
+			"redirect_url": get_safe_github_redirect_url(redirect_url),
+			"team": team,
+			"user": frappe.session.user,
+		}
+		encoded_payload = _encode_github_state_payload(payload)
+		return f"{encoded_payload}.{_sign_github_oauth_state(encoded_payload)}", payload
 
 	def _decode_state_payload(self, state: str) -> dict[str, str]:
 		encoded_payload = state.rsplit(".", 1)[0]

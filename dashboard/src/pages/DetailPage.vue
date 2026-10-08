@@ -76,6 +76,7 @@ import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
 import AccessRequestButton from '../components/AccessRequestButton.vue';
 import PageBanner from '../components/PageBanner.vue';
+import { leafTitle, pageTitle } from '../utils/title';
 
 let subscribed = {};
 
@@ -98,6 +99,9 @@ export default {
 		TabsWithRouter,
 		PageBanner,
 		FBreadcrumbs: Breadcrumbs,
+	},
+	pageMeta() {
+		return { title: pageTitle(this.title, leafTitle(this.$route)) };
 	},
 	resources: {
 		document() {

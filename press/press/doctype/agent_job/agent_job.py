@@ -23,7 +23,7 @@ from frappe.utils import (
 
 from press.access.support_access import has_support_access
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
-from press.api.client import dashboard_whitelist, is_owned_by_team
+from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
 )
@@ -34,6 +34,7 @@ from press.press.doctype.site_migration.site_migration import (
 )
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error, timer
+from press.utils.user import as_administrator
 
 AGENT_LOG_KEY = "agent-jobs"
 AGENT_JOB_TIMEOUT_HOURS = 4
@@ -293,6 +294,10 @@ class AgentJob(Document):
 		frappe.db.commit()
 
 	@frappe.whitelist()
+	def get_agent_endpoint(self):
+		return Agent(self.server, server_type=self.server_type).get_request_url(f"jobs/{self.job_id}")
+
+	@frappe.whitelist()
 	def get_status(self):
 		agent = Agent(self.server, server_type=self.server_type)
 
@@ -330,15 +335,16 @@ class AgentJob(Document):
 	def process_job_updates(self):
 		process_job_updates(self.name)
 
-	@dashboard_whitelist()
+	@frappe.whitelist()
 	def cancel_job(self):
 		if self.status not in ("Pending", "Running"):
 			frappe.throw(f"Can't cancel a job that is {self.status}")
 		if not frappe.local.system_user():
 			self.validate_dashboard_cancellation()
 
-		agent = Agent(self.server, server_type=self.server_type)
-		agent.cancel_job(self.job_id)
+		with as_administrator():
+			Agent(self.server, server_type=self.server_type).cancel_job(self.job_id)
+		self.add_comment("Info", "Cancelled the job")
 
 	def validate_dashboard_cancellation(self):
 		if self.job_type not in DASHBOARD_CANCELLABLE_JOB_TYPES:
@@ -1399,3 +1405,26 @@ def agent_poll_count_stats_daily():
 	start_time = frappe.utils.add_to_date(None, hours=-24)
 	end_time = frappe.utils.add_to_date(None, minutes=-1)
 	agent_poll_count_stats(start_time, end_time, min_count, duration)
+
+
+@frappe.whitelist()
+def cancel_job_from_dashboard(name: str):
+	"""Cancel a job from the job page.
+
+	Agent Job grants a dashboard user no permission at all, so frappe refuses
+	the read that `run_doc_method` does before it calls the method. The team
+	check runs here instead, against the site the job belongs to, and the
+	cancel itself runs as Administrator.
+
+	`frappe.get_doc` reads a dict as a new document, so the name is checked here
+	rather than left to the annotation, which frappe validates only in a request.
+	"""
+	if not isinstance(name, str):
+		frappe.throw("Job name must be a string", frappe.ValidationError)
+
+	job: AgentJob = frappe.get_doc("Agent Job", name)
+	if not has_support_access("Site", job.site):
+		is_owned_by_team("Site", job.site, raise_exception=True)
+
+	job.validate_dashboard_cancellation()
+	job.cancel_job()

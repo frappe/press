@@ -317,7 +317,13 @@ export default {
 			);
 		},
 		lastPlanChange() {
-			return this.$resources.planChange?.data?.message || null;
+			const change = this.$resources.planChange?.data?.message || null;
+			// A site gets its first plan through a plan change record as well, and
+			// that record is an assignment rather than a change.
+			if (!change || change.type === 'Initial Plan' || !change.from_plan) {
+				return null;
+			}
+			return change;
 		},
 		lastPlanChangedOn() {
 			return this.lastPlanChange

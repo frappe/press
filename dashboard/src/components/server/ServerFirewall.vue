@@ -1,20 +1,18 @@
 <template>
-	<div>
-		<div
-			class="bg-yellow-100 text-yellow-900 px-4 py-3 mb-3 rounded-md border border-yellow-200"
-		>
-			<p class="text-base space-y-2 leading-relaxed">
-				Please note that mis-configuring firewall rules can lead to loss of
-				access and should be done with caution. It may take a few minutes for
-				changes to take effect.
+	<div class="space-y-3">
+		<div>
+			<h2 class="text-lg font-medium text-ink-gray-9">Firewall</h2>
+			<p class="mt-1 text-p-base text-ink-gray-6">
+				Allow or block traffic to this server by source, port and protocol.
 			</p>
 		</div>
 		<div v-if="firewall.doc" class="flex items-center justify-between">
-			<Switch
+			<FormControl
+				type="checkbox"
 				label="Enabled"
-				class="border w-60"
-				v-model="firewall.doc.enabled"
+				:model-value="Boolean(firewall.doc.enabled)"
 				:disabled="firewall.get.loading"
+				@update:model-value="(value) => (firewall.doc.enabled = value ? 1 : 0)"
 			/>
 			<div class="flex justify-center gap-2">
 				<Button
@@ -38,6 +36,15 @@
 					@click="openAddDialog = !openAddDialog"
 				/>
 			</div>
+		</div>
+		<div
+			class="bg-yellow-100 text-yellow-900 px-4 py-3 rounded-md border border-yellow-200"
+		>
+			<p class="text-base space-y-2 leading-relaxed">
+				Please note that mis-configuring firewall rules can lead to loss of
+				access and should be done with caution. It may take a few minutes for
+				changes to take effect.
+			</p>
 		</div>
 		<ObjectList
 			v-if="firewall.doc"
@@ -95,21 +102,21 @@
 </template>
 
 <script setup lang="ts">
-import { createDocumentResource, Switch } from 'frappe-ui';
-import ObjectList from '../../components/ObjectList.vue';
-import ServerFirewallDialog from './ServerFirewallDialog.vue';
-import { ref } from 'vue';
+import { createDocumentResource, FormControl } from 'frappe-ui'
+import { ref } from 'vue'
+import ObjectList from '../../components/ObjectList.vue'
+import ServerFirewallDialog from './ServerFirewallDialog.vue'
 
 const props = defineProps<{
-	id: string;
-}>();
+	id: string
+}>()
 
-const openAddDialog = ref(false);
+const openAddDialog = ref(false)
 
 const firewall = createDocumentResource({
 	doctype: 'Server Firewall',
 	name: props.id,
 	auto: true,
 	cache: ['Server', 'Firewall', props.id],
-});
+})
 </script>

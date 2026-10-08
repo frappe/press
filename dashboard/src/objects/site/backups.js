@@ -415,6 +415,7 @@ export function backupRecordsOptions() {
 			]
 		},
 		primaryAction({ listResource: backups, documentResource: site }) {
+			if (site.doc?.status === 'Archived') return null
 			return {
 				label: 'Take Backup',
 				slots: {
@@ -461,17 +462,11 @@ export function backupRecordsOptions() {
 			if (site.doc?.status === 'Archived') {
 				if (backups?.data && backups.data.length > 0) {
 					return {
-						title: 'Need help with restoring your archived site.',
+						title:
+							'To restore an archived site backup, follow <a href="https://docs.frappe.io/cloud/sites/migrate-an-existing-site#restore-archived-site" class="underline" target="_blank">the documentation</a>. If you need more assistance, <a href="https://support.frappe.io" class="underline" target="_blank">contact support</a>.',
 						dismissable: true,
 						id: site.doc.name,
 						type: 'gray',
-						button: {
-							label: 'Contact Support',
-							variant: 'outline',
-							onClick() {
-								window.open('https://frappecloud.com/support', '_blank')
-							},
-						},
 					}
 				}
 				return

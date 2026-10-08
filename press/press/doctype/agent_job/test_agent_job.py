@@ -10,12 +10,20 @@ from unittest.mock import Mock, patch
 
 import frappe
 import responses
+from frappe.handler import run_doc_method as frappe_run_doc_method
 from frappe.model.naming import make_autoname
+from frappe.tests.ui_test_helpers import create_test_user
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days
 
 from press.agent import Agent
-from press.press.doctype.agent_job.agent_job import AgentJob, fail_old_jobs, lock_doc_updated_by_job
+from press.overrides import before_request
+from press.press.doctype.agent_job.agent_job import (
+	AgentJob,
+	cancel_job_from_dashboard,
+	fail_old_jobs,
+	lock_doc_updated_by_job,
+)
 from press.press.doctype.agent_job.agent_job_notifications import DOC_URLS, JobErr, get_details
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
@@ -393,6 +401,150 @@ class TestCancelJob(FrappeTestCase):
 		)
 
 
+class TestCancelJobFromDashboard(FrappeTestCase):
+	"""Two teams, each holding the Press User role and nothing else.
+
+	A job always names a server, a bench sometimes and a site sometimes. The
+	endpoint answers only to the team that owns the site the job belongs to.
+	"""
+
+	def setUp(self):
+		self.team = create_test_press_admin_team()
+		self.other_team = create_test_press_admin_team()
+		self.mine = self.jobs_of(self.team)
+		self.theirs = self.jobs_of(self.other_team)
+
+	def tearDown(self):
+		if hasattr(frappe.local, "request"):
+			del frappe.local.request
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def sign_in_as(self, team):
+		"""Put the request-scoped team in place the way `before_request` does."""
+		frappe.set_user(team.user)
+		before_request()
+
+	def jobs_of(self, team) -> dict[str, AgentJob]:
+		"""One running backup of each shape a job comes in."""
+		bench = create_test_bench()
+		frappe.db.set_value("Bench", bench.name, "team", team.name)
+		site = create_test_site(bench=bench.name, team=team.name)
+
+		def backup(**fields) -> AgentJob:
+			job = create_test_agent_job(job_type="Backup Site", server=bench.server, job_id=42)
+			job.db_set({"status": "Running", **fields})
+			return job
+
+		return {
+			"server": backup(),
+			"bench": backup(bench=bench.name),
+			"site": backup(bench=bench.name, site=site.name),
+		}
+
+	def test_a_team_cancels_the_running_backup_of_its_own_site(self):
+		self.sign_in_as(self.team)
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			cancel_job_from_dashboard(self.mine["site"].name)
+
+		cancel_job.assert_called_once_with(42)
+
+	@responses.activate
+	def test_a_dashboard_cancel_reaches_the_agent_and_records_the_team_user(self):
+		"""The agent call runs as Administrator, and the comment names the caller."""
+		job = self.mine["site"]
+		responses.post(re.compile(rf".*/agent/jobs/{job.job_id}/cancel"), json={})
+		self.sign_in_as(self.team)
+
+		cancel_job_from_dashboard(job.name)
+
+		self.assertEqual(len(responses.calls), 1)
+		comment = frappe.get_last_doc("Comment", {"reference_name": job.name, "comment_type": "Info"})
+		self.assertEqual((comment.content, comment.owner), ("Cancelled the job", self.team.user))
+
+	def test_a_team_cannot_cancel_the_backup_of_another_teams_site(self):
+		self.sign_in_as(self.team)
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			self.assertRaisesRegex(
+				frappe.PermissionError,
+				"Not permitted",
+				cancel_job_from_dashboard,
+				self.theirs["site"].name,
+			)
+
+		cancel_job.assert_not_called()
+		self.assertEqual(frappe.db.get_value("Agent Job", self.theirs["site"].name, "status"), "Running")
+
+	def test_a_job_that_names_no_site_belongs_to_nobody(self):
+		"""The endpoint asks the site who owns the job, so a job without one is
+		refused to its own team as well."""
+		self.sign_in_as(self.team)
+
+		for shape in ("server", "bench"):
+			for owner, jobs in (("mine", self.mine), ("theirs", self.theirs)):
+				with self.subTest(shape=shape, owner=owner):
+					with patch.object(Agent, "cancel_job") as cancel_job:
+						self.assertRaises(frappe.PermissionError, cancel_job_from_dashboard, jobs[shape].name)
+
+					cancel_job.assert_not_called()
+
+	def test_a_team_cannot_cancel_a_job_type_that_has_no_failure_path(self):
+		self.sign_in_as(self.team)
+		self.mine["site"].db_set("job_type", "Migrate Site")
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"Migrate Site jobs can't be cancelled",
+				cancel_job_from_dashboard,
+				self.mine["site"].name,
+			)
+
+		cancel_job.assert_not_called()
+
+	def test_an_operator_cancels_a_job_from_the_desk_form(self):
+		"""The desk button calls `frm.call('cancel_job')`, so the method stays
+		whitelisted. Only the dashboard route moved to the endpoint."""
+		operator = frappe.mock("email")
+		create_test_user(operator)
+		frappe.set_user(operator)
+		frappe.local.request = frappe._dict(method="POST", headers=frappe._dict())
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			frappe_run_doc_method("cancel_job", dt="Agent Job", dn=self.mine["site"].name)
+
+		cancel_job.assert_called_once_with(42)
+		comment = frappe.get_last_doc("Comment", {"reference_name": self.mine["site"].name})
+		self.assertEqual((comment.content, comment.owner), ("Cancelled the job", operator))
+
+	def test_the_endpoint_refuses_a_name_that_is_not_a_string(self):
+		"""`frappe.get_doc` reads a dict as a new document, and frappe validates
+		the annotation only in a request."""
+		self.sign_in_as(self.team)
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"must be a string",
+				cancel_job_from_dashboard,
+				{"status": "Running"},
+			)
+
+		cancel_job.assert_not_called()
+
+	def test_a_team_reads_no_job_of_another_team(self):
+		"""Agent Job grants a dashboard user nothing, so `get` refuses every shape."""
+		from press.api.client import get
+
+		self.sign_in_as(self.team)
+
+		for shape, job in self.theirs.items():
+			with self.subTest(shape=shape):
+				self.assertRaises(frappe.PermissionError, get, "Agent Job", job.name)
+
+
 class TestAgentJobNotifications(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
@@ -541,6 +693,39 @@ class TestAgentJobNotifications(FrappeTestCase):
 		self.assertEqual(details["title"], "Update failed because of the dummy_app app")
 		self.assertIn("newer release of <b>dummy_app</b> is available", details["message"])
 		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_UPDATE])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_error_raised_by_frappe_db_layer_blames_the_app_that_called_it(self):
+		site, bench = self.site_with_app("dummy_app")
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/modules/patch_handler.py", line 90, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/database/database.py", line 230, in sql\n'
+			"pymysql.err.OperationalError: (1054, \"Unknown column 'rate' in 'field list'\")",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertEqual(details["title"], "Update failed because of the dummy_app app")
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_DEBUG])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_traceback_with_only_frappe_frames_gets_no_banner(self):
+		site, bench = self.site_with_app("dummy_app")
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/migrate.py", line 120, in run\n'
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/database/database.py", line 230, in sql\n'
+			"pymysql.err.OperationalError: (2013, 'Lost connection')",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertFalse(details["is_actionable"])
+		self.assertEqual(details["title"], "Site Migrate")
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_app_name_with_digits_is_not_skipped(self):

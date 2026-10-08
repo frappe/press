@@ -19,6 +19,7 @@ from press.api.analytics import (
 	get_rate_interval,
 	get_rounded_boundaries,
 	get_rounded_boundary,
+	prometheus_timegrain,
 )
 from press.api.bench import all as all_benches
 from press.api.site import protected
@@ -454,7 +455,7 @@ def analytics(name, query, timezone, start, end, server_type=None):
 	mount_point = get_mount_point(name, server_type)
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
-	_, timegrain = auto_timespan_timegrain(start, end)
+	timegrain = prometheus_timegrain(start, end)
 	# Window for rate()/increase() must span several scrapes, otherwise the charts
 	# spike to zero on steps where the rate window saw fewer than two samples.
 	rate_interval = get_rate_interval(timegrain)
@@ -469,8 +470,9 @@ def analytics(name, query, timezone, start, end, server_type=None):
 			lambda x: x["device"],
 		),
 		"iops": (
-			f"""rate(node_disk_reads_completed_total{{instance="{name}", job="node"}}[{rate_interval}s])""",
-			lambda x: x["device"],
+			# rate() drops __name__, so tag each side before the union
+			f"""label_replace(rate(node_disk_reads_completed_total{{instance="{name}", job="node"}}[{rate_interval}s]), "op", "read", "", "") or label_replace(rate(node_disk_writes_completed_total{{instance="{name}", job="node"}}[{rate_interval}s]), "op", "write", "", "")""",
+			lambda x: f"{x['device']} {x['op']}",
 		),
 		"space": (
 			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{mount_point}"}})""",
@@ -498,12 +500,9 @@ def analytics(name, query, timezone, start, end, server_type=None):
 			lambda x: x["command"],
 		),
 		"database_connections": (
-			f"""{{__name__=~"mysql_global_status_threads_connected|mysql_global_variables_max_connections", instance="{name}"}}""",
-			lambda x: (
-				"Max Connections"
-				if x["__name__"] == "mysql_global_variables_max_connections"
-				else "Connected Clients"
-			),
+			# peak over the bucket, else a burst that hits max_connections between steps is invisible
+			f"""label_replace(max_over_time(mysql_global_status_threads_connected{{instance="{name}",job="mariadb"}}[{rate_interval}s]), "metric", "Connected Clients", "", "") or label_replace(mysql_global_variables_max_connections{{instance="{name}",job="mariadb"}}, "metric", "Max Connections", "", "")""",
+			lambda x: x["metric"],
 		),
 		"innodb_bp_size": (
 			f"""mysql_global_variables_innodb_buffer_pool_size{{instance='{name}'}}""",
@@ -579,6 +578,32 @@ def get_slow_logs_by_site(name, query, timezone, start, end):
 
 	# Not normalized: this chart groups by database name, not by query text
 	return get_slow_logs(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+@redis_cache(ttl=10 * 60)
+def get_slow_logs_by_query(name, query, timezone, start, end):
+	"""Slow queries of one host. A replica gets its own slow log, so pick the host to compare primary and replica."""
+	from press.api.analytics import MAX_QUERIES, ResourceType, get_slow_logs
+
+	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
+	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
+	timespan, timegrain = auto_timespan_timegrain(start, end)
+
+	return get_slow_logs(
+		name,
+		query,
+		timezone,
+		start,
+		end,
+		timespan,
+		timegrain,
+		ResourceType.SERVER,
+		normalize=True,
+		max_no_of_paths=MAX_QUERIES,
+		group_by_query=True,
+	)
 
 
 def prometheus_instant_value(query: str) -> float | None:

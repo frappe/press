@@ -38,7 +38,7 @@
 			</div>
 		</div>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-			<AnalyticsCard title="Uptime" v-if="isServerType('Database Server')">
+			<AnalyticsCard title="Uptime" v-if="isDatabaseServer()">
 				<LineChart
 					type="time"
 					title="Uptime"
@@ -190,7 +190,12 @@
 					:key="iopsData"
 					:data="iopsData"
 					unit="IOps"
-					:chartTheme="[$theme.colors.purple[500], $theme.colors.blue[500]]"
+					:chartTheme="[
+						$theme.colors.purple[500],
+						$theme.colors.blue[500],
+						$theme.colors.pink[500],
+						$theme.colors.cyan[500],
+					]"
 					:loading="$resources.iops.loading"
 					:error="$resources.iops.error"
 					:showCard="false"
@@ -299,7 +304,7 @@
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				title="Queries"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -328,7 +333,7 @@
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				title="DB Connections"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -351,7 +356,7 @@
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				title="Average Row Lock Time"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -371,7 +376,7 @@
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#very-high-database-server-memory-usage"
 				title="Buffer Pool Size"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -391,7 +396,7 @@
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#very-high-database-server-memory-usage"
 				title="Buffer Pool Size of Total Ram"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -422,7 +427,7 @@
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#very-high-database-server-memory-usage"
 				title="Buffer Pool Miss Percent"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -452,7 +457,7 @@
 
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 				class="sm:col-span-2"
 				title="Frequent Slow queries"
 			>
@@ -472,7 +477,7 @@
 
 			<AnalyticsCard
 				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
-				v-if="isServerType('Database Server')"
+				v-if="isDatabaseServer()"
 				class="sm:col-span-2"
 				title="Slowest queries"
 			>
@@ -484,6 +489,46 @@
 					:chartTheme="chartColors"
 					:loading="$resources.slowLogsDuration.loading"
 					:error="$resources.slowLogsDuration.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
+				v-if="isDatabaseServer()"
+				class="sm:col-span-2"
+				title="Frequent Slow queries by query"
+			>
+				<BarChart
+					title="Frequent Slow queries by query"
+					:key="slowQueriesCountData"
+					:data="slowQueriesCountData"
+					unit="queries"
+					:chartTheme="chartColors"
+					:loading="$resources.slowQueriesCount.loading"
+					:error="$resources.slowQueriesCount.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
+				v-if="isDatabaseServer()"
+				class="sm:col-span-2"
+				title="Slowest queries by query"
+			>
+				<BarChart
+					title="Slowest queries by query"
+					:key="slowQueriesDurationData"
+					:data="slowQueriesDurationData"
+					unit="seconds"
+					:chartTheme="chartColors"
+					:loading="$resources.slowQueriesDuration.loading"
+					:error="$resources.slowQueriesDuration.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 					@datazoom="handleDataZoom"
@@ -748,9 +793,7 @@ export default {
 					start: this.startTime,
 					end: this.endTime,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					!this.isServerType('Application Server'),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 		slowLogsDuration() {
@@ -763,9 +806,33 @@ export default {
 					start: this.startTime,
 					end: this.endTime,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					!this.isServerType('Application Server'),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
+			}
+		},
+		slowQueriesCount() {
+			return {
+				url: 'press.api.server.get_slow_logs_by_query',
+				params: {
+					name: this.chosenServer,
+					query: 'count',
+					timezone: this.localTimezone,
+					start: this.startTime,
+					end: this.endTime,
+				},
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
+			}
+		},
+		slowQueriesDuration() {
+			return {
+				url: 'press.api.server.get_slow_logs_by_query',
+				params: {
+					name: this.chosenServer,
+					query: 'duration',
+					timezone: this.localTimezone,
+					start: this.startTime,
+					end: this.endTime,
+				},
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 		databaseUptime() {
@@ -781,9 +848,7 @@ export default {
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
-				auto:
-					this.isServerType('Database Server') ||
-					this.isServerType('Replication Server'),
+				auto: this.isDatabaseServer(),
 			}
 		},
 		databaseCommandsCount() {
@@ -799,10 +864,7 @@ export default {
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 		databaseConnections() {
@@ -818,10 +880,7 @@ export default {
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 		innodbBufferPoolSize() {
@@ -837,10 +896,7 @@ export default {
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 		innodbBufferPoolSizeOfTotalRam() {
@@ -856,10 +912,7 @@ export default {
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 		innodbBufferPoolMissPercentage() {
@@ -875,10 +928,7 @@ export default {
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 		innodbAvgRowLockTime() {
@@ -894,10 +944,7 @@ export default {
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
 			}
 		},
 	},
@@ -1055,6 +1102,13 @@ export default {
 
 			return slowLogs
 		},
+		slowQueriesCountData() {
+			// null before the first response; BarChart wants an object or undefined
+			return this.$resources.slowQueriesCount.data ?? undefined
+		},
+		slowQueriesDurationData() {
+			return this.$resources.slowQueriesDuration.data ?? undefined
+		},
 		databaseUptimeData() {
 			const uptime = this.$resources.databaseUptime.data
 			if (!uptime) return
@@ -1187,6 +1241,17 @@ export default {
 			})
 
 			return { datasets, yMax: percentage ? 100 : null }
+		},
+		isDatabaseServer() {
+			// Not isServerType: on a unified server it maps every type to Unified
+			// Server, so a chosen replica would never match
+			const chosen = this.serverOptions.find(
+				(s) => s.value === this.chosenServer,
+			)
+			return (
+				chosen?.label === 'Replication Server' ||
+				this.isServerType('Database Server')
+			)
 		},
 		isServerType(type) {
 			// Show all analytics for Unified Server
