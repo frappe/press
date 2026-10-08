@@ -2,6 +2,7 @@
 # See license.txt
 
 import typing
+from unittest.mock import Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -16,6 +17,8 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
+from press.press.doctype.team.test_team import create_test_team
+from press.saas.doctype.product_trial.product_trial import ProductTrial
 
 
 def create_test_product_trial(
@@ -102,3 +105,24 @@ class TestProductTrial(FrappeTestCase):
 		self._create_standby_site(product, old_bench)
 
 		self.assertIsNone(product.get_standby_site())
+
+	@patch("press.saas.doctype.product_trial.product_trial.frappe.db.commit", new=Mock())
+	@patch("press.saas.doctype.product_trial.product_trial.frappe.db.rollback", new=Mock())
+	def test_failed_standby_handover_returns_site_to_pool_and_undoes_the_customer_team(self):
+		# Rollback is mocked, so the customer's team stays written as if it had been committed
+		product = create_test_product_trial(create_test_app("test_failed_handover", "Test Failed Handover"))
+		bench = create_test_bench(group=frappe.get_doc("Release Group", product.release_group))
+		standby_site = self._create_standby_site(product, bench)
+		pool_team, pool_signup_time = standby_site.team, standby_site.signup_time
+		customer = create_test_team()
+
+		with (
+			patch.object(ProductTrial, "set_site_domain", side_effect=Exception("Domain setup failed")),
+			self.assertRaisesRegex(Exception, "Domain setup failed"),
+		):
+			product.setup_trial_site("failed-handover", product.domain, team=customer.name)
+
+		standby_site.reload()
+		self.assertEqual(standby_site.is_standby, 1)
+		self.assertEqual(standby_site.team, pool_team)
+		self.assertEqual(standby_site.signup_time, pool_signup_time)
