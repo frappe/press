@@ -453,6 +453,8 @@ def check_document_write_access(doctype: str, name: str):
 		raise_not_permitted()
 
 	check_document_access(doctype, name)
+	if not role_guard.permits(doctype, name):
+		raise_not_permitted()
 
 
 def check_dashboard_actions(doctype, name, method):
