@@ -1626,7 +1626,50 @@ def get_user_banners():
 	)
 
 	# visible banners
-	return [banner for banner in all_enabled_banners if banner["name"] not in banner_dismissals_by_user]
+	visible_banners = [b for b in all_enabled_banners if b["name"] not in banner_dismissals_by_user]
+	return visible_banners + get_v16_50_release_banner(team)
+
+
+# ponytail: temporary announcement, delete this function after the end date
+V16_50_RELEASE_BANNER_END = "2026-10-15"
+
+
+def get_v16_50_release_banner(team: str) -> list[dict]:
+	if frappe.utils.getdate() > frappe.utils.getdate(V16_50_RELEASE_BANNER_END):
+		return []
+
+	Site = frappe.qb.DocType("Site")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	has_v16_site = (
+		frappe.qb.from_(Site)
+		.join(ReleaseGroup)
+		.on(Site.group == ReleaseGroup.name)
+		.select(Site.name)
+		.where(
+			(Site.team == team)
+			& Site.status.notin(["Archived", "Suspended"])
+			& (ReleaseGroup.version == "Version 16")
+		)
+		.limit(1)
+	).run()
+	if not has_v16_site:
+		return []
+
+	# is_global makes the dashboard keep the dismissal in local storage, not in a DB record
+	return [
+		{
+			"name": "v16-50-release",
+			"type": "Info",
+			"title": "Frappe v16.50 is out",
+			"message": "A major update to v16 with new desk navigation, a print format designer, an import wizard and more. Update your bench to get it.",
+			"help_url": "https://frappe.io/blog/product-updates/announcing-framework-erpnext-and-hrms-v1650",
+			"is_dismissible": 1,
+			"is_global": 1,
+			"cluster": [],
+			"server": [],
+			"site": [],
+		}
+	]
 
 
 @frappe.whitelist()
