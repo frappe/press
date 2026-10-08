@@ -432,21 +432,22 @@ class SiteBackup(Document):
 		return False
 
 	def fix_global_search_indexes(self):
-		"""
-		Run this whenever Backup Job fails because of broken global search indexes and regenerate them.
-		"""
-		job = frappe.db.get_value("Agent Job", self.job, ["bench", "server", "output"], as_dict=True)
+		"""Rebuild __global_search when the backup failed because that table is crashed."""
+		job = frappe.db.get_value("Agent Job", self.job, ["output", "traceback"], as_dict=True)
+		if not is_global_search_crashed(f"{job.output or ''}\n{job.traceback or ''}"):
+			return
 
-		if job.output and "Couldn't execute 'show create table `__global_search`'" in job.output:
-			try:
-				agent = Agent(self.server)
-				agent.create_agent_job("Fix global search", "fix_global_search")
-			except Exception:
-				frappe.log_error(
-					"Failed to fix global search indexes",
-					reference_doctype=self.doctype,
-					reference_name=self.name,
-				)
+		try:
+			site = frappe.get_doc("Site", self.site)
+			Agent(site.server).fix_global_search(
+				site, reference_doctype=self.doctype, reference_name=self.name
+			)
+		except Exception:
+			frappe.log_error(
+				"Failed to fix global search indexes",
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
 
 	@classmethod
 	def offsite_backup_exists(cls, site: str, day: date) -> bool:
@@ -509,6 +510,13 @@ def track_offsite_backups(site: str, backup_data: dict, offsite_backup_data: dic
 		remote_files["site_config"],
 		remote_files["public"],
 		remote_files["private"],
+	)
+
+
+def is_global_search_crashed(output: str) -> bool:
+	# MyISAM marks __global_search crashed after an unclean MariaDB stop, and mariadb-dump stops on it
+	return "__global_search" in output and (
+		"marked as crashed" in output or "Couldn't execute 'show create table `__global_search`'" in output
 	)
 
 
