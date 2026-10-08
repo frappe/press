@@ -374,7 +374,74 @@ def get_selected_chart(chart, period, builds, servers):
 	if chart == "Remote Builder Failures by Build Server":
 		events = [(job.failed_at, job.server) for job in get_failed_jobs("Run Remote Builder", period)]
 		return stacked_chart("Failed Run Remote Builder jobs", period.seconds, events)
+	if chart == "Build Failures by Build Server":
+		return get_failed_builds_by_server_chart(period)
+	if chart == "Build Duration by Build Server":
+		return get_build_duration_chart(builds)
+	if chart == "New Bench Jobs by Status":
+		return get_new_bench_jobs_chart(period)
+	if chart == "Prune Jobs by Server":
+		return get_prune_chart(period)
 	return get_chart(period.seconds, builds)
+
+
+def get_prune_chart(period):
+	plays = frappe.get_all(
+		"Ansible Play",
+		{
+			"playbook": ("in", ("docker_system_prune.yml", "prune_mirror_registry.yml")),
+			"creation": ("between", (period.start, period.end)),
+		},
+		["creation", "server"],
+	)
+	return stacked_chart("Prune plays", period.seconds, [(play.creation, play.server) for play in plays])
+
+
+def get_failed_builds_by_server_chart(period):
+	builds = frappe.get_all(
+		"Deploy Candidate Build",
+		{"creation": ("between", (period.start, period.end)), "status": "Failure"},
+		["creation", "build_server"],
+	)
+	events = [(build.creation, build.build_server or "No build server") for build in builds]
+	return stacked_chart("Failed builds by creation", period.seconds, events)
+
+
+def get_new_bench_jobs_chart(period):
+	jobs = frappe.get_all(
+		"Agent Job",
+		{"job_type": "New Bench", "creation": ("between", (period.start, period.end))},
+		["creation", "status"],
+	)
+	chart = stacked_chart("New Bench jobs", period.seconds, [(job.creation, job.status) for job in jobs])
+	colors = {"Success": "green", "Failure": "red", "Delivery Failure": "orange", "Running": "blue"}
+	chart["colors"] = [colors.get(dataset["name"], "grey") for dataset in chart["data"]["datasets"]]
+	return chart
+
+
+def get_build_duration_chart(builds):
+	"""Histogram of successful build minutes, about twelve bins, stacked by build server."""
+	spans = [
+		((build.build_end - build.build_start).total_seconds(), build.build_server)
+		for build in builds
+		if build.status == "Success" and build.build_end
+	]
+	longest = max((seconds for seconds, _ in spans), default=0)
+	width = max(60, math.ceil(longest / 12 / 60) * 60)  # whole minutes
+	counts = Counter((int(seconds // width), server) for seconds, server in spans)
+	bins = range(max((index for index, _ in counts), default=-1) + 1)
+	servers = sorted({server for _, server in counts})
+	return {
+		"title": "Successful builds by duration",
+		"data": {
+			"labels": [f"{index * width // 60}-{(index + 1) * width // 60} min" for index in bins],
+			"datasets": [
+				{"name": server, "values": [counts[(index, server)] for index in bins]} for server in servers
+			],
+		},
+		"type": "bar",
+		"barOptions": {"stacked": 1},
+	}
 
 
 def get_new_bench_failure_chart(period):
