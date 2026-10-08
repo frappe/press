@@ -3,7 +3,8 @@
 		<div>
 			<h2 class="text-lg font-medium text-ink-gray-9">Firewall</h2>
 			<p class="mt-1 text-p-base text-ink-gray-6">
-				Allow or block traffic to this server by source, port and protocol.
+				Allow or block traffic to this server by source, port and protocol. A
+				wrong rule can cut off your own access to the server.
 			</p>
 		</div>
 		<div v-if="firewall.doc" class="flex items-center justify-between">
