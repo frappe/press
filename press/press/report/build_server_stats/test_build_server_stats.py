@@ -278,3 +278,12 @@ class TestDiskUsage(FrappeTestCase):
 		)
 
 		self.assertEqual(disk.cells("r1.frappe.cloud"), {"disk_0": None, "disk": "/ 30.0%"})
+
+	def test_boot_efi_column_comes_last_and_the_last_directory_is_bold(self):
+		mounts = {"/": 40.0, "/boot/efi": 5.8, "/home/frappe/agent/.clones": 65.4}
+		disk = self.disk_usage({"f1.frappe.cloud": mounts, "f2.frappe.cloud": mounts})
+
+		self.assertEqual(
+			[column["label"] for column in disk.columns()[:-1]],
+			["Disk /<b></b> (%)", "Disk /home/frappe/agent/<b>.clones</b> (%)", "Disk /boot/<b>efi</b> (%)"],
+		)

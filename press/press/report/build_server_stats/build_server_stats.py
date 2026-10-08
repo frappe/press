@@ -85,7 +85,6 @@ def get_columns(disk):
 			"width": 130,
 		},
 		{"fieldname": "cluster", "label": "Cluster", "fieldtype": "Link", "options": "Cluster", "width": 120},
-		{"fieldname": "status", "label": "Status", "fieldtype": "Data", "width": 90},
 		{"fieldname": "iowait", "label": "IO Wait (%)", "fieldtype": "Float", "width": 110},
 		{"fieldname": "cpu_used", "label": "CPU Used (%)", "fieldtype": "Float", "width": 110},
 		{"fieldname": "memory_used", "label": "Memory Used (%)", "fieldtype": "Float", "width": 130},
@@ -102,6 +101,7 @@ def get_columns(disk):
 		{"fieldname": "median_build", "label": "Median Build (s)", "fieldtype": "Int", "width": 140},
 		{"fieldname": "p95_build", "label": "P95 Build (s)", "fieldtype": "Int", "width": 130},
 		{"fieldname": "median_pull", "label": "Median Image Pull (s)", "fieldtype": "Int", "width": 160},
+		{"fieldname": "status", "label": "Status", "fieldtype": "Data", "width": 90},
 	]
 
 
@@ -218,11 +218,12 @@ class DiskUsage:
 	def __init__(self, servers, end):
 		self.used = get_fleet_disk_usage(servers, end)
 		counts = Counter(mountpoint for mounts in self.used.values() for mountpoint in mounts)
-		self.common = sorted(mountpoint for mountpoint, count in counts.items() if count > 1)
+		common = [mountpoint for mountpoint, count in counts.items() if count > 1]
+		self.common = sorted(common, key=lambda mountpoint: (mountpoint == "/boot/efi", mountpoint))
 
 	def columns(self):
 		columns = [
-			{"fieldname": f"disk_{index}", "label": f"Disk {mountpoint} (%)", "fieldtype": "Float"}
+			{"fieldname": f"disk_{index}", "label": disk_label(mountpoint), "fieldtype": "Float"}
 			for index, mountpoint in enumerate(self.common)
 		]
 		other = {
@@ -242,6 +243,12 @@ class DiskUsage:
 			if mountpoint not in self.common
 		]
 		return {**cells, "disk": ", ".join(others)}
+
+
+def disk_label(mountpoint):
+	"""Bold the last directory, so .clones and .docker-builds stand out in a narrow header."""
+	parent, _, name = mountpoint.rpartition("/")
+	return f"Disk {parent}/<b>{name}</b> (%)"
 
 
 def get_fleet_disk_usage(servers, end):
