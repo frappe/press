@@ -3,7 +3,8 @@
 		<div>
 			<h2 class="text-lg font-medium text-ink-gray-9">Firewall</h2>
 			<p class="mt-1 text-p-base text-ink-gray-6">
-				Allow or block traffic to this server by source, port and protocol.
+				Allow or block traffic to this server by source, port and protocol. A
+				wrong rule can cut off your own access to the server.
 			</p>
 		</div>
 		<div v-if="firewall.doc" class="flex items-center justify-between">
@@ -26,8 +27,8 @@
 					label="Save"
 					icon-left="save"
 					theme="green"
-					:disabled="!firewall.isDirty"
-					@click.stop.prevent="() => firewall.save.submit()"
+					:disabled="!firewall.isDirty || firewall.save.loading"
+					@click.stop.prevent="save"
 				/>
 				<Button
 					label="Add Rule"
@@ -36,15 +37,6 @@
 					@click="openAddDialog = !openAddDialog"
 				/>
 			</div>
-		</div>
-		<div
-			class="bg-yellow-100 text-yellow-900 px-4 py-3 rounded-md border border-yellow-200"
-		>
-			<p class="text-base space-y-2 leading-relaxed">
-				Please note that mis-configuring firewall rules can lead to loss of
-				access and should be done with caution. It may take a few minutes for
-				changes to take effect.
-			</p>
 		</div>
 		<ObjectList
 			v-if="firewall.doc"
@@ -104,7 +96,9 @@
 <script setup lang="ts">
 import { createDocumentResource, FormControl } from 'frappe-ui'
 import { ref } from 'vue'
+import { toast } from 'vue-sonner'
 import ObjectList from '../../components/ObjectList.vue'
+import { getToastErrorMessage } from '../../utils/toast'
 import ServerFirewallDialog from './ServerFirewallDialog.vue'
 
 const props = defineProps<{
@@ -119,4 +113,12 @@ const firewall = createDocumentResource({
 	auto: true,
 	cache: ['Server', 'Firewall', props.id],
 })
+
+function save() {
+	toast.promise(firewall.save.submit(), {
+		loading: 'Saving firewall settings…',
+		success: 'Firewall settings saved. They take a few minutes to apply.',
+		error: (e) => getToastErrorMessage(e),
+	})
+}
 </script>
