@@ -209,6 +209,77 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 
 		self.assertEqual(self.datasets("Remote Builder Failures by Build Server"), {"f1.frappe.cloud": [1]})
 
+	def test_new_bench_jobs_in_the_period_are_stacked_by_status(self):
+		self.job("f1.frappe.cloud", "New Bench", "Success")
+		self.job("f1.frappe.cloud", "New Bench", "Success")
+		self.job("f1.frappe.cloud", "New Bench", "Failure")
+		self.job("f1.frappe.cloud", "New Bench", "Success", creation="2026-09-10 09:00:00")
+		self.job("f1.frappe.cloud", "Archive Bench", "Success")
+
+		self.assertEqual(self.datasets("New Bench Jobs by Status"), {"Failure": [1], "Success": [2]})
+
+	def test_failed_builds_are_stacked_by_build_server_at_their_creation(self):
+		for server, status, creation in [
+			("f1.frappe.cloud", "Failure", "2026-09-10 10:01:00"),
+			("f2.frappe.cloud", "Failure", "2026-09-10 10:01:00"),
+			("f2.frappe.cloud", "Success", "2026-09-10 10:01:00"),
+			("f2.frappe.cloud", "Failure", "2026-09-10 09:00:00"),
+		]:
+			frappe.get_doc(
+				{
+					"doctype": "Deploy Candidate Build",
+					"build_server": server,
+					"status": status,
+					"creation": creation,
+				}
+			).db_insert()
+
+		self.assertEqual(
+			self.datasets("Build Failures by Build Server"), {"f1.frappe.cloud": [1], "f2.frappe.cloud": [1]}
+		)
+
+	def test_docker_and_registry_prune_plays_are_stacked_by_server_and_other_plays_are_left_out(self):
+		for server, playbook, creation in [
+			("f1.frappe.cloud", "docker_system_prune.yml", "2026-09-10 10:01:00"),
+			("f1.frappe.cloud", "docker_system_prune.yml", "2026-09-10 10:02:00"),
+			("r1.frappe.cloud", "prune_mirror_registry.yml", "2026-09-10 10:01:00"),
+			("f1.frappe.cloud", "server.yml", "2026-09-10 10:01:00"),
+			("f1.frappe.cloud", "docker_system_prune.yml", "2026-09-10 09:00:00"),
+		]:
+			frappe.get_doc(
+				{
+					"doctype": "Ansible Play",
+					"server_type": "Server",
+					"server": server,
+					"playbook": playbook,
+					"creation": creation,
+				}
+			).db_insert()
+
+		self.assertEqual(
+			self.datasets("Prune Jobs by Server"), {"f1.frappe.cloud": [2], "r1.frappe.cloud": [1]}
+		)
+
+
+class TestBuildDurationChart(FrappeTestCase):
+	def test_successful_builds_fall_into_minute_bins_stacked_by_build_server(self):
+		start = datetime(2026, 9, 10, 10, 0)
+		builds = [
+			build("f1.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 10, 5)),
+			build("f2.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 10, 30)),
+			build("f2.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 11, 0)),
+			build("f1.frappe.cloud", build_start=start, build_end=None),
+		]
+		builds.append(frappe._dict(builds[0], status="Failure"))
+
+		chart = get_selected_chart("Build Duration by Build Server", None, builds, [])
+
+		self.assertEqual(chart["data"]["labels"][:2], ["0-5 min", "5-10 min"])
+		self.assertEqual(len(chart["data"]["labels"]), 13)
+		datasets = {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
+		self.assertEqual(datasets["f1.frappe.cloud"], [0, 1] + [0] * 11)
+		self.assertEqual(datasets["f2.frappe.cloud"], [0] * 6 + [1] + [0] * 5 + [1])
+
 
 class TestPeriod(FrappeTestCase):
 	def test_from_and_to_set_the_period_and_the_duration_is_ignored(self):

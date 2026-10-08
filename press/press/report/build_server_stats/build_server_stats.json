@@ -12,7 +12,7 @@
 			"fieldtype": "Select",
 			"label": "Chart",
 			"mandatory": 0,
-			"options": "Builds Started\nBuild Failures by Cluster\nNew Bench Failures by Cluster\nRemote Builder Failures by Build Server",
+			"options": "Builds Started\nBuild Failures by Cluster\nNew Bench Failures by Cluster\nRemote Builder Failures by Build Server\nBuild Failures by Build Server\nBuild Duration by Build Server\nNew Bench Jobs by Status\nPrune Jobs by Server",
 			"wildcard_filter": 0
 		},
 		{
