@@ -104,3 +104,22 @@ class TestRoleGuardOnProtectedEndpoints(FrappeTestCase):
 		endpoint = protected(["Server", "Database Server"])(lambda name: "allowed")
 		with self.as_member():
 			self.assertEqual(endpoint(name=database_server), "allowed")
+
+	def create_replica(self, primary: str) -> str:
+		replica = create_test_database_server()
+		frappe.db.set_value("Database Server", replica.name, {"team": self.team.name, "primary": primary})
+		return replica.name
+
+	def test_restricted_member_passes_protected_for_a_replica_of_a_server_their_role_grants(self):
+		server, database_server = self.create_database_server()
+		replica = self.create_replica(database_server)
+		self.role.add_resource([{"document_type": "Server", "document_name": server}])
+		endpoint = protected(["Server", "Database Server"])(lambda name: "allowed")
+		with self.as_member():
+			self.assertEqual(endpoint(name=replica), "allowed")
+
+	def test_restricted_member_cannot_reboot_a_replica_of_a_server_their_role_does_not_grant(self):
+		_, database_server = self.create_database_server()
+		replica = self.create_replica(database_server)
+		with self.as_member(), self.assertRaisesRegex(frappe.PermissionError, "Not Permitted"):
+			reboot(name=replica)
