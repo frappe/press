@@ -547,4 +547,7 @@ class TestV16ReleaseBanner(TestCase):
 			self.assertEqual(get_v16_50_release_banner(site.team), [])
 
 	def today_is(self, date: str):
+		from press.api.account import get_v16_50_release_banner
+
+		get_v16_50_release_banner.clear_cache()
 		return patch("frappe.utils.getdate", side_effect=lambda d=None: frappe.utils.data.getdate(d or date))

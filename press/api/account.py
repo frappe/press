@@ -15,6 +15,7 @@ from frappe.core.utils import find
 from frappe.exceptions import DoesNotExistError
 from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, get_url
+from frappe.utils.caching import redis_cache
 from frappe.utils.data import sha256_hash
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.utils.password import get_decrypted_password
@@ -1634,6 +1635,7 @@ def get_user_banners():
 V16_50_RELEASE_BANNER_END = "2026-10-15"
 
 
+@redis_cache
 def get_v16_50_release_banner(team: str) -> list[dict]:
 	if frappe.utils.getdate() > frappe.utils.getdate(V16_50_RELEASE_BANNER_END):
 		return []
