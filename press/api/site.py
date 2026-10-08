@@ -22,6 +22,7 @@ from frappe.utils.typing_validations import validate_argument_types
 from frappe.utils.user import is_system_user
 
 from press.access.support_access import has_support_access
+from press.guards import role_guard
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app.app import get_app_from_policies
 from press.press.doctype.marketplace_app.marketplace_app import (
