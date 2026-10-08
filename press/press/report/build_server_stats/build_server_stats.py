@@ -30,6 +30,17 @@ QUEUED = ("Scheduled", "Pending")
 # Preparing already holds the build server, so it counts against capacity like Running does
 RUNNING = ("Preparing", "Running")
 VOLUMES = "/opt/volumes/"
+CHARTS = (
+	"Builds Started",
+	"Build Failures by Build Server",
+	"Build Duration by Build Server",
+	"New Bench Jobs by Status",
+	"New Bench Jobs by Cluster",
+	"Prune Jobs by Server",
+	"Build Failures by Cluster",
+	"New Bench Failures by Cluster",
+	"Remote Builder Failures by Build Server",
+)
 
 
 @dataclass
@@ -53,8 +64,14 @@ def execute(filters=None):
 		get_columns(disk),
 		get_data(period, builds, servers, disk),
 		get_cluster_loss(period),
-		get_selected_chart(filters.chart, period, builds, servers),
+		get_charts(period, builds, servers),
 	)
+
+
+def get_charts(period, builds, servers):
+	"""Frappe draws only the first chart. The report's JS draws the ones in `charts` below it."""
+	charts = [{**get_selected_chart(name, period, builds, servers), "name": name} for name in CHARTS]
+	return {**charts[0], "charts": charts[1:]}
 
 
 def get_period(filters):

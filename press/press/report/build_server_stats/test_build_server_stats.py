@@ -12,10 +12,12 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.server.test_server import create_test_server
 from press.press.report.build_server_stats.build_server_stats import (
+	CHARTS,
 	DiskUsage,
 	floor_to_bucket,
 	get_build_failure_chart,
 	get_chart,
+	get_charts,
 	get_period,
 	get_selected_chart,
 	group_by_server,
@@ -209,6 +211,12 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 		)
 
 		self.assertEqual(self.datasets("Remote Builder Failures by Build Server"), {"f1.frappe.cloud": [1]})
+
+	def test_every_chart_is_sent_with_builds_started_first_and_the_rest_named_under_it(self):
+		chart = get_charts(self.period, [], [])
+
+		self.assertEqual(chart["name"], "Builds Started")
+		self.assertEqual([extra["name"] for extra in chart["charts"]], list(CHARTS[1:]))
 
 	def test_new_bench_jobs_in_the_period_are_stacked_by_status(self):
 		self.job("f1.frappe.cloud", "New Bench", "Success")
