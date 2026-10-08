@@ -537,14 +537,14 @@ class TestV16ReleaseBanner(TestCase):
 		from press.press.doctype.site.test_site import create_test_site
 
 		site = create_test_site()
-		self.assertEqual(get_v16_50_release_banner(site.team), [])
+		with self.today_is("2026-10-10"):
+			self.assertEqual(get_v16_50_release_banner(site.team), [])
 
 		frappe.db.set_value("Release Group", site.group, "version", "Version 16")
-		with patch(
-			"frappe.utils.getdate", side_effect=lambda d=None: frappe.utils.data.getdate(d or "2026-10-10")
-		):
+		with self.today_is("2026-10-10"):
 			self.assertEqual(get_v16_50_release_banner(site.team)[0]["name"], "v16-50-release")
-		with patch(
-			"frappe.utils.getdate", side_effect=lambda d=None: frappe.utils.data.getdate(d or "2026-10-16")
-		):
+		with self.today_is("2026-10-16"):
 			self.assertEqual(get_v16_50_release_banner(site.team), [])
+
+	def today_is(self, date: str):
+		return patch("frappe.utils.getdate", side_effect=lambda d=None: frappe.utils.data.getdate(d or date))
