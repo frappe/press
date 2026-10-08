@@ -15,6 +15,8 @@ from press.utils import user as utils_user
 
 from .action import action_key
 from .api import api_key
+from .bench import check as bench_check
+from .database_server import check as database_server_check
 from .document import check as document_check
 from .marketplace import check as marketplace_check
 from .server_snapshot import check as server_snapshot_check
@@ -169,6 +171,10 @@ def check(document_type: str, document_name: str) -> bool | list[str]:  # noqa: 
 		return True
 	query = base_query()
 	match document_type:
+		case "Bench":
+			return bench_check(query, document_name)
+		case "Database Server":
+			return database_server_check(query, document_name)
 		case "Marketplace App":
 			return marketplace_check(query)
 		case "Press Webhook":
