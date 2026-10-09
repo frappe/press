@@ -47,12 +47,11 @@ test('v16 release banner shows on the sites list, opens the blog and stays dismi
 	await alert.getByRole('button').last().click()
 	await expect(page.getByText(TITLE)).not.toBeVisible()
 
+	const bannersLoaded = page.waitForResponse(/get_user_banners/)
 	await page.reload()
-	await expect(
-		page.getByRole('button', { name: /new site/i }).first(),
-	).toBeVisible({
-		timeout: 15000,
-	})
+	await bannersLoaded
+	// Let Vue render the banners from that response before the check
+	await page.evaluate(() => new Promise(requestAnimationFrame))
 	await expect(page.getByText(TITLE)).not.toBeVisible()
 	// is_global banners keep the dismissal in local storage, so no DB call
 	expect(dismissCalls).toEqual([])
