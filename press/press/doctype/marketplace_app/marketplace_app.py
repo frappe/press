@@ -855,6 +855,17 @@ def get_plans_for_app(
 	return plans
 
 
+def is_marketplace_app_source(app_source_name):
+	"""Whether this specific App Source belongs to a Marketplace App.
+
+	Apps are matched elsewhere by their id alone, so a custom app on a private
+	bench can share an id with a published Marketplace App. The App Source is
+	what tells them apart: only a marketplace app registers its sources on a
+	Marketplace App Version.
+	"""
+	return bool(app_source_name) and frappe.db.exists("Marketplace App Version", {"source": app_source_name})
+
+
 def marketplace_app_hook(app=None, site: Site | None = None, op="install"):
 	if app is None:
 		if site is None:
