@@ -50,6 +50,10 @@ Read [docs/code/testing](docs/code/testing/index.md) to learn how to write tests
 
 ## Running UI Tests (Playwright)
 
+Always add a UI test when you make a UI change. Add a Playwright test in
+`dashboard/tests-e2e/tests/dashboard/`, and make sure that it passes before you
+call the work done.
+
 See [guide-to-ui-testing.md](guide-to-ui-testing.md) for setup and conventions.
 
 Quick reference — run from `dashboard/`:
