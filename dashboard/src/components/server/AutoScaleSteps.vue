@@ -56,11 +56,7 @@
 					<div>
 						<div class="text-sm font-medium text-ink-gray-5">Duration</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
-							{{
-								autoScale.duration != null
-									? $format.duration(autoScale.duration)
-									: '-'
-							}}
+							{{ $format.finishedDuration(autoScale.duration, autoScale.status) || '-' }}
 						</div>
 					</div>
 				</div>

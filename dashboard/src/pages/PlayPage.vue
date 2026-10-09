@@ -49,7 +49,7 @@
 						<div>
 							<div class="text-sm font-medium text-ink-gray-5">Duration</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
-								{{ $format.duration(play.duration) }}
+								{{ $format.finishedDuration(play.duration, play.status) }}
 							</div>
 						</div>
 						<div>
@@ -76,7 +76,7 @@
 </template>
 <script>
 import { FeatherIcon, Tooltip } from 'frappe-ui';
-import { duration } from '../utils/format';
+import { finishedDuration } from '../utils/format';
 import { getObject } from '../objects';
 import JobStep from '../components/JobStep.vue';
 
@@ -93,7 +93,7 @@ export default {
 				transform(play) {
 					for (let task of play.tasks) {
 						task.title = task.task;
-						task.duration = duration(task.duration);
+						task.duration = finishedDuration(task.duration, task.status);
 						task.isOpen = false;
 					}
 					return play;

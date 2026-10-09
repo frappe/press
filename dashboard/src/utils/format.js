@@ -62,6 +62,20 @@ export function duration(value) {
 	return dayjs.duration({ hours, minutes, seconds }).format(format)
 }
 
+const UNFINISHED_STATUSES = [
+	'Draft',
+	'Scheduled',
+	'Pending',
+	'Preparing',
+	'Running',
+]
+
+// An unfinished item's Time duration is a placeholder (00:00:00) or can read as a clock time
+export function finishedDuration(value, status) {
+	if (UNFINISHED_STATUSES.includes(status)) return
+	return duration(value)
+}
+
 export const secsToDuration = (seconds) => {
 	if (seconds == null) return ''
 	seconds = Math.floor(seconds)

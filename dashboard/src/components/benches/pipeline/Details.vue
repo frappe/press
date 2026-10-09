@@ -33,7 +33,7 @@ import { useRouter } from 'vue-router'
 import { confirmDialog, renderDialog } from '@/utils/components'
 import { getTeam } from '@/data/team'
 
-import { secsToDuration, date, duration, sanitizeHtml } from '@/utils/format'
+import { secsToDuration, date, finishedDuration, sanitizeHtml } from '@/utils/format'
 
 const team = getTeam()
 const socket = window.$socket
@@ -595,7 +595,7 @@ const redeploy = (noCache: boolean) => {
 			<div class="flex flex-col gap-2 rounded">
 				<b> Duration </b>
 				<span>
-					{{ deployview ? duration( builds[activeBuildId]?.doc?.build_duration) || '-' : secsToDuration(pipeline?.doc?.steps?.duration) || '-' }}
+					{{ deployview ? finishedDuration(builds[activeBuildId]?.doc?.build_duration, builds[activeBuildId]?.doc?.status) || '-' : secsToDuration(pipeline?.doc?.steps?.duration) || '-' }}
 				</span>
 			</div>
 		</section>
