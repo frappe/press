@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 		PrometheusAlertRule,
 	)
 
-RAVEN_ALERTS_CHANNEL = "alerts"
+RAVEN_ALERTS_CHANNEL = "Frappe Cloud-alerts"
 DISK_FULL_ALERT = "Disk Full"
 # Alertmanager re-sends a firing alert every repeat interval (1h for this rule), so an
 # alert we haven't heard about in this long has either resolved or stopped being reported.
