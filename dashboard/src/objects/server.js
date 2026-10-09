@@ -28,6 +28,7 @@ export default {
 		getSSHCommand: 'get_ssh_command',
 		rename: 'rename',
 		cleanup: 'cleanup_unused_files',
+		runningCleanupJob: 'running_cleanup_job',
 		dropServer: 'drop_server',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
