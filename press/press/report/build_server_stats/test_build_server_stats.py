@@ -16,7 +16,6 @@ from press.press.report.build_server_stats.build_server_stats import (
 	DiskUsage,
 	Period,
 	floor_to_bucket,
-	get_build_failure_chart,
 	get_chart,
 	get_charts,
 	get_period,
@@ -103,28 +102,7 @@ class TestChart(FrappeTestCase):
 		self.assertEqual(floored.second, 0)
 
 
-class TestFailureChart(FrappeTestCase):
-	def test_failed_builds_are_stacked_by_the_cluster_of_their_build_server_and_successes_are_left_out(self):
-		servers = [
-			frappe._dict(name="f1.frappe.cloud", cluster="Mumbai"),
-			frappe._dict(name="f2.frappe.cloud", cluster="Default"),
-		]
-		start = datetime(2026, 9, 10, 10, 0, 10)
-		builds = [
-			build("f1.frappe.cloud", status="Failure", build_start=start),
-			build("f1.frappe.cloud", status="Failure", build_start=start),
-			build("f2.frappe.cloud", status="Failure", build_start=datetime(2026, 9, 10, 10, 6, 0)),
-			build("f2.frappe.cloud", status="Success", build_start=start),
-			build("gone.frappe.cloud", status="Failure", build_start=start),
-		]
-
-		datasets = get_build_failure_chart(3600, builds, servers)["data"]["datasets"]
-
-		self.assertEqual(
-			{dataset["name"]: dataset["values"] for dataset in datasets},
-			{"Default": [0, 1], "Mumbai": [2, 0], "No cluster": [1, 0]},
-		)
-
+class TestBuildsByClusterChart(FrappeTestCase):
 	def test_builds_of_every_status_are_stacked_by_the_cluster_of_their_build_server(self):
 		servers = [
 			frappe._dict(name="f1.frappe.cloud", cluster="Mumbai"),
@@ -260,25 +238,36 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 
 		self.assertEqual(self.datasets("New Bench Jobs by Cluster"), {"Frankfurt": [1], "Mumbai": [2]})
 
+	def build(self, server, status, creation):
+		frappe.get_doc(
+			{
+				"doctype": "Deploy Candidate Build",
+				"build_server": server,
+				"status": status,
+				"creation": creation,
+			}
+		).db_insert()
+
 	def test_failed_builds_are_stacked_by_build_server_at_their_creation(self):
-		for server, status, creation in [
-			("f1.frappe.cloud", "Failure", "2026-09-10 10:01:00"),
-			("f2.frappe.cloud", "Failure", "2026-09-10 10:01:00"),
-			("f2.frappe.cloud", "Success", "2026-09-10 10:01:00"),
-			("f2.frappe.cloud", "Failure", "2026-09-10 09:00:00"),
-		]:
-			frappe.get_doc(
-				{
-					"doctype": "Deploy Candidate Build",
-					"build_server": server,
-					"status": status,
-					"creation": creation,
-				}
-			).db_insert()
+		self.build("f1.frappe.cloud", "Failure", "2026-09-10 10:01:00")
+		self.build("f2.frappe.cloud", "Failure", "2026-09-10 10:01:00")
+		self.build("f2.frappe.cloud", "Success", "2026-09-10 10:01:00")
+		self.build("f2.frappe.cloud", "Failure", "2026-09-10 09:00:00")
 
 		self.assertEqual(
 			self.datasets("Build Failures by Build Server"), {"f1.frappe.cloud": [1], "f2.frappe.cloud": [1]}
 		)
+
+	def test_failed_builds_are_stacked_by_the_cluster_of_their_build_server_at_their_creation(self):
+		mumbai = create_test_server(cluster="Mumbai").name
+		frankfurt = create_test_server(cluster=create_test_cluster("Frankfurt", "eu-central-1").name).name
+		self.build(mumbai, "Failure", "2026-09-10 10:01:00")
+		self.build(mumbai, "Failure", "2026-09-10 10:02:00")
+		self.build(frankfurt, "Failure", "2026-09-10 10:31:00")
+		self.build(frankfurt, "Success", "2026-09-10 10:31:00")
+		self.build(frankfurt, "Failure", "2026-09-10 09:58:00")
+
+		self.assertEqual(self.datasets("Build Failures by Cluster"), {"Frankfurt": [0, 1], "Mumbai": [2, 0]})
 
 	def test_successful_new_bench_jobs_that_ended_in_the_period_fall_into_minute_bins_by_cluster(self):
 		mumbai = create_test_server(cluster="Mumbai").name
