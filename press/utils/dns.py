@@ -91,7 +91,7 @@ def _change_dns_record(method: str, domain: RootDomain, proxy_server: str, recor
 						"ResourceRecordSet": {
 							"Name": record_name,
 							"Type": "CNAME",
-							"TTL": 600,
+							"TTL": 900,
 							"ResourceRecords": [{"Value": proxy_server}],
 						},
 					}
