@@ -14,6 +14,7 @@ from press.press.doctype.server.test_server import create_test_server
 from press.press.report.build_server_stats.build_server_stats import (
 	CHARTS,
 	DiskUsage,
+	Period,
 	floor_to_bucket,
 	get_build_failure_chart,
 	get_chart,
@@ -122,6 +123,26 @@ class TestFailureChart(FrappeTestCase):
 		self.assertEqual(
 			{dataset["name"]: dataset["values"] for dataset in datasets},
 			{"Default": [0, 1], "Mumbai": [2, 0], "No cluster": [1, 0]},
+		)
+
+	def test_builds_of_every_status_are_stacked_by_the_cluster_of_their_build_server(self):
+		servers = [
+			frappe._dict(name="f1.frappe.cloud", cluster="Mumbai"),
+			frappe._dict(name="f2.frappe.cloud", cluster="Default"),
+		]
+		start = datetime(2026, 9, 10, 10, 0, 10)
+		builds = [
+			build("f1.frappe.cloud", status="Success", build_start=start),
+			build("f1.frappe.cloud", status="Failure", build_start=start),
+			build("f2.frappe.cloud", status="Running", build_start=datetime(2026, 9, 10, 10, 6, 0)),
+		]
+
+		period = Period(datetime(2026, 9, 10, 10, 0), datetime(2026, 9, 10, 11, 0))
+		datasets = get_selected_chart("Builds by Cluster", period, builds, servers)["data"]["datasets"]
+
+		self.assertEqual(
+			{dataset["name"]: dataset["values"] for dataset in datasets},
+			{"Default": [0, 1], "Mumbai": [2, 0]},
 		)
 
 
@@ -319,6 +340,24 @@ class TestBuildDurationChart(FrappeTestCase):
 		datasets = {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
 		self.assertEqual(datasets["f1.frappe.cloud"], [0, 1] + [0] * 11)
 		self.assertEqual(datasets["f2.frappe.cloud"], [0] * 6 + [1] + [0] * 5 + [1])
+
+	def test_successful_builds_fall_into_minute_bins_stacked_by_the_cluster_of_their_build_server(self):
+		servers = [
+			frappe._dict(name="f1.frappe.cloud", cluster="Mumbai"),
+			frappe._dict(name="f2.frappe.cloud", cluster="Mumbai"),
+		]
+		start = datetime(2026, 9, 10, 10, 0)
+		builds = [
+			build("f1.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 10, 5)),
+			build("f2.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 10, 7)),
+			build("gone.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 11, 0)),
+		]
+
+		chart = get_selected_chart("Build Duration by Cluster", None, builds, servers)
+
+		datasets = {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
+		self.assertEqual(datasets["Mumbai"], [0, 2] + [0] * 11)
+		self.assertEqual(datasets["No cluster"], [0] * 12 + [1])
 
 
 class TestPeriod(FrappeTestCase):

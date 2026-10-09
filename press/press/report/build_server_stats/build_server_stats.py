@@ -30,17 +30,20 @@ QUEUED = ("Scheduled", "Pending")
 # Preparing already holds the build server, so it counts against capacity like Running does
 RUNNING = ("Preparing", "Running")
 VOLUMES = "/opt/volumes/"
+# Builds Started is drawn full width. The rest go in pairs, so each build server chart sits by its cluster chart.
 CHARTS = (
 	"Builds Started",
+	"Builds by Cluster",
+	"Remote Builder Failures by Build Server",
 	"Build Failures by Build Server",
+	"Build Failures by Cluster",
 	"Build Duration by Build Server",
+	"Build Duration by Cluster",
 	"New Bench Jobs by Status",
 	"New Bench Jobs by Cluster",
 	"New Bench Duration by Cluster",
-	"Prune Jobs by Server",
-	"Build Failures by Cluster",
 	"New Bench Failures by Cluster",
-	"Remote Builder Failures by Build Server",
+	"Prune Jobs by Server",
 )
 
 
@@ -398,8 +401,12 @@ def get_selected_chart(chart, period, builds, servers):
 		return charts_of_period[chart](period)
 	if chart == "Build Failures by Cluster":
 		return get_build_failure_chart(period.seconds, builds, servers)
+	if chart == "Builds by Cluster":
+		return get_builds_by_cluster_chart(period.seconds, builds, servers)
 	if chart == "Build Duration by Build Server":
 		return get_build_duration_chart(builds)
+	if chart == "Build Duration by Cluster":
+		return get_build_duration_by_cluster_chart(builds, servers)
 	return get_chart(period.seconds, builds)
 
 
@@ -458,12 +465,22 @@ def get_new_bench_jobs_chart(period):
 
 
 def get_build_duration_chart(builds):
-	spans = [
-		((build.build_end - build.build_start).total_seconds(), build.build_server)
+	spans = successful_build_spans(builds, lambda build: build.build_server)
+	return duration_histogram("Successful builds by duration", spans)
+
+
+def get_build_duration_by_cluster_chart(builds, servers):
+	cluster_of = {server.name: server.cluster for server in servers}
+	spans = successful_build_spans(builds, lambda build: cluster_of.get(build.build_server) or "No cluster")
+	return duration_histogram("Successful builds by duration", spans)
+
+
+def successful_build_spans(builds, group_of):
+	return [
+		((build.build_end - build.build_start).total_seconds(), group_of(build))
 		for build in builds
 		if build.status == "Success" and build.build_end
 	]
-	return duration_histogram("Successful builds by duration", spans)
 
 
 def get_new_bench_duration_chart(period):
@@ -510,14 +527,18 @@ def get_new_bench_failure_chart(period):
 
 
 def get_build_failure_chart(window, builds, servers):
+	failed = [build for build in builds if build.status == "Failure"]
+	return stacked_chart("Failed builds", window, cluster_events(failed, servers))
+
+
+def get_builds_by_cluster_chart(window, builds, servers):
+	return stacked_chart("Builds started", window, cluster_events(builds, servers))
+
+
+def cluster_events(builds, servers):
 	# ponytail: a build on a server that is no longer active reads as "No cluster"
 	cluster_of = {server.name: server.cluster for server in servers}
-	events = [
-		(build.build_start, cluster_of.get(build.build_server))
-		for build in builds
-		if build.status == "Failure"
-	]
-	return stacked_chart("Failed builds", window, events)
+	return [(build.build_start, cluster_of.get(build.build_server)) for build in builds]
 
 
 def get_failed_jobs(job_type, period):
