@@ -204,9 +204,7 @@
 								<div class="text-sm text-ink-gray-6">
 									{{ currentUsageLoading ? '—' : currentUsage.cpu }}
 									{{ $format.plural(currentUsage.cpu, 'hour', 'hours') }}
-									<template
-										v-if="currentPlan"
-									>
+									<template v-if="currentPlan">
 										of {{ currentPlan?.cpu_time_per_day }} hours
 									</template>
 								</div>
@@ -376,7 +374,7 @@ import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
 import InfoIcon from '~icons/lucide/info'
 import { renderDialog } from '../utils/components'
-import { trialDays } from '../utils/site'
+import { openInNewTab, trialDays } from '../utils/site'
 import { getToastErrorMessage } from '../utils/toast'
 import AlertBanner from './AlertBanner.vue'
 import BenchActionsDropdown from './BenchActionsDropdown.vue'
@@ -439,15 +437,11 @@ export default {
 			return this.$format.bytes(v, 2, 2)
 		},
 		loginAsAdmin() {
-			this.$site.loginAsAdmin
-				.submit({ reason: '' })
-				.then((url) => window.open(url, '_blank'))
+			openInNewTab(this.$site.loginAsAdmin.submit({ reason: '' }))
 		},
 		loginAsTeam() {
 			if (this.$site.doc?.additional_system_user_created) {
-				this.$site.loginAsTeam
-					.submit({ reason: '' })
-					.then((url) => window.open(url, '_blank'))
+				openInNewTab(this.$site.loginAsTeam.submit({ reason: '' }))
 			} else {
 				this.loginAsAdmin()
 			}

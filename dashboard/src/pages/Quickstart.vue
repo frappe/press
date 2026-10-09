@@ -1,13 +1,13 @@
 <script setup lang="ts">
+import { createResource, Spinner } from 'frappe-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { createResource, Spinner } from 'frappe-ui'
 import { toast } from 'vue-sonner'
 import FCLogo from '@/components/icons/FCLogo.vue'
 import { getActiveSites } from '@/data/sites'
 import { getTeam } from '@/data/team'
-import { trialDays } from '@/utils/site'
 import { getDocResource } from '@/utils/resource'
+import { openInNewTab, trialDays } from '@/utils/site'
 import { getToastErrorMessage } from '@/utils/toast'
 
 defineOptions({ name: 'Quickstart' })
@@ -74,9 +74,7 @@ const openSite = (site) => {
 			: doc.loginAsAdmin
 
 		loadingSite.value = site.name
-		login
-			.submit({ reason: '' })
-			.then((url) => window.open(url, '_blank'))
+		openInNewTab(login.submit({ reason: '' }))
 			.catch((e) => {
 				toast.error(getToastErrorMessage(e, 'Failed to set up site'))
 			})
