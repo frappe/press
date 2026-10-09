@@ -107,6 +107,8 @@ PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
 GLASS_FILE_SIZE = 200 * 1024 * 1024  # /root/glass, see glass_file.yml
+# clamscan holds about 1 GB of signatures in memory, too much for small servers
+MALWARE_SCAN_MIN_RAM = 8192  # MB
 
 
 class BaseServer(Document, TagHelpers):
@@ -253,6 +255,7 @@ class BaseServer(Document, TagHelpers):
 		if self.doctype == "Server":
 			doc.secondary_server = self.secondary_server
 			doc.scaled_up = self.scaled_up
+			doc.malware_scan = self.get_malware_scan_summary()
 
 		return doc
 
@@ -995,52 +998,13 @@ class BaseServer(Document, TagHelpers):
 			)
 			play = ansible.run()
 			if play.status == "Success":
-				# The YARA config lives in ossec.conf, so it goes with the agent
 				frappe.db.set_value(
 					self.doctype,
 					self.name,
-					{
-						"is_wazuh_agent_installed": False,
-						"wazuh_agent_status": None,
-						"is_yara_installed": False,
-					},
+					{"is_wazuh_agent_installed": False, "wazuh_agent_status": None},
 				)
 		except Exception:
 			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())
-
-	@frappe.whitelist()
-	def install_yara(self):
-		"""Scan files the Wazuh agent reports as changed against a YARA ruleset."""
-		if not self.is_wazuh_agent_installed:
-			frappe.throw(
-				"YARA scanning reads the Wazuh agent's file integrity events. "
-				"Please install the Wazuh agent on this server first."
-			)
-		# Stamped before the enqueue, so a server we cannot even queue still yields its turn
-		frappe.db.set_value(self.doctype, self.name, "yara_install_last_attempt", frappe.utils.now_datetime())
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_install_yara",
-			queue="long",
-			timeout=1200,
-			job_id=f"yara_install:{self.doctype}:{self.name}",
-			deduplicate=True,
-		)
-
-	def _install_yara(self):
-		try:
-			ansible = Ansible(
-				playbook="wazuh_yara_install.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-			)
-			play = ansible.run()
-			if play.status == "Success":
-				frappe.db.set_value(self.doctype, self.name, "is_yara_installed", True)
-		except Exception:
-			log_error("YARA Install Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def deregister_wazuh_agent(self):
@@ -3215,6 +3179,7 @@ class Server(BaseServer):
 		disable_agent_update: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
+		enable_malware_scan: DF.Check
 		enable_on_prem_failover_support: DF.Check
 		exclude_for_scheduling: DF.Check
 		frappe_public_key: DF.Code | None
@@ -3247,8 +3212,6 @@ class Server(BaseServer):
 		is_wazuh_agent_installed: DF.Check
 		wazuh_agent_status: DF.Data | None
 		wazuh_install_last_attempt: DF.Datetime | None
-		is_yara_installed: DF.Check
-		yara_install_last_attempt: DF.Datetime | None
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]
@@ -3303,6 +3266,7 @@ class Server(BaseServer):
 		super().validate()
 		self.set_db_healthcheck_token()
 		self.validate_managed_database_service()
+		self.validate_malware_scan_ram()
 
 	def set_db_healthcheck_token(self):
 		if not self.db_healthcheck_token:
@@ -3315,6 +3279,11 @@ class Server(BaseServer):
 			self.database_server = ""
 		else:
 			self.managed_database_service = ""
+
+	def validate_malware_scan_ram(self):
+		turned_on = self.has_value_changed("enable_malware_scan") and self.enable_malware_scan
+		if turned_on and (self.ram or 0) < MALWARE_SCAN_MIN_RAM:
+			frappe.throw(_("Malware scan needs a server with at least 8 GB of RAM"))
 
 	def on_update(self):  # noqa: C901
 		# If Database Server is changed for the server then change it for all the benches
@@ -3357,6 +3326,35 @@ class Server(BaseServer):
 
 		if self.is_new() and is_dedicated_server(self.name):
 			self.set_dedicated_server_site_warranty_quota_and_cooldown()
+
+		if self.has_value_changed("enable_malware_scan") and self.enable_malware_scan:
+			self.scan_for_malware()
+
+	def scan_for_malware(self):
+		from press.press.doctype.malware_scan.malware_scan import is_scan_active
+
+		if is_scan_active(self.name):
+			return
+		frappe.get_doc({"doctype": "Malware Scan", "server_type": self.doctype, "server": self.name}).insert()
+
+	@dashboard_whitelist()
+	def toggle_malware_scan(self, enable: bool):
+		self.enable_malware_scan = enable
+		self.save()
+
+	def get_malware_scan_summary(self) -> dict:
+		last_scan = frappe.db.get_value(
+			"Malware Scan",
+			{"server": self.name},
+			["status", "modified", "scanned_files"],
+			as_dict=True,
+			order_by="creation desc",
+		)
+		return {
+			"enabled": self.enable_malware_scan,
+			"has_enough_ram": (self.ram or 0) >= MALWARE_SCAN_MIN_RAM,
+			"last_scan": last_scan,
+		}
 
 	def update_db_server(self):
 		if not self.database_server:
@@ -4783,26 +4781,6 @@ def servers_needing_wazuh_agent() -> list[tuple[str, str]]:
 			"is_wazuh_agent_installed": 0,
 			"wazuh_agent_status": UNREGISTERED_WAZUH_AGENT_STATUS,
 		},
-	)
-
-
-def install_missing_yara():
-	"""Install YARA scanning on the enrolled servers that have waited longest for it."""
-	if not is_wazuh_configured():
-		return
-	for server_type, name in servers_needing_yara()[:WAZUH_INSTALL_BATCH_SIZE]:
-		try:
-			frappe.get_doc(server_type, name).install_yara()
-		except Exception:
-			# A full queue or one broken server must not take the rest of the batch with it
-			log_error("YARA Enqueue Exception", server_type=server_type, server=name)
-
-
-def servers_needing_yara() -> list[tuple[str, str]]:
-	"""Servers already reporting to the manager but with no ruleset to scan against."""
-	return longest_waiting_servers(
-		"yara_install_last_attempt",
-		filters={"is_wazuh_agent_installed": 1, "is_yara_installed": 0},
 	)
 
 

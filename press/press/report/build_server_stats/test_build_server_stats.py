@@ -4,16 +4,22 @@
 from __future__ import annotations
 
 from datetime import datetime
+from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.press.doctype.server.test_server import create_test_server
 from press.press.report.build_server_stats.build_server_stats import (
+	DiskUsage,
 	floor_to_bucket,
+	get_build_failure_chart,
 	get_chart,
 	get_period,
+	get_selected_chart,
 	group_by_server,
 	last_number,
+	one_mountpoint_per_device,
 	percentile,
 	seconds_of,
 )
@@ -93,6 +99,117 @@ class TestChart(FrappeTestCase):
 		self.assertEqual(floored.second, 0)
 
 
+class TestFailureChart(FrappeTestCase):
+	def test_failed_builds_are_stacked_by_the_cluster_of_their_build_server_and_successes_are_left_out(self):
+		servers = [
+			frappe._dict(name="f1.frappe.cloud", cluster="Mumbai"),
+			frappe._dict(name="f2.frappe.cloud", cluster="Default"),
+		]
+		start = datetime(2026, 9, 10, 10, 0, 10)
+		builds = [
+			build("f1.frappe.cloud", status="Failure", build_start=start),
+			build("f1.frappe.cloud", status="Failure", build_start=start),
+			build("f2.frappe.cloud", status="Failure", build_start=datetime(2026, 9, 10, 10, 6, 0)),
+			build("f2.frappe.cloud", status="Success", build_start=start),
+			build("gone.frappe.cloud", status="Failure", build_start=start),
+		]
+
+		datasets = get_build_failure_chart(3600, builds, servers)["data"]["datasets"]
+
+		self.assertEqual(
+			{dataset["name"]: dataset["values"] for dataset in datasets},
+			{"Default": [0, 1], "Mumbai": [2, 0], "No cluster": [1, 0]},
+		)
+
+
+class TestOneMountpointPerDevice(FrappeTestCase):
+	def test_bind_mounts_drop_out_and_a_disk_shows_under_its_volume_path_else_its_shortest(self):
+		used = {
+			("f1.frappe.cloud", "/dev/sda1", "/"): 55.0,
+			("f1.frappe.cloud", "/dev/sdb", "/home/frappe/mnt/builds"): 87.5,
+			("f1.frappe.cloud", "/dev/sdb", "/home/frappe/mnt/builds/tmp/buildkit-mount1085636546"): 87.6,
+			("f1.frappe.cloud", "/dev/sdc", "/opt/volumes/benches"): 71.3,
+			("f1.frappe.cloud", "/dev/sdc", "/home/frappe/benches"): 71.3,
+			("f1.frappe.cloud", "/dev/sdc", "/var/lib/docker"): 71.3,
+		}
+
+		self.assertEqual(
+			one_mountpoint_per_device(used, ["f1.frappe.cloud"]),
+			{"f1.frappe.cloud": {"/": 55.0, "/opt/volumes/benches": 71.3, "/home/frappe/mnt/builds": 87.5}},
+		)
+
+	def test_the_same_device_name_on_two_servers_is_two_disks(self):
+		used = {("f1.frappe.cloud", "/dev/sda1", "/"): 40.0, ("f2.frappe.cloud", "/dev/sda1", "/"): 60.0}
+
+		self.assertEqual(
+			one_mountpoint_per_device(used, ["f1.frappe.cloud", "f2.frappe.cloud"]),
+			{"f1.frappe.cloud": {"/": 40.0}, "f2.frappe.cloud": {"/": 60.0}},
+		)
+
+
+class TestAgentJobFailureCharts(FrappeTestCase):
+	def setUp(self):
+		self.period = get_period(
+			frappe._dict(from_datetime="2026-09-10 10:00:00", to_datetime="2026-09-10 11:00:00")
+		)
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def job(self, server, job_type, status, creation="2026-09-10 10:01:00", end=None):
+		frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"server_type": "Server",
+				"server": server,
+				"job_type": job_type,
+				"status": status,
+				"creation": creation,
+				"end": end,
+			}
+		).db_insert()
+
+	def datasets(self, chart):
+		chart = get_selected_chart(chart, self.period, [], [])
+		return {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
+
+	def test_failed_and_undelivered_new_bench_jobs_are_stacked_by_the_cluster_of_their_server(self):
+		mumbai = create_test_server(cluster="Mumbai").name
+		self.job(mumbai, "New Bench", "Failure")
+		self.job(mumbai, "New Bench", "Delivery Failure")
+		self.job(mumbai, "New Bench", "Success")
+		self.job(mumbai, "New Bench", "Failure", creation="2026-09-10 09:00:00")
+
+		self.assertEqual(self.datasets("New Bench Failures by Cluster"), {"Mumbai": [2]})
+
+	def test_failed_remote_builder_jobs_are_stacked_by_build_server_and_other_job_types_are_left_out(self):
+		self.job("f1.frappe.cloud", "Run Remote Builder", "Failure")
+		self.job("f2.frappe.cloud", "Run Remote Builder", "Failure")
+		self.job("f2.frappe.cloud", "New Bench", "Failure")
+
+		self.assertEqual(
+			self.datasets("Remote Builder Failures by Build Server"),
+			{"f1.frappe.cloud": [1], "f2.frappe.cloud": [1]},
+		)
+
+	def test_a_failed_job_counts_when_it_ended_not_when_it_was_created(self):
+		self.job(
+			"f1.frappe.cloud", "Run Remote Builder", "Failure", "2026-09-10 09:30:00", "2026-09-10 10:20:00"
+		)
+		self.job(
+			"f2.frappe.cloud", "Run Remote Builder", "Failure", "2026-09-10 10:50:00", "2026-09-10 11:40:00"
+		)
+
+		self.assertEqual(self.datasets("Remote Builder Failures by Build Server"), {"f1.frappe.cloud": [1]})
+
+	def test_a_job_that_waited_two_days_before_it_failed_still_counts_when_it_ended(self):
+		self.job(
+			"f1.frappe.cloud", "Run Remote Builder", "Failure", "2026-09-08 10:30:00", "2026-09-10 10:20:00"
+		)
+
+		self.assertEqual(self.datasets("Remote Builder Failures by Build Server"), {"f1.frappe.cloud": [1]})
+
+
 class TestPeriod(FrappeTestCase):
 	def test_from_and_to_set_the_period_and_the_duration_is_ignored(self):
 		period = get_period(
@@ -130,3 +247,34 @@ class TestPeriod(FrappeTestCase):
 		)
 
 		self.assertEqual(period.seconds, 300)
+
+
+class TestDiskUsage(FrappeTestCase):
+	def disk_usage(self, used):
+		with patch(
+			"press.press.report.build_server_stats.build_server_stats.get_fleet_disk_usage", return_value=used
+		):
+			return DiskUsage(list(used), datetime(2026, 9, 10))
+
+	def test_a_mountpoint_on_two_servers_gets_its_own_column_and_a_lone_one_stays_in_other(self):
+		disk = self.disk_usage(
+			{
+				"f1.frappe.cloud": {"/": 40.0, "/opt/volumes/docker": 88.0},
+				"f2.frappe.cloud": {"/": 55.0, "/home/registry": 70.0},
+			}
+		)
+
+		self.assertEqual([column["fieldname"] for column in disk.columns()], ["disk_0", "disk"])
+		self.assertEqual(disk.cells("f1.frappe.cloud"), {"disk_0": 40.0, "disk": "/opt/volumes/docker 88.0%"})
+		self.assertEqual(disk.cells("f2.frappe.cloud"), {"disk_0": 55.0, "disk": "/home/registry 70.0%"})
+
+	def test_a_server_without_a_common_mountpoint_leaves_its_cell_blank(self):
+		disk = self.disk_usage(
+			{
+				"f1.frappe.cloud": {"/data": 10.0},
+				"f2.frappe.cloud": {"/data": 20.0},
+				"r1.frappe.cloud": {"/": 30.0},
+			}
+		)
+
+		self.assertEqual(disk.cells("r1.frappe.cloud"), {"disk_0": None, "disk": "/ 30.0%"})

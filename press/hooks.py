@@ -225,8 +225,10 @@ scheduler_events = {
 		"press.press.doctype.server.server_monitoring.alert_on_sites_with_missing_backups",
 	],
 	"daily_long": [
+		"press.press.doctype.site_adoption_snapshot.site_adoption_snapshot.record_daily_snapshot",
 		"press.press.audit.check_bench_fields",
 		"press.press.audit.check_offsite_backups",
+		"press.press.doctype.malware_scan.malware_scan.scan_opted_in_servers",
 		"press.press.audit.plan_audit",
 		"press.press.audit.check_app_server_replica_benches",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_prepaid_credit_invoices",
@@ -272,7 +274,6 @@ scheduler_events = {
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 		"press.press.doctype.server.server.sync_wazuh_agent_status",
 		"press.press.doctype.server.server.install_missing_wazuh_agents",
-		"press.press.doctype.server.server.install_missing_yara",
 		"press.press.doctype.incident_settings.incident_settings.alert_if_phone_call_alerts_disabled",
 		"press.press.doctype.server.server_monitoring.alert_on_failing_signups",
 		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",
@@ -280,6 +281,8 @@ scheduler_events = {
 		"press.press.doctype.site_backup.site_backup.alert_if_backup_success_rate_is_low",
 	],
 	"hourly_long": [
+		"press.press.doctype.scheduled_deploy_settings.scheduled_deploy_settings.deploy_scheduled_release_groups",
+		"press.press.doctype.site_adoption_snapshot.site_adoption_snapshot.record_hourly_snapshot",
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
 		"press.press.doctype.server.server_monitoring.monitor_server_and_refresh_new_bench_and_site_server_pool",
 		"press.press.doctype.release_group.release_group.add_public_servers_to_public_groups",
@@ -519,6 +522,7 @@ __persistent_cache_keys = [
 	"rl:*",
 	"press_otp:*",
 	"press_otp_sent:*",
+	"v1_migration_request||*",
 ]
 
 # `frappe.rename_doc` erases all caches, this hook preserves some of them.

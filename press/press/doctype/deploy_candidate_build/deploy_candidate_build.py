@@ -47,6 +47,7 @@ from press.press.doctype.deploy_candidate.utils import (
 	is_suspended,
 )
 from press.utils import get_current_team, log_error
+from press.utils.environment_variable import validate_environment_variable
 from press.utils.webhook import create_webhook_event
 
 if typing.TYPE_CHECKING:
@@ -339,6 +340,9 @@ class DeployCandidateBuild(Document):
 
 			if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
 				dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
+
+		for variable in self.candidate.environment_variables:
+			validate_environment_variable(variable.key, variable.value)
 
 		return frappe.render_template(
 			dockerfile_template,

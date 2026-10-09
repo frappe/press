@@ -45,6 +45,7 @@ class SiteActivity(Document):
 			"Disable Monitoring And Alerts",
 			"Enable Monitoring And Alerts",
 			"Access Offsite Backups",
+			"Authorize Backup Access",
 			"Archive Notification",
 		]
 		job: DF.Link | None

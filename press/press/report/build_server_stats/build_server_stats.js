@@ -10,6 +10,7 @@ frappe.query_reports['Build Server Stats'] = {
 			(column.fieldname === 'iowait' && data.iowait >= 20) ||
 			(column.fieldname === 'retransmit' && data.retransmit >= 1) ||
 			(column.fieldname === 'drops' && data.drops > 0) ||
+			(column.fieldname.startsWith('disk_') && data[column.fieldname] >= 85) ||
 			(column.fieldname === 'disk' &&
 				(data.disk || '')
 					.match(/[\d.]+(?=%)/g)

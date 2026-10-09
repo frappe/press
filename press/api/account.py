@@ -176,15 +176,15 @@ def resend_otp(account_request: str):
 @rate_limit(limit=5, seconds=60)
 def send_otp(email: str, for_2fa_keys: bool = False):
 	email = canonical_login_email(email)
-	# Logging in asks whether the account exists, not how it came to. Requiring an
-	# Account Request locked out everyone whose signup record was never written or
-	# had since been cleaned up.
-	if not frappe.db.exists("User", email):
-		frappe.throw("Please sign up first")
-
 	purpose = otp_purpose.TWO_FACTOR_RECOVERY if for_2fa_keys else otp_purpose.LOGIN
 	code = OneTimePassword(purpose, email)
 	throttle_otp(code)
+
+	# Answer an unknown address the same way, throttle included, so the response
+	# does not tell a caller which addresses have accounts.
+	if not frappe.db.exists("User", email):
+		code.hold_resend()
+		return
 
 	send_otp_mail(email, code.generate(), for_login=not for_2fa_keys)
 
@@ -211,13 +211,16 @@ def send_otp_mail(email: str, otp: str, for_login: bool = True):
 		template = "2fa_recovery_codes_otp"
 		subject = f"{otp} - OTP to view 2FA recovery codes for Frappe Cloud"
 
-	frappe.sendmail(
-		recipients=email,
-		subject=subject,
-		template=template,
-		args={"otp": otp},
-		now=True,
-	)
+	send_mail_in_background(recipients=email, subject=subject, template=template, args={"otp": otp})
+
+
+def send_mail_in_background(**kwargs):
+	"""Keep delivery off the request, or how long it takes reveals that the account exists."""
+	frappe.enqueue("press.api.account.send_mail_now", queue="short", enqueue_after_commit=True, **kwargs)
+
+
+def send_mail_now(**kwargs):
+	frappe.sendmail(**kwargs, now=True)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -357,8 +360,9 @@ def add_invited_member_to_team(account_request):
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
 def send_login_link(email):
+	# Silent for an unknown address, so the response does not reveal accounts.
 	if not frappe.db.exists("User", email):
-		frappe.throw("No registered account with this email address")
+		return
 
 	key = frappe.generate_hash("Login Link", 20)
 	minutes = 10
@@ -372,12 +376,11 @@ def send_login_link(email):
 		print(link)
 		print()
 
-	frappe.sendmail(
+	send_mail_in_background(
 		subject="Login to Frappe Cloud",
 		recipients=email,
 		template="one_time_login_link",
 		args={"link": link, "minutes": minutes},
-		now=True,
 	)
 
 

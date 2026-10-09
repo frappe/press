@@ -408,6 +408,16 @@ class Agent:
 			reference_name=reference_name,
 		)
 
+	def fix_global_search(self, site, reference_doctype=None, reference_name=None):
+		return self.create_agent_job(
+			"Fix global search",
+			f"benches/{site.bench}/sites/{site.name}/fix_global_search",
+			bench=site.bench,
+			site=site.name,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
 	def update_site(
 		self,
 		site,
