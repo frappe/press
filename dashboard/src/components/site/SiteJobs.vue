@@ -49,6 +49,12 @@ export default {
 								pageLength: 100,
 							},
 						},
+						{
+							type: 'daterange',
+							label: 'Date',
+							fieldname: 'creation',
+							class: !isMobile() ? 'w-56' : '',
+						},
 					];
 				},
 				columns: [
