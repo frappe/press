@@ -20,20 +20,36 @@
       - curl
       - software-properties-common
 
+- name: Create APT Keyrings Directory
+  file:
+    dest: /etc/apt/keyrings
+    state: directory
+    mode: 0755
+
 - name: Add Docker Repository Key
-  apt_key:
+  get_url:
     url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
+    dest: /etc/apt/keyrings/docker.asc
+    mode: 0644
+    force: yes
 
 # This seems to be breaking on some servers
 - name: Add NGINX Repository Key
-  apt_key:
+  get_url:
     url: https://nginx.org/keys/nginx_signing.key
-    state: present
+    dest: /etc/apt/keyrings/nginx.asc
+    mode: 0644
+    force: yes
+
+# An unsigned entry for the same source makes apt fail with conflicting Signed-By
+- name: Remove Unsigned Docker Repository
+  apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu focal stable
+    state: absent
 
 - name: Add Docker Repository
   apt_repository:
-    repo: deb https://download.docker.com/linux/ubuntu focal stable
+    repo: deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
     state: present
     update_cache: true
 

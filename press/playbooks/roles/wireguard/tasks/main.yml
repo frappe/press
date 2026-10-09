@@ -15,13 +15,13 @@
   shell: |
     wg genkey | sudo tee /etc/wireguard/wg-private.key
   register: wg_private_key
-  when: wireguard_private_key == "False"
+  when: wireguard_private_key is falsy
 
 - name: Generate Wireguard Public Key
   shell: |
     echo "{{ wg_private_key.stdout }}" | wg pubkey | sudo tee /etc/wireguard/wg-public.key
   register: wg_public_key
-  when: wireguard_public_key == "False"
+  when: wireguard_public_key is falsy
 
 - name: Debug Wireguard wg_private_key.stdout
   debug:
