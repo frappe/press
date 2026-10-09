@@ -22,6 +22,7 @@ import tomli
 from frappe.utils.verified_command import get_secret
 
 from press.utils import docs, get_current_team, log_error
+from press.utils.user import is_system_manager
 
 if TYPE_CHECKING:
 	from press.press.doctype.github_webhook_log.github_webhook_log import GitHubWebhookLog
@@ -38,6 +39,9 @@ class GithubFetchError(Exception):
 
 class InvalidGitHubOAuthState(frappe.ValidationError):
 	pass
+
+
+GITHUB_INSTALLATION_IDS_CACHE_SECONDS = 10 * 60
 
 
 class AppDependencyFetch(TypedDict):
@@ -180,12 +184,83 @@ def options(redirect_url: str | None = None):
 	team = get_current_team()
 	token = frappe.db.get_value("Team", team, "github_access_token")
 	installation_data = get_installation_data(team, redirect_url)
+	team_installations = installations(token) if token else []
+	if token:
+		cache_installation_ids(token, [i["id"] for i in team_installations])
 
 	return {
 		"authorized": bool(token),
 		**installation_data,
-		"installations": installations(token) if token else [],
+		"installations": team_installations,
 	}
+
+
+def check_installation(team: str, installation: str | int | None) -> None:
+	"""Throw unless the team may use this GitHub App installation."""
+	if not installation or is_system_manager():
+		return
+	installation = str(installation)
+	if installation_used_by_team_sources(team, installation):
+		return
+	if installation in team_installation_ids(team):
+		return
+	frappe.throw("You don't have access to this GitHub installation.", frappe.PermissionError)
+
+
+def check_app_source(team: str, app_source: str) -> None:
+	"""Throw unless the app source is public, the team's own, or in one of its benches."""
+	if is_system_manager():
+		return
+	source = frappe.db.get_value("App Source", app_source, ["team", "public"], as_dict=True)
+	if source and (source.public or source.team == team or app_source_in_team_groups(team, app_source)):
+		return
+	frappe.throw("You don't have access to this app source.", frappe.PermissionError)
+
+
+def installation_used_by_team_sources(team: str, installation: str) -> bool:
+	# Only the team's own sources: a public source's installation can reach its owner's other repos.
+	return bool(frappe.db.exists("App Source", {"team": team, "github_installation_id": installation}))
+
+
+def app_source_in_team_groups(team: str, app_source: str) -> bool:
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	ReleaseGroupApp = frappe.qb.DocType("Release Group App")
+	return bool(
+		frappe.qb.from_(ReleaseGroupApp)
+		.inner_join(ReleaseGroup)
+		.on(ReleaseGroup.name == ReleaseGroupApp.parent)
+		.select(ReleaseGroupApp.name)
+		.where(ReleaseGroup.team == team)
+		.where(ReleaseGroupApp.source == app_source)
+		.limit(1)
+		.run()
+	)
+
+
+def team_installation_ids(team: str) -> set[str]:
+	"""Installations the team's GitHub account can see, cached to spare GitHub calls."""
+	token = frappe.db.get_value("Team", team, "github_access_token")
+	if not token:
+		return set()
+	ids = frappe.cache.get_value(installation_ids_cache_key(token))
+	if ids is None:
+		try:
+			ids = cache_installation_ids(token, [i["id"] for i in fetch_installations(token)])
+		except frappe.ValidationError:
+			return set()
+	return set(ids)
+
+
+def cache_installation_ids(token: str, ids: list) -> list[str]:
+	ids = [str(i) for i in ids]
+	frappe.cache.set_value(
+		installation_ids_cache_key(token), ids, expires_in_sec=GITHUB_INSTALLATION_IDS_CACHE_SECONDS
+	)
+	return ids
+
+
+def installation_ids_cache_key(token: str) -> str:
+	return f"github_installation_ids:{hashlib.sha256(token.encode()).hexdigest()}"
 
 
 def get_safe_github_redirect_url(redirect_url: str | None = None) -> str:
@@ -323,6 +398,7 @@ def repositories(installation, token):
 
 @frappe.whitelist()
 def repository(owner: str, name: str, installation: str | None = None):
+	check_installation(get_current_team(), installation)
 	token = ""
 	if not installation:
 		token = frappe.db.get_value("Press Settings", "github_access_token")
@@ -358,6 +434,11 @@ def repository(owner: str, name: str, installation: str | None = None):
 
 @frappe.whitelist()
 def app(owner: str, repository: str, branch: str, installation: str | None = None):
+	check_installation(get_current_team(), installation)
+	return fetch_app_info(owner, repository, branch, installation)
+
+
+def fetch_app_info(owner: str, repository: str, branch: str, installation: str | None = None):
 	headers = get_auth_headers(installation)
 	response = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/branches/{branch}",
@@ -408,12 +489,21 @@ def app(owner: str, repository: str, branch: str, installation: str | None = Non
 
 @frappe.whitelist()
 def branches(owner: str, name: str, installation: str | None = None, app_source: str | None = None):
+	if installation:
+		check_installation(get_current_team(), installation)
+	elif app_source:
+		check_app_source(get_current_team(), app_source)
+		# The source's installation only ever lists the source's own repository.
+		owner, name, installation = frappe.db.get_value(
+			"App Source", app_source, ["repository_owner", "repository", "github_installation_id"]
+		)
+	return fetch_branches(owner, name, installation)
+
+
+def fetch_branches(owner: str, name: str, installation: str | None = None) -> list[dict]:
 	"""
 	Return ALL branches for the repo, following GitHub pagination.
 	"""
-	if not installation and app_source:
-		installation = frappe.db.get_value("App Source", app_source, "github_installation_id")
-
 	headers = get_auth_headers(installation)
 
 	out: list[dict] = []
@@ -513,6 +603,13 @@ def _get_compatible_frappe_version_from_pyproject(
 
 @frappe.whitelist()
 def get_frappe_branch_major_version(
+	owner: str, repository: str, branch: str, installation: str | None = None
+) -> int:
+	check_installation(get_current_team(), installation)
+	return fetch_frappe_branch_major_version(owner, repository, branch, installation)
+
+
+def fetch_frappe_branch_major_version(
 	owner: str, repository: str, branch: str, installation: str | None = None
 ) -> int:
 	"""Get the major Frappe version declared in `frappe/__init__.py` of the given branch."""

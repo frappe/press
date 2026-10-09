@@ -751,8 +751,11 @@ def is_on_marketplace(app: str) -> bool:
 
 @frappe.whitelist()
 def new_app(app: dict):
+	from press.api.github import check_installation
+
 	name = app["name"]
 	team = get_current_team()
+	check_installation(team, app.get("github_installation_id"))
 
 	if frappe.db.exists("App", name):
 		app_doc = frappe.get_doc("App", name)
@@ -1198,7 +1201,7 @@ def subscriptions():
 @protected("App Source")
 @frappe.whitelist()
 def branches(name: str):
-	from press.api.github import branches as git_branches
+	from press.api.github import fetch_branches as git_branches
 
 	app_source = frappe.db.get_value(
 		"App Source",
