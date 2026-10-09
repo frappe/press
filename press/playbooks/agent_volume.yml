@@ -1,0 +1,8 @@
+---
+- name: Move Agent To Its Own Volume
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  roles:
+    - role: agent_volume
