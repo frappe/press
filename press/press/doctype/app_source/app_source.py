@@ -14,7 +14,7 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 
 from press.api.github import GithubFetchError, get_access_token, get_auth_headers
-from press.api.github import app as get_repo_app_info
+from press.api.github import fetch_app_info as get_repo_app_info
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import parse_frappe_version
 from press.utils import get_current_team, log_error
