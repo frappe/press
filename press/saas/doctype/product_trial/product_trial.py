@@ -118,6 +118,12 @@ class ProductTrial(Document):
 		plan = self.trial_plan
 
 		if standby_site:
+			pool_state = frappe.db.get_value(
+				"Site",
+				standby_site,
+				["team", "account_request", "signup_time", "trial_end_date"],
+				as_dict=True,
+			)
 			frappe.db.set_value("Site", standby_site, "is_standby", 0)
 			frappe.db.commit()
 			try:
@@ -145,7 +151,8 @@ class ProductTrial(Document):
 				agent_jobs.extend(self.set_site_domain(site, site_domain))
 			except Exception:
 				frappe.db.rollback()
-				frappe.db.set_value("Site", standby_site, "is_standby", 1)
+				# Part of the handover may already be committed, so undo it all, not just is_standby
+				frappe.db.set_value("Site", standby_site, {"is_standby": 1, **pool_state})
 				frappe.db.commit()
 				raise
 		else:
