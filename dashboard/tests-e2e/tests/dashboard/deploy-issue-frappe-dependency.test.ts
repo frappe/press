@@ -182,6 +182,14 @@ test('names the app that lists frappe as a dependency on a failed build', async 
 	await capture(page, 'PLAYWRIGHT_ISSUE_SHOT_AFTER')
 })
 
+test('shows the failed build step output when a failed deploy opens', async ({
+	page,
+}) => {
+	await openFailedBuild(page, genericNotificationMock)
+
+	await expect(page.getByText(buildMock.build_steps[1].output)).toBeVisible()
+})
+
 test('keeps the generic build failure notification when the cause is unknown', async ({
 	page,
 }) => {
