@@ -309,22 +309,30 @@ class AppSource(Document):
 	def get_auth_headers(self) -> dict:
 		return get_auth_headers(self.github_installation_id)
 
-	def get_access_token(self) -> str | None:
-		if self.github_installation_id:
-			return get_access_token(self.github_installation_id)
-
-		return frappe.get_value("Press Settings", None, "github_access_token")
-
 	def get_repo_url(self) -> str:
-		if not self.github_installation_id:
+		token = self.get_clone_token()
+		if not token:
 			return self.repository_url
 
+		return f"https://x-access-token:{token}@github.com/{self.repository_owner}/{self.repository}"
+
+	def get_clone_token(self) -> str | None:
+		if self.github_installation_id:
+			return self.get_installation_token()
+
+		# The Press token can read repositories the team cannot, so the operator must opt in
+		if frappe.db.get_single_value("Press Settings", "clone_with_github_access_token"):
+			return get_access_token()
+
+		return None
+
+	def get_installation_token(self) -> str:
 		token = get_access_token(self.github_installation_id)
 		if token is None:
 			# Do not edit without updating deploy_notifications.py
 			raise GithubFetchError("App installation token could not be fetched", self.app)
 
-		return f"https://x-access-token:{token}@github.com/{self.repository_owner}/{self.repository}"
+		return token
 
 
 def create_app_source(
