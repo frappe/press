@@ -242,6 +242,16 @@ watch(
 	{ immediate: true },
 )
 
+// Show the failed step's output so the user need not look for it
+watch(
+	() => builds.value[activeBuildId.value]?.doc?.build_steps,
+	(steps) => {
+		const failedStep = steps?.find((x) => x.status === 'Failure')
+		if (failedStep && !output.id) setAutomaticOutput([failedStep])
+	},
+	{ immediate: true },
+)
+
 watch(
 	() => pipeline?.doc?.status,
 	(x) => {
