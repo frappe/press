@@ -65,6 +65,7 @@ const buildMock = {
 	name: BUILD_NAME,
 	status: 'Failure',
 	group: GROUP_NAME,
+	architecture: 'x86_64',
 	build_steps: [
 		{
 			name: 'step-1',
@@ -84,6 +85,14 @@ const buildMock = {
 				'hint: `frappe` (v15.120.1) was included because `my_app` (v0.0.1) depends on `frappe`',
 		},
 	],
+}
+
+const armBuildMock = {
+	...buildMock,
+	name: 'build-0002',
+	status: 'Success',
+	architecture: 'arm64',
+	build_steps: [{ ...buildMock.build_steps[0], name: 'step-3' }],
 }
 
 // Produced by get_details() in press/press/doctype/deploy_candidate/deploy_notifications.py
@@ -112,15 +121,27 @@ const genericNotificationMock = {
 	assistance_url: null,
 }
 
-async function openFailedBuild(page, notification) {
+async function openFailedBuild(page, notification, builds = [buildMock]) {
+	const pipeline = structuredClone(pipelineMock)
+	pipeline.steps.stages[2].builds = builds.map(
+		({ name, status, architecture }) => ({
+			doctype: 'Deploy Candidate Build',
+			name,
+			status,
+			architecture,
+		}),
+	)
+
 	await page.route(
 		/\/api\/method\/press\.api\.client\.get\b/,
 		async (route) => {
 			const url = new URL(route.request().url())
 			const docs = {
 				'Release Group': groupMock,
-				'Release Pipeline': pipelineMock,
-				'Deploy Candidate Build': buildMock,
+				'Release Pipeline': pipeline,
+				'Deploy Candidate Build': builds.find(
+					(build) => build.name === url.searchParams.get('name'),
+				),
 			}
 			const doc = docs[url.searchParams.get('doctype')]
 			if (!doc) return route.continue()
@@ -180,6 +201,29 @@ test('names the app that lists frappe as a dependency on a failed build', async 
 	)
 
 	await capture(page, 'PLAYWRIGHT_ISSUE_SHOT_AFTER')
+})
+
+test('shows the failed build step output when a failed deploy opens', async ({
+	page,
+}) => {
+	await openFailedBuild(page, genericNotificationMock)
+
+	await expect(page.getByText(buildMock.build_steps[1].output)).toBeVisible()
+})
+
+test('hides the failed build output after a switch to the architecture that built', async ({
+	page,
+}) => {
+	await openFailedBuild(page, genericNotificationMock, [
+		buildMock,
+		armBuildMock,
+	])
+	await expect(page.getByText(buildMock.build_steps[1].output)).toBeVisible()
+
+	await page.getByRole('tab', { name: 'arm64' }).click()
+
+	await expect(page.getByText('No Output')).toBeVisible()
+	await expect(page.getByText(buildMock.build_steps[1].output)).toHaveCount(0)
 })
 
 test('keeps the generic build failure notification when the cause is unknown', async ({
