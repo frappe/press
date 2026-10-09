@@ -5,12 +5,20 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from typing import ClassVar
+from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from pytz import timezone as pytz_timezone
 
-from press.api.analytics import AggType, ResourceType, SlowLogGroupByChart, align_to_quarter_hour
+from press.api.analytics import (
+	WORKER_WAIT_THRESHOLD,
+	AggType,
+	ResourceType,
+	SlowLogGroupByChart,
+	align_to_quarter_hour,
+	get_usage,
+)
 
 TIMEZONE = "Asia/Kolkata"
 
@@ -159,3 +167,45 @@ class TestSlowQueriesWithoutLogServer(FrappeTestCase):
 			self.assertEqual(chart.run(), {"datasets": [], "labels": []})
 		finally:
 			frappe.db.set_single_value("Press Settings", "log_server", log_server)
+
+
+class TestRequestWorkerWait(FrappeTestCase):
+	"""Time requests spend waiting for a free web worker, summed per bucket"""
+
+	def get_usage(self, response: dict) -> tuple[list, dict]:
+		post = MagicMock()
+		post.return_value.json.return_value = response
+		with (
+			patch("press.api.analytics.frappe.db.get_single_value", return_value="log.example.com"),
+			patch("press.api.analytics.get_decrypted_password", return_value="password"),
+			patch("press.api.analytics.requests.post", post),
+		):
+			usage = get_usage(
+				"site.example.com",
+				"request",
+				TIMEZONE,
+				datetime(2026, 8, 24, 10, 0),
+				datetime(2026, 8, 24, 11, 0),
+				900,
+			)
+		return usage, post.call_args.kwargs["json"]
+
+	def test_only_waits_above_the_threshold_are_summed(self):
+		_, query = self.get_usage({})
+		worker_wait = query["aggs"]["date_histogram"]["aggs"]["worker_wait"]
+		self.assertEqual(
+			worker_wait["filter"], {"range": {"json.request.wait": {"gt": WORKER_WAIT_THRESHOLD}}}
+		)
+		self.assertEqual(worker_wait["aggs"]["total"], {"sum": {"field": "json.request.wait"}})
+
+	def test_bucket_reports_wait_and_delayed_requests(self):
+		bucket = {
+			"key_as_string": "2026-08-24T10:00:00.000Z",
+			"count": {"value": 120},
+			"duration": {"value": 9_000_000},
+			"max": {"value": 3_000_000},
+			"worker_wait": {"doc_count": 4, "total": {"value": 2_500_000}},
+		}
+		usage, _ = self.get_usage({"aggregations": {"date_histogram": {"buckets": [bucket]}}})
+		self.assertEqual(usage[0].worker_wait, 2_500_000)
+		self.assertEqual(usage[0].delayed_count, 4)
