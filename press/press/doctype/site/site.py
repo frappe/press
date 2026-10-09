@@ -314,11 +314,16 @@ class Site(Document, TagHelpers):
 	def get_list_query(query, filters=None, **list_args):
 		from frappe.query_builder.functions import Coalesce
 
+		from press.press.doctype.cluster.cluster import archived_clusters
 		from press.press.doctype.site_update.site_update import (
 			benches_with_available_update,
 		)
 
 		Site = frappe.qb.DocType("Site")
+
+		# A site in an archived region cannot be managed, updated or dropped.
+		# Listing it only gives the customer a broken row they can do nothing about.
+		query = query.where(Site.cluster.notin(archived_clusters()))
 
 		# not a real field, so validate_filters strips it before it reaches the
 		# base query; host_name is only set once a site first reaches Active, so
@@ -3308,6 +3313,11 @@ class Site(Document, TagHelpers):
 		name = frappe.db.get_value("Subscription", {"document_type": "Site", "document_name": self.name})
 		return frappe.get_doc("Subscription", name) if name else None
 
+	@property
+	def in_archived_cluster(self) -> bool:
+		"""Whether the region the site sits in is retired, or no longer reachable."""
+		return frappe.get_cached_value("Cluster", self.cluster, "status") == "Archived"
+
 	def can_charge_for_subscription(self, subscription=None):
 		today = frappe.utils.getdate()
 		return (
@@ -3316,6 +3326,9 @@ class Site(Document, TagHelpers):
 			and self.team != "Administrator"
 			and not self.free
 			and (today > get_datetime(self.trial_end_date).date() if self.trial_end_date else True)
+			# Last: the only condition here that reads another document.
+			# We do not bill for a site the customer can neither see nor reach.
+			and not self.in_archived_cluster
 		)
 
 	def get_plan_name(self, plan=None):
