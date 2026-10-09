@@ -53,7 +53,12 @@ from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import 
 )
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.root_domain.root_domain import get_matching_domain
-from press.press.doctype.server.server import Server, is_dedicated_server
+from press.press.doctype.server.server import (
+	Server,
+	find_recent_notice_dispatch,
+	is_dedicated_server,
+	notice_message_id,
+)
 from press.press.doctype.site.site_plan_utils import (
 	get_available_warranty_quota_for_server,
 	get_next_allowed_dedicated_product_warranty_change_date,
@@ -5809,6 +5814,72 @@ def suspend_sites_exceeding_disk_usage_for_last_14_days():
 			# Check once again and suspend if still exceeds limits
 			site: Site = frappe.get_doc("Site", site.name)
 			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)
+
+
+def teams_with_sites_nearing_storage_limits(threshold: int) -> dict[str, list[frappe._dict]]:
+	"""Map each paying team to its live sites using more than `threshold`% of plan disk or database."""
+	free_teams = frappe.get_all("Team", filters={"free_account": True, "enabled": True}, pluck="name")
+	sites = frappe.get_all(
+		"Site",
+		filters={"status": ("in", ["Active", "Inactive"]), "free": False, "team": ("not in", free_teams)},
+		or_filters={"current_disk_usage": (">", threshold), "current_database_usage": (">", threshold)},
+		fields=["name", "team", "plan", "current_disk_usage", "current_database_usage"],
+	)
+	sites.sort(key=lambda s: max(s.current_disk_usage or 0, s.current_database_usage or 0), reverse=True)
+	teams: dict[str, list[frappe._dict]] = {}
+	for site in sites:
+		if site.team:
+			teams.setdefault(site.team, []).append(site)
+	return teams
+
+
+def notify_teams_nearing_storage_limits(
+	threshold: int = 80,
+	action_url: str = "https://cloud.frappe.io/dashboard",
+	duplicate_window_days: int = 3,
+	verbose: bool = False,
+):
+	"""Console-run: email paying teams whose sites use over `threshold`% of plan disk or database.
+	A team already sent this notice within duplicate_window_days is skipped."""
+	args = {"threshold": threshold, "action_url": action_url}
+	teams = teams_with_sites_nearing_storage_limits(threshold)
+	if verbose:
+		print(f"Notifying {len(teams)} team(s) with sites above {threshold}% of their storage limits")
+	for team, sites in teams.items():
+		over_limit = any(
+			(s.current_disk_usage or 0) > 100 or (s.current_database_usage or 0) > 100 for s in sites
+		)
+		# Keyed on over_limit too, so a near-limit notice doesn't suppress the later over-limit one
+		message_id = notice_message_id("storage-limit-notice", team, {**args, "over_limit": over_limit})
+		duplicate = find_recent_notice_dispatch(message_id, duplicate_window_days)
+		if duplicate:
+			if verbose:
+				sent_on = frappe.utils.formatdate(duplicate.creation)
+				link = frappe.utils.get_url_to_form("Email Queue", duplicate.name)
+				print(f"  {team}: not sending this as already sent on ({sent_on}) [{link}]")
+			continue
+		recipients = get_communication_info("Email", "Site Activity", "Team", team)
+		if not recipients:
+			if verbose:
+				print(f"  skipped {team}: no recipients for {len(sites)} site(s)")
+			continue
+		noun = "sites" if len(sites) > 1 else "site"
+		subject = (
+			f"Action needed: your {noun} {'have' if len(sites) > 1 else 'has'} gone over the plan's storage limit"
+			if over_limit
+			else f"Your {noun} {'are' if len(sites) > 1 else 'is'} close to the plan's storage limit"
+		)
+		frappe.sendmail(
+			recipients=recipients,
+			subject=subject,
+			template="sites_nearing_storage_limits",
+			args={**args, "sites": sites, "site_count": len(sites), "over_limit": over_limit},
+			reference_doctype="Team",
+			reference_name=team,
+			message_id=message_id,
+		)
+		if verbose:
+			print(f"  queued {team}: {len(sites)} site(s) -> {', '.join(recipients)}")
 
 
 def create_subscription_for_trial_sites():
