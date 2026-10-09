@@ -6,6 +6,7 @@ from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 
 from press.api.billing import (
+	_validate_prepaid_credits,
 	get_cleaned_up_transactions,
 	get_processed_balance_transactions,
 	verify_m_pesa_transaction,
@@ -235,7 +236,7 @@ class TestVerifyMpesaTransaction(FrappeTestCase):
 				"mpesa_setup_id": "test-mpesa-setup",
 				"api_type": "Mpesa Express",
 				"consumer_key": "test_consumer_key",
-				"consumer_secret": "test_consumer_secret",
+				"consumer_secret": "test_consumer_secret",  # pragma: allowlist secret
 				"business_shortcode": "174379",
 				"till_number": "174379",
 				"pass_key": "test_pass_key",
@@ -324,3 +325,35 @@ class TestVerifyMpesaTransaction(FrappeTestCase):
 
 		self.assertEqual(response["status"], "Completed")
 		create_payment_record.assert_called_once()
+
+
+class TestValidatePrepaidCredits(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_team()
+		frappe.set_user(self.team.user)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def create_unpaid_invoice(self, amount_due):
+		invoice = frappe.get_doc(
+			{"doctype": "Invoice", "team": self.team.name, "type": "Subscription", "status": "Unpaid"}
+		).insert(ignore_permissions=True)
+		invoice.db_set("amount_due", amount_due)
+
+	def test_team_without_unpaid_invoices_cannot_buy_credits_below_100_inr(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "Amount should be at least ₹100"):
+			_validate_prepaid_credits(66.25, "INR")
+
+	def test_team_with_unpaid_invoice_can_buy_credits_equal_to_unpaid_amount_below_100_inr(self):
+		self.create_unpaid_invoice(66.25)
+
+		_validate_prepaid_credits(66.25, "INR")
+
+	def test_team_with_unpaid_invoice_cannot_buy_credits_below_unpaid_amount(self):
+		self.create_unpaid_invoice(66.25)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Amount should be at least ₹66.25"):
+			_validate_prepaid_credits(50, "INR")
