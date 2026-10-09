@@ -107,7 +107,7 @@ import AlertAddressableError from '../components/AlertAddressableError.vue'
 import JobStep from '../components/JobStep.vue'
 import { getObject } from '../objects'
 import { confirmDialog } from '../utils/components'
-import { duration } from '../utils/format'
+import { finishedDuration } from '../utils/format'
 import { getToastErrorMessage } from '../utils/toast'
 
 // Keep in sync with DASHBOARD_CANCELLABLE_JOB_TYPES in agent_job.py
@@ -131,7 +131,7 @@ export default {
 				transform(job) {
 					for (let step of job.steps) {
 						step.title = step.step_name
-						step.duration = duration(step.duration)
+						step.duration = finishedDuration(step.duration, step.status)
 						step.isOpen =
 							this.job?.steps?.find((s) => s.name === step.name)?.isOpen ||
 							false
@@ -230,7 +230,7 @@ export default {
 			if (data.id === this.id) {
 				data.steps = data.steps.map((step) => {
 					step.title = step.step_name
-					step.duration = duration(step.duration)
+					step.duration = finishedDuration(step.duration, step.status)
 					step.isOpen =
 						this.job?.steps?.find((s) => s.name === step.name)?.isOpen || false
 					return step
