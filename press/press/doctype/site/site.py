@@ -99,6 +99,7 @@ from press.utils import (
 	get_client_blacklisted_keys,
 	get_current_team,
 	get_last_doc,
+	get_random_names,
 	guess_type,
 	human_readable,
 	is_list,
@@ -5581,7 +5582,7 @@ def _get_apps_of_bench(version, bench):
 
 def sync_sites_setup_wizard_complete_status():
 	team_name = frappe.get_value("Team", {"user": "Administrator"}, "name")
-	sites = frappe.get_all(
+	sites = get_random_names(
 		"Site",
 		filters={
 			"status": "Active",
@@ -5590,8 +5591,6 @@ def sync_sites_setup_wizard_complete_status():
 			"setup_wizard_status_check_next_retry_on": ("<=", frappe.utils.now()),
 			"team": ("!=", team_name),
 		},
-		pluck="name",
-		order_by="RAND()",
 		limit=100,
 	)
 	for site in sites:

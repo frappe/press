@@ -13,12 +13,12 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils.caching import redis_cache
 from frappe.utils.data import add_to_date, now_datetime
-from frappe.utils.telemetry import init_telemetry
 
 from press.api.client import dashboard_whitelist
 from press.press.doctype.root_domain.root_domain import get_domains
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error, validate_subdomain
+from press.utils.telemetry import init_telemetry
 
 if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
