@@ -185,11 +185,16 @@ const minimumAmount = computed(() => {
 	)
 })
 
-const creditsToBuy = ref(minimumAmount.value)
+// Prefill the full dues, since Stripe rejects less than the uncapped unpaid amount
+const defaultAmount = computed(() =>
+	Math.max(Math.ceil(totalUnpaidAmount.data || 0), minimumAmount.value),
+)
+
+const creditsToBuy = ref(defaultAmount.value)
 const paymentGateway = ref('')
 
-watch(minimumAmount, () => {
-	creditsToBuy.value = minimumAmount.value
+watch(defaultAmount, () => {
+	creditsToBuy.value = defaultAmount.value
 })
 
 const totalAmount = computed(() => {
