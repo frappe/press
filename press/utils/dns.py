@@ -83,17 +83,22 @@ def _change_dns_record(method: str, domain: RootDomain, proxy_server: str, recor
 	try:
 		zones = client.list_hosted_zones_by_name()["HostedZones"]
 		hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))["Id"]
+		record = {
+			"Name": record_name,
+			"Type": "CNAME",
+			"TTL": 900,
+			"ResourceRecords": [{"Value": proxy_server}],
+		}
+		if method == "DELETE":
+			record = _get_dns_record_for_deletion(client, hosted_zone, record_name, proxy_server)
+			if record is None:
+				return
 		client.change_resource_record_sets(
 			ChangeBatch={
 				"Changes": [
 					{
 						"Action": method,
-						"ResourceRecordSet": {
-							"Name": record_name,
-							"Type": "CNAME",
-							"TTL": 900,
-							"ResourceRecords": [{"Value": proxy_server}],
-						},
+						"ResourceRecordSet": record,
 					}
 				]
 			},
@@ -118,6 +123,24 @@ def _change_dns_record(method: str, domain: RootDomain, proxy_server: str, recor
 			site=record_name,
 			proxy_server=proxy_server,
 		)
+
+
+def _get_dns_record_for_deletion(client, hosted_zone, record_name, proxy_server):
+	records = client.list_resource_record_sets(
+		HostedZoneId=hosted_zone,
+		StartRecordName=record_name,
+		StartRecordType="CNAME",
+		MaxItems="1",
+	)["ResourceRecordSets"]
+	if not records:
+		return None
+	record = records[0]
+	if record["Name"].rstrip(".").lower() != record_name.rstrip(".").lower() or record["Type"] != "CNAME":
+		return None
+	targets = [target["Value"].rstrip(".").lower() for target in record.get("ResourceRecords", [])]
+	if targets != [proxy_server.rstrip(".").lower()]:
+		return None
+	return record
 
 
 def get_dns_provider_mname_rname(domain):
