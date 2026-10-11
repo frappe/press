@@ -170,7 +170,7 @@ class RootDomain(Document):
 				self.delete_dns_records(to_delete)
 
 	def update_dns_records_for_sites(
-		self, sites: list[str], proxy_server: str, batch_size: int = 500, ttl: int = 600
+		self, sites: list[str], proxy_server: str, batch_size: int = 500, ttl: int = 900
 	):
 		if self.generic_dns_provider:
 			return

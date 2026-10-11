@@ -637,7 +637,7 @@ class BaseServer(Document, TagHelpers):
 							"ResourceRecordSet": {
 								"Name": self.name,
 								"Type": "A",
-								"TTL": 3600 if self.doctype == "Proxy Server" else 300,
+								"TTL": 3600 if self.doctype == "Proxy Server" else 900,
 								"ResourceRecords": [{"Value": self.ip or self.private_ip}],
 							},
 						}
