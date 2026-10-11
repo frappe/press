@@ -279,7 +279,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def new_site_from_backup(self, site: "Site", skip_failing_patches=False):
+	def new_site_from_backup(self, site: "Site", skip_failing_patches=False, skip_migrate=False):
 		site.check_space_on_server_for_restore()
 		apps = [app.app for app in site.apps]
 
@@ -319,6 +319,7 @@ class Agent:
 			"public": public_link,
 			"private": private_link,
 			"skip_failing_patches": skip_failing_patches,
+			"skip_migrate": skip_migrate,
 			"managed_database_config": self._get_managed_db_config(site),
 			"agent_job_timeout": self._get_restore_timeout(site),
 		}
