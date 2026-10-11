@@ -87,4 +87,9 @@ frappe.ui.form.on('Site Migration', {
 			frm.dashboard.clear_headline();
 		}
 	},
+	skip_migrate: function (frm) {
+		if (frm.doc.skip_migrate) {
+			frm.set_value('skip_failing_patches', 1);
+		}
+	},
 });

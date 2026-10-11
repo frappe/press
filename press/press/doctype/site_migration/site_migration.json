@@ -14,6 +14,7 @@
 		"destination_bench",
 		"backup",
 		"skip_failing_patches",
+		"skip_migrate",
 		"section_break_5",
 		"source_server",
 		"source_cluster",
@@ -139,13 +140,21 @@
 			"default": "0",
 			"fieldname": "skip_failing_patches",
 			"fieldtype": "Check",
-			"label": "Skip Failing Patches"
+			"label": "Skip Failing Patches",
+			"read_only_depends_on": "eval:doc.skip_migrate"
+		},
+		{
+			"default": "0",
+			"description": "Restore on the destination without running bench migrate. Turns on Skip Failing Patches.",
+			"fieldname": "skip_migrate",
+			"fieldtype": "Check",
+			"label": "Skip Migrate"
 		}
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2025-05-05 10:32:27.636592",
+	"modified": "2026-10-11 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Site Migration",
