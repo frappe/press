@@ -65,7 +65,9 @@ def create_dns_record(doc, record_name=None):
 		_change_dns_record("UPSERT", domain, proxy_server, record_name=record_name)
 
 
-def _change_dns_record(method: str, domain: RootDomain, proxy_server: str, record_name: str | None = None):
+def _change_dns_record(
+	method: str, domain: RootDomain, proxy_server: str, record_name: str | None = None, ttl: int = 600
+):
 	"""
 	Change dns record of site
 
@@ -91,7 +93,7 @@ def _change_dns_record(method: str, domain: RootDomain, proxy_server: str, recor
 						"ResourceRecordSet": {
 							"Name": record_name,
 							"Type": "CNAME",
-							"TTL": 600,
+							"TTL": ttl,
 							"ResourceRecords": [{"Value": proxy_server}],
 						},
 					}
