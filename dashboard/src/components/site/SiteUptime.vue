@@ -321,12 +321,17 @@ export default {
 	},
 	watch: {
 		chunkedData() {
-			if (!!this.chunkedData.length && this.firstRender) {
+			const chunkCount = this.chunkedData.length
+			if (this.firstRender && chunkCount) {
 				this.firstRender = false
-				this.$nextTick(() => {
-					this.currentChunkIndex = this.chunkedData.length - 1
-				})
+				this.currentChunkIndex = chunkCount - 1
+				return
 			}
+
+			this.currentChunkIndex = Math.min(
+				this.currentChunkIndex,
+				Math.max(chunkCount - 1, 0),
+			)
 		},
 		currentChunkIndex() {
 			this.highlightDates = true
