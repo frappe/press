@@ -59,3 +59,31 @@ test('site uptime bars stay wide enough on a phone viewport', async ({
 		.poll(async () => (await firstChunkBars.first().boundingBox())?.width ?? 0)
 		.toBeGreaterThanOrEqual(5)
 })
+
+test('resizing site uptime from its last phone chunk resets the chunk index', async ({
+	page,
+}) => {
+	const pageErrors: Error[] = []
+	page.on('pageerror', (error) => pageErrors.push(error))
+	await page.setViewportSize({ width: 320, height: 900 })
+	await mockAnalytics(
+		page,
+		Array.from({ length: 120 }, (_, index) => ({
+			date: new Date(Date.UTC(2026, 6, 1, index)).toISOString(),
+			value: index % 5 === 0 ? 0 : 1,
+		})),
+	)
+	await page.goto(`/dashboard/sites/${SITE_NAME}/insights/analytics`)
+
+	const uptimeCard = page.locator('#uptime')
+	const previousChunk = uptimeCard.locator('button').first()
+	const nextChunk = uptimeCard.locator('button').last()
+	await expect(nextChunk).toBeDisabled({ timeout: 30000 })
+	await expect(previousChunk).toBeEnabled()
+
+	await page.setViewportSize({ width: 1440, height: 900 })
+
+	await expect(previousChunk).toBeDisabled()
+	await expect(uptimeCard.locator('.transition-colors').first()).toBeVisible()
+	expect(pageErrors).toEqual([])
+})
