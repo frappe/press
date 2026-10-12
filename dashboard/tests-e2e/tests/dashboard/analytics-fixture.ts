@@ -96,11 +96,18 @@ const siteMock = {
 	},
 }
 
-export async function mockAnalytics(page: Page) {
+export async function mockAnalytics(
+	page: Page,
+	uptime?: { date: string; value: number }[],
+) {
 	await page.route(/\/api\/method\/press\.api\.analytics\./, async (route) => {
 		const method = new URL(route.request().url()).pathname.split('.').pop()!
-		const payload = analyticsPayloads[method]
-		if (payload === undefined) return route.continue()
+		const analyticsPayload = analyticsPayloads[method]
+		if (analyticsPayload === undefined) return route.continue()
+		const payload =
+			method === 'get' && uptime
+				? { ...(analyticsPayload as object), uptime }
+				: analyticsPayload
 		await route.fulfill({
 			status: 200,
 			contentType: 'application/json',
