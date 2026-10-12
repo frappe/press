@@ -242,6 +242,8 @@ class TestSiteBackup(FrappeTestCase):
 		self.assertTrue(self.site_backup.remote_private_file)
 		self.assertTrue(self.site_backup.remote_config_file)
 
+	# The failure notification commits, which would leak this site into later tests
+	@patch("press.press.doctype.agent_job.agent_job_notifications.send_job_failure_notification", new=Mock())
 	def _fail_backup_job(self, output: str):
 		self.job.db_set("status", "Failure")
 		self.job.db_set("output", output)
