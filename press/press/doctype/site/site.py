@@ -11,6 +11,7 @@ from contextlib import suppress
 from datetime import datetime, timedelta
 from functools import cached_property, wraps
 from typing import Any, Literal
+from urllib.parse import quote
 
 import dateutil.parser
 import frappe
@@ -1498,6 +1499,27 @@ class Site(Document, TagHelpers):
 		job = agent.clear_site_cache(self)
 
 		log_site_activity(self.name, "Clear Cache", job=job.name)
+
+	@dashboard_whitelist()
+	def get_local_backups(self):
+		backups = Agent(self.server).list_local_backups(self)
+		# Frappe serves private/backups at /backups to logged in System Managers
+		domain = self.host_name or self.name
+		for backup in backups:
+			backup["download_url"] = f"https://{domain}/backups/{quote(backup['file'])}"
+		return backups
+
+	@dashboard_whitelist()
+	def delete_local_backups(self, files: list[str]):
+		if isinstance(files, str):
+			files = json.loads(files)
+		if not files or not isinstance(files, list):
+			frappe.throw("Select at least one backup to delete")
+
+		result = Agent(self.server).delete_local_backups(self, files)
+		if result["deleted"]:
+			log_site_activity(self.name, "Drop Local Backups", reason=", ".join(result["deleted"]))
+		return result
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive"])
@@ -3989,6 +4011,13 @@ class Site(Document, TagHelpers):
 				"description": "Clear cache on your site",
 				"button_label": "Clear",
 				"doc_method": "clear_site_cache",
+			},
+			{
+				"action": "Manage local backups",
+				"description": "View, download or delete backups stored on the server in private/backups",
+				"button_label": "Manage",
+				"doc_method": "dummy",
+				"condition": self.status in ["Active", "Inactive", "Broken", "Suspended"],
 			},
 			{
 				"action": "Manage Product Warranty",
