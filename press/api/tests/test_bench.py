@@ -19,6 +19,7 @@ from press.api.bench import (
 	deploy_information,
 	get,
 	new,
+	search_releases,
 	update_config,
 	update_dependencies,
 )
@@ -188,6 +189,62 @@ class TestAPIBench(FrappeTestCase):
 				print("Waitng for container to respond", str(e))
 			time.sleep(0.5)
 
+<<<<<<< HEAD
+=======
+	def test_marketplace_branch_list_leaves_out_a_branch_deleted_on_github(self):
+		app = create_test_app("insights", "Insights")
+		repository_url = "https://github.com/frappe/insights"
+		live_source = create_test_app_source(self.version, app, repository_url, "master", self.team.name)
+		deleted_source = create_test_app_source(
+			self.version, app, repository_url, "version-16", self.team.name
+		)
+		frappe.db.set_value(
+			"App Source",
+			deleted_source.name,
+			{
+				"last_github_poll_failed": 1,
+				"last_github_response": '{"message": "Branch not found"}',
+			},
+		)
+		marketplace_app = create_test_marketplace_app(
+			app.name,
+			self.team.name,
+			sources=[
+				{"version": self.version, "source": live_source.name},
+				{"version": self.version, "source": deleted_source.name},
+			],
+		)
+
+		branches = get_branches_for_marketplace_app(app.name, marketplace_app.name, live_source)
+
+		self.assertEqual(branches, [{"name": "master"}])
+
+	def test_search_releases_selects_fixed_columns_when_caller_passes_fields(self):
+		release = create_test_app_release(self.app_source)
+		frappe.db.set_value("App Release", release.name, "public", 1)
+		injected_field = "hash` FROM `tabUser` WHERE SLEEP(5)-- -"
+
+		releases = frappe.call(
+			search_releases,
+			app=self.app.name,
+			source=self.app_source.name,
+			query=release.hash[:7],
+			fields=["name", injected_field],
+		)
+
+		self.assertEqual(
+			releases,
+			[
+				{
+					"name": release.name,
+					"message": release.message,
+					"timestamp": release.timestamp,
+					"hash": release.hash,
+				}
+			],
+		)
+
+>>>>>>> bcc4283 (fix(bench): Do not spread fields)
 
 class TestAPIBenchConfig(FrappeTestCase):
 	def setUp(self):
