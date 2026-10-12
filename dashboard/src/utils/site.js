@@ -1,38 +1,36 @@
-import { dayjsLocal } from './dayjs';
-import { plural } from './format';
+import { dayjsLocal } from './dayjs'
+import { plural } from './format'
 
 export function trialDays(_trialEndDate) {
-	const trialEndDate = dayjsLocal(_trialEndDate);
-	const today = dayjsLocal();
-	const diffHours = trialEndDate.diff(today, 'hours');
-	const diffDays = trialEndDate
-		.startOf('day')
-		.diff(today.startOf('day'), 'day');
-	let statusText = '';
-	const isExpired = diffHours < 0;
+	const trialEndDate = dayjsLocal(_trialEndDate)
+	const today = dayjsLocal()
+	const diffHours = trialEndDate.diff(today, 'hours')
+	const diffDays = trialEndDate.startOf('day').diff(today.startOf('day'), 'day')
+	let statusText = ''
+	const isExpired = diffHours < 0
 	if (isExpired) {
-		const absDays = Math.abs(diffDays);
+		const absDays = Math.abs(diffDays)
 		if (absDays === 0) {
-			statusText = `earlier today`;
+			statusText = `earlier today`
 		} else {
-			statusText = `${absDays} ${plural(absDays, 'day', 'days')} ago`;
+			statusText = `${absDays} ${plural(absDays, 'day', 'days')} ago`
 		}
 	} else if (diffHours < 1) {
-		statusText = 'in less than an hour';
+		statusText = 'in less than an hour'
 	} else if (diffHours < 24) {
-		statusText = `in ${diffHours} ${plural(diffHours, 'hour', 'hours')}`;
+		statusText = `in ${diffHours} ${plural(diffHours, 'hour', 'hours')}`
 	} else if (diffDays === 1) {
-		statusText = 'tomorrow';
+		statusText = 'tomorrow'
 	} else {
-		statusText = `in ${diffDays} ${plural(diffDays, 'day', 'days')}`;
+		statusText = `in ${diffDays} ${plural(diffDays, 'day', 'days')}`
 	}
-	return isExpired ? `Trial ended ${statusText}` : `Trial ends ${statusText}`;
+	return isExpired ? `Trial ended ${statusText}` : `Trial ends ${statusText}`
 }
 
 export function isTrialEnded(_trialEndDate) {
-	let trialEndDate = dayjsLocal(_trialEndDate);
-	let today = dayjsLocal();
-	return trialEndDate.isBefore(today, 'day');
+	let trialEndDate = dayjsLocal(_trialEndDate)
+	let today = dayjsLocal()
+	return trialEndDate.isBefore(today, 'day')
 }
 
 export const siteStatusBadges = {
@@ -40,34 +38,55 @@ export const siteStatusBadges = {
 	Inactive: { theme: 'gray', dot: 'bg-surface-gray-4' },
 	Suspended: { theme: 'gray', dot: 'bg-surface-gray-4' },
 	Archived: { theme: 'gray', dot: 'bg-surface-gray-4' },
-  Installing: { theme: 'blue', dot: 'bg-surface-blue-3' },
+	Installing: { theme: 'blue', dot: 'bg-surface-blue-3' },
 	Broken: { theme: 'red', dot: 'bg-surface-red-5' },
 	Draft: { theme: 'orange', dot: 'bg-surface-orange-3' },
 	AwaitingApproval: { theme: 'orange', dot: 'bg-surface-orange-3' },
 	'Update Available': { theme: 'blue', dot: 'bg-surface-blue-3' },
-};
+}
 
 export const defaultSiteStatusBadge = {
 	theme: 'gray',
 	dot: 'bg-surface-gray-4',
-};
+}
 
 export function getSiteStatusBadge(status) {
-	return siteStatusBadges[status] || defaultSiteStatusBadge;
+	return siteStatusBadges[status] || defaultSiteStatusBadge
 }
 
 export function validateSubdomain(subdomain) {
 	if (!subdomain) {
-		return 'Subdomain cannot be empty';
+		return 'Subdomain cannot be empty'
 	}
 	if (subdomain.length < 5) {
-		return 'Subdomain too short. Use 5 or more characters';
+		return 'Subdomain too short. Use 5 or more characters'
 	}
 	if (subdomain.length > 32) {
-		return 'Subdomain too long. Use 32 or less characters';
+		return 'Subdomain too long. Use 32 or less characters'
 	}
 	if (!subdomain.match(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/)) {
-		return 'Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens';
+		return 'Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens'
 	}
-	return null;
+	return null
+}
+
+// Opens the tab within the click so the popup blocker allows it, then loads
+// the URL once the (sometimes slow) login request resolves.
+export function openInNewTab(urlPromise) {
+	const tab = window.open('', '_blank')
+	if (tab) {
+		tab.opener = null
+		tab.document.title = 'Logging in…'
+		tab.document.body.textContent = 'Logging in…'
+	}
+	return Promise.resolve(urlPromise)
+		.then((url) => {
+			if (tab) tab.location.href = url
+			else window.open(url, '_blank')
+			return url
+		})
+		.catch((error) => {
+			tab?.close()
+			throw error
+		})
 }
