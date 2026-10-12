@@ -1,5 +1,10 @@
 import type { Page, Request, Route } from '@playwright/test'
 
+type UptimeData = { date: string; value: number }[]
+type UptimeProvider = (
+	request: Request,
+) => UptimeData | Promise<UptimeData>
+
 export const SITE_NAME = 'test-analytics.fc.frappe.dev'
 
 // A busy site over a long window: every advanced chart fills its top-10 paths
@@ -98,16 +103,14 @@ const siteMock = {
 
 export async function mockAnalytics(
 	page: Page,
-	uptime?:
-		| { date: string; value: number }[]
-		| ((request: Request) => { date: string; value: number }[]),
+	uptime?: UptimeData | UptimeProvider,
 ) {
 	await page.route(/\/api\/method\/press\.api\.analytics\./, async (route) => {
 		const method = new URL(route.request().url()).pathname.split('.').pop()!
 		const analyticsPayload = analyticsPayloads[method]
 		if (analyticsPayload === undefined) return route.continue()
 		const uptimeData =
-			typeof uptime === 'function' ? uptime(route.request()) : uptime
+			typeof uptime === 'function' ? await uptime(route.request()) : uptime
 		const payload =
 			method === 'get' && uptimeData
 				? { ...(analyticsPayload as object), uptime: uptimeData }

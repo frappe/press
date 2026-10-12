@@ -29,7 +29,7 @@ test('site uptime bars space evenly, dim on hover, and reset date highlights', a
 
 	const previousChunk = uptimeCard.locator('button').first()
 	await previousChunk.click()
-	const dateLabels = uptimeCard.locator('.transition-colors')
+	const dateLabels = uptimeCard.locator('.text-ink-gray-5 > div')
 	await expect(dateLabels.first()).toHaveClass(/bg-surface-gray-3/)
 	await expect(dateLabels.first()).not.toHaveClass(/bg-surface-gray-3/, {
 		timeout: 1000,
@@ -76,15 +76,18 @@ test('resizing site uptime from its last phone chunk resets the chunk index', as
 	await page.goto(`/dashboard/sites/${SITE_NAME}/insights/analytics`)
 
 	const uptimeCard = page.locator('#uptime')
+	await expect(uptimeCard.locator('.max-w-4')).toHaveCount(120, {
+		timeout: 30000,
+	})
 	const previousChunk = uptimeCard.locator('button').first()
 	const nextChunk = uptimeCard.locator('button').last()
-	await expect(nextChunk).toBeDisabled({ timeout: 30000 })
+	while (await nextChunk.isEnabled()) await nextChunk.click()
 	await expect(previousChunk).toBeEnabled()
 
 	await page.setViewportSize({ width: 1440, height: 900 })
 
 	await expect(previousChunk).toBeDisabled()
-	await expect(uptimeCard.locator('.transition-colors').first()).toBeVisible()
+	await expect(uptimeCard.locator('.text-ink-gray-5 > div').first()).toBeVisible()
 	expect(pageErrors).toEqual([])
 })
 
@@ -93,33 +96,57 @@ test('shortening the site uptime range clamps the selected chunk', async ({
 }) => {
 	const pageErrors: Error[] = []
 	page.on('pageerror', (error) => pageErrors.push(error))
-	const shorterUptime = UPTIME.slice(0, 5)
+	const shorterUptime = Array.from({ length: 50 }, (_, index) => ({
+		date: new Date(Date.UTC(2027, 6, 1, index)).toISOString(),
+		value: index % 5 === 0 ? 0 : 1,
+	}))
 	let useShorterRange = false
 	await page.setViewportSize({ width: 320, height: 900 })
-	await mockAnalytics(page, () =>
-		useShorterRange
+	await mockAnalytics(page, async () => {
+		if (useShorterRange) await new Promise((resolve) => setTimeout(resolve, 500))
+		return useShorterRange
 			? shorterUptime
 			: Array.from({ length: 120 }, (_, index) => ({
 					date: new Date(Date.UTC(2026, 6, 1, index)).toISOString(),
 					value: index % 5 === 0 ? 0 : 1,
-				})),
-	)
+				}))
+	})
 	await page.goto(`/dashboard/sites/${SITE_NAME}/insights/analytics`)
 
 	const uptimeCard = page.locator('#uptime')
+	await expect(uptimeCard.locator('.max-w-4')).toHaveCount(120, {
+		timeout: 30000,
+	})
+	const previousChunk = uptimeCard.locator('button').first()
 	const nextChunk = uptimeCard.locator('button').last()
-	await expect(nextChunk).toBeDisabled({ timeout: 30000 })
+	while (await nextChunk.isEnabled()) await nextChunk.click()
+	for (let index = 0; index < 6; index++) await previousChunk.click()
+	await expect(nextChunk).toBeEnabled()
 	await expect(uptimeCard.locator('.max-w-4')).toHaveCount(120)
 
-	const previousChunk = uptimeCard.locator('button').first()
-	await previousChunk.click()
-	await expect(previousChunk).toBeEnabled()
+	const scrollContainer = uptimeCard.locator('.overflow-x-auto.snap-x')
+	const selectedDates = uptimeCard.locator('.text-ink-gray-5 > div')
+	const previousFirstDate = await selectedDates.first().textContent()
+	const previousScrollPosition = await scrollContainer.evaluate(
+		(element) => element.scrollLeft,
+	)
+	expect(previousScrollPosition).toBeGreaterThan(0)
+
 	useShorterRange = true
-	await page.getByRole('combobox').last().selectOption('6h')
+	await page.getByRole('combobox').last().click()
+	await page.getByRole('option', { name: 'Last 6 hours' }).click()
+	await expect(uptimeCard.locator('.max-w-4')).toHaveCount(0)
 
 	await expect(uptimeCard.locator('.max-w-4')).toHaveCount(
 		shorterUptime.length,
 		{ timeout: 30000 },
 	)
+	await expect(selectedDates.first()).not.toHaveText(previousFirstDate!)
+	await expect(selectedDates.first()).toContainText('2027')
+	await expect
+		.poll(() =>
+			scrollContainer.evaluate((element) => element.scrollLeft),
+		)
+		.toBeGreaterThan(0)
 	expect(pageErrors).toEqual([])
 })
