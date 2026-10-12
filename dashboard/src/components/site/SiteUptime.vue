@@ -312,7 +312,11 @@ export default {
 			return Math.ceil(N / numChunks)
 		},
 		updateMaxChunkSize() {
-			this.maxChunkSize = window.innerWidth < 640 ? 14 : 60
+			const maxChunkSize = window.innerWidth < 640 ? 14 : 60
+			if (maxChunkSize === this.maxChunkSize) return
+
+			this.currentChunkIndex = 0
+			this.maxChunkSize = maxChunkSize
 		},
 	},
 	watch: {
