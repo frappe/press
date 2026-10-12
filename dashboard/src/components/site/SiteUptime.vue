@@ -320,6 +320,9 @@ export default {
 		},
 	},
 	watch: {
+		loading(isLoading, wasLoading) {
+			if (wasLoading && !isLoading) this.scrollToCurrentChunk()
+		},
 		chunkedData() {
 			const chunkCount = this.chunkedData.length
 			if (this.firstRender && chunkCount) {
