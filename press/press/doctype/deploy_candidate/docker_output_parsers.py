@@ -176,7 +176,7 @@ class DockerBuildOutputParser:
 		stage_slug, step_slug = match.group(1).split("-", maxsplit=1)
 		step = self.steps_by_step_slug.get((stage_slug, step_slug))
 		if not step:
-			return
+			step = self._insert_step(stage_slug, step_slug)
 
 		index = split["index"]
 		step.step_index = index
@@ -185,6 +185,29 @@ class DockerBuildOutputParser:
 		step.output = ""
 
 		self.steps[index] = step
+
+	def _insert_step(self, stage_slug: str, step_slug: str) -> DeployCandidateBuildStep:
+		"""Adds a step for a marker the agent injected, e.g. an app's pyproject apt packages"""
+		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
+			get_build_stage_and_step,
+		)
+
+		stage, title = get_build_stage_and_step(stage_slug, step_slug)
+		step = self.dc.append(
+			"build_steps",
+			dict(status="Pending", stage_slug=stage_slug, step_slug=step_slug, stage=stage, step=title),
+		)
+		self._move_before_first_pending_step(step)
+		self.steps_by_step_slug[(stage_slug, step_slug)] = step
+		return step
+
+	def _move_before_first_pending_step(self, step: DeployCandidateBuildStep):
+		build_steps = self.dc.build_steps
+		build_steps.remove(step)
+		position = next((i for i, s in enumerate(build_steps) if s.status == "Pending"), len(build_steps))
+		build_steps.insert(position, step)
+		for idx, build_step in enumerate(build_steps, start=1):
+			build_step.idx = idx
 
 	def _get_step_index_split(self, line: str) -> "IndexSplit | None":
 		splits = line.split(maxsplit=1)
