@@ -1270,7 +1270,6 @@ def confirm_bench_transfer(key: str):
 def search_releases(
 	app: str,
 	source: str,
-	fields: list,
 	query: str | None = None,
 	limit: int = 10,
 	current_release: str | None = None,
@@ -1284,7 +1283,7 @@ def search_releases(
 		frappe.qb.from_(AppRelease)
 		.left_join(YankedAppRelease)
 		.on(YankedAppRelease.hash == AppRelease.hash)
-		.select(*fields)
+		.select(AppRelease.name, AppRelease.message, AppRelease.timestamp, AppRelease.hash)
 		.where(YankedAppRelease.hash.isnull())
 		.where(AppRelease.hash.like(f"%{query.strip()}%") | AppRelease.message.like(f"%{query.strip()}%"))
 	)
