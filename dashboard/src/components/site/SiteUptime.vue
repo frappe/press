@@ -322,6 +322,7 @@ export default {
 	watch: {
 		chunkedData() {
 			if (!!this.chunkedData.length && this.firstRender) {
+				this.firstRender = false
 				this.$nextTick(() => {
 					this.currentChunkIndex = this.chunkedData.length - 1
 				})
