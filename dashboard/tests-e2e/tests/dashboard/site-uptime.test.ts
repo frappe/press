@@ -87,3 +87,39 @@ test('resizing site uptime from its last phone chunk resets the chunk index', as
 	await expect(uptimeCard.locator('.transition-colors').first()).toBeVisible()
 	expect(pageErrors).toEqual([])
 })
+
+test('shortening the site uptime range clamps the selected chunk', async ({
+	page,
+}) => {
+	const pageErrors: Error[] = []
+	page.on('pageerror', (error) => pageErrors.push(error))
+	const shorterUptime = UPTIME.slice(0, 5)
+	let useShorterRange = false
+	await page.setViewportSize({ width: 320, height: 900 })
+	await mockAnalytics(page, () =>
+		useShorterRange
+			? shorterUptime
+			: Array.from({ length: 120 }, (_, index) => ({
+					date: new Date(Date.UTC(2026, 6, 1, index)).toISOString(),
+					value: index % 5 === 0 ? 0 : 1,
+				})),
+	)
+	await page.goto(`/dashboard/sites/${SITE_NAME}/insights/analytics`)
+
+	const uptimeCard = page.locator('#uptime')
+	const nextChunk = uptimeCard.locator('button').last()
+	await expect(nextChunk).toBeDisabled({ timeout: 30000 })
+	await expect(uptimeCard.locator('.max-w-4')).toHaveCount(120)
+
+	const previousChunk = uptimeCard.locator('button').first()
+	await previousChunk.click()
+	await expect(previousChunk).toBeEnabled()
+	useShorterRange = true
+	await page.getByRole('combobox').last().selectOption('6h')
+
+	await expect(uptimeCard.locator('.max-w-4')).toHaveCount(
+		shorterUptime.length,
+		{ timeout: 30000 },
+	)
+	expect(pageErrors).toEqual([])
+})

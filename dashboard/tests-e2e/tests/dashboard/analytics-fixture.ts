@@ -1,4 +1,4 @@
-import type { Page, Route } from '@playwright/test'
+import type { Page, Request, Route } from '@playwright/test'
 
 export const SITE_NAME = 'test-analytics.fc.frappe.dev'
 
@@ -98,15 +98,19 @@ const siteMock = {
 
 export async function mockAnalytics(
 	page: Page,
-	uptime?: { date: string; value: number }[],
+	uptime?:
+		| { date: string; value: number }[]
+		| ((request: Request) => { date: string; value: number }[]),
 ) {
 	await page.route(/\/api\/method\/press\.api\.analytics\./, async (route) => {
 		const method = new URL(route.request().url()).pathname.split('.').pop()!
 		const analyticsPayload = analyticsPayloads[method]
 		if (analyticsPayload === undefined) return route.continue()
+		const uptimeData =
+			typeof uptime === 'function' ? uptime(route.request()) : uptime
 		const payload =
-			method === 'get' && uptime
-				? { ...(analyticsPayload as object), uptime }
+			method === 'get' && uptimeData
+				? { ...(analyticsPayload as object), uptime: uptimeData }
 				: analyticsPayload
 		await route.fulfill({
 			status: 200,
