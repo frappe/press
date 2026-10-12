@@ -35,3 +35,27 @@ test('site uptime bars space evenly, dim on hover, and reset date highlights', a
 		timeout: 1000,
 	})
 })
+
+test('site uptime bars stay wide enough on a phone viewport', async ({
+	page,
+}) => {
+	await page.setViewportSize({ width: 320, height: 900 })
+	await mockAnalytics(
+		page,
+		Array.from({ length: 120 }, (_, index) => ({
+			date: new Date(Date.UTC(2026, 6, 1, index)).toISOString(),
+			value: index % 5 === 0 ? 0 : 1,
+		})),
+	)
+	await page.goto(`/dashboard/sites/${SITE_NAME}/insights/analytics`)
+
+	const uptimeCard = page.locator('#uptime')
+	const firstChunkBars = uptimeCard
+		.locator('.snap-start')
+		.first()
+		.locator('.max-w-4')
+	await expect(firstChunkBars).toHaveCount(14, { timeout: 30000 })
+	await expect
+		.poll(async () => (await firstChunkBars.first().boundingBox())?.width ?? 0)
+		.toBeGreaterThanOrEqual(5)
+})
