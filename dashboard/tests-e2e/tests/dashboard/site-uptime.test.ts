@@ -150,3 +150,51 @@ test('shortening the site uptime range clamps the selected chunk', async ({
 		.toBeGreaterThan(0)
 	expect(pageErrors).toEqual([])
 })
+
+test('shortening uptime data from the last chunk clamps to the new last chunk', async ({
+	page,
+}) => {
+	const pageErrors: Error[] = []
+	page.on('pageerror', (error) => pageErrors.push(error))
+	const shorterUptime = Array.from({ length: 20 }, (_, index) => ({
+		date: new Date(Date.UTC(2027, 6, 1, index)).toISOString(),
+		value: index % 5 === 0 ? 0 : 1,
+	}))
+	let useShorterRange = false
+	await page.setViewportSize({ width: 320, height: 900 })
+	await mockAnalytics(page, async () => {
+		if (useShorterRange) await new Promise((resolve) => setTimeout(resolve, 500))
+		return useShorterRange
+			? shorterUptime
+			: Array.from({ length: 120 }, (_, index) => ({
+					date: new Date(Date.UTC(2026, 6, 1, index)).toISOString(),
+					value: index % 5 === 0 ? 0 : 1,
+				}))
+	})
+	await page.goto(`/dashboard/sites/${SITE_NAME}/insights/analytics`)
+
+	const uptimeCard = page.locator('#uptime')
+	await expect(uptimeCard.locator('.max-w-4')).toHaveCount(120, {
+		timeout: 30000,
+	})
+	const previousChunk = uptimeCard.locator('button').first()
+	const nextChunk = uptimeCard.locator('button').last()
+	while (await nextChunk.isEnabled()) await nextChunk.click()
+	await expect(nextChunk).toBeDisabled()
+
+	useShorterRange = true
+	await page.getByRole('combobox').last().click()
+	await page.getByRole('option', { name: 'Last 6 hours' }).click()
+	await expect(uptimeCard.locator('.max-w-4')).toHaveCount(0)
+	await expect(uptimeCard.locator('.max-w-4')).toHaveCount(
+		shorterUptime.length,
+		{ timeout: 30000 },
+	)
+
+	await expect(previousChunk).toBeEnabled()
+	await expect(nextChunk).toBeDisabled()
+	await expect(uptimeCard.locator('.text-ink-gray-5 > div').first()).toContainText(
+		'2027',
+	)
+	expect(pageErrors).toEqual([])
+})
