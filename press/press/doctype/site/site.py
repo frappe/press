@@ -1141,8 +1141,8 @@ class Site(Document, TagHelpers):
 
 		create_site_status_update_webhook_event(self.name)
 
-	def remove_dns_record(self, proxy_server: str, ttl: int = 600):
-		"""Remove dns record of site pointing to proxy. Route 53 deletes only if the ttl matches too."""
+	def remove_dns_record(self, proxy_server: str):
+		"""Remove dns record of site pointing to proxy."""
 		if self.status != "Archived":
 			self._create_default_site_domain()
 		domains = frappe.db.get_all(
@@ -1156,7 +1156,6 @@ class Site(Document, TagHelpers):
 					domain=frappe.get_doc("Root Domain", root_domain),
 					proxy_server=proxy_server,
 					record_name=domain,
-					ttl=ttl,
 				)
 
 	def is_this_version_or_above(self, version: int) -> bool:
