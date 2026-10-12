@@ -147,7 +147,7 @@ export default {
 		return {
 			carouselId: uuid4(),
 			chunkSize: null,
-			maxChunkSize: 60,
+			maxChunkSize: window.innerWidth < 640 ? 14 : 60,
 			currentChunkIndex: 0,
 			hoveringOn: {
 				key: null, // (== date)
@@ -167,7 +167,11 @@ export default {
 		const site = getCachedDocumentResource('Site', this.site)
 		this.siteCreation = site?.doc?.creation
 	},
+	mounted() {
+		window.addEventListener('resize', this.updateMaxChunkSize)
+	},
 	beforeUnmount() {
+		window.removeEventListener('resize', this.updateMaxChunkSize)
 		const el = this.$refs.scrollContainer
 		el?.removeEventListener('scroll', this.handleScroll)
 	},
@@ -305,8 +309,10 @@ export default {
 		getOptimalChunkSizeFromDataLength(N) {
 			const maxSize = this.maxChunkSize
 			const numChunks = Math.ceil(N / maxSize)
-			const baseSize = Math.floor(N / numChunks)
-			return baseSize + 1
+			return Math.ceil(N / numChunks)
+		},
+		updateMaxChunkSize() {
+			this.maxChunkSize = window.innerWidth < 640 ? 14 : 60
 		},
 	},
 	watch: {
