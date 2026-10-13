@@ -6,6 +6,7 @@ import typing
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 
 from press.api import client
@@ -13,6 +14,7 @@ from press.api.bench import redeploy
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.bench.bench import Bench, process_bench_queue
+from press.press.doctype.deploy_candidate.docker_output_parsers import DockerBuildOutputParser
 from press.press.doctype.deploy_candidate.test_deploy_candidate import (
 	create_test_deploy_candidate,
 	create_test_deploy_candidate_build,
@@ -221,6 +223,44 @@ class TestDeployCandidateBuild(FrappeTestCase):
 		build = self.deploy_candidate_build
 		checkpoints = build._get_dockerfile_checkpoints(build._generate_dockerfile())
 		self.assertIn("setup-chromium", checkpoints)
+
+	@patch.object(DockerBuildOutputParser, "flush_output", new=Mock())
+	def test_build_step_keeps_the_end_time_from_when_its_done_line_was_first_seen(self, _mock_commit):
+		build = self.deploy_candidate_build
+		build.add_build_steps(build._generate_dockerfile())
+		output = ["#7 [stage-1 5/30] RUN echo `#stage-setup-chromium`\n", "#7 DONE 2.5s\n"]
+
+		first_seen = frappe.utils.add_to_date(frappe.utils.now_datetime(), minutes=-5)
+		parsers = "press.press.doctype.deploy_candidate.docker_output_parsers"
+		with patch(f"{parsers}.now_datetime", return_value=first_seen):
+			DockerBuildOutputParser(build).parse_and_update(output)
+		DockerBuildOutputParser(build).parse_and_update(output)
+
+		step = find(build.build_steps, lambda s: (s.stage_slug, s.step_slug) == ("setup", "chromium"))
+		self.assertEqual((step.status, step.duration, step.end_time), ("Success", 2.5, first_seen))
+
+	def generate_dockerfile_with_app_cache(self, public: bool, no_cache: bool = False) -> str:
+		frappe.set_user("Administrator")
+		apps = [create_test_app(), create_test_app("erpnext", "ERPNext")]
+		candidate = create_test_deploy_candidate(create_test_release_group(apps, public=public))
+		candidate.db_set("use_app_cache", 1)
+		build = create_test_deploy_candidate_build(candidate, no_cache=no_cache)
+		build.candidate._set_app_cached_flags()
+		return build._generate_dockerfile()
+
+	def test_public_group_with_app_cache_installs_apps_through_the_asset_store(self, _mock_commit):
+		dockerfile = self.generate_dockerfile_with_app_cache(public=True)
+		self.assertIn("COPY get_cached_app.py /usr/local/bin/get_cached_app.py", dockerfile)
+		self.assertIn("/usr/local/bin/get_cached_app.py \\\n  erpnext \\", dockerfile)
+
+	def test_private_group_with_app_cache_installs_apps_without_the_asset_store(self, _mock_commit):
+		dockerfile = self.generate_dockerfile_with_app_cache(public=False)
+		self.assertNotIn("get_cached_app.py", dockerfile)
+		self.assertIn("bench get-app file:///home/frappe/context/apps/erpnext", dockerfile)
+
+	def test_no_cache_build_of_a_public_group_skips_the_asset_store(self, _mock_commit):
+		dockerfile = self.generate_dockerfile_with_app_cache(public=True, no_cache=True)
+		self.assertNotIn("get_cached_app.py", dockerfile)
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=Mock())
 	@patch.object(DeployCandidateBuild, "_process_run_build", new=Mock())
