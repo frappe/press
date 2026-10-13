@@ -10,7 +10,7 @@ from press.press.doctype.marketplace_app.test_marketplace_app import (
 )
 
 
-def create_test_marketplace_app_plan(app: str = "frappe"):
+def create_test_marketplace_app_plan(app: str = "frappe", *, price_usd: float = 12):
 	"""Create a test marketplace_app_plan"""
 	if not frappe.db.exists("Marketplace App", app):
 		create_test_app(name=app)
@@ -21,7 +21,7 @@ def create_test_marketplace_app_plan(app: str = "frappe"):
 			"doctype": "Marketplace App Plan",
 			"title": "Test Plan",
 			"price_inr": 1000,
-			"price_usd": 12,
+			"price_usd": price_usd,
 			"app": app,
 			"versions": [{"version": "Version 14"}],
 			"features": [{"description": "Feature 1"}],
