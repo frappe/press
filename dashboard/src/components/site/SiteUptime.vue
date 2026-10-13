@@ -44,6 +44,7 @@
 					<Button
 						v-if="chunkedData.length > 1"
 						@click="scrollPrev"
+						label="Previous uptime chunk"
 						:disabled="currentChunkIndex === 0"
 						class="rounded-full h-8 w-8"
 					>
@@ -98,6 +99,7 @@
 					<Button
 						v-if="chunkedData.length > 1"
 						@click="scrollNext"
+						label="Next uptime chunk"
 						:disabled="currentChunkIndex === chunkedData.length - 1"
 						class="rounded-full h-8 w-8"
 					>
