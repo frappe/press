@@ -59,7 +59,6 @@
 						<div
 							v-for="(group, index) in chunkedData"
 							:key="index"
-							:ref="getUptimeChunkId(index)"
 							class="flex w-full flex-shrink-0 snap-start justify-center gap-0.5"
 							:class="chunkedData.length > 1 && 'px-2'"
 						>
@@ -128,7 +127,6 @@
 </template>
 
 <script>
-import { uuid4 } from '@sentry/core'
 import { getCachedDocumentResource, Tooltip } from 'frappe-ui'
 import NoDataMsg from '@/components/common/NoDataMsg.vue'
 import { icon } from '../../utils/components'
@@ -145,7 +143,6 @@ export default {
 	emits: ['datazoom'],
 	data() {
 		return {
-			carouselId: uuid4(),
 			chunkSize: null,
 			maxChunkSize: window.innerWidth < 640 ? 14 : 60,
 			currentChunkIndex: 0,
@@ -278,9 +275,6 @@ export default {
 				sameDayEndDate,
 			}
 		},
-		getUptimeChunkId(chunkIndex) {
-			return `uptime-${this.carouselId}-${chunkIndex}`
-		},
 		clearInspect() {
 			this.hoveringOn = {
 				key: null,
@@ -301,9 +295,12 @@ export default {
 		},
 		scrollToCurrentChunk() {
 			this.$nextTick(() => {
-				this.$refs[
-					this.getUptimeChunkId(this.currentChunkIndex)
-				]?.[0]?.scrollIntoView({ behavior: 'smooth', container: 'nearest' })
+				// Scroll only the carousel; scrollIntoView also scrolls the page
+				const el = this.$refs.scrollContainer
+				el?.scrollTo({
+					left: this.currentChunkIndex * el.clientWidth,
+					behavior: 'smooth',
+				})
 			})
 		},
 		getOptimalChunkSizeFromDataLength(N) {
@@ -325,16 +322,15 @@ export default {
 		},
 		chunkedData() {
 			const chunkCount = this.chunkedData.length
-			if (this.firstRender && chunkCount) {
+			// Keep the index while a reload empties the data
+			if (!chunkCount) return
+			if (this.firstRender) {
 				this.firstRender = false
 				this.currentChunkIndex = chunkCount - 1
 				return
 			}
 
-			this.currentChunkIndex = Math.min(
-				this.currentChunkIndex,
-				Math.max(chunkCount - 1, 0),
-			)
+			this.currentChunkIndex = Math.min(this.currentChunkIndex, chunkCount - 1)
 		},
 		currentChunkIndex() {
 			this.highlightDates = true
