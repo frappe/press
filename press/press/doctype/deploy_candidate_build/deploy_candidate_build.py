@@ -351,12 +351,17 @@ class DeployCandidateBuild(Document):
 				"remove_distutils": not is_distutils_supported,
 				"requires_version_based_get_pip": requires_version_based_get_pip,
 				"is_arm_build": self.platform == "arm64",
-				"use_asset_store": False,
-				"upload_assets": False,
+				"use_asset_store": self.uses_asset_store(),
 				"site_url": frappe.utils.get_url(),
 			},
 			is_path=True,
 		)
+
+	def uses_asset_store(self) -> bool:
+		"""Public groups only, since the store serves one group's built assets to every other."""
+		if self.no_cache or not self.candidate.use_app_cache:
+			return False
+		return bool(frappe.db.get_value("Release Group", self.group, "public"))
 
 	def add_patch_build_steps(self):
 		slugs = [
@@ -846,6 +851,8 @@ class DeployCandidateBuild(Document):
 
 		self.candidate._set_additional_packages()
 		self.candidate._set_container_mounts()
+		if not self.no_cache:
+			self.candidate._set_app_cached_flags()
 
 		dockerfile = self._generate_dockerfile()
 		_, host_keys = self.candidate.generate_ssh_keys()
