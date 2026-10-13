@@ -1,5 +1,5 @@
-import { expect, test } from './coverage.fixture'
 import { mockAnalytics, SITE_NAME } from './analytics-fixture'
+import { expect, test } from './coverage.fixture'
 
 const UPTIME = Array.from({ length: 61 }, (_, index) => ({
 	date: new Date(Date.UTC(2026, 6, 1, index)).toISOString(),
@@ -27,7 +27,9 @@ test('site uptime bars space evenly, dim on hover, and reset date highlights', a
 	await expect(secondBar).toHaveClass(/opacity-40/)
 	await expect(firstBar).not.toHaveClass(/opacity-40/)
 
-	const previousChunk = uptimeCard.locator('button').first()
+	const previousChunk = uptimeCard.getByRole('button', {
+		name: 'Previous uptime chunk',
+	})
 	await previousChunk.click()
 	const dateLabels = uptimeCard.locator('.text-ink-gray-5 > div')
 	await expect(dateLabels.first()).toHaveClass(/bg-surface-gray-3/)
@@ -79,15 +81,21 @@ test('resizing site uptime from its last phone chunk resets the chunk index', as
 	await expect(uptimeCard.locator('.max-w-4')).toHaveCount(120, {
 		timeout: 30000,
 	})
-	const previousChunk = uptimeCard.locator('button').first()
-	const nextChunk = uptimeCard.locator('button').last()
+	const previousChunk = uptimeCard.getByRole('button', {
+		name: 'Previous uptime chunk',
+	})
+	const nextChunk = uptimeCard.getByRole('button', {
+		name: 'Next uptime chunk',
+	})
 	while (await nextChunk.isEnabled()) await nextChunk.click()
 	await expect(previousChunk).toBeEnabled()
 
 	await page.setViewportSize({ width: 1440, height: 900 })
 
 	await expect(previousChunk).toBeDisabled()
-	await expect(uptimeCard.locator('.text-ink-gray-5 > div').first()).toBeVisible()
+	await expect(
+		uptimeCard.locator('.text-ink-gray-5 > div').first(),
+	).toBeVisible()
 	expect(pageErrors).toEqual([])
 })
 
@@ -103,7 +111,8 @@ test('shortening the site uptime range clamps the selected chunk', async ({
 	let useShorterRange = false
 	await page.setViewportSize({ width: 320, height: 900 })
 	await mockAnalytics(page, async () => {
-		if (useShorterRange) await new Promise((resolve) => setTimeout(resolve, 500))
+		if (useShorterRange)
+			await new Promise((resolve) => setTimeout(resolve, 500))
 		return useShorterRange
 			? shorterUptime
 			: Array.from({ length: 120 }, (_, index) => ({
@@ -117,8 +126,12 @@ test('shortening the site uptime range clamps the selected chunk', async ({
 	await expect(uptimeCard.locator('.max-w-4')).toHaveCount(120, {
 		timeout: 30000,
 	})
-	const previousChunk = uptimeCard.locator('button').first()
-	const nextChunk = uptimeCard.locator('button').last()
+	const previousChunk = uptimeCard.getByRole('button', {
+		name: 'Previous uptime chunk',
+	})
+	const nextChunk = uptimeCard.getByRole('button', {
+		name: 'Next uptime chunk',
+	})
 	while (await nextChunk.isEnabled()) await nextChunk.click()
 	for (let index = 0; index < 6; index++) await previousChunk.click()
 	await expect(nextChunk).toBeEnabled()
@@ -144,9 +157,7 @@ test('shortening the site uptime range clamps the selected chunk', async ({
 	await expect(selectedDates.first()).not.toHaveText(previousFirstDate!)
 	await expect(selectedDates.first()).toContainText('2027')
 	await expect
-		.poll(() =>
-			scrollContainer.evaluate((element) => element.scrollLeft),
-		)
+		.poll(() => scrollContainer.evaluate((element) => element.scrollLeft))
 		.toBeGreaterThan(0)
 	expect(pageErrors).toEqual([])
 })
@@ -163,7 +174,8 @@ test('shortening uptime data from the last chunk clamps to the new last chunk', 
 	let useShorterRange = false
 	await page.setViewportSize({ width: 320, height: 900 })
 	await mockAnalytics(page, async () => {
-		if (useShorterRange) await new Promise((resolve) => setTimeout(resolve, 500))
+		if (useShorterRange)
+			await new Promise((resolve) => setTimeout(resolve, 500))
 		return useShorterRange
 			? shorterUptime
 			: Array.from({ length: 120 }, (_, index) => ({
@@ -177,8 +189,12 @@ test('shortening uptime data from the last chunk clamps to the new last chunk', 
 	await expect(uptimeCard.locator('.max-w-4')).toHaveCount(120, {
 		timeout: 30000,
 	})
-	const previousChunk = uptimeCard.locator('button').first()
-	const nextChunk = uptimeCard.locator('button').last()
+	const previousChunk = uptimeCard.getByRole('button', {
+		name: 'Previous uptime chunk',
+	})
+	const nextChunk = uptimeCard.getByRole('button', {
+		name: 'Next uptime chunk',
+	})
 	while (await nextChunk.isEnabled()) await nextChunk.click()
 	await expect(nextChunk).toBeDisabled()
 
@@ -193,8 +209,8 @@ test('shortening uptime data from the last chunk clamps to the new last chunk', 
 
 	await expect(previousChunk).toBeEnabled()
 	await expect(nextChunk).toBeDisabled()
-	await expect(uptimeCard.locator('.text-ink-gray-5 > div').first()).toContainText(
-		'2027',
-	)
+	await expect(
+		uptimeCard.locator('.text-ink-gray-5 > div').first(),
+	).toContainText('2027')
 	expect(pageErrors).toEqual([])
 })
