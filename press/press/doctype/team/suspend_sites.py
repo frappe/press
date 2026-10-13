@@ -9,7 +9,7 @@ This module deals with suspending sites of defaulters.
 Defaulters are identified based on the following conditions:
 - Is not a free account
 - Is not a Legacy Partner account with payment mode as Partner Credits
-- Has at least one unpaid invoice
+- Has at least one unpaid invoice, whose payment is not waiting for the bank
 - Has an active site
 
 The `execute` method is the main method which is run by the scheduler on every day of the month.
@@ -94,6 +94,7 @@ def get_teams_with_unpaid_invoices():
 			& (team.free_account == 0)
 			& (team.extend_payment_due_suspension == 0)
 			& (invoice.status == "Unpaid")
+			& (invoice.payment_processing_since.isnull())
 			& (invoice.docstatus < 2)
 			& (invoice.type == "Subscription")
 			& (site.free == 0)
