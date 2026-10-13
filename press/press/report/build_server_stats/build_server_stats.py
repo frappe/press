@@ -22,11 +22,29 @@ DURATIONS = {
 	"6 hours": 6 * 60 * 60,
 	"12 hours": 12 * 60 * 60,
 	"24 hours": 24 * 60 * 60,
+	"3 days": 3 * 24 * 60 * 60,
+	"7 days": 7 * 24 * 60 * 60,
+	"15 days": 15 * 24 * 60 * 60,
 }
 QUEUED = ("Scheduled", "Pending")
 # Preparing already holds the build server, so it counts against capacity like Running does
 RUNNING = ("Preparing", "Running")
 VOLUMES = "/opt/volumes/"
+# Builds Started is drawn full width. The rest go in pairs, so each build server chart sits by its cluster chart.
+CHARTS = (
+	"Builds Started",
+	"Builds by Cluster",
+	"Remote Builder Failures by Build Server",
+	"Build Failures by Build Server",
+	"Build Failures by Cluster",
+	"Build Duration by Build Server",
+	"Build Duration by Cluster",
+	"New Bench Jobs by Status",
+	"New Bench Jobs by Cluster",
+	"New Bench Duration by Cluster",
+	"New Bench Failures by Cluster",
+	"Prune Jobs by Server",
+)
 
 
 @dataclass
@@ -50,8 +68,14 @@ def execute(filters=None):
 		get_columns(disk),
 		get_data(period, builds, servers, disk),
 		get_cluster_loss(period),
-		get_selected_chart(filters.chart, period, builds, servers),
+		get_charts(period, builds, servers),
 	)
+
+
+def get_charts(period, builds, servers):
+	"""Frappe draws only the first chart. The report's JS draws the ones in `charts` below it."""
+	charts = [{**get_selected_chart(name, period, builds, servers), "name": name} for name in CHARTS]
+	return {**charts[0], "charts": charts[1:]}
 
 
 def get_period(filters):
@@ -85,7 +109,6 @@ def get_columns(disk):
 			"width": 130,
 		},
 		{"fieldname": "cluster", "label": "Cluster", "fieldtype": "Link", "options": "Cluster", "width": 120},
-		{"fieldname": "status", "label": "Status", "fieldtype": "Data", "width": 90},
 		{"fieldname": "iowait", "label": "IO Wait (%)", "fieldtype": "Float", "width": 110},
 		{"fieldname": "cpu_used", "label": "CPU Used (%)", "fieldtype": "Float", "width": 110},
 		{"fieldname": "memory_used", "label": "Memory Used (%)", "fieldtype": "Float", "width": 130},
@@ -102,6 +125,7 @@ def get_columns(disk):
 		{"fieldname": "median_build", "label": "Median Build (s)", "fieldtype": "Int", "width": 140},
 		{"fieldname": "p95_build", "label": "P95 Build (s)", "fieldtype": "Int", "width": 130},
 		{"fieldname": "median_pull", "label": "Median Image Pull (s)", "fieldtype": "Int", "width": 160},
+		{"fieldname": "status", "label": "Status", "fieldtype": "Data", "width": 90},
 	]
 
 
@@ -218,11 +242,12 @@ class DiskUsage:
 	def __init__(self, servers, end):
 		self.used = get_fleet_disk_usage(servers, end)
 		counts = Counter(mountpoint for mounts in self.used.values() for mountpoint in mounts)
-		self.common = sorted(mountpoint for mountpoint, count in counts.items() if count > 1)
+		common = [mountpoint for mountpoint, count in counts.items() if count > 1]
+		self.common = sorted(common, key=lambda mountpoint: (mountpoint == "/boot/efi", mountpoint))
 
 	def columns(self):
 		columns = [
-			{"fieldname": f"disk_{index}", "label": f"Disk {mountpoint} (%)", "fieldtype": "Float"}
+			{"fieldname": f"disk_{index}", "label": disk_label(mountpoint), "fieldtype": "Float"}
 			for index, mountpoint in enumerate(self.common)
 		]
 		other = {
@@ -242,6 +267,12 @@ class DiskUsage:
 			if mountpoint not in self.common
 		]
 		return {**cells, "disk": ", ".join(others)}
+
+
+def disk_label(mountpoint):
+	"""Bold the last directory, so .clones and .docker-builds stand out in a narrow header."""
+	parent, _, name = mountpoint.rpartition("/")
+	return f"Disk {parent}/<b>{name}</b> (%)"
 
 
 def get_fleet_disk_usage(servers, end):
@@ -357,33 +388,160 @@ def get_chart(window, builds):
 
 
 def get_selected_chart(chart, period, builds, servers):
-	if chart == "Build Failures by Cluster":
-		return get_build_failure_chart(period.seconds, builds, servers)
-	if chart == "New Bench Failures by Cluster":
-		return get_new_bench_failure_chart(period)
-	if chart == "Remote Builder Failures by Build Server":
-		events = [(job.failed_at, job.server) for job in get_failed_jobs("Run Remote Builder", period)]
-		return stacked_chart("Failed Run Remote Builder jobs", period.seconds, events)
+	charts_of_period = {
+		"New Bench Failures by Cluster": get_new_bench_failure_chart,
+		"Remote Builder Failures by Build Server": get_remote_builder_failure_chart,
+		"Build Failures by Build Server": get_failed_builds_by_server_chart,
+		"Build Failures by Cluster": get_build_failure_chart,
+		"New Bench Jobs by Status": get_new_bench_jobs_chart,
+		"New Bench Jobs by Cluster": get_new_bench_jobs_by_cluster_chart,
+		"New Bench Duration by Cluster": get_new_bench_duration_chart,
+		"Prune Jobs by Server": get_prune_chart,
+	}
+	if chart in charts_of_period:
+		return charts_of_period[chart](period)
+	if chart == "Builds by Cluster":
+		return get_builds_by_cluster_chart(period.seconds, builds, servers)
+	if chart == "Build Duration by Build Server":
+		return get_build_duration_chart(builds)
+	if chart == "Build Duration by Cluster":
+		return get_build_duration_by_cluster_chart(builds, servers)
 	return get_chart(period.seconds, builds)
+
+
+def get_remote_builder_failure_chart(period):
+	events = [(job.failed_at, job.server) for job in get_failed_jobs("Run Remote Builder", period)]
+	return stacked_chart("Failed Run Remote Builder jobs", period.seconds, events)
+
+
+def get_prune_chart(period):
+	plays = frappe.get_all(
+		"Ansible Play",
+		{
+			"playbook": ("in", ("docker_system_prune.yml", "prune_mirror_registry.yml")),
+			"creation": ("between", (period.start, period.end)),
+		},
+		["creation", "server"],
+	)
+	return stacked_chart("Prune plays", period.seconds, [(play.creation, play.server) for play in plays])
+
+
+def get_failed_builds(period):
+	return frappe.get_all(
+		"Deploy Candidate Build",
+		{"creation": ("between", (period.start, period.end)), "status": "Failure"},
+		["creation", "build_server"],
+	)
+
+
+def get_failed_builds_by_server_chart(period):
+	events = [
+		(build.creation, build.build_server or "No build server") for build in get_failed_builds(period)
+	]
+	return stacked_chart("Failed builds by creation", period.seconds, events)
+
+
+def get_build_failure_chart(period):
+	builds = get_failed_builds(period)
+	cluster_of = get_cluster_of({build.build_server for build in builds})
+	events = [(build.creation, cluster_of.get(build.build_server)) for build in builds]
+	return stacked_chart("Failed builds by creation", period.seconds, events)
+
+
+def get_new_bench_jobs(period):
+	return frappe.get_all(
+		"Agent Job",
+		{"job_type": "New Bench", "creation": ("between", (period.start, period.end))},
+		["creation", "status", "server"],
+	)
+
+
+def get_new_bench_jobs_by_cluster_chart(period):
+	jobs = get_new_bench_jobs(period)
+	cluster_of = get_cluster_of({job.server for job in jobs})
+	events = [(job.creation, cluster_of.get(job.server)) for job in jobs]
+	return stacked_chart("New Bench jobs", period.seconds, events)
+
+
+def get_cluster_of(servers):
+	return dict(frappe.get_all("Server", {"name": ("in", servers)}, ["name", "cluster"], as_list=True))
+
+
+def get_new_bench_jobs_chart(period):
+	jobs = get_new_bench_jobs(period)
+	chart = stacked_chart("New Bench jobs", period.seconds, [(job.creation, job.status) for job in jobs])
+	colors = {"Success": "green", "Failure": "red", "Delivery Failure": "orange", "Running": "blue"}
+	chart["colors"] = [colors.get(dataset["name"], "grey") for dataset in chart["data"]["datasets"]]
+	return chart
+
+
+def get_build_duration_chart(builds):
+	spans = successful_build_spans(builds, lambda build: build.build_server)
+	return duration_histogram("Successful builds by duration", spans)
+
+
+def get_build_duration_by_cluster_chart(builds, servers):
+	cluster_of = {server.name: server.cluster for server in servers}
+	spans = successful_build_spans(builds, lambda build: cluster_of.get(build.build_server) or "No cluster")
+	return duration_histogram("Successful builds by duration", spans)
+
+
+def successful_build_spans(builds, group_of):
+	return [
+		((build.build_end - build.build_start).total_seconds(), group_of(build))
+		for build in builds
+		if build.status == "Success" and build.build_end
+	]
+
+
+def get_new_bench_duration_chart(period):
+	"""Successful New Bench jobs that ended in the period, like the Median Image Pull column."""
+	jobs = frappe.get_all(
+		"Agent Job",
+		{"job_type": "New Bench", "status": "Success", "end": ("between", (period.start, period.end))},
+		["start", "end", "server"],
+	)
+	cluster_of = get_cluster_of({job.server for job in jobs})
+	spans = [
+		((job.end - job.start).total_seconds(), cluster_of.get(job.server) or "No cluster")
+		for job in jobs
+		if job.start
+	]
+	return duration_histogram("Successful New Bench jobs by duration", spans)
+
+
+def duration_histogram(title, spans):
+	"""Spans are (seconds, group) pairs, counted in about twelve whole-minute bins, stacked by group."""
+	longest = max((seconds for seconds, _ in spans), default=0)
+	width = max(60, math.ceil(longest / 12 / 60) * 60)
+	counts = Counter((int(seconds // width), group) for seconds, group in spans)
+	bins = range(max((index for index, _ in counts), default=-1) + 1)
+	groups = sorted({group for _, group in counts})
+	return {
+		"title": title,
+		"data": {
+			"labels": [f"{index * width // 60}-{(index + 1) * width // 60} min" for index in bins],
+			"datasets": [
+				{"name": group, "values": [counts[(index, group)] for index in bins]} for group in groups
+			],
+		},
+		"type": "bar",
+		"barOptions": {"stacked": 1},
+	}
 
 
 def get_new_bench_failure_chart(period):
 	jobs = get_failed_jobs("New Bench", period)
-	servers = {job.server for job in jobs}
-	cluster_of = dict(frappe.get_all("Server", {"name": ("in", servers)}, ["name", "cluster"], as_list=True))
+	cluster_of = get_cluster_of({job.server for job in jobs})
 	events = [(job.failed_at, cluster_of.get(job.server)) for job in jobs]
 	return stacked_chart("Failed New Bench jobs", period.seconds, events)
 
 
-def get_build_failure_chart(window, builds, servers):
+def get_builds_by_cluster_chart(window, builds, servers):
 	# ponytail: a build on a server that is no longer active reads as "No cluster"
 	cluster_of = {server.name: server.cluster for server in servers}
-	events = [
-		(build.build_start, cluster_of.get(build.build_server))
-		for build in builds
-		if build.status == "Failure"
-	]
-	return stacked_chart("Failed builds", window, events)
+	events = [(build.build_start, cluster_of.get(build.build_server)) for build in builds]
+	return stacked_chart("Builds started", window, events)
 
 
 def get_failed_jobs(job_type, period):
