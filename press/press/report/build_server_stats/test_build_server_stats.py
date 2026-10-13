@@ -333,39 +333,61 @@ class TestBuildDurationChart(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_successful_builds_fall_into_minute_bins_stacked_by_build_server(self):
-		start = datetime(2026, 9, 10, 10, 0)
+	def duration_chart(self, chart, builds):
+		period = Period(datetime(2026, 9, 10, 10, 0), datetime(2026, 9, 10, 11, 0))
+		return get_selected_chart(chart, period, builds)
+
+	def test_successful_builds_plot_their_median_minutes_per_server_at_their_creation_not_start(self):
+		created, start = datetime(2026, 9, 10, 10, 1), datetime(2026, 9, 10, 10, 20)
 		builds = [
-			build("f1.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 10, 5)),
-			build("f2.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 10, 30)),
-			build("f2.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 11, 0)),
-			build("f1.frappe.cloud", build_start=start, build_end=None),
+			build(
+				"f1.frappe.cloud",
+				creation=created,
+				build_start=start,
+				build_end=datetime(2026, 9, 10, 10, 25),
+			),
+			build(
+				"f2.frappe.cloud",
+				creation=created,
+				build_start=start,
+				build_end=datetime(2026, 9, 10, 10, 50),
+			),
+			build(
+				"f2.frappe.cloud",
+				creation=datetime(2026, 9, 10, 10, 7),
+				build_start=start,
+				build_end=datetime(2026, 9, 10, 11, 20),
+			),
+			build("f1.frappe.cloud", creation=created, build_start=start, build_end=None),
 		]
 		builds.append(frappe._dict(builds[0], status="Failure"))
 
-		chart = get_selected_chart("Build Duration by Build Server", None, builds)
+		chart = self.duration_chart("Build Duration by Build Server", builds)
 
-		self.assertEqual(chart["data"]["labels"][:2], ["0-5 min", "5-10 min"])
-		self.assertEqual(len(chart["data"]["labels"]), 13)
+		self.assertEqual(chart["data"]["labels"], ["10 Sep 10:00", "10 Sep 10:05"])
 		datasets = {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
-		self.assertEqual(datasets["f1.frappe.cloud"], [0, 1] + [0] * 11)
-		self.assertEqual(datasets["f2.frappe.cloud"], [0] * 6 + [1] + [0] * 5 + [1])
+		self.assertEqual(datasets, {"f1.frappe.cloud": [5.0, 0], "f2.frappe.cloud": [30.0, 60.0]})
 
-	def test_successful_builds_fall_into_minute_bins_stacked_by_the_cluster_of_their_build_server(self):
+	def test_successful_builds_plot_their_median_minutes_per_cluster_of_their_build_server(self):
 		f1 = create_test_server(cluster="Mumbai").name
 		f2 = create_test_server(cluster="Mumbai").name
-		start = datetime(2026, 9, 10, 10, 0)
+		created, start = datetime(2026, 9, 10, 10, 1), datetime(2026, 9, 10, 10, 0)
 		builds = [
-			build(f1, build_start=start, build_end=datetime(2026, 9, 10, 10, 5)),
-			build(f2, build_start=start, build_end=datetime(2026, 9, 10, 10, 7)),
-			build("gone.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 11, 0)),
+			build(f1, creation=created, build_start=start, build_end=datetime(2026, 9, 10, 10, 5)),
+			build(f2, creation=created, build_start=start, build_end=datetime(2026, 9, 10, 10, 7)),
+			build(
+				"gone.frappe.cloud",
+				creation=created,
+				build_start=start,
+				build_end=datetime(2026, 9, 10, 11, 0),
+			),
 		]
 
-		chart = get_selected_chart("Build Duration by Cluster", None, builds)
+		chart = self.duration_chart("Build Duration by Cluster", builds)
 
 		datasets = {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
-		self.assertEqual(datasets["Mumbai"], [0, 2] + [0] * 11)
-		self.assertEqual(datasets["No cluster"], [0] * 12 + [1])
+		self.assertEqual(datasets["Mumbai"], [7.0])
+		self.assertEqual(datasets["No cluster"], [60.0])
 
 
 class TestPeriod(FrappeTestCase):
