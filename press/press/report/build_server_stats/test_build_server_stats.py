@@ -103,25 +103,38 @@ class TestChart(FrappeTestCase):
 
 
 class TestBuildsByClusterChart(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def builds_by_cluster(self, builds):
+		period = Period(datetime(2026, 9, 10, 10, 0), datetime(2026, 9, 10, 11, 0))
+		datasets = get_selected_chart("Builds by Cluster", period, builds)["data"]["datasets"]
+		return {dataset["name"]: dataset["values"] for dataset in datasets}
+
 	def test_builds_of_every_status_are_stacked_by_the_cluster_of_their_build_server(self):
-		servers = [
-			frappe._dict(name="f1.frappe.cloud", cluster="Mumbai"),
-			frappe._dict(name="f2.frappe.cloud", cluster="Default"),
-		]
+		mumbai = create_test_server(cluster="Mumbai").name
+		frankfurt = create_test_server(cluster=create_test_cluster("Frankfurt", "eu-central-1").name).name
 		start = datetime(2026, 9, 10, 10, 0, 10)
 		builds = [
-			build("f1.frappe.cloud", status="Success", build_start=start),
-			build("f1.frappe.cloud", status="Failure", build_start=start),
-			build("f2.frappe.cloud", status="Running", build_start=datetime(2026, 9, 10, 10, 6, 0)),
+			build(mumbai, status="Success", build_start=start),
+			build(mumbai, status="Failure", build_start=start),
+			build(frankfurt, status="Running", build_start=datetime(2026, 9, 10, 10, 6, 0)),
 		]
 
-		period = Period(datetime(2026, 9, 10, 10, 0), datetime(2026, 9, 10, 11, 0))
-		datasets = get_selected_chart("Builds by Cluster", period, builds, servers)["data"]["datasets"]
+		datasets = self.builds_by_cluster(builds)
 
-		self.assertEqual(
-			{dataset["name"]: dataset["values"] for dataset in datasets},
-			{"Default": [0, 1], "Mumbai": [2, 0]},
-		)
+		self.assertEqual(datasets["Frankfurt"], [0, 1])
+		self.assertEqual(datasets["Mumbai"], [2, 0])
+
+	def test_a_live_cluster_without_builds_gets_an_empty_series_and_an_archived_one_gets_none(self):
+		mumbai = create_test_server(cluster="Mumbai").name
+		create_test_cluster("Frankfurt", "eu-central-1")
+		frappe.db.set_value("Cluster", create_test_cluster("London", "eu-west-2").name, "status", "Archived")
+
+		datasets = self.builds_by_cluster([build(mumbai, build_start=datetime(2026, 9, 10, 10, 0, 10))])
+
+		self.assertEqual(datasets["Frankfurt"], [0])
+		self.assertNotIn("London", datasets)
 
 
 class TestOneMountpointPerDevice(FrappeTestCase):
@@ -173,8 +186,13 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 		).db_insert()
 
 	def datasets(self, chart):
-		chart = get_selected_chart(chart, self.period, [], [])
-		return {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
+		"""Every live cluster gets a series. Leave out the empty ones."""
+		chart = get_selected_chart(chart, self.period, [])
+		return {
+			dataset["name"]: dataset["values"]
+			for dataset in chart["data"]["datasets"]
+			if any(dataset["values"])
+		}
 
 	def test_failed_and_undelivered_new_bench_jobs_are_stacked_by_the_cluster_of_their_server(self):
 		mumbai = create_test_server(cluster="Mumbai").name
@@ -213,7 +231,7 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 		self.assertEqual(self.datasets("Remote Builder Failures by Build Server"), {"f1.frappe.cloud": [1]})
 
 	def test_every_chart_is_sent_with_builds_started_first_and_the_rest_named_under_it(self):
-		chart = get_charts(self.period, [], [])
+		chart = get_charts(self.period, [])
 
 		self.assertEqual(chart["name"], "Builds Started")
 		self.assertEqual([extra["name"] for extra in chart["charts"]], list(CHARTS[1:]))
@@ -281,7 +299,7 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 		]:
 			self.job(server, "New Bench", status, start, end=end, start=start)
 
-		chart = get_selected_chart("New Bench Duration by Cluster", self.period, [], [])
+		chart = get_selected_chart("New Bench Duration by Cluster", self.period, [])
 
 		self.assertEqual(chart["data"]["labels"][:2], ["0-1 min", "1-2 min"])
 		datasets = {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
@@ -312,6 +330,9 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 
 
 class TestBuildDurationChart(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
 	def test_successful_builds_fall_into_minute_bins_stacked_by_build_server(self):
 		start = datetime(2026, 9, 10, 10, 0)
 		builds = [
@@ -322,7 +343,7 @@ class TestBuildDurationChart(FrappeTestCase):
 		]
 		builds.append(frappe._dict(builds[0], status="Failure"))
 
-		chart = get_selected_chart("Build Duration by Build Server", None, builds, [])
+		chart = get_selected_chart("Build Duration by Build Server", None, builds)
 
 		self.assertEqual(chart["data"]["labels"][:2], ["0-5 min", "5-10 min"])
 		self.assertEqual(len(chart["data"]["labels"]), 13)
@@ -331,18 +352,16 @@ class TestBuildDurationChart(FrappeTestCase):
 		self.assertEqual(datasets["f2.frappe.cloud"], [0] * 6 + [1] + [0] * 5 + [1])
 
 	def test_successful_builds_fall_into_minute_bins_stacked_by_the_cluster_of_their_build_server(self):
-		servers = [
-			frappe._dict(name="f1.frappe.cloud", cluster="Mumbai"),
-			frappe._dict(name="f2.frappe.cloud", cluster="Mumbai"),
-		]
+		f1 = create_test_server(cluster="Mumbai").name
+		f2 = create_test_server(cluster="Mumbai").name
 		start = datetime(2026, 9, 10, 10, 0)
 		builds = [
-			build("f1.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 10, 5)),
-			build("f2.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 10, 7)),
+			build(f1, build_start=start, build_end=datetime(2026, 9, 10, 10, 5)),
+			build(f2, build_start=start, build_end=datetime(2026, 9, 10, 10, 7)),
 			build("gone.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 11, 0)),
 		]
 
-		chart = get_selected_chart("Build Duration by Cluster", None, builds, servers)
+		chart = get_selected_chart("Build Duration by Cluster", None, builds)
 
 		datasets = {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
 		self.assertEqual(datasets["Mumbai"], [0, 2] + [0] * 11)
