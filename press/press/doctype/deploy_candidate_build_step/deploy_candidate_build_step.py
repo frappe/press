@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -19,6 +18,7 @@ class DeployCandidateBuildStep(Document):
 		cached: DF.Check
 		command: DF.Code | None
 		duration: DF.Float
+		end_time: DF.Datetime | None
 		hash: DF.Data | None
 		lines: DF.Code | None
 		output: DF.Code | None
