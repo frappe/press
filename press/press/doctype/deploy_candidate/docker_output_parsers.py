@@ -151,6 +151,8 @@ class DockerBuildOutputParser:
 		elif line.startswith("DONE"):
 			step.status = "Success"
 			step.duration = float(line.split()[1][:-1])
+			# Output is re-parsed on every poll, so keep the time it was first seen
+			step.end_time = step.end_time or now_datetime()
 		elif line == "CACHED" or "found in store. Extracting and setting up" in line:
 			step.status = "Success"
 			step.cached = True
