@@ -459,30 +459,33 @@ class Incident(WebsiteGenerator):
 	@frappe.whitelist()
 	def ignore(self, reason: str):
 		"""Stop calling the team for this incident; customers see and hear about it as usual"""
+		self.check_permission("write")
 		if not (reason := reason.strip()):
 			frappe.throw("Please give a reason for ignoring this incident.")
-		self.ignored = True
-		self.ignore_reason = reason
-		self.save()
+		# Don't touch modified: it times repeat calls, which should resume on schedule
+		self.db_set({"ignored": True, "ignore_reason": reason}, update_modified=False)
 		self.add_comment("Comment", f"Ignored incident: {reason}")
 
 	@frappe.whitelist()
 	def stop_ignoring(self, reason: str):
 		"""Resume calling the team for this incident"""
+		self.check_permission("write")
 		if not (reason := reason.strip()):
 			frappe.throw("Please give a reason for no longer ignoring this incident.")
 		if not self.ignored:
-			frappe.throw("This incident is not being ignored.")
-		self.ignored = False
-		self.ignore_reason = None
-		self.save()
+			frappe.throw("This incident is not being ignored. Reload the page to see its current state.")
+		self.db_set({"ignored": False, "ignore_reason": None}, update_modified=False)
 		self.add_comment("Comment", f"Stopped ignoring incident: {reason}")
 
 	@frappe.whitelist()
 	def send_custom_email(self, subject: str, message: str):
 		"""Email a hand-written update to the server's incident contacts"""
+		self.check_permission("write")
 		if not get_communication_info("Email", "Server Activity", "Server", self.server):
-			frappe.throw("No one is set up to receive emails for this server.")
+			frappe.throw(
+				"No one is set up to receive emails for this server. "
+				"Add a Server Activity email to the server's or its team's communication info."
+			)
 		self.send_mail(subject, message, raise_exception=True)
 		self.add_comment("Comment", f"Sent email <b>{frappe.utils.escape_html(subject)}</b><br>{message}")
 

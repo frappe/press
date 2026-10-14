@@ -962,15 +962,40 @@ class TestIncident(FrappeTestCase):
 		incident.call_humans()  # a call that was queued before the incident was ignored
 		mock_calls_create.assert_not_called()
 
-	@patch.object(Incident, "send_mail")
-	def test_ignored_incident_still_emails_customers_and_stays_on_website(self, mock_send_mail: Mock):
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("completed").create,
+	)
+	def test_stop_ignoring_resumes_overdue_calls_without_waiting_again(self, mock_calls_create):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+		frappe.get_last_doc("Incident Investigator").db_set("status", "Completed")
+		incident.db_set("status", "Acknowledged")
+		incident.reload()
+		incident.db_set(
+			"modified",
+			incident.modified - timedelta(seconds=CALL_REPEAT_INTERVAL_NIGHT + 10),
+			update_modified=False,
+		)
+		incident.ignore("Customer stopped their own benches")
+		resolve_incidents()
+		mock_calls_create.assert_not_called()
+
+		incident.stop_ignoring("Benches are running again but sites are still down")
+		resolve_incidents()
+		mock_calls_create.assert_called_once()
+
+	@patch.object(Incident, "send_email_notification")
+	def test_ignored_incident_still_emails_customers_and_stays_on_website(
+		self, mock_send_email_notification: Mock
+	):
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")
 		shown_in_website = incident.show_in_website
 		incident.ignore("Customer stopped their own benches")
 
 		incident.resolve()
-		mock_send_mail.assert_called_once()
+		mock_send_email_notification.assert_called_once()
 		self.assertEqual(frappe.db.get_value("Incident", incident.name, "show_in_website"), shown_in_website)
 
 	@patch(
@@ -1005,6 +1030,32 @@ class TestIncident(FrappeTestCase):
 				},
 			)
 		)
+
+	@patch("press.press.doctype.incident.incident.frappe.sendmail")
+	def test_press_user_cannot_ignore_incident_or_send_email(self, mock_sendmail: Mock):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+		user = frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": frappe.mock("email"),
+				"first_name": "Customer",
+				"roles": [{"role": "Press User"}],
+			}
+		).insert()
+
+		frappe.set_user(user.name)
+		try:
+			for action in (
+				lambda: incident.ignore("Customer stopped their own benches"),
+				lambda: incident.send_custom_email("Update on your incident", "<p>Hello</p>"),
+			):
+				with self.assertRaises(frappe.PermissionError):
+					action()
+		finally:
+			frappe.set_user("Administrator")
+		self.assertFalse(frappe.db.get_value("Incident", incident.name, "ignored"))
+		mock_sendmail.assert_not_called()
 
 	@patch("press.press.doctype.incident.incident.frappe.sendmail")
 	@patch("press.press.doctype.incident.incident.get_communication_info", return_value=[])
