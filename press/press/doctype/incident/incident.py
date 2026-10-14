@@ -462,8 +462,9 @@ class Incident(WebsiteGenerator):
 		self.check_permission("write")
 		if not (reason := reason.strip()):
 			frappe.throw("Please give a reason for ignoring this incident.")
-		# Don't touch modified: it times repeat calls, which should resume on schedule
-		self.db_set({"ignored": True, "ignore_reason": reason}, update_modified=False)
+		self.ignored = True
+		self.ignore_reason = reason
+		self.save()
 		self.add_comment("Comment", f"Ignored incident: {reason}")
 
 	@frappe.whitelist()
@@ -474,8 +475,14 @@ class Incident(WebsiteGenerator):
 			frappe.throw("Please give a reason for no longer ignoring this incident.")
 		if not self.ignored:
 			frappe.throw("This incident is not being ignored. Reload the page to see its current state.")
-		self.db_set({"ignored": False, "ignore_reason": None}, update_modified=False)
+		# Repeat calls are timed from modified, which save() resets, so check before saving
+		call_due = self.time_to_call_for_help or self.time_to_call_for_help_again
+		self.ignored = False
+		self.ignore_reason = None
+		self.save()
 		self.add_comment("Comment", f"Stopped ignoring incident: {reason}")
+		if call_due and self.waited_enough_for_investigator_reactions:
+			self.call_humans()
 
 	@frappe.whitelist()
 	def send_custom_email(self, subject: str, message: str):
