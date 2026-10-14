@@ -981,6 +981,8 @@ class TestIncident(FrappeTestCase):
 		resolve_incidents()
 		mock_calls_create.assert_not_called()
 
+		incident.creation = str(incident.creation)  # the Desk form sends dates as strings
+		incident.modified = str(incident.modified)
 		incident.stop_ignoring("Benches are running again but sites are still down")
 		mock_calls_create.assert_called_once()
 
