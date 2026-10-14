@@ -193,21 +193,16 @@ class DockerBuildOutputParser:
 		)
 
 		stage, title = get_build_stage_and_step(stage_slug, step_slug)
+		# Place it before the first pending step to keep build order; append renumbers idx
+		build_steps = self.dc.build_steps
+		position = next((i for i, s in enumerate(build_steps) if s.status == "Pending"), len(build_steps))
 		step = self.dc.append(
 			"build_steps",
 			dict(status="Pending", stage_slug=stage_slug, step_slug=step_slug, stage=stage, step=title),
+			position=position,
 		)
-		self._move_before_first_pending_step(step)
 		self.steps_by_step_slug[(stage_slug, step_slug)] = step
 		return step
-
-	def _move_before_first_pending_step(self, step: DeployCandidateBuildStep):
-		build_steps = self.dc.build_steps
-		build_steps.remove(step)
-		position = next((i for i, s in enumerate(build_steps) if s.status == "Pending"), len(build_steps))
-		build_steps.insert(position, step)
-		for idx, build_step in enumerate(build_steps, start=1):
-			build_step.idx = idx
 
 	def _get_step_index_split(self, line: str) -> "IndexSplit | None":
 		splits = line.split(maxsplit=1)
