@@ -946,13 +946,15 @@ Likely due to insufficient balance or incorrect credentials""",
 
 	@property
 	def time_to_call_for_help(self) -> bool:
-		return self.status == "Confirmed" and frappe.utils.now_datetime() - self.creation > timedelta(
+		creation = frappe.utils.get_datetime(self.creation)  # a str when the doc comes from the Desk form
+		return self.status == "Confirmed" and frappe.utils.now_datetime() - creation > timedelta(
 			seconds=get_confirmation_threshold_duration() + get_call_threshold_duration()
 		)
 
 	@property
 	def time_to_call_for_help_again(self) -> bool:
-		return self.status == "Acknowledged" and frappe.utils.now_datetime() - self.modified > timedelta(
+		modified = frappe.utils.get_datetime(self.modified)  # a str when the doc comes from the Desk form
+		return self.status == "Acknowledged" and frappe.utils.now_datetime() - modified > timedelta(
 			seconds=get_call_repeat_interval()
 		)
 
