@@ -34,7 +34,10 @@ class TestGetAssetUrls(FrappeTestCase):
 		self.group.db_set("public", 1)
 		self.candidate = create_test_deploy_candidate(self.group)
 		self.candidate.db_set("build_token", "test-build-token")
-		self.build = create_test_deploy_candidate_build(self.candidate, status="Running").insert()
+		# run_build=0 skips after_insert starting a real build, which needs a build server
+		build = create_test_deploy_candidate_build(self.candidate, status="Running")
+		build.run_build = 0
+		self.build = build.insert()
 		self.erpnext_hash = next(app.hash for app in self.candidate.apps if app.app == "erpnext")
 
 	def tearDown(self):
