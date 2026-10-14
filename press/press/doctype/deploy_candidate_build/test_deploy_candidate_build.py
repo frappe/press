@@ -236,6 +236,8 @@ class TestDeployCandidateBuild(FrappeTestCase):
 		dockerfile = self.generate_dockerfile_with_app_cache(public=True)
 		self.assertIn("COPY get_cached_app.py /usr/local/bin/get_cached_app.py", dockerfile)
 		self.assertIn("/usr/local/bin/get_cached_app.py \\\n  erpnext \\", dockerfile)
+		self.assertIn("--mount=type=bind,source=stored_assets/erpnext,", dockerfile)
+		self.assertNotIn("build_token", dockerfile)
 
 	def test_asset_store_install_keeps_the_pip_and_yarn_download_cache(self, _mock_commit):
 		dockerfile = self.generate_dockerfile_with_app_cache(public=True)
