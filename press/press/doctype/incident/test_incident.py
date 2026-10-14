@@ -971,31 +971,30 @@ class TestIncident(FrappeTestCase):
 		incident: Incident = frappe.get_last_doc("Incident")
 		frappe.get_last_doc("Incident Investigator").db_set("status", "Completed")
 		incident.db_set("status", "Acknowledged")
+		incident.ignore("Customer stopped their own benches")
 		incident.reload()
 		incident.db_set(
 			"modified",
 			incident.modified - timedelta(seconds=CALL_REPEAT_INTERVAL_NIGHT + 10),
 			update_modified=False,
 		)
-		incident.ignore("Customer stopped their own benches")
 		resolve_incidents()
 		mock_calls_create.assert_not_called()
 
 		incident.stop_ignoring("Benches are running again but sites are still down")
-		resolve_incidents()
 		mock_calls_create.assert_called_once()
 
-	@patch.object(Incident, "send_email_notification")
-	def test_ignored_incident_still_emails_customers_and_stays_on_website(
-		self, mock_send_email_notification: Mock
-	):
+	@patch.object(Incident, "send_mail")
+	def test_ignored_incident_still_emails_customers_and_stays_on_website(self, mock_send_mail: Mock):
+		frappe.db.set_single_value("Incident Settings", "email_alerts", 1)
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")
 		shown_in_website = incident.show_in_website
 		incident.ignore("Customer stopped their own benches")
+		mock_send_mail.reset_mock()  # the incident was announced when it opened
 
 		incident.resolve()
-		mock_send_email_notification.assert_called_once()
+		mock_send_mail.assert_called_once()
 		self.assertEqual(frappe.db.get_value("Incident", incident.name, "show_in_website"), shown_in_website)
 
 	@patch(
@@ -1040,6 +1039,7 @@ class TestIncident(FrappeTestCase):
 				"doctype": "User",
 				"email": frappe.mock("email"),
 				"first_name": "Customer",
+				"send_welcome_email": 0,
 				"roles": [{"role": "Press User"}],
 			}
 		).insert()
