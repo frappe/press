@@ -7,9 +7,11 @@ import botocore.exceptions
 import frappe
 
 if TYPE_CHECKING:
+	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import DeployCandidateApp
 	from press.press.doctype.press_settings.press_settings import PressSettings
 
-SIGNED_URL_EXPIRY = 15 * 60
+# Long enough for a build to wait in the agent's queue, run, and push
+SIGNED_URL_EXPIRY = 12 * 60 * 60
 
 
 def _get_asset_store() -> tuple[Any, str]:
@@ -39,43 +41,27 @@ def sign_url(client: Any, method: str, bucket: str, file_name: str) -> str:
 	)
 
 
-def get_running_build_group(build_token: str | None) -> tuple[str, str]:
-	"""Return the deploy candidate and release group of the running build this token belongs to."""
-	if not build_token:
-		frappe.throw("Build token is required to access the asset store", frappe.PermissionError)
+def get_asset_store_instructions(apps: list[DeployCandidateApp]) -> list[dict[str, str]]:
+	"""Signed URLs the agent uses around the build, so the build itself never reaches the store."""
+	try:
+		client, bucket = _get_asset_store()
+		instructions = []
+		for app in apps:
+			if app.app == "frappe" or not app.use_cached:
+				continue
 
-	candidate = frappe.db.get_value("Deploy Candidate", {"build_token": build_token}, ["name", "group"])
-	if not candidate:
-		frappe.throw("Invalid build token used", frappe.PermissionError)
+			file_name = f"{app.app}.{app.hash}.tar.gz"
+			if asset_exists(client, bucket, file_name):
+				url = {"download_url": sign_url(client, "get_object", bucket, file_name)}
+			else:
+				url = {"upload_url": sign_url(client, "put_object", bucket, file_name)}
+			instructions.append({"app": app.app, "hash": app.hash, **url})
+	except Exception:
+		# The build then builds every app's assets itself
+		frappe.log_error("Asset store unavailable")
+		return []
 
-	if not frappe.db.exists(
-		"Deploy Candidate Build", {"deploy_candidate": candidate[0], "status": "Running"}
-	):
-		frappe.throw("Expired token used", frappe.PermissionError)
-
-	return candidate[0], candidate[1]
-
-
-@frappe.whitelist(allow_guest=True)
-def get_asset_urls(app: str, hash: str) -> dict[str, str]:
-	"""Sign a download URL if the app's assets are stored, else an upload URL.
-
-	Builds get URLs for their own apps only, never the store's keys.
-	"""
-	candidate, group = get_running_build_group(frappe.request.headers.get("build-token"))
-
-	if not frappe.db.get_value("Release Group", group, "public"):
-		frappe.throw("Asset store is only available to public bench groups", frappe.PermissionError)
-
-	if not frappe.db.exists("Deploy Candidate App", {"parent": candidate, "app": app, "hash": hash}):
-		frappe.throw(f"App {app} at {hash} is not part of this build", frappe.PermissionError)
-
-	client, bucket = _get_asset_store()
-	file_name = f"{app}.{hash}.tar.gz"
-	if asset_exists(client, bucket, file_name):
-		return {"download_url": sign_url(client, "get_object", bucket, file_name)}
-
-	return {"upload_url": sign_url(client, "put_object", bucket, file_name)}
+	return instructions
 
 
 def upload_assets_to_store(client: Any, bucket: str, file_obj: BinaryIO, file_name: str) -> None:
