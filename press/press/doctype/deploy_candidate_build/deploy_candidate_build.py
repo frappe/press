@@ -358,10 +358,8 @@ class DeployCandidateBuild(Document):
 		)
 
 	def uses_asset_store(self) -> bool:
-		"""Public groups only, since the store serves one group's built assets to every other."""
-		if self.no_cache or not self.candidate.use_app_cache:
-			return False
-		return bool(frappe.db.get_value("Release Group", self.group, "public"))
+		"""Any group with Use App Cache downloads stored assets; only public groups upload them."""
+		return not self.no_cache and bool(self.candidate.use_app_cache)
 
 	def add_patch_build_steps(self):
 		slugs = [
@@ -901,7 +899,8 @@ class DeployCandidateBuild(Document):
 		if host_keys:
 			build_parameters["ssh_keys"] = {"host": host_keys}
 		if self.uses_asset_store():
-			build_parameters["asset_store"] = get_asset_store_instructions(self.candidate.apps)
+			can_upload = bool(frappe.db.get_value("Release Group", self.group, "public"))
+			build_parameters["asset_store"] = get_asset_store_instructions(self.candidate.apps, can_upload)
 		if self.platform == "arm64":
 			build_parameters.update({"platform": self.platform})
 

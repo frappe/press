@@ -41,8 +41,9 @@ def sign_url(client: Any, method: str, bucket: str, file_name: str) -> str:
 	)
 
 
-def get_asset_store_instructions(apps: list[DeployCandidateApp]) -> list[dict[str, str]]:
-	"""Signed URLs the agent uses around the build, so the build itself never reaches the store."""
+def get_asset_store_instructions(apps: list[DeployCandidateApp], can_upload: bool) -> list[dict[str, str]]:
+	"""Signed URLs the agent uses around the build, so the build itself never reaches the store.
+	Only builds that can upload get upload URLs; the others just build what isn't stored."""
 	try:
 		client, bucket = _get_asset_store()
 		instructions = []
@@ -53,8 +54,10 @@ def get_asset_store_instructions(apps: list[DeployCandidateApp]) -> list[dict[st
 			file_name = f"{app.app}.{app.hash}.tar.gz"
 			if asset_exists(client, bucket, file_name):
 				url = {"download_url": sign_url(client, "get_object", bucket, file_name)}
-			else:
+			elif can_upload:
 				url = {"upload_url": sign_url(client, "put_object", bucket, file_name)}
+			else:
+				continue
 			instructions.append({"app": app.app, "hash": app.hash, **url})
 	except Exception:
 		# The build then builds every app's assets itself
