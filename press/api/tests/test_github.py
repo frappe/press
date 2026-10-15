@@ -84,7 +84,7 @@ class TestGitHubAuthorization(FrappeTestCase):
 			age_seconds=int(GITHUB_OAUTH_STATE_MAX_AGE.total_seconds()) + 60,
 		)
 
-		with self.assertRaises(InvalidGitHubOAuthState):
+		with self.assertRaisesRegex(InvalidGitHubOAuthState, "Invalid GitHub authorization state"):
 			self._decode_github_oauth_state(state)
 
 	def test_get_installation_url_mints_fresh_state_for_current_team(self):
