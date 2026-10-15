@@ -3,13 +3,18 @@
 		<LoadingText />
 	</div>
 	<div class="pt-2" v-else-if="!options?.authorized">
-		<div v-if="!!needsAuthorization" class="flex justify-center">
+		<div
+			v-if="!!needsAuthorization"
+			class="flex flex-col items-center space-y-2"
+		>
 			<Button
 				variant="solid"
 				icon-left="github"
 				label="Connect To GitHub"
-				:link="installationLink"
+				@click="$resources.installationUrl.submit()"
+				:loading="$resources.installationUrl.loading"
 			/>
+			<ErrorMessage :message="$resources.installationUrl.error" />
 		</div>
 		<div v-else-if="!!requiresReAuth" class="flex justify-center">
 			<Button
@@ -66,10 +71,15 @@
 		</FormControl>
 		<span class="text-sm text-ink-gray-6">
 			Don't see your organization?
-			<Link :href="installationLink" class="font-medium">
+			<Link
+				href="#"
+				class="font-medium"
+				@click.prevent="$resources.installationUrl.submit()"
+			>
 				Add from GitHub
 			</Link>
 		</span>
+		<ErrorMessage :message="$resources.installationUrl.error" />
 		<FormControl
 			type="combobox"
 			v-if="selectedGithubUserData"
@@ -178,12 +188,20 @@ export default {
 		options() {
 			return {
 				url: 'press.api.github.options',
+				auto: true,
+			}
+		},
+		installationUrl() {
+			return {
+				url: 'press.api.github.get_installation_url',
 				makeParams() {
 					return {
 						redirect_url: window.location.href,
 					}
 				},
-				auto: true,
+				onSuccess(installationData) {
+					window.location.href = this.getInstallationLink(installationData)
+				},
 			}
 		},
 		branches() {
@@ -217,9 +235,6 @@ export default {
 	computed: {
 		options() {
 			return this.$resources.options.data
-		},
-		installationLink() {
-			return this.getInstallationLink(this.options)
 		},
 		appOwner() {
 			return this.selectedGithubUser?.login
