@@ -8,7 +8,7 @@
 	<div class="p-8 bg-white from-markdown">
 		<p class="mb-4 font-bold">
 			{% if over_limit %}
-			Your {{ "sites have" if plural else "site has" }} gone over the plan's storage limit
+			Your {{ "sites have" if plural else "site has" }} reached the plan's storage limit
 			{% else %}
 			Your {{ "sites are" if plural else "site is" }} close to the plan's storage limit
 			{% endif %}
@@ -17,23 +17,23 @@
 			Hi,<br /><br />
 
 			{% if over_limit %}
-			{{ "Some of your sites are" if plural else "Your site is" }} now using more storage than
-			{{ "their plans allow" if plural else "its plan allows" }}.
+			{{ "Some of your sites have" if plural else "Your site has" }} used up all the storage
+			{{ "their plans include" if plural else "its plan includes" }}.
 			{% else %}
-			{{ "Your sites are" if plural else "Your site is" }} using more than {{ threshold }}% of the
+			{{ "Your sites are" if plural else "Your site is" }} using {{ threshold }}% or more of the
 			storage included in {{ "their plans" if plural else "its plan" }}.
 			{% endif %}
-			Here's where things stand:
+			Here's how things look:
 		</p>
 
 		<ul class="mb-6">
 			{% for site in sites %}
 			<li>
 				<strong>{{ site.name }}</strong> ({{ site.plan }} plan)<br />
-				{% if (site.current_disk_usage or 0) > threshold %}
+				{% if (site.current_disk_usage or 0) >= threshold %}
 				File storage: <strong>{{ site.current_disk_usage }}%</strong> of the limit<br />
 				{% endif %}
-				{% if (site.current_database_usage or 0) > threshold %}
+				{% if (site.current_database_usage or 0) >= threshold %}
 				Database: <strong>{{ site.current_database_usage }}%</strong> of the limit<br />
 				{% endif %}
 			</li>
