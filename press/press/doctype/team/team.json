@@ -90,6 +90,7 @@
 		"skip_backups",
 		"enable_inplace_updates",
 		"relaxed_permissions",
+		"restrict_repository_access",
 		"apply_limits",
 		"spending_limit",
 		"tier",
@@ -678,6 +679,13 @@
 		},
 		{
 			"default": "0",
+			"description": "If checked, members get only the GitHub repositories allowed by their roles.",
+			"fieldname": "restrict_repository_access",
+			"fieldtype": "Check",
+			"label": "Restrict Repository Access"
+		},
+		{
+			"default": "0",
 			"description": "If checked, the users can access the internal Frappe Compute cluster.",
 			"fieldname": "is_frappe_compute_internal_user",
 			"fieldtype": "Check",
@@ -795,7 +803,7 @@
 			"link_fieldname": "team"
 		}
 	],
-	"modified": "2026-05-14 11:22:47.711926",
+	"modified": "2026-10-01 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Team",

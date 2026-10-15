@@ -21,6 +21,7 @@ import semantic_version as sv
 import tomli
 from frappe.utils.verified_command import get_secret
 
+from press.guards.role_guard import repository as repository_guard
 from press.utils import docs, get_current_team, log_error
 
 if TYPE_CHECKING:
@@ -180,12 +181,31 @@ def options(redirect_url: str | None = None):
 	team = get_current_team()
 	token = frappe.db.get_value("Team", team, "github_access_token")
 	installation_data = get_installation_data(team, redirect_url)
+	allowed = repository_guard.allowed_repositories(team)
 
 	return {
 		"authorized": bool(token),
 		**installation_data,
-		"installations": installations(token) if token else [],
+		"installations": filter_installations(installations(token), allowed) if token else [],
+		"restricted": allowed is not None,
 	}
+
+
+def filter_installations(installations: list[dict], allowed: set[tuple[str, str]] | None) -> list[dict]:
+	"""Keep only the repositories in `allowed`, dropping installations left empty."""
+	if allowed is None:
+		return installations
+
+	filtered = []
+	for installation in installations:
+		repos = [
+			repo
+			for repo in installation["repos"]
+			if repository_guard.is_allowed(allowed, installation["login"], repo["name"])
+		]
+		if repos:
+			filtered.append({**installation, "repos": repos})
+	return filtered
 
 
 def get_safe_github_redirect_url(redirect_url: str | None = None) -> str:
@@ -323,6 +343,8 @@ def repositories(installation, token):
 
 @frappe.whitelist()
 def repository(owner: str, name: str, installation: str | None = None):
+	if installation:
+		repository_guard.check(get_current_team(), owner, name)
 	token = ""
 	if not installation:
 		token = frappe.db.get_value("Press Settings", "github_access_token")
@@ -358,6 +380,12 @@ def repository(owner: str, name: str, installation: str | None = None):
 
 @frappe.whitelist()
 def app(owner: str, repository: str, branch: str, installation: str | None = None):
+	if installation:
+		repository_guard.check(get_current_team(), owner, repository)
+	return fetch_app_info(owner, repository, branch, installation)
+
+
+def fetch_app_info(owner: str, repository: str, branch: str, installation: str | None = None):
 	headers = get_auth_headers(installation)
 	response = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/branches/{branch}",
@@ -408,12 +436,21 @@ def app(owner: str, repository: str, branch: str, installation: str | None = Non
 
 @frappe.whitelist()
 def branches(owner: str, name: str, installation: str | None = None, app_source: str | None = None):
+	# Existing app sources (looked up via `app_source`) stay reachable.
+	if installation:
+		repository_guard.check(get_current_team(), owner, name)
+	elif app_source:
+		# The source's installation only ever lists the source's own repository.
+		owner, name, installation = frappe.db.get_value(
+			"App Source", app_source, ["repository_owner", "repository", "github_installation_id"]
+		)
+	return fetch_branches(owner, name, installation)
+
+
+def fetch_branches(owner: str, name: str, installation: str | None = None) -> list[dict]:
 	"""
 	Return ALL branches for the repo, following GitHub pagination.
 	"""
-	if not installation and app_source:
-		installation = frappe.db.get_value("App Source", app_source, "github_installation_id")
-
 	headers = get_auth_headers(installation)
 
 	out: list[dict] = []

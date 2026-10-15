@@ -1,5 +1,23 @@
 <template>
 	<div class="space-y-5">
+		<div
+			class="flex items-start justify-between gap-4 rounded border px-4 py-3"
+		>
+			<div>
+				<div class="text-base font-medium text-ink-gray-9">
+					Restrict Repository Access
+				</div>
+				<p class="mt-1 text-p-sm text-ink-gray-6">
+					When off, every member can use any repository the team's GitHub
+					account can reach. When on, members get only the repositories their
+					roles allow. Owners and admins always get all of them.
+				</p>
+			</div>
+			<Switch
+				v-model="restrictRepositoryAccess"
+				:disabled="!canManageRoles || team.setValue.loading"
+			/>
+		</div>
 		<div class="ml-auto mr-0 w-max space-x-2">
 			<Button
 				icon-left="refresh-cw"
@@ -97,12 +115,29 @@
 </template>
 
 <script setup lang="ts">
-import { createListResource, createResource } from 'frappe-ui'
-import { onMounted, ref } from 'vue'
+import { createListResource, createResource, Switch } from 'frappe-ui'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { toast } from 'vue-sonner'
+import { session } from '../../data/session'
+import { getTeam } from '../../data/team'
+import { getToastErrorMessage } from '../../utils/toast'
 import RoleCreateDialog from './RoleCreateDialog.vue'
 
 const showCreateDialog = ref(false)
+
+const team = getTeam()
+const canManageRoles = computed(
+	() => session.userPermissions.data?.owner || session.isTeamAdmin,
+)
+const restrictRepositoryAccess = computed({
+	get: () => Boolean(team.doc?.restrict_repository_access),
+	set: (value: boolean) =>
+		team.setValue.submit(
+			{ restrict_repository_access: value },
+			{ onError: (e: unknown) => toast.error(getToastErrorMessage(e)) },
+		),
+})
 
 const route = useRoute()
 const router = useRouter()

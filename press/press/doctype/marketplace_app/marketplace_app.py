@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from base64 import b64decode
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, cast
 
 import frappe
 import requests
@@ -16,7 +16,7 @@ from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
 
 from press.api.client import dashboard_whitelist
-from press.api.github import app, get_access_token
+from press.api.github import fetch_app_info, get_access_token
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	get_app_plan_features,
 )
@@ -388,8 +388,8 @@ class MarketplaceApp(WebsiteGenerator):
 		source_doc: "AppSource" = frappe.get_doc("App Source", template_source)
 		validate_frappe_version_for_branch(
 			app_name=self.app,
-			owner=source_doc.repository_owner,
-			repository=source_doc.repository,
+			owner=cast("str", source_doc.repository_owner),
+			repository=cast("str", source_doc.repository),
 			branch=branch,
 			version=version,
 			github_installation_id=source_doc.github_installation_id,
@@ -798,7 +798,7 @@ def validate_frappe_version_for_branch(
 	"""Check if the version being added is supported by the branch comparing the frappe versions in pyproject.toml
 	Only check for lower bounds major version compatibility in case `ease_versioning_constrains` is set to True
 	"""
-	app_info = app(
+	app_info = fetch_app_info(
 		owner=owner,
 		repository=repository,
 		branch=branch,

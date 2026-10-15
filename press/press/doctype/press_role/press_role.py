@@ -2,6 +2,9 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import hashlib
+import re
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -23,6 +26,7 @@ class PressRole(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.press_role_repository.press_role_repository import PressRoleRepository
 		from press.press.doctype.press_role_resource.press_role_resource import PressRoleResource
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
@@ -41,6 +45,7 @@ class PressRole(Document):
 		allow_server_creation: DF.Check
 		allow_site_creation: DF.Check
 		allow_webhook_configuration: DF.Check
+		repositories: DF.Table[PressRoleRepository]
 		resources: DF.Table[PressRoleResource]
 		team: DF.Link
 		title: DF.Data
@@ -65,6 +70,7 @@ class PressRole(Document):
 		"allow_site_creation",
 		"allow_local_payment",
 		"allow_webhook_configuration",
+		"repositories",
 		"resources",
 		"team",
 		"title",
@@ -194,6 +200,66 @@ class PressRole(Document):
 
 	@dashboard_whitelist()
 	@team_guard.only_admin()
+	def add_repositories(self, repositories: list[str]):
+		self.reload_for_update()
+		existing = {(row.repository_owner.lower(), row.repository.lower()) for row in self.repositories}
+		for full_name in repositories:
+			if not GITHUB_REPOSITORY_PATTERN.fullmatch(str(full_name)):
+				frappe.throw(_("Invalid repository {0}. Use the owner/repository format.").format(full_name))
+			owner, repository = full_name.split("/")
+			if (owner.lower(), repository.lower()) in existing:
+				continue
+			self.append("repositories", {"repository_owner": owner, "repository": repository})
+			existing.add((owner.lower(), repository.lower()))
+		self.save()
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def remove_repository(self, repository_owner: str, repository: str):
+		self.reload_for_update()
+		rows = [
+			row
+			for row in self.repositories
+			if (row.repository_owner.lower(), row.repository.lower())
+			== (repository_owner.lower(), repository.lower())
+		]
+		if not rows:
+			message = _("Repository {0}/{1} does not belong to {2}").format(
+				repository_owner, repository, self.title
+			)
+			frappe.throw(message, frappe.ValidationError)
+		for row in rows:
+			self.remove(row)
+		self.save()
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def repository_options(self, refresh: bool = False):
+		"""Every repository the team's GitHub account can reach, for the role's picker."""
+		from press.api.github import installations
+
+		token = frappe.db.get_value("Team", self.team, "github_access_token")
+		if not token:
+			return {"authorized": False, "repositories": []}
+
+		# Cached per token so reopening the picker doesn't list every installation again.
+		cache_key = f"github_repository_options:{hashlib.sha256(token.encode()).hexdigest()}"
+		repositories = None if refresh else frappe.cache.get_value(cache_key)
+		if repositories is None:
+			repositories = [
+				{
+					"value": f"{i['login']}/{r['name']}",
+					"label": f"{i['login']}/{r['name']}",
+					"private": r["private"],
+				}
+				for i in installations(token)
+				for r in i["repos"]
+			]
+			frappe.cache.set_value(cache_key, repositories, expires_in_sec=10 * 60)
+		return {"authorized": True, "repositories": repositories}
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
 	def set_permission(self, fieldname: str, value: int):
 		self.reload_for_update()
 		if fieldname not in PERMISSION_FIELDS:
@@ -253,6 +319,8 @@ class PressRole(Document):
 			flat_users.append(row)
 		return flat_users
 
+
+GITHUB_REPOSITORY_PATTERN = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Press Role")
 
