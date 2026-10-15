@@ -2700,7 +2700,7 @@ class VirtualMachine(Document):
 
 		self.sync()
 
-	def attach_to_firewall(self, firewall_id: int):
+	def attach_to_firewall(self, firewall_id: str | int):
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_instance_attribute(
 				InstanceId=self.instance_id,
@@ -2738,7 +2738,7 @@ class VirtualMachine(Document):
 				resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
 			)
 
-	def detach_from_firewall(self, firewall_id: int):
+	def detach_from_firewall(self, firewall_id: str | int):
 		if self.cloud_provider == "AWS EC2":
 			security_groups = [sg for sg in self.get_security_groups() if sg != firewall_id]
 
