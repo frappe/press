@@ -14,6 +14,7 @@ from moto import mock_aws
 from press.press.doctype.remote_file.remote_file import (
 	RemoteFile,
 	get_remote_key,
+	get_sites_with_unfinished_offsite_backups,
 	get_team_prefix,
 	get_untracked_files_to_delete,
 	poll_file_statuses_from_bucket,
@@ -253,9 +254,34 @@ class TestRemoteFile(FrappeTestCase):
 			"old-tracked.sql.gz": now - timedelta(days=3),
 		}
 
-		to_delete = get_untracked_files_to_delete(available_files, {"old-tracked.sql.gz"})
+		to_delete = get_untracked_files_to_delete(available_files, {"old-tracked.sql.gz"}, set())
 
 		self.assertEqual(to_delete, ["old-untracked.sql.gz"])
+
+	def test_untracked_files_of_a_site_with_an_unfinished_backup_are_kept(self):
+		old = datetime.now(timezone.utc) - timedelta(days=3)
+		available_files = {
+			"pending.example.com/2026-01-01/database.sql.gz": old,
+			"done.example.com/2026-01-01/database.sql.gz": old,
+		}
+
+		to_delete = get_untracked_files_to_delete(available_files, set(), {"pending.example.com"})
+
+		self.assertEqual(to_delete, ["done.example.com/2026-01-01/database.sql.gz"])
+
+	def test_sites_with_unfinished_offsite_backups(self):
+		from press.press.doctype.site.test_site import create_test_site
+		from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+
+		site = create_test_site()
+		create_test_site_backup(site.name, status="Running", offsite=True)
+		onsite_site = create_test_site()
+		create_test_site_backup(onsite_site.name, status="Pending", offsite=False)
+
+		sites = get_sites_with_unfinished_offsite_backups()
+
+		self.assertIn(site.name, sites)
+		self.assertNotIn(onsite_site.name, sites)
 
 	@mock_aws
 	def test_bucket_poll_deletes_only_old_untracked_files_and_keeps_in_flight_backups(self):

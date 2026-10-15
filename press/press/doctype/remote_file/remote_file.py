@@ -147,17 +147,35 @@ def poll_file_statuses_from_bucket(bucket):
 		frappe.db.set_value(doctype, {"name": ("in", files)}, "status", "Available")
 
 	remote_file_paths = set(file["file_path"] for file in remote_files)
-	delete_s3_files({bucket["name"]: get_untracked_files_to_delete(available_files, remote_file_paths)})
+	to_delete = get_untracked_files_to_delete(
+		available_files, remote_file_paths, get_sites_with_unfinished_offsite_backups()
+	)
+	delete_s3_files({bucket["name"]: to_delete})
 	frappe.db.commit()
 
 
-def get_untracked_files_to_delete(available_files: dict[str, datetime], tracked_paths: set[str]) -> list[str]:
-	"""S3 files with no Remote File, old enough that no running backup job can still record them."""
+def get_sites_with_unfinished_offsite_backups() -> set[str]:
+	"""Sites whose offsite backup job update hasn't been processed yet, so its Remote Files don't exist."""
+	return set(
+		frappe.get_all(
+			"Site Backup",
+			filters={"offsite": True, "status": ("in", ["Pending", "Running"])},
+			pluck="site",
+			distinct=True,
+		)
+	)
+
+
+def get_untracked_files_to_delete(
+	available_files: dict[str, datetime], tracked_paths: set[str], sites_to_keep: set[str]
+) -> list[str]:
+	"""S3 files with no Remote File, old enough that no running backup job can still record them.
+	Offsite backup keys start with the site name, so a site with an unfinished backup keeps all its files."""
 	cutoff = datetime.now(timezone.utc) - UNTRACKED_FILE_MINIMUM_AGE
 	return [
 		path
 		for path, last_modified in available_files.items()
-		if path not in tracked_paths and last_modified < cutoff
+		if path not in tracked_paths and last_modified < cutoff and path.split("/", 1)[0] not in sites_to_keep
 	]
 
 
