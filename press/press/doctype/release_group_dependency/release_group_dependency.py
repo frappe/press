@@ -3,7 +3,9 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import cint
 
+from press.access.support_access import has_support_access
 from press.api.client import is_owned_by_team
 
 
@@ -28,20 +30,32 @@ class ReleaseGroupDependency(Document):
 	def get_list_query(query, filters=None, **list_args):
 		if not filters or not (group := filters.get("parent")):
 			return None
-		is_owned_by_team("Release Group", group, raise_exception=True)
+		if not has_support_access("Release Group", group):
+			is_owned_by_team("Release Group", group, raise_exception=True)
 
-		RGDependency = frappe.qb.DocType("Release Group Dependency")
-		BenchDependency = frappe.qb.DocType("Bench Dependency")
+		# The incoming query is scoped to the caller's team, which hides it from support
+		return dependencies_of(group, cint(list_args.get("start")), cint(list_args.get("limit")) or 20)
 
-		query = (
-			query.join(BenchDependency)
-			.on(BenchDependency.name == RGDependency.dependency)
-			.where(BenchDependency.internal == 0)
-			.select(
-				RGDependency.dependency,
-				RGDependency.version,
-				BenchDependency.title,
-				RGDependency.is_custom,
-			)
+
+def dependencies_of(group: str, start: int, limit: int) -> list[dict]:
+	RGDependency = frappe.qb.DocType("Release Group Dependency")
+	BenchDependency = frappe.qb.DocType("Bench Dependency")
+	return (
+		frappe.qb.from_(RGDependency)
+		.join(BenchDependency)
+		.on(BenchDependency.name == RGDependency.dependency)
+		.where(RGDependency.parenttype == "Release Group")
+		.where(RGDependency.parent == group)
+		.where(BenchDependency.internal == 0)
+		.select(
+			RGDependency.name,
+			RGDependency.dependency,
+			RGDependency.version,
+			BenchDependency.title,
+			RGDependency.is_custom,
 		)
-		return query.run(as_dict=True)
+		.orderby(RGDependency.idx)
+		.offset(start)
+		.limit(limit)
+		.run(as_dict=True)
+	)
