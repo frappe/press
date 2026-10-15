@@ -226,6 +226,7 @@ class IntegrationTestSupportAccessToBenchGroup(IntegrationTestCase):
 	def test_group_grant_lets_support_agent_list_the_group_dependencies(self):
 		owner_team = frappe.get_doc("Team", self.group.team)
 		expected = self.dependencies_seen_by(owner_team)
+		self.assertTrue(expected)
 		self.grant("Release Group", self.group.name)
 		self.assertEqual(self.dependencies_seen_by(self.agent_team), expected)
 
@@ -236,6 +237,7 @@ class IntegrationTestSupportAccessToBenchGroup(IntegrationTestCase):
 	def test_dependency_list_returns_the_requested_page_not_every_dependency(self):
 		owner_team = frappe.get_doc("Team", self.group.team)
 		every_dependency = self.dependencies_seen_by(owner_team)
+		self.assertGreater(len(every_dependency), 2)
 		first_page = self.dependencies_seen_by(owner_team, start=0, limit=2)
 		second_page = self.dependencies_seen_by(owner_team, start=2, limit=2)
 		self.assertEqual(first_page + second_page, every_dependency[:4])
