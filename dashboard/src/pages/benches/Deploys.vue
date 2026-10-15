@@ -32,6 +32,8 @@ const deployBuilds = createListResource({
 	filters: {
 		group: props.name,
 		creation: ['<=', '2026-04-21 23:49:24'],
+		// the tab itself opens for support, so the list must too
+		skip_team_filter_for_system_user_and_support_agent: true,
 	},
 	orderBy: 'creation desc',
 })
@@ -41,6 +43,8 @@ const pipelines = createListResource({
 	fields: ['name', 'status', 'creation', 'owner'],
 	filters: {
 		release_group: props.name,
+		// the tab itself opens for support, so the list must too
+		skip_team_filter_for_system_user_and_support_agent: true,
 	},
 	orderBy: 'creation desc',
 })
