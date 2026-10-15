@@ -5795,12 +5795,12 @@ def suspend_sites_exceeding_disk_usage_for_last_14_days():
 
 
 def teams_with_sites_nearing_storage_limits(threshold: int) -> dict[str, list[frappe._dict]]:
-	"""Map each paying team to its live sites using more than `threshold`% of plan disk or database."""
+	"""Map each paying team to its live sites using `threshold`% or more of plan disk or database."""
 	free_teams = frappe.get_all("Team", filters={"free_account": True, "enabled": True}, pluck="name")
 	sites = frappe.get_all(
 		"Site",
 		filters={"status": ("in", ["Active", "Inactive"]), "free": False, "team": ("not in", free_teams)},
-		or_filters={"current_disk_usage": (">", threshold), "current_database_usage": (">", threshold)},
+		or_filters={"current_disk_usage": (">=", threshold), "current_database_usage": (">=", threshold)},
 		fields=["name", "team", "plan", "current_disk_usage", "current_database_usage"],
 	)
 	sites.sort(key=lambda s: max(s.current_disk_usage or 0, s.current_database_usage or 0), reverse=True)
@@ -5812,20 +5812,20 @@ def teams_with_sites_nearing_storage_limits(threshold: int) -> dict[str, list[fr
 
 
 def notify_teams_nearing_storage_limits(
-	threshold: int = 80,
+	threshold: int = 100,
 	action_url: str = "https://cloud.frappe.io/dashboard",
 	duplicate_window_days: int = 3,
 	verbose: bool = False,
 ):
-	"""Console-run: email paying teams whose sites use over `threshold`% of plan disk or database.
+	"""Console-run: email paying teams whose sites use `threshold`% or more of plan disk or database.
 	A team already sent this notice within duplicate_window_days is skipped."""
 	args = {"threshold": threshold, "action_url": action_url}
 	teams = teams_with_sites_nearing_storage_limits(threshold)
 	if verbose:
-		print(f"Notifying {len(teams)} team(s) with sites above {threshold}% of their storage limits")
+		print(f"Notifying {len(teams)} team(s) with sites at {threshold}% or more of their storage limits")
 	for team, sites in teams.items():
 		over_limit = any(
-			(s.current_disk_usage or 0) > 100 or (s.current_database_usage or 0) > 100 for s in sites
+			(s.current_disk_usage or 0) >= 100 or (s.current_database_usage or 0) >= 100 for s in sites
 		)
 		# Keyed on over_limit too, so a near-limit notice doesn't suppress the later over-limit one
 		message_id = notice_message_id("storage-limit-notice", team, {**args, "over_limit": over_limit})
@@ -5843,7 +5843,7 @@ def notify_teams_nearing_storage_limits(
 			continue
 		noun = "sites" if len(sites) > 1 else "site"
 		subject = (
-			f"Action needed: your {noun} {'have' if len(sites) > 1 else 'has'} gone over the plan's storage limit"
+			f"Action needed: your {noun} {'have' if len(sites) > 1 else 'has'} reached the plan's storage limit"
 			if over_limit
 			else f"Your {noun} {'are' if len(sites) > 1 else 'is'} close to the plan's storage limit"
 		)

@@ -1379,7 +1379,7 @@ class TestNotifyTeamsNearingStorageLimits(FrappeTestCase):
 		self._site_with_usage(team_one.name, disk=40, database=40)
 		self._site_with_usage(team_two.name, disk=95)
 
-		calls = self._notify()
+		calls = self._notify(threshold=80)
 
 		team_one_call = calls[team_one.name]
 		self.assertEqual(team_one_call["template"], "sites_nearing_storage_limits")
@@ -1400,31 +1400,43 @@ class TestNotifyTeamsNearingStorageLimits(FrappeTestCase):
 		self.assertTrue(team_call["args"]["over_limit"])
 		self.assertIn("Action needed", team_call["subject"])
 
-	def test_site_exactly_at_the_limit_is_not_over_it(self):
+	def test_default_notifies_only_sites_at_or_over_the_limit(self):
 		team = create_test_team()
-		self._site_with_usage(team.name, disk=100)
+		at_limit = self._site_with_usage(team.name, disk=100)
+		self._site_with_usage(team.name, database=99)
 
 		team_call = self._notify()[team.name]
 
-		self.assertFalse(team_call["args"]["over_limit"])
-		self.assertIn("close to", team_call["subject"])
+		self.assertEqual([s.name for s in team_call["args"]["sites"]], [at_limit.name])
+		self.assertTrue(team_call["args"]["over_limit"])
+		self.assertIn("reached", team_call["subject"])
+
+	def test_skips_team_with_sites_just_under_the_limit(self):
+		team = create_test_team()
+		self._site_with_usage(team.name, disk=99, database=99)
+
+		self.assertNotIn(team.name, self._notify())
 
 	def test_skips_free_sites_and_free_teams(self):
 		team = create_test_team()
 		free_team = create_test_team(free_account=True)
-		self._site_with_usage(team.name, disk=95, free=True)
-		self._site_with_usage(free_team.name, disk=95)
+		self._site_with_usage(team.name, disk=100, free=True)
+		self._site_with_usage(free_team.name, disk=100)
 
 		calls = self._notify()
 
 		self.assertNotIn(team.name, calls)
 		self.assertNotIn(free_team.name, calls)
 
-	def _mark_notified(self, team: str, over_limit: bool = False):
+	def _mark_notified(self, team: str, threshold: int = 100, over_limit: bool = True):
 		message_id = notice_message_id(
 			"storage-limit-notice",
 			team,
-			{"threshold": 80, "action_url": "https://cloud.frappe.io/dashboard", "over_limit": over_limit},
+			{
+				"threshold": threshold,
+				"action_url": "https://cloud.frappe.io/dashboard",
+				"over_limit": over_limit,
+			},
 		)
 		return frappe.get_doc(
 			{
@@ -1438,7 +1450,7 @@ class TestNotifyTeamsNearingStorageLimits(FrappeTestCase):
 
 	def test_skips_team_already_notified_within_window(self):
 		team = create_test_team()
-		self._site_with_usage(team.name, disk=95)
+		self._site_with_usage(team.name, disk=100)
 		self._mark_notified(team.name)
 
 		self.assertNotIn(team.name, self._notify())
@@ -1446,7 +1458,7 @@ class TestNotifyTeamsNearingStorageLimits(FrappeTestCase):
 
 	def test_notifies_again_once_the_default_window_has_passed(self):
 		team = create_test_team()
-		self._site_with_usage(team.name, disk=95)
+		self._site_with_usage(team.name, disk=100)
 		email_queue = self._mark_notified(team.name)
 		email_queue.db_set(
 			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -4), update_modified=False
@@ -1457,26 +1469,26 @@ class TestNotifyTeamsNearingStorageLimits(FrappeTestCase):
 	def test_near_limit_notice_does_not_suppress_over_limit_notice(self):
 		team = create_test_team()
 		self._site_with_usage(team.name, disk=110)
-		self._mark_notified(team.name, over_limit=False)
+		self._mark_notified(team.name, threshold=80, over_limit=False)
 
-		team_call = self._notify()[team.name]
+		team_call = self._notify(threshold=80)[team.name]
 
 		self.assertTrue(team_call["args"]["over_limit"])
 
 	def test_skips_team_without_recipients(self):
 		team = create_test_team()
-		self._site_with_usage(team.name, disk=95)
+		self._site_with_usage(team.name, disk=100)
 
 		with patch("press.press.doctype.site.site.get_communication_info", return_value=[]):
 			self.assertNotIn(team.name, self._notify())
 
 	def test_template_renders_usage_for_each_site(self):
 		team = create_test_team()
-		site = self._site_with_usage(team.name, disk=92, database=30)
+		site = self._site_with_usage(team.name, disk=100, database=30)
 		args = self._notify()[team.name]["args"]
 
 		html = frappe.get_template("templates/emails/sites_nearing_storage_limits.html").render(args)
 
 		self.assertIn(site.name, html)
-		self.assertIn("92%", html)
+		self.assertIn("100%", html)
 		self.assertNotIn("30%", html)
