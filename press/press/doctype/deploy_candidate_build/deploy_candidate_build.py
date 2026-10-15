@@ -28,6 +28,7 @@ from frappe.utils import rounded, sbool
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from press.agent import Agent
+from press.api.assets import get_asset_store_instructions
 from press.exceptions import ImageNotFoundInRegistry
 from press.press.doctype.deploy_candidate.deploy_notifications import (
 	create_build_failed_notification,
@@ -352,16 +353,13 @@ class DeployCandidateBuild(Document):
 				"requires_version_based_get_pip": requires_version_based_get_pip,
 				"is_arm_build": self.platform == "arm64",
 				"use_asset_store": self.uses_asset_store(),
-				"site_url": frappe.utils.get_url(),
 			},
 			is_path=True,
 		)
 
 	def uses_asset_store(self) -> bool:
-		"""Public groups only, since the store serves one group's built assets to every other."""
-		if self.no_cache or not self.candidate.use_app_cache:
-			return False
-		return bool(frappe.db.get_value("Release Group", self.group, "public"))
+		"""Any group with Use App Cache downloads stored assets; only public groups upload them."""
+		return not self.no_cache and bool(self.candidate.use_app_cache)
 
 	def add_patch_build_steps(self):
 		slugs = [
@@ -875,7 +873,6 @@ class DeployCandidateBuild(Document):
 			},
 			"no_cache": self.no_cache,
 			"no_push": self.no_push,
-			"build_token": self.candidate.build_token,
 			# Next few values are not used by agent but are
 			# read in `process_run_build`
 			"deploy_candidate_build": self.name,
@@ -901,6 +898,9 @@ class DeployCandidateBuild(Document):
 		}
 		if host_keys:
 			build_parameters["ssh_keys"] = {"host": host_keys}
+		if self.uses_asset_store():
+			can_upload = bool(frappe.db.get_value("Release Group", self.group, "public"))
+			build_parameters["asset_store"] = get_asset_store_instructions(self.candidate.apps, can_upload)
 		if self.platform == "arm64":
 			build_parameters.update({"platform": self.platform})
 
