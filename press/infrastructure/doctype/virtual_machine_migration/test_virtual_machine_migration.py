@@ -36,6 +36,20 @@ class TestVirtualMachineMigration(FrappeTestCase):
 		self.assertIn("chown root:root /opt/volumes/benches/var/lib/docker", commands)
 		self.assertFalse(any("chown -R" in command for command in commands))
 
+	def test_docker_data_dir_with_trailing_slash_is_not_chowned_recursively(self):
+		commands = self._run_bind_mount_permissions(
+			[
+				{
+					"source_mount_point": "/opt/volumes/benches/var/lib/docker/",
+					"service": "docker",
+					"mount_point_owner": "root",
+					"mount_point_group": "root",
+				}
+			]
+		)
+		self.assertIn("chown root:root /opt/volumes/benches/var/lib/docker/", commands)
+		self.assertFalse(any("chown -R" in command for command in commands))
+
 	def test_other_bind_mounts_are_chowned_recursively(self):
 		commands = self._run_bind_mount_permissions(
 			[

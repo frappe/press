@@ -541,7 +541,7 @@ class VirtualMachineMigration(Document):
 		# linux uid / gid might not be the same in the new machine
 		for mount in self.bind_mounts:
 			# Image layers under docker's data dir are owned by container uids, so only fix the top dir
-			recursive = "" if mount.source_mount_point.endswith("/var/lib/docker") else "-R "
+			recursive = "" if mount.source_mount_point.rstrip("/").endswith("/var/lib/docker") else "-R "
 			commands = [
 				f"chown {recursive}{mount.mount_point_owner}:{mount.mount_point_group} {mount.source_mount_point}",
 				# The dependent service might have failed. Start it
