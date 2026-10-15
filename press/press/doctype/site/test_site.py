@@ -1484,11 +1484,11 @@ class TestNotifyTeamsNearingStorageLimits(FrappeTestCase):
 
 	def test_template_renders_usage_for_each_site(self):
 		team = create_test_team()
-		site = self._site_with_usage(team.name, disk=104, database=30)
+		site = self._site_with_usage(team.name, disk=100, database=30)
 		args = self._notify()[team.name]["args"]
 
 		html = frappe.get_template("templates/emails/sites_nearing_storage_limits.html").render(args)
 
 		self.assertIn(site.name, html)
-		self.assertIn("104%", html)
+		self.assertIn("100%", html)
 		self.assertNotIn("30%", html)
