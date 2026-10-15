@@ -2720,10 +2720,14 @@ class VirtualMachine(Document):
 			).data
 
 			vnic_id = attachments[0].vnic_id
-			network_client.update_vnic(
-				vnic_id,
-				UpdateVnicDetails(network_security_group_ids=[*self.get_security_groups() + firewall_id]),
-			)
+
+			nsg_ids = network_client.get_vnic(vnic_id).data.nsg_ids or []
+
+			if firewall_id not in nsg_ids:
+				network_client.update_vnic(
+					vnic_id,
+					UpdateVnicDetails(nsg_ids=[*nsg_ids, firewall_id]),
+				)
 
 		elif self.cloud_provider == "Hetzner":
 			from hcloud.firewalls.domain import FirewallResource
@@ -2757,9 +2761,11 @@ class VirtualMachine(Document):
 
 			vnic_id = attachments[0].vnic_id
 
-			nsg_ids = [nsg for nsg in self.get_security_groups() if nsg != firewall_id]
+			nsg_ids = network_client.get_vnic(vnic_id).data.nsg_ids or []
 
-			network_client.update_vnic(vnic_id, UpdateVnicDetails(network_security_group_ids=nsg_ids))
+			if firewall_id in nsg_ids:
+				nsg_ids = [nsg for nsg in nsg_ids if nsg != firewall_id]
+				network_client.update_vnic(vnic_id, UpdateVnicDetails(nsg_ids=nsg_ids))
 
 		elif self.cloud_provider == "Hetzner":
 			from hcloud.firewalls.domain import FirewallResource
