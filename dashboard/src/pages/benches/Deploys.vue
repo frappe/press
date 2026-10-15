@@ -12,7 +12,7 @@ import { useRoute } from 'vue-router'
 import { toast } from 'vue-sonner'
 import Scrollbar from '@/components/common/Scrollbar.vue'
 import { renderDialog } from '@/utils/components'
-import { date, duration } from '@/utils/format'
+import { date, finishedDuration } from '@/utils/format'
 import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline'
 
 interface Props {
@@ -189,7 +189,7 @@ function handleDeploy() {
 
 					<template v-if="mode === 'older'">
 						<div class="table-cell" role="cell">
-							{{ duration(item.build_duration) }}
+							{{ finishedDuration(item.build_duration, item.status) }}
 						</div>
 						<div class="table-cell hover:rounded-r" role="cell">
 							{{ item.owner }}
