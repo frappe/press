@@ -37,9 +37,9 @@ class TestAssetStoreInstructions(FrappeTestCase):
 		frappe.db.rollback()
 		frappe.set_user("Administrator")
 
-	def get_instructions(self, stored: bool) -> list[dict[str, str]]:
+	def get_instructions(self, stored: bool, can_upload: bool = True) -> list[dict[str, str]]:
 		with patch("press.api.assets._get_asset_store", return_value=(mock_asset_store(stored), "bucket")):
-			return get_asset_store_instructions(self.candidate.apps)
+			return get_asset_store_instructions(self.candidate.apps, can_upload)
 
 	def test_stored_assets_get_a_download_url(self):
 		self.assertEqual(
@@ -53,6 +53,13 @@ class TestAssetStoreInstructions(FrappeTestCase):
 			[{"app": "erpnext", "hash": self.erpnext.hash, "upload_url": "https://signed/put_object"}],
 		)
 
+	def test_build_that_cannot_upload_only_downloads(self):
+		self.assertEqual(self.get_instructions(stored=False, can_upload=False), [])
+		self.assertEqual(
+			self.get_instructions(stored=True, can_upload=False)[0]["download_url"],
+			"https://signed/get_object",
+		)
+
 	def test_apps_without_app_cache_are_left_out(self):
 		self.erpnext.use_cached = 0
 		self.assertEqual(self.get_instructions(stored=True), [])
@@ -62,7 +69,7 @@ class TestAssetStoreInstructions(FrappeTestCase):
 			patch("press.api.assets._get_asset_store", side_effect=Exception("store unreachable")),
 			patch("press.api.assets.frappe.log_error"),
 		):
-			self.assertEqual(get_asset_store_instructions(self.candidate.apps), [])
+			self.assertEqual(get_asset_store_instructions(self.candidate.apps, can_upload=True), [])
 
 
 class TestUploadAsset(FrappeTestCase):
