@@ -334,3 +334,113 @@ class TestGitHubAuthorization(FrappeTestCase):
 	def _set_form_dict(self, **kwargs):
 		frappe.flags.redirect_location = None
 		frappe.local.form_dict = frappe._dict(kwargs)
+
+
+class TestGitHubInstallationAccess(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		from press.press.doctype.team.test_team import create_test_team
+
+		self.team = create_test_team()
+		self.other_team = create_test_team()
+		self.token = frappe.generate_hash(length=20)
+		frappe.db.set_value("Team", self.team.name, "github_access_token", self.token)
+		frappe.set_user(self.team.user)
+		# Test users get every role, System Manager included, which skips the check.
+		patcher = patch("press.api.github.is_system_manager", return_value=False)
+		patcher.start()
+		self.addCleanup(patcher.stop)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	@patch("press.api.github.fetch_installations", return_value=[{"id": 111}])
+	def test_check_installation_allows_only_the_team_accounts_installations(self, fetch: Mock):
+		from press.api.github import check_installation
+
+		check_installation(self.team.name, "111")
+		check_installation(self.team.name, 111)
+		with self.assertRaises(frappe.PermissionError):
+			check_installation(self.team.name, "999")
+		# The installation list is cached, so GitHub is asked once.
+		fetch.assert_called_once()
+
+	@patch("press.api.github.fetch_installations", return_value=[])
+	def test_check_installation_allows_installations_of_the_teams_app_sources(self, _):
+		from press.api.github import check_installation
+
+		self._create_app_source(self.team.name, "222")
+		self._create_app_source(self.other_team.name, "333")
+
+		check_installation(self.team.name, "222")
+		with self.assertRaises(frappe.PermissionError):
+			check_installation(self.team.name, "333")
+
+	def test_check_installation_rejects_everything_without_a_team_token(self):
+		from press.api.github import check_installation
+
+		frappe.db.set_value("Team", self.team.name, "github_access_token", None)
+		with self.assertRaises(frappe.PermissionError):
+			check_installation(self.team.name, "111")
+		check_installation(self.team.name, None)
+
+	def test_check_app_source_rejects_another_teams_private_source(self):
+		from press.api.github import check_app_source
+
+		own = self._create_app_source(self.team.name, "222")
+		foreign = self._create_app_source(self.other_team.name, "333")
+
+		check_app_source(self.team.name, own)
+		with self.assertRaises(frappe.PermissionError):
+			check_app_source(self.team.name, foreign)
+
+		frappe.db.set_value("App Source", foreign, "public", 1)
+		check_app_source(self.team.name, foreign)
+
+	@patch("press.api.github.fetch_branches", return_value=[])
+	def test_branches_for_an_app_source_list_only_that_sources_repository(self, fetch_branches: Mock):
+		from press.api import github
+
+		public = self._create_app_source(self.other_team.name, "333")
+		frappe.db.set_value("App Source", public, "public", 1)
+
+		with patch("press.api.github.get_current_team", return_value=self.team.name):
+			github.branches("acme", "another-private-repo", app_source=public)
+		fetch_branches.assert_called_once_with("acme", "private", "333")
+
+	@patch("press.api.github.fetch_installations", return_value=[])
+	def test_check_installation_rejects_installations_of_public_sources_of_other_teams(self, _):
+		from press.api.github import check_installation
+
+		public = self._create_app_source(self.other_team.name, "333")
+		frappe.db.set_value("App Source", public, "public", 1)
+		with self.assertRaises(frappe.PermissionError):
+			check_installation(self.team.name, "333")
+
+	@patch("press.api.github.requests.get")
+	@patch("press.api.github.fetch_installations", return_value=[{"id": 111}])
+	def test_endpoints_reject_a_foreign_installation_before_calling_github(self, _, get: Mock):
+		from press.api import github
+
+		with patch("press.api.github.get_current_team", return_value=self.team.name):
+			for call in (
+				lambda: github.app("acme", "private", "main", installation="999"),
+				lambda: github.branches("acme", "private", installation="999"),
+				lambda: github.repository("acme", "private", installation="999"),
+				lambda: github.get_frappe_branch_major_version("acme", "frappe", "main", installation="999"),
+			):
+				with self.assertRaises(frappe.PermissionError):
+					call()
+		get.assert_not_called()
+
+	def _create_app_source(self, team: str, installation: str) -> str:
+		"""Insert a bare App Source row without hooks or GitHub calls."""
+		name = frappe.generate_hash(length=10)
+		frappe.db.sql(
+			"INSERT INTO `tabApp Source`"
+			" (name, app, team, repository_url, repository_owner, repository, branch, github_installation_id, public, enabled)"
+			" VALUES (%s, 'frappe', %s, 'https://github.com/acme/private', 'acme', 'private', 'main', %s, 0, 1)",
+			(name, team, installation),
+		)
+		return name

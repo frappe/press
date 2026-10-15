@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import frappe
 import requests
@@ -12,7 +12,7 @@ from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import flt, sbool
 
-from press.api.github import branches, get_access_token
+from press.api.github import fetch_branches, get_access_token
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app.app import get_app_from_policies
@@ -948,7 +948,7 @@ def branch_list(name: str, app: str) -> list[dict]:
 	if marketplace_app and app_source.public and (not belongs_to_current_team(marketplace_app[0])):
 		return get_branches_for_marketplace_app(app, marketplace_app[0], app_source)
 
-	return branches(repo_owner, repo_name, installation_id)
+	return fetch_branches(cast("str", repo_owner), cast("str", repo_name), installation_id)
 
 
 @frappe.whitelist()

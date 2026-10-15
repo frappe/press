@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 
+from press.api.github import check_installation
 from press.press.doctype.app.app import new_app
 from press.utils import get_current_team
 
@@ -22,6 +23,7 @@ def new(app):
 
 	name = app["name"]
 	team = get_current_team()
+	check_installation(team, app.get("github_installation_id"))
 
 	if frappe.db.exists("App", name):
 		app_doc: "App" = frappe.get_doc("App", name)
