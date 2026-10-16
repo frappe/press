@@ -52,6 +52,14 @@ def permitted_database_server():
 	permitted = role_guard.permitted_condition("Server", Server.name)
 	if permitted is None:
 		return is_type
+	primaries, replicas = granted_database_servers(Server, permitted)
+	return is_type & (
+		PressNotification.reference_name.isin(primaries) | PressNotification.reference_name.isin(replicas)
+	)
+
+
+def granted_database_servers(Server, permitted):
+	"""Subqueries for the primaries of the permitted app servers, and for the replicas of those primaries."""
 	DatabaseServer = frappe.qb.DocType("Database Server")
 	primaries = frappe.qb.from_(Server).select(Server.database_server).where(permitted)
 	replicas = (
@@ -59,6 +67,4 @@ def permitted_database_server():
 		.select(DatabaseServer.name)
 		.where(DatabaseServer.primary.isin(primaries))
 	)
-	return is_type & (
-		PressNotification.reference_name.isin(primaries) | PressNotification.reference_name.isin(replicas)
-	)
+	return primaries, replicas
