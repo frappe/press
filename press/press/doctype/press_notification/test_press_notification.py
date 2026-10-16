@@ -135,6 +135,19 @@ class TestPressNotificationReference(FrappeTestCase):
 			(notification.reference_doctype, notification.reference_name), ("Server", job.server)
 		)
 
+	def test_auto_scale_and_nfs_volume_notifications_reference_the_primary_server(self):
+		for document_type in ("Auto Scale Record", "NFS Volume Attachment", "NFS Volume Detachment"):
+			with self.subTest(document_type=document_type):
+				document = frappe.get_doc({"doctype": document_type, "primary_server": "f1.example.com"})
+				document.db_insert()
+
+				notification = self.notify_about(document_type, document.name)
+
+				self.assertEqual(
+					(notification.reference_doctype, notification.reference_name),
+					("Server", "f1.example.com"),
+				)
+
 	def test_notification_keeps_the_reference_its_creator_set(self):
 		site = create_test_site()
 
