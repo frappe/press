@@ -12,6 +12,7 @@ from press.press.doctype.press_role.test_press_role import create_user
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.user_2fa.test_user_2fa import create_test_user_2fa
 from press.utils import get_current_team
+from press.www.dashboard import get_boot
 
 TEAM_2FA_REQUIRED = "requires two-factor authentication"
 
@@ -77,6 +78,13 @@ class TestTeam2FAEnforcement(FrappeTestCase):
 			secret = get_2fa_qr_code_url().split("secret=")[1].split("&")[0]
 			enable_2fa(pyotp.TOTP(secret).now())
 			self.assertEqual(get_current_team(), self.team.name)
+
+	def test_dashboard_boots_for_member_without_2fa_when_chat_is_enabled(self):
+		frappe.db.set_single_value("Press Settings", "enable_chat", 1)
+		with self.as_user(self.member):
+			boot = get_boot()
+		self.assertEqual(boot.default_team, self.team.name)
+		self.assertTrue(boot.chat_enabled)
 
 	def test_member_without_2fa_cannot_read_other_docs_of_a_team_that_enforces_it(self):
 		with self.as_user(self.member, self.team.name, cmd="press.api.client.get", doctype="Site"):

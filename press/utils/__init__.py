@@ -247,23 +247,14 @@ def get_disabled_team_of_user(user):
 	return frappe.db.get_value("Team", own_account | {"enabled": 0}, "name")
 
 
-def chat_enabled():
-	if frappe.session.user == "Guest":
+def chat_enabled(team: str | None) -> bool:
+	# Takes the team from the dashboard boot. get_current_team would refuse a member
+	# without 2FA and stop the boot before the "Enable 2FA" page loads.
+	if not team or not frappe.db.get_single_value("Press Settings", "enable_chat"):
 		return False
 
-	if not frappe.db.get_single_value("Press Settings", "enable_chat"):
-		return False
-
-	current_team_doc = get_current_team(get_doc=True)
-
-	if not current_team_doc:
-		return False
-
-	date_diff = frappe.utils.data.get_datetime() - current_team_doc.creation
-
-	if date_diff < timedelta(days=90):
-		return True
-	return False
+	creation = frappe.db.get_value("Team", team, "creation")
+	return frappe.utils.data.get_datetime() - creation < timedelta(days=90)
 
 
 def get_chat_bubble_config():
