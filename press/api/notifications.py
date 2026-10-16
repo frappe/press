@@ -7,6 +7,8 @@ from press.utils import get_current_team
 # Any team member can answer a support access request, so its notification is for everyone.
 UNRESTRICTED_TYPES = ("Support Access",)
 
+PressNotification = frappe.qb.DocType("Press Notification")
+
 
 @frappe.whitelist()
 def get_notifications(
@@ -17,7 +19,6 @@ def get_notifications(
 	if not filters:
 		filters = {}
 
-	PressNotification = frappe.qb.DocType("Press Notification")
 	query = (
 		frappe.qb.from_(PressNotification)
 		.select(
@@ -78,7 +79,6 @@ def mark_all_notifications_as_read():
 
 @frappe.whitelist()
 def get_unread_count(type: str | None = None):
-	PressNotification = frappe.qb.DocType("Press Notification")
 	query = (
 		frappe.qb.from_(PressNotification)
 		.select(Count(PressNotification.name))
@@ -96,7 +96,6 @@ def restrict_to_roles(query):
 	"""Keep only the notifications about documents the Press Roles of the user permit."""
 	if not role_guard.is_restricted():
 		return query
-	PressNotification = frappe.qb.DocType("Press Notification")
 	condition = PressNotification.type.isin(UNRESTRICTED_TYPES)
 	for document_type in role_guard.LIMITED_DOCTYPES:
 		condition |= permitted_reference(document_type)
@@ -104,7 +103,6 @@ def restrict_to_roles(query):
 
 
 def permitted_reference(document_type: str):
-	PressNotification = frappe.qb.DocType("Press Notification")
 	is_type = PressNotification.reference_doctype == document_type
 	permitted = role_guard.permitted_condition(document_type, PressNotification.reference_name)
 	return is_type if permitted is None else is_type & permitted
