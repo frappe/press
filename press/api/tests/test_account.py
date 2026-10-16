@@ -1,12 +1,15 @@
+import json
 from contextlib import contextmanager
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
 import frappe
+import pyotp
 from frappe.tests.ui_test_helpers import create_test_user
 
 from press.api.account import (
 	accept_team_invite,
+	disable_2fa,
 	leave_team,
 	reactivate_account,
 	set_2fa_recovery_code_reminders,
@@ -477,6 +480,31 @@ class TestSet2FARecoveryCodeReminders(TestCase):
 				set_2fa_recovery_code_reminders,
 				True,
 			)
+
+
+class TestDisable2FA(TestCase):
+	def setUp(self):
+		self.team = create_test_team()
+		self.totp_secret = pyotp.random_base32()
+		create_test_user_2fa(self.team.user, totp_secret=self.totp_secret)
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_disabling_2fa_is_recorded_in_the_version_log(self):
+		# Frappe skips versions in tests
+		with user_context(self.team.user), patch.object(frappe, "in_test", False):
+			disable_2fa(pyotp.TOTP(self.totp_secret).now())
+
+		self.assertEqual(frappe.db.get_value("User 2FA", self.team.user, "enabled"), 0)
+		version = frappe.get_last_doc("Version", {"ref_doctype": "User 2FA", "docname": self.team.user})
+		changed = [field for field, _old, _new in json.loads(version.data)["changed"]]
+		self.assertIn("enabled", changed)
+
+	def test_disabling_2fa_with_a_wrong_code_keeps_it_enabled(self):
+		with user_context(self.team.user):
+			self.assertRaisesRegex(frappe.ValidationError, "code is incorrect", disable_2fa, "000000")
+		self.assertEqual(frappe.db.get_value("User 2FA", self.team.user, "enabled"), 1)
 
 
 class TestReactivateAccount(TestCase):
