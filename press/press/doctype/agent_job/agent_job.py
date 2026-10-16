@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import re
 import traceback
 from typing import TYPE_CHECKING
 
@@ -41,6 +42,23 @@ AGENT_JOB_TIMEOUT_HOURS = 4
 CALLBACK_FAILURE_LIMIT = 5000
 
 BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
+
+REDACTED = "********"
+SECRET_NAME = r"[\w-]*(?:password|passwd|secret|token)[\w-]*|pwd|(?:api|access|private|encryption)[_-]?key"
+# `name=value`, `name: value`, `"name": "value"`; MySQL's "(using password: YES)" is kept
+SECRET_ASSIGNMENT_PATTERN = re.compile(
+	rf"(?i)\b({SECRET_NAME})(['\"]?\s*[:=]\s*)(?!(?:YES|NO)\b)('[^']*'|\"[^\"]*\"|[^\s,;)\]}}]+)"
+)
+DOCKER_LOGIN_PASSWORD_PATTERN = re.compile(r"(\bdocker\s+login\b[^\n]*?\s-p\s+)(\S+)")
+# `--admin-password value`; `--password-stdin` takes no value
+PASSWORD_FLAG_PATTERN = re.compile(
+	r"(--(?![\w-]*-stdin\b)[\w-]*(?:password|passwd|secret|token)[\w-]*\s+)(?!-)(\S+)"
+)
+# The agent passes MySQL/MariaDB passwords attached to the flag: `-p<password>`
+MYSQL_PASSWORD_PATTERN = re.compile(
+	r"(\b(?:mysql|mariadb)[\w-]*\b[^\n]*?\s-p)(?=[^\s-])('[^']*'|\"[^\"]*\"|\S+)"
+)
+FREE_TEXT_JOB_DATA_KEYS = ("output", "traceback", "command")
 
 # Jobs a team can cancel from the dashboard. Restricted to long running jobs whose
 # failure path Press already handles — Broken site, failed backup, or (for site
@@ -610,7 +628,7 @@ def populate_output_cache(polled_job, job):
 				output = command.get("output", "").strip()
 				if output:
 					lines.append(output)
-			frappe.cache.hset("agent_job_step_output", step.name, "\n".join(lines))
+			frappe.cache.hset("agent_job_step_output", step.name, redact_secrets("\n".join(lines)))
 
 
 def filter_active_servers(servers):
@@ -753,8 +771,41 @@ def lock_doc_updated_by_job(job_name):
 	return None
 
 
+def redact_secrets(text):
+	"""Mask password, token and secret values in job output before it's stored or shown"""
+	if isinstance(text, list | tuple):
+		# A list command's flag and value are separate items, so mask the joined command
+		joined = " ".join(str(part) for part in text)
+		redacted = redact_secrets(joined)
+		return text if redacted == joined else redacted
+	if not isinstance(text, str) or not text:
+		return text
+
+	for pattern in (DOCKER_LOGIN_PASSWORD_PATTERN, PASSWORD_FLAG_PATTERN, MYSQL_PASSWORD_PATTERN):
+		text = pattern.sub(rf"\g<1>{REDACTED}", text)
+	return SECRET_ASSIGNMENT_PATTERN.sub(_mask_secret_value, text)
+
+
+def _mask_secret_value(match: re.Match) -> str:
+	name, separator, value = match.groups()
+	quote = value[0] if len(value) > 1 and value[0] in "'\"" else ""
+	return f"{name}{separator}{quote}{REDACTED}{quote}"
+
+
+def redact_job_data(data):
+	# Only the free text fields; other keys carry results that callbacks read back
+	if not isinstance(data, dict):
+		return data
+
+	return {
+		**data,
+		**{key: redact_secrets(data[key]) for key in FREE_TEXT_JOB_DATA_KEYS if key in data},
+	}
+
+
 def update_job(job_name, job):
-	job_data = json.dumps(job["data"], indent=4, sort_keys=True)
+	data = redact_job_data(job["data"])
+	job_data = json.dumps(data, indent=4, sort_keys=True)
 	frappe.db.set_value(
 		"Agent Job",
 		job_name,
@@ -764,8 +815,8 @@ def update_job(job_name, job):
 			"duration": job["duration"],
 			"status": job["status"],
 			"data": job_data,
-			"output": job["data"].get("output"),
-			"traceback": job["data"].get("traceback"),
+			"output": data.get("output"),
+			"traceback": data.get("traceback"),
 		},
 	)
 
@@ -794,13 +845,14 @@ def update_steps(job_name, job):
 
 
 def update_step(step_name, step):
-	step_data = json.dumps(step["data"], indent=4, sort_keys=True)
+	data = redact_job_data(step["data"])
+	step_data = json.dumps(data, indent=4, sort_keys=True)
 
 	output = None
 	traceback = None
-	if isinstance(step["data"], dict):
-		traceback = to_str(step["data"].get("traceback", ""))
-		output = to_str(step["data"].get("output", ""))
+	if isinstance(data, dict):
+		traceback = redact_secrets(to_str(data.get("traceback", "")))
+		output = redact_secrets(to_str(data.get("output", "")))
 
 	frappe.db.set_value(
 		"Agent Job Step",
