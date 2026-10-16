@@ -28,6 +28,7 @@ from cryptography.x509.oid import ExtensionOID
 from frappe.query_builder.functions import Count
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import redis_cache, site_cache
+from pypika.terms import Function
 
 from press.utils.email_validator import validate_email
 
@@ -342,6 +343,38 @@ def get_last_doc(*args, **kwargs):
 		return frappe.get_last_doc(*args, **kwargs)
 	except Exception:
 		return None
+
+
+def get_random_names(doctype: str, filters=None, limit: int | None = None) -> list[str]:
+	"""Return up to `limit` names matching `filters`, in a random order.
+
+	Replaces `order_by="RAND()"` on a `get_all` call. Frappe 16 validates the
+	`order_by` string and only accepts plain field names, so `RAND()` now raises
+	`ValidationError: Invalid field format in Order By: RAND`. The query
+	builder's `orderby` is not subject to that check, which keeps the
+	randomness in the database. Shuffling in Python instead would mean fetching
+	every matching row just to pick a handful.
+
+	These callers spread recurring work across many rows so that a scheduled
+	job does not always act on the same first N.
+	"""
+	query = frappe.qb.get_query(doctype, fields=["name"], filters=filters, limit=limit)
+	return [row[0] for row in query.orderby(_RandomOrder()).run()]
+
+
+class _RandomOrder(Function):
+	"""`RAND()` as a query builder term, for MariaDB.
+
+	`Function` renders its own name, so the base class cannot be used directly
+	without adding an alias into the `ORDER BY` clause. The name is still a
+	required argument, so it is filled in and then never read.
+	"""
+
+	def __init__(self):
+		super().__init__("RAND")
+
+	def get_sql(self, **kwargs) -> str:
+		return "RAND()"
 
 
 def cache(seconds: int, maxsize: int = 128, typed: bool = False):
