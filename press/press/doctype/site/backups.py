@@ -266,7 +266,7 @@ class ScheduledBackupJob:
 		self.server_time = datetime.now()
 		self.sites = Site.get_sites_for_backup(self.interval, backup_type=self.backup_type)
 		if self.backup_type == "Logical":
-			self.sites_without_offsite = Subscription.get_sites_without_offsite_backups()
+			self.sites_without_offsite = get_sites_without_offsite_backups()
 		else:
 			self.sites_without_offsite = []
 
@@ -348,6 +348,13 @@ class ScheduledBackupJob:
 			return False
 
 
+def get_sites_without_offsite_backups() -> list[str]:
+	"""Sites that take no offsite backup: the plan leaves it out, or the site turned it off."""
+	return Subscription.get_sites_without_offsite_backups() + frappe.get_all(
+		"Site", {"skip_offsite_backups": 1}, pluck="name"
+	)
+
+
 def should_take_offsite_backup(
 	site: str, day: date, offsite_setup: bool, sites_without_offsite: list[str]
 ) -> bool:
@@ -371,7 +378,7 @@ def schedule_logical_backups_for_sites_with_backup_time():
 
 	day = frappe.utils.getdate()
 	offsite_setup = PressSettings.is_offsite_setup()
-	sites_without_offsite = Subscription.get_sites_without_offsite_backups()
+	sites_without_offsite = get_sites_without_offsite_backups()
 	for site in sites:
 		offsite = should_take_offsite_backup(site.name, day, offsite_setup, sites_without_offsite)
 		site_doc: Site = frappe.get_doc("Site", site.name)
