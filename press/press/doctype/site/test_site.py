@@ -1236,26 +1236,17 @@ class TestSite(FrappeTestCase):
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-<<<<<<< HEAD
-class TestSiteConfigJSONValidation(FrappeTestCase):
-	"""A JSON config value that isn't an object breaks every later save of the site."""
-
+class TestSiteConfigValidation(FrappeTestCase):
 	def setUp(self):
 		self.site = create_test_site("testsubdomain")
 		frappe.get_doc({"doctype": "Site Config Key", "key": "test_limits", "type": "JSON"}).insert()
-=======
-class TestSiteConfigEncryptionKeyValidation(FrappeTestCase):
-	def setUp(self):
-		self.site = create_test_site("testsubdomain")
 		for key in ENCRYPTION_KEYS:
 			if not frappe.db.exists("Site Config Key", key):
 				frappe.get_doc({"doctype": "Site Config Key", "key": key, "type": "Password"}).insert()
->>>>>>> 5ab2284 (fix(site): Validate encryption keys again)
 
 	def tearDown(self):
 		frappe.db.rollback()
 
-<<<<<<< HEAD
 	def test_json_config_key_accepts_an_object(self):
 		self.site.update_config({"test_limits": {"space": 1}})
 		self.assertEqual(json.loads(self.site.config)["test_limits"], {"space": 1})
@@ -1299,7 +1290,7 @@ class TestSiteConfigEncryptionKeyValidation(FrappeTestCase):
 		self.site.update_config({"test_limits": {"space": 1}})
 		self.site.reload()
 		self.site.save()
-=======
+
 	def test_encryption_key_that_is_not_a_fernet_key_is_rejected(self):
 		for key in ENCRYPTION_KEYS:
 			with self.subTest(key=key):
@@ -1322,7 +1313,6 @@ class TestSiteConfigEncryptionKeyValidation(FrappeTestCase):
 		self.site.update_config({"encryption_key": value})
 		self.site.update_config({"encryption_key": "*******"})
 		self.assertEqual(json.loads(self.site.config)["encryption_key"], value)
->>>>>>> 5ab2284 (fix(site): Validate encryption keys again)
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
