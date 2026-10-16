@@ -143,6 +143,7 @@ SERVER_SCRIPT_DISABLED_VERSION = (
 	15  # version from which server scripts were disabled on public benches. No longer set in site
 )
 TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
+ENCRYPTION_KEYS = ("encryption_key", "backup_encryption_key")
 
 # Fallback when max_statement_time isn't explicitly set on the database server.
 # Ref: press/fixtures/mariadb_variable.json
@@ -2785,7 +2786,8 @@ class Site(Document, TagHelpers):
 			)
 
 	def validate_encryption_key(self, key: str, value: Any):
-		if key != "encryption_key" or key != "backup_encryption_key":
+		# The dashboard sends the masked value when a password key is saved unchanged
+		if key not in ENCRYPTION_KEYS or value == "*******":
 			return
 		from cryptography.fernet import Fernet, InvalidToken
 
