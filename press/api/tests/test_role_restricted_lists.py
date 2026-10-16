@@ -10,8 +10,10 @@ from press.api.client import search_link
 from press.api.incident import get_visible_servers
 from press.api.notifications import get_notifications, get_unread_count, mark_all_notifications_as_read
 from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.database_server.test_database_server import create_test_database_server
 from press.press.doctype.press_role.test_press_role import create_permission_role, create_user
 from press.press.doctype.release_group.test_release_group import create_test_release_group
+from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.test_team import create_test_team
 
@@ -65,6 +67,14 @@ class TestRoleRestrictedLists(FrappeTestCase):
 		self.team.relaxed_permissions = 1
 		self.team.save()
 		return member
+
+	def notify_about_database_server(self, database_server: str) -> str:
+		return self.notify(
+			document_type="Database Server",
+			document_name=database_server,
+			reference_doctype="Database Server",
+			reference_name=database_server,
+		)
 
 	def notify_about_site(self, site) -> str:
 		return self.notify(
@@ -184,3 +194,45 @@ class TestRoleRestrictedLists(FrappeTestCase):
 			benches = {row.value for row in search_link("Bench")}
 
 		self.assertEqual(benches, {self.granted_site.bench, self.hidden_site.bench})
+
+	def test_restricted_member_sees_database_server_notification_when_role_grants_its_app_server(self):
+		database_server = create_test_database_server().name
+		server = create_test_server(database_server=database_server, team=self.team.name)
+		self.role.add_resource([{"document_type": "Server", "document_name": server.name}])
+		granted = self.notify_about_database_server(database_server)
+
+		with self.as_user(self.member):
+			names = [notification.name for notification in get_notifications()]
+
+		self.assertEqual(names, [granted])
+
+	def test_restricted_member_sees_replica_notification_when_role_grants_the_primary_app_server(self):
+		database_server = create_test_database_server().name
+		replica = create_test_database_server()
+		replica.db_set("primary", database_server)
+		server = create_test_server(database_server=database_server, team=self.team.name)
+		self.role.add_resource([{"document_type": "Server", "document_name": server.name}])
+		granted = self.notify_about_database_server(replica.name)
+
+		with self.as_user(self.member):
+			names = [notification.name for notification in get_notifications()]
+
+		self.assertEqual(names, [granted])
+
+	def test_restricted_member_does_not_see_database_server_notification_when_role_hides_its_app_server(
+		self,
+	):
+		database_server = create_test_database_server().name
+		create_test_server(database_server=database_server, team=self.team.name)
+		self.notify_about_database_server(database_server)
+
+		with self.as_user(self.member):
+			self.assertEqual(get_notifications(), [])
+			self.assertEqual(get_unread_count(), 0)
+
+	def test_member_whose_role_grants_all_servers_sees_every_database_server_notification(self):
+		self.role.db_set("all_servers", 1)
+		self.notify_about_database_server(create_test_database_server().name)
+
+		with self.as_user(self.member):
+			self.assertEqual(get_unread_count(), 1)

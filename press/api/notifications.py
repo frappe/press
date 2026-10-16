@@ -104,10 +104,29 @@ def restrict_to_roles(query):
 	condition = PressNotification.type.isin(UNRESTRICTED_TYPES)
 	for document_type in role_guard.LIMITED_DOCTYPES:
 		condition |= permitted_reference(document_type)
-	return query.where(condition)
+	return query.where(condition | permitted_database_server())
 
 
 def permitted_reference(document_type: str):
 	is_type = PressNotification.reference_doctype == document_type
 	permitted = role_guard.permitted_condition(document_type, PressNotification.reference_name)
 	return is_type if permitted is None else is_type & permitted
+
+
+def permitted_database_server():
+	"""A database server takes the grants of its app servers, as in `role_guard.database_server`."""
+	is_type = PressNotification.reference_doctype == "Database Server"
+	Server = frappe.qb.DocType("Server")
+	permitted = role_guard.permitted_condition("Server", Server.name)
+	if permitted is None:
+		return is_type
+	DatabaseServer = frappe.qb.DocType("Database Server")
+	primaries = frappe.qb.from_(Server).select(Server.database_server).where(permitted)
+	replicas = (
+		frappe.qb.from_(DatabaseServer)
+		.select(DatabaseServer.name)
+		.where(DatabaseServer.primary.isin(primaries))
+	)
+	return is_type & (
+		PressNotification.reference_name.isin(primaries) | PressNotification.reference_name.isin(replicas)
+	)
