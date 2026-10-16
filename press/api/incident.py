@@ -1,5 +1,3 @@
-from typing import Any
-
 import frappe
 from frappe.query_builder.functions import Coalesce, Count, DistinctOptionFunction
 from pypika.enums import Order
@@ -113,11 +111,14 @@ def get_incidents(resolved: bool = False, limit: int = 20, offset: int = 0) -> l
 
 def get_visible_servers(team: str) -> set[str]:
 	"""Servers of the team's sites and its own servers, as far as the Press Roles permit."""
-	site_filters: dict[str, Any] = {"team": team, "status": ("in", ["Active", "Broken", "Pending"])}
-	server_filters: dict[str, Any] = {"team": team}
-	if role_guard.restricts("Site"):
-		site_filters["name"] = ("in", role_guard.permitted_documents("Site"))
-	if role_guard.restricts("Server"):
-		server_filters["name"] = ("in", role_guard.permitted_documents("Server"))
-	site_servers = frappe.get_all("Site", site_filters, pluck="server")
-	return set(site_servers + frappe.get_all("Server", server_filters, pluck="name"))
+	Site = frappe.qb.DocType("Site")
+	Server = frappe.qb.DocType("Server")
+	sites = (
+		frappe.qb.from_(Site)
+		.select(Site.server)
+		.where(Site.team == team)
+		.where(Site.status.isin(["Active", "Broken", "Pending"]))
+	)
+	servers = frappe.qb.from_(Server).select(Server.name).where(Server.team == team)
+	site_servers = role_guard.filter_permitted(sites, "Site", Site.name).run(pluck=True)
+	return set(site_servers + role_guard.filter_permitted(servers, "Server", Server.name).run(pluck=True))

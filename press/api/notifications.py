@@ -98,17 +98,13 @@ def restrict_to_roles(query):
 		return query
 	PressNotification = frappe.qb.DocType("Press Notification")
 	condition = PressNotification.type.isin(UNRESTRICTED_TYPES)
-	for document_type in ("Site", "Release Group", "Server"):
-		if (permitted := permitted_reference(document_type)) is not None:
-			condition |= permitted
+	for document_type in role_guard.LIMITED_DOCTYPES:
+		condition |= permitted_reference(document_type)
 	return query.where(condition)
 
 
 def permitted_reference(document_type: str):
 	PressNotification = frappe.qb.DocType("Press Notification")
 	is_type = PressNotification.reference_doctype == document_type
-	if not role_guard.restricts(document_type):
-		return is_type
-	if permitted := role_guard.permitted_documents(document_type):
-		return is_type & PressNotification.reference_name.isin(permitted)
-	return None
+	permitted = role_guard.permitted_condition(document_type, PressNotification.reference_name)
+	return is_type if permitted is None else is_type & permitted
