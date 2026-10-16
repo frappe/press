@@ -21,7 +21,8 @@ def execute():
 
 
 def set_agent_job_references(since):
-	frappe.db.sql(
+	# frappe.qb cannot qualify SET columns in a joined UPDATE, and Agent Job also has `reference_doctype`
+	frappe.db.sql(  # nosemgrep: frappe-using-db-sql
 		"""
 		UPDATE `tabPress Notification` notification
 		JOIN `tabAgent Job` job ON job.name = notification.document_name
@@ -46,7 +47,7 @@ def set_agent_job_references(since):
 
 
 def set_references(document_type: str, reference_doctype: str, field: str, since):
-	frappe.db.sql(
+	frappe.db.sql(  # nosemgrep: frappe-using-db-sql
 		f"""
 		UPDATE `tabPress Notification` notification
 		JOIN `tab{document_type}` document ON document.name = notification.document_name
