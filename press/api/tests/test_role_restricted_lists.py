@@ -6,7 +6,7 @@ from contextlib import contextmanager
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from press.api.client import search_link
+from press.api.client import get, get_list, search_link
 from press.api.incident import get_visible_servers
 from press.api.notifications import get_notifications, get_unread_count, mark_all_notifications_as_read
 from press.press.doctype.app.test_app import create_test_app
@@ -236,3 +236,35 @@ class TestRoleRestrictedLists(FrappeTestCase):
 
 		with self.as_user(self.member):
 			self.assertEqual(get_unread_count(), 1)
+
+	def test_restricted_member_get_list_returns_only_notifications_their_role_grants(self):
+		granted = self.notify_about_site(self.granted_site)
+		self.notify_about_site(self.hidden_site)
+
+		with self.as_user(self.member):
+			names = [row.name for row in get_list("Press Notification", fields=["name"])]
+
+		self.assertEqual(names, [granted])
+
+	def test_restricted_member_get_list_by_document_finds_notification_of_granted_site(self):
+		granted = self.notify_about_site(self.granted_site)
+		filters = {"document_type": "Site", "document_name": self.granted_site.name}
+
+		with self.as_user(self.member):
+			names = [row.name for row in get_list("Press Notification", fields=["name"], filters=filters)]
+
+		self.assertEqual(names, [granted])
+
+	def test_restricted_member_cannot_get_notification_outside_their_role_by_name(self):
+		hidden = self.notify_about_site(self.hidden_site)
+		frappe.get_doc("User", self.member).add_roles("Press User")
+
+		with self.as_user(self.member), self.assertRaisesRegex(frappe.PermissionError, "Not permitted"):
+			get("Press Notification", hidden)
+
+	def test_restricted_member_can_get_notification_their_role_grants_by_name(self):
+		granted = self.notify_about_site(self.granted_site)
+		frappe.get_doc("User", self.member).add_roles("Press User")
+
+		with self.as_user(self.member):
+			self.assertEqual(get("Press Notification", granted).name, granted)

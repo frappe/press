@@ -216,6 +216,10 @@ def get_list_query(
 		return role_guard.filter_permitted(query, doctype, frappe.qb.DocType(doctype).name)
 	if doctype == "Bench":
 		return role_guard.filter_permitted(query, "Release Group", frappe.qb.DocType("Bench").group)
+	if doctype == "Press Notification":
+		from press.api.notifications import restrict_to_roles
+
+		return restrict_to_roles(query)
 	return query
 
 
@@ -251,6 +255,7 @@ def get(doctype, name):  # noqa: C901
 
 	if not (is_system_user or is_support):
 		check_document_access(doctype, name, doc=doc)
+		check_notification_access(doctype, name)
 
 	fields = tuple(default_fields)
 	if hasattr(doc, "dashboard_fields"):
@@ -437,6 +442,13 @@ def check_document_access(doctype: str, name: str, doc=None):
 		return
 
 	if not ownership.has_document_access(doctype, name, doc=doc):
+		raise_not_permitted()
+
+
+def check_notification_access(doctype: str, name: str):
+	from press.api.notifications import is_permitted
+
+	if doctype == "Press Notification" and not is_permitted(name):
 		raise_not_permitted()
 
 
