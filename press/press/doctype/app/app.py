@@ -71,9 +71,9 @@ class App(Document):
 		public=False,
 		repository_owner=None,
 	) -> "AppSource":
-		# Ensure no .git suffix when looking for existing sources
+		# Match the normalized URL that App Source saves when looking for existing sources
 		supported_frappe_versions = parse_frappe_version(frappe_version, self.title)
-		repository_url = repository_url.removesuffix(".git")
+		repository_url = repository_url.strip().rstrip("/").removesuffix(".git")
 		existing_source = frappe.get_all(
 			"App Source",
 			{"app": self.name, "repository_url": repository_url, "branch": branch, "team": team},

@@ -29,6 +29,7 @@ from press.api.marketplace import (
 	get_subscriptions_list,
 	new_app,
 	options_for_quick_install,
+	options_for_version,
 	releases,
 	remove_version,
 	reset_features_for_plan,
@@ -406,6 +407,31 @@ class TestAPIMarketplace(FrappeTestCase):
 		)
 		results = branches(self.app_source.name)
 		self.assertEqual(len(results), 2)
+
+	@responses.activate
+	def test_options_for_version_skips_disabled_sources(self):
+		disabled_source = create_test_app_source(
+			version=self.version,
+			app=self.app,
+			repository_url="https://github.com/frappe/disabled-fork",
+			team=self.team.name,
+		)
+		disabled_source.db_set("enabled", 0)
+		frappe.set_user(self.team.user)
+		responses.get(
+			url=f"https://api.github.com/repos/{self.app_source.repository_owner}/{self.app_source.repository}/branches?per_page=100&page=1",
+			json=PAYLOAD,
+			status=200,
+			headers={},
+		)
+
+		options = options_for_version(self.marketplace_app.name)
+
+		branches_offered = {branch for option in options for branch in option["branch"]}
+		self.assertEqual(
+			branches_offered,
+			{f"{self.app_source.repository_owner}/{self.app_source.repository}/{b['name']}" for b in PAYLOAD},
+		)
 
 	def test_update_app_image_by_owner(self):
 		frappe.set_user(self.team.user)

@@ -7,6 +7,7 @@ import json
 import re
 from datetime import datetime
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 import frappe
 import requests
@@ -167,10 +168,16 @@ class AppSource(Document):
 			versions.add(row.version)
 
 	def before_save(self):
-		# Assumes repository_url looks like https://github.com/frappe/erpnext
-		self.repository_url = self.repository_url.removesuffix(".git")
+		self.repository_url = self.repository_url.strip().rstrip("/").removesuffix(".git")
 
-		_, self.repository_owner, self.repository = self.repository_url.rsplit("/", 2)
+		path_parts = urlparse(self.repository_url).path.strip("/").split("/")
+		if len(path_parts) < 2 or not all(path_parts[-2:]):
+			frappe.throw(
+				f"Repository URL {self.repository_url} must look like https://github.com/<owner>/<repository>",
+				frappe.ValidationError,
+			)
+
+		self.repository_owner, self.repository = path_parts[-2:]
 		self.validate_dependent_apps()
 		# self.create_release()
 
