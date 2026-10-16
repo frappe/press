@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import typing
+from contextlib import contextmanager
 from unittest.mock import Mock, patch
 
 import frappe
@@ -1502,12 +1503,12 @@ class TestRotateDatabasePassword(FrappeTestCase):
 		frappe.set_user("Administrator")
 		frappe.db.rollback()
 
-	def test_only_system_managers_can_rotate(self):
+	def test_users_outside_the_sites_team_cannot_rotate(self):
 		user = frappe.get_doc(
 			{"doctype": "User", "email": frappe.mock("email"), "first_name": "Staff"}
 		).insert()
 
-		with self.set_user(user.name), self.assertRaisesRegex(frappe.PermissionError, "System Manager"):
+		with self.set_user(user.name), self.assertRaisesRegex(frappe.PermissionError, "Only team admins"):
 			self.site.rotate_database_password()
 
 	@patch("press.press.doctype.site.site.log_site_activity")
@@ -1600,3 +1601,49 @@ class TestRotateDatabasePassword(FrappeTestCase):
 
 		with patch("press.press.doctype.agent_job.agent_job.frappe.db.commit"):
 			newer.retry_in_place()
+
+
+class TestRotateDatabasePasswordFromDashboard(FrappeTestCase):
+	def setUp(self):
+		from press.press.doctype.press_role.test_press_role import create_permission_role
+		from press.press.doctype.press_role.test_press_role import create_user as create_press_user
+
+		self.team = create_test_team()
+		self.site = create_test_site("rotatedbpassworddashboard", team=self.team.name)
+		self.member = create_press_user(f"{frappe.generate_hash(length=8)}@example.com").name
+		self.team.append("team_members", {"user": self.member})
+		self.team.save()
+		self.role = create_permission_role(self.team.name)
+		self.role.add_user(self.member)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	@contextmanager
+	def as_member(self):
+		frappe.set_user(self.member)
+		frappe.local.request = frappe._dict(method="POST", headers={"X-Press-Team": self.team.name})
+		try:
+			yield
+		finally:
+			del frappe.local.request
+			frappe.set_user("Administrator")
+
+	def site_action_names(self) -> list[str]:
+		return [action["action"] for action in frappe.get_doc("Site", self.site.name).get_actions()]
+
+	def test_restricted_member_cannot_rotate_or_see_the_action(self):
+		with self.as_member():
+			self.assertNotIn("Rotate database password", self.site_action_names())
+			with self.assertRaisesRegex(frappe.PermissionError, "Only team admins"):
+				frappe.get_doc("Site", self.site.name).rotate_database_password()
+
+	def test_team_admin_can_rotate_and_sees_the_action(self):
+		self.role.db_set("admin_access", 1)
+
+		with self.as_member(), patch("press.press.doctype.site.site.frappe.enqueue_doc") as enqueue_doc:
+			self.assertIn("Rotate database password", self.site_action_names())
+			frappe.get_doc("Site", self.site.name).rotate_database_password()
+
+		self.assertEqual(enqueue_doc.call_args.args[2], "_rotate_database_password")

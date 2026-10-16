@@ -1505,9 +1505,10 @@ class Site(Document, TagHelpers):
 
 		log_site_activity(self.name, "Clear Cache", job=job.name)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
+	@site_action(["Active", "Broken", "Inactive"])
 	def rotate_database_password(self):
-		frappe.only_for("System Manager", message=True)
+		self.validate_can_rotate_database_password()
 		self.validate_no_password_rotation_in_progress()
 		frappe.enqueue_doc(
 			self.doctype,
@@ -1518,6 +1519,13 @@ class Site(Document, TagHelpers):
 			job_id=f"rotate_database_password:{self.name}",
 			deduplicate=True,
 		)
+
+	def validate_can_rotate_database_password(self):
+		# System Managers from desk; otherwise the owner or an admin of the site's team
+		if "System Manager" in frappe.get_roles():
+			return
+		if self.team != get_current_team() or role_guard.is_restricted():
+			frappe.throw("Only team admins can rotate the database password.", frappe.PermissionError)
 
 	def validate_no_password_rotation_in_progress(self):
 		# An older rotation's job delivered after a newer one would set a stale password
@@ -4092,6 +4100,16 @@ class Site(Document, TagHelpers):
 				"description": "Restore with database, public and private files from another site",
 				"button_label": "Restore",
 				"doc_method": "restore_site_from_files",
+				"group": "Dangerous Actions",
+			},
+			{
+				"action": "Rotate database password",
+				"description": "Set a new password for your site's database user",
+				"button_label": "Rotate",
+				"doc_method": "rotate_database_password",
+				"condition": self.status in ["Active", "Broken", "Inactive"]
+				and not self.hybrid_site
+				and not role_guard.is_restricted(),
 				"group": "Dangerous Actions",
 			},
 			{
