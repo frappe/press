@@ -1541,3 +1541,30 @@ class TestRotateDatabasePassword(FrappeTestCase):
 			self.site._rotate_database_password()
 
 		agent.return_value.create_agent_job.assert_not_called()
+
+	def create_pending_config_job(self, config: dict):
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		job = create_test_agent_job("Update Site Configuration", server=self.site.server, status="Pending")
+		job.db_set({"site": self.site.name, "request_data": json.dumps({"config": config, "remove": []})})
+
+	@patch("press.press.doctype.site.site.Ansible")
+	@patch("press.press.doctype.site.site.frappe.enqueue_doc")
+	def test_rotate_refuses_while_a_previous_rotation_is_pending(self, enqueue_doc, ansible):
+		self.create_pending_config_job({"db_password": "older-value"})  # pragma: allowlist secret
+
+		for rotate in (self.site.rotate_database_password, self.site._rotate_database_password):
+			with self.assertRaisesRegex(frappe.ValidationError, "password rotation is still running"):
+				rotate()
+
+		enqueue_doc.assert_not_called()
+		ansible.assert_not_called()
+
+	@patch("press.press.doctype.site.site.frappe.enqueue_doc")
+	def test_rotate_is_not_blocked_by_other_pending_config_updates(self, enqueue_doc):
+		self.create_pending_config_job({"maintenance_mode": 1})
+
+		self.site.rotate_database_password()
+
+		self.assertEqual(enqueue_doc.call_args.kwargs["job_id"], f"rotate_database_password:{self.site.name}")
+		self.assertTrue(enqueue_doc.call_args.kwargs["deduplicate"])

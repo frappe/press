@@ -1508,9 +1508,34 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	def rotate_database_password(self):
 		frappe.only_for("System Manager", message=True)
-		frappe.enqueue_doc(self.doctype, self.name, "_rotate_database_password", queue="long", timeout=1200)
+		self.validate_no_password_rotation_in_progress()
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_rotate_database_password",
+			queue="long",
+			timeout=1200,
+			job_id=f"rotate_database_password:{self.name}",
+			deduplicate=True,
+		)
+
+	def validate_no_password_rotation_in_progress(self):
+		# An older rotation's job delivered after a newer one would set a stale password
+		if frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "Update Site Configuration",
+				"site": self.name,
+				"status": ("not in", ("Success", "Failure", "Delivery Failure")),
+				"request_data": ("like", '%"db_password"%'),
+			},
+		):
+			frappe.throw(
+				"A database password rotation is still running for this site. Please try again after it finishes."
+			)
 
 	def _rotate_database_password(self):
+		self.validate_no_password_rotation_in_progress()
 		config = self.fetch_info()["config"]
 		db_user = config.get("db_user") or config["db_name"]
 		password = frappe.generate_hash(length=32)
