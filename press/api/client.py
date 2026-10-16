@@ -21,7 +21,6 @@ from press.access import SECTIONS, dashboard_access_rules, ownership
 from press.access.support_access import has_support_access
 from press.exceptions import TeamHeaderNotInRequestError
 from press.guards import role_guard
-from press.guards.role_guard.document import has_user_permission
 from press.telemetry import sentry
 from press.utils import has_role
 
@@ -214,16 +213,21 @@ def get_list_query(
 
 	query = ownership.scope_query(doctype, meta, filters, query)
 
-	restricted_doctypes = ("Site", "Release Group", "Server")
-	if doctype in restricted_doctypes and role_guard.is_restricted() and not has_user_permission(doctype):
-		permitted_documents = role_guard.permitted_documents(doctype)
-		if not permitted_documents:
-			query = query.where(ValueWrapper(1) == 0)  # Hack!
-		else:
-			QueryDoctype = frappe.qb.DocType(doctype)
-			query = query.where(QueryDoctype.name.isin(permitted_documents))
-
+	if doctype in ("Site", "Release Group", "Server"):
+		return restrict_to_permitted(query, doctype, frappe.qb.DocType(doctype).name)
+	if doctype == "Bench":
+		return restrict_to_permitted(query, "Release Group", frappe.qb.DocType("Bench").group)
 	return query
+
+
+def restrict_to_permitted(query, document_type: str, field):
+	"""Keep only rows where `field` is a `document_type` the Press Roles permit."""
+	if not role_guard.restricts(document_type):
+		return query
+	permitted_documents = role_guard.permitted_documents(document_type)
+	if not permitted_documents:
+		return query.where(ValueWrapper(1) == 0)  # Hack!
+	return query.where(field.isin(permitted_documents))
 
 
 @frappe.whitelist()
