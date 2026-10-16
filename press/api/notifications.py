@@ -74,7 +74,12 @@ def assign_notification_route(notification):
 
 @frappe.whitelist()
 def mark_all_notifications_as_read():
-	frappe.db.set_value("Press Notification", {"team": get_current_team()}, "read", 1, update_modified=False)
+	query = (
+		frappe.qb.update(PressNotification)
+		.set(PressNotification.read, 1)
+		.where(PressNotification.team == get_current_team())
+	)
+	restrict_to_roles(query).run()
 
 
 @frappe.whitelist()

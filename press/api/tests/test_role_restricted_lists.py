@@ -8,7 +8,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.api.client import search_link
 from press.api.incident import get_visible_servers
-from press.api.notifications import get_notifications, get_unread_count
+from press.api.notifications import get_notifications, get_unread_count, mark_all_notifications_as_read
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.press_role.test_press_role import create_permission_role, create_user
 from press.press.doctype.release_group.test_release_group import create_test_release_group
@@ -79,6 +79,16 @@ class TestRoleRestrictedLists(FrappeTestCase):
 
 		with self.as_user(self.member):
 			self.assertEqual(get_unread_count(), 1)
+
+	def test_restricted_member_marking_all_read_leaves_notifications_outside_their_role_unread(self):
+		granted = self.notify_about_site(self.granted_site)
+		hidden = self.notify_about_site(self.hidden_site)
+
+		with self.as_user(self.member):
+			mark_all_notifications_as_read()
+
+		self.assertEqual(frappe.db.get_value("Press Notification", granted, "read"), 1)
+		self.assertEqual(frappe.db.get_value("Press Notification", hidden, "read"), 0)
 
 	def test_restricted_member_does_not_see_a_notification_without_a_reference(self):
 		self.notify(type="Site Migrate", document_type="Site", document_name=self.hidden_site.name)
