@@ -97,6 +97,15 @@ def get_unread_count(type: str | None = None):
 	return restrict_to_roles(query).run(pluck=True)[0]
 
 
+def is_permitted(name: str) -> bool:
+	query = (
+		frappe.qb.from_(PressNotification)
+		.select(PressNotification.name)
+		.where(PressNotification.name == name)
+	)
+	return bool(restrict_to_roles(query).run())
+
+
 def restrict_to_roles(query):
 	"""Keep only the notifications about documents the Press Roles of the user permit."""
 	if not role_guard.is_restricted():
