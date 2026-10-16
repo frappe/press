@@ -14,6 +14,8 @@ REFERENCE_FIELDS = {
 	"Deploy Candidate Build": ("Release Group", "group"),
 	"Release Pipeline": ("Release Group", "release_group"),
 	"Auto Scale Record": ("Server", "primary_server"),
+	"NFS Volume Attachment": ("Server", "primary_server"),
+	"NFS Volume Detachment": ("Server", "primary_server"),
 }
 
 
