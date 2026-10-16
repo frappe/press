@@ -15,6 +15,7 @@ from frappe.utils.data import fmt_money
 
 from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
+from press.guards import role_guard
 from press.press.doctype.auto_scale_record.auto_scale_record import calculate_secondary_server_price
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.utils import log_error
@@ -220,11 +221,11 @@ class Invoice(Document):
 			item.plan = f"Audit Log Storage {currency_symbol}{s3_plan}/GB"
 
 	@dashboard_whitelist()
+	@role_guard.api("billing")
 	def stripe_payment_url(self):
 		if not self.stripe_invoice_id:
-			return
-		frappe.response.location = self.get_stripe_payment_url()
-		frappe.response.type = "redirect"
+			return None
+		return self.get_stripe_payment_url()
 
 	def get_stripe_payment_url(self):
 		stripe_link_expired = (
