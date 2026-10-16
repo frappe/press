@@ -643,6 +643,73 @@ class TestSite(FrappeTestCase):
 		self.assertEqual(site.apps[1].app, "erpnext")
 		self.assertEqual(len(site.apps), 2)
 
+	def _local_backups_url(self, site):
+		return f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.name}/backups/local"
+
+	@responses.activate
+	def test_get_local_backups_links_downloads_on_the_primary_domain(self):
+		site = create_test_site()
+		site.host_name = "erp.example.com"
+		backup = {"file": "my backup.sql.gz", "type": "Database", "size": 10, "modified": "2026-10-12"}
+		responses.get(self._local_backups_url(site), json={"data": [backup]})
+
+		backups = site.get_local_backups()
+
+		self.assertEqual(backups[0]["download_url"], "https://erp.example.com/backups/my%20backup.sql.gz")
+
+	@responses.activate
+	def test_delete_local_backups_sends_files_to_agent_and_logs_deleted_files(self):
+		site = create_test_site()
+		responses.delete(
+			self._local_backups_url(site),
+			json={"data": {"deleted": ["a.sql.gz", "b.tar"], "missing": ["c.tar"]}},
+			match=[responses.matchers.json_params_matcher({"files": ["a.sql.gz", "b.tar", "c.tar"]})],
+		)
+
+		result = site.delete_local_backups(["a.sql.gz", "b.tar", "c.tar"])
+
+		self.assertEqual(result["missing"], ["c.tar"])
+		activity = frappe.get_last_doc("Site Activity", {"site": site.name, "action": "Drop Local Backups"})
+		self.assertEqual(activity.reason, "a.sql.gz, b.tar")
+
+	@responses.activate
+	def test_delete_local_backups_logs_no_activity_when_agent_deleted_nothing(self):
+		site = create_test_site()
+		responses.delete(self._local_backups_url(site), json={"data": {"deleted": [], "missing": ["a.tar"]}})
+
+		site.delete_local_backups(["a.tar"])
+
+		self.assertFalse(
+			frappe.db.exists("Site Activity", {"site": site.name, "action": "Drop Local Backups"})
+		)
+
+	@responses.activate
+	def test_delete_local_backups_rejects_an_empty_selection_without_calling_agent(self):
+		site = create_test_site()
+
+		for files in ([], "[]", None):
+			with (
+				self.subTest(files=files),
+				self.assertRaisesRegex(frappe.ValidationError, "Select at least one backup to delete"),
+			):
+				site.delete_local_backups(files)
+
+		self.assertEqual(len(responses.calls), 0)
+
+	def test_manage_local_backups_action_is_offered_only_while_site_is_on_a_server(self):
+		site = create_test_site()
+
+		for status, offered in (
+			("Active", True),
+			("Suspended", True),
+			("Pending", False),
+			("Archived", False),
+		):
+			with self.subTest(status=status):
+				site.status = status
+				actions = [action["action"] for action in site.get_actions()]
+				self.assertEqual("Manage local backups" in actions, offered)
+
 	def test_delete_multiple_config_creates_job_to_remove_multiple_site_config_keys(self):
 		site = create_test_site()
 		site._set_configuration(
