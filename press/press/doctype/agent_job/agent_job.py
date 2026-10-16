@@ -49,7 +49,16 @@ SECRET_NAME = r"[\w-]*(?:password|passwd|secret|token)[\w-]*|pwd|(?:api|access|p
 SECRET_ASSIGNMENT_PATTERN = re.compile(
 	rf"(?i)\b({SECRET_NAME})(['\"]?\s*[:=]\s*)(?!(?:YES|NO)\b)('[^']*'|\"[^\"]*\"|[^\s,;)\]}}]+)"
 )
-DOCKER_LOGIN_PASSWORD_PATTERN = re.compile(r"(\bdocker\s+login\b[^\n]*?\s(?:-p|--password)\s+)(\S+)")
+DOCKER_LOGIN_PASSWORD_PATTERN = re.compile(r"(\bdocker\s+login\b[^\n]*?\s-p\s+)(\S+)")
+# `--admin-password value`; `--password-stdin` takes no value
+PASSWORD_FLAG_PATTERN = re.compile(
+	r"(--(?![\w-]*-stdin\b)[\w-]*(?:password|passwd|secret|token)[\w-]*\s+)(?!-)(\S+)"
+)
+# The agent passes MySQL/MariaDB passwords attached to the flag: `-p<password>`
+MYSQL_PASSWORD_PATTERN = re.compile(
+	r"(\b(?:mysql|mariadb)[\w-]*\b[^\n]*?\s-p)(?=[^\s-])('[^']*'|\"[^\"]*\"|\S+)"
+)
+FREE_TEXT_JOB_DATA_KEYS = ("output", "traceback", "command")
 
 # Jobs a team can cancel from the dashboard. Restricted to long running jobs whose
 # failure path Press already handles — Broken site, failed backup, or (for site
@@ -764,10 +773,16 @@ def lock_doc_updated_by_job(job_name):
 
 def redact_secrets(text):
 	"""Mask password, token and secret values in job output before it's stored or shown"""
+	if isinstance(text, list | tuple):
+		# A list command's flag and value are separate items, so mask the joined command
+		joined = " ".join(str(part) for part in text)
+		redacted = redact_secrets(joined)
+		return text if redacted == joined else redacted
 	if not isinstance(text, str) or not text:
 		return text
 
-	text = DOCKER_LOGIN_PASSWORD_PATTERN.sub(rf"\g<1>{REDACTED}", text)
+	for pattern in (DOCKER_LOGIN_PASSWORD_PATTERN, PASSWORD_FLAG_PATTERN, MYSQL_PASSWORD_PATTERN):
+		text = pattern.sub(rf"\g<1>{REDACTED}", text)
 	return SECRET_ASSIGNMENT_PATTERN.sub(_mask_secret_value, text)
 
 
@@ -784,7 +799,7 @@ def redact_job_data(data):
 
 	return {
 		**data,
-		**{key: redact_secrets(data[key]) for key in ("output", "traceback") if key in data},
+		**{key: redact_secrets(data[key]) for key in FREE_TEXT_JOB_DATA_KEYS if key in data},
 	}
 
 

@@ -785,11 +785,30 @@ class TestAgentJobOutputRedaction(FrappeTestCase):
 			redact_secrets("aws_secret_access_key=AKIA1 x=1"), "aws_secret_access_key=******** x=1"
 		)
 
+	def test_masks_mysql_attached_password_and_password_flags(self):
+		self.assertEqual(
+			redact_secrets("mariadb -h db -P 3306 -u _db1 -pfakevalue _db1 -e 'select 1'"),
+			"mariadb -h db -P 3306 -u _db1 -p******** _db1 -e 'select 1'",
+		)
+		self.assertEqual(
+			redact_secrets("bench restore --mariadb-root-password fakeroot --admin-password fakeadmin"),
+			"bench restore --mariadb-root-password ******** --admin-password ********",
+		)
+
+	def test_masks_list_command_and_keeps_list_without_secrets(self):
+		self.assertEqual(
+			redact_secrets(["docker", "login", "-u", "frappe", "-p", "fakevalue", "registry.frappe.cloud"]),
+			"docker login -u frappe -p ******** registry.frappe.cloud",
+		)
+		self.assertEqual(redact_secrets(["ls", "-la"]), ["ls", "-la"])
+
 	def test_keeps_text_without_secret_values(self):
 		for text in (
 			"Access denied for user 'u'@'h' (using password: YES)",
 			"Password reset email sent",
 			"docker login --password-stdin registry.frappe.cloud",
+			"mysqldump -u root -p --all-databases",
+			"ssh -p 22 host && docker run -p 3306:6033 image",
 			"primary_key=name keyword=value",
 		):
 			self.assertEqual(redact_secrets(text), text)
@@ -823,7 +842,11 @@ class TestAgentJobOutputRedaction(FrappeTestCase):
 			"end": None,
 			"duration": None,
 			"status": "Failure",
-			"data": {"output": "--password=leaked", "traceback": "token: leaked"},
+			"data": {
+				"output": "--password=leaked",
+				"traceback": "token: leaked",
+				"command": "docker login -u frappe -p leaked registry.frappe.cloud",
+			},
 		}
 
 		with patch("press.press.doctype.agent_job.agent_job.frappe.db.set_value") as set_value:
