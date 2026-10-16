@@ -23,6 +23,9 @@ from press.press.doctype.agent_job.agent_job import (
 	cancel_job_from_dashboard,
 	fail_old_jobs,
 	lock_doc_updated_by_job,
+	redact_secrets,
+	update_job,
+	update_step,
 )
 from press.press.doctype.agent_job.agent_job_notifications import DOC_URLS, JobErr, get_details
 from press.press.doctype.app.test_app import create_test_app
@@ -757,3 +760,75 @@ class TestAgentJobNotifications(FrappeTestCase):
 
 		self.assertFalse(details["is_actionable"])
 		self.assertIsNone(details["assistance_url"])
+
+
+class TestAgentJobOutputRedaction(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_masks_password_attribute_in_traceback_variables(self):
+		text = "self = BackupGenerator(db_name='_db1', password='fake-db-password', user='_db1')"
+
+		redacted = redact_secrets(text)
+
+		self.assertNotIn("fake-db-password", redacted)
+		self.assertIn("password='********'", redacted)
+		self.assertIn("db_name='_db1'", redacted)
+
+	def test_masks_command_line_and_json_secrets(self):
+		self.assertEqual(
+			redact_secrets("docker login -u frappe -p ghp_token123 registry.frappe.cloud"),
+			"docker login -u frappe -p ******** registry.frappe.cloud",
+		)
+		self.assertEqual(redact_secrets('{"db_password": "xyz"}'), '{"db_password": "********"}')
+		self.assertEqual(
+			redact_secrets("aws_secret_access_key=AKIA1 x=1"), "aws_secret_access_key=******** x=1"
+		)
+
+	def test_keeps_text_without_secret_values(self):
+		for text in (
+			"Access denied for user 'u'@'h' (using password: YES)",
+			"Password reset email sent",
+			"docker login --password-stdin registry.frappe.cloud",
+			"primary_key=name keyword=value",
+		):
+			self.assertEqual(redact_secrets(text), text)
+
+	def test_update_job_stores_redacted_output_traceback_and_data(self):
+		job = create_test_agent_job(status="Running")
+
+		update_job(
+			job.name,
+			{
+				"start": None,
+				"end": None,
+				"duration": None,
+				"status": "Failure",
+				"data": {
+					"output": "password='leaked-output'",  # pragma: allowlist secret
+					"traceback": "self = Conn(password='leaked-traceback')",
+					"result": {"token": "kept-for-callbacks"},
+				},
+			},
+		)
+
+		job.reload()
+		for field in ("output", "traceback", "data"):
+			self.assertNotIn("leaked", job.get(field))
+		self.assertIn("kept-for-callbacks", job.data)
+
+	def test_update_step_stores_redacted_output(self):
+		step = {
+			"start": None,
+			"end": None,
+			"duration": None,
+			"status": "Failure",
+			"data": {"output": "--password=leaked", "traceback": "token: leaked"},
+		}
+
+		with patch("press.press.doctype.agent_job.agent_job.frappe.db.set_value") as set_value:
+			update_step("step-name", step)
+
+		values = set_value.call_args.args[2]
+		for field in ("output", "traceback", "data"):
+			self.assertNotIn("leaked", values[field])
