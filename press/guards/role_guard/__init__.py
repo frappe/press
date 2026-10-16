@@ -8,7 +8,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.query_builder.functions import Count
-from frappe.query_builder.terms import QueryBuilder
+from frappe.query_builder.terms import QueryBuilder, ValueWrapper
 
 from press.utils import get_current_team, is_admin_user, is_team_owner
 from press.utils import user as utils_user
@@ -23,6 +23,9 @@ from .marketplace import check as marketplace_check
 from .server_snapshot import check as server_snapshot_check
 from .site_backup import check as site_backup_check
 from .webhook import check as webhook_check
+
+# Press Roles can limit a member to some documents of these types.
+LIMITED_DOCTYPES = ("Site", "Release Group", "Server")
 
 
 def api(scope: Literal["billing", "partner"]):
@@ -215,6 +218,21 @@ def restricts(document_type: str) -> bool:
 
 def permitted_documents(document_type: str) -> list[str]:
 	return document_check(base_query(), document_type)
+
+
+def permitted_condition(document_type: str, field):
+	"""Limit `field` to the documents of this type the Press Roles permit, or None when they permit all."""
+	if not restricts(document_type):
+		return None
+	if permitted := permitted_documents(document_type):
+		return field.isin(permitted)
+	return ValueWrapper(1) == 0  # Hack!
+
+
+def filter_permitted(query, document_type: str, field):
+	"""Keep only rows where `field` is a `document_type` the Press Roles permit."""
+	condition = permitted_condition(document_type, field)
+	return query if condition is None else query.where(condition)
 
 
 def roles_enabled() -> bool:

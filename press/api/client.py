@@ -13,7 +13,6 @@ from frappe.handler import run_doc_method as _run_doc_method
 from frappe.model import child_table_fields, default_fields
 from frappe.model.base_document import get_controller
 from frappe.monitor import add_data_to_monitor
-from frappe.query_builder.terms import ValueWrapper
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
@@ -213,21 +212,11 @@ def get_list_query(
 
 	query = ownership.scope_query(doctype, meta, filters, query)
 
-	if doctype in ("Site", "Release Group", "Server"):
-		return restrict_to_permitted(query, doctype, frappe.qb.DocType(doctype).name)
+	if doctype in role_guard.LIMITED_DOCTYPES:
+		return role_guard.filter_permitted(query, doctype, frappe.qb.DocType(doctype).name)
 	if doctype == "Bench":
-		return restrict_to_permitted(query, "Release Group", frappe.qb.DocType("Bench").group)
+		return role_guard.filter_permitted(query, "Release Group", frappe.qb.DocType("Bench").group)
 	return query
-
-
-def restrict_to_permitted(query, document_type: str, field):
-	"""Keep only rows where `field` is a `document_type` the Press Roles permit."""
-	if not role_guard.restricts(document_type):
-		return query
-	permitted_documents = role_guard.permitted_documents(document_type)
-	if not permitted_documents:
-		return query.where(ValueWrapper(1) == 0)  # Hack!
-	return query.where(field.isin(permitted_documents))
 
 
 @frappe.whitelist()
