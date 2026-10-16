@@ -526,3 +526,28 @@ class TestReactivateAccount(TestCase):
 				"You don't have a disabled account to reactivate.",
 				reactivate_account,
 			)
+
+
+class TestV16ReleaseBanner(TestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_v16_release_banner_shows_only_for_teams_with_a_v16_site_before_the_end_date(self):
+		from press.api.account import get_v16_50_release_banner
+		from press.press.doctype.site.test_site import create_test_site
+
+		site = create_test_site()
+		with self.today_is("2026-10-10"):
+			self.assertEqual(get_v16_50_release_banner(site.team), [])
+
+		frappe.db.set_value("Release Group", site.group, "version", "Version 16")
+		with self.today_is("2026-10-10"):
+			self.assertEqual(get_v16_50_release_banner(site.team)[0]["name"], "v16-50-release")
+		with self.today_is("2026-10-16"):
+			self.assertEqual(get_v16_50_release_banner(site.team), [])
+
+	def today_is(self, date: str):
+		from press.api.account import get_v16_50_release_banner
+
+		get_v16_50_release_banner.clear_cache()
+		return patch("frappe.utils.getdate", side_effect=lambda d=None: frappe.utils.data.getdate(d or date))
