@@ -1,8 +1,11 @@
+from typing import Any
+
 import frappe
 from frappe.query_builder.functions import Coalesce, Count, DistinctOptionFunction
 from pypika.enums import Order
 from pypika.terms import Field
 
+from press.guards import role_guard
 from press.utils import get_current_team
 
 
@@ -28,16 +31,7 @@ def get_incident_count(resolved: bool = False) -> int:
 	if not team:
 		return 0
 
-	site_servers = frappe.get_all(
-		"Site",
-		{"team": team, "status": ("in", ["Active", "Broken", "Pending"])},
-		pluck="server",
-	)
-
-	all_user_servers = set(
-		site_servers + frappe.get_all("Server", {"team": team}, pluck="name")
-	)  # Include shared + dedicated server customers
-
+	all_user_servers = get_visible_servers(team)
 	if not all_user_servers:
 		return 0
 
@@ -62,16 +56,7 @@ def get_incidents(resolved: bool = False, limit: int = 20, offset: int = 0) -> l
 	if not team:
 		return []
 
-	site_servers = frappe.get_all(
-		"Site",
-		{"team": team, "status": ("in", ["Active", "Broken", "Pending"])},
-		pluck="server",
-	)
-
-	all_user_servers = set(
-		site_servers + frappe.get_all("Server", {"team": team}, pluck="name")
-	)  # Include shared + dedicated server customers
-
+	all_user_servers = get_visible_servers(team)
 	if not all_user_servers:
 		return []
 
@@ -124,3 +109,15 @@ def get_incidents(resolved: bool = False, limit: int = 20, offset: int = 0) -> l
 		.offset(offset)
 		.run(as_dict=True)
 	)
+
+
+def get_visible_servers(team: str) -> set[str]:
+	"""Servers of the team's sites and its own servers, as far as the Press Roles permit."""
+	site_filters: dict[str, Any] = {"team": team, "status": ("in", ["Active", "Broken", "Pending"])}
+	server_filters: dict[str, Any] = {"team": team}
+	if role_guard.restricts("Site"):
+		site_filters["name"] = ("in", role_guard.permitted_documents("Site"))
+	if role_guard.restricts("Server"):
+		server_filters["name"] = ("in", role_guard.permitted_documents("Server"))
+	site_servers = frappe.get_all("Site", site_filters, pluck="server")
+	return set(site_servers + frappe.get_all("Server", server_filters, pluck="name"))
