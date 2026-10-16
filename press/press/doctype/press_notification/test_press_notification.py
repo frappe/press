@@ -135,6 +135,15 @@ class TestPressNotificationReference(FrappeTestCase):
 			(notification.reference_doctype, notification.reference_name), ("Server", job.server)
 		)
 
+	def test_agent_job_notification_without_a_job_does_not_reference_another_teams_job(self):
+		site = create_test_site()
+		create_test_agent_job().db_set({"site": site.name})
+
+		notification = self.notify_about("Agent Job", 0)
+
+		self.assertFalse(notification.reference_doctype)
+		self.assertFalse(notification.reference_name)
+
 	def test_auto_scale_and_nfs_volume_notifications_reference_the_primary_server(self):
 		for document_type in ("Auto Scale Record", "NFS Volume Attachment", "NFS Volume Detachment"):
 			with self.subTest(document_type=document_type):

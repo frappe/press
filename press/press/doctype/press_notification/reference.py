@@ -20,6 +20,9 @@ REFERENCE_FIELDS = {
 
 
 def find_reference(document_type: str, document_name: str):
+	# MariaDB casts names to 0 for `name = 0`, so a lookup would match another team's document
+	if not document_name:
+		return None, None
 	if document_type == "Agent Job":
 		return agent_job_reference(document_name)
 	if document_type in REFERENCE_FIELDS:
