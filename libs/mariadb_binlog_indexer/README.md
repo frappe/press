@@ -61,6 +61,14 @@ indexer.remove(
 )
 ```
 
+#### List Indexed Binlogs
+
+Binlogs whose indexing completed, including binlogs without any indexable query (e.g. an idle binlog). Use this rather than the distinct `binlog` values of the `query` table, which miss those.
+
+```python
+indexer.indexed_binlogs()
+```
+
 #### Generate Timeline
 
 This function will provide a summary of binlog event in a given time range. It will split the time range into 30 parts and provide event related information for each part.
