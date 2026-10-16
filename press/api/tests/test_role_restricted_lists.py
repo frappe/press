@@ -59,6 +59,13 @@ class TestRoleRestrictedLists(FrappeTestCase):
 		notification.flags.ignore_links = True
 		return notification.insert(ignore_permissions=True).name
 
+	def add_member_without_role_to_relaxed_team(self) -> str:
+		member = create_user(f"{frappe.generate_hash(length=8)}@example.com").name
+		self.team.append("team_members", {"user": member})
+		self.team.relaxed_permissions = 1
+		self.team.save()
+		return member
+
 	def notify_about_site(self, site) -> str:
 		return self.notify(
 			document_type="Site", document_name=site.name, reference_doctype="Site", reference_name=site.name
@@ -152,3 +159,28 @@ class TestRoleRestrictedLists(FrappeTestCase):
 	def test_bench_search_lists_nothing_when_the_role_grants_no_release_group(self):
 		with self.as_user(self.member):
 			self.assertEqual(search_link("Bench"), [])
+
+	def test_member_without_role_in_relaxed_team_sees_every_notification(self):
+		member = self.add_member_without_role_to_relaxed_team()
+		self.notify_about_site(self.granted_site)
+		self.notify_about_site(self.hidden_site)
+		self.notify(type="Site Migrate", document_type="Site", document_name=self.hidden_site.name)
+
+		with self.as_user(member):
+			self.assertEqual(get_unread_count(), 3)
+
+	def test_member_without_role_in_relaxed_team_sees_incidents_of_every_team_site(self):
+		member = self.add_member_without_role_to_relaxed_team()
+
+		with self.as_user(member):
+			servers = get_visible_servers(self.team.name)
+
+		self.assertEqual(servers, {self.granted_site.server, self.hidden_site.server})
+
+	def test_member_without_role_in_relaxed_team_finds_benches_of_every_release_group(self):
+		member = self.add_member_without_role_to_relaxed_team()
+
+		with self.as_user(member):
+			benches = {row.value for row in search_link("Bench")}
+
+		self.assertEqual(benches, {self.granted_site.bench, self.hidden_site.bench})
