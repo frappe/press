@@ -2,6 +2,7 @@
 # See license.txt
 from __future__ import annotations
 
+import json
 from unittest.mock import patch
 
 import frappe
@@ -17,7 +18,9 @@ from press.press.doctype.user_2fa.user_2fa import (
 )
 
 
-def create_test_user_2fa(user: str, recovery_codes_last_viewed_at: str | None = None) -> User2FA:
+def create_test_user_2fa(
+	user: str, recovery_codes_last_viewed_at: str | None = None, totp_secret: str | None = None
+) -> User2FA:
 	"""Create a User 2FA doc with 2FA turned on."""
 	return frappe.get_doc(
 		{
@@ -25,6 +28,7 @@ def create_test_user_2fa(user: str, recovery_codes_last_viewed_at: str | None = 
 			"user": user,
 			"enabled": 1,
 			"recovery_codes_last_viewed_at": recovery_codes_last_viewed_at,
+			"totp_secret": totp_secret,
 		}
 	).insert(ignore_permissions=True)
 
@@ -35,6 +39,24 @@ class TestUser2FA(FrappeTestCase):
 		self.assertEqual(len(recovery_codes), User2FA.recovery_codes_max)
 		self.assertTrue(all(len(code) == User2FA.recovery_codes_length for code in recovery_codes))
 		self.assertTrue(all(code.isupper() for code in recovery_codes))
+
+
+class TestUser2FAVersionLog(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_version_log_records_new_recovery_codes_without_the_codes(self):
+		two_fa = create_test_user_2fa(create_test_team().user)
+		codes = list(two_fa.generate_recovery_codes())
+		for code in codes:
+			two_fa.append("recovery_codes", {"code": code})
+		two_fa.save(ignore_permissions=True, ignore_version=False)
+
+		version = frappe.get_last_doc("Version", {"ref_doctype": "User 2FA", "docname": two_fa.name})
+		added = [row for table, row in json.loads(version.data)["added"] if table == "recovery_codes"]
+		self.assertEqual(len(added), len(codes))
+		for code in codes:
+			self.assertNotIn(code, version.data)
 
 
 class Test2FARecoveryCodeReminders(FrappeTestCase):
