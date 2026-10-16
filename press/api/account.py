@@ -1366,7 +1366,10 @@ def disable_2fa(totp_code):
 		frappe.throw(f"2FA is not enabled for {frappe.session.user}")
 
 	if pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
-		frappe.db.set_value("User 2FA", frappe.session.user, "enabled", 0)
+		# Save the doc, not set_value, so the version log records it
+		two_fa = frappe.get_doc("User 2FA", frappe.session.user)
+		two_fa.enabled = 0
+		two_fa.save()
 	else:
 		frappe.throw(
 			f"The code is incorrect or has expired. Please enter the current 6-digit code from your authenticator app. {docs.doc_link(docs.TWO_FACTOR_AUTH)}."
