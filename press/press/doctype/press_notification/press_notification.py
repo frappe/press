@@ -59,6 +59,12 @@ class PressNotification(Document):
 		"assistance_url",
 	)
 
+	def validate(self):
+		from press.press.doctype.agent_job.agent_job import redact_secrets
+
+		# Teams see the traceback in the dashboard's error dialog
+		self.traceback = redact_secrets(self.traceback)
+
 	def after_insert(self):
 		if frappe.local.dev_server:
 			return

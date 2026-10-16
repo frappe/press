@@ -61,6 +61,24 @@ class TestPressNotification(FrappeTestCase):
 		self.assertEqual(get_unread_count("Site Update"), 1)
 		self.assertEqual(len(get_notifications(filters={"type": "Site Update"})), 1)
 
+	def test_secrets_in_traceback_are_masked(self):
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+		from press.press.doctype.team.test_team import create_test_team
+
+		notification = frappe.get_doc(
+			{
+				"doctype": "Press Notification",
+				"team": create_test_team().name,
+				"type": "Agent Job Failure",
+				"document_type": "Agent Job",
+				"document_name": create_test_agent_job().name,
+				"traceback": "self = Conn(db_name='_db1', password='leaked')",  # pragma: allowlist secret
+			}
+		).insert()
+
+		traceback = frappe.db.get_value("Press Notification", notification.name, "traceback")
+		self.assertEqual(traceback, "self = Conn(db_name='_db1', password='********')")
+
 	def test_get_notifications_rejects_sql_in_pagination_arguments(self):
 		with self.assertRaisesRegex(FrappeTypeError, "Argument 'limit_start'.*should be of type 'int'"):
 			get_notifications(limit_start="0; SELECT SLEEP(10)-- -")
