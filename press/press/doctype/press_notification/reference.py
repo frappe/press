@@ -4,32 +4,37 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import frappe
 
-RELEASE_GROUP_FIELDS = {
-	"Deploy Candidate": "group",
-	"Deploy Candidate Build": "group",
-	"Release Pipeline": "release_group",
+# The Agent Job rule lives in `agent_job_reference`; the backfill patch reuses this table.
+REFERENCE_FIELDS = {
+	"Deploy Candidate": ("Release Group", "group"),
+	"Deploy Candidate Build": ("Release Group", "group"),
+	"Release Pipeline": ("Release Group", "release_group"),
+	"Auto Scale Record": ("Server", "primary_server"),
 }
 
 
 def find_reference(document_type: str, document_name: str):
 	if document_type == "Agent Job":
 		return agent_job_reference(document_name)
-	if document_type in RELEASE_GROUP_FIELDS:
-		field = RELEASE_GROUP_FIELDS[document_type]
-		return "Release Group", frappe.db.get_value(document_type, document_name, field)
-	if document_type == "Auto Scale Record":
-		return "Server", frappe.db.get_value(document_type, document_name, "primary_server")
+	if document_type in REFERENCE_FIELDS:
+		reference_doctype, field = REFERENCE_FIELDS[document_type]
+		if reference_name := frappe.db.get_value(document_type, document_name, field):
+			return reference_doctype, reference_name
 	return None, None
 
 
 def agent_job_reference(name: str):
-	job = frappe.db.get_value("Agent Job", name, ["site", "bench", "server_type", "server"], as_dict=True)
+	job: Any = frappe.db.get_value(
+		"Agent Job", name, ["site", "bench", "server_type", "server"], as_dict=True
+	)
 	if not job:
 		return None, None
 	if job.site:
 		return "Site", job.site
-	if job.bench:
-		return "Release Group", frappe.db.get_value("Bench", job.bench, "group")
+	if job.bench and (group := frappe.db.get_value("Bench", job.bench, "group")):
+		return "Release Group", group
 	return job.server_type, job.server

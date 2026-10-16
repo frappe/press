@@ -4,7 +4,7 @@
 import frappe
 from frappe.utils import add_days, now_datetime
 
-from press.press.doctype.press_notification.reference import RELEASE_GROUP_FIELDS
+from press.press.doctype.press_notification.reference import REFERENCE_FIELDS
 
 DAYS = 90
 
@@ -16,8 +16,8 @@ def execute():
 	"""
 	since = add_days(now_datetime(), -DAYS)
 	set_agent_job_references(since)
-	for document_type, field in RELEASE_GROUP_FIELDS.items():
-		set_release_group_references(document_type, field, since)
+	for document_type, (reference_doctype, field) in REFERENCE_FIELDS.items():
+		set_references(document_type, reference_doctype, field, since)
 
 
 def set_agent_job_references(since):
@@ -45,17 +45,18 @@ def set_agent_job_references(since):
 	)
 
 
-def set_release_group_references(document_type: str, field: str, since):
+def set_references(document_type: str, reference_doctype: str, field: str, since):
 	frappe.db.sql(
 		f"""
 		UPDATE `tabPress Notification` notification
 		JOIN `tab{document_type}` document ON document.name = notification.document_name
 		SET
-			notification.reference_doctype = 'Release Group',
+			notification.reference_doctype = %s,
 			notification.reference_name = document.`{field}`
 		WHERE notification.document_type = %s
+			AND IFNULL(document.`{field}`, '') != ''
 			AND IFNULL(notification.reference_doctype, '') = ''
 			AND notification.creation > %s
 		""",
-		(document_type, since),
+		(reference_doctype, document_type, since),
 	)
