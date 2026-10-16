@@ -22,7 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "ansible==3.4.0",
+    "ansible==14.4.0",
     "beautifulsoup4",
     "boto3==1.39.14",
     "Click",
