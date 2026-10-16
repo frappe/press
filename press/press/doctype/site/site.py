@@ -1525,12 +1525,7 @@ class Site(Document, TagHelpers):
 			port=database_server.ssh_port or 22,
 			variables={"db_user": db_user, "db_password": password},
 		)
-		try:
-			play = ansible.run()
-		finally:
-			mask_stored_database_password("Ansible Play", ansible.play, "variables", ("db_password",))
-			frappe.db.commit()  # Keep the mask if this job fails and rolls back
-
+		play = ansible.run()
 		if play.status != "Success":
 			frappe.throw(f"Couldn't change the database password. See Ansible Play {play.name}")
 
@@ -5041,33 +5036,6 @@ def process_complete_setup_wizard_job_update(job):
 	elif job.status in ("Failure", "Delivery Failure"):
 		product_trial_request.status = "Error"
 		product_trial_request.save(ignore_permissions=True)
-
-
-def process_update_site_configuration_job_update(job):
-	# Keep the password until success: a retry of an undelivered job resends request_data
-	if job.status == "Success":
-		mask_stored_database_password("Agent Job", job.name, "request_data", ("config", "db_password"))
-
-
-def mask_stored_database_password(doctype: str, name: str, fieldname: str, path: tuple[str, ...]):
-	"""Replace a database password stored in a JSON field with a placeholder"""
-	from press.press.doctype.agent_job.agent_job import MASKED_SECRET
-
-	if not name:
-		return
-
-	data = json.loads(frappe.db.get_value(doctype, name, fieldname) or "{}")
-	parent = data
-	for key in path[:-1]:
-		parent = parent.get(key)
-		if not isinstance(parent, dict):
-			return
-
-	if not parent.get(path[-1]):
-		return
-
-	parent[path[-1]] = MASKED_SECRET
-	frappe.db.set_value(doctype, name, fieldname, json.dumps(data, indent=4), update_modified=False)
 
 
 def process_add_domain_job_update(job):

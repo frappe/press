@@ -38,7 +38,6 @@ from press.utils.user import as_administrator
 
 AGENT_LOG_KEY = "agent-jobs"
 AGENT_JOB_TIMEOUT_HOURS = 4
-MASKED_SECRET = "********"
 
 BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
 
@@ -268,14 +267,8 @@ class AgentJob(Document):
 			)
 			doc.insert()
 
-	def validate_request_data_not_masked(self):
-		# The agent would apply the placeholder as the real value, e.g. as a site's db_password
-		if f'"{MASKED_SECRET}"' in (self.request_data or ""):
-			frappe.throw("This job's request data has masked secrets, so it can't be retried.")
-
 	@frappe.whitelist()
 	def retry(self):
-		self.validate_request_data_not_masked()
 		return frappe.get_doc(
 			{
 				"doctype": "Agent Job",
@@ -296,7 +289,6 @@ class AgentJob(Document):
 
 	@frappe.whitelist()
 	def retry_in_place(self):
-		self.validate_request_data_not_masked()
 		self.enqueue_http_request()
 		frappe.db.commit()
 
@@ -1073,7 +1065,6 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_restore_job_update,
 			process_restore_tables_job_update,
 			process_uninstall_app_site_job_update,
-			process_update_site_configuration_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_backup.site_backup import (
@@ -1209,8 +1200,6 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_logical_replication_backup_update_database_host_job_update(job)
 		elif job.job_type == "Add Domain":
 			process_add_domain_job_update(job)
-		elif job.job_type == "Update Site Configuration":
-			process_update_site_configuration_job_update(job)
 		elif job.job_type == "Add Binlogs To Indexer":
 			process_add_binlogs_to_indexer_agent_job_update(job)
 		elif job.job_type == "Remove Binlogs From Indexer":

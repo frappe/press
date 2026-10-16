@@ -41,7 +41,6 @@ from press.press.doctype.site.site import (
 	process_archive_site_job_update,
 	process_new_site_job_update,
 	process_rename_site_job_update,
-	process_update_site_configuration_job_update,
 	suspend_sites_exceeding_disk_usage_for_last_14_days,
 )
 from press.press.doctype.site_activity.site_activity import log_site_activity
@@ -1511,12 +1510,10 @@ class TestRotateDatabasePassword(FrappeTestCase):
 		with self.set_user(user.name), self.assertRaisesRegex(frappe.PermissionError, "System Manager"):
 			self.site.rotate_database_password()
 
-	@patch("press.press.doctype.site.site.frappe.db.commit", new=Mock())
 	@patch("press.press.doctype.site.site.log_site_activity")
 	@patch("press.press.doctype.site.site.Agent")
 	@patch("press.press.doctype.site.site.Ansible")
 	def test_rotate_changes_password_on_database_then_in_site_config(self, ansible, agent, log_activity):
-		ansible.return_value.play = None
 		ansible.return_value.run.return_value = Mock(status="Success")
 
 		with patch.object(Site, "fetch_info", return_value={"config": {"db_name": "_db1"}}):
@@ -1531,11 +1528,9 @@ class TestRotateDatabasePassword(FrappeTestCase):
 		self.assertEqual(data, {"config": {"db_password": variables["db_password"]}, "remove": []})
 		self.assertFalse(create_agent_job.call_args.kwargs["deduplicate"])
 
-	@patch("press.press.doctype.site.site.frappe.db.commit", new=Mock())
 	@patch("press.press.doctype.site.site.Agent")
 	@patch("press.press.doctype.site.site.Ansible")
 	def test_rotate_fails_and_leaves_site_config_alone_when_play_fails(self, ansible, agent):
-		ansible.return_value.play = None
 		ansible.return_value.run.return_value = Mock(status="Failure")
 		ansible.return_value.run.return_value.name = "play-1"
 
@@ -1546,33 +1541,3 @@ class TestRotateDatabasePassword(FrappeTestCase):
 			self.site._rotate_database_password()
 
 		agent.return_value.create_agent_job.assert_not_called()
-
-	def test_password_is_masked_in_request_data_only_after_success(self):
-		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
-
-		request_data = {"config": {"db_password": "plain-value"}, "remove": []}  # pragma: allowlist secret
-		job = create_test_agent_job("Update Site Configuration", server=self.site.server, status="Failure")
-		job.db_set("request_data", json.dumps(request_data))
-
-		process_update_site_configuration_job_update(job)
-		self.assertIn("plain-value", frappe.db.get_value("Agent Job", job.name, "request_data"))
-
-		job.db_set("status", "Success")
-		process_update_site_configuration_job_update(job)
-		stored = json.loads(frappe.db.get_value("Agent Job", job.name, "request_data"))
-		self.assertEqual(stored, {"config": {"db_password": "********"}, "remove": []})
-
-	def test_a_job_with_a_masked_password_cannot_be_retried(self):
-		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
-
-		job = create_test_agent_job("Update Site Configuration", server=self.site.server, status="Success")
-		request_data = {"config": {"db_password": "plain-value"}, "remove": []}  # pragma: allowlist secret
-		job.db_set("request_data", json.dumps(request_data))
-		process_update_site_configuration_job_update(job)
-		job.reload()
-
-		jobs_before = frappe.db.count("Agent Job")
-		for retry in (job.retry, job.retry_in_place):
-			with self.assertRaisesRegex(frappe.ValidationError, "masked secrets"):
-				retry()
-		self.assertEqual(frappe.db.count("Agent Job"), jobs_before)
