@@ -114,3 +114,26 @@ class TestAppSource(FrappeTestCase):
 		source.last_github_poll_failed = False
 
 		self.assertFalse(source.branch_deleted)
+
+	@patch.object(AppSource, "after_insert", new=Mock())
+	def test_trailing_slash_in_repository_url_is_removed_before_parsing(self):
+		source = self.create_app("hrms", "HRMS").add_source(
+			frappe_version="Nightly",
+			repository_url="https://github.com/frappe/hrms/",
+			branch="develop",
+			team=create_test_team().name,
+		)
+
+		self.assertEqual(source.repository_url, "https://github.com/frappe/hrms")
+		self.assertEqual(source.repository_owner, "frappe")
+		self.assertEqual(source.repository, "hrms")
+
+	@patch.object(AppSource, "after_insert", new=Mock())
+	def test_repository_url_without_repository_is_rejected(self):
+		with self.assertRaises(frappe.ValidationError):
+			self.create_app("hrms", "HRMS").add_source(
+				frappe_version="Nightly",
+				repository_url="https://github.com/frappe/",
+				branch="develop",
+				team=create_test_team().name,
+			)
