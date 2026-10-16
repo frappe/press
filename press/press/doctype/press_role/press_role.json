@@ -187,7 +187,7 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-02-18 18:52:22.107986",
+	"modified": "2026-10-16 11:53:36.349079",
 	"modified_by": "hello@ssiyad.com",
 	"module": "Press",
 	"name": "Press Role",
@@ -224,5 +224,6 @@
 	"sort_field": "modified",
 	"sort_order": "DESC",
 	"states": [],
-	"title_field": "title"
+	"title_field": "title",
+	"track_changes": 1
 }
