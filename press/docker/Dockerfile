@@ -1,5 +1,7 @@
 # syntax = docker/dockerfile:experimental
 FROM ubuntu:22.04
+{% set home_cache_mount = "--mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000" if shared_cache else "" %}
+{% set home_cache_mount_locked = "--mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000" if shared_cache else "" %}
 
 ENV FRAPPE_DOCKER_BUILD True
 ENV LANG C.UTF-8
@@ -218,7 +220,7 @@ RUN wget https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh
 ENV PATH "$PATH:/home/frappe/.nvm/versions/node/v${NODE_VERSION}/bin"
 
 # Install Yarn
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install -g yarn `#stage-pre-yarn`
+RUN {{ home_cache_mount }} npm install -g yarn `#stage-pre-yarn`
 
 # Install Bench
 ENV PATH "$PATH:/home/frappe/.local/bin"
@@ -232,10 +234,10 @@ RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip
 {% endif %}
 
 ENV {{ doc.get_dependency_version("bench", True) }}
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install --upgrade frappe-bench==${BENCH_VERSION} `#stage-bench-bench`
+RUN {{ home_cache_mount }} python${PYTHON_VERSION} -m pip install --upgrade frappe-bench==${BENCH_VERSION} `#stage-bench-bench`
 
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install Jinja2~=3.0.3
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install --upgrade setuptools
+RUN {{ home_cache_mount }} python${PYTHON_VERSION} -m pip install Jinja2~=3.0.3
+RUN {{ home_cache_mount }} python${PYTHON_VERSION} -m pip install --upgrade setuptools
 
 RUN git config --global advice.detachedHead false
 
@@ -254,10 +256,10 @@ COPY get_cached_app.py /usr/local/bin/get_cached_app.py
 {% endif %}
 
 # Install Frappe app
-RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench init --python /usr/bin/python${PYTHON_VERSION} --no-backups --frappe-path file:///home/frappe/context/apps/frappe frappe-bench `#stage-apps-frappe`
+RUN {{ home_cache_mount_locked }} --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench init --python /usr/bin/python${PYTHON_VERSION} --no-backups --frappe-path file:///home/frappe/context/apps/frappe frappe-bench `#stage-apps-frappe`
 WORKDIR /home/frappe/frappe-bench
 
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe/frappe-bench/env/bin/pip install pycups==2.0.1
+RUN {{ home_cache_mount }} /home/frappe/frappe-bench/env/bin/pip install pycups==2.0.1
 
 # Install Redisearch 2.0 from precompiled binaries
 COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
@@ -300,7 +302,7 @@ RUN --mount=type=cache,sharing=locked,id=chromium-{% if is_arm_build %}arm64{% e
 
 
 {% if app.use_cached and use_asset_store %}
-RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
+RUN {{ home_cache_mount_locked }} \
   --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
   --mount=type=bind,source=stored_assets/{{ app.app }},target=/home/frappe/context/stored_assets/{{ app.app }} \
   python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
@@ -308,7 +310,7 @@ RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=10
   {{ app.hash }} \
   `#stage-apps-{{ app.app }}`
 {% else %}
-RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
+RUN {{ home_cache_mount_locked }} \
   --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
   bench get-app file:///home/frappe/context/apps/{{ app.app }} \
   `#stage-apps-{{ app.app }}`

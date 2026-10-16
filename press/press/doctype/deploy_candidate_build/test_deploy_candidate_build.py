@@ -204,6 +204,16 @@ class TestDeployCandidateBuild(FrappeTestCase):
 		self.assertIn("id=chromium-arm64", arm_dockerfile)
 		self.assertNotIn("chrome-headless-shell-linux64.zip", arm_dockerfile)
 
+	def test_dockerfile_shares_the_home_cache_only_for_public_groups(self, _mock_commit):
+		build = self.deploy_candidate_build
+		cache_mount = "target=/home/frappe/.cache"
+
+		frappe.db.set_value("Release Group", build.group, "public", 0)
+		self.assertNotIn(cache_mount, build._generate_dockerfile())
+
+		frappe.db.set_value("Release Group", build.group, "public", 1)
+		self.assertIn(cache_mount, build._generate_dockerfile())
+
 	def test_dockerfile_makes_the_bundled_chromium_executable(self, _mock_commit):
 		self.assertIn(
 			"chmod 0755 /home/frappe/frappe-bench/chromium/chrome-linux/headless_shell",

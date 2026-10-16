@@ -353,9 +353,14 @@ class DeployCandidateBuild(Document):
 				"requires_version_based_get_pip": requires_version_based_get_pip,
 				"is_arm_build": self.platform == "arm64",
 				"use_asset_store": self.uses_asset_store(),
+				"shared_cache": self.uses_shared_cache(),
 			},
 			is_path=True,
 		)
+
+	def uses_shared_cache(self) -> bool:
+		"""Private builds run customer code, so only public groups share the BuildKit cache."""
+		return bool(frappe.db.get_value("Release Group", self.group, "public"))
 
 	def uses_asset_store(self) -> bool:
 		"""Any group with Use App Cache downloads stored assets; only public groups upload them."""
