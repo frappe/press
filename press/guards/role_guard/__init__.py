@@ -20,6 +20,7 @@ from .database_server import check as database_server_check
 from .document import check as document_check
 from .document import has_user_permission
 from .marketplace import check as marketplace_check
+from .notification import check as notification_check
 from .server_snapshot import check as server_snapshot_check
 from .site_backup import check as site_backup_check
 from .webhook import check as webhook_check
@@ -181,6 +182,8 @@ def check(document_type: str, document_name: str) -> bool | list[str]:  # noqa: 
 			return database_server_check(query, document_name)
 		case "Marketplace App":
 			return marketplace_check(query)
+		case "Press Notification":
+			return notification_check(document_name)
 		case "Press Webhook":
 			return webhook_check(query)
 		case "Press Webhook Attempt":

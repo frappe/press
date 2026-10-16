@@ -259,7 +259,12 @@ class TestRoleRestrictedLists(FrappeTestCase):
 		hidden = self.notify_about_site(self.hidden_site)
 		frappe.get_doc("User", self.member).add_roles("Press User")
 
-		with self.as_user(self.member), self.assertRaisesRegex(frappe.PermissionError, "Not permitted"):
+		with (
+			self.as_user(self.member),
+			self.assertRaisesRegex(
+				frappe.PermissionError, "You do not have permission to access this Press Notification"
+			),
+		):
 			get("Press Notification", hidden)
 
 	def test_restricted_member_can_get_notification_their_role_grants_by_name(self):

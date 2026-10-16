@@ -20,6 +20,7 @@ from press.access import SECTIONS, dashboard_access_rules, ownership
 from press.access.support_access import has_support_access
 from press.exceptions import TeamHeaderNotInRequestError
 from press.guards import role_guard
+from press.guards.role_guard.notification import restrict_to_roles
 from press.telemetry import sentry
 from press.utils import has_role
 
@@ -217,8 +218,6 @@ def get_list_query(
 	if doctype == "Bench":
 		return role_guard.filter_permitted(query, "Release Group", frappe.qb.DocType("Bench").group)
 	if doctype == "Press Notification":
-		from press.api.notifications import restrict_to_roles
-
 		return restrict_to_roles(query)
 	return query
 
@@ -255,7 +254,6 @@ def get(doctype, name):  # noqa: C901
 
 	if not (is_system_user or is_support):
 		check_document_access(doctype, name, doc=doc)
-		check_notification_access(doctype, name)
 
 	fields = tuple(default_fields)
 	if hasattr(doc, "dashboard_fields"):
@@ -442,13 +440,6 @@ def check_document_access(doctype: str, name: str, doc=None):
 		return
 
 	if not ownership.has_document_access(doctype, name, doc=doc):
-		raise_not_permitted()
-
-
-def check_notification_access(doctype: str, name: str):
-	from press.api.notifications import is_permitted
-
-	if doctype == "Press Notification" and not is_permitted(name):
 		raise_not_permitted()
 
 

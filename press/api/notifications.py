@@ -1,13 +1,8 @@
 import frappe
 from frappe.query_builder.functions import Count
 
-from press.guards import role_guard
+from press.guards.role_guard.notification import restrict_to_roles
 from press.utils import get_current_team
-
-# Any team member can answer a support access request, so its notification is for everyone.
-UNRESTRICTED_TYPES = ("Support Access",)
-
-PressNotification = frappe.qb.DocType("Press Notification")
 
 
 @frappe.whitelist()
@@ -19,6 +14,7 @@ def get_notifications(
 	if not filters:
 		filters = {}
 
+	PressNotification = frappe.qb.DocType("Press Notification")
 	query = (
 		frappe.qb.from_(PressNotification)
 		.select(
@@ -74,6 +70,7 @@ def assign_notification_route(notification):
 
 @frappe.whitelist()
 def mark_all_notifications_as_read():
+	PressNotification = frappe.qb.DocType("Press Notification")
 	query = (
 		frappe.qb.update(PressNotification)
 		.set(PressNotification.read, 1)
@@ -84,6 +81,7 @@ def mark_all_notifications_as_read():
 
 @frappe.whitelist()
 def get_unread_count(type: str | None = None):
+	PressNotification = frappe.qb.DocType("Press Notification")
 	query = (
 		frappe.qb.from_(PressNotification)
 		.select(Count(PressNotification.name))
@@ -95,47 +93,3 @@ def get_unread_count(type: str | None = None):
 		query = query.where(PressNotification.type == type)
 
 	return restrict_to_roles(query).run(pluck=True)[0]
-
-
-def is_permitted(name: str) -> bool:
-	query = (
-		frappe.qb.from_(PressNotification)
-		.select(PressNotification.name)
-		.where(PressNotification.name == name)
-	)
-	return bool(restrict_to_roles(query).run())
-
-
-def restrict_to_roles(query):
-	"""Keep only the notifications about documents the Press Roles of the user permit."""
-	if not role_guard.is_restricted():
-		return query
-	condition = PressNotification.type.isin(UNRESTRICTED_TYPES)
-	for document_type in role_guard.LIMITED_DOCTYPES:
-		condition |= permitted_reference(document_type)
-	return query.where(condition | permitted_database_server())
-
-
-def permitted_reference(document_type: str):
-	is_type = PressNotification.reference_doctype == document_type
-	permitted = role_guard.permitted_condition(document_type, PressNotification.reference_name)
-	return is_type if permitted is None else is_type & permitted
-
-
-def permitted_database_server():
-	"""A database server takes the grants of its app servers, as in `role_guard.database_server`."""
-	is_type = PressNotification.reference_doctype == "Database Server"
-	Server = frappe.qb.DocType("Server")
-	permitted = role_guard.permitted_condition("Server", Server.name)
-	if permitted is None:
-		return is_type
-	DatabaseServer = frappe.qb.DocType("Database Server")
-	primaries = frappe.qb.from_(Server).select(Server.database_server).where(permitted)
-	replicas = (
-		frappe.qb.from_(DatabaseServer)
-		.select(DatabaseServer.name)
-		.where(DatabaseServer.primary.isin(primaries))
-	)
-	return is_type & (
-		PressNotification.reference_name.isin(primaries) | PressNotification.reference_name.isin(replicas)
-	)
