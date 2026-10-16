@@ -168,6 +168,7 @@
 		"github_app_public_link",
 		"github_webhook_secret",
 		"github_access_token",
+		"clone_with_github_access_token",
 		"deploy_marker",
 		"section_break_41",
 		"column_break_tcmy",
@@ -915,7 +916,15 @@
 		{
 			"fieldname": "github_access_token",
 			"fieldtype": "Data",
-			"label": "GitHub Access Token"
+			"label": "GitHub Access Token",
+			"mandatory_depends_on": "eval:doc.clone_with_github_access_token"
+		},
+		{
+			"default": "0",
+			"description": "Clone App Sources that have no GitHub App installation with the GitHub Access Token. Enable only if you trust every team, because any team can then build any repository this token can read.",
+			"fieldname": "clone_with_github_access_token",
+			"fieldtype": "Check",
+			"label": "Clone With GitHub Access Token"
 		},
 		{
 			"collapsible": 1,
