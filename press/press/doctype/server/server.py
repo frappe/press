@@ -3574,6 +3574,32 @@ class Server(BaseServer):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu")
 
 	@frappe.whitelist()
+	def setup_agent_volume(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_volume", queue="long", timeout=3600)
+
+	def _setup_agent_volume(self):
+		self._run_agent_volume_play("agent_volume.yml")
+
+	@frappe.whitelist()
+	def resize_agent_volume(self, size: int):
+		frappe.enqueue_doc(self.doctype, self.name, "_resize_agent_volume", size=int(size))
+
+	def _resize_agent_volume(self, size: int):
+		self._run_agent_volume_play("resize_agent_volume.yml", {"agent_volume_size": size})
+
+	def _run_agent_volume_play(self, playbook: str, variables: dict | None = None):
+		# Raises, so the Create Server job and the enqueued job both fail with the play
+		play = Ansible(
+			playbook=playbook,
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+			variables=variables,
+		).run()
+		if play.status != "Success":
+			raise Exception(f"{playbook} failed on {self.name}. See Ansible Play {play.name}.")
+
+	@frappe.whitelist()
 	def setup_rclone(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_rclone", queue="long", timeout=1200)
 

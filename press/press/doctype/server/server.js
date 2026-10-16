@@ -161,6 +161,13 @@ frappe.ui.form.on('Server', {
 				__('Setup'),
 			],
 			[
+				__('Setup Agent Volume'),
+				'setup_agent_volume',
+				true,
+				frm.doc.is_server_setup && !frm.doc.has_data_volume,
+				__('Setup'),
+			],
+			[
 				__('Prepare Server'),
 				'prepare_server',
 				true,
@@ -516,6 +523,26 @@ frappe.ui.form.on('Server', {
 				},
 				__('Actions'),
 			)
+			if (!frm.doc.has_data_volume) {
+				frm.add_custom_button(
+					__('Resize Agent Volume'),
+					() => {
+						frappe.prompt(
+							{
+								fieldtype: 'Int',
+								label: __('Agent Volume Size (GB)'),
+								description: __('The agent volume can only grow.'),
+								fieldname: 'size',
+								default: 8,
+								reqd: 1,
+							},
+							(args) => frm.call('resize_agent_volume', args),
+							__('Resize Agent Volume'),
+						)
+					},
+					__('Actions'),
+				)
+			}
 
 			frm.add_custom_button(
 				__('Snapshot Both Servers'),
