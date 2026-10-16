@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import os
 import random
-import re
 import traceback
 from typing import TYPE_CHECKING
 
@@ -35,6 +34,7 @@ from press.press.doctype.site_migration.site_migration import (
 )
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error, timer
+from press.utils.redact import redact_secrets
 from press.utils.user import as_administrator
 
 AGENT_LOG_KEY = "agent-jobs"
@@ -43,21 +43,6 @@ CALLBACK_FAILURE_LIMIT = 5000
 
 BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
 
-REDACTED = "********"
-SECRET_NAME = r"[\w-]*(?:password|passwd|secret|token)[\w-]*|pwd|(?:api|access|private|encryption)[_-]?key"
-# `name=value`, `name: value`, `"name": "value"`; MySQL's "(using password: YES)" is kept
-SECRET_ASSIGNMENT_PATTERN = re.compile(
-	rf"(?i)\b({SECRET_NAME})(['\"]?\s*[:=]\s*)(?!(?:YES|NO)\b)('[^']*'|\"[^\"]*\"|[^\s,;)\]}}]+)"
-)
-DOCKER_LOGIN_PASSWORD_PATTERN = re.compile(r"(\bdocker\s+login\b[^\n]*?\s-p\s+)(\S+)")
-# `--admin-password value`; `--password-stdin` takes no value
-PASSWORD_FLAG_PATTERN = re.compile(
-	r"(--(?![\w-]*-stdin\b)[\w-]*(?:password|passwd|secret|token)[\w-]*\s+)(?!-)(\S+)"
-)
-# The agent passes MySQL/MariaDB passwords attached to the flag: `-p<password>`
-MYSQL_PASSWORD_PATTERN = re.compile(
-	r"(\b(?:mysql|mariadb)[\w-]*\b[^\n]*?\s-p)(?=[^\s-])('[^']*'|\"[^\"]*\"|\S+)"
-)
 FREE_TEXT_JOB_DATA_KEYS = ("output", "traceback", "command")
 
 # Jobs a team can cancel from the dashboard. Restricted to long running jobs whose
@@ -769,27 +754,6 @@ def lock_doc_updated_by_job(job_name):
 			return value
 
 	return None
-
-
-def redact_secrets(text):
-	"""Mask password, token and secret values in job output before it's stored or shown"""
-	if isinstance(text, list | tuple):
-		# A list command's flag and value are separate items, so mask the joined command
-		joined = " ".join(str(part) for part in text)
-		redacted = redact_secrets(joined)
-		return text if redacted == joined else redacted
-	if not isinstance(text, str) or not text:
-		return text
-
-	for pattern in (DOCKER_LOGIN_PASSWORD_PATTERN, PASSWORD_FLAG_PATTERN, MYSQL_PASSWORD_PATTERN):
-		text = pattern.sub(rf"\g<1>{REDACTED}", text)
-	return SECRET_ASSIGNMENT_PATTERN.sub(_mask_secret_value, text)
-
-
-def _mask_secret_value(match: re.Match) -> str:
-	name, separator, value = match.groups()
-	quote = value[0] if len(value) > 1 and value[0] in "'\"" else ""
-	return f"{name}{separator}{quote}{REDACTED}{quote}"
 
 
 def redact_job_data(data):

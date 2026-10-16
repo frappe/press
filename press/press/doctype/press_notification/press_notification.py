@@ -7,6 +7,7 @@ from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
 from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.utils.redact import redact_secrets
 
 
 class PressNotification(Document):
@@ -58,6 +59,10 @@ class PressNotification(Document):
 		"traceback",
 		"assistance_url",
 	)
+
+	def validate(self):
+		# Teams see the traceback in the dashboard's error dialog
+		self.traceback = redact_secrets(self.traceback)
 
 	def after_insert(self):
 		if frappe.local.dev_server:
