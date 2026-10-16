@@ -1,0 +1,10 @@
+---
+# Logs in as root through /root/.my.cnf. Privileges are left as they are.
+- name: Change Site Database User Password
+  mysql_user:
+    name: '{{ db_user }}'
+    host_all: yes
+    password: '{{ db_password }}' # pragma: allowlist secret
+    update_password: always # pragma: allowlist secret
+    state: present
+  no_log: true

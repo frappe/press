@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import typing
+from contextlib import contextmanager
 from unittest.mock import Mock, patch
 
 import frappe
@@ -1492,3 +1493,157 @@ class TestNotifyTeamsNearingStorageLimits(FrappeTestCase):
 		self.assertIn(site.name, html)
 		self.assertIn("100%", html)
 		self.assertNotIn("30%", html)
+
+
+class TestRotateDatabasePassword(FrappeTestCase):
+	def setUp(self):
+		self.site = create_test_site("rotatedbpassword")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def test_users_outside_the_sites_team_cannot_rotate(self):
+		user = frappe.get_doc(
+			{"doctype": "User", "email": frappe.mock("email"), "first_name": "Staff"}
+		).insert()
+
+		with self.set_user(user.name), self.assertRaisesRegex(frappe.PermissionError, "Only team admins"):
+			self.site.rotate_database_password()
+
+	@patch("press.press.doctype.site.site.log_site_activity")
+	@patch("press.press.doctype.site.site.Agent")
+	@patch("press.press.doctype.site.site.Ansible")
+	def test_rotate_changes_password_on_database_then_in_site_config(self, ansible, agent, log_activity):
+		ansible.return_value.run.return_value = Mock(status="Success")
+
+		with patch.object(Site, "fetch_info", return_value={"config": {"db_name": "_db1"}}):
+			self.site._rotate_database_password()
+
+		variables = ansible.call_args.kwargs["variables"]
+		self.assertEqual(variables["db_user"], "_db1")
+		self.assertEqual(ansible.call_args.kwargs["playbook"], "mariadb_change_site_password.yml")
+		create_agent_job = agent.return_value.create_agent_job
+		_, path, data = create_agent_job.call_args.args
+		self.assertEqual(path, f"benches/{self.site.bench}/sites/{self.site.name}/config")
+		self.assertEqual(data, {"config": {"db_password": variables["db_password"]}, "remove": []})
+		self.assertFalse(create_agent_job.call_args.kwargs["deduplicate"])
+
+	@patch("press.press.doctype.site.site.log_site_activity")
+	@patch("press.press.doctype.site.site.Agent")
+	@patch("press.press.doctype.site.site.Ansible")
+	def test_rotate_targets_the_benchs_database_server(self, ansible, agent, log_activity):
+		from press.press.doctype.database_server.test_database_server import create_test_database_server
+
+		benchs_database_server = create_test_database_server()
+		frappe.db.set_value("Bench", self.site.bench, "database_server", benchs_database_server.name)
+		ansible.return_value.run.return_value = Mock(status="Success")
+
+		with patch.object(Site, "fetch_info", return_value={"config": {"db_name": "_db1"}}):
+			self.site._rotate_database_password()
+
+		self.assertEqual(ansible.call_args.kwargs["server"].name, benchs_database_server.name)
+
+	@patch("press.press.doctype.site.site.Agent")
+	@patch("press.press.doctype.site.site.Ansible")
+	def test_rotate_fails_and_leaves_site_config_alone_when_play_fails(self, ansible, agent):
+		ansible.return_value.run.return_value = Mock(status="Failure")
+		ansible.return_value.run.return_value.name = "play-1"
+
+		with (
+			patch.object(Site, "fetch_info", return_value={"config": {"db_name": "_db1"}}),
+			self.assertRaisesRegex(frappe.ValidationError, "Couldn't change the database password.*play-1"),
+		):
+			self.site._rotate_database_password()
+
+		agent.return_value.create_agent_job.assert_not_called()
+
+	def create_pending_config_job(self, config: dict):
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		job = create_test_agent_job("Update Site Configuration", server=self.site.server, status="Pending")
+		job.db_set({"site": self.site.name, "request_data": json.dumps({"config": config, "remove": []})})
+		return job
+
+	@patch("press.press.doctype.site.site.Ansible")
+	def test_rotate_refuses_while_a_previous_rotation_is_pending(self, ansible):
+		self.create_pending_config_job({"db_password": "older-value"})  # pragma: allowlist secret
+
+		# Patched after the job is created; inserting an Agent Job enqueues its request too
+		with patch("press.press.doctype.site.site.frappe.enqueue_doc") as enqueue_doc:
+			for rotate in (self.site.rotate_database_password, self.site._rotate_database_password):
+				with self.assertRaisesRegex(frappe.ValidationError, "password rotation is still running"):
+					rotate()
+
+		enqueue_doc.assert_not_called()
+		ansible.assert_not_called()
+
+	def test_rotate_is_not_blocked_by_other_pending_config_updates(self):
+		self.create_pending_config_job({"maintenance_mode": 1})
+
+		with patch("press.press.doctype.site.site.frappe.enqueue_doc") as enqueue_doc:
+			self.site.rotate_database_password()
+
+		self.assertEqual(enqueue_doc.call_args.kwargs["job_id"], f"rotate_database_password:{self.site.name}")
+		self.assertTrue(enqueue_doc.call_args.kwargs["deduplicate"])
+
+	def test_an_older_rotation_cannot_be_retried_after_a_newer_one(self):
+		older = self.create_pending_config_job({"db_password": "older-value"})  # pragma: allowlist secret
+		older.db_set({"status": "Failure", "creation": frappe.utils.add_to_date(None, minutes=-5)})
+		newer = self.create_pending_config_job({"db_password": "newer-value"})  # pragma: allowlist secret
+		older.reload()
+
+		jobs_before = frappe.db.count("Agent Job")
+		for retry in (older.retry, older.retry_in_place):
+			with self.assertRaisesRegex(frappe.ValidationError, "newer database password rotation exists"):
+				retry()
+		self.assertEqual(frappe.db.count("Agent Job"), jobs_before)
+
+		with patch("press.press.doctype.agent_job.agent_job.frappe.db.commit"):
+			newer.retry_in_place()
+
+
+class TestRotateDatabasePasswordFromDashboard(FrappeTestCase):
+	def setUp(self):
+		from press.press.doctype.press_role.test_press_role import create_permission_role
+		from press.press.doctype.press_role.test_press_role import create_user as create_press_user
+
+		self.team = create_test_team()
+		self.site = create_test_site("rotatedbpassworddashboard", team=self.team.name)
+		self.member = create_press_user(f"{frappe.generate_hash(length=8)}@example.com").name
+		self.team.append("team_members", {"user": self.member})
+		self.team.save()
+		self.role = create_permission_role(self.team.name)
+		self.role.add_user(self.member)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	@contextmanager
+	def as_member(self):
+		frappe.set_user(self.member)
+		frappe.local.request = frappe._dict(method="POST", headers={"X-Press-Team": self.team.name})
+		try:
+			yield
+		finally:
+			del frappe.local.request
+			frappe.set_user("Administrator")
+
+	def site_action_names(self) -> list[str]:
+		return [action["action"] for action in frappe.get_doc("Site", self.site.name).get_actions()]
+
+	def test_restricted_member_cannot_rotate_or_see_the_action(self):
+		with self.as_member():
+			self.assertNotIn("Rotate database password", self.site_action_names())
+			with self.assertRaisesRegex(frappe.PermissionError, "Only team admins"):
+				frappe.get_doc("Site", self.site.name).rotate_database_password()
+
+	def test_team_admin_can_rotate_and_sees_the_action(self):
+		self.role.db_set("admin_access", 1)
+
+		with self.as_member(), patch("press.press.doctype.site.site.frappe.enqueue_doc") as enqueue_doc:
+			self.assertIn("Rotate database password", self.site_action_names())
+			frappe.get_doc("Site", self.site.name).rotate_database_password()
+
+		self.assertEqual(enqueue_doc.call_args.args[2], "_rotate_database_password")

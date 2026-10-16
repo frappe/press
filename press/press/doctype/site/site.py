@@ -98,6 +98,7 @@ from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 	get_doctype_name,
 )
+from press.runner import Ansible
 from press.utils import (
 	convert,
 	fmt_timedelta,
@@ -1503,6 +1504,76 @@ class Site(Document, TagHelpers):
 		job = agent.clear_site_cache(self)
 
 		log_site_activity(self.name, "Clear Cache", job=job.name)
+
+	@dashboard_whitelist()
+	@site_action(["Active", "Broken", "Inactive"])
+	def rotate_database_password(self):
+		self.validate_can_rotate_database_password()
+		self.validate_no_password_rotation_in_progress()
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_rotate_database_password",
+			queue="long",
+			timeout=1200,
+			job_id=f"rotate_database_password:{self.name}",
+			deduplicate=True,
+		)
+
+	def validate_can_rotate_database_password(self):
+		# System Managers from desk; otherwise the owner or an admin of the site's team
+		if "System Manager" in frappe.get_roles():
+			return
+		if self.team != get_current_team() or role_guard.is_restricted():
+			frappe.throw("Only team admins can rotate the database password.", frappe.PermissionError)
+
+	def validate_no_password_rotation_in_progress(self):
+		# An older rotation's job delivered after a newer one would set a stale password
+		if frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "Update Site Configuration",
+				"site": self.name,
+				"status": ("not in", ("Success", "Failure", "Delivery Failure")),
+				"request_data": ("like", '%"db_password"%'),
+			},
+		):
+			frappe.throw(
+				"A database password rotation is still running for this site. Please try again after it finishes."
+			)
+
+	def _rotate_database_password(self):
+		self.validate_no_password_rotation_in_progress()
+		config = self.fetch_info()["config"]
+		db_user = config.get("db_user") or config["db_name"]
+		password = frappe.generate_hash(length=32)
+
+		# The bench's database server is the one in its db_host, so the one the site connects to
+		database_server_name = frappe.db.get_value("Bench", self.bench, "database_server")
+		if not database_server_name:
+			frappe.throw("This site's bench has no database server to change the password on.")
+		database_server = frappe.get_doc("Database Server", database_server_name)
+		ansible = Ansible(
+			playbook="mariadb_change_site_password.yml",
+			server=database_server,
+			user=database_server.ssh_user or "root",
+			port=database_server.ssh_port or 22,
+			variables={"db_user": db_user, "db_password": password},
+		)
+		play = ansible.run()
+		if play.status != "Success":
+			frappe.throw(f"Couldn't change the database password. See Ansible Play {play.name}")
+
+		# Not deduplicated: reusing a pending config job would drop the new password
+		job = Agent(self.server).create_agent_job(
+			"Update Site Configuration",
+			f"benches/{self.bench}/sites/{self.name}/config",
+			{"config": {"db_password": password}, "remove": []},
+			bench=self.bench,
+			site=self.name,
+			deduplicate=False,
+		)
+		log_site_activity(self.name, "Update Configuration", reason="Rotate database password", job=job.name)
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive"])
@@ -4029,6 +4100,16 @@ class Site(Document, TagHelpers):
 				"description": "Restore with database, public and private files from another site",
 				"button_label": "Restore",
 				"doc_method": "restore_site_from_files",
+				"group": "Dangerous Actions",
+			},
+			{
+				"action": "Rotate database password",
+				"description": "Set a new password for your site's database user",
+				"button_label": "Rotate",
+				"doc_method": "rotate_database_password",
+				"condition": self.status in ["Active", "Broken", "Inactive"]
+				and not self.hybrid_site
+				and not role_guard.is_restricted(),
 				"group": "Dangerous Actions",
 			},
 			{

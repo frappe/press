@@ -95,6 +95,7 @@ export default {
 		loginAsTeam: 'login_as_team',
 		isSetupWizardComplete: 'is_setup_wizard_complete',
 		reinstall: 'reinstall',
+		rotateDatabasePassword: 'rotate_database_password', // pragma: allowlist secret
 		restoreTables: 'restore_tables',
 		removeDomain: 'remove_domain',
 		redirectToPrimary: 'set_redirect',
