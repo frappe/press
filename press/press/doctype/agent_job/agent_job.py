@@ -267,8 +267,24 @@ class AgentJob(Document):
 			)
 			doc.insert()
 
+	def validate_not_a_superseded_password_rotation(self):
+		# Resending an older rotation's db_password after a newer rotation would break the site
+		if self.job_type != "Update Site Configuration" or '"db_password"' not in (self.request_data or ""):
+			return
+		if frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "Update Site Configuration",
+				"site": self.site,
+				"creation": (">", self.creation),
+				"request_data": ("like", '%"db_password"%'),
+			},
+		):
+			frappe.throw("A newer database password rotation exists for this site. Retry that job instead.")
+
 	@frappe.whitelist()
 	def retry(self):
+		self.validate_not_a_superseded_password_rotation()
 		return frappe.get_doc(
 			{
 				"doctype": "Agent Job",
@@ -289,6 +305,7 @@ class AgentJob(Document):
 
 	@frappe.whitelist()
 	def retry_in_place(self):
+		self.validate_not_a_superseded_password_rotation()
 		self.enqueue_http_request()
 		frappe.db.commit()
 

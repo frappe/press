@@ -1547,6 +1547,7 @@ class TestRotateDatabasePassword(FrappeTestCase):
 
 		job = create_test_agent_job("Update Site Configuration", server=self.site.server, status="Pending")
 		job.db_set({"site": self.site.name, "request_data": json.dumps({"config": config, "remove": []})})
+		return job
 
 	@patch("press.press.doctype.site.site.Ansible")
 	def test_rotate_refuses_while_a_previous_rotation_is_pending(self, ansible):
@@ -1569,3 +1570,18 @@ class TestRotateDatabasePassword(FrappeTestCase):
 
 		self.assertEqual(enqueue_doc.call_args.kwargs["job_id"], f"rotate_database_password:{self.site.name}")
 		self.assertTrue(enqueue_doc.call_args.kwargs["deduplicate"])
+
+	def test_an_older_rotation_cannot_be_retried_after_a_newer_one(self):
+		older = self.create_pending_config_job({"db_password": "older-value"})  # pragma: allowlist secret
+		older.db_set({"status": "Failure", "creation": frappe.utils.add_to_date(None, minutes=-5)})
+		newer = self.create_pending_config_job({"db_password": "newer-value"})  # pragma: allowlist secret
+		older.reload()
+
+		jobs_before = frappe.db.count("Agent Job")
+		for retry in (older.retry, older.retry_in_place):
+			with self.assertRaisesRegex(frappe.ValidationError, "newer database password rotation exists"):
+				retry()
+		self.assertEqual(frappe.db.count("Agent Job"), jobs_before)
+
+		with patch("press.press.doctype.agent_job.agent_job.frappe.db.commit"):
+			newer.retry_in_place()
