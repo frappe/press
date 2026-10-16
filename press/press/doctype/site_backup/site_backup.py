@@ -13,12 +13,10 @@ import frappe.utils
 from frappe import _
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
-from frappe.query_builder.terms import ValueWrapper
 
 from press.agent import Agent
 from press.exceptions import SiteTooManyPendingBackups
 from press.guards import role_guard
-from press.guards.role_guard.document import has_user_permission
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.communication_info.communication_info import get_communication_info
@@ -120,12 +118,7 @@ class SiteBackup(Document):
 					)
 				)
 
-		if role_guard.is_restricted() and not has_user_permission("Site"):
-			permitted_sites = role_guard.permitted_documents("Site")
-			if not permitted_sites:
-				query = query.where(ValueWrapper(1) == 0)  # Hack!
-			else:
-				query = query.where(Backup.site.isin(permitted_sites))
+		query = role_guard.filter_permitted(query, "Site", Backup.site)
 
 		if not filters.get("status"):
 			query = query.where(Backup.status == "Success")
