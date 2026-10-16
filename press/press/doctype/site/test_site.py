@@ -1528,6 +1528,21 @@ class TestRotateDatabasePassword(FrappeTestCase):
 		self.assertEqual(data, {"config": {"db_password": variables["db_password"]}, "remove": []})
 		self.assertFalse(create_agent_job.call_args.kwargs["deduplicate"])
 
+	@patch("press.press.doctype.site.site.log_site_activity")
+	@patch("press.press.doctype.site.site.Agent")
+	@patch("press.press.doctype.site.site.Ansible")
+	def test_rotate_targets_the_benchs_database_server(self, ansible, agent, log_activity):
+		from press.press.doctype.database_server.test_database_server import create_test_database_server
+
+		benchs_database_server = create_test_database_server()
+		frappe.db.set_value("Bench", self.site.bench, "database_server", benchs_database_server.name)
+		ansible.return_value.run.return_value = Mock(status="Success")
+
+		with patch.object(Site, "fetch_info", return_value={"config": {"db_name": "_db1"}}):
+			self.site._rotate_database_password()
+
+		self.assertEqual(ansible.call_args.kwargs["server"].name, benchs_database_server.name)
+
 	@patch("press.press.doctype.site.site.Agent")
 	@patch("press.press.doctype.site.site.Ansible")
 	def test_rotate_fails_and_leaves_site_config_alone_when_play_fails(self, ansible, agent):

@@ -1540,9 +1540,11 @@ class Site(Document, TagHelpers):
 		db_user = config.get("db_user") or config["db_name"]
 		password = frappe.generate_hash(length=32)
 
-		database_server = frappe.get_doc(
-			"Database Server", frappe.db.get_value("Server", self.server, "database_server")
-		)
+		# The bench's database server is the one in its db_host, so the one the site connects to
+		database_server_name = frappe.db.get_value("Bench", self.bench, "database_server")
+		if not database_server_name:
+			frappe.throw("This site's bench has no database server to change the password on.")
+		database_server = frappe.get_doc("Database Server", database_server_name)
 		ansible = Ansible(
 			playbook="mariadb_change_site_password.yml",
 			server=database_server,
