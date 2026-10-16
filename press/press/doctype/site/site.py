@@ -1507,23 +1507,10 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def rotate_database_password(self):
-		frappe.only_for("System Manager")
-		self.validate_no_config_update_in_progress()
+		frappe.only_for("System Manager", message=True)
 		frappe.enqueue_doc(self.doctype, self.name, "_rotate_database_password", queue="long", timeout=1200)
 
-	def validate_no_config_update_in_progress(self):
-		# A pending config job would be reused and drop the new password after MariaDB has it
-		if Agent(self.server).get_similar_in_execution_job(
-			"Update Site Configuration", self.config_update_path, bench=self.bench, site=self.name
-		):
-			frappe.throw("A site config update is still running. Please try again after it finishes.")
-
-	@property
-	def config_update_path(self) -> str:
-		return f"benches/{self.bench}/sites/{self.name}/config"
-
 	def _rotate_database_password(self):
-		self.validate_no_config_update_in_progress()
 		config = self.fetch_info()["config"]
 		db_user = config.get("db_user") or config["db_name"]
 		password = frappe.generate_hash(length=32)
@@ -1542,18 +1529,19 @@ class Site(Document, TagHelpers):
 			play = ansible.run()
 		finally:
 			mask_stored_database_password("Ansible Play", ansible.play, "variables", ("db_password",))
+			frappe.db.commit()  # Keep the mask if this job fails and rolls back
 
 		if play.status != "Success":
-			log_error("Site Database Password Rotation Error", site=self.name, play=play.name)
-			return
+			frappe.throw(f"Couldn't change the database password. See Ansible Play {play.name}")
 
-		# The site can't reach its database until this job writes the new password
+		# Not deduplicated: reusing a pending config job would drop the new password
 		job = Agent(self.server).create_agent_job(
 			"Update Site Configuration",
-			self.config_update_path,
+			f"benches/{self.bench}/sites/{self.name}/config",
 			{"config": {"db_password": password}, "remove": []},
 			bench=self.bench,
 			site=self.name,
+			deduplicate=False,
 		)
 		log_site_activity(self.name, "Update Configuration", reason="Rotate database password", job=job.name)
 
@@ -5063,6 +5051,8 @@ def process_update_site_configuration_job_update(job):
 
 def mask_stored_database_password(doctype: str, name: str, fieldname: str, path: tuple[str, ...]):
 	"""Replace a database password stored in a JSON field with a placeholder"""
+	from press.press.doctype.agent_job.agent_job import MASKED_SECRET
+
 	if not name:
 		return
 
@@ -5076,7 +5066,7 @@ def mask_stored_database_password(doctype: str, name: str, fieldname: str, path:
 	if not parent.get(path[-1]):
 		return
 
-	parent[path[-1]] = "********"
+	parent[path[-1]] = MASKED_SECRET
 	frappe.db.set_value(doctype, name, fieldname, json.dumps(data, indent=4), update_modified=False)
 
 

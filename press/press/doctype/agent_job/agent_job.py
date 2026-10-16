@@ -38,6 +38,7 @@ from press.utils.user import as_administrator
 
 AGENT_LOG_KEY = "agent-jobs"
 AGENT_JOB_TIMEOUT_HOURS = 4
+MASKED_SECRET = "********"
 
 BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
 
@@ -267,8 +268,14 @@ class AgentJob(Document):
 			)
 			doc.insert()
 
+	def validate_request_data_not_masked(self):
+		# The agent would apply the placeholder as the real value, e.g. as a site's db_password
+		if f'"{MASKED_SECRET}"' in (self.request_data or ""):
+			frappe.throw("This job's request data has masked secrets, so it can't be retried.")
+
 	@frappe.whitelist()
 	def retry(self):
+		self.validate_request_data_not_masked()
 		return frappe.get_doc(
 			{
 				"doctype": "Agent Job",
@@ -289,6 +296,7 @@ class AgentJob(Document):
 
 	@frappe.whitelist()
 	def retry_in_place(self):
+		self.validate_request_data_not_masked()
 		self.enqueue_http_request()
 		frappe.db.commit()
 
