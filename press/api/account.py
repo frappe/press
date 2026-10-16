@@ -330,13 +330,11 @@ def accept_team_invite(key: str):
 	# PermissionError for a plain Press User. Run as Administrator, mirroring
 	# setup_account. This elevation was dropped in f1a0e80ba in favour of
 	# ignore_permissions, but that only covers the Team and User saves, not
-	# those side effects.
-	current_user = frappe.session.user
-	try:
-		frappe.set_user("Administrator")
+	# those side effects. A bare frappe.set_user pair would wipe the sid and
+	# data of the invitee's session, and Frappe then saves that broken session,
+	# so every later request runs as user None until the cookies are cleared.
+	with user_utils.as_administrator():
 		add_invited_member_to_team(account_request)
-	finally:
-		frappe.set_user(current_user)
 
 	account_request.db_set("request_key", None)
 
