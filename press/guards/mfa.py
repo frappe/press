@@ -34,7 +34,7 @@ def enabled(user_key: str = "user", raise_error: bool = False):
 	return wrapper
 
 
-def verify(user_key: str = "user", code_key: str = "totp_code", raise_error: bool = False):
+def verify(user_key: str = "user", code_key: str = "totp_code", raise_error: bool = False):  # noqa: C901
 	"""
 	Guard to verify two-factor authentication for a user.
 
@@ -74,3 +74,32 @@ def verify(user_key: str = "user", code_key: str = "totp_code", raise_error: boo
 		return inner
 
 	return wrapper
+
+
+def ensure_for_team(team: str | None) -> None:
+	"""Stop a member without 2FA from using a team that enforces it."""
+	if not team or is_exempt_from_team_2fa():
+		return
+	if not frappe.db.get_value("Team", team, "enforce_2fa"):
+		return
+	if frappe.db.get_value("User 2FA", frappe.session.user, "enabled"):
+		return
+	frappe.throw(
+		f"Team {team} requires two-factor authentication. Enable it to continue.",
+		frappe.PermissionError,
+	)
+
+
+def is_exempt_from_team_2fa() -> bool:
+	return frappe.session.data.user_type == "System User" or is_sessionless() or is_team_doc_read()
+
+
+def is_sessionless() -> bool:
+	# API key and OAuth logins call frappe.set_user, which sets the sid to the user
+	return frappe.session.sid == frappe.session.user
+
+
+def is_team_doc_read() -> bool:
+	# The dashboard loads the Team doc to show the "Enable 2FA" page
+	form = frappe.form_dict
+	return form.cmd == "press.api.client.get" and form.doctype == "Team"

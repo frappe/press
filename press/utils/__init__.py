@@ -29,6 +29,7 @@ from frappe.query_builder.functions import Count
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import redis_cache, site_cache
 
+from press.guards import mfa
 from press.utils.email_validator import validate_email
 
 if TYPE_CHECKING:
@@ -133,11 +134,9 @@ def get_current_team(get_doc=False) -> Team | str:
 
 	if not team and has_role("Press User") and frappe.db.exists("Team", {"user": frappe.session.user}):
 		# if user has_role of Press User then just return current user as default team
-		return (
-			frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1})
-			if get_doc
-			else frappe.get_value("Team", {"user": frappe.session.user, "enabled": 1}, "name")
-		)
+		team = frappe.get_value("Team", {"user": frappe.session.user, "enabled": 1}, "name")
+		mfa.ensure_for_team(team)
+		return frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1}) if get_doc else team
 
 	# if team is not passed via header, get the default team for user
 	team = team if team else get_default_team_for_user(frappe.session.user)
@@ -154,6 +153,8 @@ def get_current_team(get_doc=False) -> Team | str:
 
 	if not system_user and not frappe.db.exists("Team", {"name": team, "enabled": 1}):
 		frappe.throw("Invalid Team", frappe.AuthenticationError)
+
+	mfa.ensure_for_team(team)
 
 	if get_doc:
 		return frappe.get_doc("Team", team)
