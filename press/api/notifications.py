@@ -1,6 +1,11 @@
 import frappe
+from frappe.query_builder.functions import Count
 
+from press.guards import role_guard
 from press.utils import get_current_team
+
+# Any team member can answer a support access request, so its notification is for everyone.
+UNRESTRICTED_TYPES = ("Support Access",)
 
 
 @frappe.whitelist()
@@ -41,7 +46,7 @@ def get_notifications(
 	if filters.get("type"):
 		query = query.where(PressNotification.type == filters["type"])
 
-	notifications = query.run(as_dict=True)
+	notifications = restrict_to_roles(query).run(as_dict=True)
 
 	for notification in notifications:
 		assign_notification_route(notification)
@@ -73,9 +78,37 @@ def mark_all_notifications_as_read():
 
 @frappe.whitelist()
 def get_unread_count(type: str | None = None):
-	filters = {"read": False, "team": get_current_team()}
+	PressNotification = frappe.qb.DocType("Press Notification")
+	query = (
+		frappe.qb.from_(PressNotification)
+		.select(Count(PressNotification.name))
+		.where(PressNotification.team == get_current_team())
+		.where(PressNotification.read == 0)
+	)
 
 	if type:
-		filters["type"] = type
+		query = query.where(PressNotification.type == type)
 
-	return frappe.db.count("Press Notification", filters)
+	return restrict_to_roles(query).run(pluck=True)[0]
+
+
+def restrict_to_roles(query):
+	"""Keep only the notifications about documents the Press Roles of the user permit."""
+	if not role_guard.is_restricted():
+		return query
+	PressNotification = frappe.qb.DocType("Press Notification")
+	condition = PressNotification.type.isin(UNRESTRICTED_TYPES)
+	for document_type in ("Site", "Release Group", "Server"):
+		if (permitted := permitted_reference(document_type)) is not None:
+			condition |= permitted
+	return query.where(condition)
+
+
+def permitted_reference(document_type: str):
+	PressNotification = frappe.qb.DocType("Press Notification")
+	is_type = PressNotification.reference_doctype == document_type
+	if not role_guard.restricts(document_type):
+		return is_type
+	if permitted := role_guard.permitted_documents(document_type):
+		return is_type & PressNotification.reference_name.isin(permitted)
+	return None
