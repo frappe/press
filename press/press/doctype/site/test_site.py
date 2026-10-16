@@ -41,6 +41,7 @@ from press.press.doctype.site.site import (
 	process_archive_site_job_update,
 	process_new_site_job_update,
 	process_rename_site_job_update,
+	process_update_site_configuration_job_update,
 	suspend_sites_exceeding_disk_usage_for_last_14_days,
 )
 from press.press.doctype.site_activity.site_activity import log_site_activity
@@ -1492,3 +1493,77 @@ class TestNotifyTeamsNearingStorageLimits(FrappeTestCase):
 		self.assertIn(site.name, html)
 		self.assertIn("100%", html)
 		self.assertNotIn("30%", html)
+
+
+class TestRotateDatabasePassword(FrappeTestCase):
+	def setUp(self):
+		self.site = create_test_site("rotatedbpassword")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def test_only_system_managers_can_rotate(self):
+		from frappe.tests.ui_test_helpers import create_test_user
+
+		user = frappe.mock("email")
+		create_test_user(user)
+		frappe.set_user(user)
+
+		with self.assertRaises(frappe.PermissionError):
+			self.site.rotate_database_password()
+
+	@patch("press.press.doctype.site.site.log_site_activity")
+	@patch("press.press.doctype.site.site.Agent")
+	@patch("press.press.doctype.site.site.Ansible")
+	def test_rotate_changes_password_on_database_then_in_site_config(self, ansible, agent, log_activity):
+		agent.return_value.get_similar_in_execution_job.return_value = None
+		ansible.return_value.play = None
+		ansible.return_value.run.return_value = Mock(status="Success")
+
+		with patch.object(Site, "fetch_info", return_value={"config": {"db_name": "_db1"}}):
+			self.site._rotate_database_password()
+
+		variables = ansible.call_args.kwargs["variables"]
+		self.assertEqual(variables["db_user"], "_db1")
+		self.assertEqual(ansible.call_args.kwargs["playbook"], "mariadb_change_site_password.yml")
+		_, path, data = agent.return_value.create_agent_job.call_args.args
+		self.assertEqual(path, f"benches/{self.site.bench}/sites/{self.site.name}/config")
+		self.assertEqual(data, {"config": {"db_password": variables["db_password"]}, "remove": []})
+
+	@patch("press.press.doctype.site.site.Agent")
+	@patch("press.press.doctype.site.site.Ansible")
+	def test_rotate_leaves_site_config_alone_when_play_fails(self, ansible, agent):
+		agent.return_value.get_similar_in_execution_job.return_value = None
+		ansible.return_value.play = None
+		ansible.return_value.run.return_value = Mock(status="Failure")
+
+		with patch.object(Site, "fetch_info", return_value={"config": {"db_name": "_db1"}}):
+			self.site._rotate_database_password()
+
+		agent.return_value.create_agent_job.assert_not_called()
+
+	@patch("press.press.doctype.site.site.Agent")
+	@patch("press.press.doctype.site.site.Ansible")
+	def test_rotate_refuses_while_a_config_update_is_running(self, ansible, agent):
+		agent.return_value.get_similar_in_execution_job.return_value = Mock()
+
+		with self.assertRaises(frappe.ValidationError):
+			self.site._rotate_database_password()
+
+		ansible.assert_not_called()
+
+	def test_password_is_masked_in_request_data_only_after_success(self):
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		request_data = {"config": {"db_password": "plain-value"}, "remove": []}  # pragma: allowlist secret
+		job = create_test_agent_job("Update Site Configuration", server=self.site.server, status="Failure")
+		job.db_set("request_data", json.dumps(request_data))
+
+		process_update_site_configuration_job_update(job)
+		self.assertIn("plain-value", frappe.db.get_value("Agent Job", job.name, "request_data"))
+
+		job.db_set("status", "Success")
+		process_update_site_configuration_job_update(job)
+		stored = json.loads(frappe.db.get_value("Agent Job", job.name, "request_data"))
+		self.assertEqual(stored, {"config": {"db_password": "********"}, "remove": []})

@@ -1065,6 +1065,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_restore_job_update,
 			process_restore_tables_job_update,
 			process_uninstall_app_site_job_update,
+			process_update_site_configuration_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_backup.site_backup import (
@@ -1200,6 +1201,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_logical_replication_backup_update_database_host_job_update(job)
 		elif job.job_type == "Add Domain":
 			process_add_domain_job_update(job)
+		elif job.job_type == "Update Site Configuration":
+			process_update_site_configuration_job_update(job)
 		elif job.job_type == "Add Binlogs To Indexer":
 			process_add_binlogs_to_indexer_agent_job_update(job)
 		elif job.job_type == "Remove Binlogs From Indexer":
