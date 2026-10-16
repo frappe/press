@@ -147,7 +147,7 @@ export const index = computed(() => {
 		},
 
 		Partnership: {
-			condition: Boolean(team.doc?.erpnext_partner),
+			condition: Boolean(team.doc?.erpnext_partner) && session.hasPartnerAccess,
 			items: [
 				{ name: 'Overview', route: '/partners/overview', icon: LucideGlobe },
 				{
