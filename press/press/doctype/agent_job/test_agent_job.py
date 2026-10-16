@@ -23,7 +23,6 @@ from press.press.doctype.agent_job.agent_job import (
 	cancel_job_from_dashboard,
 	fail_old_jobs,
 	lock_doc_updated_by_job,
-	redact_secrets,
 	update_job,
 	update_step,
 )
@@ -34,6 +33,7 @@ from press.press.doctype.app_source.test_app_source import create_test_app_sourc
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
+from press.utils.redact import redact_secrets
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 if TYPE_CHECKING:
