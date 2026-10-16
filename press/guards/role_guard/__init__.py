@@ -202,6 +202,12 @@ def check(document_type: str, document_name: str) -> bool | list[str]:  # noqa: 
 
 
 def is_restricted() -> bool:
+	"""Check whether the Press Roles limit which documents the current user sees."""
+	return is_plain_member() and not skip_roles()
+
+
+def is_plain_member() -> bool:
+	"""Check whether the user is a member of a team with roles, but not an owner, admin or system manager."""
 	team = get_current_team()
 	return (
 		roles_enabled()
