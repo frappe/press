@@ -399,14 +399,22 @@ def set_as_default(name):
 @role_guard.api("billing")
 def remove_payment_method(name):
 	team = get_current_team()
-	payment_method_count = frappe.db.count("Stripe Payment Method", {"team": team})
+	is_last_card = frappe.db.count("Stripe Payment Method", {"team": team}) == 1
 
-	if has_unsettled_invoices(team) and payment_method_count == 1:
-		return "Unpaid Invoices"
+	if is_last_card and has_unsettled_invoices(team):
+		frappe.throw(
+			"You have unpaid invoices. Please pay them before you remove your last card.",
+			title="Unpaid Invoices",
+		)
 
 	payment_method = frappe.get_doc("Stripe Payment Method", {"name": name, "team": team})
 	payment_method.delete()
-	return None
+
+	if is_last_card:
+		team_doc = frappe.get_doc("Team", team)
+		if team_doc.payment_mode == "Card":
+			team_doc.payment_mode = "Prepaid Credits" if team_doc.get_balance() > 0 else ""
+			team_doc.save()
 
 
 @frappe.whitelist()

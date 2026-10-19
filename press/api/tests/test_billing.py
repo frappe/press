@@ -9,6 +9,7 @@ from press.api.billing import (
 	_validate_prepaid_credits,
 	get_cleaned_up_transactions,
 	get_processed_balance_transactions,
+	remove_payment_method,
 	verify_m_pesa_transaction,
 )
 from press.press.doctype.team.test_team import create_test_team
@@ -357,3 +358,58 @@ class TestValidatePrepaidCredits(FrappeTestCase):
 
 		with self.assertRaisesRegex(frappe.ValidationError, "Amount should be at least ₹66.25"):
 			_validate_prepaid_credits(50, "INR")
+
+
+@patch("press.press.doctype.stripe_payment_method.stripe_payment_method.get_stripe")
+class TestRemovePaymentMethod(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_team()
+		frappe.set_user(self.team.user)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def add_card(self):
+		card = frappe.get_doc(
+			{"doctype": "Stripe Payment Method", "team": self.team.name, "is_default": 1}
+		).insert(ignore_permissions=True)
+		self.team.db_set({"payment_mode": "Card", "default_payment_method": card.name})
+		return card
+
+	def test_removing_last_card_without_credits_unsets_payment_mode(self, _):
+		card = self.add_card()
+
+		remove_payment_method(card.name)
+
+		self.assertFalse(frappe.db.exists("Stripe Payment Method", card.name))
+		self.assertFalse(frappe.db.get_value("Team", self.team.name, "payment_mode"))
+
+	def test_removing_last_card_with_credits_switches_to_prepaid_credits(self, _):
+		card = self.add_card()
+		self.team.allocate_credit_amount(10, source="Free Credits", remark="Test")
+
+		remove_payment_method(card.name)
+
+		self.assertEqual(frappe.db.get_value("Team", self.team.name, "payment_mode"), "Prepaid Credits")
+
+	def test_removing_one_of_many_cards_keeps_card_payment_mode(self, _):
+		self.add_card()
+		other = frappe.get_doc({"doctype": "Stripe Payment Method", "team": self.team.name}).insert(
+			ignore_permissions=True
+		)
+
+		remove_payment_method(other.name)
+
+		self.assertEqual(frappe.db.get_value("Team", self.team.name, "payment_mode"), "Card")
+
+	def test_removing_last_card_with_unpaid_invoices_is_blocked(self, _):
+		card = self.add_card()
+
+		with patch("press.api.billing.has_unsettled_invoices", return_value=True):
+			self.assertRaisesRegex(
+				frappe.ValidationError, "unpaid invoices", remove_payment_method, card.name
+			)
+
+		self.assertTrue(frappe.db.exists("Stripe Payment Method", card.name))

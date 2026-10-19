@@ -38,7 +38,7 @@
 								</div>
 							</div>
 						</div>
-						<div v-if="cards.data.length > 1 && !card.is_default">
+						<div v-if="cards.data.length === 1 || !card.is_default">
 							<Dropdown
 								:options="[
 									{
@@ -115,7 +115,10 @@ const removeCard = (card) => {
 	confirmDialogOpened.value = true
 	confirmDialog({
 		title: 'Remove Card',
-		message: 'Are you sure you want to remove this card?',
+		message:
+			cards.data.length === 1
+				? 'This is your only card. After you remove it, add credits to pay your invoices, or your sites may be suspended.'
+				: 'Are you sure you want to remove this card?',
 		primaryAction: {
 			label: 'Remove',
 			variant: 'solid',
@@ -126,9 +129,12 @@ const removeCard = (card) => {
 					params: { name: card },
 					auto: true,
 					onSuccess: () => {
+						if (cards.data.length === 1) show.value = false
+
 						cards.reload()
 						confirmDialogOpened.value = false
 						hide()
+						emit('success')
 						toast.success('Card removed')
 					},
 					onError: (error) => {

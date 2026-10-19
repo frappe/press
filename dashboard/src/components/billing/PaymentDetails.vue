@@ -3,7 +3,7 @@
 		<div class="text-lg font-semibold text-ink-gray-9">Payment details</div>
 		<div class="flex flex-col">
 			<div
-				v-if="team.doc.payment_mode == 'Card'"
+				v-if="team.doc.payment_mode == 'Card' || team.doc.payment_method"
 				class="flex items-center justify-between text-base text-ink-gray-9"
 			>
 				<div class="flex flex-col gap-1.5">
@@ -35,7 +35,7 @@
 				</div>
 			</div>
 			<div
-				v-if="team.doc.payment_mode == 'Card'"
+				v-if="team.doc.payment_mode == 'Card' || team.doc.payment_method"
 				class="my-3 h-px bg-surface-gray-2"
 			/>
 			<div class="flex items-center justify-between text-base text-ink-gray-9">
