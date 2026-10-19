@@ -325,14 +325,8 @@ def accept_team_invite(key: str):
 			"This invite can't be accepted with the current account. Please sign in with the invited account or request a new invite."
 		)
 
-	# Adding the member triggers side effects the invited user can't perform
-	# themselves (e.g. an Email Group Member subscription), which raise a
-	# PermissionError for a plain Press User. Run as Administrator, mirroring
-	# setup_account. This elevation was dropped in f1a0e80ba in favour of
-	# ignore_permissions, but that only covers the Team and User saves, not
-	# those side effects. A bare frappe.set_user pair would wipe the sid and
-	# data of the invitee's session, and Frappe then saves that broken session,
-	# so every later request runs as user None until the cookies are cleared.
+	# Adding a member has side effects (an Email Group Member) that a Press User can't create.
+	# A bare frappe.set_user pair would break the invitee's session, so keep it.
 	with user_utils.as_administrator():
 		add_invited_member_to_team(account_request)
 
@@ -458,9 +452,7 @@ def reactivate_account():
 			"You don't have a disabled account to reactivate. Please log in with the account you disabled."
 		)
 
-	# The team is disabled, so get_current_team throws for this session and every
-	# permission check on the team and its sites fails. Run as Administrator,
-	# mirroring setup_account. Keep the session, as in accept_team_invite.
+	# The team is disabled, so every permission check for this user fails.
 	with user_utils.as_administrator():
 		Team("Team", team_name).enable_account()
 
