@@ -64,6 +64,56 @@ class TestGitHubAuthorization(FrappeTestCase):
 		self.assertEqual(payload["team"], self.team.name)
 		self.assertEqual(payload["redirect_url"], "/dashboard/sites")
 
+	def test_decode_github_oauth_state_accepts_state_just_inside_max_age(self):
+		from press.api.github import GITHUB_OAUTH_STATE_MAX_AGE
+
+		state, _ = self._make_aged_state(
+			self.team.name,
+			"/dashboard/sites",
+			age_seconds=int(GITHUB_OAUTH_STATE_MAX_AGE.total_seconds()) - 60,
+		)
+
+		self.assertEqual(self._decode_github_oauth_state(state)["team"], self.team.name)
+
+	def test_decode_github_oauth_state_rejects_state_past_max_age(self):
+		from press.api.github import GITHUB_OAUTH_STATE_MAX_AGE, InvalidGitHubOAuthState
+
+		state, _ = self._make_aged_state(
+			self.team.name,
+			"/dashboard/sites",
+			age_seconds=int(GITHUB_OAUTH_STATE_MAX_AGE.total_seconds()) + 60,
+		)
+
+		with self.assertRaisesRegex(InvalidGitHubOAuthState, "Invalid GitHub authorization state"):
+			self._decode_github_oauth_state(state)
+
+	def test_get_installation_url_mints_fresh_state_for_current_team(self):
+		from press.api.github import get_installation_url
+
+		before = int(datetime.now().timestamp())
+		with (
+			patch("press.api.github.get_current_team", return_value=self.team.name),
+			patch(
+				"press.api.github.frappe.db.get_single_value",
+				return_value="https://github.com/apps/frappe-cloud",
+			),
+		):
+			data = get_installation_url(f"{frappe.utils.get_url()}/dashboard/groups/bench-1/apps")
+
+		self.assertEqual(data["installation_url"], "https://github.com/apps/frappe-cloud/installations/new")
+		payload = self._decode_state_payload(data["state"])
+		self.assertEqual(payload["team"], self.team.name)
+		self.assertEqual(payload["redirect_url"], "/dashboard/groups/bench-1/apps")
+		self.assertGreaterEqual(payload["issued_at"], before)
+
+	def test_options_does_not_mint_state(self):
+		from press.api.github import options
+
+		with patch("press.api.github.get_current_team", return_value=self.team.name):
+			data = options()
+
+		self.assertEqual(data, {"authorized": False, "installations": []})
+
 	def test_get_context_redirects_guest_to_login_with_callback(self):
 		state = self._encode_github_oauth_state(self.team.name, "/dashboard/sites")
 		frappe.set_user("Guest")
@@ -146,11 +196,14 @@ class TestGitHubAuthorization(FrappeTestCase):
 		self.assertEqual(self._decode_state_payload(reissued_state)["team"], self.team.name)
 
 	def test_get_context_reissues_state_so_oauth_leg_gets_fresh_expiry_window(self):
-		from press.api.github import GITHUB_OAUTH_AUTHORIZE_URL
+		from press.api.github import GITHUB_OAUTH_AUTHORIZE_URL, GITHUB_OAUTH_STATE_MAX_AGE
 
-		# Mint a state that is still valid but already nine minutes into its
-		# ten-minute window, simulating a slow install wizard.
-		aged_state, aged_payload = self._make_aged_state(self.team.name, "/dashboard/sites", age_seconds=540)
+		# A state that is still valid but one minute from expiry, simulating a slow install wizard
+		aged_state, aged_payload = self._make_aged_state(
+			self.team.name,
+			"/dashboard/sites",
+			age_seconds=int(GITHUB_OAUTH_STATE_MAX_AGE.total_seconds()) - 60,
+		)
 		self._set_form_dict(state=aged_state, installation_id="123", setup_action="install")
 
 		with (

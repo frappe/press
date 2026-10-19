@@ -1,39 +1,40 @@
 <script setup lang="ts">
 import {
-	createResource,
-	createListResource,
-	createDocumentResource,
-	getCachedDocumentResource,
-	Button,
-	Dropdown,
 	Badge,
+	Button,
+	createDocumentResource,
+	createListResource,
+	createResource,
+	Dropdown,
+	getCachedDocumentResource,
 } from 'frappe-ui'
-
-import { toast } from 'vue-sonner'
-import Tabs from '@/components/common/Tabs.vue'
-
-import CopyBtn from '@/components/utils/CopyBtn.vue'
-import Scrollbar from '@/components/common/Scrollbar.vue'
-import Collapsable from '@/components/common/Collapsable.vue'
-import StatusIcon from './StatusIcon.vue'
-import AppVersionsDialog from '@/dialogs/AppVersionsDialog.vue'
-import Stages from './Stages.vue'
-import Loader from './Loader.vue'
-
 import {
-	h,
-	ref,
-	reactive,
 	computed,
-	watch,
+	h,
 	nextTick,
 	onBeforeUnmount,
+	reactive,
+	ref,
+	watch,
 } from 'vue'
 import { useRouter } from 'vue-router'
-import { confirmDialog, renderDialog } from '@/utils/components'
+import { toast } from 'vue-sonner'
+import Collapsable from '@/components/common/Collapsable.vue'
+import Scrollbar from '@/components/common/Scrollbar.vue'
+import Tabs from '@/components/common/Tabs.vue'
+import CopyBtn from '@/components/utils/CopyBtn.vue'
 import { getTeam } from '@/data/team'
-
-import { secsToDuration, date, duration, sanitizeHtml } from '@/utils/format'
+import AppVersionsDialog from '@/dialogs/AppVersionsDialog.vue'
+import { confirmDialog, renderDialog } from '@/utils/components'
+import {
+	date,
+	finishedDuration,
+	sanitizeHtml,
+	secsToDuration,
+} from '@/utils/format'
+import Loader from './Loader.vue'
+import Stages from './Stages.vue'
+import StatusIcon from './StatusIcon.vue'
 
 const team = getTeam()
 const socket = window.$socket
@@ -138,18 +139,31 @@ watch(
 	},
 )
 
+// the page itself opens for support, so the banners must too
+const supportFilter = {
+	skip_team_filter_for_system_user_and_support_agent: true,
+}
+
 const fetchSetErrs = () => {
 	const errids = buildIds.value?.length > 0 ? buildIds.value : [props.id]
 
 	errors.update({
 		cache: ['Press Notification Error', 'Deploy Candidate Build', errids],
-		filters: { document_name: ['in', errids], class: 'Error' },
+		filters: {
+			document_name: ['in', errids],
+			class: 'Error',
+			...supportFilter,
+		},
 	})
 	errors.fetch()
 
 	warnings.update({
 		cache: ['Press Notification Warning', 'Deploy Candidate Build', errids],
-		filters: { document_name: ['in', errids], class: 'Warning' },
+		filters: {
+			document_name: ['in', errids],
+			class: 'Warning',
+			...supportFilter,
+		},
 	})
 	warnings.fetch()
 }
@@ -595,7 +609,7 @@ const redeploy = (noCache: boolean) => {
 			<div class="flex flex-col gap-2 rounded">
 				<b> Duration </b>
 				<span>
-					{{ deployview ? duration( builds[activeBuildId]?.doc?.build_duration) || '-' : secsToDuration(pipeline?.doc?.steps?.duration) || '-' }}
+					{{ deployview ? finishedDuration(builds[activeBuildId]?.doc?.build_duration, builds[activeBuildId]?.doc?.status) || '-' : secsToDuration(pipeline?.doc?.steps?.duration) || '-' }}
 				</span>
 			</div>
 		</section>
@@ -654,7 +668,10 @@ const redeploy = (noCache: boolean) => {
 								class="rounded px-3 py-2 bg-surface-red-1 flex flex-col gap-2"
 								:class='x.class == "Error" ? " bg-surface-red-1 text-ink-red-4" : "bg-surface-amber-1 text-ink-amber-3"'
 							>
-								<p v-html="sanitizeHtml(x.message)" class="leading-relaxed text-sm" />
+								<p
+									v-html="sanitizeHtml(x.message)"
+									class="leading-relaxed text-sm"
+								/>
 
 								<a
 									:href="x.assistance_url"
@@ -700,6 +717,6 @@ const redeploy = (noCache: boolean) => {
 
 <style scoped>
 .smallbtn {
-	@apply hover:bg-surface-gray-3 dark:hover:bg-surface-gray-2 p-1 rounded hover:text-ink-gray-9
+	@apply hover:bg-surface-gray-3 dark:hover:bg-surface-gray-2 p-1 rounded hover:text-ink-gray-9;
 }
 </style>

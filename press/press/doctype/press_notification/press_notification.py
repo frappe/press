@@ -7,6 +7,8 @@ from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
 from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.press_notification.reference import find_reference
+from press.utils.redact import redact_secrets
 
 
 class PressNotification(Document):
@@ -58,6 +60,16 @@ class PressNotification(Document):
 		"traceback",
 		"assistance_url",
 	)
+
+	def before_insert(self):
+		if not self.reference_doctype:
+			self.reference_doctype, self.reference_name = find_reference(
+				self.document_type, self.document_name
+			)
+
+	def validate(self):
+		# Teams see the traceback in the dashboard's error dialog
+		self.traceback = redact_secrets(self.traceback)
 
 	def after_insert(self):
 		if frappe.local.dev_server:
@@ -119,16 +131,6 @@ class PressNotification(Document):
 
 def create_new_notification(team, type, document_type, document_name, message):
 	if not frappe.db.exists("Press Notification", {"document_name": document_name}):
-		if document_type == "Agent Job":
-			reference_doctype = "Site"
-			reference_doc = frappe.db.get_value("Agent Job", document_name, "site")
-			if not reference_doc:
-				reference_doctype = "Server"
-				reference_doc = frappe.db.get_value("Agent Job", document_name, "server")
-		elif document_type == "Deploy Candidate":
-			reference_doctype = "Release Group"
-			reference_doc = frappe.db.get_value("Deploy Candidate", document_name, "group")
-
 		frappe.get_doc(
 			{
 				"doctype": "Press Notification",
@@ -137,8 +139,6 @@ def create_new_notification(team, type, document_type, document_name, message):
 				"document_type": document_type,
 				"document_name": document_name or 0,
 				"message": message,
-				"reference_doctype": reference_doctype,
-				"reference_name": reference_doc,
 			}
 		).insert()
 		frappe.publish_realtime("press_notification", doctype="Press Notification", message={"team": team})

@@ -763,9 +763,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 		frappe.msgprint(
 			_(
-				"Builds of this group will share their JS and CSS through the asset store with every other"
-				" public group. Each app's install code runs during the build, so a third party app here"
-				" can change the assets that other public benches download."
+				"Builds of this group will share their JS and CSS through the asset store with every group"
+				" that uses the app cache. Each app's install code runs during the build, so a third party"
+				" app here can change the assets that other benches download."
 			),
 			title=_("Shared asset store"),
 			indicator="orange",
