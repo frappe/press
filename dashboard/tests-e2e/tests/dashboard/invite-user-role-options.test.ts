@@ -6,14 +6,16 @@ const roles = Array.from({ length: 25 }, (_, index) => ({
 	title: `Role ${String(index + 1).padStart(2, '0')}`,
 }))
 
-test('invite user dialog lists every role when the team has more than 20', async ({
+test('invite user dialog lists every role, sorted by title, when the team has more than 20', async ({
 	page,
 }) => {
+	let roleRequest: { order_by?: string } | undefined
 	await page.route(
 		/\/api\/method\/press\.api\.client\.get_list/,
 		async (route) => {
 			const body = route.request().postDataJSON()
 			if (body?.doctype !== 'Press Role') return route.continue()
+			roleRequest = body
 
 			// answer like the server, which returns at most `limit` rows
 			await route.fulfill({
@@ -31,4 +33,6 @@ test('invite user dialog lists every role when the team has more than 20', async
 	await page.getByRole('dialog').getByRole('combobox').fill('Role 25')
 
 	await expect(page.getByRole('option', { name: 'Role 25' })).toBeVisible()
+	// the mock ignores order, so check the dialog asks for it
+	expect(roleRequest?.order_by).toBe('title asc')
 })
