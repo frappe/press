@@ -552,6 +552,16 @@ class TestReactivateAccount(TestCase):
 			reactivate_account()
 		self.assertEqual(self.is_enabled(), 1)
 
+	def test_reactivating_keeps_the_user_session(self):
+		with user_context(self.team.user):
+			frappe.session.sid = "browser-session-id"
+			frappe.session.data = frappe._dict(user=self.team.user, user_type="Website User")
+			reactivate_account()
+
+			self.assertEqual(frappe.session.user, self.team.user)
+			self.assertEqual(frappe.session.sid, "browser-session-id")
+			self.assertEqual(frappe.session.data, {"user": self.team.user, "user_type": "Website User"})
+
 	def test_belonging_to_another_team_does_not_hide_the_disabled_account(self):
 		other_team = create_test_team()
 		other_team.append("team_members", {"user": self.team.user})

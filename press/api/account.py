@@ -460,13 +460,9 @@ def reactivate_account():
 
 	# The team is disabled, so get_current_team throws for this session and every
 	# permission check on the team and its sites fails. Run as Administrator,
-	# mirroring setup_account.
-	current_user = frappe.session.user
-	try:
-		frappe.set_user("Administrator")
+	# mirroring setup_account. Keep the session, as in accept_team_invite.
+	with user_utils.as_administrator():
 		Team("Team", team_name).enable_account()
-	finally:
-		frappe.set_user(current_user)
 
 	return team_name
 
