@@ -2,6 +2,7 @@ import frappe
 from frappe.query_builder.functions import Count
 
 from press.guards.role_guard.notification import restrict_to_roles
+from press.press.doctype.press_notification.press_notification import resource_route
 from press.utils import get_current_team
 
 
@@ -64,6 +65,8 @@ def assign_notification_route(notification):
 		notification.route = "access-requests"
 	elif notification.document_type == "Malware Scan":
 		notification.route = f"servers/{notification.reference_name}/security"
+	elif notification.type == "Resource Access":
+		notification.route = resource_route(notification)
 	else:
 		notification.route = None
 

@@ -43,6 +43,7 @@ class PressNotification(Document):
 			"Support Access",
 			"Auto Scale",
 			"Malware Scan",
+			"Resource Access",
 		]
 	# end: auto-generated types
 
@@ -85,6 +86,8 @@ class PressNotification(Document):
 			self.send_malware_found(
 				get_communication_info("Email", "Server Activity", "Server", self.reference_name)
 			)
+		elif self.type == "Resource Access":
+			self.send_resource_access()
 
 	def send_bench_deploy_failed(self, mails: list[str]):
 		"""Skip emails in case of warning"""
@@ -117,6 +120,18 @@ class PressNotification(Document):
 			},
 		)
 
+	def send_resource_access(self):
+		if self.reference_doctype == "Site":
+			mails = get_communication_info("Email", "Site Activity", "Site", str(self.reference_name))
+		else:
+			mails = get_communication_info("Email", "General", "Team", self.team)
+		frappe.sendmail(
+			recipients=mails,
+			subject=str(self.title),
+			template="resource_access",
+			args={"message": self.message, "link": f"dashboard/{resource_route(self)}"},
+		)
+
 	@dashboard_whitelist()
 	def mark_as_addressed(self):
 		self.read = True
@@ -127,6 +142,37 @@ class PressNotification(Document):
 	@dashboard_whitelist()
 	def mark_as_read(self):
 		self.db_set("read", True)
+
+
+def notify_resource_access(
+	document: Document, reference_doctype: str, reference_name: str, title: str, message: str
+):
+	"""Tell the team that owns `reference_name` that someone got into it."""
+	team = frappe.db.get_value(reference_doctype, reference_name, "team")
+	frappe.get_doc(
+		{
+			"doctype": "Press Notification",
+			"team": team,
+			"type": "Resource Access",
+			"class": "Warning",
+			"document_type": document.doctype,
+			"document_name": document.name,
+			"reference_doctype": reference_doctype,
+			"reference_name": reference_name,
+			"title": title,
+			"message": message,
+		}
+	).insert(ignore_permissions=True)
+	frappe.publish_realtime(
+		"press_notification", doctype="Press Notification", message={"team": team}, after_commit=True
+	)
+
+
+def resource_route(notification) -> str:
+	"""The dashboard page where the team can see the access."""
+	if notification.document_type == "Site Activity":
+		return f"sites/{notification.reference_name}/activity"
+	return f"groups/{notification.reference_name}"
 
 
 def create_new_notification(team, type, document_type, document_name, message):

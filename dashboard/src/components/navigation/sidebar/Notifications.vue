@@ -158,6 +158,11 @@ const iconCss = {
 		txt: 'text-ink-red-4',
 		bg: 'bg-surface-red-1',
 	},
+	'Resource Access': {
+		icon: LucideShieldAlert,
+		txt: 'text-ink-amber-3',
+		bg: 'bg-surface-amber-1',
+	},
 }
 
 const classCss = {
