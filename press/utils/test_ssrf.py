@@ -20,6 +20,17 @@ class TestSSRF(FrappeTestCase):
 		with patch("press.utils.ssrf.socket.getaddrinfo", return_value=resolve_to("93.184.216.34")):
 			self.assertEqual(ssrf._resolve_public_ip("example.com"), "93.184.216.34")
 
+	def test_dual_stack_hostname_resolves_to_its_ipv4_address(self):
+		with patch(
+			"press.utils.ssrf.socket.getaddrinfo",
+			return_value=resolve_to("2606:4700::6810:84e5", "104.16.132.229"),
+		):
+			self.assertEqual(ssrf._resolve_public_ip("worker.workers.dev"), "104.16.132.229")
+
+	def test_ipv6_only_hostname_resolves_to_its_ipv6_address(self):
+		with patch("press.utils.ssrf.socket.getaddrinfo", return_value=resolve_to("2606:4700::6810:84e5")):
+			self.assertEqual(ssrf._resolve_public_ip("ipv6.example.com"), "2606:4700::6810:84e5")
+
 	def test_hostname_resolving_to_metadata_ip_is_rejected(self):
 		with (
 			patch("press.utils.ssrf.socket.getaddrinfo", return_value=resolve_to("169.254.169.254")),
