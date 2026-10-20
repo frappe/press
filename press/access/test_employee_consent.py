@@ -9,6 +9,7 @@ from frappe.tests.utils import FrappeTestCase
 from press.access import dashboard_access_rules
 from press.access.support_access import has_support_access
 from press.api.site import validate_files_for_new_site
+from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 from press.press.doctype.remote_file.remote_file import RemoteFile
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
@@ -191,3 +192,41 @@ class TestEmployeeRestore(FrappeTestCase):
 		)
 		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot restore or copy a site"):
 			replication.insert(ignore_permissions=True)
+
+
+@patch.object(AccountRequest, "send_verification_email", new=Mock())
+class TestEmployeeTeamInvite(FrappeTestCase):
+	"""Only the team and its member employees can invite people into it."""
+
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_press_admin_team()
+		self.employee = create_test_employee()
+		self.email = frappe.mock("email")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def invite(self, user: str):
+		frappe.set_user(user)
+		Team("Team", self.team.name).invite_team_member(self.email)
+
+	def assert_invited(self):
+		invite = {"team": self.team.name, "email": self.email, "invited_by": ("is", "set")}
+		self.assertTrue(frappe.db.exists("Account Request", invite))
+
+	def test_employee_outside_team_cannot_invite_members_to_it(self):
+		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot invite members"):
+			self.invite(self.employee.user)
+		self.assertFalse(frappe.db.exists("Account Request", {"email": self.email}))
+
+	def test_employee_who_is_member_of_team_can_invite_members(self):
+		self.team.append("team_members", {"user": self.employee.user})
+		self.team.save()
+		self.invite(self.employee.user)
+		self.assert_invited()
+
+	def test_team_owner_can_invite_members(self):
+		self.invite(self.team.user)
+		self.assert_invited()
