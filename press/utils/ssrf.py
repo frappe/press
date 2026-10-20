@@ -47,11 +47,16 @@ def _resolve_public_ip(hostname: str) -> str:
 	except socket.gaierror as error:
 		raise SSRFError(f"Could not resolve the endpoint host '{hostname}'.") from error
 
-	ips = {str(address[4][0]) for address in addresses}
+	ips = [str(address[4][0]) for address in addresses]
 	for ip in ips:
 		if not _is_public(ip):
 			raise SSRFError("The endpoint resolves to a private or internal address, which is not allowed.")
-	return next(iter(ips))
+	return _prefer_ipv4(ips)
+
+
+def _prefer_ipv4(ips: list[str]) -> str:
+	"""Pick an IPv4 address when the host is dual-stack, as the control plane may lack IPv6 egress."""
+	return next((ip for ip in ips if ipaddress.ip_address(ip).version == 4), ips[0])
 
 
 def _is_public(ip: str) -> bool:
