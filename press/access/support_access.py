@@ -62,15 +62,29 @@ def get_extra_field(doctype: str, perm: str | None) -> str | None:
 	return None
 
 
+def is_insider(team: str | None) -> bool:
+	"""Administrator, or a member who acts for `team`, the owner of the document."""
+	return frappe.session.user == "Administrator" or access_utils.is_owner_team(team)
+
+
+def outsider_can_access(doctype: str, docname: str, rule: str, allowed: bool) -> bool:
+	"""Whether a support agent or an employee may use the action or tab `rule`."""
+	if get_extra_field(doctype, rule):
+		return allowed or has_support_access(doctype, docname, rule)
+	# Employees need consent only for the rules a grant names.
+	return allowed or frappe.local.system_user()
+
+
 def has_support_access(doctype: str, docname: str, action: str | None = None) -> bool:
 	"""
 	Checks if current team has support access to given document.
 	"""
 
-	if frappe.local.system_user():
+	# Employees read everything, but an action needs the consent of the team.
+	if frappe.local.system_user() and not action:
 		return True
 
-	if not press_utils.has_role("Press Support Agent"):
+	if not (frappe.local.system_user() or press_utils.has_role("Press Support Agent")):
 		return False
 
 	return any(
