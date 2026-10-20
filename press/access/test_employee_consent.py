@@ -41,7 +41,7 @@ class TestEmployeeConsent(FrappeTestCase):
 
 	def act_as_employee_in_site_team(self):
 		frappe.set_user(self.employee.user)
-		switched = patch("press.access.utils.get_current_team", return_value=self.site.team)
+		switched = patch("press.utils.get_current_team", return_value=self.site.team)
 		switched.start()
 		self.addCleanup(switched.stop)
 
