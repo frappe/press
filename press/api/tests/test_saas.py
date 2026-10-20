@@ -53,3 +53,13 @@ class TestAPISaas(FrappeTestCase):
 
 		with self.assertRaises(frappe.ValidationError):
 			self.get_url(self.account_request.request_key, domain_side_effect=spend_key_concurrently)
+
+	def test_setup_key_logs_guest_in_as_team_user_without_consent_check(self):
+		self.site.db_set("additional_system_user_created", 1)
+		frappe.set_user("Guest")
+		with (
+			patch("press.api.saas.get_erpnext_domain", return_value=self.site.domain),
+			patch.object(Site, "get_login_sid", return_value="x"),
+		):
+			url = get_site_url_and_sid(self.account_request.request_key)
+		self.assertEqual(url, f"https://{self.site.host_name or self.site.name}/app?sid=x")

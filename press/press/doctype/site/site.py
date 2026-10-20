@@ -2311,7 +2311,14 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
+	@action_guard(SiteActions.LoginAsAdmin)
 	def login_as_team(self, reason=None):
+		reason = f"Logged in as the team user. {reason or ''}".strip()
+		log_site_activity(self.name, "Login as Administrator", reason=reason)
+		return self.team_login_url()
+
+	def team_login_url(self):
+		"""Not whitelisted: the caller checks consent and logs the activity."""
 		if self.additional_system_user_created:
 			team_user = frappe.db.get_value("Team", self.team, "user")
 			sid = self.get_login_sid(user=team_user)
