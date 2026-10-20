@@ -63,9 +63,11 @@ def get_extra_field(doctype: str, perm: str | None) -> str | None:
 
 
 def is_insider(team: str | None) -> bool:
-	"""Administrator, or a member who acts for `team`, the owner of the document."""
+	"""
+	A member employee (by membership, as desk sends no team), or a customer
+	acting for `team`. Administrator counts as a member.
+	"""
 	if press_utils._system_user():
-		# Desk sends no X-Press-Team, so membership alone decides for employees.
 		return not access_utils.is_outside_employee(team)
 	return bool(team) and team == press_utils.get_current_team()
 
