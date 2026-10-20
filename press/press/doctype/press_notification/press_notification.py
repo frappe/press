@@ -170,7 +170,7 @@ def notify_resource_access(
 
 def resource_route(notification) -> str:
 	"""The dashboard page where the team can see the access."""
-	if notification.document_type == "Site Activity":
+	if notification.reference_doctype == "Site":
 		return f"sites/{notification.reference_name}/activity"
 	return f"groups/{notification.reference_name}"
 

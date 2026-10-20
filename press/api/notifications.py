@@ -29,6 +29,7 @@ def get_notifications(
 			PressNotification.is_actionable,
 			PressNotification.document_type,
 			PressNotification.document_name,
+			PressNotification.reference_doctype,
 			PressNotification.reference_name,
 			PressNotification["class"],
 		)
