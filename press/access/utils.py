@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 
 from press.utils import _system_user, is_user_part_of_team
 
@@ -15,3 +16,11 @@ def is_outside_employee(team: str | None) -> bool:
 	if frappe.session.user == "Administrator" or not _system_user():
 		return False
 	return not (team and is_user_part_of_team(frappe.session.user, team))
+
+
+def refuse_backup_download() -> None:
+	"""The one error for an employee downloading another team's backups."""
+	frappe.throw(
+		_("Employees cannot download the backups of a site that belongs to another team."),
+		frappe.PermissionError,
+	)

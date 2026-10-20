@@ -15,7 +15,7 @@ from frappe.model.document import Document
 from frappe.utils import cstr
 from frappe.utils.password import get_decrypted_password
 
-from press.access.utils import is_outside_employee
+from press.access.utils import is_outside_employee, refuse_backup_download
 from press.press.doctype.site_activity.site_activity import log_site_activity
 
 if TYPE_CHECKING:
@@ -290,7 +290,8 @@ class RemoteFile(Document):
 
 	@property
 	def download_link(self):
-		# Unguarded on purpose, for server-side restores (agent, snapshot recovery). Users get `get_download_link`.
+		# Unguarded on purpose, for server-side restores (agent). Callers that hand the
+		# link to a user guard and log first, like ServerSnapshotRecovery.download_backup.
 		return self.make_download_link()
 
 	@frappe.whitelist()
@@ -346,10 +347,7 @@ class RemoteFile(Document):
 
 	def validate_downloader(self):
 		if self.is_backup and is_outside_employee(self.owner_team):
-			frappe.throw(
-				_("Employees cannot download the backups of a site that belongs to another team."),
-				frappe.PermissionError,
-			)
+			refuse_backup_download()
 
 	def make_download_link(self, expires_in: int | None = None, log_activity: bool = True) -> str:
 		"""Not whitelisted: a caller over the API must not skip the activity log or extend the expiry."""
