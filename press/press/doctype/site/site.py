@@ -565,6 +565,7 @@ class Site(Document, TagHelpers):
 		self.validate_backup_times()
 
 	def before_insert(self):
+		self.validate_remote_files_downloadable()
 		if not self.bench and self.group:
 			if self.server and not self.is_standby:
 				self.set_bench_for_server()
@@ -1528,9 +1529,12 @@ class Site(Document, TagHelpers):
 
 	def validate_restorer(self):
 		"""Only those who can download a backup can restore a site from it."""
+		self.validate_backup_access()
+		self.validate_remote_files_downloadable()
+
+	def validate_remote_files_downloadable(self):
 		from press.press.doctype.remote_file.remote_file import validate_files_downloadable
 
-		self.validate_backup_access()
 		validate_files_downloadable(
 			[
 				self.remote_database_file,
