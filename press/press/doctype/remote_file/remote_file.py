@@ -19,7 +19,11 @@ from press.access.utils import is_outside_employee
 from press.press.doctype.site_activity.site_activity import log_site_activity
 
 if TYPE_CHECKING:
+	from collections.abc import Iterable
+
 	from press.press.doctype.backup_bucket.backup_bucket import BackupBucket
+
+BACKUP_FILE_KEYS = ("database", "public", "private", "config")
 
 
 def get_team_prefix(team: str) -> str:
@@ -44,7 +48,7 @@ def get_remote_key(file):
 
 def validate_files_belong_to_team(files: dict, team: str):
 	"""Restore accepts Remote File names from the client. They must be the team's own."""
-	for key in ("database", "public", "private", "config"):
+	for key in BACKUP_FILE_KEYS:
 		name = files.get(key)
 		if not name:
 			continue
@@ -58,11 +62,10 @@ def validate_files_belong_to_team(files: dict, team: str):
 			)
 
 
-def validate_files_downloadable(files: dict):
+def validate_files_downloadable(names: Iterable[str | None]):
 	"""Only those who can download a backup can restore a site from it."""
-	for key in ("database", "public", "private", "config"):
-		if name := files.get(key):
-			RemoteFile("Remote File", name).validate_downloader()
+	for name in filter(None, names):
+		RemoteFile("Remote File", name).validate_downloader()
 
 
 def poll_file_statuses():
