@@ -67,7 +67,7 @@ def is_insider(team: str | None) -> bool:
 	if frappe.local.system_user():
 		# Desk sends no X-Press-Team, so membership alone decides for employees.
 		return not access_utils.is_outside_employee(team)
-	return access_utils.is_owner_team(team)
+	return bool(team) and team == press_utils.get_current_team()
 
 
 def outsider_can_access(doctype: str, docname: str, rule: str, allowed: bool) -> bool:
