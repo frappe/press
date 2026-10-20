@@ -394,5 +394,13 @@ def get_site_url_and_sid(key, app=None):
 
 	# The spent key proves the caller signed up for the site, so no consent is needed.
 	if site.additional_system_user_created:
+		validate_site_active_for_login(site)
 		return site.team_login_url()
 	return site.login_as_admin()
+
+
+def validate_site_active_for_login(site: "Site"):
+	if site.status != "Active":
+		frappe.throw(  # nosemgrep
+			f"Site is in {frappe.bold(site.status.lower())} state. Your site has to be active to {frappe.bold('log in')}."
+		)
