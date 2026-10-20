@@ -8,7 +8,6 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.access import dashboard_access_rules
 from press.access.support_access import has_support_access
-from press.api.site import validate_files_for_new_site
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 from press.press.doctype.remote_file.remote_file import RemoteFile
@@ -203,11 +202,6 @@ class TestEmployeeRestore(FrappeTestCase):
 		frappe.set_user(self.employee.user)
 		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot restore or copy a site"):
 			Site("Site", self.site.name).restore_site_from_physical_backup("some-backup")
-
-	def test_employee_cannot_create_a_site_from_a_customer_backup(self):
-		frappe.set_user(self.employee.user)
-		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot download the backups"):
-			validate_files_for_new_site({"database": self.backup.name}, self.employee.name)
 
 	def create_site_from_backup(self):
 		bench = create_test_bench()

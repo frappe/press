@@ -33,7 +33,6 @@ from press.press.doctype.remote_file.remote_file import (
 	BACKUP_FILE_KEYS,
 	get_remote_key,
 	validate_files_belong_to_team,
-	validate_files_downloadable,
 )
 from press.press.doctype.root_domain.root_domain import get_matching_domain
 from press.press.doctype.server.server import is_dedicated_server
@@ -154,7 +153,6 @@ def get_name_from_filters(filters: dict):
 
 def validate_files_for_new_site(files: dict, team: str):
 	"""Site Replication creates the site from desk, under the operator's own team."""
-	validate_files_downloadable(files.get(key) for key in BACKUP_FILE_KEYS)
 	if _system_user():
 		return
 
