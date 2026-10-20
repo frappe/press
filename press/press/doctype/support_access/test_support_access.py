@@ -241,3 +241,62 @@ class IntegrationTestSupportAccessToBenchGroup(IntegrationTestCase):
 		first_page = self.dependencies_seen_by(owner_team, start=0, limit=2)
 		second_page = self.dependencies_seen_by(owner_team, start=2, limit=2)
 		self.assertEqual(first_page + second_page, every_dependency[:4])
+
+
+class IntegrationTestSupportAccessAnswer(IntegrationTestCase):
+	"""Only a member of the target team can answer a request, even when an employee switches in."""
+
+	def setUp(self):
+		from press.access.test_employee_consent import create_test_employee
+
+		super().setUp()
+		sendmail = patch("frappe.sendmail", new=Mock())
+		sendmail.start()
+		self.addCleanup(sendmail.stop)
+		self.site = create_test_site(team=create_test_press_admin_team().name)
+		self.employee = create_test_employee()
+		self.access = frappe.get_doc(
+			{
+				"doctype": "Support Access",
+				"requested_by": self.employee.user,
+				"requested_team": self.employee.name,
+				"reason": "Debugging",
+				"login_as_administrator": 1,
+				"resources": [{"document_type": "Site", "document_name": self.site.name}],
+			}
+		).insert(ignore_permissions=True)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def act_in_site_team_as(self, user: str) -> SupportAccess:
+		frappe.set_user(user)
+		switched = patch(
+			"press.press.doctype.support_access.support_access.get_current_team",
+			return_value=self.site.team,
+		)
+		switched.start()
+		self.addCleanup(switched.stop)
+		return SupportAccess("Support Access", self.access.name)
+
+	def test_employee_switched_into_target_team_cannot_accept_their_own_request(self):
+		access = self.act_in_site_team_as(self.employee.user)
+		access.status = "Accepted"
+		with self.assertRaisesRegex(frappe.ValidationError, "You don't have permission to set this status"):
+			access.save()
+		self.assertEqual(frappe.db.get_value("Support Access", access.name, "status"), "Pending")
+
+	def test_member_of_target_team_can_accept_the_request(self):
+		access = self.act_in_site_team_as(frappe.db.get_value("Team", self.site.team, "user"))
+		access.status = "Accepted"
+		access.save(ignore_permissions=True)
+		self.assertEqual(frappe.db.get_value("Support Access", access.name, "status"), "Accepted")
+
+	def test_employee_switched_into_target_team_cannot_change_the_validity_period(self):
+		access = self.act_in_site_team_as(self.employee.user)
+		access.allowed_for = "72"
+		with self.assertRaisesRegex(
+			frappe.ValidationError, "You are not allowed to change the validity period"
+		):
+			access.validate_validity_change()
