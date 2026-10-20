@@ -2279,7 +2279,6 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
-	@action_guard(SiteActions.LoginAsAdmin)
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/app?sid={sid}"
@@ -2318,6 +2317,7 @@ class Site(Document, TagHelpers):
 			frappe.throw(str(e))  # nosemgrep
 
 	@frappe.whitelist()
+	@action_guard(SiteActions.LoginAsAdmin)
 	def login(self, reason=None):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()
