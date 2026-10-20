@@ -17,6 +17,8 @@ from __future__ import annotations
 import frappe
 from frappe.query_builder import Criterion
 
+from press.utils import _system_user
+
 # Reference data. The same rows for every team, so any signed-in user may read
 # them and nobody may write them from the dashboard. Nothing derived from a
 # single team's data belongs here.
@@ -157,7 +159,7 @@ def scope_query(doctype: str, meta, filters: dict, query):
 	if meta.has_field("team") or doctype in GLOBAL_DOCTYPES or doctype in SELF_SCOPED_DOCTYPES:
 		return query
 
-	if frappe.local.system_user():
+	if _system_user():
 		return query
 
 	if meta.istable:

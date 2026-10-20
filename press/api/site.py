@@ -29,7 +29,11 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	get_total_installs_by_app,
 )
-from press.press.doctype.remote_file.remote_file import get_remote_key, validate_files_belong_to_team
+from press.press.doctype.remote_file.remote_file import (
+	BACKUP_FILE_KEYS,
+	get_remote_key,
+	validate_files_belong_to_team,
+)
 from press.press.doctype.root_domain.root_domain import get_matching_domain
 from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site.site import (
@@ -823,7 +827,7 @@ def backups(name):
 @frappe.whitelist()
 @protected("Site")
 def get_backup_link(name, backup, file):
-	if file not in ["database", "public", "private", "config"]:
+	if file not in BACKUP_FILE_KEYS:
 		frappe.throw("Invalid file type")  # nosemgrep
 
 	try:
@@ -832,7 +836,7 @@ def get_backup_link(name, backup, file):
 			{"name": backup, "site": name},
 			f"remote_{file}_file",
 		)
-		return frappe.get_doc("Remote File", remote_file).download_link
+		return frappe.get_doc("Remote File", remote_file).get_download_link()
 	except ClientError:
 		log_error(title="Offsite Backup Response Exception")
 
