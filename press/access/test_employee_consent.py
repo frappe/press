@@ -14,7 +14,7 @@ from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 from press.press.doctype.remote_file.remote_file import RemoteFile
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.site.site import Site
-from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.team import Team
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
@@ -208,6 +208,34 @@ class TestEmployeeRestore(FrappeTestCase):
 		frappe.set_user(self.employee.user)
 		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot download the backups"):
 			validate_files_for_new_site({"database": self.backup.name}, self.employee.name)
+
+	def create_site_from_backup(self):
+		bench = create_test_bench()
+		frappe.set_user(self.employee.user)
+		return create_test_site(
+			bench=bench.name, team=self.employee.name, remote_database_file=self.backup.name
+		)
+
+	def test_employee_cannot_create_a_site_in_desk_from_a_customer_backup(self):
+		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot download the backups"):
+			self.create_site_from_backup()
+
+	def test_employee_who_is_member_of_backup_team_can_create_a_site_from_its_backup(self):
+		team = frappe.get_doc("Team", self.site.team)
+		team.append("team_members", {"user": self.employee.user})
+		team.save()
+		self.employee.db_set("free_account", 1)
+		with patch("press.agent.Agent.new_site_from_backup", return_value=self.job):
+			site = self.create_site_from_backup()
+		self.assertEqual(site.remote_database_file, self.backup.name)
+
+	def test_employee_can_save_existing_site_that_already_carries_a_customer_backup(self):
+		self.site.db_set("remote_database_file", self.backup.name)
+		frappe.set_user(self.employee.user)
+		site = Site("Site", self.site.name)
+		site.timezone = "Asia/Kolkata"
+		site.save(ignore_permissions=True)
+		self.assertEqual(frappe.db.get_value("Site", site.name, "timezone"), "Asia/Kolkata")
 
 	def test_employee_cannot_replicate_a_customer_site(self):
 		frappe.set_user(self.employee.user)
