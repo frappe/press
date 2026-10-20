@@ -14,6 +14,7 @@ from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.press_notification.press_notification import notify_resource_access
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_backup.site_backup import get_backup_bucket
@@ -401,7 +402,11 @@ class ServerSnapshotRecovery(Document):
 		if is_outside_employee(self.owning_team(site)):
 			refuse_backup_download()
 
-		self.log_backup_access(site)
+		# Recovered Remote Files carry no site, so make_download_link logs nothing itself.
+		if frappe.db.exists("Site", site):
+			log_site_activity(site=site, action="Access Offsite Backups")
+		else:
+			self.notify_backup_access_of_gone_site(site)
 
 		try:
 			remote_file_name = ""
@@ -422,10 +427,17 @@ class ServerSnapshotRecovery(Document):
 		"""The recovered site's current team, or the recovery's team once the site is gone."""
 		return frappe.db.get_value("Site", site, "team") or self.team
 
-	def log_backup_access(self, site: str):
-		# Recovered Remote Files carry no site, so make_download_link logs nothing itself.
-		if frappe.db.exists("Site", site):
-			log_site_activity(site=site, action="Access Offsite Backups")
+	def notify_backup_access_of_gone_site(self, site: str):
+		"""The site is gone, so the recovery's team is the only audience left."""
+		message = f"{frappe.session.user} got a download link for a backup of {site}."
+		notify_resource_access(
+			self,
+			"Server Snapshot Recovery",
+			self.name,
+			f"Backup of {site} accessed",
+			message,
+			team=self.team,
+		)
 
 	@frappe.whitelist()
 	def expire_backups(self):
