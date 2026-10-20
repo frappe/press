@@ -334,8 +334,14 @@ class RemoteFile(Document):
 		self.validate_downloader()
 		return self.make_download_link()
 
+	@property
+	def is_backup(self) -> bool:
+		"""A site backup, or a file a team uploaded to restore a site from. Not a server log."""
+		uploads_bucket = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
+		return bool(self.site) or bool(uploads_bucket and self.bucket == uploads_bucket)
+
 	def validate_downloader(self):
-		if is_outside_employee(self.owner_team):
+		if self.is_backup and is_outside_employee(self.owner_team):
 			frappe.throw(
 				_("Employees cannot download the backups of a site that belongs to another team."),
 				frappe.PermissionError,
