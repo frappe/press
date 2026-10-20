@@ -89,6 +89,13 @@ class TestEmployeeConsent(FrappeTestCase):
 		self.act_as_employee_in_site_team()
 		self.assertEqual(Site("Site", self.site.name).login(), "sid")
 
+	def test_member_employee_can_login_as_administrator_from_desk_without_switching_team(self):
+		team = frappe.get_doc("Team", self.site.team)
+		team.append("team_members", {"user": self.employee.user})
+		team.save()
+		frappe.set_user(self.employee.user)
+		self.assertEqual(Site("Site", self.site.name).login(), "sid")
+
 	def test_administrator_can_login_as_administrator_without_grant(self):
 		frappe.set_user("Administrator")
 		self.assertEqual(Site("Site", self.site.name).login(), "sid")

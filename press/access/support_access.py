@@ -64,7 +64,10 @@ def get_extra_field(doctype: str, perm: str | None) -> str | None:
 
 def is_insider(team: str | None) -> bool:
 	"""Administrator, or a member who acts for `team`, the owner of the document."""
-	return frappe.session.user == "Administrator" or access_utils.is_owner_team(team)
+	if frappe.local.system_user():
+		# Desk sends no X-Press-Team, so membership alone decides for employees.
+		return not access_utils.is_outside_employee(team)
+	return access_utils.is_owner_team(team)
 
 
 def outsider_can_access(doctype: str, docname: str, rule: str, allowed: bool) -> bool:
