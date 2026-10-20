@@ -1532,12 +1532,12 @@ class Site(Document, TagHelpers):
 
 		self.validate_backup_access()
 		validate_files_downloadable(
-			{
-				"database": self.remote_database_file,
-				"public": self.remote_public_file,
-				"private": self.remote_private_file,
-				"config": self.remote_config_file,
-			}
+			[
+				self.remote_database_file,
+				self.remote_public_file,
+				self.remote_private_file,
+				self.remote_config_file,
+			]
 		)
 
 	def validate_backup_access(self):
@@ -1652,9 +1652,9 @@ class Site(Document, TagHelpers):
 	def get_backup_download_link(self, backup, file):
 		from botocore.exceptions import ClientError
 
-		from press.press.doctype.remote_file.remote_file import RemoteFile
+		from press.press.doctype.remote_file.remote_file import BACKUP_FILE_KEYS, RemoteFile
 
-		if file not in ["database", "public", "private", "config"]:
+		if file not in BACKUP_FILE_KEYS:
 			frappe.throw("Invalid file type")  # nosemgrep
 
 		try:

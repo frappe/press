@@ -30,6 +30,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_total_installs_by_app,
 )
 from press.press.doctype.remote_file.remote_file import (
+	BACKUP_FILE_KEYS,
 	get_remote_key,
 	validate_files_belong_to_team,
 	validate_files_downloadable,
@@ -153,7 +154,7 @@ def get_name_from_filters(filters: dict):
 
 def validate_files_for_new_site(files: dict, team: str):
 	"""Site Replication creates the site from desk, under the operator's own team."""
-	validate_files_downloadable(files)
+	validate_files_downloadable(files.get(key) for key in BACKUP_FILE_KEYS)
 	if _system_user():
 		return
 
@@ -798,7 +799,7 @@ def backups(name):
 @frappe.whitelist()
 @protected("Site")
 def get_backup_link(name, backup, file):
-	if file not in ["database", "public", "private", "config"]:
+	if file not in BACKUP_FILE_KEYS:
 		frappe.throw("Invalid file type")  # nosemgrep
 
 	try:
