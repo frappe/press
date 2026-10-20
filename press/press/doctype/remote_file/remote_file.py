@@ -290,6 +290,7 @@ class RemoteFile(Document):
 
 	@property
 	def download_link(self):
+		# Unguarded on purpose, for server-side restores (agent, snapshot recovery). Users get `get_download_link`.
 		return self.make_download_link()
 
 	@frappe.whitelist()
