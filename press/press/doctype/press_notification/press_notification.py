@@ -145,10 +145,15 @@ class PressNotification(Document):
 
 
 def notify_resource_access(
-	document: Document, reference_doctype: str, reference_name: str, title: str, message: str
+	document: Document,
+	reference_doctype: str,
+	reference_name: str,
+	title: str,
+	message: str,
+	team: str | None = None,
 ):
 	"""Tell the team that owns `reference_name` that someone got into it."""
-	team = frappe.db.get_value(reference_doctype, reference_name, "team")
+	team = team or str(frappe.db.get_value(reference_doctype, reference_name, "team") or "") or None
 	frappe.get_doc(
 		{
 			"doctype": "Press Notification",
@@ -156,7 +161,7 @@ def notify_resource_access(
 			"type": "Resource Access",
 			"class": "Warning",
 			"document_type": document.doctype,
-			"document_name": document.name,
+			"document_name": document.name or 0,
 			"reference_doctype": reference_doctype,
 			"reference_name": reference_name,
 			"title": title,
@@ -172,6 +177,11 @@ def resource_route(notification) -> str:
 	"""The dashboard page where the team can see the access."""
 	if notification.reference_doctype == "Site":
 		return f"sites/{notification.reference_name}/activity"
+	if notification.reference_doctype == "Server Snapshot Recovery":
+		app_server = frappe.db.get_value(
+			"Server Snapshot Recovery", notification.reference_name, "app_server"
+		)
+		return f"servers/{app_server}"
 	return f"groups/{notification.reference_name}"
 
 

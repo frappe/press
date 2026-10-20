@@ -69,6 +69,31 @@ class TestSnapshotRecoveryBackupDownload(FrappeTestCase):
 		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot download the backups"):
 			recovery.download_backup("gone.example.com", "database")
 
+	def test_member_of_recovery_team_can_download_backup_of_a_gone_site_and_team_is_notified(self):
+		recovery = self.create_recovery(team=self.site.team, site="gone.example.com")
+		team = frappe.get_doc("Team", self.site.team)
+		team.append("team_members", {"user": self.employee.user})
+		team.save()
+		frappe.set_user(self.employee.user)
+		self.assertEqual(
+			recovery.download_backup("gone.example.com", "database"), "https://example.com/database.sql.gz"
+		)
+		self.assertEqual(self.backup_accesses(), 0)
+		notification = {
+			"team": self.site.team,
+			"type": "Resource Access",
+			"reference_doctype": "Server Snapshot Recovery",
+		}
+		self.assertTrue(frappe.db.exists("Press Notification", notification))
+
+	def test_member_of_recovery_team_can_get_encryption_key_of_a_gone_site(self):
+		recovery = self.create_recovery(team=self.site.team, site="gone.example.com")
+		team = frappe.get_doc("Team", self.site.team)
+		team.append("team_members", {"user": self.employee.user})
+		team.save()
+		frappe.set_user(self.employee.user)
+		self.assertEqual(recovery.download_backup("gone.example.com", "encryption_key"), "secret")
+
 	def test_employee_member_of_site_team_can_download_recovered_backup_and_team_is_notified(self):
 		team = frappe.get_doc("Team", self.site.team)
 		team.append("team_members", {"user": self.employee.user})
