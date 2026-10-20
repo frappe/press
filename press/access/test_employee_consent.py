@@ -97,6 +97,30 @@ class TestEmployeeConsent(FrappeTestCase):
 		frappe.set_user(self.employee.user)
 		self.assertEqual(Site("Site", self.site.name).login(), "sid")
 
+	def login_as_team(self):
+		frappe.db.set_value("Site", self.site.name, "additional_system_user_created", 1)
+		return Site("Site", self.site.name).login_as_team()
+
+	def test_employee_switched_into_site_team_cannot_login_as_team_user_without_consent(self):
+		self.act_as_employee_in_site_team()
+		with self.assertRaisesRegex(frappe.PermissionError, "You do not have permission"):
+			self.login_as_team()
+
+	def test_employee_with_login_grant_logs_in_as_team_user_and_team_is_notified(self):
+		self.grant(login_as_administrator=1)
+		self.act_as_employee_in_site_team()
+		self.assertTrue(self.login_as_team().endswith("?sid=sid"))
+		notification = {"team": self.site.team, "type": "Resource Access", "reference_name": self.site.name}
+		self.assertTrue(frappe.db.exists("Press Notification", notification))
+
+	def test_team_owner_logs_in_as_team_user_without_grant(self):
+		frappe.set_user(frappe.db.get_value("Team", self.site.team, "user"))
+		self.assertTrue(self.login_as_team().endswith("?sid=sid"))
+		activity = {"site": self.site.name, "action": "Login as Administrator"}
+		self.assertEqual(
+			frappe.db.get_value("Site Activity", activity, "reason"), "Logged in as the team user."
+		)
+
 	def test_administrator_can_login_as_administrator_without_grant(self):
 		frappe.set_user("Administrator")
 		self.assertEqual(Site("Site", self.site.name).login(), "sid")

@@ -392,6 +392,7 @@ def get_site_url_and_sid(key, app=None):
 		update_modified=False,
 	)
 
+	# The spent key proves the caller signed up for the site, so no consent is needed.
 	if site.additional_system_user_created:
-		return site.login_as_team()
+		return site.team_login_url()
 	return site.login_as_admin()
