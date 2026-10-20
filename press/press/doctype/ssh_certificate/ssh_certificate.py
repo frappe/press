@@ -12,7 +12,9 @@ from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import cstr, escape_html
 
+from press.press.doctype.press_notification.press_notification import notify_resource_access
 from press.utils import log_error
 
 if TYPE_CHECKING:
@@ -107,6 +109,14 @@ class SSHCertificate(Document):
 		self.extract_certificate_details()
 		frappe.local.role_permissions = {}
 		self.save()
+		self.notify_group_team()
+
+	def notify_group_team(self):
+		if self.certificate_type != "User" or not self.group:
+			return
+		title = escape_html(cstr(frappe.db.get_value("Release Group", self.group, "title")))
+		message = f"{self.user} got SSH access to the bench group {title} for {self.validity}."
+		notify_resource_access(self, "Release Group", self.group, f"SSH access to {title}", message)
 
 	def generate_certificate(self):
 		ca: "SSHCertificateAuthority" = frappe.get_doc(

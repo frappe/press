@@ -21,6 +21,7 @@ from press.press.doctype.user_ssh_key.test_user_ssh_key import create_test_user_
 @patch.object(SSHCertificate, "generate_certificate", new=Mock())
 @patch.object(SSHCertificate, "extract_certificate_details", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
+@patch("press.press.doctype.press_notification.press_notification.frappe.sendmail", new=Mock())
 class TestSSHCertificate(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
@@ -77,6 +78,18 @@ class TestSSHCertificate(FrappeTestCase):
 		self.sign_in_with_default_ssh_key()
 		frappe.get_doc("Release Group", bench.group).generate_certificate()
 		self.assertTrue(frappe.db.exists("SSH Certificate", {"group": bench.group, "user": self.user}))
+
+	def test_user_certificate_notifies_group_team_of_ssh_access(self):
+		frappe.db.set_value("Team", self.team.name, "ssh_access_enabled", 1)
+		bench = self.create_bench_on_public_server()
+		self.sign_in_with_default_ssh_key()
+		frappe.get_doc("Release Group", bench.group).generate_certificate()
+		frappe.set_user("Administrator")
+		notification = frappe.get_last_doc("Press Notification", {"type": "Resource Access"})
+		self.assertEqual(notification.team, self.team.name)
+		self.assertEqual(notification.reference_doctype, "Release Group")
+		self.assertEqual(notification.reference_name, bench.group)
+		self.assertIn(f"{self.user} got SSH access", notification.message)
 
 	def test_old_team_without_ssh_access_sees_not_enabled_message(self):
 		self.team.db_set("creation", add_to_date(None, days=-8))
