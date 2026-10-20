@@ -14,6 +14,9 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import cstr, escape_html
 
+from press.access.actions import ReleaseGroupActions
+from press.access.support_access import has_grant
+from press.access.utils import is_outside_employee
 from press.press.doctype.press_notification.press_notification import notify_resource_access
 from press.utils import log_error
 
@@ -96,6 +99,22 @@ class SSHCertificate(Document):
 		):
 			frappe.throw(
 				"You already have a valid SSH certificate. Please use the existing certificate, or wait for it to expire before requesting a new one."
+			)
+
+	def before_insert(self):
+		self.validate_employee_consent()
+
+	def validate_employee_consent(self):
+		"""The rule of `@action_guard(ReleaseGroupActions.SSHAccess)`, for inserts from desk too."""
+		if self.certificate_type != "User" or not self.group:
+			return
+		team = cstr(frappe.db.get_value("Release Group", self.group, "team"))
+		if is_outside_employee(team) and not has_grant(
+			"Release Group", self.group, ReleaseGroupActions.SSHAccess.value
+		):
+			frappe.throw(
+				"Employees need the consent of the team to get SSH access to its bench group",
+				frappe.PermissionError,
 			)
 
 	def create_public_key_file(self):

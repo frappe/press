@@ -7,6 +7,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_to_date
 
+from press.access.test_employee_consent import create_test_employee
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.release_group.test_release_group import create_test_release_group
@@ -104,3 +105,71 @@ class TestSSHCertificate(FrappeTestCase):
 		doc = frappe._dict()
 		bench.get_doc(doc)
 		self.assertIn("on or after", doc.ssh_access_denied_reason)
+
+	def create_user_certificate(self, user: str, group: str):
+		frappe.set_user(user)
+		return frappe.get_doc(
+			{
+				"doctype": "SSH Certificate",
+				"certificate_type": "User",
+				"group": group,
+				"user": user,
+				"user_ssh_key": create_test_user_ssh_key(user=user).name,
+				"validity": "6h",
+			}
+		).insert()
+
+	def grant_ssh(self, employee, group: str, **permissions):
+		access = frappe.get_doc(
+			{
+				"doctype": "Support Access",
+				"requested_by": employee.user,
+				"requested_team": employee.name,
+				"reason": "Debugging",
+				"resources": [{"document_type": "Release Group", "document_name": group}],
+			}
+		).insert(ignore_permissions=True)
+		allowed_till = add_to_date(None, hours=1)
+		frappe.db.set_value(
+			"Support Access",
+			access.name,
+			{"status": "Accepted", "access_allowed_till": allowed_till, **permissions},
+		)
+
+	def test_employee_outside_group_team_cannot_create_user_certificate_without_ssh_grant(self):
+		group = create_test_bench(self.user).group
+		employee = create_test_employee()
+		with self.assertRaisesRegex(frappe.PermissionError, "Employees need the consent of the team"):
+			self.create_user_certificate(employee.user, group)
+
+	def test_employee_with_grant_that_lacks_ssh_cannot_create_user_certificate(self):
+		group = create_test_bench(self.user).group
+		employee = create_test_employee()
+		self.grant_ssh(employee, group)
+		with self.assertRaisesRegex(frappe.PermissionError, "Employees need the consent of the team"):
+			self.create_user_certificate(employee.user, group)
+
+	def test_employee_with_ssh_grant_can_create_user_certificate(self):
+		group = create_test_bench(self.user).group
+		employee = create_test_employee()
+		self.grant_ssh(employee, group, bench_ssh=1)
+		self.create_user_certificate(employee.user, group)
+		self.assertTrue(frappe.db.exists("SSH Certificate", {"group": group, "user": employee.user}))
+
+	def test_employee_who_is_member_of_group_team_can_create_user_certificate(self):
+		group = create_test_bench(self.user).group
+		employee = create_test_employee()
+		self.team.append("team_members", {"user": employee.user})
+		self.team.save()
+		self.create_user_certificate(employee.user, group)
+		self.assertTrue(frappe.db.exists("SSH Certificate", {"group": group, "user": employee.user}))
+
+	def test_employee_with_ssh_grant_can_generate_certificate_from_dashboard(self):
+		group = create_test_bench(self.user).group
+		employee = create_test_employee()
+		employee.db_set("ssh_access_enabled", 1)
+		self.grant_ssh(employee, group, bench_ssh=1)
+		frappe.set_user(employee.user)
+		create_test_user_ssh_key(user=employee.user).db_set("is_default", 1)
+		frappe.get_doc("Release Group", group).generate_certificate()
+		self.assertTrue(frappe.db.exists("SSH Certificate", {"group": group, "user": employee.user}))
