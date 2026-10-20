@@ -40,6 +40,7 @@ from frappe.utils.caching import redis_cache
 from press.access.actions import SiteActions
 from press.access.decorators import action_guard
 from press.access.support_access import has_support_access
+from press.access.utils import is_outside_employee
 from press.exceptions import (
 	CannotChangePlan,
 	InsufficientSpaceOnServer,
@@ -564,6 +565,7 @@ class Site(Document, TagHelpers):
 		self.validate_backup_times()
 
 	def before_insert(self):
+		self.validate_remote_files_downloadable()
 		if not self.bench and self.group:
 			if self.server and not self.is_standby:
 				self.set_bench_for_server()
@@ -1508,6 +1510,7 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive"])
 	def restore_site(self, skip_failing_patches=False):
+		self.validate_restorer()
 		if (
 			self.remote_database_file
 			and not frappe.get_doc("Remote File", self.remote_database_file).exists()
@@ -1524,9 +1527,34 @@ class Site(Document, TagHelpers):
 		self.save()
 		return job.name
 
+	def validate_restorer(self):
+		"""Only those who can download a backup can restore a site from it."""
+		self.validate_backup_access()
+		self.validate_remote_files_downloadable()
+
+	def validate_remote_files_downloadable(self):
+		from press.press.doctype.remote_file.remote_file import validate_files_downloadable
+
+		validate_files_downloadable(
+			[
+				self.remote_database_file,
+				self.remote_public_file,
+				self.remote_private_file,
+				self.remote_config_file,
+			]
+		)
+
+	def validate_backup_access(self):
+		if is_outside_employee(self.team):
+			frappe.throw(
+				"Employees cannot restore or copy a site that belongs to another team.",
+				frappe.PermissionError,
+			)
+
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive"])
 	def restore_site_from_physical_backup(self, backup: str):
+		self.validate_backup_access()
 		if frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
 			frappe.throw(
 				"Currently, Physical Backup & Restoration is disabled system wide. Please try again later."
@@ -1628,7 +1656,9 @@ class Site(Document, TagHelpers):
 	def get_backup_download_link(self, backup, file):
 		from botocore.exceptions import ClientError
 
-		if file not in ["database", "public", "private", "config"]:
+		from press.press.doctype.remote_file.remote_file import BACKUP_FILE_KEYS, RemoteFile
+
+		if file not in BACKUP_FILE_KEYS:
 			frappe.throw("Invalid file type")  # nosemgrep
 
 		try:
@@ -1637,7 +1667,7 @@ class Site(Document, TagHelpers):
 				{"name": backup, "site": self.name},
 				f"remote_{file}_file",
 			)
-			return frappe.get_doc("Remote File", remote_file).download_link
+			return RemoteFile("Remote File", remote_file).get_download_link()
 		except ClientError:
 			log_error(title="Offsite Backup Response Exception")
 
@@ -2279,14 +2309,20 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
-	@action_guard(SiteActions.LoginAsAdmin)
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/app?sid={sid}"
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
+	@action_guard(SiteActions.LoginAsAdmin)
 	def login_as_team(self, reason=None):
+		reason = f"Logged in as the team user. {reason or ''}".strip()
+		log_site_activity(self.name, "Login as Administrator", reason=reason)
+		return self.team_login_url()
+
+	def team_login_url(self):
+		"""Not whitelisted: the caller checks consent and logs the activity."""
 		if self.additional_system_user_created:
 			team_user = frappe.db.get_value("Team", self.team, "user")
 			sid = self.get_login_sid(user=team_user)
@@ -2318,6 +2354,7 @@ class Site(Document, TagHelpers):
 			frappe.throw(str(e))  # nosemgrep
 
 	@frappe.whitelist()
+	@action_guard(SiteActions.LoginAsAdmin)
 	def login(self, reason=None):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()

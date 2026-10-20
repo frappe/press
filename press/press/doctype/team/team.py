@@ -16,6 +16,7 @@ from frappe.query_builder.functions import Count
 from frappe.rate_limiter import rate_limit
 from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_form, getdate, random_string
 
+from press.access.utils import is_outside_employee
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
 from press.guards.team_guard import only_admin
@@ -1230,6 +1231,11 @@ class Team(Document):
 
 		if not is_system_user() and frappe.session.user != self.user and not has_admin_access.run():
 			frappe.throw(_("Only team owner or admins can invite team members"))
+
+		if is_outside_employee(self.name):
+			frappe.throw(
+				_("Employees cannot invite members to a team they do not belong to"), frappe.PermissionError
+			)
 
 		frappe.utils.validate_email_address(email, True)
 
