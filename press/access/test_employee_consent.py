@@ -8,6 +8,10 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.access import dashboard_access_rules
 from press.access.support_access import has_support_access
+from press.api.site import validate_files_for_new_site
+from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+from press.press.doctype.remote_file.remote_file import RemoteFile
+from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.site.site import Site
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.team import Team
@@ -118,3 +122,65 @@ class TestEmployeeConsent(FrappeTestCase):
 		frappe.get_doc("User", agent.user).add_roles("Press Support Agent")
 		frappe.set_user(agent.user)
 		self.assertFalse(self.site_rules().tabs_access["Backups"])
+
+
+@patch("frappe.sendmail", new=Mock())
+@patch.object(RemoteFile, "exists", new=Mock(return_value=True))
+class TestEmployeeRestore(FrappeTestCase):
+	"""Only those who can download a backup can restore a site from it."""
+
+	def setUp(self):
+		super().setUp()
+		self.site = create_test_site(team=create_test_press_admin_team().name)
+		self.backup = create_test_remote_file(site=self.site.name, file_path="backups/database.sql.gz")
+		self.employee = create_test_employee()
+		self.job = create_test_agent_job()
+		restore_job = patch("press.agent.Agent.restore_site", return_value=self.job)
+		restore_job.start()
+		self.addCleanup(restore_job.stop)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def restore(self, site) -> str:
+		site.db_set("remote_database_file", self.backup.name)
+		frappe.set_user(self.employee.user)
+		return Site("Site", site.name).restore_site()
+
+	def test_employee_outside_site_team_cannot_restore_site_from_its_own_backup(self):
+		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot restore or copy a site"):
+			self.restore(self.site)
+
+	def test_employee_cannot_restore_their_own_site_from_a_customer_backup(self):
+		own_site = create_test_site(team=self.employee.name)
+		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot download the backups"):
+			self.restore(own_site)
+
+	def test_employee_who_is_member_of_site_team_can_restore_site(self):
+		team = frappe.get_doc("Team", self.site.team)
+		team.append("team_members", {"user": self.employee.user})
+		team.save()
+		self.assertEqual(self.restore(self.site), self.job.name)
+
+	def test_administrator_can_restore_site_of_any_team(self):
+		self.site.db_set("remote_database_file", self.backup.name)
+		self.assertEqual(Site("Site", self.site.name).restore_site(), self.job.name)
+
+	def test_employee_outside_site_team_cannot_restore_site_from_physical_backup(self):
+		frappe.set_user(self.employee.user)
+		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot restore or copy a site"):
+			Site("Site", self.site.name).restore_site_from_physical_backup("some-backup")
+
+	def test_employee_cannot_create_a_site_from_a_customer_backup(self):
+		frappe.set_user(self.employee.user)
+		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot download the backups"):
+			validate_files_for_new_site({"database": self.backup.name}, self.employee.name)
+
+	def test_employee_cannot_replicate_a_customer_site(self):
+		frappe.set_user(self.employee.user)
+		replication = frappe.get_doc(
+			{"doctype": "Site Replication", "site": self.site.name, "subdomain": "copy"}
+		)
+		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot restore or copy a site"):
+			replication.insert(ignore_permissions=True)

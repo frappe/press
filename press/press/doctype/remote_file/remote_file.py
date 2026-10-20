@@ -12,8 +12,10 @@ import requests
 from boto3 import client, resource
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import cstr
 from frappe.utils.password import get_decrypted_password
 
+from press.access.utils import is_outside_employee
 from press.press.doctype.site_activity.site_activity import log_site_activity
 
 if TYPE_CHECKING:
@@ -54,6 +56,13 @@ def validate_files_belong_to_team(files: dict, team: str):
 				_("Remote File {0} does not belong to site's team").format(name),
 				frappe.PermissionError,
 			)
+
+
+def validate_files_downloadable(files: dict):
+	"""Only those who can download a backup can restore a site from it."""
+	for key in ("database", "public", "private", "config"):
+		if name := files.get(key):
+			RemoteFile("Remote File", name).validate_downloader()
 
 
 def poll_file_statuses():
@@ -278,7 +287,7 @@ class RemoteFile(Document):
 
 	@property
 	def download_link(self):
-		return self.get_download_link()
+		return self.make_download_link()
 
 	@frappe.whitelist()
 	def exists(self):
@@ -313,9 +322,24 @@ class RemoteFile(Document):
 	def on_trash(self):
 		self.delete_remote_object()
 
+	@property
+	def owner_team(self) -> str:
+		"""A backup belongs to the current team of its site, an upload to the team that uploaded it."""
+		if self.site:
+			return cstr(frappe.db.get_value("Site", self.site, "team"))
+		return cstr(self.team)
+
 	@frappe.whitelist()
 	def get_download_link(self):
+		self.validate_downloader()
 		return self.make_download_link()
+
+	def validate_downloader(self):
+		if is_outside_employee(self.owner_team):
+			frappe.throw(
+				_("Employees cannot download the backups of a site that belongs to another team."),
+				frappe.PermissionError,
+			)
 
 	def make_download_link(self, expires_in: int | None = None, log_activity: bool = True) -> str:
 		"""Not whitelisted: a caller over the API must not skip the activity log or extend the expiry."""

@@ -5,7 +5,7 @@ import frappe
 from frappe.model.document import Document
 
 from press.api.site import _new
-from press.press.doctype.site.site import prepare_site
+from press.press.doctype.site.site import Site, prepare_site
 
 
 class SiteReplication(Document):
@@ -31,6 +31,8 @@ class SiteReplication(Document):
 	def validate(self):
 		self.validate_duplicate()
 		self.validate_site_name()
+		# `after_insert` only logs a failed copy, so refuse here, where the operator sees it.
+		Site("Site", self.site).validate_backup_access()
 
 	def validate_duplicate(self):
 		# check for already running site replication

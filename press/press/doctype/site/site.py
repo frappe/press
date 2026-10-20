@@ -39,6 +39,7 @@ from frappe.utils.caching import redis_cache
 from press.access.actions import SiteActions
 from press.access.decorators import action_guard
 from press.access.support_access import has_support_access
+from press.access.utils import is_outside_employee
 from press.exceptions import (
 	CannotChangePlan,
 	InsufficientSpaceOnServer,
@@ -1508,6 +1509,7 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive"])
 	def restore_site(self, skip_failing_patches=False):
+		self.validate_restorer()
 		if (
 			self.remote_database_file
 			and not frappe.get_doc("Remote File", self.remote_database_file).exists()
@@ -1524,9 +1526,31 @@ class Site(Document, TagHelpers):
 		self.save()
 		return job.name
 
+	def validate_restorer(self):
+		"""Only those who can download a backup can restore a site from it."""
+		from press.press.doctype.remote_file.remote_file import validate_files_downloadable
+
+		self.validate_backup_access()
+		validate_files_downloadable(
+			{
+				"database": self.remote_database_file,
+				"public": self.remote_public_file,
+				"private": self.remote_private_file,
+				"config": self.remote_config_file,
+			}
+		)
+
+	def validate_backup_access(self):
+		if is_outside_employee(self.team):
+			frappe.throw(
+				"Employees cannot restore or copy a site that belongs to another team.",
+				frappe.PermissionError,
+			)
+
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive"])
 	def restore_site_from_physical_backup(self, backup: str):
+		self.validate_backup_access()
 		if frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
 			frappe.throw(
 				"Currently, Physical Backup & Restoration is disabled system wide. Please try again later."
@@ -1628,6 +1652,8 @@ class Site(Document, TagHelpers):
 	def get_backup_download_link(self, backup, file):
 		from botocore.exceptions import ClientError
 
+		from press.press.doctype.remote_file.remote_file import RemoteFile
+
 		if file not in ["database", "public", "private", "config"]:
 			frappe.throw("Invalid file type")  # nosemgrep
 
@@ -1637,7 +1663,7 @@ class Site(Document, TagHelpers):
 				{"name": backup, "site": self.name},
 				f"remote_{file}_file",
 			)
-			return frappe.get_doc("Remote File", remote_file).download_link
+			return RemoteFile("Remote File", remote_file).get_download_link()
 		except ClientError:
 			log_error(title="Offsite Backup Response Exception")
 

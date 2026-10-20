@@ -237,3 +237,56 @@ class TestRemoteFile(FrappeTestCase):
 			backup.remote_config_file,
 		):
 			self.assertEqual(frappe.db.get_value("Remote File", remote_file, "team"), team.name)
+
+
+@patch.object(frappe.db, "commit", new=Mock())
+@patch("press.press.doctype.press_notification.press_notification.frappe.sendmail", new=Mock())
+class TestBackupDownload(FrappeTestCase):
+	"""Employees cannot download the backups of customers, and every download is reported."""
+
+	def setUp(self):
+		from press.access.test_employee_consent import create_test_employee
+		from press.press.doctype.site.test_site import create_test_site
+		from press.press.doctype.team.test_team import create_test_press_admin_team
+
+		super().setUp()
+		self.site = create_test_site(team=create_test_press_admin_team().name)
+		self.employee = create_test_employee()
+		self.backup = create_test_remote_file(site=self.site.name, file_path="backups/database.sql.gz")
+		self.backup.db_set("url", "https://example.com/database.sql.gz")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def backup_accesses(self) -> int:
+		return frappe.db.count("Site Activity", {"site": self.site.name, "action": "Access Offsite Backups"})
+
+	def test_employee_outside_site_team_cannot_get_backup_download_link(self):
+		frappe.set_user(self.employee.user)
+		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot download the backups"):
+			RemoteFile("Remote File", self.backup.name).get_download_link()
+		self.assertEqual(self.backup_accesses(), 0)
+
+	def test_employee_in_site_team_can_get_backup_download_link(self):
+		team = frappe.get_doc("Team", self.site.team)
+		team.append("team_members", {"user": self.employee.user})
+		team.save()
+		frappe.set_user(self.employee.user)
+		link = RemoteFile("Remote File", self.backup.name).get_download_link()
+		self.assertEqual(link, "https://example.com/database.sql.gz")
+
+	def test_restore_still_reads_backup_link_for_employee_outside_site_team(self):
+		frappe.set_user(self.employee.user)
+		self.assertEqual(
+			RemoteFile("Remote File", self.backup.name).download_link, "https://example.com/database.sql.gz"
+		)
+
+	def test_backup_download_link_notifies_site_team(self):
+		frappe.set_user(frappe.db.get_value("Team", self.site.team, "user"))
+		RemoteFile("Remote File", self.backup.name).get_download_link()
+		frappe.set_user("Administrator")
+		notification = frappe.get_last_doc("Press Notification", {"type": "Resource Access"})
+		self.assertEqual(notification.team, self.site.team)
+		self.assertEqual(notification.reference_name, self.site.name)
+		self.assertEqual(notification.title, f"Backup of {self.site.name} accessed")
