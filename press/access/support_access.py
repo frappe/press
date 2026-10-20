@@ -4,7 +4,7 @@ from frappe.utils import cstr
 
 from press import utils as press_utils
 from press.access import utils as access_utils
-from press.access.actions import ReleaseGroupActions, SiteActions
+from press.access.actions import ACTIONS_RULES, ReleaseGroupActions, SiteActions
 
 TAB_DF_MAP = {
 	"Site": {
@@ -68,6 +68,14 @@ def is_insider(team: str | None) -> bool:
 		# Desk sends no X-Press-Team, so membership alone decides for employees.
 		return not access_utils.is_outside_employee(team)
 	return bool(team) and team == press_utils.get_current_team()
+
+
+def can_perform(doctype: str, docname: str, team: str | None, action: str) -> bool:
+	"""Whether the session may use `action` on `docname`, a document of `team`."""
+	if is_insider(team):
+		return True
+	allowed = ACTIONS_RULES.get(doctype, {}).get(action, True)
+	return outsider_can_access(doctype, docname, action, allowed)
 
 
 def outsider_can_access(doctype: str, docname: str, rule: str, allowed: bool) -> bool:

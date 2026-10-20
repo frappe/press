@@ -15,8 +15,7 @@ from frappe.model.document import Document
 from frappe.utils import cstr, escape_html
 
 from press.access.actions import ReleaseGroupActions
-from press.access.support_access import has_grant
-from press.access.utils import is_outside_employee
+from press.access.support_access import can_perform
 from press.press.doctype.press_notification.press_notification import notify_resource_access
 from press.utils import log_error
 
@@ -109,9 +108,7 @@ class SSHCertificate(Document):
 		if self.certificate_type != "User" or not self.group:
 			return
 		team = cstr(frappe.db.get_value("Release Group", self.group, "team"))
-		if is_outside_employee(team) and not has_grant(
-			"Release Group", self.group, ReleaseGroupActions.SSHAccess.value
-		):
+		if not can_perform("Release Group", self.group, team, ReleaseGroupActions.SSHAccess.value):
 			frappe.throw(
 				"Employees need the consent of the team to get SSH access to its bench group",
 				frappe.PermissionError,

@@ -3,8 +3,7 @@ import functools
 import frappe
 from frappe.model.document import Document
 
-from .actions import ACTIONS_RULES
-from .support_access import is_insider, outsider_can_access
+from .support_access import can_perform
 
 
 def action_guard(action: str):
@@ -22,10 +21,8 @@ def action_guard(action: str):
 	def decorator(fn):
 		@functools.wraps(fn)
 		def wrapper(instance: Document, *args, **kwargs):
-			if is_insider(getattr(instance, "team", None)):
-				return fn(instance, *args, **kwargs)
-			allowed = ACTIONS_RULES.get(instance.doctype, {}).get(action, True)
-			if not outsider_can_access(instance.doctype, str(instance.name), action, allowed):
+			team = getattr(instance, "team", None)
+			if not can_perform(instance.doctype, str(instance.name), team, action):
 				throw_err()
 			return fn(instance, *args, **kwargs)
 
