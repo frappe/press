@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import cstr
 
 from press.api.client import dashboard_whitelist
 from press.press.doctype.communication_info.communication_info import get_communication_info
@@ -152,8 +153,8 @@ def notify_resource_access(
 	message: str,
 	team: str | None = None,
 ):
-	"""Tell the team that owns `reference_name` that someone got into it."""
-	team = team or str(frappe.db.get_value(reference_doctype, reference_name, "team") or "") or None
+	"""Tell the team that owns `reference_name`, or `team`, that someone got into it."""
+	team = team or cstr(frappe.db.get_value(reference_doctype, reference_name, "team"))
 	frappe.get_doc(
 		{
 			"doctype": "Press Notification",
@@ -161,7 +162,7 @@ def notify_resource_access(
 			"type": "Resource Access",
 			"class": "Warning",
 			"document_type": document.doctype,
-			"document_name": document.name or 0,
+			"document_name": document.name,
 			"reference_doctype": reference_doctype,
 			"reference_name": reference_name,
 			"title": title,
@@ -177,12 +178,18 @@ def resource_route(notification) -> str:
 	"""The dashboard page where the team can see the access."""
 	if notification.reference_doctype == "Site":
 		return f"sites/{notification.reference_name}/activity"
-	if notification.reference_doctype == "Server Snapshot Recovery":
-		app_server = frappe.db.get_value(
-			"Server Snapshot Recovery", notification.reference_name, "app_server"
-		)
-		return f"servers/{app_server}"
+	if notification.reference_doctype == "Server":
+		return f"servers/{notification.reference_name}/snapshots"
 	return f"groups/{notification.reference_name}"
+
+
+def notify_backup_access(
+	document: Document, reference_doctype: str, reference_name: str, site: str, team: str | None = None
+):
+	"""Tell the owning team that the session got a download link for a backup of `site`."""
+	message = f"{frappe.session.user} got a download link for a backup of {site}."
+	title = f"Backup of {site} accessed"
+	notify_resource_access(document, reference_doctype, reference_name, title, message, team)
 
 
 def create_new_notification(team, type, document_type, document_name, message):

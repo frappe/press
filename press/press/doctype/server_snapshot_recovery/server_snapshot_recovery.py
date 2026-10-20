@@ -14,7 +14,7 @@ from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.communication_info.communication_info import get_communication_info
-from press.press.doctype.press_notification.press_notification import notify_resource_access
+from press.press.doctype.press_notification.press_notification import notify_backup_access
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_backup.site_backup import get_backup_bucket
@@ -428,16 +428,9 @@ class ServerSnapshotRecovery(Document):
 		return frappe.db.get_value("Site", site, "team") or self.team
 
 	def notify_backup_access_of_gone_site(self, site: str):
-		"""The site is gone, so the recovery's team is the only audience left."""
-		message = f"{frappe.session.user} got a download link for a backup of {site}."
-		notify_resource_access(
-			self,
-			"Server Snapshot Recovery",
-			self.name,
-			f"Backup of {site} accessed",
-			message,
-			team=self.team,
-		)
+		"""The site is gone, so tell the recovery's team, linked to the server the snapshot is of."""
+		server = str(frappe.db.get_value("Server Snapshot", self.snapshot, "app_server"))
+		notify_backup_access(self, "Server", server, site, team=self.team)
 
 	@frappe.whitelist()
 	def expire_backups(self):
