@@ -7,7 +7,10 @@ from frappe.model.document import Document
 from frappe.utils import escape_html
 
 from press.press.doctype.communication_info.communication_info import get_communication_info
-from press.press.doctype.press_notification.press_notification import notify_resource_access
+from press.press.doctype.press_notification.press_notification import (
+	notify_backup_access,
+	notify_resource_access,
+)
 
 
 class SiteActivity(Document):
@@ -88,8 +91,7 @@ class SiteActivity(Document):
 		notify_resource_access(self, "Site", self.site, title, message)
 
 	def notify_backup_access(self):
-		message = f"{self.owner} got a download link for a backup of {self.site}."
-		notify_resource_access(self, "Site", self.site, f"Backup of {self.site} accessed", message)
+		notify_backup_access(self, "Site", self.site, self.site)
 
 
 def log_site_activity(site, action, reason=None, job=None):

@@ -7,6 +7,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.access.test_employee_consent import create_test_employee
+from press.press.doctype.press_notification.press_notification import resource_route
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.server_snapshot_recovery.server_snapshot_recovery import (
 	ServerSnapshotRecovery,
@@ -32,8 +33,15 @@ class TestSnapshotRecoveryBackupDownload(FrappeTestCase):
 		frappe.db.rollback()
 
 	def create_recovery(self, team: str, site: str | None = None) -> ServerSnapshotRecovery:
-		"""An unsaved recovery is enough: download_backup only reads its rows and team."""
-		recovery = frappe.get_doc({"doctype": "Server Snapshot Recovery", "team": team})
+		"""Rows written without hooks: inserting a recovery would provision servers."""
+		snapshot = frappe.get_doc(
+			{"doctype": "Server Snapshot", "app_server": self.site.server, "team": team}
+		)
+		snapshot.db_insert()
+		recovery = frappe.get_doc(
+			{"doctype": "Server Snapshot Recovery", "team": team, "snapshot": snapshot.name}
+		)
+		recovery.db_insert()
 		recovery.append(
 			"sites",
 			{
@@ -79,12 +87,11 @@ class TestSnapshotRecoveryBackupDownload(FrappeTestCase):
 			recovery.download_backup("gone.example.com", "database"), "https://example.com/database.sql.gz"
 		)
 		self.assertEqual(self.backup_accesses(), 0)
-		notification = {
-			"team": self.site.team,
-			"type": "Resource Access",
-			"reference_doctype": "Server Snapshot Recovery",
-		}
-		self.assertTrue(frappe.db.exists("Press Notification", notification))
+		notification = frappe.get_last_doc("Press Notification", {"type": "Resource Access"})
+		self.assertEqual(notification.team, self.site.team)
+		self.assertEqual(notification.reference_doctype, "Server")
+		self.assertEqual(notification.reference_name, self.site.server)
+		self.assertEqual(resource_route(notification), f"servers/{self.site.server}/snapshots")
 
 	def test_member_of_recovery_team_can_get_encryption_key_of_a_gone_site(self):
 		recovery = self.create_recovery(team=self.site.team, site="gone.example.com")
