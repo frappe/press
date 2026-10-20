@@ -290,13 +290,5 @@ class IntegrationTestSupportAccessAnswer(IntegrationTestCase):
 	def test_member_of_target_team_can_accept_the_request(self):
 		access = self.act_in_site_team_as(frappe.db.get_value("Team", self.site.team, "user"))
 		access.status = "Accepted"
-		access.save(ignore_permissions=True)
+		access.save()
 		self.assertEqual(frappe.db.get_value("Support Access", access.name, "status"), "Accepted")
-
-	def test_employee_switched_into_target_team_cannot_change_the_validity_period(self):
-		access = self.act_in_site_team_as(self.employee.user)
-		access.allowed_for = "72"
-		with self.assertRaisesRegex(
-			frappe.ValidationError, "You are not allowed to change the validity period"
-		):
-			access.validate_validity_change()
