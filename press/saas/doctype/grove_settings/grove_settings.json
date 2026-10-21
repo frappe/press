@@ -7,6 +7,7 @@
 	"engine": "InnoDB",
 	"field_order": [
 		"base_url",
+		"enable_for_product_trials",
 		"trial_key_cap",
 		"control_section",
 		"control_api_key",
@@ -44,12 +45,19 @@
 			"fieldtype": "Password",
 			"label": "Control API Secret",
 			"read_only": 1
+		},
+		{
+			"default": "0",
+			"description": "Give every new Product Trial site a Grove key, written into its site config as ai_keys. Off, nothing new is minted; requests already made still run, and archived sites' keys are still revoked.",
+			"fieldname": "enable_for_product_trials",
+			"fieldtype": "Check",
+			"label": "Enable for Product Trials"
 		}
 	],
 	"grid_page_length": 50,
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-10-22 17:00:00.000000",
+	"modified": "2026-10-22 18:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "SaaS",
 	"name": "Grove Settings",

@@ -17,9 +17,14 @@ class TestProductTrialRequest(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_a_site_created_asks_for_a_grove_key_only_while_press_is_enrolled(self):
+	def test_a_site_created_asks_for_a_grove_key_only_while_enrolled_and_switched_on(self):
 		site = create_test_site()
-		for enrolment, expected in ((dict(control_api_key="", control_api_secret=""), None), ({}, "Pending")):
+		cases = (
+			(dict(control_api_key="", control_api_secret=""), None),
+			(dict(enable_for_product_trials=0), None),
+			({}, "Pending"),
+		)
+		for enrolment, expected in cases:
 			enrolled(**enrolment)
 			request = frappe.get_doc(
 				{"doctype": "Product Trial Request", "site": site.name, "status": "Wait for Site"}

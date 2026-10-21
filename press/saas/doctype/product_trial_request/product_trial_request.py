@@ -322,8 +322,8 @@ class ProductTrialRequest(Document):
 
 	def request_grove_key(self):
 		"""A Grove (AI) key for the new site, tried by a Grove Key Request until it sits in the site
-		config. None while Press is not enrolled at Grove."""
-		if not frappe.get_cached_doc("Grove Settings").is_enrolled:
+		config. None unless Grove Settings is enrolled and switched on for Product Trials."""
+		if not frappe.get_cached_doc("Grove Settings").is_on_for_product_trials:
 			return
 		if frappe.db.exists("Grove Key Request", {"site": self.site}):
 			return
