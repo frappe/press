@@ -65,7 +65,7 @@ def get_extra_field(doctype: str, perm: str | None) -> str | None:
 def is_insider(team: str | None) -> bool:
 	"""
 	A member employee (by membership, as desk sends no team), or a customer
-	acting for `team`. Administrator counts as a member.
+	acting for `team`. System Managers, Administrator among them, always count.
 	"""
 	if press_utils._system_user():
 		return not access_utils.is_outside_employee(team)

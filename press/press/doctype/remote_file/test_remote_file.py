@@ -268,6 +268,14 @@ class TestBackupDownload(FrappeTestCase):
 			RemoteFile("Remote File", self.backup.name).get_download_link()
 		self.assertEqual(self.backup_accesses(), 0)
 
+	def test_system_manager_outside_site_team_can_get_backup_download_link(self):
+		from press.access.test_employee_consent import create_test_employee
+
+		frappe.set_user(create_test_employee("System Manager").user)
+		link = RemoteFile("Remote File", self.backup.name).get_download_link()
+		self.assertEqual(link, "https://example.com/database.sql.gz")
+		self.assertEqual(self.backup_accesses(), 1)
+
 	def test_employee_in_site_team_can_get_backup_download_link(self):
 		team = frappe.get_doc("Team", self.site.team)
 		team.append("team_members", {"user": self.employee.user})

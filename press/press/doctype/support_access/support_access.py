@@ -189,7 +189,7 @@ class SupportAccess(Document):
 
 	@property
 	def acts_for_target_team(self) -> bool:
-		"""Only a member answers for the target team, though an employee can switch into it."""
+		"""A member, or a System Manager switched into the target team, answers for it. Other employees cannot."""
 		return self.target_team == get_current_team() and not is_outside_employee(self.target_team)
 
 	def is_valid_status_transition(self, status_from: str, status_to: str) -> bool:

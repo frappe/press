@@ -18,10 +18,11 @@ from press.press.doctype.team.team import Team
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
 
-def create_test_employee() -> Team:
-	"""A Frappe Cloud employee: a system user with a team of their own."""
+def create_test_employee(role: str = "Press Marketplace Manager") -> Team:
+	"""A Frappe Cloud employee: a system user with a team of their own.
+	The default role is not System Manager, which is exempt from the employee checks."""
 	team = create_test_press_admin_team()
-	frappe.get_doc("User", team.user).add_roles("System Manager")
+	frappe.get_doc("User", team.user).add_roles(role)
 	return team
 
 
@@ -105,6 +106,11 @@ class TestEmployeeConsent(FrappeTestCase):
 		with self.assertRaisesRegex(frappe.PermissionError, "You do not have permission"):
 			self.login_as_team()
 
+	def test_system_manager_switched_into_site_team_can_login_as_team_user_without_grant(self):
+		self.employee = create_test_employee("System Manager")
+		self.act_as_employee_in_site_team()
+		self.assertTrue(self.login_as_team().endswith("?sid=sid"))
+
 	def test_employee_with_login_grant_logs_in_as_team_user_and_team_is_notified(self):
 		self.grant(login_as_administrator=1)
 		self.act_as_employee_in_site_team()
@@ -123,6 +129,18 @@ class TestEmployeeConsent(FrappeTestCase):
 	def test_administrator_can_login_as_administrator_without_grant(self):
 		frappe.set_user("Administrator")
 		self.assertEqual(Site("Site", self.site.name).login(), "sid")
+
+	def test_system_manager_switched_into_site_team_can_login_as_administrator_without_grant(self):
+		self.employee = create_test_employee("System Manager")
+		self.act_as_employee_in_site_team()
+		self.assertEqual(Site("Site", self.site.name).login(), "sid")
+
+	def test_system_manager_dashboard_restricts_no_action_or_tab_without_consent(self):
+		self.employee = create_test_employee("System Manager")
+		self.act_as_employee_in_site_team()
+		rules = self.site_rules()
+		self.assertEqual(rules.actions_access, {})
+		self.assertEqual(rules.tabs_access, {})
 
 	def test_employee_dashboard_hides_login_and_domains_without_consent(self):
 		self.act_as_employee_in_site_team()
@@ -198,6 +216,15 @@ class TestEmployeeRestore(FrappeTestCase):
 		self.site.db_set("remote_database_file", self.backup.name)
 		self.assertEqual(Site("Site", self.site.name).restore_site(), self.job.name)
 
+	def test_system_manager_outside_site_team_can_restore_site_from_its_backup(self):
+		self.employee = create_test_employee("System Manager")
+		self.assertEqual(self.restore(self.site), self.job.name)
+
+	def test_system_manager_can_restore_their_own_site_from_a_customer_backup(self):
+		self.employee = create_test_employee("System Manager")
+		own_site = create_test_site(team=self.employee.name)
+		self.assertEqual(self.restore(own_site), self.job.name)
+
 	def test_employee_outside_site_team_cannot_restore_site_from_physical_backup(self):
 		frappe.set_user(self.employee.user)
 		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot restore or copy a site"):
@@ -213,6 +240,13 @@ class TestEmployeeRestore(FrappeTestCase):
 	def test_employee_cannot_create_a_site_in_desk_from_a_customer_backup(self):
 		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot download the backups"):
 			self.create_site_from_backup()
+
+	def test_system_manager_can_create_a_site_in_desk_from_a_customer_backup(self):
+		self.employee = create_test_employee("System Manager")
+		self.employee.db_set("free_account", 1)
+		with patch("press.agent.Agent.new_site_from_backup", return_value=self.job):
+			site = self.create_site_from_backup()
+		self.assertEqual(site.remote_database_file, self.backup.name)
 
 	def test_employee_who_is_member_of_backup_team_can_create_a_site_from_its_backup(self):
 		team = frappe.get_doc("Team", self.site.team)
@@ -238,6 +272,15 @@ class TestEmployeeRestore(FrappeTestCase):
 		)
 		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot restore or copy a site"):
 			replication.insert(ignore_permissions=True)
+
+	def test_system_manager_passes_the_backup_check_when_replicating_a_customer_site(self):
+		self.employee = create_test_employee("System Manager")
+		frappe.set_user(self.employee.user)
+		replication = frappe.get_doc(
+			{"doctype": "Site Replication", "site": self.site.name, "subdomain": "copy"}
+		)
+		# Insert would start the copy through the agent; the check lives in validate.
+		replication.validate()
 
 
 @patch.object(AccountRequest, "send_verification_email", new=Mock())
@@ -271,6 +314,10 @@ class TestEmployeeTeamInvite(FrappeTestCase):
 		self.team.append("team_members", {"user": self.employee.user})
 		self.team.save()
 		self.invite(self.employee.user)
+		self.assert_invited()
+
+	def test_system_manager_outside_team_can_invite_members_to_it(self):
+		self.invite(create_test_employee("System Manager").user)
 		self.assert_invited()
 
 	def test_team_owner_can_invite_members(self):
