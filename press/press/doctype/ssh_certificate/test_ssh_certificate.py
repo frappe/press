@@ -142,6 +142,12 @@ class TestSSHCertificate(FrappeTestCase):
 		with self.assertRaisesRegex(frappe.PermissionError, "Employees need the consent of the team"):
 			self.create_user_certificate(employee.user, group)
 
+	def test_system_manager_outside_group_team_can_create_user_certificate_without_ssh_grant(self):
+		group = create_test_bench(self.user).group
+		system_manager = create_test_employee("System Manager")
+		self.create_user_certificate(system_manager.user, group)
+		self.assertTrue(frappe.db.exists("SSH Certificate", {"group": group, "user": system_manager.user}))
+
 	def test_employee_with_grant_that_lacks_ssh_cannot_create_user_certificate(self):
 		group = create_test_bench(self.user).group
 		employee = create_test_employee()
