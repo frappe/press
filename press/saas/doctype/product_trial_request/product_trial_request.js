@@ -3,11 +3,6 @@
 
 frappe.ui.form.on('Product Trial Request', {
 	refresh(frm) {
-		if (frm.doc.site && frm.doc.grove_key_status !== 'Created') {
-			frm.add_custom_button(__('Provision Grove Key'), () =>
-				frm.call('provision_grove_key').then(() => frm.reload_doc()),
-			)
-		}
 		frm.add_custom_button(__('Preview Setup Wizard Payload'), function () {
 			frappe.call({
 				method: 'get_setup_wizard_payload',
