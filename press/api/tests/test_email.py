@@ -146,6 +146,7 @@ def make_mailgun_event(secret_key: str, signing_key: str = SIGNING_KEY) -> dict:
 
 
 @patch("press.api.email.requests.post")
+@patch.object(frappe.db, "commit", new=Mock())
 class TestEventLog(FrappeTestCase):
 	def setUp(self):
 		set_encrypted_password("Press Settings", "Press Settings", SIGNING_KEY, "mailgun_webhook_signing_key")
