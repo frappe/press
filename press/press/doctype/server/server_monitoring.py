@@ -31,6 +31,8 @@ TRIAL_SIGNUP_MINIMUM_COUNT = 5
 INCOMPLETE_SIGNUP_RATIO_THRESHOLD = 0.9
 INCOMPLETE_SIGNUP_MINIMUM_COUNT = 10
 BACKUP_DIGEST_SITE_LIMIT = 50
+OOM_KILLS_ALERT_THRESHOLD = 30
+DATABASE_SERVER_DISK_USED_ALERT_THRESHOLD = 0.91
 
 
 class PublicServerHealthMetrics(TypedDict):
@@ -77,7 +79,8 @@ def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
 	server_plan_prices = _get_public_server_plan_prices(server_names)
 	pool_decision = _get_public_server_pool_decision(servers_by_cluster, metrics, server_plan_prices)
 	_apply_public_server_pool_decision(server_names, pool_decision)
-	_send_public_server_pool_health_alert(pool_decision["server_issues"])
+	server_issues = pool_decision["server_issues"] | _get_public_database_server_disk_issues()
+	_send_public_server_pool_health_alert(server_issues)
 	_create_no_suitable_servers_incident(pool_decision["fallback_servers_by_cluster"], metrics)
 
 
@@ -211,7 +214,7 @@ def _get_public_server_alert_issues(server: str, metrics: PublicServerHealthMetr
 		issues.append(f"CPU utilization: {(1 - cpu_idle_ratio) * 100:.2f}%")
 	if disk_used_ratio > 0.9:
 		issues.append(f"Disk utilization: {disk_used_ratio * 100:.2f}%")
-	if oom_kills > 4:
+	if oom_kills > OOM_KILLS_ALERT_THRESHOLD:
 		issues.append(f"OOM kills: {max(1, round(oom_kills))}")
 
 	return issues
@@ -319,14 +322,10 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 		f'avg by (instance) (rate(node_cpu_seconds_total{{instance=~"^({instance_matcher})$", '
 		f'job="node", mode="idle"}}[60m]))'
 	)
-	disk_used_ratio_query = (
-		f'1 - (node_filesystem_avail_bytes{{instance=~"^({instance_matcher})$", job="node", '
-		f'device!~"rootfs", mountpoint="/"}} / node_filesystem_size_bytes{{'
-		f'instance=~"^({instance_matcher})$", job="node", device!~"rootfs", mountpoint="/"}})'
-	)
+	disk_used_ratio_query = _get_disk_used_ratio_query(instance_matcher)
 	oom_kills_query = (
 		f'sum by (instance) (increase(node_vmstat_oom_kill{{instance=~"^({instance_matcher})$", '
-		f'job="node"}}[60m])) > 4'
+		f'job="node"}}[60m])) > {OOM_KILLS_ALERT_THRESHOLD}'
 	)
 
 	available_memory_bytes_results = _query_prometheus_vector(available_memory_bytes_query, url, auth)
@@ -355,6 +354,49 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 		),
 		"oom_kills": _build_public_server_metric_map(server_names, oom_kills_results, default=0.0),
 	}
+
+
+def _get_disk_used_ratio_query(instance_matcher: str, mountpoint: str = "/") -> str:
+	return (
+		f'1 - (node_filesystem_avail_bytes{{instance=~"^({instance_matcher})$", job="node", '
+		f'device!~"rootfs", mountpoint="{mountpoint}"}} / node_filesystem_size_bytes{{'
+		f'instance=~"^({instance_matcher})$", job="node", device!~"rootfs", mountpoint="{mountpoint}"}})'
+	)
+
+
+def _get_public_database_server_disk_issues() -> dict[str, list[str]]:
+	prometheus_connection = _get_public_server_pool_prometheus_connection()
+	if not prometheus_connection:
+		return {}
+
+	disk_used_ratios: dict[str, float] = {}
+	for mountpoint, server_names in _get_public_database_servers_by_data_mountpoint().items():
+		instance_matcher = "|".join(_escape_prometheus_regex_literal(name) for name in server_names)
+		query = _get_disk_used_ratio_query(instance_matcher, mountpoint)
+		results = _query_prometheus_vector(query, *prometheus_connection)
+		disk_used_ratios |= _build_public_server_metric_map(server_names, results)
+
+	return {
+		server: [f"Disk utilization: {ratio * 100:.2f}%"]
+		for server, ratio in disk_used_ratios.items()
+		if ratio > DATABASE_SERVER_DISK_USED_ALERT_THRESHOLD
+	}
+
+
+def _get_public_database_servers_by_data_mountpoint() -> dict[str, list[str]]:
+	"""Servers with a data volume keep MariaDB files off the root disk."""
+	from press.press.doctype.server.server import MARIADB_DATA_MNT_POINT
+
+	servers = frappe.get_all(
+		"Database Server",
+		filters={"status": "Active", "public": True},
+		fields=["name", "has_data_volume"],
+	)
+	servers_by_mountpoint: dict[str, list[str]] = {}
+	for server in servers:
+		mountpoint = MARIADB_DATA_MNT_POINT if server.has_data_volume else "/"
+		servers_by_mountpoint.setdefault(mountpoint, []).append(server.name)
+	return servers_by_mountpoint
 
 
 def _get_public_server_pool_prometheus_connection() -> tuple[str, tuple[str, str]] | None:
@@ -422,10 +464,15 @@ def _send_public_server_pool_health_alert(server_issues: dict[str, list[str]]) -
 		return
 
 	affected_servers = sorted(server_issues)
+	thresholds = (
+		"Thresholds: RAM utilization > 90%, CPU utilization > 50%, Disk utilization > 90% "
+		f"(database servers > {DATABASE_SERVER_DISK_USED_ALERT_THRESHOLD * 100:.0f}%), "
+		f"OOM kills > {OOM_KILLS_ALERT_THRESHOLD}"
+	)
 	header_lines = [
 		f"**Public Server Pool Health Alerts** - {len(affected_servers)}",
 		"",
-		"Thresholds: RAM utilization > 90%, CPU utilization > 50%, Disk Utilization > 90%, OOM kills > 4",
+		thresholds,
 		"",
 	]
 	table_header = [
