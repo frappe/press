@@ -16,6 +16,8 @@ import sqlparse
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import A, Search
 from frappe import auth
+from frappe.query_builder import CustomFunction
+from frappe.query_builder.functions import Count, DateFormat
 from frappe.utils import (
 	convert_utc_to_timezone,
 	flt,
@@ -130,6 +132,8 @@ MAX_MAX_NO_OF_PATHS: Final[int] = 50
 # Elasticsearch groups slow queries by their raw text, and literals split one query
 # into many. Oversample, so that the top-N after normalization is not a set of duplicates.
 NORMALIZED_OVERSAMPLE: Final[int] = 10
+
+Week = CustomFunction("WEEK", ["date"])
 
 NICE_STEPS = [
 	1,
@@ -1808,24 +1812,22 @@ def plausible_analytics(name: str):
 				unique_visitors = [{"value": d["visitors"], "date": d["date"]} for d in res]
 				response.update({"pageviews": pageviews, "visitors": unique_visitors})
 
-	response.update(
-		{
-			"weekly_installs": frappe.db.sql(
-				f"""
-		SELECT DATE_FORMAT(sa.creation, '%Y-%m-%d') AS date, COUNT(*) AS value
-		FROM `tabSite Activity` as sa
-		WHERE sa.action = 'Install App'
-		AND sa.creation >= DATE_SUB(CURDATE(), INTERVAL 8 WEEK)
-		AND sa.reason = '{name}'
-		GROUP BY WEEK(sa.creation)
-		ORDER BY date
-		""",
-				as_dict=True,
-			),
-		}
-	)
-
+	response["weekly_installs"] = get_weekly_installs(name)
 	return response
+
+
+def get_weekly_installs(app: str) -> list[dict]:
+	activity = frappe.qb.DocType("Site Activity")
+	return (
+		frappe.qb.from_(activity)
+		.select(DateFormat(activity.creation, "%Y-%m-%d").as_("date"), Count("*").as_("value"))
+		.where(activity.action == "Install App")
+		.where(activity.creation >= frappe.utils.add_to_date(frappe.utils.today(), weeks=-8))
+		.where(activity.reason == app)
+		.groupby(Week(activity.creation))
+		.orderby("date")
+		.run(as_dict=True)
+	)
 
 
 def get_doctype_name(table_name: str) -> str:
