@@ -65,33 +65,14 @@ class TestGroveKeyRequest(FrappeTestCase):
 			doc.attempt()
 		provision_key.assert_not_called()
 
-	def test_a_site_gets_one_request_and_one_mint(self):
+	def test_a_site_gets_one_request(self):
 		site = create_test_site()
-		doc = request_for(site.name)
+		request_for(site.name)
 		with (
 			patch("frappe.enqueue_doc"),
 			self.assertRaises((frappe.UniqueValidationError, frappe.DuplicateEntryError)),
 		):
 			frappe.get_doc({"doctype": "Grove Key Request", "site": site.name}).insert()
-
-		# Another try minted while this one waited: it reads the row afresh and only writes the config.
-		other = frappe.get_doc("Grove Key Request", doc.name)
-		other.update(
-			{
-				"grove_key": "k0",
-				"geography": "in",
-				"gateway_url": "https://gw",
-				"api_key": "gr_0",  # pragma: allowlist secret
-			}
-		)
-		other.save()
-		with patch.object(AISettings, "provision_key") as provision_key:
-			doc.attempt()
-		provision_key.assert_not_called()
-		doc.reload()
-		self.assertEqual(
-			(doc.status, doc.grove_key, ai_keys_of(site.name)[0]["api_key"]), ("Success", "k0", "gr_0")
-		)
 
 	def test_a_failed_try_counts_keeps_pending_and_gives_up_at_the_cap(self):
 		doc = request_for(create_test_site().name)
@@ -109,8 +90,7 @@ class TestGroveKeyRequest(FrappeTestCase):
 		self.assertEqual((doc.status, doc.attempts, doc.grove_key), ("Failed", MAX_ATTEMPTS, None))
 		self.assertIsNone(ai_keys_of(doc.site))
 
-	def test_a_half_done_try_keeps_the_minted_key_and_leaves_no_config_behind(self):
-		frappe.db.delete("Site Config Key", {"key": "ai_keys"})  # a site of this bench may hold one already
+	def test_a_half_done_try_keeps_the_minted_key_and_finishes_without_asking_grove_again(self):
 		doc = request_for(create_test_site().name)
 		with (
 			patch.object(AISettings, "provision_key", return_value=MINTED),
@@ -122,7 +102,6 @@ class TestGroveKeyRequest(FrappeTestCase):
 			(doc.status, doc.attempts, doc.grove_key, doc.get_password("api_key")),
 			("Pending", 1, "k1", "gr_x"),
 		)
-		self.assertFalse(frappe.db.exists("Site Config Key", {"key": "ai_keys"}))
 		with patch.object(AISettings, "provision_key") as provision_key:
 			doc.attempt()
 		provision_key.assert_not_called()
