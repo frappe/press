@@ -16,9 +16,10 @@ SAVEPOINT = "grove_key_request"
 
 class GroveKeyRequest(Document):
 	"""One trial site's Grove (AI) key, tried until it sits in the site config as `ai_keys` or the
-	attempts run out. The mint happens once: what Grove answered stays on the row (the secret in a
-	Password field, cleared on Success), so a retry after a half-done try writes the config again
-	rather than minting a second key."""
+	attempts run out. One row per site (`site` is unique) and one mint per row: what Grove answered
+	stays on the row (the secret in a Password field, cleared on Success), so a retry after a
+	half-done try writes the config again rather than minting a second key, and a try takes the
+	row FOR UPDATE first, so two at once wait on each other and the second finds the key minted."""
 
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -46,6 +47,7 @@ class GroveKeyRequest(Document):
 	def attempt(self):
 		"""One try: mint unless minted, then the config. A failure counts on the row; no Error Log
 		per try, the row is the record."""
+		self.lock_row()
 		if self.status != "Pending":
 			return
 		try:
@@ -59,6 +61,12 @@ class GroveKeyRequest(Document):
 			return
 		self.update({"status": "Success", "api_key": None, "last_error": ""})
 		self.save()
+
+	def lock_row(self):
+		"""The row FOR UPDATE, then as it stands now: the immediate job and the cron cannot both
+		mint, the second waits and reads the first's key."""
+		frappe.db.get_value(self.doctype, self.name, "name", for_update=True)
+		self.reload()
 
 	def mint(self):
 		"""Grove's answer onto the row, once. `save` keeps the secret encrypted."""

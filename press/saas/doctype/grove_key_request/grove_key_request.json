@@ -20,6 +20,7 @@
 	],
 	"fields": [
 		{
+			"description": "One request per site, ever: a second insert is refused, so a site is never minted two keys.",
 			"fieldname": "site",
 			"fieldtype": "Link",
 			"in_list_view": 1,
@@ -27,7 +28,8 @@
 			"label": "Site",
 			"options": "Site",
 			"reqd": 1,
-			"set_only_once": 1
+			"set_only_once": 1,
+			"unique": 1
 		},
 		{
 			"fieldname": "product_trial_request",
@@ -103,7 +105,7 @@
 		}
 	],
 	"links": [],
-	"modified": "2026-10-22 00:00:00",
+	"modified": "2026-10-22 14:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "SaaS",
 	"name": "Grove Key Request",
