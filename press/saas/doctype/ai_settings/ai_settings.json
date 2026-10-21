@@ -1,0 +1,74 @@
+{
+	"actions": [],
+	"creation": "2026-10-22 00:00:00",
+	"description": "Grove, the AI gateway, and the control credential Press calls it with. Every Product Trial site gets one Grove key under Press's team there, capped at the trial key cap for the life of the key, written into the site config as ai_keys.",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"base_url",
+		"trial_key_cap",
+		"control_section",
+		"control_api_key",
+		"control_api_secret"
+	],
+	"fields": [
+		{
+			"description": "The Grove site that serves AI, e.g. https://grove.frappe.cloud.",
+			"fieldname": "base_url",
+			"fieldtype": "Data",
+			"label": "Grove URL",
+			"options": "URL"
+		},
+		{
+			"default": "2",
+			"description": "What one trial site may spend through its key in all, USD. Sent with every mint; a change applies to keys minted after it.",
+			"fieldname": "trial_key_cap",
+			"fieldtype": "Currency",
+			"label": "Trial Key Cap (USD)"
+		},
+		{
+			"description": "Minted by Grove for Press on Enroll.",
+			"fieldname": "control_section",
+			"fieldtype": "Section Break",
+			"label": "Control Credentials"
+		},
+		{
+			"fieldname": "control_api_key",
+			"fieldtype": "Data",
+			"label": "Control API Key",
+			"read_only": 1
+		},
+		{
+			"fieldname": "control_api_secret",
+			"fieldtype": "Password",
+			"label": "Control API Secret",
+			"read_only": 1
+		}
+	],
+	"grid_page_length": 50,
+	"issingle": 1,
+	"links": [],
+	"modified": "2026-10-22 00:00:00",
+	"modified_by": "Administrator",
+	"module": "SaaS",
+	"name": "AI Settings",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
+}

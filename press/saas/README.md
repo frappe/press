@@ -66,3 +66,10 @@ If `is_standby` field is checked, that site can be allocated to a user.
   - https://github.com/frappe/frappe/tree/develop/billing
   - https://github.com/frappe/frappe/blob/develop/frappe/integrations/frappe_providers/frappecloud_billing.py
 
+
+#### AI keys for trial sites (Grove)
+
+- Grove is the AI gateway. **AI Settings** (module SaaS) holds its URL, the trial key cap and the control credential Press mints there with **Enroll** (a bootstrap secret the Grove operator hands over). Enroll also registers Press's one team at Grove, `Press Team`, on the tier `Press Trial`; Grove's operator tunes that tier (unlimited keys, the spend limit, trial rate limits) and sets the team's **Key Cap Window** to Total, so a key's cap is for the life of the key, not per month.
+- When a Product Trial Request reaches **Site Created**, `queue_grove_key` enqueues `provision_grove_key`: Grove's `press_trial_key` (a Server Script there, one live key per site, the site name as its title, the cap from AI Settings) answers `{name, title, geography, gateway_url, api_key}`, which goes into the site config as **`ai_keys`**, a list apps read off `frappe.conf.ai_keys` and pick from by title — the same shape a Frappe Cloud server gets for its team's keys. The `Site Config Key` is internal, so the dashboard neither shows nor edits it.
+- `grove_key_status` on the request tracks it: Pending, Created, Failed (with an Error Log; the **Provision Grove Key** button runs it again — Grove hands back the same key), Revoked. Blank means Press was not enrolled when the site was created.
+- Hourly, `revoke_archived_trial_keys` asks Grove to revoke the key of every Archived trial site whose key is Created. Grove refuses a revoke inside six hours of the mint; the request stays Created and the next hour retries.

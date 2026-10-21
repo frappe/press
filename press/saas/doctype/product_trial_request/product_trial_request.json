@@ -25,6 +25,7 @@
 		"site_creation_completed_on",
 		"status_updated_on",
 		"is_site_accessible",
+		"grove_key_status",
 		"errors_tab",
 		"error"
 	],
@@ -46,7 +47,10 @@
 			"read_only": 1,
 			"search_index": 1
 		},
-		{ "fieldname": "column_break_cubd", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_cubd",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "Pending",
 			"fieldname": "status",
@@ -88,21 +92,31 @@
 			"read_only": 1,
 			"search_index": 1
 		},
-		{ "fieldname": "section_break_zlzx", "fieldtype": "Section Break" },
+		{
+			"fieldname": "section_break_zlzx",
+			"fieldtype": "Section Break"
+		},
 		{
 			"fieldname": "site_creation_started_on",
 			"fieldtype": "Datetime",
 			"label": "Site Creation Started On",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_bvut", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_bvut",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "site_creation_completed_on",
 			"fieldtype": "Datetime",
 			"label": "Site Creation Completed On",
 			"read_only": 1
 		},
-		{ "fieldname": "domain", "fieldtype": "Data", "label": "Domain" },
+		{
+			"fieldname": "domain",
+			"fieldtype": "Data",
+			"label": "Domain"
+		},
 		{
 			"fieldname": "cluster",
 			"fieldtype": "Link",
@@ -129,7 +143,11 @@
 			"options": "Not Checked\nYes\nNo",
 			"read_only": 1
 		},
-		{ "fieldname": "errors_tab", "fieldtype": "Tab Break", "label": "Errors" },
+		{
+			"fieldname": "errors_tab",
+			"fieldtype": "Tab Break",
+			"label": "Errors"
+		},
 		{
 			"fieldname": "error",
 			"fieldtype": "Code",
@@ -141,12 +159,20 @@
 			"fieldname": "is_subscription_created",
 			"fieldtype": "Check",
 			"label": "Is Subscription Created"
+		},
+		{
+			"description": "The site's Grove (AI) key: Pending while the job runs, Created once it sits in the site config as ai_keys, Failed with an Error Log, Revoked once the site was archived. Blank: never attempted, Press was not enrolled at Grove.",
+			"fieldname": "grove_key_status",
+			"fieldtype": "Select",
+			"label": "Grove Key Status",
+			"options": "\nPending\nCreated\nFailed\nRevoked",
+			"read_only": 1
 		}
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-09-08 12:00:00.000000",
+	"modified": "2026-10-22 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "SaaS",
 	"name": "Product Trial Request",
