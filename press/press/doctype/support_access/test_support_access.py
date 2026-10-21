@@ -244,7 +244,7 @@ class IntegrationTestSupportAccessToBenchGroup(IntegrationTestCase):
 
 
 class IntegrationTestSupportAccessAnswer(IntegrationTestCase):
-	"""Only a member of the target team can answer a request, even when an employee switches in."""
+	"""Only a member of the target team or a System Manager switched into it can answer a request."""
 
 	def setUp(self):
 		from press.access.test_employee_consent import create_test_employee
@@ -286,6 +286,14 @@ class IntegrationTestSupportAccessAnswer(IntegrationTestCase):
 		with self.assertRaisesRegex(frappe.ValidationError, "You don't have permission to set this status"):
 			access.save()
 		self.assertEqual(frappe.db.get_value("Support Access", access.name, "status"), "Pending")
+
+	def test_system_manager_switched_into_target_team_can_accept_the_request(self):
+		from press.access.test_employee_consent import create_test_employee
+
+		access = self.act_in_site_team_as(create_test_employee("System Manager").user)
+		access.status = "Accepted"
+		access.save()
+		self.assertEqual(frappe.db.get_value("Support Access", access.name, "status"), "Accepted")
 
 	def test_member_of_target_team_can_accept_the_request(self):
 		access = self.act_in_site_team_as(frappe.db.get_value("Team", self.site.team, "user"))

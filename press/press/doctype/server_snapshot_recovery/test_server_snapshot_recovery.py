@@ -18,7 +18,7 @@ from press.press.doctype.team.test_team import create_test_press_admin_team
 
 @patch("frappe.sendmail", new=Mock())
 class TestSnapshotRecoveryBackupDownload(FrappeTestCase):
-	"""An employee outside the team cannot download a recovered site's backups."""
+	"""An employee outside the team, unless a System Manager, cannot download a recovered site's backups."""
 
 	def setUp(self):
 		super().setUp()
@@ -70,6 +70,13 @@ class TestSnapshotRecoveryBackupDownload(FrappeTestCase):
 		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot download the backups"):
 			self.download("encryption_key")
 		self.assertEqual(self.backup_accesses(), 0)
+
+	def test_system_manager_outside_site_team_downloads_recovered_backup_and_team_is_notified(self):
+		frappe.set_user(create_test_employee("System Manager").user)
+		self.assertEqual(self.download(), "https://example.com/database.sql.gz")
+		self.assertEqual(self.backup_accesses(), 1)
+		notification = {"team": self.site.team, "type": "Resource Access", "reference_name": self.site.name}
+		self.assertTrue(frappe.db.exists("Press Notification", notification))
 
 	def test_employee_outside_recovery_team_cannot_download_backup_of_a_gone_site(self):
 		recovery = self.create_recovery(team=self.site.team, site="gone.example.com")
