@@ -2,11 +2,14 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import secrets
+
 import boto3
 import frappe
 from boto3.session import Session
 from frappe.model.document import Document
 from frappe.utils import get_url, validate_email_address
+from frappe.utils.password import set_encrypted_password
 from twilio.rest import Client
 
 from press.api.billing import get_stripe
@@ -250,8 +253,9 @@ class PressSettings(Document):
 		suspend_builds: DF.Check
 		telegram_alert_chat_id: DF.Data | None
 		telegram_alerts_chat_group: DF.Link | None
-		telegram_bot_token: DF.Data | None
+		telegram_bot_token: DF.Password | None
 		telegram_chat_id: DF.Data | None
+		telegram_webhook_secret: DF.Password | None
 		threshold: DF.Float
 		tls_renewal_queue_size: DF.Int
 		trial_sites_count: DF.Int
@@ -325,6 +329,14 @@ class PressSettings(Document):
 		self.stripe_webhook_secret = webhook["secret"]
 		self.flags.ignore_mandatory = True
 		self.save()
+
+	@frappe.whitelist()
+	def set_telegram_webhook(self):
+		# Store first, so that a failed registration rolls the secret back with the request
+		secret = secrets.token_urlsafe(32)
+		set_encrypted_password(self.doctype, self.name, secret, "telegram_webhook_secret")
+		frappe.db.set_single_value(self.doctype, "telegram_webhook_secret", "*" * len(secret))
+		Telegram().set_webhook(secret)
 
 	@frappe.whitelist()
 	def get_github_app_manifest(self):

@@ -19,7 +19,7 @@ class TelegramGroup(Document):
 		)
 
 		chat_id: DF.Data
-		token: DF.Data | None
+		token: DF.Password | None
 		topics: DF.Table[TelegramGroupTopic]
 	# end: auto-generated types
 
