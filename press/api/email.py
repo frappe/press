@@ -217,7 +217,8 @@ def send_mime_mail(data: str):
 
 	validate_plan(data_dict["sk_mail"])
 
-	api_key, domain = frappe.db.get_value("Press Settings", None, ["mailgun_api_key", "root_domain"])
+	api_key = get_decrypted_password("Press Settings", "Press Settings", "mailgun_api_key")
+	domain = frappe.db.get_single_value("Press Settings", "root_domain")
 
 	message: bytes = files["mime"].read()
 	check_spam(message)

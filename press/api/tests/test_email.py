@@ -16,6 +16,8 @@ from frappe.utils.password import set_encrypted_password
 from press.api.email import event_log, sign_mailgun_event
 
 
+# The request runs on another connection, so it does not see an uncommitted key
+@patch("press.api.email.get_decrypted_password", new=Mock(return_value="test-key"))
 class TestSendMimeMail(FrappeAPITestCase):
 	"""Test send_mime_mail endpoint with the same parameters email_delivery_service uses."""
 
@@ -54,7 +56,6 @@ class TestSendMimeMail(FrappeAPITestCase):
 		mock_mailgun_response.status_code = 200
 		mock_mailgun_post.return_value = mock_mailgun_response
 
-		frappe.db.set_single_value("Press Settings", "mailgun_api_key", "test-key")
 		frappe.db.set_single_value("Press Settings", "root_domain", "example.com")
 
 		data = {
@@ -87,7 +88,6 @@ class TestSendMimeMail(FrappeAPITestCase):
 		mock_mailgun_response.status_code = 200
 		mock_mailgun_post.return_value = mock_mailgun_response
 
-		frappe.db.set_single_value("Press Settings", "mailgun_api_key", "test-key")
 		frappe.db.set_single_value("Press Settings", "root_domain", "example.com")
 
 		data = {
@@ -108,7 +108,6 @@ class TestSendMimeMail(FrappeAPITestCase):
 	def test_send_mime_mail_mailgun_400_error(self):
 		"""Test that a 400 response from mailgun raises InvalidEmail."""
 
-		frappe.db.set_single_value("Press Settings", "mailgun_api_key", "test-key")
 		frappe.db.set_single_value("Press Settings", "root_domain", "example.com")
 
 		data = {
