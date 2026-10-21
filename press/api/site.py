@@ -99,6 +99,10 @@ def protected(doctypes):
 		if not (docname := get_protected_doctype_name(args, kwargs, doctypes)):
 			frappe.throw("Name not found, API access not permitted", frappe.PermissionError)  # nosemgrep
 
+		# A list would match any of its names in the team check below
+		if not isinstance(docname, (str, int)):
+			frappe.throw("Invalid name, API access not permitted", frappe.PermissionError)  # nosemgrep
+
 		current_team = get_current_team()
 		for doctype in doctypes:
 			if has_protected_access(doctype, docname, current_team):
