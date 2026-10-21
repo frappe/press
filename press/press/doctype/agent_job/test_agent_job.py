@@ -623,6 +623,41 @@ class TestAgentJobNotifications(FrappeTestCase):
 		self.assertFalse(details["is_actionable"])
 		self.assertIsNone(details["assistance_url"])
 
+	DISK_FULL_TRACEBACK = (
+		"redis.exceptions.ResponseError: MISCONF Errors writing to the AOF file: No space left on device"
+	)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_disk_full_on_dedicated_server_links_the_disk_chart(self):
+		job = self.restore_job(public=False)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Server disk full")
+		self.assertIn(f"/dashboard/servers/{job.server}/analytics", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.DISK_FULL])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_disk_full_on_public_server_is_not_actionable(self):
+		details = get_details(self.restore_job(public=True), "", "")
+
+		self.assertFalse(details["is_actionable"])
+
+	def restore_job(self, public: bool) -> AgentJob:
+		site = create_test_site()
+		frappe.db.set_value("Server", site.server, "public", public)
+		return frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Restore Site",
+				"site": site.name,
+				"server_type": "Server",
+				"server": site.server,
+				"traceback": self.DISK_FULL_TRACEBACK,
+			}
+		)
+
 	def site_with_app(
 		self, app_name: str, owned_by_site_team: bool = True, newer_release: bool = False
 	) -> tuple[str, str]:
