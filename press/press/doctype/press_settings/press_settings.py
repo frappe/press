@@ -252,7 +252,7 @@ class PressSettings(Document):
 		suspend_builds: DF.Check
 		telegram_alert_chat_id: DF.Data | None
 		telegram_alerts_chat_group: DF.Link | None
-		telegram_bot_token: DF.Data | None
+		telegram_bot_token: DF.Password | None
 		telegram_chat_id: DF.Data | None
 		telegram_webhook_secret: DF.Password | None
 		threshold: DF.Float

@@ -834,7 +834,7 @@
 		},
 		{
 			"fieldname": "telegram_bot_token",
-			"fieldtype": "Data",
+			"fieldtype": "Password",
 			"label": "Telegram Bot Token"
 		},
 		{
@@ -1916,7 +1916,7 @@
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-10-21 23:30:00.000000",
+	"modified": "2026-10-22 00:15:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",
