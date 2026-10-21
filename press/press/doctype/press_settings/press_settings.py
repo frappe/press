@@ -9,6 +9,7 @@ import frappe
 from boto3.session import Session
 from frappe.model.document import Document
 from frappe.utils import get_url, validate_email_address
+from frappe.utils.password import set_encrypted_password
 from twilio.rest import Client
 
 from press.api.billing import get_stripe
@@ -331,11 +332,11 @@ class PressSettings(Document):
 
 	@frappe.whitelist()
 	def set_telegram_webhook(self):
+		# Store first, so that a failed registration rolls the secret back with the request
 		secret = secrets.token_urlsafe(32)
+		set_encrypted_password(self.doctype, self.name, secret, "telegram_webhook_secret")
+		frappe.db.set_single_value(self.doctype, "telegram_webhook_secret", "*" * len(secret))
 		Telegram().set_webhook(secret)
-		self.telegram_webhook_secret = secret
-		self.flags.ignore_mandatory = True
-		self.save()
 
 	@frappe.whitelist()
 	def get_github_app_manifest(self):

@@ -6,7 +6,7 @@ frappe.ui.form.on('Press Settings', {
 		frm.call('create_stripe_webhook')
 	},
 	set_telegram_webhook(frm) {
-		frm.call('set_telegram_webhook')
+		frm.call('set_telegram_webhook').then(() => frm.reload_doc())
 	},
 	create_github_app(frm) {
 		frm.call({
