@@ -193,6 +193,17 @@ frappe.ui.form.on('Site', {
 			},
 			__('Actions'),
 		)
+
+		frm.add_custom_button(
+			__('Rotate Database Password'),
+			() => {
+				frappe.confirm(
+					`Rotate this site's database password? The site can't reach its database for a few seconds, until the new password is in its site config.`,
+					() => frm.call('rotate_database_password').then(() => frm.refresh()),
+				)
+			},
+			__('Actions'),
+		)
 		;[
 			[__('Suspend'), 'suspend'],
 			[__('Unsuspend'), 'unsuspend'],
