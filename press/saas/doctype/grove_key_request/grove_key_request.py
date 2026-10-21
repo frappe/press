@@ -11,15 +11,14 @@ from frappe.utils import add_to_date, now_datetime
 MAX_ATTEMPTS = 36
 # The cron leaves a row the immediate job may still be on: one it has not touched in this long.
 RETRY_AFTER_MINUTES = 4
-SAVEPOINT = "grove_key_request"
 
 
 class GroveKeyRequest(Document):
 	"""One trial site's Grove (AI) key, tried until it sits in the site config as `ai_keys` or the
 	attempts run out. One row per site (`site` is unique) and one mint per row: what Grove answered
 	stays on the row (the secret in a Password field, cleared on Success), so a retry after a
-	half-done try writes the config again rather than minting a second key, and a try takes the
-	row FOR UPDATE first, so two at once wait on each other and the second finds the key minted."""
+	half-done try writes the config again rather than asking Grove, which titles a key by the site
+	and refuses a second one for it."""
 
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -47,7 +46,6 @@ class GroveKeyRequest(Document):
 	def attempt(self):
 		"""One try: mint unless minted, then the config. A failure counts on the row; no Error Log
 		per try, the row is the record."""
-		self.lock_row()
 		if self.status != "Pending":
 			return
 		try:
@@ -61,12 +59,6 @@ class GroveKeyRequest(Document):
 			return
 		self.update({"status": "Success", "api_key": None, "last_error": ""})
 		self.save()
-
-	def lock_row(self):
-		"""The row FOR UPDATE, then as it stands now: the immediate job and the cron cannot both
-		mint, the second waits and reads the first's key."""
-		frappe.db.get_value(self.doctype, self.name, "name", for_update=True)
-		self.reload()
 
 	def mint(self):
 		"""Grove's answer onto the row, once. `save` keeps the secret encrypted."""
@@ -84,15 +76,9 @@ class GroveKeyRequest(Document):
 		self.save()
 
 	def write_config(self):
-		"""`ai_keys` into the site config, whole or not at all: a failure midway leaves nothing
-		behind for the next try to trip on."""
-		frappe.db.savepoint(SAVEPOINT)
-		try:
-			ensure_site_config_key("ai_keys", "JSON")
-			frappe.get_doc("Site", self.site).update_site_config({"ai_keys": [self.key_row]})
-		except Exception:
-			frappe.db.rollback(save_point=SAVEPOINT)
-			raise
+		"""`ai_keys` into the site config; a retry runs it again, every step of it idempotent."""
+		ensure_site_config_key("ai_keys", "JSON")
+		frappe.get_doc("Site", self.site).update_site_config({"ai_keys": [self.key_row]})
 
 	@property
 	def key_row(self) -> dict:
