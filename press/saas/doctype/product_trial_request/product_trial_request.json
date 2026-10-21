@@ -25,7 +25,6 @@
 		"site_creation_completed_on",
 		"status_updated_on",
 		"is_site_accessible",
-		"grove_key_status",
 		"errors_tab",
 		"error"
 	],
@@ -159,20 +158,18 @@
 			"fieldname": "is_subscription_created",
 			"fieldtype": "Check",
 			"label": "Is Subscription Created"
-		},
-		{
-			"description": "The site's Grove (AI) key: Pending while the job runs, Created once it sits in the site config as ai_keys, Failed with an Error Log, Revoked once the site was archived. Blank: never attempted, Press was not enrolled at Grove.",
-			"fieldname": "grove_key_status",
-			"fieldtype": "Select",
-			"label": "Grove Key Status",
-			"options": "\nPending\nCreated\nFailed\nRevoked",
-			"read_only": 1
 		}
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
-	"links": [],
-	"modified": "2026-10-22 12:00:00.000000",
+	"links": [
+		{
+			"group": "AI",
+			"link_doctype": "Grove Key Request",
+			"link_fieldname": "product_trial_request"
+		}
+	],
+	"modified": "2026-10-22 13:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "SaaS",
 	"name": "Product Trial Request",

@@ -19,7 +19,7 @@ def enrolled(**fields):
 		{
 			"base_url": "http://grove.test/",
 			"control_api_key": "K",
-			"control_api_secret": "S",
+			"control_api_secret": "S",  # pragma: allowlist secret
 			"trial_key_cap": 2,
 		}
 		| fields
@@ -75,23 +75,27 @@ class TestAISettings(FrappeTestCase):
 			("K2", "S2", True),
 		)
 
-	def test_a_trial_key_is_asked_for_by_site_and_cap_under_the_credential(self):
+	def test_a_key_is_minted_under_press_team_titled_by_the_site_at_the_cap(self):
 		settings = enrolled(trial_key_cap=3)
 		row = {
 			"name": "k1",
-			"title": "s.test",
 			"geography": "ap-south",
 			"gateway_url": "https://gw",
 			"api_key": "gr_x",  # pragma: allowlist secret
-		}
+		}  # pragma: allowlist secret
 		with grove_replies(row) as post:
-			self.assertEqual(settings.trial_key("s.test"), row)
+			self.assertEqual(settings.provision_key("s.test"), row)
 		self.assertEqual(
-			sent(post), ("press_trial_key", {"site": "s.test", "cap": 3}, {"Authorization": "token K:S"})
+			sent(post),
+			(
+				"grove.api.keys.provision_key",
+				{"team": PRESS_TEAM, "title": "s.test", "cap": 3},
+				{"Authorization": "token K:S"},
+			),
 		)
 		with grove_replies("Revoked.") as post:
-			settings.revoke_trial_key("s.test")
-		self.assertEqual(sent(post)[:2], ("press_revoke_trial_key", {"site": "s.test"}))
+			settings.revoke_key("k1")
+		self.assertEqual(sent(post)[:2], ("grove.api.keys.revoke_key", {"team": PRESS_TEAM, "key": "k1"}))
 
 	def test_groves_own_refusal_is_what_the_caller_reads(self):
 		settings = enrolled()
@@ -99,12 +103,12 @@ class TestAISettings(FrappeTestCase):
 		with grove_replies(None, status=417) as post:
 			post.return_value.json.return_value = {"_server_messages": refusal}
 			with self.assertRaisesRegex(frappe.ValidationError, "already holds 2 live keys"):
-				settings.trial_key("s.test")
+				settings.provision_key("s.test")
 		with grove_replies(None, status=503), self.assertRaisesRegex(frappe.ValidationError, "unavailable"):
-			settings.trial_key("s.test")
+			settings.provision_key("s.test")
 
 	def test_not_enrolled_is_refused_before_any_call(self):
 		settings = enrolled(control_api_key="", control_api_secret="")
 		with grove_replies({}) as post, self.assertRaisesRegex(frappe.ValidationError, "enroll Press"):
-			settings.trial_key("s.test")
+			settings.provision_key("s.test")
 		post.assert_not_called()
