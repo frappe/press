@@ -182,7 +182,7 @@ class PressSettings(Document):
 		ic_key: DF.Password | None
 		latest_blog_url: DF.Data | None
 		log_server: DF.Link | None
-		mailgun_api_key: DF.Data | None
+		mailgun_api_key: DF.Password | None
 		mailgun_webhook_signing_key: DF.Password | None
 		max_allowed_screenshots: DF.Int
 		max_concurrent_physical_restorations: DF.Int

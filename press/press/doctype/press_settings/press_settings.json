@@ -856,7 +856,7 @@
 		},
 		{
 			"fieldname": "mailgun_api_key",
-			"fieldtype": "Data",
+			"fieldtype": "Password",
 			"label": "Api Key"
 		},
 		{
