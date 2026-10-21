@@ -1808,24 +1808,24 @@ def plausible_analytics(name: str):
 				unique_visitors = [{"value": d["visitors"], "date": d["date"]} for d in res]
 				response.update({"pageviews": pageviews, "visitors": unique_visitors})
 
-	response.update(
-		{
-			"weekly_installs": frappe.db.sql(
-				f"""
-		SELECT DATE_FORMAT(sa.creation, '%Y-%m-%d') AS date, COUNT(*) AS value
+	response["weekly_installs"] = get_weekly_installs(name)
+	return response
+
+
+def get_weekly_installs(app: str) -> list[dict]:
+	return frappe.db.sql(
+		"""
+		SELECT DATE_FORMAT(sa.creation, '%%Y-%%m-%%d') AS date, COUNT(*) AS value
 		FROM `tabSite Activity` as sa
 		WHERE sa.action = 'Install App'
 		AND sa.creation >= DATE_SUB(CURDATE(), INTERVAL 8 WEEK)
-		AND sa.reason = '{name}'
+		AND sa.reason = %(app)s
 		GROUP BY WEEK(sa.creation)
 		ORDER BY date
 		""",
-				as_dict=True,
-			),
-		}
+		{"app": app},
+		as_dict=True,
 	)
-
-	return response
 
 
 def get_doctype_name(table_name: str) -> str:
