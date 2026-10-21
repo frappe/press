@@ -20,7 +20,7 @@ TIMEOUT = (30, 90)
 UNAVAILABLE = (502, 503, 504)
 
 
-class AISettings(Document):
+class GroveSettings(Document):
 	"""Where Grove is and the control credential Press calls it with. Every Product Trial site gets
 	one Grove key under Press's team there, capped at `trial_key_cap` for the life of the key."""
 
@@ -53,7 +53,7 @@ class AISettings(Document):
 	def call(self, method: str, **body):
 		"""POST `method` at Grove as Press; Grove's own refusal line is what the caller reads."""
 		if not self.is_enrolled:
-			frappe.throw(_("AI is not set up: enroll Press at Grove in AI Settings."))
+			frappe.throw(_("AI is not set up: enroll Press at Grove in Grove Settings."))
 		headers = {"Authorization": f"token {self.control_api_key}:{self.get_password('control_api_secret')}"}
 		try:
 			response = requests.post(
@@ -107,7 +107,7 @@ def enroll():
 	secret = frappe.local.form_dict.pop("bootstrap_secret", None)
 	if not secret:
 		frappe.throw(_("Bootstrap secret is required."))
-	settings: AISettings = frappe.get_single("AI Settings")
+	settings: GroveSettings = frappe.get_single("Grove Settings")
 	if not settings.base_url:
 		frappe.throw(_("Set the Grove URL first."))
 
@@ -124,5 +124,5 @@ def enroll():
 def rotate_credential():
 	"""Desk button: a new control secret from Grove. The old one stops at once."""
 	frappe.only_for("System Manager")
-	settings: AISettings = frappe.get_single("AI Settings")
+	settings: GroveSettings = frappe.get_single("Grove Settings")
 	settings.set_credential(settings.call("grove.api.control.create_control_client_key"))

@@ -8,7 +8,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.site.site import Site
 from press.press.doctype.site.test_site import create_test_site
-from press.saas.doctype.ai_settings.test_ai_settings import enrolled
+from press.saas.doctype.grove_settings.test_grove_settings import enrolled
 
 
 @patch.object(Site, "create_sync_user_webhook", new=Mock())

@@ -49,10 +49,10 @@
 	"grid_page_length": 50,
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-10-22 00:00:00",
+	"modified": "2026-10-22 17:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "SaaS",
-	"name": "AI Settings",
+	"name": "Grove Settings",
 	"owner": "Administrator",
 	"permissions": [
 		{
