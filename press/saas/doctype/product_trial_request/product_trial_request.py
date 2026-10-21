@@ -39,6 +39,7 @@ class ProductTrialRequest(Document):
 		cluster: DF.Link | None
 		domain: DF.Data | None
 		error: DF.Code | None
+		grove_key_status: DF.Literal["", "Pending", "Created", "Failed", "Revoked"]
 		is_site_accessible: DF.Literal["Not Checked", "Yes", "No"]
 		is_standby_site: DF.Check
 		is_subscription_created: DF.Check
@@ -318,6 +319,33 @@ class ProductTrialRequest(Document):
 							reference_doctype=self.doctype,
 							reference_name=self.name,
 						)
+					self.queue_grove_key()
+
+	def queue_grove_key(self):
+		"""A Grove (AI) key for the new site, minted in a job so a Grove that is down never holds
+		the request. Nothing while Press is not enrolled at Grove."""
+		if not frappe.get_cached_doc("AI Settings").is_enrolled:
+			return
+		self.db_set("grove_key_status", "Pending", update_modified=False)
+		frappe.enqueue_doc(self.doctype, self.name, "provision_grove_key", enqueue_after_commit=True)
+
+	@frappe.whitelist()
+	def provision_grove_key(self):
+		"""Mint the site's Grove key (or get the same one again: Grove answers one live key per
+		site) and write it into the site config as `ai_keys`, the row apps pick by title. A
+		failure is an Error Log and Failed; the Desk button runs this again."""
+		try:
+			row = frappe.get_cached_doc("AI Settings").trial_key(self.site)
+			ensure_site_config_key("ai_keys", "JSON")
+			frappe.get_doc("Site", self.site).update_site_config({"ai_keys": [row]})
+			self.db_set("grove_key_status", "Created", update_modified=False)
+		except Exception:
+			self.db_set("grove_key_status", "Failed", update_modified=False)
+			log_error(
+				title="Grove Trial Key Failed",
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
 
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):
@@ -579,6 +607,43 @@ def expire_long_pending_trial_requests():
 		{"status": "Expired", "status_updated_on": now_datetime()},
 		update_modified=False,
 	)
+
+
+def ensure_site_config_key(key: str, type: str):
+	"""An internal Site Config Key: the dashboard neither lists nor edits it, so the customer
+	cannot lift the value out of the site config."""
+	if not frappe.db.exists("Site Config Key", {"key": key}):
+		frappe.get_doc(doctype="Site Config Key", internal=True, key=key, type=type).insert(
+			ignore_permissions=True
+		)
+
+
+def revoke_archived_trial_keys():
+	"""Hourly: a trial site archived takes its Grove key with it. Grove refuses a revoke inside
+	six hours of the mint and may be down; what is refused stays Created for the next hour."""
+	settings = frappe.get_cached_doc("AI Settings")
+	if not settings.is_enrolled:
+		return
+	request, site = frappe.qb.DocType("Product Trial Request"), frappe.qb.DocType("Site")
+	archived = (
+		frappe.qb.from_(request)
+		.join(site)
+		.on(site.name == request.site)
+		.select(request.name, request.site)
+		.where((request.grove_key_status == "Created") & (site.status == "Archived"))
+	).run(as_dict=True)
+	for row in archived:
+		try:
+			settings.revoke_trial_key(row.site)
+			frappe.db.set_value(
+				"Product Trial Request", row.name, "grove_key_status", "Revoked", update_modified=False
+			)
+		except Exception:
+			log_error(
+				title="Grove Trial Key Revoke Failed",
+				reference_doctype="Product Trial Request",
+				reference_name=row.name,
+			)
 
 
 def gather_stats(time_ago):

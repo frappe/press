@@ -3,6 +3,11 @@
 
 frappe.ui.form.on('Product Trial Request', {
 	refresh(frm) {
+		if (frm.doc.site && frm.doc.grove_key_status !== 'Created') {
+			frm.add_custom_button(__('Provision Grove Key'), () =>
+				frm.call('provision_grove_key').then(() => frm.reload_doc()),
+			)
+		}
 		frm.add_custom_button(__('Preview Setup Wizard Payload'), function () {
 			frappe.call({
 				method: 'get_setup_wizard_payload',
@@ -12,18 +17,18 @@ frappe.ui.form.on('Product Trial Request', {
 				freeze_message: __('Generating Setup Wizard Payload'),
 				callback: function (r) {
 					if (r.exc) {
-						frappe.msgprint(r.exc);
+						frappe.msgprint(r.exc)
 					} else {
 						frappe.msgprint({
 							title: __('Setup Wizard Payload'),
 							message: JSON.stringify(r.message, null, 4),
-						});
+						})
 					}
 				},
 				error: function (r) {
-					frappe.msgprint(r.message);
+					frappe.msgprint(r.message)
 				},
-			});
-		});
+			})
+		})
 	},
-});
+})
