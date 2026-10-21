@@ -4,6 +4,7 @@
 
 import frappe
 import telegram
+from frappe.utils import get_url
 
 from press.utils import log_error
 
@@ -59,6 +60,10 @@ class Telegram:
 	def bot(self):
 		return telegram.Bot(token=self.token)
 
+	def set_webhook(self, secret_token: str):
+		url = get_url("/api/method/press.api.telegram.hook")
+		self.bot.set_webhook(url=url, secret_token=secret_token)
+
 	def respond(self, message):
 		if not message:
 			return
@@ -93,6 +98,8 @@ class Telegram:
 	def process(self, command):
 		arguments = command.split(" ")
 
+		if len(arguments) >= 4 and frappe.unscrub(arguments[0]) not in ALLOWED_DOCTYPES:
+			return show_help_message()
 		if len(arguments) == 1:
 			commands = {
 				"help": show_help_message,
@@ -132,7 +139,8 @@ def get_value(doctype, name, field, *args):
 
 
 def execute(doctype, name, method, *args):
-	# return "EXECUTE", doctype, name, method
+	if method == "get_password":
+		return "Reading passwords is not allowed"
 	try:
 		document = frappe.get_doc(doctype, name)
 		return document.run_method(method, *args)
@@ -147,6 +155,8 @@ def show_help_message(*args):
 def what(*args):
 	return "What are you talking about?"
 
+
+ALLOWED_DOCTYPES = ("Site", "Bench", "Server", "Proxy Server", "Database Server")
 
 HELP_MESSAGE = """Try one of these
 

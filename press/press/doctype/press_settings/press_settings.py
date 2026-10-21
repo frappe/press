@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import secrets
+
 import boto3
 import frappe
 from boto3.session import Session
@@ -252,6 +254,7 @@ class PressSettings(Document):
 		telegram_alerts_chat_group: DF.Link | None
 		telegram_bot_token: DF.Data | None
 		telegram_chat_id: DF.Data | None
+		telegram_webhook_secret: DF.Password | None
 		threshold: DF.Float
 		tls_renewal_queue_size: DF.Int
 		trial_sites_count: DF.Int
@@ -323,6 +326,14 @@ class PressSettings(Document):
 		)
 		self.stripe_webhook_endpoint_id = webhook["id"]
 		self.stripe_webhook_secret = webhook["secret"]
+		self.flags.ignore_mandatory = True
+		self.save()
+
+	@frappe.whitelist()
+	def set_telegram_webhook(self):
+		secret = secrets.token_urlsafe(32)
+		Telegram().set_webhook(secret)
+		self.telegram_webhook_secret = secret
 		self.flags.ignore_mandatory = True
 		self.save()
 
