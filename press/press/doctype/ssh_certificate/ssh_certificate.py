@@ -12,7 +12,11 @@ from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import cstr, escape_html
 
+from press.access.actions import ReleaseGroupActions
+from press.access.support_access import can_perform
+from press.press.doctype.press_notification.press_notification import notify_resource_access
 from press.utils import log_error
 
 if TYPE_CHECKING:
@@ -96,6 +100,20 @@ class SSHCertificate(Document):
 				"You already have a valid SSH certificate. Please use the existing certificate, or wait for it to expire before requesting a new one."
 			)
 
+	def before_insert(self):
+		self.validate_employee_consent()
+
+	def validate_employee_consent(self):
+		"""The rule of `@action_guard(ReleaseGroupActions.SSHAccess)`, for inserts from desk too."""
+		if self.certificate_type != "User" or not self.group:
+			return
+		team = cstr(frappe.db.get_value("Release Group", self.group, "team"))
+		if not can_perform("Release Group", self.group, team, ReleaseGroupActions.SSHAccess.value):
+			frappe.throw(
+				"Employees need the consent of the team to get SSH access to its bench group",
+				frappe.PermissionError,
+			)
+
 	def create_public_key_file(self):
 		with open(self.public_key_file, "w") as file:
 			file.write(self.ssh_public_key)
@@ -107,6 +125,14 @@ class SSHCertificate(Document):
 		self.extract_certificate_details()
 		frappe.local.role_permissions = {}
 		self.save()
+		self.notify_group_team()
+
+	def notify_group_team(self):
+		if self.certificate_type != "User" or not self.group:
+			return
+		title = escape_html(cstr(frappe.db.get_value("Release Group", self.group, "title")))
+		message = f"{self.user} got SSH access to the bench group {title} for {self.validity}."
+		notify_resource_access(self, "Release Group", self.group, f"SSH access to {title}", message)
 
 	def generate_certificate(self):
 		ca: "SSHCertificateAuthority" = frappe.get_doc(

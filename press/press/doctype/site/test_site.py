@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 import frappe
 import frappe.utils
 import responses
+from cryptography.fernet import Fernet
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
@@ -32,6 +33,7 @@ from press.press.doctype.remote_file.test_remote_file import (
 from press.press.doctype.server.server import BaseServer, Server, notice_message_id
 from press.press.doctype.site.site import (
 	ARCHIVE_AFTER_SUSPEND_DAYS,
+	ENCRYPTION_KEYS,
 	NOTIFY_BEFORE_ARCHIVAL_DAYS,
 	Site,
 	archive_suspended_sites,
@@ -1287,6 +1289,41 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 		site = Site({"doctype": "Site", "plan": plan.name})
 
 		self.assertEqual(site.get_plan_config()["rate_limit"], {"limit": 36000, "window": 86400})
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestSiteConfigEncryptionKeyValidation(FrappeTestCase):
+	def setUp(self):
+		self.site = create_test_site("testsubdomain")
+		for key in ENCRYPTION_KEYS:
+			if not frappe.db.exists("Site Config Key", key):
+				frappe.get_doc({"doctype": "Site Config Key", "key": key, "type": "Password"}).insert()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_encryption_key_that_is_not_a_fernet_key_is_rejected(self):
+		for key in ENCRYPTION_KEYS:
+			with self.subTest(key=key):
+				self.assertRaisesRegex(
+					frappe.ValidationError,
+					"not a valid encryption key",
+					self.site.update_config,
+					{key: "not-a-fernet-key"},
+				)
+				self.site.reload()
+				self.assertNotIn(key, json.loads(self.site.config))
+
+	def test_fernet_encryption_key_is_saved(self):
+		value = Fernet.generate_key().decode()
+		self.site.update_config({"encryption_key": value})
+		self.assertEqual(json.loads(self.site.config)["encryption_key"], value)
+
+	def test_encryption_key_saved_unchanged_from_dashboard_keeps_its_value(self):
+		value = Fernet.generate_key().decode()
+		self.site.update_config({"encryption_key": value})
+		self.site.update_config({"encryption_key": "*******"})
+		self.assertEqual(json.loads(self.site.config)["encryption_key"], value)
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())

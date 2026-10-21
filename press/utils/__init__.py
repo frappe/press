@@ -29,6 +29,7 @@ from frappe.query_builder.functions import Count
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import redis_cache, site_cache
 
+from press.guards import mfa
 from press.utils.email_validator import validate_email
 
 if TYPE_CHECKING:
@@ -133,11 +134,9 @@ def get_current_team(get_doc=False) -> Team | str:
 
 	if not team and has_role("Press User") and frappe.db.exists("Team", {"user": frappe.session.user}):
 		# if user has_role of Press User then just return current user as default team
-		return (
-			frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1})
-			if get_doc
-			else frappe.get_value("Team", {"user": frappe.session.user, "enabled": 1}, "name")
-		)
+		team = frappe.get_value("Team", {"user": frappe.session.user, "enabled": 1}, "name")
+		mfa.ensure_for_team(team)
+		return frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1}) if get_doc else team
 
 	# if team is not passed via header, get the default team for user
 	team = team if team else get_default_team_for_user(frappe.session.user)
@@ -154,6 +153,8 @@ def get_current_team(get_doc=False) -> Team | str:
 
 	if not system_user and not frappe.db.exists("Team", {"name": team, "enabled": 1}):
 		frappe.throw("Invalid Team", frappe.AuthenticationError)
+
+	mfa.ensure_for_team(team)
 
 	if get_doc:
 		return frappe.get_doc("Team", team)
@@ -246,23 +247,14 @@ def get_disabled_team_of_user(user):
 	return frappe.db.get_value("Team", own_account | {"enabled": 0}, "name")
 
 
-def chat_enabled():
-	if frappe.session.user == "Guest":
+def chat_enabled(team: str | None) -> bool:
+	# Takes the team from the dashboard boot. get_current_team would refuse a member
+	# without 2FA and stop the boot before the "Enable 2FA" page loads.
+	if not team or not frappe.db.get_single_value("Press Settings", "enable_chat"):
 		return False
 
-	if not frappe.db.get_single_value("Press Settings", "enable_chat"):
-		return False
-
-	current_team_doc = get_current_team(get_doc=True)
-
-	if not current_team_doc:
-		return False
-
-	date_diff = frappe.utils.data.get_datetime() - current_team_doc.creation
-
-	if date_diff < timedelta(days=90):
-		return True
-	return False
+	creation = frappe.db.get_value("Team", team, "creation")
+	return frappe.utils.data.get_datetime() - creation < timedelta(days=90)
 
 
 def get_chat_bubble_config():

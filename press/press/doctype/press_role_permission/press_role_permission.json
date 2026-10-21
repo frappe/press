@@ -53,7 +53,7 @@
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2025-03-17 12:39:57.349710",
+	"modified": "2026-10-16 11:53:36.349079",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Role Permission",
@@ -87,5 +87,6 @@
 	"row_format": "Dynamic",
 	"sort_field": "modified",
 	"sort_order": "DESC",
-	"states": []
+	"states": [],
+	"track_changes": 1
 }

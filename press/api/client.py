@@ -13,7 +13,6 @@ from frappe.handler import run_doc_method as _run_doc_method
 from frappe.model import child_table_fields, default_fields
 from frappe.model.base_document import get_controller
 from frappe.monitor import add_data_to_monitor
-from frappe.query_builder.terms import ValueWrapper
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
@@ -21,7 +20,7 @@ from press.access import SECTIONS, dashboard_access_rules, ownership
 from press.access.support_access import has_support_access
 from press.exceptions import TeamHeaderNotInRequestError
 from press.guards import role_guard
-from press.guards.role_guard.document import has_user_permission
+from press.guards.role_guard.notification import restrict_to_roles
 from press.telemetry import sentry
 from press.utils import has_role
 
@@ -214,15 +213,12 @@ def get_list_query(
 
 	query = ownership.scope_query(doctype, meta, filters, query)
 
-	restricted_doctypes = ("Site", "Release Group", "Server")
-	if doctype in restricted_doctypes and role_guard.is_restricted() and not has_user_permission(doctype):
-		permitted_documents = role_guard.permitted_documents(doctype)
-		if not permitted_documents:
-			query = query.where(ValueWrapper(1) == 0)  # Hack!
-		else:
-			QueryDoctype = frappe.qb.DocType(doctype)
-			query = query.where(QueryDoctype.name.isin(permitted_documents))
-
+	if doctype in role_guard.LIMITED_DOCTYPES:
+		return role_guard.filter_permitted(query, doctype, frappe.qb.DocType(doctype).name)
+	if doctype == "Bench":
+		return role_guard.filter_permitted(query, "Release Group", frappe.qb.DocType("Bench").group)
+	if doctype == "Press Notification":
+		return restrict_to_roles(query)
 	return query
 
 
