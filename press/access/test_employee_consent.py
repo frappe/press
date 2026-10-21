@@ -18,9 +18,9 @@ from press.press.doctype.team.team import Team
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
 
-# Any desk role but System Manager, which is exempt from the employee checks.
 def create_test_employee(role: str = "Press Marketplace Manager") -> Team:
-	"""A Frappe Cloud employee: a system user with a team of their own."""
+	"""A Frappe Cloud employee: a system user with a team of their own.
+	The default role is not System Manager, which is exempt from the employee checks."""
 	team = create_test_press_admin_team()
 	frappe.get_doc("User", team.user).add_roles(role)
 	return team
