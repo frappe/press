@@ -323,10 +323,13 @@ class ProductTrialRequest(Document):
 	def request_grove_key(self):
 		"""A Grove (AI) key for the new site, tried by a Grove Key Request until it sits in the site
 		config. None while Press is not enrolled at Grove."""
-		if frappe.get_cached_doc("AI Settings").is_enrolled:
-			frappe.get_doc(
-				{"doctype": "Grove Key Request", "site": self.site, "product_trial_request": self.name}
-			).insert()
+		if not frappe.get_cached_doc("AI Settings").is_enrolled:
+			return
+		if frappe.db.exists("Grove Key Request", {"site": self.site}):
+			return
+		frappe.get_doc(
+			{"doctype": "Grove Key Request", "site": self.site, "product_trial_request": self.name}
+		).insert()
 
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):

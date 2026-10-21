@@ -30,3 +30,8 @@ class TestProductTrialRequest(FrappeTestCase):
 				frappe.db.get_value("Grove Key Request", {"product_trial_request": request.name}, "status"),
 				expected,
 			)
+		request.status, request.error = "Error", "boom"
+		request.save()
+		request.status = "Site Created"
+		request.save()
+		self.assertEqual(frappe.db.count("Grove Key Request", {"site": site.name}), 1)
