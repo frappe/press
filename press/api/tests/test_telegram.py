@@ -10,6 +10,7 @@ from frappe.utils.password import set_encrypted_password
 
 from press.api.telegram import hook
 from press.press.doctype.team.test_team import create_test_team
+from press.press.doctype.telegram_group.test_telegram_group import create_test_telegram_group
 from press.telegram_utils import HELP_MESSAGE, Telegram
 
 SECRET = "correct-secret"  # pragma: allowlist secret
@@ -49,6 +50,22 @@ class TestTelegramHook(FrappeTestCase):
 	def test_hook_responds_to_request_with_matching_secret_token(self, respond: Mock):
 		self.call_hook({"X-Telegram-Bot-Api-Secret-Token": SECRET})
 		respond.assert_called_once_with(MESSAGE)
+
+
+class TestTelegramToken(FrappeTestCase):
+	def setUp(self):
+		set_encrypted_password("Press Settings", "Press Settings", "settings-token", "telegram_bot_token")
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_telegram_uses_decrypted_token_of_its_group(self):
+		group = create_test_telegram_group(token="group-token")
+		self.assertEqual(Telegram(group=group.name).token, "group-token")
+
+	def test_telegram_falls_back_to_decrypted_press_settings_token_when_group_has_none(self):
+		group = create_test_telegram_group()
+		self.assertEqual(Telegram(group=group.name).token, "settings-token")
 
 
 class TestTelegramProcess(FrappeTestCase):
