@@ -1,9 +1,9 @@
 // Copyright (c) 2026, Frappe and contributors
 // For license information, please see license.txt
 
-const METHODS = 'press.saas.doctype.ai_settings.ai_settings'
+const METHODS = 'press.saas.doctype.grove_settings.grove_settings'
 
-frappe.ui.form.on('AI Settings', {
+frappe.ui.form.on('Grove Settings', {
 	refresh(frm) {
 		if (frm.doc.control_api_key) {
 			frm.add_custom_button(__('Rotate Credential'), () => rotate(frm))

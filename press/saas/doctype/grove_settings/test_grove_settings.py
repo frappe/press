@@ -8,13 +8,13 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from press.saas.doctype.ai_settings import ai_settings
-from press.saas.doctype.ai_settings.ai_settings import PRESS_TEAM, PRESS_TIER
+from press.saas.doctype.grove_settings import grove_settings
+from press.saas.doctype.grove_settings.grove_settings import PRESS_TEAM, PRESS_TIER
 
 
 def enrolled(**fields):
-	"""AI Settings as an enrolled Press would hold them, without a Grove."""
-	settings = frappe.get_single("AI Settings")
+	"""Grove Settings as an enrolled Press would hold them, without a Grove."""
+	settings = frappe.get_single("Grove Settings")
 	settings.update(
 		{
 			"base_url": "http://grove.test/",
@@ -25,12 +25,12 @@ def enrolled(**fields):
 		| fields
 	)
 	settings.save()
-	return frappe.get_cached_doc("AI Settings")
+	return frappe.get_cached_doc("Grove Settings")
 
 
 @contextmanager
 def grove_replies(message, status=200):
-	with patch("press.saas.doctype.ai_settings.ai_settings.requests.post") as post:
+	with patch("press.saas.doctype.grove_settings.grove_settings.requests.post") as post:
 		post.return_value.status_code = status
 		post.return_value.json.return_value = {"message": message}
 		yield post
@@ -42,7 +42,7 @@ def sent(post, index=-1) -> tuple[str, dict, dict | None]:
 	return call.args[0].rsplit("/api/method/", 1)[1], call.kwargs["json"], call.kwargs.get("headers")
 
 
-class TestAISettings(FrappeTestCase):
+class TestGroveSettings(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -50,7 +50,7 @@ class TestAISettings(FrappeTestCase):
 		enrolled(control_api_key="", control_api_secret="")
 		with grove_replies({"api_key": "K2", "api_secret": "S2"}) as post:  # pragma: allowlist secret
 			frappe.local.form_dict.bootstrap_secret = "boot"  # pragma: allowlist secret
-			ai_settings.enroll()
+			grove_settings.enroll()
 		calls = [sent(post, i) for i in range(3)]
 		self.assertEqual(
 			calls[0],
@@ -69,7 +69,7 @@ class TestAISettings(FrappeTestCase):
 				{"Authorization": "token K2:S2"},
 			),
 		)
-		settings = frappe.get_single("AI Settings")
+		settings = frappe.get_single("Grove Settings")
 		self.assertEqual(
 			(settings.control_api_key, settings.get_password("control_api_secret"), settings.is_enrolled),
 			("K2", "S2", True),

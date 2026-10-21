@@ -64,7 +64,7 @@ class GroveKeyRequest(Document):
 		"""Grove's answer onto the row, once. `save` keeps the secret encrypted."""
 		if self.grove_key:
 			return
-		minted = frappe.get_cached_doc("AI Settings").provision_key(self.site)
+		minted = frappe.get_cached_doc("Grove Settings").provision_key(self.site)
 		self.update(
 			{
 				"grove_key": minted["name"],
@@ -120,7 +120,7 @@ def run_pending():
 def revoke_archived():
 	"""Hourly: a trial site archived takes its key with it. Grove refuses a revoke inside six hours
 	of the mint and may be down: the row keeps Success and the reason, and next hour tries again."""
-	settings = frappe.get_cached_doc("AI Settings")
+	settings = frappe.get_cached_doc("Grove Settings")
 	if not settings.is_enrolled:
 		return
 	request, site = frappe.qb.DocType("Grove Key Request"), frappe.qb.DocType("Site")
