@@ -20,6 +20,7 @@ def enrolled(**fields):
 			"base_url": "http://grove.test/",
 			"control_api_key": "K",
 			"control_api_secret": "S",  # pragma: allowlist secret
+			"enable_for_product_trials": 1,
 			"trial_key_cap": 2,
 		}
 		| fields

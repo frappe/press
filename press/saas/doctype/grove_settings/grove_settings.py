@@ -35,12 +35,18 @@ class GroveSettings(Document):
 		base_url: DF.Data | None
 		control_api_key: DF.Data | None
 		control_api_secret: DF.Password | None
+		enable_for_product_trials: DF.Check
 		trial_key_cap: DF.Currency
 	# end: auto-generated types
 
 	@property
 	def is_enrolled(self) -> bool:
 		return bool(self.base_url and self.control_api_key)
+
+	@property
+	def is_on_for_product_trials(self) -> bool:
+		"""Whether a new trial site gets a key: enrolled, and switched on for trials."""
+		return self.is_enrolled and bool(self.enable_for_product_trials)
 
 	def validate(self):
 		self.base_url = (self.base_url or "").strip().rstrip("/")
