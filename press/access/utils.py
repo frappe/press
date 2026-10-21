@@ -12,8 +12,9 @@ def is_public_resource(doctype: str, docname: str) -> bool:
 
 
 def is_outside_employee(team: str | None) -> bool:
-	"""A system user who does not belong to `team`, though they can switch into it."""
-	if frappe.session.user == "Administrator" or not _system_user():
+	"""A system user who does not belong to `team`, though they can switch into it.
+	System Managers, Administrator among them, are exempt from every employee check."""
+	if not _system_user() or "System Manager" in frappe.get_roles():
 		return False
 	return not (team and is_user_part_of_team(frappe.session.user, team))
 
