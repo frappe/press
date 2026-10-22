@@ -495,26 +495,8 @@ class Invoice(Document):
 
 	def after_insert(self):
 		if self.get("amended_from"):
-			values = {
-				"modified": frappe.utils.now(),
-				"modified_by": frappe.session.user,
-				"new_invoice": self.name,
-				"old_invoice": self.amended_from,
-			}
 			# link usage records of old cancelled invoice to the new amended invoice
-			frappe.db.sql(
-				"""
-				UPDATE
-					`tabUsage Record`
-				SET
-					`invoice` = %(new_invoice)s,
-					`modified` = %(modified)s,
-					`modified_by` = %(modified_by)s
-				WHERE
-					`invoice` = %(old_invoice)s
-				""",
-				values=values,
-			)
+			frappe.db.set_value("Usage Record", {"invoice": self.amended_from}, "invoice", self.name)
 
 	def create_stripe_invoice(self):
 		if self.stripe_invoice_id:
