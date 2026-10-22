@@ -12,10 +12,7 @@ if TYPE_CHECKING:
 	from datetime import datetime
 
 BACKUP_JOB_TYPE = "Backup Site"
-FAILED_JOB_STATUSES = ("Failure", "Delivery Failure")
-# A pending or running job may still succeed, so its site is not flagged yet
-UNFLAGGED_JOB_STATUSES = ("Success", "Pending", "Running")
-NO_SUCCESS_WINDOW_DAYS = 3
+FAILED_STATUSES = ("Failure", "Delivery Failure")
 
 
 class BackupDailyAudit(Document):
@@ -31,30 +28,31 @@ class BackupDailyAudit(Document):
 
 		audit_date: DF.Date
 		failed_jobs: DF.Int
-		failed_site_count: DF.Int
-		failed_sites: DF.Table[BackupDailyAuditSite]
-		sites_without_success: DF.Table[BackupDailyAuditSite]
-		sites_without_success_count: DF.Int
+		sites_without_success_in_3_days: DF.Table[BackupDailyAuditSite]
+		sites_without_success_in_3_days_count: DF.Int
+		sites_without_success_in_day: DF.Table[BackupDailyAuditSite]
+		sites_without_success_in_day_count: DF.Int
 		success_rate: DF.Percent
 		successful_jobs: DF.Int
 	# end: auto-generated types
 
 	def validate(self):
-		self.failed_site_count = len(self.failed_sites)
-		self.sites_without_success_count = len(self.sites_without_success)
+		self.sites_without_success_in_day_count = len(self.sites_without_success_in_day)
+		self.sites_without_success_in_3_days_count = len(self.sites_without_success_in_3_days)
 
 	def collect(self):
-		from press.press.doctype.site_backup.site_backup import get_max_failed_backup_attempts
-
 		self.audit_date = frappe.utils.today()
 		self.set_job_counts()
-		failed_sites = get_sites_with_all_backup_attempts_failed(get_max_failed_backup_attempts())
-		sites_without_success = get_sites_without_successful_backup_job()
-		details = get_site_details([row.site for row in failed_sites] + sites_without_success)
-		for row in failed_sites:
-			self.append("failed_sites", {**details[row.site], "failed_backups": row.failures})
-		for site in sites_without_success:
-			self.append("sites_without_success", details[site])
+		self.add_sites_without_success("sites_without_success_in_day", days=1)
+		self.add_sites_without_success("sites_without_success_in_3_days", days=3)
+
+	def add_sites_without_success(self, table: str, days: int):
+		since = frappe.utils.add_days(None, -days)
+		sites = get_sites_without_successful_backup(since)
+		failures = get_failed_backup_counts(sites, since)
+		details = get_site_details(sites)
+		for site in sites:
+			self.append(table, {**details[site], "failed_backups": failures.get(site, 0)})
 
 	def set_job_counts(self):
 		"""Backup Site agent jobs created in the last 24h that have finished, by outcome."""
@@ -63,7 +61,7 @@ class BackupDailyAudit(Document):
 				"Agent Job",
 				filters={
 					"job_type": BACKUP_JOB_TYPE,
-					"status": ("in", ["Success", *FAILED_JOB_STATUSES]),
+					"status": ("in", ["Success", *FAILED_STATUSES]),
 					"creation": (">=", frappe.utils.add_days(None, -1)),
 				},
 				fields=["status", "count(name) as jobs"],
@@ -72,7 +70,7 @@ class BackupDailyAudit(Document):
 			)
 		)
 		self.successful_jobs = counts.get("Success", 0)
-		self.failed_jobs = sum(counts.get(status, 0) for status in FAILED_JOB_STATUSES)
+		self.failed_jobs = sum(counts.get(status, 0) for status in FAILED_STATUSES)
 		finished_jobs = self.successful_jobs + self.failed_jobs
 		self.success_rate = self.successful_jobs / finished_jobs * 100 if finished_jobs else 0
 
@@ -85,31 +83,11 @@ def record_backup_daily_audit() -> None:
 	audit.insert(ignore_permissions=True)
 
 
-def get_sites_with_all_backup_attempts_failed(max_attempts: int) -> list[frappe._dict]:
-	"""Sites that hit the daily failed backup limit, the same limit that emails the team."""
-	failures_by_site = frappe.get_all(
+def get_sites_without_successful_backup(since: datetime) -> list[str]:
+	"""Sites due a scheduled backup with no successful logical backup since the given time."""
+	sites_with_success = frappe.get_all(
 		"Site Backup",
-		filters={
-			"status": ("in", ["Failure", "Delivery Failure"]),
-			"creation": (">=", frappe.utils.add_days(None, -1)),
-		},
-		fields=["site", "count(name) as failures"],
-		group_by="site",
-		order_by="failures desc, site asc",
-	)
-	return [row for row in failures_by_site if row.failures >= max_attempts]
-
-
-def get_sites_without_successful_backup_job() -> list[str]:
-	"""Sites due a scheduled backup with no successful, pending or running backup job in the window."""
-	since = frappe.utils.add_days(None, -NO_SUCCESS_WINDOW_DAYS)
-	sites_with_jobs = frappe.get_all(
-		"Agent Job",
-		filters={
-			"job_type": BACKUP_JOB_TYPE,
-			"status": ("in", UNFLAGGED_JOB_STATUSES),
-			"creation": (">=", since),
-		},
+		filters={"status": "Success", "physical": False, "creation": (">=", since)},
 		pluck="site",
 		distinct=True,
 	)
@@ -117,7 +95,29 @@ def get_sites_without_successful_backup_job() -> list[str]:
 	activated_sites = frappe.get_all(
 		"Site Activity", {"action": "Activate Site", "creation": (">=", since)}, pluck="site"
 	)
-	return sorted(set(get_sites_due_scheduled_backups(since)) - set(sites_with_jobs) - set(activated_sites))
+	return sorted(
+		set(get_sites_due_scheduled_backups(since)) - set(sites_with_success) - set(activated_sites)
+	)
+
+
+def get_failed_backup_counts(site_names: list[str], since: datetime) -> dict[str, int]:
+	if not site_names:
+		return {}
+
+	return dict(
+		frappe.get_all(
+			"Site Backup",
+			filters={
+				"site": ("in", site_names),
+				"status": ("in", FAILED_STATUSES),
+				"physical": False,
+				"creation": (">=", since),
+			},
+			fields=["site", "count(name) as failures"],
+			group_by="site",
+			as_list=True,
+		)
+	)
 
 
 def get_sites_due_scheduled_backups(created_before: datetime) -> list[str]:
@@ -148,7 +148,7 @@ def get_site_details(site_names: list[str]) -> dict[str, dict]:
 	last_successes = dict(
 		frappe.get_all(
 			"Site Backup",
-			filters={"site": ("in", site_names), "status": "Success"},
+			filters={"site": ("in", site_names), "status": "Success", "physical": False},
 			fields=["site", "max(creation) as last_success"],
 			group_by="site",
 			as_list=True,
