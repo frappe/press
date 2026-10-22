@@ -244,16 +244,9 @@ ENV PYTHONUNBUFFERED 1
 # For the sake of completing the step
 RUN `#stage-bench-env`
 
-# Prebundle headless Chromium for the Chrome-based PDF generator
-# Frappe and print_designer both look for chromium/chrome-linux/headless_shell and
-# neither downloads it at print time, so fetch the archive here. Going through
-# `bench setup-chrome` would tie the image to a Frappe version that ships the
-# command, and a download at runtime lands in the container's writable layer,
-# which the next deploy throws away.
-# Bump CHROMIUM_URL together with the version Frappe pins in
-# frappe/utils/chromium/download.py.
+# Prebundle headless Chromium for PDF generation, above bench init so the layer stays cached
+# Bump CHROMIUM_URL with the version Frappe pins in frappe/utils/chromium/download.py
 {% if is_arm_build %}
-# Chrome for Testing publishes no linux-arm64 build, so use Playwright's, as Frappe does.
 ARG CHROMIUM_URL=https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/1157/chromium-headless-shell-linux-arm64.zip
 {% else %}
 ARG CHROMIUM_URL=https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.35/linux64/chrome-headless-shell-linux64.zip
