@@ -70,9 +70,16 @@ class GroveSettings(Document):
 		return read(response)
 
 	def provision_key(self, site: str) -> dict:
-		"""Mint `site`'s key under Press's team at the trial cap, titled by the site:
-		`{name, geography, gateway_url, api_key}`; the secret is in this answer and nowhere else."""
-		return self.call("grove.api.keys.provision_key", team=PRESS_TEAM, title=site, cap=self.trial_key_cap)
+		"""Mint `site`'s key under Press's team at the trial cap, titled by the site, its cap window
+		Total so the budget is one-shot for the life of the key: `{name, geography, gateway_url,
+		api_key}`; the secret is in this answer and nowhere else."""
+		return self.call(
+			"grove.api.keys.provision_key",
+			team=PRESS_TEAM,
+			title=site,
+			cap=self.trial_key_cap,
+			cap_window="Total",
+		)
 
 	def revoke_key(self, name: str):
 		return self.call("grove.api.keys.revoke_key", team=PRESS_TEAM, key=name)
