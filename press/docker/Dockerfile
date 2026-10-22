@@ -244,26 +244,6 @@ ENV PYTHONUNBUFFERED 1
 # For the sake of completing the step
 RUN `#stage-bench-env`
 
-# Set environment variables
-{% for v in doc.environment_variables %}
-ENV {{v.key}} {{ v.value }}
-{% endfor %}
-
-{% if use_asset_store %}
-COPY get_cached_app.py /usr/local/bin/get_cached_app.py
-{% endif %}
-
-# Install Frappe app
-RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench init --python /usr/bin/python${PYTHON_VERSION} --no-backups --frappe-path file:///home/frappe/context/apps/frappe frappe-bench `#stage-apps-frappe`
-WORKDIR /home/frappe/frappe-bench
-
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe/frappe-bench/env/bin/pip install pycups==2.0.1
-
-# Install Redisearch 2.0 from precompiled binaries
-COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
-COPY --chown=frappe:frappe .vimrc /home/frappe/.vimrc
-COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
-
 # Prebundle headless Chromium for the Chrome-based PDF generator
 # Frappe and print_designer both look for chromium/chrome-linux/headless_shell and
 # neither downloads it at print time, so fetch the archive here. Going through
@@ -288,11 +268,34 @@ RUN --mount=type=cache,sharing=locked,id=chromium-{% if is_arm_build %}arm64{% e
   else mv /tmp/chromium-extract/chrome-headless-shell-* /home/frappe/chromium-cache/chrome-linux \
   && mv /home/frappe/chromium-cache/chrome-linux/chrome-headless-shell /home/frappe/chromium-cache/chrome-linux/headless_shell; fi \
   && rm -rf /tmp/chromium.zip /tmp/chromium-extract; fi \
-  && mkdir -p /home/frappe/frappe-bench/chromium \
-  && cp -a /home/frappe/chromium-cache/chrome-linux /home/frappe/frappe-bench/chromium/chrome-linux \
-  && chmod 0755 /home/frappe/frappe-bench/chromium/chrome-linux/headless_shell \
-  && /home/frappe/frappe-bench/chromium/chrome-linux/headless_shell --version \
+  && mkdir -p /home/frappe/chromium \
+  && cp -a /home/frappe/chromium-cache/chrome-linux /home/frappe/chromium/chrome-linux \
+  && chmod 0755 /home/frappe/chromium/chrome-linux/headless_shell \
+  && /home/frappe/chromium/chrome-linux/headless_shell --version \
   `#stage-setup-chromium`
+
+# Set environment variables
+{% for v in doc.environment_variables %}
+ENV {{v.key}} {{ v.value }}
+{% endfor %}
+
+{% if use_asset_store %}
+COPY get_cached_app.py /usr/local/bin/get_cached_app.py
+{% endif %}
+
+# Install Frappe app
+RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench init --python /usr/bin/python${PYTHON_VERSION} --no-backups --frappe-path file:///home/frappe/context/apps/frappe frappe-bench `#stage-apps-frappe`
+WORKDIR /home/frappe/frappe-bench
+
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe/frappe-bench/env/bin/pip install pycups==2.0.1
+
+# Install Redisearch 2.0 from precompiled binaries
+COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
+COPY --chown=frappe:frappe .vimrc /home/frappe/.vimrc
+COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
+
+# Symlink the Chromium bundled above bench init into the bench
+RUN ln -s /home/frappe/chromium /home/frappe/frappe-bench/chromium
 
 # Install other apps
 {% for app in doc.apps %}
