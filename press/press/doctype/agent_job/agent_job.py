@@ -851,11 +851,10 @@ def update_step(step_name, step):
 
 
 def skip_pending_steps(job_name):
-	frappe.db.sql(
-		"""UPDATE  `tabAgent Job Step` SET  status = 'Skipped'
-		WHERE status = 'Pending' AND agent_job = %s""",
-		job_name,
-	)
+	AgentJobStep = frappe.qb.DocType("Agent Job Step")
+	frappe.qb.update(AgentJobStep).set(AgentJobStep.status, "Skipped").where(
+		(AgentJobStep.status == "Pending") & (AgentJobStep.agent_job == job_name)
+	).run()
 
 
 def get_next_retry_at(job_retry_count):

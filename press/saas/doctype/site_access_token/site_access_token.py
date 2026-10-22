@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+import frappe.utils
 from frappe.model.document import Document
 
 
@@ -32,10 +33,6 @@ class SiteAccessToken(Document):
 
 def cleanup_expired_access_tokens():
 	# cleanup expired tokens
-	frappe.db.sql(
-		"""
-		DELETE FROM `tabSite Access Token`
-		WHERE TIMESTAMPDIFF(MINUTE, creation, NOW()) > 30
-		"""
-	)
+	thirty_minutes_ago = frappe.utils.add_to_date(None, minutes=-30)
+	frappe.db.delete("Site Access Token", {"creation": ("<", thirty_minutes_ago)})
 	frappe.db.commit()
