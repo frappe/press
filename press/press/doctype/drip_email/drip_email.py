@@ -190,11 +190,7 @@ class DripEmail(Document):
 		Site = frappe.qb.DocType("Site")
 		AccountRequest = frappe.qb.DocType("Account Request")
 		query = (
-			frappe.qb.from_(Site)
-			.join(AccountRequest)
-			.on(Site.account_request == AccountRequest.name)
-			.select(Site.name)
-			.where(Site.status == "Active")
+			active_signup_sites_query()
 			.where(AccountRequest.unsubscribed_from_drip_emails == 0)
 			.where(Date(AccountRequest.creation) == signup_date)
 		)
@@ -254,6 +250,19 @@ def send_drip_emails():
 		)
 
 
+def active_signup_sites_query():
+	"""Query for names of active sites joined to their account request."""
+	Site = frappe.qb.DocType("Site")
+	AccountRequest = frappe.qb.DocType("Account Request")
+	return (
+		frappe.qb.from_(Site)
+		.join(AccountRequest)
+		.on(Site.account_request == AccountRequest.name)
+		.select(Site.name)
+		.where(Site.status == "Active")
+	)
+
+
 def send_welcome_email():
 	"""Send welcome email to sites created in last 15 minutes."""
 	welcome_drips = frappe.db.get_all("Drip Email", {"email_type": "Sign Up", "enabled": 1}, pluck="name")
@@ -262,17 +271,13 @@ def send_welcome_email():
 		_5_mins_ago = frappe.utils.add_to_date(None, minutes=-5)
 		Site = frappe.qb.DocType("Site")
 		AccountRequest = frappe.qb.DocType("Account Request")
-		sites_in_last_15_mins = (
-			frappe.qb.from_(Site)
-			.join(AccountRequest)
-			.on(Site.account_request == AccountRequest.name)
-			.select(Site.name)
-			.where(Site.status == "Active")
+		recent_sites = (
+			active_signup_sites_query()
 			.where(Site.standby_for_product == welcome_email.product_trial)
 			.where(AccountRequest.creation > _5_mins_ago)
 			.run(pluck=True)
 		)
-		for site in sites_in_last_15_mins:
+		for site in recent_sites:
 			welcome_email.send(site)
 
 
