@@ -1637,3 +1637,37 @@ class TestRotateDatabasePassword(FrappeTestCase):
 
 		with patch("press.press.doctype.agent_job.agent_job.frappe.db.commit"):
 			newer.retry_in_place()
+
+	def test_site_becomes_active_on_standalone_server_without_upstream_job(self):
+		"""On a standalone server only the New Site job exists, and it alone must activate the site."""
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		site: Site = create_test_site()
+		frappe.db.set_value("Server", site.server, "is_standalone", 1)
+		frappe.db.set_value("Site", site.name, "status", "Pending")
+
+		job = create_test_agent_job("New Site", server=site.server, status="Success")
+		job.db_set("site", site.name)
+
+		with (
+			patch.object(Site, "sync_apps", new=Mock()),
+			patch("press.press.doctype.site.site.marketplace_app_hook", new=Mock()),
+		):
+			process_new_site_job_update(job)
+
+		self.assertEqual(frappe.db.get_value("Site", site.name, "status"), "Active")
+
+	def test_site_stays_pending_without_upstream_job_on_non_standalone_server(self):
+		"""Regression guard: normal servers must still wait for the Add Site to Upstream job."""
+		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+		site: Site = create_test_site()
+		frappe.db.set_value("Server", site.server, "is_standalone", 0)
+		frappe.db.set_value("Site", site.name, "status", "Pending")
+
+		job = create_test_agent_job("New Site", server=site.server, status="Success")
+		job.db_set("site", site.name)
+
+		process_new_site_job_update(job)
+
+		self.assertEqual(frappe.db.get_value("Site", site.name, "status"), "Pending")

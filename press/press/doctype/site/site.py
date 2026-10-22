@@ -1308,6 +1308,10 @@ class Site(Document, TagHelpers):
 			else:
 				self.flags.new_site_agent_job_name = agent.new_site(self).name
 
+		if self.is_on_standalone:
+			# Standalone servers have no Proxy Server, so there is no upstream to register with
+			return
+
 		server = frappe.get_all("Server", filters={"name": self.server}, fields=["proxy_server"], limit=1)[0]
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
@@ -4997,22 +5001,33 @@ def update_backup_restoration_test_status(job, updated_status):
 	frappe.db.commit()
 
 
-def process_new_site_job_update(job):  # noqa: C901
-	site_status = frappe.get_value("Site", job.site, "status", for_update=True)
+def is_site_on_standalone_server(site_name: str) -> bool:
+	"""A standalone server has no Proxy Server, hence no Add Site to Upstream job."""
+	server = frappe.db.get_value("Site", site_name, "server")
+	return bool(frappe.db.get_value("Server", server, "is_standalone"))
 
-	other_job_types = {
+
+def get_paired_job_status(job) -> str | None:
+	"""Status of the other job (New Site / Add Site to Upstream) that decides the site status."""
+	paired_job_types = {
 		"Add Site to Upstream": ("New Site", "New Site from Backup"),
 		"New Site": ("Add Site to Upstream",),
 		"New Site from Backup": ("Add Site to Upstream",),
 	}[job.job_type]
 
-	first = job.status
-	second = frappe.get_value(
+	return frappe.get_value(
 		"Agent Job",
-		{"job_type": ("in", other_job_types), "site": job.site},
+		{"job_type": ("in", paired_job_types), "site": job.site},
 		"status",
 		for_update=True,
 	)
+
+
+def process_new_site_job_update(job):  # noqa: C901
+	site_status = frappe.get_value("Site", job.site, "status", for_update=True)
+
+	first = job.status
+	second = first if is_site_on_standalone_server(job.site) else get_paired_job_status(job)
 
 	if "Success" == first == second:
 		updated_status = "Active"
