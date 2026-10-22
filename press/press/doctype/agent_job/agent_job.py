@@ -850,10 +850,12 @@ def update_step(step_name, step):
 
 
 def skip_pending_steps(job_name):
-	frappe.db.sql(
-		"""UPDATE  `tabAgent Job Step` SET  status = 'Skipped'
-		WHERE status = 'Pending' AND agent_job = %s""",
-		job_name,
+	frappe.db.set_value(
+		"Agent Job Step",
+		{"status": "Pending", "agent_job": job_name},
+		"status",
+		"Skipped",
+		update_modified=False,
 	)
 
 
