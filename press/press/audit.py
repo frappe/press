@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 from typing import TypedDict
 
 import frappe
+from frappe.query_builder import Order
+from frappe.query_builder.functions import Count, Date
 from frappe.utils import add_days, rounded, today
 
 from press.agent import Agent
@@ -195,26 +197,20 @@ class BackupRecordCheck(Audit):
 	backup_summary = "Backup Summary"
 
 	def get_sites_with_backup_in_interval(self, trial_plans: tuple[str]):
-		cond_filters = f" AND site.plan NOT IN {trial_plans}" if trial_plans else ""
-		return set(
-			frappe.db.sql_list(
-				f"""
-				SELECT
-					site.name
-				FROM
-					`tabSite Backup` site_backup
-				JOIN
-					`tabSite` site
-				ON
-					site_backup.site = site.name
-				WHERE
-					site.status = "Active" and
-					site_backup.owner = "Administrator" and
-					DATE(site_backup.creation) >= "{self.yesterday}"
-					{cond_filters}
-			"""
-			)
+		SiteBackup = frappe.qb.DocType("Site Backup")
+		Site = frappe.qb.DocType("Site")
+		query = (
+			frappe.qb.from_(SiteBackup)
+			.join(Site)
+			.on(SiteBackup.site == Site.name)
+			.select(Site.name)
+			.where(Site.status == "Active")
+			.where(SiteBackup.owner == "Administrator")
+			.where(Date(SiteBackup.creation) >= self.yesterday)
 		)
+		if trial_plans:
+			query = query.where(Site.plan.notin(trial_plans))
+		return set(query.run(pluck=True))
 
 	def get_all_sites(self, trial_plans: tuple[str]):
 		filters = {
@@ -295,22 +291,17 @@ class OffsiteBackupCheck(Audit):
 		log = {self.list_key: []}
 		status = "Success"
 		all_files = self._get_all_files_in_s3()
-		offsite_remote_files = frappe.db.sql(
-			"""
-			SELECT
-				remote_file.name, remote_file.file_path, site_backup.site
-			FROM
-				`tabRemote File` remote_file
-			JOIN
-				`tabSite Backup` site_backup
-			ON
-				site_backup.site = remote_file.site
-			WHERE
-				site_backup.status = "Success" and
-				site_backup.files_availability = "Available" and
-				site_backup.offsite = True
-			""",
-			as_dict=True,
+		RemoteFile = frappe.qb.DocType("Remote File")
+		SiteBackup = frappe.qb.DocType("Site Backup")
+		offsite_remote_files = (
+			frappe.qb.from_(RemoteFile)
+			.join(SiteBackup)
+			.on(SiteBackup.site == RemoteFile.site)
+			.select(RemoteFile.name, RemoteFile.file_path, SiteBackup.site)
+			.where(SiteBackup.status == "Success")
+			.where(SiteBackup.files_availability == "Available")
+			.where(SiteBackup.offsite == 1)
+			.run(as_dict=True)
 		)
 		for remote_file in offsite_remote_files:
 			if remote_file["file_path"] not in all_files:
@@ -386,18 +377,18 @@ class BillingAudit(Audit):
 		)
 
 	def subscriptions_with_duplicate_usage_records(self):
-		data = frappe.db.sql(
-			"""
-			SELECT subscription, Count(name) as count
-			FROM `tabUsage Record` as UR
-			WHERE UR.date = CURDATE()
-			AND UR.docstatus = 1
-			AND UR.plan NOT LIKE '%Marketplace%'
-			GROUP BY UR.document_name, UR.plan, UR.team
-			HAVING count > 1
-			ORDER BY count DESC
-		""",
-			as_dict=True,
+		UsageRecord = frappe.qb.DocType("Usage Record")
+		count = Count(UsageRecord.name).as_("count")
+		data = (
+			frappe.qb.from_(UsageRecord)
+			.select(UsageRecord.subscription, count)
+			.where(UsageRecord.date == today())
+			.where(UsageRecord.docstatus == 1)
+			.where(UsageRecord.plan.not_like("%Marketplace%"))
+			.groupby(UsageRecord.document_name, UsageRecord.plan, UsageRecord.team)
+			.having(count > 1)
+			.orderby(count, order=Order.desc)
+			.run(as_dict=True)
 		)
 
 		if not data:
