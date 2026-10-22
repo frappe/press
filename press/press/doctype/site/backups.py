@@ -22,6 +22,8 @@ from press.press.doctype.site_backup.site_backup import SiteBackup
 from press.press.doctype.subscription.subscription import Subscription
 from press.utils import log_error
 
+# DAYOFWEEK gives 1-7 for SUN-SAT, but Python's weekday() gives 0-6
+# and isoweekday() gives 1-7, both for MON-SUN
 DayOfWeek = CustomFunction("DAYOFWEEK", ["date"])
 DayOfMonth = CustomFunction("DAYOFMONTH", ["date"])
 DayOfYear = CustomFunction("DAYOFYEAR", ["date"])
@@ -221,9 +223,6 @@ class GFS(BackupRotationScheme):
 			.where((DayOfYear(creation) != self.yearly_backup_day) | (creation < oldest_yearly))
 			.run(pluck=True)
 		)
-		# XXX: DAYOFWEEK in sql gives 1-7 for SUN-SAT in sql
-		# datetime.weekday() in python gives 0-6 for MON-SUN
-		# datetime.isoweekday() in python gives 1-7 for MON-SUN
 
 
 class ModifiableCycle:
