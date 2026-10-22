@@ -42,11 +42,12 @@ def create_test_backup_job(site: Site, status: str, hours_ago: float = 0, job_ty
 
 class TestBackupDailyAudit(FrappeTestCase):
 	def setUp(self):
-		frappe.db.set_single_value("Press Settings", "max_failed_backup_attempts_in_a_day", 3)
 		plan = create_test_plan("Site", price_usd=25.0)
-		# Sites created in the last 3 days are not due a successful backup yet
-		self.site = create_test_site(subdomain="allbackupsfailed", plan=plan.name)
-		self.other_site = create_test_site(subdomain="allbackupsfailed2", plan=plan.name)
+		# Sites created within a window are not due a successful backup in it yet
+		self.new_site = create_test_site(subdomain="newbackupsite", plan=plan.name)
+		self.two_day_old_site = create_test_site(
+			subdomain="twodaybackupsite", plan=plan.name, creation=frappe.utils.add_days(None, -2)
+		)
 		self.idle_site = create_test_site(
 			subdomain="nobackupsuccess", plan=plan.name, creation=frappe.utils.add_days(None, -4)
 		)
@@ -63,8 +64,12 @@ class TestBackupDailyAudit(FrappeTestCase):
 		record_backup_daily_audit()
 		return frappe.get_last_doc("Backup Daily Audit")
 
-	def _sites_without_success(self) -> list[str]:
-		return [row.site for row in self._record_audit().sites_without_success]
+	def _listed_sites(self) -> tuple[list[str], list[str]]:
+		audit = self._record_audit()
+		return (
+			[row.site for row in audit.sites_without_success_in_day],
+			[row.site for row in audit.sites_without_success_in_3_days],
+		)
 
 	def test_audit_is_recorded_for_today(self):
 		self.assertEqual(str(self._record_audit().audit_date), frappe.utils.today())
@@ -72,10 +77,10 @@ class TestBackupDailyAudit(FrappeTestCase):
 	def test_success_rate_counts_finished_backup_jobs_from_the_last_day(self):
 		before = self._record_audit()
 		for status in ("Success", "Success", "Success", "Failure", "Delivery Failure"):
-			create_test_backup_job(self.site, status)
-		create_test_backup_job(self.site, "Running")
-		create_test_backup_job(self.site, "Success", hours_ago=25)
-		create_test_backup_job(self.site, "Failure", job_type="Add Domain")
+			create_test_backup_job(self.idle_site, status)
+		create_test_backup_job(self.idle_site, "Running")
+		create_test_backup_job(self.idle_site, "Success", hours_ago=25)
+		create_test_backup_job(self.idle_site, "Failure", job_type="Add Domain")
 
 		audit = self._record_audit()
 
@@ -84,57 +89,82 @@ class TestBackupDailyAudit(FrappeTestCase):
 		finished_jobs = audit.successful_jobs + audit.failed_jobs
 		self.assertAlmostEqual(audit.success_rate, audit.successful_jobs / finished_jobs * 100, places=2)
 
-	def test_site_with_no_successful_backup_job_in_three_days_is_listed_with_last_successful_backup(self):
-		create_test_backup_job(self.idle_site, "Success", hours_ago=4 * 24)
-		create_test_backup_job(self.idle_site, "Failure")
+	def test_site_with_no_successful_backup_is_listed_with_failures_and_last_successful_backup(self):
 		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=4 * 24)
+		self._create_backups(self.idle_site.name, 2)
 
 		audit = self._record_audit()
 
-		row = next(row for row in audit.sites_without_success if row.site == self.idle_site.name)
-		self.assertEqual(row.server, self.idle_site.server)
-		self.assertEqual(row.team, self.idle_site.team)
-		self.assertIsNotNone(row.last_successful_backup)
-		self.assertEqual(audit.sites_without_success_count, len(audit.sites_without_success))
+		for table in ("sites_without_success_in_day", "sites_without_success_in_3_days"):
+			with self.subTest(table=table):
+				row = next(row for row in audit.get(table) if row.site == self.idle_site.name)
+				self.assertEqual(row.server, self.idle_site.server)
+				self.assertEqual(row.team, self.idle_site.team)
+				self.assertEqual(row.failed_backups, 2)
+				self.assertIsNotNone(row.last_successful_backup)
+		self.assertEqual(audit.sites_without_success_in_day_count, len(audit.sites_without_success_in_day))
+		self.assertEqual(
+			audit.sites_without_success_in_3_days_count, len(audit.sites_without_success_in_3_days)
+		)
 
-	def test_site_with_a_successful_backup_job_in_three_days_is_not_listed(self):
-		create_test_backup_job(self.idle_site, "Success", hours_ago=2 * 24)
+	def test_site_with_a_successful_backup_in_the_last_day_is_not_listed(self):
+		self._create_backups(self.idle_site.name, 3)
+		self._create_backups(self.idle_site.name, 1, status="Success")
 
-		self.assertNotIn(self.idle_site.name, self._sites_without_success())
+		in_day, in_3_days = self._listed_sites()
 
-	def test_site_with_a_pending_or_running_backup_job_is_not_listed(self):
-		for status in ("Pending", "Running"):
-			with self.subTest(status=status):
-				create_test_backup_job(self.idle_site, status)
+		self.assertNotIn(self.idle_site.name, in_day)
+		self.assertNotIn(self.idle_site.name, in_3_days)
 
-				self.assertNotIn(self.idle_site.name, self._sites_without_success())
-				frappe.db.delete("Agent Job", {"site": self.idle_site.name, "job_type": "Backup Site"})
+	def test_site_with_a_successful_backup_two_days_ago_is_listed_for_the_last_day_only(self):
+		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=2 * 24)
 
-	def test_site_created_within_three_days_is_not_listed(self):
-		self.assertNotIn(self.site.name, self._sites_without_success())
+		in_day, in_3_days = self._listed_sites()
 
-	def test_site_activated_within_three_days_is_not_listed(self):
+		self.assertIn(self.idle_site.name, in_day)
+		self.assertNotIn(self.idle_site.name, in_3_days)
+
+	def test_pending_running_and_physical_backups_are_not_a_success(self):
+		self._create_backups(self.idle_site.name, 1, status="Pending", hours_ago=3)
+		self._create_backups(self.idle_site.name, 1, status="Running", hours_ago=3)
+		self._create_backups(self.idle_site.name, 1, status="Success")
+		frappe.db.set_value(
+			"Site Backup", {"site": self.idle_site.name, "status": "Success"}, "physical", True
+		)
+
+		in_day, _ = self._listed_sites()
+
+		self.assertIn(self.idle_site.name, in_day)
+
+	def test_failed_backups_are_counted_within_each_window(self):
+		self._create_backups(self.idle_site.name, 1, hours_ago=25)
+
+		audit = self._record_audit()
+
+		in_day = {row.site: row.failed_backups for row in audit.sites_without_success_in_day}
+		in_3_days = {row.site: row.failed_backups for row in audit.sites_without_success_in_3_days}
+		self.assertEqual(in_day[self.idle_site.name], 0)
+		self.assertEqual(in_3_days[self.idle_site.name], 1)
+
+	def test_sites_are_listed_only_for_windows_they_existed_through(self):
+		in_day, in_3_days = self._listed_sites()
+
+		self.assertNotIn(self.new_site.name, in_day)
+		self.assertIn(self.two_day_old_site.name, in_day)
+		self.assertNotIn(self.two_day_old_site.name, in_3_days)
+
+	def test_site_activated_within_the_window_is_not_listed(self):
 		log_site_activity(self.idle_site.name, "Activate Site")
 
-		self.assertNotIn(self.idle_site.name, self._sites_without_success())
+		in_day, in_3_days = self._listed_sites()
+
+		self.assertNotIn(self.idle_site.name, in_day)
+		self.assertNotIn(self.idle_site.name, in_3_days)
 
 	def test_site_on_server_with_scheduled_backups_skipped_is_not_listed(self):
 		frappe.db.set_value("Server", self.idle_site.server, "skip_scheduled_backups", True)
 
-		self.assertNotIn(self.idle_site.name, self._sites_without_success())
+		in_day, in_3_days = self._listed_sites()
 
-	def test_sites_that_hit_the_failed_backup_limit_are_listed_with_their_failure_count(self):
-		self._create_backups(self.site.name, 3)
-		self._create_backups(self.other_site.name, 2)
-
-		audit = self._record_audit()
-
-		failures = {row.site: row.failed_backups for row in audit.failed_sites}
-		self.assertEqual(failures.get(self.site.name), 3)
-		self.assertNotIn(self.other_site.name, failures)
-		self.assertEqual(audit.failed_site_count, len(audit.failed_sites))
-
-	def test_failed_backups_older_than_a_day_are_not_counted(self):
-		self._create_backups(self.site.name, 3, hours_ago=25)
-
-		self.assertNotIn(self.site.name, [row.site for row in self._record_audit().failed_sites])
+		self.assertNotIn(self.idle_site.name, in_day)
+		self.assertNotIn(self.idle_site.name, in_3_days)

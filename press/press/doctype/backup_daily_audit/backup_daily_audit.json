@@ -11,13 +11,13 @@
 		"successful_jobs",
 		"failed_jobs",
 		"section_break_sites",
-		"failed_site_count",
+		"sites_without_success_in_day_count",
 		"column_break_sites",
-		"sites_without_success_count",
-		"section_break_failed_sites",
-		"failed_sites",
-		"section_break_sites_without_success",
-		"sites_without_success"
+		"sites_without_success_in_3_days_count",
+		"section_break_sites_without_success_in_day",
+		"sites_without_success_in_day",
+		"section_break_sites_without_success_in_3_days",
+		"sites_without_success_in_3_days"
 	],
 	"fields": [
 		{
@@ -64,10 +64,10 @@
 			"label": "Sites"
 		},
 		{
-			"fieldname": "failed_site_count",
+			"fieldname": "sites_without_success_in_day_count",
 			"fieldtype": "Int",
 			"in_list_view": 1,
-			"label": "Sites With All Backup Attempts Failed",
+			"label": "No Successful Backup in 24h",
 			"read_only": 1
 		},
 		{
@@ -75,32 +75,32 @@
 			"fieldtype": "Column Break"
 		},
 		{
-			"fieldname": "sites_without_success_count",
+			"fieldname": "sites_without_success_in_3_days_count",
 			"fieldtype": "Int",
 			"in_list_view": 1,
-			"label": "Sites Without a Successful Backup Job",
+			"label": "No Successful Backup in 3 Days",
 			"read_only": 1
 		},
 		{
-			"description": "Sites that hit the daily failed backup limit from Press Settings in the last 24h.",
-			"fieldname": "section_break_failed_sites",
+			"description": "Sites due a scheduled backup with no successful logical backup in the last 24h. Pending, running and failed backups don't count.",
+			"fieldname": "section_break_sites_without_success_in_day",
 			"fieldtype": "Section Break",
-			"label": "Sites With All Backup Attempts Failed"
+			"label": "Sites Without a Successful Backup in 24h"
 		},
 		{
-			"fieldname": "failed_sites",
+			"fieldname": "sites_without_success_in_day",
 			"fieldtype": "Table",
 			"options": "Backup Daily Audit Site",
 			"read_only": 1
 		},
 		{
-			"description": "Sites due a scheduled backup with no successful Backup Site agent job in the last 3 days. Sites with a pending or running backup job are left out.",
-			"fieldname": "section_break_sites_without_success",
+			"description": "Sites due a scheduled backup with no successful logical backup in the last 3 days. Pending, running and failed backups don't count.",
+			"fieldname": "section_break_sites_without_success_in_3_days",
 			"fieldtype": "Section Break",
-			"label": "Sites Without a Successful Backup Job in 3 Days"
+			"label": "Sites Without a Successful Backup in 3 Days"
 		},
 		{
-			"fieldname": "sites_without_success",
+			"fieldname": "sites_without_success_in_3_days",
 			"fieldtype": "Table",
 			"options": "Backup Daily Audit Site",
 			"read_only": 1
@@ -109,7 +109,7 @@
 	"in_create": 1,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-10-22 12:00:00.000000",
+	"modified": "2026-10-23 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Backup Daily Audit",
