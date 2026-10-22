@@ -8,7 +8,7 @@ from typing import TypedDict
 
 import frappe
 from frappe.query_builder import Order
-from frappe.query_builder.functions import Count, Date
+from frappe.query_builder.functions import Count, Date, IfNull
 from frappe.utils import add_days, rounded, today
 
 from press.agent import Agent
@@ -197,27 +197,6 @@ class BackupRecordCheck(Audit):
 	backup_summary = "Backup Summary"
 
 	def get_sites_with_backup_in_interval(self, trial_plans: tuple[str]):
-<<<<<<< HEAD
-		cond_filters = f" AND IFNULL(site.plan, '') NOT IN {trial_plans}" if trial_plans else ""
-		return set(
-			frappe.db.sql_list(
-				f"""
-				SELECT
-					site.name
-				FROM
-					`tabSite Backup` site_backup
-				JOIN
-					`tabSite` site
-				ON
-					site_backup.site = site.name
-				WHERE
-					site.status = "Active" and
-					site_backup.owner = "Administrator" and
-					DATE(site_backup.creation) >= "{self.yesterday}"
-					{cond_filters}
-			"""
-			)
-=======
 		SiteBackup = frappe.qb.DocType("Site Backup")
 		Site = frappe.qb.DocType("Site")
 		query = (
@@ -228,10 +207,9 @@ class BackupRecordCheck(Audit):
 			.where(Site.status == "Active")
 			.where(SiteBackup.owner == "Administrator")
 			.where(Date(SiteBackup.creation) >= self.yesterday)
->>>>>>> 6000dbb (refactor(audit): Build audit queries with frappe.qb)
 		)
 		if trial_plans:
-			query = query.where(Site.plan.notin(trial_plans))
+			query = query.where(IfNull(Site.plan, "").notin(trial_plans))
 		return set(query.run(pluck=True))
 
 	def get_all_sites(self, trial_plans: tuple[str]):
