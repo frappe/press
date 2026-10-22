@@ -222,7 +222,7 @@ scheduler_events = {
 		"press.press.doctype.team.team.check_budget_alerts",
 		"press.press.doctype.site.site.archive_creation_failed_sites",
 		"press.press.doctype.server.server.process_running_benches_on_server",
-		"press.press.doctype.server.server_monitoring.alert_on_sites_with_missing_backups",
+		"press.press.doctype.backup_daily_audit.backup_daily_audit.record_backup_daily_audit",
 	],
 	"daily_long": [
 		"press.press.doctype.site_adoption_snapshot.site_adoption_snapshot.record_daily_snapshot",
