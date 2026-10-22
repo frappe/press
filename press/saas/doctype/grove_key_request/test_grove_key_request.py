@@ -58,8 +58,14 @@ class TestGroveKeyRequest(FrappeTestCase):
 		)
 		doc.reload()
 		self.assertEqual(
-			(doc.status, doc.grove_key, doc.attempts, doc.get_password("api_key", raise_exception=False)),
-			("Success", "k1", 0, None),
+			(
+				doc.status,
+				doc.grove_key,
+				doc.team,
+				doc.attempts,
+				doc.get_password("api_key", raise_exception=False),
+			),
+			("Success", "k1", "Press Team", 0, None),
 		)
 		with patch.object(GroveSettings, "provision_key") as provision_key:
 			doc.attempt()
@@ -138,7 +144,7 @@ class TestGroveKeyRequest(FrappeTestCase):
 		site = create_test_site()
 		gone, alive = request_for(site.name), request_for(create_test_site(bench=site.bench).name)
 		for doc in (gone, alive):
-			doc.db_set({"status": "Success", "grove_key": f"key-{doc.name}"})
+			doc.db_set({"status": "Success", "grove_key": f"key-{doc.name}", "team": "Press Team"})
 		frappe.db.set_value("Site", gone.site, "status", "Archived")
 
 		with patch.object(GroveSettings, "revoke_key", side_effect=frappe.ValidationError("6 hours")):
@@ -148,7 +154,7 @@ class TestGroveKeyRequest(FrappeTestCase):
 
 		with patch.object(GroveSettings, "revoke_key") as revoke_key:
 			revoke_archived()
-		revoke_key.assert_called_once_with(f"key-{gone.name}")
+		revoke_key.assert_called_once_with(f"key-{gone.name}", "Press Team")
 		self.assertEqual(
 			[frappe.db.get_value("Grove Key Request", d.name, "status") for d in (gone, alive)],
 			["Revoked", "Success"],

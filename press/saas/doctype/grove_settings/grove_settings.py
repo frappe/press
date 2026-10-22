@@ -10,9 +10,8 @@ import requests
 from frappe import _
 from frappe.model.document import Document
 
-# Grove holds one team for every Press trial site, on a tier of its own: unlimited keys, a large
-# spend limit and trial rate limits, tuned there. Press names both at enroll; Grove owns the values.
-PRESS_TEAM = "Press Team"
+# Trial keys go under the trial team named in Grove Settings, on a tier of its own: unlimited
+# keys, a large spend limit and trial rate limits, tuned at Grove. Press names both; Grove owns the values.
 PRESS_TIER = "Press Trial"
 # Connect, read: a job must not hang on a Grove that is down.
 TIMEOUT = (30, 90)
@@ -22,7 +21,8 @@ UNAVAILABLE = (502, 503, 504)
 
 class GroveSettings(Document):
 	"""Where Grove is and the control credential Press calls it with. Every Product Trial site gets
-	one Grove key under Press's team there, capped at `trial_key_cap` for the life of the key."""
+	one Grove key under `trial_team` there, capped at `trial_key_cap` for the life of the key and
+	retired at `trial_key_expiry`."""
 
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -37,6 +37,8 @@ class GroveSettings(Document):
 		control_api_secret: DF.Password | None
 		enable_for_product_trials: DF.Check
 		trial_key_cap: DF.Currency
+		trial_key_expiry: DF.Literal["Never", "1 Day", "7 Days", "14 Days", "30 Days"]
+		trial_team: DF.Data | None
 	# end: auto-generated types
 
 	@property
@@ -50,6 +52,15 @@ class GroveSettings(Document):
 
 	def validate(self):
 		self.base_url = (self.base_url or "").strip().rstrip("/")
+
+	def on_update(self):
+		if self.is_enrolled and self.has_value_changed("trial_team"):
+			self.register_trial_team()
+
+	def register_trial_team(self):
+		"""The trial team at Grove, on its tier: an upsert, so a name already there is fine."""
+		self.call("grove.api.teams.provision_team", team=self.trial_team)
+		self.call("grove.api.teams.update_team", team=self.trial_team, tier=PRESS_TIER)
 
 	def set_credential(self, credential: dict):
 		self.control_api_key = credential["api_key"]
@@ -70,19 +81,21 @@ class GroveSettings(Document):
 		return read(response)
 
 	def provision_key(self, site: str) -> dict:
-		"""Mint `site`'s key under Press's team at the trial cap, titled by the site, its cap window
-		Total so the budget is one-shot for the life of the key: `{name, geography, gateway_url,
-		api_key}`; the secret is in this answer and nowhere else."""
+		"""Mint `site`'s key under the trial team at the trial cap and expiry, titled by the site, its
+		cap window Total so the budget is one-shot for the life of the key: `{name, geography,
+		gateway_url, api_key}`; the secret is in this answer and nowhere else."""
 		return self.call(
 			"grove.api.keys.provision_key",
-			team=PRESS_TEAM,
+			team=self.trial_team,
 			title=site,
 			cap=self.trial_key_cap,
 			cap_window="Total",
+			expiry=self.trial_key_expiry,
 		)
 
-	def revoke_key(self, name: str):
-		return self.call("grove.api.keys.revoke_key", team=PRESS_TEAM, key=name)
+	def revoke_key(self, name: str, team: str):
+		"""Under `team`, the one the key was minted under: Grove refuses any other."""
+		return self.call("grove.api.keys.revoke_key", team=team, key=name)
 
 
 def read(response: requests.Response):
@@ -114,7 +127,7 @@ def refusal_message(response: requests.Response) -> str | None:
 @frappe.whitelist(methods=["POST"])
 def enroll():
 	"""Desk button: exchange the bootstrap secret Grove was given for Press's own control
-	credential, then register Press's team on its tier. The secret is popped from the raw request,
+	credential, then register the trial team on its tier. The secret is popped from the raw request,
 	so it is never logged."""
 	frappe.only_for("System Manager")
 	secret = frappe.local.form_dict.pop("bootstrap_secret", None)
@@ -129,8 +142,7 @@ def enroll():
 		f"{settings.base_url}/api/method/grove.api.control.create_control_client", json=body, timeout=TIMEOUT
 	)
 	settings.set_credential(read(response))
-	settings.call("grove.api.teams.provision_team", team=PRESS_TEAM)
-	settings.call("grove.api.teams.update_team", team=PRESS_TEAM, tier=PRESS_TIER)
+	settings.register_trial_team()
 
 
 @frappe.whitelist(methods=["POST"])
