@@ -90,7 +90,7 @@ class TestGroveSettings(FrappeTestCase):
 			sent(post),
 			(
 				"grove.api.keys.provision_key",
-				{"team": PRESS_TEAM, "title": "s.test", "cap": 3},
+				{"team": PRESS_TEAM, "title": "s.test", "cap": 3, "cap_window": "Total"},
 				{"Authorization": "token K:S"},
 			),
 		)
