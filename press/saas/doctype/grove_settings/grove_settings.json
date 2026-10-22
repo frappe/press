@@ -1,17 +1,20 @@
 {
 	"actions": [],
 	"creation": "2026-10-22 00:00:00",
-	"description": "Grove, the AI gateway, and the control credential Press calls it with. Every Product Trial site gets one Grove key under Press's team there, capped at the trial key cap for the life of the key, written into the site config as ai_keys.",
+	"description": "Grove, the AI gateway, and the control credential Press calls it with. Every Product Trial site gets one Grove key under the trial team there, capped at the trial key cap for the life of the key and retired at the trial key expiry, written into the site config as ai_keys.",
 	"doctype": "DocType",
 	"editable_grid": 1,
 	"engine": "InnoDB",
 	"field_order": [
 		"base_url",
-		"enable_for_product_trials",
-		"trial_key_cap",
 		"control_section",
 		"control_api_key",
-		"control_api_secret"
+		"control_api_secret",
+		"trials_tab",
+		"enable_for_product_trials",
+		"trial_team",
+		"trial_key_expiry",
+		"trial_key_cap"
 	],
 	"fields": [
 		{
@@ -52,12 +55,32 @@
 			"fieldname": "enable_for_product_trials",
 			"fieldtype": "Check",
 			"label": "Enable for Product Trials"
+		},
+		{
+			"fieldname": "trials_tab",
+			"fieldtype": "Tab Break",
+			"label": "Trials"
+		},
+		{
+			"default": "Press Team",
+			"description": "The Grove Team trial keys are minted under, one per site, titled by the site. Registered at Grove on Enroll and again when this name changes; a key keeps the team it was minted under.",
+			"fieldname": "trial_team",
+			"fieldtype": "Data",
+			"label": "Trial Team"
+		},
+		{
+			"default": "Never",
+			"description": "When a trial key retires on its own: so many days after the mint, Grove revokes it. Sent with every mint; a change applies to keys minted after it.",
+			"fieldname": "trial_key_expiry",
+			"fieldtype": "Select",
+			"label": "Trial Key Expiry",
+			"options": "Never\n1 Day\n7 Days\n14 Days\n30 Days"
 		}
 	],
 	"grid_page_length": 50,
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-10-22 18:00:00.000000",
+	"modified": "2026-10-23 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "SaaS",
 	"name": "Grove Settings",

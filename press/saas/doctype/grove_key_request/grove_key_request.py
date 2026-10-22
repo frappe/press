@@ -37,6 +37,7 @@ class GroveKeyRequest(Document):
 		product_trial_request: DF.Link | None
 		site: DF.Link
 		status: DF.Literal["Pending", "Success", "Failed", "Revoked"]
+		team: DF.Data | None
 	# end: auto-generated types
 
 	def after_insert(self):
@@ -61,13 +62,16 @@ class GroveKeyRequest(Document):
 		self.save()
 
 	def mint(self):
-		"""Grove's answer onto the row, once. `save` keeps the secret encrypted."""
+		"""Grove's answer onto the row, once, with the team it was minted under. `save` keeps the
+		secret encrypted."""
 		if self.grove_key:
 			return
-		minted = frappe.get_cached_doc("Grove Settings").provision_key(self.site)
+		settings = frappe.get_cached_doc("Grove Settings")
+		minted = settings.provision_key(self.site)
 		self.update(
 			{
 				"grove_key": minted["name"],
+				"team": settings.trial_team,
 				"geography": minted["geography"],
 				"gateway_url": minted["gateway_url"],
 				"api_key": minted["api_key"],
@@ -128,12 +132,12 @@ def revoke_archived():
 		frappe.qb.from_(request)
 		.join(site)
 		.on(site.name == request.site)
-		.select(request.name, request.grove_key)
+		.select(request.name, request.grove_key, request.team)
 		.where((request.status == "Success") & (site.status == "Archived"))
 	).run(as_dict=True)
 	for row in rows:
 		try:
-			settings.revoke_key(row.grove_key)
+			settings.revoke_key(row.grove_key, row.team)
 		except Exception as e:
 			frappe.db.set_value("Grove Key Request", row.name, "last_error", str(e)[:500])
 			continue
