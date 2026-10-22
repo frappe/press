@@ -124,7 +124,7 @@ class TestProductTrial(FrappeTestCase):
 
 	def _account_request(self, country):
 		account_request = create_test_account_request(make_autoname("test-ar-.#####"))
-		account_request.db_set("country", country)
+		frappe.db.set_value("Account Request", account_request.name, "country", country)
 		return account_request.name
 
 	def test_signup_without_matching_rule_gets_plain_standby_site(self):
