@@ -2,23 +2,13 @@
 # See license.txt
 
 import frappe
-import frappe.utils
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.site.site_usages import get_changed_disk_usages
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
+from press.press.doctype.site_usage.test_site_usage import create_test_site_usage
 from press.press.doctype.subscription.test_subscription import create_test_subscription
-
-
-def create_test_site_usage(site: str, database: int, public: int, private: int, hours_ago: int = 0):
-	usage = frappe.get_doc(
-		{"doctype": "Site Usage", "site": site, "database": database, "public": public, "private": private}
-	).insert()
-	if hours_ago:
-		creation = frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=-hours_ago)
-		usage.db_set("creation", creation, update_modified=False)
-	return usage
 
 
 class TestChangedDiskUsages(FrappeTestCase):
