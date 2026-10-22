@@ -1380,7 +1380,7 @@ class BaseServer(Document, TagHelpers):
 		if not self.virtual_machine:
 			return None
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
-		return virtual_machine.update_name_tag(self.name)
+		return virtual_machine.update_name_tag()
 
 	def create_subscription(self, plan):
 		self._create_initial_plan_change(plan)
