@@ -182,7 +182,7 @@ class PressWebhook(Document):
 
 	@dashboard_whitelist()
 	def delete(self):
-		frappe.db.sql("delete from `tabPress Webhook Attempt` where webhook = %s", (self.name,))
+		frappe.db.delete("Press Webhook Attempt", {"webhook": self.name})
 		frappe.delete_doc("Press Webhook", self.name)
 
 
