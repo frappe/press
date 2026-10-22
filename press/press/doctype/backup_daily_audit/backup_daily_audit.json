@@ -11,9 +11,13 @@
 		"successful_jobs",
 		"failed_jobs",
 		"section_break_sites",
+		"sites_with_frequent_failures_count",
+		"column_break_sites_2",
 		"sites_without_success_in_day_count",
 		"column_break_sites",
 		"sites_without_success_in_3_days_count",
+		"section_break_sites_with_frequent_failures",
+		"sites_with_frequent_failures",
 		"section_break_sites_without_success_in_day",
 		"sites_without_success_in_day",
 		"section_break_sites_without_success_in_3_days",
@@ -64,6 +68,17 @@
 			"label": "Sites"
 		},
 		{
+			"fieldname": "sites_with_frequent_failures_count",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Frequent Backup Failures in 24h",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_sites_2",
+			"fieldtype": "Column Break"
+		},
+		{
 			"fieldname": "sites_without_success_in_day_count",
 			"fieldtype": "Int",
 			"in_list_view": 1,
@@ -79,6 +94,18 @@
 			"fieldtype": "Int",
 			"in_list_view": 1,
 			"label": "No Successful Backup in 3 Days",
+			"read_only": 1
+		},
+		{
+			"description": "Sites with 3 or more failed logical backups in the last 24h. A later backup may have succeeded, so check Last Successful Backup. These are listed only to be noted.",
+			"fieldname": "section_break_sites_with_frequent_failures",
+			"fieldtype": "Section Break",
+			"label": "Sites With Frequently Failing Backups in 24h"
+		},
+		{
+			"fieldname": "sites_with_frequent_failures",
+			"fieldtype": "Table",
+			"options": "Backup Daily Audit Site",
 			"read_only": 1
 		},
 		{
