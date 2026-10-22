@@ -10,7 +10,7 @@ import razorpay
 import stripe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, flt, getdate
+from frappe.utils import cint, flt, getdate, now
 from frappe.utils.data import fmt_money
 
 from press.api.billing import get_stripe
@@ -495,13 +495,17 @@ class Invoice(Document):
 
 	def after_insert(self):
 		if self.get("amended_from"):
-			# link usage records of old cancelled invoice to the new amended invoice
-			UsageRecord = frappe.qb.DocType("Usage Record")
-			frappe.qb.update(UsageRecord).set(UsageRecord.invoice, self.name).set(
-				UsageRecord.modified, frappe.utils.now()
-			).set(UsageRecord.modified_by, frappe.session.user).where(
-				UsageRecord.invoice == self.amended_from
-			).run()
+			self.relink_usage_records_from_amended_invoice()
+
+	def relink_usage_records_from_amended_invoice(self):
+		UsageRecord = frappe.qb.DocType("Usage Record")
+		(
+			frappe.qb.update(UsageRecord)
+			.set(UsageRecord.invoice, self.name)
+			.set(UsageRecord.modified, now())
+			.set(UsageRecord.modified_by, frappe.session.user)
+			.where(UsageRecord.invoice == self.amended_from)
+		).run()
 
 	def create_stripe_invoice(self):
 		if self.stripe_invoice_id:
