@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 BACKUP_JOB_TYPE = "Backup Site"
 FAILED_STATUSES = ("Failure", "Delivery Failure")
+FREQUENT_FAILURE_THRESHOLD = 3
 
 
 class BackupDailyAudit(Document):
@@ -28,6 +29,8 @@ class BackupDailyAudit(Document):
 
 		audit_date: DF.Date
 		failed_jobs: DF.Int
+		sites_with_frequent_failures: DF.Table[BackupDailyAuditSite]
+		sites_with_frequent_failures_count: DF.Int
 		sites_without_success_in_3_days: DF.Table[BackupDailyAuditSite]
 		sites_without_success_in_3_days_count: DF.Int
 		sites_without_success_in_day: DF.Table[BackupDailyAuditSite]
@@ -37,14 +40,22 @@ class BackupDailyAudit(Document):
 	# end: auto-generated types
 
 	def validate(self):
+		self.sites_with_frequent_failures_count = len(self.sites_with_frequent_failures)
 		self.sites_without_success_in_day_count = len(self.sites_without_success_in_day)
 		self.sites_without_success_in_3_days_count = len(self.sites_without_success_in_3_days)
 
 	def collect(self):
 		self.audit_date = frappe.utils.today()
 		self.set_job_counts()
+		self.add_sites_with_frequent_failures()
 		self.add_sites_without_success("sites_without_success_in_day", days=1)
 		self.add_sites_without_success("sites_without_success_in_3_days", days=3)
+
+	def add_sites_with_frequent_failures(self):
+		failures = get_sites_with_frequent_failures(frappe.utils.add_days(None, -1))
+		details = get_site_details(list(failures))
+		for site, count in failures.items():
+			self.append("sites_with_frequent_failures", {**details[site], "failed_backups": count})
 
 	def add_sites_without_success(self, table: str, days: int):
 		since = frappe.utils.add_days(None, -days)
@@ -81,6 +92,18 @@ def record_backup_daily_audit() -> None:
 	# A site renamed or deleted since its backup failed must not block the audit
 	audit.flags.ignore_links = True
 	audit.insert(ignore_permissions=True)
+
+
+def get_sites_with_frequent_failures(since: datetime) -> dict[str, int]:
+	"""Failed logical backup counts of sites at or over the threshold, most failures first."""
+	failures_by_site = frappe.get_all(
+		"Site Backup",
+		filters={"status": ("in", FAILED_STATUSES), "physical": False, "creation": (">=", since)},
+		fields=["site", "count(name) as failures"],
+		group_by="site",
+		order_by="failures desc, site asc",
+	)
+	return {row.site: row.failures for row in failures_by_site if row.failures >= FREQUENT_FAILURE_THRESHOLD}
 
 
 def get_sites_without_successful_backup(since: datetime) -> list[str]:

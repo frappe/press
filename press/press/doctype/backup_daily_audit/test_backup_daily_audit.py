@@ -168,3 +168,23 @@ class TestBackupDailyAudit(FrappeTestCase):
 
 		self.assertNotIn(self.idle_site.name, in_day)
 		self.assertNotIn(self.idle_site.name, in_3_days)
+
+	def test_site_with_frequent_failures_is_listed_even_after_a_success(self):
+		self._create_backups(self.idle_site.name, 3)
+		self._create_backups(self.idle_site.name, 1, status="Success")
+
+		audit = self._record_audit()
+
+		row = next(row for row in audit.sites_with_frequent_failures if row.site == self.idle_site.name)
+		self.assertEqual(row.failed_backups, 3)
+		self.assertIsNotNone(row.last_successful_backup)
+		self.assertEqual(audit.sites_with_frequent_failures_count, len(audit.sites_with_frequent_failures))
+
+	def test_failures_under_the_threshold_or_older_than_a_day_are_not_frequent(self):
+		self._create_backups(self.idle_site.name, 2)
+		self._create_backups(self.two_day_old_site.name, 3, hours_ago=25)
+
+		listed = [row.site for row in self._record_audit().sites_with_frequent_failures]
+
+		self.assertNotIn(self.idle_site.name, listed)
+		self.assertNotIn(self.two_day_old_site.name, listed)
