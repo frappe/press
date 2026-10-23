@@ -3839,34 +3839,6 @@ class Server(BaseServer):
 			log_error("Agent Sentry Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def whitelist_ipaddress(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_whitelist_ip", queue="short", timeout=1200)
-
-	def _whitelist_ip(self):
-		proxy_server = frappe.get_value("Server", self.name, "proxy_server")
-		proxy_server_ip = frappe.get_doc("Proxy Server", proxy_server).ip
-
-		try:
-			ansible = Ansible(
-				playbook="whitelist_ipaddress.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-				variables={"ip_address": proxy_server_ip},
-			)
-			play = ansible.run()
-			self.reload()
-			self.reload()
-			if play.status == "Success":
-				self.status = "Active"
-			else:
-				self.status = "Broken"
-		except Exception:
-			self.status = "Broken"
-			log_error("Proxy IP Whitelist Exception", server=self.as_dict())
-		self.save()
-
-	@frappe.whitelist()
 	def agent_set_proxy_ip(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_agent_set_proxy_ip", queue="short", timeout=1200)
 
