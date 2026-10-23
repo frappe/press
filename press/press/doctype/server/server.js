@@ -238,13 +238,6 @@ frappe.ui.form.on('Server', {
 			[__('Create Image'), 'create_image', true, frm.doc.status == 'Active'],
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
 			[
-				__('Whitelist Server'),
-				'whitelist_ipaddress',
-				false,
-				frm.doc.is_server_setup,
-				__('Network'),
-			],
-			[
 				__('Agent Setup Proxy IP'),
 				'agent_set_proxy_ip',
 				false,
