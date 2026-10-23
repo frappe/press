@@ -52,6 +52,7 @@ from press.press.doctype.server_activity.server_activity import log_server_activ
 from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import docs, fmt_timedelta, log_error
 from press.utils.raven import send_raven_message
 from press.utils.user import is_desk_user
@@ -2068,6 +2069,31 @@ class BaseServer(Document, TagHelpers):
 	def rename(self, title):
 		self.title = title
 		self.save()
+
+	@frappe.whitelist()
+	def setup_fail2ban(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200)
+
+	def _setup_fail2ban(self):
+		Ansible(
+			playbook="fail2ban.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+			variables={"fail2ban_ignore_ips": fail2ban.ignore_ips()},
+		).run()
+
+	@frappe.whitelist()
+	def remove_fail2ban(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_remove_fail2ban", queue="long", timeout=1200)
+
+	def _remove_fail2ban(self):
+		Ansible(
+			playbook="fail2ban_remove.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+		).run()
 
 	def validate_mounts(self):
 		if not self.virtual_machine:
