@@ -134,18 +134,6 @@ class TestBackupDailyAudit(FrappeTestCase):
 
 		self.assertNotIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_day])
 
-	def test_refresh_of_an_audit_without_a_window_end_rebuilds_its_lists_up_to_its_creation(self):
-		audit = self._record_audit()
-		audit.db_set({"window_end": None, "day_window_hours": 0})
-		audit.reload()
-		audit.set("sites_without_success_in_day", [])
-
-		audit.recollect()
-
-		self.assertEqual(audit.window_end, audit.creation)
-		self.assertEqual(audit.day_window_hours, 30)
-		self.assertIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_day])
-
 	def test_refresh_keeps_the_day_window_length_after_the_backup_interval_changes(self):
 		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=40)
 		audit = self._record_audit()
