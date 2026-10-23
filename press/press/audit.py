@@ -8,7 +8,7 @@ from typing import TypedDict
 
 import frappe
 from frappe.query_builder import Order
-from frappe.query_builder.functions import Count, Date
+from frappe.query_builder.functions import Count, Date, IfNull
 from frappe.utils import add_days, rounded, today
 
 from press.agent import Agent
@@ -209,7 +209,7 @@ class BackupRecordCheck(Audit):
 			.where(Date(SiteBackup.creation) >= self.yesterday)
 		)
 		if trial_plans:
-			query = query.where(Site.plan.notin(trial_plans))
+			query = query.where(IfNull(Site.plan, "").notin(trial_plans))
 		return set(query.run(pluck=True))
 
 	def get_all_sites(self, trial_plans: tuple[str]):
