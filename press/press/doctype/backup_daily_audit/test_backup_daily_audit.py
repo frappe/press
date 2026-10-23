@@ -13,10 +13,12 @@ from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
+from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 
 if TYPE_CHECKING:
 	from press.press.doctype.backup_daily_audit.backup_daily_audit import BackupDailyAudit
 	from press.press.doctype.site.site import Site
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 def create_test_backup_job(site: Site, status: str, hours_ago: float = 0, job_type: str = "Backup Site"):
@@ -36,6 +38,22 @@ def create_test_backup_job(site: Site, status: str, hours_ago: float = 0, job_ty
 			"request_data": "{}",
 			"creation": creation,
 			"modified": creation,
+		}
+	).db_insert()
+
+
+def create_test_snapshot(machine: VirtualMachine, status: str, hours_ago: float = 0, **flags):
+	"""Virtual disk snapshot inserted straight into the db, so no cloud calls are made."""
+	creation = frappe.utils.add_to_date(None, hours=-hours_ago)
+	frappe.get_doc(
+		{
+			"doctype": "Virtual Disk Snapshot",
+			"virtual_machine": machine.name,
+			"snapshot_id": frappe.generate_hash(length=12),
+			"status": status,
+			"creation": creation,
+			"modified": creation,
+			**flags,
 		}
 	).db_insert()
 
@@ -70,6 +88,14 @@ class TestBackupDailyAudit(FrappeTestCase):
 			[row.site for row in audit.sites_without_success_in_day],
 			[row.site for row in audit.sites_without_success_in_3_days],
 		)
+
+	def _create_machine(self, days_old: float = 2) -> VirtualMachine:
+		machine = create_test_virtual_machine()
+		machine.db_set("creation", frappe.utils.add_days(None, -days_old))
+		return machine
+
+	def _servers_without_snapshot(self) -> list[str]:
+		return [row.virtual_machine for row in self._record_audit().servers_without_snapshot_in_day]
 
 	def test_audit_is_recorded_for_today(self):
 		self.assertEqual(str(self._record_audit().audit_date), frappe.utils.today())
@@ -216,3 +242,48 @@ class TestBackupDailyAudit(FrappeTestCase):
 
 		self.assertNotIn(self.idle_site.name, in_day)
 		self.assertNotIn(self.idle_site.name, in_3_days)
+
+	def test_server_without_a_completed_snapshot_is_listed_with_failures_and_last_snapshot(self):
+		machine = self._create_machine()
+		create_test_snapshot(machine, "Completed", hours_ago=30)
+		create_test_snapshot(machine, "Error")
+		create_test_snapshot(machine, "Pending")
+
+		audit = self._record_audit()
+
+		row = next(
+			row for row in audit.servers_without_snapshot_in_day if row.virtual_machine == machine.name
+		)
+		self.assertEqual(row.failed_snapshots, 1)
+		self.assertEqual(row.cloud_provider, "AWS EC2")
+		self.assertIsNotNone(row.last_successful_snapshot)
+		self.assertEqual(
+			audit.servers_without_snapshot_in_day_count, len(audit.servers_without_snapshot_in_day)
+		)
+
+	def test_server_with_a_completed_snapshot_in_the_last_day_is_not_listed(self):
+		machine = self._create_machine()
+		create_test_snapshot(machine, "Completed")
+
+		self.assertNotIn(machine.name, self._servers_without_snapshot())
+
+	def test_rolling_and_physical_backup_snapshots_are_not_counted(self):
+		machine = self._create_machine()
+		create_test_snapshot(machine, "Completed", rolling_snapshot=True)
+		create_test_snapshot(machine, "Completed", physical_backup=True)
+
+		self.assertIn(machine.name, self._servers_without_snapshot())
+
+	def test_servers_not_due_a_snapshot_are_not_listed(self):
+		new_machine = self._create_machine(days_old=0)
+		skipped_machine = self._create_machine()
+		skipped_machine.db_set("skip_automated_snapshot", True)
+		stopped_machine = self._create_machine()
+		stopped_machine.db_set("status", "Stopped")
+		unscheduled_machine = self._create_machine()
+		unscheduled_machine.db_set("cloud_provider", "DigitalOcean")
+
+		listed = self._servers_without_snapshot()
+
+		for machine in (new_machine, skipped_machine, stopped_machine, unscheduled_machine):
+			self.assertNotIn(machine.name, listed)
