@@ -12,4 +12,4 @@
 - name: Setup Monitoring Authentication
   become: yes
   become_user: frappe
-  command: "htpasswd -Bb /home/frappe/agent/nginx/monitoring.htpasswd {{ monitoring_username | default('frappe') }} {{ monitoring_password }}"
+  command: "htpasswd -Bb /home/frappe/agent/nginx/monitoring.htpasswd {{ monitoring_username | default('frappe') | quote }} {{ monitoring_password | quote }}"
