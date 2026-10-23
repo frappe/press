@@ -802,6 +802,14 @@ class TestAgentJobOutputRedaction(FrappeTestCase):
 		)
 		self.assertEqual(redact_secrets(["ls", "-la"]), ["ls", "-la"])
 
+	def test_masks_credentials_in_url_and_keeps_commit_hash(self):
+		self.assertEqual(
+			redact_secrets(
+				"hash 6c876ea06963ec90ffbc0673e65b48328680fdd8: https://x-access-token:ghs_abc@github.com/a/b"
+			),
+			"hash 6c876ea06963ec90ffbc0673e65b48328680fdd8: https://********@github.com/a/b",
+		)
+
 	def test_keeps_text_without_secret_values(self):
 		for text in (
 			"Access denied for user 'u'@'h' (using password: YES)",
