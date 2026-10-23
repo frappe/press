@@ -182,7 +182,7 @@ onMounted(() => {
 			<span>·</span>
 			<a
 				class="hover:text-ink-gray-8"
-				href="https://support.frappe.io/helpdesk/my-tickets/new?from=frappe-cloud"
+				href="https://support.frappe.io/helpdesk/my-tickets/new?utm_source=frappe-cloud"
 				target="_blank"
 			>
 				Support
