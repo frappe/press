@@ -25,7 +25,7 @@ def set_on_server(doctype, name, password):
 def set_metrics_password(servers, password=None):
 	"""Pass the same password again to retry a failed server or to add one more."""
 	password = password or frappe.generate_hash()
+	print("password:", password)  # first, so a failed server does not hide it
 	for doctype, name in servers:
 		print(name, set_on_server(doctype, name, password).status)
-	print("password:", password)
 	return password
