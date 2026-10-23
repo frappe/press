@@ -239,6 +239,7 @@
 		"use_staging_ca",
 		"ssh_section",
 		"ssh_certificate_authority",
+		"fail2ban_ignore_ips",
 		"bench_section",
 		"redis_cache_size",
 		"set_redis_password",
@@ -1043,6 +1044,12 @@
 			"fieldtype": "Link",
 			"label": "SSH Certificate Authority",
 			"options": "SSH Certificate Authority"
+		},
+		{
+			"description": "Press host IPs or networks that Fail2Ban never bans on servers, one per line. Proxy servers, bastion servers and private networks are added automatically.",
+			"fieldname": "fail2ban_ignore_ips",
+			"fieldtype": "Small Text",
+			"label": "Fail2Ban Ignore IPs"
 		},
 		{
 			"collapsible": 1,
@@ -1923,7 +1930,7 @@
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-10-22 10:00:00.000000",
+	"modified": "2026-10-23 13:05:58.242982",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",
