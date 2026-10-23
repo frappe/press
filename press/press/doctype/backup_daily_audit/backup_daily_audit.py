@@ -45,6 +45,7 @@ class BackupDailyAudit(Document):
 		from press.press.doctype.backup_daily_audit_site.backup_daily_audit_site import BackupDailyAuditSite
 
 		audit_date: DF.Date
+		day_window_hours: DF.Int
 		failed_jobs: DF.Int
 		servers_without_snapshot_in_day: DF.Table[BackupDailyAuditServer]
 		servers_without_snapshot_in_day_count: DF.Int
@@ -65,17 +66,20 @@ class BackupDailyAudit(Document):
 		self.sites_without_success_in_3_days_count = len(self.sites_without_success_in_3_days)
 		self.servers_without_snapshot_in_day_count = len(self.servers_without_snapshot_in_day)
 
-	def collect(self):
-		"""Fill every list for the windows ending at `window_end`, now for a new audit."""
+	def collect(self, listed: dict[str, list[str]] | None = None):
+		"""Fill every list for the windows ending at `window_end`, now for a new audit.
+		A refresh passes the sites and machines already `listed`, so it re-checks only those."""
+		listed = listed or {}
 		self.window_end = self.window_end or frappe.utils.now_datetime()
+		self.day_window_hours = self.day_window_hours or get_daily_backup_window_hours()
 		self.audit_date = frappe.utils.getdate(self.window_end)
 		for table in TABLES:
 			self.set(table, [])
 		self.set_job_counts()
 		self.add_sites_with_frequent_failures()
-		self.add_sites_without_success("sites_without_success_in_day", hours=get_daily_backup_window_hours())
-		self.add_sites_without_success("sites_without_success_in_3_days", hours=3 * 24)
-		self.add_servers_without_snapshot()
+		self.add_sites_without_success("sites_without_success_in_day", self.day_window_hours, listed)
+		self.add_sites_without_success("sites_without_success_in_3_days", 3 * 24, listed)
+		self.add_servers_without_snapshot(listed)
 
 	@frappe.whitelist()
 	def refresh_lists(self):
@@ -93,10 +97,21 @@ class BackupDailyAudit(Document):
 
 	def recollect(self):
 		# Older audits have no window end, and their windows ended when they were created
+		listed = self.listed_names() if self.window_end else None
 		self.window_end = self.window_end or self.creation
-		self.collect()
+		self.collect(listed)
 		self.flags.ignore_links = True
 		self.save(ignore_permissions=True)
+
+	def listed_names(self) -> dict[str, list[str]]:
+		"""Sites and machines on each list whose eligibility a refresh must keep."""
+		return {
+			"sites_without_success_in_day": [row.site for row in self.sites_without_success_in_day],
+			"sites_without_success_in_3_days": [row.site for row in self.sites_without_success_in_3_days],
+			"servers_without_snapshot_in_day": [
+				row.virtual_machine for row in self.servers_without_snapshot_in_day
+			],
+		}
 
 	def window(self, hours: int) -> tuple[datetime, datetime]:
 		end = frappe.utils.get_datetime(self.window_end)
@@ -108,17 +123,19 @@ class BackupDailyAudit(Document):
 		for site, count in failures.items():
 			self.append("sites_with_frequent_failures", {**details[site], "failed_backups": count})
 
-	def add_sites_without_success(self, table: str, hours: int):
+	def add_sites_without_success(self, table: str, hours: int, listed: dict[str, list[str]]):
 		since, until = self.window(hours)
-		sites = get_sites_without_successful_backup(since, until)
+		sites = get_sites_without_successful_backup(since, until, listed.get(table))
 		failures = get_failed_backup_counts(sites, since, until)
 		details = get_site_details(sites, until)
 		for site in sites:
 			self.append(table, {**details[site], "failed_backups": failures.get(site, 0)})
 
-	def add_servers_without_snapshot(self):
+	def add_servers_without_snapshot(self, listed: dict[str, list[str]]):
 		since, until = self.window(24)
-		machines = get_virtual_machines_without_snapshot(since, until)
+		machines = get_virtual_machines_without_snapshot(
+			since, until, listed.get("servers_without_snapshot_in_day")
+		)
 		failures = get_failed_snapshot_counts(machines, since, until)
 		details = get_virtual_machine_details(machines, until)
 		for machine in machines:
@@ -173,19 +190,25 @@ def get_sites_with_frequent_failures(since: datetime, until: datetime) -> dict[s
 	return {row.site: row.failures for row in failures_by_site if row.failures >= FREQUENT_FAILURE_THRESHOLD}
 
 
-def get_sites_without_successful_backup(since: datetime, until: datetime) -> list[str]:
-	"""Sites due a scheduled backup with no successful logical or physical backup in the window."""
+def get_sites_without_successful_backup(
+	since: datetime, until: datetime, candidates: list[str] | None = None
+) -> list[str]:
+	"""Sites due a backup through the window, or the `candidates` given, with no successful backup in it."""
+	if candidates is None:
+		candidates = get_sites_due_backup_through(since, until)
 	backup, query = successful_backups_query()
 	sites_with_success = (
 		query.select(backup.site).distinct().where(backup.creation.between(since, until)).run(pluck=True)
 	)
+	return sorted(set(candidates) - set(sites_with_success))
+
+
+def get_sites_due_backup_through(since: datetime, until: datetime) -> list[str]:
 	# A site deactivated for part of the window was not due a backup all along
 	activated_sites = frappe.get_all(
 		"Site Activity", {"action": "Activate Site", "creation": ("between", [since, until])}, pluck="site"
 	)
-	return sorted(
-		set(get_sites_due_scheduled_backups(since)) - set(sites_with_success) - set(activated_sites)
-	)
+	return list(set(get_sites_due_scheduled_backups(since)) - set(activated_sites))
 
 
 def successful_backups_query():
@@ -267,25 +290,32 @@ def get_site_details(site_names: list[str], until: datetime) -> dict[str, dict]:
 	return details
 
 
-def get_virtual_machines_without_snapshot(since: datetime, until: datetime) -> list[str]:
-	"""Running virtual machines due an automated snapshot with no completed daily snapshot in the window."""
-	machines = frappe.get_all(
-		"Virtual Machine",
-		{
-			"status": "Running",
-			"skip_automated_snapshot": False,
-			"cloud_provider": ("in", SNAPSHOT_CLOUD_PROVIDERS),
-			"creation": ("<=", since),
-		},
-		pluck="name",
-	)
+def get_virtual_machines_without_snapshot(
+	since: datetime, until: datetime, candidates: list[str] | None = None
+) -> list[str]:
+	"""Machines due an automated snapshot, or the `candidates` given, with no completed daily snapshot."""
+	if candidates is None:
+		candidates = get_virtual_machines_due_snapshot(since)
 	machines_with_snapshot = frappe.get_all(
 		"Virtual Disk Snapshot",
 		filters={**DAILY_SNAPSHOT_FILTERS, "status": "Completed", "creation": ("between", [since, until])},
 		pluck="virtual_machine",
 		distinct=True,
 	)
-	return sorted(set(machines) - set(machines_with_snapshot))
+	return sorted(set(candidates) - set(machines_with_snapshot))
+
+
+def get_virtual_machines_due_snapshot(created_before: datetime) -> list[str]:
+	return frappe.get_all(
+		"Virtual Machine",
+		{
+			"status": "Running",
+			"skip_automated_snapshot": False,
+			"cloud_provider": ("in", SNAPSHOT_CLOUD_PROVIDERS),
+			"creation": ("<=", created_before),
+		},
+		pluck="name",
+	)
 
 
 def get_failed_snapshot_counts(machines: list[str], since: datetime, until: datetime) -> dict[str, int]:
@@ -344,7 +374,7 @@ def get_virtual_machine_details(machines: list[str], until: datetime) -> dict[st
 	details = {}
 	for name in machines:
 		server_type, server = servers.get(name, (None, None))
-		machine = virtual_machines[name]
+		machine = virtual_machines.get(name) or frappe._dict()
 		details[name] = {
 			"virtual_machine": name,
 			"server_type": server_type,
