@@ -96,10 +96,7 @@ class BackupDailyAudit(Document):
 		)
 
 	def recollect(self):
-		# Older audits have no window end, and their windows ended when they were created
-		listed = self.listed_names() if self.window_end else None
-		self.window_end = self.window_end or self.creation
-		self.collect(listed)
+		self.collect(self.listed_names())
 		self.flags.ignore_links = True
 		self.save(ignore_permissions=True)
 
