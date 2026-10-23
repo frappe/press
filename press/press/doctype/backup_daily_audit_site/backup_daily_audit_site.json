@@ -43,7 +43,7 @@
 			"options": "Site Plan"
 		},
 		{
-			"description": "Failed logical backups in the list's window. 0 means none were attempted, or they are still running.",
+			"description": "Failed backups (logical or physical) in the list's window. 0 means none were attempted, or they are still running.",
 			"fieldname": "failed_backups",
 			"fieldtype": "Int",
 			"in_list_view": 1,

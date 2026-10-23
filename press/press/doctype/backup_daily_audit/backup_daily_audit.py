@@ -95,10 +95,10 @@ def record_backup_daily_audit() -> None:
 
 
 def get_sites_with_frequent_failures(since: datetime) -> dict[str, int]:
-	"""Failed logical backup counts of sites at or over the threshold, most failures first."""
+	"""Failed backup counts of sites at or over the threshold, most failures first."""
 	failures_by_site = frappe.get_all(
 		"Site Backup",
-		filters={"status": ("in", FAILED_STATUSES), "physical": False, "creation": (">=", since)},
+		filters={"status": ("in", FAILED_STATUSES), "creation": (">=", since)},
 		fields=["site", "count(name) as failures"],
 		group_by="site",
 		order_by="failures desc, site asc",
@@ -107,10 +107,10 @@ def get_sites_with_frequent_failures(since: datetime) -> dict[str, int]:
 
 
 def get_sites_without_successful_backup(since: datetime) -> list[str]:
-	"""Sites due a scheduled backup with no successful logical backup since the given time."""
+	"""Sites due a scheduled backup with no successful logical or physical backup since the given time."""
 	sites_with_success = frappe.get_all(
 		"Site Backup",
-		filters={"status": "Success", "physical": False, "creation": (">=", since)},
+		filters={"status": "Success", "creation": (">=", since)},
 		pluck="site",
 		distinct=True,
 	)
@@ -133,7 +133,6 @@ def get_failed_backup_counts(site_names: list[str], since: datetime) -> dict[str
 			filters={
 				"site": ("in", site_names),
 				"status": ("in", FAILED_STATUSES),
-				"physical": False,
 				"creation": (">=", since),
 			},
 			fields=["site", "count(name) as failures"],
@@ -153,8 +152,8 @@ def get_sites_due_scheduled_backups(created_before: datetime) -> list[str]:
 			"is_standby": False,
 			"plan": ("not like", "%Trial"),
 			"server": ("in", servers),
-			"skip_scheduled_logical_backups": False,
 		},
+		or_filters={"skip_scheduled_logical_backups": False, "skip_scheduled_physical_backups": False},
 		pluck="name",
 	)
 
@@ -171,7 +170,7 @@ def get_site_details(site_names: list[str]) -> dict[str, dict]:
 	last_successes = dict(
 		frappe.get_all(
 			"Site Backup",
-			filters={"site": ("in", site_names), "status": "Success", "physical": False},
+			filters={"site": ("in", site_names), "status": "Success"},
 			fields=["site", "max(creation) as last_success"],
 			group_by="site",
 			as_list=True,
