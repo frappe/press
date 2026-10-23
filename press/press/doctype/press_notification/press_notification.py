@@ -63,6 +63,17 @@ class PressNotification(Document):
 		"assistance_url",
 	)
 
+	@staticmethod
+	def get_list_query(query):
+		notifications = query.run(as_dict=True)
+		for notification in notifications:
+			redact_notification(notification)
+
+		return notifications
+
+	def get_doc(self, doc):
+		redact_notification(doc)
+
 	def before_insert(self):
 		if not self.reference_doctype:
 			self.reference_doctype, self.reference_name = find_reference(
@@ -205,3 +216,9 @@ def create_new_notification(team, type, document_type, document_name, message):
 			}
 		).insert()
 		frappe.publish_realtime("press_notification", doctype="Press Notification", message={"team": team})
+
+
+def redact_notification(notification: dict):
+	for field in ("message", "traceback"):
+		if notification.get(field):
+			notification[field] = redact_secrets(notification[field])
