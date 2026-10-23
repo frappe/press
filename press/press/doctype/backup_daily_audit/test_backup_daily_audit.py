@@ -134,14 +134,63 @@ class TestBackupDailyAudit(FrappeTestCase):
 
 		self.assertNotIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_day])
 
-	def test_refresh_of_an_audit_without_a_window_end_uses_its_creation(self):
+	def test_refresh_of_an_audit_without_a_window_end_rebuilds_its_lists_up_to_its_creation(self):
 		audit = self._record_audit()
-		audit.db_set("window_end", None)
-
+		audit.db_set({"window_end": None, "day_window_hours": 0})
 		audit.reload()
+		audit.set("sites_without_success_in_day", [])
+
 		audit.recollect()
 
 		self.assertEqual(audit.window_end, audit.creation)
+		self.assertEqual(audit.day_window_hours, 30)
+		self.assertIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_day])
+
+	def test_refresh_keeps_the_day_window_length_after_the_backup_interval_changes(self):
+		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=40)
+		audit = self._record_audit()
+		frappe.db.set_single_value("Press Settings", "backup_interval", 48)
+
+		audit.recollect()
+
+		self.assertEqual(audit.day_window_hours, 30)
+		self.assertIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_day])
+
+	def test_refresh_keeps_a_site_listed_after_it_is_deactivated(self):
+		audit = self._record_audit()
+		self.idle_site.db_set("status", "Inactive")
+
+		audit.recollect()
+
+		self.assertIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_day])
+		self.assertIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_3_days])
+
+	def test_refresh_does_not_add_a_site_that_was_not_due_a_backup_at_audit_time(self):
+		self.idle_site.db_set(
+			{"skip_scheduled_logical_backups": True, "skip_scheduled_physical_backups": True}
+		)
+		audit = self._record_audit()
+		self.idle_site.db_set("skip_scheduled_logical_backups", False)
+
+		audit.recollect()
+
+		self.assertNotIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_day])
+		self.assertNotIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_3_days])
+
+	def test_refresh_keeps_a_stopped_server_listed_until_it_has_a_snapshot(self):
+		machine = self._create_machine()
+		audit = self._record_audit()
+		machine.db_set("status", "Stopped")
+
+		audit.recollect()
+
+		listed = [row.virtual_machine for row in audit.servers_without_snapshot_in_day]
+		self.assertIn(machine.name, listed)
+
+		create_test_snapshot(machine, "Completed", hours_ago=1)
+		audit.recollect()
+
+		self.assertNotIn(machine.name, [row.virtual_machine for row in audit.servers_without_snapshot_in_day])
 
 	def test_success_rate_counts_finished_backup_jobs_from_the_last_day(self):
 		before = self._record_audit()
