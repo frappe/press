@@ -19,7 +19,7 @@ from frappe.utils.data import cint
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
-from press.exceptions import SiteAlreadyArchived, SiteUnderMaintenance
+from press.exceptions import SiteAlreadyArchived, SiteBackupInProgress, SiteUnderMaintenance
 from press.press.doctype.logical_replication_backup.logical_replication_backup import (
 	get_logical_replication_backup_restoration_steps,
 )
@@ -165,6 +165,7 @@ class SiteUpdate(Document):
 		self.validate_pending_updates()
 		self.validate_past_failed_updates()
 		self.set_backup_type()
+		self.validate_ongoing_backups()
 
 	def validate_destination_bench(self, differences):
 		if not self.destination_bench:
@@ -209,6 +210,19 @@ class SiteUpdate(Document):
 	def validate_pending_updates(self):
 		if self.has_pending_updates():
 			frappe.throw("An update is already pending for this site", frappe.ValidationError)
+
+	def validate_ongoing_backups(self):
+		"""Ask the user before a migrate that would make the site's running backups fail."""
+		if not self.is_new() or self.scheduled_time or self.deploy_type != "Migrate":
+			return
+		if not self.triggered_by_user or self.flags.cancel_ongoing_backups:
+			return
+		if frappe.get_doc("Site", self.site).get_ongoing_backup_jobs():
+			frappe.throw(
+				"A backup of this site is in progress, and it will fail if the site updates now. "
+				"If you continue, all ongoing backups of this site will be cancelled.",
+				SiteBackupInProgress,
+			)
 
 	@property
 	def triggered_by_user(self):
@@ -397,6 +411,8 @@ class SiteUpdate(Document):
 			return
 
 		self.skip_backups_for_standby_site()
+		if self.flags.cancel_ongoing_backups:
+			site.cancel_ongoing_backups()
 		if self.use_physical_backup:
 			self.deactivate_site()
 		elif self.use_logical_replication_backup:
