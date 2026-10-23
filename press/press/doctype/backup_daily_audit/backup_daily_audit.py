@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
+from frappe.query_builder.functions import Max
 
 if TYPE_CHECKING:
 	from datetime import datetime
@@ -172,11 +173,9 @@ def get_sites_with_frequent_failures(since: datetime, until: datetime) -> dict[s
 
 def get_sites_without_successful_backup(since: datetime, until: datetime) -> list[str]:
 	"""Sites due a scheduled backup with no successful logical or physical backup in the window."""
-	sites_with_success = frappe.get_all(
-		"Site Backup",
-		filters={"status": "Success", "creation": ("between", [since, until])},
-		pluck="site",
-		distinct=True,
+	backup, query = successful_backups_query()
+	sites_with_success = (
+		query.select(backup.site).distinct().where(backup.creation.between(since, until)).run(pluck=True)
 	)
 	# A site deactivated for part of the window was not due a backup all along
 	activated_sites = frappe.get_all(
@@ -185,6 +184,20 @@ def get_sites_without_successful_backup(since: datetime, until: datetime) -> lis
 	return sorted(
 		set(get_sites_due_scheduled_backups(since)) - set(sites_with_success) - set(activated_sites)
 	)
+
+
+def successful_backups_query():
+	"""Successful backups, counting a physical one only once its disk snapshot has completed."""
+	backup = frappe.qb.DocType("Site Backup")
+	snapshot = frappe.qb.DocType("Virtual Disk Snapshot")
+	query = (
+		frappe.qb.from_(backup)
+		.left_join(snapshot)
+		.on(backup.database_snapshot == snapshot.name)
+		.where(backup.status == "Success")
+		.where((backup.physical == 0) | (snapshot.status == "Completed"))
+	)
+	return backup, query
 
 
 def get_failed_backup_counts(site_names: list[str], since: datetime, until: datetime) -> dict[str, int]:
@@ -231,14 +244,13 @@ def get_site_details(site_names: list[str], until: datetime) -> dict[str, dict]:
 		site.name: site
 		for site in frappe.get_all("Site", {"name": ("in", site_names)}, ["name", "server", "team", "plan"])
 	}
+	backup, query = successful_backups_query()
 	last_successes = dict(
-		frappe.get_all(
-			"Site Backup",
-			filters={"site": ("in", site_names), "status": "Success", "creation": ("<=", until)},
-			fields=["site", "max(creation) as last_success"],
-			group_by="site",
-			as_list=True,
-		)
+		query.select(backup.site, Max(backup.creation))
+		.where(backup.site.isin(site_names))
+		.where(backup.creation <= until)
+		.groupby(backup.site)
+		.run()
 	)
 	details = {}
 	for name in site_names:

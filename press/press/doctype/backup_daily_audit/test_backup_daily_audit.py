@@ -42,10 +42,10 @@ def create_test_backup_job(site: Site, status: str, hours_ago: float = 0, job_ty
 	).db_insert()
 
 
-def create_test_snapshot(machine: VirtualMachine, status: str, hours_ago: float = 0, **flags):
+def create_test_snapshot(machine: VirtualMachine, status: str, hours_ago: float = 0, **flags) -> str:
 	"""Virtual disk snapshot inserted straight into the db, so no cloud calls are made."""
 	creation = frappe.utils.add_to_date(None, hours=-hours_ago)
-	frappe.get_doc(
+	snapshot = frappe.get_doc(
 		{
 			"doctype": "Virtual Disk Snapshot",
 			"virtual_machine": machine.name,
@@ -55,7 +55,9 @@ def create_test_snapshot(machine: VirtualMachine, status: str, hours_ago: float 
 			"modified": creation,
 			**flags,
 		}
-	).db_insert()
+	)
+	snapshot.db_insert()
+	return snapshot.name
 
 
 class TestBackupDailyAudit(FrappeTestCase):
@@ -79,6 +81,16 @@ class TestBackupDailyAudit(FrappeTestCase):
 		creation = frappe.utils.add_to_date(None, hours=-hours_ago)
 		for _ in range(count):
 			create_test_site_backup(site=site, status=status, creation=creation, offsite=False)
+
+	def _create_physical_backup(self, snapshot_status: str, hours_ago: float = 0):
+		snapshot = create_test_snapshot(self._create_machine(), snapshot_status, physical_backup=True)
+		backup = create_test_site_backup(
+			site=self.idle_site.name,
+			status="Success",
+			creation=frappe.utils.add_to_date(None, hours=-hours_ago),
+			offsite=False,
+		)
+		backup.db_set({"physical": True, "database_snapshot": snapshot})
 
 	def _record_audit(self) -> BackupDailyAudit:
 		record_backup_daily_audit()
@@ -196,14 +208,27 @@ class TestBackupDailyAudit(FrappeTestCase):
 
 		self.assertIn(self.idle_site.name, in_day)
 
-	def test_physical_backup_success_counts(self):
-		self._create_backups(self.idle_site.name, 1, status="Success")
-		frappe.db.set_value("Site Backup", {"site": self.idle_site.name}, "physical", True)
+	def test_physical_backup_with_a_completed_snapshot_counts_as_a_success(self):
+		self._create_physical_backup("Completed", hours_ago=4 * 24)
+		self._create_physical_backup("Completed")
 
-		in_day, in_3_days = self._listed_sites()
+		audit = self._record_audit()
 
-		self.assertNotIn(self.idle_site.name, in_day)
-		self.assertNotIn(self.idle_site.name, in_3_days)
+		self.assertNotIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_day])
+		self.assertNotIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_3_days])
+
+	def test_physical_backup_whose_snapshot_has_not_completed_is_not_a_success(self):
+		self._create_physical_backup("Completed", hours_ago=4 * 24)
+		for status in ("Pending", "Error", "Unavailable"):
+			self._create_physical_backup(status)
+
+		audit = self._record_audit()
+
+		row = next(row for row in audit.sites_without_success_in_day if row.site == self.idle_site.name)
+		self.assertLess(
+			frappe.utils.get_datetime(row.last_successful_backup), frappe.utils.add_days(None, -3)
+		)
+		self.assertIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_3_days])
 
 	def test_site_with_only_physical_backups_scheduled_is_listed(self):
 		frappe.db.set_value(
