@@ -2043,6 +2043,23 @@ class BaseServer(Document, TagHelpers):
 		# )
 
 	@dashboard_whitelist()
+	def reset_metrics_password(self) -> str:
+		"""Set the password the team uses to scrape https://<server>/metrics/<exporter>."""
+		if self.public:
+			frappe.throw("Metrics access is only available on dedicated servers.")
+		password = frappe.generate_hash()
+		play = Ansible(
+			playbook="monitoring_password.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+			variables={"monitoring_username": "customer", "monitoring_password": password},
+		).run()
+		if play.status != "Success":
+			frappe.throw("Could not set the metrics password. Please try again.")
+		return password
+
+	@dashboard_whitelist()
 	def reboot(self):
 		if self.provider not in (
 			"AWS EC2",
