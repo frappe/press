@@ -10,6 +10,7 @@ from frappe.frappeclient import FrappeClient
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
 
 
@@ -107,6 +108,7 @@ class RegistryServer(BaseServer):
 			"region": self.region,
 			"bucket_name": self.bucket_name,
 			"proxy_pass": self.proxy_pass,
+			"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 		}
 		try:
 			ansible = Ansible(
