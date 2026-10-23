@@ -62,7 +62,7 @@ def create_test_snapshot(machine: VirtualMachine, status: str, hours_ago: float 
 
 class TestBackupDailyAudit(FrappeTestCase):
 	def setUp(self):
-		# The day window is the backup interval plus BACKUP_GRACE_HOURS, so 30h here
+		# The day window is the backup interval, at least 24h, plus BACKUP_GRACE_HOURS, so 30h here
 		frappe.db.set_single_value("Press Settings", "backup_interval", 24)
 		plan = create_test_plan("Site", price_usd=25.0)
 		# Sites created within a window are not due a successful backup in it yet
@@ -229,6 +229,14 @@ class TestBackupDailyAudit(FrappeTestCase):
 			frappe.utils.get_datetime(row.last_successful_backup), frappe.utils.add_days(None, -3)
 		)
 		self.assertIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_3_days])
+
+	def test_daily_backup_within_a_day_is_not_listed_with_a_shorter_backup_interval(self):
+		frappe.db.set_single_value("Press Settings", "backup_interval", 6)
+		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=20)
+
+		in_day, _ = self._listed_sites()
+
+		self.assertNotIn(self.idle_site.name, in_day)
 
 	def test_site_with_only_physical_backups_scheduled_is_listed(self):
 		frappe.db.set_value(

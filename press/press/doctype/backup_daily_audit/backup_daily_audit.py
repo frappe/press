@@ -17,6 +17,8 @@ FAILED_STATUSES = ("Failure", "Delivery Failure")
 FREQUENT_FAILURE_THRESHOLD = 3
 # Sites back up once per backup interval, so allow this long for queue time on top of it
 BACKUP_GRACE_HOURS = 6
+# Sites with a custom backup time back up once a day, whatever the interval
+MINIMUM_BACKUP_INTERVAL_HOURS = 24
 # Frappe Compute and DigitalOcean snapshots aren't recorded on press, so those machines are left out
 SNAPSHOT_CLOUD_PROVIDERS = ("AWS EC2", "OCI", "Hetzner")
 DAILY_SNAPSHOT_FILTERS = {"physical_backup": False, "rolling_snapshot": False}
@@ -156,7 +158,7 @@ def record_backup_daily_audit() -> None:
 
 def get_daily_backup_window_hours() -> int:
 	interval = frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
-	return interval + BACKUP_GRACE_HOURS
+	return max(interval, MINIMUM_BACKUP_INTERVAL_HOURS) + BACKUP_GRACE_HOURS
 
 
 def get_sites_with_frequent_failures(since: datetime, until: datetime) -> dict[str, int]:
