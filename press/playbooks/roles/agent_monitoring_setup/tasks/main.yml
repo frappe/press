@@ -91,9 +91,8 @@
     dest: /home/frappe/agent/tls/chain.pem
 
 - name: Setup Monitoring Authentication
-  become: yes
-  become_user: frappe
-  command: 'htpasswd -Bbc /home/frappe/agent/nginx/monitoring.htpasswd frappe {{ monitoring_password }}'
+  include_role:
+    name: monitoring_password
 
 - name: Setup Agent NGINX
   become: yes
