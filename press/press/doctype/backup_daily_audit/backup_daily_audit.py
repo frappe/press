@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 BACKUP_JOB_TYPE = "Backup Site"
 FAILED_STATUSES = ("Failure", "Delivery Failure")
 FREQUENT_FAILURE_THRESHOLD = 3
+# Frappe Compute and DigitalOcean snapshots aren't recorded on press, so those machines are left out
+SNAPSHOT_CLOUD_PROVIDERS = ("AWS EC2", "OCI", "Hetzner")
+DAILY_SNAPSHOT_FILTERS = {"physical_backup": False, "rolling_snapshot": False}
 
 
 class BackupDailyAudit(Document):
@@ -25,10 +28,15 @@ class BackupDailyAudit(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.backup_daily_audit_server.backup_daily_audit_server import (
+			BackupDailyAuditServer,
+		)
 		from press.press.doctype.backup_daily_audit_site.backup_daily_audit_site import BackupDailyAuditSite
 
 		audit_date: DF.Date
 		failed_jobs: DF.Int
+		servers_without_snapshot_in_day: DF.Table[BackupDailyAuditServer]
+		servers_without_snapshot_in_day_count: DF.Int
 		sites_with_frequent_failures: DF.Table[BackupDailyAuditSite]
 		sites_with_frequent_failures_count: DF.Int
 		sites_without_success_in_3_days: DF.Table[BackupDailyAuditSite]
@@ -43,6 +51,7 @@ class BackupDailyAudit(Document):
 		self.sites_with_frequent_failures_count = len(self.sites_with_frequent_failures)
 		self.sites_without_success_in_day_count = len(self.sites_without_success_in_day)
 		self.sites_without_success_in_3_days_count = len(self.sites_without_success_in_3_days)
+		self.servers_without_snapshot_in_day_count = len(self.servers_without_snapshot_in_day)
 
 	def collect(self):
 		self.audit_date = frappe.utils.today()
@@ -50,6 +59,7 @@ class BackupDailyAudit(Document):
 		self.add_sites_with_frequent_failures()
 		self.add_sites_without_success("sites_without_success_in_day", days=1)
 		self.add_sites_without_success("sites_without_success_in_3_days", days=3)
+		self.add_servers_without_snapshot()
 
 	def add_sites_with_frequent_failures(self):
 		failures = get_sites_with_frequent_failures(frappe.utils.add_days(None, -1))
@@ -64,6 +74,17 @@ class BackupDailyAudit(Document):
 		details = get_site_details(sites)
 		for site in sites:
 			self.append(table, {**details[site], "failed_backups": failures.get(site, 0)})
+
+	def add_servers_without_snapshot(self):
+		since = frappe.utils.add_days(None, -1)
+		machines = get_virtual_machines_without_snapshot(since)
+		failures = get_failed_snapshot_counts(machines, since)
+		details = get_virtual_machine_details(machines)
+		for machine in machines:
+			self.append(
+				"servers_without_snapshot_in_day",
+				{**details[machine], "failed_snapshots": failures.get(machine, 0)},
+			)
 
 	def set_job_counts(self):
 		"""Backup Site agent jobs created in the last 24h that have finished, by outcome."""
@@ -185,5 +206,90 @@ def get_site_details(site_names: list[str]) -> dict[str, dict]:
 			"team": site.team,
 			"plan": site.plan,
 			"last_successful_backup": last_successes.get(name),
+		}
+	return details
+
+
+def get_virtual_machines_without_snapshot(since: datetime) -> list[str]:
+	"""Running virtual machines due an automated snapshot with no completed daily snapshot since then."""
+	machines = frappe.get_all(
+		"Virtual Machine",
+		{
+			"status": "Running",
+			"skip_automated_snapshot": False,
+			"cloud_provider": ("in", SNAPSHOT_CLOUD_PROVIDERS),
+			"creation": ("<=", since),
+		},
+		pluck="name",
+	)
+	machines_with_snapshot = frappe.get_all(
+		"Virtual Disk Snapshot",
+		filters={**DAILY_SNAPSHOT_FILTERS, "status": "Completed", "creation": (">=", since)},
+		pluck="virtual_machine",
+		distinct=True,
+	)
+	return sorted(set(machines) - set(machines_with_snapshot))
+
+
+def get_failed_snapshot_counts(machines: list[str], since: datetime) -> dict[str, int]:
+	if not machines:
+		return {}
+
+	return dict(
+		frappe.get_all(
+			"Virtual Disk Snapshot",
+			filters={
+				**DAILY_SNAPSHOT_FILTERS,
+				"virtual_machine": ("in", machines),
+				"status": "Error",
+				"creation": (">=", since),
+			},
+			fields=["virtual_machine", "count(name) as failures"],
+			group_by="virtual_machine",
+			as_list=True,
+		)
+	)
+
+
+def get_virtual_machine_details(machines: list[str]) -> dict[str, dict]:
+	"""Server, team, provider and last completed daily snapshot of each virtual machine, as audit rows."""
+	from press.press.doctype.virtual_machine.virtual_machine import server_doctypes
+
+	if not machines:
+		return {}
+
+	servers = {}
+	for doctype in server_doctypes:
+		for server in frappe.get_all(
+			doctype, {"virtual_machine": ("in", machines)}, ["name", "virtual_machine"]
+		):
+			servers[server.virtual_machine] = (doctype, server.name)
+	virtual_machines = {
+		machine.name: machine
+		for machine in frappe.get_all(
+			"Virtual Machine", {"name": ("in", machines)}, ["name", "team", "cloud_provider", "series"]
+		)
+	}
+	last_snapshots = dict(
+		frappe.get_all(
+			"Virtual Disk Snapshot",
+			filters={**DAILY_SNAPSHOT_FILTERS, "virtual_machine": ("in", machines), "status": "Completed"},
+			fields=["virtual_machine", "max(creation) as last_snapshot"],
+			group_by="virtual_machine",
+			as_list=True,
+		)
+	)
+	details = {}
+	for name in machines:
+		server_type, server = servers.get(name, (None, None))
+		machine = virtual_machines[name]
+		details[name] = {
+			"virtual_machine": name,
+			"server_type": server_type,
+			"server": server,
+			"team": machine.team,
+			"cloud_provider": machine.cloud_provider,
+			"series": machine.series,
+			"last_successful_snapshot": last_snapshots.get(name),
 		}
 	return details
