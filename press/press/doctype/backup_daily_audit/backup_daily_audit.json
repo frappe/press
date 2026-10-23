@@ -5,6 +5,8 @@
 	"engine": "InnoDB",
 	"field_order": [
 		"audit_date",
+		"column_break_audit",
+		"window_end",
 		"section_break_jobs",
 		"success_rate",
 		"column_break_jobs",
@@ -16,7 +18,7 @@
 		"sites_without_success_in_day_count",
 		"column_break_sites",
 		"sites_without_success_in_3_days_count",
-		"column_break_sites_3",
+		"section_break_servers",
 		"servers_without_snapshot_in_day_count",
 		"section_break_sites_with_frequent_failures",
 		"sites_with_frequent_failures",
@@ -36,6 +38,17 @@
 			"read_only": 1,
 			"reqd": 1,
 			"search_index": 1
+		},
+		{
+			"fieldname": "column_break_audit",
+			"fieldtype": "Column Break"
+		},
+		{
+			"description": "Every window in this audit ends at this time. Refresh rebuilds the lists for the same windows.",
+			"fieldname": "window_end",
+			"fieldtype": "Datetime",
+			"label": "Window End",
+			"read_only": 1
 		},
 		{
 			"description": "Backup Site agent jobs created in the last 24h that have finished. Delivery failures count as failed.",
@@ -101,8 +114,9 @@
 			"read_only": 1
 		},
 		{
-			"fieldname": "column_break_sites_3",
-			"fieldtype": "Column Break"
+			"fieldname": "section_break_servers",
+			"fieldtype": "Section Break",
+			"label": "Servers"
 		},
 		{
 			"fieldname": "servers_without_snapshot_in_day_count",
@@ -163,7 +177,7 @@
 	"in_create": 1,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-10-23 12:00:00.000000",
+	"modified": "2026-10-23 18:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Backup Daily Audit",

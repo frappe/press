@@ -99,8 +99,37 @@ class TestBackupDailyAudit(FrappeTestCase):
 	def _servers_without_snapshot(self) -> list[str]:
 		return [row.virtual_machine for row in self._record_audit().servers_without_snapshot_in_day]
 
-	def test_audit_is_recorded_for_today(self):
-		self.assertEqual(str(self._record_audit().audit_date), frappe.utils.today())
+	def test_audit_is_recorded_for_today_with_its_window_end(self):
+		audit = self._record_audit()
+
+		self.assertEqual(str(audit.audit_date), frappe.utils.today())
+		self.assertIsNotNone(audit.window_end)
+
+	def test_refresh_keeps_the_window_and_counts_only_backups_inside_it(self):
+		audit = self._record_audit()
+		window_end = frappe.utils.add_to_date(None, hours=-2)
+		audit.db_set("window_end", window_end)
+		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=1)
+
+		audit.reload()
+		audit.recollect()
+
+		self.assertIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_day])
+		self.assertEqual(frappe.utils.get_datetime(audit.window_end), window_end)
+
+		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=3)
+		audit.recollect()
+
+		self.assertNotIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_day])
+
+	def test_refresh_of_an_audit_without_a_window_end_uses_its_creation(self):
+		audit = self._record_audit()
+		audit.db_set("window_end", None)
+
+		audit.reload()
+		audit.recollect()
+
+		self.assertEqual(audit.window_end, audit.creation)
 
 	def test_success_rate_counts_finished_backup_jobs_from_the_last_day(self):
 		before = self._record_audit()
