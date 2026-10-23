@@ -37,7 +37,7 @@ export default {
 							label: 'Status',
 							fieldname: 'status',
 							class: !isMobile() ? 'w-24' : '',
-							options: ['', 'Pending', 'Running', 'Success', 'Failure'],
+							options: ['', 'Pending', 'Running', 'Success', 'Failure', 'Cancelled'],
 						},
 						{
 							type: 'link',

@@ -86,7 +86,9 @@ class AgentJob(Document):
 		server_type: DF.Link
 		site: DF.Link | None
 		start: DF.Datetime | None
-		status: DF.Literal["Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure"]
+		status: DF.Literal[
+			"Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure", "Cancelled"
+		]
 		traceback: DF.Code | None
 		upstream: DF.Link | None
 	# end: auto-generated types
@@ -467,7 +469,7 @@ def job_detail(job):
 
 	if job.status == "Pending":
 		current = {"name": job.job_type, "status": "Waiting", "index": -1}
-	elif job.status in ("Success", "Failure"):
+	elif job.status in ("Success", "Failure", "Cancelled"):
 		current = {"name": job.job_type, "status": job.status, "index": len(steps)}
 
 	current["total"] = len(steps)
