@@ -826,6 +826,7 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
+					"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 					"server": self.name,
 					"private_ip": self.private_ip,
 					"proxy_ip": self.get_proxy_ip(),
@@ -1765,6 +1766,7 @@ class BaseServer(Document, TagHelpers):
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
+				variables={"fail2ban_ignore_ips": fail2ban.ignore_ips()},
 			)
 			ansible.run()
 		except Exception:
@@ -3724,6 +3726,7 @@ class Server(BaseServer):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
+					"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 					"server": self.name,
 					"private_ip": self.private_ip,
 					"proxy_ip": self.get_proxy_ip(),

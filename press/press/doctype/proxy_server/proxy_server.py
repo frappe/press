@@ -9,6 +9,7 @@ from frappe.utils import unique
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
 
 # ProxySQL image version rolled out to all proxies. Bumped from 2.3.2 to fix
@@ -141,6 +142,7 @@ class ProxyServer(BaseServer):
 				user=self.ssh_user or "root",
 				port=self.ssh_port or 22,
 				variables={
+					"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 					"server": self.name,
 					"workers": 1,
 					"domain": self.domain,

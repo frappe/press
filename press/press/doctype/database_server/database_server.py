@@ -28,6 +28,7 @@ from press.press.doctype.database_server_mariadb_variable.database_server_mariad
 from press.press.doctype.s3_storage_plan.s3_storage_plan import AUDIT_LOG_STORAGE_PLAN
 from press.press.doctype.server.server import PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN, Agent, BaseServer, Server
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import get_press_base_url, log_error
 from press.utils.database import find_db_disk_info, parse_du_output_of_mysql_directory
 from press.utils.jobs import has_job_timeout_exceeded
@@ -888,6 +889,7 @@ class DatabaseServer(BaseServer):
 				user=self.ssh_user or "root",
 				port=self.ssh_port or 22,
 				variables={
+					"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 					"server_type": self.doctype,
 					"server": self.name,
 					"workers": "2",
