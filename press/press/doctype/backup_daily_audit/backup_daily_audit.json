@@ -86,7 +86,7 @@
 			"fieldname": "sites_without_success_in_day_count",
 			"fieldtype": "Int",
 			"in_list_view": 1,
-			"label": "No Successful Backup in 24h",
+			"label": "No Successful Backup in a Day",
 			"read_only": 1
 		},
 		{
@@ -124,10 +124,10 @@
 			"read_only": 1
 		},
 		{
-			"description": "Sites due a scheduled backup with no successful logical or physical backup in the last 24h. Pending, running and failed backups don't count.",
+			"description": "Sites due a scheduled backup with no successful logical or physical backup within the backup interval from Press Settings plus 6h (30h for a 24h interval). Sites back up once per interval, so the extra 6h allows for queue time. Pending, running and failed backups don't count.",
 			"fieldname": "section_break_sites_without_success_in_day",
 			"fieldtype": "Section Break",
-			"label": "Sites Without a Successful Backup in 24h"
+			"label": "Sites Without a Successful Backup in a Day"
 		},
 		{
 			"fieldname": "sites_without_success_in_day",

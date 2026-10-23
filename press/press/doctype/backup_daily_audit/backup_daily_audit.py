@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 BACKUP_JOB_TYPE = "Backup Site"
 FAILED_STATUSES = ("Failure", "Delivery Failure")
 FREQUENT_FAILURE_THRESHOLD = 3
+# Sites back up once per backup interval, so allow this long for queue time on top of it
+BACKUP_GRACE_HOURS = 6
 # Frappe Compute and DigitalOcean snapshots aren't recorded on press, so those machines are left out
 SNAPSHOT_CLOUD_PROVIDERS = ("AWS EC2", "OCI", "Hetzner")
 DAILY_SNAPSHOT_FILTERS = {"physical_backup": False, "rolling_snapshot": False}
@@ -57,8 +59,8 @@ class BackupDailyAudit(Document):
 		self.audit_date = frappe.utils.today()
 		self.set_job_counts()
 		self.add_sites_with_frequent_failures()
-		self.add_sites_without_success("sites_without_success_in_day", days=1)
-		self.add_sites_without_success("sites_without_success_in_3_days", days=3)
+		self.add_sites_without_success("sites_without_success_in_day", hours=get_daily_backup_window_hours())
+		self.add_sites_without_success("sites_without_success_in_3_days", hours=3 * 24)
 		self.add_servers_without_snapshot()
 
 	def add_sites_with_frequent_failures(self):
@@ -67,8 +69,8 @@ class BackupDailyAudit(Document):
 		for site, count in failures.items():
 			self.append("sites_with_frequent_failures", {**details[site], "failed_backups": count})
 
-	def add_sites_without_success(self, table: str, days: int):
-		since = frappe.utils.add_days(None, -days)
+	def add_sites_without_success(self, table: str, hours: int):
+		since = frappe.utils.add_to_date(None, hours=-hours)
 		sites = get_sites_without_successful_backup(since)
 		failures = get_failed_backup_counts(sites, since)
 		details = get_site_details(sites)
@@ -113,6 +115,11 @@ def record_backup_daily_audit() -> None:
 	# A site renamed or deleted since its backup failed must not block the audit
 	audit.flags.ignore_links = True
 	audit.insert(ignore_permissions=True)
+
+
+def get_daily_backup_window_hours() -> int:
+	interval = frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
+	return interval + BACKUP_GRACE_HOURS
 
 
 def get_sites_with_frequent_failures(since: datetime) -> dict[str, int]:
