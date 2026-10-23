@@ -355,6 +355,20 @@ frappe.ui.form.on('Server', {
 				__('Setup'),
 			],
 			[
+				__('Setup Fail2ban'),
+				'setup_fail2ban',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Remove Fail2ban'),
+				'remove_fail2ban',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
 				__('Setup Auditd'),
 				'setup_auditd',
 				true,
