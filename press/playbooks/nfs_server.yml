@@ -6,3 +6,4 @@
   gather_facts: yes
   roles:
     - role: nfs_server
+    - role: fail2ban
