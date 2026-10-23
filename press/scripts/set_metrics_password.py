@@ -2,6 +2,8 @@
 # Sets one metrics scrape password on several dedicated servers of a team, then
 # use set_metrics_password([("Server", "f1-x.frappe.cloud"), ("Database Server", "m1-x.frappe.cloud")]).
 # The team scrapes https://<server>/metrics/<exporter> with user `customer` and the printed password.
+# Before a server changes team or becomes public, remove the login on it by hand:
+#   htpasswd -D /home/frappe/agent/nginx/monitoring.htpasswd customer
 import frappe
 
 from press.runner import Ansible
