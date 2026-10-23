@@ -124,12 +124,28 @@ class TestBackupDailyAudit(FrappeTestCase):
 		self.assertIn(self.idle_site.name, in_day)
 		self.assertNotIn(self.idle_site.name, in_3_days)
 
-	def test_pending_running_and_physical_backups_are_not_a_success(self):
+	def test_pending_and_running_backups_are_not_a_success(self):
 		self._create_backups(self.idle_site.name, 1, status="Pending", hours_ago=3)
 		self._create_backups(self.idle_site.name, 1, status="Running", hours_ago=3)
+
+		in_day, _ = self._listed_sites()
+
+		self.assertIn(self.idle_site.name, in_day)
+
+	def test_physical_backup_success_counts(self):
 		self._create_backups(self.idle_site.name, 1, status="Success")
+		frappe.db.set_value("Site Backup", {"site": self.idle_site.name}, "physical", True)
+
+		in_day, in_3_days = self._listed_sites()
+
+		self.assertNotIn(self.idle_site.name, in_day)
+		self.assertNotIn(self.idle_site.name, in_3_days)
+
+	def test_site_with_only_physical_backups_scheduled_is_listed(self):
 		frappe.db.set_value(
-			"Site Backup", {"site": self.idle_site.name, "status": "Success"}, "physical", True
+			"Site",
+			self.idle_site.name,
+			{"skip_scheduled_logical_backups": True, "skip_scheduled_physical_backups": False},
 		)
 
 		in_day, _ = self._listed_sites()
@@ -188,3 +204,15 @@ class TestBackupDailyAudit(FrappeTestCase):
 
 		self.assertNotIn(self.idle_site.name, listed)
 		self.assertNotIn(self.two_day_old_site.name, listed)
+
+	def test_site_with_all_scheduled_backups_skipped_is_not_listed(self):
+		frappe.db.set_value(
+			"Site",
+			self.idle_site.name,
+			{"skip_scheduled_logical_backups": True, "skip_scheduled_physical_backups": True},
+		)
+
+		in_day, in_3_days = self._listed_sites()
+
+		self.assertNotIn(self.idle_site.name, in_day)
+		self.assertNotIn(self.idle_site.name, in_3_days)

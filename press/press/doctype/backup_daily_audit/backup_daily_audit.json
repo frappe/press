@@ -97,7 +97,7 @@
 			"read_only": 1
 		},
 		{
-			"description": "Sites with 3 or more failed logical backups in the last 24h. A later backup may have succeeded, so check Last Successful Backup. These are listed only to be noted.",
+			"description": "Sites with 3 or more failed backups (logical or physical) in the last 24h. A later backup may have succeeded, so check Last Successful Backup. These are listed only to be noted.",
 			"fieldname": "section_break_sites_with_frequent_failures",
 			"fieldtype": "Section Break",
 			"label": "Sites With Frequently Failing Backups in 24h"
@@ -109,7 +109,7 @@
 			"read_only": 1
 		},
 		{
-			"description": "Sites due a scheduled backup with no successful logical backup in the last 24h. Pending, running and failed backups don't count.",
+			"description": "Sites due a scheduled backup with no successful logical or physical backup in the last 24h. Pending, running and failed backups don't count.",
 			"fieldname": "section_break_sites_without_success_in_day",
 			"fieldtype": "Section Break",
 			"label": "Sites Without a Successful Backup in 24h"
@@ -121,7 +121,7 @@
 			"read_only": 1
 		},
 		{
-			"description": "Sites due a scheduled backup with no successful logical backup in the last 3 days. Pending, running and failed backups don't count.",
+			"description": "Sites due a scheduled backup with no successful logical or physical backup in the last 3 days. Pending, running and failed backups don't count.",
 			"fieldname": "section_break_sites_without_success_in_3_days",
 			"fieldtype": "Section Break",
 			"label": "Sites Without a Successful Backup in 3 Days"
