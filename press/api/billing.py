@@ -23,6 +23,7 @@ from press.api.regional_payments.mpesa.utils import (
 	update_tax_id_or_phone_no,
 )
 from press.guards import role_guard
+from press.press.doctype.invoice_item.invoice_item import get_item_description
 from press.press.doctype.team.team import (
 	_enqueue_finalize_unpaid_invoices_for_team,
 	has_unsettled_invoices,
@@ -290,7 +291,7 @@ def fetch_invoice_items(invoice):
 			"Only team owners and members are permitted to download Invoice. Please contact your team admin."
 		)
 
-	return frappe.get_all(
+	items = frappe.get_all(
 		"Invoice Item",
 		{"parent": invoice, "parenttype": "Invoice"},
 		[
@@ -305,6 +306,13 @@ def fetch_invoice_items(invoice):
 			"site",
 		],
 	)
+
+	# A draft invoice has no stored descriptions. They are written at finalize.
+	for item in items:
+		if not item.description:
+			item.description = get_item_description(item)
+
+	return items
 
 
 @frappe.whitelist()
