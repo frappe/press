@@ -397,11 +397,35 @@ class TestAccountApi(TestCase):
 			user_context(invited),
 			patch.object(Team, "create_user_for_member", record_session_user),
 		):
+			frappe.session.sid = "browser-session-id"
+			frappe.session.data = frappe._dict(user=invited, user_type="Website User")
 			accept_team_invite(key)
 			self.assertEqual(frappe.session.user, invited)
+			# Frappe saves the session after the request, so a lost sid or data logs the user out
+			self.assertEqual(frappe.session.sid, "browser-session-id")
+			self.assertEqual(frappe.session.data, {"user": invited, "user_type": "Website User"})
 
 		self.assertEqual(session_user_while_creating["user"], "Administrator")
 		self.assertTrue(frappe.db.exists("Team Member", {"parent": team.name, "user": invited}))
+
+	def test_accept_team_invite_keeps_the_invitee_session(self):
+		"""frappe.set_user overwrites the sid and data of the live session, and
+		Frappe saves that session after the request. If acceptance does not
+		restore them, the next request resumes as user None and the invitee is
+		locked out until they clear their cookies."""
+		team = create_test_team()
+		invited = frappe.mock("email")
+		create_test_user(invited)
+		key = self._invite(team, invited, roles=None)
+
+		with user_context(invited):
+			frappe.session.sid = "browser-session-id"
+			frappe.session.data = frappe._dict(user=invited, user_type="Website User")
+			accept_team_invite(key)
+
+			self.assertEqual(frappe.session.user, invited)
+			self.assertEqual(frappe.session.sid, "browser-session-id")
+			self.assertEqual(frappe.session.data, {"user": invited, "user_type": "Website User"})
 
 	def test_accept_team_invite_recovers_from_quoted_printable_break_in_key(self):
 		"""The invite URL is long enough that email transport wraps it with a
@@ -527,6 +551,16 @@ class TestReactivateAccount(TestCase):
 		with user_context(self.team.user):
 			reactivate_account()
 		self.assertEqual(self.is_enabled(), 1)
+
+	def test_reactivating_keeps_the_user_session(self):
+		with user_context(self.team.user):
+			frappe.session.sid = "browser-session-id"
+			frappe.session.data = frappe._dict(user=self.team.user, user_type="Website User")
+			reactivate_account()
+
+			self.assertEqual(frappe.session.user, self.team.user)
+			self.assertEqual(frappe.session.sid, "browser-session-id")
+			self.assertEqual(frappe.session.data, {"user": self.team.user, "user_type": "Website User"})
 
 	def test_belonging_to_another_team_does_not_hide_the_disabled_account(self):
 		other_team = create_test_team()
