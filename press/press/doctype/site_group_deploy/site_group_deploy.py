@@ -62,7 +62,7 @@ class SiteGroupDeploy(Document):
 		if self.version:
 			return
 
-		self.version = frappe.db.get_value("Frappe Version", {"status": "stable"}, order_by="number desc")
+		self.version = frappe.db.get_value("Frappe Version", {"status": "Stable"}, order_by="number desc")
 
 	def check_if_team_can_create_site(self):
 		team = frappe.get_doc("Team", self.team)

@@ -238,6 +238,9 @@ class StackedGroupByChart:
 	):
 		self.log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if not self.log_server:
+			# Set the fields a subclass reads first, so it is not half-built.
+			self.resource_type = resource_type
+			self.database_name = None
 			return
 
 		self.url = f"https://{self.log_server}/elasticsearch"
@@ -704,7 +707,12 @@ def get_metrics(
 
 	try:
 		promql_query = promql_query.format(benches=benches)
-		datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
+		# cAdvisor cannot enumerate bench containers on some hosts, so the
+		# query can legitimately return nothing: report empty datasets.
+		result = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
+		if result is None:
+			return {response_key: {"datasets": [], "labels": []}}
+		datasets, labels = result
 		return {response_key: {"datasets": datasets, "labels": labels}}
 	except (ValueError, TypeError):
 		frappe.throw(
@@ -1474,7 +1482,7 @@ class GenerateReportReports(BackgroundJobGroupByChart):
 def get_usage(site: str, type: str, timezone: str, start: datetime, end: datetime, timegrain: int):
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
-		return {"datasets": [], "labels": []}
+		return []
 
 	url = f"https://{log_server}/elasticsearch/filebeat-*/_search"
 	password = get_decrypted_password("Log Server", log_server, "kibana_password")
@@ -1517,7 +1525,9 @@ def get_usage(site: str, type: str, timezone: str, start: datetime, end: datetim
 	buckets: list[UsagePoint] = []
 
 	if not response.get("aggregations"):
-		return {"datasets": [], "labels": []}
+		# An empty list, not the chart shape: callers iterate this, so a
+		# dict would surface as an AttributeError on a string key.
+		return []
 
 	for bucket in response["aggregations"]["date_histogram"]["buckets"]:
 		buckets.append(

@@ -1,5 +1,9 @@
 line-length = 110
 indent-width = 4
+# Left at py310 rather than matching requires-python (>=3.14). Raising it turns
+# on py311+ upgrade rules across the whole tree (66 new findings: TC001-3 and
+# UP017/042/043/046/047), which is a large refactor unrelated to the datetime
+# work. Do it as its own change, once there is appetite for the churn.
 target-version = "py310"
 
 [format]
@@ -21,6 +25,12 @@ select = [
   "C90",
   "RET",
   "SIM",
+  # `datetime.utcnow()` is removed in Python 3.15, so this is a build failure
+  # waiting for a version bump rather than a style preference. Scoped to DTZ003
+  # alone: the rest of the datetimez ruleset flags naive local times that are
+  # correct all over this codebase, and adopting it wholesale would bury the
+  # one rule that matters.
+  "DTZ003",
 ]
 ignore = [
   "UP015",  # Unnecessary open mode parameters

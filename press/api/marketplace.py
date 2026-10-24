@@ -397,7 +397,7 @@ def become_publisher():
 @frappe.whitelist()
 def frappe_versions():
 	"""Return a list of Frappe Version names"""
-	return frappe.get_all("Frappe Version", pluck="name", order_by="name desc")
+	return frappe.get_all("Frappe Version", pluck="name", order_by="number desc")
 
 
 @frappe.whitelist()
