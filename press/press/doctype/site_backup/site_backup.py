@@ -15,7 +15,7 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.exceptions import SiteTooManyPendingBackups
+from press.exceptions import SiteTooManyPendingBackups, SiteUpdateInProgress
 from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
@@ -165,6 +165,13 @@ class SiteBackup(Document):
 	def before_insert(self):
 		if self.flags.get("skip_backup_after_insert"):
 			return
+
+		# The update's own physical backup runs before its migrate job, so it can't clash
+		if not self.for_site_update and frappe.get_doc("Site", self.site).is_migrate_running():
+			frappe.throw(
+				"This site is being updated. Please take a backup after the update finishes.",
+				SiteUpdateInProgress,
+			)
 
 		if getattr(self, "force", False):
 			if self.physical:
@@ -520,7 +527,7 @@ def process_backup_site_job_update(job):
 	backup = backups[0]
 	if job.status != backup.status:
 		status = job.status
-		if status == "Delivery Failure":
+		if status in ("Delivery Failure", "Cancelled"):
 			status = "Failure"
 
 		if status == "Success":
@@ -578,12 +585,12 @@ def process_backup_site_job_update(job):
 			site_backup.status = status
 			site_backup.save()
 
-			_send_backup_failure_email_to_user(site_backup)
+			_send_backup_failure_email_to_user(site_backup, cancelled=job.status == "Cancelled")
 
 
-def _send_backup_failure_email_to_user(site_backup: SiteBackup):
+def _send_backup_failure_email_to_user(site_backup: SiteBackup, cancelled: bool = False):
 	try:
-		if site_backup.status != "Failure":
+		if site_backup.status != "Failure" or cancelled:
 			return
 
 		site_name = site_backup.site

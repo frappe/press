@@ -1746,6 +1746,34 @@ class Site(Document, TagHelpers):
 			"Site Update", {"site": self.name, "status": "Scheduled"}, "scheduled_time"
 		)
 
+	def get_ongoing_backup_jobs(self) -> list[str]:
+		return frappe.get_all(
+			"Agent Job",
+			filters={
+				"site": self.name,
+				"job_type": "Backup Site",
+				"status": ("in", ["Undelivered", "Pending", "Running"]),
+			},
+			pluck="name",
+		)
+
+	def cancel_ongoing_backups(self):
+		for name in self.get_ongoing_backup_jobs():
+			job: AgentJob = frappe.get_doc("Agent Job", name)
+			job.cancel_and_mark_cancelled("A site update was started")
+
+	def is_migrate_running(self) -> bool:
+		return bool(
+			frappe.db.exists(
+				"Agent Job",
+				{
+					"site": self.name,
+					"job_type": "Update Site Migrate",
+					"status": ("in", ["Undelivered", "Pending", "Running"]),
+				},
+			)
+		)
+
 	def check_move_scheduled(self):
 		if time := self.site_migration_scheduled():
 			frappe.throw(f"Site Migration is scheduled for {self.name} at {time}")  # nosemgrep
@@ -1780,6 +1808,7 @@ class Site(Document, TagHelpers):
 		skip_backups: bool = False,
 		physical_backup: bool = False,
 		scheduled_time: str | None = None,
+		cancel_ongoing_backups: bool = False,
 	):
 		log_site_activity(self.name, "Update")
 
@@ -1793,7 +1822,9 @@ class Site(Document, TagHelpers):
 				"status": "Scheduled" if scheduled_time else "Pending",
 				"scheduled_time": scheduled_time,
 			}
-		).insert()
+		)
+		doc.flags.cancel_ongoing_backups = cancel_ongoing_backups
+		doc.insert()
 		return doc.name
 
 	@dashboard_whitelist()
