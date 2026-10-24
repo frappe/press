@@ -178,6 +178,7 @@ doc_events = {
 		"after_insert": [
 			"press.press.doctype.invoice.stripe_webhook_handler.handle_stripe_webhook_events",
 			"press.press.doctype.team.team.process_stripe_webhook",
+			"press.press.doctype.invoice.payment_processing.handle_payment_processing_webhook",
 		],
 	},
 	"Address": {"validate": "press.api.billing.validate_gst"},
@@ -220,6 +221,7 @@ scheduler_events = {
 		"press.press.doctype.mariadb_audit_log.mariadb_audit_log.delete_expired_audit_logs",
 		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
 		"press.press.doctype.team.team.check_budget_alerts",
+		"press.press.doctype.invoice.payment_processing.clear_stale_payment_processing",
 		"press.press.doctype.site.site.archive_creation_failed_sites",
 		"press.press.doctype.server.server.process_running_benches_on_server",
 	],

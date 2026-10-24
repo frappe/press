@@ -450,7 +450,16 @@ def get_unpaid_invoices():
 			"status": "Unpaid",
 			"type": "Subscription",
 		},
-		["name", "status", "period_end", "currency", "amount_due", "total", "stripe_invoice_url"],
+		[
+			"name",
+			"status",
+			"period_end",
+			"currency",
+			"amount_due",
+			"total",
+			"stripe_invoice_url",
+			"payment_processing_since",
+		],
 		order_by="creation asc",
 	)
 
