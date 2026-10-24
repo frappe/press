@@ -4,13 +4,17 @@ from unittest.mock import MagicMock, patch
 import frappe
 from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils.data import add_days, today
 
 from press.api.billing import (
 	_validate_prepaid_credits,
+	fetch_invoice_items,
 	get_cleaned_up_transactions,
 	get_processed_balance_transactions,
 	verify_m_pesa_transaction,
 )
+from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_team
 from press.utils.mpesa_utils import create_mpesa_request_log
 
@@ -357,3 +361,81 @@ class TestValidatePrepaidCredits(FrappeTestCase):
 
 		with self.assertRaisesRegex(frappe.ValidationError, "Amount should be at least ₹66.25"):
 			_validate_prepaid_credits(50, "INR")
+
+
+class TestFetchInvoiceItems(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_team()
+		self.plan = create_test_plan("Site")
+		self.site = create_test_site(team=self.team.name)
+		frappe.set_user(self.team.user)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def draft_invoice_with_item(self, **item):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert(ignore_permissions=True)
+		invoice.append(
+			"items",
+			{
+				"document_type": "Site",
+				"document_name": self.site.name,
+				"plan": self.plan.name,
+				"quantity": 5,
+				"rate": 100,
+				"amount": 500,
+				**item,
+			},
+		)
+		invoice.save(ignore_permissions=True)
+		return invoice
+
+	def test_draft_invoice_item_is_described_for_the_csv(self):
+		invoice = self.draft_invoice_with_item()
+
+		items = fetch_invoice_items(invoice.name)
+
+		self.assertEqual(
+			items[0].description,
+			f"{self.site.name} active for 5 days on {self.plan.plan_title} plan",
+		)
+
+	def test_describing_a_draft_item_does_not_store_the_description(self):
+		invoice = self.draft_invoice_with_item()
+
+		fetch_invoice_items(invoice.name)
+
+		invoice.reload()
+		self.assertFalse(invoice.items[0].description)
+
+	def test_stored_description_is_kept(self):
+		invoice = self.draft_invoice_with_item(description="Written when the invoice was finalized")
+
+		items = fetch_invoice_items(invoice.name)
+
+		self.assertEqual(items[0].description, "Written when the invoice was finalized")
+
+	def test_server_without_a_title_is_described_by_its_name(self):
+		invoice = self.draft_invoice_with_item(
+			document_type="Server", document_name=self.site.server, plan="Basic"
+		)
+		frappe.db.set_value("Server", self.site.server, "title", "")
+
+		items = fetch_invoice_items(invoice.name)
+
+		self.assertEqual(items[0].description, f"{self.site.server} active for 5 days")
+
+	def test_finalized_invoice_describes_items_the_same_way(self):
+		invoice = self.draft_invoice_with_item()
+		from_csv = fetch_invoice_items(invoice.name)[0].description
+
+		invoice.update_item_descriptions()
+
+		self.assertEqual(invoice.items[0].description, from_csv)
