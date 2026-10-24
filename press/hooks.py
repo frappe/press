@@ -261,6 +261,7 @@ scheduler_events = {
 		"press.press.doctype.site.backups.schedule_physical_backups_for_sites_with_backup_time",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.saas.doctype.product_trial_request.product_trial_request.expire_long_pending_trial_requests",
+		"press.saas.doctype.grove_trial_key.grove_trial_key.revoke_archived",
 		"press.press.doctype.support_access.support_access.expire_pending_requests",
 		"press.overrides.cleanup_ansible_tmp_files",
 		"press.press.doctype.site.site.archive_suspended_sites",
@@ -371,6 +372,7 @@ scheduler_events = {
 			"press.infrastructure.doctype.virtual_disk_resize.virtual_disk_resize.run_scheduled_resizes",
 		],
 		"*/5 * * * *": [
+			"press.saas.doctype.grove_trial_key.grove_trial_key.refill_trial_keys",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.enqueue_delete_orphaned_dedicated_snapshots",
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
 			"press.press.doctype.site_replication.site_replication.update_from_site",
