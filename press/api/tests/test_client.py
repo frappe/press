@@ -23,6 +23,9 @@ from press.api.client import (
 from press.overrides import before_request
 from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
+from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.cluster.test_cluster import create_test_cluster
+from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
@@ -212,6 +215,128 @@ class TestDocumentAccess(FrappeTestCase):
 			filters={"parenttype": "Site", "parent": site.name},
 		)
 		self.assertEqual(lying, [])
+
+
+@patch("frappe.sendmail", new=Mock())
+class TestSitesInArchivedCluster(FrappeTestCase):
+	"""A site in an archived region cannot be managed or dropped, so the dashboard omits it."""
+
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_press_admin_team()
+		self.cluster = create_test_cluster(name="Bahrain")
+		frappe.db.set_value("Cluster", self.cluster.name, "status", "Archived")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def create_site_in(self, cluster: str) -> str:
+		server = create_test_server(cluster=cluster)
+		return create_test_site(server=server.name, team=self.team.name).name
+
+	def listed_sites(self, **kwargs) -> list[str]:
+		sign_in_as(self.team)
+		return [row.name for row in get_list("Site", limit=100, **kwargs)]
+
+	def test_get_list_omits_a_site_in_an_archived_region(self):
+		archived = self.create_site_in(self.cluster.name)
+		live = self.create_site_in("Default")
+
+		names = self.listed_sites()
+
+		self.assertNotIn(archived, names)
+		self.assertIn(live, names)
+
+	def test_get_list_omits_a_site_in_an_archived_region_under_an_explicit_status_filter(self):
+		"""An explicit status takes its own branch of the query, which has to hide the region too."""
+		archived = self.create_site_in(self.cluster.name)
+		live = self.create_site_in("Default")
+
+		names = self.listed_sites(filters={"status": "Active"})
+
+		self.assertNotIn(archived, names)
+		self.assertIn(live, names)
+
+	def test_get_list_lists_the_site_again_once_the_region_is_active(self):
+		site = self.create_site_in(self.cluster.name)
+		frappe.db.set_value("Cluster", self.cluster.name, "status", "Active")
+
+		self.assertIn(site, self.listed_sites())
+
+
+@patch("frappe.sendmail", new=Mock())
+class TestInfrastructureInArchivedCluster(FrappeTestCase):
+	"""Servers, benches and bench groups in an archived region cannot be reached either."""
+
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_press_admin_team()
+		self.archived = create_test_cluster(name="Bahrain")
+		frappe.db.set_value("Cluster", self.archived.name, "status", "Archived")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def server_in(self, cluster: str) -> str:
+		return create_test_server(cluster=cluster, team=self.team.name).name
+
+	def bench_in(self, cluster: str) -> str:
+		bench = create_test_bench(server=self.server_in(cluster))
+		frappe.db.set_value("Bench", bench.name, "team", self.team.name)
+		return bench.name
+
+	def listed(self, doctype: str) -> list[str]:
+		sign_in_as(self.team)
+		return [row.name for row in get_list(doctype, limit=100)]
+
+	def test_get_list_omits_a_server_in_an_archived_region(self):
+		archived = self.server_in(self.archived.name)
+		live = self.server_in("Default")
+
+		names = self.listed("Server")
+
+		self.assertNotIn(archived, names)
+		self.assertIn(live, names)
+
+	def test_get_list_omits_a_bench_in_an_archived_region(self):
+		archived = self.bench_in(self.archived.name)
+		live = self.bench_in("Default")
+
+		names = self.listed("Bench")
+
+		self.assertNotIn(archived, names)
+		self.assertIn(live, names)
+
+	def test_get_list_omits_a_bench_group_whose_only_server_is_in_an_archived_region(self):
+		app = create_test_app()
+		dead = create_test_release_group(
+			[app], user=self.team.user, servers=[self.server_in(self.archived.name)]
+		)
+		live = create_test_release_group([app], user=self.team.user, servers=[self.server_in("Default")])
+
+		names = self.listed("Release Group")
+
+		self.assertNotIn(dead.name, names)
+		self.assertIn(live.name, names)
+
+	def test_get_list_keeps_a_bench_group_that_still_has_a_server_outside_the_archived_region(self):
+		"""Half a group in an archived region still works in the other, so it stays listed."""
+		app = create_test_app()
+		group = create_test_release_group(
+			[app],
+			user=self.team.user,
+			servers=[self.server_in(self.archived.name), self.server_in("Default")],
+		)
+
+		self.assertIn(group.name, self.listed("Release Group"))
+
+	def test_get_list_keeps_a_bench_group_that_has_no_servers_yet(self):
+		app = create_test_app()
+		group = create_test_release_group([app], user=self.team.user)
+
+		self.assertIn(group.name, self.listed("Release Group"))
 
 
 @patch("frappe.sendmail", new=Mock())
