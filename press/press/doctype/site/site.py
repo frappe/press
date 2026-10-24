@@ -4236,15 +4236,15 @@ class Site(Document, TagHelpers):
 					"data": json.loads(frappe.cache().get_value(key_for_schema)),
 				}
 
-		# Check if any agent job is created within 5 minutes and in pending/running condition
-		# Checks to prevent duplicate agent job creation due to race condition
+		# An unfinished job from the last 30 minutes blocks a new one, so repeated calls
+		# cannot pile up jobs while the server is slow to answer
 		if not frappe.db.exists(
 			"Agent Job",
 			{
 				"job_type": "Fetch Database Table Schema",
 				"site": self.name,
 				"status": ["in", ["Undelivered", "Pending", "Running"]],
-				"creation": (">", frappe.utils.add_to_date(None, minutes=-5)),
+				"creation": (">", frappe.utils.add_to_date(None, minutes=-30)),
 			},
 		):
 			# create the agent job and put it in loading state
