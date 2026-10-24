@@ -759,7 +759,6 @@
 		"configurable_by_user": 0,
 		"datatype": "Str",
 		"default_value": null,
-<<<<<<< HEAD
 		"doc_section": "innodb",
 		"docstatus": 0,
 		"doctype": "MariaDB Variable",
@@ -788,21 +787,27 @@
 		"configurable_by_user": 0,
 		"datatype": "Int",
 		"default_value": "0",
-=======
->>>>>>> 2e915dc (feat(database-server): Add binlog_legacy_event_pos mariadb variable)
 		"doc_section": "replication-and-binary-log",
 		"docstatus": 0,
 		"doctype": "MariaDB Variable",
 		"dynamic": 1,
-<<<<<<< HEAD
 		"modified": "2026-07-02 10:03:58.148822",
 		"name": "slave_connections_needed_for_purge",
 		"set_on_new_servers": 1,
-=======
+		"skippable": 0,
+		"title": null
+	},
+	{
+		"configurable_by_user": 0,
+		"datatype": "Str",
+		"default_value": null,
+		"doc_section": "replication-and-binary-log",
+		"docstatus": 0,
+		"doctype": "MariaDB Variable",
+		"dynamic": 1,
 		"modified": "2026-10-22 00:00:00.000000",
 		"name": "binlog_legacy_event_pos",
 		"set_on_new_servers": 0,
->>>>>>> 2e915dc (feat(database-server): Add binlog_legacy_event_pos mariadb variable)
 		"skippable": 0,
 		"title": null
 	}
