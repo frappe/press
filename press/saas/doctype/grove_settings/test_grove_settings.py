@@ -20,8 +20,10 @@ def enrolled(**fields):
 			"base_url": "http://grove.test/",
 			"control_api_key": "K",
 			"control_api_secret": "S",  # pragma: allowlist secret
-			"enable_for_product_trials": 1,
 			"trial_team": "Press Team",
+			"trial_key_geography": "ap-south",
+			"trial_model_group": "",
+			"trial_pool_size": 2,
 			"trial_key_expiry": "Never",
 			"trial_key_cap": 2,
 		}
@@ -79,8 +81,8 @@ class TestGroveSettings(FrappeTestCase):
 			("K2", "S2", True),
 		)
 
-	def test_a_key_is_minted_under_the_trial_team_titled_by_the_site_at_the_cap_and_expiry(self):
-		settings = enrolled(trial_key_cap=3, trial_key_expiry="7 Days")
+	def test_a_pool_key_is_minted_untitled_in_the_trial_geography_and_group_at_the_cap_and_expiry(self):
+		settings = enrolled(trial_key_cap=3, trial_key_expiry="7 Days", trial_model_group="trial-models")
 		row = {
 			"name": "k1",
 			"geography": "ap-south",
@@ -88,21 +90,27 @@ class TestGroveSettings(FrappeTestCase):
 			"api_key": "gr_x",  # pragma: allowlist secret
 		}  # pragma: allowlist secret
 		with grove_replies(row) as post:
-			self.assertEqual(settings.provision_key("s.test"), row)
+			self.assertEqual(settings.provision_key(), row)
 		self.assertEqual(
 			sent(post),
 			(
 				"grove.api.keys.provision_key",
 				{
 					"team": "Press Team",
-					"title": "s.test",
+					"title": None,
+					"geography": "ap-south",
 					"cap": 3,
-					"cap_window": "Total",
 					"expiry": "7 Days",
+					"expiry_from_first_use": True,
+					"model_group": "trial-models",
 				},
 				{"Authorization": "token K:S"},
 			),
 		)
+		# A blank group sends none: the key lands in the geography's default group.
+		with grove_replies(row) as post:
+			enrolled(trial_model_group="").provision_key()
+		self.assertNotIn("model_group", sent(post)[1])
 		with grove_replies("Revoked.") as post:
 			settings.revoke_key("k1", "Press Trials")
 		self.assertEqual(sent(post)[:2], ("grove.api.keys.revoke_key", {"team": "Press Trials", "key": "k1"}))
@@ -135,12 +143,17 @@ class TestGroveSettings(FrappeTestCase):
 		with grove_replies(None, status=417) as post:
 			post.return_value.json.return_value = {"_server_messages": refusal}
 			with self.assertRaisesRegex(frappe.ValidationError, "already holds 2 live keys"):
-				settings.provision_key("s.test")
+				settings.provision_key()
 		with grove_replies(None, status=503), self.assertRaisesRegex(frappe.ValidationError, "unavailable"):
-			settings.provision_key("s.test")
+			settings.provision_key()
+
+	def test_a_sized_pool_needs_a_geography(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "Trial Key Geography"):
+			enrolled(trial_key_geography="")
+		enrolled(trial_key_geography="", trial_pool_size=0)
 
 	def test_not_enrolled_is_refused_before_any_call(self):
 		settings = enrolled(control_api_key="", control_api_secret="")
 		with grove_replies({}) as post, self.assertRaisesRegex(frappe.ValidationError, "enroll Press"):
-			settings.provision_key("s.test")
+			settings.provision_key()
 		post.assert_not_called()
