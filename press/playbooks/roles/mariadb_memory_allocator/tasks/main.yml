@@ -1,14 +1,22 @@
 ---
+- name: Create APT Keyrings Directory
+  file:
+    dest: /etc/apt/keyrings
+    state: directory
+    mode: 0755
+
 - name: Update NGINX Repository Key
-  apt_key:
+  get_url:
     url: https://nginx.org/keys/nginx_signing.key
-    state: present
+    dest: /etc/apt/keyrings/nginx.asc
+    mode: 0644
+    force: yes
 
 - name: Install Memory Allocators
   apt:
     pkg:
       - libjemalloc2
-      - google-perftools
+      - "{{ 'libgoogle-perftools4t64' if ansible_distribution_version is version('26.04', '>=') else 'google-perftools' }}"
     state: present
     update_cache: yes
   when: allocator != "system"

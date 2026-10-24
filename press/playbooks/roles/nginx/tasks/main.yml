@@ -5,19 +5,27 @@
       - nginx
       - nginx-extras
       - apache2-utils
-      - libpcre3-dev
+      - "{{ 'libpcre2-dev' if ansible_distribution_version is version('26.04', '>=') else 'libpcre3-dev' }}"
     state: present
   ignore_errors: yes
 
-- name: Setup NGINX Source Repository
-  copy:
-    content: 'deb-src http://nginx.org/packages/mainline/ubuntu/ {{ ansible_distribution_release }} nginx'
-    dest: /etc/apt/sources.list.d/nginx.list
+- name: Create APT Keyrings Directory
+  file:
+    dest: /etc/apt/keyrings
+    state: directory
+    mode: 0755
 
 - name: Add NGINX Repository Key
-  apt_key:
+  get_url:
     url: https://nginx.org/keys/nginx_signing.key
-    state: present
+    dest: /etc/apt/keyrings/nginx.asc
+    mode: 0644
+    force: yes
+
+- name: Setup NGINX Source Repository
+  copy:
+    content: 'deb-src [signed-by=/etc/apt/keyrings/nginx.asc] http://nginx.org/packages/mainline/ubuntu/ {{ ansible_distribution_release }} nginx'
+    dest: /etc/apt/sources.list.d/nginx.list
 
 - name: Update APT Cache
   apt:
