@@ -6,6 +6,7 @@ import json
 import os
 import random
 import traceback
+from itertools import chain
 from typing import TYPE_CHECKING
 
 import frappe
@@ -39,6 +40,8 @@ from press.utils.user import as_administrator
 
 AGENT_LOG_KEY = "agent-jobs"
 AGENT_JOB_TIMEOUT_HOURS = 4
+# A Fetch Database Table Schema result can be 11 MB, and 40 in one reply timed out every poll
+POLL_BATCH_SIZE = 5
 
 BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
 
@@ -511,8 +514,14 @@ def publish_update(job):
 
 @timer
 def poll_random_jobs(agent, pending_ids):
+	return list(chain.from_iterable(poll_random_jobs_in_batches(agent, pending_ids)))
+
+
+def poll_random_jobs_in_batches(agent, pending_ids):
+	"""Small batches keep one reply under the read timeout when jobs carry large `data`."""
 	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))
-	return agent.get_jobs_status(random_pending_ids)
+	for start in range(0, len(random_pending_ids), POLL_BATCH_SIZE):
+		yield agent.get_jobs_status(random_pending_ids[start : start + POLL_BATCH_SIZE]) or []
 
 
 @timer
@@ -556,14 +565,9 @@ def poll_pending_jobs_server(server):
 		return
 
 	pending_ids = [j.job_id for j in pending_jobs]
-	polled_jobs = poll_random_jobs(agent, pending_ids)
-
-	if not polled_jobs:
-		retry_undelivered_jobs(server)
-		add_timer_data_to_monitor(server.server)
-		return
-
-	handle_polled_jobs(polled_jobs, pending_jobs)
+	# Handle each batch before the next request, so a timeout keeps earlier results
+	for polled_jobs in poll_random_jobs_in_batches(agent, pending_ids):
+		handle_polled_jobs(polled_jobs, pending_jobs)
 
 	retry_undelivered_jobs(server)
 	add_timer_data_to_monitor(server.server)

@@ -15,6 +15,7 @@ from frappe.model.naming import make_autoname
 from frappe.tests.ui_test_helpers import create_test_user
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days
+from requests.exceptions import ReadTimeout
 
 from press.agent import Agent
 from press.overrides import before_request
@@ -23,6 +24,7 @@ from press.press.doctype.agent_job.agent_job import (
 	cancel_job_from_dashboard,
 	fail_old_jobs,
 	lock_doc_updated_by_job,
+	poll_pending_jobs_server,
 	update_job,
 	update_step,
 )
@@ -219,6 +221,18 @@ def create_test_agent_job(
 	).insert(ignore_permissions=True)
 
 
+def _finished_job(job_id: int) -> dict:
+	return {
+		"id": job_id,
+		"status": "Success",
+		"data": {},
+		"steps": [],
+		"start": "2023-08-20 18:24:28.009786",
+		"end": "2023-08-20 18:24:41.506067",
+		"duration": "00:00:13.496281",
+	}
+
+
 class StepDict(TypedDict):
 	name: str
 	status: Literal["Success", "Pending", "Running", "Failure", "Skipped"]
@@ -328,6 +342,40 @@ class TestAgentJob(FrappeTestCase):
 		fail_old_jobs()
 
 		self.assertEqual(frappe.db.get_value("Agent Job", job.name, "status"), "Delivery Failure")
+
+	def _create_running_jobs(self, count: int) -> list[AgentJob]:
+		from press.press.doctype.server.test_server import create_test_server
+
+		server = create_test_server().name
+		return [create_test_agent_job(server=server, status="Running", job_id=i) for i in range(1, count + 1)]
+
+	def _poll(self, jobs: list[AgentJob], get_jobs_status: Mock):
+		server = frappe._dict(server=jobs[0].server, server_type="Server")
+		with (
+			patch.object(Agent, "get_jobs_status", get_jobs_status),
+			patch("press.press.doctype.agent_job.agent_job.random.sample", new=lambda ids, k: ids[:k]),
+			patch("press.press.doctype.agent_job.agent_job.frappe.db.commit", new=Mock()),
+		):
+			poll_pending_jobs_server(server)
+
+	def test_poll_asks_the_agent_for_at_most_five_jobs_per_request(self):
+		jobs = self._create_running_jobs(7)
+		get_jobs_status = Mock(side_effect=lambda ids: [_finished_job(i) for i in ids])
+
+		self._poll(jobs, get_jobs_status)
+
+		self.assertEqual([len(c.args[0]) for c in get_jobs_status.call_args_list], [5, 2])
+		self.assertEqual({frappe.db.get_value("Agent Job", j.name, "status") for j in jobs}, {"Success"})
+
+	def test_poll_timeout_on_a_later_batch_keeps_the_jobs_updated_by_earlier_batches(self):
+		jobs = self._create_running_jobs(7)
+		get_jobs_status = Mock(side_effect=[[_finished_job(i) for i in range(1, 6)], ReadTimeout()])
+
+		with self.assertRaises(ReadTimeout):
+			self._poll(jobs, get_jobs_status)
+
+		statuses = [frappe.db.get_value("Agent Job", j.name, "status") for j in jobs]
+		self.assertEqual(statuses, ["Success"] * 5 + ["Running"] * 2)
 
 	def test_no_duplicate_undelivered_job(self):
 		site = create_test_site()
