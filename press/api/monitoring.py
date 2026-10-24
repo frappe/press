@@ -48,12 +48,20 @@ def get_benches():
 	return benches
 
 
+def get_server_jobs(job_map: dict[str, list[str]], server_type: str, server: dict) -> list[str]:
+	jobs = job_map[server_type]
+	if server_type == "proxy" and not server.get("is_proxysql_setup"):
+		# A proxy without ProxySQL runs neither exporter, so both jobs would always be down
+		jobs = [job for job in jobs if job not in ("proxysql", "mariadb_proxy")]
+	return jobs
+
+
 def get_clusters():
 	servers = {}
 	servers["proxy"] = frappe.get_all(
 		"Proxy Server",
 		{"status": ("!=", "Archived")},
-		["name", "cluster", "use_as_proxy_for_agent_and_metrics", "ip"],
+		["name", "cluster", "use_as_proxy_for_agent_and_metrics", "ip", "is_proxysql_setup"],
 	)
 	servers["app"] = frappe.get_all(
 		"Server",
@@ -80,7 +88,7 @@ def get_clusters():
 		for server_type, server_type_servers in servers.items():
 			for server in server_type_servers:
 				if server.cluster == cluster.name:
-					for job in job_map[server_type]:
+					for job in get_server_jobs(job_map, server_type, server):
 						_server = (
 							f"{server.name}:8443"
 							if server.name in servers_using_alternative_port
