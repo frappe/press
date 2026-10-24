@@ -101,24 +101,32 @@
 					</div>
 				</div>
 				<div class="shrink-0">
-					<Button
-						:label="'Add credit'"
-						@click="
-							() => {
-								showMessage = false;
-								if (!billingDetailsSummary) {
-									showMessage = true;
-									showBillingDetailsDialog = true;
-									return;
+					<Tooltip placement="top">
+						<Button
+							:label="'Add credit'"
+							@click="
+								() => {
+									showMessage = false;
+									if (!billingDetailsSummary) {
+										showMessage = true;
+										showBillingDetailsDialog = true;
+										return;
+									}
+									showAddPrepaidCreditsDialog = true;
 								}
-								showAddPrepaidCreditsDialog = true;
-							}
-						"
-					>
-						<template #prefix>
-							<FeatherIcon class="h-4" name="plus" />
+							"
+						>
+							<template #prefix>
+								<FeatherIcon class="h-4" name="plus" />
+							</template>
+						</Button>
+						<template #content>
+							<span class="block max-w-xs leading-4">
+								You can add bulk credits in advance, and it will be
+								adjusted/deducted directly from your monthly invoice.
+							</span>
 						</template>
-					</Button>
+					</Tooltip>
 				</div>
 			</div>
 			<div class="my-3 h-px bg-surface-gray-2" />
@@ -196,7 +204,13 @@ import BudgetAlertDialog from './BudgetAlertDialog.vue';
 import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue';
 import AddCardDialog from './AddCardDialog.vue';
 import ChangeCardDialog from './ChangeCardDialog.vue';
-import { Dropdown, Button, FeatherIcon, createResource } from 'frappe-ui';
+import {
+	Dropdown,
+	Button,
+	FeatherIcon,
+	Tooltip,
+	createResource,
+} from 'frappe-ui';
 import {
 	cardBrandIcon,
 	confirmDialog,
