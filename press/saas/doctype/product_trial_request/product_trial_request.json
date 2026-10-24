@@ -165,11 +165,11 @@
 	"links": [
 		{
 			"group": "AI",
-			"link_doctype": "Grove Key Request",
+			"link_doctype": "Grove Trial Key",
 			"link_fieldname": "product_trial_request"
 		}
 	],
-	"modified": "2026-10-22 13:00:00.000000",
+	"modified": "2026-10-24 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "SaaS",
 	"name": "Product Trial Request",

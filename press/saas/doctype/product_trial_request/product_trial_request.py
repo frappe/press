@@ -318,18 +318,18 @@ class ProductTrialRequest(Document):
 							reference_doctype=self.doctype,
 							reference_name=self.name,
 						)
-					self.request_grove_key()
+					self.assign_grove_key()
 
-	def request_grove_key(self):
-		"""A Grove (AI) key for the new site, tried by a Grove Key Request until it sits in the site
-		config. None unless Grove Settings is enrolled and switched on for Product Trials."""
+	def assign_grove_key(self):
+		"""A Grove (AI) key from the pool for the new site, into its site config. None unless Grove
+		Settings is enrolled and the pool is on; an empty pool gives none, and the trial runs without
+		AI. A request reaching Site Created again keeps the key its site took."""
+		from press.saas.doctype.grove_trial_key.grove_trial_key import GroveTrialKey
+
 		if not frappe.get_cached_doc("Grove Settings").is_on_for_product_trials:
 			return
-		if frappe.db.exists("Grove Key Request", {"site": self.site}):
-			return
-		frappe.get_doc(
-			{"doctype": "Grove Key Request", "site": self.site, "product_trial_request": self.name}
-		).insert()
+		if key := GroveTrialKey.assign(self):
+			key.write_config()
 
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):

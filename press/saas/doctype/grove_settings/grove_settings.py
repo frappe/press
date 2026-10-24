@@ -9,6 +9,7 @@ import frappe
 import requests
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import cint
 
 # Trial keys go under the trial team named in Grove Settings, on a tier of its own: unlimited
 # keys, a large spend limit and trial rate limits, tuned at Grove. Press names both; Grove owns the values.
@@ -20,9 +21,9 @@ UNAVAILABLE = (502, 503, 504)
 
 
 class GroveSettings(Document):
-	"""Where Grove is and the control credential Press calls it with. Every Product Trial site gets
-	one Grove key under `trial_team` there, capped at `trial_key_cap` for the life of the key and
-	retired at `trial_key_expiry`."""
+	"""Where Grove is and the control credential Press calls it with. A pool of `trial_pool_size`
+	keys is minted ahead under `trial_team` there, each capped at `trial_key_cap` for its life and
+	retired at `trial_key_expiry` after its first use; a Product Trial site takes one."""
 
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -35,9 +36,11 @@ class GroveSettings(Document):
 		base_url: DF.Data | None
 		control_api_key: DF.Data | None
 		control_api_secret: DF.Password | None
-		enable_for_product_trials: DF.Check
 		trial_key_cap: DF.Currency
 		trial_key_expiry: DF.Literal["Never", "1 Day", "7 Days", "14 Days", "30 Days"]
+		trial_key_geography: DF.Data | None
+		trial_model_group: DF.Data | None
+		trial_pool_size: DF.Int
 		trial_team: DF.Data | None
 	# end: auto-generated types
 
@@ -47,11 +50,13 @@ class GroveSettings(Document):
 
 	@property
 	def is_on_for_product_trials(self) -> bool:
-		"""Whether a new trial site gets a key: enrolled, and switched on for trials."""
-		return self.is_enrolled and bool(self.enable_for_product_trials)
+		"""Whether trial sites get keys: enrolled, and the pool sized."""
+		return self.is_enrolled and cint(self.trial_pool_size) > 0
 
 	def validate(self):
 		self.base_url = (self.base_url or "").strip().rstrip("/")
+		if cint(self.trial_pool_size) and not self.trial_key_geography:
+			frappe.throw(_("Set Trial Key Geography before sizing the pool."))
 
 	def on_update(self):
 		if self.is_enrolled and self.has_value_changed("trial_team"):
@@ -80,18 +85,22 @@ class GroveSettings(Document):
 			raise frappe.ValidationError(_("Grove can't be reached right now.")) from e
 		return read(response)
 
-	def provision_key(self, site: str) -> dict:
-		"""Mint `site`'s key under the trial team at the trial cap and expiry, titled by the site, its
-		cap window Total so the budget is one-shot for the life of the key: `{name, geography,
-		gateway_url, api_key}`; the secret is in this answer and nowhere else."""
-		return self.call(
-			"grove.api.keys.provision_key",
-			team=self.trial_team,
-			title=site,
-			cap=self.trial_key_cap,
-			cap_window="Total",
-			expiry=self.trial_key_expiry,
-		)
+	def provision_key(self) -> dict:
+		"""Mint one pool key under the trial team: untitled, in the trial geography and model group, at
+		the trial cap and expiry, the expiry counted from the key's first request since a pool key waits
+		before anyone uses it. `{name, geography, gateway_url, api_key}`; the secret is in this answer
+		and nowhere else at Grove."""
+		body = {
+			"team": self.trial_team,
+			"title": None,
+			"geography": self.trial_key_geography,
+			"cap": self.trial_key_cap,
+			"expiry": self.trial_key_expiry,
+			"expiry_from_first_use": True,
+		}
+		if self.trial_model_group:
+			body["model_group"] = self.trial_model_group
+		return self.call("grove.api.keys.provision_key", **body)
 
 	def revoke_key(self, name: str, team: str):
 		"""Under `team`, the one the key was minted under: Grove refuses any other."""
