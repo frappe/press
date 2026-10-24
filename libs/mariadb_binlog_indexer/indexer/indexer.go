@@ -30,6 +30,15 @@ CREATE TABLE IF NOT EXISTS query (
 )
 `
 
+// One row per binlog whose indexing completed, including binlogs without any indexable query
+// (e.g. an idle binlog, or one holding only CREATE USER / GRANT). The query table alone cannot
+// tell those apart from binlogs never indexed.
+const CREATE_INDEXED_BINLOG_TABLE_SQL string = `
+CREATE TABLE IF NOT EXISTS indexed_binlog (
+	binlog VARCHAR PRIMARY KEY
+)
+`
+
 const INSERT_QUERY_SQL string = "INSERT INTO query (binlog, db_name, table_name, timestamp, type, row_id, event_size) VALUES "
 
 type Query struct {
@@ -105,11 +114,13 @@ func NewBinlogIndexer(basePath string, binlogPath string, databaseFilename strin
 		return nil, fmt.Errorf("failed to create sql parser: %w", err)
 	}
 
-	// Create table
-	_, err = db.Exec(CREATE_TABLE_SQL)
-	if err != nil {
-		_ = db.Close()
-		return nil, fmt.Errorf("failed to create table: %w", err)
+	// Create tables
+	for _, createSQL := range []string{CREATE_TABLE_SQL, CREATE_INDEXED_BINLOG_TABLE_SQL} {
+		_, err = db.Exec(createSQL)
+		if err != nil {
+			_ = db.Close()
+			return nil, fmt.Errorf("failed to create table: %w", err)
+		}
 	}
 
 	/*
@@ -118,10 +129,15 @@ func NewBinlogIndexer(basePath string, binlogPath string, databaseFilename strin
 	 * So we need to delete the current binlog data before we start index it again
 	 */
 
-	_, err = db.Exec("DELETE FROM query WHERE binlog = ?", binlogFilename)
-	if err != nil {
-		_ = db.Close()
-		return nil, fmt.Errorf("failed to delete binlog data: %w", err)
+	for _, deleteSQL := range []string{
+		"DELETE FROM indexed_binlog WHERE binlog = ?",
+		"DELETE FROM query WHERE binlog = ?",
+	} {
+		_, err = db.Exec(deleteSQL, binlogFilename)
+		if err != nil {
+			_ = db.Close()
+			return nil, fmt.Errorf("failed to delete binlog data: %w", err)
+		}
 	}
 
 	parquet_filepath := filepath.Join(basePath, fmt.Sprintf("queries_%s.parquet", binlogFilename))
@@ -288,6 +304,11 @@ func (p *BinlogIndexer) Start() error {
 	err = p.flush()
 	if err != nil {
 		return fmt.Errorf("failed to flush: %w", err)
+	}
+	// Record completion last, so a binlog that failed midway is retried
+	_, err = p.db.Exec("INSERT INTO indexed_binlog (binlog) VALUES (?) ON CONFLICT DO NOTHING", p.binlogName)
+	if err != nil {
+		return fmt.Errorf("failed to record indexed binlog: %w", err)
 	}
 	// Close everything
 	p.Close()
@@ -477,10 +498,14 @@ func (p *BinlogIndexer) flush() error {
 		}
 	}
 
-	// Insert the queries
-	_, err = tx.Exec(p.sqlStringBuilderForFlush.String())
-	if err != nil {
-		return fmt.Errorf("failed to insert queries: %w", err)
+	// Insert the queries, unless none of them references a table (e.g. a batch of only
+	// CREATE USER / GRANT statements run without a default database, as in a new server's
+	// first binlog): an INSERT with an empty VALUES list is a syntax error
+	if !first {
+		_, err = tx.Exec(p.sqlStringBuilderForFlush.String())
+		if err != nil {
+			return fmt.Errorf("failed to insert queries: %w", err)
+		}
 	}
 
 	// Write to parquet file by bulk insert
@@ -582,10 +607,19 @@ func RemoveBinlogIndex(basePath string, binlogPath string, databaseFilename stri
 		_ = db.Close()
 	}()
 
-	// drop binlog
-	_, err = db.Exec("DELETE FROM query WHERE binlog = ?", binlogFilename)
+	// drop binlog (indexes created before indexed_binlog existed lack the table)
+	_, err = db.Exec(CREATE_INDEXED_BINLOG_TABLE_SQL)
 	if err != nil {
-		return fmt.Errorf("failed to delete binlog data: %w", err)
+		return fmt.Errorf("failed to create table: %w", err)
+	}
+	for _, deleteSQL := range []string{
+		"DELETE FROM indexed_binlog WHERE binlog = ?",
+		"DELETE FROM query WHERE binlog = ?",
+	} {
+		_, err = db.Exec(deleteSQL, binlogFilename)
+		if err != nil {
+			return fmt.Errorf("failed to delete binlog data: %w", err)
+		}
 	}
 
 	// drop parquet file

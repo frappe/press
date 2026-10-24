@@ -92,6 +92,16 @@ class Indexer:
 					f"Failed to remove binlog from indexer:\n\nStdout: {result.stdout}\nStderr: {result.stderr}"
 				)
 
+	def indexed_binlogs(self) -> list[str]:
+		"""
+		Binlogs whose indexing completed, including those without any indexable query (an idle
+		binlog, or one holding only statements like GRANT). Binlogs indexed before the indexer
+		recorded completion are known only by their rows in the query table, so both are read.
+		"""
+		with_rows = self._execute_query("db", "SELECT DISTINCT binlog FROM query")
+		completed = self._execute_query("db", "SELECT binlog FROM indexed_binlog")
+		return sorted({row[0] for row in [*with_rows, *completed]})
+
 	def get_timeline(  # noqa: C901
 		self,
 		start_timestamp: int,
