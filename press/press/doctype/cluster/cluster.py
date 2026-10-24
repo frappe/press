@@ -1453,6 +1453,25 @@ class Cluster(Document):
 		self.save()
 
 	@frappe.whitelist()
+	def disable_vpc_flow_logs(self):
+		"""Delete this cluster's VPC flow log. Logs already delivered to S3 stay in the bucket."""
+		if not self.vpc_flow_logs_enabled:
+			frappe.throw("VPC Flow Logs are not enabled", frappe.ValidationError)
+		if not self.flow_log_id:
+			frappe.throw("Cluster has no Flow Log ID", frappe.ValidationError)
+
+		client = self.get_aws_client()
+		# A flow log deleted outside Press is already in the state we want.
+		if client.describe_flow_logs(FlowLogIds=[self.flow_log_id])["FlowLogs"]:
+			response = client.delete_flow_logs(FlowLogIds=[self.flow_log_id])
+			if response.get("Unsuccessful"):
+				error = response["Unsuccessful"][0].get("Error", {})
+				frappe.throw(f"Failed to delete VPC Flow Logs: {error.get('Message', error)}")
+		self.flow_log_id = None
+		self.vpc_flow_logs_enabled = 0
+		self.save()
+
+	@frappe.whitelist()
 	def create_proxy(self):
 		"""Creates a proxy server for the cluster"""
 		if self.get_same_region_vmis(get_series=True).count("n") < 1:

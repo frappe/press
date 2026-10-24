@@ -98,6 +98,12 @@ frappe.ui.form.on('Virtual Machine', {
 					frm.doc.series === 'nat',
 			],
 			[
+				__('Update Name Tag'),
+				'update_name_tag',
+				false,
+				frm.doc.cloud_provider === 'AWS EC2' && !!frm.doc.instance_id,
+			],
+			[
 				__('Disassociate Auto Assigned Public IP'),
 				'disassociate_auto_assigned_public_ip',
 				true,

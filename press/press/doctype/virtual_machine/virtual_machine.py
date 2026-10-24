@@ -762,10 +762,8 @@ class VirtualMachine(Document):
 			"DisableApiTermination": True,
 			"InstanceInitiatedShutdownBehavior": "stop",
 			"TagSpecifications": [
-				{
-					"ResourceType": "instance",
-					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"}],
-				},
+				{"ResourceType": resource_type, "Tags": [{"Key": "Name", "Value": self.get_name_tag()}]}
+				for resource_type in ("instance", "volume")
 			],
 			"UserData": self.get_cloud_init() if self.virtual_machine_image else "",
 		}
@@ -1620,13 +1618,17 @@ class VirtualMachine(Document):
 				):
 					server.create_dns_record()
 
-	def update_name_tag(self, name):
+	def get_name_tag(self) -> str:
+		server = self.get_server()
+		return f"Frappe Cloud - {server.name if server else self.name}"
+
+	@frappe.whitelist()
+	def update_name_tag(self):
 		if self.cloud_provider == "AWS EC2" and self.instance_id:
+			volume_ids = [volume.volume_id for volume in self.volumes if volume.volume_id]
 			self.client().create_tags(
-				Resources=[self.instance_id],
-				Tags=[
-					{"Key": "Name", "Value": name},
-				],
+				Resources=[self.instance_id, *volume_ids],
+				Tags=[{"Key": "Name", "Value": self.get_name_tag()}],
 			)
 
 	@frappe.whitelist()
@@ -3051,7 +3053,7 @@ class VirtualMachine(Document):
 			"TagSpecifications": [
 				{
 					"ResourceType": "volume",
-					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"}],
+					"Tags": [{"Key": "Name", "Value": self.get_name_tag()}],
 				},
 			],
 		}
@@ -3174,6 +3176,9 @@ class VirtualMachine(Document):
 				Device=device_name,
 				InstanceId=self.instance_id,
 				VolumeId=volume_id,
+			)
+			self.client().create_tags(
+				Resources=[volume_id], Tags=[{"Key": "Name", "Value": self.get_name_tag()}]
 			)
 
 		elif self.cloud_provider == "Hetzner":
@@ -3317,6 +3322,21 @@ def sync_virtual_machines():
 	VirtualMachine.bulk_sync_aws()
 	VirtualMachine.bulk_sync_oci()
 	VirtualMachine.bulk_sync_hetzner()
+
+
+def update_name_tags_of_aws_virtual_machines():
+	"""Run once from the console to tag the volumes created before volumes were tagged"""
+	machines = frappe.get_all(
+		"Virtual Machine",
+		{
+			"cloud_provider": "AWS EC2",
+			"status": ("not in", ("Terminated", "Draft")),
+			"instance_id": ("is", "set"),
+		},
+		pluck="name",
+	)
+	for machine in machines:
+		frappe.enqueue_doc("Virtual Machine", machine, "update_name_tag", queue="sync")
 
 
 def snapshot_oci_virtual_machines():
