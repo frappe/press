@@ -230,7 +230,7 @@
 				"parent": "Version 15",
 				"parentfield": "dependencies",
 				"parenttype": "Frappe Version",
-				"version": "18.16.0"
+				"version": "24.22.1"
 			},
 			{
 				"dependency": "PYTHON_VERSION",

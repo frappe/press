@@ -91,6 +91,10 @@
 			{
 				"supported_frappe_version": "Nightly",
 				"version": "24.22.1"
+			},
+			{
+				"supported_frappe_version": "Version 15",
+				"version": "24.22.1"
 			}
 		],
 		"title": "Node Version"
