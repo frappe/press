@@ -175,3 +175,4 @@ press.patches.v0_8_0.backfill_site_version_audits
 press.patches.v0_8_0.set_reference_on_press_notifications
 press.patches.v0_8_0.encrypt_telegram_bot_tokens
 press.patches.v0_8_0.encrypt_mailgun_api_key
+press.patches.v0_8_0.bump_v16_nightly_node_version_to_24_22_1
