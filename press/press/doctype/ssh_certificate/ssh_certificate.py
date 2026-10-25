@@ -131,8 +131,8 @@ class SSHCertificate(Document):
 		if self.certificate_type != "User" or not self.group:
 			return
 		title = escape_html(cstr(frappe.db.get_value("Release Group", self.group, "title")))
-		message = f"{self.user} got SSH access to the bench group {title} for {self.validity}."
-		notify_resource_access(self, "Release Group", self.group, f"SSH access to {title}", message)
+		message = f'{self.user} got SSH access to the bench group "{title}" for {self.validity}.'
+		notify_resource_access(self, "Release Group", self.group, f'SSH access to "{title}"', message)
 
 	def generate_certificate(self):
 		ca: "SSHCertificateAuthority" = frappe.get_doc(
