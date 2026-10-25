@@ -90,7 +90,9 @@ class TestSSHCertificate(FrappeTestCase):
 		self.assertEqual(notification.team, self.team.name)
 		self.assertEqual(notification.reference_doctype, "Release Group")
 		self.assertEqual(notification.reference_name, bench.group)
-		self.assertIn(f"{self.user} got SSH access", notification.message)
+		title = frappe.db.get_value("Release Group", bench.group, "title")
+		self.assertEqual(notification.title, f'SSH access to "{title}"')
+		self.assertIn(f'{self.user} got SSH access to the bench group "{title}"', notification.message)
 
 	def test_old_team_without_ssh_access_sees_not_enabled_message(self):
 		self.team.db_set("creation", add_to_date(None, days=-8))
