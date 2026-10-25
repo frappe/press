@@ -295,6 +295,22 @@
 			{
 				"supported_frappe_version": "Nightly",
 				"version": "25.2"
+			},
+			{
+				"supported_frappe_version": "Version 14",
+				"version": "26.2.2"
+			},
+			{
+				"supported_frappe_version": "Version 15",
+				"version": "26.2.2"
+			},
+			{
+				"supported_frappe_version": "Version 16",
+				"version": "26.2.2"
+			},
+			{
+				"supported_frappe_version": "Nightly",
+				"version": "26.2.2"
 			}
 		],
 		"title": "Pip Version"
