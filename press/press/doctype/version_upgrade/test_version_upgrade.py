@@ -6,10 +6,12 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
+	mock_image_size,
 )
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
@@ -137,3 +139,33 @@ class TestVersionUpgrade(FrappeTestCase):
 		self.assertEqual(updated_upgrade.status, "Cancelled")
 		# Verify start() was not called by checking that no site_update was created
 		self.assertIsNone(updated_upgrade.site_update)
+
+	@patch("press.press.doctype.deploy_candidate_build.deploy_candidate_build.frappe.db.commit", Mock())
+	@patch.object(Agent, "get", mock_image_size(3))
+	@patch.object(VersionUpgrade, "send_version_upgrade_failure_email")
+	def test_failed_build_of_destination_group_cancels_pending_version_upgrade(self, mock_email):
+		server = create_test_server()
+		app1 = create_test_app()  # frappe
+
+		group1 = create_test_release_group([app1])
+		group2 = create_test_release_group([app1])
+
+		source_bench = create_test_bench(group=group1, server=server.name)
+		create_test_bench(group=group2, server=server.name)
+
+		site = create_test_site(bench=source_bench.name)
+
+		group2.append("servers", {"server": server.name})
+		group2.save()
+
+		version_upgrade = create_test_version_upgrade(site.name, group2.name)
+		version_upgrade.db_set({"deploy_private_bench": 1, "status": "Pending"})
+
+		candidate = group2.create_deploy_candidate()
+		build = frappe.get_doc(
+			{"doctype": "Deploy Candidate Build", "deploy_candidate": candidate.name, "no_build": True}
+		).insert()
+		build.handle_build_failure()
+
+		self.assertEqual(frappe.db.get_value("Version Upgrade", version_upgrade.name, "status"), "Cancelled")
+		mock_email.assert_called_once_with(agent_job=None, bench_deploy_failure=True)

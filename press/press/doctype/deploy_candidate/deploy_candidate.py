@@ -636,6 +636,14 @@ class DeployCandidate(Document):
 		if site_group_deploy:
 			frappe.db.set_value("Site Group Deploy", site_group_deploy, "status", "Bench Deploy Failed")
 
+	def _cancel_version_upgrade_if_exists(self):
+		version_upgrade = frappe.db.get_value(
+			"Version Upgrade",
+			{"destination_group": self.group, "deploy_private_bench": 1, "status": "Pending"},
+		)
+		if version_upgrade:
+			frappe.get_doc("Version Upgrade", version_upgrade).cancel_for_failed_bench_deploy()
+
 
 def can_pull_update(file_paths: list[str]) -> bool:
 	"""
