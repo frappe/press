@@ -1,8 +1,9 @@
 import frappe
 from frappe.utils import update_progress_bar
+from packaging.version import Version
 
-# dependency: (versions to move, as a LIKE pattern; new version)
-# Node moves only within 24.x, so no group is downgraded or moved across a major.
+# dependency: (versions to move, as a LIKE pattern; new version). Only older versions move.
+# Node moves only within 24.x, so no group is moved across a major.
 # pip moves only from the old default, so a group pinned to 25.2 keeps its workaround.
 BUMPS = {
 	"NODE_VERSION": ("24.%", "24.22.1"),
@@ -34,10 +35,10 @@ def bump(groups: list[str], dependency: str, current: str, new: str):
 			["parent", "in", groups],
 			["dependency", "=", dependency],
 			["version", "like", current],
-			["version", "!=", new],
 		],
-		fields=["name", "parent"],
+		fields=["name", "parent", "version"],
 	)
+	rows = [row for row in rows if Version(row.version) < Version(new)]
 
 	now = frappe.utils.now_datetime()
 	for i, row in enumerate(rows):

@@ -68,3 +68,10 @@ class TestBumpV16NightlyNodeVersion(FrappeTestCase):
 
 		self.assertEqual(self.version("NODE_VERSION"), "26.0.0")
 		self.assertEqual(self.version("PIP_VERSION"), "25.2")
+
+	def test_patch_does_not_downgrade_newer_node_24_pin(self):
+		self.set_versions(NODE_VERSION="24.23.0")
+
+		execute()
+
+		self.assertEqual(self.version("NODE_VERSION"), "24.23.0")
