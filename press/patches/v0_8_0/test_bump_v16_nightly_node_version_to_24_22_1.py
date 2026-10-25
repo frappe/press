@@ -36,31 +36,35 @@ class TestBumpV16NightlyNodeVersion(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def node_version(self):
+	def version(self, dependency):
 		self.group.reload()
-		return find(self.group.dependencies, lambda d: d.dependency == "NODE_VERSION").version
+		return find(self.group.dependencies, lambda d: d.dependency == dependency).version
 
-	def set_node_version(self, version):
+	def set_versions(self, **versions):
 		dependencies = [{"key": d.dependency, "value": d.version} for d in self.group.dependencies]
-		find(dependencies, lambda d: d["key"] == "NODE_VERSION")["value"] = version
+		for dependency, version in versions.items():
+			find(dependencies, lambda d: d["key"] == dependency)["value"] = version
 		update_dependencies(self.group.name, json.dumps(dependencies))
 
-	def test_new_version_16_group_gets_node_24_22_1_from_frappe_version(self):
-		self.assertEqual(self.node_version(), "24.22.1")
+	def test_new_version_16_group_gets_node_24_22_1_and_pip_26_2_2_from_frappe_version(self):
+		self.assertEqual(self.version("NODE_VERSION"), "24.22.1")
+		self.assertEqual(self.version("PIP_VERSION"), "26.2.2")
 
-	def test_patch_bumps_older_node_24_group_to_24_22_1_and_shows_update_available(self):
-		self.set_node_version("24.12.0")
+	def test_patch_bumps_node_24_and_pip_25_3_group_and_shows_update_available(self):
+		self.set_versions(NODE_VERSION="24.12.0", PIP_VERSION="25.3")
 		create_test_bench(group=self.group)  # deploy, so the pending dependency update is consumed
 		self.assertFalse(deploy_information(self.group.name)["update_available"])
 
 		execute()
 
-		self.assertEqual(self.node_version(), "24.22.1")
+		self.assertEqual(self.version("NODE_VERSION"), "24.22.1")
+		self.assertEqual(self.version("PIP_VERSION"), "26.2.2")
 		self.assertTrue(deploy_information(self.group.name)["update_available"])
 
-	def test_patch_leaves_group_on_another_node_major_alone(self):
-		self.set_node_version("26.0.0")
+	def test_patch_leaves_group_on_another_node_major_and_pinned_pip_alone(self):
+		self.set_versions(NODE_VERSION="26.0.0", PIP_VERSION="25.2")
 
 		execute()
 
-		self.assertEqual(self.node_version(), "26.0.0")
+		self.assertEqual(self.version("NODE_VERSION"), "26.0.0")
+		self.assertEqual(self.version("PIP_VERSION"), "25.2")
