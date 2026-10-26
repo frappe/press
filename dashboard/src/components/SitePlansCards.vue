@@ -25,6 +25,11 @@ export default {
 		PlansCards,
 	},
 	computed: {
+		providerForPlans() {
+			return ['Generic', 'Scaleway'].includes(this.selectedProvider)
+				? 'AWS EC2'
+				: this.selectedProvider;
+		},
 		currentPlan: {
 			get() {
 				return this.modelValue;
@@ -34,84 +39,27 @@ export default {
 			},
 		},
 		plans() {
-			let plans = getPlans();
+			let plans = getPlans().filter(
+				(plan) => !!plan.dedicated_server_plan === !!this.isDedicatedServerSite,
+			);
 
-			if (this.isPrivateBenchSite) {
-				plans = plans.filter((plan) => plan.private_benches);
-			}
-			if (this.isDedicatedServerSite) {
-				plans = plans.filter(
-					(plan) =>
-						plan.dedicated_server_plan &&
-						(!plan.restrict_based_on_dedicated_server_plan ||
-							this.serverPlanPrice >= plan.minimum_server_price_usd),
-				);
-			} else {
-				plans = plans.filter((plan) => !plan.dedicated_server_plan);
-			}
-			if (this.selectedCluster) {
-				plans = plans.map((plan) => {
-					return {
-						...plan,
-						disabled:
-							plan.disabled ||
-							(plan.clusters.length == 0
-								? false
-								: !plan.clusters.includes(this.selectedCluster)),
-					};
-				});
-			}
-			if (this.selectedApps) {
-				plans = plans.map((plan) => {
-					return {
-						...plan,
-						disabled:
-							plan.disabled ||
-							(plan.allowed_apps.length == 0
-								? false
-								: !this.selectedApps.every((app) =>
-										plan.allowed_apps.includes(app.app),
-									)),
-					};
-				});
-			}
-			if (this.selectedVersion) {
-				plans = plans.map((plan) => {
-					return {
-						...plan,
-						disabled:
-							plan.disabled ||
-							(plan.bench_versions.length == 0
-								? false
-								: !plan.bench_versions.includes(this.selectedVersion)),
-					};
-				});
-			}
 			if (this.hideRestrictedPlans) {
 				plans = plans.filter((plan) => !plan.restricted_plan);
 			}
+			// Hide plans of other providers: each has its own price list
 			if (this.selectedProvider) {
-				const provider = ['Generic', 'Scaleway'].includes(this.selectedProvider)
-					? 'AWS EC2'
-					: this.selectedProvider;
-
-				plans = plans.map((plan) => {
-					return {
-						...plan,
-						disabled:
-							plan.disabled ||
-							(plan.cloud_providers && plan.cloud_providers.length > 0
-								? !plan.cloud_providers.includes(provider)
-								: false),
-					};
-				});
+				plans = plans.filter((plan) =>
+					this.allows(plan.cloud_providers, this.providerForPlans),
+				);
 			}
 
-			plans = plans.filter((plan) => !plan.disabled);
-
 			return plans.map((plan) => {
+				// Show a plan that does not fit as disabled with the reason, not hide it
+				const disabledReason = this.getDisabledReason(plan);
 				return {
 					...plan,
+					disabled: !!disabledReason,
+					disabledReason,
 					sublabel: plan.plan_description || null,
 					features: [
 						{
@@ -148,6 +96,9 @@ export default {
 							value: plan.offsite_backups ? 'Offsite Backups' : '',
 						},
 						{
+							value: plan.private_benches ? 'Private Bench & Custom Apps' : '',
+						},
+						{
 							value: plan.monitor_access ? 'Advanced Monitoring' : '',
 						},
 					].filter((feature) => feature.condition ?? true),
@@ -172,13 +123,51 @@ export default {
 		},
 	},
 	methods: {
+		getDisabledReason(plan) {
+			if (this.isPrivateBenchSite && !plan.private_benches) {
+				return 'Not available on a private bench';
+			}
+			if (
+				this.isDedicatedServerSite &&
+				plan.restrict_based_on_dedicated_server_plan &&
+				this.serverPlanPrice < plan.minimum_server_price_usd
+			) {
+				return `Needs a server plan of $${plan.minimum_server_price_usd}/mo or more`;
+			}
+			if (
+				this.selectedCluster &&
+				!this.allows(plan.clusters, this.selectedCluster)
+			) {
+				return 'Not available in this region';
+			}
+			if (
+				this.selectedApps &&
+				!this.selectedApps.every((app) =>
+					this.allows(plan.allowed_apps, app.app),
+				)
+			) {
+				return 'Not available for the selected apps';
+			}
+			if (
+				this.selectedVersion &&
+				!this.allows(plan.bench_versions, this.selectedVersion)
+			) {
+				return 'Not available for this version';
+			}
+			return null;
+		},
+		// An empty list means that the plan has no restriction
+		allows(allowedValues, value) {
+			return !allowedValues?.length || allowedValues.includes(value);
+		},
 		// Currently best plan is determined based on warranty and CPU time only (may change later)
 		getBestDedicatedSitePlan() {
-			let filteredPlans = this.plans;
+			let filteredPlans = this.plans.filter((plan) => !plan.disabled);
 
 			if (this.serverSupportQuotaAvailable) {
 				filteredPlans = filteredPlans.filter((plan) => plan.support_included);
 			}
+			if (!filteredPlans.length) return null;
 
 			const bestPlan = filteredPlans.reduce((best, curr) => {
 				return parseFloat(curr.cpu_time_per_day) >

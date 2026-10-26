@@ -12,6 +12,7 @@
 				placement="top"
 			>
 				<button
+					:disabled="plan?.disabled"
 					class="flex flex-col overflow-hidden rounded-md border text-left hover:bg-surface-gray-1"
 					:class="[
 						modelValue?.name === plan?.name
@@ -57,7 +58,10 @@
 							</div>
 						</div>
 						<div class="mt-1 text-sm text-ink-gray-6" v-if="!hourlyPricing">
-							<template v-if="plan.sublabel">
+							<template v-if="plan.disabled && plan.disabledReason">
+								{{ plan.disabledReason }}
+							</template>
+							<template v-else-if="plan.sublabel">
 								{{ plan.sublabel }}
 							</template>
 							<template v-else-if="plan.price_inr || plan.price_usd">
