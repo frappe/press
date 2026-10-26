@@ -130,7 +130,8 @@ export default {
 			if (
 				this.isDedicatedServerSite &&
 				plan.restrict_based_on_dedicated_server_plan &&
-				this.serverPlanPrice < plan.minimum_server_price_usd
+				// An unknown server price does not meet the minimum
+				!(this.serverPlanPrice >= plan.minimum_server_price_usd)
 			) {
 				return `Needs a server plan of $${plan.minimum_server_price_usd}/mo or more`;
 			}
