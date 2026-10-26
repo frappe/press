@@ -9,7 +9,7 @@ import re
 import socket
 import ssl
 import time
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, TypedDict, TypeVar, overload
@@ -336,17 +336,25 @@ def get_last_doc(*args, **kwargs):
 		return None
 
 
+def now() -> datetime:
+	"""Timezone-aware current UTC time.
+
+	Replaces `datetime.utcnow()`, which is removed in Python 3.15.
+	"""
+	return datetime.now(UTC)
+
+
 def cache(seconds: int, maxsize: int = 128, typed: bool = False):
 	def wrapper_cache(func):
 		func = functools.lru_cache(maxsize=maxsize, typed=typed)(func)
 		func.delta = timedelta(seconds=seconds)
-		func.expiration = datetime.utcnow() + func.delta
+		func.expiration = now() + func.delta
 
 		@functools.wraps(func)
 		def wrapped_func(*args, **kwargs):
-			if datetime.utcnow() >= func.expiration:
+			if now() >= func.expiration:
 				func.cache_clear()
-				func.expiration = datetime.utcnow() + func.delta
+				func.expiration = now() + func.delta
 
 			return func(*args, **kwargs)
 

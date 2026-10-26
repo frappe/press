@@ -722,7 +722,7 @@ def candidate(name: str) -> dict | None:
 
 	candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", name)
 	jobs = []
-	deploys = frappe.get_all("Deploy", {"candidate": name}, limit=1)
+	deploys = frappe.get_all("Deploy", {"candidate": name}, limit=1, order_by="creation desc")
 	if deploys:
 		deploy = frappe.get_doc("Deploy", deploys[0].name)
 		for bench in deploy.benches:
@@ -733,6 +733,7 @@ def candidate(name: str) -> dict | None:
 				["name", "status", "end", "duration", "bench"],
 				{"bench": bench.bench, "job_type": "New Bench"},
 				limit=1,
+				order_by="creation desc",
 			) or [{}]
 			jobs.append(job[0])
 

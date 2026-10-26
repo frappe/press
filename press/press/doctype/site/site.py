@@ -410,13 +410,13 @@ class Site(Document, TagHelpers):
 		doc.group_team = group.team
 		doc.group_public = group.public or group.central_bench
 		doc.latest_frappe_version = frappe.db.get_value(
-			"Frappe Version", {"status": "Stable", "public": True}, order_by="name desc"
+			"Frappe Version", {"status": "Stable", "public": True}, order_by="number desc"
 		)
 		doc.eol_versions = frappe.db.get_all(
 			"Frappe Version",
 			filters={"status": "End of Life"},
 			fields=["name"],
-			order_by="name desc",
+			order_by="number desc",
 			pluck="name",
 		)
 		doc.frappe_updated_on = get_frappe_release_timestamp(self.bench)

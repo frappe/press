@@ -136,7 +136,7 @@ class DeployCandidate(Document):
 			return f"{float(rounded(duration.total_seconds(), 2))}s"
 
 		doc.jobs = []
-		deploys = frappe.get_all("Deploy", {"candidate": self.name}, limit=1)
+		deploys = frappe.get_all("Deploy", {"candidate": self.name}, limit=1, order_by="creation desc")
 		if deploys:
 			deploy = frappe.get_doc("Deploy", deploys[0].name)
 			for bench in deploy.benches:
@@ -147,6 +147,7 @@ class DeployCandidate(Document):
 					["name", "status", "end", "duration", "bench"],
 					{"bench": bench.bench, "job_type": "New Bench"},
 					limit=1,
+					order_by="creation desc",
 				) or [{}]
 				doc.jobs.append(
 					{
@@ -517,7 +518,9 @@ class DeployCandidate(Document):
 		"""
 
 		# Deployed Benches from current DC with (potentially) cached layers
-		benches = frappe.get_all("Bench", filters={"group": self.group, "status": "Active"}, limit=1)
+		benches = frappe.get_all(
+			"Bench", filters={"group": self.group, "status": "Active"}, limit=1, order_by="creation desc"
+		)
 		if not benches:
 			return {}
 

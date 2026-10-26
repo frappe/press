@@ -10,12 +10,16 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Tuple, TypedDict
 
+# Keyword arguments, not the older functional form: `TypedDict` rejects
+# `cwd=str` and raises TypeError at import time.
 CommandOutput = TypedDict(
 	"CommandOutput",
-	cwd=str,
-	image_tag=str,
-	returncode=int,
-	output=str,
+	{
+		"cwd": str,
+		"image_tag": str,
+		"returncode": int,
+		"output": str,
+	},
 )
 
 

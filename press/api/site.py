@@ -1804,7 +1804,7 @@ def get(name):
 		"team": site.team,
 		"group_public": rg_info.public,
 		"latest_frappe_version": frappe.db.get_value(
-			"Frappe Version", {"status": "Stable", "public": True}, order_by="name desc"
+			"Frappe Version", {"status": "Stable", "public": True}, order_by="number desc"
 		),
 		"frappe_version": frappe_version,
 		"server": site.server,
