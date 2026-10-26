@@ -56,6 +56,7 @@ from press.utils import (
 	get_frappe_backups,
 	get_last_doc,
 	log_error,
+	ssrf,
 	unique,
 )
 from press.utils.dns import check_dns_cname_a
@@ -2527,8 +2528,9 @@ def uploaded_backup_info(file=None, path=None, type=None, size=None, url=None):
 def get_backup_links(url, email, password):
 	try:
 		files = get_frappe_backups(url, email, password)
-	except requests.RequestException as e:
-		frappe.throw(f"Could not fetch backups from {url}. Error: {e}")  # nosemgrep
+	except (requests.RequestException, ssrf.SSRFError):
+		log_error("Backups Retrieval Error - Magic Migration", url=url)
+		frappe.throw("Could not fetch backups from the site. Please check the site URL and try again.")
 	remote_files = []
 	for file_type, file_url in files.items():
 		file_name = file_url.split("backups/")[1].split("?sid=")[0]
