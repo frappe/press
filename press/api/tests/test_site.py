@@ -899,6 +899,41 @@ erpnext 0.8.3	    HEAD
 
 		self.assertEqual(frappe.db.get_value("Remote File", name, "file_path"), file_path)
 
+	def test_uploaded_backup_info_rejects_url_that_fails_the_url_check(self):
+		from press.api.site import uploaded_backup_info
+		from press.utils.test_ssrf import resolve_to
+
+		frappe.set_user(self.team.user)
+		with (
+			patch("press.utils.ssrf.socket.getaddrinfo", return_value=resolve_to("10.0.0.5")),
+			self.assertRaisesRegex(frappe.ValidationError, "private or internal"),
+		):
+			uploaded_backup_info(
+				file="config.json", url="http://files.example.com/config.json", type="config"
+			)
+
+	def test_get_backup_links_shows_a_generic_message_when_the_fetch_fails(self):
+		"""The full error goes to the log."""
+		from press.api.site import get_backup_links
+		from press.utils.test_ssrf import resolve_to
+
+		frappe.set_user(self.team.user)
+		with (
+			patch("press.utils.ssrf.socket.getaddrinfo", return_value=resolve_to("127.0.0.1")),
+			patch("requests.adapters.HTTPAdapter.send") as send,
+			# log_error re-raises in tests
+			patch("press.api.site.log_error") as log_error,
+			self.assertRaises(frappe.ValidationError) as context,
+		):
+			get_backup_links("http://site.example.com", "user@example.com", "password")
+
+		send.assert_not_called()
+		log_error.assert_called_once()
+		self.assertEqual(
+			str(context.exception),
+			"Could not fetch backups from the site. Please check the site URL and try again.",
+		)
+
 	def test_new_site_rejects_backup_of_another_team_for_dashboard_user(self):
 		from press.api.site import validate_files_for_new_site
 

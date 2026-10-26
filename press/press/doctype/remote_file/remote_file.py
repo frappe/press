@@ -8,7 +8,6 @@ import pprint
 from typing import TYPE_CHECKING
 
 import frappe
-import requests
 from boto3 import client, resource
 from frappe import _
 from frappe.model.document import Document
@@ -17,6 +16,7 @@ from frappe.utils.password import get_decrypted_password
 
 from press.access.utils import is_outside_employee, refuse_backup_download
 from press.press.doctype.site_activity.site_activity import log_site_activity
+from press.utils import ssrf
 
 if TYPE_CHECKING:
 	from collections.abc import Iterable
@@ -224,6 +224,17 @@ class RemoteFile(Document):
 
 	def validate(self):
 		self.validate_upload_prefix()
+		self.validate_url()
+
+	def validate_url(self):
+		"""The URL comes from the client, and Press and the agent fetch it later."""
+		if not self.url or not self.has_value_changed("url"):
+			return
+
+		try:
+			ssrf.validate(self.url)
+		except ssrf.SSRFError as e:
+			frappe.throw(str(e), frappe.ValidationError)
 
 	def validate_upload_prefix(self):
 		"""An uploaded file must sit under its team's prefix.
@@ -299,9 +310,11 @@ class RemoteFile(Document):
 		self.db_set("status", "Available")
 
 		if self.url:
-			success = str(requests.head(self.url).status_code).startswith("2")
-			if success:
-				return True
+			try:
+				if str(ssrf.head(self.url).status_code).startswith("2"):
+					return True
+			except ssrf.SSRFError:
+				pass
 			self.db_set("status", "Unavailable")
 			return False
 		try:
@@ -374,7 +387,7 @@ class RemoteFile(Document):
 
 	def get_content(self):
 		if self.url:
-			return json.loads(requests.get(self.url).content)
+			return json.loads(ssrf.get(self.url).content)
 
 		obj = self.s3_client.get_object(Bucket=self.bucket, Key=self.file_path)
 		return json.loads(obj["Body"].read().decode("utf-8"))
@@ -390,7 +403,7 @@ class RemoteFile(Document):
 			return int(self.file_size or 0)
 
 		assert self.url, "URL must be set to get file size"
-		response = requests.head(self.url)
+		response = ssrf.head(self.url)
 		self.file_size = int(response.headers.get("content-length", 0))
 		self.save()
 		return int(self.file_size)

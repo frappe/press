@@ -30,6 +30,7 @@ from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import redis_cache, site_cache
 
 from press.guards import mfa
+from press.utils import ssrf
 from press.utils.email_validator import validate_email
 
 if TYPE_CHECKING:
@@ -419,24 +420,21 @@ class RemoteFrappeSite:
 
 	def _validate_frappe_site(self):
 		"""Validates if Frappe Site and sets RemoteBackupRetrieval.site"""
-		res = requests.get(f"{self.user_site}/api/method/frappe.ping", timeout=(5, 10))
+		res = ssrf.get(f"{self.user_site}/api/method/frappe.ping")
 
-		if not res.ok:
+		if not res.ok or res.json().get("message") != "pong":
 			frappe.throw(
 				"The Frappe site is invalid or unreachable. Please check the site URL and try again."
 			)
 
-		if res.json().get("message") == "pong":
-			# Get final redirect URL
-			url = res.url.split("/api/method")[0]
-			self._site = url
+		# Get final redirect URL
+		self._site = res.url.split("/api/method")[0]
 
 	def _validate_user_permissions(self):
 		"""Validates user permssions on Frappe Site and sets RemoteBackupRetrieval.user_sid"""
-		response = requests.post(
+		response = ssrf.post(
 			f"{self.site}/api/method/login",
 			data={"usr": self.user_login, "pwd": self.password_login},
-			timeout=(5, 10),
 		)
 		if not response.ok:
 			if response.status_code == 401:
@@ -458,10 +456,7 @@ class RemoteFrappeSite:
 			error_msg = "Insufficient Permissions"
 		else:
 			side = "Client" if 400 <= response.status_code < 500 else "Server"
-			error_msg = (
-				f"{side} Error occurred: {response.status_code} {response.raw.reason}"
-				f" received from {self.site}"
-			)
+			error_msg = f"{side} Error occurred while fetching backups from the site."
 		frappe.throw(error_msg)
 
 	def get_backups(self):
@@ -474,10 +469,9 @@ class RemoteFrappeSite:
 	def _create_fetch_backups_request(self):
 		headers = {"Accept": "application/json", "Content-Type": "application/json"}
 		suffix = f"?sid={self.user_sid}" if self.user_sid else ""
-		res = requests.get(
+		res = ssrf.get(
 			f"{self.site}/api/method/frappe.utils.backups.fetch_latest_backups{suffix}",
 			headers=headers,
-			timeout=(5, 10),
 		)
 		if not res.ok:
 			self._handle_backups_retrieval_failure(res)
