@@ -13,6 +13,7 @@ from frappe import _
 from frappe.core.doctype.user.user import update_password
 from frappe.core.utils import find
 from frappe.exceptions import DoesNotExistError
+from frappe.query_builder.custom import ConstantColumn
 from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, get_url
 from frappe.utils.data import sha256_hash
@@ -1172,28 +1173,29 @@ def me():
 @frappe.whitelist()
 def fuse_list():
 	team = get_current_team(get_doc=True)
-	query = f"""
-		SELECT
-			'Site' as doctype, name as title, name as route
-		FROM
-			`tabSite`
-		WHERE
-			team = '{team.name}' AND status NOT IN ('Archived')
-		UNION ALL
-		SELECT 'Bench' as doctype, title as title, name as route
-		FROM
-			`tabRelease Group`
-		WHERE
-			team = '{team.name}' AND enabled = 1
-		UNION ALL
-		SELECT 'Server' as doctype, name as title, name as route
-		FROM
-			`tabServer`
-		WHERE
-			team = '{team.name}' AND status = 'Active'
-	"""
-
-	return frappe.db.sql(query, as_dict=True)
+	Site = frappe.qb.DocType("Site")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	Server = frappe.qb.DocType("Server")
+	sites = (
+		frappe.qb.from_(Site)
+		.select(ConstantColumn("Site").as_("doctype"), Site.name.as_("title"), Site.name.as_("route"))
+		.where((Site.team == team.name) & (Site.status != "Archived"))
+	)
+	benches = (
+		frappe.qb.from_(ReleaseGroup)
+		.select(
+			ConstantColumn("Bench").as_("doctype"),
+			ReleaseGroup.title.as_("title"),
+			ReleaseGroup.name.as_("route"),
+		)
+		.where((ReleaseGroup.team == team.name) & (ReleaseGroup.enabled == 1))
+	)
+	servers = (
+		frappe.qb.from_(Server)
+		.select(ConstantColumn("Server").as_("doctype"), Server.name.as_("title"), Server.name.as_("route"))
+		.where((Server.team == team.name) & (Server.status == "Active"))
+	)
+	return sites.union_all(benches).union_all(servers).run(as_dict=True)
 
 
 @frappe.whitelist()

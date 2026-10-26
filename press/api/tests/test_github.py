@@ -311,50 +311,66 @@ class TestGitHubAuthorization(FrappeTestCase):
 			return
 
 		now = frappe.utils.now()
-		frappe.db.sql(
-			"""
-			INSERT INTO `tabTeam Member`
-				(name, creation, modified, modified_by, owner, docstatus, idx, parent, parentfield, parenttype, user)
-			VALUES
-				(%s, %s, %s, %s, %s, 0, 1, %s, %s, %s, %s)
-			""",
-			(
-				frappe.generate_hash(length=10),
-				now,
-				now,
-				"Administrator",
-				"Administrator",
-				team.name,
-				"team_members",
-				"Team",
-				user,
-			),
-		)
+		TeamMember = frappe.qb.DocType("Team Member")
+		frappe.qb.into(TeamMember).columns(
+			"name",
+			"creation",
+			"modified",
+			"modified_by",
+			"owner",
+			"docstatus",
+			"idx",
+			"parent",
+			"parentfield",
+			"parenttype",
+			"user",
+		).insert(
+			frappe.generate_hash(length=10),
+			now,
+			now,
+			"Administrator",
+			"Administrator",
+			0,
+			1,
+			team.name,
+			"team_members",
+			"Team",
+			user,
+		).run()
 
 	def _create_test_team(self):
 		user = frappe.mock("email")
 		create_test_user(user)
 		now = frappe.utils.now()
 		team = frappe._dict(name=frappe.generate_hash(length=10), user=user)
-		frappe.db.sql(
-			"""
-			INSERT INTO `tabTeam`
-				(name, creation, modified, modified_by, owner, docstatus, idx, enabled, user, country, currency, billing_name)
-			VALUES
-				(%s, %s, %s, %s, %s, 0, 0, 1, %s, %s, %s, %s)
-			""",
-			(
-				team.name,
-				now,
-				now,
-				"Administrator",
-				"Administrator",
-				team.user,
-				"India",
-				"INR",
-				team.user,
-			),
-		)
+		Team = frappe.qb.DocType("Team")
+		frappe.qb.into(Team).columns(
+			"name",
+			"creation",
+			"modified",
+			"modified_by",
+			"owner",
+			"docstatus",
+			"idx",
+			"enabled",
+			"user",
+			"country",
+			"currency",
+			"billing_name",
+		).insert(
+			team.name,
+			now,
+			now,
+			"Administrator",
+			"Administrator",
+			0,
+			0,
+			1,
+			team.user,
+			"India",
+			"INR",
+			team.user,
+		).run()
 		return team
 
 	def _get_context(self):

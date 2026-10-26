@@ -1,0 +1,208 @@
+{
+	"actions": [],
+	"creation": "2026-10-22 12:00:00.000000",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"audit_date",
+		"column_break_audit",
+		"window_end",
+		"day_window_hours",
+		"section_break_jobs",
+		"success_rate",
+		"column_break_jobs",
+		"successful_jobs",
+		"failed_jobs",
+		"section_break_sites",
+		"sites_with_frequent_failures_count",
+		"column_break_sites_2",
+		"sites_without_success_in_day_count",
+		"column_break_sites",
+		"sites_without_success_in_3_days_count",
+		"section_break_servers",
+		"servers_without_snapshot_in_day_count",
+		"section_break_sites_with_frequent_failures",
+		"sites_with_frequent_failures",
+		"section_break_sites_without_success_in_day",
+		"sites_without_success_in_day",
+		"section_break_sites_without_success_in_3_days",
+		"sites_without_success_in_3_days",
+		"section_break_servers_without_snapshot_in_day",
+		"servers_without_snapshot_in_day"
+	],
+	"fields": [
+		{
+			"fieldname": "audit_date",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"label": "Audit Date",
+			"read_only": 1,
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "column_break_audit",
+			"fieldtype": "Column Break"
+		},
+		{
+			"description": "Every window in this audit ends at this time. Refresh re-checks the sites and servers already listed, for the same windows.",
+			"fieldname": "window_end",
+			"fieldtype": "Datetime",
+			"label": "Window End",
+			"read_only": 1
+		},
+		{
+			"description": "Length of the day window: the backup interval, at least 24h, plus 6h, when the audit was made.",
+			"fieldname": "day_window_hours",
+			"fieldtype": "Int",
+			"label": "Day Window (Hours)",
+			"read_only": 1
+		},
+		{
+			"description": "Backup Site agent jobs created in the last 24h that have finished. Delivery failures count as failed.",
+			"fieldname": "section_break_jobs",
+			"fieldtype": "Section Break",
+			"label": "Backup Agent Jobs"
+		},
+		{
+			"fieldname": "success_rate",
+			"fieldtype": "Percent",
+			"in_list_view": 1,
+			"label": "Success Rate",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_jobs",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "successful_jobs",
+			"fieldtype": "Int",
+			"label": "Successful Jobs",
+			"read_only": 1
+		},
+		{
+			"fieldname": "failed_jobs",
+			"fieldtype": "Int",
+			"label": "Failed Jobs",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_sites",
+			"fieldtype": "Section Break",
+			"label": "Sites"
+		},
+		{
+			"fieldname": "sites_with_frequent_failures_count",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Frequent Backup Failures in 24h",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_sites_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "sites_without_success_in_day_count",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "No Successful Backup in a Day",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_sites",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "sites_without_success_in_3_days_count",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "No Successful Backup in 3 Days",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_servers",
+			"fieldtype": "Section Break",
+			"label": "Servers"
+		},
+		{
+			"fieldname": "servers_without_snapshot_in_day_count",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Servers Without a Snapshot in 24h",
+			"read_only": 1
+		},
+		{
+			"description": "Sites with 3 or more failed backups (logical or physical) in the last 24h. A later backup may have succeeded, so check Last Successful Backup. These are listed only to be noted.",
+			"fieldname": "section_break_sites_with_frequent_failures",
+			"fieldtype": "Section Break",
+			"label": "Sites With Frequently Failing Backups in 24h"
+		},
+		{
+			"fieldname": "sites_with_frequent_failures",
+			"fieldtype": "Table",
+			"options": "Backup Daily Audit Site",
+			"read_only": 1
+		},
+		{
+			"description": "Sites due a scheduled backup with no successful logical or physical backup within the backup interval from Press Settings plus 6h (30h for a 24h interval). Sites back up once per interval, so the extra 6h allows for queue time. Pending, running and failed backups don't count.",
+			"fieldname": "section_break_sites_without_success_in_day",
+			"fieldtype": "Section Break",
+			"label": "Sites Without a Successful Backup in a Day"
+		},
+		{
+			"fieldname": "sites_without_success_in_day",
+			"fieldtype": "Table",
+			"options": "Backup Daily Audit Site",
+			"read_only": 1
+		},
+		{
+			"description": "Sites due a scheduled backup with no successful logical or physical backup in the last 3 days. Pending, running and failed backups don't count.",
+			"fieldname": "section_break_sites_without_success_in_3_days",
+			"fieldtype": "Section Break",
+			"label": "Sites Without a Successful Backup in 3 Days"
+		},
+		{
+			"fieldname": "sites_without_success_in_3_days",
+			"fieldtype": "Table",
+			"options": "Backup Daily Audit Site",
+			"read_only": 1
+		},
+		{
+			"description": "Running virtual machines with no completed daily snapshot in the last 24h. Excludes machines that are not running, were created in the last 24h, skip automated snapshots, or are on Frappe Compute or DigitalOcean (their snapshots aren't recorded on press). Rolling and physical backup snapshots don't count. One completed disk snapshot per machine is enough, even if it has more disks.",
+			"fieldname": "section_break_servers_without_snapshot_in_day",
+			"fieldtype": "Section Break",
+			"label": "Servers Without a Snapshot in 24h"
+		},
+		{
+			"fieldname": "servers_without_snapshot_in_day",
+			"fieldtype": "Table",
+			"options": "Backup Daily Audit Server",
+			"read_only": 1
+		}
+	],
+	"in_create": 1,
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-10-23 19:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Backup Daily Audit",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"delete": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "audit_date",
+	"sort_order": "DESC",
+	"states": []
+}

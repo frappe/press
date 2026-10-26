@@ -237,3 +237,107 @@ class TestRemoteFile(FrappeTestCase):
 			backup.remote_config_file,
 		):
 			self.assertEqual(frappe.db.get_value("Remote File", remote_file, "team"), team.name)
+
+
+@patch.object(frappe.db, "commit", new=Mock())
+@patch("press.press.doctype.press_notification.press_notification.frappe.sendmail", new=Mock())
+class TestBackupDownload(FrappeTestCase):
+	"""Employees cannot download the backups of customers, and every download is reported."""
+
+	def setUp(self):
+		from press.access.test_employee_consent import create_test_employee
+		from press.press.doctype.site.test_site import create_test_site
+		from press.press.doctype.team.test_team import create_test_press_admin_team
+
+		super().setUp()
+		self.site = create_test_site(team=create_test_press_admin_team().name)
+		self.employee = create_test_employee()
+		self.backup = create_test_remote_file(site=self.site.name, file_path="backups/database.sql.gz")
+		self.backup.db_set("url", "https://example.com/database.sql.gz")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def backup_accesses(self) -> int:
+		return frappe.db.count("Site Activity", {"site": self.site.name, "action": "Access Offsite Backups"})
+
+	def test_employee_outside_site_team_cannot_get_backup_download_link(self):
+		frappe.set_user(self.employee.user)
+		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot download the backups"):
+			RemoteFile("Remote File", self.backup.name).get_download_link()
+		self.assertEqual(self.backup_accesses(), 0)
+
+	def test_system_manager_outside_site_team_can_get_backup_download_link(self):
+		from press.access.test_employee_consent import create_test_employee
+
+		frappe.set_user(create_test_employee("System Manager").user)
+		link = RemoteFile("Remote File", self.backup.name).get_download_link()
+		self.assertEqual(link, "https://example.com/database.sql.gz")
+		self.assertEqual(self.backup_accesses(), 1)
+
+	def test_employee_in_site_team_can_get_backup_download_link(self):
+		team = frappe.get_doc("Team", self.site.team)
+		team.append("team_members", {"user": self.employee.user})
+		team.save()
+		frappe.set_user(self.employee.user)
+		link = RemoteFile("Remote File", self.backup.name).get_download_link()
+		self.assertEqual(link, "https://example.com/database.sql.gz")
+
+	def test_restore_still_reads_backup_link_for_employee_outside_site_team(self):
+		frappe.set_user(self.employee.user)
+		self.assertEqual(
+			RemoteFile("Remote File", self.backup.name).download_link, "https://example.com/database.sql.gz"
+		)
+
+	def test_backup_download_link_notifies_site_team(self):
+		frappe.set_user(frappe.db.get_value("Team", self.site.team, "user"))
+		RemoteFile("Remote File", self.backup.name).get_download_link()
+		frappe.set_user("Administrator")
+		notification = frappe.get_last_doc("Press Notification", {"type": "Resource Access"})
+		self.assertEqual(notification.team, self.site.team)
+		self.assertEqual(notification.reference_name, self.site.name)
+		self.assertEqual(notification.title, f"Backup of {self.site.name} accessed")
+
+	def test_employee_outside_team_cannot_get_download_link_of_a_customer_upload(self):
+		frappe.db.set_single_value("Press Settings", "remote_uploads_bucket", UPLOADS_BUCKET)
+		upload = frappe.get_doc(
+			{
+				"doctype": "Remote File",
+				"team": self.site.team,
+				"bucket": UPLOADS_BUCKET,
+				"file_path": f"{get_team_prefix(self.site.team)}/1_2/database.sql.gz",
+				"url": "https://example.com/database.sql.gz",
+			}
+		).insert()
+		frappe.set_user(self.employee.user)
+		with self.assertRaisesRegex(frappe.PermissionError, "Employees cannot download the backups"):
+			RemoteFile("Remote File", upload.name).get_download_link()
+
+	def test_employee_can_get_download_link_of_a_binlog_that_is_no_site_backup(self):
+		binlog = create_test_remote_file(file_path="binlogs/mysql-bin.000001.gz", bucket="binlogs")
+		binlog.db_set("url", "https://example.com/mysql-bin.000001.gz")
+		frappe.set_user(self.employee.user)
+		link = RemoteFile("Remote File", binlog.name).get_download_link()
+		self.assertEqual(link, "https://example.com/mysql-bin.000001.gz")
+
+	def test_employee_can_get_audit_log_download_link_of_a_database_server(self):
+		from press.press.doctype.database_server.database_server import DatabaseServer
+		from press.press.doctype.database_server.test_database_server import create_test_database_server
+		from press.press.doctype.mariadb_audit_log.mariadb_audit_log import create_audit_log
+
+		server = create_test_database_server()
+		now = frappe.utils.now_datetime()
+		data = {
+			"path": "audit/server_audit.log.gz",
+			"size": 1024,
+			"uncompressed_size": 4096,
+			"start_timestamp": now,
+			"end_timestamp": now,
+		}
+		create_audit_log(server.name, "audit-logs", "server_audit.log", data)
+		audit_log = frappe.get_last_doc("MariaDB Audit Log", {"database_server": server.name})
+		frappe.db.set_value("Remote File", audit_log.remote_file, "url", "https://example.com/audit.log.gz")
+		frappe.set_user(self.employee.user)
+		link = DatabaseServer("Database Server", server.name).get_audit_log_download_link(audit_log.name)
+		self.assertEqual(link, "https://example.com/audit.log.gz")

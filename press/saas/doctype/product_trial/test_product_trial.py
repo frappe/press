@@ -4,11 +4,13 @@
 import typing
 
 import frappe
+from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.app.app import App
 
+from press.press.doctype.account_request.test_account_request import create_test_account_request
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
@@ -102,3 +104,40 @@ class TestProductTrial(FrappeTestCase):
 		self._create_standby_site(product, old_bench)
 
 		self.assertIsNone(product.get_standby_site())
+
+	def _hybrid_pool(self, app_name, app_title):
+		"""A product with a Mexico rule, an older hybrid standby site and a newer plain one."""
+		app = create_test_app(app_name, app_title)
+		product = create_test_product_trial(app)
+		product.append("hybrid_pool_rules", {"field": "country", "value": "Mexico", "app": app.name})
+		_old_bench, bench = self._two_benches_on_same_server(product)
+
+		hybrid_site = create_test_site(
+			bench=bench.name,
+			standby_for_product=product.name,
+			is_standby=1,
+			hybrid_for=app.name,
+			creation=frappe.utils.add_to_date(None, hours=-2),
+		)
+		plain_site = self._create_standby_site(product, bench)
+		return product, hybrid_site, plain_site
+
+	def _account_request(self, country):
+		account_request = create_test_account_request(make_autoname("test-ar-.#####"))
+		frappe.db.set_value("Account Request", account_request.name, "country", country)
+		return account_request.name
+
+	def test_signup_without_matching_rule_gets_plain_standby_site(self):
+		product, hybrid_site, plain_site = self._hybrid_pool("test_hybrid_plain", "Test Hybrid Plain")
+
+		chosen = product.get_standby_site(account_request=self._account_request("Puerto Rico"))
+
+		self.assertEqual(chosen, plain_site.name)
+		self.assertNotEqual(chosen, hybrid_site.name)
+
+	def test_signup_matching_rule_gets_hybrid_standby_site(self):
+		product, hybrid_site, _plain_site = self._hybrid_pool("test_hybrid_match", "Test Hybrid Match")
+
+		chosen = product.get_standby_site(account_request=self._account_request("Mexico"))
+
+		self.assertEqual(chosen, hybrid_site.name)

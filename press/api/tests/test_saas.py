@@ -53,3 +53,23 @@ class TestAPISaas(FrappeTestCase):
 
 		with self.assertRaises(frappe.ValidationError):
 			self.get_url(self.account_request.request_key, domain_side_effect=spend_key_concurrently)
+
+	def get_team_user_url(self):
+		self.site.db_set("additional_system_user_created", 1)
+		frappe.set_user("Guest")
+		with (
+			patch("press.api.saas.get_erpnext_domain", return_value=self.site.domain),
+			patch.object(Site, "get_login_sid", return_value="x"),
+		):
+			return get_site_url_and_sid(self.account_request.request_key)
+
+	def test_setup_key_logs_guest_in_as_team_user_without_consent_check_or_notification(self):
+		url = self.get_team_user_url()
+		self.assertEqual(url, f"https://{self.site.host_name or self.site.name}/app?sid=x")
+		notification = {"team": self.site.team, "type": "Resource Access", "reference_name": self.site.name}
+		self.assertFalse(frappe.db.exists("Press Notification", notification))
+
+	def test_setup_key_refuses_team_user_login_to_inactive_site(self):
+		self.site.db_set("status", "Suspended")
+		with self.assertRaisesRegex(frappe.ValidationError, "Site is in .*suspended.* state"):
+			self.get_team_user_url()

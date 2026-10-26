@@ -238,13 +238,6 @@ frappe.ui.form.on('Server', {
 			[__('Create Image'), 'create_image', true, frm.doc.status == 'Active'],
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
 			[
-				__('Whitelist Server'),
-				'whitelist_ipaddress',
-				false,
-				frm.doc.is_server_setup,
-				__('Network'),
-			],
-			[
 				__('Agent Setup Proxy IP'),
 				'agent_set_proxy_ip',
 				false,
@@ -352,6 +345,20 @@ frappe.ui.form.on('Server', {
 				'uninstall_wazuh_agent',
 				true,
 				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
+				__('Setup'),
+			],
+			[
+				__('Setup Fail2ban'),
+				'setup_fail2ban',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Remove Fail2ban'),
+				'remove_fail2ban',
+				true,
+				frm.doc.is_server_setup,
 				__('Setup'),
 			],
 			[

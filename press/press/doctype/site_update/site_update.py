@@ -913,22 +913,25 @@ def update_status(name: str, status: str):
 @site_cache(ttl=60)
 def benches_with_available_update(site=None, server=None):
 	site_bench = frappe.db.get_value("Site", site, "bench") if site else None
-	values = {}
-	if site:
-		values["site_bench"] = site_bench
-	if server:
-		values["server"] = server
-	source_benches_info = frappe.db.sql(
-		f"""
-		SELECT sb.name AS source_bench, sb.candidate AS source_candidate, sb.server AS server, dcd.destination AS destination_candidate
-		FROM `tabBench` sb, `tabDeploy Candidate Difference` dcd
-		WHERE sb.status IN ('Active', 'Broken') AND sb.candidate = dcd.source
-		{"AND sb.name = %(site_bench)s" if site else ""}
-		{"AND sb.server = %(server)s" if server else ""}
-		""",
-		values=values,
-		as_dict=True,
+	Bench = frappe.qb.DocType("Bench")
+	DeployCandidateDifference = frappe.qb.DocType("Deploy Candidate Difference")
+	query = (
+		frappe.qb.from_(Bench)
+		.join(DeployCandidateDifference)
+		.on(Bench.candidate == DeployCandidateDifference.source)
+		.select(
+			Bench.name.as_("source_bench"),
+			Bench.candidate.as_("source_candidate"),
+			Bench.server.as_("server"),
+			DeployCandidateDifference.destination.as_("destination_candidate"),
+		)
+		.where(Bench.status.isin(["Active", "Broken"]))
 	)
+	if site:
+		query = query.where(Bench.name == site_bench)
+	if server:
+		query = query.where(Bench.server == server)
+	source_benches_info = query.run(as_dict=True)
 
 	destination_candidates = list(set(d["destination_candidate"] for d in source_benches_info))
 

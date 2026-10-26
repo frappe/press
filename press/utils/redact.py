@@ -18,6 +18,7 @@ PASSWORD_FLAG_PATTERN = re.compile(
 MYSQL_PASSWORD_PATTERN = re.compile(
 	r"(\b(?:mysql|mariadb)[\w-]*\b[^\n]*?\s-p)(?=[^\s-])('[^']*'|\"[^\"]*\"|\S+)"
 )
+URL_CREDENTIALS_PATTERN = re.compile(r"(\b[a-z][\w+.-]*://)[^\s/@]+@")
 
 
 def redact_secrets(text):
@@ -32,6 +33,8 @@ def redact_secrets(text):
 
 	for pattern in (DOCKER_LOGIN_PASSWORD_PATTERN, PASSWORD_FLAG_PATTERN, MYSQL_PASSWORD_PATTERN):
 		text = pattern.sub(rf"\g<1>{REDACTED}", text)
+
+	text = URL_CREDENTIALS_PATTERN.sub(rf"\g<1>{REDACTED}@", text)
 	return SECRET_ASSIGNMENT_PATTERN.sub(_mask_secret_value, text)
 
 

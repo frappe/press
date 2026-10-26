@@ -57,7 +57,7 @@ const SwitchTeamDialog2 = defineAsyncComponent(
 )
 
 const support = () => {
-	window.open('https://support.frappe.io/helpdesk/my-tickets/new', '_blank')
+	window.open('https://support.frappe.io/helpdesk/my-tickets/new?utm_source=frappe-cloud', '_blank')
 }
 const docs = () => {
 	window.open('https://docs.frappe.io/cloud', '_blank')

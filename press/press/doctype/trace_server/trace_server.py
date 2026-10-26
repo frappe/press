@@ -5,6 +5,7 @@ import frappe
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
 
 
@@ -78,6 +79,7 @@ class TraceServer(BaseServer):
 				playbook="trace.yml",
 				server=self,
 				variables={
+					"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 					"server": self.name,
 					"workers": 1,
 					"domain": self.domain,
