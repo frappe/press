@@ -5,13 +5,12 @@ from unittest.mock import Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from telegram.error import RetryAfter, TimedOut
 
 from press.press.doctype.telegram_message.telegram_message import (
 	TelegramMessage,
 	send_telegram_message,
 )
-from press.telegram_utils import Telegram
+from press.telegram_utils import NetworkError, RetryAfter, Telegram
 
 
 @patch.object(Telegram, "send")
@@ -47,9 +46,9 @@ class TestTelegramMessage(FrappeTestCase):
 
 	def test_failed_send_call_sets_error_status(self, mock_send: Mock):
 		"""Test if failed send call sets status to Error"""
-		mock_send.side_effect = Exception()
+		mock_send.side_effect = Exception("Unexpected failure")
 		first = TelegramMessage.enqueue(message="Test Message")
-		self.assertRaises(Exception, TelegramMessage.send_one)
+		self.assertRaisesRegex(Exception, "Unexpected failure", TelegramMessage.send_one)
 		first.reload()
 		self.assertEqual(first.status, "Error")
 		self.assertIn("Exception", first.error)
@@ -90,20 +89,20 @@ class TestTelegramMessage(FrappeTestCase):
 
 	def test_failed_send_network_error_increases_retry(self, mock_send: Mock):
 		"""Test if failed send call because of network issues increases retry count"""
-		mock_send.side_effect = TimedOut()
+		mock_send.side_effect = NetworkError("Timed out")
 		first = TelegramMessage.enqueue(message="Test Message")
-		self.assertRaises(TimedOut, TelegramMessage.send_one)
+		self.assertRaises(NetworkError, TelegramMessage.send_one)
 		first.reload()
 		self.assertEqual(first.status, "Queued")
 		self.assertEqual(first.retry_count, 1)
 
 	def test_test_failed_send_after_max_retries_sets_error_status(self, mock_send: Mock):
 		"""Test if failed send call after max_errors sets status to Error"""
-		mock_send.side_effect = TimedOut()
+		mock_send.side_effect = NetworkError("Timed out")
 		first = TelegramMessage.enqueue(message="Test Message")
 		first.retry_count = 4
 		first.save()
-		self.assertRaises(TimedOut, TelegramMessage.send_one)
+		self.assertRaises(NetworkError, TelegramMessage.send_one)
 		first.reload()
 		self.assertEqual(first.status, "Error")
 
