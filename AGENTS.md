@@ -27,11 +27,6 @@ screenshots in [press#7405](https://github.com/frappe/press/pull/7405) broke
 this way. Paste each image into the description box instead. GitHub uploads it
 and keeps it for the life of the pull request.
 
-Add the `backport-master` label to each new pull request against `develop`.
-Production deploys from `master`. When the pull request merges, Mergify sees the
-label and opens the backport pull request to `master`. Without the label, the
-change stays on `develop` and does not reach production.
-
 ## Running Tests
 
 Before running tests, always ask the user which site to use.
