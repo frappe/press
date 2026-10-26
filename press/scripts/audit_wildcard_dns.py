@@ -29,7 +29,7 @@ def expected_proxy_ip(domain):
 
 
 def resolved_wildcard(domain):
-	return [r.to_text() for r in resolver.query(f"*.{domain}", "A")]
+	return [r.to_text() for r in resolver.resolve(f"*.{domain}", "A")]
 
 
 def fix(domain):

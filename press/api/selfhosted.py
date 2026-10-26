@@ -153,7 +153,7 @@ def check_dns(domain, ip):
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
-		domain_ip = resolver.query(domain.strip(), "A")[0].to_text()
+		domain_ip = resolver.resolve(domain.strip(), "A")[0].to_text()
 		if domain_ip == ip:
 			return True
 	except Exception:
