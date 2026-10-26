@@ -68,7 +68,7 @@ ADDR_SPEC = LOCAL_PART + r"@" + DOMAIN  # see 3.4.1
 VALID_ADDRESS_REGEXP = re.compile(r"^" + ADDR_SPEC + r"$")
 
 MX_DNS_CACHE = {}
-MX_CHECK_CACHE = {}
+MX_CHECK_CACHE: dict[str, bool] = {}
 
 
 def get_mx_ip(mx_host):
@@ -84,7 +84,7 @@ def get_mx_ip(mx_host):
 		try:
 			resolver = Resolver(configure=False)
 			resolver.nameservers = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
-			answers = resolver.query(mx_host, "MX")
+			answers = resolver.resolve(mx_host, "MX")
 
 			mx_lookup_result = []
 
