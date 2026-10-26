@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, TypedDict, cast
 import frappe
 import frappe.utils
 import requests
-import sqlparse
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import A, Search
 from frappe import auth
@@ -38,6 +37,7 @@ from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 	execute,
 	normalize_query,
 )
+from press.utils.sql import format_sql
 
 if TYPE_CHECKING:
 	from collections.abc import Callable
@@ -1732,7 +1732,7 @@ def mariadb_processlist(site: str):
 	rows = agent.fetch_database_processes(site_doc)
 	for row in rows:
 		row["state"] = row["state"].capitalize()
-		row["query"] = sqlparse.format((row["query"] or "").strip(), keyword_case="upper", reindent=True)
+		row["query"] = format_sql(row["query"] or "")
 	return rows
 
 
