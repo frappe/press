@@ -238,6 +238,37 @@ class TestRemoteFile(FrappeTestCase):
 		):
 			self.assertEqual(frappe.db.get_value("Remote File", remote_file, "team"), team.name)
 
+	def test_remote_file_with_url_that_fails_the_url_check_is_rejected(self):
+		from press.utils.test_ssrf import resolve_to
+
+		remote_file = frappe.get_doc(
+			{
+				"doctype": "Remote File",
+				"file_name": "config.json",
+				"url": "http://files.example.com/config.json",
+			}
+		)
+		with (
+			patch("press.utils.ssrf.socket.getaddrinfo", return_value=resolve_to("10.0.0.5")),
+			self.assertRaisesRegex(frappe.ValidationError, "private or internal"),
+		):
+			remote_file.insert()
+
+	def test_remote_file_with_url_that_fails_the_url_check_is_unavailable_without_a_request(self):
+		"""A URL saved before the check existed is checked again before any request."""
+		from press.utils.test_ssrf import resolve_to
+
+		remote_file = create_test_remote_file(file_path="uploads/config.json")
+		remote_file.db_set("url", "http://files.example.com/config.json")
+		with (
+			patch("press.utils.ssrf.socket.getaddrinfo", return_value=resolve_to("10.0.0.5")),
+			patch("requests.adapters.HTTPAdapter.send") as send,
+		):
+			self.assertFalse(remote_file.exists())
+
+		send.assert_not_called()
+		self.assertEqual(frappe.db.get_value("Remote File", remote_file.name, "status"), "Unavailable")
+
 
 @patch.object(frappe.db, "commit", new=Mock())
 @patch("press.press.doctype.press_notification.press_notification.frappe.sendmail", new=Mock())
