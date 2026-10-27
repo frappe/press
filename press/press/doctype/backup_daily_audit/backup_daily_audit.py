@@ -192,20 +192,23 @@ def get_sites_without_successful_backup(
 ) -> list[str]:
 	"""Sites due a backup through the window, or the `candidates` given, with no successful backup in it."""
 	if candidates is None:
-		candidates = get_sites_due_backup_through(since, until)
+		candidates = get_sites_due_scheduled_backups(since)
 	backup, query = successful_backups_query()
 	sites_with_success = (
 		query.select(backup.site).distinct().where(backup.creation.between(since, until)).run(pluck=True)
 	)
-	return sorted(set(candidates) - set(sites_with_success))
+	return sorted(set(candidates) - set(sites_with_success) - set(get_sites_started_within(since, until)))
 
 
-def get_sites_due_backup_through(since: datetime, until: datetime) -> list[str]:
-	# A site deactivated for part of the window was not due a backup all along
+def get_sites_started_within(since: datetime, until: datetime) -> list[str]:
+	"""Sites activated, or claimed from a standby pool at signup, in the window, so not due a backup all along."""
+	window = ("between", [since, until])
 	activated_sites = frappe.get_all(
-		"Site Activity", {"action": "Activate Site", "creation": ("between", [since, until])}, pluck="site"
+		"Site Activity", {"action": "Activate Site", "creation": window}, pluck="site"
 	)
-	return list(set(get_sites_due_scheduled_backups(since)) - set(activated_sites))
+	# A pooled site's creation is when the pool made it, months before a signup can claim it
+	signed_up_sites = frappe.get_all("Site", {"signup_time": window}, pluck="name")
+	return activated_sites + signed_up_sites
 
 
 def successful_backups_query():
