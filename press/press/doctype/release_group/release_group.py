@@ -2093,6 +2093,8 @@ class ReleaseGroup(Document, TagHelpers):
 
 def site_count_query(server: str | None):
 	"""Count the sites of a group, on one server when the list is filtered by server."""
+	from press.press.doctype.cluster.cluster import archived_clusters
+
 	ReleaseGroup = frappe.qb.DocType("Release Group")
 	Site = frappe.qb.DocType("Site")
 
@@ -2101,12 +2103,17 @@ def site_count_query(server: str | None):
 		.select(Count("*"))
 		.where(Site.group == ReleaseGroup.name)
 		.where(Site.status != "Archived")
+		# A group spans regions. The sites list hides the archived ones, so a
+		# count that included them would promise rows the customer never sees.
+		.where(Site.cluster.notin(archived_clusters()))
 	)
 	return query.where(Site.server == server) if server else query
 
 
 def active_bench_count_query(server: str | None):
 	"""Count the active benches of a group, on one server when the list is filtered by server."""
+	from press.press.doctype.cluster.cluster import archived_clusters
+
 	ReleaseGroup = frappe.qb.DocType("Release Group")
 	Bench = frappe.qb.DocType("Bench")
 
@@ -2115,6 +2122,8 @@ def active_bench_count_query(server: str | None):
 		.select(Count("*"))
 		.where(Bench.group == ReleaseGroup.name)
 		.where(Bench.status == "Active")
+		# An unreachable bench must not be the one that labels the group Active.
+		.where(Bench.cluster.notin(archived_clusters()))
 	)
 	return query.where(Bench.server == server) if server else query
 

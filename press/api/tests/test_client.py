@@ -21,10 +21,12 @@ from press.api.client import (
 	writable_values,
 )
 from press.overrides import before_request
+from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.cluster.test_cluster import create_test_cluster
+from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
@@ -337,6 +339,24 @@ class TestInfrastructureInArchivedCluster(FrappeTestCase):
 		group = create_test_release_group([app], user=self.team.user)
 
 		self.assertIn(group.name, self.listed("Release Group"))
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	# The second bench of a group makes the storage precheck ask the agent for the size of
+	# the last deployed image. Nothing is really deployed here, so skip the precheck.
+	@patch.object(ReleaseGroup, "check_app_server_storage", new=Mock())
+	def test_counts_of_a_mixed_region_group_leave_out_the_archived_region(self):
+		"""The group stays listed, so its counts must name only what the dashboard shows."""
+		app = create_test_app()
+		archived_server = self.server_in(self.archived.name)
+		live_server = self.server_in("Default")
+		group = create_test_release_group([app], user=self.team.user, servers=[archived_server, live_server])
+		for server in (archived_server, live_server):
+			create_test_site(bench=create_test_bench(group=group, server=server).name, team=self.team.name)
+
+		sign_in_as(self.team)
+		[listed] = get_list("Release Group", filters={"name": group.name})
+
+		self.assertEqual((listed.active_benches, listed.site_count), (1, 1))
 
 
 @patch("frappe.sendmail", new=Mock())
