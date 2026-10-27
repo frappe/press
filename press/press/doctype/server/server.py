@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import base64
 import contextlib
 import datetime
 import hashlib
@@ -3235,6 +3236,7 @@ class Server(BaseServer):
 		build_agent_endpoint: DF.Data | None
 		build_agent_port: DF.Int | None
 		build_agent_bind_address: DF.Data | None
+		build_ssh_host_public_key: DF.Data | None
 		build_agent_repository_url: DF.Data | None
 		build_agent_repository_ref: DF.Data | None
 		build_cpu_quota_percent: DF.Int | None
@@ -3347,6 +3349,27 @@ class Server(BaseServer):
 			frappe.throw("Build-only Docker Data Root must be an absolute dedicated path")
 		if self.build_docker_root in {"/var/lib/docker", "/var/lib/containerd"}:
 			frappe.throw("Build-only Docker Data Root cannot point to the host Docker data")
+
+		ssh_host = self.ip or self.private_ip
+		try:
+			ssh_host_ip = ipaddress.ip_address(ssh_host or "")
+		except ValueError:
+			frappe.throw("Build-only SSH must target the server's Tailnet IPv4 address")
+		if ssh_host_ip.version != 4 or ssh_host_ip not in ip_network("100.64.0.0/10"):
+			frappe.throw("Build-only SSH must use a Tailnet IPv4 address")
+
+		ssh_key_parts = (self.build_ssh_host_public_key or "").strip().split()
+		if len(ssh_key_parts) != 2:
+			frappe.throw("Build-only Server requires a verified SSH host public key")
+		key_type, encoded_key = ssh_key_parts
+		try:
+			key_blob = base64.b64decode(encoded_key, validate=True)
+			key_type_length = int.from_bytes(key_blob[:4], "big")
+			key_type_from_blob = key_blob[4 : 4 + key_type_length].decode()
+		except (ValueError, UnicodeDecodeError):
+			frappe.throw("Build-only SSH host public key is invalid")
+		if not key_type or key_type_from_blob != key_type or len(key_blob) <= 4 + key_type_length:
+			frappe.throw("Build-only SSH host public key is invalid")
 
 		if not 1024 <= (self.build_agent_port or 0) <= 65535:
 			frappe.throw("Build Agent Port must be between 1024 and 65535")

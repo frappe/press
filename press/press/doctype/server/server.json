@@ -653,6 +653,14 @@
 		},
 		{
 			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_ssh_host_public_key",
+			"fieldtype": "Data",
+			"label": "Verified SSH Host Public Key",
+			"description": "Public host key verified out of band; never paste a private key here.",
+			"mandatory_depends_on": "eval:doc.is_build_only"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
 			"fieldname": "build_agent_repository_url",
 			"fieldtype": "Data",
 			"label": "Build Agent Repository URL"

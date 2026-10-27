@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import typing
 from unittest.mock import MagicMock, Mock, patch
@@ -121,6 +122,10 @@ class TestServer(FrappeTestCase):
 		server.build_agent_endpoint = f"https://{server.name}:9443"
 		server.build_agent_port = 9443
 		server.build_agent_bind_address = "100.106.180.55"
+		server.ip = "100.106.180.55"
+		key_type = b"ssh-ed25519"
+		key_blob = len(key_type).to_bytes(4, "big") + key_type + (32).to_bytes(4, "big") + b"x" * 32
+		server.build_ssh_host_public_key = f"ssh-ed25519 {base64.b64encode(key_blob).decode()}"
 		server.build_agent_repository_url = "https://github.com/frappe/agent.git"
 		server.build_agent_repository_ref = "a" * 40
 		server.build_docker_service = "albasar-build-dockerd.service"
@@ -159,6 +164,18 @@ class TestServer(FrappeTestCase):
 			server.build_agent_bind_address = address
 			with self.subTest(address=address), self.assertRaises(frappe.ValidationError):
 				server.validate_build_only_configuration()
+
+	def test_build_only_rejects_non_tailnet_ssh_host(self):
+		server = self._make_build_only_server_config(create_test_server())
+		server.ip = "31.97.157.173"
+		with self.assertRaises(frappe.ValidationError):
+			server.validate_build_only_configuration()
+
+	def test_build_only_rejects_malformed_ssh_host_key(self):
+		server = self._make_build_only_server_config(create_test_server())
+		server.build_ssh_host_public_key = "ssh-ed25519 not-base64!"
+		with self.assertRaises(frappe.ValidationError):
+			server.validate_build_only_configuration()
 
 	@patch("frappe.db.get_value", return_value=(1, "https://build.example:9443"))
 	def test_build_only_agent_uses_its_dedicated_endpoint(self, get_value):
