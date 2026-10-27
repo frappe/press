@@ -1,4 +1,3 @@
-# In bench console: from press.scripts.bump_v16_nightly_node_and_pip import execute; execute()
 import frappe
 from frappe.utils import update_progress_bar
 from packaging.version import Version
