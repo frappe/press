@@ -21,7 +21,13 @@ if TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
-def create_test_backup_job(site: Site, status: str, hours_ago: float = 0, job_type: str = "Backup Site"):
+def create_test_backup_job(
+	site: Site,
+	status: str,
+	hours_ago: float = 0,
+	job_type: str = "Backup Site",
+	owner: str = "Administrator",
+):
 	"""Backup agent job inserted straight into the db, so no steps or HTTP request get queued."""
 	creation = frappe.utils.add_to_date(None, hours=-hours_ago)
 	frappe.get_doc(
@@ -36,6 +42,7 @@ def create_test_backup_job(site: Site, status: str, hours_ago: float = 0, job_ty
 			"request_method": "POST",
 			"request_path": f"benches/{site.bench}/sites/{site.name}/backup",
 			"request_data": "{}",
+			"owner": owner,
 			"creation": creation,
 			"modified": creation,
 		}
@@ -77,10 +84,18 @@ class TestBackupDailyAudit(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def _create_backups(self, site: str, count: int, status: str = "Failure", hours_ago: float = 0):
+	def _create_backups(
+		self,
+		site: str,
+		count: int,
+		status: str = "Failure",
+		hours_ago: float = 0,
+		owner: str = "Administrator",
+	):
 		creation = frappe.utils.add_to_date(None, hours=-hours_ago)
 		for _ in range(count):
-			create_test_site_backup(site=site, status=status, creation=creation, offsite=False)
+			backup = create_test_site_backup(site=site, status=status, creation=creation, offsite=False)
+			backup.db_set("owner", owner)
 
 	def _create_physical_backup(self, snapshot_status: str, hours_ago: float = 0):
 		snapshot = create_test_snapshot(self._create_machine(), snapshot_status, physical_backup=True)
@@ -194,6 +209,35 @@ class TestBackupDailyAudit(FrappeTestCase):
 		self.assertEqual(audit.failed_jobs - before.failed_jobs, 2)
 		finished_jobs = audit.successful_jobs + audit.failed_jobs
 		self.assertAlmostEqual(audit.success_rate, audit.successful_jobs / finished_jobs * 100, places=2)
+
+	def test_success_rate_counts_only_backup_jobs_created_by_administrator(self):
+		before = self._record_audit()
+		create_test_backup_job(self.idle_site, "Success")
+		create_test_backup_job(self.idle_site, "Success", owner="user@example.com")
+		create_test_backup_job(self.idle_site, "Failure", owner="user@example.com")
+
+		audit = self._record_audit()
+
+		self.assertEqual(audit.successful_jobs - before.successful_jobs, 1)
+		self.assertEqual(audit.failed_jobs - before.failed_jobs, 0)
+
+	def test_site_with_only_a_user_taken_backup_in_the_window_is_listed(self):
+		self._create_backups(self.idle_site.name, 1, status="Success", owner="user@example.com")
+
+		in_day, in_3_days = self._listed_sites()
+
+		self.assertIn(self.idle_site.name, in_day)
+		self.assertIn(self.idle_site.name, in_3_days)
+
+	def test_failed_backups_taken_by_users_are_not_counted(self):
+		self._create_backups(self.idle_site.name, 3, owner="user@example.com")
+		self._create_backups(self.idle_site.name, 1)
+
+		audit = self._record_audit()
+
+		in_day = {row.site: row.failed_backups for row in audit.sites_without_success_in_day}
+		self.assertEqual(in_day[self.idle_site.name], 1)
+		self.assertNotIn(self.idle_site.name, [row.site for row in audit.sites_with_frequent_failures])
 
 	def test_site_with_no_successful_backup_is_listed_with_failures_and_last_successful_backup(self):
 		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=4 * 24)
