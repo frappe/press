@@ -1,0 +1,345 @@
+---
+- name: Validate build-only provisioning inputs
+  ansible.builtin.assert:
+    that:
+      - build_only | bool
+      - build_docker_host is match('^unix:///')
+      - build_docker_host not in ['unix:///run/docker.sock', 'unix:///var/run/docker.sock']
+      - build_docker_root is match('^/')
+      - build_storage_mount is match('^/')
+      - build_docker_service is match('^(albasar-build|press-build)-[a-z0-9-]+\.service$')
+      - build_agent_port | int >= 1024
+      - build_agent_port | int <= 65535
+      - build_cpu_quota_percent | int > 0
+      - build_memory_limit_mb | int > 0
+      - build_io_weight | int >= 10
+      - build_io_weight | int <= 1000
+      - build_storage_limit_gib | int > 0
+
+- name: Inspect the configured isolated Docker socket
+  ansible.builtin.stat:
+    path: "{{ build_docker_host | regex_replace('^unix://', '') }}"
+    follow: false
+  register: build_socket
+
+- name: Inspect the standard host Docker socket for accidental socket aliasing
+  ansible.builtin.stat:
+    path: /var/run/docker.sock
+    follow: true
+  register: host_docker_socket
+
+- name: Require a dedicated accessible socket, not a symlink or the standard docker group
+  ansible.builtin.assert:
+    that:
+      - build_socket.stat.exists
+      - build_socket.stat.issock
+      - not build_socket.stat.islnk
+      - build_socket.stat.gr_name not in ['root', 'docker']
+      - build_socket.stat.mode[-2] in ['6', '7']
+      - build_socket.stat.mode[-1] == '0'
+      - not host_docker_socket.stat.exists or (build_socket.stat.dev, build_socket.stat.inode) != (host_docker_socket.stat.dev, host_docker_socket.stat.inode)
+
+- name: Resolve Docker data-root and verify the isolated daemon explicitly
+  ansible.builtin.command:
+    argv:
+      - docker
+      - --host
+      - "{{ build_docker_host }}"
+      - info
+      - --format
+      - "{{ '{{' }} .DockerRootDir {{ '}}' }}"
+  register: daemon_root
+  changed_when: false
+
+- name: Verify Docker daemon data-root matches the allowlisted directory
+  ansible.builtin.assert:
+    that:
+      - daemon_root.stdout | trim == build_docker_root
+
+- name: Resolve the mount that contains the Docker data-root
+  ansible.builtin.command:
+    argv:
+      - findmnt
+      - --noheadings
+      - --output
+      - TARGET
+      - --target
+      - "{{ build_docker_root }}"
+  register: docker_root_mount
+  changed_when: false
+
+- name: Verify Docker data is on the dedicated storage mount
+  ansible.builtin.assert:
+    that:
+      - docker_root_mount.stdout | trim == build_storage_mount
+      - build_storage_mount != "/"
+
+- name: Read the size of the dedicated build filesystem
+  ansible.builtin.command:
+    argv:
+      - df
+      - --block-size=1
+      - --output=size
+      - --target
+      - "{{ build_storage_mount }}"
+  register: build_storage_size
+  changed_when: false
+
+- name: Ensure the mounted filesystem itself enforces the configured build disk ceiling
+  ansible.builtin.assert:
+    that:
+      - build_storage_size.stdout_lines[-1] | trim | int <= (build_storage_limit_gib | int * 1073741824)
+
+- name: Require the dedicated Agent and Redis ports to be unused before provisioning
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ item }}"
+    state: stopped
+    timeout: 1
+  loop:
+    - "{{ build_agent_port }}"
+    - "25026"
+
+- name: Create a private Docker CLI configuration directory for the build account
+  ansible.builtin.file:
+    path: /home/press-build/agent/.docker
+    state: directory
+    owner: press-build
+    group: press-build
+    mode: "0700"
+
+- name: Verify the isolated Docker service is active and has the approved resource limits
+  ansible.builtin.command:
+    argv:
+      - systemctl
+      - show
+      - "{{ build_docker_service }}"
+      - --property=LoadState,ActiveState,CPUQuotaPerSecUSec,MemoryMax,IOWeight
+      - --no-pager
+  register: docker_service_limits
+  changed_when: false
+
+- name: Parse the isolated Docker service resource settings
+  ansible.builtin.set_fact:
+    build_cpu_quota_raw: "{{ (docker_service_limits.stdout_lines | select('match', '^CPUQuotaPerSecUSec=') | first | regex_replace('^CPUQuotaPerSecUSec=', '')) }}"
+    build_memory_limit_raw: "{{ (docker_service_limits.stdout_lines | select('match', '^MemoryMax=') | first | regex_replace('^MemoryMax=', '')) }}"
+    build_io_weight_raw: "{{ (docker_service_limits.stdout_lines | select('match', '^IOWeight=') | first | regex_replace('^IOWeight=', '')) }}"
+
+- name: Convert the isolated Docker service CPU quota to percent
+  ansible.builtin.set_fact:
+    build_cpu_quota_effective_percent: >-
+      {% if build_cpu_quota_raw.endswith('ms') %}
+      {{ (build_cpu_quota_raw[:-2] | float / 10) | round(0) | int }}
+      {% elif build_cpu_quota_raw.endswith('us') %}
+      {{ (build_cpu_quota_raw[:-2] | float / 10000) | round(0) | int }}
+      {% elif build_cpu_quota_raw.endswith('s') %}
+      {{ (build_cpu_quota_raw[:-1] | float * 100) | round(0) | int }}
+      {% else %}0{% endif %}
+
+- name: Require the dedicated Docker daemon service and effective resource limits
+  ansible.builtin.assert:
+    that:
+      - "'LoadState=loaded' in docker_service_limits.stdout_lines"
+      - "'ActiveState=active' in docker_service_limits.stdout_lines"
+      - build_cpu_quota_effective_percent | int == build_cpu_quota_percent | int
+      - build_memory_limit_raw | int == build_memory_limit_mb | int * 1048576
+      - build_io_weight_raw | int == build_io_weight | int
+
+- name: Install only build-agent runtime packages without starting package services
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - git
+      - python3
+      - python3-dev
+      - python3-venv
+      - build-essential
+      - redis-server
+    state: present
+    update_cache: true
+    policy_rc_d: 101
+
+- name: Create the dedicated unprivileged Press build account
+  ansible.builtin.user:
+    name: press-build
+    home: /home/press-build
+    create_home: true
+    system: true
+    shell: /usr/sbin/nologin
+    groups: "{{ build_socket.stat.gr_name }}"
+    append: true
+
+- name: Inspect supplementary groups for the build account
+  ansible.builtin.command:
+    argv: [id, -nG, press-build]
+  register: build_account_groups
+  changed_when: false
+
+- name: Ensure the build account has no access to the main Docker socket through other groups
+  ansible.builtin.assert:
+    that:
+      - "'docker' not in build_account_groups.stdout.split()"
+      - "'root' not in build_account_groups.stdout.split()"
+      - build_account_groups.stdout.split() | difference(['press-build', build_socket.stat.gr_name]) | length == 0
+
+- name: Create the isolated Agent directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: press-build
+    group: "{{ build_socket.stat.gr_name }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: /home/press-build/agent, mode: "0750" }
+    - { path: /home/press-build/agent/tls, mode: "0700" }
+    - { path: /home/press-build/agent/logs, mode: "0750" }
+    - { path: /home/press-build/agent/redis-data, mode: "0750" }
+
+- name: Clone the Press-selected Agent revision
+  ansible.builtin.git:
+    repo: "{{ build_agent_repository_url }}"
+    dest: /home/press-build/agent/repo
+    version: "{{ build_agent_repository_ref }}"
+    update: true
+  become_user: press-build
+
+- name: Install the Agent in an isolated virtual environment
+  ansible.builtin.pip:
+    name: file:///home/press-build/agent/repo
+    virtualenv: /home/press-build/agent/env
+    virtualenv_command: python3 -m venv
+    editable: true
+  become_user: press-build
+
+- name: Store the HTTPS certificate for the dedicated endpoint
+  ansible.builtin.copy:
+    content: "{{ certificate_full_chain }}"
+    dest: /home/press-build/agent/tls/fullchain.pem
+    owner: press-build
+    group: press-build
+    mode: "0600"
+
+- name: Store the HTTPS private key for the dedicated endpoint
+  ansible.builtin.copy:
+    content: "{{ certificate_private_key }}"
+    dest: /home/press-build/agent/tls/privkey.pem
+    owner: press-build
+    group: press-build
+    mode: "0600"
+  no_log: true
+
+- name: Verify TLS certificate covers the dedicated Press hostname
+  ansible.builtin.command:
+    argv:
+      - openssl
+      - x509
+      - -in
+      - /home/press-build/agent/tls/fullchain.pem
+      - -noout
+      - -checkhost
+      - "{{ build_agent_endpoint | urlsplit('hostname') }}"
+  become_user: press-build
+  changed_when: false
+
+- name: Generate Agent configuration bound to the isolated Docker endpoint
+  ansible.builtin.command:
+    argv:
+      - /home/press-build/agent/env/bin/agent
+      - setup
+      - config
+      - --name
+      - "{{ server }}"
+      - --user
+      - press-build
+      - --workers
+      - "1"
+      - --press-url
+      - "{{ press_url }}"
+      - --web-port
+      - "{{ build_agent_port | string }}"
+      - --redis-port
+      - "25026"
+      - --build-only
+      - --docker-host
+      - "{{ build_docker_host }}"
+      - --docker-root
+      - "{{ build_docker_root }}"
+      - --tls-cert-file
+      - /home/press-build/agent/tls/fullchain.pem
+      - --tls-key-file
+      - /home/press-build/agent/tls/privkey.pem
+  args:
+    chdir: /home/press-build/agent
+  become_user: press-build
+
+- name: Initialize the isolated Agent database
+  ansible.builtin.command:
+    argv: [/home/press-build/agent/env/bin/agent, setup, database]
+  args:
+    chdir: /home/press-build/agent
+  become_user: press-build
+
+- name: Configure Agent authentication without logging the secret
+  ansible.builtin.command:
+    argv:
+      - /home/press-build/agent/env/bin/agent
+      - setup
+      - authentication-stdin
+  args:
+    chdir: /home/press-build/agent
+    stdin: "{{ agent_password }}"
+  become_user: press-build
+  no_log: true
+
+- name: Install the isolated Redis configuration
+  ansible.builtin.template:
+    src: redis.conf.j2
+    dest: /home/press-build/agent/redis.conf
+    owner: press-build
+    group: press-build
+    mode: "0640"
+  notify: Restart build-agent Redis
+
+- name: Install the dedicated Redis systemd unit
+  ansible.builtin.template:
+    src: redis.service.j2
+    dest: /etc/systemd/system/press-build-agent-redis.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart build-agent Redis
+
+- name: Install the dedicated Agent web systemd unit
+  ansible.builtin.template:
+    src: agent-web.service.j2
+    dest: /etc/systemd/system/press-build-agent-web.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart build-agent web
+
+- name: Install the dedicated Agent worker systemd unit
+  ansible.builtin.template:
+    src: agent-worker.service.j2
+    dest: /etc/systemd/system/press-build-agent-worker.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart build-agent worker
+
+- name: Enable and start only the build-agent services
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop:
+    - press-build-agent-redis.service
+    - press-build-agent-web.service
+    - press-build-agent-worker.service
+
+- name: Wait for the dedicated TLS Agent listener
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ build_agent_port }}"
+    timeout: 30

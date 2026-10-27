@@ -944,6 +944,15 @@ class DeployCandidateBuild(Document):
 
 	def _select_build_server(self):
 		"""Select build server based on platform or group"""
+		if self.group and (
+			group_build_server := frappe.get_value("Release Group", self.group, "build_server")
+		) and frappe.get_value("Server", group_build_server, "is_build_only"):
+			server = frappe.get_doc("Server", group_build_server)
+			if not server.use_for_build or server.status != "Active":
+				frappe.throw("The Release Group build Server must be active and enabled for builds")
+			if not self.platform or server.platform == self.platform:
+				return group_build_server
+
 		match self.platform:
 			case "arm64":
 				return get_arm_build_server_with_least_active_builds()
