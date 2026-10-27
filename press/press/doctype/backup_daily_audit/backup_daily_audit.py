@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 	from datetime import datetime
 
 BACKUP_JOB_TYPE = "Backup Site"
+# Scheduled backups run as Administrator, so backups users take themselves are left out
+SCHEDULED_BACKUP_OWNER = "Administrator"
 FAILED_STATUSES = ("Failure", "Delivery Failure")
 FREQUENT_FAILURE_THRESHOLD = 3
 # Sites back up once per backup interval, so allow this long for queue time on top of it
@@ -148,6 +150,7 @@ class BackupDailyAudit(Document):
 				"Agent Job",
 				filters={
 					"job_type": BACKUP_JOB_TYPE,
+					"owner": SCHEDULED_BACKUP_OWNER,
 					"status": ("in", ["Success", *FAILED_STATUSES]),
 					"creation": ("between", self.window(24)),
 				},
@@ -179,7 +182,11 @@ def get_sites_with_frequent_failures(since: datetime, until: datetime) -> dict[s
 	"""Failed backup counts of sites at or over the threshold, most failures first."""
 	failures_by_site = frappe.get_all(
 		"Site Backup",
-		filters={"status": ("in", FAILED_STATUSES), "creation": ("between", [since, until])},
+		filters={
+			"owner": SCHEDULED_BACKUP_OWNER,
+			"status": ("in", FAILED_STATUSES),
+			"creation": ("between", [since, until]),
+		},
 		fields=["site", "count(name) as failures"],
 		group_by="site",
 		order_by="failures desc, site asc",
@@ -212,13 +219,14 @@ def get_sites_started_within(since: datetime, until: datetime) -> list[str]:
 
 
 def successful_backups_query():
-	"""Successful backups, counting a physical one only once its disk snapshot has completed."""
+	"""Successful scheduled backups, counting a physical one only once its disk snapshot has completed."""
 	backup = frappe.qb.DocType("Site Backup")
 	snapshot = frappe.qb.DocType("Virtual Disk Snapshot")
 	query = (
 		frappe.qb.from_(backup)
 		.left_join(snapshot)
 		.on(backup.database_snapshot == snapshot.name)
+		.where(backup.owner == SCHEDULED_BACKUP_OWNER)
 		.where(backup.status == "Success")
 		.where((backup.physical == 0) | (snapshot.status == "Completed"))
 	)
@@ -234,6 +242,7 @@ def get_failed_backup_counts(site_names: list[str], since: datetime, until: date
 			"Site Backup",
 			filters={
 				"site": ("in", site_names),
+				"owner": SCHEDULED_BACKUP_OWNER,
 				"status": ("in", FAILED_STATUSES),
 				"creation": ("between", [since, until]),
 			},
