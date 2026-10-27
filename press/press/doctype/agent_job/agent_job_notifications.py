@@ -435,7 +435,7 @@ def update_with_node_modules_symlink_err(details: Details, job: AgentJob):
 		f"<p>The <b>New Bench</b> job failed in the <b>Initialize Bench</b> step, because of an issue in the <b>{app}</b> app."
 		" Your sites continue to run on the old bench.</p>"
 		f"<p><b>Cause:</b> the {app} repository contains the symlink <code>{app}/public/node_modules</code>."
-		" <code>bench build</code> makes this symlink on a developer's computer, and it was committed by mistake."
+		" The command <code>bench build</code> makes this symlink on a developer's computer, and it was committed by mistake."
 		" It points to a folder that does not exist on the server, so the bench can't be set up.</p>"
 		"<p><b>Fix:</b> remove the symlink from the app repository, then push the commit:</p>"
 		'<pre class="rounded-sm bg-surface-gray-2 p-3 text-xs">'
