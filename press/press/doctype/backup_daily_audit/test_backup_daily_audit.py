@@ -311,6 +311,31 @@ class TestBackupDailyAudit(FrappeTestCase):
 		self.assertNotIn(self.idle_site.name, in_day)
 		self.assertNotIn(self.idle_site.name, in_3_days)
 
+	def test_standby_site_claimed_at_signup_within_the_window_is_not_listed(self):
+		self.idle_site.db_set("signup_time", frappe.utils.add_to_date(None, hours=-2))
+
+		in_day, in_3_days = self._listed_sites()
+
+		self.assertNotIn(self.idle_site.name, in_day)
+		self.assertNotIn(self.idle_site.name, in_3_days)
+
+	def test_standby_site_claimed_at_signup_before_the_window_is_listed(self):
+		self.idle_site.db_set("signup_time", frappe.utils.add_days(None, -4))
+
+		in_day, in_3_days = self._listed_sites()
+
+		self.assertIn(self.idle_site.name, in_day)
+		self.assertIn(self.idle_site.name, in_3_days)
+
+	def test_refresh_drops_a_site_claimed_at_signup_within_the_window(self):
+		audit = self._record_audit()
+		self.idle_site.db_set("signup_time", frappe.utils.add_to_date(audit.window_end, minutes=-2))
+
+		audit.recollect()
+
+		self.assertNotIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_day])
+		self.assertNotIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_3_days])
+
 	def test_site_on_server_with_scheduled_backups_skipped_is_not_listed(self):
 		frappe.db.set_value("Server", self.idle_site.server, "skip_scheduled_backups", True)
 
