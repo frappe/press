@@ -825,8 +825,11 @@ class Site(Document, TagHelpers):
 
 		Enterprise plans are priced at 0 and negotiated off the ladder, so the
 		cutoff only rules out the public plans under it. Offsite backups keep the
-		trial plans out, which are priced at 0 as well.
+		trial plans out, which are priced at 0 as well. A dedicated server is the
+		team's own, so its sites can set a backup time whatever their plan.
 		"""
+		if is_dedicated_server(self.server):
+			return True
 		if not self.plan:
 			return False
 		plan = frappe.get_cached_doc("Site Plan", self.plan)
