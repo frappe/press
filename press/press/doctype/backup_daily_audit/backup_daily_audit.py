@@ -17,10 +17,7 @@ BACKUP_JOB_TYPE = "Backup Site"
 SCHEDULED_BACKUP_OWNER = "Administrator"
 FAILED_STATUSES = ("Failure", "Delivery Failure")
 FREQUENT_FAILURE_THRESHOLD = 3
-# Sites back up once per backup interval, so allow this long for queue time on top of it
-BACKUP_GRACE_HOURS = 6
-# Sites with a custom backup time back up once a day, whatever the interval
-MINIMUM_BACKUP_INTERVAL_HOURS = 24
+DAY_WINDOW_HOURS = 24
 # Frappe Compute and DigitalOcean snapshots aren't recorded on press, so those machines are left out
 SNAPSHOT_CLOUD_PROVIDERS = ("AWS EC2", "OCI", "Hetzner")
 DAILY_SNAPSHOT_FILTERS = {"physical_backup": False, "rolling_snapshot": False}
@@ -73,7 +70,7 @@ class BackupDailyAudit(Document):
 		A refresh passes the sites and machines already `listed`, so it re-checks only those."""
 		listed = listed or {}
 		self.window_end = self.window_end or frappe.utils.now_datetime()
-		self.day_window_hours = self.day_window_hours or get_daily_backup_window_hours()
+		self.day_window_hours = self.day_window_hours or DAY_WINDOW_HOURS
 		self.audit_date = frappe.utils.getdate(self.window_end)
 		for table in TABLES:
 			self.set(table, [])
@@ -171,11 +168,6 @@ def record_backup_daily_audit() -> None:
 	# A site renamed or deleted since its backup failed must not block the audit
 	audit.flags.ignore_links = True
 	audit.insert(ignore_permissions=True)
-
-
-def get_daily_backup_window_hours() -> int:
-	interval = frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
-	return max(interval, MINIMUM_BACKUP_INTERVAL_HOURS) + BACKUP_GRACE_HOURS
 
 
 def get_sites_with_frequent_failures(since: datetime, until: datetime) -> dict[str, int]:
