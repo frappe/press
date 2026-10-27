@@ -3172,13 +3172,14 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "AWS EC2":
 			# Attach a volume to the instance and return the device name
 			device_name = self.get_next_volume_device_name()
+			# Tag first, so a tagging failure leaves the volume available for a retry
+			self.client().create_tags(
+				Resources=[volume_id], Tags=[{"Key": "Name", "Value": self.get_name_tag()}]
+			)
 			self.client().attach_volume(
 				Device=device_name,
 				InstanceId=self.instance_id,
 				VolumeId=volume_id,
-			)
-			self.client().create_tags(
-				Resources=[volume_id], Tags=[{"Key": "Name", "Value": self.get_name_tag()}]
 			)
 
 		elif self.cloud_provider == "Hetzner":

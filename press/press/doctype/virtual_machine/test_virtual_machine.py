@@ -153,3 +153,11 @@ class TestVirtualMachine(FrappeTestCase):
 		client().create_tags.assert_called_once_with(
 			Resources=["vol-new"], Tags=[{"Key": "Name", "Value": f"Frappe Cloud - {vm.name}"}]
 		)
+
+	def test_attach_volume_does_not_attach_when_tagging_fails(self):
+		vm = create_test_virtual_machine()
+		with patch.object(VirtualMachine, "client") as client, patch.object(VirtualMachine, "sync"):
+			client().create_tags.side_effect = Exception("Tagging failed")
+			self.assertRaisesRegex(Exception, "Tagging failed", vm.attach_volume, "vol-new")
+
+		client().attach_volume.assert_not_called()
