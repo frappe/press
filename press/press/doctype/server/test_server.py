@@ -120,6 +120,7 @@ class TestServer(FrappeTestCase):
 		server.build_docker_root = "/srv/albasar-build/mnt/docker"
 		server.build_agent_endpoint = f"https://{server.name}:9443"
 		server.build_agent_port = 9443
+		server.build_agent_bind_address = "100.106.180.55"
 		server.build_agent_repository_url = "https://github.com/frappe/agent.git"
 		server.build_agent_repository_ref = "a" * 40
 		server.build_docker_service = "albasar-build-dockerd.service"
@@ -151,6 +152,13 @@ class TestServer(FrappeTestCase):
 		server.build_agent_endpoint = "http://elsewhere.example:9443"
 		with self.assertRaises(frappe.ValidationError):
 			server.validate_build_only_configuration()
+
+	def test_build_only_rejects_wildcard_or_non_tailnet_bind_address(self):
+		for address in ("0.0.0.0", "127.0.0.1", "192.0.2.10", "2001:db8::1"):
+			server = self._make_build_only_server_config(create_test_server())
+			server.build_agent_bind_address = address
+			with self.subTest(address=address), self.assertRaises(frappe.ValidationError):
+				server.validate_build_only_configuration()
 
 	@patch("frappe.db.get_value", return_value=(1, "https://build.example:9443"))
 	def test_build_only_agent_uses_its_dedicated_endpoint(self, get_value):

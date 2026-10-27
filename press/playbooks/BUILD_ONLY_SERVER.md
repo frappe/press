@@ -12,13 +12,14 @@ Build-only Servers run the Press Agent on an isolated HTTPS listener and direct 
 - The Docker service name must use `albasar-build-*.service` or `press-build-*.service`. The role reads, but does not change, its effective CPU quota, memory limit, and I/O weight and fails if they do not match the Server record.
 - Docker data must reside on a dedicated non-root mount whose capacity does not exceed the configured storage ceiling. The role verifies the mount and capacity; Press does not resize or reformat it.
 - The Agent endpoint must be HTTPS on the Server's own DNS name and configured port. The certificate is checked for that hostname. Press's health check must succeed after setup.
+- The Agent binds only to the configured IPv4 address in Tailscale's CGNAT range, and the playbook verifies that address is assigned to `tailscale0`. Wildcard, loopback, non-Tailnet, and unassigned addresses fail closed. The build-only endpoint does not bind a public interface or alter NGINX/firewall rules.
 - The Agent repository is HTTPS-only and pinned to a full commit SHA. The Release Group must explicitly select this active build Server; it is never chosen by global load balancing.
 
 ## Required Server fields
 
-Set `Build-only Server`, `Use For Build`, the dedicated `Build Docker Host` and `Build Docker Data Root`, the HTTPS endpoint and port, and the exact isolated Docker systemd unit name. Set the CPU quota, memory limit, I/O weight, dedicated storage mount, and storage capacity to match the already-running isolated daemon and filesystem. Set the Agent repository URL and a reviewed full commit SHA. Keep `Public`, `Staging`, `Use For New Benches`, and `Use For New Sites` disabled.
+Set `Build-only Server`, `Use For Build`, the dedicated `Build Docker Host` and `Build Docker Data Root`, the HTTPS endpoint and port, the exact `tailscale0` IPv4 bind address, and the isolated Docker systemd unit name. Set the CPU quota, memory limit, I/O weight, dedicated storage mount, and storage capacity to match the already-running isolated daemon and filesystem. Set the Agent repository URL and a reviewed full commit SHA. Keep `Public`, `Staging`, `Use For New Benches`, and `Use For New Sites` disabled.
 
-The endpoint port must be reachable from Press and serve a valid certificate. This playbook does not change provider firewalls. A failed Press-to-Agent HTTPS check leaves the Server setup failed rather than switching to another endpoint or socket.
+The endpoint port must be reachable from Press over Tailnet and serve a valid certificate. Confirm the chosen port is free on the Tailnet address; the default is `9444` to avoid common existing listeners. This playbook does not change provider firewalls. A failed Press-to-Agent HTTPS check leaves the Server setup failed rather than switching to another endpoint or socket.
 
 ## Resource behavior
 

@@ -10,6 +10,7 @@
       - build_docker_service is match('^(albasar-build|press-build)-[a-z0-9-]+\.service$')
       - build_agent_port | int >= 1024
       - build_agent_port | int <= 65535
+      - build_agent_bind_address is match('^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.[0-9]{1,3}\.[0-9]{1,3}$')
       - build_cpu_quota_percent | int > 0
       - build_memory_limit_mb | int > 0
       - build_io_weight | int >= 10
@@ -90,9 +91,27 @@
     that:
       - build_storage_size.stdout_lines[-1] | trim | int <= (build_storage_limit_gib | int * 1073741824)
 
+- name: Read addresses assigned to the Tailscale interface
+  ansible.builtin.command:
+    argv:
+      - ip
+      - -4
+      - -o
+      - address
+      - show
+      - dev
+      - tailscale0
+  register: tailnet_interface_addresses
+  changed_when: false
+
+- name: Require the Agent bind address to be assigned to tailscale0
+  ansible.builtin.assert:
+    that:
+      - build_agent_bind_address in (tailnet_interface_addresses.stdout | regex_findall('inet\s+([0-9.]+)'))
+
 - name: Require the dedicated Agent and Redis ports to be unused before provisioning
   ansible.builtin.wait_for:
-    host: 127.0.0.1
+    host: "{{ build_agent_bind_address }}"
     port: "{{ item }}"
     state: stopped
     timeout: 1
@@ -257,6 +276,8 @@
       - "{{ press_url }}"
       - --web-port
       - "{{ build_agent_port | string }}"
+      - --web-bind-address
+      - "{{ build_agent_bind_address }}"
       - --redis-port
       - "25026"
       - --build-only
@@ -340,6 +361,6 @@
 
 - name: Wait for the dedicated TLS Agent listener
   ansible.builtin.wait_for:
-    host: 127.0.0.1
+    host: "{{ build_agent_bind_address }}"
     port: "{{ build_agent_port }}"
     timeout: 30

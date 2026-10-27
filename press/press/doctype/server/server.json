@@ -107,6 +107,7 @@
 		"build_docker_root",
 		"build_agent_endpoint",
 		"build_agent_port",
+		"build_agent_bind_address",
 		"build_agent_repository_url",
 		"build_agent_repository_ref",
 		"build_docker_service",
@@ -636,11 +637,19 @@
 			"label": "Build Agent HTTPS Endpoint"
 		},
 		{
-			"default": "9443",
+			"default": "9444",
 			"depends_on": "eval:doc.is_build_only",
 			"fieldname": "build_agent_port",
 			"fieldtype": "Int",
 			"label": "Build Agent Port"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_agent_bind_address",
+			"fieldtype": "Data",
+			"label": "Build Agent Tailnet Bind Address",
+			"description": "Specific IPv4 assigned to tailscale0; wildcard and public interface addresses are rejected.",
+			"mandatory_depends_on": "eval:doc.is_build_only"
 		},
 		{
 			"depends_on": "eval:doc.is_build_only",

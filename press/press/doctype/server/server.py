@@ -3234,6 +3234,7 @@ class Server(BaseServer):
 		is_build_only: DF.Check
 		build_agent_endpoint: DF.Data | None
 		build_agent_port: DF.Int | None
+		build_agent_bind_address: DF.Data | None
 		build_agent_repository_url: DF.Data | None
 		build_agent_repository_ref: DF.Data | None
 		build_cpu_quota_percent: DF.Int | None
@@ -3349,6 +3350,14 @@ class Server(BaseServer):
 
 		if not 1024 <= (self.build_agent_port or 0) <= 65535:
 			frappe.throw("Build Agent Port must be between 1024 and 65535")
+		try:
+			bind_address = ipaddress.ip_address((self.build_agent_bind_address or "").strip())
+		except ValueError:
+			frappe.throw("Build Agent Bind Address must be a specific Tailnet IPv4 address")
+		if bind_address.version != 4 or bind_address.is_unspecified or bind_address.is_loopback:
+			frappe.throw("Build Agent Bind Address cannot be wildcard, loopback, or non-IPv4")
+		if bind_address not in ip_network("100.64.0.0/10"):
+			frappe.throw("Build Agent Bind Address must be within the Tailscale CGNAT range")
 		try:
 			endpoint = urlsplit((self.build_agent_endpoint or "").strip())
 			endpoint_port = endpoint.port
@@ -3860,6 +3869,7 @@ class Server(BaseServer):
 					"build_docker_root": self.build_docker_root,
 					"build_agent_endpoint": self.build_agent_endpoint,
 					"build_agent_port": self.build_agent_port,
+					"build_agent_bind_address": self.build_agent_bind_address,
 					"build_agent_repository_url": self.build_agent_repository_url,
 					"build_agent_repository_ref": self.build_agent_repository_ref,
 					"build_docker_service": self.build_docker_service,

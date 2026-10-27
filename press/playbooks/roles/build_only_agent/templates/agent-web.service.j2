@@ -15,7 +15,7 @@ Environment=BUILD_DOCKER_ROOT={{ build_docker_root }}
 Environment=DOCKER_CONFIG=/home/press-build/agent/.docker
 Environment=PYTHONUNBUFFERED=1
 UnsetEnvironment=DOCKER_CONTEXT DOCKER_TLS_VERIFY DOCKER_CERT_PATH
-ExecStart=/home/press-build/agent/env/bin/gunicorn --bind 0.0.0.0:{{ build_agent_port }} --certfile /home/press-build/agent/tls/fullchain.pem --keyfile /home/press-build/agent/tls/privkey.pem --workers 2 agent.web:application
+ExecStart=/home/press-build/agent/env/bin/gunicorn --bind {{ build_agent_bind_address }}:{{ build_agent_port }} --certfile /home/press-build/agent/tls/fullchain.pem --keyfile /home/press-build/agent/tls/privkey.pem --workers 2 agent.web:application
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true
