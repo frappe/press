@@ -225,7 +225,10 @@ class Ansible:
 
 		self.sources = f"{self.host},"
 		self.inventory = InventoryManager(loader=self.loader, sources=self.sources)
-		self.inventory.get_host(self.host).set_variable("ansible_port", port)
+		host = self.inventory.get_host(self.host)
+		host.set_variable("ansible_port", port)
+		for key, value in get_server_ssh_host_variables(server).items():
+			host.set_variable(key, value)
 
 		self.variable_manager = VariableManager(loader=self.loader, inventory=self.inventory)
 
@@ -300,6 +303,17 @@ class Ansible:
 					).insert()
 					self.tasks.setdefault(role.get_name(), {})[task.name] = task_doc.name
 					self.task_list.append(task_doc.name)
+
+
+def get_server_ssh_host_variables(server):
+	"""Pin SSH host-key checking for build-only provisioning without changing other hosts."""
+	if not getattr(server, "is_build_only", False):
+		return {}
+
+	return {
+		"ansible_ssh_host_key_checking": True,
+		"ansible_ssh_common_args": "-o UserKnownHostsFile=/home/frappe/.ssh/known_hosts",
+	}
 
 
 class Status(str, Enum):

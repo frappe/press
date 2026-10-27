@@ -12,6 +12,7 @@ Build-only Servers run the Press Agent on an isolated HTTPS listener and direct 
 - The Docker service name must use `albasar-build-*.service` or `press-build-*.service`. The role reads, but does not change, its effective CPU quota, memory limit, and I/O weight and fails if they do not match the Server record.
 - Docker data must reside on a dedicated non-root mount whose capacity does not exceed the configured storage ceiling. The role verifies the mount and capacity; Press does not resize or reformat it.
 - The Agent endpoint must be HTTPS on the Server's own DNS name and configured port. The certificate is checked for that hostname. Press's health check must succeed after setup.
+- Build-only SSH provisioning overrides Press's legacy global host-key-checking default: Ansible requires a matching entry for the selected Server IP in `/home/frappe/.ssh/known_hosts`. Missing or changed keys fail closed. Add the verified host key through an independent trusted channel before setup; do not use `ssh-keyscan` output as a trust source.
 - The Agent binds only to the configured IPv4 address in Tailscale's CGNAT range, and the playbook verifies that address is assigned to `tailscale0`. Wildcard, loopback, non-Tailnet, and unassigned addresses fail closed. The build-only endpoint does not bind a public interface or alter NGINX/firewall rules.
 - The Agent repository is HTTPS-only and pinned to a full commit SHA. The Release Group must explicitly select this active build Server; it is never chosen by global load balancing.
 
