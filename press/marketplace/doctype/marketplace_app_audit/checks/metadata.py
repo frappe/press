@@ -203,6 +203,8 @@ def check_links(marketplace_app):
 	"""
 	import requests
 
+	from press.utils import ssrf
+
 	website = marketplace_app.website
 	support = marketplace_app.support
 	documentation = marketplace_app.documentation
@@ -250,11 +252,11 @@ def check_links(marketplace_app):
 			headers = {
 				"User-Agent": "Mozilla/5.0 (compatible; MarketplaceAuditBot/1.0; +https://cloud.frappe.io)",
 			}
-			response = requests.get(link, timeout=(3, 20), headers=headers)
+			response = ssrf.get(link, timeout=(3, 20), headers=headers)
 			# 0k or redirect is fine.
 			if response.status_code not in [200, 301, 302]:
 				broken_links.append(link)
-		except requests.exceptions.RequestException:
+		except (requests.exceptions.RequestException, ssrf.SSRFError):
 			broken_links.append(link)
 
 	if broken_links:
