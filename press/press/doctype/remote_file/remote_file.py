@@ -16,7 +16,7 @@ from frappe.utils.password import get_decrypted_password
 
 from press.access.utils import is_outside_employee, refuse_backup_download
 from press.press.doctype.site_activity.site_activity import log_site_activity
-from press.utils import ssrf
+from press.utils import log_error, ssrf
 
 if TYPE_CHECKING:
 	from collections.abc import Iterable
@@ -417,24 +417,31 @@ def delete_s3_files(buckets):
 
 	press_settings = frappe.get_single("Press Settings")
 	for bucket_name in buckets:
-		endpoint_url = (
-			frappe.db.get_value("Backup Bucket", bucket_name, "endpoint_url") or "https://s3.amazonaws.com"
-		)
-		if "s3.me-south-1.amazonaws.com" in endpoint_url:
-			continue
+		try:
+			endpoint_url = (
+				frappe.db.get_value("Backup Bucket", bucket_name, "endpoint_url")
+				or "https://s3.amazonaws.com"
+			)
+			if "s3.me-south-1.amazonaws.com" in endpoint_url:
+				continue
 
-		s3 = resource(
-			"s3",
-			aws_access_key_id=press_settings.offsite_backups_access_key_id,
-			aws_secret_access_key=press_settings.get_password(
-				"offsite_backups_secret_access_key", raise_exception=False
-			),
-			endpoint_url=endpoint_url,
-		)
-		bucket = s3.Bucket(bucket_name)
-		for objects in chunk([{"Key": x} for x in buckets[bucket_name]], 1000):
-			response = bucket.delete_objects(Delete={"Objects": objects})
-			response = pprint.pformat(response)
-			frappe.get_doc(
-				doctype="Remote Operation Log", operation_type="Delete Files", response=response
-			).insert()
+			s3 = resource(
+				"s3",
+				aws_access_key_id=press_settings.offsite_backups_access_key_id,
+				aws_secret_access_key=press_settings.get_password(
+					"offsite_backups_secret_access_key", raise_exception=False
+				),
+				endpoint_url=endpoint_url,
+			)
+			bucket = s3.Bucket(bucket_name)
+			for objects in chunk([{"Key": x} for x in buckets[bucket_name]], 1000):
+				try:
+					response = bucket.delete_objects(Delete={"Objects": objects})
+					response = pprint.pformat(response)
+					frappe.get_doc(
+						doctype="Remote Operation Log", operation_type="Delete Files", response=response
+					).insert()
+				except Exception:
+					log_error("Failed to delete S3 files", bucket=bucket_name, objects=objects)
+		except Exception:
+			log_error("Failed to delete S3 files", bucket=bucket_name)
