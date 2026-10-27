@@ -429,17 +429,20 @@ def update_with_node_modules_symlink_err(details: Details, job: AgentJob):
 		return False
 
 	app = match.group(1)
-	details["title"] = f"Deploy failed because of the {app} app"
+	details["title"] = f"New Bench failed because of the {app} app"
 
 	details["message"] = (
-		f"<p>The repository of the <b>{app}</b> app contains the symlink <code>{app}/public/node_modules</code>."
-		" The symlink points to a folder on the computer where it was made, so the bench can't be set up.</p>"
-		"<p>This is an issue in the app, so it can't be fixed from our end. To fix it, remove the symlink from the app repository:</p>"
+		f"<p>The <b>New Bench</b> job failed in the <b>Initialize Bench</b> step, because of an issue in the <b>{app}</b> app."
+		" Your sites continue to run on the old bench.</p>"
+		f"<p><b>Cause:</b> the {app} repository contains the symlink <code>{app}/public/node_modules</code>."
+		" <code>bench build</code> makes this symlink on a developer's computer, and it was committed by mistake."
+		" It points to a folder that does not exist on the server, so the bench can't be set up.</p>"
+		"<p><b>Fix:</b> remove the symlink from the app repository, then push the commit:</p>"
 		'<pre class="rounded-sm bg-surface-gray-2 p-3 text-xs">'
 		f"git rm --cached {app}/public/node_modules\n"
 		f"echo '{app}/public/node_modules' >> .gitignore\n"
 		"git commit -am 'chore: Remove node_modules symlink'</pre>"
-		"<p>Push the commit, then update the app on your bench group and deploy again."
+		"<p>Then deploy the bench group again with the new release of the app."
 		" If you don't own the app, ask its maintainer to make this change.</p>"
 	)
 

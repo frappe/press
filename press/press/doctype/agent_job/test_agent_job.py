@@ -656,7 +656,7 @@ class TestAgentJobNotifications(FrappeTestCase):
 		details = get_details(self.new_bench_job(self.NODE_MODULES_OUTPUT), "", "")
 
 		self.assertTrue(details["is_actionable"])
-		self.assertEqual(details["title"], "Deploy failed because of the dummy_app app")
+		self.assertEqual(details["title"], "New Bench failed because of the dummy_app app")
 		self.assertIn("git rm --cached dummy_app/public/node_modules", details["message"])
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
