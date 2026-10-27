@@ -6,13 +6,13 @@ from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 
 from press.api.bench import deploy_information, update_dependencies
-from press.patches.v0_8_0.bump_v16_nightly_node_version_to_24_22_1 import execute
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.team.test_team import create_test_press_admin_team
+from press.scripts.bump_v16_nightly_node_and_pip import execute
 from press.utils import get_current_team
 
 
