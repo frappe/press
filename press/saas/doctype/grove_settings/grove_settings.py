@@ -39,7 +39,6 @@ class GroveSettings(Document):
 		trial_key_cap: DF.Currency
 		trial_key_expiry: DF.Literal["Never", "1 Day", "7 Days", "14 Days", "30 Days"]
 		trial_key_geography: DF.Data | None
-		trial_model_group: DF.Data | None
 		trial_pool_size: DF.Int
 		trial_team: DF.Data | None
 	# end: auto-generated types
@@ -86,8 +85,8 @@ class GroveSettings(Document):
 		return read(response)
 
 	def provision_key(self) -> dict:
-		"""Mint one pool key under the trial team: untitled, in the trial geography and model group, at
-		the trial cap and expiry, the expiry counted from the key's first request since a pool key waits
+		"""Mint one pool key under the trial team: untitled, in the trial geography, at the trial cap and
+		expiry (what it may call is the team's, set at Grove), the expiry counted from the key's first request since a pool key waits
 		before anyone uses it. `{name, geography, gateway_url, api_key}`; the secret is in this answer
 		and nowhere else at Grove."""
 		body = {
@@ -98,8 +97,6 @@ class GroveSettings(Document):
 			"expiry": self.trial_key_expiry,
 			"expiry_from_first_use": True,
 		}
-		if self.trial_model_group:
-			body["model_group"] = self.trial_model_group
 		return self.call("grove.api.keys.provision_key", **body)
 
 	def revoke_key(self, name: str, team: str):
