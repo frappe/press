@@ -1093,6 +1093,12 @@ def redirect_to(location):
 	)
 
 
+@frappe.whitelist(allow_guest=True)
+def redirect_to_frappe_io_auth():
+	frappe.local.response["type"] = "redirect"
+	frappe.local.response["location"] = get_frappe_io_auth_url() or "/"
+
+
 def get_frappe_io_auth_url() -> str | None:
 	"""Get auth url for oauth login with frappe.io."""
 
