@@ -177,3 +177,4 @@ press.patches.v0_8_0.encrypt_telegram_bot_tokens
 press.patches.v0_8_0.encrypt_mailgun_api_key
 # run by hand after deploy, with the execute command
 # press.patches.v0_8_0.bump_v16_nightly_node_version_to_24_22_1
+# press.patches.v0_8_0.reapply_slave_connections_needed_for_purge
