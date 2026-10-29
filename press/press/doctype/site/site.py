@@ -1561,16 +1561,57 @@ class Site(Document, TagHelpers):
 		if play.status != "Success":
 			frappe.throw(f"Couldn't change the database password. See Ansible Play {play.name}")
 
-		# Not deduplicated: reusing a pending config job would drop the new password
-		job = Agent(self.server).create_agent_job(
+		job = self.update_site_config_without_deduplication({"db_password": password})
+		log_site_activity(self.name, "Update Configuration", reason="Rotate database password", job=job.name)
+
+	def update_site_config_without_deduplication(self, config: dict) -> AgentJob:
+		# Reusing a pending config job would drop a rotated secret
+		return Agent(self.server).create_agent_job(
 			"Update Site Configuration",
 			f"benches/{self.bench}/sites/{self.name}/config",
-			{"config": {"db_password": password}, "remove": []},
+			{"config": config, "remove": []},
 			bench=self.bench,
 			site=self.name,
 			deduplicate=False,
 		)
-		log_site_activity(self.name, "Update Configuration", reason="Rotate database password", job=job.name)
+
+	@frappe.whitelist()
+	def rotate_saas_communication_secret(self):
+		frappe.only_for("System Manager", message=True)
+		self.validate_communication_secret_can_rotate()
+		self.saas_communication_secret = frappe.generate_hash(length=32)
+		config = {"fc_communication_secret": self.saas_communication_secret}
+		self._update_configuration(config)
+		job = self.update_site_config_without_deduplication(config)
+		# Tokens made with the old secret would keep working until they expire
+		frappe.db.delete("Site Access Token", {"site": self.name})
+		log_site_activity(
+			self.name, "Update Configuration", reason="Rotate communication secret", job=job.name
+		)
+		if frappe.db.exists("Product Trial Request", {"site": self.name, "status": "Site Created"}):
+			# After commit, so that a failed call to the site can't undo the rotation
+			frappe.enqueue_doc(
+				"Site", self.name, "create_sync_user_webhook", queue="short", enqueue_after_commit=True
+			)
+
+	def validate_communication_secret_can_rotate(self):
+		if self.status not in ("Active", "Inactive", "Broken", "Suspended"):
+			frappe.throw(
+				f"This site is {self.status.lower()}. Rotate the communication secret after the site is active."
+			)
+		# Every full config update carries the secret, so a pending one would put the old secret back
+		if frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "Update Site Configuration",
+				"site": self.name,
+				"status": ("not in", ("Success", "Failure", "Delivery Failure")),
+				"request_data": ("like", '%"fc_communication_secret"%'),
+			},
+		):
+			frappe.throw(
+				"A site configuration update is still running for this site. Please try again after it finishes."
+			)
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive"])
@@ -2670,7 +2711,7 @@ class Site(Document, TagHelpers):
 
 	def create_sync_user_webhook(self):
 		"""
-		Create 3 webhook records in the site to sync the user with press
+		Create or update 3 webhook records in the site to sync the user with press
 		- One for user record creation
 		- One for user record update
 		- One for user record deletion
@@ -2713,6 +2754,8 @@ class Site(Document, TagHelpers):
 			except FrappeException as ex:
 				if "frappe.exceptions.DuplicateEntryError" not in str(ex):
 					raise ex
+				# Puts the current communication secret in the existing webhook
+				conn.update({**doctype_data, **webhook})
 
 	def sync_users_to_product_site(self, analytics=None):
 		from press.press.doctype.site_user.site_user import create_user_for_product_site
