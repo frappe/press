@@ -48,7 +48,8 @@ jobs:
             # PyJWT 2.12.1, mcp 1.23.3, opentelemetry-api 1.37.0: semgrep
             # 1.159.0 pins them. Newer semgrep pins tomli~=2.4 and click~=8.4,
             # and fc-prod pins tomli~=2.0.1 and Click~=8.1.7.
-            CVE-2026-59951 CVE-2026-114603 GHSA-pxh4-856f-4h89 PYSEC-2026-175
+            CVE-2026-59951 CVE-2026-114603 CVE-2026-116684 CVE-2026-116685
+            CVE-2026-116686 GHSA-pxh4-856f-4h89 PYSEC-2026-175
             PYSEC-2026-176 PYSEC-2026-177 PYSEC-2026-178 PYSEC-2026-179
             PYSEC-2026-3481 PYSEC-2026-3482 PYSEC-2026-3483 PYSEC-2026-4140
             PYSEC-2026-4141 PYSEC-2026-4144 PYSEC-2026-4145 PYSEC-2026-4146
@@ -63,8 +64,11 @@ jobs:
             PYSEC-2026-2044 PYSEC-2026-2046 PYSEC-2026-2320 PYSEC-2026-4312
             # filelock 4.1.0: fc-prod pins filelock~=3.13.1, and the fix in
             # 4.2.1 needs Python 3.11+.
-            CVE-2026-112906 CVE-2026-112907 CVE-2026-112913 CVE-2026-112914
-            CVE-2026-112937 CVE-2026-112940
+            CVE-2026-112906 CVE-2026-112907 CVE-2026-112908 CVE-2026-112909
+            CVE-2026-112910 CVE-2026-112911 CVE-2026-112912 CVE-2026-112913
+            CVE-2026-112914 CVE-2026-112915 CVE-2026-112934 CVE-2026-112935
+            CVE-2026-112937 CVE-2026-112938 CVE-2026-112939 CVE-2026-112940
+            CVE-2026-112941
             # pillow 12.3.0: fc-prod pins Pillow~=11.0.0, and the fix in 13.0.0
             # needs Python 3.11+.
             CVE-2026-96636 CVE-2026-96637 CVE-2026-96638 CVE-2026-96639
@@ -76,6 +80,8 @@ jobs:
             CVE-2026-112406 CVE-2026-112891 CVE-2026-112892 CVE-2026-112893
             CVE-2026-112894 CVE-2026-112895 CVE-2026-112896 CVE-2026-112897
             CVE-2026-112899 CVE-2026-112900 CVE-2026-112901 CVE-2026-114501
-            GHSA-78g4-xqwv-q3g8
+            GHSA-78g4-xqwv-q3g8 PYSEC-2026-4327 PYSEC-2026-4332
+            # dnspython 2.8.0: the fix in 2.9.0 needs Python 3.11+.
+            CVE-2026-114605
           )
           pip-audit --desc on "${ignored[@]/#/--ignore-vuln=}" .
