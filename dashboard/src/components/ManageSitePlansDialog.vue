@@ -33,6 +33,7 @@
 					v-model="plan"
 					:isPrivateBenchSite="!$site.doc.group_public"
 					:isDedicatedServerSite="$site.doc.is_dedicated_server"
+					:serverPlanPrice="$site.doc.dedicated_server_price_usd"
 					:selectedProvider="$site.doc.server_provider"
 				/>
 				<AlertBanner
