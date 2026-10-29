@@ -204,6 +204,20 @@ frappe.ui.form.on('Site', {
 			},
 			__('Actions'),
 		)
+
+		frm.add_custom_button(
+			__('Rotate Communication Secret'),
+			() => {
+				frappe.confirm(
+					`Rotate this site's Frappe Cloud communication secret? Billing inside the site fails for a few seconds, until the new secret is in its site config.`,
+					() =>
+						frm
+							.call('rotate_saas_communication_secret')
+							.then(() => frm.refresh()),
+				)
+			},
+			__('Actions'),
+		)
 		;[
 			[__('Suspend'), 'suspend'],
 			[__('Unsuspend'), 'unsuspend'],
