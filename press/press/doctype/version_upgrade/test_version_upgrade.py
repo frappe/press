@@ -163,8 +163,14 @@ class TestVersionUpgrade(FrappeTestCase):
 
 		candidate = group2.create_deploy_candidate()
 		build = frappe.get_doc(
-			{"doctype": "Deploy Candidate Build", "deploy_candidate": candidate.name, "no_build": True}
+			{
+				"doctype": "Deploy Candidate Build",
+				"deploy_candidate": candidate.name,
+				"no_build": True,
+				"status": "Scheduled",  # skip the build in after_insert
+			}
 		).insert()
+		build._set_output_parsers()  # build() sets these before a failure
 		build.handle_build_failure()
 
 		self.assertEqual(frappe.db.get_value("Version Upgrade", version_upgrade.name, "status"), "Cancelled")
