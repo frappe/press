@@ -559,6 +559,7 @@ export default {
 					referrer: this.getReferrerIfAny(),
 					product: this.$route.query.product,
 					aid: this.getAidIfAny(),
+					url_args: JSON.stringify(this.$route.query),
 				},
 				onSuccess(account_request) {
 					this.account_request = account_request;
@@ -665,6 +666,7 @@ export default {
 				makeParams() {
 					return {
 						product: this.$route.query.product,
+						url_args: JSON.stringify(this.$route.query),
 					};
 				},
 				onSuccess(url) {
