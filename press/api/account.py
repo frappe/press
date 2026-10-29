@@ -23,6 +23,7 @@ from frappe.website.utils import build_response
 
 from press.guards import mfa
 from press.guards.role_guard import roles_enabled, skip_roles
+from press.press.doctype.account_request.account_request import filter_ad_click_url_args
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
@@ -49,7 +50,11 @@ if TYPE_CHECKING:
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
 def signup(
-	email: str, product: str | None = None, referrer: str | None = None, aid: str | None = None
+	email: str,
+	product: str | None = None,
+	referrer: str | None = None,
+	aid: str | None = None,
+	url_args: str | None = None,
 ) -> str:
 	frappe.utils.validate_email_address(email, True)
 
@@ -85,6 +90,7 @@ def signup(
 				# Pulse: anonymous browser id forwarded from the product website as
 				# ?aid=…; aliased onto the account user when the team is created.
 				"pulse_anonymous_id": aid,
+				"url_args": filter_ad_click_url_args(url_args),
 			}
 		).insert(ignore_permissions=True)
 		account_request = account_request_doc.name
