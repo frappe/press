@@ -412,6 +412,10 @@ frappe.ui.form.on('Database Server', {
 				frm.add_custom_button(
 					label,
 					() => {
+						if (typeof method === 'function') {
+							method()
+							return
+						}
 						if (confirm) {
 							frappe.confirm(
 								`Are you sure you want to ${label.toLowerCase()}?`,
