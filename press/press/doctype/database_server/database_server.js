@@ -415,16 +415,25 @@ frappe.ui.form.on('Database Server', {
 						if (confirm) {
 							frappe.confirm(
 								`Are you sure you want to ${label.toLowerCase()}?`,
-								() =>
+								() => {
+									if (typeof method === 'function') {
+										method()
+										return
+									}
 									frm.call(method).then((r) => {
 										if (r.message) {
 											frappe.msgprint(r.message)
 										} else {
 											frm.refresh()
 										}
-									}),
+									})
+								},
 							)
 						} else {
+							if (typeof method === 'function') {
+								method()
+								return
+							}
 							frm.call(method).then((r) => {
 								if (r.message) {
 									frappe.msgprint(r.message)
