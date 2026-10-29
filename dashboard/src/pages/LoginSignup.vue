@@ -558,12 +558,8 @@ export default {
 					email: this.email,
 					referrer: this.getReferrerIfAny(),
 					product: this.$route.query.product,
-<<<<<<< HEAD
 					aid: this.getAidIfAny(),
-=======
-					aid: getAnonymousId(),
 					url_args: JSON.stringify(this.$route.query),
->>>>>>> 24591a7 (feat(signup): Save UTM and ad click params on account request)
 				},
 				onSuccess(account_request) {
 					this.account_request = account_request;
@@ -670,11 +666,7 @@ export default {
 				makeParams() {
 					return {
 						product: this.$route.query.product,
-<<<<<<< HEAD
-=======
-						aid: getAnonymousId(),
 						url_args: JSON.stringify(this.$route.query),
->>>>>>> 24591a7 (feat(signup): Save UTM and ad click params on account request)
 					};
 				},
 				onSuccess(url) {
