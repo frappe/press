@@ -1594,16 +1594,9 @@ class TestRotateDatabasePassword(FrappeTestCase):
 
 		agent.return_value.create_agent_job.assert_not_called()
 
-	def create_pending_config_job(self, config: dict):
-		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
-
-		job = create_test_agent_job("Update Site Configuration", server=self.site.server, status="Pending")
-		job.db_set({"site": self.site.name, "request_data": json.dumps({"config": config, "remove": []})})
-		return job
-
 	@patch("press.press.doctype.site.site.Ansible")
 	def test_rotate_refuses_while_a_previous_rotation_is_pending(self, ansible):
-		self.create_pending_config_job({"db_password": "older-value"})  # pragma: allowlist secret
+		create_pending_config_job(self.site, {"db_password": "older-value"})  # pragma: allowlist secret
 
 		# Patched after the job is created; inserting an Agent Job enqueues its request too
 		with patch("press.press.doctype.site.site.frappe.enqueue_doc") as enqueue_doc:
@@ -1615,7 +1608,7 @@ class TestRotateDatabasePassword(FrappeTestCase):
 		ansible.assert_not_called()
 
 	def test_rotate_is_not_blocked_by_other_pending_config_updates(self):
-		self.create_pending_config_job({"maintenance_mode": 1})
+		create_pending_config_job(self.site, {"maintenance_mode": 1})
 
 		with patch("press.press.doctype.site.site.frappe.enqueue_doc") as enqueue_doc:
 			self.site.rotate_database_password()
@@ -1624,9 +1617,15 @@ class TestRotateDatabasePassword(FrappeTestCase):
 		self.assertTrue(enqueue_doc.call_args.kwargs["deduplicate"])
 
 	def test_an_older_rotation_cannot_be_retried_after_a_newer_one(self):
-		older = self.create_pending_config_job({"db_password": "older-value"})  # pragma: allowlist secret
+		older = create_pending_config_job(
+			self.site,
+			{"db_password": "older-value"},  # pragma: allowlist secret
+		)
 		older.db_set({"status": "Failure", "creation": frappe.utils.add_to_date(None, minutes=-5)})
-		newer = self.create_pending_config_job({"db_password": "newer-value"})  # pragma: allowlist secret
+		newer = create_pending_config_job(
+			self.site,
+			{"db_password": "newer-value"},  # pragma: allowlist secret
+		)
 		older.reload()
 
 		jobs_before = frappe.db.count("Agent Job")
@@ -1637,3 +1636,154 @@ class TestRotateDatabasePassword(FrappeTestCase):
 
 		with patch("press.press.doctype.agent_job.agent_job.frappe.db.commit"):
 			newer.retry_in_place()
+
+
+def create_pending_config_job(site: Site, config: dict):
+	from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+	job = create_test_agent_job("Update Site Configuration", server=site.server, status="Pending")
+	job.db_set({"site": site.name, "request_data": json.dumps({"config": config, "remove": []})})
+	return job
+
+
+class TestRotateSaasCommunicationSecret(FrappeTestCase):
+	def setUp(self):
+		self.site = create_test_site("rotatecommsecret")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def test_only_system_managers_can_rotate_communication_secret(self):
+		user = frappe.get_doc(
+			{"doctype": "User", "email": frappe.mock("email"), "first_name": "Staff"}
+		).insert()
+
+		with self.set_user(user.name), self.assertRaisesRegex(frappe.PermissionError, "System Manager"):
+			self.site.rotate_saas_communication_secret()
+
+	@patch("press.press.doctype.site.site.log_site_activity")
+	@patch("press.press.doctype.site.site.Agent")
+	def test_rotate_saves_new_secret_and_sends_only_it_to_site_config(self, agent, log_activity):
+		old_secret = self.site.saas_communication_secret
+
+		self.site.rotate_saas_communication_secret()
+
+		self.site.reload()
+		new_secret = self.site.saas_communication_secret
+		self.assertTrue(new_secret)
+		self.assertNotEqual(new_secret, old_secret)
+		self.assertEqual(json.loads(self.site.config)["fc_communication_secret"], new_secret)
+		create_agent_job = agent.return_value.create_agent_job
+		_, path, data = create_agent_job.call_args.args
+		self.assertEqual(path, f"benches/{self.site.bench}/sites/{self.site.name}/config")
+		self.assertEqual(data, {"config": {"fc_communication_secret": new_secret}, "remove": []})
+		self.assertFalse(create_agent_job.call_args.kwargs["deduplicate"])
+		self.assertEqual(log_activity.call_args.kwargs["reason"], "Rotate communication secret")
+
+	@patch("press.press.doctype.site.site.log_site_activity")
+	@patch("press.press.doctype.site.site.Agent")
+	def test_rotate_deletes_access_tokens_made_with_the_old_secret(self, agent, log_activity):
+		from press.saas.doctype.site_access_token.site_access_token import SiteAccessToken
+
+		SiteAccessToken.generate(self.site.name)
+
+		self.site.rotate_saas_communication_secret()
+
+		self.assertFalse(frappe.db.exists("Site Access Token", {"site": self.site.name}))
+
+	@patch("press.press.doctype.site.site.Agent")
+	def test_rotate_refuses_while_a_config_update_with_the_old_secret_is_pending(self, agent):
+		old_secret = self.site.saas_communication_secret
+		create_pending_config_job(
+			self.site,
+			{"fc_communication_secret": "old-secret"},  # pragma: allowlist secret
+		)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "configuration update is still running"):
+			self.site.rotate_saas_communication_secret()
+
+		self.assertEqual(frappe.db.get_value("Site", self.site.name, "saas_communication_secret"), old_secret)
+		agent.return_value.create_agent_job.assert_not_called()
+
+	@patch("press.press.doctype.site.site.log_site_activity")
+	@patch("press.press.doctype.site.site.Agent")
+	def test_rotate_is_not_blocked_by_finished_jobs_or_a_pending_password_rotation(self, agent, log_activity):
+		finished = create_pending_config_job(
+			self.site,
+			{"fc_communication_secret": "old-secret"},  # pragma: allowlist secret
+		)
+		finished.db_set("status", "Failure")
+		create_pending_config_job(self.site, {"db_password": "new-password"})  # pragma: allowlist secret
+
+		self.site.rotate_saas_communication_secret()
+
+		agent.return_value.create_agent_job.assert_called_once()
+
+	@patch("press.press.doctype.site.site.Agent")
+	def test_rotate_refuses_an_archived_site(self, agent):
+		self.site.db_set("status", "Archived")
+
+		with self.assertRaisesRegex(frappe.ValidationError, "This site is archived"):
+			self.site.rotate_saas_communication_secret()
+
+		agent.return_value.create_agent_job.assert_not_called()
+
+	@patch("press.press.doctype.site.site.log_site_activity")
+	@patch("press.press.doctype.site.site.Agent")
+	def test_rotate_enqueues_sync_user_webhook_update_only_for_a_created_product_trial(
+		self, agent, log_activity
+	):
+		def webhook_updates(enqueue_doc):
+			return [c for c in enqueue_doc.call_args_list if c.args[2:3] == ("create_sync_user_webhook",)]
+
+		trial_request = frappe.get_doc(
+			{"doctype": "Product Trial Request", "site": self.site.name, "status": "Error"}
+		)
+		trial_request.db_insert()
+		with patch("press.press.doctype.site.site.frappe.enqueue_doc") as enqueue_doc:
+			self.site.rotate_saas_communication_secret()
+			self.assertEqual(webhook_updates(enqueue_doc), [])
+
+			trial_request.db_set("status", "Site Created")
+			self.site.rotate_saas_communication_secret()
+			(update,) = webhook_updates(enqueue_doc)
+			self.assertTrue(update.kwargs["enqueue_after_commit"])
+
+	def test_sync_user_webhook_gets_the_current_secret_when_it_exists(self):
+		from frappe.frappeclient import FrappeException
+
+		connection = Mock()
+		connection.insert.side_effect = FrappeException("frappe.exceptions.DuplicateEntryError")
+		self.site.saas_communication_secret = "new-secret"  # pragma: allowlist secret
+
+		with patch.object(Site, "get_connection_as_admin", return_value=connection):
+			self.site.create_sync_user_webhook()
+
+		updated = [call.args[0] for call in connection.update.call_args_list]
+		self.assertEqual(
+			[webhook["name"] for webhook in updated],
+			[
+				"Sync User records with Frappe Cloud on create",
+				"Sync User records with Frappe Cloud on update",
+				"Sync User records with Frappe Cloud on delete",
+			],
+		)
+		for webhook in updated:
+			self.assertEqual(webhook["doctype"], "Webhook")
+			headers = {header["key"]: header["value"] for header in webhook["webhook_headers"]}
+			self.assertEqual(headers["x-site-token"], "new-secret")
+
+	def test_sync_user_webhook_raises_other_errors_without_updating(self):
+		from frappe.frappeclient import FrappeException
+
+		connection = Mock()
+		connection.insert.side_effect = FrappeException("frappe.exceptions.PermissionError")
+
+		with (
+			patch.object(Site, "get_connection_as_admin", return_value=connection),
+			self.assertRaisesRegex(FrappeException, "PermissionError"),
+		):
+			self.site.create_sync_user_webhook()
+
+		connection.update.assert_not_called()
