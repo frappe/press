@@ -4,7 +4,7 @@
 
 <script>
 import PlansCards from './PlansCards.vue';
-import { getPlans } from '../data/plans';
+import { getPlans, planSupportsProvider } from '../data/plans';
 
 export default {
 	name: 'SitePlansCards',
@@ -91,18 +91,12 @@ export default {
 				plans = plans.filter((plan) => !plan.restricted_plan);
 			}
 			if (this.selectedProvider) {
-				const provider = ['Generic', 'Scaleway'].includes(this.selectedProvider)
-					? 'AWS EC2'
-					: this.selectedProvider;
-
 				plans = plans.map((plan) => {
 					return {
 						...plan,
 						disabled:
 							plan.disabled ||
-							(plan.cloud_providers && plan.cloud_providers.length > 0
-								? !plan.cloud_providers.includes(provider)
-								: false),
+							!planSupportsProvider(plan, this.selectedProvider),
 					};
 				});
 			}
@@ -146,6 +140,9 @@ export default {
 						},
 						{
 							value: plan.offsite_backups ? 'Offsite Backups' : '',
+						},
+						{
+							value: plan.private_benches ? 'Private Bench' : '',
 						},
 						{
 							value: plan.monitor_access ? 'Advanced Monitoring' : '',
