@@ -1,3 +1,4 @@
+import type { Locator } from '@playwright/test'
 import { mockAnalytics, SITE_NAME } from './analytics-fixture'
 import { expect, test } from './coverage.fixture'
 
@@ -5,6 +6,33 @@ const UPTIME = Array.from({ length: 61 }, (_, index) => ({
 	date: new Date(Date.UTC(2026, 6, 1, index)).toISOString(),
 	value: index % 5 === 0 ? 0 : 1,
 }))
+
+// The uptime card lights the date labels for 300ms when the chunk changes.
+// `toHaveClass` samples from outside the browser and a loaded runner can step
+// over that window, so watch the element from inside the page instead. Call
+// this before the action that lights it, then await the result after.
+function watchForClass(label: Locator, className: string, timeout = 5000) {
+	return label.evaluate(
+		(element, { className, timeout }) =>
+			new Promise<boolean>((resolve) => {
+				if (element.classList.contains(className)) return resolve(true)
+				const observer = new MutationObserver(() => {
+					if (!element.classList.contains(className)) return
+					observer.disconnect()
+					resolve(true)
+				})
+				observer.observe(element, {
+					attributes: true,
+					attributeFilter: ['class'],
+				})
+				setTimeout(() => {
+					observer.disconnect()
+					resolve(false)
+				}, timeout)
+			}),
+		{ className, timeout },
+	)
+}
 
 test('site uptime bars space evenly, dim on hover, and reset date highlights', async ({
 	page,
@@ -30,9 +58,12 @@ test('site uptime bars space evenly, dim on hover, and reset date highlights', a
 	const previousChunk = uptimeCard.getByRole('button', {
 		name: 'Previous uptime chunk',
 	})
-	await previousChunk.click()
 	const dateLabels = uptimeCard.locator('.text-ink-gray-5 > div')
-	await expect(dateLabels.first()).toHaveClass(/bg-surface-gray-3/)
+	const highlighted = watchForClass(dateLabels.first(), 'bg-surface-gray-3')
+
+	await previousChunk.click()
+
+	expect(await highlighted).toBe(true)
 	await expect(dateLabels.first()).not.toHaveClass(/bg-surface-gray-3/, {
 		timeout: 1000,
 	})
