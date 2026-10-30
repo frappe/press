@@ -17,6 +17,7 @@ from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
 from press.press.doctype.auto_scale_record.auto_scale_record import calculate_secondary_server_price
 from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.enterprise_contract.installments import add_installment, paid_by_contract
 from press.utils import get_current_team, log_error
 from press.utils.billing import (
 	convert_stripe_money,
@@ -80,6 +81,7 @@ class Invoice(Document):
 		mpesa_receipt_number: DF.Data | None
 		mpesa_request_id: DF.Data | None
 		next_payment_attempt_date: DF.Date | None
+		paid_by_contract: DF.Currency
 		partner_email: DF.Data | None
 		payment_attempt_count: DF.Int
 		payment_attempt_date: DF.Date | None
@@ -130,6 +132,7 @@ class Invoice(Document):
 		"docstatus",
 		"gst",
 		"applied_credits",
+		"paid_by_contract",
 		"status",
 		"due_date",
 		"total_discount_amount",
@@ -238,6 +241,9 @@ class Invoice(Document):
 		else:
 			url = self.stripe_invoice_url
 		return url
+
+	def before_insert(self):
+		add_installment(self)
 
 	def before_validate(self):
 		self.apply_partner_discounts()
@@ -416,7 +422,8 @@ class Invoice(Document):
 			self.amount_due_with_tax = flt(self.amount_due + self.gst, 2)
 
 	def calculate_amount_due(self):
-		self.amount_due = flt(self.total - self.applied_credits, 2)
+		self.paid_by_contract = paid_by_contract(self)
+		self.amount_due = flt(self.total - self.applied_credits - self.paid_by_contract, 2)
 		if self.amount_due < 0 and self.amount_due > -0.1:
 			self.write_off_amount = self.amount_due
 			self.amount_due = 0
@@ -1052,10 +1059,12 @@ class Invoice(Document):
 				item.discount = flt(item.amount * (item.discount_percentage / 100), 2)
 
 		self.total_before_discount = self.total
+		# The contract line was paid in full upfront, so invoice-wide discounts skip it.
+		discountable = flt(self.total_before_discount - paid_by_contract(self), 2)
 
 		for discount in self.discounts:
 			if discount.based_on == "Percent":
-				discount.amount = flt(self.total_before_discount * (discount.percent / 100), 2)
+				discount.amount = flt(discountable * (discount.percent / 100), 2)
 
 		self.total_discount_amount = sum([item.discount for item in self.items]) + sum(
 			[d.amount for d in self.discounts]
@@ -1065,7 +1074,7 @@ class Invoice(Document):
 		if npo_discount_applicable:
 			npo_discount = frappe.db.get_single_value("Press Settings", "npo_discount")
 			if npo_discount:
-				self.total_discount_amount += flt(self.total * (npo_discount / 100), 2)
+				self.total_discount_amount += flt(discountable * (npo_discount / 100), 2)
 
 		self.total = flt(self.total_before_discount - self.total_discount_amount, 2)
 
