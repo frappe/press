@@ -15,6 +15,10 @@ from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.unique_name_generator import generate as generate_random_name
 
+# A site update marks a site Broken before its recovery job finishes
+BROKEN_STANDBY_SITE_GRACE_HOURS = 2
+BROKEN_STANDBY_SITES_PER_SERVER = 5
+
 
 class ProductTrial(Document):
 	# begin: auto-generated types
@@ -649,12 +653,46 @@ def archive_standby_sites_of_disabled_pooling_products():
 			frappe.db.rollback()
 
 
-def archive_standby_site(site: str):
+def archive_broken_standby_sites():
+	"""Archive standby sites that broke. They are never handed out and nothing else removes them."""
+	sites = frappe.get_all(
+		"Site",
+		filters={
+			"is_standby": True,
+			"status": "Broken",
+			"modified": ("<", frappe.utils.add_to_date(None, hours=-BROKEN_STANDBY_SITE_GRACE_HOURS)),
+		},
+		fields=["name", "server"],
+		order_by="modified asc",
+	)
+	archived_per_server: dict[str, int] = {}
+	for site in sites:
+		if has_job_timeout_exceeded():
+			return
+		# Each archive also queues NGINX jobs, so a server with many broken sites gets a few per run
+		if archived_per_server.get(site.server, 0) >= BROKEN_STANDBY_SITES_PER_SERVER:
+			continue
+		try:
+			archive_standby_site(site.name, reason="Broken standby site", force=True)
+			frappe.db.commit()
+			archived_per_server[site.server] = archived_per_server.get(site.server, 0) + 1
+		except Exception as e:
+			log_error(
+				"Archive Standby Site Error",
+				data=e,
+				reference_doctype="Site",
+				reference_name=site.name,
+			)
+			frappe.db.rollback()
+
+
+def archive_standby_site(site: str, reason: str = "Product Trial pooling disabled", force: bool = False):
 	site_doc = frappe.get_doc("Site", site, for_update=True)
 	if not site_doc.is_standby or site_doc.status == "Archived":
 		return
 
-	site_doc.archive(reason="Product Trial pooling disabled", create_offsite_backup=False)
+	# A standby site has no user data, so it needs no backup (one fails on a broken site anyway)
+	site_doc.archive(reason=reason, force=force, create_offsite_backup=False)
 
 
 def send_verification_mail_for_login(email: str, product: str, code: str):
