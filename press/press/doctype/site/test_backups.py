@@ -285,14 +285,16 @@ class TestBackupSchedule(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def _create_site(self, price_usd: float = 25.0, offsite_backups: bool = True) -> Site:
+	def _create_site(
+		self, price_usd: float = 25.0, offsite_backups: bool = True, public_server: bool = True
+	) -> Site:
 		plan = create_test_plan(
 			"Site",
 			plan_name=f"Test Site Plan USD {price_usd}{' with offsite backups' if offsite_backups else ''}",
 			price_usd=price_usd,
 			offsite_backups=offsite_backups,
 		)
-		return create_test_site(plan=plan.name)
+		return create_test_site(plan=plan.name, public_server=public_server)
 
 	def test_setting_a_backup_time_takes_the_site_off_the_default_schedule(self):
 		site = self._create_site()
@@ -359,3 +361,10 @@ class TestBackupSchedule(FrappeTestCase):
 		site = self._create_site(price_usd=0.0, offsite_backups=False)
 
 		self.assertFalse(site.plan_allows_backup_schedule())
+
+	def test_backup_schedule_is_offered_on_a_dedicated_server_whatever_the_plan(self):
+		site = self._create_site(price_usd=10.0, offsite_backups=False, public_server=False)
+
+		self.assertTrue(site.plan_allows_backup_schedule())
+		site.update_backup_schedule("02:00")
+		self.assertEqual(site.get_backup_schedule(), {"custom": True, "times": ["02:00"]})
