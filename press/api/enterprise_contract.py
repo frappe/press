@@ -9,23 +9,21 @@ import frappe
 from frappe.utils import get_url
 
 from press.guards import role_guard
-from press.press.doctype.balance_transaction.balance_transaction import unallocated_credit
 from press.press.doctype.enterprise_contract.checkout import (
 	paid_checkout_reference,
 	record_paid_checkout,
 	start_stripe_checkout,
 )
 from press.press.doctype.enterprise_contract.enterprise_contract import (
-	PURCHASED_CREDIT_SOURCES,
+	ALREADY_PAID,
 	EnterpriseContract,
 	bank_transfer_details,
 	create_contract,
 	open_contract_name,
+	purchased_credit,
 )
 from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan import enabled_plans
 from press.utils import get_current_team
-
-ALREADY_PAID = "This order is already paid"
 
 
 @frappe.whitelist()
@@ -37,7 +35,7 @@ def get():
 		"plans": enabled_plans(team.currency),
 		"contract": EnterpriseContract("Enterprise Contract", name).as_dashboard() if name else None,
 		"bank_transfer": bank_transfer_details() if team.currency == "INR" else None,
-		"credit_balance": unallocated_credit(team.name, PURCHASED_CREDIT_SOURCES),
+		"credit_balance": purchased_credit(team.name),
 	}
 
 
@@ -61,7 +59,7 @@ def submit(order: dict | str, return_url: str, use_credits: bool = False):
 def pay(return_url: str):
 	contract = awaiting_payment_contract(for_update=True)
 	if record_paid_checkout(contract):
-		return {"checkout_url": None}
+		return {"checkout_url": None, "message": ALREADY_PAID}
 	return {"checkout_url": start_checkout(contract, return_url)}
 
 

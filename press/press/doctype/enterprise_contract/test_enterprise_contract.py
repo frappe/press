@@ -7,9 +7,10 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, add_years, getdate, today
 
-from press.api.enterprise_contract import validate_return_url
+from press.api.enterprise_contract import pay, validate_return_url
 from press.press.doctype.enterprise_contract.checkout import record_paid_checkout
 from press.press.doctype.enterprise_contract.enterprise_contract import (
+	ALREADY_PAID,
 	EnterpriseContract,
 	create_contract,
 )
@@ -326,6 +327,19 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 		contract.reload()
 		self.assertEqual(contract.status, "Pending Signature")
 		self.assertEqual([p.payment_reference for p in contract.payments], ["pi_enterprise_test"])
+
+	def test_pay_on_an_order_whose_last_checkout_is_paid_records_it_and_says_so(self):
+		team = create_team_with_billing_address("United States")
+		contract = create_contract(team, self.make_order())
+		contract.db_set("checkout_reference", "cs_enterprise_test")
+
+		frappe.set_user(team.user)
+		self.addCleanup(frappe.set_user, "Administrator")
+		with patch_stripe_session(payment_status="paid", payment_intent="pi_enterprise_test"):
+			response = pay(return_url="http://press.local/dashboard/contracts")
+
+		self.assertEqual(response, {"checkout_url": None, "message": ALREADY_PAID})
+		self.assertEqual(contract.reload().status, "Pending Signature")
 
 	def test_unpaid_checkout_is_not_recorded_and_the_order_keeps_waiting(self):
 		contract = create_contract(create_team_with_billing_address("United States"), self.make_order())
