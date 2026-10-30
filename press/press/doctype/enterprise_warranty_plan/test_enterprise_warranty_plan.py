@@ -32,6 +32,13 @@ class TestEnterpriseWarrantyPlan(FrappeTestCase):
 		self.assertEqual(plan.as_dashboard("INR")["coverage"], ["Bug fixes", "Security fixes"])
 		self.assertEqual(plan.as_dashboard("INR")["price_lock_years"], [1, 2, 3])
 
+	def test_dashboard_view_charges_gst_on_inr_but_not_when_paid_with_credits(self):
+		frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+		view = create_test_enterprise_plan().as_dashboard("INR")
+
+		self.assertEqual(view["amount_due"], {"amount": 2400000, "gst": 432000, "total": 2832000})
+		self.assertEqual(view["amount_due_with_credits"], {"amount": 2400000, "gst": 0, "total": 2400000})
+
 	def test_plan_without_a_price_lock_period_is_rejected(self):
 		with self.assertRaisesRegex(frappe.ValidationError, "at least 1 year"):
 			create_test_enterprise_plan(max_price_lock_years=0)

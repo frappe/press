@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import add_days, add_years, cint, flt, getdate, now_datetime, today
+from frappe.utils import add_days, add_years, cint, getdate, now_datetime, today
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.enterprise_contract.installments import (
@@ -17,7 +17,7 @@ from press.press.doctype.enterprise_contract.installments import (
 )
 from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan import (
 	EnterpriseWarrantyPlan,
-	gst_rate,
+	amount_due,
 )
 
 if TYPE_CHECKING:
@@ -144,11 +144,8 @@ class EnterpriseContract(Document):
 		if self.status == "Pending Signature" and self.agreement_date and self.signed_contract:
 			self.status = "Active"
 
-	# Credits were taxed when they were bought, so paying with them adds no GST.
 	def amount_due(self, with_gst: bool = True) -> dict:
-		amount = self.renewal_price()
-		gst = flt(amount * gst_rate(), 2) if with_gst and self.currency == "INR" else 0
-		return {"amount": amount, "gst": gst, "total": amount + gst}
+		return amount_due(self.renewal_price(), self.currency, with_gst)
 
 	def pay_with_credits(self):
 		if self.status != "Awaiting Payment":
@@ -196,10 +193,19 @@ class EnterpriseContract(Document):
 		add_installment_to_current_invoice(self.team)
 
 	def submit_transfer_reference(self, reference: str):
+		if self.payment_gateway != "Bank Transfer":
+			frappe.throw("This order is paid online")
 		reference = (reference or "").strip().upper()
 		if not UTR_PATTERN.fullmatch(reference):
 			frappe.throw("Enter the 12 to 22 character UTR number from your bank")
 		self.transfer_reference = reference
+		# Team members only have read access; callers check billing access.
+		self.save(ignore_permissions=True)
+
+	def cancel_order(self):
+		if self.transfer_reference:
+			frappe.throw("You have already sent a bank transfer for this order. Please contact support.")
+		self.status = "Cancelled"
 		# Team members only have read access; callers check billing access.
 		self.save(ignore_permissions=True)
 
@@ -233,6 +239,7 @@ class EnterpriseContract(Document):
 			"payments": [payment_for_dashboard(row) for row in reversed(self.payments)],
 			"next_renewal": {"date": self.next_period_start(), "amount": self.renewal_price()},
 			"amount_due": self.amount_due(),
+			"amount_due_with_credits": self.amount_due(with_gst=False),
 		}
 
 
