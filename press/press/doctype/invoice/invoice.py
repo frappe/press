@@ -10,13 +10,14 @@ import razorpay
 import stripe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, flt, getdate, now
+from frappe.utils import flt, getdate, now
 from frappe.utils.data import fmt_money
 
 from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
 from press.press.doctype.auto_scale_record.auto_scale_record import calculate_secondary_server_price
 from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.invoice_item.invoice_item import get_item_description
 from press.utils import get_current_team, log_error
 from press.utils.billing import (
 	convert_stripe_money,
@@ -894,24 +895,7 @@ class Invoice(Document):
 	def update_item_descriptions(self):
 		for item in self.items:
 			if not item.description:
-				how_many_days = f"{cint(item.quantity)} day{'s' if item.quantity > 1 else ''}"
-				if item.document_type == "Site" and item.plan:
-					site_name = item.document_name.split(".archived")[0]
-					plan = frappe.get_cached_value("Site Plan", item.plan, "plan_title")
-					item.description = f"{site_name} active for {how_many_days} on {plan} plan"
-				elif item.document_type in ["Server", "Database Server"]:
-					server_title = frappe.get_cached_value(item.document_type, item.document_name, "title")
-					if item.plan == "Add-on Storage plan":
-						item.description = f"{server_title} Storage Add-on for {how_many_days}"
-					else:
-						item.description = f"{server_title} active for {how_many_days}"
-				elif item.document_type == "Server Snapshot":
-					item.description = f"{item.document_name} stored for {how_many_days}"
-				elif item.document_type == "Marketplace App":
-					app_title = frappe.get_cached_value("Marketplace App", item.document_name, "title")
-					item.description = f"Marketplace app {app_title} active for {how_many_days}"
-				else:
-					item.description = "Prepaid Credits"
+				item.description = get_item_description(item)
 
 	def is_auto_scale_invoice_item(self, usage_record: UsageRecord) -> bool:
 		"""Check if this a secondary server usage record"""

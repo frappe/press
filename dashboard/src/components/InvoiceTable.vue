@@ -152,6 +152,7 @@
 </template>
 <script>
 import { getPlans } from '../data/plans'
+import { downloadCSV } from '../utils/csv'
 
 export default {
 	name: 'InvoiceTable',
@@ -178,8 +179,7 @@ export default {
 					}
 				},
 				onSuccess(data) {
-					const filename = `${this.invoiceId}.csv`
-					this.downloadAsCSV(data, filename)
+					downloadCSV(data, `${this.invoiceId}.csv`)
 				},
 			}
 		},
@@ -241,22 +241,6 @@ export default {
 			if (!this.doc) return
 			let currency = this.doc.currency
 			return this.$format.currency(value, currency)
-		},
-		downloadAsCSV(data, filename) {
-			if (!data || data.length === 0) return
-			let result = []
-			result[0] = Object.keys(data[0])
-			data.forEach((row) => {
-				result.push(Object.values(row))
-			})
-			const csv = result.map((row) => Object.values(row).join(',')).join('\n')
-			const blob = new Blob([csv], { type: 'text/csv' })
-			const url = window.URL.createObjectURL(blob)
-			const a = document.createElement('a')
-			a.href = url
-			a.download = filename
-			a.click()
-			window.URL.revokeObjectURL(url)
 		},
 	},
 }
