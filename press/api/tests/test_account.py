@@ -75,6 +75,20 @@ class TestAccountApi(TestCase):
 		acc_req_count_after = frappe.db.count("Account Request")
 		self.assertGreater(acc_req_count_after, acc_req_count_before)
 
+	def test_signup_saves_only_ad_click_and_utm_params_in_url_args(self):
+		email = frappe.mock("email")
+		url_args = {"product": "crm", "gclid": "abc123", "utm_source": "google", "other": "x"}
+		with patch.object(AccountRequest, "send_verification_email"):
+			account_request = signup(email, product=None, url_args=json.dumps(url_args))
+		saved = frappe.db.get_value("Account Request", account_request, "url_args")
+		self.assertEqual(json.loads(saved), {"gclid": "abc123", "utm_source": "google"})
+
+	def test_signup_without_ad_click_params_leaves_url_args_empty(self):
+		email = frappe.mock("email")
+		with patch.object(AccountRequest, "send_verification_email"):
+			account_request = signup(email, url_args=json.dumps({"product": "crm"}))
+		self.assertIsNone(frappe.db.get_value("Account Request", account_request, "url_args"))
+
 	def test_invite_team_member_accepts_custom_role_by_press_role_name(self):
 		"""The invite dialog sends the Press Role document name (a hash) for
 		custom roles, not the title. invite_team_member must accept it and store
