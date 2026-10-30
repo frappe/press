@@ -250,6 +250,12 @@ let router = createRouter({
 			],
 		},
 		{
+			name: 'Contracts',
+			path: '/contracts',
+			component: () => import('./pages/EnterpriseContract.vue'),
+			meta: { title: 'Contracts' },
+		},
+		{
 			path: '/settings',
 			name: 'Settings',
 			redirect: { name: 'SettingsProfile' },
