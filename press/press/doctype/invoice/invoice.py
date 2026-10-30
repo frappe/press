@@ -1048,7 +1048,8 @@ class Invoice(Document):
 
 		self.total_before_discount = self.total
 		# The contract line was paid in full upfront, so invoice-wide discounts skip it.
-		discountable = flt(self.total_before_discount - paid_by_contract(self), 2)
+		contract_paid = paid_by_contract(self)
+		discountable = flt(self.total_before_discount - contract_paid, 2)
 
 		for discount in self.discounts:
 			if discount.based_on == "Percent":
@@ -1063,6 +1064,9 @@ class Invoice(Document):
 			npo_discount = frappe.db.get_single_value("Press Settings", "npo_discount")
 			if npo_discount:
 				self.total_discount_amount += flt(discountable * (npo_discount / 100), 2)
+
+		if contract_paid:
+			self.total_discount_amount = min(self.total_discount_amount, discountable)
 
 		self.total = flt(self.total_before_discount - self.total_discount_amount, 2)
 
