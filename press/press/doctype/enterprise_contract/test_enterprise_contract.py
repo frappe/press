@@ -201,6 +201,27 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 		self.assertEqual((contract.payments[0].gst, contract.payments[0].amount_paid), (0, 2400000))
 		self.assertEqual(frappe.get_doc("Team", self.team.name).get_balance(), 600000)
 
+	def test_free_credits_alone_do_not_pay_for_a_contract(self):
+		self.team.allocate_credit_amount(3000000, source="Free Credits")
+		contract = create_contract(self.team, self.make_order())
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Not enough credits to pay for the full year"):
+			contract.pay_with_credits()
+		self.assertEqual(frappe.get_doc("Team", self.team.name).get_balance(), 3000000)
+		self.assertFalse(contract.payments)
+
+	def test_paying_with_credits_draws_on_prepaid_credits_and_leaves_free_credits_untouched(self):
+		free = self.team.allocate_credit_amount(1000000, source="Free Credits")
+		prepaid = self.team.allocate_credit_amount(3000000, source="Prepaid Credits")
+		contract = create_contract(self.team, self.make_order())
+
+		contract.pay_with_credits()
+
+		self.assertEqual(frappe.db.get_value("Balance Transaction", free.name, "unallocated_amount"), 1000000)
+		self.assertEqual(
+			frappe.db.get_value("Balance Transaction", prepaid.name, "unallocated_amount"), 600000
+		)
+
 	def test_paying_with_credits_is_rejected_when_they_do_not_cover_the_full_year(self):
 		self.team.allocate_credit_amount(1000000, source="Prepaid Credits")
 		contract = create_contract(self.team, self.make_order())

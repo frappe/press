@@ -27,6 +27,7 @@
 					v-if="current.status === 'Awaiting Payment'"
 					:contract="current"
 					:bank="contract.data.bank_transfer"
+					:credit-balance="contract.data.credit_balance"
 					@updated="contract.reload()"
 				/>
 				<ContractDetails v-else :contract="current" />
@@ -34,6 +35,7 @@
 			<OrderForm
 				v-else-if="contract.data.plans.length"
 				:plans="contract.data.plans"
+				:credit-balance="contract.data.credit_balance"
 				@placed="contract.reload()"
 			/>
 			<div v-else class="py-24 text-center text-base text-ink-gray-6">

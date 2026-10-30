@@ -74,7 +74,7 @@ class BalanceTransaction(Document):
 			self.unallocated_amount = self.amount
 			if self.unallocated_amount < 0:
 				# in case of credit transfer
-				self.consume_unallocated_amount()
+				self.consume_unallocated_amount(self.flags.consume_sources)
 				self.unallocated_amount = 0
 			elif last_balance < 0 and abs(last_balance) <= self.amount:
 				# previously the balance was negative
@@ -92,14 +92,15 @@ class BalanceTransaction(Document):
 	def on_submit(self):
 		frappe.publish_realtime("balance_updated", user=self.team)
 
-	def consume_unallocated_amount(self):
-		self.validate_total_unallocated_amount()
+	# sources limits which credits are drawn on; by default every source is.
+	def consume_unallocated_amount(self, sources: tuple[str, ...] | None = None):
+		self.validate_total_unallocated_amount(sources)
 
 		allocation_map = {}
 		remaining_amount = abs(self.amount)
 		transactions = frappe.get_all(
 			"Balance Transaction",
-			filters={"docstatus": 1, "team": self.team, "unallocated_amount": (">", 0)},
+			filters=unallocated_filters(self.team, sources),
 			fields=["name", "unallocated_amount"],
 			order_by="creation asc",
 		)
@@ -122,11 +123,11 @@ class BalanceTransaction(Document):
 			)
 			doc.save(ignore_permissions=True)
 
-	def validate_total_unallocated_amount(self):
+	def validate_total_unallocated_amount(self, sources: tuple[str, ...] | None = None):
 		unallocated_amounts = (
 			frappe.get_all(
 				"Balance Transaction",
-				filters={"docstatus": 1, "team": self.team, "unallocated_amount": (">", 0)},
+				filters=unallocated_filters(self.team, sources),
 				fields=["unallocated_amount"],
 				pluck="unallocated_amount",
 			)
@@ -140,6 +141,20 @@ class BalanceTransaction(Document):
 			frappe.throw(
 				f"Cannot create transaction as unallocated amount {sum(unallocated_amounts)} is less than {self.amount}"
 			)
+
+
+def unallocated_filters(team: str, sources: tuple[str, ...] | None = None) -> dict:
+	filters = {"docstatus": 1, "team": team, "unallocated_amount": (">", 0)}
+	if sources:
+		filters["source"] = ("in", sources)
+	return filters
+
+
+def unallocated_credit(team: str, sources: tuple[str, ...] | None = None) -> float:
+	amounts = frappe.get_all(
+		"Balance Transaction", filters=unallocated_filters(team, sources), pluck="unallocated_amount"
+	)
+	return sum(amounts)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Balance Transaction")
