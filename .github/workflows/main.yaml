@@ -191,6 +191,9 @@ jobs:
           node-version: 22
           check-latest: true
 
+      - name: Refresh apt index
+        run: sudo apt-get update
+
       - name: Cache apt
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -312,6 +315,9 @@ jobs:
         with:
           node-version: 18
           check-latest: true
+
+      - name: Refresh apt index
+        run: sudo apt-get update
 
       - name: Cache apt
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -449,6 +455,9 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.10.20'
+
+      - name: Refresh apt index
+        run: sudo apt-get update
 
       - name: Cache apt
         uses: awalsh128/cache-apt-pkgs-action@latest

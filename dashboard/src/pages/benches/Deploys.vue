@@ -12,7 +12,7 @@ import { useRoute } from 'vue-router'
 import { toast } from 'vue-sonner'
 import Scrollbar from '@/components/common/Scrollbar.vue'
 import { renderDialog } from '@/utils/components'
-import { date, duration } from '@/utils/format'
+import { date, finishedDuration } from '@/utils/format'
 import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline'
 
 interface Props {
@@ -32,6 +32,8 @@ const deployBuilds = createListResource({
 	filters: {
 		group: props.name,
 		creation: ['<=', '2026-04-21 23:49:24'],
+		// the tab itself opens for support, so the list must too
+		skip_team_filter_for_system_user_and_support_agent: true,
 	},
 	orderBy: 'creation desc',
 })
@@ -41,6 +43,8 @@ const pipelines = createListResource({
 	fields: ['name', 'status', 'creation', 'owner'],
 	filters: {
 		release_group: props.name,
+		// the tab itself opens for support, so the list must too
+		skip_team_filter_for_system_user_and_support_agent: true,
 	},
 	orderBy: 'creation desc',
 })
@@ -189,7 +193,7 @@ function handleDeploy() {
 
 					<template v-if="mode === 'older'">
 						<div class="table-cell" role="cell">
-							{{ duration(item.build_duration) }}
+							{{ finishedDuration(item.build_duration, item.status) }}
 						</div>
 						<div class="table-cell hover:rounded-r" role="cell">
 							{{ item.owner }}

@@ -9,9 +9,11 @@ from unittest.mock import Mock, patch
 import frappe
 import frappe.utils
 import responses
+from cryptography.fernet import Fernet
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
+from press.agent import MINIMUM_RESTORE_TIMEOUT, Agent
 from press.exceptions import InsufficientSpaceOnServer
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.app.test_app import create_test_app
@@ -28,19 +30,22 @@ from press.press.doctype.remote_file.remote_file import RemoteFile
 from press.press.doctype.remote_file.test_remote_file import (
 	create_test_remote_file,
 )
-from press.press.doctype.server.server import BaseServer, Server
+from press.press.doctype.server.server import BaseServer, Server, notice_message_id
 from press.press.doctype.site.site import (
 	ARCHIVE_AFTER_SUSPEND_DAYS,
+	ENCRYPTION_KEYS,
 	NOTIFY_BEFORE_ARCHIVAL_DAYS,
 	Site,
 	archive_suspended_sites,
 	get_remove_step_status,
 	notify_sites_before_archival,
+	notify_teams_nearing_storage_limits,
 	process_archive_site_job_update,
 	process_new_site_job_update,
 	process_rename_site_job_update,
 	suspend_sites_exceeding_disk_usage_for_last_14_days,
 )
+from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_migration.site_migration import SiteMigration
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_team
@@ -232,9 +237,9 @@ class TestSite(FrappeTestCase):
 		self.assertEqual(site.db_server_restore_space(app, unified_db, db_required=100, app_required=30), 130)
 		self.assertEqual(site.db_server_restore_space(app, split_db, db_required=100, app_required=30), 100)
 
-	def test_has_recent_failed_migration_only_true_for_a_recent_failure(self):
+	def test_recent_failed_migration_servers_lists_only_recent_failure_destinations(self):
 		site = create_test_site("testsubdomain")
-		self.assertFalse(site.has_recent_failed_migration())
+		self.assertEqual(site.recent_failed_migration_servers(), [])
 
 		bench = create_test_bench()
 		with patch.object(SiteMigration, "after_insert"):
@@ -243,12 +248,12 @@ class TestSite(FrappeTestCase):
 			).insert()
 
 		frappe.db.set_value("Site Migration", migration.name, "status", "Failure")
-		self.assertTrue(site.has_recent_failed_migration())
+		self.assertEqual(site.recent_failed_migration_servers(), [bench.server])
 
 		frappe.db.set_value(
 			"Site Migration", migration.name, "creation", frappe.utils.add_to_date(None, days=-2)
 		)
-		self.assertFalse(site.has_recent_failed_migration())
+		self.assertEqual(site.recent_failed_migration_servers(), [])
 
 	def test_site_has_default_site_domain_on_create(self):
 		"""Ensure site has default site domain on create."""
@@ -556,6 +561,55 @@ class TestSite(FrappeTestCase):
 		with patch.object(Server, "free_space", new=Mock(return_value=0)):
 			self.assertRaises(InsufficientSpaceOnServer, site.restore_site)
 
+	def _timeout_sent_by(self, restore: typing.Callable[[Site], AgentJob], site: Site) -> int:
+		with (
+			patch.object(TelegramMessage, "enqueue", new=Mock()),
+			patch.object(BaseServer, "disk_capacity", new=Mock(return_value=100)),
+			patch.object(BaseServer, "free_space", new=Mock(return_value=500 * 1024 * 1024 * 1024)),
+			patch.object(RemoteFile, "download_link", new="http://test.com"),
+		):
+			job = restore(site)
+		return json.loads(job.request_data)["agent_job_timeout"]
+
+	def test_restore_job_uses_backup_timeout_of_the_site_the_backup_was_taken_from(self):
+		origin_site = create_test_site(backup_timeout=54321)
+		site = create_test_site(backup_timeout=20000)
+		site.remote_database_file = create_test_remote_file(site=origin_site.name).name
+
+		self.assertEqual(self._timeout_sent_by(Agent(site.server).restore_site, site), 54321)
+
+	def test_restore_job_falls_back_to_own_backup_timeout_for_uploaded_backup(self):
+		site = create_test_site(backup_timeout=43210)
+		site.remote_database_file = create_test_remote_file().name
+
+		self.assertEqual(self._timeout_sent_by(Agent(site.server).restore_site, site), 43210)
+
+	def test_restore_job_gets_at_least_agent_default_timeout_when_backup_timeout_is_lower(self):
+		site = create_test_site(backup_timeout=600)
+		site.remote_database_file = create_test_remote_file(site=site.name).name
+
+		self.assertEqual(
+			self._timeout_sent_by(Agent(site.server).restore_site, site), MINIMUM_RESTORE_TIMEOUT
+		)
+
+	def test_new_site_from_backup_job_uses_backup_timeout_of_the_site_the_backup_was_taken_from(self):
+		origin_site = create_test_site(backup_timeout=54321)
+		site = create_test_site(backup_timeout=20000)
+		site.remote_database_file = create_test_remote_file(site=origin_site.name).name
+
+		self.assertEqual(self._timeout_sent_by(Agent(site.server).new_site_from_backup, site), 54321)
+
+	@patch.object(BaseServer, "guess_data_disk_mountpoint", new=Mock(return_value="/"))
+	@patch.object(BaseServer, "calculated_increase_disk_size")
+	def test_disk_increase_passes_shortfall_as_positive_whole_gb(self, mock_increase_disk_size: Mock):
+		site = create_test_site()
+		server = frappe.get_doc("Server", site.server)
+		server.public = True
+		gb = 1024 * 1024 * 1024
+		with patch.object(BaseServer, "free_space", new=Mock(return_value=10 * gb)):
+			site.check_and_increase_disk(server, int(13.2 * gb))
+		mock_increase_disk_size.assert_called_once_with(mountpoint="/", additional=4)
+
 	def test_user_cannot_disable_auto_update_if_site_in_public_release_group(self):
 		rg = create_test_release_group([create_test_app()], public=True)
 		bench = create_test_bench(group=rg)
@@ -657,6 +711,35 @@ class TestSite(FrappeTestCase):
 		site_recent.reload()
 		self.assertEqual(site_to_notify_and_archive.status, "Pending")  # site is being archived
 		self.assertEqual(site_recent.status, "Suspended")  # Do not archive recently suspended site
+
+	def test_archival_details_name_the_user_who_archived_the_site_and_the_reason(self):
+		site = create_test_site()
+		activity = log_site_activity(site.name, "Archive", "Not needed anymore")
+		frappe.db.set_value("Site Activity", activity.name, "owner", "jane@example.com")
+
+		details = site.get_archival_details()
+
+		self.assertEqual(details["archived_by"], "jane@example.com")
+		self.assertEqual(details["reason"], "Not needed anymore")
+		self.assertEqual(details["archived_on"], frappe.utils.get_datetime(activity.creation))
+
+	def test_archival_details_credit_frappe_cloud_for_an_archival_run_by_administrator(self):
+		site = create_test_site()
+		log_site_activity(site.name, "Archive", "Archive suspended site")
+
+		self.assertEqual(site.get_archival_details()["archived_by"], "Frappe Cloud")
+
+	def test_archival_details_keep_the_reason_of_the_first_archive_attempt(self):
+		site = create_test_site()
+		log_site_activity(site.name, "Archive", "Archive suspended site")
+		log_site_activity(site.name, "Archive", "Retry Archive")
+
+		self.assertEqual(site.get_archival_details()["reason"], "Archive suspended site")
+
+	def test_archival_details_are_empty_for_a_site_that_was_never_archived(self):
+		site = create_test_site()
+
+		self.assertIsNone(site.get_archival_details())
 
 	def test_site_usage_exceed_tracking(self):
 		team = create_test_team()
@@ -1031,6 +1114,21 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 			"The refused restore must not have created a second job",
 		)
 
+	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=1))
+	@patch.object(
+		Site, "ping", new=Mock(return_value=Mock(status_code=200, json=lambda: {"message": "pong"}))
+	)
+	def test_restore_tables_is_rejected_when_site_responds_to_ping(self):
+		# The user may have activated the site by hand. A restore would overwrite the
+		# data they entered since.
+		site = self._broken_site_with_fatal_update()
+
+		self.assertRaisesRegex(frappe.ValidationError, "may already be active", site.restore_tables)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"The refused restore must not have created a job",
+		)
+
 	@patch("press.api.server.prometheus_instant_value", new=Mock(return_value=None))
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_force_restore_tables_skips_the_checks_for_a_system_user(self):
@@ -1194,6 +1292,41 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestSiteConfigEncryptionKeyValidation(FrappeTestCase):
+	def setUp(self):
+		self.site = create_test_site("testsubdomain")
+		for key in ENCRYPTION_KEYS:
+			if not frappe.db.exists("Site Config Key", key):
+				frappe.get_doc({"doctype": "Site Config Key", "key": key, "type": "Password"}).insert()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_encryption_key_that_is_not_a_fernet_key_is_rejected(self):
+		for key in ENCRYPTION_KEYS:
+			with self.subTest(key=key):
+				self.assertRaisesRegex(
+					frappe.ValidationError,
+					"not a valid encryption key",
+					self.site.update_config,
+					{key: "not-a-fernet-key"},
+				)
+				self.site.reload()
+				self.assertNotIn(key, json.loads(self.site.config))
+
+	def test_fernet_encryption_key_is_saved(self):
+		value = Fernet.generate_key().decode()
+		self.site.update_config({"encryption_key": value})
+		self.assertEqual(json.loads(self.site.config)["encryption_key"], value)
+
+	def test_encryption_key_saved_unchanged_from_dashboard_keeps_its_value(self):
+		value = Fernet.generate_key().decode()
+		self.site.update_config({"encryption_key": value})
+		self.site.update_config({"encryption_key": "*******"})
+		self.assertEqual(json.loads(self.site.config)["encryption_key"], value)
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestArchiveSiteJobUpdate(FrappeTestCase):
 	"""A skipped Archive Site step must not mark the site Archived."""
 
@@ -1257,3 +1390,400 @@ class TestArchiveSiteJobUpdate(FrappeTestCase):
 		self._set_step_status(job, "Remove Site File from Upstream Directory", "Skipped")
 
 		self.assertEqual(get_remove_step_status(job), "Skipped")
+
+
+@patch("press.press.doctype.site.site.get_communication_info", new=Mock(return_value=["owner@example.com"]))
+class TestNotifyTeamsNearingStorageLimits(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _site_with_usage(self, team: str, disk: int = 0, database: int = 0, **kwargs) -> Site:
+		site = create_test_site(team=team, free=kwargs.pop("free", False), **kwargs)
+		frappe.db.set_value(
+			"Site", site.name, {"current_disk_usage": disk, "current_database_usage": database}
+		)
+		return site
+
+	def _notify(self, **kwargs) -> dict[str, dict]:
+		with patch.object(frappe, "sendmail") as sendmail:
+			notify_teams_nearing_storage_limits(**kwargs)
+		return {call.kwargs["reference_name"]: call.kwargs for call in sendmail.call_args_list}
+
+	def test_sends_one_email_per_team_with_only_its_sites_above_threshold(self):
+		team_one, team_two = create_test_team(), create_test_team()
+		disk_heavy = self._site_with_usage(team_one.name, disk=90)
+		database_heavy = self._site_with_usage(team_one.name, database=85)
+		self._site_with_usage(team_one.name, disk=40, database=40)
+		self._site_with_usage(team_two.name, disk=95)
+
+		calls = self._notify(threshold=80)
+
+		team_one_call = calls[team_one.name]
+		self.assertEqual(team_one_call["template"], "sites_nearing_storage_limits")
+		self.assertEqual(
+			[s.name for s in team_one_call["args"]["sites"]], [disk_heavy.name, database_heavy.name]
+		)
+		self.assertEqual(team_one_call["args"]["site_count"], 2)
+		self.assertFalse(team_one_call["args"]["over_limit"])
+		self.assertIn("close to", team_one_call["subject"])
+		self.assertEqual(calls[team_two.name]["args"]["site_count"], 1)
+
+	def test_flags_team_with_a_site_over_the_limit(self):
+		team = create_test_team()
+		self._site_with_usage(team.name, database=110)
+
+		team_call = self._notify()[team.name]
+
+		self.assertTrue(team_call["args"]["over_limit"])
+		self.assertIn("Action needed", team_call["subject"])
+
+	def test_default_notifies_only_sites_at_or_over_the_limit(self):
+		team = create_test_team()
+		at_limit = self._site_with_usage(team.name, disk=100)
+		self._site_with_usage(team.name, database=99)
+
+		team_call = self._notify()[team.name]
+
+		self.assertEqual([s.name for s in team_call["args"]["sites"]], [at_limit.name])
+		self.assertTrue(team_call["args"]["over_limit"])
+		self.assertIn("reached", team_call["subject"])
+
+	def test_skips_team_with_sites_just_under_the_limit(self):
+		team = create_test_team()
+		self._site_with_usage(team.name, disk=99, database=99)
+
+		self.assertNotIn(team.name, self._notify())
+
+	def test_skips_free_sites_and_free_teams(self):
+		team = create_test_team()
+		free_team = create_test_team(free_account=True)
+		self._site_with_usage(team.name, disk=100, free=True)
+		self._site_with_usage(free_team.name, disk=100)
+
+		calls = self._notify()
+
+		self.assertNotIn(team.name, calls)
+		self.assertNotIn(free_team.name, calls)
+
+	def _mark_notified(self, team: str, threshold: int = 100, over_limit: bool = True):
+		message_id = notice_message_id(
+			"storage-limit-notice",
+			team,
+			{
+				"threshold": threshold,
+				"action_url": "https://cloud.frappe.io/dashboard",
+				"over_limit": over_limit,
+			},
+		)
+		return frappe.get_doc(
+			{
+				"doctype": "Email Queue",
+				"sender": "notifications@frappe.io",
+				"message": "sent",
+				"status": "Sent",
+				"message_id": message_id,
+			}
+		).insert(ignore_permissions=True)
+
+	def test_skips_team_already_notified_within_window(self):
+		team = create_test_team()
+		self._site_with_usage(team.name, disk=100)
+		self._mark_notified(team.name)
+
+		self.assertNotIn(team.name, self._notify())
+		self.assertIn(team.name, self._notify(threshold=90))
+
+	def test_notifies_again_once_the_default_window_has_passed(self):
+		team = create_test_team()
+		self._site_with_usage(team.name, disk=100)
+		email_queue = self._mark_notified(team.name)
+		email_queue.db_set(
+			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -4), update_modified=False
+		)
+
+		self.assertIn(team.name, self._notify())
+
+	def test_near_limit_notice_does_not_suppress_over_limit_notice(self):
+		team = create_test_team()
+		self._site_with_usage(team.name, disk=110)
+		self._mark_notified(team.name, threshold=80, over_limit=False)
+
+		team_call = self._notify(threshold=80)[team.name]
+
+		self.assertTrue(team_call["args"]["over_limit"])
+
+	def test_skips_team_without_recipients(self):
+		team = create_test_team()
+		self._site_with_usage(team.name, disk=100)
+
+		with patch("press.press.doctype.site.site.get_communication_info", return_value=[]):
+			self.assertNotIn(team.name, self._notify())
+
+	def test_template_renders_usage_for_each_site(self):
+		team = create_test_team()
+		site = self._site_with_usage(team.name, disk=100, database=30)
+		args = self._notify()[team.name]["args"]
+
+		html = frappe.get_template("templates/emails/sites_nearing_storage_limits.html").render(args)
+
+		self.assertIn(site.name, html)
+		self.assertIn("100%", html)
+		self.assertNotIn("30%", html)
+
+
+class TestRotateDatabasePassword(FrappeTestCase):
+	def setUp(self):
+		self.site = create_test_site("rotatedbpassword")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def test_only_system_managers_can_rotate(self):
+		user = frappe.get_doc(
+			{"doctype": "User", "email": frappe.mock("email"), "first_name": "Staff"}
+		).insert()
+
+		with self.set_user(user.name), self.assertRaisesRegex(frappe.PermissionError, "System Manager"):
+			self.site.rotate_database_password()
+
+	@patch("press.press.doctype.site.site.log_site_activity")
+	@patch("press.press.doctype.site.site.Agent")
+	@patch("press.press.doctype.site.site.Ansible")
+	def test_rotate_changes_password_on_database_then_in_site_config(self, ansible, agent, log_activity):
+		ansible.return_value.run.return_value = Mock(status="Success")
+
+		with patch.object(Site, "fetch_info", return_value={"config": {"db_name": "_db1"}}):
+			self.site._rotate_database_password()
+
+		variables = ansible.call_args.kwargs["variables"]
+		self.assertEqual(variables["db_user"], "_db1")
+		self.assertEqual(ansible.call_args.kwargs["playbook"], "mariadb_change_site_password.yml")
+		create_agent_job = agent.return_value.create_agent_job
+		_, path, data = create_agent_job.call_args.args
+		self.assertEqual(path, f"benches/{self.site.bench}/sites/{self.site.name}/config")
+		self.assertEqual(data, {"config": {"db_password": variables["db_password"]}, "remove": []})
+		self.assertFalse(create_agent_job.call_args.kwargs["deduplicate"])
+
+	@patch("press.press.doctype.site.site.log_site_activity")
+	@patch("press.press.doctype.site.site.Agent")
+	@patch("press.press.doctype.site.site.Ansible")
+	def test_rotate_targets_the_benchs_database_server(self, ansible, agent, log_activity):
+		from press.press.doctype.database_server.test_database_server import create_test_database_server
+
+		benchs_database_server = create_test_database_server()
+		frappe.db.set_value("Bench", self.site.bench, "database_server", benchs_database_server.name)
+		ansible.return_value.run.return_value = Mock(status="Success")
+
+		with patch.object(Site, "fetch_info", return_value={"config": {"db_name": "_db1"}}):
+			self.site._rotate_database_password()
+
+		self.assertEqual(ansible.call_args.kwargs["server"].name, benchs_database_server.name)
+
+	@patch("press.press.doctype.site.site.Agent")
+	@patch("press.press.doctype.site.site.Ansible")
+	def test_rotate_fails_and_leaves_site_config_alone_when_play_fails(self, ansible, agent):
+		ansible.return_value.run.return_value = Mock(status="Failure")
+		ansible.return_value.run.return_value.name = "play-1"
+
+		with (
+			patch.object(Site, "fetch_info", return_value={"config": {"db_name": "_db1"}}),
+			self.assertRaisesRegex(frappe.ValidationError, "Couldn't change the database password.*play-1"),
+		):
+			self.site._rotate_database_password()
+
+		agent.return_value.create_agent_job.assert_not_called()
+
+	@patch("press.press.doctype.site.site.Ansible")
+	def test_rotate_refuses_while_a_previous_rotation_is_pending(self, ansible):
+		create_pending_config_job(self.site, {"db_password": "older-value"})  # pragma: allowlist secret
+
+		# Patched after the job is created; inserting an Agent Job enqueues its request too
+		with patch("press.press.doctype.site.site.frappe.enqueue_doc") as enqueue_doc:
+			for rotate in (self.site.rotate_database_password, self.site._rotate_database_password):
+				with self.assertRaisesRegex(frappe.ValidationError, "password rotation is still running"):
+					rotate()
+
+		enqueue_doc.assert_not_called()
+		ansible.assert_not_called()
+
+	def test_rotate_is_not_blocked_by_other_pending_config_updates(self):
+		create_pending_config_job(self.site, {"maintenance_mode": 1})
+
+		with patch("press.press.doctype.site.site.frappe.enqueue_doc") as enqueue_doc:
+			self.site.rotate_database_password()
+
+		self.assertEqual(enqueue_doc.call_args.kwargs["job_id"], f"rotate_database_password:{self.site.name}")
+		self.assertTrue(enqueue_doc.call_args.kwargs["deduplicate"])
+
+	def test_an_older_rotation_cannot_be_retried_after_a_newer_one(self):
+		older = create_pending_config_job(
+			self.site,
+			{"db_password": "older-value"},  # pragma: allowlist secret
+		)
+		older.db_set({"status": "Failure", "creation": frappe.utils.add_to_date(None, minutes=-5)})
+		newer = create_pending_config_job(
+			self.site,
+			{"db_password": "newer-value"},  # pragma: allowlist secret
+		)
+		older.reload()
+
+		jobs_before = frappe.db.count("Agent Job")
+		for retry in (older.retry, older.retry_in_place):
+			with self.assertRaisesRegex(frappe.ValidationError, "newer database password rotation exists"):
+				retry()
+		self.assertEqual(frappe.db.count("Agent Job"), jobs_before)
+
+		with patch("press.press.doctype.agent_job.agent_job.frappe.db.commit"):
+			newer.retry_in_place()
+
+
+def create_pending_config_job(site: Site, config: dict):
+	from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+
+	job = create_test_agent_job("Update Site Configuration", server=site.server, status="Pending")
+	job.db_set({"site": site.name, "request_data": json.dumps({"config": config, "remove": []})})
+	return job
+
+
+class TestRotateSaasCommunicationSecret(FrappeTestCase):
+	def setUp(self):
+		self.site = create_test_site("rotatecommsecret")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def test_only_system_managers_can_rotate_communication_secret(self):
+		user = frappe.get_doc(
+			{"doctype": "User", "email": frappe.mock("email"), "first_name": "Staff"}
+		).insert()
+
+		with self.set_user(user.name), self.assertRaisesRegex(frappe.PermissionError, "System Manager"):
+			self.site.rotate_saas_communication_secret()
+
+	@patch("press.press.doctype.site.site.log_site_activity")
+	@patch("press.press.doctype.site.site.Agent")
+	def test_rotate_saves_new_secret_and_sends_only_it_to_site_config(self, agent, log_activity):
+		old_secret = self.site.saas_communication_secret
+
+		self.site.rotate_saas_communication_secret()
+
+		self.site.reload()
+		new_secret = self.site.saas_communication_secret
+		self.assertTrue(new_secret)
+		self.assertNotEqual(new_secret, old_secret)
+		self.assertEqual(json.loads(self.site.config)["fc_communication_secret"], new_secret)
+		create_agent_job = agent.return_value.create_agent_job
+		_, path, data = create_agent_job.call_args.args
+		self.assertEqual(path, f"benches/{self.site.bench}/sites/{self.site.name}/config")
+		self.assertEqual(data, {"config": {"fc_communication_secret": new_secret}, "remove": []})
+		self.assertFalse(create_agent_job.call_args.kwargs["deduplicate"])
+		self.assertEqual(log_activity.call_args.kwargs["reason"], "Rotate communication secret")
+
+	@patch("press.press.doctype.site.site.log_site_activity")
+	@patch("press.press.doctype.site.site.Agent")
+	def test_rotate_deletes_access_tokens_made_with_the_old_secret(self, agent, log_activity):
+		from press.saas.doctype.site_access_token.site_access_token import SiteAccessToken
+
+		SiteAccessToken.generate(self.site.name)
+
+		self.site.rotate_saas_communication_secret()
+
+		self.assertFalse(frappe.db.exists("Site Access Token", {"site": self.site.name}))
+
+	@patch("press.press.doctype.site.site.Agent")
+	def test_rotate_refuses_while_a_config_update_with_the_old_secret_is_pending(self, agent):
+		old_secret = self.site.saas_communication_secret
+		create_pending_config_job(
+			self.site,
+			{"fc_communication_secret": "old-secret"},  # pragma: allowlist secret
+		)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "configuration update is still running"):
+			self.site.rotate_saas_communication_secret()
+
+		self.assertEqual(frappe.db.get_value("Site", self.site.name, "saas_communication_secret"), old_secret)
+		agent.return_value.create_agent_job.assert_not_called()
+
+	@patch("press.press.doctype.site.site.log_site_activity")
+	@patch("press.press.doctype.site.site.Agent")
+	def test_rotate_is_not_blocked_by_finished_jobs_or_a_pending_password_rotation(self, agent, log_activity):
+		finished = create_pending_config_job(
+			self.site,
+			{"fc_communication_secret": "old-secret"},  # pragma: allowlist secret
+		)
+		finished.db_set("status", "Failure")
+		create_pending_config_job(self.site, {"db_password": "new-password"})  # pragma: allowlist secret
+
+		self.site.rotate_saas_communication_secret()
+
+		agent.return_value.create_agent_job.assert_called_once()
+
+	@patch("press.press.doctype.site.site.Agent")
+	def test_rotate_refuses_an_archived_site(self, agent):
+		self.site.db_set("status", "Archived")
+
+		with self.assertRaisesRegex(frappe.ValidationError, "This site is archived"):
+			self.site.rotate_saas_communication_secret()
+
+		agent.return_value.create_agent_job.assert_not_called()
+
+	@patch("press.press.doctype.site.site.log_site_activity")
+	@patch("press.press.doctype.site.site.Agent")
+	def test_rotate_enqueues_sync_user_webhook_update_only_for_a_created_product_trial(
+		self, agent, log_activity
+	):
+		def webhook_updates(enqueue_doc):
+			return [c for c in enqueue_doc.call_args_list if c.args[2:3] == ("create_sync_user_webhook",)]
+
+		trial_request = frappe.get_doc(
+			{"doctype": "Product Trial Request", "site": self.site.name, "status": "Error"}
+		)
+		trial_request.db_insert()
+		with patch("press.press.doctype.site.site.frappe.enqueue_doc") as enqueue_doc:
+			self.site.rotate_saas_communication_secret()
+			self.assertEqual(webhook_updates(enqueue_doc), [])
+
+			trial_request.db_set("status", "Site Created")
+			self.site.rotate_saas_communication_secret()
+			(update,) = webhook_updates(enqueue_doc)
+			self.assertTrue(update.kwargs["enqueue_after_commit"])
+
+	def test_sync_user_webhook_gets_the_current_secret_when_it_exists(self):
+		from frappe.frappeclient import FrappeException
+
+		connection = Mock()
+		connection.insert.side_effect = FrappeException("frappe.exceptions.DuplicateEntryError")
+		self.site.saas_communication_secret = "new-secret"  # pragma: allowlist secret
+
+		with patch.object(Site, "get_connection_as_admin", return_value=connection):
+			self.site.create_sync_user_webhook()
+
+		updated = [call.args[0] for call in connection.update.call_args_list]
+		self.assertEqual(
+			[webhook["name"] for webhook in updated],
+			[
+				"Sync User records with Frappe Cloud on create",
+				"Sync User records with Frappe Cloud on update",
+				"Sync User records with Frappe Cloud on delete",
+			],
+		)
+		for webhook in updated:
+			self.assertEqual(webhook["doctype"], "Webhook")
+			headers = {header["key"]: header["value"] for header in webhook["webhook_headers"]}
+			self.assertEqual(headers["x-site-token"], "new-secret")
+
+	def test_sync_user_webhook_raises_other_errors_without_updating(self):
+		from frappe.frappeclient import FrappeException
+
+		connection = Mock()
+		connection.insert.side_effect = FrappeException("frappe.exceptions.PermissionError")
+
+		with (
+			patch.object(Site, "get_connection_as_admin", return_value=connection),
+			self.assertRaisesRegex(FrappeException, "PermissionError"),
+		):
+			self.site.create_sync_user_webhook()
+
+		connection.update.assert_not_called()

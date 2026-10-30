@@ -497,6 +497,20 @@ class TestServerPlansForUpgrade(FrappeTestCase):
 
 		self.assertIn(bigger_legacy.name, self._plan_names())
 
+	def test_plans_report_the_root_disk_a_resize_grows_from(self):
+		frappe.db.set_value("Database Server", self.server.name, "provider", "Hetzner")
+		frappe.db.set_value("Virtual Machine", self.server.virtual_machine, "root_disk_size", 160)
+
+		result = plans("Database Server", cluster=self.cluster.name, resource_name=self.server.name)
+
+		self.assertEqual(result["current_root_disk_size"], 160)
+
+	def test_plans_report_no_root_disk_size_when_the_disk_resizes_on_its_own(self):
+		# The server is on AWS EC2, where volumes are independent of the machine type
+		result = plans("Database Server", cluster=self.cluster.name, resource_name=self.server.name)
+
+		self.assertIsNone(result["current_root_disk_size"])
+
 	def test_has_similar_enabled_plans_ignores_legacy_plans(self):
 		self._plan(platform="arm64", legacy_plan=True)
 

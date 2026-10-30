@@ -3,6 +3,15 @@ import dotenv from 'dotenv'
 
 dotenv.config({ path: './tests-e2e/.env', quiet: true })
 
+const launchOptions = {
+	args: ['--no-sandbox', '--disable-setuid-sandbox'],
+	slowMo: process.env.PLAYWRIGHT_SLOW_MO
+		? parseInt(process.env.PLAYWRIGHT_SLOW_MO)
+		: undefined,
+	// undefined keeps Playwright's bundled browser; a path uses a browser already installed
+	executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+}
+
 export default defineConfig({
 	testDir: './tests-e2e',
 	fullyParallel: true,
@@ -13,12 +22,7 @@ export default defineConfig({
 		trace: 'retain-on-failure',
 		screenshot: 'only-on-failure',
 		video: 'retain-on-failure',
-		launchOptions: {
-			args: ['--no-sandbox', '--disable-setuid-sandbox'],
-			slowMo: process.env.PLAYWRIGHT_SLOW_MO
-				? parseInt(process.env.PLAYWRIGHT_SLOW_MO)
-				: undefined,
-		},
+		launchOptions,
 	},
 	reporter: [['list'], ['html', { open: 'never' }]],
 	projects: [
@@ -30,16 +34,12 @@ export default defineConfig({
 		{
 			name: 'setup',
 			testMatch: /.*\.setup\.ts/,
-			use: {
-				executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
-			},
 		},
 		{
 			name: 'chromium',
 			use: {
 				...devices['Desktop Chrome'],
 				storageState: 'tests-e2e/.auth/session.json',
-				executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
 			},
 			// must match all *.test.ts files only
 			testMatch: /^(?!.*(\.cron|\.setup)\.spec\.ts$).*\.test\.ts$/,

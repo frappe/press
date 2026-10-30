@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 import frappe
 
 if frappe.TYPE_CHECKING:
@@ -29,3 +31,19 @@ def is_desk_user(user: str | None = None) -> bool:
 	user = user or frappe.session.user
 	user_doc: User = frappe.get_cached_doc("User", user)
 	return user_doc.user_type == "System User"
+
+
+@contextmanager
+def as_administrator():
+	"""Run the block as Administrator, and keep the caller's session intact.
+
+	`frappe.set_user` overwrites the sid and data of the live session. Frappe then
+	saves the broken session at the end of the request, which logs the user out.
+	"""
+	session = frappe.session.copy()
+	frappe.set_user("Administrator")
+	try:
+		yield
+	finally:
+		frappe.set_user(session["user"])
+		frappe.session.update(session)

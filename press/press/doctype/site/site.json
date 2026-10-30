@@ -702,7 +702,7 @@
 			"read_only": 1
 		},
 		{
-			"default": "18000",
+			"default": "36000",
 			"fieldname": "backup_timeout",
 			"fieldtype": "Int",
 			"label": "Backup Timeout"
@@ -800,7 +800,7 @@
 			"link_fieldname": "site"
 		}
 	],
-	"modified": "2026-04-12 12:56:22.557860",
+	"modified": "2026-09-22 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Site",

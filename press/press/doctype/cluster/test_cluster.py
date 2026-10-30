@@ -7,6 +7,8 @@ from unittest.mock import MagicMock, Mock, patch
 import boto3
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from hcloud.locations.domain import Location
+from hcloud.server_types.domain import ServerType, ServerTypeLocation
 from moto import mock_aws
 
 from press.press.doctype.cluster.cluster import Cluster
@@ -301,3 +303,57 @@ class TestClusterVPCFlowLogs(TestCluster):
 		self.assertRaisesRegex(
 			frappe.ValidationError, "only supported on AWS EC2", cluster.setup_vpc_flow_logs
 		)
+
+
+def hetzner_server_type(name: str, **availability_by_location: bool) -> ServerType:
+	return ServerType(
+		name=name,
+		locations=[
+			ServerTypeLocation(
+				location=Location(name=location), deprecation=None, available=available, recommended=available
+			)
+			for location, available in availability_by_location.items()
+		],
+	)
+
+
+class TestHetznerMachineAvailability(FrappeTestCase):
+	def setUp(self):
+		frappe.cache.delete_value("hetzner_available_machine_types:Hetzner - Falkenstein")
+
+	def _hetzner_cluster(self) -> Cluster:
+		return frappe.get_doc(
+			{
+				"doctype": "Cluster",
+				"name": "Hetzner - Falkenstein",
+				"cloud_provider": "Hetzner",
+				"region": "fsn1",
+			}
+		)
+
+	def _hetzner_client_offering(self, *server_types: ServerType) -> MagicMock:
+		client = MagicMock()
+		client.server_types.get_all.return_value = list(server_types)
+		return client
+
+	def test_hetzner_machine_is_available_only_if_its_server_type_is_available_in_the_cluster_region(self):
+		client = self._hetzner_client_offering(
+			hetzner_server_type("cx42", fsn1=True, nbg1=False),
+			hetzner_server_type("cx52", fsn1=False, nbg1=True),
+		)
+		with patch.object(Cluster, "get_hetzner_client", return_value=client):
+			cluster = self._hetzner_cluster()
+			self.assertTrue(cluster.check_machine_availability("cx42"))
+			self.assertEqual(
+				cluster.check_machine_availability(["cx42", "cx52", "cx62"]),
+				{"cx42": True, "cx52": False, "cx62": False},
+			)
+
+	def test_hetzner_availability_is_fetched_once_and_then_served_from_cache_for_the_same_cluster(self):
+		client = self._hetzner_client_offering(hetzner_server_type("cx42", fsn1=True))
+		with patch.object(Cluster, "get_hetzner_client", return_value=client):
+			self.assertTrue(self._hetzner_cluster().check_machine_availability("cx42"))
+			frappe.local.cache.clear()  # a new request starts with an empty local cache
+			self.assertTrue(self._hetzner_cluster().check_machine_availability("cx42"))
+
+		client.server_types.get_all.assert_called_once()

@@ -11,8 +11,9 @@ import router from '../router'
 import { getRunningJobs } from '../utils/agentJob'
 import { confirmDialog, icon, renderDialog } from '../utils/components'
 import { isMobile } from '../utils/device'
-import { date } from '../utils/format'
+import { date, escapeHtml } from '../utils/format'
 import { getDocResource } from '../utils/resource'
+import { openInNewTab } from '../utils/site'
 import { getToastErrorMessage } from '../utils/toast'
 import { getFrappeUpdateBanner, getUpsellBanner } from './common'
 import { getAppsTab } from './common/apps'
@@ -20,6 +21,23 @@ import { getBackupsTab } from './site/backups'
 
 // prefilled so only the ticket id has to be typed; on its own it is not a reason
 const LOGIN_REASON_PREFIX = 'Investigating '
+
+// A scheduled action runs as Administrator, which means nothing to a customer.
+// Site.get_archival_details does the same for the banner.
+function getActorName(owner) {
+	return owner === 'Administrator' ? 'Frappe Cloud' : owner
+}
+
+// The banner names who and when; the Activity tab carries the reason and the rest.
+function getArchivalMessage(site) {
+	const details = site.archival_details
+	if (!details) return 'This site is archived. It cannot be used again.'
+
+	return `Archived by ${escapeHtml(details.archived_by)} on ${date(
+		details.archived_on,
+		'LLL',
+	)}`
+}
 
 function jobLink(site, job, text) {
 	if (!job) return text
@@ -42,7 +60,6 @@ function confirmRestoreTables(site) {
 		message: `The ${jobLink(site, site.doc?.fatal_update?.update_job, 'last update')} failed and the ${jobLink(site, site.doc?.fatal_update?.recover_job, 'automatic recovery')} could not restore the tables.<br><br>Re-attempt the recovery manually?<br><br>The site database goes back to <b>${date(site.doc?.fatal_update?.update_start, 'lll')}</b>, when the last update started. <b>Any data written to the site after that time is lost.</b> You cannot undo this.`,
 		primaryAction: {
 			label: 'Restore Tables',
-			theme: 'red',
 		},
 		onSuccess({ hide }) {
 			if (site.restoreTables.loading) return
@@ -90,6 +107,7 @@ export default {
 		scheduleUpdate: 'schedule_update',
 		editScheduledUpdate: 'edit_scheduled_update',
 		cancelUpdate: 'cancel_scheduled_update',
+		getAutoUpdateWindow: 'get_auto_update_window',
 		setPlan: 'set_plan',
 		updateConfig: 'update_config',
 		deleteConfig: 'delete_config',
@@ -97,6 +115,8 @@ export default {
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
 		getBackupDownloadLink: 'get_backup_download_link',
+		getBackupSchedule: 'get_backup_schedule',
+		updateBackupSchedule: 'update_backup_schedule',
 		fetchDatabaseTableSchemas: 'fetch_database_table_schemas',
 		fetchSitesDataForExport: 'fetch_sites_data_for_export',
 	},
@@ -126,7 +146,9 @@ export default {
 					type: 'error',
 				}
 			}
-			if (site.doc.status === 'Archived') return null
+			if (site.doc.status === 'Archived') {
+				return { title: getArchivalMessage(site.doc), type: 'info' }
+			}
 			return getFrappeUpdateBanner(site.doc, 'This site')
 		},
 		breadcrumbs({ items, documentResource: site }) {
@@ -1038,7 +1060,6 @@ export default {
 				icon: icon('activity'),
 				route: 'activity',
 				type: 'list',
-				condition: (site) => site.doc?.status !== 'Archived',
 				list: {
 					doctype: 'Site Activity',
 					filters: (site) => {
@@ -1063,7 +1084,7 @@ export default {
 								if (action == 'Create') {
 									action = 'Site created'
 								}
-								return `${action} by ${row.owner}`
+								return `${action} by ${getActorName(row.owner)}`
 							},
 						},
 						{
@@ -1197,6 +1218,7 @@ export default {
 					},
 					condition() {
 						return (
+							!canRestoreTables(site) &&
 							!site.doc?.has_scheduled_updates &&
 							site.doc.update_information?.update_available &&
 							['Active', 'Inactive', 'Suspended', 'Broken'].includes(
@@ -1295,15 +1317,10 @@ export default {
 					condition: () =>
 						site.doc.status === 'Active' && !site.doc?.setup_wizard_complete,
 					onClick() {
-						if (site.doc.additional_system_user_created) {
-							site.loginAsTeam
-								.submit({ reason: '' })
-								.then((url) => window.open(url, '_blank'))
-						} else {
-							site.loginAsAdmin
-								.submit({ reason: '' })
-								.then((url) => window.open(url, '_blank'))
-						}
+						const login = site.doc.additional_system_user_created
+							? site.loginAsTeam
+							: site.loginAsAdmin
+						openInNewTab(login.submit({ reason: '' }))
 					},
 				},
 				{
@@ -1350,13 +1367,9 @@ export default {
 												'Reason is required. Enter why you are logging in as Administrator before continuing.',
 											)
 										}
-										return site.loginAsAdmin
-											.submit({ reason: values.reason })
-											.then((result) => {
-												let url = result
-												window.open(url, '_blank')
-												hide()
-											})
+										return openInNewTab(
+											site.loginAsAdmin.submit({ reason: values.reason }),
+										).then(() => hide())
 									},
 								})
 							},
@@ -1371,16 +1384,19 @@ export default {
 		{
 			name: 'Site Backup Audit Trail',
 			path: 'backups/audit-trail',
+			meta: { title: 'Backup Audit Trail' },
 			component: () => import('../components/site/SiteBackupAuditTrail.vue'),
 		},
 		{
 			name: 'Site Update',
 			path: 'updates/:id',
+			meta: { title: 'Update' },
 			component: () => import('../pages/SiteUpdate.vue'),
 		},
 		{
 			name: 'Site Migration',
 			path: 'migrations/:id',
+			meta: { title: 'Migration' },
 			component: () => import('../pages/SiteMigration.vue'),
 		},
 	],

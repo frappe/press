@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import math
 from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime, timedelta
@@ -28,6 +29,7 @@ from frappe.utils import (
 	cstr,
 	flt,
 	get_datetime,
+	get_system_timezone,
 	get_url,
 	now_datetime,
 	sbool,
@@ -38,6 +40,7 @@ from frappe.utils.caching import redis_cache
 from press.access.actions import SiteActions
 from press.access.decorators import action_guard
 from press.access.support_access import has_support_access
+from press.access.utils import is_outside_employee
 from press.exceptions import (
 	CannotChangePlan,
 	InsufficientSpaceOnServer,
@@ -51,7 +54,12 @@ from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import 
 )
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.root_domain.root_domain import get_matching_domain
-from press.press.doctype.server.server import Server, is_dedicated_server
+from press.press.doctype.server.server import (
+	Server,
+	find_recent_notice_dispatch,
+	is_dedicated_server,
+	notice_message_id,
+)
 from press.press.doctype.site.site_plan_utils import (
 	get_available_warranty_quota_for_server,
 	get_next_allowed_dedicated_product_warranty_change_date,
@@ -91,6 +99,7 @@ from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 	get_doctype_name,
 )
+from press.runner import Ansible
 from press.utils import (
 	convert,
 	fmt_timedelta,
@@ -107,8 +116,6 @@ from press.utils import (
 from press.utils.dns import _change_dns_record, check_dns_cname_a, create_dns_record
 
 if TYPE_CHECKING:
-	from datetime import datetime
-
 	from frappe.types import DF
 	from frappe.types.DF import Table
 
@@ -139,12 +146,16 @@ SERVER_SCRIPT_DISABLED_VERSION = (
 	15  # version from which server scripts were disabled on public benches. No longer set in site
 )
 TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
+ENCRYPTION_KEYS = ("encryption_key", "backup_encryption_key")
 
 # Fallback when max_statement_time isn't explicitly set on the database server.
 # Ref: press/fixtures/mariadb_variable.json
 DEFAULT_MAX_STATEMENT_TIME = 3600
 # How much to bump max_statement_time by (in seconds) each time — one hour.
 STATEMENT_TIME_INCREMENT = 3600
+
+# Picking a backup time is for plans from this price up. Ref: USD 25.
+MINIMUM_BACKUP_SCHEDULE_PLAN_PRICE_USD = 25
 
 # Conditions a site must satisfy for the agent to stream offsite backup
 # artifacts straight to S3 instead of uploading them after the dump finishes.
@@ -411,6 +422,7 @@ class Site(Document, TagHelpers):
 		doc.frappe_updated_on = get_frappe_release_timestamp(self.bench)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
+		doc.can_schedule_backups = self.plan_allows_backup_schedule()
 		doc.last_updated = self.last_updated
 		doc.creation_failure_retention_days = CREATION_FAILURE_RETENTION_DAYS
 		doc.has_scheduled_updates = bool(
@@ -462,6 +474,7 @@ class Site(Document, TagHelpers):
 			if self.status == "Suspended"
 			else None
 		)
+		doc.archival_details = self.get_archival_details() if self.status == "Archived" else None
 		doc.communication_infos = self.get_communication_infos()
 		if doc.owner == "Administrator":
 			doc.signup_by = frappe.db.get_value("Account Request", doc.account_request, "email")
@@ -474,6 +487,25 @@ class Site(Document, TagHelpers):
 			)[0]
 
 		return doc
+
+	def get_archival_details(self) -> dict | None:
+		"""Who dropped the site, when, and why."""
+		activity = frappe.db.get_value(
+			"Site Activity",
+			{"site": self.name, "action": "Archive"},
+			["owner", "creation", "reason"],
+			order_by="creation asc",  # a retried archive logs again; the first one holds the reason
+			as_dict=True,
+		)
+		if not activity:
+			return None
+
+		return {
+			# every scheduled archival runs as Administrator, which means nothing to a customer
+			"archived_by": "Frappe Cloud" if activity.owner == "Administrator" else activity.owner,
+			"archived_on": activity.creation,
+			"reason": activity.reason,
+		}
 
 	def site_action(allowed_status: list[str], disallowed_message: str | dict[str, str] | None = None):
 		def outer_wrapper(func):
@@ -534,6 +566,7 @@ class Site(Document, TagHelpers):
 		self.validate_backup_times()
 
 	def before_insert(self):
+		self.validate_remote_files_downloadable()
 		if not self.bench and self.group:
 			if self.server and not self.is_standby:
 				self.set_bench_for_server()
@@ -751,6 +784,55 @@ class Site(Document, TagHelpers):
 				frappe.throw(
 					f"Multiple backups have been scheduled at following hour {h}:00:00. Please configure the newer custom backup hours to a different time of the day."
 				)
+
+	@dashboard_whitelist()
+	def get_backup_schedule(self) -> dict:
+		"""Times are on the server's clock, same as the scheduler reads them."""
+		return {
+			"custom": bool(self.schedule_logical_backup_at_custom_time),
+			"times": sorted(
+				frappe.utils.get_time(row.backup_time).strftime("%H:%M") for row in self.logical_backup_times
+			),
+		}
+
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def update_backup_schedule(self, time: str | None = None):
+		"""Move the site's backups to a time of its own. No time means back to the default schedule.
+
+		One time a day — each extra time is one more backup we pay for. We set up
+		more times than that for a site ourselves. Logical only — physical backups
+		deactivate the site while they run.
+		"""
+		self.validate_backup_schedule_is_editable()
+
+		self.logical_backup_times = []
+		if time:
+			self.append("logical_backup_times", {"backup_time": parse_backup_time(time)})
+		self.schedule_logical_backup_at_custom_time = bool(time)
+		self.save()
+
+	def validate_backup_schedule_is_editable(self):
+		if not self.plan_allows_backup_schedule():
+			frappe.throw(
+				"Your plan does not come with a backup schedule you can set. Change to a plan of USD 25 or more to select a backup time."
+			)
+		if len(self.logical_backup_times) > 1:
+			frappe.throw("We set up the backup times of your site. Write to support to change them.")
+
+	def plan_allows_backup_schedule(self) -> bool:
+		"""Entry-level plans stay on the default schedule.
+
+		Enterprise plans are priced at 0 and negotiated off the ladder, so the
+		cutoff only rules out the public plans under it. Offsite backups keep the
+		trial plans out, which are priced at 0 as well.
+		"""
+		if not self.plan:
+			return False
+		plan = frappe.get_cached_doc("Site Plan", self.plan)
+		if not plan.offsite_backups:
+			return False
+		return plan.price_usd == 0 or plan.price_usd >= MINIMUM_BACKUP_SCHEDULE_PLAN_PRICE_USD
 
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)
@@ -1151,8 +1233,9 @@ class Site(Document, TagHelpers):
 
 	def try_increasing_disk(self, server: "BaseServer", mountpoint: str, diff: int, err_msg: str):
 		try:
+			diff = abs(diff)
 			server.calculated_increase_disk_size(
-				mountpoint=mountpoint, additional=cint(diff / 1024 / 1024 // 1024)
+				mountpoint=mountpoint, additional=math.ceil(diff / 1024 / 1024 / 1024)
 			)
 		except VolumeResizeLimitError:
 			frappe.throw(
@@ -1377,6 +1460,14 @@ class Site(Document, TagHelpers):
 		database_server = frappe.get_doc("Database Server", self.database_server_name)
 		if not database_server.is_mariadb_up():
 			frappe.throw("The database server is not up. Wait for it to come back, then try again.")
+		# A site that answers is out of maintenance mode. Someone activated it by hand,
+		# and a restore now would overwrite the data they have entered since.
+		if self.is_responsive():
+			frappe.throw(
+				"This site responds to requests, so it may already be active. A table "
+				"restore would overwrite its current data. If the site is still broken, "
+				"contact support."
+			)
 
 	@property
 	def database_size(self) -> int:
@@ -1417,9 +1508,115 @@ class Site(Document, TagHelpers):
 
 		log_site_activity(self.name, "Clear Cache", job=job.name)
 
+	@frappe.whitelist()
+	def rotate_database_password(self):
+		frappe.only_for("System Manager", message=True)
+		self.validate_no_password_rotation_in_progress()
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_rotate_database_password",
+			queue="long",
+			timeout=1200,
+			job_id=f"rotate_database_password:{self.name}",
+			deduplicate=True,
+		)
+
+	def validate_no_password_rotation_in_progress(self):
+		# An older rotation's job delivered after a newer one would set a stale password
+		if frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "Update Site Configuration",
+				"site": self.name,
+				"status": ("not in", ("Success", "Failure", "Delivery Failure")),
+				"request_data": ("like", '%"db_password"%'),
+			},
+		):
+			frappe.throw(
+				"A database password rotation is still running for this site. Please try again after it finishes."
+			)
+
+	def _rotate_database_password(self):
+		self.validate_no_password_rotation_in_progress()
+		config = self.fetch_info()["config"]
+		db_user = config.get("db_user") or config["db_name"]
+		password = frappe.generate_hash(length=32)
+
+		# The bench's database server is the one in its db_host, so the one the site connects to
+		database_server_name = frappe.db.get_value("Bench", self.bench, "database_server")
+		if not database_server_name:
+			frappe.throw(
+				"This site's bench has no database server that press manages. Change the password on its database service instead."
+			)
+		database_server = frappe.get_doc("Database Server", database_server_name)
+		ansible = Ansible(
+			playbook="mariadb_change_site_password.yml",
+			server=database_server,
+			user=database_server.ssh_user or "root",
+			port=database_server.ssh_port or 22,
+			variables={"db_user": db_user, "db_password": password},
+		)
+		play = ansible.run()
+		if play.status != "Success":
+			frappe.throw(f"Couldn't change the database password. See Ansible Play {play.name}")
+
+		job = self.update_site_config_without_deduplication({"db_password": password})
+		log_site_activity(self.name, "Update Configuration", reason="Rotate database password", job=job.name)
+
+	def update_site_config_without_deduplication(self, config: dict) -> AgentJob:
+		# Reusing a pending config job would drop a rotated secret
+		return Agent(self.server).create_agent_job(
+			"Update Site Configuration",
+			f"benches/{self.bench}/sites/{self.name}/config",
+			{"config": config, "remove": []},
+			bench=self.bench,
+			site=self.name,
+			deduplicate=False,
+		)
+
+	@frappe.whitelist()
+	def rotate_saas_communication_secret(self):
+		frappe.only_for("System Manager", message=True)
+		self.validate_communication_secret_can_rotate()
+		self.saas_communication_secret = frappe.generate_hash(length=32)
+		config = {"fc_communication_secret": self.saas_communication_secret}
+		self._update_configuration(config)
+		job = self.update_site_config_without_deduplication(config)
+		# Tokens made with the old secret would keep working until they expire
+		frappe.db.delete("Site Access Token", {"site": self.name})
+		log_site_activity(
+			self.name, "Update Configuration", reason="Rotate communication secret", job=job.name
+		)
+		if frappe.db.exists("Product Trial Request", {"site": self.name, "status": "Site Created"}):
+			# After commit, so that a failed call to the site can't undo the rotation
+			frappe.enqueue_doc(
+				"Site", self.name, "create_sync_user_webhook", queue="short", enqueue_after_commit=True
+			)
+
+	def validate_communication_secret_can_rotate(self):
+		if self.status not in ("Active", "Inactive", "Broken", "Suspended"):
+			frappe.throw(
+				f"This site is {self.status.lower()}. Rotate the communication secret after the site is active."
+			)
+		# Every full config update carries the secret, so a pending one would put the old secret back
+		if frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "Update Site Configuration",
+				"site": self.name,
+				"status": ("not in", ("Success", "Failure", "Delivery Failure")),
+				"request_data": ("like", '%"fc_communication_secret"%'),
+			},
+		):
+			frappe.throw(
+				"A site configuration update is still running for this site. Please try again after it finishes."
+			)
+
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive"])
 	def restore_site(self, skip_failing_patches=False):
+		self.validate_restorer()
 		if (
 			self.remote_database_file
 			and not frappe.get_doc("Remote File", self.remote_database_file).exists()
@@ -1436,9 +1633,34 @@ class Site(Document, TagHelpers):
 		self.save()
 		return job.name
 
+	def validate_restorer(self):
+		"""Only those who can download a backup can restore a site from it."""
+		self.validate_backup_access()
+		self.validate_remote_files_downloadable()
+
+	def validate_remote_files_downloadable(self):
+		from press.press.doctype.remote_file.remote_file import validate_files_downloadable
+
+		validate_files_downloadable(
+			[
+				self.remote_database_file,
+				self.remote_public_file,
+				self.remote_private_file,
+				self.remote_config_file,
+			]
+		)
+
+	def validate_backup_access(self):
+		if is_outside_employee(self.team):
+			frappe.throw(
+				"Employees cannot restore or copy a site that belongs to another team.",
+				frappe.PermissionError,
+			)
+
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive"])
 	def restore_site_from_physical_backup(self, backup: str):
+		self.validate_backup_access()
 		if frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
 			frappe.throw(
 				"Currently, Physical Backup & Restoration is disabled system wide. Please try again later."
@@ -1540,7 +1762,9 @@ class Site(Document, TagHelpers):
 	def get_backup_download_link(self, backup, file):
 		from botocore.exceptions import ClientError
 
-		if file not in ["database", "public", "private", "config"]:
+		from press.press.doctype.remote_file.remote_file import BACKUP_FILE_KEYS, RemoteFile
+
+		if file not in BACKUP_FILE_KEYS:
 			frappe.throw("Invalid file type")  # nosemgrep
 
 		try:
@@ -1549,7 +1773,7 @@ class Site(Document, TagHelpers):
 				{"name": backup, "site": self.name},
 				f"remote_{file}_file",
 			)
-			return frappe.get_doc("Remote File", remote_file).download_link
+			return RemoteFile("Remote File", remote_file).get_download_link()
 		except ClientError:
 			log_error(title="Offsite Backup Response Exception")
 
@@ -2191,14 +2415,20 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
-	@action_guard(SiteActions.LoginAsAdmin)
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/app?sid={sid}"
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
+	@action_guard(SiteActions.LoginAsAdmin)
 	def login_as_team(self, reason=None):
+		reason = f"Logged in as the team user. {reason or ''}".strip()
+		log_site_activity(self.name, "Login as Administrator", reason=reason)
+		return self.team_login_url()
+
+	def team_login_url(self):
+		"""Not whitelisted: the caller checks consent and logs the activity."""
 		if self.additional_system_user_created:
 			team_user = frappe.db.get_value("Team", self.team, "user")
 			sid = self.get_login_sid(user=team_user)
@@ -2230,6 +2460,7 @@ class Site(Document, TagHelpers):
 			frappe.throw(str(e))  # nosemgrep
 
 	@frappe.whitelist()
+	@action_guard(SiteActions.LoginAsAdmin)
 	def login(self, reason=None):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()
@@ -2480,7 +2711,7 @@ class Site(Document, TagHelpers):
 
 	def create_sync_user_webhook(self):
 		"""
-		Create 3 webhook records in the site to sync the user with press
+		Create or update 3 webhook records in the site to sync the user with press
 		- One for user record creation
 		- One for user record update
 		- One for user record deletion
@@ -2523,6 +2754,8 @@ class Site(Document, TagHelpers):
 			except FrappeException as ex:
 				if "frappe.exceptions.DuplicateEntryError" not in str(ex):
 					raise ex
+				# Puts the current communication secret in the existing webhook
+				conn.update({**doctype_data, **webhook})
 
 	def sync_users_to_product_site(self, analytics=None):
 		from press.press.doctype.site_user.site_user import create_user_for_product_site
@@ -2698,7 +2931,8 @@ class Site(Document, TagHelpers):
 			)
 
 	def validate_encryption_key(self, key: str, value: Any):
-		if key != "encryption_key" or key != "backup_encryption_key":
+		# The dashboard sends the masked value when a password key is saved unchanged
+		if key not in ENCRYPTION_KEYS or value == "*******":
 			return
 		from cryptography.fernet import Fernet, InvalidToken
 
@@ -3006,6 +3240,17 @@ class Site(Document, TagHelpers):
 
 		validate_plan(self.server, self.name, plan)
 		self.change_plan(plan)
+
+	@dashboard_whitelist()
+	def last_plan_change(self):
+		"""Most recent plan change for this site, for showing 'last changed on' in the dashboard."""
+		return frappe.db.get_value(
+			"Site Plan Change",
+			{"site": self.name},
+			["from_plan", "to_plan", "type", "creation"],
+			order_by="creation desc",
+			as_dict=True,
+		)
 
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
@@ -3346,6 +3591,9 @@ class Site(Document, TagHelpers):
 		release_group_names = []
 		host_on_shared_server = False
 		plan_name = self.get_plan_name()
+
+		if self.is_standby:
+			host_on_shared_server = True
 		if plan_name:
 			release_group_names = frappe.db.get_all(
 				"Site Plan Release Group",
@@ -3384,7 +3632,7 @@ class Site(Document, TagHelpers):
 				"from_plan": "",
 				"to_plan": plan,
 				"type": "Initial Plan",
-				"timestamp": self.creation,
+				"timestamp": self.signup_time or self.creation,
 			}
 		).insert(ignore_permissions=True)
 
@@ -3399,6 +3647,35 @@ class Site(Document, TagHelpers):
 			for_update=True,
 		):
 			frappe.throw("Database Access is already being enabled on this site. Please check after a while.")
+
+	@dashboard_whitelist()
+	def get_auto_update_window(self):
+		"""Tell when an automatic update of this site can start.
+
+		The dashboard shows this, because the user cannot see the update window
+		anywhere else.
+		"""
+		from press.press.doctype.site_update.site_update import (
+			DEFAULT_SITE_TIMEZONE,
+			get_deploy_hour_windows,
+		)
+
+		if self.only_update_at_specified_time:
+			# This schedule runs on the clock of the platform, not of the site.
+			return {
+				"timezone": get_system_timezone(),
+				"windows": None,
+				"frequency": self.update_trigger_frequency,
+				"time": self.update_trigger_time,
+				"weekday": self.update_on_weekday,
+				"day_of_month": self.update_on_day_of_month,
+				"end_of_month": self.update_end_of_month,
+			}
+
+		return {
+			"timezone": self.timezone or DEFAULT_SITE_TIMEZONE,
+			"windows": get_deploy_hour_windows(),
+		}
 
 	def get_auto_update_info(self):
 		fields = [
@@ -4002,15 +4279,15 @@ class Site(Document, TagHelpers):
 					"data": json.loads(frappe.cache().get_value(key_for_schema)),
 				}
 
-		# Check if any agent job is created within 5 minutes and in pending/running condition
-		# Checks to prevent duplicate agent job creation due to race condition
+		# An unfinished job from the last 30 minutes blocks a new one, so repeated calls
+		# cannot pile up jobs while the server is slow to answer
 		if not frappe.db.exists(
 			"Agent Job",
 			{
 				"job_type": "Fetch Database Table Schema",
 				"site": self.name,
 				"status": ["in", ["Undelivered", "Pending", "Running"]],
-				"creation": (">", frappe.utils.add_to_date(None, minutes=-5)),
+				"creation": (">", frappe.utils.add_to_date(None, minutes=-30)),
 			},
 		):
 			# create the agent job and put it in loading state
@@ -4536,7 +4813,7 @@ class Site(Document, TagHelpers):
 			region.inbound_ip = self.inbound_ip_in_cluster(region.name)
 
 		return {
-			"has_recent_failed_migration": self.has_recent_failed_migration(),
+			"recent_failed_migration_servers": self.recent_failed_migration_servers(),
 			"In-Place Migrate Site": {
 				"hidden": False,
 				"allow_scheduling": False,
@@ -4565,15 +4842,17 @@ class Site(Document, TagHelpers):
 			},
 		}
 
-	def has_recent_failed_migration(self) -> bool:
-		# A failed move leaves restore files behind, so a retry hits the space pre-check.
-		return frappe.db.exists(
+	def recent_failed_migration_servers(self) -> list[str]:
+		# A failed move leaves restore files on its destination, so a retry there hits the space pre-check.
+		return frappe.get_all(
 			"Site Migration",
-			{
+			filters={
 				"site": self.name,
 				"status": "Failure",
 				"creation": (">", frappe.utils.add_to_date(frappe.utils.now(), days=-1)),
 			},
+			pluck="destination_server",
+			distinct=True,
 		)
 
 	@property
@@ -4628,6 +4907,14 @@ class Site(Document, TagHelpers):
 		if not d:
 			return None
 		return str(timedelta(seconds=round(d.total_seconds() * 2)))
+
+
+def parse_backup_time(time: str) -> str:
+	try:
+		parsed = datetime.strptime(time, "%H:%M")
+	except (TypeError, ValueError):
+		frappe.throw(f"{time} is not a valid backup time. Use HH:MM.")
+	return parsed.strftime("%H:%M:00")
 
 
 def get_inbound_ip(server: str) -> str | None:
@@ -5676,6 +5963,72 @@ def suspend_sites_exceeding_disk_usage_for_last_14_days():
 			site.suspend(reason="Site Usage Exceeds Plan limits", skip_reload=True)
 
 
+def teams_with_sites_nearing_storage_limits(threshold: int) -> dict[str, list[frappe._dict]]:
+	"""Map each paying team to its live sites using `threshold`% or more of plan disk or database."""
+	free_teams = frappe.get_all("Team", filters={"free_account": True, "enabled": True}, pluck="name")
+	sites = frappe.get_all(
+		"Site",
+		filters={"status": ("in", ["Active", "Inactive"]), "free": False, "team": ("not in", free_teams)},
+		or_filters={"current_disk_usage": (">=", threshold), "current_database_usage": (">=", threshold)},
+		fields=["name", "team", "plan", "current_disk_usage", "current_database_usage"],
+	)
+	sites.sort(key=lambda s: max(s.current_disk_usage or 0, s.current_database_usage or 0), reverse=True)
+	teams: dict[str, list[frappe._dict]] = {}
+	for site in sites:
+		if site.team:
+			teams.setdefault(site.team, []).append(site)
+	return teams
+
+
+def notify_teams_nearing_storage_limits(
+	threshold: int = 100,
+	action_url: str = "https://cloud.frappe.io/dashboard",
+	duplicate_window_days: int = 3,
+	verbose: bool = False,
+):
+	"""Console-run: email paying teams whose sites use `threshold`% or more of plan disk or database.
+	A team already sent this notice within duplicate_window_days is skipped."""
+	args = {"threshold": threshold, "action_url": action_url}
+	teams = teams_with_sites_nearing_storage_limits(threshold)
+	if verbose:
+		print(f"Notifying {len(teams)} team(s) with sites at {threshold}% or more of their storage limits")
+	for team, sites in teams.items():
+		over_limit = any(
+			(s.current_disk_usage or 0) >= 100 or (s.current_database_usage or 0) >= 100 for s in sites
+		)
+		# Keyed on over_limit too, so a near-limit notice doesn't suppress the later over-limit one
+		message_id = notice_message_id("storage-limit-notice", team, {**args, "over_limit": over_limit})
+		duplicate = find_recent_notice_dispatch(message_id, duplicate_window_days)
+		if duplicate:
+			if verbose:
+				sent_on = frappe.utils.formatdate(duplicate.creation)
+				link = frappe.utils.get_url_to_form("Email Queue", duplicate.name)
+				print(f"  {team}: not sending this as already sent on ({sent_on}) [{link}]")
+			continue
+		recipients = get_communication_info("Email", "Site Activity", "Team", team)
+		if not recipients:
+			if verbose:
+				print(f"  skipped {team}: no recipients for {len(sites)} site(s)")
+			continue
+		noun = "sites" if len(sites) > 1 else "site"
+		subject = (
+			f"Action needed: your {noun} {'have' if len(sites) > 1 else 'has'} reached the plan's storage limit"
+			if over_limit
+			else f"Your {noun} {'are' if len(sites) > 1 else 'is'} close to the plan's storage limit"
+		)
+		frappe.sendmail(
+			recipients=recipients,
+			subject=subject,
+			template="sites_nearing_storage_limits",
+			args={**args, "sites": sites, "site_count": len(sites), "over_limit": over_limit},
+			reference_doctype="Team",
+			reference_name=team,
+			message_id=message_id,
+		)
+		if verbose:
+			print(f"  queued {team}: {len(sites)} site(s) -> {', '.join(recipients)}")
+
+
 def create_subscription_for_trial_sites():
 	# Get sites that are in "Site Created" status and has no entry in "Site Plan Change"
 	# For those sites, invoke "Create Subscription" that puts entry into "Site Plan Change" and "Subscription"
@@ -5690,6 +6043,7 @@ def create_subscription_for_trial_sites():
 		.left_join(ProductTrial)
 		.on(ProductTrialRequest.product_trial == ProductTrial.name)
 		.where(ProductTrialRequest.is_subscription_created == 0)
+		.where(ProductTrialRequest.site != "")
 		.where(SitePlanChange.name.isnull())
 		.where(ProductTrialRequest.status == "Site Created")
 		.limit(25)

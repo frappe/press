@@ -1,9 +1,12 @@
 # Copyright (c) 2026, Frappe and Contributors
 # See license.txt
 
+from unittest.mock import patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.agent import Agent
 from press.api.client import set_value
 from press.api.tests.test_client import sign_in_as
 from press.press.doctype.server.test_server import create_test_server
@@ -85,3 +88,40 @@ class TestServerFirewallDashboardEditing(FrappeTestCase):
 		self.assertEqual(
 			frappe.db.get_value("Server Firewall", self.firewall.name, "server_id"), self.server.name
 		)
+
+
+class TestServerFirewallNginxSync(FrappeTestCase):
+	"""Nginx cannot tell a visitor from the proxy unless the sync carries the proxy IP."""
+
+	def setUp(self):
+		super().setUp()
+		self.server = create_test_server()
+		self.firewall = frappe.get_doc("Server Firewall", {"server_id": self.server.name})
+		self.firewall.append(
+			"rules", {"source": "183.82.5.84/32", "port": 443, "protocol": "TCP", "action": "Allow"}
+		)
+		self.firewall.append(
+			"rules", {"source": "0.0.0.0/0", "port": 443, "protocol": "TCP", "action": "Deny"}
+		)
+		self.firewall.enabled = 1
+		self.firewall.save()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	@patch.object(Agent, "update_nginx_access")
+	def test_nginx_sync_sends_the_proxy_ip_along_with_the_rules(self, update_nginx_access):
+		self.firewall._sync_nginx()
+
+		ip_accept, ip_drop, proxy_ip = update_nginx_access.call_args.args
+		self.assertIn("183.82.5.84/32", ip_accept)
+		self.assertEqual(ip_drop, ["0.0.0.0/0"])
+		self.assertEqual(proxy_ip, self.server.get_proxy_ip())
+
+	@patch.object(Agent, "update_nginx_access")
+	def test_the_proxy_subnet_the_sync_allows_is_the_one_it_asks_nginx_to_trust(self, update_nginx_access):
+		"""Allowing the subnet without trusting it is what let every visitor through."""
+		self.firewall._sync_nginx()
+
+		ip_accept, _, proxy_ip = update_nginx_access.call_args.args
+		self.assertIn(proxy_ip, ip_accept)

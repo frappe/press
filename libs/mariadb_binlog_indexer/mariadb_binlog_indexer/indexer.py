@@ -304,8 +304,8 @@ class Indexer:
 					i[0]
 					for i in self._execute_query(
 						"parquet",
-						f"SELECT id FROM '{parquet_file_path}' WHERE id IN ? AND query ILIKE '%{search_str}%'",
-						[row_ids],
+						f"SELECT id FROM '{parquet_file_path}' WHERE id IN ? AND query ILIKE ?",
+						[row_ids, f"%{search_str}%"],
 					)
 				]
 

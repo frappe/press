@@ -10,14 +10,14 @@ import razorpay
 import stripe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, flt, getdate
+from frappe.utils import cint, flt, getdate, now
 from frappe.utils.data import fmt_money
 
 from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
 from press.press.doctype.auto_scale_record.auto_scale_record import calculate_secondary_server_price
 from press.press.doctype.communication_info.communication_info import get_communication_info
-from press.utils import log_error
+from press.utils import get_current_team, log_error
 from press.utils.billing import (
 	convert_stripe_money,
 	get_frappe_io_connection,
@@ -149,6 +149,7 @@ class Invoice(Document):
 		partner_customer = filters.get("partner_customer")
 		if partner_customer:
 			team_name = filters.get("team")
+			validate_partner_customer(team_name)
 			due_date = filters.get("due_date")
 			filters.pop("partner_customer")
 			query = (
@@ -495,26 +496,17 @@ class Invoice(Document):
 
 	def after_insert(self):
 		if self.get("amended_from"):
-			values = {
-				"modified": frappe.utils.now(),
-				"modified_by": frappe.session.user,
-				"new_invoice": self.name,
-				"old_invoice": self.amended_from,
-			}
-			# link usage records of old cancelled invoice to the new amended invoice
-			frappe.db.sql(
-				"""
-				UPDATE
-					`tabUsage Record`
-				SET
-					`invoice` = %(new_invoice)s,
-					`modified` = %(modified)s,
-					`modified_by` = %(modified_by)s
-				WHERE
-					`invoice` = %(old_invoice)s
-				""",
-				values=values,
-			)
+			self.relink_usage_records_from_amended_invoice()
+
+	def relink_usage_records_from_amended_invoice(self):
+		UsageRecord = frappe.qb.DocType("Usage Record")
+		(
+			frappe.qb.update(UsageRecord)
+			.set(UsageRecord.invoice, self.name)
+			.set(UsageRecord.modified, now())
+			.set(UsageRecord.modified_by, frappe.session.user)
+			.where(UsageRecord.invoice == self.amended_from)
+		).run()
 
 	def create_stripe_invoice(self):
 		if self.stripe_invoice_id:
@@ -1471,6 +1463,21 @@ class Invoice(Document):
 			return None
 		stripe = get_stripe()
 		return stripe.Invoice.retrieve(self.stripe_invoice_id)
+
+
+def validate_partner_customer(customer: str | None):
+	"""Throw unless the current team is the partner of the customer team."""
+	partner = get_current_team(get_doc=True)
+	is_customer = (
+		customer
+		and partner.erpnext_partner
+		and partner.partner_email
+		and frappe.db.exists(
+			"Team", {"name": customer, "erpnext_partner": 0, "partner_email": partner.partner_email}
+		)
+	)
+	if not is_customer:
+		frappe.throw(_("You can only view invoices of your own customers."), frappe.PermissionError)
 
 
 def finalize_monthly_draft_invoices():

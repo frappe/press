@@ -41,6 +41,7 @@ class PaymentDueExtension(Document):
 
 	def on_submit(self):
 		frappe.db.set_value("Team", self.team, "extend_payment_due_suspension", 1)
+		frappe.get_doc("Team", self.team).unsuspend_sites(reason=self.reason)
 
 	def expire(self):
 		frappe.db.set_value("Payment Due Extension", self.name, "status", "Expired")

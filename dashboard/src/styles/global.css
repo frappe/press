@@ -58,3 +58,7 @@ body {
 *::-webkit-scrollbar-thumb:hover {
 	background-color: var(--scrollbar-thumb-hover);
 }
+
+.razorpay-container {
+	pointer-events: auto;
+}

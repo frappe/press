@@ -15,3 +15,4 @@
     - role: filebeat
     - role: auditd
     - role: clamav
+    - role: fail2ban

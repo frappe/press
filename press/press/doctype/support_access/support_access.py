@@ -9,7 +9,10 @@ from frappe.model.document import Document
 from frappe.query_builder import Criterion, JoinType
 from frappe.query_builder.functions import Count
 
+from press.access.utils import is_outside_employee
 from press.utils import get_current_team
+
+PENDING_REQUEST_EXPIRY_DAYS = 7
 
 
 class SupportAccess(Document):
@@ -33,7 +36,7 @@ class SupportAccess(Document):
 		resources: DF.Table[SupportAccessResource]
 		site_domains: DF.Check
 		site_release_group: DF.Check
-		status: DF.Literal["Pending", "Accepted", "Rejected", "Forfeited", "Revoked"]
+		status: DF.Literal["Pending", "Accepted", "Rejected", "Forfeited", "Revoked", "Expired"]
 		target_team: DF.Link | None
 	# end: auto-generated types
 
@@ -177,23 +180,29 @@ class SupportAccess(Document):
 		"""
 		current_team = get_current_team()
 		if self.flags.ignore_permissions:
-			return ["Pending", "Accepted", "Rejected", "Forfeited", "Revoked"]
-		if self.target_team == current_team:
+			return ["Pending", "Accepted", "Rejected", "Forfeited", "Revoked", "Expired"]
+		if self.acts_for_target_team:
 			return ["Accepted", "Rejected", "Revoked"]
 		if self.requested_team == current_team:
 			return ["Pending", "Forfeited"]
 		return []
+
+	@property
+	def acts_for_target_team(self) -> bool:
+		"""A member, or a System Manager switched into the target team, answers for it. Other employees cannot."""
+		return self.target_team == get_current_team() and not is_outside_employee(self.target_team)
 
 	def is_valid_status_transition(self, status_from: str, status_to: str) -> bool:
 		"""
 		Checks if status can be changed from `status_from` to `status_to`.
 		"""
 		return status_to in {
-			"Pending": ["Accepted", "Rejected"],
+			"Pending": ["Accepted", "Rejected", "Expired"],
 			"Accepted": ["Revoked", "Forfeited"],
 			"Rejected": [],
 			"Forfeited": [],
 			"Revoked": [],
+			"Expired": [],
 		}.get(status_from, [])
 
 	def validate_status_change(self):
@@ -232,8 +241,7 @@ class SupportAccess(Document):
 		self.target_team = teams.pop()
 
 	def validate_validity_change(self):
-		is_target_team = get_current_team() == self.target_team
-		if self.has_value_changed("allowed_for") and not is_target_team:
+		if self.has_value_changed("allowed_for") and not self.acts_for_target_team:
 			message = _("You are not allowed to change the validity period.")
 			frappe.throw(message, frappe.ValidationError)
 		if self.status != "Pending":
@@ -244,6 +252,10 @@ class SupportAccess(Document):
 		self.notify_on_request()
 
 	def on_update(self):
+		self.notify_on_status_change()
+
+	def expire(self):
+		self.db_set("status", "Expired")
 		self.notify_on_status_change()
 
 	def notify_on_status_change(self):
@@ -258,13 +270,16 @@ class SupportAccess(Document):
 			message = "Support access has been forfieted."
 			recipient = self.target_team
 
+		if self.status == "Expired":
+			message = "Your request for support access has expired without a response."
+
 		frappe.sendmail(
 			subject=title,
 			message=message,
 			recipients=recipient,
 			template="access_request_update",
 			args={
-				"status": self.status,
+				"message": message,
 				"resources": self.resources,
 			},
 		)
@@ -324,6 +339,14 @@ class SupportAccess(Document):
 				"team": self.target_team,
 			},
 		)
+
+
+def expire_pending_requests():
+	"""Expire requests left pending for more than `PENDING_REQUEST_EXPIRY_DAYS` and notify the requester."""
+	cutoff = frappe.utils.add_to_date(frappe.utils.now_datetime(), days=-PENDING_REQUEST_EXPIRY_DAYS)
+	names = frappe.get_all("Support Access", {"status": "Pending", "creation": ("<", cutoff)}, pluck="name")
+	for name in names:
+		SupportAccess("Support Access", name).expire()
 
 
 def has_permission(doc, user=None, permission_type=None) -> bool:

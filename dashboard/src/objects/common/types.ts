@@ -181,6 +181,7 @@ export interface RouteDetail {
 	path: string
 	component?: Component
 	redirect?: RouteRecordRaw['redirect']
+	meta?: RouteRecordRaw['meta']
 }
 
 interface Option {

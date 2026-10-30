@@ -32,7 +32,7 @@ class PressWorkflowTask(Document):
 		from frappe.types import DF
 
 		args: DF.Data | None
-		args_type: DF.Literal["int", "float", "string", "tuple", "list", "dict", "object"]
+		args_type: DF.Literal["bool", "int", "float", "string", "tuple", "list", "dict", "object"]
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		exception: DF.Link | None
@@ -41,7 +41,7 @@ class PressWorkflowTask(Document):
 		method_name: DF.Data
 		method_title: DF.Data
 		output: DF.Data | None
-		output_type: DF.Literal["int", "float", "string", "tuple", "list", "dict", "object"]
+		output_type: DF.Literal["bool", "int", "float", "string", "tuple", "list", "dict", "object"]
 		parent_task: DF.Link | None
 		queue: DF.Data | None
 		signature: DF.Data

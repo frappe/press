@@ -81,6 +81,7 @@
 <script>
 import { Breadcrumbs } from 'frappe-ui';
 import Header from '../components/Header.vue';
+import { pageTitle } from '../utils/title';
 
 export default {
 	props: {
@@ -90,9 +91,7 @@ export default {
 		},
 	},
 	pageMeta() {
-		return {
-			title: `Install ${this.appDoc.title} - Frappe Cloud`,
-		};
+		return { title: pageTitle(`Install ${this.appDoc.title}`) };
 	},
 	components: {
 		FBreadcrumbs: Breadcrumbs,

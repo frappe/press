@@ -26,8 +26,17 @@
 import Header from '../components/Header.vue';
 import { Breadcrumbs, Tabs } from 'frappe-ui';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
+import { leafTitle, pageTitle } from '../utils/title';
 export default {
 	name: 'PartnerLeadDetails',
+	pageMeta() {
+		return {
+			title: pageTitle(
+				this.lead.doc?.organization_name,
+				leafTitle(this.$route),
+			),
+		};
+	},
 	components: {
 		Header,
 		FBreadcrumbs: Breadcrumbs,

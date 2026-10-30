@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
@@ -31,22 +30,17 @@ class ERPNextConsultant(Document):
 		return get_fullname(self.name)
 
 	@classmethod
-	def list_for_region(cls, region_name: str) -> [str]:
+	def list_for_region(cls, region_name: str) -> list[str]:
 		"""List ACTIVE consultants for a region."""
-		return frappe.db.sql_list(
-			f"""
-				SELECT
-					consultant.name
-				FROM
-					`tabERPNext Consultant` consultant
-				JOIN
-					`tabERPNext Consultant Region` region
-				ON
-					region.parent = consultant.name
-				WHERE
-					consultant.active = True and
-					region.territory = "{region_name}"
-			"""
+		Consultant = frappe.qb.DocType("ERPNext Consultant")
+		ConsultantRegion = frappe.qb.DocType("ERPNext Consultant Region")
+		return (
+			frappe.qb.from_(Consultant)
+			.join(ConsultantRegion)
+			.on(ConsultantRegion.parent == Consultant.name)
+			.select(Consultant.name)
+			.where((Consultant.active == 1) & (ConsultantRegion.territory == region_name))
+			.run(pluck=True)
 		)
 
 	@classmethod
@@ -58,8 +52,6 @@ class ERPNextConsultant(Document):
 			return consultants[consultants.index(region.last_allocated_to) + 1]
 		except (IndexError, ValueError):
 			return consultants[0]
-		except IndexError:
-			return ""
 
 	@classmethod
 	def get_one_for_country(cls, country: str) -> str:

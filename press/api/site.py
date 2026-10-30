@@ -29,7 +29,11 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	get_total_installs_by_app,
 )
-from press.press.doctype.remote_file.remote_file import get_remote_key, validate_files_belong_to_team
+from press.press.doctype.remote_file.remote_file import (
+	BACKUP_FILE_KEYS,
+	get_remote_key,
+	validate_files_belong_to_team,
+)
 from press.press.doctype.root_domain.root_domain import get_matching_domain
 from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site.site import (
@@ -52,6 +56,7 @@ from press.utils import (
 	get_frappe_backups,
 	get_last_doc,
 	log_error,
+	ssrf,
 	unique,
 )
 from press.utils.dns import check_dns_cname_a
@@ -95,16 +100,25 @@ def protected(doctypes):
 		if not (docname := get_protected_doctype_name(args, kwargs, doctypes)):
 			frappe.throw("Name not found, API access not permitted", frappe.PermissionError)  # nosemgrep
 
+		# A list would match any of its names in the team check below
+		if not isinstance(docname, (str, int)):
+			frappe.throw("Invalid name, API access not permitted", frappe.PermissionError)  # nosemgrep
+
 		current_team = get_current_team()
 		for doctype in doctypes:
-			document_team = frappe.db.get_value(doctype, docname, "team")
-			if document_team == current_team or has_support_access(doctype, docname):
+			if has_protected_access(doctype, docname, current_team):
 				return wrapped(*args, **kwargs)
 
 		frappe.throw("Not Permitted", frappe.PermissionError)  # nosemgrep
 		return None
 
 	return wrapper
+
+
+def has_protected_access(doctype: str, docname: str, team: str) -> bool:
+	if frappe.db.get_value(doctype, docname, "team") == team:
+		return role_guard.permits(doctype, docname)
+	return has_support_access(doctype, docname)
 
 
 def get_protected_doctype_name(args: list, kwargs: dict, doctypes: list[str]):
@@ -788,7 +802,7 @@ def backups(name):
 @frappe.whitelist()
 @protected("Site")
 def get_backup_link(name, backup, file):
-	if file not in ["database", "public", "private", "config"]:
+	if file not in BACKUP_FILE_KEYS:
 		frappe.throw("Invalid file type")  # nosemgrep
 
 	try:
@@ -797,7 +811,7 @@ def get_backup_link(name, backup, file):
 			{"name": backup, "site": name},
 			f"remote_{file}_file",
 		)
-		return frappe.get_doc("Remote File", remote_file).download_link
+		return frappe.get_doc("Remote File", remote_file).get_download_link()
 	except ClientError:
 		log_error(title="Offsite Backup Response Exception")
 
@@ -816,33 +830,6 @@ def domains(name):
 		primary.primary = True
 	domains.sort(key=lambda domain: not domain.primary)
 	return domains
-
-
-@frappe.whitelist()
-def activities(filters=None, order_by=None, limit_start=None, limit_page_length=None):
-	# get all site activity except Backup by Administrator
-	SiteActivity = frappe.qb.DocType("Site Activity")
-	activities = (
-		frappe.qb.from_(SiteActivity)
-		.select(
-			SiteActivity.action,
-			SiteActivity.reason,
-			SiteActivity.creation,
-			SiteActivity.owner,
-		)
-		.where(SiteActivity.site == filters["site"])
-		.where((SiteActivity.action != "Backup") | (SiteActivity.owner != "Administrator"))
-		.orderby(SiteActivity.creation, order=frappe.qb.desc)
-		.offset(limit_start)
-		.limit(limit_page_length)
-		.run(as_dict=True)
-	)
-
-	for activity in activities:
-		if activity.action == "Create":
-			activity.action = "Site Created"
-
-	return activities
 
 
 @frappe.whitelist()
@@ -2511,8 +2498,9 @@ def uploaded_backup_info(file=None, path=None, type=None, size=None, url=None):
 def get_backup_links(url, email, password):
 	try:
 		files = get_frappe_backups(url, email, password)
-	except requests.RequestException as e:
-		frappe.throw(f"Could not fetch backups from {url}. Error: {e}")  # nosemgrep
+	except (requests.RequestException, ssrf.SSRFError):
+		log_error("Backups Retrieval Error - Magic Migration", url=url)
+		frappe.throw("Could not fetch backups from the site. Please check the site URL and try again.")
 	remote_files = []
 	for file_type, file_url in files.items():
 		file_name = file_url.split("backups/")[1].split("?sid=")[0]

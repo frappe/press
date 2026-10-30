@@ -1,4 +1,4 @@
-import { createResource } from 'frappe-ui'
+import { createResource, Tooltip } from 'frappe-ui'
 import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
 import router from '../../router'
@@ -270,9 +270,12 @@ export function backupRecordsOptions() {
 								if (row.physical) {
 									confirmDialog({
 										title: 'Restore Physical Backup',
+										primaryAction: { theme: 'red' },
 										message: `Are you sure you want to restore your site's database from physical backup taken on <b>${dayjs(
 											row.creation,
-										).format('lll')}</b> ?`,
+										).format(
+											'lll',
+										)}</b> ?<br><br>This will overwrite all <b>data</b> & <b>apps</b> in your site with those from the backup.`,
 										onSuccess({ hide }) {
 											toast.promise(
 												site.restoreSiteFromPhysicalBackup.submit({
@@ -298,9 +301,12 @@ export function backupRecordsOptions() {
 								} else {
 									confirmDialog({
 										title: 'Restore Backup',
+										primaryAction: { theme: 'red' },
 										message: `Are you sure you want to restore your site to this offsite backup from <b>${dayjs(
 											row.creation,
-										).format('lll')}</b> ?`,
+										).format(
+											'lll',
+										)}</b> ?<br><br>This will overwrite all <b>data</b> & <b>apps</b> in your site with those from the backup.`,
 										onSuccess({ hide }) {
 											toast.promise(
 												site.restoreSiteFromFiles.submit({
@@ -415,6 +421,7 @@ export function backupRecordsOptions() {
 			]
 		},
 		primaryAction({ listResource: backups, documentResource: site }) {
+			if (site.doc?.status === 'Archived') return null
 			return {
 				label: 'Take Backup',
 				slots: {
@@ -436,21 +443,36 @@ export function backupRecordsOptions() {
 				},
 			}
 		},
+		secondaryAction({ documentResource: site }) {
+			if (site.doc?.status !== 'Active') return null
+			if (!site.doc?.can_schedule_backups) return null
+			return {
+				label: 'Backup Schedule',
+				slots: {
+					icon: () => h(Tooltip, { text: 'Backup Schedule' }, icon('settings')),
+				},
+				onClick() {
+					renderDialog(
+						h(
+							defineAsyncComponent(
+								() =>
+									import('../../components/site/SiteBackupScheduleDialog.vue'),
+							),
+							{ site: site.name },
+						),
+					)
+				},
+			}
+		},
 		banner({ documentResource: site, listResource: backups }) {
 			if (site.doc?.status === 'Archived') {
 				if (backups?.data && backups.data.length > 0) {
 					return {
-						title: 'Need help with restoring your archived site.',
+						title:
+							'To restore an archived site backup, follow <a href="https://docs.frappe.io/cloud/sites/migrate-an-existing-site#restore-archived-site" class="underline" target="_blank">the documentation</a>. If you need more assistance, <a href="https://support.frappe.io" class="underline" target="_blank">contact support</a>.',
 						dismissable: true,
 						id: site.doc.name,
 						type: 'gray',
-						button: {
-							label: 'Contact Support',
-							variant: 'outline',
-							onClick() {
-								window.open('https://frappecloud.com/support', '_blank')
-							},
-						},
 					}
 				}
 				return

@@ -1206,8 +1206,8 @@ def show_app_versions(name: str, dc_name: str) -> list[dict[str, Any]]:
 
 @frappe.whitelist()
 @protected("Release Group")
-def redeploy(name: str, dc_name: str) -> str:
-	response = redeploy_candidate(dc_name)
+def redeploy(name: str, dc_name: str, no_cache: bool = False) -> str:
+	response = redeploy_candidate(dc_name, no_cache=bool(sbool(no_cache)))
 
 	if response["error"]:
 		frappe.throw("Unable to redeploy this build!", frappe.ValidationError)
@@ -1270,7 +1270,6 @@ def confirm_bench_transfer(key: str):
 def search_releases(
 	app: str,
 	source: str,
-	fields: list,
 	query: str | None = None,
 	limit: int = 10,
 	current_release: str | None = None,
@@ -1284,7 +1283,7 @@ def search_releases(
 		frappe.qb.from_(AppRelease)
 		.left_join(YankedAppRelease)
 		.on(YankedAppRelease.hash == AppRelease.hash)
-		.select(*fields)
+		.select(AppRelease.name, AppRelease.message, AppRelease.timestamp, AppRelease.hash)
 		.where(YankedAppRelease.hash.isnull())
 		.where(AppRelease.hash.like(f"%{query.strip()}%") | AppRelease.message.like(f"%{query.strip()}%"))
 	)

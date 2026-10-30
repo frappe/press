@@ -39,6 +39,7 @@ ALLOWED_PATHS = [
 	"/api/method/press.press.doctype.stripe_webhook_log.stripe_webhook_log.stripe_webhook_handler",
 	"/api/method/press.press.doctype.drip_email.drip_email.unsubscribe",
 	"/api/method/press.press.doctype.user_2fa.user_2fa.unsubscribe_from_recovery_code_reminders",
+	"/api/method/press.press.doctype.agent_job.agent_job.cancel_job_from_dashboard",
 	"/api/method/upload_file",
 	"/api/method/frappe.search.web_search",
 	"/api/method/frappe.email.queue.unsubscribe",

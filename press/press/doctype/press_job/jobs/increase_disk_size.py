@@ -9,7 +9,10 @@ from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 class IncreaseDiskSizeJob(PressJob):
 	@flow
 	def execute(self):
-		self.increase_disk_size()
+		if not self.increase_disk_size():
+			# Nothing was resized, so skip the partition wait and avoid restarting
+			# every bench, which would interrupt running jobs and backups.
+			return
 
 		provider = self.server_doc.provider
 		if provider == "AWS EC2":
@@ -20,16 +23,16 @@ class IncreaseDiskSizeJob(PressJob):
 			self.wait_for_server_to_be_accessible_oci()
 			self.add_glass_file_oci()
 
+		# TODO: Enable after a manual trial with the button on Server
+		# self.restore_truncated_configs()
+
 		if self.server_type == "Server":
 			self.restart_active_benches()
 
 	@task
-	def increase_disk_size(self):
+	def increase_disk_size(self) -> bool:
 		mountpoint = self.arguments_dict.labels.get("mountpoint")
-		self.server_doc.calculated_increase_disk_size(mountpoint=mountpoint)
-
-		if not frappe.db.get_value(self.server_type, self.server, "auto_increase_storage"):
-			return
+		return self.server_doc.calculated_increase_disk_size(mountpoint=mountpoint)
 
 	@task
 	def wait_for_partition_to_resize_for_aws_ec2(self):
@@ -88,6 +91,10 @@ class IncreaseDiskSizeJob(PressJob):
 			return
 
 		self.server_doc._add_glass_file()
+
+	@task(queue="long", timeout=900)
+	def restore_truncated_configs(self):
+		self.server_doc.restore_truncated_configs()
 
 	@task
 	def restart_active_benches(self):

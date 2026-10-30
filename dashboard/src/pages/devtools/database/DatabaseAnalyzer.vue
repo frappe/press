@@ -264,6 +264,7 @@
 										tab.label === 'Full Table Scan Queries') &&
 									!isPerformanceSchemaEnabled
 								"
+								:isDedicatedServer="isDedicatedServer"
 							/>
 							<ResultTable
 								v-else
@@ -300,6 +301,7 @@
 										tab.label === 'Suggested Indexes') &&
 									!isPerformanceSchemaEnabled
 								"
+								:isDedicatedServer="isDedicatedServer"
 							/>
 							<div v-else-if="tab.label === 'Suggested Indexes'">
 								<div
@@ -758,6 +760,9 @@ export default {
 					(claimable_size / database_size_limit) * 100,
 				),
 			};
+		},
+		isDedicatedServer() {
+			return Boolean(this.site_info?.is_dedicated_server);
 		},
 		isPerformanceSchemaEnabled() {
 			const result = this.$resources.databasePerformanceReport?.data?.message;

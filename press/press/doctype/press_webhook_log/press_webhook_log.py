@@ -11,6 +11,7 @@ from frappe.model.document import Document
 from frappe.utils import add_to_date, now
 
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.utils import ssrf
 
 
 class PressWebhookLog(Document):
@@ -41,7 +42,7 @@ class PressWebhookLog(Document):
 		response = ""
 		response_status_code = 0
 		try:
-			req = requests.post(
+			req = ssrf.post(
 				url,
 				json=payload,
 				headers={"X-Webhook-Secret": secret},
@@ -49,6 +50,8 @@ class PressWebhookLog(Document):
 			)
 			response = req.text or ""
 			response_status_code = req.status_code
+		except ssrf.SSRFError as e:
+			response = str(e)
 		except requests.exceptions.ConnectionError:
 			response = "Failed to connect to the webhook endpoint"
 		except requests.exceptions.SSLError:
@@ -76,7 +79,7 @@ class PressWebhookLog(Document):
 
 		return sent
 
-	def schedule_retry(self, save: True):
+	def schedule_retry(self, save: bool = True):
 		self.retries = self.retries + 1
 		self.next_retry_at = add_to_date(now(), minutes=2**self.retries)
 		if save:

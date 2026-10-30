@@ -1,12 +1,15 @@
+import json
 from contextlib import contextmanager
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
 import frappe
+import pyotp
 from frappe.tests.ui_test_helpers import create_test_user
 
 from press.api.account import (
 	accept_team_invite,
+	disable_2fa,
 	leave_team,
 	logout_from_all_devices,
 	reactivate_account,
@@ -144,39 +147,19 @@ class TestAccountApi(TestCase):
 			frappe.local.request = request
 			frappe.local.form_dict = form_dict
 
-	def test_accept_team_invite_with_blank_existing_member_role(self):
-		team = create_test_team()
-		existing_member = frappe.mock("email")
-		create_test_user(existing_member)
-		team.append("team_members", {"user": existing_member})
-		team.save(ignore_permissions=True)
-		member = frappe.db.get_value(
-			"Team Member",
-			{"parent": team.name, "user": existing_member},
-			"name",
-		)
-		frappe.db.set_value("Team Member", member, "role", "")
+	def test_signup_saves_only_ad_click_and_utm_params_in_url_args(self):
+		email = frappe.mock("email")
+		url_args = {"product": "crm", "gclid": "abc123", "utm_source": "google", "other": "x"}
+		with patch.object(AccountRequest, "send_verification_email"):
+			account_request = signup(email, product=None, url_args=json.dumps(url_args))
+		saved = frappe.db.get_value("Account Request", account_request, "url_args")
+		self.assertEqual(json.loads(saved), {"gclid": "abc123", "utm_source": "google"})
 
-		invited_member = frappe.mock("email")
-		create_test_user(invited_member)
-		key = frappe.generate_hash(length=32)
-		account_request = frappe.get_doc(
-			{
-				"doctype": "Account Request",
-				"team": team.name,
-				"email": invited_member,
-				"invited_by": team.user,
-				"request_key": key,
-				"request_key_expiration_time": frappe.utils.add_days(frappe.utils.now_datetime(), 1),
-			}
-		).insert(ignore_permissions=True)
-
-		with user_context(invited_member):
-			accept_team_invite(key)
-
-		self.assertTrue(frappe.db.exists("Team Member", {"parent": team.name, "user": invited_member}))
-		self.assertEqual(frappe.db.get_value("Team Member", member, "role"), "Member")
-		self.assertFalse(frappe.db.get_value("Account Request", account_request.name, "request_key"))
+	def test_signup_without_ad_click_params_leaves_url_args_empty(self):
+		email = frappe.mock("email")
+		with patch.object(AccountRequest, "send_verification_email"):
+			account_request = signup(email, url_args=json.dumps({"product": "crm"}))
+		self.assertIsNone(frappe.db.get_value("Account Request", account_request, "url_args"))
 
 	def test_invite_team_member_accepts_custom_role_by_press_role_name(self):
 		"""The invite dialog sends the Press Role document name (a hash) for
@@ -583,6 +566,31 @@ class TestSet2FARecoveryCodeReminders(TestCase):
 				set_2fa_recovery_code_reminders,
 				True,
 			)
+
+
+class TestDisable2FA(TestCase):
+	def setUp(self):
+		self.team = create_test_team()
+		self.totp_secret = pyotp.random_base32()
+		create_test_user_2fa(self.team.user, totp_secret=self.totp_secret)
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_disabling_2fa_is_recorded_in_the_version_log(self):
+		# Frappe skips versions in tests
+		with user_context(self.team.user), patch.object(frappe, "in_test", False):
+			disable_2fa(pyotp.TOTP(self.totp_secret).now())
+
+		self.assertEqual(frappe.db.get_value("User 2FA", self.team.user, "enabled"), 0)
+		version = frappe.get_last_doc("Version", {"ref_doctype": "User 2FA", "docname": self.team.user})
+		changed = [field for field, _old, _new in json.loads(version.data)["changed"]]
+		self.assertIn("enabled", changed)
+
+	def test_disabling_2fa_with_a_wrong_code_keeps_it_enabled(self):
+		with user_context(self.team.user):
+			self.assertRaisesRegex(frappe.ValidationError, "code is incorrect", disable_2fa, "000000")
+		self.assertEqual(frappe.db.get_value("User 2FA", self.team.user, "enabled"), 1)
 
 
 class TestReactivateAccount(TestCase):

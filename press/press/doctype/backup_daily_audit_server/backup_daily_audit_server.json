@@ -1,0 +1,84 @@
+{
+	"actions": [],
+	"creation": "2026-10-23 12:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"virtual_machine",
+		"server_type",
+		"server",
+		"team",
+		"cloud_provider",
+		"series",
+		"failed_snapshots",
+		"last_successful_snapshot"
+	],
+	"fields": [
+		{
+			"fieldname": "virtual_machine",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Virtual Machine",
+			"options": "Virtual Machine",
+			"reqd": 1
+		},
+		{
+			"fieldname": "server_type",
+			"fieldtype": "Link",
+			"label": "Server Type",
+			"options": "DocType"
+		},
+		{
+			"fieldname": "server",
+			"fieldtype": "Dynamic Link",
+			"in_list_view": 1,
+			"label": "Server",
+			"options": "server_type"
+		},
+		{
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Team",
+			"options": "Team"
+		},
+		{
+			"fieldname": "cloud_provider",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Cloud Provider"
+		},
+		{
+			"fieldname": "series",
+			"fieldtype": "Data",
+			"label": "Series"
+		},
+		{
+			"description": "Failed daily snapshots in the last 24h. 0 means none were attempted, or they are still pending.",
+			"fieldname": "failed_snapshots",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Failed Snapshots"
+		},
+		{
+			"fieldname": "last_successful_snapshot",
+			"fieldtype": "Datetime",
+			"in_list_view": 1,
+			"label": "Last Successful Snapshot"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"istable": 1,
+	"links": [],
+	"modified": "2026-10-23 12:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Backup Daily Audit Server",
+	"owner": "Administrator",
+	"permissions": [],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
+}

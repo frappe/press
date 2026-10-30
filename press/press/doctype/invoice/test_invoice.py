@@ -1117,3 +1117,47 @@ class TestInvoice(FrappeTestCase):
 		new_invoice.insert()
 
 		self.assertTrue(frappe.db.exists("Invoice", new_invoice.name))
+
+
+@patch.object(Invoice, "create_invoice_on_frappeio", new=Mock())
+class TestInvoicePartnerCustomerList(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		self.partner = create_test_team()
+		self.partner.db_set({"erpnext_partner": 1, "partner_email": self.partner.user})
+		self.customer = create_test_team()
+		self.customer.db_set("partner_email", self.partner.user)
+		self.invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.customer.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+			due_date=add_days(today(), 10),
+		).insert()
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def list_customer_invoices_as(self, team):
+		frappe.set_user(team.user)
+		filters = {"partner_customer": True, "team": self.customer.name, "due_date": [">=", today()]}
+		return Invoice.get_list_query(None, filters)
+
+	def test_partner_customer_list_returns_invoices_of_own_customer(self):
+		invoices = self.list_customer_invoices_as(self.partner)
+
+		self.assertEqual([invoice.name for invoice in invoices], [self.invoice.name])
+
+	def test_partner_customer_list_rejects_team_that_is_not_a_partner(self):
+		other_team = create_test_team()
+
+		with self.assertRaisesRegex(frappe.PermissionError, "only view invoices of your own customers"):
+			self.list_customer_invoices_as(other_team)
+
+	def test_partner_customer_list_rejects_customer_of_another_partner(self):
+		other_partner = create_test_team()
+		other_partner.db_set({"erpnext_partner": 1, "partner_email": other_partner.user})
+
+		with self.assertRaisesRegex(frappe.PermissionError, "only view invoices of your own customers"):
+			self.list_customer_invoices_as(other_partner)

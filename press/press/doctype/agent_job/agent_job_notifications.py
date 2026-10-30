@@ -69,6 +69,7 @@ class JobErr(Enum):
 	APP_UPDATE = auto()
 	APP_DEBUG = auto()
 	PKG_RESOURCES = auto()
+	DISK_FULL = auto()
 
 
 DOC_URLS = {
@@ -84,6 +85,7 @@ DOC_URLS = {
 	JobErr.APP_UPDATE: "https://docs.frappe.io/cloud/benches/updating_a_bench",
 	JobErr.APP_DEBUG: "https://frappecloud.com/docs/benches/debugging",
 	JobErr.PKG_RESOURCES: "https://docs.frappe.io/cloud/private-benches/common-issues/pkg-resources-error-when-updating-site",
+	JobErr.DISK_FULL: "https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#server-analytics",
 }
 
 
@@ -111,6 +113,8 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("returned non-zero exit status 137", update_with_oom_err),
 		("returned non-zero exit status 143", update_with_oom_err),
 		("b'Terminated\\n'", update_with_oom_err),
+		# Before the tar/gzip handlers: a full disk also truncates extracted backups
+		("No space left on device", update_with_disk_full_err),
 		("Row size too large", update_with_row_size_too_large_err),
 		("Data truncated for column", update_with_data_truncated_for_column_err),
 		("BrokenPipeError", update_with_broken_pipe_err),
@@ -243,6 +247,33 @@ def update_with_oom_err(
 	if not frappe.db.get_value(job.server_type, job.server, "public"):
 		return True
 	return False
+
+
+def update_with_disk_full_err(details: Details, job: AgentJob):
+	# Only dedicated servers, users can't add storage to a public server
+	if job.on_public_server:
+		return False
+
+	details["title"] = "Server disk full"
+
+	details["message"] = (
+		f"<p>The server ran out of disk space while the {job.job_type} job was running.</p>"
+		f'<p>Check the <i>Disk Space</i> chart in the <a class="underline" href="{get_disk_chart_url(job)}">server analytics</a>.'
+		" Free up space or increase the storage of the server, then retry the job.</p>"
+	)
+
+	details["assistance_url"] = DOC_URLS[JobErr.DISK_FULL]
+
+	return True
+
+
+def get_disk_chart_url(job: AgentJob) -> str:
+	"""Database server charts are a tab of the app server's analytics page"""
+	if job.server_type != "Database Server":
+		return f"/dashboard/servers/{job.server}/analytics"
+
+	app_server = frappe.db.get_value("Server", {"database_server": job.server}, "name")
+	return f"/dashboard/servers/{app_server}/analytics?server={job.server}"
 
 
 def update_with_row_size_too_large_err(details: Details, job: AgentJob):
@@ -458,13 +489,20 @@ def update_with_check_for_update_message(details: Details, job: AgentJob, app: s
 
 
 def get_failing_app_and_source(job: AgentJob) -> tuple[str, str] | None:
-	"""Innermost app in the traceback that is installed on the bench, with its app source"""
+	"""Innermost app in the traceback that is installed on the bench, with its app source
+
+	Frappe is never the failing app. Every error passes through framework frames
+	(patch handler, database layer). So the innermost frame is frappe even when
+	another app raised the error. Frappe always has a newer release, so the banner
+	showed on every failed update."""
 	text = f"{job.traceback or ''}\n{job.output or ''}"
 	group = frappe.db.get_value("Bench", job.bench, "group")
 	if not group:
 		return None
 
 	for app in reversed(APP_FRAME.findall(text)):
+		if app == "frappe":
+			continue
 		source = frappe.db.get_value("Release Group App", {"parent": group, "app": app}, "source")
 		if source:
 			return app, source

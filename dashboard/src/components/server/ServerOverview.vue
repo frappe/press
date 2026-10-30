@@ -8,7 +8,7 @@
 			v-if="$appServer?.doc?.is_server_disk_full"
 			class="mb-5"
 			type="error"
-			title="This server is out of disk space. Sites on it may stop responding until space is freed up."
+			title="This server is out of disk space. Until space is freed up, sites on it may stop responding and backups may fail, leaving your data unprotected."
 		>
 			<Button
 				class="ml-auto min-w-[7rem]"
@@ -65,7 +65,7 @@
 										<div class="flex items-center text-base text-ink-gray-9">
 											{{ d.value }}
 											<Tooltip
-												v-if="d.isShared && $team.doc?.is_desk_user"
+												v-if="d.isShared"
 												text="A shared instance can have variable performance. We give only limited support for it."
 											>
 												<Badge
@@ -249,9 +249,7 @@ export default {
 		})
 
 		this.autoscaleDiscount = await get.fetch()
-
-		// Only support reads the shared badge, so only support pays for the call.
-		if (this.$team.doc?.is_desk_user) this.fetchPlanTypes()
+		this.fetchPlanTypes()
 	},
 
 	methods: {
@@ -828,6 +826,7 @@ export default {
 					updateBinlogRetention: 'update_binlog_retention',
 					updateBinlogSizeLimit: 'update_binlog_size_limit',
 					getBinlogsInfo: 'get_binlogs_info',
+					purgeBinlogsForcefully: 'purge_binlogs_forcefully',
 					configureDatabaseAuditLog: 'configure_database_audit_log',
 					getAuditLogs: 'get_audit_logs',
 					getAuditLogDownloadLink: 'get_audit_log_download_link',

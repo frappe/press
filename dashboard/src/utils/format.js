@@ -62,6 +62,20 @@ export function duration(value) {
 	return dayjs.duration({ hours, minutes, seconds }).format(format)
 }
 
+const UNFINISHED_STATUSES = [
+	'Draft',
+	'Scheduled',
+	'Pending',
+	'Preparing',
+	'Running',
+]
+
+// An unfinished item's Time duration is a placeholder (00:00:00) or can read as a clock time
+export function finishedDuration(value, status) {
+	if (UNFINISHED_STATUSES.includes(status)) return
+	return duration(value)
+}
+
 export const secsToDuration = (seconds) => {
 	if (seconds == null) return ''
 	seconds = Math.floor(seconds)
@@ -418,14 +432,23 @@ export function prettyDate(date, mini = false) {
 	}
 }
 
-// allow only bold tags
+const linkTag = (_, href, text) =>
+	/^https?:\/\//.test(href)
+		? `<a href="${href}" target="_blank">${text}</a>`
+		: text
+
+// allow only bold and link tags
 export const sanitizeHtml = (str) => {
 	if (!str) return ''
 
 	return str
+		.replace(/<a\b[^>]*href="([^"]*)"[^>]*>/g, '[a href="$1"]')
+		.replace(/<\/a>/g, '[/a]')
 		.replace(/\[b\]/g, '<b>')
 		.replace(/\[\/b\]/g, '</b>')
 		.replace(/<b[^>]*>/g, '<b>')
 		.replace(/<(?!\/?b\b)[^>]*>/g, '')
+		.replace(/\[a\b[^\]]*href="([^"]*)"[^\]]*\]([\s\S]*?)\[\/a\]/g, linkTag)
+		.replace(/\[\/?a\b[^\]]*\]/g, '')
 		.split('\n')[0]
 }
