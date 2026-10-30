@@ -113,6 +113,9 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("returned non-zero exit status 137", update_with_oom_err),
 		("returned non-zero exit status 143", update_with_oom_err),
 		("b'Terminated\\n'", update_with_oom_err),
+		# Python's wording when the killed process is the agent's direct child, not a grandchild
+		("died with <Signals.SIGKILL: 9>", update_with_oom_err),
+		("died with <Signals.SIGTERM: 15>", update_with_oom_err),
 		# Before the tar/gzip handlers: a full disk also truncates extracted backups
 		("No space left on device", update_with_disk_full_err),
 		("Row size too large", update_with_row_size_too_large_err),

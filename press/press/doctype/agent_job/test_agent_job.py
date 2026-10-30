@@ -644,7 +644,30 @@ class TestAgentJobNotifications(FrappeTestCase):
 
 		self.assertFalse(details["is_actionable"])
 
-	def restore_job(self, public: bool) -> AgentJob:
+	OOM_TRACEBACKS = (
+		"subprocess.CalledProcessError: Command 'bench --site x migrate' returned non-zero exit status 137.",
+		"subprocess.CalledProcessError: Command 'bench --site x migrate' returned non-zero exit status 143.",
+		"subprocess.CalledProcessError: Command 'bench --site x migrate' died with <Signals.SIGKILL: 9>.",
+		"subprocess.CalledProcessError: Command 'bench --site x migrate' died with <Signals.SIGTERM: 15>.",
+	)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_every_way_a_killed_command_is_reported_shows_the_oom_banner_on_dedicated_server(self):
+		for traceback in self.OOM_TRACEBACKS:
+			with self.subTest(traceback=traceback):
+				details = get_details(self.restore_job(public=False, traceback=traceback), "", "")
+
+				self.assertTrue(details["is_actionable"])
+				self.assertEqual(details["title"], "Server out of memory error")
+				self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.OOM])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_command_killed_by_signal_on_public_server_is_not_actionable(self):
+		details = get_details(self.restore_job(public=True, traceback=self.OOM_TRACEBACKS[2]), "", "")
+
+		self.assertFalse(details["is_actionable"])
+
+	def restore_job(self, public: bool, traceback: str = DISK_FULL_TRACEBACK) -> AgentJob:
 		site = create_test_site()
 		frappe.db.set_value("Server", site.server, "public", public)
 		return frappe.get_doc(
@@ -654,7 +677,7 @@ class TestAgentJobNotifications(FrappeTestCase):
 				"site": site.name,
 				"server_type": "Server",
 				"server": site.server,
-				"traceback": self.DISK_FULL_TRACEBACK,
+				"traceback": traceback,
 			}
 		)
 
@@ -840,7 +863,7 @@ class TestAgentJobOutputRedaction(FrappeTestCase):
 	def test_masks_credentials_in_url_and_keeps_commit_hash(self):
 		self.assertEqual(
 			redact_secrets(
-				"hash 6c876ea06963ec90ffbc0673e65b48328680fdd8: https://x-access-token:ghs_abc@github.com/a/b"
+				"hash 6c876ea06963ec90ffbc0673e65b48328680fdd8: https://x-access-token:ghs_abc@github.com/a/b"  # pragma: allowlist secret
 			),
 			"hash 6c876ea06963ec90ffbc0673e65b48328680fdd8: https://********@github.com/a/b",
 		)
