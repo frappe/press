@@ -12,6 +12,7 @@ from press.press.doctype.enterprise_contract.test_enterprise_contract import (
 	create_team_with_billing_address,
 )
 from press.press.doctype.invoice.invoice import Invoice
+from press.press.doctype.team.team import check_budget_alerts
 
 
 def create_invoice(team: str, months_from_now: int = 0) -> Invoice:
@@ -67,6 +68,22 @@ class TestEnterpriseContractInstallments(EnterpriseContractTestCase):
 		self.assertEqual(invoice.status, "Paid")
 		self.assertEqual(invoice.applied_credits, 1000)
 		self.assertEqual(frappe.get_doc("Team", self.team.name).get_balance(), 4000)
+
+	@patch("press.press.doctype.team.team.send_budget_alert_email", return_value=True)
+	def test_budget_alert_counts_usage_only_and_not_the_contract_line(self, send_alert):
+		frappe.db.set_value(
+			"Team", self.team.name, {"receive_budget_alerts": 1, "monthly_alert_threshold": 5000}
+		)
+		create_invoice(self.team.name)
+		create_contract(self.team, self.make_order()).record_payment(reference="pay_1")
+		add_usage(self.team.name, 1000)
+
+		check_budget_alerts()
+		send_alert.assert_not_called()
+
+		add_usage(self.team.name, 5000)
+		check_budget_alerts()
+		self.assertEqual(send_alert.call_args.args[1]["total"], 6000)
 
 	def test_invoice_wide_discount_leaves_the_contract_line_out(self):
 		invoice = create_invoice(self.team.name)

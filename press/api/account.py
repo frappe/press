@@ -24,6 +24,7 @@ from frappe.website.utils import build_response
 from press.guards import mfa
 from press.guards.role_guard import roles_enabled, skip_roles
 from press.press.doctype.account_request.account_request import filter_ad_click_url_args
+from press.press.doctype.enterprise_contract.installments import usage_total
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
@@ -1040,11 +1041,11 @@ def feedback(team, message, note, rating, route=None):
 	invs = frappe.get_all(
 		"Invoice",
 		{"team": team, "status": "Paid", "type": "Subscription"},
-		pluck="total",
+		["total", "paid_by_contract"],
 		order_by="creation desc",
 		limit=1,
 	)
-	feedback.last_paid_invoice = 0 if not invs else invs[0]
+	feedback.last_paid_invoice = usage_total(invs[0] if invs else None)
 	feedback.insert(ignore_permissions=True)
 
 

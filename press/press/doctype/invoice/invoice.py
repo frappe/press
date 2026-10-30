@@ -17,7 +17,11 @@ from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
 from press.press.doctype.auto_scale_record.auto_scale_record import calculate_secondary_server_price
 from press.press.doctype.communication_info.communication_info import get_communication_info
-from press.press.doctype.enterprise_contract.installments import add_installment, paid_by_contract
+from press.press.doctype.enterprise_contract.installments import (
+	add_installment,
+	paid_by_contract,
+	usage_total,
+)
 from press.utils import get_current_team, log_error
 from press.utils.billing import (
 	convert_stripe_money,
@@ -481,9 +485,9 @@ class Invoice(Document):
 		if len(last_invoices) < 3:
 			return
 
-		current_total = flt(self.total)
+		current_total = usage_total(self)
 		if self.currency == "INR":
-			current_total = flt(self.total / 82, 2)
+			current_total = flt(current_total / 82, 2)
 
 		tiers = frappe.get_all(
 			"Team Tier",

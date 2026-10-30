@@ -83,6 +83,11 @@ def paid_by_contract(invoice: Invoice) -> float:
 	return flt(sum(item.amount for item in invoice.items if item.document_type == "Enterprise Contract"), 2)
 
 
+# The contract line is in the invoice total, but it was prepaid, so it is not monthly spend.
+def usage_total(invoice) -> float:
+	return flt(flt(invoice.total) - flt(invoice.paid_by_contract), 2) if invoice else 0
+
+
 def payment_covering(team: str, month) -> frappe._dict | None:
 	payment = frappe.qb.DocType("Enterprise Contract Payment")
 	contract = frappe.qb.DocType("Enterprise Contract")
