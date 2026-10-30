@@ -26,9 +26,11 @@
 					</div>
 				</div>
 				<div>
-					<div>{{ money(payment.amount_paid || payment.amount) }}</div>
+					<div>
+						{{ money(payment.amount_paid || payment.amount, contract.currency) }}
+					</div>
 					<div v-if="payment.gst" class="text-sm text-ink-gray-6">
-						incl. {{ money(payment.gst) }} GST
+						incl. {{ money(payment.gst, contract.currency) }} GST
 					</div>
 				</div>
 				<div class="flex justify-end">
@@ -56,11 +58,7 @@
 
 <script setup>
 import { Badge, Button, Tooltip } from 'frappe-ui'
-import { dayjsLocal as dayjs } from '../../utils/dayjs'
-import { currency } from '../../utils/format'
+import { formatDate, money } from './format'
 
-const props = defineProps({ contract: { type: Object, required: true } })
-
-const money = (amount) => currency(amount, props.contract.currency, 0)
-const formatDate = (date) => dayjs(date).format('D MMM YYYY')
+defineProps({ contract: { type: Object, required: true } })
 </script>

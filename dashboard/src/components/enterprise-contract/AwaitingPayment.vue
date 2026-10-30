@@ -94,13 +94,17 @@ const emit = defineEmits(['updated'])
 const team = getTeam()
 const redirecting = ref(false)
 const creditPrice = computed(() =>
-	currency(props.contract.amount_due.amount, props.contract.currency, 0),
+	currency(
+		props.contract.amount_due_with_credits.total,
+		props.contract.currency,
+		0,
+	),
 )
 // Hidden once a bank transfer is on its way, so the year is not paid twice.
 const canUseCredits = computed(
 	() =>
 		!props.contract.transfer_reference &&
-		(team.doc.balance || 0) >= props.contract.amount_due.amount,
+		(team.doc.balance || 0) >= props.contract.amount_due_with_credits.total,
 )
 
 const payWithCredits = createResource({
