@@ -23,7 +23,7 @@ def add_installment(invoice: Invoice):
 		return
 	month = get_first_day(invoice.period_start)
 	payment = payment_covering(invoice.team, month)
-	if not payment:
+	if not payment or billed_in_month(payment.contract, month):
 		return
 	number = months_between(get_first_day(payment.period_start), month) + 1
 	invoice.append(
@@ -47,6 +47,8 @@ def add_installment_to_current_invoice(team: str):
 		order_by="period_start asc",
 	)
 	if not name:
+		# The new invoice adds this month's line in before_insert.
+		frappe.get_doc("Team", team).create_upcoming_invoice()
 		return
 	invoice = frappe.get_doc("Invoice", name)
 	add_installment(invoice)
@@ -56,6 +58,25 @@ def add_installment_to_current_invoice(team: str):
 
 def has_installment(invoice: Invoice) -> bool:
 	return any(item.document_type == "Enterprise Contract" for item in invoice.items)
+
+
+# An invoice finalized early is followed by one starting mid-month; the month is billed once.
+def billed_in_month(contract: str, month) -> bool:
+	item = frappe.qb.DocType("Invoice Item")
+	invoice = frappe.qb.DocType("Invoice")
+	rows = (
+		frappe.qb.from_(item)
+		.join(invoice)
+		.on(item.parent == invoice.name)
+		.select(item.name)
+		.where(item.parenttype == "Invoice")
+		.where(item.document_type == "Enterprise Contract")
+		.where(item.document_name == contract)
+		.where(invoice.docstatus < 2)
+		.where(invoice.period_start[get_first_day(month) : get_last_day(month)])
+		.limit(1)
+	).run()
+	return bool(rows)
 
 
 def paid_by_contract(invoice: Invoice) -> float:
