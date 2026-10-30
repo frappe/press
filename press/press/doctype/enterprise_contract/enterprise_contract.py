@@ -11,6 +11,7 @@ from frappe.model.document import Document
 from frappe.utils import add_days, add_years, cint, getdate, now_datetime, today
 
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.balance_transaction.balance_transaction import unallocated_credit
 from press.press.doctype.enterprise_contract.installments import (
 	OPEN_STATUSES,
 	add_installment_to_current_invoice,
@@ -24,6 +25,8 @@ if TYPE_CHECKING:
 	from press.press.doctype.team.team import Team
 
 UTR_PATTERN = re.compile(r"[A-Z0-9]{12,22}")
+# Credits the team paid for. Free and promotional credits do not pay for a contract.
+PURCHASED_CREDIT_SOURCES = ("Prepaid Credits", "Transferred Credits")
 VISIBLE_STATUSES = ("Awaiting Payment", *OPEN_STATUSES)
 ORDER_FIELDS = (
 	"plan",
@@ -151,7 +154,7 @@ class EnterpriseContract(Document):
 		if self.status != "Awaiting Payment":
 			frappe.throw("This order is already paid")
 		amount = self.amount_due(with_gst=False)["amount"]
-		if frappe.get_cached_doc("Team", self.team).get_balance() < amount:
+		if unallocated_credit(self.team, PURCHASED_CREDIT_SOURCES) < amount:
 			frappe.throw("Not enough credits to pay for the full year")
 		transaction = frappe.get_doc(
 			doctype="Balance Transaction",
@@ -161,6 +164,7 @@ class EnterpriseContract(Document):
 			amount=-amount,
 			description=f"Paid for Enterprise Contract {self.name}",
 		)
+		transaction.flags.consume_sources = PURCHASED_CREDIT_SOURCES
 		# Team members cannot create balance transactions; callers check billing access.
 		transaction.insert(ignore_permissions=True)
 		transaction.submit()

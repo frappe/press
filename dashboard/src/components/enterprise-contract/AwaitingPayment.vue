@@ -89,6 +89,8 @@ import { contractsReturnUrl } from './checkout'
 const props = defineProps({
 	contract: { type: Object, required: true },
 	bank: { type: Object, default: null },
+	// Purchased credits only; free credits do not pay for a contract.
+	creditBalance: { type: Number, default: 0 },
 })
 const emit = defineEmits(['updated'])
 
@@ -105,7 +107,7 @@ const creditPrice = computed(() =>
 const canUseCredits = computed(
 	() =>
 		!props.contract.transfer_reference &&
-		(team.doc.balance || 0) >= props.contract.amount_due_with_credits.total,
+		props.creditBalance >= props.contract.amount_due_with_credits.total,
 )
 
 const payWithCredits = createResource({
