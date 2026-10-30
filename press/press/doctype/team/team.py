@@ -1864,6 +1864,10 @@ def process_stripe_webhook(doc, method):
 		process_micro_debit_test_charge(event)
 		return
 
+	if payment_for == "enterprise_contract":
+		# Paid on the contract itself, not added to team credits.
+		return
+
 	handle_payment_intent_succeeded(payment_intent)
 
 

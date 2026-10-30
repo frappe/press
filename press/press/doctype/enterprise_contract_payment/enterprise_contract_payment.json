@@ -1,0 +1,85 @@
+{
+	"actions": [],
+	"creation": "2026-10-29 13:45:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"period_start",
+		"period_end",
+		"amount",
+		"gst",
+		"amount_paid",
+		"payment_reference",
+		"paid_on",
+		"frappe_invoice",
+		"invoice_pdf"
+	],
+	"fields": [
+		{
+			"fieldname": "period_start",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"label": "Period Start",
+			"reqd": 1
+		},
+		{
+			"fieldname": "period_end",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"label": "Period End",
+			"reqd": 1
+		},
+		{
+			"fieldname": "amount",
+			"fieldtype": "Currency",
+			"label": "Amount",
+			"reqd": 1
+		},
+		{
+			"fieldname": "gst",
+			"fieldtype": "Currency",
+			"label": "GST"
+		},
+		{
+			"fieldname": "amount_paid",
+			"fieldtype": "Currency",
+			"in_list_view": 1,
+			"label": "Amount Paid"
+		},
+		{
+			"fieldname": "payment_reference",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Payment Reference"
+		},
+		{
+			"fieldname": "paid_on",
+			"fieldtype": "Datetime",
+			"label": "Paid On"
+		},
+		{
+			"description": "Set once the invoice is synced from frappe.io",
+			"fieldname": "frappe_invoice",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "frappe.io Invoice"
+		},
+		{
+			"fieldname": "invoice_pdf",
+			"fieldtype": "Attach",
+			"label": "Invoice PDF"
+		}
+	],
+	"istable": 1,
+	"links": [],
+	"modified": "2026-10-29 15:30:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Enterprise Contract Payment",
+	"owner": "Administrator",
+	"permissions": [],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": []
+}
