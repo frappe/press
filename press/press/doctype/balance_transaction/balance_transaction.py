@@ -124,22 +124,14 @@ class BalanceTransaction(Document):
 			doc.save(ignore_permissions=True)
 
 	def validate_total_unallocated_amount(self, sources: tuple[str, ...] | None = None):
-		unallocated_amounts = (
-			frappe.get_all(
-				"Balance Transaction",
-				filters=unallocated_filters(self.team, sources),
-				fields=["unallocated_amount"],
-				pluck="unallocated_amount",
-			)
-			or []
-		)
-		if not unallocated_amounts:
+		unallocated_amount = unallocated_credit(self.team, sources)
+		if not unallocated_amount:
 			frappe.throw(
 				"This team has no unallocated credit to draw from, so this transaction can't be created. Please add credits before allocating them."
 			)
-		if sum(unallocated_amounts) < abs(self.amount):
+		if unallocated_amount < abs(self.amount):
 			frappe.throw(
-				f"Cannot create transaction as unallocated amount {sum(unallocated_amounts)} is less than {self.amount}"
+				f"Cannot create transaction as unallocated amount {unallocated_amount} is less than {self.amount}"
 			)
 
 
