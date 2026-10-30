@@ -79,6 +79,7 @@
 <script setup>
 import { Badge, Button, createResource, ErrorMessage } from 'frappe-ui'
 import { computed, ref } from 'vue'
+import { toast } from 'vue-sonner'
 import { getTeam } from '../../data/team'
 import { currency } from '../../utils/format'
 import BankTransfer from './BankTransfer.vue'
@@ -121,13 +122,21 @@ const total = computed(() =>
 const pay = createResource({
 	url: 'press.api.enterprise_contract.pay',
 	makeParams: () => ({ return_url: contractsReturnUrl() }),
-	onSuccess: ({ checkout_url }) => window.location.assign(checkout_url),
+	// No checkout URL when the last checkout turns out to be paid already.
+	onSuccess: ({ checkout_url }) => {
+		if (checkout_url) return window.location.assign(checkout_url)
+		redirecting.value = false
+		emit('updated')
+	},
 	onError: () => (redirecting.value = false),
 })
 
 const cancelOrder = createResource({
 	url: 'press.api.enterprise_contract.cancel_order',
-	onSuccess: () => emit('updated'),
+	onSuccess: ({ message }) => {
+		if (message) toast.info(message)
+		emit('updated')
+	},
 })
 
 function payNow() {
