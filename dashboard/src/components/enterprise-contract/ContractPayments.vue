@@ -44,12 +44,7 @@
 					<span v-else-if="payment.frappe_invoice" class="text-ink-gray-8">
 						{{ payment.frappe_invoice }}
 					</span>
-					<Tooltip
-						v-else
-						text="The invoice shows here once it syncs from frappe.io"
-					>
-						<Badge theme="gray" label="Syncing" />
-					</Tooltip>
+					<span v-else class="text-ink-gray-6">Sent by email</span>
 				</div>
 			</div>
 		</div>
@@ -57,7 +52,7 @@
 </template>
 
 <script setup>
-import { Badge, Button, Tooltip } from 'frappe-ui'
+import { Button } from 'frappe-ui'
 import { formatDate, money } from './format'
 
 defineProps({ contract: { type: Object, required: true } })
