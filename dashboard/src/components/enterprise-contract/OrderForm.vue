@@ -17,7 +17,7 @@
 						<div class="px-4 py-3">
 							<div class="text-lg text-ink-gray-9">{{ p.title }}</div>
 							<div class="text-sm text-ink-gray-6">
-								{{ currency(p.yearly_price, p.currency, 0) }}
+								{{ money(p.yearly_price, p.currency) }}
 								/ year
 							</div>
 						</div>
@@ -156,11 +156,10 @@ import { computed, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { getTeam } from '../../data/team'
 import { dayjsLocal as dayjs } from '../../utils/dayjs'
-import { currency } from '../../utils/format'
 import BillingDetailsCard from './BillingDetailsCard.vue'
 import CustomerFields from './CustomerFields.vue'
 import { contractsReturnUrl } from './checkout'
-import { formatDate } from './format'
+import { formatDate, money } from './format'
 import OrderSummary from './OrderSummary.vue'
 
 const props = defineProps({
@@ -185,7 +184,7 @@ const canUseCredits = computed(
 )
 const paymentMethods = computed(() => {
 	const isIndia = plan.value.currency === 'INR'
-	const balance = currency(props.creditBalance, plan.value.currency, 0)
+	const balance = money(props.creditBalance, plan.value.currency)
 	return [
 		{
 			credits: false,
@@ -201,7 +200,7 @@ const paymentMethods = computed(() => {
 })
 
 const price = computed(() =>
-	currency(plan.value.yearly_price, plan.value.currency, 0),
+	money(plan.value.yearly_price, plan.value.currency),
 )
 
 const submit = createResource({
