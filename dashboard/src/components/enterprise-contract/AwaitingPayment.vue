@@ -81,10 +81,10 @@ import { Badge, Button, createResource, ErrorMessage } from 'frappe-ui'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { getTeam } from '../../data/team'
-import { currency } from '../../utils/format'
 import BankTransfer from './BankTransfer.vue'
 import ContractProgress from './ContractProgress.vue'
 import { contractsReturnUrl } from './checkout'
+import { money } from './format'
 
 const props = defineProps({
 	contract: { type: Object, required: true },
@@ -97,11 +97,7 @@ const emit = defineEmits(['updated'])
 const team = getTeam()
 const redirecting = ref(false)
 const creditPrice = computed(() =>
-	currency(
-		props.contract.amount_due_with_credits.total,
-		props.contract.currency,
-		0,
-	),
+	money(props.contract.amount_due_with_credits.total, props.contract.currency),
 )
 // Hidden once a bank transfer is on its way, so the year is not paid twice.
 const canUseCredits = computed(
@@ -118,7 +114,7 @@ const payWithCredits = createResource({
 	},
 })
 const total = computed(() =>
-	currency(props.contract.amount_due.total, props.contract.currency, 0),
+	money(props.contract.amount_due.total, props.contract.currency),
 )
 
 const pay = createResource({
