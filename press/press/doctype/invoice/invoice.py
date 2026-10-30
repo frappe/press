@@ -87,6 +87,7 @@ class Invoice(Document):
 		payment_mode: DF.Literal[
 			"", "Card", "Prepaid Credits", "NEFT", "Partner Credits", "Paid By Partner", "UPI Autopay"
 		]
+		payment_processing_since: DF.Datetime | None
 		period_end: DF.Date | None
 		period_start: DF.Date | None
 		razorpay_order_id: DF.Data | None
@@ -136,6 +137,7 @@ class Invoice(Document):
 		"invoice_pdf",
 		"stripe_invoice_url",
 		"amount_due_with_tax",
+		"payment_processing_since",
 		"mpesa_invoice",
 		"mpesa_invoice_pdf",
 		"customer_name",
