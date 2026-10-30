@@ -42,6 +42,7 @@
 		"total",
 		"total_before_tax",
 		"applied_credits",
+		"paid_by_contract",
 		"free_credits",
 		"amount_due",
 		"gst",
@@ -224,6 +225,16 @@
 			"label": "Applied Credits",
 			"no_copy": 1,
 			"options": "currency"
+		},
+		{
+			"default": "0",
+			"description": "Monthly share of an Enterprise Contract payment. The contract pays it, not credits.",
+			"fieldname": "paid_by_contract",
+			"fieldtype": "Currency",
+			"label": "Paid by Enterprise Contract",
+			"no_copy": 1,
+			"options": "currency",
+			"read_only": 1
 		},
 		{
 			"allow_on_submit": 1,
