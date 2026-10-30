@@ -80,6 +80,18 @@ class TestEnterpriseContractInstallments(EnterpriseContractTestCase):
 		self.assertEqual(invoice.total_discount_amount, 100)
 		self.assertEqual(invoice.amount_due, 900)
 
+	def test_flat_amount_discount_above_the_usage_does_not_eat_into_the_contract_line(self):
+		invoice = create_invoice(self.team.name)
+		create_contract(self.team, self.make_order()).record_payment(reference="pay_1")
+		add_usage(self.team.name, 1000)
+
+		invoice.reload()
+		invoice.append("discounts", {"discount_type": "Flat On Total", "based_on": "Amount", "amount": 1500})
+		invoice.save()
+
+		self.assertEqual(invoice.total_discount_amount, 1000)
+		self.assertEqual(invoice.amount_due, 0)
+
 	def test_invoice_that_follows_an_early_finalize_in_the_same_month_gets_no_second_contract_line(self):
 		invoice = create_invoice(self.team.name)
 		create_contract(self.team, self.make_order()).record_payment(reference="pay_1")
