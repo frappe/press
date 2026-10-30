@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 
 """Stripe Checkout for USD Enterprise contracts. The payment carries PAYMENT_FOR, so the
-Stripe webhook does not add it to team credits."""
+Stripe webhook records it on the contract and not as team credits."""
 
 from __future__ import annotations
 
@@ -33,11 +33,31 @@ def start_stripe_checkout(contract: EnterpriseContract, return_url: str) -> tupl
 	return session.id, session.url
 
 
-def stripe_paid_reference(contract: EnterpriseContract, params: dict) -> str | None:
-	session = get_stripe().checkout.Session.retrieve(params.get("session_id"))
-	if session.id != contract.checkout_reference or session.payment_status != "paid":
+def paid_checkout_reference(contract: EnterpriseContract, session_id: str | None) -> str | None:
+	if not session_id or session_id != contract.checkout_reference:
 		return None
-	return session.payment_intent
+	session = get_stripe().checkout.Session.retrieve(session_id)
+	return session.payment_intent if session.payment_status == "paid" else None
+
+
+# Called before the order is paid again or cancelled, in case the webhook did not arrive.
+def record_paid_checkout(contract: EnterpriseContract) -> bool:
+	if contract.status != "Awaiting Payment":
+		return False
+	reference = paid_checkout_reference(contract, contract.checkout_reference)
+	if reference:
+		contract.record_payment(reference=reference)
+	return bool(reference)
+
+
+def record_webhook_payment(payment_intent: dict):
+	from press.press.doctype.enterprise_contract.enterprise_contract import EnterpriseContract
+
+	name = payment_intent["metadata"]["enterprise_contract"]
+	# Locked so that the webhook and the browser return record the payment once.
+	contract = EnterpriseContract("Enterprise Contract", name, for_update=True)
+	if contract.status == "Awaiting Payment":
+		contract.record_payment(reference=payment_intent["id"])
 
 
 def price_data(contract: EnterpriseContract, total: float) -> dict:
