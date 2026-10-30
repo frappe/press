@@ -18,6 +18,7 @@ from press.press.report.build_server_stats.build_server_stats import (
 	floor_to_bucket,
 	get_chart,
 	get_charts,
+	get_clusters,
 	get_period,
 	get_selected_chart,
 	group_by_server,
@@ -135,6 +136,17 @@ class TestBuildsByClusterChart(FrappeTestCase):
 
 		self.assertEqual(datasets["Frankfurt"], [0])
 		self.assertNotIn("London", datasets)
+
+	def test_no_cluster_comes_after_every_live_cluster_so_the_live_ones_keep_their_colours(self):
+		mumbai = create_test_server(cluster="Mumbai").name
+		create_test_cluster("Zurich", "eu-central-2")
+		start = datetime(2026, 9, 10, 10, 0, 10)
+
+		datasets = self.builds_by_cluster(
+			[build(mumbai, build_start=start), build("gone", build_start=start)]
+		)
+
+		self.assertEqual(list(datasets), [*get_clusters(), "No cluster"])
 
 
 class TestOneMountpointPerDevice(FrappeTestCase):
@@ -337,28 +349,17 @@ class TestBuildDurationChart(FrappeTestCase):
 		period = Period(datetime(2026, 9, 10, 10, 0), datetime(2026, 9, 10, 11, 0))
 		return get_selected_chart(chart, period, builds)
 
-	def test_successful_builds_plot_their_median_minutes_per_server_at_their_creation_not_start(self):
-		created, start = datetime(2026, 9, 10, 10, 1), datetime(2026, 9, 10, 10, 20)
+	def test_successful_builds_plot_their_median_minutes_per_server_at_their_start(self):
+		start = datetime(2026, 9, 10, 10, 1)
 		builds = [
-			build(
-				"f1.frappe.cloud",
-				creation=created,
-				build_start=start,
-				build_end=datetime(2026, 9, 10, 10, 25),
-			),
+			build("f1.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 10, 6)),
+			build("f2.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 10, 31)),
 			build(
 				"f2.frappe.cloud",
-				creation=created,
-				build_start=start,
-				build_end=datetime(2026, 9, 10, 10, 50),
+				build_start=datetime(2026, 9, 10, 10, 7),
+				build_end=datetime(2026, 9, 10, 11, 7),
 			),
-			build(
-				"f2.frappe.cloud",
-				creation=datetime(2026, 9, 10, 10, 7),
-				build_start=start,
-				build_end=datetime(2026, 9, 10, 11, 20),
-			),
-			build("f1.frappe.cloud", creation=created, build_start=start, build_end=None),
+			build("f1.frappe.cloud", build_start=start, build_end=None),
 		]
 		builds.append(frappe._dict(builds[0], status="Failure"))
 
@@ -371,16 +372,11 @@ class TestBuildDurationChart(FrappeTestCase):
 	def test_successful_builds_plot_their_median_minutes_per_cluster_of_their_build_server(self):
 		f1 = create_test_server(cluster="Mumbai").name
 		f2 = create_test_server(cluster="Mumbai").name
-		created, start = datetime(2026, 9, 10, 10, 1), datetime(2026, 9, 10, 10, 0)
+		start = datetime(2026, 9, 10, 10, 0)
 		builds = [
-			build(f1, creation=created, build_start=start, build_end=datetime(2026, 9, 10, 10, 5)),
-			build(f2, creation=created, build_start=start, build_end=datetime(2026, 9, 10, 10, 7)),
-			build(
-				"gone.frappe.cloud",
-				creation=created,
-				build_start=start,
-				build_end=datetime(2026, 9, 10, 11, 0),
-			),
+			build(f1, build_start=start, build_end=datetime(2026, 9, 10, 10, 5)),
+			build(f2, build_start=start, build_end=datetime(2026, 9, 10, 10, 7)),
+			build("gone.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 11, 0)),
 		]
 
 		chart = self.duration_chart("Build Duration by Cluster", builds)
