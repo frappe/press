@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 UTR_PATTERN = re.compile(r"[A-Z0-9]{12,22}")
 # Credits the team paid for. Free and promotional credits do not pay for a contract.
 PURCHASED_CREDIT_SOURCES = ("Prepaid Credits", "Transferred Credits")
+ALREADY_PAID = "This order is already paid"
 VISIBLE_STATUSES = ("Awaiting Payment", *OPEN_STATUSES)
 ORDER_FIELDS = (
 	"plan",
@@ -55,6 +56,10 @@ DASHBOARD_FIELDS = (
 	"signed_contract",
 	"transfer_reference",
 )
+
+
+def purchased_credit(team: str) -> float:
+	return unallocated_credit(team, PURCHASED_CREDIT_SOURCES)
 
 
 class EnterpriseContract(Document):
@@ -154,9 +159,9 @@ class EnterpriseContract(Document):
 
 	def pay_with_credits(self):
 		if self.status != "Awaiting Payment":
-			frappe.throw("This order is already paid")
+			frappe.throw(ALREADY_PAID)
 		amount = self.amount_due(with_gst=False)["amount"]
-		if unallocated_credit(self.team, PURCHASED_CREDIT_SOURCES) < amount:
+		if purchased_credit(self.team) < amount:
 			frappe.throw("Not enough credits to pay for the full year")
 		transaction = frappe.get_doc(
 			doctype="Balance Transaction",
