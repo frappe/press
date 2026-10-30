@@ -23,6 +23,7 @@ from press.guards.team_guard import only_admin
 from press.partner.doctype.partner_onboarding.partner_onboarding import has_partner_onboarding
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.enterprise_contract.checkout import PAYMENT_FOR as ENTERPRISE_CONTRACT_PAYMENT
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import get_valid_teams_for_user, has_role, log_error
 from press.utils import is_admin_user as check_is_admin_user
@@ -1859,7 +1860,7 @@ def process_stripe_webhook(doc, method):
 		process_micro_debit_test_charge(event)
 		return
 
-	if payment_for == "enterprise_contract":
+	if payment_for == ENTERPRISE_CONTRACT_PAYMENT:
 		# Paid on the contract itself, not added to team credits.
 		return
 
