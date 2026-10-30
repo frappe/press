@@ -123,6 +123,26 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 		self.assertEqual(contract.payments[0].payment_reference, "HDFCR52026102912345678")
 		self.assertEqual(contract.payments[0].amount_paid, 2832000)
 
+	def test_stripe_order_rejects_a_bank_transfer_utr(self):
+		contract = create_contract(create_team_with_billing_address("United States"), self.make_order())
+
+		with self.assertRaisesRegex(frappe.ValidationError, "This order is paid online"):
+			contract.submit_transfer_reference("HDFCR52026102912345678")
+
+	def test_order_with_a_utr_cannot_be_cancelled_by_the_customer(self):
+		contract = create_contract(self.team, self.make_order())
+		contract.submit_transfer_reference("HDFCR52026102912345678")
+
+		with self.assertRaisesRegex(frappe.ValidationError, "already sent a bank transfer"):
+			contract.cancel_order()
+		self.assertEqual(contract.reload().status, "Awaiting Payment")
+
+	def test_unpaid_order_without_a_utr_is_cancelled(self):
+		contract = create_contract(self.team, self.make_order())
+		contract.cancel_order()
+
+		self.assertEqual(frappe.db.get_value("Enterprise Contract", contract.name, "status"), "Cancelled")
+
 	def test_bank_transfer_cannot_be_confirmed_before_the_customer_enters_a_utr(self):
 		contract = create_contract(self.team, self.make_order())
 

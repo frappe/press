@@ -39,14 +39,14 @@ class EnterpriseWarrantyPlan(Document):
 
 	def as_dashboard(self, currency: str) -> dict:
 		price = self.get_price(currency)
-		gst = flt(price * gst_rate(), 2) if currency == "INR" else 0
 		return {
 			"name": self.name,
 			"title": self.title,
 			"description": self.description,
 			"currency": currency,
 			"yearly_price": price,
-			"amount_due": {"amount": price, "gst": gst, "total": price + gst},
+			"amount_due": amount_due(price, currency),
+			"amount_due_with_credits": amount_due(price, currency, with_gst=False),
 			"price_lock_years": self.price_lock_years,
 			"coverage": (self.coverage or "").strip().splitlines(),
 		}
@@ -59,3 +59,9 @@ def enabled_plans(currency: str) -> list[dict]:
 
 def gst_rate() -> float:
 	return flt(frappe.db.get_single_value("Press Settings", "gst_percentage"))
+
+
+# Credits were taxed when they were bought, so paying with them adds no GST.
+def amount_due(price: float, currency: str, with_gst: bool = True) -> dict:
+	gst = flt(price * gst_rate(), 2) if with_gst and currency == "INR" else 0
+	return {"amount": price, "gst": gst, "total": price + gst}

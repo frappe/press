@@ -1,11 +1,8 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
-"""Spread each yearly contract payment over 12 monthly invoices.
-
-The line counts towards partner contribution like any invoice item, and the
-contract pays for it, so it never draws on the team's credits.
-"""
+"""Spread each yearly contract payment over 12 monthly invoice lines that the contract
+pays, so they count for partner contribution but never draw on team credits."""
 
 from __future__ import annotations
 

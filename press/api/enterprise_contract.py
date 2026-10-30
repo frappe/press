@@ -9,7 +9,7 @@ import frappe
 from frappe.utils import get_url
 
 from press.guards import role_guard
-from press.press.doctype.enterprise_contract.checkout import checkout_for
+from press.press.doctype.enterprise_contract.checkout import start_stripe_checkout, stripe_paid_reference
 from press.press.doctype.enterprise_contract.enterprise_contract import (
 	EnterpriseContract,
 	bank_transfer_details,
@@ -68,9 +68,10 @@ def verify_payment(params: dict | str):
 	if not name:
 		frappe.throw("No Enterprise order found")
 	# Locked so that two returns from the gateway record the payment once.
-	contract: EnterpriseContract = frappe.get_doc("Enterprise Contract", name, for_update=True)
+	contract = EnterpriseContract("Enterprise Contract", name, for_update=True)
 	if contract.status == "Awaiting Payment":
-		reference = checkout_for(contract).paid_reference(frappe.parse_json(params))
+		validate_online_checkout(contract)
+		reference = stripe_paid_reference(contract, frappe.parse_json(params))
 		if reference:
 			contract.record_payment(reference=reference)
 	return contract.as_dashboard()
@@ -80,8 +81,6 @@ def verify_payment(params: dict | str):
 @role_guard.api("billing")
 def submit_transfer_reference(reference: str):
 	contract = awaiting_payment_contract()
-	if contract.payment_gateway != "Bank Transfer":
-		frappe.throw("This order is paid online")
 	contract.submit_transfer_reference(reference)
 	return contract.as_dashboard()
 
@@ -89,12 +88,7 @@ def submit_transfer_reference(reference: str):
 @frappe.whitelist()
 @role_guard.api("billing")
 def cancel_order():
-	contract = awaiting_payment_contract()
-	if contract.transfer_reference:
-		frappe.throw("You have already sent a bank transfer for this order. Please contact support.")
-	contract.status = "Cancelled"
-	# Team members only have read access; billing access is checked above.
-	contract.save(ignore_permissions=True)
+	awaiting_payment_contract().cancel_order()
 
 
 def awaiting_payment_contract(for_update: bool = False) -> EnterpriseContract:
@@ -103,14 +97,20 @@ def awaiting_payment_contract(for_update: bool = False) -> EnterpriseContract:
 	)
 	if not name:
 		frappe.throw("No Enterprise order is waiting for payment")
-	return frappe.get_doc("Enterprise Contract", name, for_update=for_update)
+	return EnterpriseContract("Enterprise Contract", name, for_update=for_update)
 
 
 def start_checkout(contract: EnterpriseContract, return_url: str) -> str:
 	validate_return_url(return_url, frappe.request.host)
-	reference, url = checkout_for(contract).start(return_url)
+	validate_online_checkout(contract)
+	reference, url = start_stripe_checkout(contract, return_url)
 	contract.db_set("checkout_reference", reference)
 	return url
+
+
+def validate_online_checkout(contract: EnterpriseContract):
+	if contract.payment_gateway != "Stripe":
+		frappe.throw(f"{contract.payment_gateway} has no online checkout")
 
 
 # The gateway sends the customer back here, so it must be this site. host_name in
