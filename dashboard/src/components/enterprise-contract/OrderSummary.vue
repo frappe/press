@@ -17,10 +17,12 @@
 		<div class="flex flex-col space-y-2">
 			<div class="text-base text-ink-gray-7">Pay Today</div>
 			<div class="flex flex-col space-y-1">
-				<div class="text-lg font-semibold">{{ money(payToday.total) }}</div>
+				<div class="text-lg font-semibold">
+					{{ money(payToday.total, plan.currency) }}
+				</div>
 				<div class="text-base font-medium text-ink-gray-7">
 					{{ payToday.gst
-							? `${money(payToday.amount)} + ${money(payToday.gst)} GST`
+							? `${money(payToday.amount, plan.currency)} + ${money(payToday.gst, plan.currency)} GST`
 							: 'for the first year' }}
 				</div>
 			</div>
@@ -53,8 +55,7 @@
 <script setup>
 import { Button, ErrorMessage, FormControl } from 'frappe-ui'
 import { computed, ref } from 'vue'
-import { dayjsLocal as dayjs } from '../../utils/dayjs'
-import { currency } from '../../utils/format'
+import { formatDate, money } from './format'
 
 const props = defineProps({
 	plan: { type: Object, required: true },
@@ -69,8 +70,6 @@ const props = defineProps({
 const emit = defineEmits(['pay'])
 
 const agreedToTerms = ref(false)
-const money = (amount) => currency(amount, props.plan.currency, 0)
-const formatDate = (date) => dayjs(date).format('D MMM YYYY')
 
 const methods = {
 	credits: {
@@ -98,11 +97,9 @@ const method = computed(() => {
 	return props.plan.currency === 'INR' ? methods.bank : methods.stripe
 })
 
-// Credits were taxed when they were bought, so paying with them adds no GST.
-const payToday = computed(() => {
-	const due = props.plan.amount_due
-	return props.useCredits ? { ...due, gst: 0, total: due.amount } : due
-})
+const payToday = computed(() =>
+	props.useCredits ? props.plan.amount_due_with_credits : props.plan.amount_due,
+)
 
 const rows = computed(() => {
 	const years = Number(props.order.price_lock_years)
@@ -111,7 +108,7 @@ const rows = computed(() => {
 		{ label: 'Applications', value: 'All core apps built by Frappe' },
 		{
 			label: 'Price Lock',
-			value: `${money(props.plan.yearly_price)} / year for ${years} ${years > 1 ? 'years' : 'year'}`,
+			value: `${money(props.plan.yearly_price, props.plan.currency)} / year for ${years} ${years > 1 ? 'years' : 'year'}`,
 			hint: `Locked until ${formatDate(props.lockedUntil)}, counted from payment`,
 		},
 		{ label: 'Payment Method', value: method.value.label },

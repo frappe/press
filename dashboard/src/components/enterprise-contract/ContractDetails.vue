@@ -83,15 +83,11 @@
 <script setup>
 import { Badge, Button } from 'frappe-ui'
 import { computed } from 'vue'
-import { dayjsLocal as dayjs } from '../../utils/dayjs'
-import { currency } from '../../utils/format'
 import ContractPayments from './ContractPayments.vue'
 import ContractProgress from './ContractProgress.vue'
+import { formatDate, money } from './format'
 
 const props = defineProps({ contract: { type: Object, required: true } })
-
-const money = (amount) => currency(amount, props.contract.currency, 0)
-const formatDate = (date) => dayjs(date).format('D MMM YYYY')
 
 const statusTheme = computed(
 	() =>
@@ -105,7 +101,7 @@ const facts = computed(() => {
 	return [
 		{
 			label: 'Yearly price',
-			value: money(contract.yearly_price),
+			value: money(contract.yearly_price, contract.currency),
 			hint: 'Excluding taxes',
 		},
 		{
@@ -116,7 +112,7 @@ const facts = computed(() => {
 		{
 			label: 'Next renewal',
 			value: formatDate(contract.next_renewal.date),
-			hint: money(contract.next_renewal.amount),
+			hint: money(contract.next_renewal.amount, contract.currency),
 		},
 	]
 })

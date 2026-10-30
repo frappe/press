@@ -159,6 +159,7 @@ import { currency } from '../../utils/format'
 import BillingDetailsCard from './BillingDetailsCard.vue'
 import CustomerFields from './CustomerFields.vue'
 import { contractsReturnUrl } from './checkout'
+import { formatDate } from './format'
 import OrderSummary from './OrderSummary.vue'
 
 const props = defineProps({ plans: { type: Array, required: true } })
@@ -173,9 +174,9 @@ const plan = computed(() => props.plans.find((p) => p.name === order.plan))
 const hasBillingAddress = computed(() =>
 	Boolean(team.doc.billing_details?.name),
 )
-// Credits pay the plan price only; part payments are not allowed.
+// Credits pay the full year only; part payments are not allowed.
 const canUseCredits = computed(
-	() => (team.doc.balance || 0) >= plan.value.yearly_price,
+	() => (team.doc.balance || 0) >= plan.value.amount_due_with_credits.total,
 )
 const paymentMethods = computed(() => {
 	const isIndia = plan.value.currency === 'INR'
@@ -251,9 +252,5 @@ function tileClass(selected) {
 			: 'border-outline-gray-3 bg-surface-white hover:bg-surface-gray-1',
 		'flex w-full flex-col rounded-md border text-left',
 	]
-}
-
-function formatDate(date) {
-	return dayjs(date).format('D MMM YYYY')
 }
 </script>
