@@ -3,6 +3,7 @@ from frappe.query_builder.functions import Coalesce, Count, DistinctOptionFuncti
 from pypika.enums import Order
 from pypika.terms import Field
 
+from press.guards import role_guard
 from press.utils import get_current_team
 
 
@@ -28,16 +29,7 @@ def get_incident_count(resolved: bool = False) -> int:
 	if not team:
 		return 0
 
-	site_servers = frappe.get_all(
-		"Site",
-		{"team": team, "status": ("in", ["Active", "Broken", "Pending"])},
-		pluck="server",
-	)
-
-	all_user_servers = set(
-		site_servers + frappe.get_all("Server", {"team": team}, pluck="name")
-	)  # Include shared + dedicated server customers
-
+	all_user_servers = get_visible_servers(team)
 	if not all_user_servers:
 		return 0
 
@@ -62,16 +54,7 @@ def get_incidents(resolved: bool = False, limit: int = 20, offset: int = 0) -> l
 	if not team:
 		return []
 
-	site_servers = frappe.get_all(
-		"Site",
-		{"team": team, "status": ("in", ["Active", "Broken", "Pending"])},
-		pluck="server",
-	)
-
-	all_user_servers = set(
-		site_servers + frappe.get_all("Server", {"team": team}, pluck="name")
-	)  # Include shared + dedicated server customers
-
+	all_user_servers = get_visible_servers(team)
 	if not all_user_servers:
 		return []
 
@@ -124,3 +107,18 @@ def get_incidents(resolved: bool = False, limit: int = 20, offset: int = 0) -> l
 		.offset(offset)
 		.run(as_dict=True)
 	)
+
+
+def get_visible_servers(team: str) -> set[str]:
+	"""Servers of the team's sites and its own servers, as far as the Press Roles permit."""
+	Site = frappe.qb.DocType("Site")
+	Server = frappe.qb.DocType("Server")
+	sites = (
+		frappe.qb.from_(Site)
+		.select(Site.server)
+		.where(Site.team == team)
+		.where(Site.status.isin(["Active", "Broken", "Pending"]))
+	)
+	servers = frappe.qb.from_(Server).select(Server.name).where(Server.team == team)
+	site_servers = role_guard.filter_permitted(sites, "Site", Site.name).run(pluck=True)
+	return set(site_servers + role_guard.filter_permitted(servers, "Server", Server.name).run(pluck=True))

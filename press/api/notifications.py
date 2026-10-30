@@ -1,5 +1,8 @@
 import frappe
+from frappe.query_builder.functions import Count
 
+from press.guards.role_guard.notification import restrict_to_roles
+from press.press.doctype.press_notification.press_notification import resource_route
 from press.utils import get_current_team
 
 
@@ -26,6 +29,7 @@ def get_notifications(
 			PressNotification.is_actionable,
 			PressNotification.document_type,
 			PressNotification.document_name,
+			PressNotification.reference_doctype,
 			PressNotification.reference_name,
 			PressNotification["class"],
 		)
@@ -41,7 +45,7 @@ def get_notifications(
 	if filters.get("type"):
 		query = query.where(PressNotification.type == filters["type"])
 
-	notifications = query.run(as_dict=True)
+	notifications = restrict_to_roles(query).run(as_dict=True)
 
 	for notification in notifications:
 		assign_notification_route(notification)
@@ -62,20 +66,34 @@ def assign_notification_route(notification):
 		notification.route = "access-requests"
 	elif notification.document_type == "Malware Scan":
 		notification.route = f"servers/{notification.reference_name}/security"
+	elif notification.type == "Resource Access":
+		notification.route = resource_route(notification)
 	else:
 		notification.route = None
 
 
 @frappe.whitelist()
 def mark_all_notifications_as_read():
-	frappe.db.set_value("Press Notification", {"team": get_current_team()}, "read", 1, update_modified=False)
+	PressNotification = frappe.qb.DocType("Press Notification")
+	query = (
+		frappe.qb.update(PressNotification)
+		.set(PressNotification.read, 1)
+		.where(PressNotification.team == get_current_team())
+	)
+	restrict_to_roles(query).run()
 
 
 @frappe.whitelist()
 def get_unread_count(type: str | None = None):
-	filters = {"read": False, "team": get_current_team()}
+	PressNotification = frappe.qb.DocType("Press Notification")
+	query = (
+		frappe.qb.from_(PressNotification)
+		.select(Count(PressNotification.name))
+		.where(PressNotification.team == get_current_team())
+		.where(PressNotification.read == 0)
+	)
 
 	if type:
-		filters["type"] = type
+		query = query.where(PressNotification.type == type)
 
-	return frappe.db.count("Press Notification", filters)
+	return restrict_to_roles(query).run(pluck=True)[0]

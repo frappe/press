@@ -68,7 +68,7 @@ ADDR_SPEC = LOCAL_PART + r"@" + DOMAIN  # see 3.4.1
 VALID_ADDRESS_REGEXP = re.compile(r"^" + ADDR_SPEC + r"$")
 
 MX_DNS_CACHE = {}
-MX_CHECK_CACHE = {}
+MX_CHECK_CACHE: dict[str, bool] = {}
 
 
 def get_mx_ip(mx_host):

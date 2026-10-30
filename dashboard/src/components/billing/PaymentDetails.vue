@@ -95,7 +95,20 @@
 			<div class="my-3 h-px bg-surface-gray-2" />
 			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
-					<div class="font-medium">Credit balance</div>
+					<div class="flex items-center gap-1.5">
+						<div class="font-medium">Credit balance</div>
+						<Tooltip placement="top">
+							<button type="button" aria-label="About credit balance">
+								<FeatherIcon class="h-4 text-ink-gray-5" name="info" />
+							</button>
+							<template #content>
+								<span class="block max-w-xs leading-4">
+									You can add bulk credits in advance, and it will be
+									adjusted/deducted directly from your monthly invoice.
+								</span>
+							</template>
+						</Tooltip>
+					</div>
 					<div class="text-ink-gray-7">
 						{{ availableCredits || currency + ' 0.00' }}
 					</div>
@@ -196,7 +209,13 @@ import BudgetAlertDialog from './BudgetAlertDialog.vue';
 import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue';
 import AddCardDialog from './AddCardDialog.vue';
 import ChangeCardDialog from './ChangeCardDialog.vue';
-import { Dropdown, Button, FeatherIcon, createResource } from 'frappe-ui';
+import {
+	Dropdown,
+	Button,
+	FeatherIcon,
+	Tooltip,
+	createResource,
+} from 'frappe-ui';
 import {
 	cardBrandIcon,
 	confirmDialog,

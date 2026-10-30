@@ -13,6 +13,7 @@ from frappe import _
 from frappe.core.doctype.user.user import update_password
 from frappe.core.utils import find
 from frappe.exceptions import DoesNotExistError
+from frappe.query_builder.custom import ConstantColumn
 from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, get_url
 from frappe.utils.data import sha256_hash
@@ -22,6 +23,7 @@ from frappe.website.utils import build_response
 
 from press.guards import mfa
 from press.guards.role_guard import roles_enabled, skip_roles
+from press.press.doctype.account_request.account_request import filter_ad_click_url_args
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
@@ -48,7 +50,11 @@ if TYPE_CHECKING:
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
 def signup(
-	email: str, product: str | None = None, referrer: str | None = None, aid: str | None = None
+	email: str,
+	product: str | None = None,
+	referrer: str | None = None,
+	aid: str | None = None,
+	url_args: str | None = None,
 ) -> str:
 	frappe.utils.validate_email_address(email, True)
 
@@ -84,6 +90,7 @@ def signup(
 				# Pulse: anonymous browser id forwarded from the product website as
 				# ?aid=…; aliased onto the account user when the team is created.
 				"pulse_anonymous_id": aid,
+				"url_args": filter_ad_click_url_args(url_args),
 			}
 		).insert(ignore_permissions=True)
 		account_request = account_request_doc.name
@@ -1172,28 +1179,29 @@ def me():
 @frappe.whitelist()
 def fuse_list():
 	team = get_current_team(get_doc=True)
-	query = f"""
-		SELECT
-			'Site' as doctype, name as title, name as route
-		FROM
-			`tabSite`
-		WHERE
-			team = '{team.name}' AND status NOT IN ('Archived')
-		UNION ALL
-		SELECT 'Bench' as doctype, title as title, name as route
-		FROM
-			`tabRelease Group`
-		WHERE
-			team = '{team.name}' AND enabled = 1
-		UNION ALL
-		SELECT 'Server' as doctype, name as title, name as route
-		FROM
-			`tabServer`
-		WHERE
-			team = '{team.name}' AND status = 'Active'
-	"""
-
-	return frappe.db.sql(query, as_dict=True)
+	Site = frappe.qb.DocType("Site")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	Server = frappe.qb.DocType("Server")
+	sites = (
+		frappe.qb.from_(Site)
+		.select(ConstantColumn("Site").as_("doctype"), Site.name.as_("title"), Site.name.as_("route"))
+		.where((Site.team == team.name) & (Site.status != "Archived"))
+	)
+	benches = (
+		frappe.qb.from_(ReleaseGroup)
+		.select(
+			ConstantColumn("Bench").as_("doctype"),
+			ReleaseGroup.title.as_("title"),
+			ReleaseGroup.name.as_("route"),
+		)
+		.where((ReleaseGroup.team == team.name) & (ReleaseGroup.enabled == 1))
+	)
+	servers = (
+		frappe.qb.from_(Server)
+		.select(ConstantColumn("Server").as_("doctype"), Server.name.as_("title"), Server.name.as_("route"))
+		.where((Server.team == team.name) & (Server.status == "Active"))
+	)
+	return sites.union_all(benches).union_all(servers).run(as_dict=True)
 
 
 @frappe.whitelist()
@@ -1366,7 +1374,10 @@ def disable_2fa(totp_code):
 		frappe.throw(f"2FA is not enabled for {frappe.session.user}")
 
 	if pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
-		frappe.db.set_value("User 2FA", frappe.session.user, "enabled", 0)
+		# Save the doc, not set_value, so the version log records it
+		two_fa = frappe.get_doc("User 2FA", frappe.session.user)
+		two_fa.enabled = 0
+		two_fa.save()
 	else:
 		frappe.throw(
 			f"The code is incorrect or has expired. Please enter the current 6-digit code from your authenticator app. {docs.doc_link(docs.TWO_FACTOR_AUTH)}."

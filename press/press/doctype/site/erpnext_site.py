@@ -3,6 +3,7 @@
 
 
 import frappe
+from frappe.query_builder import Order
 
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.erpnext_consultant.erpnext_consultant import ERPNextConsultant
@@ -61,23 +62,22 @@ def get_erpnext_bench():
 		pluck="name",
 	)
 	release_group = get_erpnext_group()
-	query = """
-		SELECT
-			bench.name
-		FROM
-			tabBench bench
-		LEFT JOIN
-			tabServer server
-		ON
-			bench.server = server.name
-		WHERE
-			server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s
-			AND server.skip_standby_site_creation = 0
-		ORDER BY
-			server.use_for_new_sites DESC, bench.creation DESC
-		LIMIT 1
-	"""
-	return frappe.db.sql(query, [proxy_servers, release_group], as_dict=True)[0].name
+	Bench = frappe.qb.DocType("Bench")
+	Server = frappe.qb.DocType("Server")
+	return (
+		frappe.qb.from_(Bench)
+		.left_join(Server)
+		.on(Bench.server == Server.name)
+		.select(Bench.name)
+		.where(Server.proxy_server.isin(proxy_servers))
+		.where(Bench.status == "Active")
+		.where(Bench.group == release_group)
+		.where(Server.skip_standby_site_creation == 0)
+		.orderby(Server.use_for_new_sites, order=Order.desc)
+		.orderby(Bench.creation, order=Order.desc)
+		.limit(1)
+		.run(pluck=True)[0]
+	)
 
 
 def get_erpnext_domain():
