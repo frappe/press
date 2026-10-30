@@ -26,7 +26,12 @@ from press.press.doctype.agent_job.agent_job import (
 	update_job,
 	update_step,
 )
-from press.press.doctype.agent_job.agent_job_notifications import DOC_URLS, JobErr, get_details
+from press.press.doctype.agent_job.agent_job_notifications import (
+	DOC_URLS,
+	JobErr,
+	get_details,
+	send_job_failure_notification,
+)
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
@@ -643,6 +648,62 @@ class TestAgentJobNotifications(FrappeTestCase):
 		details = get_details(self.restore_job(public=True), "", "")
 
 		self.assertFalse(details["is_actionable"])
+
+	NODE_MODULES_OUTPUT = "cp: cannot stat 'sites/./assets/dummy_app/node_modules': No such file or directory"
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_committed_node_modules_symlink_tells_the_team_to_fix_the_app(self):
+		details = get_details(self.new_bench_job(self.NODE_MODULES_OUTPUT), "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "New Bench failed because of the dummy_app app")
+		self.assertIn("git rm --cached dummy_app/public/node_modules", details["message"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_node_modules_error_outside_new_bench_is_not_actionable(self):
+		job = self.new_bench_job(self.NODE_MODULES_OUTPUT)
+		job.job_type = "Rebuild Bench Assets"
+
+		self.assertFalse(get_details(job, "", "")["is_actionable"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_new_bench_on_public_server_notifies_the_bench_team_of_a_broken_app(self):
+		job = self.new_bench_job(self.NODE_MODULES_OUTPUT)
+
+		send_job_failure_notification(job)
+
+		notification = frappe.get_last_doc(
+			"Press Notification", {"document_type": "Agent Job", "document_name": job.name}
+		)
+		self.assertEqual(notification.team, frappe.db.get_value("Bench", job.bench, "team"))
+		self.assertTrue(notification.is_actionable)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_new_bench_on_public_server_does_not_notify_of_an_unknown_error(self):
+		job = self.new_bench_job("docker: Error response from daemon: pull access denied")
+
+		send_job_failure_notification(job)
+
+		self.assertFalse(
+			frappe.db.exists("Press Notification", {"document_type": "Agent Job", "document_name": job.name})
+		)
+
+	def new_bench_job(self, output: str) -> AgentJob:
+		bench = create_test_bench()
+		frappe.db.set_value("Server", bench.server, "public", True)
+		return frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "New Bench",
+				"request_path": "benches",
+				"request_data": "{}",
+				"bench": bench.name,
+				"server_type": "Server",
+				"server": bench.server,
+				"status": "Failure",
+				"output": output,
+			}
+		).insert(ignore_permissions=True)
 
 	def restore_job(self, public: bool) -> AgentJob:
 		site = create_test_site()
