@@ -268,6 +268,8 @@ def open_contract_name(team: str) -> str | None:
 
 
 def create_contract(team: Team, order: dict) -> EnterpriseContract:
+	# Serializes orders for a team, so two at once cannot both pass the open-contract check.
+	frappe.db.get_value("Team", team.name, "name", for_update=True)
 	contract = frappe.get_doc(
 		{
 			"doctype": "Enterprise Contract",

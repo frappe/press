@@ -1,6 +1,8 @@
 # Copyright (c) 2026, Frappe and Contributors
 # See license.txt
 
+from unittest.mock import patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, add_years, getdate, today
@@ -227,6 +229,12 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 
 		with self.assertRaisesRegex(frappe.ValidationError, "already has an Enterprise contract"):
 			create_contract(self.team, self.make_order())
+
+	def test_order_locks_the_team_row_so_two_orders_at_once_run_one_after_the_other(self):
+		with patch.object(frappe.db, "get_value", wraps=frappe.db.get_value) as get_value:
+			create_contract(self.team, self.make_order())
+
+		get_value.assert_any_call("Team", self.team.name, "name", for_update=True)
 
 	def test_price_lock_longer_than_three_years_is_rejected(self):
 		with self.assertRaisesRegex(frappe.ValidationError, "must be 1 to 3 years"):
