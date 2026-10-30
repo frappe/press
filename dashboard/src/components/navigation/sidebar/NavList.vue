@@ -157,6 +157,15 @@ const list = computed(() => {
 		},
 
 		{
+			name: 'Contracts',
+			icon: LucideFileSignature,
+			route: '/contracts',
+			isActive: routeName === 'Contracts',
+			condition: $team.doc?.is_desk_user || $session.hasBillingAccess,
+			disabled: enforce2FA,
+		},
+
+		{
 			name: 'Partnership',
 			icon: LucideGlobe,
 			route: activePartner ? '/partners' : '/partner-onboarding',

@@ -125,7 +125,17 @@
 							['Paid', 'Unpaid'].includes(doc.status)
 						"
 					>
-						<tr>
+						<tr v-if="doc.paid_by_contract">
+							<td></td>
+							<td></td>
+							<td class="pr-2 text-right font-medium">
+								Paid by Enterprise Contract
+							</td>
+							<td class="whitespace-nowrap py-3 pr-2 text-right font-medium">
+								- {{ formatCurrency(doc.paid_by_contract) }}
+							</td>
+						</tr>
+						<tr v-if="doc.applied_credits">
 							<td></td>
 							<td></td>
 							<td class="pr-2 text-right font-medium">Applied Balance</td>
