@@ -13,9 +13,5 @@ frappe.ui.form.on('Enterprise Contract', {
 				),
 			)
 		}
-		if (frm.doc.status !== 'Active' || !frappe.boot.developer_mode) return
-		frm.add_custom_button(__('Record Demo Renewal'), () =>
-			frm.call('record_demo_renewal').then(() => frm.reload_doc()),
-		)
 	},
 })
