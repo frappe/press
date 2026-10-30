@@ -560,6 +560,7 @@ export default {
 					referrer: this.getReferrerIfAny(),
 					product: this.$route.query.product,
 					aid: getAnonymousId(),
+					url_args: JSON.stringify(this.$route.query),
 				},
 				onSuccess(account_request) {
 					this.account_request = account_request;
@@ -667,6 +668,7 @@ export default {
 					return {
 						product: this.$route.query.product,
 						aid: getAnonymousId(),
+						url_args: JSON.stringify(this.$route.query),
 					};
 				},
 				onSuccess(url) {
