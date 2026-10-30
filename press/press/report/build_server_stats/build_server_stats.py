@@ -35,6 +35,8 @@ VOLUMES = "/opt/volumes/"
 # A golden-angle step around the colour wheel, so names next to each other get far-apart hues
 GOLDEN_RATIO_CONJUGATE = 0.381966
 UNKNOWN_COLOURS = {"No cluster": "#98a2b3", "No build server": "#98a2b3"}
+# Frappe Charts leaves out the time labels that do not fit, instead of cutting each one short
+TIME_AXIS = {"xIsSeries": 1}
 # Builds Started is drawn full width. The rest go in pairs, so each build server chart sits by its cluster chart.
 CHARTS = (
 	"Builds Started",
@@ -419,10 +421,11 @@ def get_chart(window, builds):
 	return {
 		"title": f"Builds started per {bucket // 60} minutes",
 		"data": {
-			"labels": [label.strftime("%d %b %H:%M") for label in labels],
+			"labels": time_labels(labels),
 			"datasets": [{"name": "Builds", "values": [counts[label] for label in labels]}],
 		},
 		"type": "bar",
+		"axisOptions": TIME_AXIS,
 	}
 
 
@@ -531,13 +534,14 @@ def median_duration_chart(period, builds, group_of):
 	return {
 		"title": f"Median minutes of successful builds, by start per {bucket // 60} minutes",
 		"data": {
-			"labels": [label.strftime("%d %b %H:%M") for label in labels],
+			"labels": time_labels(labels),
 			"datasets": [
 				{"name": group, "values": [minutes.get((label, group), 0) for label in labels]}
 				for group in groups
 			],
 		},
 		"type": "bar",
+		"axisOptions": TIME_AXIS,
 	}
 
 
@@ -629,14 +633,21 @@ def stacked_chart(title, window, events):
 	return {
 		"title": f"{title} per {bucket // 60} minutes",
 		"data": {
-			"labels": [label.strftime("%d %b %H:%M") for label in labels],
+			"labels": time_labels(labels),
 			"datasets": [
 				{"name": group, "values": [counts[(label, group)] for label in labels]} for group in groups
 			],
 		},
 		"type": "bar",
+		"axisOptions": TIME_AXIS,
 		"barOptions": {"stacked": 1},
 	}
+
+
+def time_labels(moments):
+	"""Only the time when every bucket is on one day, so more labels fit under the bars."""
+	same_day = len({moment.date() for moment in moments}) == 1
+	return [moment.strftime("%H:%M" if same_day else "%d %b %H:%M") for moment in moments]
 
 
 def floor_to_bucket(moment, bucket):
