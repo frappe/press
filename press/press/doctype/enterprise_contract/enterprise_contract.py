@@ -126,7 +126,9 @@ class EnterpriseContract(Document):
 		self.billing_address = billing_address
 
 	def validate_no_open_contract(self):
-		if frappe.db.exists("Enterprise Contract", {"team": self.team, "status": ("in", OPEN_STATUSES)}):
+		# A locking read, because the InnoDB snapshot can miss a contract committed while we waited.
+		filters = {"team": self.team, "status": ("in", OPEN_STATUSES)}
+		if frappe.db.get_value("Enterprise Contract", filters, "name", for_update=True):
 			frappe.throw("This team already has an Enterprise contract")
 
 	# An order the customer abandoned at checkout is replaced by the new one.
