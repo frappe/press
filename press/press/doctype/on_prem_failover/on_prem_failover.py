@@ -20,6 +20,12 @@ if TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 WIREGUARD_DEFAULT_PORT = 51820
+ASSUMED_SYNC_SPEED_BYTES_PER_SECOND = 5 * 1024 * 1024
+
+
+def estimate_initial_sync_seconds(disk_used_kib: int) -> float:
+	# disk_used comes from `df`, which reports 1K blocks
+	return disk_used_kib * 1024 / ASSUMED_SYNC_SPEED_BYTES_PER_SECOND
 
 
 class OnPremFailover(Document):
@@ -366,9 +372,7 @@ PersistentKeepalive = 25
 			# TODO: Perform network testing and setup db_lsyncd_stop_at accordingly
 			try:
 				usage: dict = self.database_server_doc.get_storage_usage()
-				disk_usage = usage.get("disk_used", 0)
-				# Assuming 5 MB/s transfer speed for estimation
-				estimated_seconds = disk_usage / (5 * 1024 * 1024)
+				estimated_seconds = estimate_initial_sync_seconds(usage.get("disk_used", 0))
 				self.db_lsyncd_stop_at = add_to_date(self.db_lsyncd_started_on, seconds=estimated_seconds)
 			except Exception:
 				self.db_lsyncd_stop_at = add_to_date(self.db_lsyncd_started_on, hours=1)
