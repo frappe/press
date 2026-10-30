@@ -25,6 +25,7 @@ from press.api.regional_payments.mpesa.utils import (
 	update_tax_id_or_phone_no,
 )
 from press.guards import role_guard
+from press.press.doctype.enterprise_contract.installments import usage_total
 from press.press.doctype.invoice_item.invoice_item import get_item_description
 from press.press.doctype.team.team import (
 	_enqueue_finalize_unpaid_invoices_for_team,
@@ -1059,14 +1060,13 @@ def get_current_billing_amount():
 	team = get_current_team(get_doc=True)
 	due_date = frappe.utils.get_last_day(frappe.utils.getdate())
 
-	return (
-		frappe.get_value(
-			"Invoice",
-			{"team": team.name, "due_date": due_date, "docstatus": 0},
-			"total",
-		)
-		or 0
+	invoice = frappe.get_value(
+		"Invoice",
+		{"team": team.name, "due_date": due_date, "docstatus": 0},
+		["total", "paid_by_contract"],
+		as_dict=True,
 	)
+	return usage_total(invoice)
 
 
 # Mpesa integrations, mpesa express
@@ -1417,8 +1417,8 @@ def _get_invoice_data(team_name: str, date_info: dict):
 	return {
 		"current_invoice": current_invoice,
 		"last_month_invoice": last_month_invoice,
-		"current_month_total": current_invoice.total if current_invoice else 0,
-		"last_month_total": last_month_invoice.total if last_month_invoice else 0,
+		"current_month_total": usage_total(current_invoice),
+		"last_month_total": usage_total(last_month_invoice),
 	}
 
 
@@ -1426,7 +1426,7 @@ def _get_invoice_based_on_due_date(team_name, due_date):
 	return frappe.db.get_value(
 		"Invoice",
 		{"team": team_name, "due_date": due_date, "docstatus": ("!=", 2)},
-		["name", "total", "currency"],
+		["name", "total", "paid_by_contract", "currency"],
 		as_dict=True,
 	)
 
@@ -1509,6 +1509,8 @@ def _get_usage_breakdown(invoice: str) -> dict[str, float]:
 	service_costs: dict[str, float] = {}
 
 	for item in invoice_doc.items:
+		if item.document_type == "Enterprise Contract":
+			continue
 		service = item.document_type
 		service_costs[service] = service_costs.get(service, 0.0) + float(item.amount)
 
@@ -1631,11 +1633,11 @@ def team_tiers():
 			"docstatus": 1,
 			"status": "Paid",
 		},
-		fields=["total"],
+		fields=["total", "paid_by_contract"],
 		order_by="creation desc",
 		limit=1,
 	)
-	last_invoice_amount = last_paid_invoice[0].total if last_paid_invoice else 0
+	last_invoice_amount = usage_total(last_paid_invoice[0] if last_paid_invoice else None)
 
 	has_payment_method = bool(team.payment_mode) or team.get_balance() > 0
 
