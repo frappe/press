@@ -125,9 +125,10 @@ const pay = createResource({
 	url: 'press.api.enterprise_contract.pay',
 	makeParams: () => ({ return_url: contractsReturnUrl() }),
 	// No checkout URL when the last checkout turns out to be paid already.
-	onSuccess: ({ checkout_url }) => {
+	onSuccess: ({ checkout_url, message }) => {
 		if (checkout_url) return window.location.assign(checkout_url)
 		redirecting.value = false
+		if (message) toast.info(message)
 		emit('updated')
 	},
 	onError: () => (redirecting.value = false),
