@@ -15,17 +15,20 @@ from press.press.report.build_server_stats.build_server_stats import (
 	CHARTS,
 	DiskUsage,
 	Period,
+	colour_by_name,
 	floor_to_bucket,
 	get_chart,
 	get_charts,
-	get_clusters,
 	get_period,
 	get_selected_chart,
 	group_by_server,
 	last_number,
+	median,
 	one_mountpoint_per_device,
 	percentile,
 	seconds_of,
+	spread_colours,
+	with_clusters,
 )
 
 
@@ -58,13 +61,16 @@ class TestBuildSpans(FrappeTestCase):
 
 class TestPercentile(FrappeTestCase):
 	def test_the_median_of_five_values_is_the_middle_one(self):
-		self.assertEqual(percentile([50, 10, 30, 20, 40], 0.5), 30)
+		self.assertEqual(median([50, 10, 30, 20, 40]), 30)
+
+	def test_the_median_of_an_even_count_is_the_mean_of_the_two_middle_values(self):
+		self.assertEqual(median([7, 5]), 6)
 
 	def test_the_p95_of_a_short_list_is_the_largest_value(self):
 		self.assertEqual(percentile([10, 20, 30], 0.95), 30)
 
 	def test_a_window_without_builds_reports_zero(self):
-		self.assertEqual(percentile([], 0.5), 0)
+		self.assertEqual(median([]), 0)
 
 
 class TestLastNumber(FrappeTestCase):
@@ -109,7 +115,7 @@ class TestBuildsByClusterChart(FrappeTestCase):
 
 	def builds_by_cluster(self, builds):
 		period = Period(datetime(2026, 9, 10, 10, 0), datetime(2026, 9, 10, 11, 0))
-		datasets = get_selected_chart("Builds by Cluster", period, builds)["data"]["datasets"]
+		datasets = get_selected_chart("Builds by Cluster", period, with_clusters(builds))["data"]["datasets"]
 		return {dataset["name"]: dataset["values"] for dataset in datasets}
 
 	def test_builds_of_every_status_are_stacked_by_the_cluster_of_their_build_server(self):
@@ -127,26 +133,41 @@ class TestBuildsByClusterChart(FrappeTestCase):
 		self.assertEqual(datasets["Frankfurt"], [0, 1])
 		self.assertEqual(datasets["Mumbai"], [2, 0])
 
-	def test_a_live_cluster_without_builds_gets_an_empty_series_and_an_archived_one_gets_none(self):
-		mumbai = create_test_server(cluster="Mumbai").name
-		create_test_cluster("Frankfurt", "eu-central-1")
-		frappe.db.set_value("Cluster", create_test_cluster("London", "eu-west-2").name, "status", "Archived")
-
-		datasets = self.builds_by_cluster([build(mumbai, build_start=datetime(2026, 9, 10, 10, 0, 10))])
-
-		self.assertEqual(datasets["Frankfurt"], [0])
-		self.assertNotIn("London", datasets)
-
-	def test_no_cluster_comes_after_every_live_cluster_so_the_live_ones_keep_their_colours(self):
-		mumbai = create_test_server(cluster="Mumbai").name
-		create_test_cluster("Zurich", "eu-central-2")
-		start = datetime(2026, 9, 10, 10, 0, 10)
-
+	def test_a_build_server_without_a_server_record_reads_as_no_cluster(self):
 		datasets = self.builds_by_cluster(
-			[build(mumbai, build_start=start), build("gone", build_start=start)]
+			[build("gone.frappe.cloud", build_start=datetime(2026, 9, 10, 10, 0))]
 		)
 
-		self.assertEqual(list(datasets), [*get_clusters(), "No cluster"])
+		self.assertEqual(datasets, {"No cluster": [1]})
+
+
+class TestChartColours(FrappeTestCase):
+	def chart(self, *names, colors=None):
+		chart = {"data": {"datasets": [{"name": name} for name in names]}}
+		return {**chart, "colors": colors} if colors else chart
+
+	def test_a_cluster_keeps_one_colour_in_every_chart_whatever_else_is_in_each(self):
+		charts = [self.chart("Mumbai", "Zurich"), self.chart("Bahrain", "Mumbai", "No cluster")]
+
+		colour_by_name(charts)
+
+		self.assertEqual(charts[0]["colors"][0], charts[1]["colors"][1])
+		self.assertEqual(len(set(charts[0]["colors"] + charts[1]["colors"])), 4)
+
+	def test_no_cluster_and_no_build_server_are_grey_and_a_chart_with_its_own_colours_keeps_them(self):
+		charts = [self.chart("No cluster", "No build server"), self.chart("Success", colors=["green"])]
+
+		colour_by_name(charts)
+
+		self.assertEqual(charts[0]["colors"], ["#98a2b3", "#98a2b3"])
+		self.assertEqual(charts[1]["colors"], ["green"])
+
+	def test_thirty_names_get_thirty_different_hex_colours_beyond_the_ten_of_frappe_charts(self):
+		colours = spread_colours(30)
+
+		self.assertEqual(len(set(colours)), 30)
+		for colour in colours:
+			self.assertRegex(colour, r"^#[0-9a-f]{6}$")
 
 
 class TestOneMountpointPerDevice(FrappeTestCase):
@@ -198,13 +219,8 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 		).db_insert()
 
 	def datasets(self, chart):
-		"""Every live cluster gets a series. Leave out the empty ones."""
 		chart = get_selected_chart(chart, self.period, [])
-		return {
-			dataset["name"]: dataset["values"]
-			for dataset in chart["data"]["datasets"]
-			if any(dataset["values"])
-		}
+		return {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
 
 	def test_failed_and_undelivered_new_bench_jobs_are_stacked_by_the_cluster_of_their_server(self):
 		mumbai = create_test_server(cluster="Mumbai").name
@@ -349,7 +365,10 @@ class TestBuildDurationChart(FrappeTestCase):
 		period = Period(datetime(2026, 9, 10, 10, 0), datetime(2026, 9, 10, 11, 0))
 		return get_selected_chart(chart, period, builds)
 
-	def test_successful_builds_plot_their_median_minutes_per_server_at_their_start(self):
+	def datasets(self, chart):
+		return {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
+
+	def test_successful_builds_show_their_median_minutes_per_server_in_every_bucket_by_start(self):
 		start = datetime(2026, 9, 10, 10, 1)
 		builds = [
 			build("f1.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 10, 6)),
@@ -359,17 +378,40 @@ class TestBuildDurationChart(FrappeTestCase):
 				build_start=datetime(2026, 9, 10, 10, 7),
 				build_end=datetime(2026, 9, 10, 11, 7),
 			),
-			build("f1.frappe.cloud", build_start=start, build_end=None),
 		]
 		builds.append(frappe._dict(builds[0], status="Failure"))
 
 		chart = self.duration_chart("Build Duration by Build Server", builds)
 
-		self.assertEqual(chart["data"]["labels"], ["10 Sep 10:00", "10 Sep 10:05"])
-		datasets = {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
-		self.assertEqual(datasets, {"f1.frappe.cloud": [5.0, 0], "f2.frappe.cloud": [30.0, 60.0]})
+		labels = chart["data"]["labels"]
+		self.assertEqual((len(labels), labels[0], labels[-1]), (12, "10 Sep 10:00", "10 Sep 10:55"))
+		self.assertEqual(
+			self.datasets(chart),
+			{"f1.frappe.cloud": [5.0] + [0] * 11, "f2.frappe.cloud": [30.0, 60.0] + [0] * 10},
+		)
 
-	def test_successful_builds_plot_their_median_minutes_per_cluster_of_their_build_server(self):
+	def test_a_bucket_with_a_build_still_running_has_no_bar_as_its_median_is_not_known_yet(self):
+		builds = [
+			build(
+				"f1.frappe.cloud",
+				build_start=datetime(2026, 9, 10, 10, 1),
+				build_end=datetime(2026, 9, 10, 10, 6),
+			),
+			build(
+				"f1.frappe.cloud", status="Running", build_start=datetime(2026, 9, 10, 10, 2), build_end=None
+			),
+			build(
+				"f1.frappe.cloud",
+				build_start=datetime(2026, 9, 10, 10, 20),
+				build_end=datetime(2026, 9, 10, 10, 23),
+			),
+		]
+
+		chart = self.duration_chart("Build Duration by Build Server", builds)
+
+		self.assertEqual(self.datasets(chart), {"f1.frappe.cloud": [0, 0, 0, 0, 3.0] + [0] * 7})
+
+	def test_successful_builds_show_their_median_minutes_per_cluster_of_their_build_server(self):
 		f1 = create_test_server(cluster="Mumbai").name
 		f2 = create_test_server(cluster="Mumbai").name
 		start = datetime(2026, 9, 10, 10, 0)
@@ -379,11 +421,11 @@ class TestBuildDurationChart(FrappeTestCase):
 			build("gone.frappe.cloud", build_start=start, build_end=datetime(2026, 9, 10, 11, 0)),
 		]
 
-		chart = self.duration_chart("Build Duration by Cluster", builds)
+		chart = self.duration_chart("Build Duration by Cluster", with_clusters(builds))
 
-		datasets = {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
-		self.assertEqual(datasets["Mumbai"], [7.0])
-		self.assertEqual(datasets["No cluster"], [60.0])
+		datasets = self.datasets(chart)
+		self.assertEqual(datasets["Mumbai"][0], 6.0)
+		self.assertEqual(datasets["No cluster"][0], 60.0)
 
 
 class TestPeriod(FrappeTestCase):

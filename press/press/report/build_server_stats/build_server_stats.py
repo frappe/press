@@ -1,7 +1,9 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
+import colorsys
 import math
+import statistics
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -30,6 +32,9 @@ QUEUED = ("Scheduled", "Pending")
 # Preparing already holds the build server, so it counts against capacity like Running does
 RUNNING = ("Preparing", "Running")
 VOLUMES = "/opt/volumes/"
+# A golden-angle step around the colour wheel, so names next to each other get far-apart hues
+GOLDEN_RATIO_CONJUGATE = 0.381966
+UNKNOWN_COLOURS = {"No cluster": "#98a2b3", "No build server": "#98a2b3"}
 # Builds Started is drawn full width. The rest go in pairs, so each build server chart sits by its cluster chart.
 CHARTS = (
 	"Builds Started",
@@ -75,7 +80,27 @@ def execute(filters=None):
 def get_charts(period, builds):
 	"""Frappe draws only the first chart. The report's JS draws the ones in `charts` below it."""
 	charts = [{**get_selected_chart(name, period, builds), "name": name} for name in CHARTS]
+	colour_by_name(charts)
 	return {**charts[0], "charts": charts[1:]}
+
+
+def colour_by_name(charts):
+	"""A cluster or server keeps one colour in every chart. A chart with its own colours keeps them."""
+	uncoloured = [chart for chart in charts if "colors" not in chart]
+	names = {dataset["name"] for chart in uncoloured for dataset in chart["data"]["datasets"]}
+	names = sorted(names - UNKNOWN_COLOURS.keys())
+	colour_of = {**dict(zip(names, spread_colours(len(names)), strict=True)), **UNKNOWN_COLOURS}
+	for chart in uncoloured:
+		chart["colors"] = [colour_of[dataset["name"]] for dataset in chart["data"]["datasets"]]
+
+
+def spread_colours(count):
+	"""As many distinct hex colours as names. Frappe Charts has only ten of its own."""
+	colours = []
+	for index in range(count):
+		red, green, blue = colorsys.hls_to_rgb(index * GOLDEN_RATIO_CONJUGATE % 1, 0.5, 0.65)
+		colours.append(f"#{round(red * 255):02x}{round(green * 255):02x}{round(blue * 255):02x}")
+	return colours
 
 
 def get_period(filters):
@@ -151,8 +176,8 @@ def get_data(period, builds, servers, disk):
 				"builds_per_hour": rounded(len(server_builds) / (period.seconds / 3600), 1),
 				"running_builds": active.get(server.name, {}).get("running", 0),
 				"queued_builds": active.get(server.name, {}).get("queued", 0),
-				"median_wait": percentile(waits, 0.5),
-				"median_build": percentile(durations, 0.5),
+				"median_wait": round(median(waits)),
+				"median_build": round(median(durations)),
 				"p95_build": percentile(durations, 0.95),
 				"median_pull": pull if server.server_type == "Registry Server" else None,
 				**{name: rounded(value, 2) for name, value in stats[server.name].items()},
@@ -305,6 +330,11 @@ def mount_rank(mountpoint):
 	return (not mountpoint.startswith(VOLUMES), len(mountpoint), mountpoint)
 
 
+def median(values):
+	"""The middle value, or the mean of the two middle ones."""
+	return statistics.median(values) if values else 0
+
+
 def percentile(values, fraction):
 	"""Nearest rank. Good enough for a handful of builds, and correct at both ends."""
 	if not values:
@@ -315,14 +345,23 @@ def percentile(values, fraction):
 
 def get_builds(period):
 	"""Builds that started inside the period."""
-	return frappe.get_all(
+	builds = frappe.get_all(
 		"Deploy Candidate Build",
 		{
 			"build_start": ("between", (period.start, period.end)),
 			"build_server": ("is", "set"),
 		},
-		["build_server", "status", "creation", "pending_start", "build_start", "build_end"],
+		["build_server", "status", "pending_start", "build_start", "build_end"],
 	)
+	return with_clusters(builds)
+
+
+def with_clusters(builds):
+	"""Look up the cluster of each build server once, for every chart that groups builds by cluster."""
+	cluster_of = get_cluster_of({build.build_server for build in builds})
+	for build in builds:
+		build.cluster = cluster_of.get(build.build_server)
+	return builds
 
 
 def group_by_server(builds):
@@ -370,7 +409,7 @@ def get_pull_seconds(period):
 		},
 		["start", "end"],
 	)
-	return percentile(seconds_of(jobs, "start", "end"), 0.5)
+	return round(median(seconds_of(jobs, "start", "end")))
 
 
 def get_chart(window, builds):
@@ -403,9 +442,9 @@ def get_selected_chart(chart, period, builds):
 	if chart == "Builds by Cluster":
 		return get_builds_by_cluster_chart(period.seconds, builds)
 	if chart == "Build Duration by Build Server":
-		return get_build_duration_chart(period.seconds, builds)
+		return get_build_duration_chart(period, builds)
 	if chart == "Build Duration by Cluster":
-		return get_build_duration_by_cluster_chart(period.seconds, builds)
+		return get_build_duration_by_cluster_chart(period, builds)
 	return get_chart(period.seconds, builds)
 
 
@@ -445,7 +484,7 @@ def get_build_failure_chart(period):
 	builds = get_failed_builds(period)
 	cluster_of = get_cluster_of({build.build_server for build in builds})
 	events = [(build.creation, cluster_of.get(build.build_server)) for build in builds]
-	return stacked_chart("Failed builds by creation", period.seconds, events, get_clusters())
+	return stacked_chart("Failed builds by creation", period.seconds, events)
 
 
 def get_new_bench_jobs(period):
@@ -460,21 +499,11 @@ def get_new_bench_jobs_by_cluster_chart(period):
 	jobs = get_new_bench_jobs(period)
 	cluster_of = get_cluster_of({job.server for job in jobs})
 	events = [(job.creation, cluster_of.get(job.server)) for job in jobs]
-	return stacked_chart("New Bench jobs", period.seconds, events, get_clusters())
+	return stacked_chart("New Bench jobs", period.seconds, events)
 
 
 def get_cluster_of(servers):
 	return dict(frappe.get_all("Server", {"name": ("in", servers)}, ["name", "cluster"], as_list=True))
-
-
-def get_clusters():
-	"""Every cluster gets a series, even an empty one, so a cluster keeps its colour in every chart."""
-	return frappe.get_all("Cluster", {"status": ("!=", "Archived")}, pluck="name", order_by="name asc")
-
-
-def ordered_groups(fixed, found):
-	"""Fixed groups keep their places, so their colours. Groups only in the data go last."""
-	return [*fixed, *sorted(set(found) - set(fixed))]
 
 
 def get_new_bench_jobs_chart(period):
@@ -485,50 +514,49 @@ def get_new_bench_jobs_chart(period):
 	return chart
 
 
-def get_build_duration_chart(window, builds):
-	spans = successful_build_spans(builds, lambda build: build.build_server)
-	return median_duration_chart(window, spans)
+def get_build_duration_chart(period, builds):
+	return median_duration_chart(period, builds, lambda build: build.build_server)
 
 
-def get_build_duration_by_cluster_chart(window, builds):
-	cluster_of = get_cluster_of({build.build_server for build in builds})
-	spans = successful_build_spans(builds, lambda build: cluster_of.get(build.build_server) or "No cluster")
-	return median_duration_chart(window, spans, get_clusters())
+def get_build_duration_by_cluster_chart(period, builds):
+	return median_duration_chart(period, builds, lambda build: build.cluster or "No cluster")
 
 
-def successful_build_spans(builds, group_of):
-	return [
-		(build.build_start, (build.build_end - build.build_start).total_seconds(), group_of(build))
-		for build in builds
-		if build.status == "Success" and build.build_end
-	]
-
-
-def median_duration_chart(window, spans, groups=()):
-	"""Spans are (start, seconds, group). One line per group, of the median minutes per bucket."""
-	# ponytail: a bucket without builds reads 0, so a quiet server dips to the floor
-	bucket = max(60, window // 12)
-	seconds = {}
-	for moment, span, group in spans:
-		seconds.setdefault((floor_to_bucket(moment, bucket), group), []).append(span)
-	labels = sorted({label for label, _ in seconds})
-	groups = ordered_groups(groups, {group for _, group in seconds})
+def median_duration_chart(period, builds, group_of):
+	"""Bars side by side, as medians do not add up. A missing bar is a bucket without a median."""
+	bucket = max(60, period.seconds // 12)
+	minutes = median_minutes(builds, bucket, group_of)
+	labels = buckets_of(period, bucket)
+	groups = sorted({group for _, group in minutes})
 	return {
 		"title": f"Median minutes of successful builds, by start per {bucket // 60} minutes",
 		"data": {
 			"labels": [label.strftime("%d %b %H:%M") for label in labels],
 			"datasets": [
-				{
-					"name": group,
-					"values": [
-						rounded(percentile(seconds.get((label, group), []), 0.5) / 60, 1) for label in labels
-					],
-				}
+				{"name": group, "values": [minutes.get((label, group), 0) for label in labels]}
 				for group in groups
 			],
 		},
-		"type": "line",
+		"type": "bar",
 	}
+
+
+def median_minutes(builds, bucket, group_of):
+	"""Median minutes of successful builds per (bucket, group). None yet where a build still runs."""
+	seconds, running = {}, set()
+	for build in builds:
+		key = (floor_to_bucket(build.build_start, bucket), group_of(build))
+		if build.status in RUNNING:
+			running.add(key)
+		elif build.status == "Success" and build.build_end:
+			seconds.setdefault(key, []).append((build.build_end - build.build_start).total_seconds())
+	return {key: rounded(median(spans) / 60, 1) for key, spans in seconds.items() if key not in running}
+
+
+def buckets_of(period, bucket):
+	"""Every bucket of the period, so the time axis is even, also where nothing happened."""
+	first = int(period.start.timestamp()) // bucket * bucket
+	return [datetime.fromtimestamp(moment) for moment in range(first, int(period.end.timestamp()), bucket)]
 
 
 def get_new_bench_duration_chart(period):
@@ -544,16 +572,16 @@ def get_new_bench_duration_chart(period):
 		for job in jobs
 		if job.start
 	]
-	return duration_histogram("Successful New Bench jobs by duration", spans, get_clusters())
+	return duration_histogram("Successful New Bench jobs by duration", spans)
 
 
-def duration_histogram(title, spans, groups=()):
+def duration_histogram(title, spans):
 	"""Spans are (seconds, group) pairs, counted in about twelve whole-minute bins, stacked by group."""
 	longest = max((seconds for seconds, _ in spans), default=0)
 	width = max(60, math.ceil(longest / 12 / 60) * 60)
 	counts = Counter((int(seconds // width), group) for seconds, group in spans)
 	bins = range(max((index for index, _ in counts), default=-1) + 1)
-	groups = ordered_groups(groups, {group for _, group in counts})
+	groups = sorted({group for _, group in counts})
 	return {
 		"title": title,
 		"data": {
@@ -571,13 +599,12 @@ def get_new_bench_failure_chart(period):
 	jobs = get_failed_jobs("New Bench", period)
 	cluster_of = get_cluster_of({job.server for job in jobs})
 	events = [(job.failed_at, cluster_of.get(job.server)) for job in jobs]
-	return stacked_chart("Failed New Bench jobs", period.seconds, events, get_clusters())
+	return stacked_chart("Failed New Bench jobs", period.seconds, events)
 
 
 def get_builds_by_cluster_chart(window, builds):
-	cluster_of = get_cluster_of({build.build_server for build in builds})
-	events = [(build.build_start, cluster_of.get(build.build_server)) for build in builds]
-	return stacked_chart("Builds started", window, events, get_clusters())
+	events = [(build.build_start, build.cluster) for build in builds]
+	return stacked_chart("Builds started", window, events)
 
 
 def get_failed_jobs(job_type, period):
@@ -593,12 +620,12 @@ def get_failed_jobs(job_type, period):
 	)
 
 
-def stacked_chart(title, window, events, groups=()):
+def stacked_chart(title, window, events):
 	"""Events per bucket, one stacked series per group. An event is a (moment, group) pair."""
 	bucket = max(60, window // 12)
 	counts = Counter((floor_to_bucket(moment, bucket), group or "No cluster") for moment, group in events)
 	labels = sorted({moment for moment, _ in counts})
-	groups = ordered_groups(groups, {group for _, group in counts})
+	groups = sorted({group for _, group in counts})
 	return {
 		"title": f"{title} per {bucket // 60} minutes",
 		"data": {
