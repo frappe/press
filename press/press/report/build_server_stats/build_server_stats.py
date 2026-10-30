@@ -472,6 +472,11 @@ def get_clusters():
 	return frappe.get_all("Cluster", {"status": ("!=", "Archived")}, pluck="name", order_by="name asc")
 
 
+def ordered_groups(fixed, found):
+	"""Fixed groups keep their places, so their colours. Groups only in the data go last."""
+	return [*fixed, *sorted(set(found) - set(fixed))]
+
+
 def get_new_bench_jobs_chart(period):
 	jobs = get_new_bench_jobs(period)
 	chart = stacked_chart("New Bench jobs", period.seconds, [(job.creation, job.status) for job in jobs])
@@ -493,23 +498,23 @@ def get_build_duration_by_cluster_chart(window, builds):
 
 def successful_build_spans(builds, group_of):
 	return [
-		(build.creation, (build.build_end - build.build_start).total_seconds(), group_of(build))
+		(build.build_start, (build.build_end - build.build_start).total_seconds(), group_of(build))
 		for build in builds
 		if build.status == "Success" and build.build_end
 	]
 
 
 def median_duration_chart(window, spans, groups=()):
-	"""Spans are (creation, seconds, group). One line per group, of the median minutes per bucket."""
+	"""Spans are (start, seconds, group). One line per group, of the median minutes per bucket."""
 	# ponytail: a bucket without builds reads 0, so a quiet server dips to the floor
 	bucket = max(60, window // 12)
 	seconds = {}
 	for moment, span, group in spans:
 		seconds.setdefault((floor_to_bucket(moment, bucket), group), []).append(span)
 	labels = sorted({label for label, _ in seconds})
-	groups = sorted(set(groups) | {group for _, group in seconds})
+	groups = ordered_groups(groups, {group for _, group in seconds})
 	return {
-		"title": f"Median minutes of successful builds, by creation per {bucket // 60} minutes",
+		"title": f"Median minutes of successful builds, by start per {bucket // 60} minutes",
 		"data": {
 			"labels": [label.strftime("%d %b %H:%M") for label in labels],
 			"datasets": [
@@ -548,7 +553,7 @@ def duration_histogram(title, spans, groups=()):
 	width = max(60, math.ceil(longest / 12 / 60) * 60)
 	counts = Counter((int(seconds // width), group) for seconds, group in spans)
 	bins = range(max((index for index, _ in counts), default=-1) + 1)
-	groups = sorted(set(groups) | {group for _, group in counts})
+	groups = ordered_groups(groups, {group for _, group in counts})
 	return {
 		"title": title,
 		"data": {
@@ -593,7 +598,7 @@ def stacked_chart(title, window, events, groups=()):
 	bucket = max(60, window // 12)
 	counts = Counter((floor_to_bucket(moment, bucket), group or "No cluster") for moment, group in events)
 	labels = sorted({moment for moment, _ in counts})
-	groups = sorted(set(groups) | {group for _, group in counts})
+	groups = ordered_groups(groups, {group for _, group in counts})
 	return {
 		"title": f"{title} per {bucket // 60} minutes",
 		"data": {
