@@ -220,13 +220,6 @@ class EnterpriseContract(Document):
 			frappe.throw("The customer has not entered a UTR yet")
 		self.record_payment(reference=self.transfer_reference)
 
-	@frappe.whitelist()
-	def record_demo_renewal(self):
-		frappe.only_for("System Manager")
-		if not frappe.conf.developer_mode:
-			frappe.throw("Demo renewals only work in developer mode")
-		self.record_payment(reference=f"DEMO-{frappe.generate_hash(length=8).upper()}")
-
 	def next_period_start(self):
 		if not self.payments:
 			return getdate(self.start_date)
