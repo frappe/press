@@ -9,7 +9,11 @@ import frappe
 from frappe.utils import get_url
 
 from press.guards import role_guard
-from press.press.doctype.enterprise_contract.checkout import start_stripe_checkout, stripe_paid_reference
+from press.press.doctype.enterprise_contract.checkout import (
+	paid_checkout_reference,
+	record_paid_checkout,
+	start_stripe_checkout,
+)
 from press.press.doctype.enterprise_contract.enterprise_contract import (
 	EnterpriseContract,
 	bank_transfer_details,
@@ -18,6 +22,8 @@ from press.press.doctype.enterprise_contract.enterprise_contract import (
 )
 from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan import enabled_plans
 from press.utils import get_current_team
+
+ALREADY_PAID = "This order is already paid"
 
 
 @frappe.whitelist()
@@ -36,6 +42,8 @@ def get():
 @role_guard.api("billing")
 def submit(order: dict | str, return_url: str, use_credits: bool = False):
 	team = get_current_team(get_doc=True)
+	if record_awaiting_checkout():
+		return {"checkout_url": None, "message": ALREADY_PAID}
 	contract = create_contract(team, frappe.parse_json(order))
 	if frappe.utils.sbool(use_credits):
 		contract.pay_with_credits()
@@ -48,7 +56,9 @@ def submit(order: dict | str, return_url: str, use_credits: bool = False):
 @frappe.whitelist()
 @role_guard.api("billing")
 def pay(return_url: str):
-	contract = awaiting_payment_contract()
+	contract = awaiting_payment_contract(for_update=True)
+	if record_paid_checkout(contract):
+		return {"checkout_url": None}
 	return {"checkout_url": start_checkout(contract, return_url)}
 
 
@@ -71,7 +81,7 @@ def verify_payment(params: dict | str):
 	contract = EnterpriseContract("Enterprise Contract", name, for_update=True)
 	if contract.status == "Awaiting Payment":
 		validate_online_checkout(contract)
-		reference = stripe_paid_reference(contract, frappe.parse_json(params))
+		reference = paid_checkout_reference(contract, frappe.parse_json(params).get("session_id"))
 		if reference:
 			contract.record_payment(reference=reference)
 	return contract.as_dashboard()
@@ -88,16 +98,32 @@ def submit_transfer_reference(reference: str):
 @frappe.whitelist()
 @role_guard.api("billing")
 def cancel_order():
-	awaiting_payment_contract().cancel_order()
+	contract = awaiting_payment_contract(for_update=True)
+	if record_paid_checkout(contract):
+		return {"message": ALREADY_PAID}
+	contract.cancel_order()
+	return {"message": None}
 
 
 def awaiting_payment_contract(for_update: bool = False) -> EnterpriseContract:
-	name = frappe.db.get_value(
-		"Enterprise Contract", {"team": get_current_team(), "status": "Awaiting Payment"}, "name"
-	)
+	name = awaiting_contract_name()
 	if not name:
 		frappe.throw("No Enterprise order is waiting for payment")
 	return EnterpriseContract("Enterprise Contract", name, for_update=for_update)
+
+
+# Recorded instead of raised, because an error rolls the recorded payment back.
+def record_awaiting_checkout() -> bool:
+	name = awaiting_contract_name()
+	return bool(name) and record_paid_checkout(
+		EnterpriseContract("Enterprise Contract", name, for_update=True)
+	)
+
+
+def awaiting_contract_name() -> str | None:
+	return frappe.db.get_value(
+		"Enterprise Contract", {"team": get_current_team(), "status": "Awaiting Payment"}, "name"
+	)
 
 
 def start_checkout(contract: EnterpriseContract, return_url: str) -> str:

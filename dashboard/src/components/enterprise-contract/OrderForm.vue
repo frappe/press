@@ -153,6 +153,7 @@
 <script setup>
 import { createResource, FormControl, Tooltip } from 'frappe-ui'
 import { computed, reactive, ref } from 'vue'
+import { toast } from 'vue-sonner'
 import { getTeam } from '../../data/team'
 import { dayjsLocal as dayjs } from '../../utils/dayjs'
 import { currency } from '../../utils/format'
@@ -206,8 +207,9 @@ const submit = createResource({
 		return_url: contractsReturnUrl(),
 		use_credits: useCredits.value,
 	}),
-	onSuccess: ({ checkout_url }) => {
+	onSuccess: ({ checkout_url, message }) => {
 		if (checkout_url) return window.location.assign(checkout_url)
+		if (message) toast.info(message)
 		if (useCredits.value) team.reload()
 		emit('placed')
 	},

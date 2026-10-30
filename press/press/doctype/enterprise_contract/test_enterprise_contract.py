@@ -1,13 +1,14 @@
 # Copyright (c) 2026, Frappe and Contributors
 # See license.txt
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, add_years, getdate, today
 
 from press.api.enterprise_contract import validate_return_url
+from press.press.doctype.enterprise_contract.checkout import record_paid_checkout
 from press.press.doctype.enterprise_contract.enterprise_contract import (
 	EnterpriseContract,
 	create_contract,
@@ -37,6 +38,27 @@ def create_team_with_billing_address(country: str):
 		"Team", team.name, {"billing_name": "Acme Industries", "billing_address": address.name}
 	)
 	return team
+
+
+def send_payment_webhook(contract: str, payment_intent: str):
+	event = {
+		"type": "payment_intent.succeeded",
+		"data": {
+			"object": {
+				"id": payment_intent,
+				"amount": 2500000,
+				"created": 1793500000,
+				"metadata": {"payment_for": "enterprise_contract", "enterprise_contract": contract},
+			}
+		},
+	}
+	process_stripe_webhook(frappe._dict(event_type=event["type"], payload=frappe.as_json(event)), None)
+
+
+def patch_stripe_session(**session):
+	stripe = MagicMock()
+	stripe.checkout.Session.retrieve.return_value = frappe._dict(session)
+	return patch("press.press.doctype.enterprise_contract.checkout.get_stripe", return_value=stripe)
 
 
 class EnterpriseContractTestCase(FrappeTestCase):
@@ -260,24 +282,39 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 		self.assertEqual([p["payment_reference"] for p in view["payments"]], ["pay_2", "pay_1"])
 		self.assertEqual(view["next_renewal"]["date"], getdate(add_years(today(), 2)))
 
-	def test_stripe_webhook_for_contract_payment_does_not_add_team_credits(self):
-		frappe.db.set_value("Team", self.team.name, "stripe_customer_id", "cus_enterprise_test")
-		event = {
-			"type": "payment_intent.succeeded",
-			"data": {
-				"object": {
-					"id": "pi_enterprise_test",
-					"customer": "cus_enterprise_test",
-					"amount": 2500000,
-					"created": 1793500000,
-					"metadata": {"payment_for": "enterprise_contract", "enterprise_contract": "EC-00001"},
-				}
-			},
-		}
+	def test_stripe_webhook_records_the_contract_payment_once_and_adds_no_team_credits(self):
+		team = create_team_with_billing_address("United States")
+		contract = create_contract(team, self.make_order())
 
-		process_stripe_webhook(frappe._dict(event_type=event["type"], payload=frappe.as_json(event)), None)
+		send_payment_webhook(contract.name, "pi_enterprise_test")
+		send_payment_webhook(contract.name, "pi_enterprise_test")
 
-		self.assertFalse(frappe.db.exists("Balance Transaction", {"team": self.team.name}))
+		contract.reload()
+		self.assertEqual(contract.status, "Pending Signature")
+		self.assertEqual([p.payment_reference for p in contract.payments], ["pi_enterprise_test"])
+		self.assertFalse(frappe.db.exists("Balance Transaction", {"team": team.name}))
+
+	def test_paid_checkout_and_its_webhook_record_one_payment(self):
+		contract = create_contract(create_team_with_billing_address("United States"), self.make_order())
+		contract.db_set("checkout_reference", "cs_enterprise_test")
+
+		with patch_stripe_session(payment_status="paid", payment_intent="pi_enterprise_test"):
+			self.assertTrue(record_paid_checkout(contract))
+		send_payment_webhook(contract.name, "pi_enterprise_test")
+
+		contract.reload()
+		self.assertEqual(contract.status, "Pending Signature")
+		self.assertEqual([p.payment_reference for p in contract.payments], ["pi_enterprise_test"])
+
+	def test_unpaid_checkout_is_not_recorded_and_the_order_keeps_waiting(self):
+		contract = create_contract(create_team_with_billing_address("United States"), self.make_order())
+		contract.db_set("checkout_reference", "cs_enterprise_test")
+
+		with patch_stripe_session(payment_status="unpaid", payment_intent=None):
+			self.assertFalse(record_paid_checkout(contract))
+
+		self.assertEqual(contract.reload().status, "Awaiting Payment")
+		self.assertFalse(contract.payments)
 
 	def test_return_url_on_another_host_is_rejected(self):
 		with self.assertRaisesRegex(frappe.ValidationError, "Invalid return URL"):
