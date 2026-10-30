@@ -28,6 +28,7 @@ from press.press.report.build_server_stats.build_server_stats import (
 	percentile,
 	seconds_of,
 	spread_colours,
+	time_labels,
 	with_clusters,
 )
 
@@ -139,6 +140,18 @@ class TestBuildsByClusterChart(FrappeTestCase):
 		)
 
 		self.assertEqual(datasets, {"No cluster": [1]})
+
+
+class TestTimeLabels(FrappeTestCase):
+	def test_buckets_on_one_day_show_only_the_time(self):
+		moments = [datetime(2026, 9, 10, 10, 0), datetime(2026, 9, 10, 10, 5)]
+
+		self.assertEqual(time_labels(moments), ["10:00", "10:05"])
+
+	def test_buckets_over_two_days_also_show_the_date(self):
+		moments = [datetime(2026, 9, 10, 18, 0), datetime(2026, 9, 11, 0, 0)]
+
+		self.assertEqual(time_labels(moments), ["10 Sep 18:00", "11 Sep 00:00"])
 
 
 class TestChartColours(FrappeTestCase):
@@ -384,7 +397,7 @@ class TestBuildDurationChart(FrappeTestCase):
 		chart = self.duration_chart("Build Duration by Build Server", builds)
 
 		labels = chart["data"]["labels"]
-		self.assertEqual((len(labels), labels[0], labels[-1]), (12, "10 Sep 10:00", "10 Sep 10:55"))
+		self.assertEqual((len(labels), labels[0], labels[-1]), (12, "10:00", "10:55"))
 		self.assertEqual(
 			self.datasets(chart),
 			{"f1.frappe.cloud": [5.0] + [0] * 11, "f2.frappe.cloud": [30.0, 60.0] + [0] * 10},
