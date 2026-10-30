@@ -78,6 +78,22 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			server.save()
 
+	def test_str_variable_survives_resave_after_value_int_is_hydrated_from_db(self):
+		"""Test that a Str variable's default value_str isn't shadowed by value_int's DB default of 0 on re-save"""
+		server = create_test_database_server()
+		server.append(
+			"mariadb_system_variables",
+			{"mariadb_variable": "local_infile"},
+		)
+		server.save()
+		server.reload()  # value_int is now hydrated to 0 from the DB, not None
+
+		server.mariadb_system_variables[0].persist = True
+		try:
+			server.save()
+		except frappe.ValidationError:
+			self.fail("Re-saving a Str variable should not fail after value_int loads as 0 from the DB")
+
 	def test_only_skippable_variables_can_be_skipped(self):
 		"""Test that only skippable variables can be skipped"""
 		server = create_test_database_server()

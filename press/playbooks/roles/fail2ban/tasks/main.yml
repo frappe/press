@@ -1,38 +1,41 @@
 ---
-- name: Setup Fail2Ban
+- name: Check Fail2Ban Ignore List
+  assert:
+    that: fail2ban_ignore_ips | trim | length > 0
+    fail_msg: 'Pass fail2ban_ignore_ips (press.security.fail2ban.ignore_ips) so that Press, proxies and private networks are never banned.'
+
+- name: Install Fail2Ban
   apt:
     pkg: fail2ban
     state: present
+    update_cache: yes
+
+- name: Remove Old Nginx Jails and Filters
+  file:
+    path: '{{ item }}'
+    state: absent
+  with_items:
+    - /etc/fail2ban/jail.d/nginx.conf
+    - /etc/fail2ban/jail.d/nginx-spam.conf
+    - /etc/fail2ban/filter.d/nginx.conf
+    - /etc/fail2ban/filter.d/nginx-spam.conf
+    - /etc/fail2ban/jail.local
+
+- name: Setup SSH Jail
+  template:
+    src: press-sshd.conf
+    dest: /etc/fail2ban/jail.d/press-sshd.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Check Fail2Ban Configuration
+  command: fail2ban-client --test
 
 - name: Enable Fail2Ban
   service:
     name: fail2ban
     enabled: yes
-
-- name: Copy jail.conf to jail.local
-  copy:
-    src: /etc/fail2ban/jail.conf
-    dest: /etc/fail2ban/jail.local
-    owner: root
-    group: root
-    mode: '0644'
-    remote_src: yes
-
-- name: Setup Filters
-  template:
-    src: 'filters/{{ item }}.conf'
-    dest: '/etc/fail2ban/filter.d/{{ item }}.conf'
-  with_items:
-    - nginx
-    - nginx-spam
-
-- name: Setup Jails
-  template:
-    src: 'jails/{{ item }}.conf'
-    dest: '/etc/fail2ban/jail.d/{{ item }}.conf'
-  with_items:
-    - nginx
-    - nginx-spam
 
 - name: Restart Fail2Ban
   service:

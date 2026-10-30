@@ -7,7 +7,7 @@ from itertools import groupby
 import frappe
 from frappe import _  # Import this for translation functionality
 from frappe.core.utils import find
-from frappe.utils import fmt_money, get_request_site_address
+from frappe.utils import flt, fmt_money, get_request_site_address
 
 from press.api.regional_payments.mpesa.utils import (
 	confirmed_by_mpesa,
@@ -908,6 +908,10 @@ def _validate_razorpay_order_type(transaction_type, amount, doc_name, currency):
 
 def _validate_prepaid_credits(amount, currency):
 	minimum_amount = 100 if currency == "INR" else 5
+	# A paying team may settle a smaller unpaid amount
+	unpaid_amount = flt(total_unpaid_amount(), 2)
+	if unpaid_amount > 0:
+		minimum_amount = min(minimum_amount, unpaid_amount)
 	if amount < minimum_amount:
 		currency_symbol = "₹" if currency == "INR" else "$"
 		frappe.throw(

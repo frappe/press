@@ -73,6 +73,7 @@ class SiteMigration(Document):
 		scheduled_time: DF.Datetime | None
 		site: DF.Link
 		skip_failing_patches: DF.Check
+		skip_migrate: DF.Check
 		source_bench: DF.Link
 		source_cluster: DF.Link
 		source_server: DF.Link
@@ -86,6 +87,10 @@ class SiteMigration(Document):
 		site: Site = frappe.get_doc("Site", self.site)
 		site.check_move_scheduled()
 		site.check_fatal_site_update()
+
+	def validate(self):
+		if self.skip_migrate:
+			self.skip_failing_patches = 1
 
 	def check_for_existing_domains(self):
 		"""
@@ -702,7 +707,9 @@ class SiteMigration(Document):
 				site.remove_dns_record(source_proxy)
 		elif self.is_standalone_migration:
 			site.create_dns_record()
-		return agent.new_site_from_backup(site, skip_failing_patches=self.skip_failing_patches)
+		return agent.new_site_from_backup(
+			site, skip_failing_patches=self.skip_failing_patches, skip_migrate=self.skip_migrate
+		)
 
 	def restore_site_on_destination_proxy(self):
 		"""Restore site on destination proxy"""

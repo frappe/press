@@ -29,6 +29,7 @@ from press.api.marketplace import (
 	get_subscriptions_list,
 	new_app,
 	options_for_quick_install,
+	options_for_version,
 	releases,
 	remove_version,
 	reset_features_for_plan,
@@ -207,14 +208,37 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.assertIsNotNone(get_marketplace_subscriptions_for_site(site.name))
 
 	def test_change_app_plan(self):
-		subscription = create_test_marketplace_app_subscription()
-		new_plan = create_test_marketplace_app_plan()
+		subscription = create_test_marketplace_app_subscription(app="frappe")
+		new_plan = create_test_marketplace_app_plan(price_usd=0)
+		frappe.set_user(frappe.db.get_value("Team", subscription.team, "user"))
 		change_app_plan(subscription.name, new_plan.name)
 
 		self.assertEqual(
 			new_plan.name,
 			frappe.db.get_value("Subscription", subscription.name, "plan"),
 		)
+
+	def test_change_app_plan_blocked_for_other_team(self):
+		subscription = create_test_marketplace_app_subscription(app="frappe")
+		new_plan = create_test_marketplace_app_plan(price_usd=0)
+		frappe.set_user(create_test_press_admin_team().user)
+
+		with self.assertRaises(frappe.PermissionError):
+			change_app_plan(subscription.name, new_plan.name)
+
+		self.assertEqual(
+			subscription.plan,
+			frappe.db.get_value("Subscription", subscription.name, "plan"),
+		)
+
+	def test_change_app_plan_rejects_plan_of_another_app(self):
+		subscription = create_test_marketplace_app_subscription(app="frappe")
+		other_app = create_test_app(frappe.mock("name"), frappe.mock("name"))
+		other_plan = create_test_marketplace_app_plan(other_app.name, price_usd=0)
+		frappe.set_user(frappe.db.get_value("Team", subscription.team, "user"))
+
+		with self.assertRaises(frappe.ValidationError):
+			change_app_plan(subscription.name, other_plan.name)
 
 	def test_get_subscription_list(self):
 		self.assertEqual([], get_subscriptions_list("frappe"))
@@ -383,6 +407,27 @@ class TestAPIMarketplace(FrappeTestCase):
 		)
 		results = branches(self.app_source.name)
 		self.assertEqual(len(results), 2)
+
+	@responses.activate
+	def test_options_for_version_lists_source_branches_for_team_user(self):
+		if not frappe.db.exists("Frappe Version", "Version 99"):
+			frappe.get_doc({"doctype": "Frappe Version", "name": "Version 99", "number": 99}).insert()
+		frappe.db.set_value("Frappe Version", "Version 99", "public", 1)
+		frappe.set_user(self.team.user)
+		responses.get(
+			url=f"https://api.github.com/repos/{self.app_source.repository_owner}/{self.app_source.repository}/branches?per_page=100&page=1",
+			json=PAYLOAD,
+			status=200,
+			headers={},
+		)
+		options = {
+			option["version"]: option["branch"] for option in options_for_version(self.marketplace_app.name)
+		}
+		owner, repository = self.app_source.repository_owner, self.app_source.repository
+		self.assertCountEqual(
+			options["Version 99"],
+			[f"{owner}/{repository}/develop", f"{owner}/{repository}/enterprise-staging"],
+		)
 
 	def test_update_app_image_by_owner(self):
 		frappe.set_user(self.team.user)

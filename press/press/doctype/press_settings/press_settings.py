@@ -2,15 +2,19 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import secrets
+
 import boto3
 import frappe
 from boto3.session import Session
 from frappe.model.document import Document
 from frappe.utils import get_url, validate_email_address
+from frappe.utils.password import set_encrypted_password
 from twilio.rest import Client
 
 from press.api.billing import get_stripe
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
+from press.security import fail2ban
 from press.telegram_utils import Telegram
 
 
@@ -158,6 +162,7 @@ class PressSettings(Document):
 		erpnext_plan: DF.Link | None
 		erpnext_url: DF.Data | None
 		execute_incident_action: DF.Check
+		fail2ban_ignore_ips: DF.SmallText | None
 		frappe_url: DF.Data | None
 		frappeio_api_key: DF.Data | None
 		frappeio_api_secret: DF.Password | None
@@ -179,7 +184,8 @@ class PressSettings(Document):
 		ic_key: DF.Password | None
 		latest_blog_url: DF.Data | None
 		log_server: DF.Link | None
-		mailgun_api_key: DF.Data | None
+		mailgun_api_key: DF.Password | None
+		mailgun_webhook_signing_key: DF.Password | None
 		max_allowed_screenshots: DF.Int
 		max_concurrent_physical_restorations: DF.Int
 		max_failed_backup_attempts_in_a_day: DF.Int
@@ -250,8 +256,9 @@ class PressSettings(Document):
 		suspend_builds: DF.Check
 		telegram_alert_chat_id: DF.Data | None
 		telegram_alerts_chat_group: DF.Link | None
-		telegram_bot_token: DF.Data | None
+		telegram_bot_token: DF.Password | None
 		telegram_chat_id: DF.Data | None
+		telegram_webhook_secret: DF.Password | None
 		threshold: DF.Float
 		tls_renewal_queue_size: DF.Int
 		trial_sites_count: DF.Int
@@ -283,6 +290,8 @@ class PressSettings(Document):
 	)
 
 	def validate(self):
+		fail2ban.validate_ips(self.fail2ban_ignore_ips)
+
 		if self.max_concurrent_physical_restorations > 5:
 			frappe.throw("Please set Max Concurrent Physical Restorations to less than 5.")
 
@@ -325,6 +334,14 @@ class PressSettings(Document):
 		self.stripe_webhook_secret = webhook["secret"]
 		self.flags.ignore_mandatory = True
 		self.save()
+
+	@frappe.whitelist()
+	def set_telegram_webhook(self):
+		# Store first, so that a failed registration rolls the secret back with the request
+		secret = secrets.token_urlsafe(32)
+		set_encrypted_password(self.doctype, self.name, secret, "telegram_webhook_secret")
+		frappe.db.set_single_value(self.doctype, "telegram_webhook_secret", "*" * len(secret))
+		Telegram().set_webhook(secret)
 
 	@frappe.whitelist()
 	def get_github_app_manifest(self):

@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from press.api.account import send_otp, verify_otp, verify_otp_and_login
+from press.api.account import send_login_link, send_otp, verify_otp, verify_otp_and_login
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.utils import otp as otp_purpose
@@ -124,9 +124,39 @@ class TestLoginOtp(FrappeTestCase):
 		with self.assertRaisesRegex(Exception, "Invalid Email"):
 			send_otp(["someone@example.com"])
 
-	def test_send_otp_still_refuses_an_address_with_no_user(self, send_otp_mail):
-		with self.assertRaisesRegex(Exception, "Please sign up first"):
-			send_otp("no-such-person@example.com")
+	def test_send_otp_answers_an_unknown_address_like_a_known_one_without_mailing(self, send_otp_mail):
+		"""A different answer for an unknown address tells a caller who has an account."""
+		self.assertIsNone(send_otp(f"no-such-person-{frappe.generate_hash(length=8)}@example.com"))
+		send_otp_mail.assert_not_called()
+
+	def test_send_otp_throttles_an_unknown_address_like_a_known_one(self, send_otp_mail):
+		"""Only throttling known addresses would turn the wait message into the oracle."""
+		email = f"no-such-person-{frappe.generate_hash(length=8)}@example.com"
+		send_otp(email)
+
+		with self.assertRaisesRegex(Exception, "Please wait for 30 seconds"):
+			send_otp(email)
+
+	def test_send_otp_issues_no_login_code_for_an_unknown_address(self, send_otp_mail):
+		email = f"no-such-person-{frappe.generate_hash(length=8)}@example.com"
+		send_otp(email)
+
+		self.assertIsNone(frappe.cache.get(OneTimePassword(otp_purpose.LOGIN, email).key))
+
+	@patch("press.api.account.send_mail_in_background")
+	def test_send_login_link_answers_an_unknown_address_silently(self, send_mail, send_otp_mail):
+		self.assertIsNone(send_login_link("no-such-person@example.com"))
+		send_mail.assert_not_called()
+
+	@patch("press.api.account.frappe.enqueue")
+	@patch("press.api.account.frappe.sendmail")
+	def test_send_login_link_delivers_mail_outside_the_request(self, sendmail, enqueue, send_otp_mail):
+		"""Delivering in the request makes a known address measurably slower to answer."""
+		send_login_link(self.team.user)
+
+		sendmail.assert_not_called()
+		self.assertEqual(enqueue.call_args.args[0], "press.api.account.send_mail_now")
+		self.assertEqual(enqueue.call_args.kwargs["recipients"], self.team.user)
 
 	def test_a_second_code_within_thirty_seconds_is_refused(self, send_otp_mail):
 		send_otp(self.team.user)

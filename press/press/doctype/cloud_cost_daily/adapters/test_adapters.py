@@ -52,7 +52,7 @@ def hetzner_server(outgoing_traffic, included_traffic):
 				}
 			],
 		),
-		datacenter=Bag(location=Bag(name="fsn1")),
+		location=Bag(name="fsn1"),
 		outgoing_traffic=outgoing_traffic,
 		included_traffic=included_traffic,
 	)

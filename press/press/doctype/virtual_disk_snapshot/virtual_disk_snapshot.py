@@ -689,25 +689,17 @@ def delete_duplicate_snapshot_docs(snapshot):
 					"database_server_snapshot",
 				)
 
+		VirtualDiskSnapshot = frappe.qb.DocType("Virtual Disk Snapshot")
+		query = (
+			frappe.qb.from_(VirtualDiskSnapshot)
+			.delete()
+			.where(VirtualDiskSnapshot.snapshot_id == snapshot_id)
+		)
 		if snapshot_to_keep:
-			frappe.db.sql(
-				"""
-					DELETE
-					FROM `tabVirtual Disk Snapshot`
-					WHERE snapshot_id=%s AND name!=%s
-				""",
-				(snapshot_id, snapshot_to_keep),
-			)
+			query = query.where(VirtualDiskSnapshot.name != snapshot_to_keep)
 		else:
-			frappe.db.sql(
-				"""
-					DELETE
-					FROM `tabVirtual Disk Snapshot`
-					WHERE snapshot_id=%s
-					LIMIT %s
-				""",
-				(snapshot_id, snapshot_count - 1),
-			)
+			query = query.limit(snapshot_count - 1)
+		query.run()
 
 
 def _update_snapshot_if_exists(snapshot, random_snapshot):

@@ -10,6 +10,9 @@
 
 ## Pull requests
 
+Open pull requests against the `develop` branch, not `master`. Add the
+`backport-master` label to each pull request.
+
 Never hard-wrap the PR description at 80 characters, or at any width. GitHub
 renders the description as markdown and wraps it for the reader. Hand-wrapped
 lines break when the reader changes the width of the box, and they are hard to

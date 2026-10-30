@@ -78,9 +78,13 @@ class OneTimePassword:
 			code = "111111"
 
 		frappe.cache.set(self.key, self.hashed(code), ex=self.expires_in)
-		frappe.cache.set(self.resend_key, 1, ex=RESEND_AFTER)
+		self.hold_resend()
 
 		return code
+
+	def hold_resend(self):
+		"""Refuse another code to this identifier for the next RESEND_AFTER seconds."""
+		frappe.cache.set(self.resend_key, 1, ex=RESEND_AFTER)
 
 	def verify(self, code: str | int) -> bool:
 		"""Whether the code is the one currently issued. Claims nothing."""

@@ -8,6 +8,7 @@ import frappe
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
 
 
@@ -46,8 +47,6 @@ class AnalyticsServer(BaseServer):
 		virtual_machine: DF.Link | None
 		wazuh_agent_status: DF.Data | None
 		wazuh_install_last_attempt: DF.Datetime | None
-		is_yara_installed: DF.Check
-		yara_install_last_attempt: DF.Datetime | None
 	# end: auto-generated types
 
 	def validate(self):
@@ -81,6 +80,7 @@ class AnalyticsServer(BaseServer):
 				playbook="analytics.yml",
 				server=self,
 				variables={
+					"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 					"server": self.name,
 					"workers": 1,
 					"domain": self.domain,

@@ -500,12 +500,9 @@ def analytics(name, query, timezone, start, end, server_type=None):
 			lambda x: x["command"],
 		),
 		"database_connections": (
-			f"""{{__name__=~"mysql_global_status_threads_connected|mysql_global_variables_max_connections", instance="{name}"}}""",
-			lambda x: (
-				"Max Connections"
-				if x["__name__"] == "mysql_global_variables_max_connections"
-				else "Connected Clients"
-			),
+			# peak over the bucket, else a burst that hits max_connections between steps is invisible
+			f"""label_replace(max_over_time(mysql_global_status_threads_connected{{instance="{name}",job="mariadb"}}[{rate_interval}s]), "metric", "Connected Clients", "", "") or label_replace(mysql_global_variables_max_connections{{instance="{name}",job="mariadb"}}, "metric", "Max Connections", "", "")""",
+			lambda x: x["metric"],
 		),
 		"innodb_bp_size": (
 			f"""mysql_global_variables_innodb_buffer_pool_size{{instance='{name}'}}""",

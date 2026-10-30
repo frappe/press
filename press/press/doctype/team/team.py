@@ -12,10 +12,11 @@ from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.core.utils import find
 from frappe.model.document import Document
-from frappe.query_builder.functions import Count
+from frappe.query_builder.functions import Count, GroupConcat
 from frappe.rate_limiter import rate_limit
 from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_form, getdate, random_string
 
+from press.access.utils import is_outside_employee
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
 from press.guards.team_guard import only_admin
@@ -747,6 +748,7 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
+		frappe.only_for(["Partner Manager", "System Manager"], message=True)
 		self.erpnext_partner = 1
 		if not self.partner_email:
 			self.partner_email = self.user
@@ -755,7 +757,9 @@ class Team(Document):
 		self.partner_status = "Active"
 		self.save(ignore_permissions=True)
 		self.create_partner_referral_code()
-		frappe.get_doc("User", self.user).add_roles("Partner")
+		user = frappe.get_doc("User", self.user)
+		user.append_roles("Partner")
+		user.save(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
@@ -1227,6 +1231,11 @@ class Team(Document):
 
 		if not is_system_user() and frappe.session.user != self.user and not has_admin_access.run():
 			frappe.throw(_("Only team owner or admins can invite team members"))
+
+		if is_outside_employee(self.name):
+			frappe.throw(
+				_("Employees cannot invite members to a team they do not belong to"), frappe.PermissionError
+			)
 
 		frappe.utils.validate_email_address(email, True)
 
@@ -1776,24 +1785,24 @@ def get_team_members(team):
 
 	users = []
 	if member_emails:
-		users = frappe.db.sql(
-			"""
-				select
-					u.name,
-					u.first_name,
-					u.last_name,
-					u.full_name,
-					u.user_image,
-					u.name as email,
-					GROUP_CONCAT(r.`role`) as roles
-				from `tabUser` u
-				left join `tabHas Role` r
-				on (r.parent = u.name)
-				where u.name in %s
-				group by u.name
-			""",
-			[member_emails],
-			as_dict=True,
+		User = frappe.qb.DocType("User")
+		HasRole = frappe.qb.DocType("Has Role")
+		users = (
+			frappe.qb.from_(User)
+			.left_join(HasRole)
+			.on(HasRole.parent == User.name)
+			.select(
+				User.name,
+				User.first_name,
+				User.last_name,
+				User.full_name,
+				User.user_image,
+				User.name.as_("email"),
+				GroupConcat(HasRole.role).as_("roles"),
+			)
+			.where(User.name.isin(member_emails))
+			.groupby(User.name)
+			.run(as_dict=True)
 		)
 		for user in users:
 			user.roles = (user.roles or "").split(",")
@@ -1813,15 +1822,13 @@ def get_child_team_members(team):
 
 	child_teams = []
 	if child_team_members:
-		child_teams = frappe.db.sql(
-			"""
-				select t.name, t.team_title, t.parent_team, t.user
-				from `tabTeam` t
-				where t.name in %s
-				and t.enabled = 1
-			""",
-			[child_team_members],
-			as_dict=True,
+		Team = frappe.qb.DocType("Team")
+		child_teams = (
+			frappe.qb.from_(Team)
+			.select(Team.name, Team.team_title, Team.parent_team, Team.user)
+			.where(Team.name.isin(child_team_members))
+			.where(Team.enabled == 1)
+			.run(as_dict=True)
 		)
 
 	return child_teams

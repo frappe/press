@@ -102,10 +102,12 @@ SERVER_METRICS: dict[str, dict[str, str]] = {
 		"source": "prometheus",
 		"job": "mariadb",
 		"query": (
-			'{__name__=~"mysql_global_status_threads_connected|mysql_global_variables_max_connections", '
-			'instance="$server"}'
+			'label_replace(max_over_time(mysql_global_status_threads_connected{instance="$server",job="mariadb"}[$step]), '
+			'"metric", "Connected Clients", "", "") or label_replace('
+			'mysql_global_variables_max_connections{instance="$server",job="mariadb"}, '
+			'"metric", "Max Connections", "", "")'
 		),
-		"group_by": "__name__",
+		"group_by": "metric",
 	},
 	"innodb_bp_size": {
 		"name": "InnoDB buffer pool size",

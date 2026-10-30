@@ -84,6 +84,7 @@ repos:
             types-stripe~=3.5.2,
             types-oauthlib~=3.3,
             types-passlib~=1.7,
+            types-PyYAML~=6.0,
           ]
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0

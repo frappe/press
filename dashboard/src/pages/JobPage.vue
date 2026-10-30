@@ -107,7 +107,7 @@ import AlertAddressableError from '../components/AlertAddressableError.vue'
 import JobStep from '../components/JobStep.vue'
 import { getObject } from '../objects'
 import { confirmDialog } from '../utils/components'
-import { duration } from '../utils/format'
+import { finishedDuration } from '../utils/format'
 import { getToastErrorMessage } from '../utils/toast'
 
 // Keep in sync with DASHBOARD_CANCELLABLE_JOB_TYPES in agent_job.py
@@ -131,7 +131,7 @@ export default {
 				transform(job) {
 					for (let step of job.steps) {
 						step.title = step.step_name
-						step.duration = duration(step.duration)
+						step.duration = finishedDuration(step.duration, step.status)
 						step.isOpen =
 							this.job?.steps?.find((s) => s.name === step.name)?.isOpen ||
 							false
@@ -230,7 +230,7 @@ export default {
 			if (data.id === this.id) {
 				data.steps = data.steps.map((step) => {
 					step.title = step.step_name
-					step.duration = duration(step.duration)
+					step.duration = finishedDuration(step.duration, step.status)
 					step.isOpen =
 						this.job?.steps?.find((s) => s.name === step.name)?.isOpen || false
 					return step
@@ -254,18 +254,19 @@ export default {
 	},
 	methods: {
 		confirmCancel() {
-			const warning =
-				this.job.job_type === 'Update Site Migrate'
-					? '<br><br>The update will be marked as failed and a recovery job will restore the backup and roll the site back to the previous bench.'
-					: ''
+			// a cancelled site update rolls itself back, so it isn't destructive
+			const isSiteUpdate = this.job.job_type === 'Update Site Migrate'
+			const message = isSiteUpdate
+				? 'The migration will stop and the site will roll back to how it was before the update. The database is restored from the backup taken before the update, and the site moves back to its previous bench.<br><br>You can update the site again later.'
+				: `Are you sure you want to cancel this <b>${this.job.job_type}</b> job?<br><br>It will stop midway and <b>can't be resumed</b>.`
 
 			confirmDialog({
 				title: 'Cancel Job',
-				message: `Are you sure you want to cancel this <b>${this.job.job_type}</b> job?<br><br>It will stop midway and <b>can't be resumed</b>.${warning}`,
+				message,
 				primaryAction: {
 					label: 'Cancel Job',
 					variant: 'solid',
-					theme: 'red',
+					theme: isSiteUpdate ? 'gray' : 'red',
 					onClick: ({ hide }) => {
 						toast.promise(this.$resources.cancelJob.submit(), {
 							loading: 'Cancelling job...',

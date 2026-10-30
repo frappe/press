@@ -99,6 +99,8 @@ class Incident(WebsiteGenerator):
 		confirmed_at: DF.Datetime | None
 		corrective_suggestions: DF.Table[IncidentSuggestion]
 		description: DF.TextEditor | None
+		ignore_reason: DF.SmallText | None
+		ignored: DF.Check
 		investigation: DF.Link | None
 		likely_cause: DF.Text | None
 		phone_call: DF.Check
@@ -455,6 +457,46 @@ class Incident(WebsiteGenerator):
 		self.save()
 
 	@frappe.whitelist()
+	def ignore(self, reason: str):
+		"""Stop calling the team for this incident; customers see and hear about it as usual"""
+		self.check_permission("write")
+		if not (reason := reason.strip()):
+			frappe.throw("Please give a reason for ignoring this incident.")
+		self.ignored = True
+		self.ignore_reason = reason
+		self.save()
+		self.add_comment("Comment", f"Ignored incident: {reason}")
+
+	@frappe.whitelist()
+	def stop_ignoring(self, reason: str):
+		"""Resume calling the team for this incident"""
+		self.check_permission("write")
+		if not (reason := reason.strip()):
+			frappe.throw("Please give a reason for no longer ignoring this incident.")
+		if not self.ignored:
+			frappe.throw("This incident is not being ignored. Reload the page to see its current state.")
+		# Repeat calls are timed from modified, which save() resets, so check before saving
+		call_due = self.time_to_call_for_help or self.time_to_call_for_help_again
+		self.ignored = False
+		self.ignore_reason = None
+		self.save()
+		self.add_comment("Comment", f"Stopped ignoring incident: {reason}")
+		if call_due and self.waited_enough_for_investigator_reactions:
+			self.call_humans()
+
+	@frappe.whitelist()
+	def send_custom_email(self, subject: str, message: str):
+		"""Email a hand-written update to the server's incident contacts"""
+		self.check_permission("write")
+		if not get_communication_info("Email", "Server Activity", "Server", self.server):
+			frappe.throw(
+				"No one is set up to receive emails for this server. "
+				"Add a Server Activity email to the server's or its team's communication info."
+			)
+		self.send_mail(subject, message, raise_exception=True)
+		self.add_comment("Comment", f"Sent email <b>{frappe.utils.escape_html(subject)}</b><br>{message}")
+
+	@frappe.whitelist()
 	def cancel_stuck_jobs(self):
 		"""
 		During db reboot/upgrade some jobs tend to get stuck. This is a hack to cancel those jobs
@@ -644,7 +686,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		return acknowledged
 
 	def _call_humans(self):
-		if not self.phone_call or not self.global_phone_call_enabled:
+		if self.ignored or not self.phone_call or not self.global_phone_call_enabled:
 			return
 		if (
 			ignore_till := frappe.db.get_value("Server", self.server, "ignore_incidents_till")
@@ -692,7 +734,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		"""
 		self.send_mail(subject, message)
 
-	def send_mail(self, subject: str, message: str):
+	def send_mail(self, subject: str, message: str, raise_exception: bool = False):
 		try:
 			frappe.sendmail(
 				recipients=get_communication_info("Email", "Server Activity", "Server", self.server),
@@ -708,6 +750,8 @@ Likely due to insufficient balance or incorrect credentials""",
 			)
 
 		except Exception:
+			if raise_exception:
+				raise
 			# Swallow the exception to avoid breaking the Incident creation
 			log_error("Incident Notification Email Failed")
 
@@ -726,6 +770,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		message = self.get_email_message()
 		self.send_mail(subject, message)
 
+	@frappe.whitelist()
 	def get_email_subject(self):
 		title = str(frappe.db.get_value("Server", self.server, "title"))
 		name = title.removesuffix(" - Application") or self.server
@@ -901,13 +946,15 @@ Likely due to insufficient balance or incorrect credentials""",
 
 	@property
 	def time_to_call_for_help(self) -> bool:
-		return self.status == "Confirmed" and frappe.utils.now_datetime() - self.creation > timedelta(
+		creation = frappe.utils.get_datetime(self.creation)  # a str when the doc comes from the Desk form
+		return self.status == "Confirmed" and frappe.utils.now_datetime() - creation > timedelta(
 			seconds=get_confirmation_threshold_duration() + get_call_threshold_duration()
 		)
 
 	@property
 	def time_to_call_for_help_again(self) -> bool:
-		return self.status == "Acknowledged" and frappe.utils.now_datetime() - self.modified > timedelta(
+		modified = frappe.utils.get_datetime(self.modified)  # a str when the doc comes from the Desk form
+		return self.status == "Acknowledged" and frappe.utils.now_datetime() - modified > timedelta(
 			seconds=get_call_repeat_interval()
 		)
 
@@ -987,6 +1034,8 @@ def resolve_incidents():
 	for incident_name in ongoing_incidents:
 		incident = Incident("Incident", incident_name)
 		incident.check_resolved()
+		if incident.ignored:
+			continue
 		if (
 			incident.time_to_call_for_help or incident.time_to_call_for_help_again
 		) and incident.waited_enough_for_investigator_reactions:

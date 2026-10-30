@@ -147,6 +147,21 @@ class TestServerAnalyticsQuery(FrappeTestCase):
 		self.assertIn("[240s]", query)
 		self.assertNotIn("[90s]", query)
 
+	def test_connections_chart_plots_the_peak_of_each_step_not_a_point_sample(self):
+		# A burst that hits max_connections for a few seconds fell between the
+		# ~10 minute steps of a 3 day chart, so the chart showed no spike at all.
+		start = datetime(2024, 1, 1, 0, 0, 0)
+		end = start + timedelta(days=3)
+
+		query = self._capture_query(start, end, "database_connections")
+
+		window = get_rate_interval(prometheus_timegrain(start, end))
+		self.assertIn("max_over_time(mysql_global_status_threads_connected", query)
+		self.assertIn(f"[{window}s]", query)
+		label = self.captured["function"]
+		self.assertEqual(label({"metric": "Connected Clients"}), "Connected Clients")
+		self.assertEqual(label({"metric": "Max Connections"}), "Max Connections")
+
 	def test_rate_charts_never_use_a_sub_scrape_window(self):
 		start = datetime(2024, 1, 1, 0, 0, 0)
 		for chart in ("cpu", "network", "iops", "database_commands_count"):

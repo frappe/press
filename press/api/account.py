@@ -13,6 +13,7 @@ from frappe import _
 from frappe.core.doctype.user.user import update_password
 from frappe.core.utils import find
 from frappe.exceptions import DoesNotExistError
+from frappe.query_builder.custom import ConstantColumn
 from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, get_url
 from frappe.utils.data import sha256_hash
@@ -176,15 +177,15 @@ def resend_otp(account_request: str):
 @rate_limit(limit=5, seconds=60)
 def send_otp(email: str, for_2fa_keys: bool = False):
 	email = canonical_login_email(email)
-	# Logging in asks whether the account exists, not how it came to. Requiring an
-	# Account Request locked out everyone whose signup record was never written or
-	# had since been cleaned up.
-	if not frappe.db.exists("User", email):
-		frappe.throw("Please sign up first")
-
 	purpose = otp_purpose.TWO_FACTOR_RECOVERY if for_2fa_keys else otp_purpose.LOGIN
 	code = OneTimePassword(purpose, email)
 	throttle_otp(code)
+
+	# Answer an unknown address the same way, throttle included, so the response
+	# does not tell a caller which addresses have accounts.
+	if not frappe.db.exists("User", email):
+		code.hold_resend()
+		return
 
 	send_otp_mail(email, code.generate(), for_login=not for_2fa_keys)
 
@@ -211,13 +212,16 @@ def send_otp_mail(email: str, otp: str, for_login: bool = True):
 		template = "2fa_recovery_codes_otp"
 		subject = f"{otp} - OTP to view 2FA recovery codes for Frappe Cloud"
 
-	frappe.sendmail(
-		recipients=email,
-		subject=subject,
-		template=template,
-		args={"otp": otp},
-		now=True,
-	)
+	send_mail_in_background(recipients=email, subject=subject, template=template, args={"otp": otp})
+
+
+def send_mail_in_background(**kwargs):
+	"""Keep delivery off the request, or how long it takes reveals that the account exists."""
+	frappe.enqueue("press.api.account.send_mail_now", queue="short", enqueue_after_commit=True, **kwargs)
+
+
+def send_mail_now(**kwargs):
+	frappe.sendmail(**kwargs, now=True)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -357,8 +361,9 @@ def add_invited_member_to_team(account_request):
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
 def send_login_link(email):
+	# Silent for an unknown address, so the response does not reveal accounts.
 	if not frappe.db.exists("User", email):
-		frappe.throw("No registered account with this email address")
+		return
 
 	key = frappe.generate_hash("Login Link", 20)
 	minutes = 10
@@ -372,12 +377,11 @@ def send_login_link(email):
 		print(link)
 		print()
 
-	frappe.sendmail(
+	send_mail_in_background(
 		subject="Login to Frappe Cloud",
 		recipients=email,
 		template="one_time_login_link",
 		args={"link": link, "minutes": minutes},
-		now=True,
 	)
 
 
@@ -1169,28 +1173,29 @@ def me():
 @frappe.whitelist()
 def fuse_list():
 	team = get_current_team(get_doc=True)
-	query = f"""
-		SELECT
-			'Site' as doctype, name as title, name as route
-		FROM
-			`tabSite`
-		WHERE
-			team = '{team.name}' AND status NOT IN ('Archived')
-		UNION ALL
-		SELECT 'Bench' as doctype, title as title, name as route
-		FROM
-			`tabRelease Group`
-		WHERE
-			team = '{team.name}' AND enabled = 1
-		UNION ALL
-		SELECT 'Server' as doctype, name as title, name as route
-		FROM
-			`tabServer`
-		WHERE
-			team = '{team.name}' AND status = 'Active'
-	"""
-
-	return frappe.db.sql(query, as_dict=True)
+	Site = frappe.qb.DocType("Site")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	Server = frappe.qb.DocType("Server")
+	sites = (
+		frappe.qb.from_(Site)
+		.select(ConstantColumn("Site").as_("doctype"), Site.name.as_("title"), Site.name.as_("route"))
+		.where((Site.team == team.name) & (Site.status != "Archived"))
+	)
+	benches = (
+		frappe.qb.from_(ReleaseGroup)
+		.select(
+			ConstantColumn("Bench").as_("doctype"),
+			ReleaseGroup.title.as_("title"),
+			ReleaseGroup.name.as_("route"),
+		)
+		.where((ReleaseGroup.team == team.name) & (ReleaseGroup.enabled == 1))
+	)
+	servers = (
+		frappe.qb.from_(Server)
+		.select(ConstantColumn("Server").as_("doctype"), Server.name.as_("title"), Server.name.as_("route"))
+		.where((Server.team == team.name) & (Server.status == "Active"))
+	)
+	return sites.union_all(benches).union_all(servers).run(as_dict=True)
 
 
 @frappe.whitelist()
@@ -1363,7 +1368,10 @@ def disable_2fa(totp_code):
 		frappe.throw(f"2FA is not enabled for {frappe.session.user}")
 
 	if pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
-		frappe.db.set_value("User 2FA", frappe.session.user, "enabled", 0)
+		# Save the doc, not set_value, so the version log records it
+		two_fa = frappe.get_doc("User 2FA", frappe.session.user)
+		two_fa.enabled = 0
+		two_fa.save()
 	else:
 		frappe.throw(
 			f"The code is incorrect or has expired. Please enter the current 6-digit code from your authenticator app. {docs.doc_link(docs.TWO_FACTOR_AUTH)}."
