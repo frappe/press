@@ -163,7 +163,11 @@ import { contractsReturnUrl } from './checkout'
 import { formatDate } from './format'
 import OrderSummary from './OrderSummary.vue'
 
-const props = defineProps({ plans: { type: Array, required: true } })
+const props = defineProps({
+	plans: { type: Array, required: true },
+	// Purchased credits only; free credits do not pay for a contract.
+	creditBalance: { type: Number, default: 0 },
+})
 const emit = defineEmits(['placed'])
 
 const team = getTeam()
@@ -177,11 +181,11 @@ const hasBillingAddress = computed(() =>
 )
 // Credits pay the full year only; part payments are not allowed.
 const canUseCredits = computed(
-	() => (team.doc.balance || 0) >= plan.value.amount_due_with_credits.total,
+	() => props.creditBalance >= plan.value.amount_due_with_credits.total,
 )
 const paymentMethods = computed(() => {
 	const isIndia = plan.value.currency === 'INR'
-	const balance = currency(team.doc.balance, plan.value.currency, 0)
+	const balance = currency(props.creditBalance, plan.value.currency, 0)
 	return [
 		{
 			credits: false,
