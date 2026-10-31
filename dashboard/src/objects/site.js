@@ -116,6 +116,8 @@ export default {
 		removeTag: 'remove_resource_tag',
 		getBackupDownloadLink: 'get_backup_download_link',
 		getBackupSchedule: 'get_backup_schedule',
+		getLocalBackups: 'get_local_backups',
+		deleteLocalBackups: 'delete_local_backups',
 		updateBackupSchedule: 'update_backup_schedule',
 		fetchDatabaseTableSchemas: 'fetch_database_table_schemas',
 		fetchSitesDataForExport: 'fetch_sites_data_for_export',

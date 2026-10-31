@@ -1274,6 +1274,14 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			return result["data"]
 		return None
 
+	def list_local_backups(self, site):
+		return self.get(f"benches/{site.bench}/sites/{site.name}/backups/local")["data"]
+
+	def delete_local_backups(self, site, files: list[str]):
+		return self.delete(f"benches/{site.bench}/sites/{site.name}/backups/local", data={"files": files})[
+			"data"
+		]
+
 	def get_sites_analytics(self, bench):
 		return self.get(f"benches/{bench.name}/analytics")
 

@@ -52,6 +52,7 @@ class SiteActivity(Document):
 			"Access Offsite Backups",
 			"Authorize Backup Access",
 			"Archive Notification",
+			"Drop Local Backups",
 		]
 		job: DF.Link | None
 		reason: DF.SmallText | None
