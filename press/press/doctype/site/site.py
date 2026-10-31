@@ -6119,6 +6119,8 @@ def archive_creation_failed_sites():
 		["creation_failed", "!=", None],
 		["creation_failed", "<", creation_failure_retention_date],
 		["status", "=", "Broken"],
+		# archive_broken_standby_sites archives these without the backup that fails on them
+		["is_standby", "=", 0],
 	]
 
 	failed_sites = frappe.db.get_all("Site", filters=filters, fields=["name"], pluck="name")
