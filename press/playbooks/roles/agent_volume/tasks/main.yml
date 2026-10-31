@@ -15,8 +15,21 @@
 - name: Move Agent To Its Own Volume
   when: bench_volume.rc != 0 and agent_volume.rc != 0
   block:
+    - name: Measure Agent Directory
+      command: du -sxB1 /home/frappe/agent
+      register: agent_directory
+      changed_when: false
+
+    # Fails before the agent stops, so a copy cannot run out of space and leave the agent down
+    - name: Refuse An Agent Directory Too Large For The Agent Volume
+      vars:
+        agent_directory_size: '{{ agent_directory.stdout.split()[0] | int }}'
+      assert:
+        that: (agent_directory_size | int) <= 5 * 1073741824 * 0.8
+        fail_msg: 'The agent directory is {{ ((agent_directory_size | int) / 1073741824) | round(1) }}G. It must be 4G or less to fit in the 5G agent volume.'
+
     - name: Allocate Agent Volume Image
-      command: fallocate -l 8G /home/frappe/agent.img
+      command: fallocate -l 5G /home/frappe/agent.img
       args:
         creates: /home/frappe/agent.img
 
