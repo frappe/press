@@ -17,6 +17,7 @@ from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
 from frappe.utils import get_timedelta
 
+from press.ansible_setup import use_callback
 from press.press.doctype.virtual_machine.virtual_machine import SERIES_TO_SERVER_TYPE
 from press.utils import reconnect_on_failure
 
@@ -101,8 +102,8 @@ class AnsibleCallback(CallbackBase):
 		self.publish_update()
 
 	def parse_result(self, result):
-		host = result._host.get_name()
-		_result = result._result
+		host = result.host.get_name()
+		_result = result.result
 		return host, frappe._dict(
 			{
 				"output": _result.get("stdout"),
@@ -175,9 +176,9 @@ class AnsibleAdHoc:
 			variable_manager=self.variable_manager,
 			loader=self.loader,
 			passwords=self.passwords,
-			stdout_callback=self.callback,
 			forks=16,
 		)
+		use_callback(tqm, self.callback)
 
 		try:
 			tqm.run(self.play)

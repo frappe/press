@@ -20,9 +20,9 @@ from ansible.plugins.callback import CallbackBase
 from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
-from frappe.utils import cstr
 from frappe.utils import now_datetime as now
 
+from press.ansible_setup import use_callback
 from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 
 if typing.TYPE_CHECKING:
@@ -50,12 +50,12 @@ def _patched_action_module_run(*args, **kwargs):
 	return result
 
 
-def _patched_poll_async_result(executor, result, templar, task_vars=None):
+def _patched_poll_async_result(executor, utr, templar, task_vars):
 	current_ansible = _get_current_ansible()
 	if current_ansible:
 		task = executor._task
-		current_ansible.callback.on_async_start(task._role.get_name(), task.name, result["ansible_job_id"])
-	return _poll_async_result_orig(executor, result, templar, task_vars=task_vars)
+		current_ansible.callback.on_async_start(task._role.get_name(), task.name, utr.async_job_id)
+	return _poll_async_result_orig(executor, utr=utr, templar=templar, task_vars=task_vars)
 
 
 _action_module_run_orig = ActionModule.run
@@ -81,10 +81,18 @@ def reconnect_on_failure():
 class AnsibleCallback(CallbackBase):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
+		# Kept in memory because update_task skips tasks outside a role, like Gathering Facts
+		self.failed_results = []
+
+	def record_failure(self, status, result):
+		self.failed_results.append(
+			f"[{status}] {result.task.get_name()} on {result.host.get_name()}\n"
+			f"{json.dumps(result.result, indent=4, default=str)}"
+		)
 
 	@reconnect_on_failure()
 	def process_task_success(self, result):
-		result, action = frappe._dict(result._result), result._task.action
+		result, action = frappe._dict(result.result), result.task.action
 		if action == "user":
 			server_type, server = frappe.db.get_value("Ansible Play", self.play, ["server_type", "server"])
 			server = frappe.get_doc(server_type, server)
@@ -99,12 +107,14 @@ class AnsibleCallback(CallbackBase):
 		self.process_task_success(result)
 
 	def v2_runner_on_failed(self, result, *args, **kwargs):
+		self.record_failure("Failure", result)
 		self.update_task("Failure", result)
 
 	def v2_runner_on_skipped(self, result):
 		self.update_task("Skipped", result)
 
 	def v2_runner_on_unreachable(self, result):
+		self.record_failure("Unreachable", result)
 		self.update_task("Unreachable", result)
 
 	def v2_playbook_on_task_start(self, task, is_conditional):
@@ -139,7 +149,7 @@ class AnsibleCallback(CallbackBase):
 	@reconnect_on_failure()
 	def update_task(self, status, result=None, task=None):
 		if result:
-			if not result._task._role:
+			if not result.task._role:
 				return
 			task_name, result = self.parse_result(result)
 		else:
@@ -174,9 +184,9 @@ class AnsibleCallback(CallbackBase):
 		)
 
 	def parse_result(self, result):
-		task = result._task.name
-		role = result._task._role.get_name()
-		return self.tasks[role][task], frappe._dict(result._result)
+		task = result.task.name
+		role = result.task._role.get_name()
+		return self.tasks[role][task], frappe._dict(result.result)
 
 	@reconnect_on_failure()
 	def on_async_start(self, role, task, job_id):
@@ -211,8 +221,8 @@ class Ansible:
 			become_method="sudo",
 			check=False,
 			connection="ssh",
-			# This is the only way to pass variables that preserves newlines
-			extra_vars=[f"{cstr(key)}='{cstr(value)}'" for key, value in self.variables.items()],
+			# JSON keeps newlines and types; strings would make every conditional non-boolean
+			extra_vars=[json.dumps(self.variables, default=str)],
 			remote_user=user,
 			start_at_task=None,
 			syntax=False,
@@ -252,20 +262,77 @@ class Ansible:
 
 	def run(self) -> AnsiblePlay:
 		_ansible_local.current = self
-		self.executor = PlaybookExecutor(
-			playbooks=[self.playbook_path],
-			inventory=self.inventory,
-			variable_manager=self.variable_manager,
-			loader=self.loader,
-			passwords=self.passwords,
+		frappe.log_error(
+			title=f"Running Ansible playbook: {self.playbook_path}",
+			message=f"Server: {self.server.name} ({self.host})",
 		)
-		# Use AnsibleCallback so we can receive updates for tasks execution
-		self.executor._tqm._stdout_callback = self.callback
-		self.callback.play = self.play
-		self.callback.tasks = self.tasks
-		self.callback.task_list = self.task_list
-		self.executor.run()
-		return frappe.get_doc("Ansible Play", self.play)
+		try:
+			self.executor = PlaybookExecutor(
+				playbooks=[self.playbook_path],
+				inventory=self.inventory,
+				variable_manager=self.variable_manager,
+				loader=self.loader,
+				passwords=self.passwords,
+			)
+			# Use AnsibleCallback so we can receive updates for tasks execution
+			use_callback(self.executor._tqm, self.callback)
+			self.callback.play = self.play
+			self.callback.tasks = self.tasks
+			self.callback.task_list = self.task_list
+			return_code = self.executor.run()
+			play = frappe.get_doc("Ansible Play", self.play)
+			# Ansible reports failed and unreachable tasks through its return code, not an exception
+			if play.status != "Success":
+				self.log_failed_tasks(play, return_code)
+			return play
+		except Exception:
+			self.log_run_failure()
+			raise
+
+	def log_failed_tasks(self, play, return_code):
+		failed_tasks = frappe.get_all(
+			"Ansible Task",
+			filters={"play": play.name, "status": ("in", ("Failure", "Unreachable"))},
+			fields=["name", "task", "role", "status", "exception", "error", "output", "result"],
+		)
+		details = [
+			f"Task: {task.role} / {task.task} [{task.status}]\n"
+			f"Exception: {task.exception}\nStderr: {task.error}\nStdout: {task.output}\nResult: {task.result}"
+			for task in failed_tasks
+		]
+		frappe.log_error(
+			title=f"Ansible play {play.status}: {self.playbook} on {self.server.name}",
+			message="\n\n".join(
+				[
+					f"Server: {self.server.doctype} {self.server.name} ({self.host})",
+					f"Return code: {return_code}",
+					f"Failures: {play.failures}, Unreachable: {play.unreachable}",
+					*details,
+					*self.callback.failed_results,
+				]
+			),
+			reference_doctype="Ansible Play",
+			reference_name=play.name,
+		)
+
+	def log_run_failure(self):
+		# Variable values may hold secrets, so only their names are logged
+		frappe.log_error(
+			title=f"Ansible play failed: {self.playbook} on {self.server.name}",
+			message="\n".join(
+				[
+					f"Server: {self.server.doctype} {self.server.name} ({self.host})",
+					f"Playbook: {self.playbook_path}",
+					f"Ansible Play: {getattr(self, 'play', None)}",
+					f"Variable names: {sorted(self.variables)}",
+					f"Tasks: {len(getattr(self, 'task_list', []))}",
+					"",
+					frappe.get_traceback(with_context=True),
+				]
+			),
+			reference_doctype="Ansible Play" if getattr(self, "play", None) else None,
+			reference_name=getattr(self, "play", None),
+		)
 
 	def create_ansible_play(self):
 		# Parse the playbook and create Ansible Tasks so we can show how many tasks are pending
