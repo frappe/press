@@ -107,3 +107,11 @@ class MonitorServerDown(ValidationError):
 
 class ReleasePipelineFailure(Exception):
 	pass
+
+
+class SiteBackupInProgress(ValidationError):
+	pass
+
+
+class SiteUpdateInProgress(ValidationError):
+	pass

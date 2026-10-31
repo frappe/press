@@ -15,6 +15,7 @@ import frappe
 import pytz
 from frappe.query_builder import CustomFunction
 
+from press.exceptions import SiteUpdateInProgress
 from press.press.doctype.press_settings.press_settings import PressSettings
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 from press.press.doctype.site.site import Site
@@ -348,6 +349,10 @@ class ScheduledBackupJob:
 				)
 				frappe.db.commit()
 				return True
+			return False
+
+		except SiteUpdateInProgress:
+			frappe.db.rollback()
 			return False
 
 		except Exception:
