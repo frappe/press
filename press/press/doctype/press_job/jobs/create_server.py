@@ -54,6 +54,9 @@ class CreateServerJob(PressJob):
 		# racing the apt plays that step enqueues
 		self.enable_backup_streaming()
 
+		# Before set_additional_config, so the agent stop does not race the plays that step enqueues
+		self.setup_agent_volume()
+
 		self.set_additional_config()
 
 		if self.is_fs_server:
@@ -304,6 +307,14 @@ class CreateServerJob(PressJob):
 			return
 
 		self.server_doc.enable_backup_streaming()
+
+	# Agent workers get up to 1500 seconds (stopwaitsecs) to finish their running jobs
+	@task(queue="long", timeout=3600)
+	def setup_agent_volume(self):
+		if self.server_type != "Server" or self.server_doc.has_data_volume:
+			return
+
+		self.server_doc._setup_agent_volume()
 
 	@task
 	def set_additional_config(self):

@@ -6,6 +6,7 @@ from unittest.mock import Mock, patch
 
 from frappe.tests.utils import FrappeTestCase
 
+from press.press.doctype.press_job.jobs.create_server import CreateServerJob
 from press.press.doctype.press_job.jobs.increase_disk_size import IncreaseDiskSizeJob
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.server.test_server import create_test_server
@@ -28,6 +29,42 @@ def make_increase_disk_size_job(resized: bool) -> IncreaseDiskSizeJob:
 	)
 	job._server_doc = Mock(provider="AWS EC2", calculated_increase_disk_size=Mock(return_value=resized))
 	return job
+
+
+def make_create_server_job(server_type: str, has_data_volume: bool) -> CreateServerJob:
+	job = CreateServerJob(
+		{
+			"doctype": "Press Job",
+			"job_type": "Create Server",
+			"server_type": server_type,
+			"server": "f1-test.frappe.cloud",
+		}
+	)
+	job._server_doc = Mock(has_data_volume=has_data_volume)
+	return job
+
+
+class TestCreateServerJobAgentVolume(FrappeTestCase):
+	def test_agent_volume_set_up_on_app_and_unified_server_without_data_volume(self):
+		job = make_create_server_job("Server", has_data_volume=False)
+		job.setup_agent_volume()
+		job.server_doc._setup_agent_volume.assert_called_once()
+
+	def test_agent_volume_skipped_on_app_server_with_data_volume(self):
+		job = make_create_server_job("Server", has_data_volume=True)
+		job.setup_agent_volume()
+		job.server_doc._setup_agent_volume.assert_not_called()
+
+	def test_agent_volume_skipped_on_database_server(self):
+		job = make_create_server_job("Database Server", has_data_volume=False)
+		job.setup_agent_volume()
+		job.server_doc._setup_agent_volume.assert_not_called()
+
+	def test_failed_agent_volume_play_fails_the_create_server_job_step(self):
+		job = make_create_server_job("Server", has_data_volume=False)
+		job.server_doc._setup_agent_volume.side_effect = Exception("agent_volume.yml failed")
+		with self.assertRaisesRegex(Exception, "agent_volume.yml failed"):
+			job.setup_agent_volume()
 
 
 @patch.object(IncreaseDiskSizeJob, "restart_active_benches")
