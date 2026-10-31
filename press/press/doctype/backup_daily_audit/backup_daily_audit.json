@@ -45,21 +45,21 @@
 			"fieldtype": "Column Break"
 		},
 		{
-			"description": "Every window in this audit ends at this time. Refresh re-checks the sites and servers already listed, for the same windows.",
+			"description": "Start of the audit date in the system time zone. Every window in this audit ends here, so backups taken on the audit date don't count. Refresh re-checks the sites and servers already listed, for the same windows.",
 			"fieldname": "window_end",
 			"fieldtype": "Datetime",
 			"label": "Window End",
 			"read_only": 1
 		},
 		{
-			"description": "Length of the day window when the audit was made. New audits use 24h.",
+			"description": "Length of the day window when the audit was made. New audits use 24h, the day before the audit date.",
 			"fieldname": "day_window_hours",
 			"fieldtype": "Int",
 			"label": "Day Window (Hours)",
 			"read_only": 1
 		},
 		{
-			"description": "Backup Site agent jobs created in the last 24h that have finished. Delivery failures count as failed.",
+			"description": "Backup Site agent jobs created the day before the audit date that have finished. Delivery failures count as failed.",
 			"fieldname": "section_break_jobs",
 			"fieldtype": "Section Break",
 			"label": "Backup Agent Jobs"
@@ -96,7 +96,7 @@
 			"fieldname": "sites_with_frequent_failures_count",
 			"fieldtype": "Int",
 			"in_list_view": 1,
-			"label": "Frequent Backup Failures in 24h",
+			"label": "Frequent Backup Failures Yesterday",
 			"read_only": 1
 		},
 		{
@@ -107,7 +107,7 @@
 			"fieldname": "sites_without_success_in_day_count",
 			"fieldtype": "Int",
 			"in_list_view": 1,
-			"label": "No Successful Backup in a Day",
+			"label": "No Successful Backup Yesterday",
 			"read_only": 1
 		},
 		{
@@ -118,7 +118,7 @@
 			"fieldname": "sites_without_success_in_3_days_count",
 			"fieldtype": "Int",
 			"in_list_view": 1,
-			"label": "No Successful Backup in 3 Days",
+			"label": "No Successful Backup in the Last 3 Days",
 			"read_only": 1
 		},
 		{
@@ -130,14 +130,14 @@
 			"fieldname": "servers_without_snapshot_in_day_count",
 			"fieldtype": "Int",
 			"in_list_view": 1,
-			"label": "Servers Without a Snapshot in 24h",
+			"label": "Servers Without a Snapshot Yesterday",
 			"read_only": 1
 		},
 		{
-			"description": "Sites with 3 or more failed backups (logical or physical) in the last 24h. A later backup may have succeeded, so check Last Successful Backup. These are listed only to be noted.",
+			"description": "Sites with 3 or more failed backups (logical or physical) the day before the audit date. A later backup may have succeeded, so check Last Successful Backup. These are listed only to be noted.",
 			"fieldname": "section_break_sites_with_frequent_failures",
 			"fieldtype": "Section Break",
-			"label": "Sites With Frequently Failing Backups in 24h"
+			"label": "Sites With Frequently Failing Backups Yesterday"
 		},
 		{
 			"fieldname": "sites_with_frequent_failures",
@@ -146,10 +146,10 @@
 			"read_only": 1
 		},
 		{
-			"description": "Sites due a scheduled backup with no successful logical or physical backup in the last 24h. Pending, running and failed backups don't count.",
+			"description": "Sites due a scheduled backup with no successful logical or physical backup the day before the audit date. Backups taken on the audit date don't count, and neither do pending, running and failed backups.",
 			"fieldname": "section_break_sites_without_success_in_day",
 			"fieldtype": "Section Break",
-			"label": "Sites Without a Successful Backup in a Day"
+			"label": "Sites Without a Successful Backup Yesterday"
 		},
 		{
 			"fieldname": "sites_without_success_in_day",
@@ -158,10 +158,10 @@
 			"read_only": 1
 		},
 		{
-			"description": "Sites due a scheduled backup with no successful logical or physical backup in the last 3 days. Pending, running and failed backups don't count.",
+			"description": "Sites due a scheduled backup with no successful logical or physical backup in the 3 days before the audit date. Backups taken on the audit date don't count, and neither do pending, running and failed backups.",
 			"fieldname": "section_break_sites_without_success_in_3_days",
 			"fieldtype": "Section Break",
-			"label": "Sites Without a Successful Backup in 3 Days"
+			"label": "Sites Without a Successful Backup in the Last 3 Days"
 		},
 		{
 			"fieldname": "sites_without_success_in_3_days",
@@ -170,10 +170,10 @@
 			"read_only": 1
 		},
 		{
-			"description": "Running virtual machines with no completed daily snapshot in the last 24h. Excludes machines that are not running, were created in the last 24h, skip automated snapshots, or are on a cloud provider whose snapshots aren't recorded here. Rolling and physical backup snapshots don't count. One completed disk snapshot per machine is enough, even if it has more disks.",
+			"description": "Running virtual machines with no completed daily snapshot the day before the audit date. Excludes machines that are not running, were created after that day began, skip automated snapshots, or are on a cloud provider whose snapshots aren't recorded here. Rolling and physical backup snapshots don't count. One completed disk snapshot per machine is enough, even if it has more disks.",
 			"fieldname": "section_break_servers_without_snapshot_in_day",
 			"fieldtype": "Section Break",
-			"label": "Servers Without a Snapshot in 24h"
+			"label": "Servers Without a Snapshot Yesterday"
 		},
 		{
 			"fieldname": "servers_without_snapshot_in_day",
@@ -185,7 +185,7 @@
 	"in_create": 1,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-10-27 18:30:00.000000",
+	"modified": "2026-10-27 19:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Backup Daily Audit",
