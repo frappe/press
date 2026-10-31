@@ -2553,8 +2553,9 @@ class BaseServer(Document, TagHelpers):
 			60,
 			60,
 		)["datasets"]
-		if response:
-			return response[0]["values"][-1]
+		value = _latest_prometheus_bytes(response)
+		if value is not None:
+			return value
 		return 50 * 1024 * 1024 * 1024  # Assume 50GB free space
 
 	def is_disk_full(self, mountpoint: str) -> bool:
@@ -2572,9 +2573,10 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			120,
 			120,
 		)["datasets"]
-		if not response:
+		value = _latest_prometheus_bytes(response)
+		if value is None:
 			return -20 * 1024 * 1024 * 1024
-		return response[0]["values"][-1]
+		return value
 
 	def disk_capacity(self, mountpoint: str) -> int:
 		from press.api.server import prometheus_query
@@ -2586,8 +2588,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			120,
 			120,
 		)["datasets"]
-		if response:
-			return response[0]["values"][-1]
+		value = _latest_prometheus_bytes(response)
+		if value is not None:
+			return value
 		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size") * 1024 * 1024 * 1024
 
 	def size_to_increase_by_for_20_percent_available(self, mountpoint: str):  # min 50 GB, max 250 GB
@@ -5052,6 +5055,18 @@ def _refresh_bench_pool_and_raise_capacity_incidents(
 				available_memory_bytes=available_memory,
 				minimum_required_memory_bytes=minimum_bench_memory_bytes,
 			)
+
+
+def _latest_prometheus_bytes(datasets: list[dict]) -> int | None:
+	"""Return the newest byte value of the first series, or None if there is no sample.
+
+	prometheus_query fills empty time slots with None. The last slot is often
+	empty because the query window can end after the newest scrape.
+	"""
+	if not datasets:
+		return None
+	value = next((v for v in reversed(datasets[0]["values"]) if v is not None), None)
+	return None if value is None else int(value)
 
 
 def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[str]]]:
