@@ -58,7 +58,7 @@
         src: /home/frappe/agent.img
         path: /home/frappe/agent
         fstype: ext4
-        opts: loop
+        opts: loop,nofail
         state: mounted
 
     - name: Create Drop-In Directories
