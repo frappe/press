@@ -4,9 +4,9 @@ import { expect, test } from './coverage.fixture'
 const SERVER_NAME = 'f1-mumbai.frappe.cloud'
 const SITE_NAME = 'test-disk-full.fc.frappe.dev'
 const SITE_BANNER =
-	"This site's server is out of disk space. The site may stop responding until space is freed up."
+	"This site's server is out of disk space. Until space is freed up, the site may stop responding and backups may fail, leaving your data unprotected."
 const SERVER_BANNER =
-	'This server is out of disk space. Sites on it may stop responding until space is freed up.'
+	'This server is out of disk space. Until space is freed up, sites on it may stop responding and backups may fail, leaving your data unprotected.'
 
 const site = {
 	name: SITE_NAME,
