@@ -15,7 +15,6 @@ import semantic_version as sv
 import tomli
 from frappe.model.document import Document
 
-from press.api.github import GithubFetchError, get_access_token
 from press.press.doctype.app_source.app_source import AppSource
 from press.utils import log_error
 
@@ -301,24 +300,13 @@ class AppRelease(Document):
 			- Installation Id is set
 			- Installation Id is used to fetch token
 			- If token cannot be fetched, GitHub responds with an error
-			- If token is not received _get_repo_url throws
+			- If token is not received AppSource.get_repo_url throws
 			- Hence token was received, but app still cannot be cloned
 			"""
 			raise Exception("Repository could not be fetched", self.app)  # noqa
 
 		self.output += self.run(f"git checkout {self.hash}")
 		self.output += self.run(f"git reset --hard {self.hash}")
-
-	def _get_repo_url(self, source: "AppSource") -> str:
-		if not source.github_installation_id:
-			return source.repository_url
-
-		token = get_access_token(source.github_installation_id)
-		if token is None:
-			# Do not edit without updating deploy_notifications.py
-			raise GithubFetchError("App installation token could not be fetched", self.app)
-
-		return f"https://x-access-token:{token}@github.com/{source.repository_owner}/{source.repository}"
 
 	def on_trash(self):
 		if self.clone_directory and os.path.exists(self.clone_directory):
