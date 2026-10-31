@@ -555,6 +555,7 @@ class DeployCandidateBuild(Document):
 
 		if not should_retry:
 			self.candidate._fail_site_group_deploy_if_exists()
+			self.candidate._cancel_version_upgrade_if_exists()
 
 		# Do not send a notification if the build is being retried.
 		if not should_retry and create_build_failed_notification(self.candidate, self, exc):
