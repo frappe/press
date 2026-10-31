@@ -437,12 +437,51 @@ class ProductTrialRequest(Document):
 			self.error = str(e)
 			self.save()
 
+	def refresh_current_agent_job(self) -> bool:
+		"""Read the current required job from its agent, so the signup page doesn't wait for the poll.
+		Return True if the job's status changed."""
+		from press.agent import Agent
+		from press.press.doctype.agent_job.agent_job import handle_polled_job
+
+		agent_job = self.get_current_agent_job()
+		job = agent_job and frappe.db.get_value(
+			"Agent Job", agent_job, ["name", "job_id", "server", "server_type", "status"], as_dict=True
+		)
+		if not job or not job.job_id or job.status not in ("Pending", "Running"):
+			return False
+
+		agent = Agent(job.server, server_type=job.server_type)
+		if agent.should_skip_requests():
+			return False
+		try:
+			polled_job = agent.raw_request("GET", f"jobs/{job.job_id}", timeout=(2, 5))
+		except Exception:
+			return False  # the regular poll still picks the job up
+
+		# Re-read under a lock, since the regular poll may have handled the job meanwhile
+		job = frappe.db.get_value(
+			"Agent Job",
+			job.name,
+			["name", "job_id", "status", "callback_failure_count"],
+			as_dict=True,
+			for_update=True,
+		)
+		if not isinstance(polled_job, dict) or job.status == polled_job.get("status"):
+			return False
+		if job.status not in ("Pending", "Running"):
+			return False
+
+		handle_polled_job(polled_job=polled_job, job=job)
+		return True
+
 	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):  # noqa: C901
 		try:
 			current_progress = float(current_progress or 10)
 		except (TypeError, ValueError):
 			current_progress = 10.0
+		if self.status != "Site Created" and self.refresh_current_agent_job():
+			self.reload()
 		if agent_job := self.get_current_agent_job():
 			agent_job_data = frappe.db.get_value(
 				"Agent Job",
