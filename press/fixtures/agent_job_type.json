@@ -1957,6 +1957,12 @@
 				"parent": "Run Remote Builder",
 				"parentfield": "steps",
 				"parenttype": "Agent Job Type",
+				"step_name": "Prepare Build Context"
+			},
+			{
+				"parent": "Run Remote Builder",
+				"parentfield": "steps",
+				"parenttype": "Agent Job Type",
 				"step_name": "Run Validations"
 			},
 			{
