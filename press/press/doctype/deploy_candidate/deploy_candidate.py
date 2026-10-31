@@ -601,7 +601,7 @@ class DeployCandidate(Document):
 
 			dc.remove(app)
 
-		self.save()
+		dc.save()
 		return dc
 
 	def has_app(self, name: str) -> bool:
