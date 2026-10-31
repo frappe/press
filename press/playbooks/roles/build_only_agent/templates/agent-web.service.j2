@@ -1,0 +1,31 @@
+[Unit]
+Description=Press build-only Agent HTTPS API
+After=press-build-agent-redis.service
+Requires=press-build-agent-redis.service
+
+[Service]
+Type=simple
+User=press-build
+Group=press-build
+SupplementaryGroups={{ build_socket.stat.gr_name }}
+WorkingDirectory=/home/press-build/agent
+Environment=PRESS_AGENT_BUILD_ONLY=1
+Environment=DOCKER_HOST={{ build_docker_host }}
+Environment=BUILD_DOCKER_ROOT={{ build_docker_root }}
+Environment=DOCKER_CONFIG=/home/press-build/agent/.docker
+Environment=PYTHONUNBUFFERED=1
+UnsetEnvironment=DOCKER_CONTEXT DOCKER_TLS_VERIFY DOCKER_CERT_PATH
+ExecStart=/home/press-build/agent/env/bin/gunicorn --bind {{ build_agent_bind_address }}:{{ build_agent_port }} --certfile /home/press-build/agent/tls/fullchain.pem --keyfile /home/press-build/agent/tls/privkey.pem --workers 2 agent.web:application
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/press-build/agent
+RestrictSUIDSGID=true
+LockPersonality=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

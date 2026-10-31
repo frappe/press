@@ -1,4 +1,5 @@
 import json
+import os
 import threading
 import typing
 from collections.abc import Callable
@@ -23,6 +24,7 @@ from frappe.model.document import Document
 from frappe.utils import cstr
 from frappe.utils import now_datetime as now
 
+from press.ansible_security import build_only_ssh_host_variables, redact_ansible_secrets
 from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 
 if typing.TYPE_CHECKING:
@@ -201,6 +203,7 @@ class Ansible:
 	def __init__(self, server, playbook, user="root", variables=None, port=22):
 		self.server = server
 		self.playbook = playbook
+		self.port = port
 		self.playbook_path = frappe.get_app_path("press", "playbooks", self.playbook)
 		self.host = server.ip if server.ip else server.private_ip
 		# Every playbook gets the provider, so templates don't depend on the caller passing it
@@ -225,13 +228,15 @@ class Ansible:
 
 		self.sources = f"{self.host},"
 		self.inventory = InventoryManager(loader=self.loader, sources=self.sources)
-		self.inventory.get_host(self.host).set_variable("ansible_port", port)
+		host = self.inventory.get_host(self.host)
+		host.set_variable("ansible_port", port)
 
 		self.variable_manager = VariableManager(loader=self.loader, inventory=self.inventory)
 
 		self.callback = AnsibleCallback()
 		self.display = Display()
 		self.display.verbosity = 1
+		self._build_only_known_hosts_file = None
 		self.create_ansible_play()
 
 	def _get_ssh_proxy_commad(self, server):
@@ -252,20 +257,33 @@ class Ansible:
 
 	def run(self) -> AnsiblePlay:
 		_ansible_local.current = self
-		self.executor = PlaybookExecutor(
-			playbooks=[self.playbook_path],
-			inventory=self.inventory,
-			variable_manager=self.variable_manager,
-			loader=self.loader,
-			passwords=self.passwords,
-		)
-		# Use AnsibleCallback so we can receive updates for tasks execution
-		self.executor._tqm._stdout_callback = self.callback
-		self.callback.play = self.play
-		self.callback.tasks = self.tasks
-		self.callback.task_list = self.task_list
-		self.executor.run()
-		return frappe.get_doc("Ansible Play", self.play)
+		if getattr(self.server, "is_build_only", False):
+			ssh_variables, self._build_only_known_hosts_file = build_only_ssh_host_variables(
+				self.server, self.host, port=self.port
+			)
+			host = self.inventory.get_host(self.host)
+			for key, value in ssh_variables.items():
+				host.set_variable(key, value)
+
+		try:
+			self.executor = PlaybookExecutor(
+				playbooks=[self.playbook_path],
+				inventory=self.inventory,
+				variable_manager=self.variable_manager,
+				loader=self.loader,
+				passwords=self.passwords,
+			)
+			# Use AnsibleCallback so we can receive updates for tasks execution
+			self.executor._tqm._stdout_callback = self.callback
+			self.callback.play = self.play
+			self.callback.tasks = self.tasks
+			self.callback.task_list = self.task_list
+			self.executor.run()
+			return frappe.get_doc("Ansible Play", self.play)
+		finally:
+			if self._build_only_known_hosts_file:
+				os.unlink(self._build_only_known_hosts_file)
+				self._build_only_known_hosts_file = None
 
 	def create_ansible_play(self):
 		# Parse the playbook and create Ansible Tasks so we can show how many tasks are pending
@@ -279,7 +297,7 @@ class Ansible:
 				"doctype": "Ansible Play",
 				"server_type": self.server.doctype,
 				"server": self.server.name,
-				"variables": json.dumps(self.variables, indent=4),
+				"variables": json.dumps(redact_ansible_secrets(self.variables), indent=4),
 				"playbook": self.playbook,
 				"play": play.get_name(),
 			}

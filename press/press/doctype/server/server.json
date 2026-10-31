@@ -101,6 +101,21 @@
 		"use_for_new_sites",
 		"staging",
 		"use_for_build",
+		"is_build_only",
+		"build_only_section",
+		"build_docker_host",
+		"build_docker_root",
+		"build_agent_endpoint",
+		"build_agent_port",
+		"build_agent_bind_address",
+		"build_agent_repository_url",
+		"build_agent_repository_ref",
+		"build_docker_service",
+		"build_cpu_quota_percent",
+		"build_memory_limit_mb",
+		"build_io_weight",
+		"build_storage_mount",
+		"build_storage_limit_gib",
 		"platform",
 		"column_break_ktkv",
 		"exclude_for_scheduling",
@@ -589,6 +604,108 @@
 			"fieldtype": "Check",
 			"label": "Use For Build",
 			"search_index": 1
+		},
+		{
+			"default": "0",
+			"description": "Provision only a restricted build Agent; never install or configure the host Docker daemon or NGINX.",
+			"fieldname": "is_build_only",
+			"fieldtype": "Check",
+			"label": "Build-only Server"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_only_section",
+			"fieldtype": "Section Break",
+			"label": "Isolated Build Agent"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_docker_host",
+			"fieldtype": "Data",
+			"label": "Build Docker Host"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_docker_root",
+			"fieldtype": "Data",
+			"label": "Build Docker Data Root"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_agent_endpoint",
+			"fieldtype": "Data",
+			"label": "Build Agent HTTPS Endpoint"
+		},
+		{
+			"default": "9444",
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_agent_port",
+			"fieldtype": "Int",
+			"label": "Build Agent Port"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_agent_bind_address",
+			"fieldtype": "Data",
+			"label": "Build Agent Tailnet Bind Address",
+			"description": "Specific IPv4 assigned to tailscale0; wildcard and public interface addresses are rejected.",
+			"mandatory_depends_on": "eval:doc.is_build_only"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_ssh_host_public_key",
+			"fieldtype": "Data",
+			"label": "Verified SSH Host Public Key",
+			"description": "Public host key verified out of band; never paste a private key here.",
+			"mandatory_depends_on": "eval:doc.is_build_only"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_agent_repository_url",
+			"fieldtype": "Data",
+			"label": "Build Agent Repository URL"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_agent_repository_ref",
+			"fieldtype": "Data",
+			"label": "Pinned Build Agent Commit SHA"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_docker_service",
+			"fieldtype": "Data",
+			"label": "Isolated Docker Service"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_cpu_quota_percent",
+			"fieldtype": "Int",
+			"label": "Build CPU Quota (%)"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_memory_limit_mb",
+			"fieldtype": "Int",
+			"label": "Build Memory Limit (MiB)"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_io_weight",
+			"fieldtype": "Int",
+			"label": "Build I/O Weight"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_storage_mount",
+			"fieldtype": "Data",
+			"label": "Dedicated Build Storage Mount"
+		},
+		{
+			"depends_on": "eval:doc.is_build_only",
+			"fieldname": "build_storage_limit_gib",
+			"fieldtype": "Int",
+			"label": "Build Storage Capacity (GiB)"
 		},
 		{
 			"default": "25",

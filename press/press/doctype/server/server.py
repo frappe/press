@@ -3,18 +3,21 @@
 
 from __future__ import annotations
 
+import base64
 import contextlib
 import datetime
 import hashlib
 import ipaddress
 import json
 import random
+import re
 import shlex
 import typing
 from contextlib import suppress
 from datetime import timedelta
 from functools import cached_property
 from ipaddress import ip_network
+from urllib.parse import urlsplit
 
 import boto3
 import frappe
@@ -3229,6 +3232,21 @@ class Server(BaseServer):
 		is_replication_setup: DF.Check
 		is_secondary: DF.Check
 		is_self_hosted: DF.Check
+		is_build_only: DF.Check
+		build_agent_endpoint: DF.Data | None
+		build_agent_port: DF.Int | None
+		build_agent_bind_address: DF.Data | None
+		build_ssh_host_public_key: DF.Data | None
+		build_agent_repository_url: DF.Data | None
+		build_agent_repository_ref: DF.Data | None
+		build_cpu_quota_percent: DF.Int | None
+		build_docker_host: DF.Data | None
+		build_docker_root: DF.Data | None
+		build_docker_service: DF.Data | None
+		build_io_weight: DF.Int | None
+		build_memory_limit_mb: DF.Int | None
+		build_storage_limit_gib: DF.Int | None
+		build_storage_mount: DF.Data | None
 		is_server_prepared: DF.Check
 		is_server_renamed: DF.Check
 		is_server_setup: DF.Check
@@ -3292,9 +3310,127 @@ class Server(BaseServer):
 	@role_guard.action()
 	def validate(self):
 		super().validate()
+		self.validate_build_only_configuration()
 		self.set_db_healthcheck_token()
 		self.validate_managed_database_service()
 		self.validate_malware_scan_ram()
+
+	def validate_build_only_configuration(self):
+		if not self.is_build_only:
+			return
+
+		if not self.is_self_hosted:
+			frappe.throw("Build-only servers must be registered as self-hosted Servers")
+		if (
+			self.database_server
+			or self.managed_database_service
+			or self.proxy_server
+			or self.primary
+			or self.secondary_server
+			or self.is_secondary
+			or self.is_unified_server
+			or self.is_standalone
+		):
+			frappe.throw("Build-only Servers cannot be attached to database, proxy, or bench-server roles")
+		if not self.use_for_build:
+			frappe.throw("Enable Use For Build for a build-only Server")
+		if self.public or self.use_for_new_benches or self.use_for_new_sites or self.staging:
+			frappe.throw("Build-only Servers cannot host benches, sites, public groups, or staging sites")
+		if frappe.db.exists("Bench", {"server": self.name, "status": ("!=", "Archived")}):
+			frappe.throw("A Server with existing benches cannot be converted to build-only")
+
+		docker_host = (self.build_docker_host or "").strip()
+		if not docker_host.startswith("unix://"):
+			frappe.throw("Build-only Docker Host must be a Unix socket")
+		socket_path = docker_host.removeprefix("unix://")
+		if not socket_path.startswith("/") or socket_path in {"/run/docker.sock", "/var/run/docker.sock"}:
+			frappe.throw("Build-only Docker Host must use a dedicated non-default socket")
+		if not self.build_docker_root or not self.build_docker_root.startswith("/"):
+			frappe.throw("Build-only Docker Data Root must be an absolute dedicated path")
+		if self.build_docker_root in {"/var/lib/docker", "/var/lib/containerd"}:
+			frappe.throw("Build-only Docker Data Root cannot point to the host Docker data")
+
+		ssh_host = self.ip or self.private_ip
+		try:
+			ssh_host_ip = ipaddress.ip_address(ssh_host or "")
+		except ValueError:
+			frappe.throw("Build-only SSH must target the server's Tailnet IPv4 address")
+		if ssh_host_ip.version != 4 or ssh_host_ip not in ip_network("100.64.0.0/10"):
+			frappe.throw("Build-only SSH must use a Tailnet IPv4 address")
+
+		ssh_key_parts = (self.build_ssh_host_public_key or "").strip().split()
+		if len(ssh_key_parts) != 2:
+			frappe.throw("Build-only Server requires a verified SSH host public key")
+		key_type, encoded_key = ssh_key_parts
+		try:
+			key_blob = base64.b64decode(encoded_key, validate=True)
+			key_type_length = int.from_bytes(key_blob[:4], "big")
+			key_type_from_blob = key_blob[4 : 4 + key_type_length].decode()
+		except (ValueError, UnicodeDecodeError):
+			frappe.throw("Build-only SSH host public key is invalid")
+		if not key_type or key_type_from_blob != key_type or len(key_blob) <= 4 + key_type_length:
+			frappe.throw("Build-only SSH host public key is invalid")
+
+		if not 1024 <= (self.build_agent_port or 0) <= 65535:
+			frappe.throw("Build Agent Port must be between 1024 and 65535")
+		try:
+			bind_address = ipaddress.ip_address((self.build_agent_bind_address or "").strip())
+		except ValueError:
+			frappe.throw("Build Agent Bind Address must be a specific Tailnet IPv4 address")
+		if bind_address.version != 4 or bind_address.is_unspecified or bind_address.is_loopback:
+			frappe.throw("Build Agent Bind Address cannot be wildcard, loopback, or non-IPv4")
+		if bind_address not in ip_network("100.64.0.0/10"):
+			frappe.throw("Build Agent Bind Address must be within the Tailscale CGNAT range")
+		try:
+			endpoint = urlsplit((self.build_agent_endpoint or "").strip())
+			endpoint_port = endpoint.port
+		except ValueError:
+			frappe.throw("Build Agent Endpoint is not a valid HTTPS URL")
+		if (
+			endpoint.scheme != "https"
+			or endpoint.hostname != self.name.lower()
+			or endpoint_port != self.build_agent_port
+			or endpoint.username
+			or endpoint.password
+			or endpoint.path
+			or endpoint.query
+			or endpoint.fragment
+		):
+			frappe.throw("Build Agent Endpoint must be the Server's HTTPS hostname and configured port")
+		if not self.build_agent_repository_url or not self.build_agent_repository_ref:
+			frappe.throw("Build-only Server requires a pinned Agent repository and commit SHA")
+		try:
+			agent_repository = urlsplit(self.build_agent_repository_url)
+			agent_repository_host = agent_repository.hostname
+		except ValueError:
+			frappe.throw("Build Agent Repository must be a valid HTTPS GitHub URL")
+		if (
+			agent_repository.scheme != "https"
+			or agent_repository_host != "github.com"
+			or agent_repository.username
+			or agent_repository.password
+			or not agent_repository.path.strip("/")
+			or agent_repository.query
+			or agent_repository.fragment
+		):
+			frappe.throw("Build Agent Repository must be an HTTPS GitHub URL without credentials")
+		if not re.fullmatch(r"[0-9a-f]{40}", self.build_agent_repository_ref):
+			frappe.throw("Build Agent Repository Ref must be a full 40-character commit SHA")
+
+		if not self.build_docker_service or not re.fullmatch(
+			r"(?:albasar-build|press-build)-[a-z0-9-]+\.service", self.build_docker_service
+		):
+			frappe.throw("Isolated Docker Service must use the albasar-build- or press-build- service prefix")
+		if not 1 <= (self.build_cpu_quota_percent or 0) <= 800:
+			frappe.throw("Build CPU quota must be between 1 and 800 percent")
+		if not 512 <= (self.build_memory_limit_mb or 0) <= 65536:
+			frappe.throw("Build memory limit must be between 512 and 65536 MiB")
+		if not 10 <= (self.build_io_weight or 0) <= 1000:
+			frappe.throw("Build I/O weight must be between 10 and 1000")
+		if not self.build_storage_mount or not self.build_storage_mount.startswith("/") or self.build_storage_mount == "/":
+			frappe.throw("Build storage mount must be a dedicated absolute mount point")
+		if not 1 <= (self.build_storage_limit_gib or 0) <= 4096:
+			frappe.throw("Build storage capacity must be between 1 and 4096 GiB")
 
 	def set_db_healthcheck_token(self):
 		if not self.db_healthcheck_token:
@@ -3721,7 +3857,13 @@ class Server(BaseServer):
 
 		try:
 			ansible = Ansible(
-				playbook=("self_hosted.yml" if getattr(self, "is_self_hosted", False) else "server.yml"),
+				playbook=(
+					"build_only.yml"
+					if self.is_build_only
+					else "self_hosted.yml"
+					if getattr(self, "is_self_hosted", False)
+					else "server.yml"
+				),
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
@@ -3729,7 +3871,7 @@ class Server(BaseServer):
 					"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 					"server": self.name,
 					"private_ip": self.private_ip,
-					"proxy_ip": self.get_proxy_ip(),
+					"proxy_ip": None if self.is_build_only else self.get_proxy_ip(),
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
@@ -3745,6 +3887,21 @@ class Server(BaseServer):
 					"db_port": db_port,
 					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
 					"agent_update_args": " --skip-repo-setup=true",
+					"build_only": self.is_build_only,
+					"build_docker_host": self.build_docker_host,
+					"build_docker_root": self.build_docker_root,
+					"build_agent_endpoint": self.build_agent_endpoint,
+					"build_agent_port": self.build_agent_port,
+					"build_agent_bind_address": self.build_agent_bind_address,
+					"build_agent_repository_url": self.build_agent_repository_url,
+					"build_agent_repository_ref": self.build_agent_repository_ref,
+					"build_docker_service": self.build_docker_service,
+					"build_cpu_quota_percent": self.build_cpu_quota_percent,
+					"build_memory_limit_mb": self.build_memory_limit_mb,
+					"build_io_weight": self.build_io_weight,
+					"build_storage_mount": self.build_storage_mount,
+					"build_storage_limit_gib": self.build_storage_limit_gib,
+					"press_url": frappe.utils.get_url(),
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
 					"cloud_provider": self.provider,
 					"network_gateway": (
@@ -3759,10 +3916,15 @@ class Server(BaseServer):
 			self.reload()
 			self._set_mount_status(play)
 			if play.status == "Success":
+				if self.is_build_only:
+					response = Agent(self.name).get("/ping")
+					if response.get("message") != "pong":
+						frappe.throw("Build-only Agent health check did not return pong")
+				else:
+					self.set_auditd_setup_from_base_playbook()
 				self.status = "Active"
 				self.is_server_setup = True
-				self.set_auditd_setup_from_base_playbook()
-				if self.provider == "DigitalOcean":
+				if not self.is_build_only and self.provider == "DigitalOcean":
 					# To adjust docker permissions
 					self.reboot()
 			else:

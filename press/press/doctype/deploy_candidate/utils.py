@@ -173,7 +173,10 @@ def get_build_server(group: str | None = None) -> str | None:
 		if server := get_intel_build_server_with_least_active_builds():
 			return server
 
-	return frappe.get_value("Press Settings", None, "build_server")
+	server = frappe.get_value("Press Settings", None, "build_server")
+	if server and not frappe.get_value("Server", server, "is_build_only"):
+		return server
+	return None
 
 
 def get_intel_build_server_with_least_active_builds() -> str | None:
@@ -187,7 +190,12 @@ def get_arm_build_server_with_least_active_builds() -> str | None:
 def get_build_server_with_least_active_builds(platform: str) -> str | None:
 	build_servers = frappe.get_all(
 		"Server",
-		filters={"use_for_build": True, "status": "Active", "platform": platform},
+		filters={
+			"use_for_build": True,
+			"status": "Active",
+			"platform": platform,
+			"is_build_only": False,
+		},
 		pluck="name",
 	)
 

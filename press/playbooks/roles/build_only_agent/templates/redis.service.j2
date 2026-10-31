@@ -1,0 +1,22 @@
+[Unit]
+Description=Isolated Redis queue for the Press build-only Agent
+After=network.target
+
+[Service]
+Type=simple
+User=press-build
+Group=press-build
+WorkingDirectory=/home/press-build/agent
+ExecStart=/usr/bin/redis-server /home/press-build/agent/redis.conf
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/press-build/agent/redis-data
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target
