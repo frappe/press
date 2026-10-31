@@ -114,6 +114,7 @@ from press.utils import (
 	validate_subdomain,
 )
 from press.utils.dns import _change_dns_record, check_dns_cname_a, create_dns_record
+from press.utils.random_names import get_random_names
 
 if TYPE_CHECKING:
 	from frappe.types import DF
@@ -5733,7 +5734,7 @@ def _get_apps_of_bench(version, bench):
 
 def sync_sites_setup_wizard_complete_status():
 	team_name = frappe.get_value("Team", {"user": "Administrator"}, "name")
-	sites = frappe.get_all(
+	sites = get_random_names(
 		"Site",
 		filters={
 			"status": "Active",
@@ -5742,8 +5743,6 @@ def sync_sites_setup_wizard_complete_status():
 			"setup_wizard_status_check_next_retry_on": ("<=", frappe.utils.now()),
 			"team": ("!=", team_name),
 		},
-		pluck="name",
-		order_by="RAND()",
 		limit=100,
 	)
 	for site in sites:
