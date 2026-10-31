@@ -107,6 +107,7 @@ python${PYTHON_VERSION}-venv \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-python`
 
+{% if install_wkhtmltopdf %}
 # Install wkhtmltopdf
 ENV {{ doc.get_dependency_version("wkhtmltopdf", True) }}
 
@@ -138,6 +139,7 @@ RUN wget https://github.com/Aradhya-Tripathi/wkhtmltopdf/releases/download/0.12.
   && dpkg -i wkhtmltox_0.12.5-1.jammy_amd64.deb \
   && rm wkhtmltox_0.12.5-1.jammy_amd64.deb \
   `#stage-pre-wkhtmltopdf`
+{% endif %}
 {% endif %}
 {% endif %}
 
