@@ -121,6 +121,25 @@ class TestDeployCandidate(FrappeTestCase):
 		self.assertEqual(first_candidate.apps[0].release, second_candidate.apps[0].release)
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
+	def test_redeploy_keeps_original_releases(self, mock_enqueue_doc, mock_commit):
+		"""
+		Test if get_duplicate_dc keeps original app releases even when a newer release exists
+		"""
+		bench = create_test_bench()
+		# Create a newer release
+		source = frappe.get_doc("App Source", bench.apps[0].source)
+		newer_release = create_test_app_release(source)
+		first_candidate = frappe.get_doc("Deploy Candidate", bench.candidate)
+
+		duplicate_candidate = first_candidate.get_duplicate_dc()
+		self.assertIsNotNone(duplicate_candidate)
+
+		# Reload from database to ensure changes were persisted
+		saved_dc = frappe.get_doc("Deploy Candidate", duplicate_candidate.name)
+		self.assertEqual(saved_dc.apps[0].release, first_candidate.apps[0].release)
+		self.assertNotEqual(saved_dc.apps[0].release, newer_release.name)
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
 	def test_deploy_with_no_arguments_creates_deploy_candidate_with_newer_release(
 		self, mock_enqueue_doc, mock_commit
 	):
