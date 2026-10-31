@@ -1563,6 +1563,16 @@ class TestAgentVolume(FrappeTestCase):
 			server.setup_agent_volume()
 		self.assertGreater(enqueue_doc.call_args.kwargs["timeout"], 1500)
 
+	def test_setup_agent_volume_refused_on_server_with_data_volume_even_if_unmounted(self):
+		server = create_test_server()
+		server.has_data_volume = 1  # Set directly; the test VM's fetch_from overwrites the helper argument
+		with (
+			patch("press.press.doctype.server.server.frappe.enqueue_doc") as enqueue_doc,
+			self.assertRaisesRegex(frappe.ValidationError, "This server has a data volume"),
+		):
+			server.setup_agent_volume()
+		enqueue_doc.assert_not_called()
+
 	def test_setup_agent_volume_runs_agent_volume_playbook(self):
 		server = create_test_server()
 		with patch("press.press.doctype.server.server.Ansible") as Ansible:

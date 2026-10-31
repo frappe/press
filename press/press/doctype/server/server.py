@@ -3577,6 +3577,9 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def setup_agent_volume(self):
+		# The play only checks the live mount, so an unmounted data volume would slip past it
+		if self.has_data_volume:
+			frappe.throw("This server has a data volume. It does not need an agent volume.")
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_volume", queue="long", timeout=3600)
 
 	def _setup_agent_volume(self):
