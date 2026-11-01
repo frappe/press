@@ -92,7 +92,7 @@ def is_in_region(countries: set[str], region: dict) -> bool:
 
 def get_customers() -> dict[str, dict]:
 	"""Every email we hold PII for, merged across the teams and signups it belongs to"""
-	customers = {}
+	customers: dict[str, dict] = {}
 	for email, team, country, customer_type in get_contacts():
 		email = (email or "").strip().lower()
 		if "@" not in email or email.endswith("@deleted.com"):
@@ -126,14 +126,15 @@ def get_contacts() -> list[tuple]:
 	return contacts
 
 
-def get_teams(signup_countries: dict[str, str]) -> tuple[dict[str, dict], set[str]]:
+def get_teams(signup_countries: dict[str, str]) -> tuple[dict[str, frappe._dict], set[str]]:
 	"""Teams that are not deleted, and the signups of the deleted ones"""
 	deleted = get_deleted_teams()
 	with_active_site = set(
 		frappe.get_all("Site", filters={"status": ("!=", "Archived")}, pluck="team", distinct=True)
 	)
 
-	teams, deleted_signups = {}, set()
+	teams: dict[str, frappe._dict] = {}
+	deleted_signups: set[str] = set()
 	for team in frappe.get_all("Team", fields=["name", "user", "country", "account_request"]):
 		if team.name in deleted:
 			deleted_signups.add(team.account_request)
