@@ -64,14 +64,14 @@ def close_checkout(contract: EnterpriseContract) -> bool:
 
 
 def expire_session(contract: EnterpriseContract) -> bool:
-	session = get_stripe().checkout.Session
+	sessions = get_stripe().checkout.Session
 	try:
-		session.expire(contract.checkout_reference)
+		sessions.expire(contract.checkout_reference)
 	except stripe.error.InvalidRequestError:
 		# Stripe refuses a session that is not open. It can have been paid since the retrieve.
 		if record_paid_checkout(contract):
 			return True
-		if session.retrieve(contract.checkout_reference).get("status") == "open":
+		if sessions.retrieve(contract.checkout_reference).get("status") == "open":
 			raise
 	return False
 
