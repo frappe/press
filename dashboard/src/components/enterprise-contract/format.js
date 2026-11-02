@@ -10,10 +10,6 @@ export function money(amount, currencyCode) {
 	return currency(amount, currencyCode, 0)
 }
 
-export function statusTheme(status) {
-	return { Active: 'green', 'Pending Signature': 'orange' }[status] || 'gray'
-}
-
 export function contractStatusBadge(status) {
 	return getSiteStatusBadge(status === 'Pending Signature' ? 'Draft' : status)
 }
