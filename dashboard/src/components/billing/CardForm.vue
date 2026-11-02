@@ -227,18 +227,52 @@ const setupIntentSuccess = createResource({
 	},
 });
 
+const paymentIntentSuccess = createResource({
+	url: 'press.api.billing.payment_intent_success',
+	makeParams: ({ paymentIntent, address }) => ({
+		payment_intent: paymentIntent,
+		address,
+	}),
+	onSuccess: () => {
+		addingCard.value = false;
+		toast.success('Card added successfully');
+		emit('success');
+	},
+	onError: (error) => {
+		console.error(error);
+		addingCard.value = false;
+		errorMessage.value = error.messages.join('\n');
+		toast.error(errorMessage.value);
+	},
+});
+
 const verifyCardWithMicroCharge = createResource({
 	url: 'press.api.billing.create_payment_intent_for_micro_debit',
 	onSuccess: async (paymentIntent) => {
 		let { client_secret } = paymentIntent;
 
 		let payload = await stripe.value.confirmCardPayment(client_secret, {
-			payment_method: { card: card.value },
+			payment_method: {
+				card: card.value,
+				billing_details: {
+					name: billingInformation.cardHolderName,
+					address: {
+						line1: billingInformation.address,
+						city: billingInformation.city,
+						state: billingInformation.state,
+						postal_code: billingInformation.postal_code,
+						country: getCountryCode(team.doc?.country),
+					},
+				},
+			},
 		});
 
 		if (payload.paymentIntent?.status === 'succeeded') {
 			microChargeCompleted.value = true;
-			submit();
+			paymentIntentSuccess.submit({
+				paymentIntent: { id: payload.paymentIntent.id },
+				address: billingInformation,
+			});
 		} else {
 			tryingMicroCharge.value = false;
 			errorMessage.value = payload.error?.message;
@@ -261,17 +295,6 @@ async function setupStripeIntent() {
 const addressFormRef = ref(null);
 
 async function submit() {
-	addingCard.value = true;
-	let message = await addressFormRef.value.validate();
-
-	if (message) {
-		errorMessage.value = message;
-		addingCard.value = false;
-		return;
-	} else {
-		errorMessage.value = null;
-	}
-
 	const { setupIntent, error } = await stripe.value.confirmCardSetup(
 		_setupIntent.value.client_secret,
 		{
@@ -313,22 +336,28 @@ async function submit() {
 }
 
 async function verifyWithMicroChargeIfApplicable() {
+	addingCard.value = true;
+	let message = await addressFormRef.value.validate();
+	if (message) {
+		errorMessage.value = message;
+		addingCard.value = false;
+		return;
+	}
+	errorMessage.value = null;
+
 	const teamCurrency = team.doc?.currency;
 	const verifyCardsWithMicroCharge = window.verify_cards_with_micro_charge;
 	const isMicroChargeApplicable =
 		verifyCardsWithMicroCharge === 'Both INR and USD' ||
 		(verifyCardsWithMicroCharge == 'Only INR' && teamCurrency === 'INR') ||
 		(verifyCardsWithMicroCharge === 'Only USD' && teamCurrency === 'USD');
-	if (isMicroChargeApplicable) {
-		await _verifyWithMicroCharge();
-	} else {
-		submit();
-	}
-}
 
-async function _verifyWithMicroCharge() {
-	tryingMicroCharge.value = true;
-	return verifyCardWithMicroCharge.submit();
+	if (isMicroChargeApplicable) {
+		tryingMicroCharge.value = true;
+		verifyCardWithMicroCharge.submit();
+	} else {
+		await submit();
+	}
 }
 
 function getCountryCode(country) {
