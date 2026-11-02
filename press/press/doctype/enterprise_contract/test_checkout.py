@@ -7,7 +7,7 @@ import frappe
 import stripe
 
 from press.api import enterprise_contract as contract_api
-from press.api.enterprise_contract import pay, validate_return_url
+from press.api.enterprise_contract import get_contract, pay, validate_return_url
 from press.press.doctype.enterprise_contract.checkout import record_paid_checkout
 from press.press.doctype.enterprise_contract.enterprise_contract import ALREADY_PAID, create_contract
 from press.press.doctype.enterprise_contract.test_enterprise_contract import (
@@ -102,8 +102,17 @@ class TestStripeCheckoutPayment(EnterpriseContractTestCase):
 		self.assertEqual(contract.reload().status, "Awaiting Payment")
 		self.assertFalse(contract.payments)
 
+	def test_contract_of_another_team_cannot_be_opened(self):
+		contract = create_contract(create_team_with_billing_address("India"), self.make_order())
+		other_team = create_team_with_billing_address("India")
+
+		frappe.set_user(other_team.user)
+		self.addCleanup(frappe.set_user, "Administrator")
+		with self.assertRaisesRegex(frappe.ValidationError, "could not find this contract"):
+			get_contract(contract.name)
+
 	def test_return_url_on_another_host_is_rejected(self):
-		with self.assertRaisesRegex(frappe.ValidationError, "Invalid return URL"):
+		with self.assertRaisesRegex(frappe.ValidationError, "not on this site"):
 			validate_return_url("https://attacker.example/dashboard/contracts")
 
 	def test_return_url_on_the_host_the_request_came_in_on_is_accepted(self):
