@@ -109,6 +109,7 @@ PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
 GLASS_FILE_SIZE = 200 * 1024 * 1024  # /root/glass, see glass_file.yml
+DISK_RESIZE_PROVIDERS = ("AWS EC2", "OCI", "Frappe Compute")
 # clamscan holds about 1 GB of signatures in memory, too much for small servers
 MALWARE_SCAN_MIN_RAM = 8192  # MB
 
@@ -1315,7 +1316,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def increase_disk_size(self, increment=50, mountpoint=None, log: str | None = None):
-		if self.provider not in ("AWS EC2", "OCI", "Frappe Compute"):
+		if self.provider not in DISK_RESIZE_PROVIDERS:
 			return
 		if self.provider == "AWS EC2" and self.time_to_wait_before_updating_volume:
 			frappe.throw(
@@ -2648,6 +2649,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			},
 		)
 
+	def can_auto_increase_storage(self, mountpoint: str | None) -> bool:
+		"""Whether a disk alert on this mountpoint should resize it without asking the team"""
+		if self.provider not in DISK_RESIZE_PROVIDERS:
+			return False
+		return bool(self.auto_increase_storage or (self.has_data_volume and mountpoint == "/"))
+
+	def disk_increase_skip_reason(self) -> str:
+		if self.provider not in DISK_RESIZE_PROVIDERS:
+			return f"Press can't resize disks on provider {self.provider}"
+		return "auto disk increase disabled by user"
+
 	def calculated_increase_disk_size(
 		self,
 		mountpoint: str,
@@ -2656,7 +2668,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		"""
 		Calculate required disk increase for servers and handle notifications accordingly.
 		Returns True if the disk was increased, False if it was left as is.
-				- For servers with `auto_increase_storage` enabled:
+				- For servers with `auto_increase_storage` enabled, on a provider Press can resize:
 					- Compute the required storage increase.
 					- Automatically apply the increase.
 					- Send an email notification about the auto-added storage.
@@ -2672,11 +2684,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		current_disk_usage = round((disk_capacity - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2)
 
-		if not server.auto_increase_storage and (not server.has_data_volume or mountpoint != "/"):
+		if not server.can_auto_increase_storage(mountpoint):
 			TelegramMessage.enqueue(
 				f"Not increasing disk (mount point {mountpoint}) on "
 				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
-				f"by {buffer + additional}G as auto disk increase disabled by user",
+				f"by {buffer + additional}G as {server.disk_increase_skip_reason()}",
 				"Information",
 			)
 			insert_addon_storage_log(
