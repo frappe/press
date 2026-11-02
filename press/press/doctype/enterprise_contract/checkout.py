@@ -45,7 +45,7 @@ def paid_checkout_reference(contract: EnterpriseContract, session_id: str | None
 	return session.payment_intent if session.payment_status == "paid" else None
 
 
-# Called before the order is paid again or cancelled, in case the webhook did not arrive.
+# In case the webhook did not arrive.
 def record_paid_checkout(contract: EnterpriseContract) -> bool:
 	if contract.status != "Awaiting Payment":
 		return False
