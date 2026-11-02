@@ -169,6 +169,7 @@ class ReleaseGroup(Document, TagHelpers):
 			query.where(ReleaseGroup.team == frappe.local.team().name)
 			.where(ReleaseGroup.enabled == 1)
 			.where(ReleaseGroup.public == 0)
+			.where(outside_archived_clusters())
 			.select(
 				site_count_query(server).as_("site_count"),
 				active_bench_count_query(server).as_("active_benches"),
@@ -2117,6 +2118,8 @@ class ReleaseGroup(Document, TagHelpers):
 
 def site_count_query(server: str | None):
 	"""Count the sites of a group, on one server when the list is filtered by server."""
+	from press.press.doctype.cluster.cluster import archived_clusters
+
 	ReleaseGroup = frappe.qb.DocType("Release Group")
 	Site = frappe.qb.DocType("Site")
 
@@ -2125,12 +2128,17 @@ def site_count_query(server: str | None):
 		.select(Count("*"))
 		.where(Site.group == ReleaseGroup.name)
 		.where(Site.status != "Archived")
+		# A group spans regions. The sites list hides the archived ones, so a
+		# count that included them would promise rows the customer never sees.
+		.where(Site.cluster.notin(archived_clusters()))
 	)
 	return query.where(Site.server == server) if server else query
 
 
 def active_bench_count_query(server: str | None):
 	"""Count the active benches of a group, on one server when the list is filtered by server."""
+	from press.press.doctype.cluster.cluster import archived_clusters
+
 	ReleaseGroup = frappe.qb.DocType("Release Group")
 	Bench = frappe.qb.DocType("Bench")
 
@@ -2139,8 +2147,33 @@ def active_bench_count_query(server: str | None):
 		.select(Count("*"))
 		.where(Bench.group == ReleaseGroup.name)
 		.where(Bench.status == "Active")
+		# An unreachable bench must not be the one that labels the group Active.
+		.where(Bench.cluster.notin(archived_clusters()))
 	)
 	return query.where(Bench.server == server) if server else query
+
+
+def outside_archived_clusters():
+	"""A group is listed unless every one of its servers sits in an archived region.
+
+	A group that still has a server elsewhere keeps working there, so only a group
+	that is entirely in archived regions goes. A group with no servers yet stays.
+	"""
+	from press.press.doctype.cluster.cluster import archived_clusters
+
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
+	Server = frappe.qb.DocType("Server")
+
+	with_any_server = frappe.qb.from_(ReleaseGroupServer).select(ReleaseGroupServer.parent)
+	with_a_reachable_server = (
+		frappe.qb.from_(ReleaseGroupServer)
+		.join(Server)
+		.on(Server.name == ReleaseGroupServer.server)
+		.select(ReleaseGroupServer.parent)
+		.where(Server.cluster.notin(archived_clusters()))
+	)
+	return ReleaseGroup.name.notin(with_any_server) | ReleaseGroup.name.isin(with_a_reachable_server)
 
 
 @redis_cache(ttl=60)
