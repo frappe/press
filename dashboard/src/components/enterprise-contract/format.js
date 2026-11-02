@@ -1,4 +1,5 @@
 import { currency, date } from '../../utils/format'
+import { getSiteStatusBadge } from '../../utils/site'
 
 export function formatDate(value) {
 	return date(value, 'D MMM YYYY')
@@ -11,6 +12,10 @@ export function money(amount, currencyCode) {
 
 export function statusTheme(status) {
 	return { Active: 'green', 'Pending Signature': 'orange' }[status] || 'gray'
+}
+
+export function contractStatusBadge(status) {
+	return getSiteStatusBadge(status === 'Pending Signature' ? 'Draft' : status)
 }
 
 export function gstLines(gst, split) {
