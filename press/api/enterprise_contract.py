@@ -16,6 +16,7 @@ from press.press.doctype.enterprise_contract.checkout import (
 )
 from press.press.doctype.enterprise_contract.enterprise_contract import (
 	ALREADY_PAID,
+	OPEN_STATUSES,
 	EnterpriseContract,
 	bank_transfer_details,
 	create_contract,
@@ -24,7 +25,6 @@ from press.press.doctype.enterprise_contract.enterprise_contract import (
 	purchased_credit,
 	team_contracts,
 )
-from press.press.doctype.enterprise_contract.installments import OPEN_STATUSES
 from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan import enabled_plans, gst_split
 from press.utils import get_current_team
 

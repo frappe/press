@@ -1,0 +1,99 @@
+# Copyright (c) 2026, Frappe and contributors
+# For license information, please see license.txt
+
+"""Spread each yearly contract payment over 12 months of partner contribution, without touching invoices."""
+
+from __future__ import annotations
+
+import json
+
+import frappe
+from frappe.utils import add_months, flt, get_date_str, get_first_day, get_last_day, getdate
+
+from press.press.doctype.enterprise_contract.enterprise_contract import OPEN_STATUSES
+from press.utils.billing import get_frappe_io_connection
+
+MONTHS_IN_YEAR = 12
+TRANSACTION_TYPE = "Enterprise Contract"
+TRANSACTION_ENDPOINT = "create_partner_transaction_for_fc_invoice"
+
+
+def contract_shares(month, partner_emails: list[str]) -> list[frappe._dict]:
+	if not partner_emails:
+		return []
+	month = get_first_day(month)
+	payment = frappe.qb.DocType("Enterprise Contract Payment")
+	contract = frappe.qb.DocType("Enterprise Contract")
+	team = frappe.qb.DocType("Team")
+	rows = (
+		frappe.qb.from_(payment)
+		.join(contract)
+		.on(payment.parent == contract.name)
+		.join(team)
+		.on(contract.team == team.name)
+		.select(
+			contract.name.as_("contract"),
+			contract.currency,
+			team.partner_email,
+			team.user.as_("customer_email"),
+			team.billing_name.as_("customer_name"),
+			payment.period_start,
+			payment.amount,
+		)
+		.where(contract.status.isin(OPEN_STATUSES))
+		.where(team.enabled == 1)
+		.where(team.partner_email.isin(partner_emails))
+		.where(payment.period_start >= add_months(month, 1 - MONTHS_IN_YEAR))
+		.where(payment.period_start <= get_last_day(month))
+	).run(as_dict=True)
+	for row in rows:
+		number = months_between(get_first_day(row.period_start), month) + 1
+		row.amount = monthly_amount(row.amount, number)
+	return rows
+
+
+# The last month takes the rounding difference, so the 12 shares add up to the payment.
+def monthly_amount(amount: float, number: int) -> float:
+	share = flt(amount / MONTHS_IN_YEAR, 2)
+	return flt(amount - share * (MONTHS_IN_YEAR - 1), 2) if number == MONTHS_IN_YEAR else share
+
+
+def months_between(start, end) -> int:
+	start, end = getdate(start), getdate(end)
+	return (end.year - start.year) * 12 + end.month - start.month
+
+
+def partner_transaction(share: frappe._dict, month) -> dict:
+	month = getdate(month)
+	return {
+		"invoice_id": f"{share.contract}-{month:%Y-%m}",
+		"invoice_amount": share.amount,
+		"currency": share.currency,
+		"due_date": get_date_str(get_last_day(month)),
+		"partner_email": share.partner_email,
+		"team": share.customer_email,
+		# Already paid, so frappe.io records it as a completed transaction.
+		"docstatus": 1,
+		"transaction_type": TRANSACTION_TYPE,
+	}
+
+
+# Runs daily and frappe.io updates by reference, so a failed day is retried by the next run.
+def send_partner_transactions():
+	if not frappe.db.get_single_value("Press Settings", "send_contract_partner_transactions"):
+		return
+	month = getdate()
+	partners = frappe.get_all("Team", {"enabled": 1, "erpnext_partner": 1}, pluck="partner_email")
+	transactions = [partner_transaction(share, month) for share in contract_shares(month, partners)]
+	if transactions:
+		post_transactions(transactions)
+
+
+def post_transactions(transactions: list[dict]):
+	client = get_frappe_io_connection()
+	response = client.session.post(
+		f"{client.url}/api/method/{TRANSACTION_ENDPOINT}",
+		headers=client.headers,
+		data={"partner_fc_invoices": json.dumps(transactions)},
+	)
+	response.raise_for_status()

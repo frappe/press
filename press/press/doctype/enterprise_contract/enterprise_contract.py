@@ -12,10 +12,6 @@ from frappe.utils import add_days, add_years, cint, getdate, now_datetime, today
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.balance_transaction.balance_transaction import unallocated_credit
-from press.press.doctype.enterprise_contract.installments import (
-	OPEN_STATUSES,
-	add_installment_to_current_invoice,
-)
 from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan import (
 	EnterpriseWarrantyPlan,
 	amount_due,
@@ -28,6 +24,7 @@ if TYPE_CHECKING:
 UTR_PATTERN = re.compile(r"[A-Z0-9]{12,22}")
 # Credits the team paid for. Free and promotional credits do not pay for a contract.
 PURCHASED_CREDIT_SOURCES = ("Prepaid Credits", "Transferred Credits")
+OPEN_STATUSES = ("Pending Signature", "Active")
 ALREADY_PAID = "This order is already paid. You can find your contract in the Contracts list."
 VISIBLE_STATUSES = ("Awaiting Payment", *OPEN_STATUSES)
 ORDER_FIELDS = (
@@ -210,7 +207,6 @@ class EnterpriseContract(Document):
 			self.status = "Pending Signature"
 		# Team members only have read access; callers check billing access.
 		self.save(ignore_permissions=True)
-		add_installment_to_current_invoice(self.team)
 
 	def submit_transfer_reference(self, reference: str):
 		if self.payment_gateway != "Bank Transfer":
