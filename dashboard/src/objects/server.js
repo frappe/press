@@ -29,6 +29,7 @@ export default {
 		rename: 'rename',
 		cleanup: 'cleanup_unused_files',
 		dropServer: 'drop_server',
+		sendTransferRequest: 'send_change_team_request',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
 		deleteSnapshot: 'delete_snapshot',
