@@ -159,6 +159,15 @@ class GroveTrialKey(Document):
 		frappe.get_cached_doc("Grove Settings").revoke_key(self.grove_key, self.team)
 		self.db_set({"status": "Revoked", "last_error": None}, commit=True)
 
+	def try_revoke_at_grove(self) -> None:
+		"""One try. A refusal (Grove's six-hour mint guard, Grove down) is kept on the record as
+		`last_error`; the write spaces the hourly retries."""
+		try:
+			self.revoke_at_grove()
+		except Exception as error:
+			frappe.log_error(title=f"Grove trial key revoke failed for {self.name}")
+			self.db_set({"status": "Revoking", "last_error": str(error) or type(error).__name__})
+
 
 def ensure_site_config_key(key: str, type: str) -> None:
 	"""An internal Site Config Key: the dashboard neither lists nor edits it, so the customer
@@ -172,7 +181,7 @@ def ensure_site_config_key(key: str, type: str) -> None:
 def revoke_trial_key(name: str) -> None:
 	key = frappe.get_doc("Grove Trial Key", name)
 	if key.status == "Revoking":
-		key.revoke_at_grove()
+		key.try_revoke_at_grove()
 
 
 def refill_trial_keys() -> None:
@@ -209,12 +218,7 @@ def retry_revokes() -> None:
 	for name in frappe.get_all(
 		"Grove Trial Key", filters={"status": "Revoking", "modified": ("<", stale)}, pluck="name"
 	):
-		key = frappe.get_doc("Grove Trial Key", name)
-		try:
-			key.revoke_at_grove()
-		except Exception as error:
-			frappe.log_error(title=f"Grove trial key revoke failed for {name}")
-			key.db_set({"status": "Revoking", "last_error": str(error) or type(error).__name__})
+		frappe.get_doc("Grove Trial Key", name).try_revoke_at_grove()
 
 
 def revoke_expired_keys(settings: GroveSettings) -> None:
