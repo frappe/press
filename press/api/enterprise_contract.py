@@ -60,7 +60,7 @@ def submit(order: dict | str, return_url: str, use_credits: bool = False):
 @frappe.whitelist()
 @role_guard.api("billing")
 def pay(return_url: str):
-	contract = awaiting_payment_contract(for_update=True)
+	contract = awaiting_payment_contract()
 	if close_checkout(contract):
 		return {"checkout_url": None, "message": ALREADY_PAID}
 	return {"checkout_url": start_checkout(contract, return_url)}
@@ -70,7 +70,7 @@ def pay(return_url: str):
 @role_guard.api("billing")
 def pay_with_credits():
 	# Locked so that a double click debits the credits once.
-	contract = awaiting_payment_contract(for_update=True)
+	contract = awaiting_payment_contract()
 	if close_checkout(contract):
 		return {**contract.as_dashboard(), "message": ALREADY_PAID}
 	contract.pay_with_credits()
@@ -104,18 +104,18 @@ def submit_transfer_reference(reference: str):
 @frappe.whitelist()
 @role_guard.api("billing")
 def cancel_order():
-	contract = awaiting_payment_contract(for_update=True)
+	contract = awaiting_payment_contract()
 	if close_checkout(contract):
 		return {"message": ALREADY_PAID}
 	contract.cancel_order()
 	return {"message": None}
 
 
-def awaiting_payment_contract(for_update: bool = False) -> EnterpriseContract:
+def awaiting_payment_contract() -> EnterpriseContract:
 	name = awaiting_contract_name()
 	if not name:
 		frappe.throw("No Enterprise order is waiting for payment")
-	return EnterpriseContract("Enterprise Contract", name, for_update=for_update)
+	return EnterpriseContract("Enterprise Contract", name, for_update=True)
 
 
 # Recorded instead of raised, because an error rolls the recorded payment back.
