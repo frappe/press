@@ -89,9 +89,13 @@ const props = defineProps({
 	contracts: { type: Array, required: true },
 })
 
-const statusOptions = ['Pending Signature', 'Active', 'Cancelled'].map(
-	(label) => ({ label, value: label }),
-)
+// Matches OPEN_STATUSES on the server.
+const OPEN_STATUSES = ['Pending Signature', 'Active']
+
+const statusOptions = [...OPEN_STATUSES, 'Cancelled'].map((label) => ({
+	label,
+	value: label,
+}))
 
 const search = ref('')
 const selectedStatuses = ref([])
@@ -106,8 +110,8 @@ const visible = computed(() => {
 	)
 })
 
-// A cancelled order has no agreement or payments to open.
-const hasDetails = (row) => row.status !== 'Cancelled'
+// Only an open contract has an agreement and payments to show.
+const hasDetails = (row) => OPEN_STATUSES.includes(row.status)
 </script>
 
 <style scoped>
