@@ -23,6 +23,7 @@ from press.press.doctype.enterprise_contract.test_enterprise_contract import (
 	create_team_with_billing_address,
 )
 from press.press.doctype.team.test_team import create_test_team
+from press.tests.before_test import freeze_time
 
 CONNECTION = "press.press.doctype.enterprise_contract.partner_contribution.get_frappe_io_connection"
 
@@ -94,6 +95,20 @@ class TestPartnerContribution(EnterpriseContractTestCase):
 				}
 			],
 		)
+
+	def test_payment_on_a_months_last_day_is_sent_by_the_run_on_the_first_but_not_on_the_second(self):
+		with freeze_time("2026-01-31 18:00:00", tick=True):
+			contract = self.paid_contract()
+		with freeze_time("2026-02-01 00:00:00"):
+			first_day_run = self.sent_transactions()
+		with freeze_time("2026-02-02 00:00:00"):
+			second_day_run = self.sent_transactions()
+
+		self.assertEqual(
+			[(row["invoice_id"], row["due_date"]) for row in first_day_run],
+			[(f"{contract.name}-2026-01", "2026-01-31"), (f"{contract.name}-2026-02", "2026-02-28")],
+		)
+		self.assertEqual([row["invoice_id"] for row in second_day_run], [f"{contract.name}-2026-02"])
 
 	def test_job_sends_nothing_while_the_press_setting_is_off(self):
 		self.paid_contract()
