@@ -108,7 +108,9 @@ const canUseCredits = computed(
 
 const payWithCredits = createResource({
 	url: 'press.api.enterprise_contract.pay_with_credits',
-	onSuccess: () => {
+	// A message when the last checkout turns out to be paid already.
+	onSuccess: ({ message }) => {
+		if (message) toast.info(message)
 		team.reload()
 		emit('updated')
 	},

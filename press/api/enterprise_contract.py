@@ -10,8 +10,8 @@ from frappe.utils import get_url
 
 from press.guards import role_guard
 from press.press.doctype.enterprise_contract.checkout import (
+	close_checkout,
 	paid_checkout_reference,
-	record_paid_checkout,
 	start_stripe_checkout,
 )
 from press.press.doctype.enterprise_contract.enterprise_contract import (
@@ -19,6 +19,7 @@ from press.press.doctype.enterprise_contract.enterprise_contract import (
 	EnterpriseContract,
 	bank_transfer_details,
 	create_contract,
+	lock_team_orders,
 	open_contract_name,
 	purchased_credit,
 )
@@ -43,7 +44,9 @@ def get():
 @role_guard.api("billing")
 def submit(order: dict | str, return_url: str, use_credits: bool = False):
 	team = get_current_team(get_doc=True)
-	if record_awaiting_checkout():
+	# Taken first, so that an order placed at the same time cannot start a session we then miss.
+	lock_team_orders(team.name)
+	if close_awaiting_checkout():
 		return {"checkout_url": None, "message": ALREADY_PAID}
 	contract = create_contract(team, frappe.parse_json(order))
 	if frappe.utils.sbool(use_credits):
@@ -58,7 +61,7 @@ def submit(order: dict | str, return_url: str, use_credits: bool = False):
 @role_guard.api("billing")
 def pay(return_url: str):
 	contract = awaiting_payment_contract(for_update=True)
-	if record_paid_checkout(contract):
+	if close_checkout(contract):
 		return {"checkout_url": None, "message": ALREADY_PAID}
 	return {"checkout_url": start_checkout(contract, return_url)}
 
@@ -68,6 +71,8 @@ def pay(return_url: str):
 def pay_with_credits():
 	# Locked so that a double click debits the credits once.
 	contract = awaiting_payment_contract(for_update=True)
+	if close_checkout(contract):
+		return {**contract.as_dashboard(), "message": ALREADY_PAID}
 	contract.pay_with_credits()
 	return contract.as_dashboard()
 
@@ -100,7 +105,7 @@ def submit_transfer_reference(reference: str):
 @role_guard.api("billing")
 def cancel_order():
 	contract = awaiting_payment_contract(for_update=True)
-	if record_paid_checkout(contract):
+	if close_checkout(contract):
 		return {"message": ALREADY_PAID}
 	contract.cancel_order()
 	return {"message": None}
@@ -114,16 +119,18 @@ def awaiting_payment_contract(for_update: bool = False) -> EnterpriseContract:
 
 
 # Recorded instead of raised, because an error rolls the recorded payment back.
-def record_awaiting_checkout() -> bool:
+def close_awaiting_checkout() -> bool:
 	name = awaiting_contract_name()
-	return bool(name) and record_paid_checkout(
-		EnterpriseContract("Enterprise Contract", name, for_update=True)
-	)
+	return bool(name) and close_checkout(EnterpriseContract("Enterprise Contract", name, for_update=True))
 
 
+# A locking read, so that a request which waited sees the order another one just cancelled or paid.
 def awaiting_contract_name() -> str | None:
 	return frappe.db.get_value(
-		"Enterprise Contract", {"team": get_current_team(), "status": "Awaiting Payment"}, "name"
+		"Enterprise Contract",
+		{"team": get_current_team(), "status": "Awaiting Payment"},
+		"name",
+		for_update=True,
 	)
 
 
