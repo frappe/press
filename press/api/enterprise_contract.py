@@ -24,6 +24,7 @@ from press.press.doctype.enterprise_contract.enterprise_contract import (
 	purchased_credit,
 	team_contracts,
 )
+from press.press.doctype.enterprise_contract.installments import OPEN_STATUSES
 from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan import enabled_plans, gst_split
 from press.utils import get_current_team
 
@@ -46,7 +47,9 @@ def get():
 @frappe.whitelist()
 @role_guard.api("billing")
 def get_contract(name: str):
-	if not frappe.db.exists("Enterprise Contract", {"name": name, "team": get_current_team()}):
+	if not frappe.db.exists(
+		"Enterprise Contract", {"name": name, "team": get_current_team(), "status": ("in", OPEN_STATUSES)}
+	):
 		frappe.throw("We could not find this contract. Please open it from the Contracts list.")
 	return EnterpriseContract("Enterprise Contract", name).as_dashboard()
 

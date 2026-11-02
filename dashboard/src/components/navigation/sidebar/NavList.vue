@@ -160,7 +160,7 @@ const list = computed(() => {
 			name: 'Contracts',
 			icon: LucideFileSignature,
 			route: '/contracts',
-			isActive: routeName === 'Contracts',
+			isActive: ['Contracts', 'Contract'].includes(routeName),
 			condition: $team.doc?.is_desk_user || $session.hasBillingAccess,
 			disabled: enforce2FA,
 		},

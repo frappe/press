@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 UTR_PATTERN = re.compile(r"[A-Z0-9]{12,22}")
 # Credits the team paid for. Free and promotional credits do not pay for a contract.
 PURCHASED_CREDIT_SOURCES = ("Prepaid Credits", "Transferred Credits")
-ALREADY_PAID = "This order is already paid. Reload the page to see your contract."
+ALREADY_PAID = "This order is already paid. You can find your contract in the Contracts list."
 VISIBLE_STATUSES = ("Awaiting Payment", *OPEN_STATUSES)
 ORDER_FIELDS = (
 	"plan",
