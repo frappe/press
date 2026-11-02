@@ -279,6 +279,11 @@ class TestGroveTrialKey(FrappeTestCase):
 		self.revoke.side_effect = frappe.ValidationError("6 hours")
 		with patch(f"{MODULE}.frappe.enqueue"):
 			key.revoke()
+		# The queued job itself: the refusal lands on the record, nothing raises.
+		with patch(f"{MODULE}.frappe.log_error"):
+			grove_trial_key.revoke_trial_key(key.name)
+		self.assertEqual((key.reload().status, key.last_error), ("Revoking", "6 hours"))
+		self.revoke.reset_mock()
 
 		grove_trial_key.retry_revokes()
 		self.revoke.assert_not_called()
