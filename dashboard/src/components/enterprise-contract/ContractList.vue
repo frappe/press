@@ -1,62 +1,121 @@
 <template>
-	<div
-		class="flex flex-col rounded-lg text-base text-ink-gray-9 shadow dark:border"
-	>
-		<div class="flex items-center justify-between gap-4 px-4 py-3">
-			<div class="text-lg font-semibold">Contracts</div>
-			<Button
-				v-if="canOrder"
-				variant="solid"
-				label="New contract"
-				@click="emit('new')"
+	<div>
+		<div class="flex items-center gap-2 pb-3 overflow-auto">
+			<TextInput
+				v-model="search"
+				placeholder="Search contracts"
+				class="w-56 shrink-0"
+			>
+				<template #prefix>
+					<lucide-search class="size-4 text-ink-gray-5" />
+				</template>
+			</TextInput>
+			<MultiSelect
+				v-model="selectedStatuses"
+				placeholder="Status"
+				class="!w-44 shrink-0 *:text-ink-gray-5"
+				:options="statusOptions"
 			/>
 		</div>
-		<div
-			class="hidden grid-cols-4 border-y bg-surface-gray-1 px-4 py-2 text-sm text-ink-gray-6 sm:grid"
-		>
-			<span>Contract</span>
-			<span>Status</span>
-			<span>Yearly price</span>
-			<span>Period</span>
+
+		<div class="overflow-x-auto">
+			<table class="contracts-table w-full">
+				<thead class="text-ink-gray-5 text-sm">
+					<tr>
+						<th class="rounded-l">Contract</th>
+						<th>Status</th>
+						<th>Plan</th>
+						<th>Yearly Price</th>
+						<th>Start Date</th>
+						<th class="rounded-r">Price Locked Until</th>
+					</tr>
+				</thead>
+				<tbody class="text-base text-ink-gray-8">
+					<tr v-for="row in visible" :key="row.name" class="*:border-b">
+						<td class="font-medium">
+							<router-link
+								v-if="hasDetails(row)"
+								class="hover:underline"
+								:to="{ name: 'Contract', params: { name: row.name } }"
+							>
+								{{ row.name }}
+							</router-link>
+							<template v-else>{{ row.name }}</template>
+						</td>
+						<td>
+							<Badge
+								variant="subtle"
+								class="w-fit"
+								:theme="contractStatusBadge(row.status).theme"
+							>
+								<span
+									class="size-1.5 rounded-full shrink-0 mr-0.5"
+									:class="contractStatusBadge(row.status).dot"
+								/>
+								{{ row.status }}
+							</Badge>
+						</td>
+						<td>{{ row.plan_title }}</td>
+						<td>{{ money(row.yearly_price, row.currency) }}</td>
+						<td>{{ hasDetails(row) ? formatDate(row.start_date) : '—' }}</td>
+						<td>
+							{{ hasDetails(row) ? formatDate(row.price_locked_until) : '—' }}
+						</td>
+					</tr>
+				</tbody>
+			</table>
 		</div>
-		<div class="divide-y">
-			<component
-				:is="hasDetails(row) ? 'router-link' : 'div'"
-				v-for="row in contracts"
-				:key="row.name"
-				:to="hasDetails(row) ? { name: 'Contract', params: { name: row.name } } : undefined"
-				class="grid grid-cols-1 items-center gap-2 px-4 py-3 sm:grid-cols-4 sm:gap-0"
-				:class="{ 'hover:bg-surface-gray-1': hasDetails(row) }"
-			>
-				<div>
-					<div class="font-medium">{{ row.plan_title }} plan</div>
-					<div class="text-sm text-ink-gray-6">{{ row.name }}</div>
-				</div>
-				<div>
-					<Badge :theme="statusTheme(row.status)" :label="row.status" />
-				</div>
-				<div>{{ money(row.yearly_price, row.currency) }}</div>
-				<div class="text-ink-gray-7">{{ period(row) }}</div>
-			</component>
+
+		<div
+			v-if="!visible.length"
+			class="py-10 text-center text-sm text-ink-gray-5"
+		>
+			No contracts
+		</div>
+
+		<div class="flex justify-end py-2 text-sm text-ink-gray-5">
+			Total {{ visible.length }}
+			{{ visible.length === 1 ? 'contract' : 'contracts' }}
 		</div>
 	</div>
 </template>
 
 <script setup>
-import { Badge, Button } from 'frappe-ui'
-import { formatDate, money, statusTheme } from './format'
+import { Badge, MultiSelect, TextInput } from 'frappe-ui'
+import { computed, ref } from 'vue'
+import { contractStatusBadge, formatDate, money } from './format'
 
-defineProps({
+const props = defineProps({
 	contracts: { type: Array, required: true },
-	canOrder: { type: Boolean, default: false },
 })
-const emit = defineEmits(['new'])
 
-// A cancelled or unpaid order has no agreement or payments to open.
-const hasDetails = (row) => ['Pending Signature', 'Active'].includes(row.status)
+const statusOptions = ['Pending Signature', 'Active', 'Cancelled'].map(
+	(label) => ({ label, value: label }),
+)
 
-const period = (row) =>
-	hasDetails(row)
-		? `Since ${formatDate(row.start_date)}, price locked until ${formatDate(row.price_locked_until)}`
-		: '—'
+const search = ref('')
+const selectedStatuses = ref([])
+
+const visible = computed(() => {
+	const query = search.value.trim().toLowerCase()
+	return props.contracts.filter(
+		(row) =>
+			(!selectedStatuses.value.length ||
+				selectedStatuses.value.includes(row.status)) &&
+			`${row.name} ${row.plan_title}`.toLowerCase().includes(query),
+	)
+})
+
+// A cancelled order has no agreement or payments to open.
+const hasDetails = (row) => row.status !== 'Cancelled'
 </script>
+
+<style scoped>
+.contracts-table th {
+	@apply p-2 bg-surface-gray-1 text-left font-normal;
+}
+
+.contracts-table td {
+	@apply p-2 whitespace-nowrap;
+}
+</style>
