@@ -100,7 +100,9 @@ class TestGroveSettings(FrappeTestCase):
 			("K2", "S2", True),
 		)
 
-	def test_a_pool_key_is_minted_untitled_in_the_trial_geography_at_the_cap_in_the_rows_group(self):
+	def test_a_pool_key_is_minted_titled_by_the_record_in_the_trial_geography_at_the_cap_in_the_rows_group(
+		self,
+	):
 		settings = enrolled(
 			trial_key_cap=3,
 			trial_products=pool_rows(
@@ -114,13 +116,13 @@ class TestGroveSettings(FrappeTestCase):
 			"api_key": "gr_x",  # pragma: allowlist secret
 		}  # pragma: allowlist secret
 		with grove_replies(row) as post:
-			self.assertEqual(settings.provision_key(settings.trial_products[0]), row)
-			settings.provision_key(settings.trial_products[1])
+			self.assertEqual(settings.provision_key(settings.trial_products[0], "GTK-00001"), row)
+			settings.provision_key(settings.trial_products[1], "GTK-00002")
 		self.assertEqual(
 			sent(post, 0),
 			(
 				"grove.api.keys.provision_key",
-				{"team": "Press Team", "title": None, "geography": "ap-south", "cap": 3},
+				{"team": "Press Team", "title": "GTK-00001", "geography": "ap-south", "cap": 3},
 				{"Authorization": "token K:S"},
 			),
 		)
@@ -163,9 +165,9 @@ class TestGroveSettings(FrappeTestCase):
 		with grove_replies(None, status=417) as post:
 			post.return_value.json.return_value = {"_server_messages": refusal}
 			with self.assertRaisesRegex(frappe.ValidationError, "already holds 2 live keys"):
-				settings.provision_key(row)
+				settings.provision_key(row, "GTK-00001")
 		with grove_replies(None, status=503), self.assertRaisesRegex(frappe.ValidationError, "unavailable"):
-			settings.provision_key(row)
+			settings.provision_key(row, "GTK-00001")
 
 	def test_a_sized_pool_needs_a_geography_and_one_row_per_product(self):
 		with self.assertRaisesRegex(frappe.ValidationError, "Trial Key Geography"):
@@ -178,5 +180,5 @@ class TestGroveSettings(FrappeTestCase):
 	def test_not_enrolled_is_refused_before_any_call(self):
 		settings = enrolled(control_api_key="", control_api_secret="")
 		with grove_replies({}) as post, self.assertRaisesRegex(frappe.ValidationError, "enroll Press"):
-			settings.provision_key(settings.trial_products[0])
+			settings.provision_key(settings.trial_products[0], "GTK-00001")
 		post.assert_not_called()

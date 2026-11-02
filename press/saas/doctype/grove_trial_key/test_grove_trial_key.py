@@ -64,7 +64,7 @@ class TestGroveTrialKey(FrappeTestCase):
 			patch.object(
 				GroveSettings,
 				"provision_key",
-				side_effect=lambda row: minted(frappe.generate_hash(length=10)),
+				side_effect=lambda row, title: minted(frappe.generate_hash(length=10)),
 			)
 		)
 		self.revoke = self.start(patch.object(GroveSettings, "revoke_key"))
@@ -108,7 +108,9 @@ class TestGroveTrialKey(FrappeTestCase):
 
 		self.assertEqual(self.statuses(), ["Available"] * 3)
 		self.assertEqual(self.provision.call_count, 2)
-		key = frappe.get_doc("Grove Trial Key", frappe.get_all("Grove Trial Key", pluck="name")[-1])
+		key = frappe.get_doc(
+			"Grove Trial Key", frappe.get_all("Grove Trial Key", pluck="name", order_by="creation asc")[-1]
+		)
 		self.assertEqual(
 			(
 				key.team,
@@ -120,6 +122,9 @@ class TestGroveTrialKey(FrappeTestCase):
 			),
 			("Press Team", PRODUCT, "ap-south", GATEWAY, 2, f"gr_{key.grove_key}"),
 		)
+		# The record has an id of its own, and that id is the key's title at Grove.
+		self.assertTrue(key.name.startswith("GTK-") and key.name != key.grove_key)
+		self.assertEqual(self.provision.call_args.kwargs["title"], key.name)
 
 	def test_each_product_is_refilled_to_its_size_in_its_group_within_one_batch(self):
 		pools({PRODUCT: 2, OTHER: 2}, groups={OTHER: "crm-trial"})

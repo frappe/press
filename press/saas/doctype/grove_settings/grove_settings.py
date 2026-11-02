@@ -91,14 +91,15 @@ class GroveSettings(Document):
 			raise frappe.ValidationError(_("Grove can't be reached right now.")) from e
 		return read(response)
 
-	def provision_key(self, row: GroveTrialProduct) -> dict:
-		"""Mint one key into `row`'s product's pool under the trial team: untitled, in the trial
-		geography, at the trial cap, no expiry (Press revokes it on its own clock). What it may call is
-		the team's, set at Grove, plus the row's Model Group when it names one.
-		`{name, geography, gateway_url, api_key}`; the secret is in this answer and nowhere else at Grove."""
+	def provision_key(self, row: GroveTrialProduct, title: str) -> dict:
+		"""Mint one key into `row`'s product's pool under the trial team: titled `title` (the Grove Trial
+		Key record's id, so Grove's list names Press's record), in the trial geography, at the trial cap,
+		no expiry (Press revokes it on its own clock). What it may call is the team's, set at Grove, plus
+		the row's Model Group when it names one. `{name, geography, gateway_url, api_key}`; the secret is
+		in this answer and nowhere else at Grove."""
 		body = {
 			"team": self.trial_team,
-			"title": None,
+			"title": title,
 			"geography": self.trial_key_geography,
 			"cap": self.trial_key_cap,
 		}
