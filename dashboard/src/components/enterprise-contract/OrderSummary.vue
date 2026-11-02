@@ -22,7 +22,7 @@
 				</div>
 				<div class="text-base font-medium text-ink-gray-7">
 					{{ payToday.gst
-							? `${money(payToday.amount, plan.currency)} + ${money(payToday.gst, plan.currency)} GST`
+							? `${money(payToday.amount, plan.currency)} + ${gstText(payToday.gst, gstSplit, plan.currency)}`
 							: 'for the first year' }}
 				</div>
 			</div>
@@ -55,12 +55,13 @@
 <script setup>
 import { Button, ErrorMessage, FormControl } from 'frappe-ui'
 import { computed, ref } from 'vue'
-import { formatDate, money } from './format'
+import { formatDate, gstText, money } from './format'
 
 const props = defineProps({
 	plan: { type: Object, required: true },
 	order: { type: Object, required: true },
 	billingName: { type: String, default: '' },
+	gstSplit: { type: String, default: null },
 	canPay: { type: Boolean, default: false },
 	useCredits: { type: Boolean, default: false },
 	lockedUntil: { type: Object, required: true },

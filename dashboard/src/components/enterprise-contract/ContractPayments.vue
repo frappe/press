@@ -30,7 +30,8 @@
 						{{ money(payment.amount_paid || payment.amount, contract.currency) }}
 					</div>
 					<div v-if="payment.gst" class="text-sm text-ink-gray-6">
-						incl. {{ money(payment.gst, contract.currency) }} GST
+						incl.
+						{{ gstText(payment.gst, contract.gst_split, contract.currency) }}
 					</div>
 				</div>
 				<div class="flex justify-end">
@@ -53,7 +54,7 @@
 
 <script setup>
 import { Button } from 'frappe-ui'
-import { formatDate, money } from './format'
+import { formatDate, gstText, money } from './format'
 
 defineProps({ contract: { type: Object, required: true } })
 </script>

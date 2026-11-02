@@ -64,7 +64,7 @@
 				<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 					Billing Details
 				</h2>
-				<BillingDetailsCard class="mt-2" />
+				<BillingDetailsCard class="mt-2" @saved="emit('billingSaved')" />
 			</div>
 
 			<div>
@@ -140,6 +140,7 @@
 			:plan="plan"
 			:order="order"
 			:billing-name="team.doc.billing_details?.billing_name"
+			:gst-split="gstSplit"
 			:can-pay="hasBillingAddress"
 			:use-credits="useCredits"
 			:locked-until="lockedUntil(Number(order.price_lock_years))"
@@ -166,8 +167,9 @@ const props = defineProps({
 	plans: { type: Array, required: true },
 	// Purchased credits only; free credits do not pay for a contract.
 	creditBalance: { type: Number, default: 0 },
+	gstSplit: { type: String, default: null },
 })
-const emit = defineEmits(['placed'])
+const emit = defineEmits(['placed', 'billingSaved'])
 
 const team = getTeam()
 const order = reactive(newOrder())

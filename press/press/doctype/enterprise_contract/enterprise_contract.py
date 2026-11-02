@@ -19,6 +19,7 @@ from press.press.doctype.enterprise_contract.installments import (
 from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan import (
 	EnterpriseWarrantyPlan,
 	amount_due,
+	gst_split,
 )
 
 if TYPE_CHECKING:
@@ -248,6 +249,7 @@ class EnterpriseContract(Document):
 			"next_renewal": {"date": self.next_period_start(), "amount": self.renewal_price()},
 			"amount_due": self.amount_due(),
 			"amount_due_with_credits": self.amount_due(with_gst=False),
+			"gst_split": gst_split(self.billing_address),
 		}
 
 
