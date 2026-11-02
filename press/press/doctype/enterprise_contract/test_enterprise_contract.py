@@ -8,6 +8,7 @@ from frappe.utils import add_days, add_years, getdate, today
 from press.press.doctype.enterprise_contract.enterprise_contract import (
 	EnterpriseContract,
 	create_contract,
+	team_contracts,
 )
 from press.press.doctype.enterprise_warranty_plan.test_enterprise_warranty_plan import (
 	create_test_enterprise_plan,
@@ -65,6 +66,18 @@ class EnterpriseContractTestCase(FrappeTestCase):
 
 
 class TestEnterpriseContract(EnterpriseContractTestCase):
+	def test_team_contracts_list_the_history_of_this_team_only(self):
+		cancelled = create_contract(self.team, self.make_order())
+		cancelled.cancel_order()
+		paid = create_contract(self.team, self.make_order())
+		paid.record_payment(reference="UTR000000000002")
+		other_team = create_team_with_billing_address("India")
+		create_contract(other_team, self.make_order())
+
+		rows = {row.name: row.status for row in team_contracts(self.team.name)}
+
+		self.assertEqual(rows, {cancelled.name: "Cancelled", paid.name: "Pending Signature"})
+
 	def test_payment_keeps_its_gst_split_when_the_billing_state_changes(self):
 		frappe.db.set_single_value("Press Settings", "gst_home_state", "Maharashtra")
 		contract = create_contract(self.team, self.make_order())
