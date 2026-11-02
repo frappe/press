@@ -9,6 +9,10 @@ export function money(amount, currencyCode) {
 	return currency(amount, currencyCode, 0)
 }
 
+export function statusTheme(status) {
+	return { Active: 'green', 'Pending Signature': 'orange' }[status] || 'gray'
+}
+
 export function gstLines(gst, split) {
 	if (split === 'inter_state') return [{ label: 'IGST', amount: gst }]
 	if (split !== 'intra_state') return [{ label: 'GST', amount: gst }]

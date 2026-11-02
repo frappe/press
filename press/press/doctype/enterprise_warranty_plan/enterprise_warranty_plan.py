@@ -28,7 +28,7 @@ class EnterpriseWarrantyPlan(Document):
 
 	def validate(self):
 		if self.max_price_lock_years < 1:
-			frappe.throw("Max price lock period must be at least 1 year")
+			frappe.throw("Max price lock period must be at least 1 year. Please enter 1 or more.")
 
 	def get_price(self, currency: str) -> float:
 		return self.price_inr if currency == "INR" else self.price_usd

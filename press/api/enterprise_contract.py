@@ -22,6 +22,7 @@ from press.press.doctype.enterprise_contract.enterprise_contract import (
 	lock_team_orders,
 	open_contract_name,
 	purchased_credit,
+	team_contracts,
 )
 from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan import enabled_plans, gst_split
 from press.utils import get_current_team
@@ -38,7 +39,16 @@ def get():
 		"bank_transfer": bank_transfer_details() if team.currency == "INR" else None,
 		"credit_balance": purchased_credit(team.name),
 		"gst_split": gst_split(team.billing_address),
+		"contracts": team_contracts(team.name),
 	}
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def get_contract(name: str):
+	if not frappe.db.exists("Enterprise Contract", {"name": name, "team": get_current_team()}):
+		frappe.throw("We could not find this contract. Please open it from the Contracts list.")
+	return EnterpriseContract("Enterprise Contract", name).as_dashboard()
 
 
 @frappe.whitelist()
@@ -153,4 +163,4 @@ def validate_online_checkout(contract: EnterpriseContract):
 def validate_return_url(return_url: str, request_host: str | None = None):
 	hostnames = {urlparse(get_url()).hostname, (request_host or "").split(":")[0]}
 	if urlparse(return_url).hostname not in hostnames:
-		frappe.throw("Invalid return URL")
+		frappe.throw("This return URL is not on this site. Please reload the page and try again.")

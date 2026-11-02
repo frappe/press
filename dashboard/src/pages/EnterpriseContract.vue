@@ -7,7 +7,7 @@
 
 	<div
 		class="mx-auto w-full px-4 sm:px-5"
-		:class="current ? 'max-w-3xl' : 'max-w-[72rem]'"
+		:class="showForm ? 'max-w-[72rem]' : 'max-w-3xl'"
 	>
 		<div
 			v-if="verifyPayment.loading || (contract.loading && !contract.data)"
@@ -22,22 +22,30 @@
 			:message="contract.error || verifyPayment.error"
 		/>
 		<template v-else-if="contract.data">
-			<div v-if="current" class="py-8">
+			<div
+				v-if="!showForm && contracts.length"
+				class="flex flex-col gap-6 py-8"
+			>
 				<AwaitingPayment
-					v-if="current.status === 'Awaiting Payment'"
+					v-if="awaiting"
 					:contract="current"
 					:bank="contract.data.bank_transfer"
 					:credit-balance="contract.data.credit_balance"
 					@updated="contract.reload()"
 				/>
-				<ContractDetails v-else :contract="current" />
+				<ContractList
+					v-if="listed.length"
+					:contracts="listed"
+					:can-order="!current && contract.data.plans.length > 0"
+					@new="ordering = true"
+				/>
 			</div>
 			<OrderForm
 				v-else-if="contract.data.plans.length"
 				:plans="contract.data.plans"
 				:credit-balance="contract.data.credit_balance"
 				:gst-split="contract.data.gst_split"
-				@placed="contract.reload()"
+				@placed="onPlaced"
 				@billing-saved="contract.reload()"
 			/>
 			<div v-else class="py-24 text-center text-base text-ink-gray-6">
@@ -49,11 +57,11 @@
 
 <script setup>
 import { Breadcrumbs, createResource, ErrorMessage, Spinner } from 'frappe-ui'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import AwaitingPayment from '../components/enterprise-contract/AwaitingPayment.vue'
-import ContractDetails from '../components/enterprise-contract/ContractDetails.vue'
+import ContractList from '../components/enterprise-contract/ContractList.vue'
 import { isGatewayReturn } from '../components/enterprise-contract/checkout'
 import OrderForm from '../components/enterprise-contract/OrderForm.vue'
 import Header from '../components/Header.vue'
@@ -63,6 +71,23 @@ const router = useRouter()
 
 const contract = createResource({ url: 'press.api.enterprise_contract.get' })
 const current = computed(() => contract.data?.contract)
+const contracts = computed(() => contract.data?.contracts || [])
+const awaiting = computed(() => current.value?.status === 'Awaiting Payment')
+// The awaiting order has its own card above the list.
+const listed = computed(() =>
+	contracts.value.filter(
+		(row) => !awaiting.value || row.name !== current.value.name,
+	),
+)
+const ordering = ref(false)
+const showForm = computed(
+	() => contract.data && (ordering.value || !contracts.value.length),
+)
+
+function onPlaced() {
+	ordering.value = false
+	contract.reload()
+}
 
 const verifyPayment = createResource({
 	url: 'press.api.enterprise_contract.verify_payment',

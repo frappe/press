@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 UTR_PATTERN = re.compile(r"[A-Z0-9]{12,22}")
 # Credits the team paid for. Free and promotional credits do not pay for a contract.
 PURCHASED_CREDIT_SOURCES = ("Prepaid Credits", "Transferred Credits")
-ALREADY_PAID = "This order is already paid"
+ALREADY_PAID = "This order is already paid. Reload the page to see your contract."
 VISIBLE_STATUSES = ("Awaiting Payment", *OPEN_STATUSES)
 ORDER_FIELDS = (
 	"plan",
@@ -103,7 +103,7 @@ class EnterpriseContract(Document):
 	def before_insert(self):
 		self.validate_no_open_contract()
 		if not self.plan_doc.enabled:
-			frappe.throw("This plan is no longer available")
+			frappe.throw("This plan is no longer available. Please choose another plan.")
 		if self.currency == "INR" and not bank_transfer_details():
 			frappe.throw("Bank transfer details are not set up yet. Please contact support.")
 		self.cancel_unpaid_contracts()
@@ -164,7 +164,9 @@ class EnterpriseContract(Document):
 			frappe.throw(ALREADY_PAID)
 		amount = self.amount_due(with_gst=False)["amount"]
 		if purchased_credit(self.team) < amount:
-			frappe.throw("Not enough credits to pay for the full year")
+			frappe.throw(
+				"Not enough credits to pay for the full year. Please buy more credits or choose another payment method."
+			)
 		transaction = frappe.get_doc(
 			doctype="Balance Transaction",
 			team=self.team,
@@ -212,7 +214,7 @@ class EnterpriseContract(Document):
 
 	def submit_transfer_reference(self, reference: str):
 		if self.payment_gateway != "Bank Transfer":
-			frappe.throw("This order is paid online")
+			frappe.throw("This order is paid online. Please use the Pay button on the Contracts page.")
 		reference = (reference or "").strip().upper()
 		if not UTR_PATTERN.fullmatch(reference):
 			frappe.throw("Enter the 12 to 22 character UTR number from your bank")
@@ -269,6 +271,23 @@ def payment_for_dashboard(row) -> dict:
 		"invoice_pdf",
 	)
 	return {field: row.get(field) for field in fields}
+
+
+def team_contracts(team: str) -> list[dict]:
+	return frappe.get_all(
+		"Enterprise Contract",
+		{"team": team},
+		[
+			"name",
+			"plan_title",
+			"status",
+			"currency",
+			"yearly_price",
+			"start_date",
+			"price_locked_until",
+		],
+		order_by="creation desc",
+	)
 
 
 def open_contract_name(team: str) -> str | None:
