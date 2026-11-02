@@ -10,6 +10,7 @@
 		"from_team",
 		"to_team",
 		"transfer_completed",
+		"expires_on",
 		"reason",
 		"key"
 	],
@@ -57,12 +58,19 @@
 			"in_standard_filter": 1,
 			"label": "Transfer Completed"
 		},
+		{
+			"description": "The confirmation link stops working after this time.",
+			"fieldname": "expires_on",
+			"fieldtype": "Datetime",
+			"label": "Expires On",
+			"read_only": 1
+		},
 		{ "fieldname": "reason", "fieldtype": "Long Text", "label": "Reason" },
 		{ "fieldname": "key", "fieldtype": "Data", "label": "Key", "read_only": 1 }
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2025-02-20 13:46:49.448661",
+	"modified": "2026-11-02 16:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Team Change",
