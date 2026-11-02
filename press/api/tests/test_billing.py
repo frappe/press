@@ -2,11 +2,15 @@ from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 import frappe
+import razorpay
+import stripe
 from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 
 from press.api.billing import (
 	_validate_prepaid_credits,
+	create_payment_intent_for_buying_credits,
+	create_razorpay_order,
 	get_cleaned_up_transactions,
 	get_processed_balance_transactions,
 	verify_m_pesa_transaction,
@@ -357,3 +361,79 @@ class TestValidatePrepaidCredits(FrappeTestCase):
 
 		with self.assertRaisesRegex(frappe.ValidationError, "Amount should be at least ₹66.25"):
 			_validate_prepaid_credits(50, "INR")
+
+
+class TestAmountAboveGatewayLimit(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_team()
+		self.team.db_set("currency", "INR")
+		frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+		frappe.db.set_single_value("Press Settings", "razorpay_max_order_amount_inr", 500000)
+		frappe.set_user(self.team.user)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_razorpay_order_above_limit_with_gst_is_blocked_before_calling_razorpay(self, mock_client):
+		with self.assertRaisesRegex(frappe.ValidationError, r"5,?90,000.*including GST.*5,?00,000"):
+			create_razorpay_order(500000, "Prepaid Credits")
+
+		mock_client.return_value.order.create.assert_not_called()
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_razorpay_order_equal_to_limit_with_gst_creates_order(self, mock_client):
+		mock_client.return_value.order.create.return_value = {"id": "order_at_limit"}
+
+		order = create_razorpay_order(423728.81, "Prepaid Credits")
+
+		self.assertEqual(order["order_id"], "order_at_limit")
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_inr_limit_does_not_apply_to_usd_razorpay_order(self, mock_client):
+		self.team.db_set("currency", "USD")
+		mock_client.return_value.order.create.return_value = {"id": "order_usd"}
+
+		order = create_razorpay_order(600000, "Prepaid Credits")
+
+		self.assertEqual(order["order_id"], "order_usd")
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_razorpay_order_is_not_limited_when_setting_is_empty(self, mock_client):
+		frappe.db.set_single_value("Press Settings", "razorpay_max_order_amount_inr", 0)
+		mock_client.return_value.order.create.return_value = {"id": "order_no_limit"}
+
+		order = create_razorpay_order(500000, "Prepaid Credits")
+
+		self.assertEqual(order["order_id"], "order_no_limit")
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_razorpay_rejection_shows_its_reason_and_creates_no_payment_record(self, mock_client):
+		mock_client.return_value.order.create.side_effect = razorpay.errors.BadRequestError(
+			"Amount exceeds maximum amount allowed."
+		)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Amount exceeds maximum amount allowed"):
+			create_razorpay_order(1000, "Prepaid Credits")
+
+		self.assertFalse(frappe.db.exists("Razorpay Payment Record", {"team": self.team.name}))
+
+	@patch("press.api.billing.get_stripe")
+	def test_stripe_intent_above_limit_shows_stripe_message(self, mock_get_stripe):
+		mock_get_stripe.return_value.PaymentIntent.create.side_effect = stripe.error.InvalidRequestError(
+			"Amount must be no more than ₹9,999,999.99", "amount", code="amount_too_large"
+		)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Amount must be no more than"):
+			create_payment_intent_for_buying_credits(10000000)
+
+	@patch("press.api.billing.get_stripe")
+	def test_other_stripe_invalid_request_is_not_shown_to_customer(self, mock_get_stripe):
+		mock_get_stripe.return_value.PaymentIntent.create.side_effect = stripe.error.InvalidRequestError(
+			"No such customer", "customer", code="resource_missing"
+		)
+
+		with self.assertRaisesRegex(stripe.error.InvalidRequestError, "No such customer"):
+			create_payment_intent_for_buying_credits(1000)
