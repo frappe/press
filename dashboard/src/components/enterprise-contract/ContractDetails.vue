@@ -14,11 +14,13 @@
 						· {{ contract.name }}
 					</div>
 				</div>
-				<Badge
-					size="lg"
-					:theme="statusTheme(contract.status)"
-					:label="contract.status"
-				/>
+				<Badge size="lg" :theme="contractStatusBadge(contract.status).theme">
+					<span
+						class="size-1.5 rounded-full shrink-0 mr-0.5"
+						:class="contractStatusBadge(contract.status).dot"
+					/>
+					{{ contract.status }}
+				</Badge>
 			</div>
 
 			<ContractProgress class="px-4 pb-4 pt-1" :status="contract.status" />
@@ -89,7 +91,7 @@ import { Badge, Button } from 'frappe-ui'
 import { computed } from 'vue'
 import ContractPayments from './ContractPayments.vue'
 import ContractProgress from './ContractProgress.vue'
-import { formatDate, money, statusTheme } from './format'
+import { contractStatusBadge, formatDate, money } from './format'
 
 const props = defineProps({ contract: { type: Object, required: true } })
 
