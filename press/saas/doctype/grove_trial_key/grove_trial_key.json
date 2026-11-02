@@ -2,28 +2,31 @@
 	"actions": [],
 	"autoname": "field:grove_key",
 	"creation": "2026-10-24 00:00:00",
-	"description": "One Grove (AI) key minted ahead under the trial team and held here with its secret, until a Product Trial site takes it into its site config as ai_keys. Revoked once the site is archived.",
+	"description": "One Grove (AI) key minted ahead under the trial team for one Product Trial and held here with its secret, until a site of that product takes it into its site config as ai_keys. Revoked once the site is archived or Revokes Automatically After days have passed since it took it.",
 	"doctype": "DocType",
 	"engine": "InnoDB",
 	"field_order": [
 		"status",
 		"grove_key",
+		"product_trial",
 		"column_break_head",
 		"geography",
 		"gateway_url",
+		"cap",
 		"assignment_section",
 		"team",
 		"site",
 		"column_break_assignment",
 		"product_trial_request",
 		"assigned_at",
+		"last_error",
 		"credentials_section",
 		"api_key"
 	],
 	"fields": [
 		{
 			"default": "Available",
-			"description": "Available until a Product Trial site takes it (Assigned). Revoking once the site is archived or Revoke Key is clicked, Revoked when Grove confirms.",
+			"description": "Available until a site of its product takes it (Assigned). Revoking once the site is archived, its days have passed or Revoke Key is clicked, Revoked when Grove confirms.",
 			"fieldname": "status",
 			"fieldtype": "Select",
 			"in_list_view": 1,
@@ -44,6 +47,16 @@
 			"unique": 1
 		},
 		{
+			"description": "The Product Trial whose sites this key is for, set at the mint.",
+			"fieldname": "product_trial",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Product Trial",
+			"options": "Product Trial",
+			"read_only": 1
+		},
+		{
 			"fieldname": "column_break_head",
 			"fieldtype": "Column Break"
 		},
@@ -59,6 +72,13 @@
 			"fieldtype": "Data",
 			"label": "Gateway URL",
 			"options": "URL",
+			"read_only": 1
+		},
+		{
+			"description": "What the key may spend for its life, as Grove minted it from Trial Key Cap; Raise Cap lifts it while the site runs.",
+			"fieldname": "cap",
+			"fieldtype": "Currency",
+			"label": "Cap (USD)",
 			"read_only": 1
 		},
 		{
@@ -102,6 +122,14 @@
 			"fieldname": "assigned_at",
 			"fieldtype": "Datetime",
 			"label": "Assigned At",
+			"read_only": 1,
+			"description": "Press revokes the key once Grove Settings' Revokes Automatically After days have passed from this, whatever the site does."
+		},
+		{
+			"description": "What Grove answered the last revoke that failed; cleared once one lands. The Error Log has the traceback.",
+			"fieldname": "last_error",
+			"fieldtype": "Small Text",
+			"label": "Last Error",
 			"read_only": 1
 		},
 		{
@@ -119,7 +147,7 @@
 		}
 	],
 	"links": [],
-	"modified": "2026-10-24 00:00:00",
+	"modified": "2026-11-02 00:00:00",
 	"modified_by": "Administrator",
 	"module": "SaaS",
 	"name": "Grove Trial Key",
@@ -142,6 +170,24 @@
 	"row_format": "Dynamic",
 	"sort_field": "creation",
 	"sort_order": "DESC",
-	"states": [],
-	"track_changes": 1
+	"states": [
+		{
+			"color": "Blue",
+			"title": "Available"
+		},
+		{
+			"color": "Green",
+			"title": "Assigned"
+		},
+		{
+			"color": "Orange",
+			"title": "Revoking"
+		},
+		{
+			"color": "Gray",
+			"title": "Revoked"
+		}
+	],
+	"track_changes": 1,
+	"search_fields": "site,product_trial"
 }

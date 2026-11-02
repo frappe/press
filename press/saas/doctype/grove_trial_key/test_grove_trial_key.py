@@ -10,38 +10,45 @@ from frappe.utils import add_to_date, now_datetime
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.site.test_site import create_test_site
 from press.saas.doctype.grove_settings.grove_settings import GroveSettings
-from press.saas.doctype.grove_settings.test_grove_settings import enrolled
+from press.saas.doctype.grove_settings.test_grove_settings import enrolled, pool_rows, product_trial
 from press.saas.doctype.grove_trial_key import grove_trial_key
 from press.saas.doctype.grove_trial_key.grove_trial_key import GroveTrialKey
 
 MODULE = "press.saas.doctype.grove_trial_key.grove_trial_key"
 GATEWAY = "https://gw"
+PRODUCT, OTHER = "grove-trial-a", "grove-trial-b"
 
 
 def minted(name: str) -> dict:
 	return {"name": name, "geography": "ap-south", "gateway_url": GATEWAY, "api_key": f"gr_{name}"}
 
 
-def available() -> GroveTrialKey:
+def available(product: str = PRODUCT) -> GroveTrialKey:
 	"""A pool key as the refill job holds one, without a Grove."""
 	reply = minted(frappe.generate_hash(length=10))
 	return frappe.get_doc(
 		{
 			"doctype": "Grove Trial Key",
 			"grove_key": reply["name"],
+			"product_trial": product_trial(product),
 			"team": "Press Team",
 			"geography": reply["geography"],
 			"gateway_url": reply["gateway_url"],
+			"cap": 2,
 			"api_key": reply["api_key"],
 		}
 	).insert()
 
 
-def request_for(site: str, name: str = "PTR-1") -> Mock:
+def request_for(site: str, name: str = "PTR-1", product: str = PRODUCT) -> Mock:
 	"""What `assign` reads off a Product Trial Request."""
-	request = Mock(site=site)
+	request = Mock(site=site, product_trial=product_trial(product))
 	request.name = name
 	return request
+
+
+def pools(sizes: dict[str, int], groups: dict[str, str] | None = None, **fields):
+	return enrolled(trial_products=pool_rows(sizes, groups), **fields)
 
 
 def ai_keys_of(site: str) -> list | None:
@@ -55,13 +62,16 @@ class TestGroveTrialKey(FrappeTestCase):
 		self.start(patch.object(frappe.db, "commit"))
 		self.provision = self.start(
 			patch.object(
-				GroveSettings, "provision_key", side_effect=lambda: minted(frappe.generate_hash(length=10))
+				GroveSettings,
+				"provision_key",
+				side_effect=lambda row: minted(frappe.generate_hash(length=10)),
 			)
 		)
 		self.revoke = self.start(patch.object(GroveSettings, "revoke_key"))
+		self.update_caps = self.start(patch.object(GroveSettings, "update_caps"))
 		# A live run leaves real pool rows on the site; the counts here assume none.
 		frappe.db.delete("Grove Trial Key")
-		enrolled(trial_pool_size=3)
+		pools({PRODUCT: 3})
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -82,6 +92,15 @@ class TestGroveTrialKey(FrappeTestCase):
 			update_modified=False,
 		)
 
+	def age_assignment(self, key: GroveTrialKey, days: int = 31) -> None:
+		frappe.db.set_value(
+			"Grove Trial Key",
+			key.name,
+			"assigned_at",
+			add_to_date(now_datetime(), days=-days),
+			update_modified=False,
+		)
+
 	def test_refill_mints_only_the_missing_keys_under_the_trial_team(self):
 		available()
 
@@ -91,12 +110,34 @@ class TestGroveTrialKey(FrappeTestCase):
 		self.assertEqual(self.provision.call_count, 2)
 		key = frappe.get_doc("Grove Trial Key", frappe.get_all("Grove Trial Key", pluck="name")[-1])
 		self.assertEqual(
-			(key.team, key.geography, key.gateway_url, key.get_password("api_key")),
-			("Press Team", "ap-south", GATEWAY, f"gr_{key.grove_key}"),
+			(
+				key.team,
+				key.product_trial,
+				key.geography,
+				key.gateway_url,
+				key.cap,
+				key.get_password("api_key"),
+			),
+			("Press Team", PRODUCT, "ap-south", GATEWAY, 2, f"gr_{key.grove_key}"),
+		)
+
+	def test_each_product_is_refilled_to_its_size_in_its_group_within_one_batch(self):
+		pools({PRODUCT: 2, OTHER: 2}, groups={OTHER: "crm-trial"})
+		available()
+
+		with patch(f"{MODULE}.REFILL_BATCH_SIZE", 2):
+			grove_trial_key.refill_trial_keys()
+
+		self.assertEqual(
+			frappe.get_all("Grove Trial Key", pluck="product_trial", order_by="creation asc"),
+			[PRODUCT, PRODUCT, OTHER],
+		)
+		self.assertEqual(
+			[call.args[0].model_group for call in self.provision.call_args_list], [None, "crm-trial"]
 		)
 
 	def test_refill_mints_at_most_one_batch(self):
-		enrolled(trial_pool_size=5)
+		pools({PRODUCT: 5})
 
 		with patch(f"{MODULE}.REFILL_BATCH_SIZE", 2):
 			grove_trial_key.refill_trial_keys()
@@ -112,17 +153,35 @@ class TestGroveTrialKey(FrappeTestCase):
 		self.assertEqual(self.statuses(), [])
 		log_error.assert_called_once()
 
-	def test_refill_does_nothing_while_the_pool_is_off_or_press_is_not_enrolled(self):
-		enrolled(trial_pool_size=0)
+	def test_refill_does_nothing_while_the_pools_are_off_or_press_is_not_enrolled(self):
+		pools({PRODUCT: 0})
 		grove_trial_key.refill_trial_keys()
-		enrolled(trial_pool_size=3, control_api_key="", control_api_secret="")
+		pools({PRODUCT: 3}, control_api_key="", control_api_secret="")
 		grove_trial_key.refill_trial_keys()
 
 		self.assertEqual(self.statuses(), [])
 		self.provision.assert_not_called()
 
-	def test_a_site_takes_the_oldest_key_and_a_repeated_site_created_keeps_it(self):
-		first, second = available(), available()
+	def test_a_pending_revoke_is_retried_with_the_pool_off_or_paused(self):
+		key = available()
+		with patch(f"{MODULE}.frappe.enqueue"):
+			GroveTrialKey.queue_revoke(name=key.name)
+		self.age(key)
+		pools({PRODUCT: 0})
+
+		grove_trial_key.refill_trial_keys()
+
+		self.assertEqual(key.reload().status, "Revoked")
+		self.provision.assert_not_called()
+
+		pools({PRODUCT: 3}, pause_pool_refill=1)
+		with patch(f"{MODULE}.retry_revokes") as retry_revokes:
+			grove_trial_key.refill_trial_keys()
+		retry_revokes.assert_called_once()
+		self.provision.assert_not_called()
+
+	def test_a_site_takes_the_oldest_key_of_its_product_and_a_repeated_site_created_keeps_it(self):
+		first, second, others = available(), available(), available(OTHER)
 
 		taken = GroveTrialKey.assign(request_for("a.test"))
 		again = GroveTrialKey.assign(request_for("a.test", "PTR-2"))
@@ -134,6 +193,14 @@ class TestGroveTrialKey(FrappeTestCase):
 			(first.status, first.site, first.product_trial_request), ("Assigned", "a.test", "PTR-1")
 		)
 		self.assertIsNone(GroveTrialKey.assign(request_for("c.test", "PTR-4")))
+		self.assertEqual(GroveTrialKey.assign(request_for("d.test", "PTR-5", OTHER)).name, others.name)
+
+	def test_paused_assignment_leaves_the_ready_key_in_the_pool(self):
+		key = available()
+		pools({PRODUCT: 3}, pause_key_assignment=1)
+
+		self.assertIsNone(GroveTrialKey.assign(request_for("a.test")))
+		self.assertEqual(key.reload().status, "Available")
 
 	def test_the_key_goes_into_the_site_config_as_an_internal_key(self):
 		site = create_test_site()
@@ -148,6 +215,43 @@ class TestGroveTrialKey(FrappeTestCase):
 			frappe.db.get_value("Site Config Key", "ai_keys", ["internal", "type"], as_dict=True),
 			{"internal": 1, "type": "JSON"},
 		)
+
+	def test_only_a_running_sites_cap_can_be_raised_and_only_upward(self):
+		key = available()
+		with self.assertRaisesRegex(frappe.ValidationError, "running trial site"):
+			key.raise_cap(5)
+
+		GroveTrialKey.assign(request_for("a.test"))
+		key.reload().raise_cap(5)
+		self.update_caps.assert_called_once_with("Press Team", {key.grove_key: 5})
+		self.assertEqual(key.reload().cap, 5)
+		with self.assertRaisesRegex(frappe.ValidationError, "already"):
+			key.raise_cap(5)
+
+		for status in ("Revoking", "Revoked"):
+			key.db_set("status", status)
+			with self.assertRaisesRegex(frappe.ValidationError, "running trial site"):
+				key.reload().raise_cap(9)
+		self.update_caps.assert_called_once()
+
+	def test_an_assigned_key_is_revoked_once_its_days_have_passed(self):
+		pools({PRODUCT: 0})
+		aged, fresh = available(), available()
+		available()
+		GroveTrialKey.assign(request_for("a.test"))
+		GroveTrialKey.assign(request_for("b.test", "PTR-2"))
+
+		self.age_assignment(aged)
+		with patch(f"{MODULE}.frappe.enqueue"):
+			grove_trial_key.refill_trial_keys()
+		self.assertEqual(self.statuses(), ["Revoking", "Assigned", "Available"])
+
+		# 0 turns the stop off.
+		pools({PRODUCT: 0}, trial_key_revoke_after_days=0)
+		self.age_assignment(fresh)
+		with patch(f"{MODULE}.frappe.enqueue"):
+			grove_trial_key.refill_trial_keys()
+		self.assertEqual(self.statuses(), ["Revoking", "Assigned", "Available"])
 
 	def test_an_archived_sites_key_is_queued_for_revoke_hourly_and_the_job_revokes_it(self):
 		site = create_test_site()
@@ -165,7 +269,7 @@ class TestGroveTrialKey(FrappeTestCase):
 		self.revoke.assert_called_once_with(gone.grove_key, "Press Team")
 		self.assertEqual(gone.reload().status, "Revoked")
 
-	def test_a_refused_revoke_stays_revoking_and_is_tried_again_once_stale(self):
+	def test_a_refused_revoke_stays_revoking_with_groves_answer_and_is_tried_again_once_stale(self):
 		key = available()
 		self.revoke.side_effect = frappe.ValidationError("6 hours")
 		with patch(f"{MODULE}.frappe.enqueue"):
@@ -177,7 +281,9 @@ class TestGroveTrialKey(FrappeTestCase):
 		self.age(key)
 		with patch(f"{MODULE}.frappe.log_error") as log_error:
 			grove_trial_key.retry_revokes()
-		self.assertEqual((key.reload().status, log_error.call_count), ("Revoking", 1))
+		self.assertEqual(
+			(key.reload().status, key.last_error, log_error.call_count), ("Revoking", "6 hours", 1)
+		)
 		# The failed attempt wrote the record, so the next run waits another hour.
 		self.revoke.reset_mock()
 		grove_trial_key.retry_revokes()
@@ -186,7 +292,7 @@ class TestGroveTrialKey(FrappeTestCase):
 		self.revoke.side_effect = None
 		self.age(key)
 		grove_trial_key.retry_revokes()
-		self.assertEqual(key.reload().status, "Revoked")
+		self.assertEqual((key.reload().status, key.last_error), ("Revoked", None))
 
 	def test_only_a_revoked_record_can_be_deleted(self):
 		key = available()
