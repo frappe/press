@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.model.naming import make_autoname
 from frappe.utils import add_to_date, cint, flt, now_datetime
 
 if TYPE_CHECKING:
@@ -51,10 +52,12 @@ class GroveTrialKey(Document):
 
 	@classmethod
 	def provision(cls, settings: GroveSettings, row: GroveTrialProduct) -> GroveTrialKey:
-		"""Mint one key into `row`'s product's pool, in the row's Model Group on top of the team's when
-		it names one. A crash between the mint and the insert leaves a capped, untitled key under the
-		trial team that no record names; Grove Desk shows it."""
-		minted = settings.provision_key(row)
+		"""Mint one key into `row`'s product's pool, titled at Grove by this record's id (taken from the
+		series before the mint), in the row's Model Group on top of the team's when it names one. A
+		crash between the mint and the insert leaves a capped key under the trial team titled by an id
+		no record carries; Grove Desk shows it."""
+		name = make_autoname(frappe.get_meta("Grove Trial Key").autoname)
+		minted = settings.provision_key(row, title=name)
 		return frappe.get_doc(
 			{
 				"doctype": "Grove Trial Key",
@@ -66,7 +69,7 @@ class GroveTrialKey(Document):
 				"cap": cint(settings.trial_key_cap),
 				"api_key": minted["api_key"],
 			}
-		).insert(ignore_permissions=True)
+		).insert(set_name=name, ignore_permissions=True)
 
 	@classmethod
 	def assign(cls, request: ProductTrialRequest) -> GroveTrialKey | None:
