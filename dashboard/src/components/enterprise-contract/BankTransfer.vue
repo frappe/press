@@ -1,7 +1,8 @@
 <template>
 	<div class="flex flex-col">
 		<div
-			class="grid grid-cols-1 divide-y border-y sm:grid-cols-3 sm:divide-x sm:divide-y-0"
+			class="grid grid-cols-1 divide-y border-y sm:divide-x sm:divide-y-0"
+			:class="amountLines.length > 3 ? 'sm:grid-cols-4' : 'sm:grid-cols-3'"
 		>
 			<div
 				v-for="line in amountLines"
@@ -66,6 +67,7 @@ import { Button, createResource, ErrorMessage, FormControl } from 'frappe-ui'
 import { computed, ref } from 'vue'
 import { currency } from '../../utils/format'
 import CopyBtn from '../utils/CopyBtn.vue'
+import { gstLines } from './format'
 
 const props = defineProps({
 	contract: { type: Object, required: true },
@@ -87,7 +89,10 @@ const amountLines = computed(() => {
 	const due = props.contract.amount_due
 	return [
 		{ label: 'Plan price', value: money(due.amount) },
-		{ label: 'GST', value: money(due.gst) },
+		...gstLines(due.gst, props.contract.gst_split).map((line) => ({
+			label: line.label,
+			value: money(line.amount),
+		})),
 		{
 			label: 'Amount to transfer',
 			value: money(due.total),
