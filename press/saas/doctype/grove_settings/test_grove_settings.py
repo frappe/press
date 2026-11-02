@@ -8,12 +8,30 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.press.doctype.app.test_app import create_test_app
 from press.saas.doctype.grove_settings import grove_settings
 from press.saas.doctype.grove_settings.grove_settings import PRESS_TIER
+from press.saas.doctype.product_trial.test_product_trial import create_test_product_trial
+
+
+def product_trial(key: str = "grove-trial-a") -> str:
+	"""A Product Trial for a pool row, made once per site."""
+	if not frappe.db.exists("Product Trial", key):
+		create_test_product_trial(create_test_app(key, key.title()))
+	return key
+
+
+def pool_rows(sizes: dict[str, int], groups: dict[str, str] | None = None) -> list[dict]:
+	"""Trial Products rows: one per product in `sizes` ({key: size}), in the Model Group `groups`
+	names for it, if any."""
+	return [
+		{"product_trial": product_trial(key), "pool_size": size, "model_group": (groups or {}).get(key)}
+		for key, size in sizes.items()
+	]
 
 
 def enrolled(**fields):
-	"""Grove Settings as an enrolled Press would hold them, without a Grove."""
+	"""Grove Settings as an enrolled Press would hold them, without a Grove: one pool of two."""
 	settings = frappe.get_single("Grove Settings")
 	settings.update(
 		{
@@ -22,9 +40,11 @@ def enrolled(**fields):
 			"control_api_secret": "S",  # pragma: allowlist secret
 			"trial_team": "Press Team",
 			"trial_key_geography": "ap-south",
-			"trial_pool_size": 2,
-			"trial_key_expiry": "Never",
 			"trial_key_cap": 2,
+			"trial_key_revoke_after_days": 30,
+			"pause_pool_refill": 0,
+			"pause_key_assignment": 0,
+			"trial_products": pool_rows({"grove-trial-a": 2}),
 		}
 		| fields
 	)
@@ -80,8 +100,13 @@ class TestGroveSettings(FrappeTestCase):
 			("K2", "S2", True),
 		)
 
-	def test_a_pool_key_is_minted_untitled_in_the_trial_geography_at_the_cap_and_expiry(self):
-		settings = enrolled(trial_key_cap=3, trial_key_expiry="7 Days")
+	def test_a_pool_key_is_minted_untitled_in_the_trial_geography_at_the_cap_in_the_rows_group(self):
+		settings = enrolled(
+			trial_key_cap=3,
+			trial_products=pool_rows(
+				{"grove-trial-a": 2, "grove-trial-b": 1}, groups={"grove-trial-b": "crm-trial"}
+			),
+		)
 		row = {
 			"name": "k1",
 			"geography": "ap-south",
@@ -89,25 +114,25 @@ class TestGroveSettings(FrappeTestCase):
 			"api_key": "gr_x",  # pragma: allowlist secret
 		}  # pragma: allowlist secret
 		with grove_replies(row) as post:
-			self.assertEqual(settings.provision_key(), row)
+			self.assertEqual(settings.provision_key(settings.trial_products[0]), row)
+			settings.provision_key(settings.trial_products[1])
 		self.assertEqual(
-			sent(post),
+			sent(post, 0),
 			(
 				"grove.api.keys.provision_key",
-				{
-					"team": "Press Team",
-					"title": None,
-					"geography": "ap-south",
-					"cap": 3,
-					"expiry": "7 Days",
-					"expiry_from_first_use": True,
-				},
+				{"team": "Press Team", "title": None, "geography": "ap-south", "cap": 3},
 				{"Authorization": "token K:S"},
 			),
 		)
+		self.assertEqual(sent(post, 1)[1]["model_groups"], ["crm-trial"])
 		with grove_replies("Revoked.") as post:
 			settings.revoke_key("k1", "Press Trials")
 		self.assertEqual(sent(post)[:2], ("grove.api.keys.revoke_key", {"team": "Press Trials", "key": "k1"}))
+		with grove_replies([]) as post:
+			settings.update_caps("Press Team", {"k1": 5})
+		self.assertEqual(
+			sent(post)[:2], ("grove.api.keys.update_caps", {"team": "Press Team", "caps": {"k1": 5}})
+		)
 
 	def test_a_changed_trial_team_is_registered_at_grove_and_a_quiet_save_is_not(self):
 		settings = enrolled()
@@ -133,21 +158,25 @@ class TestGroveSettings(FrappeTestCase):
 
 	def test_groves_own_refusal_is_what_the_caller_reads(self):
 		settings = enrolled()
+		row = settings.trial_products[0]
 		refusal = json.dumps([json.dumps({"message": "This team already holds 2 live keys, its limit."})])
 		with grove_replies(None, status=417) as post:
 			post.return_value.json.return_value = {"_server_messages": refusal}
 			with self.assertRaisesRegex(frappe.ValidationError, "already holds 2 live keys"):
-				settings.provision_key()
+				settings.provision_key(row)
 		with grove_replies(None, status=503), self.assertRaisesRegex(frappe.ValidationError, "unavailable"):
-			settings.provision_key()
+			settings.provision_key(row)
 
-	def test_a_sized_pool_needs_a_geography(self):
+	def test_a_sized_pool_needs_a_geography_and_one_row_per_product(self):
 		with self.assertRaisesRegex(frappe.ValidationError, "Trial Key Geography"):
 			enrolled(trial_key_geography="")
-		enrolled(trial_key_geography="", trial_pool_size=0)
+		enrolled(trial_key_geography="", trial_products=pool_rows({"grove-trial-a": 0}))
+		enrolled(trial_key_geography="", trial_products=[])
+		with self.assertRaisesRegex(frappe.ValidationError, "One pool row per product"):
+			enrolled(trial_products=pool_rows({"grove-trial-a": 1}) * 2)
 
 	def test_not_enrolled_is_refused_before_any_call(self):
 		settings = enrolled(control_api_key="", control_api_secret="")
 		with grove_replies({}) as post, self.assertRaisesRegex(frappe.ValidationError, "enroll Press"):
-			settings.provision_key()
+			settings.provision_key(settings.trial_products[0])
 		post.assert_not_called()

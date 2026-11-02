@@ -1,7 +1,7 @@
 {
 	"actions": [],
 	"creation": "2026-10-22 00:00:00",
-	"description": "Grove, the AI gateway, and the control credential Press calls it with. A pool of trial keys is minted ahead under the trial team there, each capped at the trial key cap for its life and retired at the trial key expiry after its first use; a Product Trial site takes one into its site config as ai_keys.",
+	"description": "Grove, the AI gateway, and the control credential Press calls it with. A pool of trial keys per Product Trial is minted ahead under the trial team there, each capped at the trial key cap for its life and minted into the product's Model Group; a Product Trial site takes one of its product into its site config as ai_keys, and Press revokes it so many days after.",
 	"doctype": "DocType",
 	"editable_grid": 1,
 	"engine": "InnoDB",
@@ -9,13 +9,18 @@
 		"base_url",
 		"control_section",
 		"control_api_key",
+		"column_break_ctrl",
 		"control_api_secret",
 		"trials_tab",
 		"trial_team",
 		"trial_key_geography",
-		"trial_pool_size",
-		"trial_key_expiry",
-		"trial_key_cap"
+		"pause_pool_refill",
+		"column_break_trials",
+		"trial_key_cap",
+		"trial_key_revoke_after_days",
+		"pause_key_assignment",
+		"pools_section",
+		"trial_products"
 	],
 	"fields": [
 		{
@@ -24,13 +29,6 @@
 			"fieldtype": "Data",
 			"label": "Grove URL",
 			"options": "URL"
-		},
-		{
-			"default": "2",
-			"description": "What one trial site may spend through its key in all, USD. Sent with every mint; a change applies to keys minted after it.",
-			"fieldname": "trial_key_cap",
-			"fieldtype": "Currency",
-			"label": "Trial Key Cap (USD)"
 		},
 		{
 			"description": "Minted by Grove for Press on Enroll.",
@@ -43,6 +41,10 @@
 			"fieldtype": "Data",
 			"label": "Control API Key",
 			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_ctrl",
+			"fieldtype": "Column Break"
 		},
 		{
 			"fieldname": "control_api_secret",
@@ -63,31 +65,60 @@
 			"label": "Trial Team"
 		},
 		{
-			"default": "Never",
-			"description": "When a trial key retires on its own: so many days after its first request, not after the mint, so a key waiting in the pool does not age. Sent with every mint; a change applies to keys minted after it. Never: trial keys never retire on their own.",
-			"fieldname": "trial_key_expiry",
-			"fieldtype": "Select",
-			"label": "Trial Key Expiry",
-			"options": "Never\n1 Day\n7 Days\n14 Days\n30 Days"
-		},
-		{
-			"description": "The Grove geography the pool's keys are minted in, one of Grove's geography names; a key dials that geography's gateway. A key minted earlier keeps its own.",
+			"description": "The Grove geography the pools' keys are minted in, one of Grove's geography names; a key dials that geography's gateway. A key minted earlier keeps its own.",
 			"fieldname": "trial_key_geography",
 			"fieldtype": "Data",
 			"label": "Trial Key Geography"
 		},
 		{
 			"default": "0",
-			"description": "How many trial keys Press keeps minted and ready for Product Trial sites, under the trial team; a job every 5 minutes refills the pool. 0 keeps the pool off: a trial site then gets no key, and archived sites' keys are still revoked.",
-			"fieldname": "trial_pool_size",
+			"description": "Stops the 5-minute job from minting new keys. The pools keep their sizes and their ready keys; retries of revokes still run.",
+			"fieldname": "pause_pool_refill",
+			"fieldtype": "Check",
+			"label": "Pause Pool Refill"
+		},
+		{
+			"fieldname": "column_break_trials",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "2",
+			"description": "What one trial site may spend through its key in all, whole USD. Sent with every mint; a change applies to keys minted after it.",
+			"fieldname": "trial_key_cap",
+			"fieldtype": "Currency",
+			"label": "Trial Key Cap (USD)"
+		},
+		{
+			"default": "30",
+			"description": "A trial site's key is revoked at Grove this many days after the site took it, whatever the site does. 0 keeps the key until the site is archived.",
+			"fieldname": "trial_key_revoke_after_days",
 			"fieldtype": "Int",
-			"label": "Trial Pool Size"
+			"label": "Revokes Automatically After (Days)"
+		},
+		{
+			"default": "0",
+			"description": "Stops a new trial site from taking a key from its pool. It runs without one, as with an empty pool; a site that already holds a key keeps it.",
+			"fieldname": "pause_key_assignment",
+			"fieldtype": "Check",
+			"label": "Pause Key Assignment"
+		},
+		{
+			"fieldname": "pools_section",
+			"fieldtype": "Section Break",
+			"label": "Pools"
+		},
+		{
+			"description": "One row per Product Trial: how many trial keys Press keeps minted and ready for its sites, under the trial team, and the Grove Model Group those keys add to the team's catalog. A job every 5 minutes refills every pool. A product without a row gets no key.",
+			"fieldname": "trial_products",
+			"fieldtype": "Table",
+			"label": "Trial Products",
+			"options": "Grove Trial Product"
 		}
 	],
 	"grid_page_length": 50,
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-10-27 00:00:00.000000",
+	"modified": "2026-11-02 00:00:00",
 	"modified_by": "Administrator",
 	"module": "SaaS",
 	"name": "Grove Settings",

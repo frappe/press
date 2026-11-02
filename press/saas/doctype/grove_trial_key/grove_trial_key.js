@@ -17,5 +17,28 @@ frappe.ui.form.on('Grove Trial Key', {
 					.then(() => frm.reload_doc()),
 			),
 		)
+		if (frm.doc.status !== 'Assigned') return
+		frm.add_custom_button(__('Raise Cap'), () =>
+			frappe.prompt(
+				{
+					fieldname: 'cap',
+					fieldtype: 'Currency',
+					label: __('New cap (USD)'),
+					default: frm.doc.cap,
+					reqd: 1,
+				},
+				(values) =>
+					frm
+						.call({
+							doc: frm.doc,
+							method: 'raise_cap',
+							args: { cap: values.cap },
+							freeze: true,
+						})
+						.then(() => frm.reload_doc()),
+				__('Raise Cap'),
+				__('Raise'),
+			),
+		)
 	},
 })

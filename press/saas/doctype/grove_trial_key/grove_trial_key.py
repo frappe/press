@@ -8,10 +8,11 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import add_to_date, cint, now_datetime
+from frappe.utils import add_to_date, cint, flt, now_datetime
 
 if TYPE_CHECKING:
 	from press.saas.doctype.grove_settings.grove_settings import GroveSettings
+	from press.saas.doctype.grove_trial_product.grove_trial_product import GroveTrialProduct
 	from press.saas.doctype.product_trial_request.product_trial_request import ProductTrialRequest
 
 # One batch per run keeps the job short.
@@ -21,9 +22,10 @@ RETRY_AFTER_MINUTES = 60
 
 
 class GroveTrialKey(Document):
-	"""One Grove key minted ahead under the trial team and held here with its secret, until a
-	Product Trial site takes it into its site config as `ai_keys`. Press revokes it once the site
-	is archived; Grove retires it on its own, Trial Key Expiry after its first use."""
+	"""One Grove key minted ahead under the trial team for one Product Trial and held here with its
+	secret, until a site of that product takes it into its site config as `ai_keys`. The key carries
+	no expiry at Grove: Press revokes it once the site is archived, or once Grove Settings' Revokes
+	Automatically After days have passed since the site took it."""
 
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -35,9 +37,12 @@ class GroveTrialKey(Document):
 
 		api_key: DF.Password | None
 		assigned_at: DF.Datetime | None
+		cap: DF.Currency
 		gateway_url: DF.Data | None
 		geography: DF.Data | None
 		grove_key: DF.Data
+		last_error: DF.SmallText | None
+		product_trial: DF.Link | None
 		product_trial_request: DF.Link | None
 		site: DF.Link | None
 		status: DF.Literal["Available", "Assigned", "Revoking", "Revoked"]
@@ -45,31 +50,37 @@ class GroveTrialKey(Document):
 	# end: auto-generated types
 
 	@classmethod
-	def provision(cls, settings: GroveSettings) -> GroveTrialKey:
-		"""Mint one key into the pool. A crash between the mint and the insert leaves a capped,
-		untitled key under the trial team that no record names; Grove Desk shows it."""
-		minted = settings.provision_key()
+	def provision(cls, settings: GroveSettings, row: GroveTrialProduct) -> GroveTrialKey:
+		"""Mint one key into `row`'s product's pool, in the row's Model Group on top of the team's when
+		it names one. A crash between the mint and the insert leaves a capped, untitled key under the
+		trial team that no record names; Grove Desk shows it."""
+		minted = settings.provision_key(row)
 		return frappe.get_doc(
 			{
 				"doctype": "Grove Trial Key",
 				"grove_key": minted["name"],
+				"product_trial": row.product_trial,
 				"team": settings.trial_team,
 				"geography": minted["geography"],
 				"gateway_url": minted["gateway_url"],
+				"cap": cint(settings.trial_key_cap),
 				"api_key": minted["api_key"],
 			}
 		).insert(ignore_permissions=True)
 
 	@classmethod
 	def assign(cls, request: ProductTrialRequest) -> GroveTrialKey | None:
-		"""The oldest ready key for the request's site; none on an empty pool. A site that reached
-		Site Created before keeps the key it took."""
+		"""The oldest ready key of the request's product for its site; none on an empty pool or while
+		assignment is paused. A site that reached Site Created before keeps the key it took."""
 		if name := frappe.db.get_value("Grove Trial Key", {"site": request.site, "status": "Assigned"}):
 			return frappe.get_doc("Grove Trial Key", name)
 
+		if frappe.db.get_single_value("Grove Settings", "pause_key_assignment"):
+			return None
+
 		name = frappe.db.get_value(
 			"Grove Trial Key",
-			{"status": "Available"},
+			{"status": "Available", "product_trial": request.product_trial},
 			order_by="creation asc",
 			for_update=True,
 			skip_locked=True,
@@ -121,6 +132,19 @@ class GroveTrialKey(Document):
 
 		self.queue_revoke(name=self.name)
 
+	@frappe.whitelist(methods=["POST"])
+	def raise_cap(self, cap: float) -> None:
+		"""Lift the cap of a running site's key at Grove. Only an Assigned record is one: a revoke
+		moves it on, and a ready key's cap is the setting's."""
+		self.check_permission("write")
+		if self.status != "Assigned":
+			frappe.throw(_("Only the key of a running trial site can have its cap raised."))
+		if flt(cap) <= flt(self.cap):
+			frappe.throw(_("The cap is {0} USD already; enter more.").format(self.cap))
+
+		frappe.get_cached_doc("Grove Settings").update_caps(self.team, {self.grove_key: flt(cap)})
+		self.db_set("cap", flt(cap))
+
 	def on_trash(self) -> None:
 		# A record must outlive its live key, so that a failed revoke is retried.
 		if self.status != "Revoked":
@@ -130,7 +154,7 @@ class GroveTrialKey(Document):
 		"""Under the team the key was minted under. Safe to repeat: Grove answers a revoked key's
 		revoke as done."""
 		frappe.get_cached_doc("Grove Settings").revoke_key(self.grove_key, self.team)
-		self.db_set("status", "Revoked", commit=True)
+		self.db_set({"status": "Revoked", "last_error": None}, commit=True)
 
 
 def ensure_site_config_key(key: str, type: str) -> None:
@@ -149,20 +173,30 @@ def revoke_trial_key(name: str) -> None:
 
 
 def refill_trial_keys() -> None:
-	"""Cron, every five minutes: retry the revokes Grove refused, then mint what the pool is
-	missing, up to one batch. Nothing while Press is not enrolled or the pool is off."""
-	settings = frappe.get_cached_doc("Grove Settings")
-	if not settings.is_on_for_product_trials:
+	"""Cron, every five minutes: retry the revokes Grove refused, revoke the keys past their days,
+	then mint the keys each product's pool is missing, up to one batch across them. Nothing while
+	Press is not enrolled; the retries and the revokes run with the pools off or paused too, the
+	mint does not."""
+	settings: GroveSettings = frappe.get_cached_doc("Grove Settings")
+	if not settings.is_enrolled:
 		return
 
 	retry_revokes()
-	missing = cint(settings.trial_pool_size) - frappe.db.count("Grove Trial Key", {"status": "Available"})
-	for _attempt in range(min(missing, REFILL_BATCH_SIZE)):
-		try:
-			GroveTrialKey.provision(settings)
-		except Exception:
-			frappe.log_error(title="Grove trial key mint failed")
-			break
+	revoke_expired_keys(settings)
+	if settings.pause_pool_refill:
+		return
+	budget = REFILL_BATCH_SIZE
+	for row in settings.trial_products:
+		ready = frappe.db.count(
+			"Grove Trial Key", {"status": "Available", "product_trial": row.product_trial}
+		)
+		for _attempt in range(min(cint(row.pool_size) - ready, budget)):
+			try:
+				GroveTrialKey.provision(settings, row)
+			except Exception:
+				frappe.log_error(title="Grove trial key mint failed")
+				return
+			budget -= 1
 
 
 def retry_revokes() -> None:
@@ -175,9 +209,27 @@ def retry_revokes() -> None:
 		key = frappe.get_doc("Grove Trial Key", name)
 		try:
 			key.revoke_at_grove()
-		except Exception:
-			key.db_set("status", "Revoking")
+		except Exception as error:
 			frappe.log_error(title=f"Grove trial key revoke failed for {name}")
+			key.db_set({"status": "Revoking", "last_error": str(error) or type(error).__name__})
+
+
+def revoke_expired_keys(settings: GroveSettings) -> None:
+	"""An Assigned key older than Revokes Automatically After since its site took it is revoked,
+	whatever the site is doing: the site runs on without AI. 0 turns this off."""
+	days = cint(settings.trial_key_revoke_after_days)
+	if not days:
+		return
+
+	# Only an Assigned key has an assignment: a `<` alone would also match the NULL of a ready
+	# key, which Frappe compares as the oldest date.
+	expired = frappe.get_all(
+		"Grove Trial Key",
+		filters={"status": "Assigned", "assigned_at": ("<", add_to_date(now_datetime(), days=-days))},
+		pluck="name",
+	)
+	if expired:
+		GroveTrialKey.queue_revoke(name=("in", expired))
 
 
 def revoke_archived() -> None:
