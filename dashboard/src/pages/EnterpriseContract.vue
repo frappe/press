@@ -4,16 +4,28 @@
 			<Breadcrumbs :items="[{ label: 'Contracts', route: '/contracts' }]" />
 			<Button
 				v-if="ordering"
+				class="ml-auto"
 				label="Back to contracts"
 				@click="ordering = false"
 			/>
+			<template v-else-if="contracts.length">
+				<Button
+					class="ml-auto"
+					:class="{ 'mr-2': canOrder }"
+					:loading="contract.loading"
+					@click="contract.reload()"
+				>
+					<template #icon><lucide-refresh-ccw class="size-4" /></template>
+				</Button>
+				<Button v-if="canOrder" variant="solid" @click="ordering = true">
+					<template #prefix><lucide-plus class="size-4" /></template>
+					New Contract
+				</Button>
+			</template>
 		</Header>
 	</div>
 
-	<div
-		class="mx-auto w-full px-4 sm:px-5"
-		:class="showForm ? 'max-w-[72rem]' : 'max-w-3xl'"
-	>
+	<div class="w-full px-5" :class="{ 'mx-auto max-w-[72rem]': showForm }">
 		<div
 			v-if="verifyPayment.loading || (contract.loading && !contract.data)"
 			class="flex flex-col items-center gap-3 py-24 text-base text-ink-gray-6"
@@ -27,20 +39,16 @@
 			:message="contract.error || verifyPayment.error"
 		/>
 		<template v-else-if="contract.data">
-			<div v-if="!showForm" class="flex flex-col gap-6 py-8">
+			<div v-if="!showForm" class="flex flex-col gap-6 pt-4">
 				<AwaitingPayment
 					v-if="awaiting"
+					class="mx-auto w-full max-w-3xl"
 					:contract="current"
 					:bank="contract.data.bank_transfer"
 					:credit-balance="contract.data.credit_balance"
 					@updated="contract.reload()"
 				/>
-				<ContractList
-					v-if="listed.length"
-					:contracts="listed"
-					:can-order="!current && contract.data.plans.length > 0"
-					@new="ordering = true"
-				/>
+				<ContractList v-if="listed.length" :contracts="listed" />
 			</div>
 			<OrderForm
 				v-else-if="contract.data.plans.length"
@@ -84,6 +92,9 @@ const awaiting = computed(() => current.value?.status === 'Awaiting Payment')
 // The awaiting order has its own card above the list.
 const listed = computed(() =>
 	contracts.value.filter((row) => row.status !== 'Awaiting Payment'),
+)
+const canOrder = computed(
+	() => !current.value && contract.data?.plans.length > 0,
 )
 const ordering = ref(false)
 const showForm = computed(
