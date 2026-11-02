@@ -12,7 +12,7 @@ export function money(amount, currencyCode) {
 export function gstLines(gst, split) {
 	if (split === 'inter_state') return [{ label: 'IGST', amount: gst }]
 	if (split !== 'intra_state') return [{ label: 'GST', amount: gst }]
-	// SGST takes the odd paisa, so the two lines add up to the GST.
+	// SGST is the remainder, so the two lines add up to the GST.
 	const cgst = Math.round(gst * 50) / 100
 	return [
 		{ label: 'CGST', amount: cgst },
@@ -22,6 +22,10 @@ export function gstLines(gst, split) {
 
 export function gstText(gst, split, currencyCode) {
 	return gstLines(gst, split)
-		.map((line) => `${money(line.amount, currencyCode)} ${line.label}`)
+		.map((line) => {
+			// A half can end in paise; rounding it would break the sum.
+			const digits = Number.isInteger(line.amount) ? 0 : 2
+			return `${currency(line.amount, currencyCode, digits)} ${line.label}`
+		})
 		.join(' + ')
 }

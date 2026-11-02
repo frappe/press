@@ -31,7 +31,7 @@
 					</div>
 					<div v-if="payment.gst" class="text-sm text-ink-gray-6">
 						incl.
-						{{ gstText(payment.gst, contract.gst_split, contract.currency) }}
+						{{ gstText(payment.gst, payment.gst_split, contract.currency) }}
 					</div>
 				</div>
 				<div class="flex justify-end">

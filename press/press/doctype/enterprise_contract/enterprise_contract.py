@@ -197,6 +197,8 @@ class EnterpriseContract(Document):
 				"period_end": add_days(add_years(start, 1), -1),
 				"amount": due["amount"],
 				"gst": due["gst"],
+				# Kept with the payment, so a later address edit does not relabel it.
+				"gst_split": gst_split(self.billing_address),
 				"amount_paid": due["total"],
 				"payment_reference": reference,
 				"paid_on": now_datetime(),
@@ -259,6 +261,7 @@ def payment_for_dashboard(row) -> dict:
 		"period_end",
 		"amount",
 		"gst",
+		"gst_split",
 		"amount_paid",
 		"payment_reference",
 		"paid_on",
