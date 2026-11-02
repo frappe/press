@@ -1,0 +1,657 @@
+<template>
+	<!-- This page is named as SiteMigration but the doctype is `Site Action` -->
+	<Dialog
+		:options="{
+			title: 'Migrate Site',
+			actions: selectedMigrationMode
+				? [
+						{
+							label: selectedMigrationChoiceDetails?.button_label || 'Proceed',
+							disabled: migrationRequestLoading,
+							variant: 'solid',
+							onClick: triggerMigration,
+						},
+					]
+				: [],
+			size: 'xl',
+		}"
+		v-model="show"
+		@close="resetValues"
+	>
+		<template #body-content>
+			<div
+				v-if="this.$resources?.migrationOptions?.loading"
+				class="flex flex-col items-center justify-center h-[200px]"
+			>
+				<Spinner class="h-4 w-4 text-ink-gray-6" />
+			</div>
+			<div v-else class="flex flex-col gap-3">
+				<!-- Chose Migration Mode -->
+				<div class="flex flex-col gap-2">
+					<p class="text-base text-ink-gray-8">Select Migration Type</p>
+					<FormControl
+						type="select"
+						:options="migrationChoices"
+						size="md"
+						variant="outline"
+						placeholder="Select Migration Option"
+						v-model="selectedMigrationMode"
+						required
+					/>
+				</div>
+
+				<!-- Warning -->
+				<AlertBanner
+					v-if="warningMessage"
+					:type="'warning'"
+					:title="warningMessage"
+					:show-icon="false"
+				/>
+
+				<!-- Move Site To Different Server / Bench -->
+				<div
+					v-if="
+						selectedMigrationMode == 'Move Site To Different Server / Bench'
+					"
+					class="flex flex-col gap-3"
+				>
+					<!-- Choose Bench Type -->
+					<div
+						class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-ink-gray-8"
+					>
+						<div
+							class="w-1/2 text-base cursor-pointer rounded-sm py-2 text-center transition-all"
+							:class="{
+								'bg-surface-gray-2': benchMovementType == 'Create A New Bench',
+							}"
+							@click="benchMovementType = 'Create A New Bench'"
+						>
+							New Bench
+						</div>
+						<div
+							class="w-1/2 text-base cursor-pointer rounded-sm py-2 text-center transition-all"
+							:class="{
+								'bg-surface-gray-2': benchMovementType == 'Move To Existing Bench',
+							}"
+							@click="benchMovementType = 'Move To Existing Bench'"
+						>
+							Existing Bench
+						</div>
+					</div>
+
+					<!-- Choose Release Group (For Existing) -->
+					<div
+						class="flex flex-col gap-2"
+						v-if="benchMovementType == 'Move To Existing Bench'"
+					>
+						<p class="text-sm text-ink-gray-7">Select Bench</p>
+						<FormControl
+							type="combobox"
+							:options="
+								availableReleaseGroups.map((e) => ({
+									label: e.title,
+									value: e.name,
+								}))
+							"
+							size="md"
+							variant="outline"
+							placeholder="Choose Release Group"
+							v-model="selectedReleaseGroupToMoveTo"
+							required
+						/>
+					</div>
+					<!-- Choose Server (For Existing) -->
+					<!-- Because, Release group can have multiple server -->
+					<div
+						class="flex flex-col gap-2"
+						v-if="
+							benchMovementType == 'Move To Existing Bench' &&
+							selectedReleaseGroupToMoveTo
+						"
+					>
+						<p class="text-sm text-ink-gray-7">Select Server</p>
+						<FormControl
+							type="combobox"
+							:options="
+								availableServersForSelectedReleaseGroup.map((e) => ({
+									label: e.title ? `${e.title} (${e.name})` : e.name,
+									value: e.name,
+								}))
+							"
+							size="md"
+							variant="outline"
+							placeholder="Choose Server"
+							v-model="selectedServerToMoveTo"
+							required
+						/>
+					</div>
+
+					<!-- New Bench Group Name (For New) -->
+					<div
+						class="flex flex-col gap-2"
+						v-if="benchMovementType == 'Create A New Bench'"
+					>
+						<p class="text-sm text-ink-gray-7">Provide New Bench Name</p>
+						<FormControl
+							type="text"
+							size="md"
+							variant="outline"
+							placeholder="Provide New Bench Name"
+							v-model="newBenchGroupName"
+							required
+						/>
+					</div>
+
+					<!-- Choose Server Type (For New) -->
+					<div
+						class="flex flex-col gap-2"
+						v-if="benchMovementType == 'Create A New Bench'"
+					>
+						<p class="text-sm text-ink-gray-7">Select Server Type</p>
+						<FormControl
+							type="select"
+							:options="[
+								{
+									label: 'Shared Server',
+									value: 'Shared Server',
+								},
+								{
+									label: 'Dedicated Server',
+									value: 'Dedicated Server',
+								},
+							]"
+							size="md"
+							variant="outline"
+							placeholder="Select Server Type"
+							v-model="selectedServerType"
+							required
+						/>
+					</div>
+
+					<!-- Choose The Server (For New + Dedicated) -->
+					<div
+						class="flex flex-col gap-2"
+						v-if="
+							benchMovementType == 'Create A New Bench' &&
+							selectedServerType == 'Dedicated Server'
+						"
+					>
+						<p class="text-sm text-ink-gray-7">Select Server</p>
+						<FormControl
+							type="combobox"
+							:options="
+								dedicatedServersForNewReleaseGroup.map((e) => ({
+									label: e.title ? `${e.title} (${e.name})` : e.name,
+									value: e.name,
+								}))
+							"
+							size="md"
+							variant="outline"
+							placeholder="Select Server"
+							v-model="selectedServerToMoveTo"
+							required
+						/>
+					</div>
+				</div>
+
+				<!-- Move Site to Different Region -->
+				<div
+					v-else-if="selectedMigrationMode === 'Move Site To Different Region'"
+					class="flex flex-col gap-3"
+				>
+					<!-- Chose The Region -->
+					<div class="flex flex-col gap-2">
+						<p class="text-sm text-ink-gray-7">Select Region</p>
+						<FormControl
+							type="combobox"
+							:options="
+								availableRegionsToMoveSiteTo.map((e) => ({
+									label: e.title,
+									value: e.name,
+								}))
+							"
+							size="md"
+							variant="outline"
+							placeholder="Select Region"
+							v-model="selectedRegion"
+							required
+						/>
+
+						<AlertBanner
+							v-if="customDomainWarning"
+							:type="'warning'"
+							:title="customDomainWarning"
+							:show-icon="false"
+						/>
+
+						<p
+							v-if="!$site.doc.group_public"
+							class="mt-1 text-sm text-ink-gray-6"
+							:showIcon="false"
+						>
+							If the region you're looking for isn't available, please follow
+							<a
+								href="https://docs.frappe.io/cloud/site/site-migrations/move-site-to-different-region"
+								target="_blank"
+								class="underline"
+								>this documentation</a
+							>
+							to add it.
+						</p>
+					</div>
+				</div>
+
+				<!-- Checkbox  -->
+				<Checkbox
+					v-if="selectedMigrationMode"
+					v-model="skipFailingPatches"
+					label="Skip Failing Patches"
+					size="sm"
+				/>
+
+				<!-- Scheduling Option -->
+				<div v-if="showSchedulingOption" class="flex flex-col gap-2">
+					<p class="text-sm text-ink-gray-7">Choose Scheduled Time</p>
+					<DateTimeControl v-model="scheduledTime" :hideLabel="true" />
+				</div>
+
+				<!-- Error Message (the space banner below replaces the out-of-space one) -->
+				<ErrorMessage
+					v-if="!(showSpaceCleanupHelp && isInsufficientSpaceError)"
+					:message="errorMessage"
+				/>
+
+				<!-- A recent move failed: its leftover files eat space on the dedicated server -->
+				<div
+					v-if="showSpaceCleanupHelp"
+					class="flex flex-col gap-3 rounded-md bg-surface-amber-2 p-3"
+				>
+					<div class="flex gap-2">
+						<lucide-alert-triangle
+							class="mt-0.5 size-4 shrink-0 text-ink-amber-3"
+						/>
+						<p class="text-p-base text-ink-gray-8">
+							A recent migration failed and may have left files on the server.
+							Free up space first, or the move can fail again.
+							<a
+								:href="storageAddonsDocUrl"
+								target="_blank"
+								rel="noopener"
+								class="underline"
+								>Add more storage</a
+							>
+							or use the actions below.
+						</p>
+					</div>
+					<div class="flex flex-wrap items-center gap-x-4 gap-y-2 pl-6">
+						<div class="flex items-center gap-1.5">
+							<Button @click="openServerActions('Cleanup Server')">
+								Cleanup Server
+							</Button>
+							<a
+								:href="cleanupServerDocUrl"
+								target="_blank"
+								rel="noopener"
+								title="Learn about Cleanup Server"
+								aria-label="Learn about Cleanup Server"
+								class="text-ink-gray-5 hover:text-ink-gray-8"
+							>
+								<lucide-info class="size-4" />
+							</a>
+						</div>
+						<div class="flex items-center gap-1.5">
+							<Button @click="openServerActions('Forcefully Purge Binlogs')">
+								Forcefully Purge Binlogs
+							</Button>
+							<a
+								:href="purgeBinlogsDocUrl"
+								target="_blank"
+								rel="noopener"
+								title="Learn about Forcefully Purge Binlogs"
+								aria-label="Learn about Forcefully Purge Binlogs"
+								class="text-ink-gray-5 hover:text-ink-gray-8"
+							>
+								<lucide-info class="size-4" />
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</template>
+	</Dialog>
+</template>
+<script>
+import {
+	Checkbox,
+	FormControl,
+	getCachedDocumentResource,
+	Select,
+} from 'frappe-ui'
+import { dayjsIST } from '../../utils/dayjs'
+import AlertBanner from '../AlertBanner.vue'
+import GenericList from '../GenericList.vue'
+
+export default {
+	props: ['site', 'defaultAction', 'defaultNewBenchName'],
+	components: {
+		AlertBanner,
+		Select,
+		GenericList,
+		Checkbox,
+	},
+	data() {
+		return {
+			show: true,
+			selectedMigrationMode: '',
+			skipFailingPatches: false,
+			scheduledTime: '',
+
+			// For migration
+			benchMovementType: 'Create A New Bench',
+			selectedReleaseGroupToMoveTo: '',
+			selectedServerToMoveTo: '',
+			selectedServerType: 'Shared Server',
+
+			newBenchGroupName: '',
+			selectedRegion: '',
+		}
+	},
+	watch: {
+		selectedMigrationMode() {
+			this.resetValues(true)
+		},
+	},
+	resources: {
+		migrationOptions() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'get_migration_options',
+					}
+				},
+				initialData: {},
+				auto: true,
+				onSuccess: () => {
+					this.autoSelectMigrationOption()
+				},
+			}
+		},
+		createMigrationPlan() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'create_migration_plan',
+						args: {
+							type: this.selectedMigrationMode,
+							group: this.selectedReleaseGroupToMoveTo || null,
+							server: this.selectedServerToMoveTo,
+							new_group_name: this.selectedReleaseGroupToMoveTo
+								? null
+								: this.newBenchGroupName,
+							skip_failing_patches: this.skipFailingPatches,
+							scheduled_time: this.scheduledTimeInIST,
+							cluster: this.selectedRegion,
+						},
+					}
+				},
+				onSuccess: (result) => {
+					if (result?.message) {
+						console.log(result.message)
+						this.$router.push({
+							name: 'Site Migration',
+							params: { id: result.message },
+						})
+					}
+					this.hide()
+				},
+			}
+		},
+		migrateSite() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'migrate',
+						args: {
+							skip_failing_patches: this.skipFailingPatches,
+						},
+					}
+				},
+				onSuccess: (result) => {
+					if (result?.message) {
+						this.$router.push({
+							name: 'Site Job',
+							params: { id: result.message },
+						})
+					}
+					this.hide()
+				},
+			}
+		},
+	},
+	computed: {
+		$site() {
+			return getCachedDocumentResource('Site', this.site)
+		},
+		errorMessage() {
+			return (
+				this.$resources?.createMigrationPlan?.error ??
+				this.$resources?.migrateSite?.error ??
+				''
+			)
+		},
+		isInsufficientSpaceError() {
+			// ponytail: string-match the backend message; tighten if a typed error code is exposed
+			const error = this.errorMessage
+			const text = [error?.message, ...(error?.messages || []), error]
+				.filter((part) => typeof part === 'string')
+				.join(' ')
+			return /Insufficient estimated space/i.test(text)
+		},
+		showSpaceCleanupHelp() {
+			// Shown before the retry, not only after it fails. Only for dedicated
+			// servers — shared servers auto-extend and lack these actions.
+			return (
+				this.isDedicatedServerMove &&
+				this.recentFailedMigrationServers.includes(this.cleanupTargetServer)
+			)
+		},
+		isDedicatedServerMove() {
+			if (
+				this.selectedMigrationMode !== 'Move Site To Different Server / Bench'
+			)
+				return false
+			if (this.benchMovementType === 'Create A New Bench')
+				return this.selectedServerType === 'Dedicated Server'
+			const server = this.availableServersForSelectedReleaseGroup.find(
+				(e) => e.name === this.selectedServerToMoveTo,
+			)
+			return Boolean(server) && !server.public
+		},
+		cleanupTargetServer() {
+			return this.selectedServerToMoveTo || this.$site?.doc?.server
+		},
+		storageAddonsDocUrl() {
+			return 'https://docs.frappe.io/cloud/storage-addons'
+		},
+		cleanupServerDocUrl() {
+			return 'https://docs.frappe.io/cloud/storage-addons#how-to-force-cleanup-unused-files'
+		},
+		purgeBinlogsDocUrl() {
+			return 'https://docs.frappe.io/cloud/database-server-actions#view-purge-binlogs'
+		},
+		migrationRequestLoading() {
+			return (
+				this.$resources?.createMigrationPlan?.loading ||
+				this.$resources?.migrateSite?.loading ||
+				false
+			)
+		},
+		migrationOptions() {
+			return this.$resources?.migrationOptions?.data?.message ?? {}
+		},
+		migrationChoices() {
+			return Object.keys(this.migrationOptions)
+				.filter((e) => this.migrationOptions[e]?.button_label)
+				.map((e) => ({
+					label: e,
+					value: e,
+				}))
+				.filter((e) => !this.migrationOptions[e.value].hidden)
+		},
+		recentFailedMigrationServers() {
+			return this.migrationOptions?.recent_failed_migration_servers ?? []
+		},
+		selectedMigrationChoiceDetails() {
+			return this.migrationOptions[this.selectedMigrationMode]
+		},
+		showSchedulingOption() {
+			return this.selectedMigrationChoiceDetails?.allow_scheduling
+		},
+		selectedMigrationChoiceOptions() {
+			return this.selectedMigrationChoiceDetails?.options || {}
+		},
+		// Move Site To Different Server / Bench
+		availableReleaseGroups() {
+			if (
+				this.selectedMigrationMode !== 'Move Site To Different Server / Bench'
+			)
+				return []
+			return this.selectedMigrationChoiceOptions?.available_release_groups ?? []
+		},
+		availableServersForSelectedReleaseGroup() {
+			if (
+				this.selectedMigrationMode !== 'Move Site To Different Server / Bench'
+			)
+				return []
+			if (this.benchMovementType !== 'Move To Existing Bench') return []
+			return (
+				this.availableReleaseGroups.find(
+					(e) => e.name === this.selectedReleaseGroupToMoveTo,
+				)?.servers ?? []
+			)
+		},
+		dedicatedServersForNewReleaseGroup() {
+			if (
+				this.selectedMigrationMode !== 'Move Site To Different Server / Bench'
+			)
+				return []
+			if (this.benchMovementType !== 'Create A New Bench') return []
+			if (this.selectedServerType !== 'Dedicated Server') return []
+			return (
+				this.selectedMigrationChoiceOptions
+					?.dedicated_servers_for_new_release_group ?? []
+			)
+		},
+		availableRegionsToMoveSiteTo() {
+			if (this.selectedMigrationMode !== 'Move Site To Different Region')
+				return []
+			return this.selectedMigrationChoiceOptions?.available_regions ?? []
+		},
+		customDomainWarning() {
+			if (!this.selectedMigrationChoiceOptions?.has_domain_with_a_record)
+				return ''
+			const region = this.availableRegionsToMoveSiteTo.find(
+				(e) => e.name === this.selectedRegion,
+			)
+			if (!region?.inbound_ip) return ''
+			return `This site has custom domains pointing to an A record. After the migration, update them to <strong>${region.inbound_ip}</strong>, or switch them to a CNAME record pointing to <strong>${this.site}</strong>. Until then those domains will not resolve. <a href="https://docs.frappe.io/cloud/sites/custom-domains" target="_blank" class="underline">Read more</a>`
+		},
+		warningMessage() {
+			return {
+				'In-Place Migrate Site':
+					'Runs `bench migrate` without a backup. Proceed with caution.',
+				'Move Site To Different Server / Bench':
+					'Site will be unavailable during this process.',
+				'Move Site To Different Region':
+					'Site will be unavailable during this process.',
+			}[this.selectedMigrationMode]
+		},
+		scheduledTimeInIST() {
+			if (!this.scheduledTime) return
+			return dayjsIST(this.scheduledTime).format('YYYY-MM-DDTHH:mm')
+		},
+	},
+	methods: {
+		autoSelectMigrationOption() {
+			// Check if 'action' is passed via prop or URL params
+			const actionFromProp = this.defaultAction
+			const actionFromUrl = this.$route?.query?.action
+			const actionToSelect = actionFromProp || actionFromUrl
+
+			if (!actionToSelect) return
+
+			// Check if the action exists in migration choices and is not hidden
+			const matchingChoice = this.migrationChoices.find(
+				(choice) => choice.value === actionToSelect,
+			)
+
+			if (matchingChoice) {
+				// Auto-select the option
+				this.selectedMigrationMode = actionToSelect
+
+				// Set default new bench name if provided and not already set
+				if (this.defaultNewBenchName && !this.newBenchGroupName) {
+					this.newBenchGroupName = this.defaultNewBenchName
+				}
+			}
+		},
+		resetValues(skip_migration_mode_set = false) {
+			if (!skip_migration_mode_set) {
+				this.selectedMigrationMode = ''
+			}
+			this.skipFailingPatches = false
+			this.scheduledTime = ''
+
+			// For migration
+			this.benchMovementType = 'Create A New Bench'
+			this.selectedReleaseGroupToMoveTo = ''
+			this.selectedServerToMoveTo = ''
+			this.selectedServerType = 'Shared Server'
+
+			// Reset to default bench name if provided, otherwise empty
+			this.newBenchGroupName = this.defaultNewBenchName || ''
+
+			// Reset the errors
+			if (this.$resources?.createMigrationPlan) {
+				this.$resources.createMigrationPlan.error = null
+			}
+			if (this.$resources?.migrateSite) {
+				this.$resources.migrateSite.error = null
+			}
+		},
+		openServerActions(action) {
+			// Both actions live on the server's Actions tab. The `action` query param
+			// makes ServerActionCell auto-open that action's dialog on mount.
+			// Open in a new tab so this dialog stays open for the retry.
+			const server = this.cleanupTargetServer
+			if (!server) return
+			const { href } = this.$router.resolve({
+				path: `/servers/${server}/actions`,
+				query: { action },
+			})
+			window.open(href, '_blank')
+		},
+		triggerMigration() {
+			if (this.selectedMigrationMode === 'In-Place Migrate Site') {
+				this.$resources?.migrateSite?.submit()
+			} else {
+				this.$resources?.createMigrationPlan?.submit()
+			}
+		},
+		hide() {
+			this.show = false
+			this.$emit('update:modelValue', false)
+			this.$emit('close')
+		},
+	},
+}
+</script>

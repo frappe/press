@@ -30,8 +30,26 @@ def get_context(context):
 			settings.save()
 			frappe.db.commit()
 		except Exception:
-			log_error("GitHub App Creation Error", code=code, response=response)
+			log_error(
+				"GitHub App Creation Error",
+				response=summarize_github_app_creation_response(response),
+			)
 
 	redirect_url = frappe.utils.get_url("/app#Form/Press Settings")
 	frappe.flags.redirect_location = redirect_url
 	raise frappe.Redirect
+
+
+def summarize_github_app_creation_response(response):
+	if not response:
+		return None
+
+	return {
+		"app_id": response.get("id"),
+		"errors": response.get("errors"),
+		"html_url": response.get("html_url"),
+		"has_client_secret": bool(response.get("client_secret")),
+		"has_private_key": bool(response.get("pem")),
+		"has_webhook_secret": bool(response.get("webhook_secret")),
+		"message": response.get("message"),
+	}

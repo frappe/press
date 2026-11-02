@@ -14,6 +14,7 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.virtual_machine.virtual_machine import SERIES_TO_SERVER_TYPE
 
 if TYPE_CHECKING:
 	from press.infrastructure.doctype.virtual_machine_migration_step.virtual_machine_migration_step import (
@@ -253,7 +254,9 @@ class VirtualMachineMigration(Document):
 
 	def validate_aws_only(self):
 		if self.machine.cloud_provider != "AWS EC2":
-			frappe.throw("This feature is only available for AWS EC2")
+			frappe.throw(
+				"This feature is only available for servers hosted on AWS EC2. Please use an AWS EC2 server to continue."
+			)
 
 	def validate_existing_migration(self):
 		if existing := frappe.get_all(
@@ -362,7 +365,7 @@ class VirtualMachineMigration(Document):
 		# Remove these labels from the old volume
 		# So the new machine doesn't mount these as root or efi partitions
 		# Important: Update fstab so we can still boot the old machine
-		parsed_devices = json.loads(self.parsed_devices)
+		parsed_devices = json.loads(self.parsed_devices)  # type: ignore[arg-type]
 		for device in parsed_devices:
 			old_label = device["label"]
 			if not old_label:
@@ -537,8 +540,10 @@ class VirtualMachineMigration(Document):
 		"Update bind mount permissions"
 		# linux uid / gid might not be the same in the new machine
 		for mount in self.bind_mounts:
+			# Image layers under docker's data dir are owned by container uids, so only fix the top dir
+			recursive = "" if mount.source_mount_point.rstrip("/").endswith("/var/lib/docker") else "-R "
 			commands = [
-				f"chown -R {mount.mount_point_owner}:{mount.mount_point_group} {mount.source_mount_point}",
+				f"chown {recursive}{mount.mount_point_owner}:{mount.mount_point_group} {mount.source_mount_point}",
 				# The dependent service might have failed. Start it
 				f"systemctl start {mount.service}",
 			]
@@ -609,10 +614,13 @@ class VirtualMachineMigration(Document):
 			self.succeed()
 			return
 
+		# Steps like a recursive chown of the benches dir outlast the default queue's 5 minute timeout
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"execute_step",
+			queue="long",
+			timeout=3600,
 			step_name=next_step.name,
 			enqueue_after_commit=True,
 			at_front=True,
@@ -677,8 +685,10 @@ class VirtualMachineMigration(Document):
 		return None
 
 	def ansible_run(self, command):
-		virtual_machine_ip = frappe.db.get_value("Virtual Machine", self.virtual_machine, "public_ip_address")
-		inventory = f"{virtual_machine_ip},"
+		vm_series = frappe.db.get_value("Virtual Machine", self.virtual_machine, "series")
+		server_type = SERIES_TO_SERVER_TYPE.get(vm_series)
+		server_name = frappe.db.get_value(server_type, {"virtual_machine": self.virtual_machine}, "name")
+		inventory = f"{server_name},"
 		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 		self.add_command(command, result)
 		return result

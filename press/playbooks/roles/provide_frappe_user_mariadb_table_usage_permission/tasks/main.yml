@@ -1,0 +1,10 @@
+- name: Allow frappe user to run mariadb_table_usage cli
+  lineinfile:
+    path: /etc/sudoers.d/frappe
+    line: 'frappe ALL = (root) NOPASSWD: /home/frappe/agent/env/lib/*/site-packages/mariadb_table_usage/lib/mariadb_table_usage'
+    create: yes
+    state: present
+    validate: 'visudo -cf %s'
+    mode: '0440'
+    owner: root
+    group: root

@@ -103,7 +103,7 @@ class PhysicalRestorationTest(Document):
 		else:
 			self.completed = True
 			self.save()
-			frappe.throw("No pending restoration found")
+			frappe.throw("No pending restoration was found to test. Please trigger a restoration first.")
 
 	@frappe.whitelist()
 	def sync(self):

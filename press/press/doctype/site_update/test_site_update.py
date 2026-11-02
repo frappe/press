@@ -6,30 +6,71 @@ import json
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
+from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
+from press.press.doctype.agent_job.agent_job_notifications import get_details
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.database_server.database_server import DatabaseServer
+from press.press.doctype.database_server.test_database_server import create_test_database_server
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
 )
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
+from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.site.site import (
+	DEFAULT_MAX_STATEMENT_TIME,
+	STATEMENT_TIME_INCREMENT,
+	Site,
+)
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
-from press.press.doctype.site_update.site_update import SiteUpdate
+from press.press.doctype.site_update.site_update import (
+	STATEMENT_TIME_BUMP_SIZE_MB,
+	SiteUpdate,
+	is_site_in_deploy_hours,
+	run_scheduled_updates,
+	schedule_updates_server,
+	sites_with_available_update,
+)
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 
 
+def make_deploy_type_migrate(candidate: str, app: str):
+	"""Site Update reads the app rows of the difference to tell a Pull from a Migrate."""
+	difference = frappe.get_last_doc("Deploy Candidate Difference", {"destination": candidate})
+	difference.append("apps", {"app": app, "deploy_type": "Migrate"})
+	difference.save()
+
+
 @patch.object(SiteUpdate, "start", new=Mock())
-def create_test_site_update(site: str, destination_group: str, status: str):
-	return frappe.get_doc(
-		dict(doctype="Site Update", site=site, destination_group=destination_group, status=status)
-	).insert(ignore_if_duplicate=True)
+def create_test_site_update(
+	site: str,
+	destination_group: str,
+	status: str,
+	ignore_validate: bool = False,
+	deploy_type: str = "Migrate",
+) -> SiteUpdate:
+	# validate() computes deploy_type itself, so it only holds when validation is skipped.
+	doc = frappe.get_doc(
+		dict(
+			doctype="Site Update",
+			site=site,
+			destination_group=destination_group,
+			status=status,
+			deploy_type=deploy_type,
+		)
+	)
+	# Tests that only need a Site Update record in a given status (e.g. a Fatal update to
+	# recover from) can skip validation, which otherwise requires a real destination bench.
+	doc.flags.ignore_validate = ignore_validate
+	return doc.insert(ignore_if_duplicate=True)
 
 
 class TestSiteUpdate(FrappeTestCase):
@@ -104,11 +145,12 @@ class TestSiteUpdate(FrappeTestCase):
 
 		self.assertRaisesRegex(
 			frappe.ValidationError,
-			f".*apps installed on {site.name}: app., app.$",
+			".*apps installed on the site: app., app.*",
 			site.schedule_update,
 		)
 
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	@patch.object(Site, "sync_apps", new=Mock())
 	def test_site_update_callback_reallocates_workers_after_disable_maintenance_mode_job(
 		self,
 	):
@@ -156,3 +198,791 @@ class TestSiteUpdate(FrappeTestCase):
 		self.assertEqual(bench1.background_workers, 1)
 		self.assertGreater(bench2.gunicorn_workers, 2)
 		self.assertGreater(bench2.background_workers, 1)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_failed_pull_before_move_site_marks_update_fatal_but_not_the_site(self):
+		app1 = create_test_app()  # frappe
+		app2 = create_test_app("app2", "App 2")
+		app3 = create_test_app("app3", "App 3")
+
+		group = create_test_release_group([app1, app2, app3])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+
+		create_test_deploy_candidate_differences(bench2.candidate)  # for site update to be available
+
+		site = create_test_site(bench=bench1.name)
+		plan = create_test_plan(site.doctype, cpu_time=8)
+		create_test_subscription(site.name, plan.name, site.team)
+		site.reload()
+
+		site_update = None
+
+		with fake_agent_job(
+			{
+				"Update Site Pull": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Enable Maintenance Mode", "status": "Success"},
+						{"name": "Wait for Enqueued Jobs", "status": "Failure"},
+						{"name": "Move Site", "status": "Pending"},
+						{"name": "Disable Maintenance Mode", "status": "Pending"},
+					],
+				},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		self.assertEqual(
+			frappe.get_value("Site Update", site_update, "status"),
+			"Fatal",
+			"Site Update status should be set to Fatal after failed recovery",
+		)
+		self.assertIsNone(
+			frappe.get_value("Site", site.name, "fatal_site_update"),
+			"The site never moved, so it should not be marked fatal",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_failed_pull_at_move_site_marks_site_fatal(self):
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		site = create_test_site(bench=bench1.name)
+
+		with fake_agent_job(
+			{
+				"Update Site Pull": {
+					"status": "Failure",
+					"steps": [{"name": "Move Site", "status": "Failure"}],
+				},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		self.assertEqual(
+			frappe.get_value("Site", site.name, "fatal_site_update"),
+			site_update,
+			"A failed move leaves the site half-moved, so it should be marked fatal",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_failed_migrate_before_backup_step_doesnt_mark_site_fatal(self):
+		site = self._migrate_site_with_difference()
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Enable Maintenance Mode", "status": "Success"},
+						{"name": "Wait for Enqueued Jobs", "status": "Failure"},
+						{"name": "Clear Backup Directory", "status": "Pending"},
+						{"name": "Backup Site Tables", "status": "Pending"},
+						{"name": "Move Site", "status": "Pending"},
+					],
+				},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		self.assertEqual(
+			frappe.get_value("Site Update", site_update, "status"),
+			"Fatal",
+			"Site Update status should be set to Fatal after failed recovery",
+		)
+		self.assertIsNone(
+			frappe.get_value("Site", site.name, "fatal_site_update"),
+			"The migration never ran, so the site should not be marked fatal",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_failed_backup_step_doesnt_mark_site_fatal(self):
+		# The job stops at the backup, so the site never moves and never migrates.
+		site = self._migrate_site_with_difference()
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Backup Site Tables", "status": "Failure"},
+						{"name": "Move Site", "status": "Pending"},
+						{"name": "Disable Maintenance Mode", "status": "Pending"},
+					],
+				},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		self.assertEqual(
+			frappe.get_value("Site Update", site_update, "status"),
+			"Fatal",
+			"Site Update status should be set to Fatal after failed recovery",
+		)
+		self.assertIsNone(
+			frappe.get_value("Site", site.name, "fatal_site_update"),
+			"A failed backup stops the job before the move, so the site should not be marked fatal",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_stale_job_cleanup_doesnt_mark_site_fatal_for_a_move_that_never_ran(self):
+		# fail_old_jobs and update_job_step_status stamp the job status on every step that is
+		# still Pending, so a Move Site that never ran can end up Failure or Delivery Failure.
+		site = self._migrate_site_with_difference()
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Backup Site Tables", "status": "Failure"},
+						{"name": "Move Site", "status": "Pending"},
+					],
+				},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		update_job = frappe.db.get_value("Site Update", site_update, "update_job")
+		for status in ("Failure", "Delivery Failure"):
+			frappe.db.set_value(
+				"Agent Job Step",
+				{"agent_job": update_job, "step_name": "Move Site"},
+				"status",
+				status,
+			)
+			self.assertFalse(
+				SiteUpdate("Site Update", site_update).should_mark_site_fatal(),
+				f"A Move Site step stamped {status} by cleanup has no start time, so the move"
+				" never ran and the site should not be blocked",
+			)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_failed_migrate_with_skipped_backup_step_marks_site_fatal(self):
+		# A physical backup skips the in-job backup step, but the migration still runs.
+		site = self._migrate_site_with_difference()
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Backup Site Tables", "status": "Skipped"},
+						{"name": "Move Site", "status": "Success"},
+						{"name": "Migrate Site", "status": "Failure"},
+					],
+				},
+				"Recover Failed Site Migrate": {"status": "Failure"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		self.assertEqual(
+			frappe.get_value("Site", site.name, "fatal_site_update"),
+			site_update,
+			"A migration that ran past the backup step should mark the site fatal",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_dont_allow_site_update_if_last_fatal_update_not_resolved(self):
+		app1 = create_test_app()  # frappe
+		app2 = create_test_app("app2", "App 2")
+		app3 = create_test_app("app3", "App 3")
+		app4 = create_test_app("app4", "App 4")
+
+		group = create_test_release_group([app1, app2, app3, app4])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		bench3 = create_test_bench(group=group, server=bench1.server)
+
+		create_test_deploy_candidate_differences(bench2.candidate)  # for site update to be available
+		create_test_deploy_candidate_differences(bench3.candidate)  # for site update to be available
+
+		site = create_test_site(bench=bench1.name)
+		plan = create_test_plan(site.doctype, cpu_time=8)
+		create_test_subscription(site.name, plan.name, site.team)
+		site.reload()
+
+		fatal_site_update = create_test_site_update(site.name, bench2.group, "Fatal")
+		site.fatal_site_update = fatal_site_update.name
+		site.save()
+
+		with fake_agent_job(
+			{
+				"Update Site Pull": {"status": "Failure"},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				r".*Site has encountered a fatal error during last update*",
+				site.schedule_update,
+			)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_after_resolving_fatal_site_update_new_update_can_be_scheduled(self):
+		app1 = create_test_app()  # frappe
+		app2 = create_test_app("app2", "App 2")
+		app3 = create_test_app("app3", "App 3")
+		app4 = create_test_app("app4", "App 4")
+
+		group = create_test_release_group([app1, app2, app3, app4])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		bench3 = create_test_bench(group=group, server=bench1.server)
+
+		create_test_deploy_candidate_differences(bench2.candidate)  # for site update to be available
+		create_test_deploy_candidate_differences(bench3.candidate)  # for site update to be available
+
+		site = create_test_site(bench=bench1.name)
+		plan = create_test_plan(site.doctype, cpu_time=8)
+		create_test_subscription(site.name, plan.name, site.team)
+		site.reload()
+
+		fatal_site_update: SiteUpdate = create_test_site_update(site.name, bench2.group, "Fatal")
+		site.fatal_site_update = fatal_site_update.name
+		site.save()
+
+		fatal_site_update.set_cause_of_failure_is_resolved()
+		site.reload()
+		self.assertEqual(
+			site.fatal_site_update,
+			None,
+			"Site's fatal_site_update should be reset after resolving the cause of failure",
+		)
+
+		with fake_agent_job(
+			"Update Site Pull",
+			"Success",
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+
+			self.assertEqual(
+				frappe.get_value("Site Update", site_update, "status"),
+				"Success",
+				"Site Update should be successful",
+			)
+
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_run_scheduled_updates_starts_scheduled_update(self):
+		"""A scheduled update should start and succeed when all validations pass at run time."""
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		site = create_test_site(bench=bench1.name)
+
+		past_time = frappe.utils.add_to_date(None, hours=-1)
+		site_update_name = site.schedule_update(scheduled_time=past_time)
+
+		with fake_agent_job("Update Site Pull", "Success"):
+			run_scheduled_updates()
+			poll_pending_jobs()
+
+		self.assertEqual(
+			frappe.get_value("Site Update", site_update_name, "status"),
+			"Success",
+		)
+
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	def test_run_scheduled_updates_fails_if_destination_bench_missing_app(self):
+		"""Validation at scheduled run time should catch apps removed from the destination bench after scheduling."""
+		app1 = create_test_app()
+		app2 = create_test_app("app2", "App 2")
+		group = create_test_release_group([app1, app2])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		site = create_test_site(bench=bench1.name)
+
+		past_time = frappe.utils.add_to_date(None, hours=-1)
+		site_update_name = site.schedule_update(scheduled_time=past_time)
+
+		bench2_doc = frappe.get_doc("Bench", bench2.name)
+		bench2_doc.apps = [a for a in bench2_doc.apps if a.app != app2.name]
+		bench2_doc.save()
+
+		run_scheduled_updates()
+
+		self.assertEqual(frappe.get_value("Site Update", site_update_name, "status"), "Cancelled")
+		self.assertTrue(frappe.db.exists("Press Notification", {"type": "Site Update", "team": site.team}))
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_migrate_update_of_standby_site_skips_backups(self):
+		site = self._migrate_site_with_difference()
+		frappe.db.set_value("Site", site.name, "is_standby", 1)
+
+		site_update = frappe.get_doc("Site Update", site.schedule_update())
+
+		self.assertEqual(site_update.deploy_type, "Migrate")
+		self.assertTrue(site_update.skipped_backups)
+		agent_job = frappe.get_doc("Agent Job", site_update.update_job)
+		self.assertTrue(json.loads(agent_job.request_data)["skip_backups"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_site_handed_out_from_pool_before_its_update_starts_takes_backups(self):
+		site = self._migrate_site_with_difference()
+		frappe.db.set_value("Site", site.name, "is_standby", 1)
+		later = frappe.utils.add_to_date(None, hours=1)
+		site_update = frappe.get_doc("Site Update", site.schedule_update(scheduled_time=later))
+
+		frappe.db.set_value("Site", site.name, "is_standby", 0)
+		site_update.start()
+
+		site_update.reload()
+		self.assertFalse(site_update.skipped_backups)
+		agent_job = frappe.get_doc("Agent Job", site_update.update_job)
+		self.assertFalse(json.loads(agent_job.request_data)["skip_backups"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_migrate_update_of_customer_site_still_takes_backups(self):
+		site = self._migrate_site_with_difference()
+
+		site_update = frappe.get_doc("Site Update", site.schedule_update())
+
+		self.assertEqual(site_update.deploy_type, "Migrate")
+		self.assertFalse(site_update.skipped_backups)
+		agent_job = frappe.get_doc("Agent Job", site_update.update_job)
+		self.assertFalse(json.loads(agent_job.request_data)["skip_backups"])
+
+	def _sites_on_bench_with_update(
+		self, standby: int, customer: int, queue_size: int = 10
+	) -> tuple[list[str], list[str]]:
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+
+		standby_sites = [create_test_site(bench=bench1.name).name for _ in range(standby)]
+		for site in standby_sites:
+			frappe.db.set_value("Site", site, "is_standby", 1)
+		customer_sites = [create_test_site(bench=bench1.name).name for _ in range(customer)]
+		frappe.db.set_single_value("Press Settings", "auto_update_queue_size", queue_size)
+		return standby_sites, customer_sites
+
+	@patch.object(SiteUpdate, "start", new=Mock())
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	def test_all_standby_sites_on_a_bench_are_scheduled_in_one_run_but_customer_sites_one_per_bench(
+		self,
+	):
+		standby_sites, customer_sites = self._sites_on_bench_with_update(standby=3, customer=3)
+		server = frappe.db.get_value("Site", standby_sites[0], "server")
+
+		with patch("press.press.doctype.site_update.site_update.is_site_in_deploy_hours", return_value=True):
+			schedule_updates_server(server)
+
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", standby_sites)}), 3)
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", customer_sites)}), 1)
+
+	@patch.object(SiteUpdate, "start", new=Mock())
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	def test_customer_sites_wait_for_deploy_hours_while_standby_sites_move(self):
+		standby_sites, customer_sites = self._sites_on_bench_with_update(standby=2, customer=2)
+		server = frappe.db.get_value("Site", standby_sites[0], "server")
+
+		with patch("press.press.doctype.site_update.site_update.is_site_in_deploy_hours", return_value=False):
+			schedule_updates_server(server)
+
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", standby_sites)}), 2)
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", customer_sites)}), 0)
+
+	@patch.object(SiteUpdate, "start", new=Mock())
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	def test_standby_sites_spend_the_server_update_budget_before_customer_sites(self):
+		# A queue size of 1 lets a run schedule 2 updates on the server.
+		standby_sites, customer_sites = self._sites_on_bench_with_update(standby=2, customer=2, queue_size=1)
+		server = frappe.db.get_value("Site", standby_sites[0], "server")
+
+		with patch("press.press.doctype.site_update.site_update.is_site_in_deploy_hours", return_value=True):
+			schedule_updates_server(server)
+
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", standby_sites)}), 2)
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", customer_sites)}), 0)
+
+	@patch.object(SiteUpdate, "start", new=Mock())
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	def test_no_updates_are_scheduled_when_the_server_queue_is_full(self):
+		standby_sites, customer_sites = self._sites_on_bench_with_update(standby=1, customer=2, queue_size=0)
+		server = frappe.db.get_value("Site", standby_sites[0], "server")
+		frappe.get_doc("Site", customer_sites[0]).schedule_update()  # stays Pending
+
+		with patch("press.press.doctype.site_update.site_update.is_site_in_deploy_hours", return_value=True):
+			schedule_updates_server(server)
+
+		self.assertEqual(frappe.db.count("Site Update", {"site": standby_sites[0]}), 0)
+		self.assertEqual(frappe.db.count("Site Update", {"site": customer_sites[1]}), 0)
+
+	def test_standby_site_is_updated_even_outside_deploy_hours(self):
+		"""A standby site must bypass the deploy-hours filter; regression for is_standby not being fetched."""
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		site = create_test_site(bench=bench1.name)
+		frappe.db.set_value("Site", site.name, "is_standby", 1)
+
+		[fetched_site] = [s for s in sites_with_available_update(bench1.server) if s.name == site.name]
+
+		# is_standby must be selected, otherwise the deploy-hours bypass is a silent no-op
+		self.assertTrue(fetched_site.is_standby)
+		# With no deploy hours configured a non-standby site would be filtered out;
+		# the standby site must still pass.
+		with patch("press.press.doctype.site_update.site_update.frappe.get_hooks", return_value=[]):
+			self.assertTrue(is_site_in_deploy_hours(fetched_site))
+
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_run_scheduled_updates_fails_if_past_update_to_same_candidates_failed(self):
+		"""Validation at scheduled run time should block if an unresolved failure exists for the same source/destination."""
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		site = create_test_site(bench=bench1.name)
+
+		# Trigger an immediate update that fails, leaving an unresolved past failure record
+		with fake_agent_job(
+			{
+				"Update Site Pull": {"status": "Failure"},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		# Reset site state so a new update can be scheduled
+		frappe.db.set_value("Site", site.name, "fatal_site_update", None)
+		frappe.db.set_value("Site", site.name, "status", "Active")
+
+		# Schedule the update, bypassing the past failure check — that check is what we're testing at run time
+		past_time = frappe.utils.add_to_date(None, hours=-1)
+		with patch.object(SiteUpdate, "validate_past_failed_updates"):
+			site_update_name = site.schedule_update(scheduled_time=past_time)
+
+		run_scheduled_updates()
+
+		self.assertEqual(frappe.get_value("Site Update", site_update_name, "status"), "Cancelled")
+		self.assertTrue(frappe.db.exists("Press Notification", {"type": "Site Update", "team": site.team}))
+
+	def _migrate_site_with_difference(self) -> Site:
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		# Mark the site's app as a Migrate in the difference so the update's deploy_type is
+		# Migrate and recovery uses "Recover Failed Site Migrate".
+		difference = frappe.get_doc(
+			"Deploy Candidate Difference",
+			{"source": bench1.candidate, "destination": bench2.candidate},
+		)
+		app_row = find(difference.apps, lambda row: row.app == app.name)
+		if app_row:
+			app_row.deploy_type = "Migrate"
+		else:
+			difference.append("apps", {"app": app.name, "deploy_type": "Migrate"})
+		difference.flags.ignore_validate = True
+		difference.save()
+		return create_test_site(bench=bench1.name)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_skipped_backups_update_failure_goes_fatal_without_attempting_recovery(self):
+		# With backups skipped there is no backup to roll back to, so a failed update must
+		# go straight to Fatal — no recover job and no table restore.
+		site = self._migrate_site_with_difference()
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [{"name": "Move Site", "status": "Success"}],
+				},
+			}
+		):
+			site_update = site.schedule_update(skip_backups=True)
+			poll_pending_jobs()  # Update fails
+
+		self.assertEqual(
+			frappe.get_value("Site Update", site_update, "status"),
+			"Fatal",
+			"A skipped-backups update failure should go straight to Fatal",
+		)
+		for job_type in ("Recover Failed Site Migrate", "Recover Failed Site Update", "Restore Site Tables"):
+			self.assertFalse(
+				frappe.db.exists("Agent Job", {"site": site.name, "job_type": job_type}),
+				f"A skipped-backups update failure should not trigger a {job_type} job",
+			)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_restore_tables_success_activates_site_and_resolves_fatal_update(self):
+		app1 = create_test_app()
+
+		group = create_test_release_group([app1])
+		bench1 = create_test_bench(group=group)
+
+		site = create_test_site(bench=bench1.name)
+		fatal_site_update = create_test_site_update(site.name, bench1.group, "Fatal", ignore_validate=True)
+
+		# Simulate state after failed update + failed recovery
+		site.status = "Broken"
+		site.status_before_update = "Active"
+		site.fatal_site_update = fatal_site_update.name
+		site.save()
+
+		with fake_agent_job("Restore Site Tables", "Success"):
+			# force: this test is about the callback, not the guards restore_tables applies
+			site.restore_tables(force=True)
+			poll_pending_jobs()
+
+		site.reload()
+		self.assertEqual(
+			site.status,
+			"Active",
+			"Site should be Active after successful restore_tables",
+		)
+		self.assertIsNone(
+			site.fatal_site_update,
+			"fatal_site_update should be cleared after restore_tables success",
+		)
+		self.assertEqual(
+			frappe.get_value("Site Update", fatal_site_update.name, "status"),
+			"Fatal",
+			"Site Update should stay Fatal after restore_tables success",
+		)
+		self.assertTrue(
+			frappe.get_value("Site Update", fatal_site_update.name, "cause_of_failure_is_resolved"),
+			"Site Update's cause of failure should be marked resolved after restore_tables success",
+		)
+
+	def test_database_size_returns_latest_usage_in_mb(self):
+		site = create_test_site()
+		self.assertEqual(site.database_size, 0)
+
+		frappe.get_doc(doctype="Site Usage", site=site.name, database=1536).insert()  # 1.5 GB in MB
+
+		self.assertEqual(site.database_size, 1536)
+
+	@patch.object(DatabaseServer, "_update_mariadb_system_variables", new=Mock())
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_increase_max_statement_time_bumps_value_by_an_hour(self):
+		group = create_test_release_group([create_test_app()])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench.name)
+
+		old_timeout, new_timeout = site.increase_max_statement_time()
+
+		self.assertEqual(old_timeout, DEFAULT_MAX_STATEMENT_TIME)
+		self.assertEqual(new_timeout, DEFAULT_MAX_STATEMENT_TIME + STATEMENT_TIME_INCREMENT)
+
+		database_server = frappe.get_doc("Database Server", site.database_server_name)
+		row = find(
+			database_server.mariadb_system_variables,
+			lambda x: x.mariadb_variable == "max_statement_time",
+		)
+		self.assertIsNotNone(row, "max_statement_time should be set on the database server")
+		self.assertEqual(row.value_str, str(new_timeout))
+
+	@patch.object(DatabaseServer, "_update_mariadb_system_variables", new=Mock())
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_recovery_max_statement_time_bump_is_stashed_and_restored(self):
+		group = create_test_release_group([create_test_app()])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench.name)
+		# A database over the threshold qualifies for the recovery-migrate bump.
+		frappe.get_doc(
+			{"doctype": "Site Usage", "site": site.name, "database": STATEMENT_TIME_BUMP_SIZE_MB + 1}
+		).insert()
+		site_update = create_test_site_update(site.name, bench.group, "Pending", ignore_validate=True)
+		site_update.deploy_type = "Migrate"
+
+		site_update.bump_max_statement_time_before_recovery(site)
+
+		self.assertEqual(
+			site_update.previous_max_statement_time,
+			DEFAULT_MAX_STATEMENT_TIME,
+			"The pre-bump max_statement_time should be stashed on the Site Update",
+		)
+		database_server = frappe.get_doc("Database Server", site.database_server_name)
+		self.assertEqual(
+			int(float(database_server.get_mariadb_variable_value("max_statement_time"))),
+			DEFAULT_MAX_STATEMENT_TIME + STATEMENT_TIME_INCREMENT,
+		)
+
+		site_update.reload()
+		site_update.restore_max_statement_time()
+
+		database_server.reload()
+		self.assertEqual(
+			int(float(database_server.get_mariadb_variable_value("max_statement_time"))),
+			DEFAULT_MAX_STATEMENT_TIME,
+			"max_statement_time should be restored to its pre-bump value once recovery ends",
+		)
+		self.assertFalse(
+			frappe.db.get_value("Site Update", site_update.name, "previous_max_statement_time"),
+			"The stashed value should be cleared after restoring",
+		)
+
+	@patch.object(DatabaseServer, "_update_mariadb_system_variables", new=Mock())
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_recovery_does_not_bump_unlimited_max_statement_time(self):
+		# max_statement_time = 0 means no limit; bumping it would impose one, so the recovery
+		# leaves it alone and stashes nothing (a stashed 0 could never be told from "not bumped").
+		group = create_test_release_group([create_test_app()])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench.name)
+		site.set_max_statement_time(0)
+		frappe.get_doc(
+			{"doctype": "Site Usage", "site": site.name, "database": STATEMENT_TIME_BUMP_SIZE_MB + 1}
+		).insert()
+		site_update = create_test_site_update(site.name, bench.group, "Pending", ignore_validate=True)
+		site_update.deploy_type = "Migrate"
+
+		site_update.bump_max_statement_time_before_recovery(site)
+
+		self.assertFalse(
+			site_update.previous_max_statement_time,
+			"An unlimited max_statement_time must not be stashed",
+		)
+		database_server = frappe.get_doc("Database Server", site.database_server_name)
+		self.assertEqual(
+			int(float(database_server.get_mariadb_variable_value("max_statement_time"))),
+			0,
+			"An unlimited max_statement_time must stay unlimited",
+		)
+
+	def test_skipped_backups_update_failure_notification_directs_user_to_ssh(self):
+		group = create_test_release_group([create_test_app()])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench.name)
+		site_update = create_test_site_update(site.name, bench.group, "Fatal", ignore_validate=True)
+		frappe.db.set_value(
+			"Site Update",
+			site_update.name,
+			{"skipped_backups": 1, "update_job": "test-update-job"},
+		)
+
+		job = frappe._dict(
+			name="test-update-job",
+			job_type="Update Site Migrate",
+			site=site.name,
+			traceback="",
+			output="some migration error",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(
+			details["is_actionable"],
+			"A skipped-backups update failure should be actionable",
+		)
+		self.assertEqual(
+			details["title"],
+			"Site update failed and cannot be recovered automatically",
+		)
+		self.assertIn("SSH", details["message"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_migrate_update_is_blocked_on_site_with_database_larger_than_100_gb(self):
+		group = create_test_release_group([create_test_app()])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		make_deploy_type_migrate(bench2.candidate, "frappe")
+
+		site = create_test_site(bench=bench1.name)
+		# Site Usage sizes are in MB
+		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"too large to update without a physical backup",
+			site.schedule_update,
+		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_pull_update_is_allowed_on_site_with_database_larger_than_100_gb(self):
+		"""A Pull update takes no backup, so the size of the database doesn't matter."""
+		group = create_test_release_group([create_test_app()])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+
+		site = create_test_site(bench=bench1.name)
+		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
+
+		site_update = frappe.get_doc("Site Update", site.schedule_update())
+		self.assertEqual(site_update.deploy_type, "Pull")
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_site_update_is_allowed_on_site_with_database_smaller_than_100_gb(self):
+		group = create_test_release_group([create_test_app()])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+
+		site = create_test_site(bench=bench1.name)
+		frappe.get_doc(doctype="Site Usage", site=site.name, database=99 * 1024).insert()
+
+		self.assertTrue(site.schedule_update())
+
+	def test_site_update_with_logical_replication_backup_is_allowed_on_large_site(self):
+		"""Logical Replication doesn't take a full dump, so the size limit shouldn't apply."""
+		site = create_test_site()
+		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
+
+		site_update = frappe.new_doc(
+			"Site Update", site=site.name, server=site.server, backup_type="Logical Replication"
+		)
+		site_update.validate_backup_type_for_large_database()  # shouldn't raise
+
+		site_update.backup_type = "Logical"
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"too large to update without a physical backup",
+			site_update.validate_backup_type_for_large_database,
+		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_site_update_is_allowed_on_large_site_of_non_aws_server(self):
+		"""Physical backup only works on AWS, so the size limit can't be worked around elsewhere."""
+		database_server = create_test_database_server()
+		frappe.db.set_value("Database Server", database_server.name, "provider", "OCI")
+		server = create_test_server(database_server=database_server.name, provider="OCI")
+
+		group = create_test_release_group([create_test_app()])
+		bench1 = create_test_bench(group=group, server=server.name)
+		bench2 = create_test_bench(group=group, server=server.name)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		make_deploy_type_migrate(bench2.candidate, "frappe")
+
+		site = create_test_site(bench=bench1.name)
+		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
+
+		self.assertTrue(site.schedule_update())

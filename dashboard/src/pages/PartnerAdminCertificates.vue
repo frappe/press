@@ -23,14 +23,27 @@ export default {
 					{
 						label: 'Member Name',
 						fieldname: 'partner_member_name',
+						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 					},
 					{
 						label: 'Member Email',
 						fieldname: 'partner_member_email',
+						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 					},
 					{
 						label: 'Issued On',
 						fieldname: 'issue_date',
+						width: 0.5,
 						format(value) {
 							return Intl.DateTimeFormat('en-US', {
 								year: 'numeric',
@@ -47,17 +60,22 @@ export default {
 								? 'Framework'
 								: 'ERPNext';
 						},
-						width: 0.6,
+						width: 0.5,
 					},
 					{
 						label: 'Partner',
 						fieldname: 'team',
 						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 					},
 					{
 						label: 'Version',
 						fieldname: 'version',
-						width: 0.5,
+						width: 0.3,
 						align: 'center',
 					},
 					{
@@ -65,7 +83,7 @@ export default {
 						fieldname: 'free',
 						type: 'Component',
 						align: 'center',
-						width: 0.4,
+						width: 0.3,
 						component({ row }) {
 							if (row.free) {
 								return h(
@@ -86,6 +104,7 @@ export default {
 						label: 'Certificate Link',
 						type: 'Button',
 						align: 'center',
+						width: 0.5,
 						Button({ row }) {
 							return {
 								label: 'View',

@@ -5,18 +5,35 @@ from __future__ import annotations
 import json
 import re
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, TypedDict
 from unittest.mock import Mock, patch
 
 import frappe
 import responses
+from frappe.handler import run_doc_method as frappe_run_doc_method
 from frappe.model.naming import make_autoname
+from frappe.tests.ui_test_helpers import create_test_user
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import add_days
 
 from press.agent import Agent
-from press.press.doctype.agent_job.agent_job import AgentJob, lock_doc_updated_by_job
-from press.press.doctype.site.test_site import create_test_site
+from press.overrides import before_request
+from press.press.doctype.agent_job.agent_job import (
+	AgentJob,
+	cancel_job_from_dashboard,
+	fail_old_jobs,
+	lock_doc_updated_by_job,
+	update_job,
+	update_step,
+)
+from press.press.doctype.agent_job.agent_job_notifications import DOC_URLS, JobErr, get_details
+from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.app_release.test_app_release import create_test_app_release
+from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.release_group.test_release_group import create_test_release_group
+from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
+from press.utils.redact import redact_secrets
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 if TYPE_CHECKING:
@@ -35,11 +52,11 @@ def before_insert(self):
 	return None
 
 
-def fake_agent_job_req(  # noqa: C901
+def fake_agent_job_req(
 	job_type: str | list[str] | dict,
 	status: Literal["Success", "Pending", "Running", "Failure"] | None = None,
 	data: dict | None = None,
-	steps: list[dict] | None = None,
+	steps: list[StepDict] | None = None,
 ) -> Callable:
 	"""
 	Fake successful (or custom status) delivery for one or more job types.
@@ -74,7 +91,7 @@ def fake_agent_job_req(  # noqa: C901
 			"Use job_type['job_type'] = {'status': ..., 'data': ..., 'steps': ...} instead."
 		)
 
-	job_polling_response = dict()
+	job_polling_response: dict[int, dict] = dict()
 
 	def _fake_bulk_polling(request):
 		match = re.search(r"/agent/jobs/([\d,]+)", request.url)
@@ -114,12 +131,16 @@ def fake_agent_job_req(  # noqa: C901
 		# Add timestamps and other fields
 		for step in steps_for_job:
 			step["start"] = "2023-08-20 18:24:28.024885"
-			step["data"] = {}
+			step["data"] = step.get("data", {})
 			if step["status"] in ["Success", "Failure"]:
 				step["duration"] = "00:00:13.464445"
 				step["end"] = "2023-08-20 18:24:41.489330"
 			if step["status"] in ["Success", "Failure", "Running"]:
 				step["start"] = "2023-08-20 18:24:28.024885"
+				step["end"] = None
+				step["duration"] = None
+			if step["status"] in ["Skipped", "Pending"]:
+				step["start"] = None
 				step["end"] = None
 				step["duration"] = None
 
@@ -140,6 +161,7 @@ def fake_agent_job_req(  # noqa: C901
 			"data": spec["data"],
 			# TODO: uncomment lines as needed and make new parameters #
 			"duration": "00:00:13.496281",
+			"output": spec["data"].get("output", ""),
 			"end": "2023-08-20 18:24:41.506067",
 			"id": job_id,
 			"start": "2023-08-20 18:24:28.009786",
@@ -169,12 +191,45 @@ def fake_agent_job_req(  # noqa: C901
 	return before_insert
 
 
+def create_test_agent_job(
+	job_type: str = "Force Remove Zombie Benches",
+	server: str | None = None,
+	server_type: str = "Server",
+	status: str = "Undelivered",
+	job_id: int = 0,
+) -> AgentJob:
+	"""Create a test Agent Job doc."""
+	from press.press.doctype.server.test_server import create_test_server
+
+	if not server:
+		server = create_test_server().name
+
+	return frappe.get_doc(
+		{
+			"doctype": "Agent Job",
+			"server": server,
+			"server_type": server_type,
+			"job_type": job_type,
+			"status": status,
+			"job_id": job_id,
+			"request_method": "POST",
+			"request_path": "benches",
+			"request_data": "{}",
+		}
+	).insert(ignore_permissions=True)
+
+
+class StepDict(TypedDict):
+	name: str
+	status: Literal["Success", "Pending", "Running", "Failure", "Skipped"]
+
+
 @contextmanager
 def fake_agent_job(
 	job_type: str,
 	status: Literal["Success", "Pending", "Running", "Failure"] = "Success",
 	data: dict | None = None,
-	steps: list[dict] | None = None,
+	steps: list[StepDict] | None = None,
 ):
 	"""Fakes agent job request and response.
 
@@ -254,6 +309,26 @@ class TestAgentJob(FrappeTestCase):
 		doc_name = lock_doc_updated_by_job(job.name)
 		self.assertEqual(site.name, doc_name)
 
+	def _make_old(self, job_name: str):
+		# Age the job past the 2-day cutoff that fail_old_jobs uses
+		frappe.db.set_value("Agent Job", job_name, "creation", add_days(None, -3), update_modified=False)
+
+	def test_fail_old_jobs_marks_stuck_running_job_as_failure(self):
+		job = create_test_agent_job(status="Running", job_id=42)
+		self._make_old(job.name)
+
+		fail_old_jobs()
+
+		self.assertEqual(frappe.db.get_value("Agent Job", job.name, "status"), "Failure")
+
+	def test_fail_old_jobs_marks_undelivered_job_as_delivery_failure(self):
+		job = create_test_agent_job(status="Undelivered", job_id=0)
+		self._make_old(job.name)
+
+		fail_old_jobs()
+
+		self.assertEqual(frappe.db.get_value("Agent Job", job.name, "status"), "Delivery Failure")
+
 	def test_no_duplicate_undelivered_job(self):
 		site = create_test_site()
 		site.update_site_config({"maintenance_mode": "1"})
@@ -285,3 +360,541 @@ class TestAgentJob(FrappeTestCase):
 		self.assertEqual(in_execution_job.name, job.name)
 
 		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", True)
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestCancelJob(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_cancelling_a_finished_job_is_rejected(self):
+		job = create_test_agent_job(job_type="Restore Site", status="Success", job_id=42)
+
+		self.assertRaisesRegex(frappe.ValidationError, "job that is Success", job.cancel_job)
+
+	def test_dashboard_cant_cancel_a_job_type_without_a_failure_path(self):
+		job = create_test_agent_job(job_type="Migrate Site", status="Running", job_id=42)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Migrate Site jobs can't be cancelled",
+			job.validate_dashboard_cancellation,
+		)
+
+	def test_dashboard_can_cancel_a_running_restore(self):
+		job = create_test_agent_job(job_type="Restore Site", status="Running", job_id=42)
+
+		job.validate_dashboard_cancellation()  # doesn't raise
+
+	def test_dashboard_cant_cancel_a_site_update_that_skipped_backups(self):
+		job = create_test_agent_job(job_type="Update Site Migrate", status="Running", job_id=42)
+		site_update = frappe.get_doc(
+			doctype="Site Update",
+			name="test-site-update-cancel",
+			status="Running",
+			update_job=job.name,
+			skipped_backups=1,
+		)
+		site_update.db_insert()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"backups skipped",
+			job.validate_dashboard_cancellation,
+		)
+
+
+class TestCancelJobFromDashboard(FrappeTestCase):
+	"""Two teams, each holding the Press User role and nothing else.
+
+	A job always names a server, a bench sometimes and a site sometimes. The
+	endpoint answers only to the team that owns the site the job belongs to.
+	"""
+
+	def setUp(self):
+		self.team = create_test_press_admin_team()
+		self.other_team = create_test_press_admin_team()
+		self.mine = self.jobs_of(self.team)
+		self.theirs = self.jobs_of(self.other_team)
+
+	def tearDown(self):
+		if hasattr(frappe.local, "request"):
+			del frappe.local.request
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def sign_in_as(self, team):
+		"""Put the request-scoped team in place the way `before_request` does."""
+		frappe.set_user(team.user)
+		before_request()
+
+	def jobs_of(self, team) -> dict[str, AgentJob]:
+		"""One running backup of each shape a job comes in."""
+		bench = create_test_bench()
+		frappe.db.set_value("Bench", bench.name, "team", team.name)
+		site = create_test_site(bench=bench.name, team=team.name)
+
+		def backup(**fields) -> AgentJob:
+			job = create_test_agent_job(job_type="Backup Site", server=bench.server, job_id=42)
+			job.db_set({"status": "Running", **fields})
+			return job
+
+		return {
+			"server": backup(),
+			"bench": backup(bench=bench.name),
+			"site": backup(bench=bench.name, site=site.name),
+		}
+
+	def test_a_team_cancels_the_running_backup_of_its_own_site(self):
+		self.sign_in_as(self.team)
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			cancel_job_from_dashboard(self.mine["site"].name)
+
+		cancel_job.assert_called_once_with(42)
+
+	@responses.activate
+	def test_a_dashboard_cancel_reaches_the_agent_and_records_the_team_user(self):
+		"""The agent call runs as Administrator, and the comment names the caller."""
+		job = self.mine["site"]
+		responses.post(re.compile(rf".*/agent/jobs/{job.job_id}/cancel"), json={})
+		self.sign_in_as(self.team)
+
+		cancel_job_from_dashboard(job.name)
+
+		self.assertEqual(len(responses.calls), 1)
+		comment = frappe.get_last_doc("Comment", {"reference_name": job.name, "comment_type": "Info"})
+		self.assertEqual((comment.content, comment.owner), ("Cancelled the job", self.team.user))
+
+	def test_a_team_cannot_cancel_the_backup_of_another_teams_site(self):
+		self.sign_in_as(self.team)
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			self.assertRaisesRegex(
+				frappe.PermissionError,
+				"Not permitted",
+				cancel_job_from_dashboard,
+				self.theirs["site"].name,
+			)
+
+		cancel_job.assert_not_called()
+		self.assertEqual(frappe.db.get_value("Agent Job", self.theirs["site"].name, "status"), "Running")
+
+	def test_a_job_that_names_no_site_belongs_to_nobody(self):
+		"""The endpoint asks the site who owns the job, so a job without one is
+		refused to its own team as well."""
+		self.sign_in_as(self.team)
+
+		for shape in ("server", "bench"):
+			for owner, jobs in (("mine", self.mine), ("theirs", self.theirs)):
+				with self.subTest(shape=shape, owner=owner):
+					with patch.object(Agent, "cancel_job") as cancel_job:
+						self.assertRaises(frappe.PermissionError, cancel_job_from_dashboard, jobs[shape].name)
+
+					cancel_job.assert_not_called()
+
+	def test_a_team_cannot_cancel_a_job_type_that_has_no_failure_path(self):
+		self.sign_in_as(self.team)
+		self.mine["site"].db_set("job_type", "Migrate Site")
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"Migrate Site jobs can't be cancelled",
+				cancel_job_from_dashboard,
+				self.mine["site"].name,
+			)
+
+		cancel_job.assert_not_called()
+
+	def test_an_operator_cancels_a_job_from_the_desk_form(self):
+		"""The desk button calls `frm.call('cancel_job')`, so the method stays
+		whitelisted. Only the dashboard route moved to the endpoint."""
+		operator = frappe.mock("email")
+		create_test_user(operator)
+		frappe.set_user(operator)
+		frappe.local.request = frappe._dict(method="POST", headers=frappe._dict())
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			frappe_run_doc_method("cancel_job", dt="Agent Job", dn=self.mine["site"].name)
+
+		cancel_job.assert_called_once_with(42)
+		comment = frappe.get_last_doc("Comment", {"reference_name": self.mine["site"].name})
+		self.assertEqual((comment.content, comment.owner), ("Cancelled the job", operator))
+
+	def test_the_endpoint_refuses_a_name_that_is_not_a_string(self):
+		"""`frappe.get_doc` reads a dict as a new document, and frappe validates
+		the annotation only in a request."""
+		self.sign_in_as(self.team)
+
+		with patch.object(Agent, "cancel_job") as cancel_job:
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"must be a string",
+				cancel_job_from_dashboard,
+				{"status": "Running"},
+			)
+
+		cancel_job.assert_not_called()
+
+	def test_a_team_reads_no_job_of_another_team(self):
+		"""Agent Job grants a dashboard user nothing, so `get` refuses every shape."""
+		from press.api.client import get
+
+		self.sign_in_as(self.team)
+
+		for shape, job in self.theirs.items():
+			with self.subTest(shape=shape):
+				self.assertRaises(frappe.PermissionError, get, "Agent Job", job.name)
+
+
+class TestAgentJobNotifications(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	PKG_RESOURCES_TRACEBACK = (
+		'  File "/home/frappe/frappe-bench/apps/frappe/frappe/__init__.py", line 1461, in get_module\n'
+		'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/utils.py", line 6, in <module>\n'
+		"    import razorpay\n"
+		'  File "/home/frappe/frappe-bench/env/lib/python3.11/site-packages/razorpay/client.py", line 4, in <module>\n'
+		"    import pkg_resources\n"
+		"ModuleNotFoundError: No module named 'pkg_resources'"
+	)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_missing_pkg_resources_points_at_the_app_and_the_doc(self):
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False, newer_release=True)
+		job = self.update_job(site, bench, self.PKG_RESOURCES_TRACEBACK)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Update failed because of the dummy_app app")
+		self.assertIn("<code>pkg_resources</code>", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.PKG_RESOURCES])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_missing_pkg_resources_in_teams_own_app_points_at_the_same_doc(self):
+		site, bench = self.site_with_app("dummy_app", newer_release=True)
+		job = self.update_job(site, bench, self.PKG_RESOURCES_TRACEBACK)
+
+		details = get_details(job, "", "")
+
+		self.assertIn("<code>pkg_resources</code>", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.PKG_RESOURCES])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_missing_pkg_resources_gets_a_banner_even_when_the_app_is_on_its_latest_release(self):
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False)
+		job = self.update_job(site, bench, self.PKG_RESOURCES_TRACEBACK)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.PKG_RESOURCES])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_known_traceback_wins_over_the_app_update_suggestion(self):
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False, newer_release=True)
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
+			"pymysql.err.OperationalError: (1118, 'Row size too large')",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertEqual(details["title"], "Row size too large error")
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.ROW_SIZE_TOO_LARGE])
+
+	def test_missing_pkg_resources_on_a_job_without_bench_is_not_actionable(self):
+		job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Update Agent",
+				"server": "test.frappe.cloud",
+				"traceback": "ImportError: Module import failed for Dropbox Settings, the DocType you're trying to open might be deleted.\nError: No module named 'pkg_resources'",
+			}
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertFalse(details["is_actionable"])
+		self.assertIsNone(details["assistance_url"])
+
+	DISK_FULL_TRACEBACK = (
+		"redis.exceptions.ResponseError: MISCONF Errors writing to the AOF file: No space left on device"
+	)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_disk_full_on_dedicated_server_links_the_disk_chart(self):
+		job = self.restore_job(public=False)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Server disk full")
+		self.assertIn(f"/dashboard/servers/{job.server}/analytics", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.DISK_FULL])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_disk_full_on_public_server_is_not_actionable(self):
+		details = get_details(self.restore_job(public=True), "", "")
+
+		self.assertFalse(details["is_actionable"])
+
+	def restore_job(self, public: bool) -> AgentJob:
+		site = create_test_site()
+		frappe.db.set_value("Server", site.server, "public", public)
+		return frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Restore Site",
+				"site": site.name,
+				"server_type": "Server",
+				"server": site.server,
+				"traceback": self.DISK_FULL_TRACEBACK,
+			}
+		)
+
+	def site_with_app(
+		self, app_name: str, owned_by_site_team: bool = True, newer_release: bool = False
+	) -> tuple[str, str]:
+		"""Site on a bench that has app_name installed"""
+		frappe_app = create_test_app()
+		other_app = create_test_app(app_name, app_name.title())
+		app_source = create_test_app_source(
+			"Version 14", other_app, repository_url=f"https://github.com/dummy/{app_name}"
+		)
+		group = create_test_release_group(
+			[frappe_app, other_app],
+			app_sources=[create_test_app_source("Version 14", frappe_app).name, app_source.name],
+		)
+		bench = create_test_bench(group=group)
+
+		if newer_release:
+			create_test_app_release(app_source)
+
+		site = create_test_site(bench=bench.name)
+		if not owned_by_site_team:
+			app_source.db_set("team", self.team_other_than(site.team))
+
+		return site.name, bench.name
+
+	def team_other_than(self, team: str) -> str:
+		"""Reuse an existing team, creating one per test gets rate limited"""
+		return frappe.db.get_value("Team", {"name": ("!=", team), "enabled": 1}, "name")
+
+	def update_job(self, site: str, bench: str, traceback: str) -> AgentJob:
+		return frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Update Site Migrate",
+				"site": site,
+				"bench": bench,
+				"traceback": traceback,
+			}
+		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_update_failing_inside_teams_own_app_asks_them_to_debug_it(self):
+		site, bench = self.site_with_app("dummy_app")
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/modules/patch_handler.py", line 90, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
+			"KeyError: 'rate'",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Update failed because of the dummy_app app")
+		self.assertIn("failed inside your app <b>dummy_app</b>", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_DEBUG])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_update_failing_inside_someone_elses_app_suggests_updating_it(self):
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False, newer_release=True)
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
+			"KeyError: 'rate'",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Update failed because of the dummy_app app")
+		self.assertIn("newer release of <b>dummy_app</b> is available", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_UPDATE])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_error_raised_by_frappe_db_layer_blames_the_app_that_called_it(self):
+		site, bench = self.site_with_app("dummy_app")
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/modules/patch_handler.py", line 90, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/database/database.py", line 230, in sql\n'
+			"pymysql.err.OperationalError: (1054, \"Unknown column 'rate' in 'field list'\")",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertEqual(details["title"], "Update failed because of the dummy_app app")
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_DEBUG])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_traceback_with_only_frappe_frames_gets_no_banner(self):
+		site, bench = self.site_with_app("dummy_app")
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/migrate.py", line 120, in run\n'
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/database/database.py", line 230, in sql\n'
+			"pymysql.err.OperationalError: (2013, 'Lost connection')",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertFalse(details["is_actionable"])
+		self.assertEqual(details["title"], "Site Migrate")
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_app_name_with_digits_is_not_skipped(self):
+		site, bench = self.site_with_app("dummy_app2")
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/frappe/frappe/modules/patch_handler.py", line 90, in execute\n'
+			'  File "/home/frappe/frappe-bench/apps/dummy_app2/dummy_app2/patches/fix_rates.py", line 12, in execute\n'
+			"KeyError: 'rate'",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertEqual(details["title"], "Update failed because of the dummy_app2 app")
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.APP_DEBUG])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_someone_elses_app_already_on_latest_release_gets_no_banner(self):
+		site, bench = self.site_with_app("dummy_app", owned_by_site_team=False)
+		job = self.update_job(
+			site,
+			bench,
+			'  File "/home/frappe/frappe-bench/apps/dummy_app/dummy_app/patches/fix_rates.py", line 12, in execute\n'
+			"KeyError: 'rate'",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertFalse(details["is_actionable"])
+		self.assertIsNone(details["assistance_url"])
+
+
+class TestAgentJobOutputRedaction(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_masks_password_attribute_in_traceback_variables(self):
+		text = "self = BackupGenerator(db_name='_db1', password='fake-db-password', user='_db1')"
+
+		redacted = redact_secrets(text)
+
+		self.assertNotIn("fake-db-password", redacted)
+		self.assertIn("password='********'", redacted)
+		self.assertIn("db_name='_db1'", redacted)
+
+	def test_masks_command_line_and_json_secrets(self):
+		self.assertEqual(
+			redact_secrets("docker login -u frappe -p ghp_token123 registry.frappe.cloud"),
+			"docker login -u frappe -p ******** registry.frappe.cloud",
+		)
+		self.assertEqual(redact_secrets('{"db_password": "xyz"}'), '{"db_password": "********"}')
+		self.assertEqual(
+			redact_secrets("aws_secret_access_key=AKIA1 x=1"), "aws_secret_access_key=******** x=1"
+		)
+
+	def test_masks_mysql_attached_password_and_password_flags(self):
+		self.assertEqual(
+			redact_secrets("mariadb -h db -P 3306 -u _db1 -pfakevalue _db1 -e 'select 1'"),
+			"mariadb -h db -P 3306 -u _db1 -p******** _db1 -e 'select 1'",
+		)
+		self.assertEqual(
+			redact_secrets("bench restore --mariadb-root-password fakeroot --admin-password fakeadmin"),
+			"bench restore --mariadb-root-password ******** --admin-password ********",
+		)
+
+	def test_masks_list_command_and_keeps_list_without_secrets(self):
+		self.assertEqual(
+			redact_secrets(["docker", "login", "-u", "frappe", "-p", "fakevalue", "registry.frappe.cloud"]),
+			"docker login -u frappe -p ******** registry.frappe.cloud",
+		)
+		self.assertEqual(redact_secrets(["ls", "-la"]), ["ls", "-la"])
+
+	def test_masks_credentials_in_url_and_keeps_commit_hash(self):
+		self.assertEqual(
+			redact_secrets(
+				"hash 6c876ea06963ec90ffbc0673e65b48328680fdd8: https://x-access-token:ghs_abc@github.com/a/b"
+			),
+			"hash 6c876ea06963ec90ffbc0673e65b48328680fdd8: https://********@github.com/a/b",
+		)
+
+	def test_keeps_text_without_secret_values(self):
+		for text in (
+			"Access denied for user 'u'@'h' (using password: YES)",
+			"Password reset email sent",
+			"docker login --password-stdin registry.frappe.cloud",
+			"mysqldump -u root -p --all-databases",
+			"ssh -p 22 host && docker run -p 3306:6033 image",
+			"primary_key=name keyword=value",
+		):
+			self.assertEqual(redact_secrets(text), text)
+
+	def test_update_job_stores_redacted_output_traceback_and_data(self):
+		job = create_test_agent_job(status="Running")
+
+		update_job(
+			job.name,
+			{
+				"start": None,
+				"end": None,
+				"duration": None,
+				"status": "Failure",
+				"data": {
+					"output": "password='leaked-output'",  # pragma: allowlist secret
+					"traceback": "self = Conn(password='leaked-traceback')",
+					"result": {"token": "kept-for-callbacks"},
+				},
+			},
+		)
+
+		job.reload()
+		for field in ("output", "traceback", "data"):
+			self.assertNotIn("leaked", job.get(field))
+		self.assertIn("kept-for-callbacks", job.data)
+
+	def test_update_step_stores_redacted_output(self):
+		step = {
+			"start": None,
+			"end": None,
+			"duration": None,
+			"status": "Failure",
+			"data": {
+				"output": "--password=leaked",
+				"traceback": "token: leaked",
+				"command": "docker login -u frappe -p leaked registry.frappe.cloud",
+			},
+		}
+
+		with patch("press.press.doctype.agent_job.agent_job.frappe.db.set_value") as set_value:
+			update_step("step-name", step)
+
+		values = set_value.call_args.args[2]
+		for field in ("output", "traceback", "data"):
+			self.assertNotIn("leaked", values[field])

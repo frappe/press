@@ -8,15 +8,21 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.api import client
+from press.api.bench import redeploy
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
-from press.press.doctype.bench.bench import Bench
+from press.press.doctype.bench.bench import Bench, process_bench_queue
+from press.press.doctype.deploy_candidate.docker_output_parsers import DockerBuildOutputParser
 from press.press.doctype.deploy_candidate.test_deploy_candidate import (
 	create_test_deploy_candidate,
 	create_test_deploy_candidate_build,
 	create_test_press_admin_team,
 )
-from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
+	DeployCandidateBuild,
+	is_cache_related_failure,
+)
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
@@ -166,10 +172,13 @@ class TestDeployCandidateBuild(FrappeTestCase):
 		newly_created_build.process_run_build(job, response_data=None)
 		self.assertEqual(len(frappe.get_all("Deploy", {"candidate": dc.name})), 1)
 
+		process_bench_queue()  # Ensure bench ref exists
+
 		# Check correct build association with the bench
 		deploy: Deploy = frappe.get_doc("Deploy", {"candidate": dc.name})
 		for bench_ref in deploy.benches:
-			server, bench = bench_ref.server, bench_ref.bench
+			server, bench_queue = bench_ref.server, bench_ref.bench
+			bench = frappe.db.get_value("New Bench Queue", bench_queue, "bench")
 			build = frappe.get_value("Bench", bench, "build")
 			server_platform = frappe.get_value("Server", server, "platform")
 			build_platform = frappe.get_value("Deploy Candidate Build", build, "platform")
@@ -179,3 +188,202 @@ class TestDeployCandidateBuild(FrappeTestCase):
 				self.assertEqual(newly_created_build.name, build)
 			else:
 				self.assertEqual(deploy_candidate_build.name, build)
+
+	def test_dockerfile_installs_chromium_for_the_platform_being_built(self, _mock_commit):
+		build = self.deploy_candidate_build
+
+		build.platform = "x86_64"
+		intel_dockerfile = build._generate_dockerfile()
+		self.assertIn("chrome-headless-shell-linux64.zip", intel_dockerfile)
+		self.assertIn("id=chromium-x86_64", intel_dockerfile)
+
+		# Chrome for Testing publishes no linux-arm64 build, so ARM uses Playwright's.
+		build.platform = "arm64"
+		arm_dockerfile = build._generate_dockerfile()
+		self.assertIn("chromium-headless-shell-linux-arm64.zip", arm_dockerfile)
+		self.assertIn("id=chromium-arm64", arm_dockerfile)
+		self.assertNotIn("chrome-headless-shell-linux64.zip", arm_dockerfile)
+
+	def test_dockerfile_makes_the_bundled_chromium_executable(self, _mock_commit):
+		self.assertIn(
+			"chmod 0755 /home/frappe/frappe-bench/chromium/chrome-linux/headless_shell",
+			self.deploy_candidate_build._generate_dockerfile(),
+		)
+
+	def test_dockerfile_generation_refuses_a_stored_variable_with_a_newline(self, _mock_commit):
+		self.deploy_candidate.append(
+			"environment_variables", {"key": "MY_VAR", "value": "foo\nRUN touch /tmp/pwned"}
+		)
+		self.deploy_candidate.save()
+		with self.assertRaisesRegex(frappe.ValidationError, "must not contain newlines"):
+			self.deploy_candidate_build._generate_dockerfile()
+
+	def test_chromium_setup_shows_up_as_a_build_step(self, _mock_commit):
+		build = self.deploy_candidate_build
+		checkpoints = build._get_dockerfile_checkpoints(build._generate_dockerfile())
+		self.assertIn("setup-chromium", checkpoints)
+
+	def generate_dockerfile_with_app_cache(self, public: bool, no_cache: bool = False) -> str:
+		frappe.set_user("Administrator")
+		apps = [create_test_app(), create_test_app("erpnext", "ERPNext")]
+		candidate = create_test_deploy_candidate(create_test_release_group(apps, public=public))
+		candidate.db_set("use_app_cache", 1)
+		build = create_test_deploy_candidate_build(candidate, no_cache=no_cache)
+		build.candidate._set_app_cached_flags()
+		return build._generate_dockerfile()
+
+	def test_public_group_with_app_cache_installs_apps_through_the_asset_store(self, _mock_commit):
+		dockerfile = self.generate_dockerfile_with_app_cache(public=True)
+		self.assertIn("COPY get_cached_app.py /usr/local/bin/get_cached_app.py", dockerfile)
+		self.assertIn("/usr/local/bin/get_cached_app.py \\\n  erpnext \\", dockerfile)
+		self.assertIn("--mount=type=bind,source=stored_assets/erpnext,", dockerfile)
+		self.assertNotIn("build_token", dockerfile)
+
+	def test_asset_store_install_keeps_the_pip_and_yarn_download_cache(self, _mock_commit):
+		dockerfile = self.generate_dockerfile_with_app_cache(public=True)
+		erpnext_step = next(step for step in dockerfile.split("RUN ") if "#stage-apps-erpnext" in step)
+		self.assertIn("--mount=type=cache,sharing=locked,target=/home/frappe/.cache", erpnext_step)
+
+	def test_private_group_with_app_cache_also_installs_apps_through_the_asset_store(self, _mock_commit):
+		dockerfile = self.generate_dockerfile_with_app_cache(public=False)
+		self.assertIn("/usr/local/bin/get_cached_app.py \\\n  erpnext \\", dockerfile)
+		self.assertIn("--mount=type=bind,source=stored_assets/erpnext,", dockerfile)
+
+	def test_no_cache_build_of_a_public_group_skips_the_asset_store(self, _mock_commit):
+		dockerfile = self.generate_dockerfile_with_app_cache(public=True, no_cache=True)
+		self.assertNotIn("get_cached_app.py", dockerfile)
+
+	# Saving would insert the build, and after_insert needs a build server
+	@patch.object(DeployCandidateBuild, "save", new=Mock())
+	def test_package_the_agent_injects_into_the_dockerfile_gets_a_build_step_in_build_order(
+		self, _mock_commit
+	):
+		build = self.deploy_candidate_build
+		build.add_build_steps(build._generate_dockerfile())
+
+		DockerBuildOutputParser(build).parse_and_update(
+			[
+				"#5 [stage-0 2/35] RUN apt-get update `#stage-pre-essentials`\n",
+				"#5 DONE 1.0s\n",
+				"#10 [stage-0 10/35] RUN apt-get install --yes tesseract-ocr `#stage-pre-tesseract-ocr`\n",
+				"#10 DONE 2.1s\n",
+			]
+		)
+
+		slugs = [(step.stage_slug, step.step_slug) for step in build.build_steps]
+		self.assertEqual(slugs.index(("pre", "tesseract-ocr")), slugs.index(("pre", "essentials")) + 1)
+		step = build.get_first_step("step_slug", "tesseract-ocr")
+		self.assertEqual(
+			(step.stage, step.step, step.status), ("Setup Prerequisites", "tesseract-ocr", "Success")
+		)
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=Mock())
+	@patch.object(DeployCandidateBuild, "_process_run_build", new=Mock())
+	@patch.object(Bench, "after_insert", new=Mock())
+	def test_redeploy_without_cache_disables_the_cache_on_the_new_build(self, mock_commit):
+		self.assertIs(self.redeploy_and_capture_no_cache(True), True)
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=Mock())
+	@patch.object(DeployCandidateBuild, "_process_run_build", new=Mock())
+	@patch.object(Bench, "after_insert", new=Mock())
+	def test_redeploy_with_no_cache_as_the_string_false_keeps_the_cache(self, mock_commit):
+		self.assertIs(self.redeploy_and_capture_no_cache("false"), False)
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=Mock())
+	@patch.object(DeployCandidateBuild, "_process_run_build", new=Mock())
+	@patch.object(Bench, "after_insert", new=Mock())
+	def test_dashboard_is_told_a_failed_build_is_a_cache_failure(self, mock_commit):
+		build = self.create_failed_build()
+		build.db_set("build_output", "failed to compute cache key: not found")
+
+		self.assertTrue(client.get("Deploy Candidate Build", build.name).is_cache_failure)
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=Mock())
+	@patch.object(DeployCandidateBuild, "_process_run_build", new=Mock())
+	@patch.object(Bench, "after_insert", new=Mock())
+	def test_dashboard_is_not_told_an_unrelated_failure_is_a_cache_failure(self, mock_commit):
+		build = self.create_failed_build()
+		build.db_set("build_output", "RUN --mount=type=cache bench build\nModuleNotFoundError")
+
+		self.assertFalse(client.get("Deploy Candidate Build", build.name).is_cache_failure)
+
+	def redeploy_and_capture_no_cache(self, no_cache):
+		"""Redeploy a failed build and return the no_cache the new build sends to the agent.
+
+		The agent reads it off the in-memory document, so the persisted (cast) value
+		of the field says nothing about what the build actually runs with.
+		"""
+		build = self.create_failed_build()
+		sent_to_agent = []
+
+		def capture(build_being_run, **kwargs):
+			sent_to_agent.append(build_being_run.no_cache)
+
+		with patch.object(DeployCandidateBuild, "pre_build", capture):
+			redeploy(name=build.group, dc_name=build.name, no_cache=no_cache)
+
+		return sent_to_agent[0]
+
+	def create_failed_build(self) -> DeployCandidateBuild:
+		group = create_test_release_group(
+			[create_test_app()],
+			self.user,
+			servers=[self.x86_build_server.name],
+		)
+		candidate: DeployCandidate = group.create_deploy_candidate()
+		build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", candidate.build_and_deploy())
+		build.db_set("status", "Failure")
+		return build
+
+
+class TestCacheRelatedFailure(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_buildkit_cache_key_failure_is_cache_related(self):
+		self.assertTrue(
+			is_cache_related_failure("failed to compute cache key: failed to calculate checksum of ref")
+		)
+
+	def test_yarn_integrity_failure_is_cache_related(self):
+		self.assertTrue(is_cache_related_failure("error Incorrect integrity when fetching from the cache"))
+
+	def test_apt_lock_failure_is_cache_related(self):
+		self.assertTrue(
+			is_cache_related_failure("E: Could not get lock /var/cache/apt/archives/lock - open (11)")
+		)
+
+	def test_missing_import_inside_a_cache_mount_step_is_not_cache_related(self):
+		build_output = """
+			#42 [apps 3/5] RUN --mount=type=cache,target=/home/frappe/.cache/pip bench build
+			#42 12.34 ModuleNotFoundError: No module named 'press.utils.missing'
+			#42 ERROR: process "/bin/sh -c bench build" did not complete successfully: exit code: 1
+		"""
+		self.assertFalse(is_cache_related_failure(build_output))
+
+	def test_is_cache_failure_is_set_on_a_failed_build_with_a_cache_error(self):
+		build = DeployCandidateBuild(
+			{
+				"doctype": "Deploy Candidate Build",
+				"status": "Failure",
+				"build_output": "failed to compute cache key: not found",
+			}
+		)
+
+		self.assertTrue(build.get_doc(frappe._dict()).is_cache_failure)
+
+	def test_is_cache_failure_is_not_set_on_a_successful_build(self):
+		build = DeployCandidateBuild(
+			{
+				"doctype": "Deploy Candidate Build",
+				"status": "Success",
+				"build_output": "failed to compute cache key: not found",
+			}
+		)
+
+		self.assertFalse(build.get_doc(frappe._dict()).is_cache_failure)
+
+	def test_is_cache_failure_is_not_set_on_a_build_with_no_output(self):
+		build = DeployCandidateBuild({"doctype": "Deploy Candidate Build", "status": "Failure"})
+
+		self.assertFalse(build.get_doc(frappe._dict()).is_cache_failure)

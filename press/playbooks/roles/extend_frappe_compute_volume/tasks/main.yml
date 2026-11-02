@@ -1,0 +1,45 @@
+---
+- name: Show Volumes
+  command: df -hT
+
+- name: Show Block Devices
+  command: lsblk
+
+- name: Show Partitions
+  command: 'lsblk --noheadings --output PTTYPE {{ device }}'
+  register: lsblk_output
+
+- name: Set Partition Status
+  set_fact:
+    partitioned_disk: '{{ lsblk_output.stdout.strip() != "" }}'
+
+- name: Extend Partition
+  command: 'growpart {{ device }} 1'
+  register: result
+  until: result.rc == 0
+  retries: 10
+  delay: 10
+  when: partitioned_disk
+
+- name: Show Modified Block Devices
+  command: lsblk
+
+- name: Extend Partitioned Filesystem
+  command: 'resize2fs {{ device }}1'
+  when: partitioned_disk
+
+- name: Extend Un-partitioned Filesystem
+  command: 'resize2fs {{ device }}'
+  when: not partitioned_disk
+
+- name: Add Glass file back
+  command: fallocate -l 200M /root/glass
+
+- name: Show Modified Volumes
+  command: df -h
+
+- name: Restart MariaDB
+  service:
+    name: mysql
+    state: restarted
+  when: restart_mariadb | default(false) | bool

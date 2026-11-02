@@ -8,12 +8,15 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import add_to_date
 
+from press.access.utils import is_outside_employee, refuse_backup_download
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.press_notification.press_notification import notify_backup_access
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
+from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
 if TYPE_CHECKING:
@@ -204,7 +207,9 @@ class ServerSnapshotRecovery(Document):
 	@frappe.whitelist()
 	def archive_servers(self):
 		if not self.app_server or not self.database_server:
-			frappe.throw("Servers are not provisioned yet.")
+			frappe.throw(
+				"The servers are not provisioned yet. Please wait for provisioning to finish before retrying."
+			)
 
 		app_server_doc = frappe.get_doc("Server", self.app_server)
 		if app_server_doc.status != "Archived":
@@ -297,6 +302,7 @@ class ServerSnapshotRecovery(Document):
 
 		if not site_record:
 			frappe.throw(f"Site {site} not found in recovery sites.")
+		assert site_record  # frappe.throw above raises; narrows the type for mypy
 
 		if job.status == "Failure":
 			site_record.status = "Failure"
@@ -332,6 +338,7 @@ class ServerSnapshotRecovery(Document):
 				break
 		if not site_record:
 			frappe.throw(f"Site {site} not found in recovery sites.")
+		assert site_record  # frappe.throw above raises; narrows the type for mypy
 
 		if job.status == "Failure":
 			site_record.status = "Failure"
@@ -382,6 +389,7 @@ class ServerSnapshotRecovery(Document):
 
 		if not site_record:
 			frappe.throw(f"Site {site} not found in recovery sites.")
+		assert site_record  # frappe.throw above raises; narrows the type for mypy
 
 		if (
 			(file_type == "public" and not site_record.public_remote_file)
@@ -390,6 +398,15 @@ class ServerSnapshotRecovery(Document):
 			or (file_type == "encryption_key" and not site_record.encryption_key)
 		):
 			frappe.throw(f"{file_type.capitalize()} backup not available for site {site}.")
+
+		if is_outside_employee(self.owning_team(site)):
+			refuse_backup_download()
+
+		# Recovered Remote Files carry no site, so make_download_link logs nothing itself.
+		if frappe.db.exists("Site", site):
+			log_site_activity(site=site, action="Access Offsite Backups")
+		else:
+			self.notify_backup_access_of_gone_site(site)
 
 		try:
 			remote_file_name = ""
@@ -405,6 +422,15 @@ class ServerSnapshotRecovery(Document):
 			return frappe.get_doc("Remote File", remote_file_name).download_link
 		except Exception:
 			frappe.throw(f"Error downloading {file_type} backup for site {site}. Please try again later.")
+
+	def owning_team(self, site: str) -> str | None:
+		"""The recovered site's current team, or the recovery's team once the site is gone."""
+		return frappe.db.get_value("Site", site, "team") or self.team
+
+	def notify_backup_access_of_gone_site(self, site: str):
+		"""The site is gone, so tell the recovery's team, linked to the server the snapshot is of."""
+		server = str(frappe.db.get_value("Server Snapshot", self.snapshot, "app_server"))
+		notify_backup_access(self, "Server", server, site, team=self.team)
 
 	@frappe.whitelist()
 	def expire_backups(self):

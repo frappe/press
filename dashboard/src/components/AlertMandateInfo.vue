@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<AlertBanner
-			title="Due to RBI regulations, we need to generate a mandate to process payments from your card."
+			title="Due to RBI regulations, we need to generate a mandate to process payments from your card. Please update your card to avoid site suspension."
 			type="warning"
 		>
 			<Button
@@ -19,8 +19,8 @@
 	</div>
 </template>
 <script>
-import AlertBanner from './AlertBanner.vue';
-import StripeCardDialog from './StripeCardDialog.vue';
+import AlertBanner from './AlertBanner.vue'
+import StripeCardDialog from './StripeCardDialog.vue'
 
 export default {
 	name: 'AlertMandateInfo',
@@ -28,7 +28,7 @@ export default {
 	data() {
 		return {
 			showAddCardDialog: false,
-		};
+		}
 	},
-};
+}
 </script>

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './coverage.fixture';
 import mockResponse from '../../mocks/sites/get_list.json' assert { type: 'json' };
 
 test('Ensure sites are visible in the list', async ({ page }) => {

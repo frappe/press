@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe.query_builder import Order
+from frappe.query_builder.functions import Count
 
 
 def get_context(context):
@@ -26,30 +28,26 @@ def get_context(context):
 		key=lambda y: featured.index(y.name),
 	)
 
-	context.apps["Most Installed"] = frappe.db.sql(
-		"""
-		SELECT
-			marketplace.name,
-			marketplace.title,
-			marketplace.image,
-			marketplace.route,
-			marketplace.description,
-			COUNT(*) AS total_installs
-		FROM
-			`tabMarketplace App` marketplace
-		LEFT JOIN
-			`tabSite App` site
-		ON
-			site.app = marketplace.app
-		WHERE
-			marketplace.status = "Published"
-		GROUP BY
-			marketplace.name
-		ORDER BY
-			total_installs DESC
-		LIMIT 6
-	""",
-		as_dict=True,
+	MarketplaceApp = frappe.qb.DocType("Marketplace App")
+	SiteApp = frappe.qb.DocType("Site App")
+	total_installs = Count("*").as_("total_installs")
+	context.apps["Most Installed"] = (
+		frappe.qb.from_(MarketplaceApp)
+		.left_join(SiteApp)
+		.on(SiteApp.app == MarketplaceApp.app)
+		.select(
+			MarketplaceApp.name,
+			MarketplaceApp.title,
+			MarketplaceApp.image,
+			MarketplaceApp.route,
+			MarketplaceApp.description,
+			total_installs,
+		)
+		.where(MarketplaceApp.status == "Published")
+		.groupby(MarketplaceApp.name)
+		.orderby(total_installs, order=Order.desc)
+		.limit(6)
+		.run(as_dict=True)
 	)
 
 	context.apps["Recently Added"] = frappe.get_all(
@@ -86,26 +84,20 @@ def search(query: str, offset: int = 0, limit: int = 20):
 
 @frappe.whitelist(allow_guest=True)
 def filter_by_category(category):
-	return frappe.db.sql(
-		"""
-		SELECT
-			marketplace.name,
-			marketplace.title,
-			marketplace.image,
-			marketplace.route,
-			marketplace.description
-		FROM
-			`tabMarketplace App` marketplace
-		LEFT JOIN
-			`tabMarketplace App Categories` category
-		ON
-			category.parent = marketplace.name
-		WHERE
-			marketplace.status = "Published"
-		AND
-			category.category = %s
-		ORDER BY marketplace.frappe_approved DESC
-	""",
-		category,
-		as_dict=True,
+	MarketplaceApp = frappe.qb.DocType("Marketplace App")
+	Category = frappe.qb.DocType("Marketplace App Categories")
+	return (
+		frappe.qb.from_(MarketplaceApp)
+		.left_join(Category)
+		.on(Category.parent == MarketplaceApp.name)
+		.select(
+			MarketplaceApp.name,
+			MarketplaceApp.title,
+			MarketplaceApp.image,
+			MarketplaceApp.route,
+			MarketplaceApp.description,
+		)
+		.where((MarketplaceApp.status == "Published") & (Category.category == category))
+		.orderby(MarketplaceApp.frappe_approved, order=Order.desc)
+		.run(as_dict=True)
 	)

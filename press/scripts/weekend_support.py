@@ -3,15 +3,20 @@ from datetime import timedelta
 from itertools import cycle
 
 import frappe
+from frappe.utils import add_months
 
 agents = [
-	"shadrak@erpnext.com",
-	"tanmoy@frappe.io",
-	"alan@iwebnotes.com",
+	"aysha@frappe.io",
+	"ritwik.p@frappe.io",
 	"balamurali@erpnext.com",
-	"arun@frappe.io",
+	"jayanta@frappe.io",
 	"saurabh@erpnext.com",
-	"suhail@frappe.io",
+	"shadrak@erpnext.com",
+	"aradhya@frappe.io",
+	"sabu@frappe.io",
+	"tanmoy@frappe.io",
+	"prathamesh@frappe.io",
+	"sidhant@frappe.io",
 ]
 
 
@@ -38,16 +43,33 @@ def next_weekdays(from_: datetime.date, till: datetime.date):
 			yield dt
 
 
+def last_assigned_agent() -> str | None:
+	"""Returns the agent on support for the latest weekend that's already scheduled"""
+	subject = frappe.db.get_value(
+		"Event",
+		{"subject": ("like", "%on Weekend Support")},
+		"subject",
+		order_by="starts_on desc",
+	)
+	if not subject:
+		return None
+	first_name = subject.split(" on Weekend Support")[0]
+	return frappe.db.get_value("User", {"name": ("in", agents), "first_name": first_name}, "name")
+
+
 def main():
 	agent_cycle = cycle(agents)
-	weekday_cycle = cycle(reversed(agents))
+	last_agent = last_assigned_agent()
+	if last_agent:
+		# wind the cycle forward so the next weekend gets the next agent
+		for agent in agent_cycle:
+			if agent == last_agent:
+				break
 
 	from_ = datetime.date.today()
-	till = datetime.date(2023, 7, 20)
+	till = add_months(from_, 3)
 
 	for weekend in get_weekends(from_, till):
-		agent = next(agent_cycle)
-		contact = frappe.get_doc("User", {"name": agent})
 		if frappe.db.exists(
 			"Event",
 			{
@@ -57,35 +79,14 @@ def main():
 			},
 		):
 			continue
+		agent = next(agent_cycle)
+		contact = frappe.get_doc("User", {"name": agent})
 		frappe.get_doc(
 			{
 				"doctype": "Event",
 				"subject": f"{contact.first_name} on Weekend Support",
 				"starts_on": weekend[0],
 				"ends_on": weekend[1],
-				"all_day": 1,
-				"event_type": "Public",
-			}
-		).insert()
-
-	for weekday in next_weekdays(from_, till):
-		agent = next(weekday_cycle)
-		contact = frappe.get_last_doc("Contact", {"email_id": agent})
-		if frappe.db.exists(
-			"Event",
-			{
-				"subject": ("like", "%Backup Support"),
-				"starts_on": weekday,
-				"ends_on": datetime.datetime.combine(weekday, datetime.time(23, 59)),
-			},
-		):
-			continue
-		frappe.get_doc(
-			{
-				"doctype": "Event",
-				"subject": f"{contact.first_name} on Backup Support",
-				"starts_on": weekday,
-				"ends_on": datetime.datetime.combine(weekday, datetime.time(23, 59)),
 				"all_day": 1,
 				"event_type": "Public",
 			}

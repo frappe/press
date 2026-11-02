@@ -1,0 +1,85 @@
+---
+- name: Check current cgroup hierarchy version
+  command: stat -fc %T /sys/fs/cgroup/
+  register: cgroup_type
+  changed_when: false
+  failed_when: false
+
+- name: Skip if already on cgroup v2 unified
+  meta: end_play
+  when: cgroup_type.stdout | default('') == 'cgroup2fs'
+
+- name: Backup current GRUB configuration
+  copy:
+    src: /etc/default/grub
+    dest: /etc/default/grub.cgroupv2_backup
+    remote_src: true
+    mode: '0644'
+
+- name: Check if cgroup v1 hybrid parameters exist in GRUB
+  command: grep -c 'systemd.unified_cgroup_hierarchy=0\|cgroup_no_v1=' /etc/default/grub
+  register: v1_params_count
+  changed_when: false
+  failed_when: false
+
+- name: Remove cgroup v1 hybrid parameters from GRUB
+  ansible.builtin.replace:
+    path: /etc/default/grub
+    regexp: '(GRUB_CMDLINE_LINUX="[^"]*)\s*systemd\.unified_cgroup_hierarchy=0\s*([^"]*")'
+    replace: '\1 \2'
+  when: v1_params_count.stdout | int > 0
+
+- name: Remove cgroup_no_v1 parameter from GRUB
+  ansible.builtin.replace:
+    path: /etc/default/grub
+    regexp: '\s*cgroup_no_v1=[a-z,]*'
+    replace: ''
+  when: v1_params_count.stdout | int > 0
+
+- name: Add cgroup v2 unified parameter to GRUB_CMDLINE_LINUX
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^(GRUB_CMDLINE_LINUX=")([^"]*)(")$'
+    line: '\1\2 systemd.unified_cgroup_hierarchy=1\3'
+    backrefs: true
+    backup: false
+
+- name: Run update-grub with auto-revert on failure
+  block:
+    - name: Execute update-grub
+      command: update-grub
+      register: update_grub_result
+      changed_when: update_grub_result.rc == 0
+
+  rescue:
+    - name: Revert GRUB configuration from backup
+      ansible.builtin.copy:
+        src: /etc/default/grub.cgroupv2_backup
+        dest: /etc/default/grub
+        remote_src: true
+        mode: '0644'
+
+    - name: Re-run update-grub after revert to restore boot config
+      ansible.builtin.command: update-grub
+      register: grub_revert_result
+
+    - name: Fail play after reverting GRUB changes
+      ansible.builtin.fail:
+        msg: >-
+          update-grub failed. GRUB config reverted and re-applied
+          (revert rc: {{ grub_revert_result.rc }}).
+          Manual intervention required on {{ inventory_hostname }}.
+
+
+- name: Clean up GRUB backup file
+  file:
+    path: /etc/default/grub.cgroupv2_backup
+    state: absent
+
+- name: Reboot to apply cgroup v2 unified changes
+  reboot:
+    msg: "Rebooting to apply cgroup v2 unified hierarchy changes"
+    connect_timeout: 5
+    reboot_timeout: 300
+    pre_reboot_delay: 0
+    post_reboot_delay: 30

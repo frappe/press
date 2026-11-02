@@ -65,7 +65,9 @@ class WireguardPeer(Document):
 				self.peer_ip = str(next_ip_addr)
 		except Exception:
 			log_error("Wireguard Peer IP Exception", server=self.as_dict())
-			frappe.throw("Invalid Wireguard Network")
+			frappe.throw(
+				"The WireGuard network is invalid. Please provide a valid network address in CIDR notation."
+			)
 
 	@frappe.whitelist()
 	def setup_wireguard(self):
@@ -79,9 +81,8 @@ class WireguardPeer(Document):
 				server=self,
 			)
 			play = ansible.run()
-			if play.status == "Success":
-				if not self.peer_private_network:
-					self.fetch_peer_private_network(play)
+			if play.status == "Success" and not self.peer_private_network:
+				self.fetch_peer_private_network(play)
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
 
@@ -98,7 +99,7 @@ class WireguardPeer(Document):
 		self.private_ip = facts["eth1"]["ipv4"]["address"]
 		self.peer_private_network = str(
 			ipaddress.IPv4Network(
-				f'{facts["eth1"]["ipv4"]["address"]}/{facts["eth1"]["ipv4"]["netmask"]}',
+				f"{facts['eth1']['ipv4']['address']}/{facts['eth1']['ipv4']['netmask']}",
 				strict=False,
 			)
 		)
@@ -112,14 +113,10 @@ class WireguardPeer(Document):
 				server=self,
 				variables={
 					"wireguard_port": proxy.wireguard_port,
-					"interface_id": proxy.private_ip_interface_id,
+					"external_interface_id": proxy.private_ip_interface_id,
 					"wireguard_network": self.peer_ip + "/" + self.wireguard_network.split("/")[1],
-					"wireguard_private_key": self.get_password("private_key")
-					if self.private_key
-					else False,
-					"wireguard_public_key": self.get_password("public_key")
-					if self.public_key
-					else False,
+					"wireguard_private_key": self.get_password("private_key") if self.private_key else False,
+					"wireguard_public_key": self.get_password("public_key") if self.public_key else False,
 					"peers": json.dumps(
 						[
 							{

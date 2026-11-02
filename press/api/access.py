@@ -1,6 +1,5 @@
 import frappe
 import frappe.utils
-from frappe import _
 from frappe.utils import caching, typing_validations
 
 from press.access import support_access
@@ -11,8 +10,7 @@ from press.access import support_access
 @typing_validations.validate_argument_types
 def status(doctype: str, docname: str):
 	if not support_access.has_support_access(doctype, docname):
-		message = _("You do not have support access to this document.")
-		frappe.throw(message, frappe.PermissionError)
+		frappe.throw("You do not have support access to this document", frappe.PermissionError)  # nosemgrep
 
 	AccessRequest = frappe.qb.DocType("Support Access")
 	AccessRequestResource = frappe.qb.DocType("Support Access Resource")
@@ -32,8 +30,7 @@ def status(doctype: str, docname: str):
 	results = query.run(as_dict=True)
 
 	if len(results) == 0:
-		message = _("You do not have support access to this document.")
-		frappe.throw(message, frappe.PermissionError)
+		frappe.throw("You do not have support access to this document.", frappe.PermissionError)  # nosemgrep
 
 	until = results[0].access_allowed_till
 

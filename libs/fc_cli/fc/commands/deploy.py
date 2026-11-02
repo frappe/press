@@ -15,9 +15,8 @@ deploy = typer.Typer(help="Bench/Deploy Commands")
 console = Console()
 
 
-# Trigger initial deploy for a bench group
 @deploy.command(help="Trigger initial deploy for a bench group")
-def bench_init(
+def create_initial_deploy(
 	ctx: typer.Context,
 	name: Annotated[str, typer.Argument(help="Bench group name")],
 	force: Annotated[
@@ -55,10 +54,12 @@ def bench_init(
 @deploy.command(help="Create bench group")
 def create_bench_group(
 	ctx: typer.Context,
-	version: Annotated[str, typer.Argument(help="Frappe Framework Version (e.g. Version 15)")],
-	region: Annotated[str, typer.Argument(help="Region (cluster name, e.g. Mumbai)")],
-	title: Annotated[str, typer.Argument(help="Bench Group Title (e.g. cli-test-bench)")],
-	server: Annotated[str, typer.Argument(help="Server name")],
+	name: Annotated[str, typer.Argument(help="Bench group name")],
+	version: Annotated[
+		str, typer.Option("--version", help="Frappe Framework Version (e.g. Version 15)")
+	] = "",
+	server: Annotated[str, typer.Option("--server", help="Server name")] = "",
+	cluster: Annotated[str, typer.Option("--cluster", help="Cluster (e.g. Mumbai)")] = "",
 ):
 	session: CloudSession = ctx.obj
 	try:
@@ -69,7 +70,7 @@ def create_bench_group(
 			Print.error(console, f"Could not find valid source for frappe in version '{version}'.")
 			return
 		_warn_server_name_format(server)
-		_create_bench(session, title, version, region, frappe_source, server)
+		_create_bench(session, name, version, cluster, frappe_source, server)
 	except Exception as e:
 		Print.error(console, f"Error creating bench group: {e}")
 
@@ -102,7 +103,7 @@ def drop_bench_group(
 		if response and response.get("exc_type"):
 			Print.error(console, f"Failed to drop bench group: {response.get('exception', 'Unknown error')}")
 			return
-		# Consider success if no error and either 'success' is True or no error but response is present
+
 		if response.get("success") or (response and not response.get("exc_type")):
 			Print.success(console, f"Successfully dropped bench group: {name}")
 		else:
@@ -115,9 +116,9 @@ def drop_bench_group(
 @deploy.command(help="Add app to bench group by name and version")
 def add_app(
 	ctx: typer.Context,
-	bench: Annotated[str, typer.Argument(help="Bench group name")],
 	app: Annotated[str, typer.Argument(help="App name")],
-	branch: Annotated[str, typer.Argument(help="App branch (e.g. 'version-15-beta')")],
+	bench: Annotated[str, typer.Option("--bench", help="Bench group name")] = "",
+	branch: Annotated[str, typer.Option("--branch", help="App branch (e.g. 'version-15')")] = "",
 ):
 	session: CloudSession = ctx.obj
 	url = _build_method_url(session, "press.api.bench.all_apps")
@@ -148,7 +149,6 @@ def add_app(
 				)
 				Print.error(console, f"Failed to add app '{app}' to bench '{bench}': {error_msg}")
 		elif isinstance(add_response, str):
-			# Handle string response (e.g. when app is already added or not found)
 			if "already exists" in add_response:
 				Print.info(console, f"App '{app}' is already added to bench '{bench}'.")
 			else:
@@ -163,7 +163,7 @@ def add_app(
 def remove_app(
 	ctx: typer.Context,
 	bench: Annotated[str, typer.Argument(help="Bench group name")],
-	app: Annotated[str, typer.Argument(help="App name to remove")],
+	app: Annotated[str, typer.Option("--app", help="App name to remove")],
 ):
 	session: CloudSession = ctx.obj
 	url = _build_method_url(session, "press.api.client.run_doc_method")
@@ -182,7 +182,6 @@ def remove_app(
 				)
 				Print.error(console, f"Failed to remove app '{app}' from bench '{bench}': {error_msg}")
 		elif isinstance(response, str):
-			# If response is just the app name, treat as success (already removed or not present)
 			if response.strip() == app:
 				Print.success(console, f"Successfully removed app '{app}' from bench '{bench}'")
 			elif "not found" in response or "does not exist" in response:
@@ -202,61 +201,40 @@ if __name__ == "__main__":
 @deploy.command(help="Update a single app in a bench by release hash prefix")
 def update_app(
 	ctx: typer.Context,
-	app: Annotated[str, typer.Argument(help="App name to update (e.g. india_compliance)")],
+	app: Annotated[list[str], typer.Option("--app", help="App name to update (repeat for multiple)")],
 	hash_prefix: Annotated[
-		str, typer.Argument(help="First few characters of the target release git hash (min 5)")
+		list[str], typer.Option("--hash", help="Release hash prefix (repeat for multiple)")
 	],
-	bench: Annotated[
-		str | None,
-		typer.Argument(help="Bench group name (optional; auto-detect by app)"),
+	bench: Annotated[str, typer.Argument(help="Bench group name")],
+	sites_opt: Annotated[
+		list[str] | None,
+		typer.Option(
+			"--site",
+			help="Site(s) to include in update (repeat --site for multiple)",
+		),
 	] = None,
 ):
-	"""Find the app release whose commit hash starts with HASH_PREFIX and trigger deploy_and_update.
-
-	Workflow:
-	- Fetch deploy information for the bench (apps and their upcoming releases)
-	- Find the app entry and match release by git hash prefix
-	- Call press.api.bench.deploy_and_update with the selected release
-	"""
 	session: CloudSession = ctx.obj
 
 	try:
-		# Auto-detect bench if not provided
-		target_bench = bench or _auto_detect_bench_for_app(session, app)
-		if not target_bench:
-			Print.error(
-				console,
-				"Could not determine bench group. Please pass bench explicitly or ensure the app is present in a bench.",
-			)
+		target_bench = bench
+
+		if not app or not hash_prefix or len(app) != len(hash_prefix):
+			Print.error(console, "You must provide equal numbers of --app and --hash options.")
 			return
 
-		_warn_if_short_hash(hash_prefix)
-
-		# Get deploy information (includes upcoming releases per app)
-		info = (
-			session.get(
-				"press.api.bench.deploy_information",
-				params={"name": target_bench},
-			)
-			or {}
-		)
-
-		app_entry = _pick_app_entry(info, app)
-		if not app_entry:
-			Print.error(console, f"App '{app}' not found in bench '{target_bench}'.")
+		info = _get_deploy_info(session, target_bench)
+		apps_payload = _build_apps_payload(info, app, hash_prefix, target_bench)
+		if not apps_payload:
+			Print.error(console, "No valid app/release pairs to update.")
 			return
 
-		selected_release, selected_hash = _select_release_by_prefix(
-			app_entry.get("releases", []) or [], hash_prefix
-		)
-		if not selected_release:
-			# _select_release_by_prefix already printed helpful messages
-			return
+		selected_sites = _resolve_sites_for_update(info, sites_opt, target_bench)
 
 		payload = {
 			"name": target_bench,
-			"apps": [{"app": app, "release": selected_release}],
-			"sites": [],
+			"apps": apps_payload,
+			"sites": selected_sites,
 			"run_will_fail_check": False,
 		}
 
@@ -264,21 +242,18 @@ def update_app(
 			"press.api.bench.deploy_and_update",
 			json=payload,
 			message=(
-				f"[bold green]Updating app '{app}' on bench '{target_bench}' to release {selected_release}"
-				f" (hash {selected_hash[:12]})..."
+				f"[bold green]Updating {len(payload['apps'])} app(s) on bench '{target_bench}'"
+				f" with {len(selected_sites)} site(s) ..."
 			),
 		)
 
 		if _is_success_response(result):
-			# Response is typically a deploy candidate/build name (string) or success dict.
 			if isinstance(result, str) and result:
 				Print.success(console, f"Update scheduled. Tracking name: {result}")
 			else:
 				Print.success(console, "Update scheduled successfully.")
 		else:
 			Print.error(console, f"Failed to schedule update: {_format_error_message(result)}")
-
-		# No separate deploy call needed; deploy_and_update already schedules build + deploy.
 
 	except Exception as e:
 		Print.error(console, f"Error scheduling app update: {e}")
@@ -290,10 +265,6 @@ def _pick_app_entry(info: dict, app: str) -> dict | None:
 
 
 def _select_release_by_prefix(releases: list[dict], hash_prefix: str) -> tuple[str | None, str]:
-	"""Return (release_name, hash) matching the given hash prefix, else (None, "").
-
-	Prints concise error messages on ambiguity or no-match.
-	"""
 	matches = [r for r in releases if str(r.get("hash", "")).startswith(hash_prefix)]
 	if not matches:
 		suggestions = ", ".join([r.get("hash", "")[:7] for r in releases][:10])
@@ -312,9 +283,44 @@ def _select_release_by_prefix(releases: list[dict], hash_prefix: str) -> tuple[s
 	return selected.get("name"), selected.get("hash", "")
 
 
-def _warn_if_short_hash(hash_prefix: str) -> None:
-	if len(hash_prefix) < 5:
-		Print.warn(console, "Hash prefix is very short; using at least 5 characters reduces ambiguity.")
+def _get_deploy_info(session: "CloudSession", bench_name: str) -> dict:
+	"""Fetch deploy information for a bench."""
+	return (
+		session.get(
+			"press.api.bench.deploy_information",
+			params={"name": bench_name},
+		)
+		or {}
+	)
+
+
+def _build_apps_payload(info: dict, apps: list[str], hashes: list[str], bench_name: str) -> list[dict]:
+	apps_payload: list[dict] = []
+	for app_name, hash_val in zip(apps, hashes, strict=True):
+		app_entry = _pick_app_entry(info, app_name)
+		if not app_entry:
+			Print.error(console, f"App '{app_name}' not found in bench '{bench_name}'. Skipping.")
+			continue
+		selected_release, _ = _select_release_by_prefix(app_entry.get("releases", []) or [], hash_val)
+		if not selected_release:
+			continue
+		apps_payload.append({"app": app_name, "release": selected_release})
+	return apps_payload
+
+
+def _resolve_sites_for_update(info: dict, sites_opt: list[str] | None, bench_name: str) -> list[dict]:
+	try:
+		bench_sites = info.get("sites", []) or []
+		if not sites_opt:
+			return []
+		by_name = {s.get("name"): s for s in bench_sites if s.get("name")}
+		selected = [by_name[s] for s in sites_opt if s in by_name]
+		missing = [s for s in sites_opt if s not in by_name]
+		if missing:
+			Print.warn(console, f"Skipping unknown site(s) for bench '{bench_name}': {', '.join(missing)}")
+		return selected
+	except Exception:
+		return []
 
 
 def _is_success_response(result: object) -> bool:
@@ -337,11 +343,6 @@ def _should_proceed(message: str, confirm_token: str | None) -> bool:
 	if isinstance(confirm_token, str) and confirm_token.lower() in {"force", "yes", "y"}:
 		return True
 	return typer.confirm(message, default=False)
-
-
-# --------------------
-# Helper functions (grouped at bottom for structure)
-# --------------------
 
 
 def _build_method_url(session: "CloudSession", method: str) -> str:
@@ -374,37 +375,7 @@ def _prepare_bench_payload(
 	}
 
 
-def _auto_detect_bench_for_app(session: "CloudSession", app: str) -> str | None:
-	"""Return the first bench name that contains the given app, else None."""
-	benches_url = _build_method_url(session, "press.api.bench.all")
-	benches = session.get(benches_url) or []
-	for bench in benches:
-		for app_entry in bench.get("apps", []) or []:
-			if app_entry.get("app") == app:
-				return bench.get("name")
-	return None
-
-
-def _get_source_and_release(
-	session: "CloudSession", bench_name: str, app: str, branch: str | None
-) -> tuple[str | None, str | None]:
-	"""Resolve (source, release) for app on a bench, optionally filtering by branch."""
-	apps_url = _build_method_url(session, "press.api.bench.all_apps")
-	apps_response = session.post(apps_url, json={"name": bench_name})
-	if not isinstance(apps_response, list):
-		return None, None
-	for entry in apps_response:
-		if entry.get("app") != app:
-			continue
-		for src in entry.get("sources", []) or []:
-			if branch and src.get("branch") != branch:
-				continue
-			return src.get("name"), src.get("release")
-	return None, None
-
-
 def _find_frappe_source(options: dict, version: str) -> str | None:
-	"""Given bench options and a version, return the frappe source name or None."""
 	try:
 		for v in options.get("versions", []):
 			if v.get("name") == version:
@@ -418,7 +389,6 @@ def _find_frappe_source(options: dict, version: str) -> str | None:
 
 
 def _find_app_source(apps_list: list[dict], app: str, branch: str) -> str | None:
-	"""Find source name for an app/branch in the all_apps response."""
 	for entry in apps_list:
 		if entry.get("app") == app:
 			for src in entry.get("sources", []):
@@ -450,7 +420,6 @@ def _create_bench(
 		if isinstance(response, dict) and response.get("success"):
 			Print.success(console, f"Successfully created bench group: {title}")
 		elif isinstance(response, dict):
-			# Show only the main error message if present
 			msg = (
 				response.get("message") or response.get("exception") or response.get("exc") or "Unknown error"
 			)
@@ -460,5 +429,4 @@ def _create_bench(
 		else:
 			Print.error(console, f"Backend error: {response}")
 	except Exception as req_exc:
-		# Show only the exception message
 		Print.error(console, f"Request error: {req_exc}")

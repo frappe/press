@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -12,9 +12,19 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.agent_job.agent_job import AgentJob, process_job_updates
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.site_activity.test_site_activity import create_test_site_activity
+from press.press.doctype.site_backup.site_backup import (
+	alert_if_backup_success_rate_is_low,
+	is_global_search_crashed,
+)
 
 if TYPE_CHECKING:
 	from datetime import datetime
+
+CRASHED_GLOBAL_SEARCH_OUTPUT = (
+	"mariadb-dump: Couldn't execute 'show create table `__global_search`': Table"
+	" './_db/__global_search' is marked as crashed and last (automatic?) repair failed (144)"
+)
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
@@ -24,6 +34,7 @@ def create_test_site_backup(
 	files_availability: str = "Available",
 	offsite: bool = True,
 	status: str = "Success",
+	bucket: str | None = None,
 ):
 	"""
 	Create test site backup doc for required timestamp.
@@ -40,9 +51,9 @@ def create_test_site_backup(
 		"with_files": offsite,
 	}
 	if offsite:
-		params_dict["remote_public_file"] = create_test_remote_file(site, creation).name
-		params_dict["remote_private_file"] = create_test_remote_file(site, creation).name
-		params_dict["remote_database_file"] = create_test_remote_file(site, creation).name
+		params_dict["remote_public_file"] = create_test_remote_file(site, creation, bucket=bucket).name
+		params_dict["remote_private_file"] = create_test_remote_file(site, creation, bucket=bucket).name
+		params_dict["remote_database_file"] = create_test_remote_file(site, creation, bucket=bucket).name
 	site_backup = frappe.get_doc(params_dict).insert(ignore_if_duplicate=True)
 
 	site_backup.db_set("creation", creation)
@@ -233,3 +244,247 @@ class TestSiteBackup(FrappeTestCase):
 		self.assertTrue(self.site_backup.remote_public_file)
 		self.assertTrue(self.site_backup.remote_private_file)
 		self.assertTrue(self.site_backup.remote_config_file)
+
+	# The failure notification commits, which would leak this site into later tests
+	@patch("press.press.doctype.agent_job.agent_job_notifications.send_job_failure_notification", new=Mock())
+	def _fail_backup_job(self, output: str):
+		self.job.db_set("status", "Failure")
+		self.job.db_set("output", output)
+		process_job_updates(self.job.name)
+
+	def _fix_global_search_jobs(self):
+		return frappe.get_all(
+			"Agent Job",
+			filters={"job_type": "Fix global search", "site": self.site.name},
+			fields=["request_path", "bench", "server", "reference_doctype", "reference_name"],
+		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_backup_failing_on_crashed_global_search_starts_fix_job_on_site_bench(self):
+		self._fail_backup_job(CRASHED_GLOBAL_SEARCH_OUTPUT)
+
+		jobs = self._fix_global_search_jobs()
+		self.assertEqual(len(jobs), 1)
+		self.assertEqual(
+			jobs[0].request_path, f"benches/{self.site.bench}/sites/{self.site.name}/fix_global_search"
+		)
+		self.assertEqual(jobs[0].bench, self.site.bench)
+		self.assertEqual(jobs[0].server, self.site.server)
+		self.assertEqual(jobs[0].reference_name, self.site_backup.name)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_backup_failing_for_other_reason_does_not_start_fix_global_search_job(self):
+		self._fail_backup_job("mariadb-dump: Got error: 2013: Lost connection to server during query")
+
+		self.assertEqual(self._fix_global_search_jobs(), [])
+
+	def test_crashed_global_search_is_detected_when_dump_fails_on_a_select(self):
+		output = (
+			"mariadb-dump: Error 145: Table './_db/__global_search' is marked as crashed"
+			" and should be repaired when dumping table `__global_search` at row: 0"
+		)
+		self.assertTrue(is_global_search_crashed(output))
+		self.assertFalse(is_global_search_crashed("Table './_db/tabUser' is marked as crashed"))
+
+	def test_archiving_site_with_offsite_backup_creates_site_backup_record(self):
+		"""
+		When a site is archived after taking an offsite backup, test if a Site Backup record is created from the 'Archive Site' agent job's response.
+		"""
+		from press.press.doctype.site_backup.site_backup import (
+			_create_site_backup_from_agent_job,
+		)
+
+		archive_job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Archive Site",
+				"site": self.site.name,
+				"server_type": "Server",
+				"server": self.site.server,
+				"request_method": "POST",
+				"request_path": f"benches/{self.site.bench}/sites/{self.site.name}/archive",
+				"request_data": "{}",
+				"status": "Success",
+				"data": json.dumps(
+					{
+						"backups": {
+							"database": {
+								"file": "breadshop_database.sql.gz",
+								"path": "/benches/breadshop_database.sql.gz",
+								"size": 12345,
+								"url": "https://breadshop.com/backups/breadshop-database.sql.gz",
+							},
+							"site_config": {
+								"file": "breadshop_config.json",
+								"path": "/benches/breadshop_config.json",
+								"size": 54321,
+								"url": "https://breadshop.com/backups/breadshop-config.json",
+							},
+							"public": {
+								"file": "breadshop_public_files.tar",
+								"path": "/benches/breadshop_public_files.tar",
+								"size": 99999,
+								"url": "https://breadshop.com/backups/breadshop-public-files.tar",
+							},
+							"private": {
+								"file": "breadshop_private_files.tar",
+								"path": "/benches/breadshop_private_files.tar",
+								"size": 88888,
+								"url": "https://breadshop.com/backups/breadshop-private-files.tar",
+							},
+						},
+						"offsite": {
+							"breadshop_database.sql.gz": "s3://bucket/breadshop_database.sql.gz",
+							"breadshop_config.json": "s3://bucket/breadshop_config.json",
+							"breadshop_public_files.tar": "s3://bucket/breadshop_public_files.tar",
+							"breadshop_private_files.tar": "s3://bucket/breadshop_private_files.tar",
+						},
+					}
+				),
+			}
+		).insert()
+
+		# Create the required backup steps with Success status
+		frappe.get_doc(
+			{
+				"doctype": "Agent Job Step",
+				"agent_job": archive_job.name,
+				"step_name": "Backup Site",
+				"status": "Success",
+			}
+		).insert()
+		frappe.get_doc(
+			{
+				"doctype": "Agent Job Step",
+				"agent_job": archive_job.name,
+				"step_name": "Upload Site Backup to S3",
+				"status": "Success",
+			}
+		).insert()
+
+		# Invoke the function to create Site Backup
+		_create_site_backup_from_agent_job(archive_job)
+
+		# verify Site Backup record creation
+		site_backup = frappe.get_doc("Site Backup", {"job": archive_job.name})
+
+		self.assertEqual(site_backup.status, "Success")
+		self.assertEqual(site_backup.files_availability, "Available")
+		self.assertEqual(site_backup.offsite, 1)
+		self.assertEqual(site_backup.with_files, 1)
+		self.assertEqual(site_backup.site, self.site.name)
+
+		# Verify database, config and public and private file backup
+		self.assertEqual(site_backup.database_file, "breadshop_database.sql.gz")
+		self.assertEqual(site_backup.database_size, "12345")
+		self.assertTrue(site_backup.remote_database_file)
+
+		self.assertEqual(site_backup.config_file, "breadshop_config.json")
+		self.assertEqual(site_backup.config_file_size, "54321")
+		self.assertTrue(site_backup.remote_config_file)
+
+		self.assertEqual(site_backup.public_file, "breadshop_public_files.tar")
+		self.assertEqual(site_backup.public_size, "99999")
+		self.assertTrue(site_backup.remote_public_file)
+
+		self.assertEqual(site_backup.private_file, "breadshop_private_files.tar")
+		self.assertEqual(site_backup.private_size, "88888")
+		self.assertTrue(site_backup.remote_private_file)
+
+		# Verify remote files were created
+		remote_files = frappe.get_all("Remote File", {"site": self.site.name})
+		self.assertEqual(len(remote_files), 4)
+
+		for remote_file in remote_files:
+			remote_file_doc = frappe.get_doc("Remote File", remote_file.name)
+			self.assertEqual(remote_file_doc.site, self.site.name)
+			self.assertIsNotNone(remote_file_doc.file_path)
+			self.assertIsNotNone(remote_file_doc.file_name)
+
+	@patch("press.press.doctype.site_backup.site_backup.frappe.db.commit", new=MagicMock)
+	def test_delete_backups_for_archived_sites_after_retention(self):
+		"""Clear up backups if the site was archived before 6 months"""
+		from press.press.doctype.site_backup.site_backup import (
+			delete_backups_for_archived_sites_after_retention,
+		)
+
+		site = create_test_site(subdomain="old-archive")
+		site.db_set("status", "Archived")
+
+		backup = create_test_site_backup(site=site.name, offsite=True, files_availability="Available")
+
+		archive_job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Archive Site",
+				"site": site.name,
+				"server_type": "Server",
+				"server": site.server,
+				"request_method": "POST",
+				"request_path": f"benches/{site.bench}/sites/{site.name}/archive",
+				"request_data": "{}",
+				"status": "Success",
+			}
+		).insert()
+
+		activity = create_test_site_activity(site.name, "Archive")
+		activity.db_set("job", archive_job.name)
+		activity.db_set(
+			"creation",
+			frappe.utils.add_to_date(frappe.utils.now(), months=-7),
+		)
+
+		delete_backups_for_archived_sites_after_retention()
+
+		backup.reload()
+		self.assertEqual(backup.files_availability, "Unavailable")
+
+
+@patch("press.press.doctype.site_backup.site_backup.send_raven_message")
+class TestBackupSuccessRateAlert(FrappeTestCase):
+	def setUp(self):
+		self.site = create_test_site(subdomain="backuprate")
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _create_backups(self, successes: int, failures: int, hours_ago: float = 0):
+		creation = frappe.utils.add_to_date(None, hours=-hours_ago)
+		for _ in range(successes):
+			create_test_site_backup(site=self.site.name, creation=creation, status="Success")
+		for _ in range(failures):
+			create_test_site_backup(site=self.site.name, creation=creation, status="Failure")
+
+	def test_alert_sent_when_success_rate_is_below_threshold(self, mock_send_raven_message):
+		# 30 out of 31 backups succeeded, i.e. 96.77%
+		self._create_backups(successes=30, failures=1)
+
+		alert_if_backup_success_rate_is_low()
+
+		self.assertTrue(mock_send_raven_message.called)
+		message = mock_send_raven_message.call_args[0][0]
+		self.assertIn("96.77% success rate in the last hour", message)
+		self.assertIn(f"| {self.site.name} | 1 |", message)
+
+	def test_no_alert_when_success_rate_is_at_threshold(self, mock_send_raven_message):
+		# 34 out of 35 backups succeeded, i.e. 97.14%
+		self._create_backups(successes=34, failures=1)
+
+		alert_if_backup_success_rate_is_low()
+
+		mock_send_raven_message.assert_not_called()
+
+	def test_no_alert_when_there_are_no_completed_backups_in_the_last_hour(self, mock_send_raven_message):
+		self._create_backups(successes=0, failures=3, hours_ago=2)
+
+		alert_if_backup_success_rate_is_low()
+
+		mock_send_raven_message.assert_not_called()
+
+	def test_unfinished_backups_are_not_counted(self, mock_send_raven_message):
+		self._create_backups(successes=34, failures=1)
+		create_test_site_backup(site=self.site.name, status="Pending")
+
+		alert_if_backup_success_rate_is_low()
+
+		mock_send_raven_message.assert_not_called()

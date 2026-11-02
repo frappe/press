@@ -34,16 +34,16 @@ class ServerActivity(Document):
 
 
 def log_server_activity(
-	series: Literal["f", "m"],
+	series: Literal["f", "m", "u"],
 	server: str,
 	action: Literal["Created", "Reboot", "Volume", "Terminated", "Disk Size Change"],
 	reason: str | None = None,
 ) -> None:
 	"""Create a log of server activity"""
-	if series not in ["f", "m"]:
+	if series not in ["f", "m", "u"]:
 		return
 
-	document_type = "Server" if series == "f" else "Database Server"
+	document_type = "Server" if series in ("f", "u") else "Database Server"
 	team = frappe.db.get_value(document_type, server, "team")
 
 	frappe.get_doc(

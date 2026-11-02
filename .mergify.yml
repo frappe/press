@@ -1,18 +1,28 @@
 pull_request_rules:
+  - name: hotfix to master
+    conditions:
+      - label="hotfix"
+    actions:
+      backport:
+        branches:
+          - master
+        assignees:
+          - "{{ author }}"
   - name: Auto-close PRs on stable branch
     conditions:
       - and:
-        - and:
-          - author!=frappe-pr-bot
-          - author!=mergify[bot]
-          - author!=github-actions
-        - or:
-          - base=master
+          - and:
+              - author!=frappe-pr-bot
+              - author!=mergify[bot]
+              - author!=github-actions
+          - or:
+              - base=master
     actions:
       comment:
-          message: |
-            @{{author}}, thanks for the contribution, but we do not accept pull requests on a master. Please close this PR and raise PR on an develop branch.
-        
+        message: >
+          @{{author}}, thanks for the contribution, but we do not accept pull
+          requests on a master. Please close this PR and raise PR on an develop
+          branch.
   - name: backport to develop
     conditions:
       - label="backport-develop"
@@ -22,7 +32,6 @@ pull_request_rules:
           - develop
         assignees:
           - "{{ author }}"
-  
   - name: backport to master
     conditions:
       - label="backport-master"
@@ -32,11 +41,3 @@ pull_request_rules:
           - master
         assignees:
           - "{{ author }}"
-
-  - name: Label PRs targeting develop with 'backport-master'
-    conditions:
-      - base=develop
-    actions:
-      label:
-        add:
-          - backport-master

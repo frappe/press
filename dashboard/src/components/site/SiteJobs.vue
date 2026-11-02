@@ -1,5 +1,5 @@
 <template>
-	<ObjectList class="p-5" :options="logsOptions" />
+	<ObjectList class="p-3" :options="logsOptions" />
 </template>
 
 <script>
@@ -48,6 +48,12 @@ export default {
 								orderBy: 'name asc',
 								pageLength: 100,
 							},
+						},
+						{
+							type: 'daterange',
+							label: 'Date',
+							fieldname: 'creation',
+							class: !isMobile() ? 'w-56' : '',
 						},
 					];
 				},

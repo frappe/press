@@ -17,9 +17,10 @@ import (
 )
 
 var (
-	PART_SIZE       int64 = 1 * 1024 * 1024 * 1024 // 1GB per part
-	MAX_CONCURRENCY       = 10                     // Limit concurrent uploads
-	HTTP_TIMEOUT          = 30 * time.Minute       // Request timeout
+	PART_SIZE       int64 = 200 * 1024 * 1024 // 200MB per part
+	MAX_CONCURRENCY       = 5
+	HTTP_TIMEOUT          = 3 * time.Hour
+	MAX_RETRIES           = 3
 )
 
 type MultipartUpload struct {
@@ -132,8 +133,8 @@ func (s *Session) GenerateMultipartUploadLink(filePath string) (*MultipartUpload
 			},
 		},
 		bufferPool: sync.Pool{
-			New: func() interface{} {
-				buf := make([]byte, 32*1024) // 32KB buffer
+			New: func() any {
+				buf := make([]byte, 32*1024)
 				return &buf
 			},
 		},
@@ -144,22 +145,20 @@ func (s *Session) GenerateMultipartUploadLink(filePath string) (*MultipartUpload
 
 func (m *MultipartUpload) UploadParts(s *Session) error {
 	if m.IsUploaded() {
-		// If it's already uploaded, silently ignore
 		return nil
 	}
 
-	// Check if the file already uploaded previously
-	if remote_file, ok := s.UploadedFiles[m.CacheKey()]; ok && remote_file != "" {
-		m.RemoteFile = remote_file
+	if remoteFile, ok := s.UploadedFiles[m.CacheKey()]; ok && remoteFile != "" {
+		m.RemoteFile = remoteFile
 		m.UploadedSize = m.TotalSize
-		// This will clear the pre-signed URLs which isn't going to be used
 		m.abortPresignedURLs(s)
 		return nil
 	}
+
 	m.mu.Lock()
 	m.ctx, m.cancelFn = context.WithCancel(context.Background())
 	m.errors = make([]error, 0)
-	m.UploadedSize = 0 // Reset progress
+	m.UploadedSize = 0
 	m.mu.Unlock()
 
 	partRanges := m.calculatePartRanges()
@@ -171,6 +170,10 @@ func (m *MultipartUpload) UploadParts(s *Session) error {
 			continue
 		}
 
+		if m.ctx.Err() != nil {
+			break
+		}
+
 		m.wg.Add(1)
 		sem <- struct{}{}
 
@@ -180,9 +183,12 @@ func (m *MultipartUpload) UploadParts(s *Session) error {
 				m.wg.Done()
 			}()
 
-			etag, err := m.uploadPart(partNum, start, end)
+			etag, err := m.uploadPartWithRetry(partNum, start, end)
 			if err != nil {
 				errorChan <- fmt.Errorf("part %d: %w", partNum, err)
+				if m.cancelFn != nil {
+					m.cancelFn()
+				}
 				return
 			}
 
@@ -204,16 +210,72 @@ func (m *MultipartUpload) UploadParts(s *Session) error {
 	}
 
 	if len(m.errors) > 0 {
-		errorString := ""
+		var sb strings.Builder
 		for _, err := range m.errors {
-			errorString += fmt.Sprintf("- %v\n", err)
+			fmt.Fprintf(&sb, "  - %v\n", err)
 		}
-		return fmt.Errorf("%d parts failed:\n%s", len(m.errors), errorString)
+		lines := sb.String()
+		return fmt.Errorf(
+			"upload failed: %d part(s) could not be uploaded after %d retries each.\n\n"+
+				"This usually happens when your network is too slow or unstable to sustain\n"+
+				"the upload. Each 200 MB part must finish within the timeout window.\n\n"+
+				"What you can try:\n"+
+				"  - Check your internet connection and try again\n"+
+				"  - Move closer to your router or switch to a wired connection\n"+
+				"  - Avoid running large downloads while uploading\n"+
+				"  - Try again at a time when your network is less congested\n\n"+
+				"Part errors:\n%s",
+			len(m.errors), MAX_RETRIES, lines,
+		)
 	}
 	return nil
 }
 
+func (m *MultipartUpload) uploadPartWithRetry(partNumber int, start, end int64) (string, error) {
+	var lastErr error
+
+	for attempt := range MAX_RETRIES {
+		if m.ctx.Err() != nil {
+			if lastErr != nil {
+				return "", lastErr
+			}
+			return "", fmt.Errorf("upload cancelled: %w", m.ctx.Err())
+		}
+
+		if attempt > 0 {
+			backoff := time.Duration(attempt) * 5 * time.Second
+			select {
+			case <-time.After(backoff):
+			case <-m.ctx.Done():
+				return "", lastErr
+			}
+		}
+
+		sizeBefore := atomic.LoadInt64(&m.UploadedSize)
+		etag, err := m.uploadPart(partNumber, start, end)
+		if err == nil {
+			return etag, nil
+		}
+
+		lastErr = err
+
+		// Undo progress counted during the failed attempt so the
+		// progress bar stays accurate across retries.
+		sizeAfter := atomic.LoadInt64(&m.UploadedSize)
+		if delta := sizeAfter - sizeBefore; delta > 0 {
+			atomic.AddInt64(&m.UploadedSize, -delta)
+		}
+	}
+
+	return "", lastErr
+}
+
 func (m *MultipartUpload) uploadPart(partNumber int, start, end int64) (string, error) {
+	// Check context before starting
+	if m.ctx != nil && m.ctx.Err() != nil {
+		return "", fmt.Errorf("upload cancelled before start: %w", m.ctx.Err())
+	}
+
 	file, err := os.Open(m.Path)
 	if err != nil {
 		return "", fmt.Errorf("file open error: %w", err)
@@ -225,7 +287,7 @@ func (m *MultipartUpload) uploadPart(partNumber int, start, end int64) (string, 
 	}
 
 	pr, pw := io.Pipe()
-	defer pr.Close()
+	copyErrChan := make(chan error, 1)
 
 	go func() {
 		defer pw.Close()
@@ -236,28 +298,47 @@ func (m *MultipartUpload) uploadPart(partNumber int, start, end int64) (string, 
 			Reader: io.LimitReader(file, end-start+1),
 			size:   &m.UploadedSize,
 		}, *bufPtr)
+		copyErrChan <- err
 		if err != nil {
 			pw.CloseWithError(err)
 		}
 	}()
 
-	req, err := http.NewRequestWithContext(m.ctx, "PUT", m.SignedURLs[partNumber-1], pr)
+	ctx := m.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "PUT", m.SignedURLs[partNumber-1], pr)
 	if err != nil {
+		pr.Close()
 		return "", fmt.Errorf("request creation failed: %w", err)
 	}
 	req.ContentLength = end - start + 1
 
 	resp, err := m.client.Do(req)
 	if err != nil {
-		if m.ctx.Err() != nil {
-			return "", fmt.Errorf("upload cancelled")
+		pr.Close()
+		if ctx.Err() != nil {
+			return "", fmt.Errorf("upload cancelled: %w", ctx.Err())
 		}
 		return "", fmt.Errorf("upload failed: %w", err)
 	}
 	defer resp.Body.Close()
 
+	// Check for copy errors
+	select {
+	case copyErr := <-copyErrChan:
+		if copyErr != nil {
+			return "", fmt.Errorf("file read error: %w", copyErr)
+		}
+	default:
+		// Copy still in progress, that's fine
+	}
+
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("status %d", resp.StatusCode)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	etag := strings.Trim(resp.Header.Get("ETag"), `"`)
@@ -293,10 +374,18 @@ func (m *MultipartUpload) Complete(s *Session) error {
 	if m.IsUploaded() {
 		return nil
 	}
-	// Check if context was cancelled
-	if m.ctx.Err() != nil {
-		return fmt.Errorf("upload cancelled")
+
+	// Get context, or use background if not set
+	ctx := m.ctx
+	if ctx == nil {
+		ctx = context.Background()
 	}
+
+	// Check if context was cancelled
+	if ctx.Err() != nil {
+		return fmt.Errorf("upload cancelled: %w", ctx.Err())
+	}
+
 	parts := make([]map[string]any, 0, len(m.Etags))
 	for i, etag := range m.Etags {
 		if etag != "" {
@@ -312,7 +401,7 @@ func (m *MultipartUpload) Complete(s *Session) error {
 		return fmt.Errorf("failed to marshal parts: %w", err)
 	}
 
-	_, err = s.SendRequest("press.api.site.multipart_exit", map[string]any{
+	_, err = s.SendRequestWithContext(ctx, "press.api.site.multipart_exit", map[string]any{
 		"file":   m.Key,
 		"id":     m.UploadID,
 		"action": "complete",
@@ -322,7 +411,7 @@ func (m *MultipartUpload) Complete(s *Session) error {
 		return fmt.Errorf("completion failed: %w", err)
 	}
 
-	res, err := s.SendRequest("press.api.site.uploaded_backup_info", map[string]any{
+	res, err := s.SendRequestWithContext(ctx, "press.api.site.uploaded_backup_info", map[string]any{
 		"file": m.FileName,
 		"path": m.Key,
 		"type": m.MimeType,
@@ -356,7 +445,12 @@ func (m *MultipartUpload) Abort(s *Session) {
 }
 
 func (m *MultipartUpload) abortPresignedURLs(s *Session) {
-	_, _ = s.SendRequest("press.api.site.complete_multipart_upload", map[string]any{
+	// Use a separate context with timeout for abort operation
+	// We don't want to use the cancelled context from the upload
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	_, _ = s.SendRequestWithContext(ctx, "press.api.site.complete_multipart_upload", map[string]any{
 		"file":   m.Key,
 		"id":     m.UploadID,
 		"action": "abort",

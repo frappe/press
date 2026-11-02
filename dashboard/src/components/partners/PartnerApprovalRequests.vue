@@ -23,10 +23,22 @@ export default {
 					{
 						label: 'Customer Email',
 						fieldname: 'customer_email',
+						width: 0.8,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 					},
 					{
 						label: 'Customer Team',
 						fieldname: 'requested_by',
+						width: 0.8,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 					},
 					{
 						label: 'Raised On',

@@ -2,11 +2,22 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Server', {
+	onload: (frm) => {
+		frm.set_query('proxy_server', () => {
+			return {
+				filters: {
+					status: 'Active',
+					is_server_setup: 1,
+					exclude_from_auto_selection: 0,
+				},
+			}
+		})
+	},
 	refresh: function (frm) {
 		frm.add_web_link(
 			`/dashboard/servers/${frm.doc.name}`,
 			__('Visit Dashboard'),
-		);
+		)
 
 		const ping_actions = [
 			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
@@ -23,71 +34,159 @@ frappe.ui.form.on('Server', {
 				true,
 				!frm.doc.is_server_prepared,
 			],
-		];
+		]
 
 		for (const [label, method, confirm, condition] of ping_actions) {
 			if (!condition || typeof condition === 'undefined') {
-				continue;
+				continue
 			}
 
 			async function callback() {
 				if (confirm && !(await frappe_confirm(label))) {
-					return;
+					return
 				}
 
-				const res = await frm.call(method);
+				const res = await frm.call(method)
 				if (res.message && method == 'ping_agent_job') {
 					frappe.msgprint(
-						`Agejt Job <a href="/app/agent-job/${res?.message}">${res?.message}</a> created.`,
-					);
+						`Agent Job <a href="/app/agent-job/${res?.message}">${res?.message}</a> created.`,
+					)
 				} else if (res.message) {
-					frappe.msgprint(res.message);
+					frappe.msgprint(res.message)
 				} else {
-					frm.refresh();
+					frm.refresh()
 				}
 			}
 
-			frm.add_custom_button(label, callback, __('Ping'));
+			frm.add_custom_button(label, callback, __('Ping'))
 		}
 
-		[
-			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
+		;[
 			[
-				__('Install Filebeat'),
-				'install_filebeat',
+				__('Update Agent'),
+				'update_agent',
 				true,
 				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
 				__('Update Agent Ansible'),
 				'update_agent_ansible',
 				true,
 				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
-				__('Get AWS Static IP'),
-				'get_aws_static_ip',
+				__('Restore Truncated Configs'),
+				'restore_truncated_configs_ansible',
+				true,
+				frm.doc.is_server_setup,
+				__('Actions'),
+			],
+			[
+				__('Copy SSH Command'),
+				() =>
+					frm
+						.call('get_ssh_command')
+						.then((r) => frappe.utils.copy_to_clipboard(r.message)),
 				false,
-				frm.doc.provider === 'AWS EC2',
+			],
+			[__('Get Static IP'), 'get_static_ip', false, undefined, __('Network')],
+			[
+				__('Add public IP'),
+				() => {
+					const dialog = new frappe.ui.Dialog({
+						title: __('Add Public IP'),
+						fields: [
+							{
+								fieldtype: 'Check',
+								fieldname: 'auto_assign',
+								label: __('Assign New Primary IP'),
+								default: 1,
+								onchange() {
+									const auto_assign = dialog.get_value('auto_assign')
+									dialog.set_df_property('primary_ip', 'hidden', auto_assign)
+									dialog.set_df_property('primary_ip', 'reqd', !auto_assign)
+									dialog.refresh()
+								},
+							},
+							{
+								fieldtype: 'Data',
+								fieldname: 'primary_ip',
+								label: __('Primary IP'),
+								description: __('Existing detached Hetzner Primary IP'),
+								hidden: 1,
+							},
+						],
+					})
+
+					dialog.set_primary_action(__('Add Public IP'), (values) => {
+						if (!values.auto_assign && !values.primary_ip) {
+							frappe.msgprint(__('Please enter a Primary IP.'))
+							return
+						}
+
+						frm.call(
+							'add_hetzner_public_ip',
+							{
+								primary_ip: values.auto_assign ? null : values.primary_ip,
+							},
+							() => {
+								dialog.hide()
+								frm.reload_doc()
+							},
+						)
+					})
+
+					dialog.show()
+				},
+				false,
+				frm.doc.is_server_setup &&
+					frm.doc.provider === 'Hetzner' &&
+					!frm.doc.ip,
+				__('Network'),
+			],
+			[
+				__('Update DNS Record'),
+				'create_dns_record',
+				true,
+				undefined,
+				__('Network'),
 			],
 			[
 				__('Setup PySpy'),
 				'setup_pyspy',
 				false,
 				frm.doc.is_server_setup && !frm.doc.is_pyspy_setup,
+				__('Setup'),
 			],
 			[
 				__('Prepare Server'),
 				'prepare_server',
 				true,
 				!frm.doc.is_server_prepared,
+				__('Setup'),
 			],
-			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
+			[
+				__('Setup Server'),
+				'setup_server',
+				true,
+				!frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Setup Unified Server'),
+				'setup_unified_server',
+				true,
+				frm.doc.is_unified_server,
+				__('Setup'),
+			],
 			[
 				__('Add to Proxy'),
 				'add_upstream_to_proxy',
 				true,
 				frm.doc.is_server_setup && !frm.doc.is_upstream_setup,
+				__('Network'),
 			],
 			[
 				__('Setup Replication'),
@@ -96,6 +195,7 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup &&
 					!frm.doc.is_primary &&
 					!frm.doc.is_replication_setup,
+				__('Setup'),
 			],
 			[
 				__('Setup Rename'),
@@ -104,6 +204,7 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup &&
 					frm.doc.is_server_prepared &&
 					!frm.doc.is_server_renamed,
+				__('Setup'),
 			],
 			[
 				__('Fetch Keys'),
@@ -111,8 +212,15 @@ frappe.ui.form.on('Server', {
 				false,
 				frm.doc.is_server_setup &&
 					(!frm.doc.frappe_public_key || !frm.doc.root_public_key),
+				__('Setup'),
 			],
-			[__('Update TLS Certificate'), 'update_tls_certificate', true],
+			[
+				__('Update TLS Certificate'),
+				'update_tls_certificate',
+				true,
+				undefined,
+				__('Network'),
+			],
 			[
 				__('Auto Scale Workers'),
 				'auto_scale_workers',
@@ -129,30 +237,19 @@ frappe.ui.form.on('Server', {
 			],
 			[__('Create Image'), 'create_image', true, frm.doc.status == 'Active'],
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
-			[__('Setup Fail2ban'), 'setup_fail2ban', true, frm.doc.is_server_setup],
-			[
-				__('Setup MySQLdump'),
-				'setup_mysqldump',
-				true,
-				frm.doc.is_server_setup && frm.doc.status == 'Active',
-			],
-			[
-				__('Whitelist Server'),
-				'whitelist_ipaddress',
-				false,
-				frm.doc.is_server_setup,
-			],
 			[
 				__('Agent Setup Proxy IP'),
 				'agent_set_proxy_ip',
 				false,
 				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
 				__('Setup Agent Sentry'),
 				'setup_agent_sentry',
 				false,
 				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
 				__('Start Active Benches'),
@@ -165,12 +262,14 @@ frappe.ui.form.on('Server', {
 				'show_agent_password',
 				false,
 				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
 				__('Show Agent Version'),
 				'show_agent_version',
 				false,
 				frm.doc.is_server_setup,
+				__('Agent'),
 			],
 			[
 				__('Setup Standalone'),
@@ -179,6 +278,7 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup &&
 					frm.doc.is_standalone &&
 					!frm.doc.is_standalone_setup,
+				__('Setup'),
 			],
 			[
 				__('Fetch Security Updates'),
@@ -191,6 +291,7 @@ frappe.ui.form.on('Server', {
 				'configure_ssh_logging',
 				false,
 				frm.doc.is_server_setup,
+				__('Setup'),
 			],
 			[
 				__('Reset Usage for all sites'),
@@ -217,12 +318,6 @@ frappe.ui.form.on('Server', {
 				frm.doc.virtual_machine,
 			],
 			[
-				__('Set Swappiness and SysRq'),
-				'set_swappiness',
-				false,
-				frm.doc.is_server_setup,
-			],
-			[
 				__('Mount Volumes'),
 				'mount_volumes',
 				true,
@@ -243,14 +338,72 @@ frappe.ui.form.on('Server', {
 				'install_wazuh_agent',
 				true,
 				frm.doc.is_server_setup,
+				__('Setup'),
 			],
 			[
 				__('Uninstall Wazuh Agent'),
 				'uninstall_wazuh_agent',
 				true,
-				frm.doc.is_server_setup,
+				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
+				__('Setup'),
 			],
-		].forEach(([label, method, confirm, condition]) => {
+			[
+				__('Setup Fail2ban'),
+				'setup_fail2ban',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Remove Fail2ban'),
+				'remove_fail2ban',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Setup Auditd'),
+				'setup_auditd',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Set Additional Config'),
+				'set_additional_config',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Setup Wildcard Hosts'),
+				'setup_wildcard_hosts',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_standalone_setup,
+				__('Network'),
+			],
+			[
+				__('Install NAT iptables'),
+				'install_nat_iptables',
+				true,
+				frm.doc.is_server_setup && frm.doc.nat_server,
+				__('Network'),
+			],
+			[
+				__('Remove NAT iptables'),
+				'remove_nat_iptables',
+				true,
+				frm.doc.is_server_setup && !frm.doc.nat_server,
+				__('Network'),
+			],
+			[
+				__('Migrate to Cgroup V2'),
+				'migrate_to_cgroup_v2',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+		].forEach(([label, method, confirm, condition, group]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
 					label,
@@ -258,60 +411,69 @@ frappe.ui.form.on('Server', {
 						if (confirm) {
 							frappe.confirm(
 								`Are you sure you want to ${label.toLowerCase()}?`,
-								() =>
+								() => {
+									if (typeof method === 'function') {
+										method()
+										return
+									}
 									frm.call(method).then((r) => {
 										if (r.message) {
-											frappe.msgprint(r.message);
+											frappe.msgprint(r.message)
 										} else {
-											frm.refresh();
+											frm.refresh()
 										}
-									}),
-							);
+									})
+								},
+							)
 						} else {
+							if (typeof method === 'function') {
+								method()
+								return
+							}
 							frm.call(method).then((r) => {
 								if (r.message) {
-									frappe.msgprint(r.message);
+									frappe.msgprint(r.message)
 								} else {
-									frm.refresh();
+									frm.refresh()
 								}
-							});
+							})
 						}
 					},
-					__('Actions'),
-				);
+					__(group || 'Actions'),
+				)
 			}
-		});
-
-		if ((frm.doc.is_server_setup, frm.doc.is_primary)) {
-			frm.add_custom_button(
-				'Setup Secondary Server',
-				() => {
-					frappe.prompt(
-						[
-							{
-								fieldtype: 'Link',
-								fieldname: 'server_plan',
-								label: __('Server Plan'),
-								options: 'Server Plan',
-								reqd: 1,
-							},
-						],
-						({ server_plan }) => {
-							frm
-								.call('setup_secondary_server', {
-									server_plan: server_plan,
-								})
-								.then((r) => {
-									frm.refresh();
-								});
-						},
-					);
-				},
-				__('Actions'),
-			);
-		}
+		})
 
 		if (frm.doc.is_server_setup) {
+			if (frm.doc.is_primary) {
+				frm.add_custom_button(
+					'Setup Secondary Server',
+					() => {
+						frappe.prompt(
+							[
+								{
+									fieldtype: 'Link',
+									fieldname: 'server_plan',
+									label: __('Server Plan'),
+									options: 'Server Plan',
+									reqd: 1,
+								},
+							],
+							({ server_plan }) => {
+								frm
+									.call('setup_secondary_server', {
+										server_plan: server_plan,
+									})
+									.then((r) => {
+										frm.refresh()
+									})
+							},
+						)
+					},
+					__('Actions'),
+				)
+			}
+
 			frm.add_custom_button(
 				__('Increase Swap'),
 				() => {
@@ -326,18 +488,18 @@ frappe.ui.form.on('Server', {
 								default: 4,
 							},
 						],
-					});
+					})
 
 					dialog.set_primary_action(__('Increase Swap'), (args) => {
 						frm.call('increase_swap', args).then(() => {
-							dialog.hide();
-							frm.refresh();
-						});
-					});
-					dialog.show();
+							dialog.hide()
+							frm.refresh()
+						})
+					})
+					dialog.show()
 				},
 				__('Actions'),
-			);
+			)
 			frm.add_custom_button(
 				__('Reset Swap'),
 				() => {
@@ -354,18 +516,18 @@ frappe.ui.form.on('Server', {
 								default: 1,
 							},
 						],
-					});
+					})
 
 					dialog.set_primary_action(__('Reset Swap'), (args) => {
 						frm.call('reset_swap', args).then(() => {
-							dialog.hide();
-							frm.refresh();
-						});
-					});
-					dialog.show();
+							dialog.hide()
+							frm.refresh()
+						})
+					})
+					dialog.show()
 				},
 				__('Actions'),
-			);
+			)
 
 			frm.add_custom_button(
 				__('Snapshot Both Servers'),
@@ -382,25 +544,25 @@ frappe.ui.form.on('Server', {
 								default: 1,
 							},
 						],
-					});
+					})
 
 					dialog.set_primary_action(__('Submit'), (args) => {
 						frm.call('create_snapshot', args).then(() => {
-							dialog.hide();
-							frm.refresh();
-						});
-					});
-					dialog.show();
+							dialog.hide()
+							frm.refresh()
+						})
+					})
+					dialog.show()
 				},
 				__('Actions'),
-			);
+			)
 		}
 	},
 
 	hostname: function (frm) {
-		press.set_hostname_abbreviation(frm);
+		press.set_hostname_abbreviation(frm)
 	},
-});
+})
 
 async function frappe_confirm(label) {
 	return new Promise((r) => {
@@ -408,6 +570,6 @@ async function frappe_confirm(label) {
 			`Are you sure you want to ${label.toLowerCase()}?`,
 			() => r(true),
 			() => r(false),
-		);
-	});
+		)
+	})
 }

@@ -1,0 +1,31 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "@/layouts/IndexLayout.astro";
+import PostList from "@/components/PostList.astro";
+import { pagelimit } from "@/consts";
+
+export async function getStaticPaths() {
+  let posts = await getCollection("releases");
+  posts.sort((a, b) => +b.data.date - +a.data.date);
+
+  const totalPages = Math.ceil(posts.length / pagelimit);
+
+  return Array.from({ length: totalPages - 1 }, (_, i) => {
+    const page = i + 2; // starts at page 2, page 1 is index.astro
+    return {
+      params: { page: String(page) },
+      props: {
+        posts: posts.slice((page - 1) * pagelimit, page * pagelimit),
+        currentPage: page,
+        totalPages,
+      },
+    };
+  });
+}
+
+const { posts, currentPage, totalPages } = Astro.props;
+---
+
+<Layout>
+  <PostList posts={posts} currentPage={currentPage} totalPages={totalPages} />
+</Layout>

@@ -1,0 +1,62 @@
+---
+# The audit plugin ships with the MariaDB server package. If this build doesn't
+# have it, fail here rather than enabling audit logging that silently writes nothing.
+- name: Check that the server_audit plugin is available
+  stat:
+    path: /usr/lib/mysql/plugin/server_audit.so
+  register: server_audit_plugin
+
+- name: Fail if the server_audit plugin is missing
+  fail:
+    msg: 'server_audit.so not found. This MariaDB build does not ship the audit plugin.'
+  when: not server_audit_plugin.stat.exists
+
+# /var/log is on the root volume. Audit logs are capped at tens of GB, so on servers
+# with a data volume they're bind mounted onto it instead.
+- name: Create log directory on the data volume
+  file:
+    path: /opt/volumes/mariadb/mysql_logs
+    state: directory
+    owner: mysql
+    group: frappe
+    mode: '0770'
+  when: has_data_volume | default(false) | bool
+
+- name: Create log directory
+  file:
+    path: /var/log/mysql
+    state: directory
+    owner: mysql
+    group: frappe
+    mode: '0770'
+
+- name: Add bind mount to /etc/fstab
+  lineinfile:
+    path: /etc/fstab
+    line: '/opt/volumes/mariadb/mysql_logs /var/log/mysql none defaults,nofail,bind 0 0'
+    state: present
+    create: yes
+  when: has_data_volume | default(false) | bool
+
+- name: Mount all from fstab
+  command: mount -av
+  when: has_data_volume | default(false) | bool
+
+# Written after the mount so the directory the agent actually sees gets these
+# permissions, not the one hidden underneath it. mysql writes the logs, the agent
+# runs as frappe and needs to unlink them, which needs write on the directory.
+- name: Set ownership on the mounted log directory
+  file:
+    path: /var/log/mysql
+    state: directory
+    owner: mysql
+    group: frappe
+    mode: '0770'
+
+- name: Create staging directory for rotated audit logs
+  file:
+    path: /var/log/mysql/audit_pending
+    state: directory
+    owner: mysql
+    group: frappe
+    mode: '0770'

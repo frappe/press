@@ -3,7 +3,7 @@
 		<template #body-content>
 			<div
 				v-if="showMessage"
-				class="mb-5 inline-flex gap-1.5 text-base text-gray-700"
+				class="mb-5 inline-flex gap-1.5 text-base text-ink-gray-7"
 			>
 				<FeatherIcon class="h-4" name="info" />
 				<span> Add billing details to your account before proceeding.</span>

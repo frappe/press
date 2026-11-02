@@ -1,188 +1,182 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "field:app",
- "creation": "2022-04-14 16:30:53.293931",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "setup_section",
-  "app",
-  "domain",
-  "cluster",
-  "group",
-  "email_account",
-  "column_break_9",
-  "apps",
-  "multi_subscription",
-  "whitelisted_apps",
-  "section_break_5",
-  "plan",
-  "site_plan",
-  "billing_type",
-  "column_break_13",
-  "multiplier_pricing",
-  "section_break_9",
-  "standby_pool_size",
-  "standby_queue_size",
-  "enable_pooling",
-  "enable_hybrid_pools",
-  "default_team"
- ],
- "fields": [
-  {
-   "fieldname": "domain",
-   "fieldtype": "Link",
-   "label": "Domain",
-   "options": "Root Domain"
-  },
-  {
-   "fieldname": "cluster",
-   "fieldtype": "Link",
-   "label": "Cluster",
-   "options": "Cluster"
-  },
-  {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "label": "Trial Plan",
-   "options": "Marketplace App Plan"
-  },
-  {
-   "fieldname": "group",
-   "fieldtype": "Link",
-   "label": "Group",
-   "options": "Release Group"
-  },
-  {
-   "default": "4",
-   "fieldname": "standby_pool_size",
-   "fieldtype": "Int",
-   "label": "Standby Pool Size"
-  },
-  {
-   "default": "2",
-   "fieldname": "standby_queue_size",
-   "fieldtype": "Int",
-   "label": "Standby Queue Size"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_pooling",
-   "fieldtype": "Check",
-   "label": "Enable Pooling"
-  },
-  {
-   "fieldname": "app",
-   "fieldtype": "Link",
-   "label": "App",
-   "options": "Marketplace App",
-   "unique": 1
-  },
-  {
-   "fieldname": "column_break_9",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "apps",
-   "fieldtype": "Table",
-   "label": "Apps",
-   "options": "ERPNext App"
-  },
-  {
-   "fieldname": "site_plan",
-   "fieldtype": "Link",
-   "label": "Site Plan",
-   "options": "Site Plan"
-  },
-  {
-   "fieldname": "billing_type",
-   "fieldtype": "Select",
-   "label": "Billing Type",
-   "options": "prepaid\npostpaid"
-  },
-  {
-   "fieldname": "section_break_5",
-   "fieldtype": "Section Break",
-   "label": "Billing"
-  },
-  {
-   "fieldname": "section_break_9",
-   "fieldtype": "Section Break",
-   "label": "Pooling"
-  },
-  {
-   "fieldname": "setup_section",
-   "fieldtype": "Section Break",
-   "label": "Signup Setup"
-  },
-  {
-   "fieldname": "whitelisted_apps",
-   "fieldtype": "Table",
-   "label": "Whitelisted Apps",
-   "options": "ERPNext App"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_hybrid_pools",
-   "fieldtype": "Check",
-   "label": "Enable Hybrid Pools"
-  },
-  {
-   "fieldname": "column_break_13",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "multiplier_pricing",
-   "fieldtype": "Check",
-   "label": "Multiplier Pricing"
-  },
-  {
-   "fieldname": "default_team",
-   "fieldtype": "Link",
-   "label": "Default Team",
-   "options": "Team"
-  },
-  {
-   "default": "0",
-   "description": "Create marketplace subscription(doc and keys in config) for all the above apps that are on marketplace",
-   "fieldname": "multi_subscription",
-   "fieldtype": "Check",
-   "label": "Multi Subscription"
-  },
-  {
-   "description": "Email account for sending signup/verification mails",
-   "fieldname": "email_account",
-   "fieldtype": "Link",
-   "label": "Email Account",
-   "options": "Email Account"
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2024-09-13 09:55:11.473243",
- "modified_by": "Administrator",
- "module": "SaaS",
- "name": "Saas Settings",
- "naming_rule": "By fieldname",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+	"actions": [],
+	"allow_rename": 1,
+	"autoname": "field:app",
+	"creation": "2022-04-14 16:30:53.293931",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"setup_section",
+		"app",
+		"domain",
+		"cluster",
+		"group",
+		"email_account",
+		"column_break_9",
+		"apps",
+		"multi_subscription",
+		"whitelisted_apps",
+		"section_break_5",
+		"plan",
+		"site_plan",
+		"billing_type",
+		"column_break_13",
+		"multiplier_pricing",
+		"section_break_9",
+		"standby_pool_size",
+		"standby_queue_size",
+		"enable_pooling",
+		"enable_hybrid_pools",
+		"default_team"
+	],
+	"fields": [
+		{
+			"fieldname": "domain",
+			"fieldtype": "Link",
+			"label": "Domain",
+			"options": "Root Domain"
+		},
+		{
+			"fieldname": "cluster",
+			"fieldtype": "Link",
+			"label": "Cluster",
+			"options": "Cluster"
+		},
+		{
+			"fieldname": "plan",
+			"fieldtype": "Link",
+			"label": "Trial Plan",
+			"options": "Marketplace App Plan"
+		},
+		{
+			"fieldname": "group",
+			"fieldtype": "Link",
+			"label": "Group",
+			"options": "Release Group"
+		},
+		{
+			"default": "4",
+			"fieldname": "standby_pool_size",
+			"fieldtype": "Int",
+			"label": "Standby Pool Size"
+		},
+		{
+			"default": "2",
+			"fieldname": "standby_queue_size",
+			"fieldtype": "Int",
+			"label": "Standby Queue Size"
+		},
+		{
+			"default": "0",
+			"fieldname": "enable_pooling",
+			"fieldtype": "Check",
+			"label": "Enable Pooling"
+		},
+		{
+			"fieldname": "app",
+			"fieldtype": "Link",
+			"label": "App",
+			"options": "Marketplace App",
+			"unique": 1
+		},
+		{ "fieldname": "column_break_9", "fieldtype": "Column Break" },
+		{
+			"fieldname": "apps",
+			"fieldtype": "Table",
+			"label": "Apps",
+			"options": "ERPNext App"
+		},
+		{
+			"fieldname": "site_plan",
+			"fieldtype": "Link",
+			"label": "Site Plan",
+			"options": "Site Plan"
+		},
+		{
+			"fieldname": "billing_type",
+			"fieldtype": "Select",
+			"label": "Billing Type",
+			"options": "prepaid\npostpaid"
+		},
+		{
+			"fieldname": "section_break_5",
+			"fieldtype": "Section Break",
+			"label": "Billing"
+		},
+		{
+			"fieldname": "section_break_9",
+			"fieldtype": "Section Break",
+			"label": "Pooling"
+		},
+		{
+			"fieldname": "setup_section",
+			"fieldtype": "Section Break",
+			"label": "Signup Setup"
+		},
+		{
+			"fieldname": "whitelisted_apps",
+			"fieldtype": "Table",
+			"label": "Whitelisted Apps",
+			"options": "ERPNext App"
+		},
+		{
+			"default": "0",
+			"fieldname": "enable_hybrid_pools",
+			"fieldtype": "Check",
+			"label": "Enable Hybrid Pools"
+		},
+		{ "fieldname": "column_break_13", "fieldtype": "Column Break" },
+		{
+			"default": "0",
+			"fieldname": "multiplier_pricing",
+			"fieldtype": "Check",
+			"label": "Multiplier Pricing"
+		},
+		{
+			"fieldname": "default_team",
+			"fieldtype": "Link",
+			"label": "Default Team",
+			"options": "Team"
+		},
+		{
+			"default": "0",
+			"description": "Create marketplace subscription(doc and keys in config) for all the above apps that are on marketplace",
+			"fieldname": "multi_subscription",
+			"fieldtype": "Check",
+			"label": "Multi Subscription"
+		},
+		{
+			"description": "Email account for sending signup/verification mails",
+			"fieldname": "email_account",
+			"fieldtype": "Link",
+			"label": "Email Account",
+			"options": "Email Account"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2024-09-13 09:55:11.473243",
+	"modified_by": "Administrator",
+	"module": "SaaS",
+	"name": "Saas Settings",
+	"naming_rule": "By fieldname",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
 }

@@ -35,6 +35,12 @@
 					</div>
 				</div>
 
+				<ErrorMessage
+					v-if="certExist === false"
+					class="mt-4"
+					:message="`No certificates found for ${userEmail}.`"
+				/>
+
 				<div class="pt-4">
 					<Button
 						class="w-full"
@@ -55,8 +61,8 @@ import { createResource, frappeRequest, debounce } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 
 const courseTypes = [
-	{ label: 'Framework', value: 'frappe-developer-certification' },
-	{ label: 'ERPNext', value: 'erpnext-distribution' },
+	{ label: 'Framework', value: 'frappe' },
+	{ label: 'ERPNext', value: 'erpnext' },
 ];
 const show = ref(true);
 
@@ -86,19 +92,21 @@ const linkCertificate = createResource({
 });
 
 const certCount = ref(0);
-const certExist = ref(false);
+const certExist = ref(null);
 const emailChange = debounce(async () => {
 	if (!userEmail.value) return;
 	let response = await frappeRequest({
 		url: 'press.api.partner.check_certificate_exists',
 		params: {
 			email: userEmail.value,
-			type: certificateType.value,
+			certificate_type: certificateType.value,
 		},
 	});
 	if (response > 0) {
 		certCount.value = response;
 		certExist.value = true;
+	} else {
+		certExist.value = false;
 	}
 }, 500);
 

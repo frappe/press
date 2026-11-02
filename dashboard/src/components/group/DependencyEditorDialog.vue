@@ -51,7 +51,7 @@
 							href="https://docs.frappe.io/cloud/benches/editing-bench-dependency-version#setting-a-custom-version"
 							><FeatherIcon
 								name="help-circle"
-								class="h-3 w-3 text-gray-700"
+								class="h-3 w-3 text-ink-gray-7"
 							></FeatherIcon
 						></a>
 					</Tooltip>

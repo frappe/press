@@ -10,7 +10,7 @@ console = Console()
 
 # Default User-Agent to identify CLI-originated traffic server-side
 CLI_USER_AGENT = (
-	f"press-cli/dev (python/{sys.version_info.major}.{sys.version_info.minor}; {platform.system().lower()})"
+	f"press-cli/python-{sys.version_info.major}.{sys.version_info.minor}; {platform.system().lower()})"
 )
 
 

@@ -1,0 +1,8 @@
+---
+- name: Allow Redis Loopbacks
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  roles:
+    - role: allow_docker_loopback

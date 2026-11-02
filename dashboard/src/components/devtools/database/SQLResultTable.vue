@@ -168,7 +168,7 @@ const downloadCSV = async () => {
 	>
 		<template #body-content>
 			<pre
-				class="mt-2 whitespace-pre-wrap rounded-lg border-2 border-gray-200 bg-gray-100 p-3 text-sm text-gray-700"
+				class="mt-2 whitespace-pre-wrap rounded-lg border-2 border-outline-gray-1 bg-surface-gray-2 p-3 text-sm text-ink-gray-7"
 				>{{ fullViewDialogBody }}</pre
 			>
 		</template>
@@ -185,7 +185,7 @@ const downloadCSV = async () => {
 				v-if="props?.columns?.length || props.data?.length"
 				class="border-separate border-spacing-0"
 			>
-				<thead class="sticky top-0 bg-gray-50">
+				<thead class="sticky top-0 z-10 bg-surface-gray-1">
 					<tr
 						v-for="headerGroup in table.getHeaderGroups()"
 						:key="headerGroup.id"
@@ -194,7 +194,7 @@ const downloadCSV = async () => {
 							v-for="header in headerGroup.headers"
 							:key="header.id"
 							:colSpan="header.colSpan"
-							class="border-b text-gray-800"
+							class="border-b text-ink-gray-8"
 							:class="{
 								'border-r': header.column.columnDef.id !== lastColumn,
 							}"
@@ -211,7 +211,7 @@ const downloadCSV = async () => {
 							</div>
 						</td>
 						<td
-							class="w-[10rem] border-b border-r text-center text-gray-800"
+							class="w-[10rem] border-b border-r text-center text-ink-gray-8"
 							v-if="actionHeaderLabel"
 						>
 							{{ actionHeaderLabel }}
@@ -240,11 +240,11 @@ const downloadCSV = async () => {
 							<MaximizedIcon
 								v-if="isTextTruncated(cell)"
 								@click="handleViewFull(cell)"
-								class="!my-0 ml-2 inline-block !h-4 !w-4 cursor-pointer text-gray-700"
+								class="!my-0 ml-2 inline-block !h-4 !w-4 cursor-pointer text-ink-gray-7"
 							/>
 						</td>
 						<td
-							class="w-[6rem] border-b border-r text-center text-gray-800"
+							class="w-[6rem] border-b border-r text-center text-ink-gray-8"
 							v-if="actionComponent"
 						>
 							<component
@@ -284,7 +284,7 @@ const downloadCSV = async () => {
 			>
 				<div class="flex flex-shrink-0 items-center justify-end gap-3">
 					<div class="flex flex-shrink-0 items-center gap-2 border-r-2 pr-3">
-						<p class="text-sm text-gray-600">Per Page</p>
+						<p class="text-sm text-ink-gray-6">Per Page</p>
 						<select
 							class="form-select block !py-0.5 text-sm"
 							v-model="pageSize"
@@ -299,7 +299,7 @@ const downloadCSV = async () => {
 							</option>
 						</select>
 					</div>
-					<p class="tnum text-sm text-gray-600">
+					<p class="tnum text-sm text-ink-gray-6">
 						{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
 					</p>
 					<div class="flex gap-2">

@@ -46,10 +46,10 @@
    "role": "System Manager"
   },
   {
-   "role": "Press Member"
+   "role": "Press User"
   },
   {
-   "role": "Press Admin"
+   "role": "Press User"
   }
  ]
 }

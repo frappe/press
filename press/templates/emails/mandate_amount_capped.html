@@ -1,0 +1,17 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white">
+		<p class="mb-4 font-bold">{{ subject }}</p>
+		<p>Your UPI Autopay mandate was successfully set up, but your bank authorized a monthly limit of <strong>₹{{ confirmed_amount }}</strong> instead of the <strong>₹{{ requested_amount }}</strong> you requested.</p>
+		<p>This limit is enforced by your bank. If a future invoice exceeds <strong>₹{{ confirmed_amount }}</strong>, the auto-debit will fail. Please contact your bank to increase your UPI Autopay transaction limit.</p>
+		<p><a href="{{ upi_autopay_link }}">Manage UPI Autopay</a></p>
+		{{ utils.separator() }}
+		{{ utils.signature() }}
+	</div>
+</td>
+
+{% endblock %}

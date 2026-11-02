@@ -28,7 +28,7 @@
 			<ListRows>
 				<div
 					v-if="rows.length === 0"
-					class="text-center text-sm leading-10 text-gray-500"
+					class="text-center text-sm leading-10 text-ink-gray-5"
 				>
 					No results found
 				</div>

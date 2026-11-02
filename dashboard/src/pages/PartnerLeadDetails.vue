@@ -9,6 +9,14 @@
 						{ label: lead.doc?.organization_name, route: '#' },
 					]"
 				/>
+				<div>
+					<Button
+						v-if="$session.isSystemUser"
+						:variant="'subtle'"
+						label="View in Desk"
+						@click="openIndDesk()"
+					/>
+				</div>
 			</Header>
 		</div>
 		<TabsWithRouter :tabs="tabs" />
@@ -18,8 +26,17 @@
 import Header from '../components/Header.vue';
 import { Breadcrumbs, Tabs } from 'frappe-ui';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
+import { leafTitle, pageTitle } from '../utils/title';
 export default {
 	name: 'PartnerLeadDetails',
+	pageMeta() {
+		return {
+			title: pageTitle(
+				this.lead.doc?.organization_name,
+				leafTitle(this.$route),
+			),
+		};
+	},
 	components: {
 		Header,
 		FBreadcrumbs: Breadcrumbs,
@@ -48,6 +65,12 @@ export default {
 	computed: {
 		lead() {
 			return this.$resources.lead;
+		},
+	},
+	methods: {
+		openIndDesk() {
+			const deskUrl = `${window.location.protocol}//${window.location.host}/app/partner-lead/${this.lead.name}`;
+			window.open(deskUrl, '_blank');
 		},
 	},
 };

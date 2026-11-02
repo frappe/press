@@ -91,6 +91,12 @@ class GenerateBuildMetric:
 				"fc_manual_failure": len(self.total_failures["fc_manual_failure"]),
 				"fc_failure": len(self.total_failures["fc_failure"]),
 			},
+			# Deployment Info
+			"total_deployments": self.total_deployment_info[
+				"total_deployments"
+			],  # Should be same as total builds?
+			"successful_deployments": self.total_deployment_info["successful_deployments"],
+			"failed_deployments": self.total_deployment_info["failed_deployments"],
 			# Pending durations
 			"median_pending_duration": self.build_duration_metrics["median_pending_duration"],
 			"p90_pending_duration": self.build_duration_metrics["p90_pending_duration"],
@@ -120,6 +126,7 @@ class GenerateBuildMetric:
 		- Get Avg context durations (package & upload)
 		- Get failure frequency.
 		"""
+		self.total_deployment_info = self.get_total_deployment_info()
 		self.total_builds = self.get_total_builds()
 		self.total_failures = self.get_total_failures()
 		self.build_duration_metrics = self.get_build_duration_metrics()
@@ -142,6 +149,39 @@ class GenerateBuildMetric:
 		if not values:
 			return None
 		return quantiles(values, n=100)[percentile - 1]
+
+	def get_total_deployment_info(self) -> dict[str, int]:
+		deploy_candidate_build = frappe.qb.DocType("Deploy Candidate Build")
+		agent_job = frappe.qb.DocType("Agent Job")
+		bench = frappe.qb.DocType("Bench")
+
+		query = (
+			frappe.qb.from_(deploy_candidate_build)
+			.join(bench)
+			.on(deploy_candidate_build.name == bench.build)
+			.join(agent_job)
+			.on(agent_job.bench == bench.name)
+			.select(
+				deploy_candidate_build.name,
+				bench.name.as_("bench_name"),
+				agent_job.name.as_("agent_job_name"),
+				agent_job.status.as_("agent_job_status"),
+			)
+			.where(agent_job.job_type == "New Bench")
+			.where(deploy_candidate_build.status == "Success")
+			.where(deploy_candidate_build.creation[self.from_date : self.end_date])
+			.where(deploy_candidate_build.deploy_after_build == 1)
+		)
+
+		results = query.run(as_dict=1)
+		successful_deployments = sum(1 for r in results if r.agent_job_status == "Success")
+		failed_deployments = sum(1 for r in results if r.agent_job_status == "Failure")
+
+		return {
+			"total_deployments": len(results),
+			"successful_deployments": successful_deployments,
+			"failed_deployments": failed_deployments,
+		}
 
 	def get_context_durations(self) -> ContextDurationType:
 		"""Compute median, p90, and p99 for package/upload durations."""
@@ -271,8 +311,8 @@ class GenerateBuildMetric:
 
 	def get_fc_failure_metrics(self) -> dict[str, dict[str, int]]:
 		fc_failures = self._get_failure(is_user_addressable=False, is_manually_failed=False)
-		failed_step_frequency = defaultdict(int)
-		failure_output_frequency = defaultdict(int)
+		failed_step_frequency: defaultdict[str, int] = defaultdict(int)
+		failure_output_frequency: defaultdict[str, int] = defaultdict(int)
 
 		for fc_failure in fc_failures:
 			failed_build_step = frappe.db.get_value(

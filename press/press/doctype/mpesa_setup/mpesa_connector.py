@@ -5,6 +5,17 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 
+def current_timestamp():
+	"""Timestamp in the YYYYMMDDHHMMSS format Mpesa expects."""
+	return datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
+
+def generate_password(business_shortcode, passcode, timestamp):
+	# Expected format is base64 encoded string of BusinessShortCode + Passkey + Timestamp
+	password = f"{business_shortcode!s}{passcode!s}{timestamp}"
+	return base64.b64encode(bytes(password, encoding="utf8")).decode("utf-8")
+
+
 class MpesaConnector:
 	def __init__(
 		self,
@@ -119,13 +130,11 @@ class MpesaConnector:
 			errorMessage(str): This is a predefined code that indicates the reason for request failure.
 		"""
 
-		time = str(datetime.datetime.now()).split(".")[0].replace("-", "").replace(" ", "").replace(":", "")
-		password = f"{business_shortcode!s}{passcode!s}{time}"
-		encoded = base64.b64encode(bytes(password, encoding="utf8"))
+		timestamp = current_timestamp()
 		payload = {
 			"BusinessShortCode": business_shortcode,
-			"Password": encoded.decode("utf-8"),
-			"Timestamp": time,
+			"Password": generate_password(business_shortcode, passcode, timestamp),
+			"Timestamp": timestamp,
 			"Amount": amount,
 			"PartyA": int(phone_number),
 			"PartyB": reference_code,
@@ -142,4 +151,44 @@ class MpesaConnector:
 
 		saf_url = "{}{}".format(self.base_url, "/mpesa/stkpush/v1/processrequest")
 		r = requests.post(saf_url, headers=headers, json=payload)
+		return r.json()
+
+	def stk_push_query(self, business_shortcode=None, passcode=None, checkout_request_id=None):
+		"""
+		This method uses Mpesa's Express Query API to ask Mpesa for the result of a checkout request.
+
+		The STK callback is unauthenticated, so this is the only way to tell a real payment from a
+		forged callback.
+
+		Args:
+			business_shortcode (int): The short code of the organization.
+			passcode (str): Get from developer portal.
+			checkout_request_id (str): Identifier of the checkout request returned by stk_push.
+
+		Success Response:
+			ResultCode(str): "0" means the customer paid, all others mean they did not.
+			ResultDesc(str): Describes the result of the checkout request.
+			CheckoutRequestID(str): Identifier of the checkout request that was queried.
+			MerchantRequestID(str): This is a global unique Identifier for any submitted payment request.
+
+		Error Response:
+			requestId(str): This is a unique requestID for the payment request
+			errorCode(str): This is a predefined code that indicates the reason for request failure.
+			errorMessage(str): This is a predefined code that indicates the reason for request failure.
+		"""
+
+		timestamp = current_timestamp()
+		payload = {
+			"BusinessShortCode": business_shortcode,
+			"Password": generate_password(business_shortcode, passcode, timestamp),
+			"Timestamp": timestamp,
+			"CheckoutRequestID": checkout_request_id,
+		}
+		headers = {
+			"Authorization": f"Bearer {self.authentication_token}",
+			"Content-Type": "application/json",
+		}
+
+		saf_url = "{}{}".format(self.base_url, "/mpesa/stkpushquery/v1/query")
+		r = requests.post(saf_url, headers=headers, json=payload, timeout=30)
 		return r.json()

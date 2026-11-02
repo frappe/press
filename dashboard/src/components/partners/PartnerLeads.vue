@@ -37,17 +37,17 @@
 		<div v-if="partnerLeadsList">
 			<ObjectList :options="partnerLeadsList" />
 		</div>
-		<div v-else class="text-base text-gray-600">
+		<div v-else class="text-base text-ink-gray-6">
 			No partner leads available.
 		</div>
 	</div>
 </template>
 <script>
-import ObjectList from '../ObjectList.vue';
-import { icon, renderDialog } from '../../utils/components';
-import NewPartnerLead from './NewPartnerLead.vue';
-import { NumberChart } from 'frappe-ui';
-import { h } from 'vue';
+import { NumberChart } from 'frappe-ui'
+import { h } from 'vue'
+import { icon, renderDialog } from '../../utils/components'
+import ObjectList from '../ObjectList.vue'
+import NewPartnerLead from './NewPartnerLead.vue'
 export default {
 	name: 'PartnerLeads',
 	components: {
@@ -59,7 +59,14 @@ export default {
 			return {
 				url: 'press.api.partner.get_lead_stats',
 				auto: true,
-			};
+			}
+		},
+		leadOwners() {
+			return {
+				url: 'press.api.partner.get_lead_owners',
+				auto: true,
+				initialData: [],
+			}
 		},
 	},
 	computed: {
@@ -79,40 +86,63 @@ export default {
 									lead_source: d.lead_source || '',
 									status: d.status || '',
 									partner_team: d.partner_team || '',
-								};
-							});
+								}
+							})
 						},
-					};
+					}
 				},
 				columns: [
 					{
 						label: 'Lead Name',
 						fieldname: 'lead_name',
+						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return ''
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value
+						},
 					},
 					{
 						label: 'Organization',
 						fieldname: 'organization',
+						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return ''
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value
+						},
 					},
 					{
 						label: 'Lead Source',
 						fieldname: 'lead_source',
+						width: 0.5,
 					},
 					{
 						label: 'Status',
 						fieldname: 'status',
 						type: 'Badge',
+						width: 0.4,
+						align: 'center',
 					},
 					{
 						label: 'Lead ID',
 						fieldname: 'name',
+						width: 0.5,
 					},
 					{
 						label: 'Partner',
 						fieldname: 'partner_team',
+						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return ''
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value
+						},
 						condition: () => Boolean(this.$team.doc.is_desk_user),
 					},
 				],
-				filterControls() {
+				filterControls: () => {
+					const leadOwners = this.$resources.leadOwners.data || []
 					return [
 						{
 							type: 'data',
@@ -124,37 +154,55 @@ export default {
 							fieldname: 'status',
 							label: 'Status',
 							options: [
-								'',
+								'All',
 								'Open',
-								'In Process',
+								'Qualification',
+								'Demo/Making',
+								'Proposal/Quotation',
+								'Follow Up',
+								'Negotiation',
+								'Ready to Close',
 								'Won',
 								'Lost',
 								'Junk',
-								'Passed to Other Partner',
-								'Other',
+								'Closed',
 							],
 						},
 						{
 							type: 'select',
-							fieldname: 'engagement_stage',
-							label: 'Engagement Stage',
+							fieldname: 'source',
+							label: 'Lead Source',
 							options: [
-								'',
-								'Demo',
-								'Qualification',
-								'Quotation',
-								'Ready for Closing',
-								'Negotiation',
-								'Learning',
+								{ label: 'All', value: 'All' },
+								{ label: 'Partner Owned', value: 'Partner Owned' },
+								{ label: 'Passed to Partner', value: 'Passed to Partner' },
+								{ label: 'Partner Listing', value: 'Partner Listing' },
 							],
 						},
-					];
+						{
+							type: 'select',
+							fieldname: 'lead_owner',
+							label: 'Lead Owner',
+							options: [
+								{ label: 'All', value: 'All' },
+								...leadOwners.map((owner) => ({
+									label: owner.label,
+									value: owner.value,
+								})),
+							],
+						},
+						{
+							type: 'checkbox',
+							fieldname: 'is_starter_pack',
+							label: 'Starter Pack',
+						},
+					]
 				},
 				onRowClick: (row) => {
 					this.$router.push({
 						name: 'LeadOverview',
 						params: { leadId: row.name },
-					});
+					})
 				},
 				primaryAction: () => {
 					return {
@@ -168,22 +216,29 @@ export default {
 								h(NewPartnerLead, {
 									modelValue: true,
 								}),
-							);
+							)
 						},
-					};
+					}
 				},
-			};
+				orderBy: 'modified desc',
+			}
 		},
 		statusTheme() {
 			return {
 				Open: 'blue',
+				Qualification: 'orange',
+				'Demo/Making': 'orange',
+				'Proposal/Quotation': 'orange',
+				'Follow Up': 'blue',
+				Negotiation: 'orange',
+				'Ready to Close': 'blue',
 				'In Process': 'orange',
 				Won: 'green',
 				Lost: 'red',
 				Junk: 'gray',
-				'Passed to Other Partner': 'gray',
-			};
+				Closed: 'gray',
+			}
 		},
 	},
-};
+}
 </script>

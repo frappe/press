@@ -1,0 +1,35 @@
+# Copyright (c) 2026, Frappe and contributors
+# For license information, please see license.txt
+
+import frappe
+import frappe_mcp
+from frappe.utils.data import sbool
+
+mcp = frappe_mcp.MCP("press-mcp")
+
+
+@mcp.register()
+def handler():
+	frappe.only_for("System Manager")
+
+	user_type = frappe.get_cached_value("User", frappe.session.user, "user_type")
+
+	# Allow unchecked access to System Users
+	if user_type != "System User":
+		frappe.throw("Access not allowed for this URL", frappe.AuthenticationError)
+
+	# MCP feature flag should be enabled
+	if not sbool(str(frappe.get_value("Press Settings", None, "enable_mcp"))):
+		frappe.throw("MCP is not enabled", frappe.AuthenticationError)
+
+	import press.mcp.tools.actions
+	import press.mcp.tools.codebase
+	import press.mcp.tools.documents
+	import press.mcp.tools.routes
+	import press.mcp.tools.telemetry
+
+	_ = press.mcp.tools.codebase
+	_ = press.mcp.tools.documents
+	_ = press.mcp.tools.routes
+	_ = press.mcp.tools.telemetry
+	_ = press.mcp.tools.actions

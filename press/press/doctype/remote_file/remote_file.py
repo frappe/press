@@ -5,25 +5,67 @@ from __future__ import annotations
 
 import json
 import pprint
+from typing import TYPE_CHECKING
 
 import frappe
-import requests
 from boto3 import client, resource
+from frappe import _
 from frappe.model.document import Document
+from frappe.utils import cstr
 from frappe.utils.password import get_decrypted_password
+
+from press.access.utils import is_outside_employee, refuse_backup_download
+from press.press.doctype.site_activity.site_activity import log_site_activity
+from press.utils import ssrf
+
+if TYPE_CHECKING:
+	from collections.abc import Iterable
+
+	from press.press.doctype.backup_bucket.backup_bucket import BackupBucket
+
+BACKUP_FILE_KEYS = ("database", "public", "private", "config")
+
+
+def get_team_prefix(team: str) -> str:
+	"""Every uploaded file is keyed under a prefix derived from the team."""
+	from hashlib import sha1
+
+	return sha1(team.encode()).hexdigest()
 
 
 def get_remote_key(file):
-	from hashlib import sha1
-	from os.path import join
+	from os.path import basename
 	from time import time
 
 	from press.utils import get_current_team
 
-	team = sha1(get_current_team().encode()).hexdigest()
-	time = str(time()).replace(".", "_")
+	prefix = get_team_prefix(get_current_team())
+	timestamp = str(time()).replace(".", "_")
 
-	return join(team, time, file)
+	# basename, because join() drops the prefix when file is an absolute path
+	return f"{prefix}/{timestamp}/{basename(file)}"
+
+
+def validate_files_belong_to_team(files: dict, team: str):
+	"""Restore accepts Remote File names from the client. They must be the team's own."""
+	for key in BACKUP_FILE_KEYS:
+		name = files.get(key)
+		if not name:
+			continue
+
+		# A file with no team has no established owner, so it is never the site's
+		file_team = frappe.db.get_value("Remote File", name, "team")
+		if file_team != team:
+			frappe.throw(
+				_("Remote File {0} does not belong to site's team").format(name),
+				frappe.PermissionError,
+			)
+
+
+def validate_files_downloadable(names: Iterable[str | None]):
+	"""Only those who can download a backup can restore a site from it."""
+	for name in filter(None, names):
+		RemoteFile("Remote File", name).validate_downloader()
 
 
 def poll_file_statuses():
@@ -159,8 +201,63 @@ class RemoteFile(Document):
 		file_type: DF.Data | None
 		site: DF.Link | None
 		status: DF.Literal["Available", "Unavailable"]
+		team: DF.Link | None
 		url: DF.Code | None
 	# end: auto-generated types
+
+	def before_validate(self):
+		self.ensure_team_set()
+
+	def ensure_team_set(self):
+		if self.team:
+			return
+
+		if self.site:
+			# Backup remote files are created in agent job callbacks, where the
+			# session user is Administrator. The site's team is the owner there.
+			self.team = frappe.db.get_value("Site", self.site, "team")
+
+		if not self.team:
+			from press.utils import get_current_team
+
+			self.team = get_current_team()
+
+	def validate(self):
+		self.validate_upload_prefix()
+		self.validate_url()
+
+	def validate_url(self):
+		"""The URL comes from the client, and Press and the agent fetch it later."""
+		if not self.url or not self.has_value_changed("url"):
+			return
+
+		try:
+			ssrf.validate(self.url)
+		except ssrf.SSRFError as e:
+			frappe.throw(str(e), frappe.ValidationError)
+
+	def validate_upload_prefix(self):
+		"""An uploaded file must sit under its team's prefix.
+
+		The path comes from the client, and the restore flow later hands it to
+		the agent as a presigned link.
+		"""
+		if not self.is_new() or not self.file_path:
+			return
+
+		uploads_bucket = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
+		if not uploads_bucket or self.bucket != uploads_bucket:
+			return
+
+		if not self.team:
+			frappe.throw(_("Uploaded file must belong to a team"), frappe.PermissionError)
+
+		prefix = get_team_prefix(self.team)
+		if not self.file_path.startswith(f"{prefix}/"):
+			frappe.throw(
+				_("File path {0} is not under this team's upload prefix").format(self.file_path),
+				frappe.PermissionError,
+			)
 
 	@property
 	def s3_client(self):
@@ -182,30 +279,52 @@ class RemoteFile(Document):
 		else:
 			return None
 
+		region = frappe.db.get_single_value("Press Settings", "backup_region")
+		endpoint_url = None
+
+		if frappe.db.exists("Backup Bucket", self.bucket):
+			backup_bucket: BackupBucket = frappe.get_doc("Backup Bucket", self.bucket)
+			if backup_bucket.replication_enabled:
+				region = backup_bucket.replication_region
+				endpoint_url = backup_bucket.replication_endpoint_url or endpoint_url
+			else:
+				region = backup_bucket.region
+				endpoint_url = backup_bucket.endpoint_url or endpoint_url
+
 		return client(
 			"s3",
 			aws_access_key_id=access_key_id,
 			aws_secret_access_key=secret_access_key,
-			region_name=frappe.db.get_value("Backup Bucket", self.bucket, "region")
-			or frappe.db.get_single_value("Press Settings", "backup_region"),
+			region_name=region,
+			endpoint_url=endpoint_url,
 		)
 
 	@property
 	def download_link(self):
-		return self.get_download_link()
+		# Unguarded on purpose, for server-side restores (agent). Callers that hand the
+		# link to a user guard and log first, like ServerSnapshotRecovery.download_backup.
+		return self.make_download_link()
 
 	@frappe.whitelist()
 	def exists(self):
 		self.db_set("status", "Available")
 
 		if self.url:
-			success = str(requests.head(self.url).status_code).startswith("2")
-			if success:
-				return True
+			try:
+				if str(ssrf.head(self.url).status_code).startswith("2"):
+					return True
+			except ssrf.SSRFError:
+				pass
 			self.db_set("status", "Unavailable")
 			return False
 		try:
-			return self.s3_client.head_object(Bucket=self.bucket, Key=self.file_path)
+			bucket = self.bucket
+			if frappe.db.exists("Backup Bucket", self.bucket):
+				backup_bucket: BackupBucket = frappe.get_doc("Backup Bucket", self.bucket)
+				if backup_bucket.replication_enabled:
+					bucket = backup_bucket.replication_bucket
+
+			return self.s3_client.head_object(Bucket=bucket, Key=self.file_path)
 		except Exception:
 			self.db_set("status", "Unavailable")
 			return False
@@ -221,17 +340,54 @@ class RemoteFile(Document):
 	def on_trash(self):
 		self.delete_remote_object()
 
+	@property
+	def owner_team(self) -> str:
+		"""A backup belongs to the current team of its site, an upload to the team that uploaded it."""
+		if self.site:
+			return cstr(frappe.db.get_value("Site", self.site, "team"))
+		return cstr(self.team)
+
 	@frappe.whitelist()
 	def get_download_link(self):
+		self.validate_downloader()
+		return self.make_download_link()
+
+	@property
+	def is_backup(self) -> bool:
+		"""A site backup, or a file a team uploaded to restore a site from. Not a server log."""
+		uploads_bucket = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
+		return bool(self.site) or bool(uploads_bucket and self.bucket == uploads_bucket)
+
+	def validate_downloader(self):
+		if self.is_backup and is_outside_employee(self.owner_team):
+			refuse_backup_download()
+
+	def make_download_link(self, expires_in: int | None = None, log_activity: bool = True) -> str:
+		"""Not whitelisted: a caller over the API must not skip the activity log or extend the expiry."""
+		# The `site` field is not set during the upload & restore of files.
+		# Not gonna play with the code here.
+		# Also, it doesn't make sense to log access while restoring.
+		if self.site and log_activity:
+			log_site_activity(site=self.site, action="Access Offsite Backups")
+			frappe.db.commit()
+
+		bucket = self.bucket
+		if frappe.db.exists("Backup Bucket", bucket):
+			backup_bucket: BackupBucket = frappe.get_doc("Backup Bucket", bucket)
+			if backup_bucket.replication_enabled:
+				bucket = backup_bucket.replication_bucket
+
 		return self.url or self.s3_client.generate_presigned_url(
 			"get_object",
-			Params={"Bucket": self.bucket, "Key": self.file_path},
-			ExpiresIn=frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600,
+			Params={"Bucket": bucket, "Key": self.file_path},
+			ExpiresIn=expires_in
+			or frappe.db.get_single_value("Press Settings", "remote_link_expiry")
+			or 3600,
 		)
 
 	def get_content(self):
 		if self.url:
-			return json.loads(requests.get(self.url).content)
+			return json.loads(ssrf.get(self.url).content)
 
 		obj = self.s3_client.get_object(Bucket=self.bucket, Key=self.file_path)
 		return json.loads(obj["Body"].read().decode("utf-8"))
@@ -246,7 +402,8 @@ class RemoteFile(Document):
 		if int(self.file_size or 0):
 			return int(self.file_size or 0)
 
-		response = requests.head(self.url)
+		assert self.url, "URL must be set to get file size"
+		response = ssrf.head(self.url)
 		self.file_size = int(response.headers.get("content-length", 0))
 		self.save()
 		return int(self.file_size)
@@ -260,14 +417,19 @@ def delete_s3_files(buckets):
 
 	press_settings = frappe.get_single("Press Settings")
 	for bucket_name in buckets:
+		endpoint_url = (
+			frappe.db.get_value("Backup Bucket", bucket_name, "endpoint_url") or "https://s3.amazonaws.com"
+		)
+		if "s3.me-south-1.amazonaws.com" in endpoint_url:
+			continue
+
 		s3 = resource(
 			"s3",
 			aws_access_key_id=press_settings.offsite_backups_access_key_id,
 			aws_secret_access_key=press_settings.get_password(
 				"offsite_backups_secret_access_key", raise_exception=False
 			),
-			endpoint_url=frappe.db.get_value("Backup Bucket", bucket_name, "endpoint_url")
-			or "https://s3.amazonaws.com",
+			endpoint_url=endpoint_url,
 		)
 		bucket = s3.Bucket(bucket_name)
 		for objects in chunk([{"Key": x} for x in buckets[bucket_name]], 1000):

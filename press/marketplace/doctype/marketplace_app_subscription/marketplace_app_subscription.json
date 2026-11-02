@@ -1,147 +1,144 @@
 {
- "actions": [],
- "autoname": "format:app-subscription-{app}-{#####}",
- "creation": "2022-03-06 20:52:51.924858",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "site",
-  "team",
-  "marketplace_app_plan",
-  "status",
-  "app",
-  "start_date",
-  "end_date",
-  "secret_key",
-  "interval",
-  "plan",
-  "while_site_creation",
-  "subscription"
- ],
- "fields": [
-  {
-   "fieldname": "site",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Site",
-   "options": "Site",
-   "read_only": 1
-  },
-  {
-   "default": "Active",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "options": "Active\nInactive\nDisabled"
-  },
-  {
-   "fieldname": "app",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "App",
-   "options": "Marketplace App",
-   "reqd": 1,
-   "set_only_once": 1
-  },
-  {
-   "default": "Today",
-   "fieldname": "start_date",
-   "fieldtype": "Date",
-   "label": "Start date"
-  },
-  {
-   "fieldname": "end_date",
-   "fieldtype": "Date",
-   "label": "End date"
-  },
-  {
-   "fieldname": "secret_key",
-   "fieldtype": "Data",
-   "label": "Secret Key",
-   "read_only": 1
-  },
-  {
-   "fieldname": "interval",
-   "fieldtype": "Select",
-   "label": "Interval",
-   "options": "Daily\nMonthly\nAnnually"
-  },
-  {
-   "fieldname": "marketplace_app_plan",
-   "fieldtype": "Link",
-   "label": "Marketplace App Plan",
-   "options": "Marketplace App Plan",
-   "reqd": 1
-  },
-  {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "label": "Plan",
-   "options": "Site Plan",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "while_site_creation",
-   "fieldtype": "Check",
-   "label": "While Site Creation",
-   "read_only": 1
-  },
-  {
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "label": "Team",
-   "options": "Team"
-  },
-  {
-   "fieldname": "subscription",
-   "fieldtype": "Data",
-   "label": "Subscription"
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-08-20 20:10:01.897498",
- "modified_by": "Administrator",
- "module": "Marketplace",
- "name": "Marketplace App Subscription",
- "naming_rule": "Expression",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Marketplace Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "title_field": "app",
- "track_changes": 1
+	"actions": [],
+	"autoname": "format:app-subscription-{app}-{#####}",
+	"creation": "2022-03-06 20:52:51.924858",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"site",
+		"team",
+		"marketplace_app_plan",
+		"status",
+		"app",
+		"start_date",
+		"end_date",
+		"secret_key",
+		"interval",
+		"plan",
+		"while_site_creation",
+		"subscription"
+	],
+	"fields": [
+		{
+			"fieldname": "site",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Site",
+			"options": "Site",
+			"read_only": 1
+		},
+		{
+			"default": "Active",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Status",
+			"options": "Active\nInactive\nDisabled"
+		},
+		{
+			"fieldname": "app",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "App",
+			"options": "Marketplace App",
+			"reqd": 1,
+			"set_only_once": 1
+		},
+		{
+			"default": "Today",
+			"fieldname": "start_date",
+			"fieldtype": "Date",
+			"label": "Start date"
+		},
+		{ "fieldname": "end_date", "fieldtype": "Date", "label": "End date" },
+		{
+			"fieldname": "secret_key",
+			"fieldtype": "Data",
+			"label": "Secret Key",
+			"read_only": 1
+		},
+		{
+			"fieldname": "interval",
+			"fieldtype": "Select",
+			"label": "Interval",
+			"options": "Daily\nMonthly\nAnnually"
+		},
+		{
+			"fieldname": "marketplace_app_plan",
+			"fieldtype": "Link",
+			"label": "Marketplace App Plan",
+			"options": "Marketplace App Plan",
+			"reqd": 1
+		},
+		{
+			"fieldname": "plan",
+			"fieldtype": "Link",
+			"label": "Plan",
+			"options": "Site Plan",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "while_site_creation",
+			"fieldtype": "Check",
+			"label": "While Site Creation",
+			"read_only": 1
+		},
+		{
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"label": "Team",
+			"options": "Team",
+			"search_index": 1
+		},
+		{
+			"fieldname": "subscription",
+			"fieldtype": "Data",
+			"label": "Subscription"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2025-08-20 20:10:01.897498",
+	"modified_by": "Administrator",
+	"module": "Marketplace",
+	"name": "Marketplace App Subscription",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Marketplace Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "app",
+	"track_changes": 1
 }

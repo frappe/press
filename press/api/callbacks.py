@@ -5,6 +5,7 @@ from __future__ import annotations
 import ipaddress
 
 import frappe
+from frappe.rate_limiter import rate_limit
 
 from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import handle_polled_job
@@ -97,11 +98,14 @@ def handle_job_updates(server: str, job_identifier: str):
 
 
 @frappe.whitelist(allow_guest=True)
-def callback(job_id: str):
+@rate_limit(limit=10, seconds=60)
+def callback(job_id: str | None = None):
 	"""
 	Handle job updates sent from agent.
 	This api should ideally only be hit from a build server.
 	"""
+	if not job_id:
+		return
 	remote_addr = frappe.request.environ["HTTP_X_FORWARDED_FOR"]
 	server = validate_server_request(remote_addr)
 

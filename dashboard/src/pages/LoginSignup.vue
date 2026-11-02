@@ -35,7 +35,7 @@
 								</Button>
 								<Button
 									:loading="$resources.googleLogin.loading"
-									@click="$resources.googleLogin.submit()"
+									@click="continueWithGoogle"
 								>
 									<div class="flex items-center">
 										<GoogleIcon class="w-4" />
@@ -143,6 +143,7 @@
 									I remember my password
 								</router-link>
 								<Button
+									type="submit"
 									class="mt-4"
 									:loading="$resources.resetPassword.loading"
 									variant="solid"
@@ -162,9 +163,15 @@
 									variant="outline"
 									required
 								/>
+								<p
+									v-if="emailHasCapitalLetters"
+									class="mt-2 text-sm text-yellow-700"
+								>
+									The email you entered has capital letters
+								</p>
 								<!-- OAuth Authentication -->
 								<template v-if="isOauthLogin && !usePassword">
-									<Button class="mt-4" variant="solid">
+									<Button class="mt-4" variant="solid" type="submit">
 										Log in with {{ oauthProviderName }}
 									</Button>
 								</template>
@@ -197,6 +204,7 @@
 										class="mt-4"
 										variant="solid"
 										:loading="$session.login.loading"
+										type="submit"
 									>
 										Log In
 									</Button>
@@ -281,6 +289,7 @@
 									class="mt-4"
 									:loading="$resources.signup.loading"
 									variant="solid"
+									type="submit"
 								>
 									Sign up with email
 								</Button>
@@ -292,19 +301,19 @@
 							class="mt-4 flex flex-col"
 							v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
 						>
-							<div v-if="$route.name === 'Signup'">
-								<span class="text-base font-normal text-gray-600">
+							<div class="text-p-base" v-if="$route.name === 'Signup'">
+								<span class="text-ink-gray-6">
 									{{ 'By signing up, you agree to our ' }}
 								</span>
 								<a
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-ink-gray-9 underline hover:text-ink-gray-7"
 									href="https://frappecloud.com/policies"
 								>
 									Terms & Policies
 								</a>
 							</div>
-							<div v-if="!(otpRequested || resetPasswordEmailSent)">
-								<span class="text-base font-normal text-gray-600">
+							<div class="mt-2" v-if="!(otpRequested || resetPasswordEmailSent)">
+								<span class="text-p-base text-ink-gray-6">
 									{{
 										$route.name == 'Login'
 											? 'New member? '
@@ -312,7 +321,7 @@
 									}}
 								</span>
 								<router-link
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-p-base text-ink-gray-9 underline hover:text-ink-gray-7"
 									:to="{
 										name: $route.name == 'Login' ? 'Signup' : 'Login',
 										query: { ...$route.query, forgot: undefined },
@@ -351,6 +360,7 @@
 								:message="$resources.verifyOTP.error"
 							/>
 							<Button
+								type="submit"
 								class="mt-4"
 								variant="solid"
 								:loading="$resources.verifyOTP.loading"
@@ -375,18 +385,18 @@
 						</form>
 						<div class="mt-4 space-y-2">
 							<div v-if="$route.name === 'Signup'">
-								<span class="text-base font-normal text-gray-600">
+								<span class="text-base font-normal text-ink-gray-6">
 									{{ 'By signing up, you agree to our ' }}
 								</span>
 								<a
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 									href="https://frappecloud.com/policies"
 								>
 									Terms & Policies
 								</a>
 							</div>
 							<div>
-								<span class="text-base font-normal text-gray-600">
+								<span class="text-base font-normal text-ink-gray-6">
 									{{
 										$route.name == 'Login'
 											? 'New member? '
@@ -394,7 +404,7 @@
 									}}
 								</span>
 								<router-link
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 									:to="{
 										name: $route.name == 'Login' ? 'Signup' : 'Login',
 										query: { ...$route.query, forgot: undefined },
@@ -408,42 +418,71 @@
 						</div>
 					</div>
 					<div
-						class="text-p-base text-gray-700"
+						class="text-p-base text-ink-gray-7"
 						v-else-if="resetPasswordEmailSent"
 					>
 						<p>
 							You will receive an email with instructions to reset your password
-							if an account with the provided email
-							(<span class="font-medium">{{ email }}</span>)
-							exists.
+							if an account with the provided email (<span
+								class="font-medium"
+								>{{ email }}</span
+							>) exists.
 						</p>
 					</div>
 				</template>
-				<template v-slot:logo v-if="saasProduct">
-					<div class="flex space-x-2">
-						<img
-							class="inline-block h-[38px] w-[38px] rounded-sm"
-							:src="saasProduct?.logo"
-						/>
-					</div>
-				</template>
+
 			</LoginBox>
 		</div>
+
+		<Dialog
+			v-model="showReactivateAccountDialog"
+			:options="{ title: 'Reactivate Account', size :'sm' }"
+			@close="cancelReactivation"
+		>
+			<template v-slot:body-content>
+				<p class="text-p-base text-ink-gray-7">
+					This account is disabled. Reactivating restores your account and
+					resumes billing.
+				</p>
+				<ErrorMessage
+					class="mt-2"
+					:message="$resources.reactivateAccount.error"
+				/>
+			</template>
+
+			<template v-slot:actions>
+				<div class="flex justify-end gap-2">
+					<Button @click="cancelReactivation">Cancel</Button>
+					<Button
+						variant="solid"
+						:loading="$resources.reactivateAccount.loading"
+						@click="$resources.reactivateAccount.submit()"
+					>
+						Reactivate
+					</Button>
+				</div>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
 <script>
 import LoginBox from '../components/auth/LoginBox.vue';
+import { getAnonymousId } from '@/telemetry/pulse.js';
 import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
 import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 import { toast } from 'vue-sonner';
 import { getToastErrorMessage } from '../utils/toast';
+import { h } from 'vue';
+import { call } from 'frappe-ui';
+import CustomToast from '../components/CustomToast.vue';
 
 export default {
 	name: 'Signup',
 	components: {
 		LoginBox,
 		GoogleIcon,
+		CustomToast,
 	},
 	data() {
 		return {
@@ -458,10 +497,16 @@ export default {
 			otpResendCountdown: 0,
 			resetPasswordEmailSent: false,
 			on2FARecovery: false,
+			showReactivateAccountDialog: Boolean(window.account_disabled),
 		};
 	},
 	mounted() {
 		this.email = localStorage.getItem('login_email');
+		if (this.$route.name === 'Signup' && this.$route.query.product) {
+			this.$pulse?.capture('signup_viewed', {
+				product: this.$route.query.product,
+			});
+		}
 		if (window.posthog?.__loaded) {
 			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
 				app: 'frappe_cloud',
@@ -475,6 +520,31 @@ export default {
 				this.otpResendCountdown -= 1;
 			}
 		}, 1000);
+
+		if (this.$route.query?.reason) {
+			switch (this.$route.query.reason) {
+				case 'INVALID_TEAM':
+					toast.custom(
+						h(CustomToast, {
+							html: `
+							You are not part of an active team<br/>
+							<span class="text-sm text-ink-gray-8">
+								If the issue persists, please contact
+								<a href="https://support.frappe.io" class="font-medium underline" target="_blank" rel="noopener noreferrer">
+									support.
+								</a>
+							</span>
+						`,
+						}),
+						{ duration: 5000 },
+					);
+					break;
+				default:
+					toast.error(
+						'An unknown error occurred. Please try logging in again.',
+					);
+			}
+		}
 	},
 	watch: {
 		email() {
@@ -489,6 +559,8 @@ export default {
 					email: this.email,
 					referrer: this.getReferrerIfAny(),
 					product: this.$route.query.product,
+					aid: getAnonymousId(),
+					url_args: JSON.stringify(this.$route.query),
 				},
 				onSuccess(account_request) {
 					this.account_request = account_request;
@@ -508,18 +580,12 @@ export default {
 					if (errorMessage.includes('is already registered')) {
 						localStorage.setItem('login_email', this.email);
 
-						if (this.$route.query?.product) {
-							this.$router.push({
-								name: 'Login',
-								query: {
-									redirect: `/dashboard/create-site/${this.$route.query.product}/setup`,
-								},
-							});
-						} else {
-							this.$router.push({
-								name: 'Login',
-							});
-						}
+						this.$router.push({
+							name: 'Login',
+							query: {
+								product: this.$route.query?.product,
+							},
+						});
 					}
 				},
 			};
@@ -563,7 +629,9 @@ export default {
 				onSuccess() {
 					this.otpSent = true;
 					this.otpResendCountdown = 30;
-					toast.success('Verification code sent to your email');
+					toast.success(
+						'If an account exists for this email, we sent it a verification code',
+					);
 				},
 				onError(err) {
 					toast.error(
@@ -599,6 +667,8 @@ export default {
 				makeParams() {
 					return {
 						product: this.$route.query.product,
+						aid: getAnonymousId(),
+						url_args: JSON.stringify(this.$route.query),
 					};
 				},
 				onSuccess(url) {
@@ -626,6 +696,15 @@ export default {
 		is2FAEnabled() {
 			return {
 				url: 'press.api.account.is_2fa_enabled',
+			};
+		},
+		reactivateAccount() {
+			return {
+				url: 'press.api.account.reactivate_account',
+				onSuccess(team) {
+					localStorage.setItem('current_team', team);
+					window.location.href = '/dashboard';
+				},
 			};
 		},
 		verify2FA() {
@@ -692,6 +771,9 @@ export default {
 			} else {
 				this.$resources.signup.submit();
 			}
+		},
+		continueWithGoogle() {
+			this.$resources.googleLogin.submit();
 		},
 
 		async checkTwoFactorAndLogin() {
@@ -787,14 +869,31 @@ export default {
 				},
 			);
 		},
-		afterLogin(res) {
-			let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
-			// if query param redirect is present, redirect to that route
-			if (this.$route.query.redirect) {
-				loginRoute = this.$route.query.redirect;
-			}
+		cancelReactivation() {
+			this.showReactivateAccountDialog = false;
+			this.$session.logoutWithoutReload.submit();
+		},
+		async afterLogin() {
 			localStorage.setItem('login_email', this.email);
-			window.location.href = loginRoute;
+
+			// Restrict redirect to relative paths.
+			const redirect = this.$route.query.redirect;
+			if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+				window.location.href = redirect;
+				return;
+			}
+
+			try {
+				const route = await call('press.api.account.get_route_on_login');
+				const product = this.$route.query.product;
+				if (route === '/quickstart' && product) {
+					window.location.href = `/dashboard/quickstart?product=${product}`;
+				} else {
+					window.location.href = `/dashboard${route || '/'}`;
+				}
+			} catch (e) {
+				window.location.href = '/dashboard/';
+			}
 		},
 	},
 	computed: {
@@ -806,9 +905,6 @@ export default {
 			if (this.$resources.resetPassword.error) {
 				return this.$resources.resetPassword.error;
 			}
-		},
-		saasProduct() {
-			return this.$resources.signupSettings.data?.product_trial;
 		},
 		isLogin() {
 			return this.$route.name == 'Login' && !this.$route.query.forgot;
@@ -828,6 +924,9 @@ export default {
 		},
 		emailDomain() {
 			return this.email?.includes('@') ? this.email?.split('@').pop() : '';
+		},
+		emailHasCapitalLetters() {
+			return /[A-Z]/.test(this.email || '');
 		},
 		isOauthLogin() {
 			return (
@@ -869,27 +968,18 @@ export default {
 			} else if (this.otpRequested) {
 				return 'Verify your email address';
 			} else if (this.isLogin) {
-				if (this.saasProduct) {
-					return `Log in to your account to start using ${this.saasProduct.title}`;
-				}
-				return 'Log in to your account';
-			} else {
-				if (this.saasProduct) {
-					return `Sign up to create your ${this.saasProduct.title} site`;
-				}
-
-				return 'Create your Frappe Cloud account';
+				return 'Log in to your Frappe Cloud account';
 			}
+			return 'Signup to your Frappe Cloud account';
 		},
 		subtitle() {
 			if (this.hasForgotPassword) {
 				return 'Enter your email address to reset your password';
-			} else {
-				if (this.saasProduct) {
-					return `Get started and explore the easiest way to use ${this.saasProduct.title}`;
-				}
+			} else if (this.isLogin) {
 				return 'Get started and explore the easiest way to use all Frappe apps';
 			}
+
+			return 'Hosting platform for Frappe apps';
 		},
 	},
 };

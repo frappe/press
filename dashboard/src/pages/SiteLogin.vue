@@ -145,7 +145,7 @@
 					</div>
 					<div v-else class="mt-10">
 						<div v-if="sites.data.length === 0">
-							<div class="text-center text-base leading-6 text-gray-700">
+							<div class="text-center text-base leading-6 text-ink-gray-7">
 								<div>No sites found for {{ email }}</div>
 								<Link :to="{ name: 'Signup' }">Sign up</Link> to create a new
 								site
@@ -155,14 +155,14 @@
 							<div
 								v-for="site in sites.data"
 								:key="site.name"
-								class="flex items-center justify-between rounded-md px-3 py-2 hover:cursor-pointer hover:bg-gray-100"
+								class="flex items-center justify-between rounded-md px-3 py-2 hover:cursor-pointer hover:bg-surface-gray-2"
 								@click="loginToSite(site.name)"
 							>
 								<div
 									class="flex min-h-[40px] w-full items-center justify-between"
 								>
 									<div class="space-y-2">
-										<div class="text-base text-gray-800">
+										<div class="text-base text-ink-gray-8">
 											{{ site.host_name || site.name }}
 										</div>
 									</div>
@@ -183,22 +183,22 @@
 			<template v-slot:footer>
 				<div class="flex w-full flex-col px-4 justify-center pb-8">
 					<div v-if="sites.fetched">
-						<span class="text-base font-normal text-gray-600">
+						<span class="text-base font-normal text-ink-gray-6">
 							Switch to a different account?
 						</span>
 						<span
-							class="text-base font-normal text-gray-900 underline hover:text-gray-700 cursor-pointer"
+							class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7 cursor-pointer"
 							@click="goBack"
 						>
 							Logout
 						</span>
 					</div>
 					<div>
-						<span class="text-base font-normal text-gray-600">
+						<span class="text-base font-normal text-ink-gray-6">
 							Manage your sites?
 						</span>
 						<router-link
-							class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+							class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 							:to="{
 								name: 'Login',
 							}"

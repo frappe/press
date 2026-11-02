@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import math
 import time
 
 import boto3
@@ -12,8 +13,13 @@ import pytz
 import rq
 from botocore.exceptions import ClientError
 from frappe.model.document import Document
+from frappe.utils.data import cint
+from hcloud import Client as HetznerClient
+from hcloud.images.domain import Image as HetznerImage
 from oci.core import BlockstorageClient
+from pypika.terms import ExistsCriterion
 
+from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 
@@ -110,7 +116,7 @@ class VirtualDiskSnapshot(Document):
 					)
 
 	@frappe.whitelist()
-	def sync(self):
+	def sync(self):  # noqa: C901
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		if cluster.cloud_provider == "AWS EC2":
 			try:
@@ -144,6 +150,27 @@ class VirtualDiskSnapshot(Document):
 				snapshot.time_created.astimezone(pytz.timezone(frappe.utils.get_system_timezone())),
 				"yyyy-MM-dd HH:mm:ss",
 			)
+
+		elif cluster.cloud_provider == "Hetzner":
+			try:
+				client: HetznerClient = self.client
+				snapshot = client.images.get_by_id(self.snapshot_id)
+				self.status = self.get_hetzner_status_map(snapshot.status)
+				self.size = math.ceil(snapshot.image_size or 0)
+				self.start_time = frappe.utils.format_datetime(snapshot.created, "yyyy-MM-dd HH:mm:ss")
+				self.progress = 100 if self.status == "Completed" else 0
+			except Exception:
+				self.status = "Unavailable"
+
+		elif cluster.cloud_provider == "Frappe Compute":
+			try:
+				client: FrappeComputeClient = self.client
+				snapshot = client.sync_snapshot(self.snapshot_id)
+				self.status = self.get_frappe_compute_status_map(snapshot.status)
+				self.start_time = frappe.utils.format_datetime(snapshot.created, "yyyy-MM-dd HH:mm:ss")
+				self.progress = snapshot.progress
+			except Exception:
+				self.status = "Unavailable"
 		self.save(ignore_version=True)
 		self.sync_server_snapshot()
 
@@ -176,6 +203,10 @@ class VirtualDiskSnapshot(Document):
 				self.client.delete_boot_volume_backup(self.snapshot_id)
 			else:
 				self.client.delete_volume_backup(self.snapshot_id)
+		elif cluster.cloud_provider == "Hetzner":
+			self.client.images.delete(HetznerImage(id=cint(self.snapshot_id)))
+		elif cluster.cloud_provider == "Frappe Compute":
+			self.client.delete_snapshot(self.snapshot_id)
 		self.sync()
 
 	def get_aws_status_map(self, status):
@@ -197,29 +228,51 @@ class VirtualDiskSnapshot(Document):
 			"REQUEST_RECEIVED": "Pending",
 		}.get(status, "Unavailable")
 
+	def get_hetzner_status_map(self, status):
+		return {
+			"creating": "Pending",
+			"available": "Completed",
+		}.get(status, "Unavailable")
+
+	def get_frappe_compute_status_map(self, status):
+		return {
+			"Draft": "Pending",
+			"Pending": "Pending",
+			"Available": "Completed",
+			"Unavailable": "Unavailable",
+		}.get(status, "Unavailable")
+
+	@frappe.whitelist()
 	def lock(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		if cluster.cloud_provider != "AWS EC2":
-			frappe.throw("Only AWS Provider is supported for now")
+		if cluster.cloud_provider == "AWS EC2":
+			self.client.lock_snapshot(
+				SnapshotId=self.snapshot_id,
+				LockMode="governance",
+				LockDuration=365,  # Lock for 1 year
+				# After this period, the snapshot will be automatically unlocked
+			)
+		elif cluster.cloud_provider == "Hetzner":
+			self.client.images.change_protection(HetznerImage(cint(self.snapshot_id)), delete=True)
+		else:
+			frappe.throw("Only AWS and Hetzner Providers support snapshot locking/unlocking")
 
-		self.client.lock_snapshot(
-			SnapshotId=self.snapshot_id,
-			LockMode="governance",
-			LockDuration=365,  # Lock for 1 year
-			# After this period, the snapshot will be automatically unlocked
-		)
-
+	@frappe.whitelist()
 	def unlock(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		if cluster.cloud_provider != "AWS EC2":
-			frappe.throw("Only AWS Provider is supported for now")
+		if cluster.cloud_provider == "AWS EC2":
+			try:
+				self.client.unlock_snapshot(SnapshotId=self.snapshot_id)
+			except botocore.exceptions.ClientError as e:
+				if e.response.get("Error", {}).get("Code") == "SnapshotLockNotFound":
+					return
+				raise e
 
-		try:
-			self.client.unlock_snapshot(SnapshotId=self.snapshot_id)
-		except botocore.exceptions.ClientError as e:
-			if e.response.get("Error", {}).get("Code") == "SnapshotLockNotFound":
-				return
-			raise e
+		elif cluster.cloud_provider == "Hetzner":
+			self.client.images.change_protection(HetznerImage(cint(self.snapshot_id)), delete=False)
+
+		else:
+			frappe.throw("Only AWS and Hetzner Providers support snapshot locking/unlocking")
 
 	def create_volume(
 		self,
@@ -286,6 +339,17 @@ class VirtualDiskSnapshot(Document):
 			)
 		if cluster.cloud_provider == "OCI":
 			return BlockstorageClient(cluster.get_oci_config())
+
+		if cluster.cloud_provider == "Hetzner":
+			api_token = cluster.get_password("hetzner_api_token")
+			return HetznerClient(token=api_token)
+
+		if cluster.cloud_provider == "Frappe Compute":
+			return FrappeComputeClient(
+				url=cluster.frappe_compute_base_url,
+				api_key=cluster.frappe_compute_api_key,
+				api_secret=cluster.get_password("frappe_compute_api_secret"),
+			)
 		return None
 
 
@@ -295,6 +359,10 @@ class SnapshotInUseError(Exception):
 
 class SnapshotLockedError(Exception):
 	pass
+
+
+def on_doctype_update():
+	frappe.db.add_index("Virtual Disk Snapshot", ["dedicated_snapshot", "status", "creation"])
 
 
 def sync_snapshots():
@@ -435,6 +503,64 @@ def delete_expired_snapshots():
 			frappe.db.rollback()
 
 
+def enqueue_delete_orphaned_dedicated_snapshots():
+	frappe.enqueue(
+		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_orphaned_dedicated_snapshots",
+		queue="long",
+		timeout=900,
+		deduplicate=True,
+		job_id="delete_orphaned_dedicated_snapshots",
+	)
+
+
+def delete_orphaned_dedicated_snapshots():
+	for snapshot in get_orphaned_dedicated_snapshots():
+		if has_job_timeout_exceeded():
+			return
+		try:
+			frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot(ignore_validation=True)
+			frappe.db.commit()
+		except (SnapshotLockedError, SnapshotInUseError):
+			pass
+		except Exception:
+			log_error("Orphaned Dedicated Snapshot Delete Error", snapshot=snapshot)
+			frappe.db.rollback()
+
+
+def get_orphaned_dedicated_snapshots() -> list[str]:
+	# Filter out in-use snapshots in SQL, else they fill every batch and nothing gets deleted
+	VirtualDiskSnapshot = frappe.qb.DocType("Virtual Disk Snapshot")
+	return (
+		frappe.qb.from_(VirtualDiskSnapshot)
+		.select(VirtualDiskSnapshot.name)
+		.where(
+			VirtualDiskSnapshot.status.isin(("Pending", "Completed", "Error", "Recovering", "Recoverable"))
+			& (VirtualDiskSnapshot.dedicated_snapshot == 1)
+			& (VirtualDiskSnapshot.creation <= frappe.utils.add_days(None, -4))
+			& VirtualDiskSnapshot.cluster.notin(("Bahrain", "UAE"))
+			& ExistsCriterion(server_snapshots_using(VirtualDiskSnapshot, "app_server_snapshot")).negate()
+			& ExistsCriterion(
+				server_snapshots_using(VirtualDiskSnapshot, "database_server_snapshot")
+			).negate()
+		)
+		.orderby(VirtualDiskSnapshot.creation)
+		.limit(50)
+		.run(pluck=True)
+	)
+
+
+def server_snapshots_using(VirtualDiskSnapshot, field: str):
+	ServerSnapshot = frappe.qb.DocType("Server Snapshot")
+	return (
+		frappe.qb.from_(ServerSnapshot)
+		.select(ServerSnapshot.name)
+		.where(
+			(ServerSnapshot[field] == VirtualDiskSnapshot.name)
+			& ServerSnapshot.status.isin(("Pending", "Processing", "Completed"))
+		)
+	)
+
+
 def sync_all_snapshots_from_aws():
 	regions = frappe.get_all("Cloud Region", {"provider": "AWS EC2"}, pluck="name")
 	for region in regions:
@@ -563,25 +689,17 @@ def delete_duplicate_snapshot_docs(snapshot):
 					"database_server_snapshot",
 				)
 
+		VirtualDiskSnapshot = frappe.qb.DocType("Virtual Disk Snapshot")
+		query = (
+			frappe.qb.from_(VirtualDiskSnapshot)
+			.delete()
+			.where(VirtualDiskSnapshot.snapshot_id == snapshot_id)
+		)
 		if snapshot_to_keep:
-			frappe.db.sql(
-				"""
-					DELETE
-					FROM `tabVirtual Disk Snapshot`
-					WHERE snapshot_id=%s AND name!=%s
-				""",
-				(snapshot_id, snapshot_to_keep),
-			)
+			query = query.where(VirtualDiskSnapshot.name != snapshot_to_keep)
 		else:
-			frappe.db.sql(
-				"""
-					DELETE
-					FROM `tabVirtual Disk Snapshot`
-					WHERE snapshot_id=%s
-					LIMIT %s
-				""",
-				(snapshot_id, snapshot_count - 1),
-			)
+			query = query.limit(snapshot_count - 1)
+		query.run()
 
 
 def _update_snapshot_if_exists(snapshot, random_snapshot):

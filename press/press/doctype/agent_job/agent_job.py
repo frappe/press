@@ -32,10 +32,29 @@ from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
 )
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error, timer
+from press.utils.redact import redact_secrets
+from press.utils.user import as_administrator
 
 AGENT_LOG_KEY = "agent-jobs"
 AGENT_JOB_TIMEOUT_HOURS = 4
+
+BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
+
+FREE_TEXT_JOB_DATA_KEYS = ("output", "traceback", "command")
+
+# Jobs a team can cancel from the dashboard. Restricted to long running jobs whose
+# failure path Press already handles — Broken site, failed backup, or (for site
+# updates) an automatic recovery job that rolls the site back to the old bench.
+# App installs and standalone Migrate Site jobs are left out: they have no rollback,
+# so cancelling midway leaves a half migrated database.
+DASHBOARD_CANCELLABLE_JOB_TYPES = [
+	"Restore Site",
+	"New Site from Backup",
+	"Backup Site",
+	"Update Site Migrate",
+]
 
 
 class AgentJob(Document):
@@ -112,6 +131,11 @@ class AgentJob(Document):
 		if server:
 			is_owned_by_team("Server", server, raise_exception=True)
 
+		# `bench` on its own gets the caller past the check above, so it needs an
+		# owner of its own — otherwise naming someone else's bench lists their jobs.
+		if bench and not has_support_access("Bench", bench):
+			is_owned_by_team("Bench", bench, raise_exception=True)
+
 		results = query.run(as_dict=1)
 		update_query_result_status_timestamps(results)
 		return results
@@ -164,7 +188,7 @@ class AgentJob(Document):
 	def create_http_request(self):
 		try:
 			agent = Agent(self.server, server_type=self.server_type)
-			if agent.should_skip_requests():
+			if agent.should_skip_requests() and self.job_type not in BYPASS_AGENT_JOB_HALT:
 				self.retry_count = 0
 				self.set_status_and_next_retry_at()
 				return
@@ -246,8 +270,24 @@ class AgentJob(Document):
 			)
 			doc.insert()
 
+	def validate_not_a_superseded_password_rotation(self):
+		# Resending an older rotation's db_password after a newer rotation would break the site
+		if self.job_type != "Update Site Configuration" or '"db_password"' not in (self.request_data or ""):
+			return
+		if frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "Update Site Configuration",
+				"site": self.site,
+				"creation": (">", self.creation),
+				"request_data": ("like", '%"db_password"%'),
+			},
+		):
+			frappe.throw("A newer database password rotation exists for this site. Retry that job instead.")
+
 	@frappe.whitelist()
 	def retry(self):
+		self.validate_not_a_superseded_password_rotation()
 		return frappe.get_doc(
 			{
 				"doctype": "Agent Job",
@@ -268,8 +308,13 @@ class AgentJob(Document):
 
 	@frappe.whitelist()
 	def retry_in_place(self):
+		self.validate_not_a_superseded_password_rotation()
 		self.enqueue_http_request()
 		frappe.db.commit()
+
+	@frappe.whitelist()
+	def get_agent_endpoint(self):
+		return Agent(self.server, server_type=self.server_type).get_request_url(f"jobs/{self.job_id}")
 
 	@frappe.whitelist()
 	def get_status(self):
@@ -311,8 +356,29 @@ class AgentJob(Document):
 
 	@frappe.whitelist()
 	def cancel_job(self):
-		agent = Agent(self.server, server_type=self.server_type)
-		agent.cancel_job(self.job_id)
+		if self.status not in ("Pending", "Running"):
+			frappe.throw(f"Can't cancel a job that is {self.status}")
+		if not frappe.local.system_user():
+			self.validate_dashboard_cancellation()
+
+		with as_administrator():
+			Agent(self.server, server_type=self.server_type).cancel_job(self.job_id)
+		self.add_comment("Info", "Cancelled the job")
+
+	def validate_dashboard_cancellation(self):
+		if self.job_type not in DASHBOARD_CANCELLABLE_JOB_TYPES:
+			frappe.throw(f"{self.job_type} jobs can't be cancelled")
+
+		# Without a backup the failed update has nothing to recover from, so
+		# cancelling would leave the site broken on the destination bench.
+		if self.job_type == "Update Site Migrate" and frappe.db.exists(
+			"Site Update", {"update_job": self.name, "skipped_backups": 1}
+		):
+			frappe.throw(
+				"This site update started with backups skipped. "
+				"Without a backup the site cannot be rolled back to the old bench. "
+				"Wait for the update to finish."
+			)
 
 	def on_trash(self):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
@@ -563,15 +629,14 @@ def populate_output_cache(polled_job, job):
 				output = command.get("output", "").strip()
 				if output:
 					lines.append(output)
-			frappe.cache.hset("agent_job_step_output", step.name, "\n".join(lines))
+			frappe.cache.hset("agent_job_step_output", step.name, redact_secrets("\n".join(lines)))
 
 
 def filter_active_servers(servers):
 	# Prepare list of all_active_servers for each server_type
 	# Return servers that are in all_active_servers
-	server_types = [server.server_type for server in servers]
 	all_active_servers = {}
-	for server_type in server_types:
+	for server_type in {server.server_type for server in servers}:
 		all_active_servers[server_type] = set(frappe.get_all(server_type, {"status": "Active"}, pluck="name"))
 
 	active_servers = []
@@ -632,29 +697,29 @@ def fail_old_jobs():
 			process_job_updates(job)
 		frappe.db.commit()
 
-	failed_jobs = frappe.db.get_values(
+	failed_jobs = frappe.db.get_all(
 		"Agent Job",
 		{
 			"status": ("in", ["Pending", "Running"]),
 			"job_id": ("!=", 0),
 			"creation": ("<", add_days(None, -2)),
 		},
-		"name",
 		limit=100,
-		pluck=True,
+		order_by="RAND()",
+		pluck="name",
 	)
 	update_status(failed_jobs, "Failure")
 
-	delivery_failed_jobs = frappe.db.get_values(
+	delivery_failed_jobs = frappe.db.get_all(
 		"Agent Job",
 		{
 			"job_id": 0,
 			"creation": ("<", add_days(None, -2)),
 			"status": ("!=", "Delivery Failure"),
 		},
-		"name",
 		limit=100,
-		pluck=True,
+		order_by="RAND()",
+		pluck="name",
 	)
 
 	update_status(delivery_failed_jobs, "Delivery Failure")
@@ -707,8 +772,20 @@ def lock_doc_updated_by_job(job_name):
 	return None
 
 
+def redact_job_data(data):
+	# Only the free text fields; other keys carry results that callbacks read back
+	if not isinstance(data, dict):
+		return data
+
+	return {
+		**data,
+		**{key: redact_secrets(data[key]) for key in FREE_TEXT_JOB_DATA_KEYS if key in data},
+	}
+
+
 def update_job(job_name, job):
-	job_data = json.dumps(job["data"], indent=4, sort_keys=True)
+	data = redact_job_data(job["data"])
+	job_data = json.dumps(data, indent=4, sort_keys=True)
 	frappe.db.set_value(
 		"Agent Job",
 		job_name,
@@ -718,8 +795,8 @@ def update_job(job_name, job):
 			"duration": job["duration"],
 			"status": job["status"],
 			"data": job_data,
-			"output": job["data"].get("output"),
-			"traceback": job["data"].get("traceback"),
+			"output": data.get("output"),
+			"traceback": data.get("traceback"),
 		},
 	)
 
@@ -748,13 +825,14 @@ def update_steps(job_name, job):
 
 
 def update_step(step_name, step):
-	step_data = json.dumps(step["data"], indent=4, sort_keys=True)
+	data = redact_job_data(step["data"])
+	step_data = json.dumps(data, indent=4, sort_keys=True)
 
 	output = None
 	traceback = None
-	if isinstance(step["data"], dict):
-		traceback = to_str(step["data"].get("traceback", ""))
-		output = to_str(step["data"].get("output", ""))
+	if isinstance(data, dict):
+		traceback = redact_secrets(to_str(data.get("traceback", "")))
+		output = redact_secrets(to_str(data.get("output", "")))
 
 	frappe.db.set_value(
 		"Agent Job Step",
@@ -772,11 +850,10 @@ def update_step(step_name, step):
 
 
 def skip_pending_steps(job_name):
-	frappe.db.sql(
-		"""UPDATE  `tabAgent Job Step` SET  status = 'Skipped'
-		WHERE status = 'Pending' AND agent_job = %s""",
-		job_name,
-	)
+	AgentJobStep = frappe.qb.DocType("Agent Job Step")
+	frappe.qb.update(AgentJobStep).set(AgentJobStep.status, "Skipped").where(
+		(AgentJobStep.status == "Pending") & (AgentJobStep.agent_job == job_name)
+	).run()
 
 
 def get_next_retry_at(job_retry_count):
@@ -805,7 +882,9 @@ def retry_undelivered_jobs(server):
 		if delivered_jobs:
 			update_job_ids_for_delivered_jobs(delivered_jobs)
 
-		undelivered_jobs = list(set(server_jobs[server]) - set(delivered_jobs))
+		undelivered_jobs = list(
+			set(server_jobs[server]) - set([job["agent_job_id"] for job in delivered_jobs])
+		)
 
 		for job_name in undelivered_jobs:
 			job = AgentJob("Agent Job", job_name)
@@ -937,6 +1016,12 @@ def update_job_ids_for_delivered_jobs(delivered_jobs):
 		)
 
 
+def is_site_archived(site: str | None) -> bool:
+	if not site:
+		return False
+	return frappe.db.get_value("Site", site, "status") == "Archived"
+
+
 def process_job_updates(job_name: str, response_data: dict | None = None):  # noqa: C901
 	job: "AgentJob" = frappe.get_doc("Agent Job", job_name)
 	start = now_datetime()
@@ -969,6 +1054,9 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_logical_replication_backup_deactivate_site_job_update,
 			process_logical_replication_backup_update_database_host_job_update,
 		)
+		from press.press.doctype.mariadb_audit_log.mariadb_audit_log import (
+			process_upload_audit_logs_to_s3_job_update,
+		)
 		from press.press.doctype.mariadb_binlog.mariadb_binlog import (
 			process_upload_binlogs_to_s3_job_update,
 		)
@@ -981,7 +1069,10 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		from press.press.doctype.proxy_server.proxy_server import (
 			process_update_nginx_job_update,
 		)
-		from press.press.doctype.server.server import process_new_server_job_update
+		from press.press.doctype.server.server import (
+			process_cleanup_unused_files_job_update,
+			process_new_server_job_update,
+		)
 		from press.press.doctype.server_snapshot_recovery.server_snapshot_recovery import (
 			process_backup_database_from_snapshot_job_callback,
 			process_backup_files_from_snapshot_job_callback,
@@ -1000,6 +1091,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_migrate_site_job_update,
 			process_move_site_to_bench_job_update,
 			process_new_site_job_update,
+			process_refresh_database_usage_job_update,
 			process_reinstall_site_job_update,
 			process_rename_site_job_update,
 			process_restore_job_update,
@@ -1023,9 +1115,15 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 
 		site_migration = get_ongoing_migration(job.site)
 		if site_migration:
-			process_site_migration_job_update(job, site_migration)
+			process_site_migration_job_update(
+				job, site_migration
+			)  # has to be at top to prevent regular callbacks from running
+		elif is_site_archived(job.site):
+			return
 		elif job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
+		elif job.job_type == "Cleanup Unused Files":
+			process_cleanup_unused_files_job_update(job)
 		elif job.job_type == "New Bench":
 			process_new_bench_job_update(job)
 		elif job.job_type == "Archive Bench":
@@ -1092,6 +1190,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			AppPatch.process_patch_app(job)
 		elif job.job_type == "Run Remote Builder":
 			DeployCandidateBuild.process_run_build(job, response_data)
+		elif job.job_type == "Run Patch Build":
+			DeployCandidateBuild.process_run_patch_build(job, response_data)
 		elif job.job_type == "Create User":
 			process_create_user_job_update(job)
 		elif job.job_type == "Complete Setup Wizard":
@@ -1102,6 +1202,12 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			Bench.process_recover_update_inplace(job)
 		elif job.job_type == "Fetch Database Table Schema":
 			process_fetch_database_table_schema_job_update(job)
+		elif job.job_type == "Fetch Backup Jobs":
+			from press.press.doctype.site_backup.backup_history import (
+				process_fetch_backup_jobs_update,
+			)
+
+			process_fetch_backup_jobs_update(job)
 		elif job.job_type in [
 			"Create Database User",
 			"Remove Database User",
@@ -1132,12 +1238,16 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_remove_binlogs_from_indexer_agent_job_update(job)
 		elif job.job_type == "Upload Binlogs To S3":
 			process_upload_binlogs_to_s3_job_update(job)
+		elif job.job_type == "Upload Audit Logs To S3":
+			process_upload_audit_logs_to_s3_job_update(job)
 		elif job.job_type == "Search Sites In Snapshot":
 			process_search_sites_in_snapshot_job_callback(job)
 		elif job.job_type == "Backup Database From Snapshot":
 			process_backup_database_from_snapshot_job_callback(job)
 		elif job.job_type == "Backup Files From Snapshot":
 			process_backup_files_from_snapshot_job_callback(job)
+		elif job.job_type == "Refresh Database Usage":
+			process_refresh_database_usage_job_update(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":
@@ -1264,3 +1374,79 @@ def update_query_result_status_timestamps(results):
 
 		if result.end:
 			result.end = convert_utc_to_system_timezone(result.end).replace(tzinfo=None)
+
+
+def agent_poll_count_stats(from_datetime, to_datetime, min_count, duration):
+	rows = frappe.get_all(
+		"Scheduled Job Log",
+		filters=[
+			["creation", ">=", from_datetime],
+			["creation", "<", to_datetime],
+			["scheduled_job_type", "=", "agent_job.poll_pending_jobs"],
+		],
+		fields=["DATE_FORMAT(creation, '%Y-%m-%d %H:%i:00') as timestamp", "count(*) as count"],
+		order_by="timestamp ASC",
+		group_by="timestamp",
+	)
+	found = {frappe.utils.get_datetime(row["timestamp"]): row["count"] for row in rows}
+	total_count = sum(found.values())
+	average_count = total_count / len(found)
+	filtered_data = {key: value for key, value in found.items() if value < 10}
+	sorted_dict = dict(sorted(filtered_data.items(), key=lambda item: item[1]))
+	top_min_count = dict(list(sorted_dict.items())[:min_count])
+
+	telegram_message = f"""Agent Polling Count {duration} Report
+
+	Average Count: {average_count:.2f}
+
+	Top {min_count} Minimum Values (≤10):
+	"""
+
+	if top_min_count:
+		for i, item in enumerate(top_min_count, 1):
+			timestamp_str = frappe.utils.format_datetime(item, "dd MMM yyyy, HH:mm")
+			telegram_message = telegram_message + f"\n{i}. 🕒 {timestamp_str} → Count: {top_min_count[item]}"
+	else:
+		telegram_message = telegram_message + "\nNo entries found with count ≤ 10"
+
+	telegram_message = telegram_message + f"\n\nFound {len(filtered_data)} entries with count ≤ 10"
+	TelegramMessage.enqueue(message=telegram_message, topic="Signups")
+
+
+def agent_poll_count_stats_hourly():
+	min_count = 3
+	duration = "Hourly"
+	start_time = frappe.utils.add_to_date(None, hours=-1)
+	end_time = frappe.utils.add_to_date(None, minutes=-1)
+	agent_poll_count_stats(start_time, end_time, min_count, duration)
+
+
+def agent_poll_count_stats_daily():
+	min_count = 12
+	duration = "Daily"
+	start_time = frappe.utils.add_to_date(None, hours=-24)
+	end_time = frappe.utils.add_to_date(None, minutes=-1)
+	agent_poll_count_stats(start_time, end_time, min_count, duration)
+
+
+@frappe.whitelist()
+def cancel_job_from_dashboard(name: str):
+	"""Cancel a job from the job page.
+
+	Agent Job grants a dashboard user no permission at all, so frappe refuses
+	the read that `run_doc_method` does before it calls the method. The team
+	check runs here instead, against the site the job belongs to, and the
+	cancel itself runs as Administrator.
+
+	`frappe.get_doc` reads a dict as a new document, so the name is checked here
+	rather than left to the annotation, which frappe validates only in a request.
+	"""
+	if not isinstance(name, str):
+		frappe.throw("Job name must be a string", frappe.ValidationError)
+
+	job: AgentJob = frappe.get_doc("Agent Job", name)
+	if not has_support_access("Site", job.site):
+		is_owned_by_team("Site", job.site, raise_exception=True)
+
+	job.validate_dashboard_cancellation()
+	job.cancel_job()

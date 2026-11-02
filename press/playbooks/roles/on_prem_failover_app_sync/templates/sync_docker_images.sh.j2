@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+# Ensure only one instance of this script runs at a time
+exec 200>/var/lock/sync_docker_images.lock
+flock -n 200 || { echo "Another sync process is currently running. Exiting."; exit 0; }
+
+ON_PREM_IP="{{ on_prem_ip }}"
+echo "Starting Docker Image Sync to $ON_PREM_IP"
+
+# Get a listing of all local docker images containing frappe or mariadb, avoiding `<none>`
+LOCAL_IMAGES=$(docker images --format "{{ '{{' }}.Repository{{ '}}' }}:{{ '{{' }}.Tag{{ '}}' }}" | grep -v "<none>" | grep -E "frappe|mariadb|redis" || true)
+
+# SSH into the on-premise server and get its images
+REMOTE_IMAGES=$(ssh -o BatchMode=yes -o StrictHostKeyChecking=no root@$ON_PREM_IP docker images --format "{{ '{{' }}.Repository{{ '}}' }}:{{ '{{' }}.Tag{{ '}}' }}" || true)
+
+# Compare and push missing images
+for IMAGE in $LOCAL_IMAGES; do
+    if ! echo "$REMOTE_IMAGES" | grep -q "^$IMAGE$"; then
+        echo "Image $IMAGE is missing on $ON_PREM_IP. Transferring..."
+        # Save docker image, gzip it over the wire, and load it dynamically on the remote
+        docker save "$IMAGE" | gzip | ssh -o BatchMode=yes -o StrictHostKeyChecking=no root@$ON_PREM_IP "gunzip | docker load"
+        echo "Successfully synced $IMAGE."
+    else
+        echo "Image $IMAGE already exists on remote."
+    fi
+done
+
+echo "Docker Image Sync constraints satisfied!"

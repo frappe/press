@@ -84,6 +84,42 @@ class TestTLSCertificate(FrappeTestCase):
 
 		mock_setup_wildcard_hosts.assert_not_called()
 
+	def test_private_key_is_encrypted_at_rest_and_readable_via_accessor(self):
+		cert = create_test_tls_certificate("enc-test.dev")
+		private_key = "-----BEGIN PRIVATE KEY-----\nMIItestkeymaterial\n-----END PRIVATE KEY-----"  # pragma: allowlist secret
+
+		cert.private_key = private_key
+		cert.save(ignore_permissions=True)
+
+		# The raw DB column must never hold the plaintext key.
+		stored = frappe.db.get_value("TLS Certificate", cert.name, "private_key")
+		self.assertNotEqual(stored, private_key)
+		self.assertEqual(set(stored), {"*"})  # dummy mask that Password fields store
+
+		# The accessor is the only supported way to read it back.
+		cert.reload()
+		self.assertEqual(cert.get_private_key(), private_key)
+
+	def test_patch_moves_existing_plaintext_private_key_into_encrypted_store(self):
+		from frappe.utils.password import get_decrypted_password, remove_encrypted_password
+
+		from press.patches.v0_8_0.encrypt_tls_private_keys_at_rest import execute
+
+		cert = create_test_tls_certificate("patch-test.dev")
+		private_key = "-----BEGIN PRIVATE KEY-----\nplaintextkeyfrombeforemigration\n-----END PRIVATE KEY-----"  # pragma: allowlist secret
+
+		# Simulate the pre-migration state: plaintext sits in the column and
+		# nothing is in the encrypted store.
+		frappe.db.set_value("TLS Certificate", cert.name, "private_key", private_key, update_modified=False)
+		remove_encrypted_password("TLS Certificate", cert.name, "private_key")
+
+		with patch.object(frappe.db, "commit", new=Mock()):
+			execute()
+
+		stored = frappe.db.get_value("TLS Certificate", cert.name, "private_key")
+		self.assertEqual(set(stored), {"*"})
+		self.assertEqual(get_decrypted_password("TLS Certificate", cert.name, "private_key"), private_key)
+
 	def test_renewal_of_primary_domain_calls_update_tls_certificates(self):
 		# Use a diffferent domain to avoid any chance of
 		# Reusing same non wildcard domain in tests

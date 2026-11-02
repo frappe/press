@@ -10,7 +10,9 @@ import rq
 import rq.exceptions
 import rq.timeouts
 from frappe import _
+from frappe.email.email_body import get_filecontent_from_path
 from frappe.model.document import Document
+from frappe.query_builder.functions import Date
 from frappe.rate_limiter import rate_limit
 from frappe.utils.make_random import get_random
 
@@ -44,6 +46,7 @@ class DripEmail(Document):
 		send_after: DF.Int
 		send_after_payment: DF.Check
 		send_by_consultant: DF.Check
+		send_raw: DF.Check
 		sender: DF.Data
 		sender_name: DF.Data
 		skip_sites_with_paid_plan: DF.Check
@@ -87,23 +90,42 @@ class DripEmail(Document):
 		# build the message
 		message = frappe.render_template(self.message, context)
 		account_request = context.get("account_request", "")
-		app = frappe.db.get_value("Product Trial", self.product_trial, ["title", "logo"], as_dict=True)
 
-		# add to queue
-		frappe.sendmail(
+		kwargs = dict(
 			subject=self.subject,
 			recipients=[recipient],
 			sender=f"{self.sender_name} <{self.sender}>",
 			reply_to=self.reply_to,
 			reference_doctype="Drip Email",
 			reference_name=self.name,
-			unsubscribe_message="Unsubscribe",
-			unsubscribe_method="api/method/press.press.doctype.drip_email.drip_email.unsubscribe",
-			unsubscribe_params={"account_request": account_request.name},
 			attachments=self.get_setup_guides(account_request),
-			template="product_trial_email",
-			args={"message": message, "title": app.title, "logo": app.logo},
 		)
+
+		if self.send_raw:
+			kwargs["message"] = message
+		else:
+			if not self.product_trial:
+				frappe.throw(_("Product Trial is required when Send Raw is disabled"))
+			app = frappe.db.get_value("Product Trial", self.product_trial, ["title", "logo"], as_dict=True)
+			if not app:
+				frappe.throw(_("Product Trial {0} not found").format(self.product_trial))
+			args = {"message": message, "title": app.title}
+			inline_images = []
+			if app.logo:
+				# get_filecontent_from_path resolves the path and guards against traversal.
+				logo_content = get_filecontent_from_path(app.logo)
+				if logo_content:
+					logo_name = app.logo[1:]
+					args["logo_name"] = logo_name
+					inline_images.append({"filename": logo_name, "filecontent": logo_content})
+			kwargs["template"] = "product_trial_email"
+			kwargs["args"] = args
+			kwargs["inline_images"] = inline_images
+			kwargs["unsubscribe_message"] = "Unsubscribe"
+			kwargs["unsubscribe_method"] = "api/method/press.press.doctype.drip_email.drip_email.unsubscribe"
+			kwargs["unsubscribe_params"] = {"account_request": account_request.name}
+
+		frappe.sendmail(**kwargs)
 
 	@property
 	def message(self):
@@ -113,14 +135,14 @@ class DripEmail(Document):
 			return self.message_rich_text
 		return self.message_html
 
-	def evaluate_condition(self, site_name: str) -> bool:
+	def evaluate_condition(self, site_name: str | None) -> bool:
 		"""
 		Evaluate the condition to check if the email should be sent.
 		"""
 		if not self.condition:
 			return True
 
-		product_trial = frappe.get_doc("Product Trial", self.product_trial)
+		product_trial = frappe.get_doc("Product Trial", self.product_trial) if self.product_trial else None
 		site_account_request = frappe.db.get_value("Site", site_name, "account_request")
 		account_request = frappe.get_doc("Account Request", site_account_request)
 
@@ -165,10 +187,16 @@ class DripEmail(Document):
 	def sites_to_send_drip(self):
 		signup_date = frappe.utils.getdate() - timedelta(days=self.send_after)
 
-		conditions = ""
+		Site = frappe.qb.DocType("Site")
+		AccountRequest = frappe.qb.DocType("Account Request")
+		query = (
+			active_signup_sites_query()
+			.where(AccountRequest.unsubscribed_from_drip_emails == 0)
+			.where(Date(AccountRequest.creation) == signup_date)
+		)
 
 		if self.product_trial:
-			conditions += f'AND site.standby_for_product = "{self.product_trial}"'
+			query = query.where(Site.standby_for_product == self.product_trial)
 
 		if self.skip_sites_with_paid_plan:
 			paid_site_plans = frappe.get_all(
@@ -176,27 +204,9 @@ class DripEmail(Document):
 			)
 
 			if paid_site_plans:
-				paid_site_plans_str = ", ".join(f"'{plan}'" for plan in paid_site_plans)
-				conditions += f" AND site.plan NOT IN ({paid_site_plans_str})"
+				query = query.where(Site.plan.notin(paid_site_plans))
 
-		sites = frappe.db.sql(
-			f"""
-				SELECT
-					site.name
-				FROM
-					tabSite site
-				JOIN
-					`tabAccount Request` account_request
-				ON
-					site.account_request = account_request.name
-				WHERE
-					site.status = "Active" AND
-					account_request.unsubscribed_from_drip_emails = 0 AND
-					DATE(account_request.creation) = "{signup_date}"
-					{conditions}
-			"""
-		)
-		return [t[0] for t in sites]  # site names
+		return query.run(pluck=True)
 
 	def send_to_sites(self):
 		sites = self.sites_to_send_drip
@@ -240,30 +250,34 @@ def send_drip_emails():
 		)
 
 
+def active_signup_sites_query():
+	"""Query for names of active sites joined to their account request."""
+	Site = frappe.qb.DocType("Site")
+	AccountRequest = frappe.qb.DocType("Account Request")
+	return (
+		frappe.qb.from_(Site)
+		.join(AccountRequest)
+		.on(Site.account_request == AccountRequest.name)
+		.select(Site.name)
+		.where(Site.status == "Active")
+	)
+
+
 def send_welcome_email():
 	"""Send welcome email to sites created in last 15 minutes."""
 	welcome_drips = frappe.db.get_all("Drip Email", {"email_type": "Sign Up", "enabled": 1}, pluck="name")
 	for drip in welcome_drips:
 		welcome_email = frappe.get_doc("Drip Email", drip)
 		_5_mins_ago = frappe.utils.add_to_date(None, minutes=-5)
-		tuples = frappe.db.sql(
-			f"""
-				SELECT
-					site.name
-				FROM
-					tabSite site
-				JOIN
-					`tabAccount Request` account_request
-				ON
-					site.account_request = account_request.name
-				WHERE
-					site.status = "Active" and
-					site.standby_for_product = "{welcome_email.product_trial}" and
-					account_request.creation > "{_5_mins_ago}"
-			"""
+		Site = frappe.qb.DocType("Site")
+		AccountRequest = frappe.qb.DocType("Account Request")
+		recent_sites = (
+			active_signup_sites_query()
+			.where(Site.standby_for_product == welcome_email.product_trial)
+			.where(AccountRequest.creation > _5_mins_ago)
+			.run(pluck=True)
 		)
-		sites_in_last_15_mins = [t[0] for t in tuples]
-		for site in sites_in_last_15_mins:
+		for site in recent_sites:
 			welcome_email.send(site)
 
 

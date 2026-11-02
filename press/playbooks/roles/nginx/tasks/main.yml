@@ -7,10 +7,11 @@
       - apache2-utils
       - libpcre3-dev
     state: present
+  ignore_errors: yes
 
 - name: Setup NGINX Source Repository
   copy:
-    content: "deb-src http://nginx.org/packages/mainline/ubuntu/ {{ ansible_distribution_release }} nginx"
+    content: 'deb-src http://nginx.org/packages/mainline/ubuntu/ {{ ansible_distribution_release }} nginx'
     dest: /etc/apt/sources.list.d/nginx.list
 
 - name: Add NGINX Repository Key
@@ -27,6 +28,7 @@
     pkg:
       - nginx
     state: build-dep
+  ignore_errors: yes
 
 - name: Extract NGINX Version
   shell: "nginx -v 2>&1 | grep -oP '[\\d.]*'"
@@ -53,18 +55,18 @@
   register: nginx_compile_flags
 
 - name: Configure NGINX Modules
-  shell: "./configure {{ nginx_compile_flags.stdout }} --add-dynamic-module=/opt/nginx-modules/nginx-module-vts"
+  shell: './configure {{ nginx_compile_flags.stdout }} --add-dynamic-module=/opt/nginx-modules/nginx-module-vts'
   args:
-    chdir: "/opt/nginx/nginx-{{ nginx_version.stdout }}"
+    chdir: '/opt/nginx/nginx-{{ nginx_version.stdout }}'
 
 - name: Compile NGINX modules
-  shell: "make modules"
+  shell: 'make modules'
   args:
-    chdir: "/opt/nginx/nginx-{{ nginx_version.stdout }}"
+    chdir: '/opt/nginx/nginx-{{ nginx_version.stdout }}'
 
 - name: Copy NGINX VTS Module Shared Object File
   copy:
-    src: "/opt/nginx/nginx-{{ nginx_version.stdout }}/objs/ngx_http_vhost_traffic_status_module.so"
+    src: '/opt/nginx/nginx-{{ nginx_version.stdout }}/objs/ngx_http_vhost_traffic_status_module.so'
     dest: /usr/lib/nginx/modules
     remote_src: yes
 

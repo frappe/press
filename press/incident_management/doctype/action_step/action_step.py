@@ -14,27 +14,23 @@ class ActionStep(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		method: DF.Data | None
+		attempt: DF.Int
+		is_waiting: DF.Check
+		job: DF.DynamicLink | None
+		job_type: DF.Link | None
+		max_attempt: DF.Int
+		method_name: DF.Data | None
 		output: DF.Code | None
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		reference_doctype: DF.Link | None
-		reference_name: DF.DynamicLink | None
-		wait: DF.Check
+		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		step_name: DF.Data | None
 	# end: auto-generated types
 
-	def before_save(self):
-		try:
-			target_doc = frappe.get_doc(self.reference_doctype, self.reference_name)
-		except frappe.DoesNotExistError:
-			frappe.throw(
-				f"Invalid reference: {self.reference_doctype} {self.reference_name}",
-				frappe.DoesNotExistError,
-			)
 
-		if not hasattr(target_doc, self.method):
-			frappe.throw(
-				f"Method '{self.method}' does not exist on document '{target_doc.name}'",
-				frappe.ValidationError,
-			)
+def on_doctype_update():
+	"""Add index on parent and idx fields for faster ordered action step lookup
+	https://dev.mysql.com/doc/refman/8.4/en/order-by-optimization.html#order-by-index-use
+	"""
+	frappe.db.add_index("Action Step", ["parent", "idx"])

@@ -14,6 +14,25 @@ from press.press.doctype.account_request.test_account_request import (
 from press.press.doctype.team.team import Team
 
 
+def allow_server_creation(team: Team):
+	"""Give a team the billing address and entitlement a server purchase needs."""
+	address = frappe.get_doc(
+		{
+			"doctype": "Address",
+			"address_title": team.name,
+			"address_type": "Billing",
+			"address_line1": "1 Test Street",
+			"city": "Mumbai",
+			"state": "Maharashtra",
+			"gstin": "Not Applicable",
+			"country": team.country,
+		}
+	).insert(ignore_permissions=True)
+
+	team.db_set({"billing_address": address.name, "servers_enabled": 1})
+	team.reload()
+
+
 def create_test_press_admin_team(
 	email: str | None = None, skip_onboarding: bool | None = 0, free_account: bool | None = None
 ) -> Team:
@@ -23,7 +42,7 @@ def create_test_press_admin_team(
 	create_test_user(email)
 	user = frappe.get_doc("User", {"email": email})
 	user.remove_roles(*frappe.get_all("Role", pluck="name"))
-	user.add_roles("Press Admin")
+	user.add_roles("Press User")
 	return create_test_team(email, skip_onboarding=skip_onboarding, free_account=free_account)
 
 
@@ -56,9 +75,88 @@ def create_test_team(
 	return team
 
 
+def create_paid_invoice(team: Team):
+	invoice = frappe.get_doc({"doctype": "Invoice", "team": team.name, "type": "Prepaid Credits"}).insert(
+		ignore_permissions=True
+	)
+	invoice.db_set({"status": "Paid", "amount_paid": 100})
+
+
+def add_card(team: Team):
+	team.db_set({"payment_mode": "Card", "default_payment_method": "pm-test", "billing_address": "addr-test"})
+
+
+def subscribe_to_server_plan(team: Team, price_usd: float):
+	from press.press.doctype.server.test_server import create_test_server
+	from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
+	from press.press.doctype.subscription.test_subscription import create_test_subscription
+
+	plan = create_test_server_plan()
+	plan.db_set("price_usd", price_usd)
+	server = create_test_server(team=team.name)
+	create_test_subscription(server.name, plan.name, team.name, "Server", "Server Plan")
+
+
 class TestTeam(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
+
+	def test_new_team_cannot_skip_ssh_wait_with_card_and_paid_trial_site_plan(self):
+		from press.press.doctype.site.test_site import create_test_site
+		from press.press.doctype.site_plan.test_site_plan import create_test_plan
+		from press.press.doctype.subscription.test_subscription import create_test_subscription
+
+		team = create_test_team()
+		add_card(team)
+		plan = create_test_plan("Site", price_usd=10, is_trial_plan=True)
+		site = create_test_site(team=team.name)
+		create_test_subscription(site.name, plan.name, team.name)
+		self.assertFalse(team.can_skip_ssh_wait())
+
+	def test_new_team_can_skip_ssh_wait_after_buying_credits(self):
+		team = create_test_team()
+		create_paid_invoice(team)
+		self.assertTrue(team.can_skip_ssh_wait())
+
+	def test_new_team_can_skip_ssh_wait_with_card_and_paid_server_plan(self):
+		team = create_test_team()
+		add_card(team)
+		subscribe_to_server_plan(team, price_usd=200)
+		self.assertTrue(team.can_skip_ssh_wait())
+
+	def test_new_team_cannot_skip_ssh_wait_with_card_but_only_free_plan(self):
+		team = create_test_team()
+		add_card(team)
+		subscribe_to_server_plan(team, price_usd=0)
+		self.assertFalse(team.can_skip_ssh_wait())
+
+	def test_new_team_cannot_skip_ssh_wait_with_paid_plan_but_no_payment_method(self):
+		team = create_test_team()
+		subscribe_to_server_plan(team, price_usd=200)
+		self.assertFalse(team.can_skip_ssh_wait())
+
+	def test_switching_to_card_payment_mode_moves_beginner_team_to_growth_tier(self):
+		team = create_test_team()
+		frappe.db.set_value(
+			"Team",
+			team.name,
+			{"apply_limits": 1, "tier": "Beginner", "spending_limit": 100, "payment_mode": "Prepaid Credits"},
+		)
+		frappe.get_doc(
+			{
+				"doctype": "Stripe Payment Method",
+				"team": team.name,
+				"stripe_customer_id": "cus_test123",
+				"stripe_payment_method_id": "pm_test123",
+			}
+		).insert(ignore_permissions=True)
+
+		team.reload()
+		team.payment_mode = "Card"
+		team.save()
+
+		self.assertEqual(frappe.db.get_value("Team", team.name, "tier"), "Growth")
+		self.assertEqual(frappe.db.get_value("Team", team.name, "spending_limit"), 250)
 
 	def test_create_new_method_works(self):
 		account_request = create_test_account_request("testsubdomain")
@@ -77,9 +175,7 @@ class TestTeam(FrappeTestCase):
 		self.assertEqual(team.billing_name, "first name last name")
 
 	def test_create_user_for_member_adds_team_member(self):
-		# create system manager to pass mandatory site requirement
-		Team.create_user("sys_mgr", email="testuser1@gmail.com", role="System Manager")
-
+		Team.create_user("sys_mgr", email="testuser1@gmail.com")
 		team = create_test_team()
 		email = "testuser@frappe.cloud"
 		team.create_user_for_member("test", "user", "testuser@frappe.cloud")
@@ -97,3 +193,123 @@ class TestTeam(FrappeTestCase):
 				account_request2, "John", "Meyer", "jonmeyer@gmail.com", country="Pakistan"
 			)
 		self.assertEqual(team2.currency, "USD")
+
+	def test_can_create_site_blocks_team_with_two_or_more_unpaid_subscription_invoices(self):
+		team = create_test_team()
+		for _ in range(2):
+			frappe.get_doc(
+				{"doctype": "Invoice", "team": team.name, "type": "Subscription", "status": "Unpaid"}
+			).insert(ignore_permissions=True)
+
+		allow, why = team.can_create_site()
+
+		self.assertFalse(allow)
+		self.assertEqual(why, "Please settle your outstanding invoices to create new sites")
+
+	def test_validate_can_create_server_blocks_team_with_two_or_more_unpaid_subscription_invoices(self):
+		team = create_test_team()
+		allow_server_creation(team)
+		for _ in range(2):
+			frappe.get_doc(
+				{"doctype": "Invoice", "team": team.name, "type": "Subscription", "status": "Unpaid"}
+			).insert(ignore_permissions=True)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Please settle your outstanding invoices"):
+			team.validate_can_create_server()
+
+	def test_can_create_site_blocks_team_that_has_exceeded_its_spending_limit(self):
+		team = create_test_team()
+		team.db_set({"apply_limits": 1, "spending_limit": 100})
+		with patch.object(Team, "total_subscribed_amount", return_value=100):
+			allow, why = team.can_create_site()
+
+		self.assertFalse(allow)
+		self.assertEqual(
+			why, "You have exceeded your spending limit. Please contact support to increase your limits."
+		)
+
+	def test_total_subscribed_amount_skips_legacy_subscriptions_with_null_plan_fields(self):
+		team = create_test_team()
+		plan = frappe.get_doc(
+			{
+				"doctype": "Site Plan",
+				"name": "Test-Plan-USD-50",
+				"document_type": "Site",
+				"interval": "Daily",
+				"price_usd": 50,
+				"price_inr": 3000,
+			}
+		).insert()
+
+		def make_sub(todo_desc):
+			todo = frappe.get_doc(doctype="ToDo", description=todo_desc).insert()
+			return frappe.get_doc(
+				{
+					"doctype": "Subscription",
+					"document_type": "ToDo",
+					"document_name": todo.name,
+					"team": team.name,
+					"plan_type": "Site Plan",
+					"plan": plan.name,
+					"enabled": 1,
+				}
+			).insert()
+
+		make_sub("valid")
+
+		null_plan_type_sub = make_sub("null plan_type")
+		frappe.db.set_value("Subscription", null_plan_type_sub.name, "plan_type", None)
+
+		null_plan_sub = make_sub("null plan")
+		frappe.db.set_value("Subscription", null_plan_sub.name, "plan", None)
+
+		total = team.total_subscribed_amount()
+		self.assertEqual(total, 50)
+
+	def test_get_upcoming_invoice_ignores_invoice_already_finalized_to_unpaid(self):
+		"""Once an invoice is finalized to Unpaid it may already have a Stripe/Razorpay
+		invoice created against it - get_upcoming_invoice must never return it for further
+		mutation, even though it's still docstatus=0 (not yet submitted)."""
+		team = create_test_team()
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=team.name,
+			period_start=frappe.utils.add_days(frappe.utils.today(), -10),
+			period_end=frappe.utils.add_days(frappe.utils.today(), 10),
+		).insert()
+		invoice.db_set("status", "Unpaid")
+
+		self.assertIsNone(team.get_upcoming_invoice())
+
+	def test_get_upcoming_invoice_matches_invoice_for_given_date_not_only_today(self):
+		team = create_test_team()
+		last_months_invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=team.name,
+			period_start=frappe.utils.add_days(frappe.utils.today(), -40),
+			period_end=frappe.utils.add_days(frappe.utils.today(), -10),
+		).insert()
+
+		backfilled_date = frappe.utils.add_days(frappe.utils.today(), -20)
+
+		self.assertEqual(team.get_upcoming_invoice(backfilled_date).name, last_months_invoice.name)
+		self.assertIsNone(team.get_upcoming_invoice())
+
+	def test_create_upcoming_invoice_uses_given_date_as_period_start(self):
+		team = create_test_team()
+		backfilled_date = frappe.utils.add_days(frappe.utils.today(), -20)
+
+		invoice = team.create_upcoming_invoice(backfilled_date)
+
+		self.assertEqual(frappe.utils.getdate(invoice.period_start), frappe.utils.getdate(backfilled_date))
+
+	def test_create_upcoming_invoice_returns_existing_invoice_on_race_duplicate(self):
+		"""If two callers race to create the invoice for the same date, the loser must get
+		back the winner's invoice instead of raising a DuplicateEntryError."""
+		team = create_test_team()
+		date = frappe.utils.today()
+		first = team.create_upcoming_invoice(date)
+
+		second = team.create_upcoming_invoice(date)
+
+		self.assertEqual(second.name, first.name)

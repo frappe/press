@@ -1,0 +1,67 @@
+---
+- name: Remove On-Prem Server from Known Hosts
+  become: yes
+  become_user: root
+  known_hosts:
+    name: "{{ on_prem_ip }}"
+    state: absent
+
+- name: Add On-Prem Server to Known Hosts
+  become: yes
+  become_user: root
+  shell: ssh-keyscan -p 22 {{ on_prem_ip }} >> /root/.ssh/known_hosts
+
+- name: Create target directories on On-Prem server
+  become: yes
+  become_user: root
+  command: "ssh -o BatchMode=yes -o StrictHostKeyChecking=no root@{{ on_prem_ip }} 'mkdir -p {{ database_base_directory }}/var/lib/mysql {{ database_base_directory }}/etc/mysql'"
+
+- name: Forcefully remove existing replica container on on-premise server
+  become: yes
+  become_user: root
+  command: "ssh -o BatchMode=yes -o StrictHostKeyChecking=no root@{{ on_prem_ip }} 'docker rm -f fc-dr-db-replica || true'"
+
+- name: Install Lsyncd
+  apt:
+    state: present
+    pkg:
+      - lsyncd
+      - rsync
+
+- name: Create Lsyncd Directory
+  file:
+    dest: /etc/on-prem-lsyncd-db
+    state: directory
+
+- name: Create Lsyncd Log Directory
+  file:
+    dest: /var/log/on-prem-lsyncd-db
+    state: directory
+
+- name: Create Lsyncd Log and Status File
+  file:
+    dest: /var/log/on-prem-lsyncd-db/{{ item }}
+    state: touch
+  with_items:
+    - lsyncd.log
+    - lsyncd.status
+
+- name: Create Lsynd Config File
+  template:
+    src: lsyncd.conf
+    dest: /etc/on-prem-lsyncd-db/lsyncd.conf.lua
+
+- name: Setup on-prem-lsyncd-db service
+  template:
+    src: lsyncd.service
+    dest: /etc/systemd/system/on-prem-lsyncd-db.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Restart on-prem-lsyncd-db service
+  systemd:
+    daemon_reload: true
+    name: on-prem-lsyncd-db
+    state: restarted
+    enabled: True

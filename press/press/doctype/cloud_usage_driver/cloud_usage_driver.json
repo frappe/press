@@ -1,0 +1,96 @@
+{
+	"actions": [],
+	"allow_rename": 0,
+	"autoname": "hash",
+	"creation": "2026-08-18 10:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 0,
+	"engine": "InnoDB",
+	"field_order": [
+		"date",
+		"driver",
+		"provider",
+		"scope",
+		"column_break_value",
+		"value",
+		"unit"
+	],
+	"fields": [
+		{
+			"fieldname": "date",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Date",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"description": "What the business was doing that day: active sites, running servers, bytes uploaded to backups.",
+			"fieldname": "driver",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Driver",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "provider",
+			"fieldtype": "Select",
+			"label": "Provider",
+			"options": "\nAWS EC2\nOCI\nHetzner\nDigitalOcean",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"description": "Blank is the whole fleet. A series on one provider is judged against that provider's own count first, because a Hetzner volume growing says nothing about AWS."
+		},
+		{
+			"description": "Optional dimension the driver is counted within, such as a bucket or a cluster. Blank means the whole fleet.",
+			"fieldname": "scope",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Scope"
+		},
+		{
+			"fieldname": "column_break_value",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "value",
+			"fieldtype": "Float",
+			"in_list_view": 1,
+			"label": "Value",
+			"precision": "6"
+		},
+		{
+			"fieldname": "unit",
+			"fieldtype": "Data",
+			"label": "Unit"
+		}
+	],
+	"in_create": 1,
+	"index_web_pages_for_search": 0,
+	"links": [],
+	"modified": "2026-08-18 10:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Cloud Usage Driver",
+	"naming_rule": "Random",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1
+		}
+	],
+	"sort_field": "date",
+	"sort_order": "DESC",
+	"states": []
+}

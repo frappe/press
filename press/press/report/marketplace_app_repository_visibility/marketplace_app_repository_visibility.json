@@ -24,7 +24,7 @@
    "role": "System Manager"
   },
   {
-   "role": "Press Admin"
+   "role": "Press User"
   }
  ],
  "timeout": 3000

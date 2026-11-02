@@ -2,10 +2,10 @@
 	<div>
 		<div v-if="doc" class="overflow-x-auto">
 			<table
-				class="text w-full border-separate border-spacing-y-2 text-base font-normal text-gray-900"
+				class="text w-full border-separate border-spacing-y-2 text-base font-normal text-ink-gray-9"
 			>
-				<thead class="bg-gray-100">
-					<tr class="text-gray-600">
+				<thead class="bg-surface-gray-2">
+					<tr class="text-ink-gray-6">
 						<th class="rounded-l p-2 text-left font-normal">App</th>
 						<th class="rounded-l p-2 text-left font-normal">Site</th>
 						<th class="whitespace-nowrap p-2 text-right font-normal">Rate</th>

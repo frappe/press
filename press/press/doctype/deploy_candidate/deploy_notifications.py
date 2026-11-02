@@ -9,11 +9,13 @@ from textwrap import dedent
 from typing import Protocol, TypedDict
 
 import frappe
+from frappe.utils import escape_html
 
 from press.press.doctype.deploy_candidate.utils import (
 	BuildValidationError,
 	get_error_key,
 )
+from press.utils.docs import doc_link
 
 """
 Used to create notifications if the Deploy error is something that can
@@ -47,6 +49,9 @@ if typing.TYPE_CHECKING:
 		DeployCandidateApp,
 	)
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+	from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
+		DeployCandidateBuildStep,
+	)
 
 	# TYPE_CHECKING guard for code below cause DeployCandidate
 	# might cause circular import.
@@ -55,6 +60,7 @@ if typing.TYPE_CHECKING:
 			self,
 			details: "Details",
 			dc: "DeployCandidate",
+			dcb: "DeployCandidateBuild",
 			exc: BaseException,
 		) -> bool:  # Return True if is_actionable
 			...
@@ -80,12 +86,16 @@ DOC_URLS = {
 	"vite-not-found": "https://docs.frappe.io/cloud/common-issues/vite-not-found",
 	"invalid-project-structure": "https://docs.frappe.io/framework/user/en/tutorial/create-an-app#app-directory-structure",
 	"frappe-not-found": "https://pip.pypa.io/en/stable/news/#v25-3",
+	"frappe-listed-as-a-python-dependency": "https://docs.frappe.io/cloud/private-benches/common-issues/frappe-listed-as-a-python-dependency",
 	"no-python-dependency-file-found": "https://packaging.python.org/en/latest/guides/writing-pyproject-toml/",
+	"build-might-fail": "https://docs.frappe.io/cloud/common-issues/build-might-fail",
 }
 
 
-def handlers() -> "list[UserAddressableHandlerTuple]":
+def handlers():
 	"""
+	Returns list[UserAddressableHandlerTuple]
+
 	Before adding anything here, view the type:
 	`UserAddressableHandlerTuple`
 
@@ -224,6 +234,11 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			update_with_error_on_pip_install,
 			check_if_app_updated,
 		),
+		(
+			"depends on `frappe`",
+			update_with_frappe_listed_as_dependency,
+			check_if_app_updated,
+		),
 		# Below three are catch all fallback handlers for `yarn build`,
 		# `yarn install` and `pip install` errors originating due to
 		# issues in an app.
@@ -249,6 +264,11 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 		(
 			"Error occurred during app install",
 			update_with_invalid_app_structure,
+			None,
+		),
+		(
+			"`frappe` package is installed from PyPI, which isn't supported",
+			update_with_frappe_installed_from_pypi,
 			None,
 		),
 	]
@@ -353,6 +373,61 @@ def get_details(
 		details["assistance_url"] = None
 
 	return details
+
+
+def update_with_frappe_installed_from_pypi(
+	details: "Details",
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	exc: BaseException,
+):
+	details["title"] = (
+		"[Action Required] App installation failed due to 'frappe' package being installed from PyPI"
+	)
+
+	message = """
+	<p><strong>Installation Failed:</strong> Your custom app's installation is failing because the <code>frappe</code> package is installed from PyPI.
+	This setup is not supported and is preventing the installation from completing.</p>
+
+	<p>Please remove <code>frappe</code> from your app's <code>requirements.txt</code> or <code>pyproject.toml</code> file to proceed.</p>
+	"""
+
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["frappe-listed-as-a-python-dependency"]
+	return True
+
+
+def update_with_frappe_listed_as_dependency(
+	details: "Details",
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	exc: BaseException,
+):
+	if not (app_name := get_app_that_depends_on_frappe(dcb)):
+		return False
+
+	details["title"] = f"{app_name} lists frappe as a Python dependency"
+
+	message = f"""
+	<p><b>{escape_html(app_name)}</b> declares <code>frappe</code> under
+	<code>[project] dependencies</code> in its <b>pyproject.toml</b>.</p>
+
+	<p>Please <b>remove</b> <code>frappe</code> from the dependencies list of your app and
+	deploy again. To declare which Frappe versions your app supports, use the
+	<code>[tool.bench.frappe-dependencies]</code> section instead.</p>
+	"""
+
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["frappe-listed-as-a-python-dependency"]
+	return True
+
+
+def get_app_that_depends_on_frappe(dcb: "DeployCandidateBuild") -> str:
+	"""App name from uv's hint: `frappe` (v15.x) was included because `app` (v0.0.1) depends on `frappe`"""
+	# uv wraps the hint at the terminal width, so match on the unwrapped output.
+	output = re.sub(r"\s+", " ", dcb.build_output)
+	match = re.search(r"was included because `([^`]+)`[^`]*depends on `frappe`", output)
+	return match.group(1) if match else ""
 
 
 def update_with_unsupported_init_file(
@@ -606,7 +681,7 @@ def update_with_invalid_pyproject_error(
 	if len(exc.args) <= 1 or not (app := exc.args[1]):
 		return False
 
-	build_step = get_ct_row(dcb, app, "build_steps", "step_slug")
+	build_step: DeployCandidateBuildStep = get_ct_row(dcb, app, "build_steps", "step_slug")
 	app_name = build_step.step
 
 	details["title"] = "Invalid pyproject.toml file found"
@@ -630,7 +705,7 @@ def update_with_invalid_app_structure(
 	if len(exc.args) <= 1 or not (app := exc.args[1]):
 		return False
 
-	build_step = get_ct_row(dcb, app, "build_steps", "step_slug")
+	build_step: DeployCandidateBuildStep = get_ct_row(dcb, app, "build_steps", "step_slug")
 	app_name = build_step.step
 
 	details["title"] = "App Installation Failed"
@@ -657,7 +732,7 @@ def update_with_invalid_package_json_error(
 	if len(exc.args) <= 1 or not (app := exc.args[1]):
 		return False
 
-	build_step = get_ct_row(dcb, app, "build_steps", "step_slug")
+	build_step: DeployCandidateBuildStep = get_ct_row(dcb, app, "build_steps", "step_slug")
 	app_name = build_step.step
 
 	loc_str = ""
@@ -698,8 +773,10 @@ def update_with_app_not_fetchable(
 		in <i>Help</i>.</p>
 		"""
 	else:
-		message = """
-		<p>App could not be fetched from GitHub.</p>
+		app_name = exc.args[1] if len(exc.args) >= 2 else ""
+		app_str = f"<b>{app_name}</b> " if app_name else "App "
+		message = f"""
+		<p>{app_str}could not be fetched from GitHub.</p>
 
 		<p>This may have been due to an invalid installation id or due
 		to an invalid repository URL.</p>
@@ -718,15 +795,19 @@ def update_with_incompatible_node(
 	dc: "DeployCandidate",
 	dcb: "DeployCandidateBuild",
 	exc: BaseException,
-) -> None:
+) -> bool:
 	# Example line:
 	# `#60 5.030 error customization_forms@1.0.0: The engine "node" is incompatible with this module. Expected version ">=18.0.0". Got "16.16.0"`
 	if line := get_build_output_line(dcb, '"node" is incompatible with this module'):
 		app = get_app_from_incompatible_build_output_line(line)
 		version = ""
-	elif len(exc.args) == 5:
+	elif len(exc.args) >= 3:
+		# args order: (actual, app, expected, package, message, invalid_releases)
 		app = exc.args[1]
-		version = f'Expected "{exc.args[3]}", found "{exc.args[2]}". '
+		version = f'Expected "{exc.args[2]}", found "{exc.args[0]}". '
+	else:
+		app = ""
+		version = ""
 
 	details["title"] = "Incompatible Node version"
 	message = f"""
@@ -752,8 +833,15 @@ def check_incompatible_node(old_dcb: "DeployCandidateBuild", new_dc: "DeployCand
 	if old_node != new_node:
 		return
 
+	# An app update can make the build compatible with the same Node version.
+	if apps_changed(old_dcb.candidate, new_dc):
+		return
+
 	frappe.throw(
-		"Node version not updated since previous failing build.",
+		f"The previous build failed because of an incompatible Node version. The Node version is still"
+		f" <b>{escape_html(new_node)}</b>. <b>Set a compatible Node version</b> in Bench Group &gt; Config &gt;"
+		" Dependencies. To build without a change, open the failed deploy and click <b>Redeploy</b>. "
+		+ doc_link(DOC_URLS["incompatible-node-version"]),
 		BuildValidationError,
 	)
 
@@ -781,14 +869,21 @@ def update_with_incompatible_python(
 
 
 def check_incompatible_python(old_dcb: "DeployCandidateBuild", new_dc: "DeployCandidate") -> None:
-	old_node = old_dcb.candidate.get_dependency_version("python")
-	new_node = new_dc.get_dependency_version("python")
+	old_python = old_dcb.candidate.get_dependency_version("python")
+	new_python = new_dc.get_dependency_version("python")
 
-	if old_node != new_node:
+	if old_python != new_python:
+		return
+
+	# An app update can make the build compatible with the same Python version.
+	if apps_changed(old_dcb.candidate, new_dc):
 		return
 
 	frappe.throw(
-		"Python version not updated since previous failing build.",
+		f"The previous build failed because of an incompatible Python version. The Python version is"
+		f" still <b>{escape_html(new_python)}</b>. <b>Set a compatible Python version</b> in Bench Group"
+		" &gt; Config &gt; Dependencies. To build without a change, open the"
+		" failed deploy and click <b>Redeploy</b>. " + doc_link(DOC_URLS["incompatible-dependency-version"]),
 		BuildValidationError,
 	)
 
@@ -797,11 +892,12 @@ def update_with_incompatible_node_prebuild(
 	details: "Details",
 	dc: "DeployCandidate",
 	exc: BaseException,
-) -> None:
-	if len(exc.args) != 5:
+) -> bool:
+	if len(exc.args) < 4:
 		return False
 
-	_, app, actual, expected, package_name = exc.args
+	# args order: (actual, app, expected, package_name, message, invalid_releases)
+	actual, app, expected, package_name = exc.args[0], exc.args[1], exc.args[2], exc.args[3]
 
 	package_name_str = ""
 	if isinstance(package_name, str):
@@ -829,11 +925,12 @@ def update_with_incompatible_python_prebuild(
 	dc: "DeployCandidate",
 	dcb: "DeployCandidateBuild",
 	exc: BaseException,
-) -> None:
-	if len(exc.args) != 4:
+) -> bool:
+	if len(exc.args) < 3:
 		return False
 
-	_, app, actual, expected = exc.args
+	# args order: (actual, app, expected, package, message, invalid_releases)
+	actual, app, expected = exc.args[0], exc.args[1], exc.args[2]
 
 	details["title"] = "Validation Failed: Incompatible Python version"
 	message = f"""
@@ -855,24 +952,28 @@ def update_with_incompatible_app_prebuild(
 	dc: "DeployCandidate",
 	dcb: "DeployCandidateBuild",
 	exc: BaseException,
-) -> None:
-	if len(exc.args) != 5:
-		return False
-
-	_, app, dep_app, actual, expected = exc.args
-
+) -> bool:
 	details["title"] = "Validation Failed: Incompatible app version"
 
-	message = f"""
-	<p><b>{app}</b> depends on version <b>{expected}</b> of <b>{dep_app}</b>.
-	Found version is <b>{actual}</b></p>
+	# Plain Exception from agent stores the traceback as the only arg (not structured)
+	if len(exc.args) == 5:
+		_, app, dep_app, actual, expected = exc.args
+		message = f"""
+		<p><b>{app}</b> depends on version <b>{expected}</b> of <b>{dep_app}</b>.
+		Found version is <b>{actual}</b></p>
 
-	<p>To fix this issue please set <b>{dep_app}</b> to version <b>{expected}</b>.</p>
-	"""
+		<p>To fix this issue please set <b>{dep_app}</b> to version <b>{expected}</b>.</p>
+		"""
+	else:
+		message = """
+		<p>An app has a Frappe dependency with an incompatible version.</p>
+
+		<p>Please check your app's <b>pyproject.toml</b> <code>[tool.bench.frappe-dependencies]</code>
+		and ensure the required app is at a compatible version before retrying.</p>
+		"""
+
 	details["message"] = fmt(message)
 	details["assistance_url"] = DOC_URLS["incompatible-app-version"]
-
-	# Traceback is not pertinent to issue
 	details["traceback"] = None
 	return True
 
@@ -1122,11 +1223,49 @@ def check_if_app_updated(old_dcb: "DeployCandidateBuild", new_dc: "DeployCandida
 	if old_hash != new_hash:
 		return
 
+	# The app itself wasn't updated, but the build may still succeed if the user
+	# changed a dependency or any other app. Don't block the retry in that case.
+	if build_inputs_changed(old_dcb.candidate, new_dc):
+		return
+
 	title = new_app.title or old_app.title
 	frappe.throw(
-		f"App <b>{title}</b> has not been updated since previous failing build. Release hash is <b>{new_hash[:10]}</b>.",
+		f"App <b>{escape_html(title)}</b> failed in the previous build. The app is still on release"
+		f" <b>{escape_html(new_hash[:10])}</b>. <b>Push a fix to the app, then fetch the new release.</b>"
+		" To build without a change, open the failed deploy and click <b>Redeploy</b>. "
+		+ doc_link(DOC_URLS["build-might-fail"]),
 		BuildValidationError,
 	)
+
+
+def build_inputs_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
+	"""Whether any dependency, app commit hash or package differs between the two candidates."""
+	return (
+		dependencies_changed(old_dc, new_dc)
+		or apps_changed(old_dc, new_dc)
+		or packages_changed(old_dc, new_dc)
+	)
+
+
+def dependencies_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
+	old = {d.dependency: d.version for d in old_dc.dependencies}
+	new = {d.dependency: d.version for d in new_dc.dependencies}
+	return old != new
+
+
+def apps_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
+	old = {app.app: app.hash or app.pullable_hash for app in old_dc.apps}
+	new = {app.app: app.hash or app.pullable_hash for app in new_dc.apps}
+	return old != new
+
+
+def packages_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
+	"""If anything in the package manager changes we should allow a redeploy"""
+	return get_packages(old_dc) != get_packages(new_dc)
+
+
+def get_packages(dc: "DeployCandidate") -> set[tuple[str, str, str, str]]:
+	return {(p.package_manager, p.package, p.package_prerequisites, p.after_install) for p in dc.packages}
 
 
 def get_dc_app(dc: "DeployCandidate", app_name: str) -> "DeployCandidateApp | None":

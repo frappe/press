@@ -2,15 +2,19 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import secrets
+
 import boto3
 import frappe
 from boto3.session import Session
 from frappe.model.document import Document
 from frappe.utils import get_url, validate_email_address
+from frappe.utils.password import set_encrypted_password
 from twilio.rest import Client
 
 from press.api.billing import get_stripe
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
+from press.security import fail2ban
 from press.telegram_utils import Telegram
 
 
@@ -29,8 +33,17 @@ class PressSettings(Document):
 		agent_github_access_token: DF.Data | None
 		agent_repository_owner: DF.Data | None
 		agent_sentry_dsn: DF.Data | None
+		allow_patch_builds: DF.Check
+		anthropic_api_key: DF.Password | None
 		app_include_script: DF.Data | None
+		asset_store_access_key: DF.Data | None
+		asset_store_bucket_name: DF.Data | None
+		asset_store_endpoint: DF.Data | None
+		asset_store_region: DF.Data | None
+		asset_store_secret_access_key: DF.Password | None
 		auto_update_queue_size: DF.Int
+		auto_upgrade_dependencies: DF.Check
+		autoscale_discount: DF.Float
 		aws_access_key_id: DF.Data | None
 		aws_s3_bucket: DF.Data | None
 		aws_secret_access_key: DF.Password | None
@@ -45,6 +58,60 @@ class PressSettings(Document):
 		build_server: DF.Link | None
 		central_migration_server: DF.Link | None
 		certbot_directory: DF.Data
+		chat_base_url: DF.Data | None
+		chat_support_end_time: DF.Literal[
+			"1",
+			"2",
+			"3",
+			"4",
+			"5",
+			"6",
+			"7",
+			"8",
+			"9",
+			"10",
+			"11",
+			"12",
+			"13",
+			"14",
+			"15",
+			"16",
+			"17",
+			"18",
+			"19",
+			"20",
+			"21",
+			"22",
+			"23",
+			"24",
+		]
+		chat_support_start_time: DF.Literal[
+			"1",
+			"2",
+			"3",
+			"4",
+			"5",
+			"6",
+			"7",
+			"8",
+			"9",
+			"10",
+			"11",
+			"12",
+			"13",
+			"14",
+			"15",
+			"16",
+			"17",
+			"18",
+			"19",
+			"20",
+			"21",
+			"22",
+			"23",
+		]
+		chat_website_token: DF.Data | None
+		cleanup_standby_site_pool: DF.Check
 		clone_directory: DF.Data | None
 		cluster: DF.Link | None
 		code_server: DF.Data | None
@@ -54,11 +121,16 @@ class PressSettings(Document):
 		cool_off_period: DF.Int
 		data_40: DF.Data | None
 		default_apps: DF.Table[AppGroup]
+		default_dedicated_server_site_warranty_change_cooldown: DF.Int
+		default_dedicated_server_site_warranty_quota: DF.Int
 		default_outgoing_id: DF.Data | None
 		default_outgoing_pass: DF.Data | None
+		default_server_plan_type: DF.Link | None
 		deploy_marker: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check
+		disable_binlog_indexer_service: DF.Check
+		disable_database_audit_service: DF.Check
 		disable_frappe_auth: DF.Check
 		disable_physical_backup: DF.Check
 		disallow_disposable_emails: DF.Check
@@ -73,8 +145,10 @@ class PressSettings(Document):
 		eff_registration_email: DF.Data
 		email_recipients: DF.SmallText | None
 		enable_app_grouping: DF.Check
+		enable_chat: DF.Check
 		enable_email_pre_verification: DF.Check
 		enable_google_oauth: DF.Check
+		enable_mcp: DF.Check
 		enable_server_snapshot_recovery: DF.Check
 		enable_site_pooling: DF.Check
 		enable_spam_check: DF.Check
@@ -88,6 +162,7 @@ class PressSettings(Document):
 		erpnext_plan: DF.Link | None
 		erpnext_url: DF.Data | None
 		execute_incident_action: DF.Check
+		fail2ban_ignore_ips: DF.SmallText | None
 		frappe_url: DF.Data | None
 		frappeio_api_key: DF.Data | None
 		frappeio_api_secret: DF.Password | None
@@ -102,12 +177,15 @@ class PressSettings(Document):
 		github_pat_token: DF.Data | None
 		github_webhook_secret: DF.Data | None
 		gst_percentage: DF.Float
-		hetzner_api_token: DF.Password | None
+		hetzner_server_limit: DF.Int
+		hetzner_vcpu_limit: DF.Int
 		hybrid_cluster: DF.Link | None
 		hybrid_domain: DF.Link | None
 		ic_key: DF.Password | None
+		latest_blog_url: DF.Data | None
 		log_server: DF.Link | None
-		mailgun_api_key: DF.Data | None
+		mailgun_api_key: DF.Password | None
+		mailgun_webhook_signing_key: DF.Password | None
 		max_allowed_screenshots: DF.Int
 		max_concurrent_physical_restorations: DF.Int
 		max_failed_backup_attempts_in_a_day: DF.Int
@@ -116,6 +194,7 @@ class PressSettings(Document):
 		minimum_rebuild_memory: DF.Int
 		monitor_server: DF.Link | None
 		monitor_token: DF.Data | None
+		new_bench_concurrency_limit: DF.Int
 		ngrok_auth_token: DF.Data | None
 		npo_discount: DF.Float
 		offsite_backups_access_key_id: DF.Data | None
@@ -131,24 +210,35 @@ class PressSettings(Document):
 		press_monitoring_password: DF.Password | None
 		press_trial_plan: DF.Link | None
 		print_format: DF.Data | None
+		production_server_ip: DF.Data | None
 		publish_docs: DF.Check
+		pulse_api_key: DF.Data | None
+		pulse_site: DF.Data | None
+		raven_access_key_id: DF.Data | None
+		raven_incidents_channel: DF.Data | None
+		raven_secret_access_key: DF.Password | None
+		raven_url: DF.Data | None
 		razorpay_key_id: DF.Data | None
 		razorpay_key_secret: DF.Password | None
+		razorpay_max_order_amount_inr: DF.Currency
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
 		redis_cache_size: DF.Int
+		region_name: DF.Data | None
 		remote_access_key_id: DF.Data | None
 		remote_link_expiry: DF.Int
 		remote_secret_access_key: DF.Password | None
 		remote_uploads_bucket: DF.Data | None
 		root_domain: DF.Data | None
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
+		school_api_key: DF.Data | None
+		school_api_secret: DF.Password | None
+		school_url: DF.Data | None
 		send_email_notifications: DF.Check
 		send_telegram_notifications: DF.Check
 		servers_using_alternative_http_port_for_communication: DF.SmallText | None
 		set_redis_password: DF.Check
 		shared_directory: DF.Data | None
-		spaces_domain: DF.Link | None
 		spamd_api_key: DF.Data | None
 		spamd_api_secret: DF.Password | None
 		spamd_endpoint: DF.Data | None
@@ -167,8 +257,9 @@ class PressSettings(Document):
 		suspend_builds: DF.Check
 		telegram_alert_chat_id: DF.Data | None
 		telegram_alerts_chat_group: DF.Link | None
-		telegram_bot_token: DF.Data | None
+		telegram_bot_token: DF.Password | None
 		telegram_chat_id: DF.Data | None
+		telegram_webhook_secret: DF.Password | None
 		threshold: DF.Float
 		tls_renewal_queue_size: DF.Int
 		trial_sites_count: DF.Int
@@ -180,9 +271,16 @@ class PressSettings(Document):
 		usd_rate: DF.Float
 		use_agent_job_callbacks: DF.Check
 		use_app_cache: DF.Check
+		use_asset_store: DF.Check
 		use_delta_builds: DF.Check
+		use_new_deploy_flow: DF.Check
 		use_staging_ca: DF.Check
 		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]
+		wazuh_agent_version: DF.Data | None
+		wazuh_api_password: DF.Password | None
+		wazuh_api_url: DF.Data | None
+		wazuh_api_username: DF.Data | None
+		wazuh_api_verify_tls: DF.Check
 		wazuh_server: DF.Data | None
 		webroot_directory: DF.Data | None
 	# end: auto-generated types
@@ -193,8 +291,10 @@ class PressSettings(Document):
 	)
 
 	def validate(self):
+		fail2ban.validate_ips(self.fail2ban_ignore_ips)
+
 		if self.max_concurrent_physical_restorations > 5:
-			frappe.throw("Max Concurrent Physical Restorations should be less than 5")
+			frappe.throw("Please set Max Concurrent Physical Restorations to less than 5.")
 
 		if self.send_email_notifications:
 			if self.email_recipients:
@@ -204,10 +304,10 @@ class PressSettings(Document):
 					if not validate_email_address(email):
 						frappe.throw(f"Invalid email address: {email}")
 			else:
-				frappe.throw("Email Recipients List can not be empty")
+				frappe.throw("Please add at least one recipient to the Email Recipients List.")
 
 		if self.minimum_rebuild_memory < 2:
-			frappe.throw("Minimum rebuild memory needs to be 2 GB or more.")
+			frappe.throw("Please set the minimum rebuild memory to 2 GB or more.")
 
 	@frappe.whitelist()
 	def create_stripe_webhook(self):
@@ -224,6 +324,7 @@ class PressSettings(Document):
 				"payment_method.attached",
 				"invoice.payment_action_required",
 				"invoice.payment_succeeded",
+				"invoice.paid",
 				"invoice.payment_failed",
 				"invoice.finalized",
 				"mandate.updated",
@@ -234,6 +335,14 @@ class PressSettings(Document):
 		self.stripe_webhook_secret = webhook["secret"]
 		self.flags.ignore_mandatory = True
 		self.save()
+
+	@frappe.whitelist()
+	def set_telegram_webhook(self):
+		# Store first, so that a failed registration rolls the secret back with the request
+		secret = secrets.token_urlsafe(32)
+		set_encrypted_password(self.doctype, self.name, secret, "telegram_webhook_secret")
+		frappe.db.set_single_value(self.doctype, "telegram_webhook_secret", "*" * len(secret))
+		Telegram().set_webhook(secret)
 
 	@frappe.whitelist()
 	def get_github_app_manifest(self):
@@ -305,7 +414,10 @@ class PressSettings(Document):
 		return Client(api_key_sid, api_key_secret, account_sid)
 
 	def get_default_apps(self):
-		if hasattr(self, "enable_app_grouping") and hasattr(self, "default_apps"):  # noqa
-			if self.enable_app_grouping:
-				return [app.app for app in self.default_apps]
+		if (
+			hasattr(self, "enable_app_grouping")
+			and hasattr(self, "default_apps")
+			and self.enable_app_grouping
+		):
+			return [app.app for app in self.default_apps]
 		return []

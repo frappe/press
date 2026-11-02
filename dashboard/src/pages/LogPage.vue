@@ -13,7 +13,7 @@
 					<lucide-arrow-left class="inline-block h-4 w-4" />
 				</template>
 			</Button>
-			<h2 class="text-lg font-medium text-gray-900">{{ logName }}</h2>
+			<h2 class="text-lg font-medium text-ink-gray-9">{{ logName }}</h2>
 			<div class="!ml-auto flex gap-2">
 				<Button
 					:route="{
@@ -41,24 +41,27 @@
 			</div>
 		</div>
 
-		<div class="mt-3">
-			<div class="mt-8 space-y-4">
-				<div
-					class="overflow-auto rounded border border-gray-100 bg-gray-900 px-2.5 py-2 text-sm text-gray-200"
-				>
-					<pre>{{
-						$resources.log.loading ? 'Loading...' : log || 'No output'
-					}}</pre>
-				</div>
-			</div>
+		<div
+			class="mt-5 flex rounded bg-surface-gray-7 dark:bg-surface-gray-1 p-4 text-sm text-ink-gray-2 dark:text-ink-gray-8"
+		>
+			<span v-if="$resources.log.loading" class="flex items-center gap-2">
+				<Spinner /> Loading...
+			</span>
+
+			<pre v-else class="flex-1 min-w-0 overflow-auto">{{
+				log || 'No output'
+			}}</pre>
+
+			<CopyBtn :text="log" class="pl-1 ml-auto mb-auto shrink-0 -mr-1 -mt-1" />
 		</div>
 	</div>
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui';
+import { FeatherIcon, Spinner } from 'frappe-ui';
 import { getObject } from '../objects';
 import { unreachable } from '../objects/common';
+import CopyBtn from '@/components/utils/CopyBtn.vue';
 
 export default {
 	name: 'LogPage',

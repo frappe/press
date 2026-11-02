@@ -3,6 +3,7 @@ package main
 import (
 	"fcrestore/tui"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -10,11 +11,63 @@ import (
 	"golang.org/x/text/language"
 )
 
+var errorLogFile *os.File
+
+// initErrorLog initializes the error log file
+func initErrorLog() error {
+	var err error
+	errorLogFile, err = os.OpenFile("error.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open error.log: %w", err)
+	}
+	// Write session start marker
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Fprintf(errorLogFile, "\n=== Session started at %s ===\n", timestamp)
+	return nil
+}
+
+// closeErrorLog closes the error log file
+func closeErrorLog() {
+	if errorLogFile != nil {
+		timestamp := time.Now().Format("2006-01-02 15:04:05")
+		fmt.Fprintf(errorLogFile, "=== Session ended at %s ===\n\n", timestamp)
+		errorLogFile.Close()
+	}
+}
+
+// logError logs error message to both console and error.log file
+func logError(format string, args ...interface{}) {
+	message := fmt.Sprintf(format, args...)
+
+	// Print to console
+	fmt.Println(message)
+
+	// Write to error log file with timestamp
+	if errorLogFile != nil {
+		timestamp := time.Now().Format("2006-01-02 15:04:05")
+		fmt.Fprintf(errorLogFile, "[%s] %s\n", timestamp, message)
+	}
+}
+
+// waitForUser pauses execution and waits for user to press Enter
+// This ensures error messages are visible before program exits
+func waitForUser() {
+	fmt.Println("\nPress Enter to exit...")
+	fmt.Scanln()
+}
+
 func main() {
+	// Initialize error log
+	if err := initErrorLog(); err != nil {
+		fmt.Println("Warning: Could not initialize error log:", err)
+	}
+	defer closeErrorLog()
+
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("An unexpected error occurred:", r)
-			fmt.Println("Please try again or contact support if the issue persists.")
+			logError("An unexpected error occurred: %v", r)
+			logError("Please try again or contact support if the issue persists.")
+			waitForUser()
 		} else {
 			fmt.Println("\n\nThank you for using Frappe Cloud Restore CLI!")
 			fmt.Println("Exiting in 5 seconds...")
@@ -32,11 +85,13 @@ func main() {
 	if session.IsLoggedIn() {
 		option, error := tui.PickItem("You are already logged in as "+session.LoginEmail+". Do you want to continue?", []string{"Yes, Continue with " + session.LoginEmail, "No, Logout and Login with a different account"})
 		if error != nil {
-			fmt.Println("Error picking item: " + error.Error())
+			logError("Error picking item: %s", error.Error())
+			waitForUser()
 			return
 		}
 		if option == "" {
-			fmt.Println("No option selected. Exiting.")
+			logError("No option selected. Exiting.")
+			waitForUser()
 			return
 		}
 		if strings.HasPrefix(option, "No") {
@@ -50,56 +105,66 @@ func main() {
 	if loginRequired {
 		email, err := tui.AskInput("Enter your email address to login to Frappe Cloud", "")
 		if err != nil {
-			fmt.Println("Error asking for email: " + err.Error())
+			logError("Error asking for email: %s", err.Error())
+			waitForUser()
 			return
 		}
 		if email == "" {
-			fmt.Println("Login cancelled.")
+			logError("Login cancelled.")
+			waitForUser()
 			return
 		}
 		session.LoginEmail = email
 		is2FAEnabled, err := session.Is2FAEnabled()
 		if err != nil {
-			fmt.Println("Error checking 2FA status: " + err.Error())
+			logError("Error checking 2FA status: %s", err.Error())
+			waitForUser()
 			return
 		}
 		err = session.SendLoginVerificationCode(email)
 		if err != nil {
-			fmt.Println("Error logging in: " + err.Error())
+			logError("Error logging in: %s", err.Error())
+			waitForUser()
 			return
 		}
 
 		// Ask to enter the verification code
 		code, err := tui.AskInput("Enter the verification code sent to "+email, "123456")
 		if err != nil {
-			fmt.Println("Error asking for verification code: " + err.Error())
+			logError("Error asking for verification code: %s", err.Error())
+			waitForUser()
 			return
 		}
 		if code == "" {
-			fmt.Println("Login cancelled.")
+			logError("Login cancelled.")
+			waitForUser()
 			return
 		}
 		// Ask for 2FA code if enabled
 		if is2FAEnabled {
 			totpCode, err := tui.AskInput("Enter the 2FA code", "123456")
 			if err != nil {
-				fmt.Println("Error logging in: " + err.Error())
+				logError("Error logging in: %s", err.Error())
+				waitForUser()
 				return
 			}
 			if totpCode == "" {
-				fmt.Println("Login cancelled.")
+				logError("Login cancelled.")
+				waitForUser()
 				return
 			}
 			err = session.Verify2FA(totpCode)
 			if err != nil {
-				fmt.Println("Error verifying 2FA code: " + err.Error())
+				logError("Error verifying 2FA code: %s", err.Error())
+				waitForUser()
 				return
 			}
 		}
 		// Log in with the verification code
 		err = session.Login(code)
 		if err != nil {
-			fmt.Println("Error logging in: " + err.Error())
+			logError("Error logging in: %s", err.Error())
+			waitForUser()
 			return
 		}
 		fmt.Println("Logged in successfully as " + session.LoginEmail)
@@ -112,11 +177,13 @@ func main() {
 	}
 	selectedTeam, err := tui.PickItem("Select the team you want to restore the site to:", teamOptions)
 	if err != nil {
-		fmt.Println("Error picking team: " + err.Error())
+		logError("Error picking team: %s", err.Error())
+		waitForUser()
 		return
 	}
 	if selectedTeam == "" {
-		fmt.Println("No team selected. Exiting.")
+		logError("No team selected. Exiting.")
+		waitForUser()
 		return
 	}
 	teamName := strings.Split(selectedTeam, "<")[1]
@@ -124,27 +191,32 @@ func main() {
 	fmt.Println("Selected team:", teamName)
 	err = session.SetCurrentTeam(teamName, true)
 	if err != nil {
-		fmt.Println("Error setting current team: " + err.Error())
+		logError("Error setting current team: %s", err.Error())
+		waitForUser()
 		return
 	}
 
 	// Ask to pick the site to restore
 	sites, err := session.FetchSites()
 	if err != nil {
-		fmt.Println("Error fetching sites: " + err.Error())
+		logError("Error fetching sites: %s", err.Error())
+		waitForUser()
 		return
 	}
 	if len(sites) == 0 {
-		fmt.Println("No sites found in the selected team. Exiting.")
+		logError("No sites found in the selected team. Exiting.")
+		waitForUser()
 		return
 	}
 	selectedSite, err := tui.PickItem("Select the site you want to restore:", sites)
 	if err != nil {
-		fmt.Println("Error picking site: " + err.Error())
+		logError("Error picking site: %s", err.Error())
+		waitForUser()
 		return
 	}
 	if selectedSite == "" {
-		fmt.Println("No site selected. Exiting.")
+		logError("No site selected. Exiting.")
+		waitForUser()
 		return
 	}
 
@@ -156,11 +228,13 @@ func main() {
 	}
 	selectedRestoreOptions, err := tui.PickMultipleOptions(fmt.Sprintf("Select what you want to restore on %s :", selectedSite), restoreOptions)
 	if err != nil {
-		fmt.Println("Error picking restore options: " + err.Error())
+		logError("Error picking restore options: %s", err.Error())
+		waitForUser()
 		return
 	}
 	if len(selectedRestoreOptions) == 0 {
-		fmt.Println("No restore options selected. Exiting.")
+		logError("No restore options selected. Exiting.")
+		waitForUser()
 		return
 	}
 
@@ -180,7 +254,8 @@ func main() {
 		case "Public Files":
 			filePaths["public"] = ""
 		default:
-			fmt.Println("Unknown restore option:", option)
+			logError("Unknown restore option: %s", option)
+			waitForUser()
 			return
 		}
 	}
@@ -189,11 +264,13 @@ func main() {
 	for restoreType := range filePaths {
 		filePath, err := tui.PickFile(fmt.Sprintf("Select the %s file (%s) to restore for %s:", restoreType, strings.Join(allowedFileTypes[restoreType], ", "), selectedSite), allowedFileTypes[restoreType])
 		if err != nil {
-			fmt.Println("Error picking file for", restoreType+":", err.Error())
+			logError("Error picking file for %s: %s", restoreType, err.Error())
+			waitForUser()
 			return
 		}
 		if filePath == "" {
-			fmt.Println("No file selected for", restoreType+". Exiting.")
+			logError("No file selected for %s. Exiting.", restoreType)
+			waitForUser()
 			return
 		}
 		filePaths[restoreType] = filePath
@@ -206,7 +283,10 @@ func main() {
 	for restoreType, filePath := range filePaths {
 		upload, err := session.GenerateMultipartUploadLink(filePath)
 		if err != nil {
-			fmt.Println("Error generating upload link for", restoreType+":", err.Error())
+			spinner.Done()
+			time.Sleep(500 * time.Millisecond)
+			logError("\nError generating upload link for %s: %s", restoreType, err.Error())
+			waitForUser()
 			return
 		}
 		fileUploads[restoreType] = upload
@@ -219,18 +299,24 @@ func main() {
 
 	result, err := session.CheckSpaceOnserver(selectedSite, fileUploads["database"], fileUploads["public"], fileUploads["private"])
 	if err != nil {
-		fmt.Println("Error validating restoration space requirements:", err.Error())
+		spinner.Done()
+		time.Sleep(500 * time.Millisecond)
+		logError("\nError validating restoration space requirements: %s", err.Error())
+		waitForUser()
 		return
 	}
 
 	if !result.AllowedToUpload {
-		fmt.Println("Restoration cannot be performed due to insufficient space on the server.")
+		spinner.Done()
+		time.Sleep(500 * time.Millisecond)
+		logError("\nRestoration cannot be performed due to insufficient space on the server.")
 		if result.IsInsufficientSpaceOnAppServer {
-			fmt.Printf("- Insufficient space on app server [Required: %s, Available: %s]\n", formatBytes(result.RequiredSpaceOnAppServer), formatBytes(result.FreeSpaceOnAppServer))
+			logError("- Insufficient space on app server [Required: %s, Available: %s]", formatBytes(result.RequiredSpaceOnAppServer), formatBytes(result.FreeSpaceOnAppServer))
 		}
 		if result.ISInsufficientSpaceOnDBServer {
-			fmt.Printf("- Insufficient space on database server [Required: %s, Available: %s]\n", formatBytes(result.RequiredSpaceOnDBServer), formatBytes(result.FreeSpaceOnDBServer))
+			logError("- Insufficient space on database server [Required: %s, Available: %s]", formatBytes(result.RequiredSpaceOnDBServer), formatBytes(result.FreeSpaceOnDBServer))
 		}
+		waitForUser()
 		return
 	}
 
@@ -245,9 +331,10 @@ func main() {
 		})
 
 		// Start progress monitoring in a separate goroutine
-		go func(upload *MultipartUpload) {
+		go func(upload *MultipartUpload, done chan struct{}) {
 			ticker := time.NewTicker(1 * time.Second) // Update every second
 			defer ticker.Stop()
+			defer progressBar.Done()
 
 			for {
 				select {
@@ -255,40 +342,49 @@ func main() {
 					progress, uploadedSize, totalSize := upload.Progress()
 					progressBar.Update(progress, uploadedSize, totalSize)
 					if progress >= 1.0 {
-						close(done)
-						progressBar.Done()
 						return
 					}
 				case <-done:
-					progressBar.Done()
+					// Upload finished or cancelled
+					progress, uploadedSize, totalSize := upload.Progress()
+					progressBar.Update(progress, uploadedSize, totalSize)
 					return
 				}
 			}
-		}(upload)
+		}(upload, done)
 
 		// Start the upload
 		err := upload.UploadParts(&session)
+
+		// Signal progress monitor to stop
+		close(done)
+
 		if err != nil {
-			progressBar.Done()
-			fmt.Println("\nError uploading", restoreType+" file:", err)
+			<-progressBar.DoneChan
+			time.Sleep(500 * time.Millisecond)
+			logError("\nError uploading %s file: %v", restoreType, err)
+			waitForUser()
 			return
 		}
 
 		// Check whether uploaded whole file or not
 		if upload.UploadedSize < upload.TotalSize {
-			fmt.Printf("Uploaded %s file: %s (%d bytes)\n", restoreType, upload.RemoteFile, upload.UploadedSize)
-			fmt.Println("Upload incomplete. Please check the file and try again.")
+			<-progressBar.DoneChan
+			time.Sleep(500 * time.Millisecond)
+			logError("\nUploaded %s file: %s (%d bytes)", restoreType, upload.RemoteFile, upload.UploadedSize)
+			logError("Upload incomplete. Please check the file and try again.")
+			waitForUser()
 			return
 		}
 
 		// Wait for progress monitor to finish
-		<-done
 		<-progressBar.DoneChan
 
 		err = upload.Complete(&session)
 		if err != nil {
-			progressBar.Done()
-			fmt.Println("Error completing multipart upload for", restoreType+":", err)
+			time.Sleep(500 * time.Millisecond)
+			logError("\nError completing multipart upload for %s: %v", restoreType, err)
+			waitForUser()
 			return
 		}
 	}
@@ -298,8 +394,9 @@ func main() {
 	for restoreType, upload := range fileUploads {
 		restoreType = cases.Title(language.English).String(restoreType)
 		if !upload.IsUploaded() {
-			fmt.Printf("x %s file upload failed\n", restoreType)
+			logError("x %s file upload failed", restoreType)
 			failedUploads = true
+			waitForUser()
 			return
 		}
 	}
@@ -308,11 +405,13 @@ func main() {
 	if !failedUploads {
 		confirm, err := tui.PickItem("Do you want to restore the site "+selectedSite+" with the uploaded files?", []string{"Yes, Restore", "No, Cancel"})
 		if err != nil {
-			fmt.Println("Error picking confirmation:", err.Error())
+			logError("Error picking confirmation: %s", err.Error())
+			waitForUser()
 			return
 		}
 		if confirm == "" || strings.HasPrefix(confirm, "No") {
-			fmt.Println("Restoration cancelled.")
+			logError("Restoration cancelled.")
+			waitForUser()
 			return
 		}
 		isDatabaseGettingRestored := false
@@ -323,7 +422,8 @@ func main() {
 		if isDatabaseGettingRestored {
 			isSkipPatches, err := tui.PickItem("Do you want to skip failing patches during migration ?\nYou can fix the issues manually and migrate from Site Actions later", []string{"Yes, Skip Patches", "No, Migrate with Patches"})
 			if err != nil {
-				fmt.Println("Error picking skip patches option:", err.Error())
+				logError("Error picking skip patches option: %s", err.Error())
+				waitForUser()
 				return
 			}
 			skipFailingPatches = strings.HasPrefix(isSkipPatches, "Yes")
@@ -335,7 +435,8 @@ func main() {
 		if err != nil {
 			spinner.Done()
 			time.Sleep(1 * time.Second)
-			fmt.Println("Failed to restore site:", err.Error())
+			logError("\nFailed to restore site: %s", err.Error())
+			waitForUser()
 			return
 		}
 		spinner.Done()

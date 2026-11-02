@@ -15,7 +15,7 @@
 		/>
 		<div
 			v-else
-			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
+			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-ink-gray-6"
 		>
 			<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 			<ErrorMessage
@@ -26,9 +26,9 @@
 </template>
 
 <script>
-import Header from '../components/Header.vue';
-import { Breadcrumbs, Tabs } from 'frappe-ui';
-import TabsWithRouter from '../components/TabsWithRouter.vue';
+import { Breadcrumbs, Tabs } from 'frappe-ui'
+import Header from '../components/Header.vue'
+import TabsWithRouter from '../components/TabsWithRouter.vue'
 
 export default {
 	name: 'Partner',
@@ -45,6 +45,11 @@ export default {
 				{
 					label: 'Overview',
 					route: { name: 'PartnerOverview' },
+					condition: () => Boolean(this.$team.doc.erpnext_partner),
+				},
+				{
+					label: 'Website Details',
+					route: { name: 'PartnerWebsiteDetails' },
 					condition: () => Boolean(this.$team.doc.erpnext_partner),
 				},
 				{
@@ -106,6 +111,15 @@ export default {
 						),
 				},
 				{
+					label: 'Audits',
+					route: { name: 'PartnerAudits' },
+					condition: () =>
+						Boolean(
+							this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active',
+						),
+				},
+				{
 					label: 'Local Payment Setup',
 					route: { name: 'LocalPaymentSetup' },
 					condition: () =>
@@ -113,7 +127,8 @@ export default {
 							this.$team.doc.country === 'Kenya' &&
 								this.$team.doc.mpesa_enabled &&
 								this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active',
+								this.$team.doc.partner_status === 'Active' &&
+								this.$session.hasPartnerLocalPaymentAccess,
 						),
 				},
 				{
@@ -122,11 +137,12 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.country === 'Kenya' &&
-								this.$team.doc.mpesa_enabled,
+								this.$team.doc.mpesa_enabled &&
+								this.$session.hasPartnerLocalPaymentAccess,
 						),
 				},
 			],
-		};
+		}
 	},
-};
+}
 </script>

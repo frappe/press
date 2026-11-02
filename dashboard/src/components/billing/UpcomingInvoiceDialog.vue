@@ -10,7 +10,7 @@
 			<template v-if="upcomingInvoice.data.upcoming_invoice">
 				<div
 					v-if="upcomingInvoice.data.upcoming_invoice.status === 'Empty'"
-					class="text-base text-gray-600"
+					class="text-base text-ink-gray-6"
 				>
 					Nothing to show
 				</div>
@@ -20,7 +20,7 @@
 				/>
 			</template>
 			<template v-else>
-				<div class="text-base text-gray-600">Nothing to show</div>
+				<div class="text-base text-ink-gray-6">Nothing to show</div>
 			</template>
 		</template>
 	</Dialog>

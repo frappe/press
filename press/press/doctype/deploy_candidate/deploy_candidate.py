@@ -8,7 +8,9 @@ import re
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 import shlex
+import shutil
 import subprocess
+import tempfile
 import typing
 from datetime import datetime, timedelta
 from subprocess import Popen
@@ -31,6 +33,7 @@ from press.press.doctype.deploy_candidate.utils import (
 	PackageManagerFiles,
 	is_suspended,
 )
+from press.press.doctype.release_group.release_group import DEFAULT_DEPENDENCIES
 from press.utils import log_error
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
@@ -67,6 +70,7 @@ class DeployCandidate(Document):
 
 		apps: DF.Table[DeployCandidateApp]
 		arm_build: DF.Link | None
+		build_token: DF.Data | None
 		compress_app_cache: DF.Check
 		dependencies: DF.Table[DeployCandidateDependency]
 		environment_variables: DF.Table[DeployCandidateVariable]
@@ -209,7 +213,9 @@ class DeployCandidate(Document):
 		servers = [server_ref.server for server_ref in self.release_group.servers]
 
 		if frappe.get_value("Server", {"name": ("in", servers)}, "stop_deployments"):
-			frappe.throw("Deployments on this server are currently halted!")
+			frappe.throw(
+				"Deployments on this server are currently halted. Please resume deployments for the server, or try again later."
+			)
 
 		kwargs.update(
 			{"doctype": "Deploy Candidate Build", "deploy_candidate": self.name},
@@ -235,14 +241,30 @@ class DeployCandidate(Document):
 		return dict(error=False, message=deploy_candidate_build.name)
 
 	@frappe.whitelist()
+	def trigger_patch_deploy(self, ignore_permissions: bool = False):
+		if is_suspended():
+			return dict(
+				error=True,
+				message="Builds are currently suspended. Please try again later.",
+			)
+
+		deploy_candidate_build = self.create_build(no_cache=False, deploy_after_build=True, patch_build=True)
+		deploy_candidate_build.insert(ignore_permissions=ignore_permissions)
+		return {"error": False, "name": deploy_candidate_build.name}
+
+	@frappe.whitelist()
 	def schedule_build_and_deploy(
 		self,
 		run_now: bool = True,
 		scheduled_time: datetime | None = None,
 		retry_count: int = 0,
+		ignore_permissions: bool = False,
 	):
 		if run_now and not is_suspended():
-			return {"error": False, "name": self.build_and_deploy()}
+			return {
+				"error": False,
+				"name": self.build_and_deploy(ignore_permissions=ignore_permissions),
+			}
 
 		deploy_candidate_build = self.create_build(
 			no_cache=False,
@@ -251,12 +273,12 @@ class DeployCandidate(Document):
 			scheduled_time=scheduled_time or now(),
 			retry_count=retry_count,
 		)
-		deploy_candidate_build.insert()
+		deploy_candidate_build.insert(ignore_permissions=ignore_permissions)
 		return {"error": False, "name": deploy_candidate_build.name}
 
-	def build_and_deploy(self, no_cache: bool = False) -> str:
+	def build_and_deploy(self, no_cache: bool = False, ignore_permissions: bool = False) -> str:
 		deploy_candidate_build = self.create_build(no_cache=no_cache, deploy_after_build=True)
-		deploy_candidate_build.insert()
+		deploy_candidate_build.insert(ignore_permissions=ignore_permissions)
 		return deploy_candidate_build.name
 
 	def _set_app_cached_flags(self) -> None:
@@ -302,68 +324,71 @@ class DeployCandidate(Document):
 		if return_code:
 			raise subprocess.CalledProcessError(return_code, command)
 
-	def generate_ssh_keys(self, build_directory: str):
+	def generate_ssh_keys(self):
 		ca = frappe.db.get_single_value("Press Settings", "ssh_certificate_authority")
 		if not ca:
-			return
+			return None, None
 
 		ca = frappe.get_doc("SSH Certificate Authority", ca)
-		ssh_directory = os.path.join(build_directory, "config", "ssh")
+		tmp_dir = tempfile.mkdtemp()
+		ssh_directory = os.path.join(tmp_dir, "ssh")
+		os.makedirs(ssh_directory)
 
-		self.generate_host_keys(ca, ssh_directory)
-		self.generate_user_keys(ca, ssh_directory)
-
-		ca_public_key = os.path.join(ssh_directory, "ca.pub")
-		with open(ca_public_key, "w") as f:
-			f.write(ca.public_key)
-
-		# Generate authorized principal file
-		principals = os.path.join(ssh_directory, "principals")
-		with open(principals, "w") as f:
-			f.write(f"restrict,pty {self.group}")
-
-	def generate_host_keys(self, ca, ssh_directory):
-		# Generate host keys
-		list(
-			self.run(
-				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f ssh_host_rsa_key",
-				directory=ssh_directory,
+		try:
+			# Generate host keys and certificate
+			list(
+				self.run(
+					f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f ssh_host_rsa_key",
+					directory=ssh_directory,
+				)
 			)
-		)
+			host_public_key_path = os.path.join(ssh_directory, "ssh_host_rsa_key.pub")
+			ca.sign(self.name, None, "+52w", host_public_key_path, 0, host_key=True)
 
-		# Generate host Certificate
-		host_public_key_path = os.path.join(ssh_directory, "ssh_host_rsa_key.pub")
-		ca.sign(self.name, None, "+52w", host_public_key_path, 0, host_key=True)
-
-	def generate_user_keys(self, ca, ssh_directory):
-		# Generate user keys
-		list(
-			self.run(
-				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f id_rsa",
-				directory=ssh_directory,
+			# Generate user keys and certificate
+			list(
+				self.run(
+					f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f id_rsa",
+					directory=ssh_directory,
+				)
 			)
-		)
+			user_public_key_path = os.path.join(ssh_directory, "id_rsa.pub")
+			ca.sign(self.name, [self.group], "+52w", user_public_key_path, 0)
 
-		# Generate user certificates
-		user_public_key_path = os.path.join(ssh_directory, "id_rsa.pub")
-		ca.sign(self.name, [self.group], "+52w", user_public_key_path, 0)
+			# Read all generated files before cleanup
+			with open(os.path.join(ssh_directory, "ssh_host_rsa_key")) as f:
+				host_private_key = f.read()
+			with open(host_public_key_path) as f:
+				host_public_key = f.read()
+			with open(os.path.join(ssh_directory, "ssh_host_rsa_key-cert.pub")) as f:
+				host_certificate = f.read()
 
-		user_private_key_path = os.path.join(ssh_directory, "id_rsa")
-		with open(user_private_key_path) as f:
-			self.user_private_key = f.read()
+			with open(os.path.join(ssh_directory, "id_rsa")) as f:
+				self.user_private_key = f.read()
+			with open(user_public_key_path) as f:
+				self.user_public_key = f.read()
+			with open(os.path.join(ssh_directory, "id_rsa-cert.pub")) as f:
+				self.user_certificate = f.read()
 
-		with open(user_public_key_path) as f:
-			self.user_public_key = f.read()
+			self.save(ignore_permissions=True)
+		finally:
+			shutil.rmtree(tmp_dir)
 
-		user_certificate_path = os.path.join(ssh_directory, "id_rsa-cert.pub")
-		with open(user_certificate_path) as f:
-			self.user_certificate = f.read()
+		user_keys = {
+			"private_key": self.user_private_key,
+			"public_key": self.user_public_key,
+			"certificate": self.user_certificate,
+		}
 
-		self.save(ignore_permissions=True)
-		# Remove user key files
-		os.remove(user_private_key_path)
-		os.remove(user_public_key_path)
-		os.remove(user_certificate_path)
+		host_keys = {
+			"private_key": host_private_key,
+			"public_key": host_public_key,
+			"certificate": host_certificate,
+			"ca_public_key": ca.public_key,
+			"principals": f"restrict,pty {self.group}",
+		}
+
+		return user_keys, host_keys
 
 	def _update_packages(self, pmf: PackageManagerFiles):
 		existing_apt_packages = set()
@@ -409,7 +434,7 @@ class DeployCandidate(Document):
 	def __prepare_chunks(self, packages: list[str]):
 		"""Chunk packages into groups of 140 characters"""
 		# Start with one empty chunk
-		chunks = [[]]
+		chunks: list[list[str]] = [[]]
 		for package in packages:
 			# Appending the package to the last chunk will keep it under 140
 			# Append package to last chunk
@@ -469,7 +494,11 @@ class DeployCandidate(Document):
 		if dependency.islower():
 			dependency = dependency.upper() + "_VERSION"
 
-		version = find(self.dependencies, lambda x: x.dependency == dependency).version
+		dependency_record = find(self.dependencies, lambda x: x.dependency == dependency)
+		if not dependency_record:
+			version = find(DEFAULT_DEPENDENCIES, lambda x: x["dependency"] == dependency)["version"]
+		else:
+			version = dependency_record.version
 
 		if as_env:
 			return f"{dependency} {version}"
@@ -605,9 +634,7 @@ class DeployCandidate(Document):
 			},
 		)
 		if site_group_deploy:
-			frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_deploy_failure(
-				self,
-			)
+			frappe.db.set_value("Site Group Deploy", site_group_deploy, "status", "Bench Deploy Failed")
 
 
 def can_pull_update(file_paths: list[str]) -> bool:
@@ -629,6 +656,9 @@ def pull_update_file_filter(file_path: str) -> bool:
 		"setup.py",
 		# Requires yarn install, build
 		"package.json",
+		"yarn.lock",
+		"package-lock.json",
+		"pnpm-lock.yaml",
 		".vue",
 		".ts",
 		".jsx",
@@ -721,7 +751,8 @@ def get_build_stage_and_step(
 	stage = STAGE_SLUG_MAP.get(stage_slug, stage_slug)
 	step = step_slug
 	if stage_slug == "clone" or stage_slug == "apps":
-		step = app_titles.get(step_slug, step_slug)
+		if app_titles:
+			step = app_titles.get(step_slug, step_slug)
 	else:
 		step = STEP_SLUG_MAP.get((stage_slug, step_slug), step_slug)
 	return (stage, step)

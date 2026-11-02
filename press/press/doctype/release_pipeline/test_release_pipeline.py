@@ -1,0 +1,590 @@
+# Copyright (c) 2026, Frappe and Contributors
+# See license.txt
+import shutil
+from unittest.mock import Mock, patch
+
+import frappe
+import tomli
+from frappe.database.mariadb.database import MariaDBDatabase
+from frappe.tests.utils import FrappeTestCase
+
+from press.api.bench import deploy_and_update
+from press.api.github import get_dependant_apps_with_versions
+from press.exceptions import ReleasePipelineFailure
+from press.press.doctype.agent_job.agent_job import poll_pending_jobs
+from press.press.doctype.agent_job.test_agent_job import fake_agent_job
+from press.press.doctype.app.app import parse_frappe_version
+from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.app_release.test_app_release import create_test_app_release
+from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.deploy_candidate.test_deploy_candidate import (
+	create_test_deploy_candidate,
+	create_test_deploy_candidate_build,
+)
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+from press.press.doctype.release_group.test_release_group import create_test_release_group
+from press.press.doctype.release_pipeline.release_pipeline import (
+	ReleasePipeline,
+	_resolve_dependent_app,
+	_resolve_python_version_conflicts_and_update_group,
+)
+from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.team.test_team import create_test_team
+from press.utils import get_current_team
+
+
+def get_mock_context_file(*args, **kwargs):
+	return frappe.mock("file_path")
+
+
+def mock_build_monitoring(*args, **kwargs):
+	"""Simulates monitoring of the build however returns success immediately without raising task enqueued error"""
+	return
+
+
+def mock_pre_build_validation_monitoring(*args, **kwargs):
+	"""Simulates monitoring of the pre-build validation however returns success immediately without raising task enqueued error"""
+	return
+
+
+def mock_bench_monitoring(*args, **kwargs):
+	"""Simulates monitoring of the benches however returns success immediately without raising task enqueued error"""
+	return
+
+
+def get_failure_pyproject_file(*args, **kwargs):
+	frappe.throw("No pyproject found or something went wrong with github", frappe.ValidationError)
+
+
+def get_mock_pyproject_file(*args, **kwargs):
+	return tomli.loads("""[project]
+		name = "helpdesk"
+		authors = [
+			{ name = "Frappe Technologies Pvt Ltd", email = "hello@frappe.io"}
+		]
+		description = "Open Source Customer Service Software"
+		requires-python = ">=3.10"
+		readme = "README.md"
+		dynamic = ["version"]
+		dependencies = [
+			# Core dependencies
+			"textblob==0.18.0.post0",
+		]
+		[build-system]
+		requires = ["flit_core >=3.4,<4"]
+		build-backend = "flit_core.buildapi"
+
+		[tool.bench.frappe-dependencies]
+		frappe = ">=14.0.0,<17.0.0"
+		telephony = ">=0.0.1,<1.0.0"
+
+		[tool.bench.assets]
+		build_dir = "./desk"
+		out_dir = "./helpdesk/public/desk"
+		index_html_path = "./helpdesk/www/helpdesk/index.html"
+""")
+
+
+def pyproject_with_frappe_dependencies(dependencies: dict[str, str]) -> dict:
+	return {
+		"project": {"requires-python": ">=3.10"},
+		"tool": {"bench": {"frappe-dependencies": {"frappe": ">=14.0.0,<17.0.0", **dependencies}}},
+	}
+
+
+def mock_pyproject_per_app(dependencies_by_app: dict[str, dict[str, str]]):
+	"""Patch the pyproject fetch so every app source returns the dependencies of its own app."""
+
+	def get_pyproject(app_source, commit):
+		app = frappe.db.get_value("App Source", app_source, "app")
+		return pyproject_with_frappe_dependencies(dependencies_by_app.get(app, {}))
+
+	return patch("press.api.github._get_pyproject_from_commit", get_pyproject)
+
+
+@patch.object(MariaDBDatabase, "commit", Mock())
+class TestReleasePipeline(FrappeTestCase):
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.delete("App")
+		frappe.db.delete("App Source")
+		frappe.db.delete("App Release")
+		# App sources are recreated with the same names across tests, so their cached dependencies would leak
+		frappe.cache().delete_keys("app_deps:")
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		cls.server = create_test_server(use_for_build=True)
+		cls.test_frappe_app = create_test_app("frappe")
+		cls.test_erpnext_app = create_test_app("erpnext", "Erpnext App")
+		cls.test_frappe_release = create_test_app_release(
+			create_test_app_source(
+				app=cls.test_frappe_app,
+				version="Version 15",
+				repository_url="https://github.com/frappe/frappe",
+			),
+			"79f10f8769a9a839abaef1f220da2d2eea5eea27",  # pragma: allowlist secret
+		)
+		cls.test_erpnext_release = create_test_app_release(
+			create_test_app_source(
+				app=cls.test_erpnext_app,
+				version="Version 15",
+				repository_url="https://github.com/frappe/erpnext",
+			),
+			"a2626ed55f437f69b99a29cfb0b9ead219f59458",  # pragma: allowlist secret
+		)
+		cls.test_release_group = create_test_release_group(
+			apps=[cls.test_frappe_app, cls.test_erpnext_app],
+			frappe_version="Version 15",
+			servers=[cls.server.name],
+		)
+		frappe.db.set_single_value("Press Settings", "build_directory", "/tmp/test-build-dir/")
+		frappe.db.set_single_value("Press Settings", "clone_directory", "/tmp/test-clone-dir/")
+		frappe.db.set_single_value("Press Settings", "use_new_deploy_flow", 1)
+
+	def create_deploy_and_update(self, release_group_name=None):
+		deploy_and_update(
+			release_group_name or self.test_release_group.name,
+			apps=[
+				{
+					"app": "frappe",
+					"source": "SRC-Frappe-001",
+					"release": self.test_frappe_release.name,
+					"hash": self.test_frappe_release.hash,
+				},
+				{
+					"app": "erpnext",
+					"source": "SRC-Erpnext-001",
+					"release": self.test_erpnext_release.name,
+					"hash": self.test_erpnext_release.hash,
+				},
+			],
+		)
+
+	@patch.object(DeployCandidateBuild, "build", Mock())
+	@patch.object(ReleasePipeline, "monitor_build_success", mock_build_monitoring)
+	def test_release_pipeline_creation(self):
+		self.create_deploy_and_update()
+
+		release_pipeline: ReleasePipeline = frappe.get_last_doc("Release Pipeline")
+		self.assertEqual(release_pipeline.release_group, self.test_release_group.name)
+		self.assertEqual(release_pipeline.team, get_current_team())
+		workflow_doc = frappe.get_doc(
+			"Press Workflow",
+			{
+				"linked_doctype": "Release Pipeline",
+				"linked_docname": release_pipeline.name,
+			},
+		)
+		self.assertEqual(release_pipeline.workflow, workflow_doc.name)
+
+	@patch.object(DeployCandidateBuild, "build", Mock())
+	@patch.object(ReleasePipeline, "monitor_build_success", mock_build_monitoring)
+	def test_release_pipeline_build_creation(self):
+		with fake_agent_job("Remote Build Job", "Success"):
+			self.create_deploy_and_update()
+			poll_pending_jobs()
+
+		frappe.get_last_doc(
+			"Deploy Candidate Build"
+		)  # Just ensure this is created without error since we are mocking the build
+
+	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
+	@patch.object(DeployCandidateBuild, "build", Mock())
+	@patch.object(ReleasePipeline, "monitor_build_success", mock_build_monitoring)
+	def test_dynamic_apps_additions_and_bench_dependencies_upgrade(self):
+		parent_hash = frappe.mock("sha1")
+		frappe.db.set_single_value("Press Settings", "auto_upgrade_dependencies", 1)
+
+		root_app = create_test_app("frappe")
+		root_app_source = create_test_app_source(
+			app=root_app,
+			version="Version 15",
+			repository_url="https://github.com/frappe/frappe",
+			branch="main",
+		)
+		root_app_release = create_test_app_release(root_app_source, parent_hash)
+
+		# Own release group, the class level one loses its app sources to the tearDown of any test before this one
+		release_group = create_test_release_group(
+			apps=[root_app],
+			frappe_version="Version 15",
+			servers=[self.server.name],
+			app_sources=[root_app_source.name],
+		)
+
+		for dep in release_group.dependencies:
+			if dep.dependency == "PYTHON_VERSION":
+				dep.version = "3.8"
+				dep.save()
+
+		app_dependencies = get_dependant_apps_with_versions(root_app_source.name, root_app_release.hash).get(
+			"frappe_dependencies"
+		)
+		self.assertEqual(app_dependencies, {"frappe": ">=14.0.0,<17.0.0", "telephony": ">=0.0.1,<1.0.0"})
+
+		# Ensure system can get these!
+		dependency_app = frappe.get_doc(
+			{"doctype": "App", "title": "Telephony", "frappe": 1, "name": "telephony"}
+		).insert()
+
+		correct_source = create_test_app_source(
+			app=dependency_app,
+			version="Version 15",
+			repository_url="https://github.com/frappe/dependency-app",
+			branch="main",
+		)
+
+		correct_hash = frappe.mock("sha1")
+		create_test_app_release(
+			app_source=correct_source,
+			hash=correct_hash,
+		)
+
+		self.assertNotIn(
+			"telephony", [app.app for app in release_group.apps]
+		)  # Ensure app was added as part of the release pipeline
+
+		for dependency in release_group.dependencies:
+			if dependency.dependency == "PYTHON_VERSION":
+				self.assertEqual(dependency.version, "3.8")
+
+		with fake_agent_job("Remote Build Job", "Success"):
+			deploy_and_update(
+				release_group.name,
+				apps=[
+					{
+						"app": root_app.name,
+						"source": root_app_source.name,
+						"release": root_app_release.name,
+						"hash": root_app_release.hash,
+					}
+				],
+			)
+			poll_pending_jobs()
+
+		test_release_group = release_group.reload()
+		self.assertIn(
+			"telephony", [app.app for app in test_release_group.apps]
+		)  # Ensure app was added as part of the release pipeline
+		for dependency in test_release_group.dependencies:
+			if dependency.dependency == "PYTHON_VERSION":
+				self.assertEqual(
+					dependency.version, "3.14"
+				)  # >=3.10 is updated to 3.14 since we take the highest possible version that fits
+
+		with self.assertRaises(ReleasePipelineFailure):
+			_resolve_python_version_conflicts_and_update_group(
+				release_group.name, {"frappe": ">=3.10", "erpnext": "<3.10"}
+			)  # This should raise an error since frappe and erpnext have conflicting python version requirements
+
+		_resolve_python_version_conflicts_and_update_group(
+			release_group.name,
+			{
+				"frappe": ">=3.10",
+				"erpnext": ">=3.10",
+				"telephony": None,  # Some apps might not give their python version requirements.
+			},
+		)
+
+	def test_no_failure_on_fetching_non_existent_pyproject_file(self):
+		# This can happen when fetching pyproject for apps that are not part of the release but are dependencies of apps in the release
+		with patch("press.api.github._get_pyproject_from_commit", get_failure_pyproject_file):
+			dependent_apps = get_dependant_apps_with_versions("some_source", "some_commit", raises=False)
+			self.assertEqual(dependent_apps["frappe_dependencies"], {})
+			self.assertEqual(dependent_apps["python_version"], None)
+
+		with (
+			patch("press.api.github._get_pyproject_from_commit", get_failure_pyproject_file),
+			self.assertRaises(frappe.ValidationError),
+		):
+			get_dependant_apps_with_versions("some_source", "some_commit", raises=True, cache=False)
+
+	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
+	def test_implicit_dependency_source_addition(self):
+		parent_hash = frappe.mock("sha1")
+
+		root_app = create_test_app("someapp")
+		root_app_source = create_test_app_source(
+			app=root_app,
+			version="Version 15",
+			repository_url="https://github.com/frappe/test-app",
+			branch="main",
+		)
+		root_app_release = create_test_app_release(root_app_source, parent_hash)
+
+		app_dependencies = get_dependant_apps_with_versions(root_app_source.name, root_app_release.hash).get(
+			"frappe_dependencies"
+		)
+		self.assertEqual(app_dependencies, {"frappe": ">=14.0.0,<17.0.0", "telephony": ">=0.0.1,<1.0.0"})
+		supported_frappe_version = app_dependencies.pop("frappe")
+		parsed_frappe_version = parse_frappe_version(
+			version_string=supported_frappe_version,
+			app_title="frappe",
+			ease_versioning_constrains=False,
+		)
+		app, _ = next(iter(app_dependencies.items()))
+		team = get_current_team()
+
+		# No App doc yet
+		self.assertIsNone(_resolve_dependent_app(app, parsed_frappe_version, team))
+
+		dependency_app = frappe.get_doc(
+			{"doctype": "App", "title": "Telephony", "frappe": 1, "name": "telephony"}
+		).insert()
+
+		# App exists, but no matching app source yet
+		self.assertIsNone(_resolve_dependent_app(app, parsed_frappe_version, team))
+
+		create_test_app_source(
+			app=dependency_app,
+			version="Version 15",
+			repository_url="https://github.com/frappe/dependency-app",
+			branch="new",
+		)
+
+		correct_source = create_test_app_source(
+			app=dependency_app,
+			version="Version 16",
+			repository_url="https://github.com/frappe/dependency-app",
+			branch="main",
+		)
+
+		correct_hash = frappe.mock("sha1")
+		correct_release = create_test_app_release(
+			app_source=correct_source,
+			hash=correct_hash,
+		)
+
+		resolved_source, resolved_release = _resolve_dependent_app(app, parsed_frappe_version, team)
+
+		self.assertEqual(resolved_source.name, correct_source.name)
+		self.assertEqual(resolved_source.app, "telephony")
+		self.assertEqual(resolved_release.name, correct_release.name)
+		self.assertEqual(resolved_release.hash, correct_hash)
+
+	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
+	def test_implicit_dependency_is_skipped_when_no_frappe_or_same_team_source_exists(self):
+		parsed_frappe_version = parse_frappe_version(
+			version_string=">=14.0.0,<17.0.0",
+			app_title="frappe",
+			ease_versioning_constrains=False,
+		)
+		dependency_app = frappe.get_doc(
+			{"doctype": "App", "title": "Telephony", "frappe": 1, "name": "telephony"}
+		).insert()
+
+		other_team = create_test_team().name
+		create_test_app_source(
+			app=dependency_app,
+			version="Version 16",
+			repository_url="https://github.com/someone-else/telephony",
+			branch="main",
+			team=other_team,
+		)
+
+		self.assertIsNone(_resolve_dependent_app("telephony", parsed_frappe_version, get_current_team()))
+
+	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
+	def test_implicit_dependency_falls_back_to_same_team_source(self):
+		parsed_frappe_version = parse_frappe_version(
+			version_string=">=14.0.0,<17.0.0",
+			app_title="frappe",
+			ease_versioning_constrains=False,
+		)
+		dependency_app = frappe.get_doc(
+			{"doctype": "App", "title": "Telephony", "frappe": 1, "name": "telephony"}
+		).insert()
+
+		other_team = create_test_team().name
+		create_test_app_source(
+			app=dependency_app,
+			version="Version 16",
+			repository_url="https://github.com/someone-else/telephony",
+			branch="main",
+			team=other_team,
+		)
+
+		team = get_current_team()
+		own_source = create_test_app_source(
+			app=dependency_app,
+			version="Version 16",
+			repository_url="https://github.com/my-org/telephony",
+			branch="main",
+			team=team,
+		)
+		own_release = create_test_app_release(app_source=own_source, hash=frappe.mock("sha1"))
+
+		resolved_source, resolved_release = _resolve_dependent_app("telephony", parsed_frappe_version, team)
+
+		self.assertEqual(resolved_source.name, own_source.name)
+		self.assertEqual(resolved_release.name, own_release.name)
+
+	def create_app_with_release(self, name: str):
+		"""Create an app with a source and release so it can be deployed or resolved as a dependency."""
+		app = create_test_app(name, name.title())
+		source = create_test_app_source(
+			"Version 15", app, repository_url=f"https://github.com/frappe/{name}", branch="main"
+		)
+		create_test_app_release(source, frappe.mock("sha1"))
+		return app
+
+	def add_implicit_app_dependencies(self, release_group, deploy_candidate):
+		pipeline: ReleasePipeline = frappe.get_doc(
+			{
+				"doctype": "Release Pipeline",
+				"release_group": release_group.name,
+				"team": get_current_team(),
+			}
+		).insert()
+		pipeline.add_implicit_app_dependencies(deploy_candidate.name)
+
+	def test_implicit_dependency_is_added_before_the_app_that_depends_on_it(self):
+		frappe_app = self.create_app_with_release("frappe")
+		helpdesk_app = self.create_app_with_release("helpdesk")
+		self.create_app_with_release("telephony")
+		release_group = create_test_release_group(
+			apps=[frappe_app, helpdesk_app],
+			frappe_version="Version 15",
+			servers=[self.server.name],
+		)
+		deploy_candidate = create_test_deploy_candidate(release_group)
+
+		with mock_pyproject_per_app({"helpdesk": {"telephony": ">=0.0.1,<1.0.0"}}):
+			self.add_implicit_app_dependencies(release_group, deploy_candidate)
+
+		self.assertEqual(
+			[app.app for app in deploy_candidate.reload().apps], ["frappe", "telephony", "helpdesk"]
+		)
+		self.assertEqual(
+			[app.app for app in release_group.reload().apps], ["frappe", "telephony", "helpdesk"]
+		)
+
+	def test_dependency_of_an_implicit_dependency_is_added_before_that_dependency(self):
+		frappe_app = self.create_app_with_release("frappe")
+		helpdesk_app = self.create_app_with_release("helpdesk")
+		self.create_app_with_release("telephony")
+		self.create_app_with_release("gameplan")
+		release_group = create_test_release_group(
+			apps=[frappe_app, helpdesk_app],
+			frappe_version="Version 15",
+			servers=[self.server.name],
+		)
+		deploy_candidate = create_test_deploy_candidate(release_group)
+
+		with mock_pyproject_per_app(
+			{
+				"helpdesk": {"telephony": ">=0.0.1,<1.0.0"},
+				"telephony": {"gameplan": ">=0.0.1,<1.0.0"},
+			}
+		):
+			self.add_implicit_app_dependencies(release_group, deploy_candidate)
+
+		self.assertEqual(
+			[app.app for app in deploy_candidate.reload().apps],
+			["frappe", "gameplan", "telephony", "helpdesk"],
+		)
+		self.assertEqual(
+			[app.app for app in release_group.reload().apps],
+			["frappe", "gameplan", "telephony", "helpdesk"],
+		)
+
+	def test_dependency_of_frappe_is_added_after_frappe_which_has_to_stay_first(self):
+		frappe_app = self.create_app_with_release("frappe")
+		helpdesk_app = self.create_app_with_release("helpdesk")
+		self.create_app_with_release("telephony")
+		release_group = create_test_release_group(
+			apps=[frappe_app, helpdesk_app],
+			frappe_version="Version 15",
+			servers=[self.server.name],
+		)
+		deploy_candidate = create_test_deploy_candidate(release_group)
+
+		with mock_pyproject_per_app({"frappe": {"telephony": ">=0.0.1,<1.0.0"}}):
+			self.add_implicit_app_dependencies(release_group, deploy_candidate)
+
+		self.assertEqual(
+			[app.app for app in release_group.reload().apps], ["frappe", "telephony", "helpdesk"]
+		)
+
+	def test_dependency_already_in_the_release_group_keeps_its_position(self):
+		frappe_app = self.create_app_with_release("frappe")
+		helpdesk_app = self.create_app_with_release("helpdesk")
+		telephony_app = self.create_app_with_release("telephony")
+		release_group = create_test_release_group(
+			apps=[frappe_app, helpdesk_app, telephony_app],
+			frappe_version="Version 15",
+			servers=[self.server.name],
+		)
+		deploy_candidate = create_test_deploy_candidate(release_group)
+
+		with mock_pyproject_per_app({"helpdesk": {"telephony": ">=0.0.1,<1.0.0"}}):
+			self.add_implicit_app_dependencies(release_group, deploy_candidate)
+
+		self.assertEqual(
+			[app.app for app in deploy_candidate.reload().apps], ["frappe", "helpdesk", "telephony"]
+		)
+
+	def create_running_pipeline(self):
+		"""Release pipeline with one build in progress, owned by a non-admin team.
+
+		Builds its own release group instead of reusing `self.test_release_group`,
+		since other tests' tearDown wipes App/App Source between tests.
+		"""
+		app = self.create_app_with_release("frappe")
+		release_group = create_test_release_group(
+			apps=[app], frappe_version="Version 15", servers=[self.server.name]
+		)
+		team = create_test_team()
+		deploy_candidate = create_test_deploy_candidate(release_group)
+		build = create_test_deploy_candidate_build(deploy_candidate, no_build=True, status="Scheduled")
+		with patch.object(DeployCandidateBuild, "after_insert", Mock()):
+			build.insert(ignore_permissions=True)
+		frappe.db.set_value("Deploy Candidate Build", build.name, "status", "Running")
+
+		release_pipeline: ReleasePipeline = frappe.get_doc(
+			{
+				"doctype": "Release Pipeline",
+				"release_group": release_group.name,
+				"team": team.name,
+			}
+		).insert(ignore_permissions=True)
+		release_pipeline.add_build_to_pipeline(build.name)
+
+		frappe.set_user(team.user)
+		return release_pipeline, build, team.user
+
+	@patch.object(ReleasePipeline, "send_failure_notification", Mock())
+	@patch("press.press.doctype.release_pipeline.release_pipeline.fail_remote_job")
+	def test_force_fail_cancels_build_as_administrator_and_restores_user(self, mock_fail_remote_job):
+		session_user_during_call = []
+		mock_fail_remote_job.side_effect = lambda build: session_user_during_call.append(frappe.session.user)
+
+		release_pipeline, build, team_user = self.create_running_pipeline()
+		release_pipeline.force_fail()
+
+		mock_fail_remote_job.assert_called_once_with(build.name)
+		self.assertEqual(session_user_during_call, ["Administrator"])
+		self.assertEqual(frappe.session.user, team_user)
+
+	@patch.object(ReleasePipeline, "send_failure_notification", Mock())
+	@patch("press.press.doctype.release_pipeline.release_pipeline.fail_remote_job")
+	def test_force_fail_restores_user_when_cancellation_raises(self, mock_fail_remote_job):
+		mock_fail_remote_job.side_effect = frappe.PermissionError("no access")
+
+		release_pipeline, _build, team_user = self.create_running_pipeline()
+		release_pipeline.force_fail()  # must swallow the exception, not raise
+
+		self.assertEqual(frappe.session.user, team_user)
+		self.assertTrue(
+			frappe.db.exists(
+				"Error Log",
+				{"reference_doctype": "Release Pipeline", "reference_name": release_pipeline.name},
+			)
+		)
+
+	@classmethod
+	def tearDownClass(cls):
+		shutil.rmtree(frappe.db.get_single_value("Press Settings", "build_directory"), ignore_errors=True)
+		shutil.rmtree(frappe.db.get_single_value("Press Settings", "clone_directory"), ignore_errors=True)

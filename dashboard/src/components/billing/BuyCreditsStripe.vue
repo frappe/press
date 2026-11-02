@@ -7,7 +7,7 @@
 				'mt-4': step == 'Add Card Details',
 			}"
 		>
-			<span class="text-sm leading-4 text-gray-700">
+			<span class="text-sm leading-4 text-ink-gray-7">
 				Credit or Debit Card
 			</span>
 			<div class="form-input mt-2 block w-full pl-3" ref="cardElementRef"></div>
@@ -15,7 +15,7 @@
 		</label>
 
 		<div v-if="step == 'Setting up Stripe'" class="mt-8 flex justify-center">
-			<Spinner class="h-4 w-4 text-gray-700" />
+			<Spinner class="h-4 w-4 text-ink-gray-7" />
 		</div>
 		<ErrorMessage
 			class="mt-2"
@@ -44,11 +44,11 @@
 	</div>
 </template>
 <script setup>
-import { Button, ErrorMessage, Spinner, createResource } from 'frappe-ui';
-import { loadStripe } from '@stripe/stripe-js';
-import { ref, nextTick, inject } from 'vue';
-import { toast } from 'vue-sonner';
-import { DashboardError } from '../../utils/error';
+import { loadStripe } from '@stripe/stripe-js'
+import { Button, createResource, ErrorMessage, Spinner } from 'frappe-ui'
+import { inject, nextTick, ref } from 'vue'
+import { toast } from 'vue-sonner'
+import { DashboardError } from '../../utils/error'
 
 const props = defineProps({
 	amount: {
@@ -59,41 +59,41 @@ const props = defineProps({
 		type: Number,
 		default: 0,
 	},
-});
+})
 
-const emit = defineEmits(['success']);
+const emit = defineEmits(['success'])
 
-const team = inject('team');
+const team = inject('team')
 
-const step = ref('Get Amount');
-const clientSecret = ref(null);
-const cardErrorMessage = ref(null);
-const errorMessage = ref(null);
-const paymentInProgress = ref(false);
+const step = ref('Get Amount')
+const clientSecret = ref(null)
+const cardErrorMessage = ref(null)
+const errorMessage = ref(null)
+const paymentInProgress = ref(false)
 
-const stripe = ref(null);
-const card = ref(null);
-const elements = ref(null);
-const ready = ref(false);
+const stripe = ref(null)
+const card = ref(null)
+const elements = ref(null)
+const ready = ref(false)
 
-const cardElementRef = ref(null);
+const cardElementRef = ref(null)
 
 const createPaymentIntent = createResource({
 	url: 'press.api.billing.create_payment_intent_for_buying_credits',
-	params: { amount: props.amount },
+	makeParams: () => ({ amount: props.amount }),
 	validate() {
 		if (props.amount < props.minimumAmount && !team.doc.erpnext_partner) {
 			throw new DashboardError(
 				`Amount must be greater than or equal to ${props.minimumAmount}`,
-			);
+			)
 		}
 	},
 	async onSuccess(data) {
-		step.value = 'Setting up Stripe';
-		let { publishable_key, client_secret } = data;
-		clientSecret.value = client_secret;
-		stripe.value = await loadStripe(publishable_key);
-		elements.value = stripe.value.elements();
+		step.value = 'Setting up Stripe'
+		let { publishable_key, client_secret } = data
+		clientSecret.value = client_secret
+		stripe.value = await loadStripe(publishable_key)
+		elements.value = stripe.value.elements()
 		const style = {
 			base: {
 				color: '#171717',
@@ -123,46 +123,46 @@ const createPaymentIntent = createResource({
 				color: '#7C7C7C',
 				iconColor: '#7C7C7C',
 			},
-		};
+		}
 		card.value = elements.value.create('card', {
 			hidePostalCode: true,
 			style: style,
 			classes: {
 				complete: '',
-				focus: 'bg-gray-100',
+				focus: 'bg-surface-gray-2',
 			},
-		});
+		})
 
-		step.value = 'Add Card Details';
+		step.value = 'Add Card Details'
 		nextTick(() => {
-			card.value.mount(cardElementRef.value);
-		});
+			card.value.mount(cardElementRef.value)
+		})
 
 		card.value.addEventListener('change', (event) => {
-			cardErrorMessage.value = event.error?.message || null;
-		});
+			cardErrorMessage.value = event.error?.message || null
+		})
 		card.value.addEventListener('ready', () => {
-			ready.value = true;
-		});
+			ready.value = true
+		})
 	},
-});
+})
 
 async function onBuyClick() {
-	paymentInProgress.value = true;
+	paymentInProgress.value = true
 	let payload = await stripe.value.confirmCardPayment(clientSecret.value, {
 		payment_method: { card: card.value },
-	});
+	})
 
 	if (payload.error) {
-		errorMessage.value = payload.error.message;
-		paymentInProgress.value = false;
+		errorMessage.value = payload.error.message
+		paymentInProgress.value = false
 	} else {
 		toast.success(
 			'Payment processed successfully, we will update your account shortly on confirmation from Stripe',
-		);
-		paymentInProgress.value = false;
-		emit('success');
-		errorMessage.value = null;
+		)
+		paymentInProgress.value = false
+		emit('success')
+		errorMessage.value = null
 	}
 }
 </script>

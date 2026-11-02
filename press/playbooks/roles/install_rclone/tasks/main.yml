@@ -1,0 +1,39 @@
+---
+# Pinned rclone version. To upgrade, bump rclone_version and update both
+# checksums from the official SHA256SUMS published with the release:
+# https://github.com/rclone/rclone/releases/download/v<version>/SHA256SUMS
+- name: Set Rclone Facts
+  set_fact:
+    rclone_version: "1.74.3"
+    rclone_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+    rclone_checksums:
+      amd64: "sha256:408cde598307dedc26b7108553cb2147a8d2d12853100447e802f47454582ecc"
+      arm64: "sha256:f3216d5a73fe11e2604cc204b91502757b37c23e9ea47e14b7c0caf727f47343"
+
+- name: Check Installed Rclone Version
+  command: rclone version
+  register: rclone_installed
+  ignore_errors: true
+  changed_when: false
+
+- name: Determine Whether Rclone Install Is Required
+  set_fact:
+    rclone_install_required: "{{ rclone_installed.rc != 0 or rclone_version not in rclone_installed.stdout }}"
+
+- name: Download Rclone Package
+  get_url:
+    url: "https://github.com/rclone/rclone/releases/download/v{{ rclone_version }}/rclone-v{{ rclone_version }}-linux-{{ rclone_arch }}.deb"
+    dest: "/tmp/rclone-v{{ rclone_version }}-linux-{{ rclone_arch }}.deb"
+    checksum: "{{ rclone_checksums[rclone_arch] }}"
+  when: rclone_install_required
+
+- name: Install Rclone Package
+  apt:
+    deb: "/tmp/rclone-v{{ rclone_version }}-linux-{{ rclone_arch }}.deb"
+  when: rclone_install_required
+
+- name: Remove Downloaded Rclone Package
+  file:
+    path: "/tmp/rclone-v{{ rclone_version }}-linux-{{ rclone_arch }}.deb"
+    state: absent
+  when: rclone_install_required

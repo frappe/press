@@ -8,6 +8,7 @@ from functools import partial
 import frappe
 from frappe.core.doctype.user.user import User
 from frappe.handler import is_whitelisted
+from frappe.query_builder import Table
 from frappe.utils import cint
 
 from press.access.support_access import has_support_access
@@ -57,23 +58,6 @@ def upload_file():
 	return ret
 
 
-def on_session_creation():
-	from press.utils import get_current_team
-
-	if (
-		not frappe.db.exists("Team", {"user": frappe.session.user})
-		and frappe.session.data.user_type == "System User"
-	):
-		return
-
-	try:
-		team = get_current_team(get_doc=True)
-		route = team.get_route_on_login()
-		frappe.local.response.update({"dashboard_route": route})
-	except Exception:
-		pass
-
-
 def on_login(login_manager):
 	if frappe.session.user and frappe.session.data and frappe.session.data.user_type == "System User":
 		return
@@ -87,19 +71,15 @@ def on_login(login_manager):
 	):
 		frappe.throw("Please re-login to verify your identity.")
 
-	if not frappe.db.exists("Team", {"user": frappe.session.user, "enabled": 1}) and frappe.db.exists(
-		"Team", {"user": frappe.session.user, "enabled": 0}
-	):
-		frappe.db.set_value("Team", {"user": frappe.session.user, "enabled": 0}, "enabled", 1)
-		frappe.db.commit()
-
 
 def before_job():
+	frappe.local._current_team = None
 	frappe.local.team = _get_current_team
 	frappe.local.system_user = _system_user
 
 
 def before_request():
+	frappe.local._current_team = None
 	frappe.local.team = _get_current_team
 	frappe.local.system_user = _system_user
 
@@ -193,14 +173,7 @@ class CustomUser(User):
 		Changes:
 		- Excluding update operations on MyISAM tables
 		"""
-		myisam_tables = frappe.db.sql_list(
-			"""SELECT
-			TABLE_NAME FROM information_schema.TABLES
-		WHERE
-			ENGINE='MyISAM'
-		AND TABLE_SCHEMA NOT IN ('mysql','information_schema','performance_schema')
-		"""
-		)
+		myisam_tables = get_myisam_tables()
 		tables = [x for x in frappe.db.get_tables() if x not in myisam_tables]
 
 		for tab in tables:
@@ -210,24 +183,26 @@ class CustomUser(User):
 				if d.get("name") in ["owner", "modified_by"]:
 					has_fields.append(d.get("name"))
 			for field in has_fields:
-				frappe.db.sql(
-					"""UPDATE `{}`
-					SET `{}` = {}
-					WHERE `{}` = {}""".format(tab, field, "%s", field, "%s"),
-					(new_name, old_name),
-				)
+				table = Table(tab)
+				frappe.qb.update(table).set(table[field], new_name).where(table[field] == old_name).run()
 
 		for dt in ["Chat Profile", "Notification Settings"]:
 			if frappe.db.exists(dt, old_name):
 				frappe.rename_doc(dt, old_name, new_name, force=True, show_alert=False)
 
 		# set email
-		frappe.db.sql(
-			"""UPDATE `tabUser`
-			SET email = %s
-			WHERE name = %s""",
-			(new_name, new_name),
-		)
+		frappe.db.set_value("User", new_name, "email", new_name, update_modified=False)
+
+
+def get_myisam_tables() -> list[str]:
+	tables = Table("TABLES", schema="information_schema")
+	return (
+		frappe.qb.from_(tables)
+		.select(tables.TABLE_NAME)
+		.where(tables.ENGINE == "MyISAM")
+		.where(tables.TABLE_SCHEMA.notin(["mysql", "information_schema", "performance_schema"]))
+		.run(pluck=True)
+	)
 
 
 def before_after_migrate():

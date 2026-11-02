@@ -37,6 +37,11 @@ class Print:
 		spaces = "  " * indent
 		console.print(f"{spaces}[bold]{label}:[/bold] {value}")
 
+	@classmethod
+	def code(cls, console: "Console", message: str, **kwargs) -> None:
+		"""Simulate terminal color: gray text on black background."""
+		console.print(f"{message}", style="grey0 on black", **kwargs)
+
 
 def print_plan_details(plan: dict[str, typing.Any], console: "Console") -> None:
 	"""Pretty-print plan details using a rich Console instance."""

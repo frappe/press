@@ -1,20 +1,32 @@
 <template>
 	<Dialog v-model="showDialog" :options="{ title: 'Add Tag' }">
 		<template #body-content>
-			<div class="space-y-4">
+			<div class="space-y-2">
+				<FormControl
+					type="checkbox"
+					label="Create new tag"
+					v-model="showNewTagInput"
+				/>
 				<div class="flex items-center space-x-2">
-					<PressAutocomplete
+					<Combobox
+						v-if="!showNewTagInput"
 						v-model="selectedTag"
 						:options="tagOptions"
-						label="Select or create a tag"
-						:allowInputAsOption="true"
+						placeholder="Select an existing tag"
+						class="w-full"
+						open-on-focus
+					/>
+					<FormControl
+						v-else
+						v-model="selectedTag"
+						type="text"
+						placeholder="new-category"
 						class="w-full"
 					/>
 					<Button
 						label="Add"
 						icon-left="plus"
 						@click="addTag"
-						class="mt-5"
 						:disabled="!selectedTag"
 					/>
 				</div>
@@ -24,17 +36,17 @@
 </template>
 
 <script>
-import { ErrorMessage, getCachedDocumentResource } from 'frappe-ui';
+import { Combobox, ErrorMessage, getCachedDocumentResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import Autocomplete from '../components/Autocomplete.vue';
 
 export default {
 	name: 'TagsDialog',
 	props: ['docname', 'doctype'],
-	components: { ErrorMessage, PressAutocomplete: Autocomplete },
+	components: { ErrorMessage, Combobox },
 	data() {
 		return {
 			showDialog: true,
+			showNewTagInput: false,
 			newTag: '',
 			selectedTag: null,
 		};
@@ -78,6 +90,11 @@ export default {
 				loading: 'Adding tag...',
 				error: 'Failed to add tag',
 			});
+		},
+	},
+	watch: {
+		showNewTagInput() {
+			this.selectedTag = null;
 		},
 	},
 };

@@ -10,6 +10,7 @@ from frappe.frappeclient import FrappeClient
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
 
 
@@ -33,6 +34,7 @@ class RegistryServer(BaseServer):
 		ip: DF.Data
 		is_mirror: DF.Check
 		is_server_setup: DF.Check
+		is_wazuh_agent_installed: DF.Check
 		monitoring_password: DF.Password | None
 		plan: DF.Link | None
 		private_ip: DF.Data
@@ -50,6 +52,8 @@ class RegistryServer(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
+		wazuh_agent_status: DF.Data | None
+		wazuh_install_last_attempt: DF.Datetime | None
 	# end: auto-generated types
 
 	def validate(self):
@@ -91,7 +95,7 @@ class RegistryServer(BaseServer):
 			"private_ip": self.private_ip,
 			"registry_username": self.registry_username,
 			"registry_password": self.get_password("registry_password"),
-			"certificate_private_key": certificate.private_key,
+			"certificate_private_key": certificate.get_private_key(),
 			"certificate_full_chain": certificate.full_chain,
 			"is_mirror": self.is_mirror,
 			"docker_data_mountpoint": self.docker_data_mountpoint,
@@ -104,6 +108,7 @@ class RegistryServer(BaseServer):
 			"region": self.region,
 			"bucket_name": self.bucket_name,
 			"proxy_pass": self.proxy_pass,
+			"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 		}
 		try:
 			ansible = Ansible(
@@ -133,8 +138,9 @@ class RegistryServer(BaseServer):
 
 		frappe.enqueue_doc(self.doctype, self.name, "_prune_mirror_registry", queue="long", timeout=3600)
 
-	def _prune_mirror_registry(self):
+	def _prune_mirror_registry(self, throw_on_failure: bool = False):
 		try:
+			assert self.docker_data_mountpoint, "Docker data mountpoint is required to prune mirror registry"
 			ansible = Ansible(
 				playbook="prune_mirror_registry.yml",
 				server=self,
@@ -147,9 +153,15 @@ class RegistryServer(BaseServer):
 					"registry_container": "registry-registry-1",
 				},
 			)
-			ansible.run()
+			play = ansible.run()
+			if play.status != "Success" and throw_on_failure:
+				frappe.throw("Failed to prune mirror registry")  # nosemgrep
+			return play
 		except Exception:
 			log_error("Mirror Registry Prune Failed", server=self.as_dict())
+			if throw_on_failure:
+				frappe.throw("Failed to prune mirror registry")  # nosemgrep
+			return None
 
 	@frappe.whitelist()
 	def show_registry_password(self):

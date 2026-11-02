@@ -1,0 +1,26 @@
+---
+- name: Stop mariadb-monitor Service
+  ansible.builtin.systemd:
+    name: mariadb-monitor
+    state: stopped
+    enabled: false
+  failed_when: false
+
+- name: Remove Systemd Service File
+  ansible.builtin.file:
+    path: /etc/systemd/system/mariadb-monitor.service
+    state: absent
+
+- name: Reload Systemd Daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Remove mariadb-monitor Binary
+  ansible.builtin.file:
+    path: /usr/local/bin/mariadb_monitor
+    state: absent
+
+- name: Remove mariadb-monitor Config Directory
+  ansible.builtin.file:
+    path: /etc/mariadb-monitor
+    state: absent

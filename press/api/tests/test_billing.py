@@ -1,12 +1,22 @@
 from unittest import TestCase
+from unittest.mock import MagicMock, patch
 
 import frappe
+import razorpay
+import stripe
 from frappe.core.utils import find
+from frappe.tests.utils import FrappeTestCase
 
 from press.api.billing import (
+	_validate_prepaid_credits,
+	create_payment_intent_for_buying_credits,
+	create_razorpay_order,
 	get_cleaned_up_transactions,
 	get_processed_balance_transactions,
+	verify_m_pesa_transaction,
 )
+from press.press.doctype.team.test_team import create_test_team
+from press.utils.mpesa_utils import create_mpesa_request_log
 
 test_bts = [
 	{
@@ -190,9 +200,7 @@ class TestBalances(TestCase):
 		self.assertTrue(find(clean_transactions, lambda x: x.name == "BT-2022-00051"))
 
 	def test_processed_balances(self):
-		processed_transactions = get_processed_balance_transactions(
-			[frappe._dict(d) for d in test_bts]
-		)
+		processed_transactions = get_processed_balance_transactions([frappe._dict(d) for d in test_bts])
 
 		self.assertEqual(len(processed_transactions), 6)
 
@@ -206,18 +214,226 @@ class TestBalances(TestCase):
 
 		# Testing ending balance calculation
 		self.assertEqual(processed_transactions[-1].ending_balance, 200)
-		self.assertEqual(
-			processed_transactions[-2].ending_balance, 700
-		)  # Added 500 in credits
-		self.assertEqual(
-			processed_transactions[-3].ending_balance, 400
-		)  # Applied to invoice, -300
-		self.assertEqual(
-			processed_transactions[-4].ending_balance, 900
-		)  # Added 500 in credits
-		self.assertEqual(
-			processed_transactions[-5].ending_balance, 400
-		)  # Applied to invoice, -500
-		self.assertEqual(
-			processed_transactions[-6].ending_balance, 200
-		)  # Applied to invoice, -200
+		self.assertEqual(processed_transactions[-2].ending_balance, 700)  # Added 500 in credits
+		self.assertEqual(processed_transactions[-3].ending_balance, 400)  # Applied to invoice, -300
+		self.assertEqual(processed_transactions[-4].ending_balance, 900)  # Added 500 in credits
+		self.assertEqual(processed_transactions[-5].ending_balance, 400)  # Applied to invoice, -500
+		self.assertEqual(processed_transactions[-6].ending_balance, 200)  # Applied to invoice, -200
+
+
+class TestVerifyMpesaTransaction(FrappeTestCase):
+	"""The STK callback is unauthenticated, so credit must depend on Mpesa's own answer."""
+
+	CHECKOUT_ID = "ws_CO_test_checkout_request"
+
+	def setUp(self):
+		super().setUp()
+
+		self.team = create_test_team()
+		self.partner = create_test_team()
+		self.partner.db_set("erpnext_partner", 1)
+
+		frappe.get_doc(
+			{
+				"doctype": "Mpesa Setup",
+				"team": self.partner.name,
+				"mpesa_setup_id": "test-mpesa-setup",
+				"api_type": "Mpesa Express",
+				"consumer_key": "test_consumer_key",
+				"consumer_secret": "test_consumer_secret",  # pragma: allowlist secret
+				"business_shortcode": "174379",
+				"till_number": "174379",
+				"pass_key": "test_pass_key",
+				"security_credential": "test_security_credential",
+				"sandbox": 1,
+			}
+		).insert(ignore_permissions=True)
+
+		create_mpesa_request_log(
+			{
+				"team": self.team.name,
+				"partner": self.partner.user,
+				"request_amount": 6500,
+				"amount_usd": 50,
+				"exchange_rate": 130,
+			},
+			"Host",
+			"Mpesa Express",
+			self.CHECKOUT_ID,
+		)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def success_callback(self):
+		return {
+			"Body": {
+				"stkCallback": {
+					"MerchantRequestID": "test-merchant-request",
+					"CheckoutRequestID": self.CHECKOUT_ID,
+					"ResultCode": 0,
+					"ResultDesc": "The service request is processed successfully.",
+					"CallbackMetadata": {
+						"Item": [
+							{"Name": "Amount", "Value": 6500},
+							{"Name": "MpesaReceiptNumber", "Value": "TEST1RECEIPT"},
+							{"Name": "TransactionDate", "Value": 20250101120000},
+							{"Name": "PhoneNumber", "Value": 254700000000},
+						]
+					},
+				}
+			}
+		}
+
+	def connector_answering(self, result_code):
+		connector = MagicMock()
+		connector.stk_push_query.return_value = {
+			"ResultCode": result_code,
+			"ResultDesc": "Test query response",
+			"CheckoutRequestID": self.CHECKOUT_ID,
+		}
+		return MagicMock(return_value=connector)
+
+	def test_callback_is_rejected_when_mpesa_says_the_customer_did_not_pay(self):
+		with patch(
+			"press.api.regional_payments.mpesa.utils.MpesaConnector",
+			new=self.connector_answering("1032"),
+		):
+			response = verify_m_pesa_transaction(**self.success_callback())
+
+		self.assertEqual(response["status"], "Failed")
+		self.assertFalse(frappe.db.exists("Mpesa Payment Record", {"transaction_id": self.CHECKOUT_ID}))
+		self.assertFalse(frappe.db.exists("Balance Transaction", {"team": self.team.name}))
+
+	def test_rejected_callback_leaves_a_failed_request_log_behind(self):
+		with patch(
+			"press.api.regional_payments.mpesa.utils.MpesaConnector",
+			new=self.connector_answering("1032"),
+		):
+			verify_m_pesa_transaction(**self.success_callback())
+
+		self.assertTrue(
+			frappe.db.exists("Mpesa Request Log", {"request_id": self.CHECKOUT_ID, "status": "Failed"})
+		)
+
+	def test_callback_is_accepted_when_mpesa_confirms_the_payment(self):
+		with (
+			patch(
+				"press.api.regional_payments.mpesa.utils.MpesaConnector",
+				new=self.connector_answering("0"),
+			),
+			patch("press.api.billing.create_mpesa_payment_record") as create_payment_record,
+		):
+			response = verify_m_pesa_transaction(**self.success_callback())
+
+		self.assertEqual(response["status"], "Completed")
+		create_payment_record.assert_called_once()
+
+
+class TestValidatePrepaidCredits(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_team()
+		frappe.set_user(self.team.user)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def create_unpaid_invoice(self, amount_due):
+		invoice = frappe.get_doc(
+			{"doctype": "Invoice", "team": self.team.name, "type": "Subscription", "status": "Unpaid"}
+		).insert(ignore_permissions=True)
+		invoice.db_set("amount_due", amount_due)
+
+	def test_team_without_unpaid_invoices_cannot_buy_credits_below_100_inr(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "Amount should be at least ₹100"):
+			_validate_prepaid_credits(66.25, "INR")
+
+	def test_team_with_unpaid_invoice_can_buy_credits_equal_to_unpaid_amount_below_100_inr(self):
+		self.create_unpaid_invoice(66.25)
+
+		_validate_prepaid_credits(66.25, "INR")
+
+	def test_team_with_unpaid_invoice_cannot_buy_credits_below_unpaid_amount(self):
+		self.create_unpaid_invoice(66.25)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Amount should be at least ₹66.25"):
+			_validate_prepaid_credits(50, "INR")
+
+
+class TestAmountAboveGatewayLimit(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_team()
+		self.team.db_set("currency", "INR")
+		frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+		frappe.db.set_single_value("Press Settings", "razorpay_max_order_amount_inr", 500000)
+		frappe.set_user(self.team.user)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_razorpay_order_above_limit_with_gst_is_blocked_before_calling_razorpay(self, mock_client):
+		with self.assertRaisesRegex(frappe.ValidationError, r"5,?90,000.*including GST.*5,?00,000"):
+			create_razorpay_order(500000, "Prepaid Credits")
+
+		mock_client.return_value.order.create.assert_not_called()
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_razorpay_order_equal_to_limit_with_gst_creates_order(self, mock_client):
+		mock_client.return_value.order.create.return_value = {"id": "order_at_limit"}
+
+		order = create_razorpay_order(423728.81, "Prepaid Credits")
+
+		self.assertEqual(order["order_id"], "order_at_limit")
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_inr_limit_does_not_apply_to_usd_razorpay_order(self, mock_client):
+		self.team.db_set("currency", "USD")
+		mock_client.return_value.order.create.return_value = {"id": "order_usd"}
+
+		order = create_razorpay_order(600000, "Prepaid Credits")
+
+		self.assertEqual(order["order_id"], "order_usd")
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_razorpay_order_is_not_limited_when_setting_is_empty(self, mock_client):
+		frappe.db.set_single_value("Press Settings", "razorpay_max_order_amount_inr", 0)
+		mock_client.return_value.order.create.return_value = {"id": "order_no_limit"}
+
+		order = create_razorpay_order(500000, "Prepaid Credits")
+
+		self.assertEqual(order["order_id"], "order_no_limit")
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_razorpay_rejection_shows_its_reason_and_creates_no_payment_record(self, mock_client):
+		mock_client.return_value.order.create.side_effect = razorpay.errors.BadRequestError(
+			"Amount exceeds maximum amount allowed."
+		)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Amount exceeds maximum amount allowed"):
+			create_razorpay_order(1000, "Prepaid Credits")
+
+		self.assertFalse(frappe.db.exists("Razorpay Payment Record", {"team": self.team.name}))
+
+	@patch("press.api.billing.get_stripe")
+	def test_stripe_intent_above_limit_shows_stripe_message(self, mock_get_stripe):
+		mock_get_stripe.return_value.PaymentIntent.create.side_effect = stripe.error.InvalidRequestError(
+			"Amount must be no more than ₹9,999,999.99", "amount", code="amount_too_large"
+		)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Amount must be no more than"):
+			create_payment_intent_for_buying_credits(10000000)
+
+	@patch("press.api.billing.get_stripe")
+	def test_other_stripe_invalid_request_is_not_shown_to_customer(self, mock_get_stripe):
+		mock_get_stripe.return_value.PaymentIntent.create.side_effect = stripe.error.InvalidRequestError(
+			"No such customer", "customer", code="resource_missing"
+		)
+
+		with self.assertRaisesRegex(stripe.error.InvalidRequestError, "No such customer"):
+			create_payment_intent_for_buying_credits(1000)

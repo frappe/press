@@ -56,7 +56,7 @@ frappe.ui.form.on('Team', {
 					},
 				);
 			},
-			'Actions',
+			'Dangerous Actions',
 		);
 		frm.add_custom_button(
 			'Unsuspend Sites',
@@ -94,6 +94,17 @@ frappe.ui.form.on('Team', {
 				}),
 			);
 		}
+
+		frm.add_custom_button(
+			'Ban Team',
+			() => {
+				frappe.confirm(
+					`Are you sure you want to ban ${frm.doc.name.bold()}? This will disable the team and linked user. All sites linked to the team will be suspended. This action cannot be undone.`,
+					() => frm.call('ban').then(() => frm.refresh()),
+				);
+			},
+			'Dangerous Actions',
+		);
 	},
 });
 

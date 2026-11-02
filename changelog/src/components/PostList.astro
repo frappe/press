@@ -1,0 +1,62 @@
+---
+import { render } from "astro:content";
+import { ArrowRight } from "@lucide/astro";
+import { ArrowLeft } from "@lucide/astro";
+
+const { posts, currentPage, totalPages } = Astro.props;
+const baseurl = import.meta.env.BASE_URL;
+
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+---
+
+<ul class="mx-auto max-w-3xl my-5 px-1">
+  {posts.map((post) => (
+    <li class="grid grid-cols-[150px_1fr] gap-10">
+      <div class="flex flex-col items-start">
+        <a href={`${baseurl}/version/${post.id}`} class="sticky top-25 w-full">
+          <span class="text-sm text-surface-gray-5 flex items-center gap-3">
+            <div
+              class="bg-surface-gray-5 size-2 rounded shrink-0 relative z-10 ring-4 ring-outline-gray-2"
+            />
+            {formatDate(post.data.date)}
+          </span>
+        </a>
+        <div class="w-px grow bg-surface-gray-2 ml-1" />
+      </div>
+      <div class="prose mb-15 -mt-2">
+        {render(post).then(({ Content }) => <Content />)}
+      </div>
+    </li>
+  ))}
+</ul>
+
+<!-- Pagination -->
+<div
+  class="flex gap-5 pb-10 mx-auto max-w-3xl text-sm text-ink-gray-6 justify-end"
+>
+  {currentPage > 1 && (
+    <a
+      href={currentPage === 2 ? `${baseurl}/` : `${baseurl}/page/${currentPage - 1}`}
+      class="flex items-center gap-2"
+    >
+      <ArrowLeft class="size-3.5" />
+
+      Prev</a>
+  )}
+
+  {currentPage < totalPages && (
+    <a
+      href={`${baseurl}/page/${currentPage + 1}`}
+      class="flex items-center gap-2"
+    >
+      Next
+      <ArrowRight class="size-3.5" />
+    </a>
+  )}
+</div>

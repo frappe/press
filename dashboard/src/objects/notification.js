@@ -1,8 +1,13 @@
 import { h } from 'vue';
 import router from '../router';
 import { getDocResource } from '../utils/resource';
-import { unreadNotificationsCount } from '../data/notifications';
-import { Tooltip, frappeRequest } from 'frappe-ui';
+
+import {
+	markAllNotificationsAsRead,
+	unreadNotificationsCount,
+} from '../data/notifications';
+
+import { Tooltip } from 'frappe-ui';
 import { icon } from '../utils/components';
 import { getTeam } from '../data/team';
 import { toast } from 'vue-sonner';
@@ -65,9 +70,7 @@ export default {
 					},
 					async onClick() {
 						toast.promise(
-							frappeRequest({
-								url: '/api/method/press.api.notifications.mark_all_notifications_as_read',
-							}),
+							markAllNotificationsAsRead.submit(),
 							{
 								success: () => {
 									notifications.reload();
@@ -121,7 +124,7 @@ export default {
 				width: '40rem',
 				component({ row }) {
 					return h('div', {
-						class: 'truncate text-base text-gray-600',
+						class: 'truncate text-base text-ink-gray-6',
 						// replace all html tags except <b>
 						innerHTML: row.message
 							.replace(/<(?!\/?b\b)[^>]*>/g, '')

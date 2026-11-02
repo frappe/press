@@ -1,6 +1,7 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
+import json
 from unittest.mock import patch
 
 import frappe
@@ -10,6 +11,9 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.agent_job.agent_job import poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
+	create_test_deploy_candidate_differences,
+)
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
@@ -20,6 +24,8 @@ from press.press.doctype.site_migration.site_migration import (
 	SiteMigration,
 	run_scheduled_migrations,
 )
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
+from press.press.doctype.subscription.test_subscription import create_test_subscription
 
 BACKUP_JOB_RES = {
 	"backups": {
@@ -68,13 +74,6 @@ class TestSiteMigration(FrappeTestCase):
 			site = create_test_site()
 
 		bench = create_test_bench()
-		site_migration = frappe.get_doc(
-			{
-				"doctype": "Site Migration",
-				"site": site.name,
-				"destination_bench": bench.name,
-			}
-		).insert()
 
 		with (
 			fake_agent_job("Update Site Configuration", "Success"),
@@ -88,7 +87,13 @@ class TestSiteMigration(FrappeTestCase):
 			fake_agent_job("Add Site to Upstream"),
 			fake_agent_job("Update Site Configuration"),
 		):
-			site_migration.start()
+			site_migration: SiteMigration = frappe.get_doc(
+				{
+					"doctype": "Site Migration",
+					"site": site.name,
+					"destination_bench": bench.name,
+				}
+			).insert()
 			poll_pending_jobs()
 			poll_pending_jobs()
 			poll_pending_jobs()
@@ -107,18 +112,42 @@ class TestSiteMigration(FrappeTestCase):
 		self.assertEqual(site.bench, bench.name)
 		self.assertEqual(site.server, bench.server)
 
+	def test_skip_migrate_turns_on_skip_failing_patches_and_reaches_the_restore(self):
+		with patch.object(Site, "after_insert"), patch.object(Site, "on_update"):
+			site = create_test_site()
+		bench = create_test_bench()
+
+		with (
+			fake_agent_job("Update Site Configuration"),
+			fake_agent_job("Backup Site", data=BACKUP_JOB_RES),
+			fake_agent_job("New Site from Backup"),
+		):
+			site_migration: SiteMigration = frappe.get_doc(
+				{
+					"doctype": "Site Migration",
+					"site": site.name,
+					"destination_bench": bench.name,
+					"skip_migrate": 1,
+				}
+			).insert()
+			self.assertTrue(site_migration.skip_failing_patches)
+			poll_pending_jobs()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		request_data = json.loads(
+			frappe.db.get_value(
+				"Agent Job", {"job_type": "New Site from Backup", "site": site.name}, "request_data"
+			)
+		)
+		self.assertTrue(request_data["skip_migrate"])
+		self.assertTrue(request_data["skip_failing_patches"])
+
 	def test_site_is_activated_on_failure_when_possible(self):
 		with patch.object(Site, "after_insert"), patch.object(Site, "on_update"):
 			"""Patching these methods as its creating issue with duplicate agent job check"""
 			site = create_test_site()
 		bench = create_test_bench()
-		site_migration: SiteMigration = frappe.get_doc(
-			{
-				"doctype": "Site Migration",
-				"site": site.name,
-				"destination_bench": bench.name,
-			}
-		).insert()
 
 		with (
 			fake_agent_job("Update Site Configuration"),
@@ -129,7 +158,13 @@ class TestSiteMigration(FrappeTestCase):
 			fake_agent_job("New Site from Backup", "Failure"),
 			fake_agent_job("Archive Site"),
 		):
-			site_migration.start()
+			site_migration: SiteMigration = frappe.get_doc(
+				{
+					"doctype": "Site Migration",
+					"site": site.name,
+					"destination_bench": bench.name,
+				}
+			).insert()
 			poll_pending_jobs()
 			poll_pending_jobs()
 			poll_pending_jobs()
@@ -142,13 +177,6 @@ class TestSiteMigration(FrappeTestCase):
 	def test_site_archived_on_destination_on_failure(self):
 		site = create_test_site()
 		bench = create_test_bench()
-		site_migration: SiteMigration = frappe.get_doc(
-			{
-				"doctype": "Site Migration",
-				"site": site.name,
-				"destination_bench": bench.name,
-			}
-		).insert()
 
 		with (
 			fake_agent_job("Update Site Configuration"),
@@ -162,7 +190,13 @@ class TestSiteMigration(FrappeTestCase):
 			),
 			fake_agent_job("Update Site Configuration"),
 		):
-			site_migration.start()
+			site_migration: SiteMigration = frappe.get_doc(
+				{
+					"doctype": "Site Migration",
+					"site": site.name,
+					"destination_bench": bench.name,
+				}
+			).insert()
 			poll_pending_jobs()
 			poll_pending_jobs()
 			poll_pending_jobs()
@@ -178,13 +212,6 @@ class TestSiteMigration(FrappeTestCase):
 	def test_site_not_archived_on_destination_on_failure_if_site_archived_on_source(self):
 		site = create_test_site()
 		bench = create_test_bench()
-		site_migration: SiteMigration = frappe.get_doc(
-			{
-				"doctype": "Site Migration",
-				"site": site.name,
-				"destination_bench": bench.name,
-			}
-		).insert()
 
 		with (
 			fake_agent_job("Update Site Configuration"),
@@ -199,7 +226,13 @@ class TestSiteMigration(FrappeTestCase):
 			fake_agent_job("Remove Site from Upstream"),
 			fake_agent_job("Add Site to Upstream", "Failure"),
 		):
-			site_migration.start()
+			site_migration: SiteMigration = frappe.get_doc(
+				{
+					"doctype": "Site Migration",
+					"site": site.name,
+					"destination_bench": bench.name,
+				}
+			).insert()
 			poll_pending_jobs()
 			poll_pending_jobs()
 			poll_pending_jobs()
@@ -247,3 +280,58 @@ class TestSiteMigration(FrappeTestCase):
 		run_scheduled_migrations()
 		site_migration.reload()
 		self.assertEqual(site_migration.status, "Failure")
+
+	def test_migration_can_not_be_trigerred_with_unresolved_fatal_site_update(self):
+		app1 = create_test_app()  # frappe
+		app2 = create_test_app("app2", "App 2")
+		app3 = create_test_app("app3", "App 3")
+		app4 = create_test_app("app4", "App 4")
+
+		group = create_test_release_group([app1, app2, app3, app4])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		dest_bench = create_test_bench(group=group)
+
+		create_test_deploy_candidate_differences(bench2.candidate)  # for site update to be available
+
+		site = create_test_site(bench=bench1.name)
+		plan = create_test_plan(site.doctype, cpu_time=8)
+		create_test_subscription(site.name, plan.name, site.team)
+		site.reload()
+
+		with fake_agent_job(
+			{
+				# Only a failure at or past the move marks the site fatal.
+				"Update Site Pull": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Enable Maintenance Mode", "status": "Success"},
+						{"name": "Wait for Enqueued Jobs", "status": "Success"},
+						{"name": "Move Site", "status": "Failure"},
+						{"name": "Bench Setup NGINX", "status": "Skipped"},
+						{"name": "Bench Setup NGINX Target", "status": "Skipped"},
+						{"name": "Reload NGINX", "status": "Skipped"},
+						{"name": "Disable Maintenance Mode", "status": "Skipped"},
+					],
+				},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site.schedule_update()
+			poll_pending_jobs()  # For update site pull
+			poll_pending_jobs()  # For recover failed site update
+
+		site_migration: SiteMigration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": site.name,
+				"destination_bench": dest_bench.name,
+				"scheduled_time": frappe.utils.now_datetime(),
+			}
+		)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			r".*Site has encountered a fatal error during last update*",
+			site_migration.insert,
+		)

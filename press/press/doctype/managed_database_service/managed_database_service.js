@@ -5,6 +5,7 @@ frappe.ui.form.on('Managed Database Service', {
 	refresh(frm) {
 		let command = `mysql -h ${frm.doc.name} -p -u ${frm.doc.database_root_user} -P ${frm.doc.port}`;
 		frm.add_custom_button('Console Access', () => {
+			frappe.utils.copy_to_clipboard(command);
 			frappe.msgprint(`<pre>${command}</pre>`);
 		});
 		frm.add_custom_button('Show Root Password', () => {

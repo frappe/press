@@ -4,12 +4,12 @@
 			v-if="!ready"
 			class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-8 transform"
 		>
-			<Spinner class="h-5 w-5 text-gray-700" />
+			<Spinner class="h-5 w-5 text-ink-gray-7" />
 		</div>
 		<div :class="{ 'opacity-0': !ready }">
 			<div v-show="!tryingMicroCharge">
 				<label class="block">
-					<span class="block text-xs text-gray-600">
+					<span class="block text-xs text-ink-gray-6">
 						Credit or Debit Card
 					</span>
 					<div
@@ -27,14 +27,15 @@
 				<NewAddressForm
 					ref="addressFormRef"
 					class="mt-5"
-					v-model="billingInformation"
+					:model-value="billingInformation"
+					@update:model-value="Object.assign(billingInformation, $event)"
 					:disable-form="props.disableAddressForm"
 					@success="console.log('Address form submitted')"
 				/>
 			</div>
 
 			<div class="mt-3 space-y-4" v-show="tryingMicroCharge">
-				<p class="text-base text-gray-700">
+				<p class="text-base text-ink-gray-7">
 					We are attempting to charge your card with
 					<strong>{{ formattedMicroChargeAmount }}</strong> to make sure the
 					card works. This amount will be <strong>refunded</strong> back to your
@@ -158,7 +159,7 @@ const getPublishedKeyAndSetupIntent = createResource({
 			style: style,
 			classes: {
 				complete: '',
-				focus: 'bg-gray-100',
+				focus: 'bg-surface-gray-2',
 			},
 		});
 		card.value.mount(cardElementRef.value);

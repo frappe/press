@@ -41,6 +41,10 @@
 			{
 				"supported_frappe_version": "Version 15",
 				"version": "3.11"
+			},
+			{
+				"supported_frappe_version": "Nightly",
+				"version": "3.14"
 			}
 		],
 		"title": "Python Version"
@@ -75,6 +79,22 @@
 			{
 				"supported_frappe_version": "Version 12",
 				"version": "12.19.0"
+			},
+			{
+				"supported_frappe_version": "Nightly",
+				"version": "24.12.0"
+			},
+			{
+				"supported_frappe_version": "Version 16",
+				"version": "24.22.1"
+			},
+			{
+				"supported_frappe_version": "Nightly",
+				"version": "24.22.1"
+			},
+			{
+				"supported_frappe_version": "Version 15",
+				"version": "24.22.1"
 			}
 		],
 		"title": "Node Version"
@@ -199,6 +219,14 @@
 			{
 				"supported_frappe_version": "Version 12",
 				"version": "5.18.0"
+			},
+			{
+				"supported_frappe_version": "Version 15",
+				"version": "5.31.0"
+			},
+			{
+				"supported_frappe_version": "Version 16",
+				"version": "5.31.0"
 			}
 		],
 		"title": "Bench Version"
@@ -279,6 +307,22 @@
 			{
 				"supported_frappe_version": "Nightly",
 				"version": "25.2"
+			},
+			{
+				"supported_frappe_version": "Version 14",
+				"version": "26.2.2"
+			},
+			{
+				"supported_frappe_version": "Version 15",
+				"version": "26.2.2"
+			},
+			{
+				"supported_frappe_version": "Version 16",
+				"version": "26.2.2"
+			},
+			{
+				"supported_frappe_version": "Nightly",
+				"version": "26.2.2"
 			}
 		],
 		"title": "Pip Version"

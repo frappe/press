@@ -20,9 +20,10 @@
 			class="flex h-full items-center justify-center"
 		>
 			<ErrorMessage v-if="error" :message="error" />
-			<span v-else class="text-base text-gray-700">No data</span>
+			<NoDataMsg v-else />
 		</div>
 		<VChart
+			ref="chartRef"
 			v-else
 			autoresize
 			class="chart"
@@ -33,21 +34,26 @@
 </template>
 
 <script setup>
-import { ref, toRefs } from 'vue';
-import { DateTime } from 'luxon';
-import { use, graphic } from 'echarts/core';
-import { SVGRenderer } from 'echarts/renderers';
-import { BarChart } from 'echarts/charts';
+import { BarChart } from 'echarts/charts'
 import {
+	DataZoomComponent,
 	GridComponent,
 	LegendComponent,
-	TooltipComponent,
 	MarkLineComponent,
-} from 'echarts/components';
-import VChart from 'vue-echarts';
-import Card from '../global/Card.vue';
-import { theme } from '../../utils/theme';
-import { bytes, getUnit } from '../../utils/format';
+	ToolboxComponent,
+	TooltipComponent,
+} from 'echarts/components'
+import { graphic, use } from 'echarts/core'
+import { SVGRenderer } from 'echarts/renderers'
+import { DateTime } from 'luxon'
+import { ref, toRefs } from 'vue'
+import VChart from 'vue-echarts'
+import NoDataMsg from '@/components/common/NoDataMsg.vue'
+import dayjs from '../../utils/dayjs'
+import { bytes, escapeHtml, getUnit } from '../../utils/format'
+import { theme } from '../../utils/theme'
+import Card from '../global/Card.vue'
+import { useDataZoom } from './useDataZoom'
 
 const props = defineProps({
 	showCard: {
@@ -98,9 +104,9 @@ const props = defineProps({
 		required: false,
 		default: () => '',
 	},
-});
+})
 
-const { title, unit, data, type, chartTheme } = toRefs(props);
+const { title, unit, data, type, chartTheme } = toRefs(props)
 
 use([
 	BarChart,
@@ -109,11 +115,13 @@ use([
 	LegendComponent,
 	TooltipComponent,
 	MarkLineComponent,
-]);
+	DataZoomComponent,
+	ToolboxComponent,
+])
 
 const initOptions = {
 	renderer: 'svg',
-};
+}
 
 const options = ref({
 	grid: {
@@ -130,22 +138,33 @@ const options = ref({
 			// for the dot to follow the same color as the line 🗿
 			let tooltip = `<p>${DateTime.fromSQL(
 				params[0].axisValueLabel,
-			).toLocaleString(DateTime.DATETIME_MED)}</p>`;
+			).toLocaleString(DateTime.DATETIME_MED)}</p>`
 
 			params.forEach(({ value, seriesName }, i) => {
-				if (!value) return;
+				if (!value) return
 
 				let colorSpan = (color) =>
 					'<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:' +
 					color +
-					'"></span>';
+					'"></span>'
 
 				tooltip += `<p>${colorSpan(chartTheme.value[i])}  ${getUnit(
 					value,
 					unit.value,
-				)} ${unit.value !== seriesName ? `- ${seriesName}` : ''}</p>`;
-			});
-			return tooltip;
+				)} ${
+					unit.value !== seriesName ? `- ${escapeHtml(seriesName)}` : ''
+				}</p>`
+			})
+			return tooltip
+		},
+	},
+	toolbox: {
+		// Hidden: `show: false` would drop the drag-to-zoom cursor with it.
+		itemSize: 0,
+		feature: {
+			dataZoom: {
+				yAxisIndex: false,
+			},
 		},
 	},
 	xAxis: {
@@ -165,12 +184,12 @@ const options = ref({
 		axisLabel: {
 			formatter: (value) => {
 				if (unit.value === 'bytes') {
-					return bytes(value, 0);
+					return bytes(value, 0)
 				} else {
-					if (value >= 1000000000) return `${value / 1000000000}B`;
-					else if (value >= 1000000) return `${value / 1000000}M`;
-					else if (value >= 1000) return `${value / 1000}K`;
-					return value;
+					if (value >= 1000000000) return `${value / 1000000000}B`
+					else if (value >= 1000000) return `${value / 1000000}M`
+					else if (value >= 1000) return `${value / 1000}K`
+					return value
 				}
 			},
 			padding: 5,
@@ -221,7 +240,19 @@ const options = ref({
 				]),
 				opacity: 0.3,
 			},
-		};
+		}
 	}),
-});
+})
+
+const chartRef = ref(null)
+const emits = defineEmits(['datazoom'])
+
+const labelToDate = (index) =>
+	dayjs(
+		data.value.labels[index],
+		'YYYY-MM-DD HH:mm:ss',
+		dayjs.tz.guess(),
+	).toDate()
+
+useDataZoom(chartRef, labelToDate, emits)
 </script>

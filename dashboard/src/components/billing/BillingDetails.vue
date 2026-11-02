@@ -9,7 +9,8 @@
 		/>
 		<NewAddressForm
 			ref="addressFormRef"
-			v-model="billingInformation"
+			:model-value="billingInformation"
+			@update:model-value="Object.assign(billingInformation, $event)"
 			@success="() => emit('success')"
 		/>
 		<ErrorMessage class="mt-2" :message="errorMessage" />
@@ -25,19 +26,20 @@
 	</div>
 </template>
 <script setup>
-import NewAddressForm from './NewAddressForm.vue';
-import { FormControl, ErrorMessage, Button, createResource } from 'frappe-ui';
-import { reactive, ref, inject } from 'vue';
+import { Button, createResource, ErrorMessage, FormControl } from 'frappe-ui'
+import { inject, reactive, ref } from 'vue'
+import { validateBillingName } from '../../utils/billing'
+import NewAddressForm from './NewAddressForm.vue'
 
-const emit = defineEmits(['success']);
+const emit = defineEmits(['success'])
 
-const team = inject('team');
+const team = inject('team')
 
-const addressFormRef = ref(null);
+const addressFormRef = ref(null)
 
 const fullName = `${team.doc.user_info.first_name || ''} ${
 	team.doc.user_info.last_name || ''
-}`.trim();
+}`.trim()
 
 const billingInformation = reactive({
 	billing_name: fullName || '',
@@ -47,13 +49,13 @@ const billingInformation = reactive({
 	postal_code: '',
 	country: '',
 	gstin: '',
-});
+})
 
 createResource({
 	url: 'press.api.account.get_billing_information',
 	auto: true,
 	onSuccess: (data) => {
-		if (!Object.keys(data).length) return;
+		if (!Object.keys(data).length) return
 
 		Object.assign(billingInformation, {
 			address: data.address_line1,
@@ -63,25 +65,23 @@ createResource({
 			country: data.country,
 			gstin: data.gstin == 'Not Applicable' ? '' : data.gstin,
 			billing_name: data.billing_name,
-		});
+		})
 	},
-});
+})
 
-const errorMessage = ref('');
+const errorMessage = ref('')
 
 function updateBillingInformation() {
 	if (!billingInformation.billing_name) {
-		errorMessage.value = 'Billing Name is required';
-		return;
+		errorMessage.value = 'Billing Name is required'
+		return
 	}
-	const billing_name = billingInformation.billing_name.trim();
-	const billingNameRegex = /^[a-zA-Z0-9\-\'\,\.\(\)\s]+$/;
-	const billingNameValid = billingNameRegex.test(billing_name);
-	if (!billingNameValid) {
-		errorMessage.value = 'Billing Name contains invalid characters';
-		return;
+	const billing_name = validateBillingName(billingInformation.billing_name)
+	if (!billing_name) {
+		errorMessage.value = 'Billing Name contains invalid characters'
+		return
 	}
-	billingInformation.billing_name = billing_name;
-	addressFormRef.value.updateBillingInformation.submit();
+	billingInformation.billing_name = billing_name
+	addressFormRef.value.updateBillingInformation.submit()
 }
 </script>

@@ -3,13 +3,13 @@
 		<div>
 			<div class="flex justify-start">
 				<img class="mr-2 h-4" v-if="image" :src="image" :alt="title" />
-				<h3 class="text-base font-medium text-gray-900">
+				<h3 class="text-base font-medium text-ink-gray-9">
 					{{ title }}
 				</h3>
 			</div>
 			<div class="mt-1" v-if="secondaryText || $slots.subtitle">
 				<template v-if="secondaryText">
-					<span class="text-base text-gray-600" v-html="secondaryText" />
+					<span class="text-base text-ink-gray-6" v-html="secondaryText" />
 				</template>
 				<slot v-if="$slots.subtitle" name="subtitle" />
 			</div>

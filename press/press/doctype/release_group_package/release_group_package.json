@@ -1,61 +1,58 @@
 {
- "actions": [],
- "allow_rename": 1,
- "creation": "2023-05-12 14:37:58.299311",
- "default_view": "List",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "package_manager",
-  "package_prerequisites",
-  "column_break_r6rj",
-  "package",
-  "after_install"
- ],
- "fields": [
-  {
-   "default": "apt",
-   "fieldname": "package_manager",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Package Manager",
-   "reqd": 1
-  },
-  {
-   "fieldname": "package",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Package",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_r6rj",
-   "fieldtype": "Column Break"
-  },
-  {
-   "description": "Use &amp;&amp; for multiline prerequisites\n<br><br>\nUse jinja syntax to define dependancy variables <br>\neg: python{{ PYTHON_VERSION }} ",
-   "fieldname": "package_prerequisites",
-   "fieldtype": "Text",
-   "label": "Package Prerequisites"
-  },
-  {
-   "description": "Use && for multiline prerequisites\n",
-   "fieldname": "after_install",
-   "fieldtype": "Text",
-   "label": "After Install"
-  }
- ],
- "index_web_pages_for_search": 1,
- "istable": 1,
- "links": [],
- "modified": "2023-12-26 18:17:13.374441",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Release Group Package",
- "owner": "Administrator",
- "permissions": [],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+	"actions": [],
+	"allow_rename": 1,
+	"creation": "2023-05-12 14:37:58.299311",
+	"default_view": "List",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"package_manager",
+		"package_prerequisites",
+		"column_break_r6rj",
+		"package",
+		"after_install"
+	],
+	"fields": [
+		{
+			"default": "apt",
+			"fieldname": "package_manager",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Package Manager",
+			"reqd": 1
+		},
+		{
+			"fieldname": "package",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Package",
+			"reqd": 1
+		},
+		{ "fieldname": "column_break_r6rj", "fieldtype": "Column Break" },
+		{
+			"description": "Use &amp;&amp; for multiline prerequisites\n<br><br>\nUse jinja syntax to define dependancy variables <br>\neg: python{{ PYTHON_VERSION }} ",
+			"fieldname": "package_prerequisites",
+			"fieldtype": "Text",
+			"label": "Package Prerequisites"
+		},
+		{
+			"description": "Use && for multiline prerequisites\n",
+			"fieldname": "after_install",
+			"fieldtype": "Text",
+			"label": "After Install"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"istable": 1,
+	"links": [],
+	"modified": "2023-12-26 18:17:13.374441",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Release Group Package",
+	"owner": "Administrator",
+	"permissions": [],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
 }

@@ -1,0 +1,31 @@
+settings {
+    logfile = "/var/log/on-prem-lsyncd-app/lsyncd.log",
+    statusFile = "/var/log/on-prem-lsyncd-app/lsyncd.status"
+}
+
+sync {
+    default.rsyncssh,
+    source = "/home/frappe/benches",
+    host = "root@{{ on_prem_ip }}",
+    targetdir = "{{ app_server_base_directory }}/home/frappe/benches",
+    exclude = {
+        "**/.git/***",
+        "**/*.pyc",
+        "**/.DS_Store",
+        "**/__pycache__/***",
+        "**/sites/assets/***",
+        "**/sites/downloads/***",
+        "**/sites/archived/***",
+        "**/private/backups/***",
+        "**/.migrate/***"
+    },
+    rsync = {
+        archive = true,
+        compress = false,
+        whole_file = false
+    },
+    ssh = {
+        port = 22,
+        _extra = {"-o", "StrictHostKeyChecking=no", "-o", "BatchMode=yes"}
+    }
+}

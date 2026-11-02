@@ -7,6 +7,7 @@ from frappe import _
 from frappe.query_builder import DocType
 from frappe.utils.password import get_decrypted_password
 
+from press.press.doctype.mpesa_setup.mpesa_connector import MpesaConnector
 from press.utils import get_current_team
 
 supported_mpesa_currencies = ["KES"]
@@ -276,7 +277,7 @@ def get_details_from_request_log(transaction_id):
 			amount_usd = request_data_dict.get("amount_usd")
 			exchange_rate = request_data_dict.get("exchange_rate")
 		except json.JSONDecodeError:
-			frappe.throw(_("Invalid JSON format in request_data"))
+			frappe.throw(_("Invalid JSON format in request_data"))  # nosemgrep
 			team = None
 			partner = None
 
@@ -301,7 +302,7 @@ def get_payment_gateway(partner_value):
 		pluck="name",
 	)
 	if not payment_gateway:
-		frappe.throw(_("Payment Gateway not found"), title=_("Mpesa Express Error"))
+		frappe.throw(_("Payment Gateway not found"), title=_("Mpesa Express Error"))  # nosemgrep
 	gateway = frappe.get_doc("Payment Gateway", payment_gateway[0])
 	return gateway.name
 
@@ -313,8 +314,34 @@ def get_mpesa_setup_for_team(team_name):
 	if not mpesa_setup:
 		frappe.throw(
 			_(f"Mpesa Setup not configured for the team {team_name}"), title=_("Mpesa Express Error")
-		)
+		)  # nosemgrep
 	return frappe.get_doc("Mpesa Setup", mpesa_setup[0])
+
+
+def get_mpesa_connector(mpesa_setup):
+	return MpesaConnector(
+		env="sandbox" if mpesa_setup.sandbox else "production",
+		app_key=mpesa_setup.consumer_key,
+		app_secret=mpesa_setup.get_password("consumer_secret"),
+	)
+
+
+def get_business_shortcode(mpesa_setup):
+	# For sandbox, business shortcode is same as till number.
+	return mpesa_setup.till_number if mpesa_setup.sandbox else mpesa_setup.business_shortcode
+
+
+def confirmed_by_mpesa(checkout_request_id):
+	"""Ask Mpesa for confirmation of the transaction."""
+	partner = get_details_from_request_log(checkout_request_id).partner
+	mpesa_setup = get_mpesa_setup_for_team(partner)
+	connector = get_mpesa_connector(mpesa_setup)
+	response = connector.stk_push_query(
+		business_shortcode=get_business_shortcode(mpesa_setup),
+		passcode=mpesa_setup.get_password("pass_key"),
+		checkout_request_id=checkout_request_id,
+	)
+	return str(response.get("ResultCode")) == "0"
 
 
 def sanitize_mobile_number(number):
@@ -456,11 +483,19 @@ def create_invoice_partner_site(data, gateway_controller):
 			invoice_name = response_data.get("invoice_name", "")
 			return download_link, invoice_name
 		frappe.log_error(f"API Error: {response.status_code} - {response.text}")
-		frappe.throw(_("Failed to create the invoice via API"))
+		frappe.throw(
+			_(
+				"Failed to create the invoice via API. Please reach out to us at <a href='https://support.frappe.io'>support.frappe.io</a> for assistance."
+			)
+		)
 
 	except requests.exceptions.RequestException as e:
 		frappe.log_error(f"Error calling API: {e}")
-		frappe.throw(_("There was an issue connecting to the API."))
+		frappe.throw(
+			_(
+				"There was an issue connecting to the API. Please retry after some time or reach out to us at <a href='https://support.frappe.io'>support.frappe.io</a>."
+			)
+		)
 
 
 @frappe.whitelist()

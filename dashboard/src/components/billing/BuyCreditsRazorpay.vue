@@ -2,7 +2,7 @@
 	<div>
 		<span
 			v-if="team.doc.currency === 'INR' || paypalEnabled"
-			class="mt-2.5 inline-flex gap-2 text-base text-gray-700"
+			class="mt-2.5 inline-flex gap-2 text-base text-ink-gray-7"
 		>
 			<FeatherIcon name="info" class="my-1 h-4" />
 			<span class="leading-5" v-if="team.doc.currency === 'INR'">
@@ -22,8 +22,12 @@
 				class="w-full"
 				size="md"
 				variant="solid"
-				:label="`Proceed to payment using ${paypalEnabled ? 'PayPal' : 'Razorpay'}`"
-				:loading="createRazorpayOrder.loading"
+				:label="
+					razorpayScriptLoading
+						? 'Loading payment gateway...'
+						: `Proceed to payment using ${paypalEnabled ? 'PayPal' : 'Razorpay'}`
+				"
+				:loading="createRazorpayOrder.loading || razorpayScriptLoading"
 				@click="createRazorpayOrder.submit()"
 			/>
 			<Button
@@ -38,10 +42,11 @@
 	</div>
 </template>
 <script setup>
-import { Button, ErrorMessage, FeatherIcon, createResource } from 'frappe-ui';
-import { ref, onMounted, onBeforeUnmount, inject } from 'vue';
-import { toast } from 'vue-sonner';
-import { DashboardError } from '../../utils/error';
+import { Button, createResource, ErrorMessage, FeatherIcon } from 'frappe-ui'
+import { inject, onMounted, ref } from 'vue'
+import { toast } from 'vue-sonner'
+import { DashboardError } from '../../utils/error'
+import { loadRazorpayScript } from '../../utils/razorpay'
 
 const props = defineProps({
 	amount: {
@@ -56,50 +61,63 @@ const props = defineProps({
 		type: Boolean,
 		default: false,
 	},
-});
+	type: {
+		type: String,
+		default: 'Prepaid Credits',
+	},
+	docName: {
+		type: String,
+		default: null,
+	},
+})
 
-const emit = defineEmits(['success']);
-const team = inject('team');
+const emit = defineEmits(['success'])
+const team = inject('team')
 
-const paypalEnabled = team.doc.currency === 'USD' && props.paypalEnabled;
-const isPaymentComplete = ref(false);
-const isVerifyingPayment = ref(false);
+const paypalEnabled = team.doc.currency === 'USD' && props.paypalEnabled
+const isPaymentComplete = ref(false)
+const isVerifyingPayment = ref(false)
 
-const razorpayCheckoutJS = ref(null);
+const razorpayScriptLoading = ref(!window.Razorpay)
 
 onMounted(() => {
-	razorpayCheckoutJS.value = document.createElement('script');
-	razorpayCheckoutJS.value.setAttribute(
-		'src',
-		'https://checkout.razorpay.com/v1/checkout.js',
-	);
-	razorpayCheckoutJS.value.async = true;
-	document.head.appendChild(razorpayCheckoutJS.value);
-});
-
-onBeforeUnmount(() => {
-	razorpayCheckoutJS.value?.remove();
-});
+	loadRazorpayScript()
+		.then(() => {
+			razorpayScriptLoading.value = false
+		})
+		.catch(() => {
+			toast.error(
+				'Failed to load payment gateway. Please refresh and try again.',
+			)
+		})
+})
 
 const createRazorpayOrder = createResource({
 	url: 'press.api.billing.create_razorpay_order',
-	params: {
+	makeParams: () => ({
 		amount: props.amount,
+		transaction_type: props.type,
+		doc_name: props.docName,
+	}),
+	onSuccess: async (data) => {
+		await loadRazorpayScript()
+		processOrder(data)
 	},
-	onSuccess: (data) => processOrder(data),
 	validate: () => {
 		if (props.amount < props.minimumAmount) {
-			throw new DashboardError('Amount less than minimum amount required');
+			throw new DashboardError(
+				`Amount should be equal to or greater than ${props.minimumAmount}`,
+			)
 		}
 	},
-});
+})
 
 const handlePaymentFailed = createResource({
 	url: 'press.api.billing.handle_razorpay_payment_failed',
 	onSuccess: () => {
-		console.log('Payment Failed.');
+		console.log('Payment Failed.')
 	},
-});
+})
 
 function processOrder(data) {
 	const options = {
@@ -133,26 +151,26 @@ function processOrder(data) {
 					},
 				}
 			: {}),
-	};
+	}
 
-	const rzp = new Razorpay(options);
+	const rzp = new Razorpay(options)
 
 	// Opens the payment checkout frame
-	rzp.open();
+	rzp.open()
 
 	// Attach failure handler
-	rzp.on('payment.failed', handlePaymentFailure);
+	rzp.on('payment.failed', handlePaymentFailure)
 	// rzp.on('payment.success', this.handlePaymentSuccess);
 }
 
 function handlePaymentFailure(response) {
-	handlePaymentFailed.submit({ response });
-	toast.error('Payment failed');
+	handlePaymentFailed.submit({ response })
+	toast.error('Payment failed')
 }
 
 function handlePaymentSuccess() {
-	isPaymentComplete.value = true;
-	emit('success');
-	toast.success('Payment successful');
+	isPaymentComplete.value = true
+	emit('success')
+	toast.success('Payment successful')
 }
 </script>

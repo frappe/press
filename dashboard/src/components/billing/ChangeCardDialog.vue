@@ -10,7 +10,7 @@
 					<div
 						v-for="card in cards.data"
 						:key="card.name"
-						class="flex justify-between gap-2 rounded p-2.5 text-base text-gray-900 hover:bg-gray-100"
+						class="flex justify-between gap-2 rounded p-2.5 text-base text-ink-gray-9 hover:bg-surface-gray-2"
 					>
 						<div class="flex gap-2">
 							<component :is="cardBrandIcon(card.brand)" class="my-auto" />
@@ -18,7 +18,7 @@
 								<div class="flex h-7 items-center gap-1 font-medium">
 									<div>{{ card.name_on_card }}</div>
 									<div>&middot;</div>
-									<div class="flex gap-1 text-gray-700">
+									<div class="flex gap-1 text-ink-gray-7">
 										<div>Card ending in ••••</div>
 										<div>{{ card.last_4 }}</div>
 									</div>
@@ -30,13 +30,11 @@
 										theme="green"
 									/>
 								</div>
-								<div class="text-gray-600">
+								<div class="text-ink-gray-6">
 									Expiry
-									{{
-										card.expiry_month < 10
+									{{ card.expiry_month < 10
 											? `0${card.expiry_month}`
-											: card.expiry_month
-									}}/{{ card.expiry_year }}
+											: card.expiry_month }}/{{ card.expiry_year }}
 								</div>
 							</div>
 						</div>
@@ -75,25 +73,26 @@
 <script setup>
 // import { createDialog } from '../dialogs.js';
 import {
-	Dropdown,
 	Badge,
-	Dialog,
 	Button,
-	FeatherIcon,
 	createResource,
-} from 'frappe-ui';
-import { cardBrandIcon, confirmDialog } from '../../utils/components';
-import { ref } from 'vue';
+	Dialog,
+	Dropdown,
+	FeatherIcon,
+} from 'frappe-ui'
+import { ref } from 'vue'
+import { toast } from 'vue-sonner'
+import { cardBrandIcon, confirmDialog } from '../../utils/components'
 
-const emit = defineEmits(['success', 'addCard']);
+const emit = defineEmits(['success', 'addCard'])
 
-const show = defineModel();
+const show = defineModel()
 
 const cards = createResource({
 	url: 'press.api.billing.get_payment_methods',
 	cache: 'cards',
 	auto: true,
-});
+})
 
 const setAsDefault = (card) => {
 	createResource({
@@ -101,15 +100,19 @@ const setAsDefault = (card) => {
 		params: { name: card },
 		auto: true,
 		onSuccess: () => {
-			cards.reload();
-			emit('success');
+			cards.reload()
+			emit('success')
+			toast.success('Default card set')
 		},
-	});
-};
+		onError: (error) => {
+			toast.error(error.messages?.join('\n') || 'Could not set default card')
+		},
+	})
+}
 
-const confirmDialogOpened = ref(false);
+const confirmDialogOpened = ref(false)
 const removeCard = (card) => {
-	confirmDialogOpened.value = true;
+	confirmDialogOpened.value = true
 	confirmDialog({
 		title: 'Remove Card',
 		message: 'Are you sure you want to remove this card?',
@@ -123,16 +126,21 @@ const removeCard = (card) => {
 					params: { name: card },
 					auto: true,
 					onSuccess: () => {
-						cards.reload();
-						confirmDialogOpened.value = false;
-						hide();
+						cards.reload()
+						confirmDialogOpened.value = false
+						hide()
+						toast.success('Card removed')
 					},
-				});
+					onError: (error) => {
+						confirmDialogOpened.value = false
+						toast.error(error.messages?.join('\n') || 'Could not remove card')
+					},
+				})
 			},
 		},
 		onSuccess: () => {
-			confirmDialogOpened.value = false;
+			confirmDialogOpened.value = false
 		},
-	});
-};
+	})
+}
 </script>

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.utils import convert_utc_to_system_timezone
 
 from press.agent import Agent
 from press.exceptions import (
@@ -25,6 +26,7 @@ from press.exceptions import (
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
+from press.press.doctype.site.site import Site
 from press.press.doctype.site_backup.site_backup import (
 	SiteBackup,
 	process_backup_site_job_update,
@@ -37,11 +39,10 @@ if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.server.server import Server
-	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_domain.site_domain import SiteDomain
 
 
-def get_ongoing_migration(site: Link, scheduled=False):
+def get_ongoing_migration(site: Link | None, scheduled=False) -> str:
 	"""
 	Return ongoing Site Migration for site.
 
@@ -72,6 +73,7 @@ class SiteMigration(Document):
 		scheduled_time: DF.Datetime | None
 		site: DF.Link
 		skip_failing_patches: DF.Check
+		skip_migrate: DF.Check
 		source_bench: DF.Link
 		source_cluster: DF.Link
 		source_server: DF.Link
@@ -80,15 +82,15 @@ class SiteMigration(Document):
 	# end: auto-generated types
 
 	def before_insert(self):
-		self.validate_apps()
-		self.validate_bench()
-		self.check_for_inactive_domains()
-		self.check_for_existing_domains()
-		self.check_enough_space_on_destination_server()
 		if get_ongoing_migration(self.site, scheduled=True):
 			frappe.throw(f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists.")
 		site: Site = frappe.get_doc("Site", self.site)
 		site.check_move_scheduled()
+		site.check_fatal_site_update()
+
+	def validate(self):
+		if self.skip_migrate:
+			self.skip_failing_patches = 1
 
 	def check_for_existing_domains(self):
 		"""
@@ -111,20 +113,13 @@ class SiteMigration(Document):
 
 	def validate_bench(self):
 		if frappe.db.get_value("Bench", self.destination_bench, "status", for_update=True) != "Active":
-			frappe.throw("Destination bench does not exist")
+			frappe.throw(
+				"The destination bench isn't active, so the site can't be moved to it. Please choose an active bench and try again."
+			)
 
 	@cached_property
 	def last_backup(self) -> SiteBackup | None:
-		return frappe.get_last_doc(
-			"Site Backup",
-			{
-				"site": self.site,
-				"with_files": True,
-				"offsite": True,
-				"status": "Success",
-				"files_availability": "Available",
-			},
-		)
+		return Site("Site", self.site).last_backup
 
 	def check_enough_space_on_source_server(self):
 		# server needs to have enough space to create backup
@@ -133,32 +128,34 @@ class SiteMigration(Document):
 		except frappe.DoesNotExistError:
 			pass
 		else:
-			site: "Site" = frappe.get_doc("Site", self.site)
+			site = Site("Site", self.site)
 			site.remote_database_file = backup.remote_database_file
 			site.remote_public_file = backup.remote_public_file
 			site.remote_private_file = backup.remote_private_file
 			site.check_space_on_server_for_backup()
 
 	def check_enough_space_on_destination_server(self):
-		try:
-			backup = self.last_backup
-		except frappe.DoesNotExistError:
-			pass
-		else:
-			site: "Site" = frappe.get_doc("Site", self.site)
-			site.server = self.destination_server
-			site.remote_database_file = backup.remote_database_file
-			site.remote_public_file = backup.remote_public_file
-			site.remote_private_file = backup.remote_private_file
-			site.check_space_on_server_for_restore()
+		backup = self.last_backup
+		if not backup:
+			return
+		site = Site("Site", self.site)
+		site.server = self.destination_server
+		site.remote_database_file = backup.remote_database_file
+		site.remote_public_file = backup.remote_public_file
+		site.remote_private_file = backup.remote_private_file
+		site.check_space_on_server_for_restore()
 
 	def after_insert(self):
 		self.set_migration_type()
 		self.add_steps()
 		self.save()
+		if not self.scheduled_time:
+			self.start()
+		else:
+			self.run_validations()
 
 	def validate_apps(self):
-		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
+		site_apps = [app.app for app in Site("Site", self.site).apps]
 		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
 
 		if diff := set(site_apps) - set(bench_apps):
@@ -176,17 +173,21 @@ class SiteMigration(Document):
 				InactiveDomains,
 			)
 
+	def run_validations(self):
+		self.validate_bench()
+		self.validate_apps()
+		self.check_for_inactive_domains()
+		self.check_for_existing_domains()
+		self.check_enough_space_on_destination_server()
+
 	@frappe.whitelist()
 	def start(self):
 		self.check_for_ongoing_agent_jobs()  # has to be before setting state to pending so it gets retried
 		previous_status = self.status
 		self.status = "Pending"
 		self.save()
-		self.check_for_inactive_domains()
-		self.check_for_existing_domains()
-		self.validate_apps()
-		self.check_enough_space_on_destination_server()
-		site: Site = frappe.get_doc("Site", self.site)
+		self.run_validations()
+		site = Site("Site", self.site)
 		try:
 			site.ready_for_move()
 		except SiteAlreadyArchived:
@@ -331,12 +332,47 @@ class SiteMigration(Document):
 
 	def setup_redirects(self):
 		"""Setup redirects of site in proxy"""
-		site: "Site" = frappe.get_doc("Site", self.site)
+		site = Site("Site", self.site)
 		ret = site._update_redirects_for_all_site_domains()
 		if ret:
 			# could be no jobs
 			return ret
 		self.update_next_step_status("Skipped")
+		return self.run_next_step()
+
+	def _add_step_for_removing_redirects_for_custom_domain_with_A_record(self):
+		step = {
+			"step_title": self.remove_redirects_for_custom_domain_with_A_record.__doc__,
+			"status": "Pending",
+			"method_name": self.remove_redirects_for_custom_domain_with_A_record.__name__,
+		}
+		self.append("steps", step)
+
+	def remove_redirects_for_custom_domain_with_A_record(self):
+		"""Remove redirects for custom domain with A record"""
+		primary_domain = frappe.db.get_value("Site", self.site, "host_name")
+		if self.site == primary_domain:
+			self.update_next_step_status("Skipped")
+			return self.run_next_step()
+
+		if not frappe.db.exists("Site Domain", primary_domain):
+			self.update_next_step_status("Skipped")
+			return self.run_next_step()
+
+		site_domain: SiteDomain = frappe.get_doc("Site Domain", primary_domain)
+		if site_domain.dns_type == "CNAME":
+			self.update_next_step_status("Skipped")
+			return self.run_next_step()
+
+		# Remove the redirects for default domain and make that primary
+		site: Site = frappe.get_doc("Site", self.site)
+		if site_domain.redirect_to_primary:
+			site.unset_redirect(site_domain.name)
+
+		# Make the default domain as primary
+		site.set_host_name(self.site)
+
+		self.update_next_step_status("Success")
 		return self.run_next_step()
 
 	def add_steps_for_domains(self):
@@ -349,6 +385,12 @@ class SiteMigration(Document):
 			self._add_add_host_to_destination_proxy_step(domain)
 		if len(domains) > 1:
 			self._add_setup_redirects_step()
+			if (
+				self.migration_type == "Cluster"
+				and (site_primary_domain := frappe.db.get_value("Site", self.site, "host_name"))
+				and frappe.db.get_value("Site Domain", site_primary_domain, "dns_type") == "A"
+			):
+				self._add_step_for_removing_redirects_for_custom_domain_with_A_record()
 
 	def add_steps_for_user_defined_domains(self):
 		domains = frappe.get_all("Site Domain", {"site": self.site, "name": ["!=", self.site]}, pluck="name")
@@ -441,7 +483,7 @@ class SiteMigration(Document):
 		return find(self.steps, lambda x: x.status == "Failure")
 
 	def activate_site_if_appropriate(self, force=False):
-		site: "Site" = frappe.get_doc("Site", self.site)
+		site = Site("Site", self.site)
 		failed_step_method_name = (self.failed_step or {}).get("method_name", "__NOT_SET__")
 		if force or (
 			failed_step_method_name
@@ -453,6 +495,8 @@ class SiteMigration(Document):
 			and site.status_before_update != "Inactive"
 		):
 			site.activate()
+		elif site.status_before_update == "Inactive":
+			site.db_set("status", "Inactive")
 		if self.is_standalone_migration:
 			site.create_dns_record()
 		if self.migration_type == "Cluster":
@@ -466,7 +510,7 @@ class SiteMigration(Document):
 	def send_fail_notification(self, reason: str | None = None):
 		from press.press.doctype.agent_job.agent_job_notifications import create_job_failed_notification
 
-		site = frappe.get_doc("Site", self.site)
+		site = Site("Site", self.site)
 		message = f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> failed"
 		if reason:
 			message += f" due to {reason}"
@@ -480,7 +524,10 @@ class SiteMigration(Document):
 				message,
 			)
 		else:
-			agent_job_id = find(self.steps, lambda x: x.status == "Failure").get("step_job")
+			step = find(self.steps, lambda x: x.status == "Failure")
+			if not step:
+				return
+			agent_job_id = step.get("step_job")
 
 			job = frappe.get_doc("Agent Job", agent_job_id)
 			create_job_failed_notification(job, site.team, "Site Migrate", "Site Migrate", message)
@@ -491,7 +538,7 @@ class SiteMigration(Document):
 		self.send_success_notification()
 
 	def send_success_notification(self):
-		site = frappe.get_doc("Site", self.site)
+		site = Site("Site", self.site)
 
 		message = (
 			f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> completed successfully"
@@ -583,6 +630,8 @@ class SiteMigration(Document):
 				"step_title": self.remove_site_from_source_proxy.__doc__,
 				"method_name": self.remove_site_from_source_proxy.__name__,
 				"status": "Pending",
+				"condition": frappe.db.get_value("Server", self.source_server, "proxy_server")
+				!= frappe.db.get_value("Server", self.destination_server, "proxy_server"),
 			},
 			{
 				"step_title": self.restore_site_on_destination_proxy.__doc__,
@@ -606,7 +655,9 @@ class SiteMigration(Document):
 			},
 		]
 		for step in steps:
-			self.append("steps", step)
+			if step.get("condition", None) is None or step["condition"]:
+				step.pop("condition", None)
+				self.append("steps", step)
 
 	def deactivate_site_on_source_server(self):
 		"""Deactivate site on source"""
@@ -656,7 +707,9 @@ class SiteMigration(Document):
 				site.remove_dns_record(source_proxy)
 		elif self.is_standalone_migration:
 			site.create_dns_record()
-		return agent.new_site_from_backup(site, skip_failing_patches=self.skip_failing_patches)
+		return agent.new_site_from_backup(
+			site, skip_failing_patches=self.skip_failing_patches, skip_migrate=self.skip_migrate
+		)
 
 	def restore_site_on_destination_proxy(self):
 		"""Restore site on destination proxy"""
@@ -778,10 +831,68 @@ class SiteMigration(Document):
 			)  # sometimes site may not even get created in destination to clean it up
 		)
 
+	def get_steps(self) -> list[dict]:
+		steps = []
+		for step in self.steps:
+			# Now if the step has agent job expand that as well
+			if step.step_job:
+				job = frappe.get_doc("Agent Job", step.step_job)
+				agent_steps = frappe.get_all(
+					"Agent Job Step",
+					{"agent_job": step.step_job},
+					["name", "step_name", "status", "output"],
+					order_by="creation asc",
+				)
+				for s in agent_steps:
+					steps.append(
+						{
+							"name": s.name,
+							"title": s.step_name,
+							"status": s.status,
+							"output": s.output,
+							"stage": job.job_type,
+						}
+					)
+			else:
+				steps.append(
+					{
+						"name": step.name,
+						"title": step.step_title,
+						"status": step.status,
+						"output": "",
+						"stage": "Migrating Site",
+					}
+				)
 
-def process_required_job_callbacks(job):
+		if not steps:
+			steps.append(
+				{
+					"name": "site_migration_scheduled",
+					"title": f"Scheduled at {convert_utc_to_system_timezone(self.scheduled_time).strftime('%Y-%m-%d %H:%M:%S') if self.scheduled_time and self.status == 'Scheduled' else ''}",
+					"status": "Pending",
+					"output": "",
+					"stage": "Migrating Site",
+				}
+			)
+
+		return steps
+
+	@property
+	def is_destination_unified(self):
+		return bool(frappe.db.get_value("Server", self.destination_server, "is_unified_server"))
+
+
+def process_required_job_callbacks(job, site_migration: SiteMigration):
 	if job.job_type == "Backup Site":
 		process_backup_site_job_update(job)
+	elif job.job_type == "New Site from Backup" and job.status == "Success":
+		if not site_migration.is_destination_unified:
+			return
+		site = Site("Site", site_migration.site)
+		site.bench = site_migration.destination_bench
+		Agent(site_migration.destination_server).create_database_access_credentials(
+			site=site
+		)  # In case the permissions are missing correct them
 
 
 def job_matches_site_migration(job, site_migration_name: str):
@@ -799,7 +910,7 @@ def process_site_migration_job_update(job, site_migration_name: str):
 		log_error("Extra Job found during Site Migration", job=job.as_dict())
 		return
 
-	process_required_job_callbacks(job)
+	process_required_job_callbacks(job, site_migration)
 	site_migration.update_next_step_status(job.status)
 
 	if site_migration.is_cleanup_done(job):

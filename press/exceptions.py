@@ -89,6 +89,10 @@ class MultipleCNAMERecords(DNSValidationError):
 	pass
 
 
+class DomainNoLongerPointed(DNSValidationError):
+	pass
+
+
 class TLSRetryLimitExceeded(ValidationError):
 	pass
 
@@ -98,4 +102,8 @@ class ArchiveBenchError(ValidationError):
 
 
 class MonitorServerDown(ValidationError):
+	pass
+
+
+class ReleasePipelineFailure(Exception):
 	pass

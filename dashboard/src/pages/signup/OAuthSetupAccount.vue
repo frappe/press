@@ -4,9 +4,9 @@
 		v-if="$resources.signupSettings.loading"
 	>
 		<Spinner class="mr-2 w-4" />
-		<p class="text-gray-800">Loading</p>
+		<p class="text-ink-gray-8">Loading</p>
 	</div>
-	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
+	<div class="flex h-screen overflow-hidden sm:bg-surface-gray-1" v-else>
 		<div class="w-full overflow-auto">
 			<LoginBox
 				title="Get started in minutes"
@@ -105,6 +105,13 @@ export default {
 			terms_accepted: false,
 			isRedirecting: false,
 		};
+	},
+	mounted() {
+		// Google has already verified the address by the time this page loads.
+		this.$pulse?.capture('signup_verified', {
+			method: 'oauth',
+			product: this.productId,
+		});
 	},
 	resources: {
 		setupAccount() {

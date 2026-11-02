@@ -1,210 +1,119 @@
 {
- "actions": [],
- "creation": "2021-07-12 16:17:54.427902",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "marketplace_app",
-  "team",
-  "status",
-  "column_break_4",
-  "app_release",
-  "app",
-  "reviewed_by",
-  "section_break_8",
-  "reason_for_rejection",
-  "code_screening_tab",
-  "screening_status",
-  "baseline_result_section",
-  "baseline_request",
-  "baseline_result",
-  "baseline_requirements",
-  "result_section",
-  "result",
-  "result_html",
-  "result_html_rendered",
-  "requirements",
-  "comments_tab",
-  "code_comments"
- ],
- "fields": [
-  {
-   "fieldname": "marketplace_app",
-   "fieldtype": "Link",
-   "label": "Marketplace App",
-   "options": "Marketplace App",
-   "reqd": 1,
-   "set_only_once": 1
-  },
-  {
-   "allow_in_quick_entry": 1,
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "options": "Open\nCancelled\nApproved\nRejected",
-   "reqd": 1
-  },
-  {
-   "fieldname": "app_release",
-   "fieldtype": "Link",
-   "label": "App Release",
-   "options": "App Release",
-   "reqd": 1,
-   "set_only_once": 1
-  },
-  {
-   "fetch_from": "marketplace_app.team",
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "label": "Team",
-   "options": "Team",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_4",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "marketplace_app.app",
-   "fieldname": "app",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "App",
-   "options": "App",
-   "read_only": 1
-  },
-  {
-   "depends_on": "eval:doc.status==\"Rejected\"",
-   "fieldname": "reason_for_rejection",
-   "fieldtype": "Text Editor",
-   "label": "Reason For Rejection",
-   "mandatory_depends_on": "eval:doc.status==\"Rejected\""
-  },
-  {
-   "fieldname": "section_break_8",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "reviewed_by",
-   "fieldtype": "Link",
-   "label": "Reviewed By",
-   "options": "User"
-  },
-  {
-   "fieldname": "result",
-   "fieldtype": "Code",
-   "label": "Result",
-   "read_only": 1
-  },
-  {
-   "fieldname": "result_html",
-   "fieldtype": "Code",
-   "label": "Result Html",
-   "read_only": 1
-  },
-  {
-   "fieldname": "code_screening_tab",
-   "fieldtype": "Tab Break",
-   "label": "Code Screening"
-  },
-  {
-   "fieldname": "baseline_result_section",
-   "fieldtype": "Section Break",
-   "label": "Baseline Result"
-  },
-  {
-   "fieldname": "baseline_result",
-   "fieldtype": "Code",
-   "label": "Baseline Result",
-   "read_only": 1
-  },
-  {
-   "fieldname": "baseline_requirements",
-   "fieldtype": "Code",
-   "label": "Baseline Requirements",
-   "read_only": 1
-  },
-  {
-   "fieldname": "result_section",
-   "fieldtype": "Section Break",
-   "label": "Result"
-  },
-  {
-   "fieldname": "result_html_rendered",
-   "fieldtype": "HTML",
-   "label": "Result HTML Rendered"
-  },
-  {
-   "fieldname": "requirements",
-   "fieldtype": "Code",
-   "label": "Requirements"
-  },
-  {
-   "fieldname": "baseline_request",
-   "fieldtype": "Data",
-   "label": "Baseline Request"
-  },
-  {
-   "default": "Not Started",
-   "fieldname": "screening_status",
-   "fieldtype": "Select",
-   "label": "Screening Status",
-   "options": "Not Started\nScreening\nComplete"
-  },
-  {
-   "fieldname": "comments_tab",
-   "fieldtype": "Tab Break",
-   "label": "Comments"
-  },
-  {
-   "fieldname": "code_comments",
-   "fieldtype": "Table",
-   "label": "Code Comments",
-   "options": "App Release Approval Code Comments"
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-08-22 22:42:15.984891",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "App Release Approval Request",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Marketplace Manager",
-   "select": 1,
-   "share": 1,
-   "write": 1
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1,
- "track_seen": 1
+	"actions": [],
+	"creation": "2021-07-12 16:17:54.427902",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"marketplace_app",
+		"team",
+		"status",
+		"column_break_4",
+		"app_release",
+		"app",
+		"reviewed_by",
+		"section_break_8",
+		"reason_for_rejection"
+	],
+	"fields": [
+		{
+			"fieldname": "marketplace_app",
+			"fieldtype": "Link",
+			"label": "Marketplace App",
+			"options": "Marketplace App",
+			"reqd": 1,
+			"set_only_once": 1
+		},
+		{
+			"allow_in_quick_entry": 1,
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Status",
+			"options": "Open\nCancelled\nApproved\nRejected",
+			"reqd": 1
+		},
+		{
+			"fieldname": "app_release",
+			"fieldtype": "Link",
+			"label": "App Release",
+			"options": "App Release",
+			"reqd": 1,
+			"set_only_once": 1
+		},
+		{
+			"fetch_from": "marketplace_app.team",
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"label": "Team",
+			"options": "Team",
+			"read_only": 1
+		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
+		{
+			"fetch_from": "marketplace_app.app",
+			"fieldname": "app",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "App",
+			"options": "App",
+			"read_only": 1
+		},
+		{
+			"depends_on": "eval:doc.status==\"Rejected\"",
+			"fieldname": "reason_for_rejection",
+			"fieldtype": "Text Editor",
+			"label": "Reason For Rejection",
+			"mandatory_depends_on": "eval:doc.status==\"Rejected\""
+		},
+		{ "fieldname": "section_break_8", "fieldtype": "Section Break" },
+		{
+			"fieldname": "reviewed_by",
+			"fieldtype": "Link",
+			"label": "Reviewed By",
+			"options": "User"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-04-09 17:39:08.003050",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "App Release Approval Request",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Marketplace Manager",
+			"select": 1,
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1,
+	"track_seen": 1
 }

@@ -28,7 +28,7 @@
     dest: /etc/systemd/system/mariadb.service.d/allocator.conf
     owner: root
     group: root
-    mode: 0644
+    mode: 644
   when: allocator != "system"
 
 - name: Remove Memory Allocator
@@ -43,6 +43,22 @@
     name: mariadb
     enabled: yes
     state: restarted
+  ignore_errors: true # We need to recover from a failed restart if the allocator is not compatible
+  register: restart_result
+
+- name: Fallback to System Memory Allocator
+  file:
+    path: /etc/systemd/system/mariadb.service.d/allocator.conf
+    state: absent
+  when: restart_result is failed
+
+- name: Restart MariaDB after Fallback
+  systemd:
+    daemon_reload: true
+    name: mariadb
+    enabled: yes
+    state: restarted
+  when: restart_result is failed
 
 - name: Show Memory Allocator
   mysql_query:

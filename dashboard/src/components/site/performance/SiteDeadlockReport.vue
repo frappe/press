@@ -76,7 +76,7 @@ export default {
 					{
 						label: 'Table',
 						fieldname: 'table',
-						class: 'text-gray-600',
+						class: 'text-ink-gray-6',
 						align: 'left',
 						width: '200px',
 					},

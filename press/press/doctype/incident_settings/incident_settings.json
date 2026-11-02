@@ -1,135 +1,163 @@
 {
- "actions": [],
- "allow_rename": 1,
- "creation": "2023-12-14 09:23:55.912233",
- "default_view": "List",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "users",
-  "self_hosted_users",
-  "section_break_rnxb",
-  "enable_incident_detection",
-  "phone_call_alerts",
-  "email_alerts",
-  "grafana_screenshots",
-  "column_break_ehby",
-  "confirmation_threshold_day",
-  "call_threshold_day",
-  "call_repeat_interval_day",
-  "column_break_voyg",
-  "confirmation_threshold_night",
-  "call_threshold_night",
-  "call_repeat_interval_night"
- ],
- "fields": [
-  {
-   "fieldname": "users",
-   "fieldtype": "Table",
-   "label": "Users",
-   "options": "Incident Settings User"
-  },
-  {
-   "default": "1",
-   "fieldname": "phone_call_alerts",
-   "fieldtype": "Check",
-   "label": "Phone Call Alerts"
-  },
-  {
-   "default": "1",
-   "fieldname": "enable_incident_detection",
-   "fieldtype": "Check",
-   "label": "Enable Incident Detection"
-  },
-  {
-   "fieldname": "self_hosted_users",
-   "fieldtype": "Table",
-   "label": "Self Hosted Users",
-   "options": "Incident Settings Self Hosted User"
-  },
-  {
-   "fieldname": "section_break_rnxb",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_voyg",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "confirmation_threshold_day",
-   "fieldtype": "Duration",
-   "hide_days": 1,
-   "label": "Confirmation Threshold Day"
-  },
-  {
-   "fieldname": "confirmation_threshold_night",
-   "fieldtype": "Duration",
-   "hide_days": 1,
-   "label": "Confirmation Threshold Night"
-  },
-  {
-   "fieldname": "call_threshold_day",
-   "fieldtype": "Duration",
-   "hide_days": 1,
-   "label": "Call Threshold Day"
-  },
-  {
-   "fieldname": "call_threshold_night",
-   "fieldtype": "Duration",
-   "hide_days": 1,
-   "label": "Call Threshold Night"
-  },
-  {
-   "fieldname": "call_repeat_interval_day",
-   "fieldtype": "Duration",
-   "hide_days": 1,
-   "label": "Call Repeat Interval Day"
-  },
-  {
-   "fieldname": "call_repeat_interval_night",
-   "fieldtype": "Duration",
-   "hide_days": 1,
-   "label": "Call Repeat Interval Night"
-  },
-  {
-   "fieldname": "column_break_ehby",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "email_alerts",
-   "fieldtype": "Check",
-   "label": "Email Alerts"
-  },
-  {
-   "default": "0",
-   "fieldname": "grafana_screenshots",
-   "fieldtype": "Check",
-   "label": "Grafana Screenshots"
-  }
- ],
- "index_web_pages_for_search": 1,
- "issingle": 1,
- "links": [],
- "modified": "2025-01-24 11:07:55.944210",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Incident Settings",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+	"actions": [],
+	"allow_rename": 1,
+	"creation": "2023-12-14 09:23:55.912233",
+	"default_view": "List",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"users",
+		"self_hosted_users",
+		"section_break_kbro",
+		"night_shifts",
+		"night_shift_call_limit",
+		"section_break_rnxb",
+		"enable_incident_detection",
+		"phone_call_alerts",
+		"email_alerts",
+		"grafana_screenshots",
+		"column_break_ehby",
+		"confirmation_threshold_day",
+		"call_threshold_day",
+		"call_repeat_interval_day",
+		"wait_time_post_investigator_actions",
+		"column_break_voyg",
+		"confirmation_threshold_night",
+		"call_threshold_night",
+		"call_repeat_interval_night"
+	],
+	"fields": [
+		{
+			"fieldname": "users",
+			"fieldtype": "Table",
+			"label": "Users",
+			"options": "Incident Settings User"
+		},
+		{
+			"default": "1",
+			"fieldname": "phone_call_alerts",
+			"fieldtype": "Check",
+			"label": "Phone Call Alerts"
+		},
+		{
+			"default": "1",
+			"fieldname": "enable_incident_detection",
+			"fieldtype": "Check",
+			"label": "Enable Incident Detection"
+		},
+		{
+			"fieldname": "self_hosted_users",
+			"fieldtype": "Table",
+			"label": "Self Hosted Users",
+			"options": "Incident Settings Self Hosted User"
+		},
+		{
+			"fieldname": "section_break_rnxb",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "column_break_voyg",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "confirmation_threshold_day",
+			"fieldtype": "Duration",
+			"hide_days": 1,
+			"label": "Confirmation Threshold Day"
+		},
+		{
+			"fieldname": "confirmation_threshold_night",
+			"fieldtype": "Duration",
+			"hide_days": 1,
+			"label": "Confirmation Threshold Night"
+		},
+		{
+			"fieldname": "call_threshold_day",
+			"fieldtype": "Duration",
+			"hide_days": 1,
+			"label": "Call Threshold Day"
+		},
+		{
+			"fieldname": "call_threshold_night",
+			"fieldtype": "Duration",
+			"hide_days": 1,
+			"label": "Call Threshold Night"
+		},
+		{
+			"fieldname": "call_repeat_interval_day",
+			"fieldtype": "Duration",
+			"hide_days": 1,
+			"label": "Call Repeat Interval Day"
+		},
+		{
+			"fieldname": "call_repeat_interval_night",
+			"fieldtype": "Duration",
+			"hide_days": 1,
+			"label": "Call Repeat Interval Night"
+		},
+		{
+			"fieldname": "column_break_ehby",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "0",
+			"fieldname": "email_alerts",
+			"fieldtype": "Check",
+			"label": "Email Alerts"
+		},
+		{
+			"default": "0",
+			"fieldname": "grafana_screenshots",
+			"fieldtype": "Check",
+			"label": "Grafana Screenshots"
+		},
+		{
+			"fieldname": "wait_time_post_investigator_actions",
+			"fieldtype": "Duration",
+			"hide_days": 1,
+			"label": "Wait Time Post Investigator Actions"
+		},
+		{
+			"fieldname": "section_break_kbro",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "night_shifts",
+			"fieldtype": "Table",
+			"label": "Night Shifts",
+			"options": "Incident Settings Night Shift"
+		},
+		{
+			"default": "10",
+			"description": "Number of unanswered call attempts to night shift assignees before falling back to the full default on-call list",
+			"fieldname": "night_shift_call_limit",
+			"fieldtype": "Int",
+			"label": "Max Calls To Dedicated Persons (Night)"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"issingle": 1,
+	"links": [],
+	"modified": "2026-06-02 15:33:07.990491",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Incident Settings",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
 }

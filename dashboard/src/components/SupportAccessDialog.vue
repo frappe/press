@@ -15,7 +15,7 @@
 						'bg-green-50 border-green-200 text-green-800':
 							banner.type === 'success',
 						'bg-red-50 border-red-200 text-red-800': banner.type === 'error',
-						'bg-gray-50 border-gray-200 text-gray-800':
+						'bg-surface-gray-1 border-outline-gray-1 text-ink-gray-8':
 							banner.type === 'neutral',
 					}"
 				>
@@ -50,6 +50,16 @@
 						</div>
 					</div>
 				</div>
+				<div class="flex items-center gap-2">
+					<div>Valid For</div>
+					<div>
+						<Select
+							v-model="request.doc.allowed_for"
+							:options="validityOptions"
+							:disabled="!isPending"
+						/>
+					</div>
+				</div>
 				<div v-if="request.doc?.reason" class="space-y-2">
 					<p class="font-medium">Reason:</p>
 					<p class="leading-relaxed">{{ request.doc?.reason }}</p>
@@ -73,32 +83,46 @@
 </template>
 
 <script setup lang="ts">
-import Link from './Link.vue';
-import { Badge, createDocumentResource, createResource } from 'frappe-ui';
-import { computed, ref } from 'vue';
-import { getTeam } from '../data/team';
-import { toast } from 'vue-sonner';
+import {
+	Badge,
+	createDocumentResource,
+	createResource,
+	Select,
+} from 'frappe-ui'
+import { computed, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
+import { getTeam } from '../data/team'
+import Link from './Link.vue'
 
 const props = defineProps<{
-	name: string;
-}>();
+	name: string
+}>()
 
-const open = ref(true);
-const team = getTeam();
+const open = ref(true)
+const team = getTeam()
 
 const request = createDocumentResource({
 	doctype: 'Support Access',
 	name: props.name,
 	auto: true,
-});
+})
 
 const isReceived = computed(() => {
-	return team.doc?.name === request.doc?.target_team;
-});
+	return team.doc?.name === request.doc?.target_team
+})
 
 const isPending = computed(() => {
-	return request.doc?.status === 'Pending';
-});
+	return request.doc?.status === 'Pending'
+})
+
+const validityOptions = [
+	{ label: '3 Hours', value: '3' },
+	{ label: '6 Hours', value: '6' },
+	{ label: '12 Hours', value: '12' },
+	{ label: '1 Day', value: '24' },
+	{ label: '3 Days', value: '72' },
+	{ label: '7 Days', value: '168' },
+]
 
 const permissions = computed(() =>
 	[
@@ -123,7 +147,7 @@ const permissions = computed(() =>
 			color: 'green',
 		},
 	].filter((p) => p.requested),
-);
+)
 
 const update = createResource({
 	url: 'press.api.client.set_value',
@@ -132,41 +156,47 @@ const update = createResource({
 		name: props.name,
 		fieldname: {
 			status: args.status,
+			allowed_for: args.allowed_for,
 		},
 	}),
 	onSuccess: (data: any) => {
-		toast.success(`Request ${data.status}`);
-		open.value = false;
+		toast.success(`Request ${data.status}`)
+		open.value = false
 	},
-});
+})
 
 const banner = computed(() => {
 	if (request.doc?.status === 'Accepted') {
 		return {
 			type: 'success',
 			message: 'This request has been accepted.',
-		};
+		}
 	} else if (request.doc?.status === 'Rejected') {
 		return {
 			type: 'error',
 			message: 'This request has been rejected.',
-		};
+		}
 	} else if (request.doc?.status === 'Revoked') {
 		return {
 			type: 'neutral',
 			message: 'This request has been revoked.',
-		};
+		}
 	} else if (request.doc?.status === 'Forfeited') {
 		return {
 			type: 'neutral',
 			message: 'This request has been forfeited.',
-		};
+		}
+	} else if (request.doc?.status === 'Expired') {
+		return {
+			type: 'neutral',
+			message: 'This request expired before anyone responded to it.',
+		}
 	}
-});
+})
 
 const actions = computed(() => {
-	const actions = [];
-	const isExpired = new Date(request.doc.access_allowed_till) < new Date();
+	const actions = []
+	const isExpired = new Date(request.doc.access_allowed_till) < new Date()
 
 	if (request.doc?.status === 'Pending' && isReceived.value) {
 		actions.push(
@@ -177,7 +207,8 @@ const actions = computed(() => {
 				onClick: () => {
 					update.submit({
 						status: 'Rejected',
-					});
+						allowed_for: request.doc.allowed_for,
+					})
 				},
 			},
 			{
@@ -186,10 +217,11 @@ const actions = computed(() => {
 				onClick: () => {
 					update.submit({
 						status: 'Accepted',
-					});
+						allowed_for: request.doc.allowed_for,
+					})
 				},
 			},
-		);
+		)
 	}
 
 	if (request.doc?.status === 'Accepted' && isReceived.value && !isExpired) {
@@ -200,9 +232,10 @@ const actions = computed(() => {
 			onClick: () => {
 				update.submit({
 					status: 'Revoked',
-				});
+					allowed_for: request.doc.allowed_for,
+				})
 			},
-		});
+		})
 	}
 
 	if (request.doc?.status === 'Accepted' && !isReceived.value && !isExpired) {
@@ -213,13 +246,14 @@ const actions = computed(() => {
 			onClick: () => {
 				update.submit({
 					status: 'Forfeited',
-				});
+					allowed_for: request.doc.allowed_for,
+				})
 			},
-		});
+		})
 	}
 
-	return actions;
-});
+	return actions
+})
 
 const resourceLink = (documentType: string, documentName: string) => {
 	switch (documentType) {
@@ -229,21 +263,21 @@ const resourceLink = (documentType: string, documentName: string) => {
 				params: {
 					name: documentName,
 				},
-			};
+			}
 		case 'Release Group':
 			return {
 				name: 'Release Group Detail',
 				params: {
 					name: documentName,
 				},
-			};
+			}
 		case 'Bench':
 			return {
 				name: 'Bench Detail',
 				params: {
 					name: documentName,
 				},
-			};
+			}
 	}
-};
+}
 </script>

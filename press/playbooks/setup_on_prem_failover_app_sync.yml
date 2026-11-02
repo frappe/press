@@ -1,0 +1,12 @@
+---
+- name: Setup App Server Replication Sync
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+
+  vars:
+    # app_server_base_directory must be passed in by Python
+
+  roles:
+    - role: on_prem_failover_app_sync

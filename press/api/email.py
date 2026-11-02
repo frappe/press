@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import calendar
+import hashlib
+import hmac
 import json
 import secrets
 from datetime import datetime
@@ -79,20 +81,19 @@ def setup(site):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_analytics(**data):
+def get_analytics(month: int, status: str, site: str, key: str):
 	"""
 	send data for a specific month
 	"""
-	month = data.get("month")
 	year = datetime.now().year
 	last_day = calendar.monthrange(year, int(month))[1]
-	status = data.get("status")
-	site = data.get("site")
-	subscription_key = data.get("key")
+	subscription_key = key
 
 	for value in (site, subscription_key):
 		if not value or not isinstance(value, str):
-			frappe.throw("Invalid Request")
+			frappe.throw(
+				"This request is missing required information. Please use the unsubscribe link from the email you received."
+			)
 
 	return frappe.get_all(
 		"Mail Log",
@@ -162,7 +163,7 @@ def make_spamd_request(press_settings: PressSettings, message: bytes):
 		spamd_api_secret = get_decrypted_password("Press Settings", "Press Settings", "spamd_api_secret")
 		headers["Authorization"] = f"token {press_settings.spamd_api_key}:{spamd_api_secret}"
 	r = requests.post(
-		press_settings.spamd_endpoint,
+		press_settings.spamd_endpoint,  # type: ignore[arg-type]
 		headers=headers,
 		files={"message": message},
 	)
@@ -207,25 +208,26 @@ def check_recipients(recipients: str | list[str]):
 
 
 @frappe.whitelist(allow_guest=True)
-def send_mime_mail(**data):
+def send_mime_mail(data: str):
 	"""
 	send api request to mailgun
 	"""
 	files = frappe._dict(frappe.request.files)
-	data = json.loads(data["data"])
+	data_dict = json.loads(data)
 
-	validate_plan(data["sk_mail"])
+	validate_plan(data_dict["sk_mail"])
 
-	api_key, domain = frappe.db.get_value("Press Settings", None, ["mailgun_api_key", "root_domain"])
+	api_key = get_decrypted_password("Press Settings", "Press Settings", "mailgun_api_key")
+	domain = frappe.db.get_single_value("Press Settings", "root_domain")
 
 	message: bytes = files["mime"].read()
 	check_spam(message)
-	check_recipients(data["recipients"])
+	check_recipients(data_dict["recipients"])
 
 	resp = requests.post(
 		f"https://api.mailgun.net/v3/{domain}/messages.mime",
 		auth=("api", f"{api_key}"),
-		data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
+		data={"to": data_dict["recipients"], "v:sk_mail": data_dict["sk_mail"]},
 		files={"message": message},
 	)
 
@@ -234,7 +236,7 @@ def send_mime_mail(**data):
 	if resp.status_code == 400:
 		err_msg: str = resp.json().get("message", "Invalid request")
 		frappe.throw(f"Something went wrong with sending emails: {err_msg}", InvalidEmail)
-	log_error("Email Delivery Service: Sending error", response=resp.text, data=data, message=message)
+	log_error("Email Delivery Service: Sending error", response=resp.text, data=data_dict, message=message)
 	frappe.throw(
 		"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
 		EmailSendError,
@@ -261,12 +263,29 @@ def is_valid_mailgun_event(event_data):
 	return True
 
 
+def verify_mailgun_signature(signature: dict | None):
+	"""Reject events that Mailgun did not sign with the webhook signing key."""
+	key = get_decrypted_password(
+		"Press Settings", "Press Settings", "mailgun_webhook_signing_key", raise_exception=False
+	)
+	signature = signature if isinstance(signature, dict) else {}
+	received = str(signature.get("signature") or "")
+	if not key or not hmac.compare_digest(sign_mailgun_event(key, signature), received):
+		frappe.throw("Invalid Mailgun signature", frappe.AuthenticationError)
+
+
+def sign_mailgun_event(key: str, signature: dict) -> str:
+	message = f"{signature.get('timestamp', '')}{signature.get('token', '')}"
+	return hmac.new(key.encode(), message.encode(), hashlib.sha256).hexdigest()
+
+
 @frappe.whitelist(allow_guest=True)
 def event_log():
 	"""
 	log the webhook and forward it to site
 	"""
 	data = json.loads(frappe.request.data)
+	verify_mailgun_signature(data.get("signature"))
 	event_data = data.get("event-data")
 
 	if not is_valid_mailgun_event(event_data):
@@ -280,10 +299,10 @@ def event_log():
 			# TOOD: Investigate why this is happening
 			return None
 		message_id = headers["message-id"]
-		site = (
-			frappe.get_cached_value("Subscription", {"secret_key": secret_key}, "site")
-			or message_id.split("@")[1]
-		)
+		site = frappe.get_cached_value("Subscription", {"secret_key": secret_key}, "site")
+		if not site:
+			# Not sent through send_mime_mail, which needs a subscription
+			return None
 		status = event_data["event"]
 		delivery_message = (
 			event_data["delivery-status"]["message"] or event_data["delivery-status"]["description"]
@@ -319,7 +338,9 @@ def event_log():
 		requests.post(
 			f"https://{host_name}/api/method/email_delivery_service.controller.update_status",
 			data=data,
-		)
+			timeout=5,
+			stream=True,
+		).close()
 	except requests.exceptions.ConnectionError:
 		# site might be down or unreachable
 		pass

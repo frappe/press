@@ -24,20 +24,24 @@ def sync_product_site_user(**data):
 	site_token = headers.get("x-site-token")
 
 	if not frappe.db.exists("Site", site):
-		frappe.throw("Invalid site")
+		frappe.throw(
+			"The site does not seem to exist. Please <a href='https://docs.frappe.io/cloud/sites/creating-a-new-site'>create a new site</a> or reach out to us at <a href='https://support.frappe.io/'>support.frappe.io</a> if you don't think this should be expected."
+		)
 
 	if not site_token:
-		frappe.throw("Invalid communication secret")
+		frappe.throw("Invalid communication secret. Please verify your key secret and retry.")
 
 	site = frappe.db.get_value("Site", site, ["saas_communication_secret", "name"], as_dict=True)
 
 	if site.saas_communication_secret != site_token:
-		frappe.throw("Invalid token")
+		frappe.throw("The secret seems invalid. Please verify your key secret and retry.")
 
 	user_info = data.get("user_info")
 
 	if not user_info:
-		frappe.throw("No user info provided")
+		frappe.throw(
+			"There was no user information provided during the setup. Please provide User info to smoothly proceed further."
+		)
 
 	if type(user_info) is str:
 		user_info = json.loads(user_info)
@@ -77,7 +81,7 @@ def get_product_sites_of_user(user: str):
 		or not isinstance(session_id, str)
 		or not frappe.db.exists("Site User Session", {"user": user, "session_id": session_id})
 	) and (frappe.session.user == "Guest"):
-		return frappe.throw("Invalid session")
+		return frappe.throw("Invalid session")  # nosemgrep
 
 	sites = frappe.db.get_all(
 		"Site User", filters={"user": user, "enabled": 1}, fields=["site"], pluck="site"
@@ -106,7 +110,7 @@ def send_otp(email: str):
 
 	last_otp = frappe.db.get_value("Site User Session", {"user": email}, "otp_generated_at")
 	if last_otp and (frappe.utils.now_datetime() - last_otp).seconds < 30:
-		return frappe.throw("Please wait for 30 seconds before sending the OTP again")
+		return frappe.throw("Please wait for 30 seconds before sending the OTP again")  # nosemgrep
 
 	session = frappe.get_doc({"doctype": "Site User Session", "user": email}).insert(ignore_permissions=True)
 	return session.send_otp()
@@ -124,19 +128,19 @@ def verify_otp(email: str, otp: str):
 		"Site User Session", {"user": email}, ["name", "session_id", "otp", "otp_generated_at"], as_dict=True
 	)
 	if not session:
-		return frappe.throw("Invalid session")
+		return frappe.throw("Invalid session")  # nosemgrep
 
 	if not session.otp:
-		return frappe.throw("OTP is not set")
+		return frappe.throw("OTP is not set. Please set OTP and try.")
 
 	if (frappe.utils.now_datetime() - session.otp_generated_at).seconds > 300:
-		return frappe.throw("OTP is expired")
+		return frappe.throw("OTP is expired. Please re-send and try again")
 
 	ip_tracker = get_login_attempt_tracker(frappe.local.request_ip)
 
 	if session.otp != otp:
 		ip_tracker and ip_tracker.add_failure_attempt()
-		return frappe.throw("Invalid OTP")
+		return frappe.throw("Invalid OTP")  # nosemgrep
 
 	frappe.db.set_value("Site User Session", session.name, {"otp": None, "verified": 1})
 	ip_tracker and ip_tracker.add_success_attempt()
@@ -157,7 +161,7 @@ def login_to_site(email: str, site: str):
 	session_id = frappe.local.request.cookies.get("site_user_sid")
 	if not session_id or not isinstance(session_id, str):
 		if frappe.session.user == "Guest":
-			return frappe.throw("Invalid session")
+			return frappe.throw("Invalid session. Please login to {site}.")
 		frappe.get_doc({"doctype": "Site User Session", "user": email}).insert(ignore_permissions=True)
 
 	site_user_name = frappe.db.get_value("Site User", {"user": email, "site": site}, "name")
@@ -165,7 +169,7 @@ def login_to_site(email: str, site: str):
 		return frappe.throw(f"User {email} not found in site {site}")
 	site_user = frappe.get_doc("Site User", site_user_name)
 	if not site_user.enabled:
-		frappe.throw(_(f"User is disabled for the site {site}"))
+		frappe.throw(_(f"User is disabled for the site {site}"))  # nosemgrep
 
 	return site_user.login_to_site()
 

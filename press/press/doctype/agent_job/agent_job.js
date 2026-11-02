@@ -3,10 +3,9 @@
 
 frappe.ui.form.on('Agent Job', {
 	refresh: function (frm) {
-		frm.add_web_link(
-			`https://${frm.doc.server}/agent/jobs/${frm.doc.job_id}`,
-			__('Visit Agent Endpoint'),
-		);
+		frm
+			.call('get_agent_endpoint')
+			.then((r) => frm.add_web_link(r.message, __('Visit Agent Endpoint')));
 		frm.add_web_link(
 			frm.doc.site
 				? `/dashboard/sites/${frm.doc.site}/insights/jobs/${frm.doc.name}`
@@ -14,7 +13,7 @@ frappe.ui.form.on('Agent Job', {
 			__('Visit Dashboard'),
 		);
 
-		if (!['Success', 'Failure', 'Delivery Failure'].includes(frm.doc.status)) {
+		if (!['Success', 'Delivery Failure'].includes(frm.doc.status)) {
 			frm.add_custom_button(
 				__('Get Status'),
 				() => {
@@ -23,26 +22,36 @@ frappe.ui.form.on('Agent Job', {
 				__('Actions'),
 			);
 		}
-
-		frm.add_custom_button(
-			__('Retry'),
-			() => {
-				frappe.confirm(`Are you sure you want to retry this job?`, () =>
-					frm
-						.call('retry')
-						.then((result) =>
-							frappe.msgprint(
-								frappe.utils.get_form_link(
-									'Agent Job',
-									result.message.name,
-									true,
+		if (
+			![
+				'New Site',
+				'Archive Site',
+				'Restore Site',
+				'New Site from Backup',
+				'Update Site Pull',
+				'Update Site Migrate',
+			].includes(frm.doc.job_type)
+		) {
+			frm.add_custom_button(
+				__('Retry'),
+				() => {
+					frappe.confirm(`Are you sure you want to retry this job?`, () =>
+						frm
+							.call('retry')
+							.then((result) =>
+								frappe.msgprint(
+									frappe.utils.get_form_link(
+										'Agent Job',
+										result.message.name,
+										true,
+									),
 								),
 							),
-						),
-				);
-			},
-			__('Actions'),
-		);
+					);
+				},
+				__('Actions'),
+			);
+		}
 
 		[
 			[__('Retry In-Place'), 'retry_in_place'],
@@ -52,7 +61,11 @@ frappe.ui.form.on('Agent Job', {
 				__('Succeed and Process Job Updates'),
 				'succeed_and_process_job_updates',
 			],
-			[__('Cancel Job'), 'cancel_job', ['Pending', "Running"].includes(frm.doc.status)],
+			[
+				__('Cancel Job'),
+				'cancel_job',
+				['Pending', 'Running'].includes(frm.doc.status),
+			],
 		].forEach(([label, method, condition]) => {
 			frm.add_custom_button(
 				label,

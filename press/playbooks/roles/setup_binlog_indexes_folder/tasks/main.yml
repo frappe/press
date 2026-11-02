@@ -1,0 +1,37 @@
+---
+- name: Ensure source and destination directories exist
+  file:
+    path: '{{ item }}'
+    state: directory
+    mode: '0755'
+    owner: frappe
+    group: frappe
+  loop:
+    - /home/frappe/binlog_indexes
+    - /opt/volumes/mariadb/binlog_indexes
+
+- name: Move existing files from old archive to new location
+  command: mv /home/frappe/binlog_indexes/* /opt/volumes/mariadb/binlog_indexes/
+  args:
+    removes: /home/frappe/binlog_indexes/*
+  ignore_errors: yes
+
+- name: Set ownership recursively
+  file:
+    path: '{{ item }}'
+    owner: frappe
+    group: frappe
+    recurse: true
+  loop:
+    - /opt/volumes/mariadb/binlog_indexes
+    - /home/frappe/binlog_indexes
+
+- name: Add bind mount to /etc/fstab
+  lineinfile:
+    path: /etc/fstab
+    line: '/opt/volumes/mariadb/binlog_indexes /home/frappe/binlog_indexes none defaults,nofail,bind 0 0'
+    state: present
+    create: yes
+
+- name: Mount all from fstab
+  command: mount -av

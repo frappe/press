@@ -76,7 +76,7 @@
 
 				<!-- <div class="flex items-center">
 					<input v-model="sandBox" type="checkbox" class="mr-2" />
-					<label class="text-sm font-medium text-gray-700">Sandbox Mode</label>
+					<label class="text-sm font-medium text-ink-gray-7">Sandbox Mode</label>
 				</div> -->
 				<ErrorMessage class="mt-2" :message="errorMessage" />
 			</div>

@@ -36,7 +36,7 @@ def create_webhook_event(event: str, payload: dict | Document, team: str) -> boo
 			elif isinstance(payload, Document):
 				data = _process_document_payload(payload)
 			else:
-				frappe.throw("Invalid data type")
+				frappe.throw("The webhook data type is invalid. Please send a supported data type.")
 
 			request_payload = json.dumps(
 				{

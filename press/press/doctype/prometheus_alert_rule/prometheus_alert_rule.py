@@ -34,7 +34,7 @@ class PrometheusAlertRule(Document):
 		annotations: DF.Code
 		description: DF.Data
 		enabled: DF.Check
-		expression: DF.Code
+		expression: DF.Code | None
 		group_by: DF.Code
 		group_interval: DF.Data
 		group_wait: DF.Data
@@ -44,6 +44,7 @@ class PrometheusAlertRule(Document):
 		press_job_type: DF.Link | None
 		repeat_interval: DF.Data
 		route_preview: DF.Code | None
+		send_to_raven: DF.Check
 		severity: DF.Literal["Critical", "Warning", "Information"]
 		silent: DF.Check
 	# end: auto-generated types
@@ -51,6 +52,8 @@ class PrometheusAlertRule(Document):
 	def validate(self):
 		self.alert_preview = yaml.dump(self.get_rule())
 		self.route_preview = yaml.dump(self.get_route())
+		if self.enabled and not self.expression:
+			frappe.throw("Please add an expression for this alert rule before enabling it.")
 
 	def get_rule(self):
 		labels = json.loads(self.labels)
@@ -121,7 +124,7 @@ class PrometheusAlertRule(Document):
 		return routes_dict
 
 	def react(self, instance_type: str, instance: str, labels: dict | None = None):
-		return self.run_press_job(self.press_job_type, instance_type, instance, labels)
+		return self.run_press_job(self.press_job_type, instance_type, instance, labels)  # type: ignore[arg-type]
 
 	def run_press_job(
 		self, job_name: str, server_type: str, server_name: str, labels: dict | None = None, arguments=None

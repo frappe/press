@@ -1,5 +1,5 @@
 <template>
-	<Header class="sticky top-0 z-10 bg-white">
+	<Header class="sticky top-0 z-10 bg-surface-white">
 		<div class="w-full sm:flex sm:justify-between sm:items-center">
 			<div class="flex items-center space-x-2">
 				<FBreadcrumbs :items="breadcrumbs" />
@@ -19,7 +19,10 @@
 					:doc="$resources.document?.doc"
 					:error="$resources.document.get.error"
 				/>
-				<div class="space-x-2" v-if="$resources.document?.doc">
+				<div
+					class="space-x-2 flex items-center"
+					v-if="$resources.document?.doc"
+				>
 					<ActionButton
 						v-for="action in actions"
 						v-bind="action"
@@ -31,14 +34,23 @@
 		</div>
 	</Header>
 	<div>
+		<PageBanner v-if="banner" v-bind="banner" />
 		<TabsWithRouter
 			v-if="!$resources.document.get.error && $resources.document.get.fetched"
 			:document="$resources.document?.doc"
 			:tabs="tabs"
 		>
+			<template #tab-item="{ tab }">
+				<router-link
+					:to="{ name: tab.routeName }"
+					class="flex whitespace-nowrap items-center py-2.5 gap-1.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:text-ink-gray-9 data-[state=active]:text-ink-gray-9"
+				>
+					<component v-if="tab.icon" :is="tab.icon" class="size-4"> </component>
+
+					{{ tab.label }}
+				</router-link>
+			</template>
 			<template #tab-content="{ tab }">
-				<!-- this div is required for some reason -->
-				<div></div>
 				<router-view
 					v-if="$resources.document?.doc"
 					:tab="tab"
@@ -63,6 +75,8 @@ import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
 import AccessRequestButton from '../components/AccessRequestButton.vue';
+import PageBanner from '../components/PageBanner.vue';
+import { leafTitle, pageTitle } from '../utils/title';
 
 let subscribed = {};
 
@@ -83,7 +97,11 @@ export default {
 		Header,
 		ActionButton,
 		TabsWithRouter,
+		PageBanner,
 		FBreadcrumbs: Breadcrumbs,
+	},
+	pageMeta() {
+		return { title: pageTitle(this.title, leafTitle(this.$route)) };
 	},
 	resources: {
 		document() {
@@ -142,6 +160,14 @@ export default {
 		badge() {
 			if (this.object.detail.statusBadge) {
 				return this.object.detail.statusBadge({
+					documentResource: this.$resources.document,
+				});
+			}
+			return null;
+		},
+		banner() {
+			if (this.object.detail.banner && this.$resources.document?.doc) {
+				return this.object.detail.banner({
 					documentResource: this.$resources.document,
 				});
 			}

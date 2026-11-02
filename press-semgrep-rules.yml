@@ -30,7 +30,7 @@ rules:
       - pattern: frappe.db.sql_list(...)
     paths:
       exclude:
-        - "test_*.py"
+        - 'test_*.py'
     message: |
       The PR contains a SQL query that may be re-written with frappe.qb (https://frappeframework.com/docs/user/en/api/query-builder) or the Database API (https://frappeframework.com/docs/user/en/api/database)
     languages: [python]
@@ -137,3 +137,55 @@ rules:
         - https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_loops.html#retrying-a-task-until-a-condition-is-met
         - https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-community-changelogs
 
+  - id: frappe-exceptions-in-press-job-type
+    languages:
+      - generic
+    patterns:
+      - pattern-regex: 'frappe\.exceptions\.'
+    paths:
+      include:
+        - 'press/fixtures/press_job_type.json'
+    message: |
+      Usage of frappe.exceptions found in press_job_type.json fixture. Frappe exception classes are available directly from the frappe module. Instead of frappe.exceptions.QueryTimeoutError use frappe.QueryTimeoutError. Similarly, use frappe.QueryDeadlockError, frappe.TimestampMismatchError, etc.
+    severity: ERROR
+    metadata:
+      category: correctness
+      technology:
+        - frappe
+
+  - id: non-actionable-error-message
+    patterns:
+      - pattern-either:
+          - pattern: frappe.throw("$MSG")
+          - pattern: new Error("$MSG")
+          - pattern: toast.error("$MSG")
+      - metavariable-regex:
+          metavariable: $MSG
+          # Matches strings that do NOT have a second sentence (no period + space)
+          # and do NOT contain common instructional keywords (case-insensitive, so a
+          # capitalized "Please ..." counts as actionable just like lowercase "please").
+          regex: '^(?![^.]*\. [A-Z])(?!.*(?i:try|please|check|contact|ensure|use|click|refer|provide|choose|select|enter|make sure)).*$'
+    message: 'This error message is a single sentence and lacks user instructions. High-quality errors should explain what happened and how to fix it.'
+    languages: [javascript, typescript, python]
+    severity: WARNING
+
+  - id: whitelisted-ansible-usage
+    message: "Whitelisted API method instantiates Ansible."
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+        - pattern-inside: |
+            @frappe.whitelist(...)
+            def $FUNC(...):
+                ...
+        - pattern-inside: |
+            @dashboard_whitelist(...)
+            def $FUNC(...):
+                ...
+
+      - pattern-either:
+          - pattern: |
+              Ansible(...)
+          - pattern: |
+              AnsibleAdHoc(...)

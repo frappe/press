@@ -14,6 +14,7 @@ from requests.auth import HTTPBasicAuth
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
 
 
@@ -51,6 +52,7 @@ class MonitorServer(BaseServer):
 		hostname: DF.Data
 		ip: DF.Data | None
 		is_server_setup: DF.Check
+		is_wazuh_agent_installed: DF.Check
 		monitoring_password: DF.Password | None
 		node_exporter_dashboard_path: DF.Data | None
 		only_monitor_uptime_metrics: DF.Check
@@ -67,6 +69,8 @@ class MonitorServer(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
+		wazuh_agent_status: DF.Data | None
+		wazuh_install_last_attempt: DF.Datetime | None
 		webhook_token: DF.Data | None
 	# end: auto-generated types
 
@@ -137,6 +141,7 @@ class MonitorServer(BaseServer):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
+					"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 					"server": self.name,
 					"workers": 1,
 					"domain": self.domain,
@@ -156,7 +161,8 @@ class MonitorServer(BaseServer):
 					"clusters_json": json.dumps(clusters),
 					"private_ip": self.private_ip,
 					"grafana_password": self.get_password("grafana_password"),
-					"certificate_private_key": certificate.private_key,
+					"prometheus_username": self.prometheus_username,
+					"certificate_private_key": certificate.get_private_key(),
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 				},
@@ -229,6 +235,7 @@ class MonitorServer(BaseServer):
 					"log_servers_json": json.dumps(log_servers),
 					"clusters_json": json.dumps(clusters),
 					"grafana_password": self.get_password("grafana_password"),
+					"prometheus_username": self.prometheus_username,
 				},
 			)
 			ansible.run()
@@ -241,20 +248,34 @@ class MonitorServer(BaseServer):
 
 	@property
 	def alerts(self):
-		print(
-			f"https://{self.name}/prometheus/api/v1/rules",
-		)
 		ret = requests.get(
 			f"https://{self.name}/prometheus/api/v1/rules",
 			auth=HTTPBasicAuth(self.prometheus_username, self.get_password("grafana_password")),
 			params={"type": "alert"},
+			timeout=15,
 		)
 
 		ret.raise_for_status()
+
 		data = ret.json()
-		if data["status"] != "success":
-			frappe.throw("Error fetching sites down")
-		return data["data"]["groups"][0]["rules"]
+
+		if data.get("status") != "success":
+			frappe.throw(
+				"""
+			Failed to fetch alerts from Prometheus.
+
+			Please verify that Prometheus is running and reachable.
+			"""
+			)
+
+		groups = data.get("data", {}).get("groups", [])
+
+		alerts = []
+
+		for group in groups:
+			alerts.extend(group.get("rules", []))
+
+		return alerts
 
 	@property
 	def sites_down_alerts(self) -> list[SitesDownAlert]:

@@ -31,11 +31,8 @@ class RazorpayPaymentRecord(Document):
 	# end: auto-generated types
 
 	def on_update(self):
-		if self.has_value_changed("status") and self.status == "Captured":
-			if self.type == "Prepaid Credits":
-				self.process_prepaid_credits()
-			elif self.type == "Partnership Fee":
-				self.process_partnership_fee()
+		if self.has_value_changed("status") and self.status == "Captured" and self.type == "Prepaid Credits":
+			self.process_prepaid_credits()
 
 	def process_prepaid_credits(self):
 		team = frappe.get_doc("Team", self.team)
@@ -86,54 +83,6 @@ class RazorpayPaymentRecord(Document):
 
 		_enqueue_finalize_unpaid_invoices_for_team(team.name)
 
-	def process_partnership_fee(self):
-		team = frappe.get_doc("Team", self.team)
-
-		client = get_razorpay_client()
-		payment = client.payment.fetch(self.payment_id)
-		amount_with_tax = payment["amount"] / 100
-		gst = float(payment["notes"].get("gst", 0))
-		amount = amount_with_tax - gst
-		balance_transaction = team.allocate_credit_amount(
-			amount,
-			source="Prepaid Credits",
-			remark=f"Razorpay: {self.payment_id}",
-			type="Partnership Fee",
-		)
-		team.reload()
-
-		# Add a field to track razorpay event
-		invoice = frappe.get_doc(
-			doctype="Invoice",
-			team=team.name,
-			type="Partnership Fees",
-			status="Paid",
-			due_date=datetime.fromtimestamp(payment["created_at"]),
-			total=amount,
-			amount_due=amount,
-			gst=gst or 0,
-			amount_due_with_tax=amount_with_tax,
-			amount_paid=amount_with_tax,
-			razorpay_order_id=self.order_id,
-			razorpay_payment_record=self.name,
-			razorpay_payment_method=payment["method"],
-		)
-		invoice.append(
-			"items",
-			{
-				"description": "Partnership Fee",
-				"document_type": "Balance Transaction",
-				"document_name": balance_transaction.name,
-				"quantity": 1,
-				"rate": amount,
-			},
-		)
-		invoice.insert()
-		invoice.reload()
-
-		invoice.update_razorpay_transaction_details(payment)
-		invoice.submit()
-
 	@frappe.whitelist()
 	def sync(self):
 		try:
@@ -163,10 +112,10 @@ def fetch_pending_payment_orders(hours=12):
 		pluck="order_id",
 	)
 
-	client = get_razorpay_client()
 	if not pending_orders:
 		return
 
+	client = get_razorpay_client()
 	for order_id in pending_orders:
 		try:
 			response = client.order.payments(order_id)

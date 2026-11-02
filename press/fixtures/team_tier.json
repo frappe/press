@@ -1,0 +1,62 @@
+[
+	{
+		"amount": 1000.0,
+		"docstatus": 0,
+		"doctype": "Team Tier",
+		"last_invoice_amount": 300.0,
+		"modified": "2026-05-18 23:02:26.936141",
+		"name": "Intermediate",
+		"paying_user_since": 3,
+		"tier": "Intermediate"
+	},
+	{
+		"amount": 10000.0,
+		"docstatus": 0,
+		"doctype": "Team Tier",
+		"last_invoice_amount": 3000.0,
+		"modified": "2026-05-18 23:06:36.961176",
+		"name": "Elite",
+		"paying_user_since": 6,
+		"tier": "Elite"
+	},
+	{
+		"amount": 250.0,
+		"docstatus": 0,
+		"doctype": "Team Tier",
+		"last_invoice_amount": 50.0,
+		"modified": "2026-05-18 23:01:22.392423",
+		"name": "Growth",
+		"paying_user_since": 3,
+		"tier": "Growth"
+	},
+	{
+		"amount": 7500.0,
+		"docstatus": 0,
+		"doctype": "Team Tier",
+		"last_invoice_amount": 1500.0,
+		"modified": "2026-05-18 23:05:46.906063",
+		"name": "Power",
+		"paying_user_since": 6,
+		"tier": "Power"
+	},
+	{
+		"amount": 2500.0,
+		"docstatus": 0,
+		"doctype": "Team Tier",
+		"last_invoice_amount": 500.0,
+		"modified": "2026-05-18 23:04:22.463032",
+		"name": "Advance",
+		"paying_user_since": 3,
+		"tier": "Advance"
+	},
+	{
+		"amount": 100.0,
+		"docstatus": 0,
+		"doctype": "Team Tier",
+		"last_invoice_amount": 0.0,
+		"modified": "2026-05-18 23:00:15.204958",
+		"name": "Beginner",
+		"paying_user_since": 0,
+		"tier": "Beginner"
+	}
+]

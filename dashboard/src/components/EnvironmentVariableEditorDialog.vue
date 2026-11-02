@@ -23,8 +23,8 @@
 				<FormControl label="Value" v-model="value" autocomplete="off" />
 				<ErrorMessage class="mt-2" :message="error" />
 				<div class="flex items-center">
-					<lucide-info class="mr-2 text-gray-500" />
-					<div class="text-sm text-gray-600">
+					<lucide-info class="mr-2 text-ink-gray-5" />
+					<div class="text-sm text-ink-gray-6">
 						Environment variable changes will only be reflected in the newer
 						deploys.
 					</div>

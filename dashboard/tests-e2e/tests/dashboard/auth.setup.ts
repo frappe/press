@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from "fs";
 import { fileURLToPath } from 'url';
-import { test as setup } from "@playwright/test"
+import { test as setup } from "./coverage.fixture";
 
 const localCloudBaseUrl = process.env.BASE_URL!;
 const userEmail = process.env.PRESS_ADMIN_USER_EMAIL!;
@@ -29,8 +29,9 @@ setup('authenticate into press dashboard', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Password (required)' }).fill(userPassword);
   await page.getByRole('button', { name: 'Log In' }).click();
 
-  // Wait for successful navigation
-  await page.waitForURL('**/dashboard/sites');
+  // Wait for successful navigation. Post-login route depends on how many
+  // sites the team has (e.g. /sites vs /quickstart), so match either.
+  await page.waitForURL(/\/dashboard\/(sites|quickstart)/);
 
   // Save storage state
   await page.context().storageState({ path: getSessionStorageStatePath() });

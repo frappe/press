@@ -1,5 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING
@@ -87,3 +88,8 @@ class PressJobStep(Document):
 			job.fail(local["arguments"])
 		else:
 			job.next(local["arguments"])
+
+
+def on_doctype_update():
+	if not frappe.db.has_index("tabPress Job Step", "job_status_idx"):
+		frappe.db.add_index("Press Job Step", ["job", "status"], "job_status_idx")

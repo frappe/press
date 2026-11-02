@@ -3,6 +3,7 @@
 		v-if="$attrs.type === 'link'"
 		v-bind="$attrs"
 		class="min-w-[6rem]"
+    :openOnClick="true"
 	/>
 	<TabButtons
 		v-else-if="$attrs.type === 'tab'"
@@ -16,11 +17,29 @@
 		v-else-if="$attrs.type === 'datetime'"
 		v-bind="{ ...$attrs, type: undefined }"
 	/>
+	<DateRangeFilter
+		v-else-if="$attrs.type === 'daterange'"
+		v-bind="{ ...$attrs, type: undefined }"
+	/>
+	<div
+		v-else-if="$attrs.type === 'checkbox'"
+		class="[&_input+label]:text-ink-gray-5 [&_input:checked+label]:text-ink-gray-8 [&_input+label]:font-normal"
+	>
+		<FormControl v-bind="$attrs" />
+	</div>
 	<FormControl v-else v-bind="$attrs" />
-	<div v-if="$attrs.type === 'date' || $attrs.type === 'datetime'"></div>
+	<div
+		v-if="
+			$attrs.type === 'date' ||
+			$attrs.type === 'datetime' ||
+			$attrs.type === 'daterange'
+		"
+	></div>
 	<!-- idk what magic is it but if I remove the div datetime components cease to work -->
 </template>
+
 <script setup>
-import { DatePicker, TabButtons, DateTimePicker } from 'frappe-ui';
+import { DatePicker, TabButtons, DateTimePicker, FormControl } from 'frappe-ui';
+import DateRangeFilter from './DateRangeFilter.vue';
 import LinkControl from './LinkControl.vue';
 </script>

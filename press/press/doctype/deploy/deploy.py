@@ -15,6 +15,7 @@ from press.utils import log_error
 if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+	from press.press.doctype.new_bench_queue.new_bench_queue import NewBenchQueue
 
 
 class Deploy(Document):
@@ -73,21 +74,25 @@ class Deploy(Document):
 				hub_registry_url = frappe.db.get_value("Press Settings", None, "docker_registry_url")
 				image = image.replace(hub_registry_url, cluster_docker_repository)
 
-			new = frappe.get_doc(
+			new_bench_queue: NewBenchQueue = frappe.get_doc(
 				{
-					"doctype": "Bench",
-					"server": bench.server,
-					"build": build.name,
-					"docker_image": image,
+					"doctype": "New Bench Queue",
+					"status": "Queued",
+					"payload": {
+						"server": bench.server,
+						"build": build.name,
+						"docker_image": image,
+						"group": self.group,
+						"candidate": self.candidate,
+						"workers": 1,
+						"staging": self.staging,
+						"environment_variables": environment_variables,
+						"mounts": mounts,
+					},
 					"group": self.group,
-					"candidate": self.candidate,
-					"workers": 1,
-					"staging": self.staging,
-					"environment_variables": environment_variables,
-					"mounts": mounts,
 				}
 			).insert()
-			bench.bench = new.name
+			bench.bench = new_bench_queue.name  # Instead of giving it the bench link it with the created queue now? (assuming this is mostly internal?) this field is also optional can be ignored?
 
 		frappe.enqueue(
 			"press.press.doctype.deploy.deploy.create_deploy_candidate_differences",

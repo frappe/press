@@ -1,7 +1,7 @@
-import { computed, reactive } from 'vue';
-import { createResource } from 'frappe-ui';
-import { clear } from 'idb-keyval';
-import router from '../router';
+import { createResource } from 'frappe-ui'
+import { clear } from 'idb-keyval'
+import { computed, reactive } from 'vue'
+import router from '../router'
 
 export let session = reactive({
 	login: createResource({
@@ -10,121 +10,111 @@ export let session = reactive({
 			return {
 				usr: email,
 				pwd: password,
-			};
+			}
 		},
 	}),
 	logout: createResource({
 		url: 'logout',
 		async onSuccess() {
-			session.user = getSessionUser();
-			await router.replace({ name: 'Login' });
-			localStorage.removeItem('current_team');
+			session.user = getSessionUser()
+			await router.replace({ name: 'Login' })
+			localStorage.removeItem('current_team')
 			// On logout, reset posthog user identity and device id
 			if (window.posthog?.__loaded) {
-				posthog.reset(true);
+				posthog.reset(true)
 			}
 
 			// clear all cache from the session
-			clear();
+			clear()
 
-			window.location.reload();
+			window.location.reload()
 		},
 	}),
 	logoutWithoutReload: createResource({
 		url: 'logout',
 		async onSuccess() {
-			session.user = getSessionUser();
-			localStorage.removeItem('current_team');
+			session.user = getSessionUser()
+			localStorage.removeItem('current_team')
 			// On logout, reset posthog user identity and device id
 			if (window.posthog?.__loaded) {
-				posthog.reset(true);
+				posthog.reset(true)
 			}
 
-			clear();
+			clear()
 		},
 	}),
-	roles: createResource({
-		url: 'press.api.account.get_permission_roles',
-		cache: ['roles', localStorage.getItem('current_team')],
-		initialData: [],
+	userPermissions: createResource({
+		url: 'press.api.account.user_permissions',
+		cache: [
+			'userPermissions',
+			localStorage.getItem('current_team'),
+			getSessionUser(),
+		],
+		initialData: {
+			owner: false,
+			admin: false,
+			billing: false,
+			webhook: false,
+			apps: false,
+			partner: false,
+			partner_dashboard: false,
+			partner_leads: false,
+			partner_customer: false,
+			partner_contribution: false,
+			partner_local_payment: false,
+			site_creation: false,
+			bench_creation: false,
+			server_creation: false,
+		},
 	}),
-	isTeamAdmin: computed(
-		() =>
-			session.roles.data.length
-				? session.roles.data.some((role) => role.admin_access)
-				: false, // if no roles, assume not admin and has member access
+	isTeamAdmin: computed(() => session.userPermissions.data.admin),
+	hasBillingAccess: computed(() => session.userPermissions.data.billing),
+	hasWebhookConfigurationAccess: computed(
+		() => session.userPermissions.data.webhook,
 	),
-	hasBillingAccess: computed(() =>
-		session.roles.data.length
-			? session.roles.data.some((role) => role.allow_billing)
-			: true,
+	hasAppsAccess: computed(() => session.userPermissions.data.apps),
+	hasPartnerAccess: computed(() => session.userPermissions.data.partner),
+	hasPartnerDashboardAccess: computed(
+		() => session.userPermissions.data.partner_dashboard,
 	),
-	hasWebhookConfigurationAccess: computed(() =>
-		session.roles.data.length
-			? session.roles.data.some((role) => role.allow_webhook_configuration)
-			: true,
+	hasPartnerLeadsAccess: computed(
+		() => session.userPermissions.data.partner_leads,
 	),
-	hasAppsAccess: computed(() =>
-		session.roles.data.length
-			? session.roles.data.some((role) => role.allow_apps)
-			: true,
+	hasPartnerCustomerAccess: computed(
+		() => session.userPermissions.data.partner_customer,
 	),
-	hasPartnerAccess: computed(() =>
-		session.roles.data.length
-			? session.roles.data.some((role) => role.allow_partner)
-			: true,
+	hasPartnerContributionAccess: computed(
+		() => session.userPermissions.data.partner_contribution,
 	),
-	hasPartnerDashboardAccess: computed(() =>
-		session.roles.data.length
-			? session.roles.data.some((role) => role.allow_dashboard)
-			: true,
+	hasPartnerLocalPaymentAccess: computed(
+		() => session.userPermissions.data.partner_local_payment,
 	),
-	hasPartnerLeadsAccess: computed(() =>
-		session.roles.data.length
-			? session.roles.data.some((role) => role.allow_leads)
-			: true,
+	hasSiteCreationAccess: computed(
+		() => session.userPermissions.data.site_creation,
 	),
-	hasPartnerCustomerAccess: computed(() =>
-		session.roles.data.length
-			? session.roles.data.some((role) => role.allow_customer)
-			: true,
+	hasBenchCreationAccess: computed(
+		() => session.userPermissions.data.bench_creation,
 	),
-	hasPartnerContributionAccess: computed(() =>
-		session.roles.data.length
-			? session.roles.data.some((role) => role.allow_contribution)
-			: true,
-	),
-	hasSiteCreationAccess: computed(() =>
-		session.roles.data.length
-			? session.roles.data.some((role) => role.allow_site_creation)
-			: true,
-	),
-	hasBenchCreationAccess: computed(() =>
-		session.roles.data.length
-			? session.roles.data.some((role) => role.allow_bench_creation)
-			: true,
-	),
-	hasServerCreationAccess: computed(() =>
-		session.roles.data.length
-			? session.roles.data.some((role) => role.allow_server_creation)
-			: true,
+	hasServerCreationAccess: computed(
+		() => session.userPermissions.data.server_creation,
 	),
 	user: getSessionUser(),
+	userFullName: getSessionCookies().get('full_name') || '',
 	isLoggedIn: computed(() => !!session.user),
 	isSystemUser: getSessionCookies().get('system_user') === 'yes',
-});
+})
 
-export default session;
+export default session
 
 export function getSessionUser() {
-	let cookies = getSessionCookies();
-	let sessionUser = cookies.get('user_id');
+	let cookies = getSessionCookies()
+	let sessionUser = cookies.get('user_id')
 	if (!sessionUser || sessionUser === 'Guest') {
-		sessionUser = null;
+		sessionUser = null
 	}
-	return sessionUser;
+	return sessionUser
 }
 
 function getSessionCookies() {
-	return new URLSearchParams(document.cookie.split('; ').join('&'));
+	return new URLSearchParams(document.cookie.split('; ').join('&'))
 }

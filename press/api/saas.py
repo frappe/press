@@ -43,16 +43,16 @@ def account_request(
 	frappe.utils.validate_email_address(email, True)
 
 	if not check_subdomain_availability(subdomain, app):
-		frappe.throw(f"Subdomain {subdomain} is already taken")
+		frappe.throw(f"Subdomain {subdomain} is already taken. Please try with some other subdomain.")
 
 	all_countries = frappe.db.get_all("Country", pluck="name")
 	country = find(all_countries, lambda x: x.lower() == country.lower())
 	if not country:
-		frappe.throw("Country field should be a valid country name")
+		frappe.throw("{country} is not a valid country. Please choose the correct country value.")
 
 	team = frappe.db.get_value("Team", {"user": email})
 	if team and frappe.db.exists("Invoice", {"team": team, "status": "Unpaid", "type": "Subscription"}):
-		frappe.throw(f"Account {email} already exists with unpaid invoices")
+		frappe.throw(f"Account {email} already exists with unpaid invoices. Please clear the previous dues.")
 
 	current_user = frappe.session.user
 	try:
@@ -65,7 +65,7 @@ def account_request(
 				"erpnext": False,
 				"subdomain": subdomain,
 				"email": email,
-				"role": "Press Admin",
+				"role": "Press User",
 				"first_name": clean_html(first_name),
 				"last_name": clean_html(last_name),
 				"country": country,
@@ -140,14 +140,6 @@ def new_saas_site(subdomain, app):
 	return site
 
 
-@frappe.whitelist()
-def get_saas_site_status(site):
-	if frappe.db.exists("Site", site):
-		return {"site": site, "status": frappe.db.get_value("Site", site, "status")}
-
-	return {"site": site, "status": "Pending"}
-
-
 def get_hybrid_saas_pool(account_request):
 	"""
 	1. Get all hybrid pools and their rules
@@ -217,7 +209,7 @@ def setup_account(key, business_data=None):
 	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")
+		frappe.throw("Invalid or Expired Key")  # nosemgrep
 
 	capture(
 		"init_server_setup_account",
@@ -262,7 +254,7 @@ def headless_setup_account(key):
 	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")
+		frappe.throw("Invalid or Expired Key")  # nosemgrep
 
 	capture(
 		"init_server_setup_account",
@@ -346,7 +338,7 @@ def get_site_status(key, app=None):
 	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")
+		frappe.throw("Invalid or Expired Key")  # nosemgrep
 
 	domain = get_saas_domain(app) if app else get_erpnext_domain()
 
@@ -369,12 +361,46 @@ def get_site_url_and_sid(key, app=None):
 	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")
+		frappe.throw("Invalid or Expired Key")  # nosemgrep
 
 	domain = get_saas_domain(app) if app else get_erpnext_domain()
 
 	name = frappe.db.get_value("Site", {"subdomain": account_request.subdomain, "domain": domain})
 	site: "Site" = frappe.get_doc("Site", name)
+
+	# The key mints a login session, so spend it; lock the row so a replay can't race the first use.
+	key_details = frappe.db.get_value(
+		"Account Request",
+		account_request.name,
+		["request_key", "request_key_expiration_time"],
+		as_dict=True,
+		for_update=True,
+	)
+	if (
+		not key_details.request_key
+		or key_details.request_key != account_request.request_key
+		or (
+			key_details.request_key_expiration_time
+			and key_details.request_key_expiration_time < frappe.utils.now_datetime()
+		)
+	):
+		frappe.throw("Invalid or Expired Key")  # nosemgrep
+	frappe.db.set_value(
+		"Account Request",
+		account_request.name,
+		{"request_key": "", "request_key_expiration_time": None},
+		update_modified=False,
+	)
+
+	# The spent key proves the caller signed up for the site, so no consent is needed.
 	if site.additional_system_user_created:
-		return site.login_as_team()
+		validate_site_active_for_login(site)
+		return site.team_login_url()
 	return site.login_as_admin()
+
+
+def validate_site_active_for_login(site: "Site"):
+	if site.status != "Active":
+		frappe.throw(  # nosemgrep
+			f"Site is in {frappe.bold(site.status.lower())} state. Your site has to be active to {frappe.bold('log in')}."
+		)

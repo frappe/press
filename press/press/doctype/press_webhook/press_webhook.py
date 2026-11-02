@@ -9,14 +9,15 @@ import json
 from urllib.parse import urlparse
 
 import frappe
-import frappe.query_builder
-import frappe.query_builder.functions
 import requests
 from frappe.model.document import Document
+from frappe.query_builder import Case
+from frappe.query_builder.functions import Count, Sum
 
 from press.api.client import dashboard_whitelist
+from press.guards import role_guard
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.utils import is_valid_hostname
+from press.utils import docs, is_valid_hostname, ssrf
 
 
 class PressWebhook(Document):
@@ -33,7 +34,7 @@ class PressWebhook(Document):
 		)
 
 		enabled: DF.Check
-		endpoint: DF.Data
+		endpoint: DF.SmallText
 		events: DF.Table[PressWebhookSelectedEvent]
 		secret: DF.Data
 		team: DF.Link
@@ -42,10 +43,13 @@ class PressWebhook(Document):
 	DOCTYPE = "Press Webhook"
 	dashboard_fields = ("enabled", "endpoint", "events")
 
+	@role_guard.action()
 	def validate(self):
 		# maximum 5 webhooks per team
 		if self.is_new() and frappe.db.count("Press Webhook", {"team": self.team}) > 5:
-			frappe.throw("You have reached the maximum number of webhooks per team")
+			frappe.throw(
+				f"Your team has reached the maximum of 5 webhooks. Please delete an existing webhook before adding a new one. {docs.doc_link(docs.WEBHOOKS)}."
+			)
 
 		if self.has_value_changed("endpoint"):
 			self.enabled = 0
@@ -61,20 +65,28 @@ class PressWebhook(Document):
 			pluck="name",
 		)
 		if len(webhooks) != 0:
-			frappe.throw("You have already added webhook for this endpoint")
+			frappe.throw(
+				"A webhook for this endpoint already exists. Please edit the existing webhook, or use a different endpoint URL."
+			)
 
 	def validate_endpoint_url_format(self):
 		url = urlparse(self.endpoint)
 		if not url.netloc:
-			frappe.throw("Endpoint should be a valid url")
+			frappe.throw(
+				"Please enter a valid URL for the endpoint, for example https://example.com/webhook."
+			)
 
 		# protocol should be http or https
 		if url.scheme not in ["http", "https"]:
-			frappe.throw("Endpoint should start with http:// or https://")
+			frappe.throw(
+				"The endpoint must start with http:// or https://. Please add the scheme to the URL."
+			)
 
 		# dont allow query params
 		if url.query:
-			frappe.throw("Endpoint should not have query params")
+			frappe.throw(
+				"The endpoint URL can't contain query parameters. Please remove everything after the '?' from the URL."
+			)
 
 		isIPAddress = False
 		# If endpoint target is ip address, it should be a public ip address
@@ -82,16 +94,22 @@ class PressWebhook(Document):
 			ip = ipaddress.ip_address(url.hostname)
 			isIPAddress = True
 			if not ip.is_global:
-				frappe.throw("Endpoint address should be a public ip or domain")
+				frappe.throw(
+					"The endpoint must be reachable from the internet. Please use a public IP address or domain, not a private or internal one."
+				)
 
 		if not isIPAddress:
 			# domain should be a fqdn
 			if not is_valid_hostname(url.hostname):
-				frappe.throw("Endpoint address should be a valid domain")
+				frappe.throw(
+					"Please enter a valid domain for the endpoint, for example webhooks.example.com."
+				)
 
 			# Endpoint can't be any local domain
 			if not frappe.conf.developer_mode and ("localhost" in url.hostname or ".local" in url.hostname):
-				frappe.throw("Endpoint can't be localhost or local domain")
+				frappe.throw(
+					"The endpoint can't be localhost or a .local domain. Please use a publicly reachable address."
+				)
 
 	@dashboard_whitelist()
 	def validate_endpoint(self) -> dict:
@@ -99,7 +117,7 @@ class PressWebhook(Document):
 		response_status_code = 0
 		payload = {"event": "Webhook Validate", "data": {}}
 		try:
-			req = requests.post(
+			req = ssrf.post(
 				self.endpoint,
 				timeout=5,
 				json=payload,
@@ -107,6 +125,8 @@ class PressWebhook(Document):
 			)
 			response = req.text or ""
 			response_status_code = req.status_code
+		except ssrf.SSRFError as e:
+			response = str(e)
 		except requests.exceptions.ConnectionError:
 			response = "Failed to connect to the webhook endpoint"
 		except requests.exceptions.SSLError:
@@ -162,25 +182,37 @@ class PressWebhook(Document):
 
 	@dashboard_whitelist()
 	def delete(self):
-		frappe.db.sql("delete from `tabPress Webhook Attempt` where webhook = %s", (self.name,))
+		frappe.db.delete("Press Webhook Attempt", {"webhook": self.name})
 		frappe.delete_doc("Press Webhook", self.name)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")
 
 
+# Below this many delivery attempts in the window, a single transient failure
+# (a timeout, the endpoint briefly restarting, ...) would already exceed the
+# failure-rate threshold on its own. Most webhook events (site/bench status
+# changes) fire rarely enough that 1-2 attempts an hour is the common case,
+# so without this floor the check disables webhooks on isolated blips rather
+# than genuine, sustained delivery failure.
+MIN_ATTEMPTS_FOR_AUTO_DISABLE = 5
+
+
 def auto_disable_high_delivery_failure_webhooks():
 	# In past hour, if 70% of webhook deliveries has failed, disable the webhook and notify the user
-	data = frappe.db.sql(
-		"""
-SELECT `endpoint`
-FROM `tabPress Webhook Attempt`
-WHERE `creation` >= NOW() - INTERVAL 1 HOUR
-GROUP BY `endpoint`
-HAVING (COUNT(CASE WHEN `status` = 'Failed' THEN 1 END) / COUNT(*)) * 100 > 70;
-""",
-		as_dict=True,
+	PressWebhookAttempt = frappe.qb.DocType("Press Webhook Attempt")
+	total = Count("*")
+	failed = Sum(Case().when(PressWebhookAttempt.status == "Failed", 1).else_(0))
+	one_hour_ago = frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=-1)
+
+	query = (
+		frappe.qb.from_(PressWebhookAttempt)
+		.select(PressWebhookAttempt.endpoint)
+		.where(PressWebhookAttempt.creation >= one_hour_ago)
+		.groupby(PressWebhookAttempt.endpoint)
+		.having((total >= MIN_ATTEMPTS_FOR_AUTO_DISABLE) & ((failed / total) * 100 > 70))
 	)
+	data = query.run(as_dict=True)
 	endpoints = [row.endpoint for row in data]
 	doc_names = frappe.get_all("Press Webhook", filters={"endpoint": ("in", endpoints)}, pluck="name")
 	for doc_name in doc_names:

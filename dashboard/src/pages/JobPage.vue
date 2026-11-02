@@ -24,7 +24,9 @@
 		<div class="mt-3">
 			<div>
 				<div class="flex items-center">
-					<h2 class="text-lg font-medium text-gray-900">{{ job.job_type }}</h2>
+					<h2 class="text-lg font-medium text-ink-gray-9">
+						{{ job.job_type }}
+					</h2>
 					<Badge class="ml-2" :label="job.status" />
 					<div class="ml-auto flex items-center space-x-2">
 						<Button
@@ -34,6 +36,14 @@
 							<template #icon>
 								<lucide-refresh-ccw class="h-4 w-4" />
 							</template>
+						</Button>
+						<Button
+							v-if="canCancel"
+							@click="confirmCancel"
+							:loading="$resources.cancelJob.loading"
+							theme="red"
+						>
+							Cancel Job
 						</Button>
 						<Dropdown v-if="dropdownOptions.length" :options="dropdownOptions">
 							<template v-slot="{ open }">
@@ -51,32 +61,32 @@
 						class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5"
 					>
 						<div>
-							<div class="text-sm font-medium text-gray-500">Creation</div>
-							<div class="mt-2 text-sm text-gray-900">
+							<div class="text-sm font-medium text-ink-gray-5">Creation</div>
+							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ $format.date(job.creation, 'lll') }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-gray-500">Creator</div>
-							<div class="mt-2 text-sm text-gray-900">
+							<div class="text-sm font-medium text-ink-gray-5">Creator</div>
+							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ job.owner }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-gray-500">Duration</div>
-							<div class="mt-2 text-sm text-gray-900">
+							<div class="text-sm font-medium text-ink-gray-5">Duration</div>
+							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ job.end ? $format.duration(job.duration) : '-' }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-gray-500">Start</div>
-							<div class="mt-2 text-sm text-gray-900">
+							<div class="text-sm font-medium text-ink-gray-5">Start</div>
+							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ $format.date(job.start, 'lll') }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-gray-500">End</div>
-							<div class="mt-2 text-sm text-gray-900">
+							<div class="text-sm font-medium text-ink-gray-5">End</div>
+							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ job.end ? $format.date(job.end, 'lll') : '-' }}
 							</div>
 						</div>
@@ -91,11 +101,22 @@
 	</div>
 </template>
 <script>
-import { FeatherIcon, Tooltip } from 'frappe-ui';
-import AlertAddressableError from '../components/AlertAddressableError.vue';
-import { duration } from '../utils/format';
-import { getObject } from '../objects';
-import JobStep from '../components/JobStep.vue';
+import { FeatherIcon, Tooltip } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import AlertAddressableError from '../components/AlertAddressableError.vue'
+import JobStep from '../components/JobStep.vue'
+import { getObject } from '../objects'
+import { confirmDialog } from '../utils/components'
+import { finishedDuration } from '../utils/format'
+import { getToastErrorMessage } from '../utils/toast'
+
+// Keep in sync with DASHBOARD_CANCELLABLE_JOB_TYPES in agent_job.py
+const cancellableJobTypes = [
+	'Restore Site',
+	'New Site from Backup',
+	'Backup Site',
+	'Update Site Migrate',
+]
 
 export default {
 	name: 'JobPage',
@@ -109,25 +130,43 @@ export default {
 				name: this.id,
 				transform(job) {
 					for (let step of job.steps) {
-						step.title = step.step_name;
-						step.duration = duration(step.duration);
+						step.title = step.step_name
+						step.duration = finishedDuration(step.duration, step.status)
 						step.isOpen =
 							this.job?.steps?.find((s) => s.name === step.name)?.isOpen ||
-							false;
+							false
 					}
 
 					// on delivery failure, there'll be no output for any step
 					// so show the job output (error) in the first step
 					if (['Undelivered', 'Delivery Failure'].includes(job.status)) {
-						job.steps[0].output = job.output;
+						job.steps[0].output = job.output
 					}
 
-					return job;
+					return job
 				},
 				onSuccess() {
-					this.lastLoaded = Date.now();
+					this.lastLoaded = Date.now()
 				},
-			};
+			}
+		},
+		// a site update that skipped backups has nothing to recover from,
+		// so its migrate job can't be cancelled
+		siteUpdate() {
+			return {
+				type: 'list',
+				doctype: 'Site Update',
+				auto: this.job?.job_type === 'Update Site Migrate',
+				fields: ['skipped_backups'],
+				filters: { update_job: this.id },
+				limit: 1,
+			}
+		},
+		cancelJob() {
+			return {
+				url: 'press.press.doctype.agent_job.agent_job.cancel_job_from_dashboard',
+				makeParams: () => ({ name: this.id }),
+			}
 		},
 		errors() {
 			return {
@@ -141,21 +180,33 @@ export default {
 					document_name: this.id,
 					is_actionable: true,
 					class: 'Error',
+					// the page itself opens for support, so the banner must too
+					skip_team_filter_for_system_user_and_support_agent: true,
 				},
 				limit: 1,
 				orderBy: 'creation desc',
-			};
+			}
 		},
 	},
 	computed: {
 		object() {
-			return getObject(this.objectType);
+			return getObject(this.objectType)
 		},
 		job() {
-			return this.$resources.job.doc;
+			return this.$resources.job.doc
 		},
 		error() {
-			return this.$resources.errors?.data?.[0] ?? null;
+			return this.$resources.errors?.data?.[0] ?? null
+		},
+		canCancel() {
+			if (!['Pending', 'Running'].includes(this.job.status)) return false
+			if (!cancellableJobTypes.includes(this.job.job_type)) return false
+			if (this.job.job_type !== 'Update Site Migrate') return true
+
+			// wait for the site update, so the button doesn't flash for an
+			// update that turns out to have skipped its backups
+			const siteUpdate = this.$resources.siteUpdate.data?.[0]
+			return Boolean(siteUpdate) && !siteUpdate.skipped_backups
 		},
 		dropdownOptions() {
 			return [
@@ -167,50 +218,77 @@ export default {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/agent-job/${this.id}`,
 							'_blank',
-						);
+						)
 					},
 				},
-			].filter((option) => option.condition?.() ?? true);
+			].filter((option) => option.condition?.() ?? true)
 		},
 	},
 	mounted() {
-		this.$socket.emit('doc_subscribe', 'Agent Job', this.id);
+		this.$socket.emit('doc_subscribe', 'Agent Job', this.id)
 		this.$socket.on('agent_job_update', (data) => {
 			if (data.id === this.id) {
 				data.steps = data.steps.map((step) => {
-					step.title = step.step_name;
-					step.duration = duration(step.duration);
+					step.title = step.step_name
+					step.duration = finishedDuration(step.duration, step.status)
 					step.isOpen =
-						this.job?.steps?.find((s) => s.name === step.name)?.isOpen || false;
-					return step;
-				});
+						this.job?.steps?.find((s) => s.name === step.name)?.isOpen || false
+					return step
+				})
 
 				this.$resources.job.doc = {
 					...this.$resources.job.doc,
 					...data,
-				};
+				}
 			}
-		});
+		})
 		// reload job every minute, in case socket is not working
 		this.reloadInterval = setInterval(() => {
-			this.reload();
-		}, 1000 * 60);
+			this.reload()
+		}, 1000 * 60)
 	},
 	beforeUnmount() {
-		this.$socket.emit('doc_unsubscribe', 'Agent Job', this.id);
-		this.$socket.off('agent_job_update');
-		clearInterval(this.reloadInterval);
+		this.$socket.emit('doc_unsubscribe', 'Agent Job', this.id)
+		this.$socket.off('agent_job_update')
+		clearInterval(this.reloadInterval)
 	},
 	methods: {
+		confirmCancel() {
+			// a cancelled site update rolls itself back, so it isn't destructive
+			const isSiteUpdate = this.job.job_type === 'Update Site Migrate'
+			const message = isSiteUpdate
+				? 'The migration will stop and the site will roll back to how it was before the update. The database is restored from the backup taken before the update, and the site moves back to its previous bench.<br><br>You can update the site again later.'
+				: `Are you sure you want to cancel this <b>${this.job.job_type}</b> job?<br><br>It will stop midway and <b>can't be resumed</b>.`
+
+			confirmDialog({
+				title: 'Cancel Job',
+				message,
+				primaryAction: {
+					label: 'Cancel Job',
+					variant: 'solid',
+					theme: isSiteUpdate ? 'gray' : 'red',
+					onClick: ({ hide }) => {
+						toast.promise(this.$resources.cancelJob.submit(), {
+							loading: 'Cancelling job...',
+							success: () => {
+								hide()
+								return 'Job will be cancelled shortly'
+							},
+							error: (e) => getToastErrorMessage(e, 'Failed to cancel job'),
+						})
+					},
+				},
+			})
+		},
 		reload() {
 			if (
 				!this.$resources.job.loading &&
 				// reload if job was loaded more than 5 seconds ago
 				Date.now() - this.lastLoaded > 5000
 			) {
-				this.$resources.job.reload();
+				this.$resources.job.reload()
 			}
 		},
 	},
-};
+}
 </script>

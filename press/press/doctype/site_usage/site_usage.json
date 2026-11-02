@@ -1,89 +1,92 @@
 {
- "actions": [],
- "creation": "2020-08-18 13:35:32.151920",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "site",
-  "database",
-  "backups",
-  "public",
-  "private",
-  "database_free_tables",
-  "database_free"
- ],
- "fields": [
-  {
-   "fieldname": "site",
-   "fieldtype": "Link",
-   "in_filter": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Site",
-   "options": "Site",
-   "read_only": 1
-  },
-  {
-   "fieldname": "database",
-   "fieldtype": "Int",
-   "label": "Database",
-   "read_only": 1
-  },
-  {
-   "fieldname": "public",
-   "fieldtype": "Int",
-   "label": "Public",
-   "read_only": 1
-  },
-  {
-   "fieldname": "private",
-   "fieldtype": "Int",
-   "label": "Private",
-   "read_only": 1
-  },
-  {
-   "fieldname": "backups",
-   "fieldtype": "Int",
-   "label": "Backups",
-   "read_only": 1
-  },
-  {
-   "fieldname": "database_free_tables",
-   "fieldtype": "Code",
-   "label": "Database Free Tables",
-   "read_only": 1
-  },
-  {
-   "fieldname": "database_free",
-   "fieldtype": "Int",
-   "label": "Database Free",
-   "read_only": 1
-  }
- ],
- "links": [],
- "modified": "2023-10-19 14:31:13.374011",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Site Usage",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "quick_entry": 1,
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "title_field": "site"
+	"actions": [],
+	"creation": "2020-08-18 13:35:32.151920",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"site",
+		"database",
+		"backups",
+		"public",
+		"private",
+		"database_free_tables",
+		"database_free"
+	],
+	"fields": [
+		{
+			"fieldname": "site",
+			"fieldtype": "Link",
+			"in_filter": 1,
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Site",
+			"options": "Site",
+			"read_only": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "database",
+			"fieldtype": "Int",
+			"label": "Database",
+			"read_only": 1
+		},
+		{
+			"fieldname": "public",
+			"fieldtype": "Int",
+			"label": "Public",
+			"read_only": 1
+		},
+		{
+			"fieldname": "private",
+			"fieldtype": "Int",
+			"label": "Private",
+			"read_only": 1
+		},
+		{
+			"fieldname": "backups",
+			"fieldtype": "Int",
+			"label": "Backups",
+			"read_only": 1
+		},
+		{
+			"fieldname": "database_free_tables",
+			"fieldtype": "Code",
+			"label": "Database Free Tables",
+			"read_only": 1
+		},
+		{
+			"fieldname": "database_free",
+			"fieldtype": "Int",
+			"label": "Database Free",
+			"read_only": 1
+		}
+	],
+	"grid_page_length": 50,
+	"links": [],
+	"modified": "2026-02-18 18:13:11.271217",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Site Usage",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"quick_entry": 1,
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "site"
 }

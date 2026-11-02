@@ -1,41 +1,38 @@
 {
- "actions": [],
- "creation": "2021-03-24 10:21:00.192032",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "domain",
-  "code_server"
- ],
- "fields": [
-  {
-   "fieldname": "domain",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Domain",
-   "options": "Root Domain",
-   "reqd": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "code_server",
-   "fieldtype": "Check",
-   "label": "Code Server"
-  }
- ],
- "index_web_pages_for_search": 1,
- "istable": 1,
- "links": [],
- "modified": "2023-07-24 21:41:33.648896",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Proxy Server Domain",
- "owner": "Administrator",
- "permissions": [],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+	"actions": [],
+	"creation": "2021-03-24 10:21:00.192032",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": ["domain", "code_server"],
+	"fields": [
+		{
+			"fieldname": "domain",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Domain",
+			"options": "Root Domain",
+			"reqd": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "code_server",
+			"fieldtype": "Check",
+			"label": "Code Server"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"istable": 1,
+	"links": [],
+	"modified": "2023-07-24 21:41:33.648896",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Proxy Server Domain",
+	"owner": "Administrator",
+	"permissions": [],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
 }

@@ -25,6 +25,8 @@ def create_test_plan(
 	release_groups: list[str] | None = None,
 	private_benches: bool = False,
 	is_trial_plan: bool = False,
+	offsite_backups: bool = False,
+	dedicated_server_plan: bool = False,
 ):
 	"""Create test Plan doc."""
 	plan_name = plan_name or f"Test {document_type} plan {make_autoname('.#')}"
@@ -45,6 +47,8 @@ def create_test_plan(
 			"instance_type": "t2.micro",
 			"private_benches": private_benches,
 			"is_trial_plan": is_trial_plan,
+			"offsite_backups": offsite_backups,
+			"dedicated_server_plan": dedicated_server_plan,
 		}
 	)
 	if allowed_apps:
@@ -92,3 +96,11 @@ class TestSitePlan(FrappeTestCase):
 
 		self.assertNotEqual(per_day_for_29_usd, per_day_for_30_usd)
 		self.assertNotEqual(per_day_for_29_inr, per_day_for_30_inr)
+
+	def test_offsite_backups_reaches_the_dashboard(self):
+		"""The backups tab decides what to say about missing days from this flag."""
+		from press.api.client import get
+
+		plan = create_test_plan("Site", offsite_backups=True)
+
+		self.assertTrue(get("Site Plan", plan.name).offsite_backups)

@@ -2,39 +2,62 @@
 	<div class="space-y-4">
 		<div class="flex space-x-2">
 			<FormControl
-				class="w-40"
+				v-if="serverOptions.length > 1"
+				class="w-50"
 				label="Server"
 				type="select"
 				:options="serverOptions"
 				v-model="chosenServer"
 			/>
 			<FormControl
-				class="w-32"
+				class="w-36"
 				label="Duration"
 				type="select"
-				:options="
-					durationOptions.map((option) => ({ label: option, value: option }))
-				"
+				:options="durationOptions"
 				v-model="duration"
 			/>
+			<div v-if="duration === 'custom'" class="flex flex-col gap-1.5">
+				<div class="text-xs text-ink-gray-5">Start</div>
+				<DateTimePicker
+					class="w-52"
+					type="datetime"
+					format="D MMM YYYY, hh:mm a"
+					:model-value="customStartTime"
+					@update:model-value="customStartTime = new Date($event)"
+				/>
+			</div>
+			<div v-if="duration === 'custom'" class="flex flex-col gap-1.5">
+				<div class="text-xs text-ink-gray-5">End</div>
+				<DateTimePicker
+					class="w-52"
+					type="datetime"
+					format="D MMM YYYY, hh:mm a"
+					:model-value="customEndTime"
+					@update:model-value="customEndTime = new Date($event)"
+				/>
+			</div>
 		</div>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-			<AnalyticsCard title="Uptime" v-if="!isServerType('Application Server')">
+			<AnalyticsCard title="Uptime" v-if="isDatabaseServer()">
 				<LineChart
 					type="time"
 					title="Uptime"
 					:key="databaseUptimeData"
 					:data="databaseUptimeData"
-					unit=""
+					unit="%"
 					:chartTheme="[$theme.colors.purple[500]]"
 					:loading="$resources.databaseUptime.loading"
 					:error="$resources.databaseUptime.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="CPU">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#cpu"
+				title="CPU"
+			>
 				<LineChart
 					type="time"
 					title="CPU"
@@ -55,10 +78,14 @@
 					:error="$resources.cpu.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Load Average">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#load-average"
+				title="Load Average"
+			>
 				<LineChart
 					type="time"
 					title="Load Average"
@@ -73,10 +100,14 @@
 					:error="$resources.loadavg.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Memory">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#bench-memory-usage"
+				title="Memory"
+			>
 				<LineChart
 					type="time"
 					title="Memory"
@@ -88,10 +119,33 @@
 					:error="$resources.memory.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Disk Space">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#bench-memory-usage"
+				title="OOM Kills"
+			>
+				<LineChart
+					type="time"
+					title="OOM Kills"
+					unit="kills"
+					:key="oomKillsData"
+					:data="oomKillsData"
+					:chartTheme="[$theme.colors.red[500]]"
+					:loading="$resources.oomKills.loading"
+					:error="$resources.oomKills.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#server-analytics"
+				title="Disk Space"
+			>
 				<LineChart
 					type="time"
 					title="Disk Space"
@@ -103,10 +157,14 @@
 					:error="$resources.space.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Network">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#server-analytics"
+				title="Network"
+			>
 				<LineChart
 					type="time"
 					title="Network"
@@ -118,21 +176,31 @@
 					:error="$resources.network.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Disk I/O">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#server-analytics"
+				title="Disk I/O"
+			>
 				<LineChart
 					type="time"
 					title="Disk I/O"
 					:key="iopsData"
 					:data="iopsData"
-					unit="I0ps"
-					:chartTheme="[$theme.colors.purple[500], $theme.colors.blue[500]]"
+					unit="IOps"
+					:chartTheme="[
+						$theme.colors.purple[500],
+						$theme.colors.blue[500],
+						$theme.colors.pink[500],
+						$theme.colors.cyan[500],
+					]"
 					:loading="$resources.iops.loading"
 					:error="$resources.iops.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 		</div>
@@ -142,7 +210,7 @@
 		>
 			<h2 class="text-lg font-semibold">Advanced Analytics</h2>
 			<FeatherIcon
-				class="h-5 w-5 text-gray-500 hover:text-gray-700"
+				class="h-5 w-5 text-ink-gray-5 hover:text-ink-gray-7"
 				:name="showAdvancedAnalytics ? 'chevron-down' : 'chevron-right'"
 			/>
 		</div>
@@ -154,6 +222,7 @@
 		>
 			<!-- Advanced Charts -->
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				v-if="isServerType('Application Server')"
 				class="sm:col-span-2"
 				title="Request frequency by site"
@@ -168,10 +237,12 @@
 					:error="$resources.requestCountBySite.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/site/common-issues/site-slow-504-gateway-timeout"
 				v-if="isServerType('Application Server')"
 				class="sm:col-span-2"
 				title="Slowest request by site"
@@ -186,10 +257,12 @@
 					:error="$resources.requestDurationBySite.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				v-if="isServerType('Application Server')"
 				class="sm:col-span-2"
 				title="Background job frequency by site"
@@ -204,10 +277,12 @@
 					:error="$resources.backgroundJobCountBySite.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/sites/monitoring#investigating-high-usage"
 				v-if="isServerType('Application Server')"
 				class="sm:col-span-2"
 				title="Slowest background jobs by site"
@@ -222,10 +297,15 @@
 					:error="$resources.backgroundJobDurationBySite.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Queries" v-if="!isServerType('Application Server')">
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
+				title="Queries"
+				v-if="isDatabaseServer()"
+			>
 				<LineChart
 					type="time"
 					title="Queries"
@@ -246,12 +326,14 @@
 					:error="$resources.databaseCommandsCount.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				title="DB Connections"
-				v-if="!isServerType('Application Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -267,12 +349,14 @@
 					:error="$resources.databaseConnections.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
 				title="Average Row Lock Time"
-				v-if="!isServerType('Application Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -285,12 +369,14 @@
 					:error="$resources.innodbAvgRowLockTime.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#very-high-database-server-memory-usage"
 				title="Buffer Pool Size"
-				v-if="!isServerType('Application Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -303,12 +389,14 @@
 					:error="$resources.innodbBufferPoolSize.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#very-high-database-server-memory-usage"
 				title="Buffer Pool Size of Total Ram"
-				v-if="!isServerType('Application Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -321,10 +409,11 @@
 					:error="$resources.innodbBufferPoolSizeOfTotalRam.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 				<template #action>
 					<router-link
-						class="text-base text-gray-600 hover:text-gray-700"
+						class="text-base text-ink-gray-6 hover:text-ink-gray-7"
 						:to="{
 							name: 'Server Detail Actions',
 							params: { name: this.serverName },
@@ -336,8 +425,9 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#very-high-database-server-memory-usage"
 				title="Buffer Pool Miss Percent"
-				v-if="!isServerType('Application Server')"
+				v-if="isDatabaseServer()"
 			>
 				<LineChart
 					type="time"
@@ -350,10 +440,11 @@
 					:error="$resources.innodbBufferPoolMissPercentage.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 				<template #action>
 					<router-link
-						class="text-base text-gray-600 hover:text-gray-700"
+						class="text-base text-ink-gray-6 hover:text-ink-gray-7"
 						:to="{
 							name: 'Server Detail Actions',
 							params: { name: this.serverName },
@@ -365,16 +456,11 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
-				v-if="!isServerType('Application Server')"
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
+				v-if="isDatabaseServer()"
 				class="sm:col-span-2"
 				title="Frequent Slow queries"
 			>
-				<template #action>
-					<TabButtons
-						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
-						v-model="slowLogsFrequencyType"
-					/>
-				</template>
 				<BarChart
 					title="Frequent Slow queries"
 					:key="slowLogsCountData"
@@ -385,20 +471,16 @@
 					:error="$resources.slowLogsCount.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 
 			<AnalyticsCard
-				v-if="!isServerType('Application Server')"
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
+				v-if="isDatabaseServer()"
 				class="sm:col-span-2"
 				title="Slowest queries"
 			>
-				<template #action>
-					<TabButtons
-						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
-						v-model="slowLogsDurationType"
-					/>
-				</template>
 				<BarChart
 					title="Slowest queries"
 					:key="slowLogsDurationData"
@@ -409,6 +491,47 @@
 					:error="$resources.slowLogsDuration.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
+				v-if="isDatabaseServer()"
+				class="sm:col-span-2"
+				title="Frequent Slow queries by query"
+			>
+				<BarChart
+					title="Frequent Slow queries by query"
+					:key="slowQueriesCountData"
+					:data="slowQueriesCountData"
+					unit="queries"
+					:chartTheme="chartColors"
+					:loading="$resources.slowQueriesCount.loading"
+					:error="$resources.slowQueriesCount.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				docs="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
+				v-if="isDatabaseServer()"
+				class="sm:col-span-2"
+				title="Slowest queries by query"
+			>
+				<BarChart
+					title="Slowest queries by query"
+					:key="slowQueriesDurationData"
+					:data="slowQueriesDurationData"
+					unit="seconds"
+					:chartTheme="chartColors"
+					:loading="$resources.slowQueriesDuration.loading"
+					:error="$resources.slowQueriesDuration.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+					@datazoom="handleDataZoom"
 				/>
 			</AnalyticsCard>
 		</div>
@@ -416,11 +539,12 @@
 </template>
 
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
-import LineChart from '@/components/charts/LineChart.vue';
-import BarChart from '@/components/charts/BarChart.vue';
-import AnalyticsCard from '../site/AnalyticsCard.vue';
-import dayjs from '../../utils/dayjs';
+import { DateTimePicker, getCachedDocumentResource } from 'frappe-ui'
+import BarChart from '@/components/charts/BarChart.vue'
+import LineChart from '@/components/charts/LineChart.vue'
+import dayjs, { dayjsFloorToMinutes } from '../../utils/dayjs'
+import { duration } from '../../utils/format'
+import AnalyticsCard from '../site/AnalyticsCard.vue'
 
 export default {
 	props: ['serverName'],
@@ -428,16 +552,29 @@ export default {
 		AnalyticsCard,
 		BarChart,
 		LineChart,
+		DateTimePicker,
 	},
 	data() {
+		const defaultDuration = '1h'
+
 		return {
-			duration: '1 Hour',
-			showAdvancedAnalytics: false,
+			defaultDuration,
+			duration: defaultDuration,
+			customStartTime: null,
+			customEndTime: null,
+			showAdvancedAnalytics: true,
 			localTimezone: dayjs.tz.guess(),
-			slowLogsDurationType: 'Denormalized',
-			slowLogsFrequencyType: 'Denormalized',
 			chosenServer: this.$route.query.server ?? this.serverName,
-			durationOptions: ['1 Hour', '6 Hour', '24 Hour', '7 Days', '15 Days'],
+			durationOptions: [
+				{ label: 'Duration', value: null, disabled: true },
+				{ label: '1 hour', value: '1h' },
+				{ label: '6 hours', value: '6h' },
+				{ label: '24 hours', value: '24h' },
+				{ label: '3 days', value: '3d' },
+				{ label: '7 days', value: '7d' },
+				{ label: '15 days', value: '15d' },
+				{ label: 'Custom', value: 'custom' },
+			],
 			chartColors: [
 				this.$theme.colors.green[500],
 				this.$theme.colors.red[500],
@@ -450,7 +587,7 @@ export default {
 				this.$theme.colors.gray[500],
 				this.$theme.colors.orange[500],
 			],
-		};
+		}
 	},
 	watch: {
 		chosenServer() {
@@ -458,7 +595,23 @@ export default {
 				query: {
 					server: this.chosenServer,
 				},
-			});
+			})
+		},
+		duration: {
+			// sync, so that a zoom can overwrite the range this sets before any
+			// chart reads it. Otherwise the tab refetches the default range first.
+			flush: 'sync',
+			handler() {
+				const now = dayjs()
+				// floor to 15 minutes to avoid issues with caching
+				const flooredEndDate = dayjsFloorToMinutes(now, 15)
+				this.customEndTime = flooredEndDate.toDate()
+				const dur =
+					this.duration === 'custom'
+						? this.defaultDurationToArray
+						: this.inputDurationToArray
+				this.customStartTime = flooredEndDate.subtract(...dur).toDate()
+			},
 		},
 	},
 	resources: {
@@ -469,13 +622,14 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'loadavg',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 					server_type: this.serverOptions.find(
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
 				auto: true,
-			};
+			}
 		},
 		cpu() {
 			return {
@@ -484,13 +638,14 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'cpu',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 					server_type: this.serverOptions.find(
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
 				auto: true,
-			};
+			}
 		},
 		memory() {
 			return {
@@ -499,13 +654,30 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'memory',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 					server_type: this.serverOptions.find(
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
 				auto: true,
-			};
+			}
+		},
+		oomKills() {
+			return {
+				url: 'press.api.server.analytics',
+				params: {
+					name: this.chosenServer,
+					timezone: this.localTimezone,
+					query: 'oom_kills',
+					start: this.startTime,
+					end: this.endTime,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
+				},
+				auto: true,
+			}
 		},
 		network() {
 			return {
@@ -514,13 +686,14 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'network',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 					server_type: this.serverOptions.find(
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
 				auto: true,
-			};
+			}
 		},
 		iops() {
 			return {
@@ -529,13 +702,14 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'iops',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 					server_type: this.serverOptions.find(
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
 				auto: true,
-			};
+			}
 		},
 		space() {
 			return {
@@ -544,13 +718,14 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'space',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 					server_type: this.serverOptions.find(
 						(s) => s.value === this.chosenServer,
 					)?.label,
 				},
 				auto: true,
-			};
+			}
 		},
 		requestCountBySite() {
 			return {
@@ -559,11 +734,12 @@ export default {
 					name: this.chosenServer,
 					query: 'count',
 					timezone: this.localTimezone,
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.showAdvancedAnalytics && this.isServerType('Application Server'),
-			};
+			}
 		},
 		requestDurationBySite() {
 			return {
@@ -572,11 +748,12 @@ export default {
 					name: this.chosenServer,
 					query: 'duration',
 					timezone: this.localTimezone,
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.showAdvancedAnalytics && this.isServerType('Application Server'),
-			};
+			}
 		},
 		backgroundJobCountBySite() {
 			return {
@@ -585,11 +762,12 @@ export default {
 					name: this.chosenServer,
 					query: 'count',
 					timezone: this.localTimezone,
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.showAdvancedAnalytics && this.isServerType('Application Server'),
-			};
+			}
 		},
 		backgroundJobDurationBySite() {
 			return {
@@ -598,11 +776,12 @@ export default {
 					name: this.chosenServer,
 					query: 'duration',
 					timezone: this.localTimezone,
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.showAdvancedAnalytics && this.isServerType('Application Server'),
-			};
+			}
 		},
 		slowLogsCount() {
 			return {
@@ -611,13 +790,11 @@ export default {
 					name: this.chosenServer,
 					query: 'count',
 					timezone: this.localTimezone,
-					duration: this.duration,
-					normalize: this.slowLogsFrequencyType === 'Normalized',
+					start: this.startTime,
+					end: this.endTime,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					!this.isServerType('Application Server'),
-			};
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
+			}
 		},
 		slowLogsDuration() {
 			return {
@@ -626,13 +803,37 @@ export default {
 					name: this.chosenServer,
 					query: 'duration',
 					timezone: this.localTimezone,
-					duration: this.duration,
-					normalize: this.slowLogsDurationType === 'Normalized',
+					start: this.startTime,
+					end: this.endTime,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					!this.isServerType('Application Server'),
-			};
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
+			}
+		},
+		slowQueriesCount() {
+			return {
+				url: 'press.api.server.get_slow_logs_by_query',
+				params: {
+					name: this.chosenServer,
+					query: 'count',
+					timezone: this.localTimezone,
+					start: this.startTime,
+					end: this.endTime,
+				},
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
+			}
+		},
+		slowQueriesDuration() {
+			return {
+				url: 'press.api.server.get_slow_logs_by_query',
+				params: {
+					name: this.chosenServer,
+					query: 'duration',
+					timezone: this.localTimezone,
+					start: this.startTime,
+					end: this.endTime,
+				},
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
+			}
 		},
 		databaseUptime() {
 			return {
@@ -641,12 +842,14 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'database_uptime',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
-				auto:
-					this.isServerType('Database Server') ||
-					this.isServerType('Replication Server'),
-			};
+				auto: this.isDatabaseServer(),
+			}
 		},
 		databaseCommandsCount() {
 			return {
@@ -655,13 +858,14 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'database_commands_count',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
-			};
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
+			}
 		},
 		databaseConnections() {
 			return {
@@ -670,13 +874,14 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'database_connections',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
-			};
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
+			}
 		},
 		innodbBufferPoolSize() {
 			return {
@@ -685,13 +890,14 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'innodb_bp_size',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
-			};
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
+			}
 		},
 		innodbBufferPoolSizeOfTotalRam() {
 			return {
@@ -700,13 +906,14 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'innodb_bp_size_of_total_ram',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
-			};
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
+			}
 		},
 		innodbBufferPoolMissPercentage() {
 			return {
@@ -715,13 +922,14 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'innodb_bp_miss_percent',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
-			};
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
+			}
 		},
 		innodbAvgRowLockTime() {
 			return {
@@ -730,48 +938,87 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'innodb_avg_row_lock_time',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
-					(this.isServerType('Database Server') ||
-						this.isServerType('Replication Server')),
-			};
+				auto: this.showAdvancedAnalytics && this.isDatabaseServer(),
+			}
 		},
 	},
 	computed: {
 		$server() {
-			return getCachedDocumentResource('Server', this.serverName);
+			return getCachedDocumentResource('Server', this.serverName)
 		},
 		serverOptions() {
-			return [
+			const options = [
 				{
-					label: 'Application Server',
+					label: this.$server.doc.is_unified_server
+						? 'Unified Server'
+						: 'Application Server',
 					value: this.$server.doc.name,
 				},
 				{
 					label: 'Database Server',
-					value: this.$server.doc.database_server,
+					value: !this.$server.doc.is_unified_server
+						? this.$server.doc.database_server
+						: false,
 				},
 				{
 					label: 'Replication Server',
 					value: this.$server.doc.replication_server,
 				},
-			].filter((v) => v.value);
+			].filter((v) => v.value)
+			if (options.length === 1 && !this.chosenServer) {
+				this.chosenServer = options[0].value
+			}
+			return options
+		},
+		inputDurationToArray() {
+			if (this.duration === 'custom') {
+				return null
+			}
+			const durationValue = Number(this.duration.slice(0, -1))
+			const durationUnit = this.duration.slice(-1)
+			return [durationValue, durationUnit]
+		},
+		defaultDurationToArray() {
+			const durationValue = Number(this.defaultDuration.slice(0, -1))
+			const durationUnit = this.defaultDuration.slice(-1)
+			return [durationValue, durationUnit]
+		},
+		startTime() {
+			if (this.duration === 'custom') {
+				return this.customStartTime
+			}
+			return dayjs(this.endTime)
+				.subtract(...this.inputDurationToArray)
+				.toDate()
+		},
+		endTime() {
+			if (this.duration === 'custom') {
+				return this.customEndTime
+			}
+			const now = dayjs()
+			// floor to 15 minutes to avoid issues with caching
+			const flooredNow = dayjsFloorToMinutes(now, 15)
+			return flooredNow.toDate()
 		},
 		loadAverageData() {
-			let loadavg = this.$resources.loadavg.data;
-			if (!loadavg) return;
+			let loadavg = this.$resources.loadavg.data
+			if (!loadavg) return
 
 			loadavg.datasets.sort(
 				(a, b) => Number(a.name.split(' ')[2]) - Number(b.name.split(' ')[2]),
-			);
+			)
 
-			return this.transformMultiLineChartData(loadavg);
+			return this.transformMultiLineChartData(loadavg)
 		},
 		cpuData() {
-			let cpu = this.$resources.cpu.data;
-			if (!cpu) return;
+			let cpu = this.$resources.cpu.data
+			if (!cpu) return
 			const order = [
 				'system',
 				'user',
@@ -781,102 +1028,117 @@ export default {
 				'nice',
 				'steal',
 				'idle',
-			];
+			]
 
 			cpu.datasets = cpu.datasets.sort((a, b) => {
-				return order.indexOf(a.name) - order.indexOf(b.name);
-			});
+				return order.indexOf(a.name) - order.indexOf(b.name)
+			})
 
-			return this.transformMultiLineChartData(cpu, 'cpu', true);
+			return this.transformMultiLineChartData(cpu, 'cpu', true)
 		},
 		memoryData() {
-			let memory = this.$resources.memory.data;
-			if (!memory) return;
+			let memory = this.$resources.memory.data
+			if (!memory) return
 
-			return this.transformSingleLineChartData(memory);
+			return this.transformSingleLineChartData(memory)
+		},
+		oomKillsData() {
+			let oomKills = this.$resources.oomKills.data
+			if (!oomKills) return
+
+			return this.transformSingleLineChartData(oomKills)
 		},
 		iopsData() {
-			let iops = this.$resources.iops.data;
-			if (!iops) return;
+			let iops = this.$resources.iops.data
+			if (!iops) return
 
-			return this.transformMultiLineChartData(iops);
+			return this.transformMultiLineChartData(iops)
 		},
 		spaceData() {
-			let space = this.$resources.space.data;
-			if (!space) return;
+			let space = this.$resources.space.data
+			if (!space) return
 
-			return this.transformMultiLineChartData(space);
+			return this.transformMultiLineChartData(space)
 		},
 		networkData() {
-			let network = this.$resources.network.data;
-			if (!network) return;
+			let network = this.$resources.network.data
+			if (!network) return
 
-			return this.transformSingleLineChartData(network);
+			return this.transformSingleLineChartData(network)
 		},
 		requestCountBySiteData() {
-			const requests = this.$resources.requestCountBySite.data;
-			if (!requests) return;
+			const requests = this.$resources.requestCountBySite.data
+			if (!requests) return
 
-			return requests;
+			return requests
 		},
 		requestDurationBySiteData() {
-			const requests = this.$resources.requestDurationBySite.data;
-			if (!requests) return;
+			const requests = this.$resources.requestDurationBySite.data
+			if (!requests) return
 
-			return requests;
+			return requests
 		},
 		backgroundJobCountBySiteData() {
-			const jobs = this.$resources.backgroundJobCountBySite.data;
-			if (!jobs) return;
+			const jobs = this.$resources.backgroundJobCountBySite.data
+			if (!jobs) return
 
-			return jobs;
+			return jobs
 		},
 		backgroundJobDurationBySiteData() {
-			const jobs = this.$resources.backgroundJobDurationBySite.data;
-			if (!jobs) return;
+			const jobs = this.$resources.backgroundJobDurationBySite.data
+			if (!jobs) return
 
-			return jobs;
+			return jobs
 		},
 		slowLogsDurationData() {
-			const slowLogs = this.$resources.slowLogsDuration.data;
-			if (!slowLogs) return;
+			const slowLogs = this.$resources.slowLogsDuration.data
+			if (!slowLogs) return
 
-			return slowLogs;
+			return slowLogs
 		},
 		slowLogsCountData() {
-			const slowLogs = this.$resources.slowLogsCount.data;
-			if (!slowLogs) return;
+			const slowLogs = this.$resources.slowLogsCount.data
+			if (!slowLogs) return
 
-			return slowLogs;
+			return slowLogs
+		},
+		slowQueriesCountData() {
+			// null before the first response; BarChart wants an object or undefined
+			return this.$resources.slowQueriesCount.data ?? undefined
+		},
+		slowQueriesDurationData() {
+			return this.$resources.slowQueriesDuration.data ?? undefined
 		},
 		databaseUptimeData() {
-			const uptime = this.$resources.databaseUptime.data;
-			if (!uptime) return;
+			const uptime = this.$resources.databaseUptime.data
+			if (!uptime) return
 
-			return this.transformSingleLineChartData(uptime);
+			const data = this.transformSingleLineChartData(uptime)
+			// uptime sits at 100%, so a zero-based axis flattens every dip
+			return data && { ...data, yScale: true }
 		},
 		databaseCommandsCountData() {
-			const commandsCount = this.$resources.databaseCommandsCount.data;
-			if (!commandsCount) return;
+			const commandsCount = this.$resources.databaseCommandsCount.data
+			if (!commandsCount) return
 
-			return this.transformMultiLineChartData(commandsCount, null, false);
+			return this.transformMultiLineChartData(commandsCount, null, false)
 		},
 		databaseConnectionsData() {
-			const connections = this.$resources.databaseConnections.data;
-			if (!connections) return;
+			const connections = this.$resources.databaseConnections.data
+			if (!connections) return
 
-			return this.transformMultiLineChartData(connections, null, false);
+			return this.transformMultiLineChartData(connections, null, false)
 		},
 		innodbBufferPoolSizeData() {
-			let innodbBufferPoolSize = this.$resources.innodbBufferPoolSize.data;
-			if (!innodbBufferPoolSize) return;
+			let innodbBufferPoolSize = this.$resources.innodbBufferPoolSize.data
+			if (!innodbBufferPoolSize) return
 
-			return this.transformSingleLineChartData(innodbBufferPoolSize, false);
+			return this.transformSingleLineChartData(innodbBufferPoolSize, false)
 		},
 		innodbBufferPoolSizeOfTotalRamData() {
-			let data = this.$resources.innodbBufferPoolSizeOfTotalRam.data;
-			if (!data) return;
-			let payload = this.transformSingleLineChartData(data, true);
+			let data = this.$resources.innodbBufferPoolSizeOfTotalRam.data
+			if (!data || (data.datasets && data.datasets.length === 0)) return
+			let payload = this.transformSingleLineChartData(data, true)
 			payload['markLine'] = {
 				data: [
 					{
@@ -903,13 +1165,14 @@ export default {
 					},
 				],
 				symbol: ['none', 'none'],
-			};
-			return payload;
+			}
+			return payload
 		},
 		innodbBufferPoolMissPercentageData() {
-			let data = this.$resources.innodbBufferPoolMissPercentage.data;
-			if (!data) return;
-			let payload = this.transformSingleLineChartData(data, false);
+			let data = this.$resources.innodbBufferPoolMissPercentage.data
+			if (!data || (data.datasets && data.datasets.length === 0)) return
+
+			let payload = this.transformSingleLineChartData(data, false)
 			payload['markLine'] = {
 				data: [
 					{
@@ -925,69 +1188,94 @@ export default {
 					},
 				],
 				symbol: ['none', 'none'],
-			};
-			return payload;
+			}
+			return payload
 		},
 		innodbAvgRowLockTimeData() {
-			let data = this.$resources.innodbAvgRowLockTime.data;
-			if (!data) return;
-			return this.transformSingleLineChartData(data, false);
+			let data = this.$resources.innodbAvgRowLockTime.data
+			if (!data) return
+			return this.transformSingleLineChartData(data, false)
 		},
 	},
 	methods: {
 		transformSingleLineChartData(data, percentage = false) {
-			if (!data.datasets?.length) return;
+			if (!data.datasets?.length) return
 
-			let dataset = [];
-			const name = data.datasets ? data.datasets[0]?.name : null;
+			let dataset = []
+			const name = data.datasets ? data.datasets[0]?.name : null
 			for (let index = 0; index < data.datasets[0].values.length; index++) {
 				dataset.push([
 					+new Date(data.labels[index]),
 					data.datasets[0].values[index],
-				]);
+				])
 			}
 
 			return {
 				datasets: [{ dataset: dataset, name }],
 				yMax: percentage ? 100 : null,
-			};
+			}
 		},
 		transformMultiLineChartData(data, stack = null, percentage = false) {
-			if (!data.datasets?.length) return;
+			if (!data.datasets?.length) return
 
-			let total = [];
+			let total = []
 			if (percentage) {
 				// the sum of each cpu values tends to differ by few values
 				// so we need to calculate the total for each timestamp
 				for (let i = 0; i < data.datasets[0].values.length; i++) {
 					for (let j = 0; j < data.datasets.length; j++) {
-						if (!total[i]) total[i] = 0;
-						total[i] += data.datasets[j].values[i];
+						if (!total[i]) total[i] = 0
+						total[i] += data.datasets[j].values[i]
 					}
 				}
 			}
 			const datasets = data.datasets.map(({ name, values }) => {
-				let dataset = [];
+				let dataset = []
 				for (let i = 0; i < values.length; i++) {
 					dataset.push([
 						+new Date(data.labels[i]),
 						percentage ? (values[i] / total[i]) * 100 : values[i],
-					]);
+					])
 				}
-				return { name, dataset, stack };
-			});
+				return { name, dataset, stack }
+			})
 
-			return { datasets, yMax: percentage ? 100 : null };
+			return { datasets, yMax: percentage ? 100 : null }
+		},
+		isDatabaseServer() {
+			// Not isServerType: on a unified server it maps every type to Unified
+			// Server, so a chosen replica would never match
+			const chosen = this.serverOptions.find(
+				(s) => s.value === this.chosenServer,
+			)
+			return (
+				chosen?.label === 'Replication Server' ||
+				this.isServerType('Database Server')
+			)
 		},
 		isServerType(type) {
+			// Show all analytics for Unified Server
+			if (this.$server.doc.is_unified_server) {
+				type = 'Unified Server'
+			}
 			return (
 				this.chosenServer ===
 				this.serverOptions.find((s) => s.label === type)?.value
-			);
+			)
 		},
 		toggleAdvancedAnalytics() {
-			this.showAdvancedAnalytics = !this.showAdvancedAnalytics;
+			this.showAdvancedAnalytics = !this.showAdvancedAnalytics
+		},
+		handleDataZoom({ startDate, endDate }) {
+			clearTimeout(this.zoomTimeout)
+			// debounce: one drag can end in more than one zoom event, and every
+			// chart on the tab refetches when the range changes
+			this.zoomTimeout = setTimeout(() => {
+				this.duration = 'custom'
+				this.customStartTime = startDate
+				this.customEndTime = endDate
+			}, 500)
 		},
 	},
-};
+}
 </script>

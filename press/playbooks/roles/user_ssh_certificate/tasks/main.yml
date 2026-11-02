@@ -3,7 +3,7 @@
   block:
     - name: Setup certificate-authority key file
       get_url:
-        url: "https://frappecloud.com/files/ca.pub"
+        url: "https://cloud.frappe.io/files/ca.pub"
         dest: /etc/ssh/ca.pub
 
     - name: Set key file permissions to 0644

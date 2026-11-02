@@ -168,3 +168,20 @@ press/public/css/marketplace-next.css
 # IDE
 .idea
 .vscode
+
+# Vitepress
+docs/.vitepress/cache
+docs/.vitepress/dist
+
+# Tmp
+on_prem_dr
+
+# changelog dist
+press/www/releases
+
+dashboard/auto-imports.d.ts
+
+# Local scratch (keep the repo root readable)
+*.sql.gz
+*.csv
+*.bak-*

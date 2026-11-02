@@ -5,6 +5,7 @@
   become_user: root
   gather_facts: yes
   roles:
+    - role: nat_iptables
     - role: essentials
     - role: user
     - role: mount
@@ -23,4 +24,5 @@
     - role: warning_banners
     - role: auditd
     - role: sshd_hardening
+    - role: fail2ban
     - role: pam
