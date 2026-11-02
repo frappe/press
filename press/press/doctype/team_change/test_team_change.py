@@ -87,12 +87,14 @@ class TestTeamChange(FrappeTestCase):
 		self.assertEqual(frappe.db.get_value("Site", site.name, "team"), self.to_team.name)
 		self.assertFalse(frappe.db.exists("Press Role Permission", {"site": site.name}))
 
-	def test_confirm_bench_transfer_moves_group_and_removes_role_permissions(self):
+	def test_confirm_bench_transfer_moves_group_and_its_benches_and_removes_role_permissions(self):
 		group = create_test_release_group([create_test_app()], user=self.from_team.user)
+		bench = create_test_bench(group=group)
 		self._add_role_permission(release_group=group.name)
 		self._confirm(self._request(group))
 
 		self.assertEqual(frappe.db.get_value("Release Group", group.name, "team"), self.to_team.name)
+		self.assertEqual(frappe.db.get_value("Bench", bench.name, "team"), self.to_team.name)
 		self.assertFalse(frappe.db.exists("Press Role Permission", {"release_group": group.name}))
 
 	def test_server_transfer_request_blocked_when_receiving_team_cannot_have_servers(self):
@@ -142,7 +144,7 @@ class TestTeamChange(FrappeTestCase):
 		self._add_running_job("Press Job", server.name, hours_ago=25, job_type="Resize Server")
 		self.assertEqual(self._request(server).document_name, server.name)
 
-	def test_confirm_server_transfer_moves_server_database_server_group_and_site(self):
+	def test_confirm_server_transfer_moves_server_database_server_group_bench_and_site(self):
 		server, group, site = self._server_with_group_and_site()
 		self._add_role_permission(server=server.name)
 		self._confirm(self._request(server))
@@ -152,6 +154,7 @@ class TestTeamChange(FrappeTestCase):
 			("Database Server", server.database_server),
 			("Virtual Machine", server.virtual_machine),
 			("Release Group", group.name),
+			("Bench", site.bench),
 			("Site", site.name),
 		):
 			self.assertEqual(frappe.db.get_value(doctype, name, "team"), self.to_team.name, doctype)

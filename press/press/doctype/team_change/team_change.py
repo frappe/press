@@ -249,6 +249,8 @@ def transfer_site(site: str, to_team: str):
 
 def transfer_release_group(group: str, to_team: str):
 	frappe.db.set_value("Release Group", group, "team", to_team)
+	# Benches copy the group's team only when created, and access checks read it
+	frappe.db.set_value("Bench", {"group": group}, "team", to_team)
 	frappe.db.delete("Press Role Permission", {"release_group": group})
 	# Skip onboarding for receiving team so they can access bench groups immediately
 	# Actual resource usage (servers/sites) will still require billing setup
