@@ -2,6 +2,11 @@
 	<div class="sticky top-0 z-10 shrink-0">
 		<Header>
 			<Breadcrumbs :items="[{ label: 'Contracts', route: '/contracts' }]" />
+			<Button
+				v-if="ordering"
+				label="Back to contracts"
+				@click="ordering = false"
+			/>
 		</Header>
 	</div>
 
@@ -22,10 +27,7 @@
 			:message="contract.error || verifyPayment.error"
 		/>
 		<template v-else-if="contract.data">
-			<div
-				v-if="!showForm && contracts.length"
-				class="flex flex-col gap-6 py-8"
-			>
+			<div v-if="!showForm" class="flex flex-col gap-6 py-8">
 				<AwaitingPayment
 					v-if="awaiting"
 					:contract="current"
@@ -56,7 +58,13 @@
 </template>
 
 <script setup>
-import { Breadcrumbs, createResource, ErrorMessage, Spinner } from 'frappe-ui'
+import {
+	Breadcrumbs,
+	Button,
+	createResource,
+	ErrorMessage,
+	Spinner,
+} from 'frappe-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -75,9 +83,7 @@ const contracts = computed(() => contract.data?.contracts || [])
 const awaiting = computed(() => current.value?.status === 'Awaiting Payment')
 // The awaiting order has its own card above the list.
 const listed = computed(() =>
-	contracts.value.filter(
-		(row) => !awaiting.value || row.name !== current.value.name,
-	),
+	contracts.value.filter((row) => row.status !== 'Awaiting Payment'),
 )
 const ordering = ref(false)
 const showForm = computed(

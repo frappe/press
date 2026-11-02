@@ -5,6 +5,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, add_years, getdate, today
 
+from press.api.enterprise_contract import get_contract
 from press.press.doctype.enterprise_contract.enterprise_contract import (
 	EnterpriseContract,
 	create_contract,
@@ -66,6 +67,25 @@ class EnterpriseContractTestCase(FrappeTestCase):
 
 
 class TestEnterpriseContract(EnterpriseContractTestCase):
+	def test_only_the_owning_team_can_open_a_paid_contract(self):
+		contract = create_contract(self.team, self.make_order())
+		other_team = create_team_with_billing_address("India")
+		self.addCleanup(frappe.set_user, "Administrator")
+
+		frappe.set_user(self.team.user)
+		with self.assertRaisesRegex(frappe.ValidationError, "could not find this contract"):
+			get_contract(contract.name)
+
+		frappe.set_user("Administrator")
+		contract.record_payment(reference="UTR000000000003")
+
+		frappe.set_user(self.team.user)
+		self.assertEqual(get_contract(contract.name)["name"], contract.name)
+
+		frappe.set_user(other_team.user)
+		with self.assertRaisesRegex(frappe.ValidationError, "could not find this contract"):
+			get_contract(contract.name)
+
 	def test_team_contracts_list_the_history_of_this_team_only(self):
 		cancelled = create_contract(self.team, self.make_order())
 		cancelled.cancel_order()
