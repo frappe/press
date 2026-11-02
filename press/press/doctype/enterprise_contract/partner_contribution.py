@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 
 import frappe
-from frappe.utils import add_months, flt, get_date_str, get_first_day, get_last_day, getdate
+from frappe.utils import add_months, flt, get_date_str, get_first_day, get_last_day, getdate, month_diff
 
 from press.press.doctype.enterprise_contract.enterprise_contract import OPEN_STATUSES
 from press.utils.billing import get_frappe_io_connection
@@ -47,8 +47,7 @@ def contract_shares(month, partner_emails: list[str]) -> list[frappe._dict]:
 		.where(payment.period_start <= get_last_day(month))
 	).run(as_dict=True)
 	for row in rows:
-		number = months_between(get_first_day(row.period_start), month) + 1
-		row.amount = monthly_amount(row.amount, number)
+		row.amount = monthly_amount(row.amount, month_diff(month, row.period_start))
 	return rows
 
 
@@ -56,11 +55,6 @@ def contract_shares(month, partner_emails: list[str]) -> list[frappe._dict]:
 def monthly_amount(amount: float, number: int) -> float:
 	share = flt(amount / MONTHS_IN_YEAR, 2)
 	return flt(amount - share * (MONTHS_IN_YEAR - 1), 2) if number == MONTHS_IN_YEAR else share
-
-
-def months_between(start, end) -> int:
-	start, end = getdate(start), getdate(end)
-	return (end.year - start.year) * 12 + end.month - start.month
 
 
 def partner_transaction(share: frappe._dict, month) -> dict:
