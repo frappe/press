@@ -25,7 +25,6 @@ from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.enterprise_contract.checkout import PAYMENT_FOR as ENTERPRISE_CONTRACT_PAYMENT
 from press.press.doctype.enterprise_contract.checkout import record_webhook_payment
-from press.press.doctype.enterprise_contract.installments import usage_total
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import get_valid_teams_for_user, has_role, log_error
 from press.utils import is_admin_user as check_is_admin_user
@@ -2116,7 +2115,6 @@ def check_budget_alerts():
 			"name",
 			"team",
 			"total",
-			"paid_by_contract",
 			"period_start",
 			"period_end",
 		],
@@ -2127,7 +2125,6 @@ def check_budget_alerts():
 	for invoice in current_invoices:
 		team_name = invoice["team"]
 		monthly_limit = team_dict[team_name]["monthly_alert_threshold"]
-		invoice["total"] = usage_total(invoice)
 		if invoice["total"] > monthly_limit:
 			email_sent = send_budget_alert_email(team_dict[team_name], invoice)
 			if email_sent:

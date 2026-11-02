@@ -7,10 +7,11 @@ from frappe.desk.form.load import get_docinfo
 from frappe.query_builder import Case
 from frappe.query_builder.functions import Count, Sum
 from frappe.utils import flt
-from frappe.utils.data import add_days, add_months, get_first_day, get_last_day, today
+from frappe.utils.data import add_days, add_months, get_first_day, get_last_day, getdate, today
 from frappe.utils.user import is_system_user
 
 from press.guards import role_guard
+from press.press.doctype.enterprise_contract.partner_contribution import contract_shares
 from press.utils import get_current_team
 
 
@@ -242,7 +243,7 @@ def get_partner_contribution_list(partner_email: str) -> list[dict] | None:
 				d.update({"partner_total": flt(d.total_before_discount * 83)})
 		else:
 			d.update({"partner_total": d.total_before_discount})
-	return invoices
+	return invoices + contract_contribution_rows(partner_email, partner_currency)
 
 
 @frappe.whitelist()
@@ -290,7 +291,8 @@ def get_partner_mrr(partner_email: str, prev_month: bool = False) -> list[dict] 
 		query = query.where(Invoice.due_date == last_month_end)
 
 	result = query.run(as_dict=True)
-	return [d for d in result]
+	months = [add_months(today(), -number) for number in range(1, 2 if prev_month else 13)]
+	return add_contract_shares_to_mrr(result, partner_email, partner_currency, months)
 
 
 @frappe.whitelist()
@@ -562,7 +564,7 @@ def get_current_month_partner_contribution(partner_email: str) -> float | None:
 		else:
 			total += d.total_before_discount
 
-	return total
+	return total + contract_contribution(partner_email, partner_currency, today())
 
 
 @frappe.whitelist()
@@ -606,7 +608,44 @@ def get_prev_month_partner_contribution(partner_email: str) -> float | None:
 				total += flt(d.total_before_discount * 83, 2)
 		else:
 			total += d.total_before_discount
-	return total
+	return total + contract_contribution(partner_email, partner_currency, add_months(today(), -1))
+
+
+def convert_to_partner_currency(amount: float, currency: str, partner_currency: str) -> float:
+	if currency == partner_currency:
+		return amount
+	return flt(amount / 83, 2) if partner_currency == "USD" else flt(amount * 83, 2)
+
+
+def contract_contribution(partner_email: str, partner_currency: str, month) -> float:
+	shares = contract_shares(month, [partner_email])
+	return flt(
+		sum(convert_to_partner_currency(row.amount, row.currency, partner_currency) for row in shares), 2
+	)
+
+
+def contract_contribution_rows(partner_email: str, partner_currency: str) -> list[dict]:
+	return [
+		{
+			"due_date": get_last_day(today()),
+			"customer_name": row.customer_name,
+			"total_before_discount": row.amount,
+			"currency": row.currency,
+			"status": "Paid",
+			"partner_total": convert_to_partner_currency(row.amount, row.currency, partner_currency),
+		}
+		for row in contract_shares(today(), [partner_email])
+	]
+
+
+def add_contract_shares_to_mrr(rows: list, partner_email: str, partner_currency: str, months: list) -> list:
+	totals = {row.due_date: row.total_amount for row in rows}
+	for month in months:
+		if amount := contract_contribution(partner_email, partner_currency, month):
+			due_date = getdate(get_last_day(month))
+			totals[due_date] = flt(totals.get(due_date)) + amount
+	ordered = sorted(totals.items(), reverse=True)[:12]
+	return [{"due_date": due_date, "total_amount": amount} for due_date, amount in ordered]
 
 
 @frappe.whitelist()

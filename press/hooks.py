@@ -222,6 +222,7 @@ scheduler_events = {
 		"press.press.doctype.mariadb_audit_log.mariadb_audit_log.delete_expired_audit_logs",
 		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
 		"press.press.doctype.team.team.check_budget_alerts",
+		"press.press.doctype.enterprise_contract.partner_contribution.send_partner_transactions",
 		"press.press.doctype.site.site.archive_creation_failed_sites",
 		"press.press.doctype.server.server.process_running_benches_on_server",
 	],
