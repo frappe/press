@@ -28,6 +28,7 @@ from frappe.utils import rounded, sbool
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from press.agent import Agent
+from press.api.assets import get_asset_store_instructions
 from press.exceptions import ImageNotFoundInRegistry
 from press.press.doctype.deploy_candidate.deploy_notifications import (
 	create_build_failed_notification,
@@ -47,6 +48,7 @@ from press.press.doctype.deploy_candidate.utils import (
 	is_suspended,
 )
 from press.utils import get_current_team, log_error
+from press.utils.environment_variable import validate_environment_variable
 from press.utils.webhook import create_webhook_event
 
 if typing.TYPE_CHECKING:
@@ -340,6 +342,9 @@ class DeployCandidateBuild(Document):
 			if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
 				dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
 
+		for variable in self.candidate.environment_variables:
+			validate_environment_variable(variable.key, variable.value)
+
 		return frappe.render_template(
 			dockerfile_template,
 			{
@@ -347,12 +352,14 @@ class DeployCandidateBuild(Document):
 				"remove_distutils": not is_distutils_supported,
 				"requires_version_based_get_pip": requires_version_based_get_pip,
 				"is_arm_build": self.platform == "arm64",
-				"use_asset_store": False,
-				"upload_assets": False,
-				"site_url": frappe.utils.get_url(),
+				"use_asset_store": self.uses_asset_store(),
 			},
 			is_path=True,
 		)
+
+	def uses_asset_store(self) -> bool:
+		"""Any group with Use App Cache downloads stored assets; only public groups upload them."""
+		return not self.no_cache and bool(self.candidate.use_app_cache)
 
 	def add_patch_build_steps(self):
 		slugs = [
@@ -842,6 +849,8 @@ class DeployCandidateBuild(Document):
 
 		self.candidate._set_additional_packages()
 		self.candidate._set_container_mounts()
+		if not self.no_cache:
+			self.candidate._set_app_cached_flags()
 
 		dockerfile = self._generate_dockerfile()
 		_, host_keys = self.candidate.generate_ssh_keys()
@@ -864,7 +873,6 @@ class DeployCandidateBuild(Document):
 			},
 			"no_cache": self.no_cache,
 			"no_push": self.no_push,
-			"build_token": self.candidate.build_token,
 			# Next few values are not used by agent but are
 			# read in `process_run_build`
 			"deploy_candidate_build": self.name,
@@ -890,6 +898,9 @@ class DeployCandidateBuild(Document):
 		}
 		if host_keys:
 			build_parameters["ssh_keys"] = {"host": host_keys}
+		if self.uses_asset_store():
+			can_upload = bool(frappe.db.get_value("Release Group", self.group, "public"))
+			build_parameters["asset_store"] = get_asset_store_instructions(self.candidate.apps, can_upload)
 		if self.platform == "arm64":
 			build_parameters.update({"platform": self.platform})
 
@@ -1499,22 +1510,19 @@ def fail_or_retry_stuck_builds(
 ):
 	# Fails or retries builds builds from the `last_n_days` and `last_n_hours` that
 	# have not been updated for longer than `stuck_threshold_in_hours`.
-	result = frappe.db.sql(
-		"""
-	select dcb.name as name
-	from  `tabDeploy Candidate Build` as dcb
-	where  dcb.modified between now() - interval %s day - interval %s hour and now()
-	and    dcb.modified < now() - interval %s hour
-	and    dcb.status not in ('Draft', 'Failure', 'Success')
-	""",
-		(
-			last_n_days,
-			last_n_hours,
-			stuck_threshold_in_hours,
-		),
+	Build = frappe.qb.DocType("Deploy Candidate Build")
+	window_start = now() - timedelta(days=last_n_days, hours=last_n_hours)
+	stuck_since = now() - timedelta(hours=stuck_threshold_in_hours)
+	names = (
+		frappe.qb.from_(Build)
+		.select(Build.name)
+		.where(Build.modified[window_start : now()])
+		.where(Build.modified < stuck_since)
+		.where(Build.status.notin(["Draft", "Failure", "Success"]))
+		.run(pluck=True)
 	)
 
-	for (name,) in result:
+	for name in names:
 		dcb: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", name)
 		dcb._stop_and_fail()
 		dcb = dcb.reload()  # Stop and fail makes modifications to the build
@@ -1545,26 +1553,21 @@ def can_retry_build(name: str, group: str, build_start: datetime):
 
 def correct_false_positives(last_n_days=0, last_n_hours=1):
 	# Fails jobs non Failed jobs that have steps with Failure status
-	result = frappe.db.sql(
-		"""
-	with dcb as (
-		select dcb.name as name, dcb.status as status
-		from  `tabDeploy Candidate Build` as dcb
-		where  dcb.modified between now() - interval %s day - interval %s hour and now()
-		and    dcb.status != "Failure"
-	)
-	select dcb.name
-	from   dcb join `tabDeploy Candidate Build Step` as deploy_candidate_build_step
-	on     dcb.name = deploy_candidate_build_step.parent
-	where  deploy_candidate_build_step.status = "Failure"
-	""",
-		(
-			last_n_days,
-			last_n_hours,
-		),
+	Build = frappe.qb.DocType("Deploy Candidate Build")
+	BuildStep = frappe.qb.DocType("Deploy Candidate Build Step")
+	window_start = now() - timedelta(days=last_n_days, hours=last_n_hours)
+	names = (
+		frappe.qb.from_(Build)
+		.join(BuildStep)
+		.on(Build.name == BuildStep.parent)
+		.select(Build.name)
+		.where(Build.modified[window_start : now()])
+		.where(Build.status != "Failure")
+		.where(BuildStep.status == "Failure")
+		.run(pluck=True)
 	)
 
-	for (name,) in result:
+	for name in names:
 		correct_status(name)
 
 

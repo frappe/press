@@ -66,6 +66,7 @@ function getServerActionHandler(action) {
 		'Reboot server': onRebootServer,
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
+		'Transfer server': onTransferServer,
 		'Cleanup Server': onCleanupServer,
 		'Enable Autoscale': onSetupSecondaryServer,
 		'Disable Autoscale': onTeardownSecondaryServer,
@@ -247,6 +248,43 @@ function onRebootServer() {
 					error: 'Failed to reboot server',
 				},
 			)
+		},
+	})
+}
+
+function onTransferServer() {
+	confirmDialog({
+		title: 'Transfer Server Ownership',
+		message: `<div class="space-y-2 text-base text-ink-gray-7">
+			<p>The database server, and all bench groups and sites on this server, move with it.</p>
+			<p>The new owner will be billed for the server and can see its past activity.</p>
+			<p><strong>This can't be undone.</strong> The confirmation link expires in 48 hours.</p>
+		</div>`,
+		fields: [
+			{
+				label: 'Email address of the team that will own the server',
+				fieldname: 'email',
+			},
+			{
+				label: 'Reason for transfer',
+				fieldname: 'reason',
+				type: 'textarea',
+			},
+		],
+		primaryAction: {
+			label: 'Transfer',
+			variant: 'solid',
+			onClick: ({ hide, values }) => {
+				if (!values.email) {
+					throw new Error('Please enter a valid email address')
+				}
+				return server.sendTransferRequest
+					.submit({ team_mail_id: values.email, reason: values.reason || '' })
+					.then(() => {
+						hide()
+						toast.success(`Transfer request sent to ${values.email}.`)
+					})
+			},
 		},
 	})
 }

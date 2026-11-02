@@ -1,6 +1,7 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
+import json
 from unittest.mock import patch
 
 import frappe
@@ -110,6 +111,37 @@ class TestSiteMigration(FrappeTestCase):
 		self.assertEqual(site.status, "Active")
 		self.assertEqual(site.bench, bench.name)
 		self.assertEqual(site.server, bench.server)
+
+	def test_skip_migrate_turns_on_skip_failing_patches_and_reaches_the_restore(self):
+		with patch.object(Site, "after_insert"), patch.object(Site, "on_update"):
+			site = create_test_site()
+		bench = create_test_bench()
+
+		with (
+			fake_agent_job("Update Site Configuration"),
+			fake_agent_job("Backup Site", data=BACKUP_JOB_RES),
+			fake_agent_job("New Site from Backup"),
+		):
+			site_migration: SiteMigration = frappe.get_doc(
+				{
+					"doctype": "Site Migration",
+					"site": site.name,
+					"destination_bench": bench.name,
+					"skip_migrate": 1,
+				}
+			).insert()
+			self.assertTrue(site_migration.skip_failing_patches)
+			poll_pending_jobs()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		request_data = json.loads(
+			frappe.db.get_value(
+				"Agent Job", {"job_type": "New Site from Backup", "site": site.name}, "request_data"
+			)
+		)
+		self.assertTrue(request_data["skip_migrate"])
+		self.assertTrue(request_data["skip_failing_patches"])
 
 	def test_site_is_activated_on_failure_when_possible(self):
 		with patch.object(Site, "after_insert"), patch.object(Site, "on_update"):

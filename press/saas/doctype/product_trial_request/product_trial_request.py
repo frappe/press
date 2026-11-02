@@ -318,6 +318,17 @@ class ProductTrialRequest(Document):
 							reference_doctype=self.doctype,
 							reference_name=self.name,
 						)
+					self.assign_grove_key()
+
+	def assign_grove_key(self):
+		"""A Grove (AI) key from the product's pool for the new site, into its site config. None while
+		Grove Settings pauses assignment or the pool has no ready key (a product without a pool row never
+		has one), and the trial runs without AI. A request reaching Site Created again keeps the key its
+		site took."""
+		from press.saas.doctype.grove_trial_key.grove_trial_key import GroveTrialKey
+
+		if key := GroveTrialKey.assign(self):
+			key.write_config()
 
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):
@@ -541,7 +552,7 @@ class ProductTrialRequest(Document):
 			self.product_trial,
 			"redirect_to_after_login",
 		)
-		if site.additional_system_user_created and site.setup_wizard_complete:
+		if site.additional_system_user_created and site.is_setup_wizard_complete():
 			# go to setup wizard as admin only
 			# they'll log in as user after setup wizard
 			email = frappe.db.get_value("Team", self.team, "user")

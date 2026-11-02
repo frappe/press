@@ -51,6 +51,19 @@ class TestBackupRecordCheck(FrappeTestCase):
 		audit_log = frappe.get_last_doc("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
 		self.assertEqual(audit_log.status, "Success")
 
+	def test_audit_succeeds_for_site_without_plan_that_has_backup_in_interval(self):
+		create_test_press_settings()
+		create_test_plan("Site", is_trial_plan=True)
+		site = create_test_site(creation=self._2_hrs_before_yesterday)
+		frappe.db.set_value("Site", site.name, "plan", None)
+		create_test_site_backup(site.name, creation=self._2_hrs_before_yesterday + timedelta(hours=3))
+
+		BackupRecordCheck()
+
+		audit_log = frappe.get_last_doc("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
+		sites_without_backup = frappe.parse_json(audit_log.log)[BackupRecordCheck.list_key]
+		self.assertNotIn(site.name, sites_without_backup)
+
 	def test_audit_log_is_created(self):
 		create_test_press_settings()
 		site = create_test_site(creation=self._2_hrs_before_yesterday)

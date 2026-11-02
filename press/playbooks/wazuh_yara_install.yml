@@ -1,8 +1,0 @@
----
-- name: Install YARA Scanning
-  hosts: all
-  become: yes
-  become_user: root
-  gather_facts: no
-  roles:
-    - role: wazuh_yara_install

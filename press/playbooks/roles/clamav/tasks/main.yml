@@ -1,14 +1,12 @@
-- name: Update APT Cache
-  apt:
-    update_cache: yes
-
-- name: Install ClamAV and related packages
+---
+- name: Install ClamAV
   apt:
     pkg:
       - clamav
       - clamav-base
-    state:
-      latest
+    state: latest
+    update_cache: yes
+    cache_valid_time: 86400
 
 - name: Configure freshclam
   replace:
@@ -21,6 +19,7 @@
     - { source_name: '#DatabaseDirectory', target_name: 'DatabaseDirectory' }
     - { source_name: '#LogTime', target_name: 'LogTime' }
 
+# Definitions update right before a scan, so an idle daemon need not run all day
 - name: Disable automatic update of virus definitions
   service:
     name: clamav-freshclam

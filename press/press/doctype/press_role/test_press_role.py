@@ -1,6 +1,9 @@
 # Copyright (c) 2024, Frappe and Contributors
 # See license.txt
 
+import json
+from unittest.mock import patch
+
 import frappe
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
@@ -45,6 +48,16 @@ class TestPressRole(FrappeTestCase):
 		self.assertTrue(perm_role_user_exists)
 		self.assertRaises(frappe.ValidationError, self.perm_role.add_user, self.team_member.name)
 
+	def test_adding_a_user_to_a_role_is_recorded_in_the_version_log(self):
+		# Frappe skips versions in tests
+		with patch.object(frappe, "in_test", False):
+			self.perm_role.add_user(self.team_member.name)
+		version = frappe.get_last_doc(
+			"Version", {"ref_doctype": "Press Role", "docname": self.perm_role.name}
+		)
+		added = json.loads(version.data)["added"]
+		self.assertIn(self.team_member.name, [row["user"] for table, row in added if table == "users"])
+
 	def test_remove_user(self):
 		self.perm_role.add_user(self.team_member.name)
 		self.perm_role.remove_user(self.team_member.name)
@@ -78,7 +91,7 @@ class TestPressRole(FrappeTestCase):
 		subdomain = frappe.generate_hash(length=8)
 		site_name = f"{subdomain}.frappe.cloud"
 		create_test_site_record(site_name, subdomain, team)
-		self.addCleanup(lambda: frappe.db.sql("DELETE FROM `tabSite` WHERE name = %s", (site_name,)))
+		self.addCleanup(lambda: frappe.db.delete("Site", {"name": site_name}))
 		return site_name
 
 	def test_add_resource_applies_on_top_of_a_concurrent_edit(self):
@@ -147,9 +160,7 @@ def get_users(role):
 
 def create_test_site_record(name, subdomain, team_name):
 	"""Insert a bare Site row without running any hooks. For use in tests only."""
-	frappe.db.sql(
-		"INSERT INTO `tabSite`"
-		" (name, team, subdomain, status, server, bench, cluster, `group`)"
-		" VALUES (%s, %s, %s, 'Active', 'test-server', 'test-bench', 'Default', 'test-group')",
-		(name, team_name, subdomain),
-	)
+	Site = frappe.qb.DocType("Site")
+	frappe.qb.into(Site).columns(
+		"name", "team", "subdomain", "status", "server", "bench", "cluster", "group"
+	).insert(name, team_name, subdomain, "Active", "test-server", "test-bench", "Default", "test-group").run()
