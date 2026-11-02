@@ -137,6 +137,7 @@ class EnterpriseContract(Document):
 			frappe.throw("This team already has an Enterprise contract")
 
 	# An order the customer abandoned at checkout is replaced by the new one.
+	# The API has closed its Stripe session by now, because a paid one must not raise here.
 	def cancel_unpaid_contracts(self):
 		frappe.db.set_value(
 			"Enterprise Contract",
@@ -177,8 +178,11 @@ class EnterpriseContract(Document):
 		transaction.submit()
 		self.record_payment(reference=transaction.name, with_gst=False)
 
+	def has_payment(self, reference: str) -> bool:
+		return any(row.payment_reference == reference for row in self.payments)
+
 	def record_payment(self, reference: str, with_gst: bool = True):
-		if any(row.payment_reference == reference for row in self.payments):
+		if self.has_payment(reference):
 			return
 		if not self.payments:
 			# The contract starts on the day the first payment lands, not the order day.
@@ -271,9 +275,13 @@ def open_contract_name(team: str) -> str | None:
 	)
 
 
+# Serializes orders for a team, so two at once cannot both pass the open-contract check.
+def lock_team_orders(team: str):
+	frappe.db.get_value("Team", team, "name", for_update=True)
+
+
 def create_contract(team: Team, order: dict) -> EnterpriseContract:
-	# Serializes orders for a team, so two at once cannot both pass the open-contract check.
-	frappe.db.get_value("Team", team.name, "name", for_update=True)
+	lock_team_orders(team.name)
 	contract = frappe.get_doc(
 		{
 			"doctype": "Enterprise Contract",
