@@ -8,7 +8,16 @@ from __future__ import annotations
 import json
 
 import frappe
-from frappe.utils import add_months, flt, get_date_str, get_first_day, get_last_day, getdate, month_diff
+from frappe.utils import (
+	add_months,
+	flt,
+	get_date_str,
+	get_first_day,
+	get_last_day,
+	getdate,
+	month_diff,
+	today,
+)
 
 from press.press.doctype.enterprise_contract.enterprise_contract import OPEN_STATUSES
 from press.utils.billing import get_frappe_io_connection
@@ -101,3 +110,40 @@ def post_transactions(transactions: list[dict]):
 		data={"partner_fc_invoices": json.dumps(transactions)},
 	)
 	response.raise_for_status()
+
+
+def convert_to_partner_currency(amount: float, currency: str, partner_currency: str) -> float:
+	if currency == partner_currency:
+		return amount
+	return flt(amount / 83, 2) if partner_currency == "USD" else flt(amount * 83, 2)
+
+
+def contract_contribution(partner_email: str, partner_currency: str, month) -> float:
+	shares = contract_shares(month, [partner_email])
+	return flt(
+		sum(convert_to_partner_currency(row.amount, row.currency, partner_currency) for row in shares), 2
+	)
+
+
+def contract_contribution_rows(partner_email: str, partner_currency: str) -> list[dict]:
+	return [
+		{
+			"due_date": get_last_day(today()),
+			"customer_name": row.customer_name,
+			"total_before_discount": row.amount,
+			"currency": row.currency,
+			"status": "Paid",
+			"partner_total": convert_to_partner_currency(row.amount, row.currency, partner_currency),
+		}
+		for row in contract_shares(today(), [partner_email])
+	]
+
+
+def add_contract_shares_to_mrr(rows: list, partner_email: str, partner_currency: str, months: list) -> list:
+	totals = {row.due_date: row.total_amount for row in rows}
+	for month in months:
+		if amount := contract_contribution(partner_email, partner_currency, month):
+			due_date = getdate(get_last_day(month))
+			totals[due_date] = flt(totals.get(due_date)) + amount
+	ordered = sorted(totals.items(), reverse=True)[:12]
+	return [{"due_date": due_date, "total_amount": amount} for due_date, amount in ordered]
