@@ -17,6 +17,7 @@ class EnterpriseContractPayment(Document):
 		amount_paid: DF.Currency
 		frappe_invoice: DF.Data | None
 		gst: DF.Currency
+		gst_split: DF.Data | None
 		invoice_pdf: DF.Attach | None
 		paid_on: DF.Datetime | None
 		parent: DF.Data

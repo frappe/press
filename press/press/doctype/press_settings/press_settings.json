@@ -1280,7 +1280,7 @@
 			"label": "GST Percentage"
 		},
 		{
-			"description": "The state of our GST registration. Customers in this state see CGST and SGST, others see IGST. Leave empty to show plain GST.",
+			"description": "The state of our GST registration. Use the full state name, as listed in the billing form. Customers in this state see CGST and SGST, others see IGST. Leave empty to show plain GST.",
 			"fieldname": "gst_home_state",
 			"fieldtype": "Data",
 			"label": "GST Home State"

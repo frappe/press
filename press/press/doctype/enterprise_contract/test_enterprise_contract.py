@@ -65,6 +65,18 @@ class EnterpriseContractTestCase(FrappeTestCase):
 
 
 class TestEnterpriseContract(EnterpriseContractTestCase):
+	def test_payment_keeps_its_gst_split_when_the_billing_state_changes(self):
+		frappe.db.set_single_value("Press Settings", "gst_home_state", "Maharashtra")
+		contract = create_contract(self.team, self.make_order())
+		contract.record_payment(reference="UTR000000000001")
+
+		frappe.db.set_value("Address", contract.billing_address, "state", "Karnataka")
+		frappe.db.set_single_value("Press Settings", "gst_home_state", None)
+
+		view = contract.as_dashboard()
+		self.assertEqual(view["payments"][0]["gst_split"], "intra_state")
+		self.assertIsNone(view["gst_split"])
+
 	def test_order_takes_billing_name_and_address_from_the_team(self):
 		contract = create_contract(self.team, self.make_order())
 
