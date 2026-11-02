@@ -73,6 +73,7 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 		frappe.db.set_value("Address", contract.billing_address, "state", "Karnataka")
 		frappe.db.set_single_value("Press Settings", "gst_home_state", None)
 
+		contract.reload()
 		view = contract.as_dashboard()
 		self.assertEqual(view["payments"][0]["gst_split"], "intra_state")
 		self.assertIsNone(view["gst_split"])
