@@ -27,6 +27,7 @@
 		"invoicing_section",
 		"invoicing_column",
 		"gst_percentage",
+		"gst_home_state",
 		"npo_discount",
 		"autoscale_discount",
 		"column_break_qfwx",
@@ -1279,6 +1280,12 @@
 			"label": "GST Percentage"
 		},
 		{
+			"description": "The state of our GST registration. Customers in this state see CGST and SGST, others see IGST. Leave empty to show plain GST.",
+			"fieldname": "gst_home_state",
+			"fieldtype": "Data",
+			"label": "GST Home State"
+		},
+		{
 			"fieldname": "column_break_tcmy",
 			"fieldtype": "Column Break"
 		},
@@ -1992,7 +1999,7 @@
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-11-02 12:00:00.000000",
+	"modified": "2026-11-02 18:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",

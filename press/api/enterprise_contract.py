@@ -23,7 +23,7 @@ from press.press.doctype.enterprise_contract.enterprise_contract import (
 	open_contract_name,
 	purchased_credit,
 )
-from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan import enabled_plans
+from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan import enabled_plans, gst_split
 from press.utils import get_current_team
 
 
@@ -37,6 +37,7 @@ def get():
 		"contract": EnterpriseContract("Enterprise Contract", name).as_dashboard() if name else None,
 		"bank_transfer": bank_transfer_details() if team.currency == "INR" else None,
 		"credit_balance": purchased_credit(team.name),
+		"gst_split": gst_split(team.billing_address),
 	}
 
 

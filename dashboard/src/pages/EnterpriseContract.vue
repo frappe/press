@@ -36,7 +36,9 @@
 				v-else-if="contract.data.plans.length"
 				:plans="contract.data.plans"
 				:credit-balance="contract.data.credit_balance"
+				:gst-split="contract.data.gst_split"
 				@placed="contract.reload()"
+				@billing-saved="contract.reload()"
 			/>
 			<div v-else class="py-24 text-center text-base text-ink-gray-6">
 				No Enterprise plan is available right now.

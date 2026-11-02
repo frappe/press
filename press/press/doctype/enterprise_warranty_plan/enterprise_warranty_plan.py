@@ -61,6 +61,15 @@ def gst_rate() -> float:
 	return flt(frappe.db.get_single_value("Press Settings", "gst_percentage"))
 
 
+# Only how the GST is shown changes; the amount is the same for both.
+def gst_split(billing_address: str | None) -> str | None:
+	home_state = frappe.db.get_single_value("Press Settings", "gst_home_state")
+	state = frappe.db.get_value("Address", billing_address, "state") if billing_address else None
+	if not home_state or not state:
+		return None
+	return "intra_state" if state.strip().casefold() == home_state.strip().casefold() else "inter_state"
+
+
 # Credits were taxed when they were bought, so paying with them adds no GST.
 def amount_due(price: float, currency: str, with_gst: bool = True) -> dict:
 	gst = flt(price * gst_rate(), 2) if with_gst and currency == "INR" else 0

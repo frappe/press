@@ -181,6 +181,7 @@ class PressSettings(Document):
 		github_app_public_link: DF.Data | None
 		github_pat_token: DF.Data | None
 		github_webhook_secret: DF.Data | None
+		gst_home_state: DF.Data | None
 		gst_percentage: DF.Float
 		hetzner_server_limit: DF.Int
 		hetzner_vcpu_limit: DF.Int

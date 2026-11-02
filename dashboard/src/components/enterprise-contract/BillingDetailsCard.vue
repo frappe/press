@@ -28,7 +28,7 @@
 	<BillingDetailsDialog
 		v-if="showDialog"
 		v-model="showDialog"
-		@success="team.reload()"
+		@success="onSaved"
 	/>
 </template>
 
@@ -38,8 +38,15 @@ import { computed, ref } from 'vue'
 import { getTeam } from '../../data/team'
 import BillingDetailsDialog from '../billing/BillingDetailsDialog.vue'
 
+const emit = defineEmits(['saved'])
+
 const team = getTeam()
 const showDialog = ref(false)
+
+function onSaved() {
+	team.reload()
+	emit('saved')
+}
 
 const details = computed(() => team.doc.billing_details || {})
 const hasBillingAddress = computed(() => Boolean(details.value.name))
