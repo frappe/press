@@ -43,7 +43,7 @@ def settle_with_credit(invoice: Invoice):
 	if invoice.amount_due > 0:
 		invoice.apply_credit_balance()
 	if invoice.amount_due > 0:
-		# A Draft stays Draft: the monthly finalize skips an invoice that ends before the month does
+		# Leave it open with the credit applied; a Draft keeps its period_end so the monthly finalize still bills it
 		invoice.save()
 		return
 	close_paid_invoice(invoice)
