@@ -1,0 +1,87 @@
+name: Dependency Audit
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deps-vulnerable-check:
+    name: 'Vulnerable Dependency Check'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.10.20'
+
+      - name: Install and run pip-audit
+        run: |
+          pip install pip-audit
+          # Each group is blocked upstream. Remove a group when its blocker
+          # moves. Press must stay inside the pins of the Frappe branch that
+          # runs in production:
+          # https://github.com/balamurali27/frappe/blob/fc-prod/pyproject.toml
+          ignored=(
+            # cryptography 44.0.3: fc-prod pins cryptography~=44.0.1.
+            GHSA-537c-gmf6-5ccf PYSEC-2026-35 PYSEC-2026-2141 PYSEC-2026-3552
+            PYSEC-2026-3553 PYSEC-2026-3554
+            # pyOpenSSL 25.0.0: fc-prod pins pyOpenSSL~=25.0.0.
+            PYSEC-2026-2268 PYSEC-2026-2269
+            # requests 2.32.5: fc-prod pins requests~=2.32.0.
+            PYSEC-2026-2275
+            # sqlparse 0.5.5: fc-prod pins sqlparse~=0.5.0.
+            PYSEC-2026-3696 PYSEC-2026-3697 PYSEC-2026-3698 PYSEC-2026-3699
+            PYSEC-2026-3923
+            # setuptools 80.9.0: the fixes are in 83+, which has no
+            # pkg_resources. The dropbox, google-api-python-client,
+            # google-api-core and passlib that fc-prod pins import it.
+            GHSA-xmj3-9gf7-h52w PYSEC-2026-3447
+            # PyJWT 2.12.1, mcp 1.23.3, opentelemetry-api 1.37.0: semgrep
+            # 1.159.0 pins them. Newer semgrep pins tomli~=2.4 and click~=8.4,
+            # and fc-prod pins tomli~=2.0.1 and Click~=8.1.7.
+            CVE-2026-59951 CVE-2026-114603 CVE-2026-116684 CVE-2026-116685
+            CVE-2026-116686 GHSA-pxh4-856f-4h89 PYSEC-2026-175
+            PYSEC-2026-176 PYSEC-2026-177 PYSEC-2026-178 PYSEC-2026-179
+            PYSEC-2026-3481 PYSEC-2026-3482 PYSEC-2026-3483 PYSEC-2026-4140
+            PYSEC-2026-4141 PYSEC-2026-4144 PYSEC-2026-4145 PYSEC-2026-4146
+            PYSEC-2026-4147 PYSEC-2026-4148 PYSEC-2026-4149 PYSEC-2026-4152
+            PYSEC-2026-4183
+            # ansible 3.4.0: the fixes need ansible 12.2 (Python 3.11+) and a
+            # runner migration. They are in community.general Keycloak,
+            # ansible-galaxy and amazon.aws, which press does not use.
+            PYSEC-2026-1119 PYSEC-2026-1120 PYSEC-2026-768
+            # Werkzeug 3.1.3: fc-prod pins Werkzeug==3.0.6, and frappe-mcp pins
+            # Werkzeug==3.1.3.
+            PYSEC-2026-2044 PYSEC-2026-2046 PYSEC-2026-2320 PYSEC-2026-4312
+            # filelock 4.1.0: fc-prod pins filelock~=3.13.1, and the fix in
+            # 4.2.1 needs Python 3.11+.
+            CVE-2026-112906 CVE-2026-112907 CVE-2026-112908 CVE-2026-112909
+            CVE-2026-112910 CVE-2026-112911 CVE-2026-112912 CVE-2026-112913
+            CVE-2026-112914 CVE-2026-112915 CVE-2026-112934 CVE-2026-112935
+            CVE-2026-112937 CVE-2026-112938 CVE-2026-112939 CVE-2026-112940
+            CVE-2026-112941
+            # pillow 12.3.0: fc-prod pins Pillow~=11.0.0, and the fix in 13.0.0
+            # needs Python 3.11+.
+            CVE-2026-96636 CVE-2026-96637 CVE-2026-96638 CVE-2026-96639
+            CVE-2026-96640 CVE-2026-96641 CVE-2026-96642 CVE-2026-96643
+            CVE-2026-96644 CVE-2026-96778 CVE-2026-112390 CVE-2026-112391
+            CVE-2026-112392 CVE-2026-112393 CVE-2026-112395 CVE-2026-112396
+            CVE-2026-112397 CVE-2026-112398 CVE-2026-112399 CVE-2026-112400
+            CVE-2026-112401 CVE-2026-112402 CVE-2026-112404 CVE-2026-112405
+            CVE-2026-112406 CVE-2026-112891 CVE-2026-112892 CVE-2026-112893
+            CVE-2026-112894 CVE-2026-112895 CVE-2026-112896 CVE-2026-112897
+            CVE-2026-112899 CVE-2026-112900 CVE-2026-112901 CVE-2026-114501
+            GHSA-78g4-xqwv-q3g8 PYSEC-2026-4327 PYSEC-2026-4332
+            # dnspython 2.8.0: the fix in 2.9.0 needs Python 3.11+.
+            CVE-2026-114605
+          )
+          pip-audit --desc on "${ignored[@]/#/--ignore-vuln=}" .

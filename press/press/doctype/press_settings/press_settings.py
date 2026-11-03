@@ -14,6 +14,7 @@ from twilio.rest import Client
 
 from press.api.billing import get_stripe
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
+from press.security import fail2ban
 from press.telegram_utils import Telegram
 
 
@@ -161,6 +162,7 @@ class PressSettings(Document):
 		erpnext_plan: DF.Link | None
 		erpnext_url: DF.Data | None
 		execute_incident_action: DF.Check
+		fail2ban_ignore_ips: DF.SmallText | None
 		frappe_url: DF.Data | None
 		frappeio_api_key: DF.Data | None
 		frappeio_api_secret: DF.Password | None
@@ -218,6 +220,7 @@ class PressSettings(Document):
 		raven_url: DF.Data | None
 		razorpay_key_id: DF.Data | None
 		razorpay_key_secret: DF.Password | None
+		razorpay_max_order_amount_inr: DF.Currency
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
 		redis_cache_size: DF.Int
@@ -288,6 +291,8 @@ class PressSettings(Document):
 	)
 
 	def validate(self):
+		fail2ban.validate_ips(self.fail2ban_ignore_ips)
+
 		if self.max_concurrent_physical_restorations > 5:
 			frappe.throw("Please set Max Concurrent Physical Restorations to less than 5.")
 

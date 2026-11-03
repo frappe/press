@@ -118,6 +118,7 @@ const notifApiFields = {
 		'message',
 		'document_name',
 		'class',
+		'traceback',
 		'assistance_url',
 	],
 	filters: { document_type: 'Deploy Candidate Build', is_actionable: true },
@@ -136,6 +137,12 @@ watch(
 	() => errList.value,
 	(x) => {
 		if (x.length > 0) tabState.value = 'Issues'
+
+		const traceback = x.find((error) => error.traceback)?.traceback
+
+		if (traceback)
+			setOutput({ val: traceback, status: 'Failure', id: 'traceback' })
+		else if (output.id === 'traceback') setOutput({ val: null })
 	},
 )
 

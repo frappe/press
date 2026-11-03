@@ -1510,22 +1510,19 @@ def fail_or_retry_stuck_builds(
 ):
 	# Fails or retries builds builds from the `last_n_days` and `last_n_hours` that
 	# have not been updated for longer than `stuck_threshold_in_hours`.
-	result = frappe.db.sql(
-		"""
-	select dcb.name as name
-	from  `tabDeploy Candidate Build` as dcb
-	where  dcb.modified between now() - interval %s day - interval %s hour and now()
-	and    dcb.modified < now() - interval %s hour
-	and    dcb.status not in ('Draft', 'Failure', 'Success')
-	""",
-		(
-			last_n_days,
-			last_n_hours,
-			stuck_threshold_in_hours,
-		),
+	Build = frappe.qb.DocType("Deploy Candidate Build")
+	window_start = now() - timedelta(days=last_n_days, hours=last_n_hours)
+	stuck_since = now() - timedelta(hours=stuck_threshold_in_hours)
+	names = (
+		frappe.qb.from_(Build)
+		.select(Build.name)
+		.where(Build.modified[window_start : now()])
+		.where(Build.modified < stuck_since)
+		.where(Build.status.notin(["Draft", "Failure", "Success"]))
+		.run(pluck=True)
 	)
 
-	for (name,) in result:
+	for name in names:
 		dcb: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", name)
 		dcb._stop_and_fail()
 		dcb = dcb.reload()  # Stop and fail makes modifications to the build
@@ -1556,26 +1553,21 @@ def can_retry_build(name: str, group: str, build_start: datetime):
 
 def correct_false_positives(last_n_days=0, last_n_hours=1):
 	# Fails jobs non Failed jobs that have steps with Failure status
-	result = frappe.db.sql(
-		"""
-	with dcb as (
-		select dcb.name as name, dcb.status as status
-		from  `tabDeploy Candidate Build` as dcb
-		where  dcb.modified between now() - interval %s day - interval %s hour and now()
-		and    dcb.status != "Failure"
-	)
-	select dcb.name
-	from   dcb join `tabDeploy Candidate Build Step` as deploy_candidate_build_step
-	on     dcb.name = deploy_candidate_build_step.parent
-	where  deploy_candidate_build_step.status = "Failure"
-	""",
-		(
-			last_n_days,
-			last_n_hours,
-		),
+	Build = frappe.qb.DocType("Deploy Candidate Build")
+	BuildStep = frappe.qb.DocType("Deploy Candidate Build Step")
+	window_start = now() - timedelta(days=last_n_days, hours=last_n_hours)
+	names = (
+		frappe.qb.from_(Build)
+		.join(BuildStep)
+		.on(Build.name == BuildStep.parent)
+		.select(Build.name)
+		.where(Build.modified[window_start : now()])
+		.where(Build.status != "Failure")
+		.where(BuildStep.status == "Failure")
+		.run(pluck=True)
 	)
 
-	for (name,) in result:
+	for name in names:
 		correct_status(name)
 
 
