@@ -1,7 +1,9 @@
 # Copyright (c) 2023, Frappe and Contributors
 # See license.txt
 
+import json
 import typing
+from unittest.mock import Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -9,6 +11,7 @@ from frappe.tests.utils import FrappeTestCase
 if typing.TYPE_CHECKING:
 	from press.press.doctype.app.app import App
 
+from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
@@ -16,6 +19,8 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
+from press.press.doctype.team.test_team import create_test_team
+from press.saas.doctype.product_trial.product_trial import ProductTrial
 
 
 def create_test_product_trial(
@@ -102,3 +107,29 @@ class TestProductTrial(FrappeTestCase):
 		self._create_standby_site(product, old_bench)
 
 		self.assertIsNone(product.get_standby_site())
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch.object(ProductTrial, "set_site_domain", new=Mock(return_value=[]))
+	def test_claiming_a_standby_site_pushes_fc_team_in_the_secret_config_job(self):
+		product = create_test_product_trial(create_test_app("test_claim_standby", "Test Claim Standby"))
+		bench = create_test_bench(group=frappe.get_doc("Release Group", product.release_group))
+		standby = self._create_standby_site(product, bench)
+		team = create_test_team()
+		config_job_filters = {"site": standby.name, "job_type": "Update Site Configuration"}
+		config_jobs_before = frappe.db.count("Agent Job", config_job_filters)
+
+		# setup_trial_site commits the standby flag; keep the test's rows inside its transaction
+		with patch.object(frappe.db, "commit", new=Mock()):
+			site, _, is_standby = product.setup_trial_site("claimed", product.domain, team=team.name)
+
+		self.assertTrue(is_standby)
+		self.assertEqual(site.name, standby.name)
+		jobs = frappe.get_all(
+			"Agent Job", filters=config_job_filters, pluck="request_data", order_by="creation desc"
+		)
+		self.assertEqual(len(jobs), config_jobs_before + 1)
+		config = json.loads(jobs[0])["config"]
+		self.assertEqual(config["fc_team"], team.name)
+		self.assertEqual(config["fc_communication_secret"], site.saas_communication_secret)
+		# The after-commit sync that Site.on_update enqueues has nothing left to push
+		self.assertIsNone(site.sync_fc_team_config(create_agent_job=True))
