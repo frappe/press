@@ -104,6 +104,7 @@ STEP_SLUG_MAP = {
 	("pre", "essentials"): "Install Essential Packages",
 	("pre", "redis"): "Install Redis",
 	("pre", "python"): "Install Python",
+	("pre", "sqlite"): "Install SQLite",
 	("pre", "wkhtmltopdf"): "Install wkhtmltopdf",
 	("pre", "fonts"): "Install Fonts",
 	("pre", "node"): "Install Node.js",

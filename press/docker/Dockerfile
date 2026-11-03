@@ -107,6 +107,19 @@ python${PYTHON_VERSION}-venv \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-python`
 
+ENV SQLITE_AUTOCONF sqlite-autoconf-3540100
+RUN cd /tmp \
+  && wget https://www.sqlite.org/2026/${SQLITE_AUTOCONF}.tar.gz \
+  && echo "926ef8d3eab93fbf6e06011901273eec076b25594a4e1cdadd50c987f4f6d64e  ${SQLITE_AUTOCONF}.tar.gz" | sha256sum --check \
+  && tar -xzf ${SQLITE_AUTOCONF}.tar.gz \
+  && cd ${SQLITE_AUTOCONF} \
+  && CFLAGS="-O2 -DSQLITE_ENABLE_COLUMN_METADATA -DSQLITE_ENABLE_UNLOCK_NOTIFY -DSQLITE_SECURE_DELETE -DSQLITE_MAX_VARIABLE_NUMBER=250000" ./configure --prefix=/usr/local --all \
+  && make -j"$(nproc)" \
+  && make install \
+  && ldconfig \
+  && rm -rf /tmp/${SQLITE_AUTOCONF}* \
+  `#stage-pre-sqlite`
+
 # Install wkhtmltopdf
 ENV {{ doc.get_dependency_version("wkhtmltopdf", True) }}
 
