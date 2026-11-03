@@ -22,7 +22,7 @@ from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.subscription.test_subscription import create_test_subscription
-from press.press.doctype.team.test_team import create_test_press_admin_team, create_test_team
+from press.press.doctype.team.test_team import add_card, create_test_press_admin_team, create_test_team
 from press.press.doctype.team.test_team_members import user_context
 from press.press.doctype.team_change.balance import unallocated_credit_by_source
 from press.press.doctype.team_change.team_change import TeamChange, confirm_transfer
@@ -302,7 +302,6 @@ class TestTeamChange(FrappeTestCase):
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
 @patch.object(Invoice, "create_invoice_on_frappeio", new=Mock())
-@patch.object(Invoice, "create_stripe_invoice", new=Mock())
 class TestAdminTeamChange(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
@@ -688,6 +687,29 @@ class TestAdminTeamChange(FrappeTestCase):
 
 		self.assertEqual(frappe.db.get_value("Invoice", invoice.name, "status"), "Paid")
 		self.assertEqual(self.balance_of(self.new_team.name), 300)
+
+	@patch.object(Invoice, "create_razorpay_payment")
+	@patch.object(Invoice, "create_stripe_invoice")
+	def test_balance_move_on_card_settles_from_credit_only_and_leaves_the_shortfall_unpaid(
+		self, create_stripe_invoice: Mock, create_razorpay_payment: Mock
+	):
+		add_card(self.old_team)
+		self.old_team.allocate_credit_amount(100, source="Prepaid Credits")
+		invoice = self.create_draft_invoice_with_usage(self.old_team.name, 200)
+		team_change = self.full_account_transfer(move_balance=True, resources=[("Server", self.server.name)])
+
+		team_change.transfer()
+
+		create_stripe_invoice.assert_not_called()
+		create_razorpay_payment.assert_not_called()
+		status, amount_due = frappe.db.get_value("Invoice", invoice, ("status", "amount_due"))
+		self.assertNotEqual(status, "Paid")
+		self.assertEqual(amount_due, 100)
+		self.assertEqual(self.team_of("Server", self.server.name), self.new_team.name)
+		team_change.reload()
+		self.assertEqual(team_change.transfer_completed, 1)
+		self.assertEqual(team_change.balance_moved, 0)
+		self.assertEqual(self.balance_of(self.new_team.name), 0)
 
 	def test_balance_move_between_currencies_needs_an_exchange_rate_and_converts_with_it(self):
 		self.old_team.allocate_credit_amount(830, source="Prepaid Credits")
