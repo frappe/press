@@ -108,6 +108,13 @@ class TestTeamChange(FrappeTestCase):
 			self._request(server)
 		self.assertIn("Self-hosted servers can't be transferred", str(cm.exception))
 
+	def test_server_transfer_request_blocked_for_server_with_managed_database(self):
+		server = create_test_server(team=self.from_team.name)
+		server.db_set({"is_managed_database": 1, "database_server": ""})
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._request(server)
+		self.assertIn("Servers with a managed database can't be transferred", str(cm.exception))
+
 	def test_server_transfer_request_blocked_when_bench_group_also_runs_on_another_server(self):
 		server = create_test_server(team=self.from_team.name)
 		other_server = create_test_server(team=self.from_team.name)
