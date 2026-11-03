@@ -40,21 +40,16 @@ class TestInvoicePaymentUrl(FrappeTestCase):
 		frappe.db.rollback()
 
 	def create_unpaid_stripe_invoice(self) -> Invoice:
-		invoice = frappe.get_doc(
+		# validate_dates sets due_date to period_end, so the link is not expired
+		return frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
 			period_start=add_days(today(), -10),
 			period_end=today(),
+			status="Unpaid",
+			stripe_invoice_id="in_test",
+			stripe_invoice_url=STRIPE_URL,
 		).insert()
-		invoice.db_set(
-			{
-				"status": "Unpaid",
-				"due_date": today(),
-				"stripe_invoice_id": "in_test",
-				"stripe_invoice_url": STRIPE_URL,
-			}
-		)
-		return invoice
 
 	@contextmanager
 	def as_user(self, user: str):
