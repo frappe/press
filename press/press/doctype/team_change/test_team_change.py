@@ -14,6 +14,7 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.database_server.test_database_server import create_test_database_server
+from press.press.doctype.invoice.invoice import Invoice
 from press.press.doctype.press_role.test_press_role import create_permission_role
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.release_group.test_release_group import create_test_release_group
@@ -23,6 +24,7 @@ from press.press.doctype.site.test_site import create_test_bench, create_test_si
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 from press.press.doctype.team.test_team import create_test_press_admin_team, create_test_team
 from press.press.doctype.team.test_team_members import user_context
+from press.press.doctype.team_change.balance import unallocated_credit_by_source
 from press.press.doctype.team_change.team_change import TeamChange, confirm_transfer
 
 
@@ -299,6 +301,8 @@ class TestTeamChange(FrappeTestCase):
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
+@patch.object(Invoice, "create_invoice_on_frappeio", new=Mock())
+@patch.object(Invoice, "create_stripe_invoice", new=Mock())
 class TestAdminTeamChange(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
@@ -335,6 +339,16 @@ class TestAdminTeamChange(FrappeTestCase):
 
 	def team_of(self, doctype: str, name: str) -> str:
 		return frappe.db.get_value(doctype, name, "team")
+
+	def balance_of(self, team: str) -> float:
+		return frappe.get_doc("Team", team).get_balance()
+
+	def create_draft_invoice_with_usage(self, team: str, amount: float) -> str:
+		invoice = frappe.get_doc(
+			doctype="Invoice", team=team, period_start=frappe.utils.today(), type="Subscription"
+		).insert()
+		frappe.get_doc(doctype="Usage Record", team=team, amount=amount).insert().submit()
+		return invoice.name
 
 	def transfer_server(self):
 		create_team_change(self.old_team.name, self.new_team.name, [("Server", self.server.name)]).transfer()
@@ -621,3 +635,69 @@ class TestAdminTeamChange(FrappeTestCase):
 		with self.assertRaisesRegex(frappe.ValidationError, "Only an Active server"):
 			team_change.save()
 		self.assertEqual(self.team_of("Server", self.server.name), self.old_team.name)
+
+	def test_balance_can_be_moved_only_in_a_full_account_transfer(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "only in a full account transfer"):
+			create_team_change(
+				self.old_team.name, self.new_team.name, [("Server", self.server.name)], move_balance=True
+			)
+
+	def test_full_account_without_balance_option_leaves_credit_and_invoices_with_the_old_team(self):
+		self.old_team.allocate_credit_amount(500, source="Prepaid Credits")
+		invoice = self.create_draft_invoice_with_usage(self.old_team.name, 200)
+
+		self.full_account_transfer(resources=[("Server", self.server.name)]).transfer()
+
+		self.assertEqual(self.balance_of(self.old_team.name), 500)
+		self.assertEqual(self.balance_of(self.new_team.name), 0)
+		self.assertEqual(frappe.db.get_value("Invoice", invoice, "status"), "Draft")
+
+	def test_balance_move_keeps_the_source_of_each_credit(self):
+		self.old_team.allocate_credit_amount(500, source="Prepaid Credits")
+		self.old_team.allocate_credit_amount(100, source="Free Credits")
+		team_change = self.full_account_transfer(move_balance=True)
+
+		team_change.transfer()
+
+		self.assertEqual(self.balance_of(self.old_team.name), 0)
+		self.assertEqual(self.balance_of(self.new_team.name), 600)
+		self.assertEqual(
+			unallocated_credit_by_source(self.new_team.name), {"Prepaid Credits": 500, "Free Credits": 100}
+		)
+		self.assertEqual(frappe.db.get_value("Team Change", team_change.name, "balance_moved"), 600)
+
+	def test_balance_move_pays_the_current_invoice_first_and_moves_only_the_rest(self):
+		self.old_team.allocate_credit_amount(500, source="Prepaid Credits")
+		invoice = self.create_draft_invoice_with_usage(self.old_team.name, 200)
+
+		self.full_account_transfer(move_balance=True).transfer()
+
+		status, period_end = frappe.db.get_value("Invoice", invoice, ("status", "period_end"))
+		self.assertEqual(status, "Paid")
+		self.assertEqual(period_end, frappe.utils.getdate())
+		self.assertEqual(self.balance_of(self.old_team.name), 0)
+		self.assertEqual(self.balance_of(self.new_team.name), 300)
+
+	def test_balance_move_pays_an_unpaid_invoice_before_moving_credit(self):
+		invoice = Invoice("Invoice", self.create_draft_invoice_with_usage(self.old_team.name, 200))
+		invoice.finalize_invoice()
+		self.assertEqual(invoice.status, "Unpaid")
+		self.old_team.allocate_credit_amount(500, source="Prepaid Credits")
+
+		self.full_account_transfer(move_balance=True).transfer()
+
+		self.assertEqual(frappe.db.get_value("Invoice", invoice.name, "status"), "Paid")
+		self.assertEqual(self.balance_of(self.new_team.name), 300)
+
+	def test_balance_move_between_currencies_needs_an_exchange_rate_and_converts_with_it(self):
+		self.old_team.allocate_credit_amount(830, source="Prepaid Credits")
+		frappe.db.set_value("Team", self.new_team.name, "currency", "USD")
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Enter the exchange rate from INR to USD"):
+			self.full_account_transfer(move_balance=True)
+
+		team_change = self.full_account_transfer(move_balance=True, exchange_rate=1 / 83)
+		team_change.transfer()
+
+		self.assertEqual(self.balance_of(self.old_team.name), 0)
+		self.assertEqual(self.balance_of(self.new_team.name), 10)

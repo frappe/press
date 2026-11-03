@@ -34,11 +34,14 @@ class TeamChange(Document):
 
 		from press.press.doctype.team_change_resource.team_change_resource import TeamChangeResource
 
+		balance_moved: DF.Float
 		document_name: DF.DynamicLink | None
 		document_type: DF.Link | None
+		exchange_rate: DF.Float
 		expires_on: DF.Datetime | None
 		from_team: DF.Link
 		key: DF.Data | None
+		move_balance: DF.Check
 		reason: DF.LongText | None
 		resources: DF.Table[TeamChangeResource]
 		to_team: DF.Link
