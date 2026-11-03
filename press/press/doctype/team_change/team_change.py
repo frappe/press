@@ -189,8 +189,7 @@ class TeamChange(Document):
 				f"This link has expired. Please ask the sender to send a new {self.label} transfer request."
 			)
 		for team in (self.from_team, self.to_team):
-			if not frappe.db.get_value("Team", team, "enabled"):
-				frappe.throw(f"The team {team} is disabled, so this {self.label} can't be transferred.")
+			validate_team_enabled(team)
 
 	def send_confirmation_email(self, title: str):
 		to_email = frappe.db.get_value("Team", self.to_team, "user")
@@ -214,6 +213,14 @@ class TeamChange(Document):
 				"expires_on": format_datetime(self.expires_on, "d MMM yyyy, h:mm a"),
 				**extra_args,
 			},
+		)
+
+
+def validate_team_enabled(team: str):
+	if not frappe.db.get_value("Team", team, "enabled"):
+		frappe.throw(
+			f"The team {team} is disabled, so this transfer can't be completed. "
+			"Please make sure the team is enabled, then try again."
 		)
 
 

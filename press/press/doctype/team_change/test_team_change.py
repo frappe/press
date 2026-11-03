@@ -300,6 +300,7 @@ class TestAdminTeamChange(FrappeTestCase):
 		super().setUp()
 		self.old_team = create_test_press_admin_team()
 		self.new_team = create_test_press_admin_team()
+		self.new_team.db_set("servers_enabled", 1)
 		self.database_server = create_test_database_server()
 		self.server = create_test_server(database_server=self.database_server.name, team=self.old_team.name)
 		frappe.db.set_value("Database Server", self.database_server.name, "team", self.old_team.name)
@@ -393,7 +394,6 @@ class TestAdminTeamChange(FrappeTestCase):
 	def test_server_transfer_skips_the_dashboard_blockers_and_moves_the_autoscale_secondary(self):
 		secondary = create_test_server(team=self.old_team.name)
 		frappe.db.set_value("Server", self.server.name, "secondary_server", secondary.name)
-		self.assertFalse(frappe.db.get_value("Team", self.new_team.name, "servers_enabled"))
 
 		self.transfer_server()
 
@@ -521,6 +521,20 @@ class TestAdminTeamChange(FrappeTestCase):
 	def test_transfer_to_the_source_team_is_rejected(self):
 		with self.assertRaisesRegex(frappe.ValidationError, "source team and the target team are the same"):
 			create_team_change(self.old_team.name, self.old_team.name, [("Server", self.server.name)])
+
+	def test_transfer_to_a_disabled_team_is_refused_when_the_team_change_is_saved(self):
+		self.new_team.db_set("enabled", 0)
+
+		with self.assertRaisesRegex(frappe.ValidationError, f"The team {self.new_team.name} is disabled"):
+			self.transfer_server()
+		self.assertEqual(self.team_of("Server", self.server.name), self.old_team.name)
+
+	def test_server_row_is_refused_when_the_target_team_cannot_have_servers(self):
+		self.new_team.db_set("servers_enabled", 0)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Turn on Servers Enabled for the team"):
+			self.transfer_server()
+		self.assertEqual(self.team_of("Server", self.server.name), self.old_team.name)
 
 	def test_public_server_is_refused_when_the_team_change_is_saved(self):
 		frappe.db.set_value("Server", self.server.name, "public", 1)

@@ -126,7 +126,7 @@ class ServerTransfer:
 		return None
 
 	def _servers_not_enabled_blocker(self, to_team: str) -> str | None:
-		if not frappe.db.get_value("Team", to_team, "servers_enabled"):
+		if not can_have_servers(to_team):
 			return "The receiving team can't have dedicated servers yet. They need to contact support to enable it."
 		return None
 
@@ -191,6 +191,10 @@ class ServerTransfer:
 		# Without its own contacts, the server falls back to the new team's contacts
 		frappe.db.delete("Communication Info", {"parenttype": "Server", "parent": self.server.name})
 		get_communication_info.clear_cache()
+
+
+def can_have_servers(team: str) -> bool:
+	return bool(frappe.db.get_value("Team", team, "servers_enabled"))
 
 
 def _set_team(doctype: str, names: Sequence[str | None], to_team: str):
