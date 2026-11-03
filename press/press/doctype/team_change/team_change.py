@@ -32,19 +32,31 @@ class TeamChange(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		document_name: DF.DynamicLink
-		document_type: DF.Link
+		from press.press.doctype.team_change_resource.team_change_resource import TeamChangeResource
+
+		document_name: DF.DynamicLink | None
+		document_type: DF.Link | None
 		expires_on: DF.Datetime | None
 		from_team: DF.Link
 		key: DF.Data | None
 		reason: DF.LongText | None
+		resources: DF.Table[TeamChangeResource]
 		to_team: DF.Link
 		transfer_completed: DF.Check
+		transfer_type: DF.Literal["Specific Resources", "Full Account"]
+		transferred_by: DF.Link | None
+		transferred_on: DF.Datetime | None
 	# end: auto-generated types
 
 	@property
+	def is_dashboard_request(self) -> bool:
+		"""A customer's request for one document, accepted from the emailed link. Else a desk transfer."""
+		return bool(self.document_name)
+
+	@property
 	def label(self) -> str:
-		return DOCUMENT_LABELS.get(self.document_type, self.document_type)
+		doctype = self.document_type or ""
+		return DOCUMENT_LABELS.get(doctype, doctype)
 
 	@property
 	def is_expired(self) -> bool:
@@ -56,11 +68,33 @@ class TeamChange(Document):
 		return bool(self.transfer_completed) and self.has_value_changed("transfer_completed")
 
 	def before_insert(self):
+		if not self.is_dashboard_request:
+			return
 		self.validate_no_pending_request()
 		self.key = self.key or frappe.generate_hash("Team Change", 20)
 		self.expires_on = now_datetime() + LINK_VALIDITY
 
 	def validate(self):
+		self.validate_not_completed_before()
+		if self.from_team == self.to_team:
+			frappe.throw(
+				"The source team and the target team are the same. "
+				"Pick the team that should receive the resources as the Target Team."
+			)
+		if self.is_dashboard_request:
+			self.validate_dashboard_request()
+		else:
+			self.admin_transfer.validate()
+
+	def validate_not_completed_before(self):
+		before = self.get_doc_before_save()
+		if before and before.transfer_completed:
+			frappe.throw(
+				"This transfer is already complete and can't be changed. "
+				"Create a new Team Change to move more resources."
+			)
+
+	def validate_dashboard_request(self):
 		self.validate_owner()
 		if self.is_new() or self.is_being_accepted:
 			self.validate_document_can_move()
@@ -70,6 +104,36 @@ class TeamChange(Document):
 	def on_update(self):
 		if not self.is_being_accepted:
 			return
+		if self.is_dashboard_request:
+			self.move_requested_document()
+		else:
+			self.admin_transfer.move()
+
+	@frappe.whitelist()
+	def fetch_resources(self):
+		self.validate_desk_transfer()
+		self.admin_transfer.fetch_resources()
+
+	@frappe.whitelist()
+	def transfer(self):
+		self.validate_desk_transfer()
+		self.admin_transfer.transfer()
+
+	def validate_desk_transfer(self):
+		frappe.only_for("System Manager")
+		if self.is_dashboard_request:
+			frappe.throw(
+				"This is a dashboard request, which the receiving team accepts from the emailed link. "
+				"Create a new Team Change with the resources as rows to move them yourself."
+			)
+
+	@property
+	def admin_transfer(self):
+		from press.press.doctype.team_change.admin_transfer import AdminTransfer
+
+		return AdminTransfer(self)
+
+	def move_requested_document(self):
 		if self.document_type == "Site":
 			transfer_site(self.document_name, self.to_team)
 		elif self.document_type == "Release Group":
@@ -130,7 +194,7 @@ class TeamChange(Document):
 		extra_args = (
 			self.server_transfer.email_details(self.to_team) if self.document_type == "Server" else {}
 		)
-		link = get_url(f"/api/method/{CONFIRM_METHODS[self.document_type]}?key={self.key}")
+		link = get_url(f"/api/method/{CONFIRM_METHODS[self.document_type or '']}?key={self.key}")
 		if frappe.conf.developer_mode:
 			print(f"\n{self.label.capitalize()} transfer link for {to_email}\n{link}\n")
 
