@@ -167,17 +167,47 @@ class TestTeamChange(FrappeTestCase):
 		self.assertEqual(frappe.db.get_value("Site", site.name, "team"), self.from_team.name)
 		self.assertIn("can't have dedicated servers", frappe.local.response.get("message", ""))
 
+	def test_press_user_cannot_insert_a_completed_team_change_to_take_another_teams_site(self):
+		site = create_test_site(team=self.from_team.name)
+		taker = create_test_press_admin_team()
+		with user_context(taker.user), self.assertRaises(frappe.PermissionError):
+			frappe.get_doc(
+				{
+					"doctype": "Team Change",
+					"document_type": "Site",
+					"document_name": site.name,
+					"from_team": self.from_team.name,
+					"to_team": taker.name,
+					"transfer_completed": 1,
+				}
+			).insert()
+		self.assertEqual(frappe.db.get_value("Site", site.name, "team"), self.from_team.name)
+
+	def test_site_transfer_request_and_confirm_work_for_users_with_only_the_press_user_role(self):
+		sender = create_test_press_admin_team()
+		receiver = create_test_press_admin_team()
+		receiver.append("team_members", {"user": receiver.user})
+		receiver.save(ignore_permissions=True)
+		site = create_test_site(team=sender.name)
+
+		with user_context(sender.user):
+			site.send_change_team_request(receiver.user, "Handing over to the client")
+		team_change = frappe.get_last_doc("Team Change", {"document_name": site.name})
+		self._confirm(team_change, receiver.user)
+
+		self.assertEqual(frappe.db.get_value("Site", site.name, "team"), receiver.name)
+
 	def _request(self, doc) -> TeamChange:
 		with user_context(self.from_team.user):
 			doc.send_change_team_request(self.to_team.user, "test")
 		return frappe.get_last_doc("Team Change", {"document_name": doc.name})
 
-	def _confirm(self, team_change: TeamChange):
+	def _confirm(self, team_change: TeamChange, user: str | None = None):
 		frappe.local.response = frappe._dict()
 		frappe.local.message_title = ""
 		# Commit and rollback would end the test's own transaction
 		with (
-			user_context(self.to_team.user),
+			user_context(user or self.to_team.user),
 			patch.object(frappe, "respond_as_web_page", self._capture_page),
 			patch.object(frappe.db, "commit", new=Mock()),
 			patch.object(frappe.db, "rollback", new=Mock()),

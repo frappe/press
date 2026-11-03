@@ -177,7 +177,7 @@ def request_transfer(doc: Document, team_mail_id: str, reason: str | None, title
 			"to_team": to_team,
 			"reason": reason or "",
 		}
-	).insert()
+	).insert(ignore_permissions=True)  # Team Change is System Manager only; ownership is checked above
 	team_change.send_confirmation_email(title)
 	return team_change
 
@@ -200,7 +200,8 @@ def confirm_transfer(key: str, document_type: str):
 
 	try:
 		team_change.transfer_completed = True
-		team_change.save()
+		# Team Change is System Manager only; the key and team membership are checked above
+		team_change.save(ignore_permissions=True)
 	except frappe.ValidationError as e:
 		frappe.db.rollback()
 		return _not_permitted(str(e), title=_("Transfer Not Completed"))
