@@ -27,7 +27,7 @@ def create_website_user() -> str:
 class TestInvoicePaymentUrl(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
-		self.team = create_test_team()
+		self.team = create_test_team(create_website_user())
 		self.invoice = self.create_unpaid_stripe_invoice()
 		self.member = create_website_user()
 		self.team.append("team_members", {"user": self.member})
@@ -71,6 +71,10 @@ class TestInvoicePaymentUrl(FrappeTestCase):
 	def payment_url(self) -> str:
 		run_doc_method(dt="Invoice", dn=self.invoice.name, method="stripe_payment_url")
 		return frappe.response.message
+
+	def test_team_owner_without_a_role_gets_payment_url_while_team_roles_are_enabled(self):
+		with self.as_user(self.team.user):
+			self.assertEqual(self.payment_url(), STRIPE_URL)
 
 	def test_member_with_billing_role_gets_payment_url_for_the_team_invoice(self):
 		self.role.db_set("allow_billing", 1)
