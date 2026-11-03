@@ -62,7 +62,11 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
+<<<<<<< HEAD
 	"modified": "2025-02-20 13:46:49.448661",
+=======
+	"modified": "2026-11-03 12:00:00.000000",
+>>>>>>> f857347 (fix(team-change): Limit Team Change records to System Managers)
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Team Change",
@@ -77,17 +81,6 @@
 			"read": 1,
 			"report": 1,
 			"role": "System Manager",
-			"share": 1,
-			"write": 1
-		},
-		{
-			"create": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Press User",
 			"share": 1,
 			"write": 1
 		}
