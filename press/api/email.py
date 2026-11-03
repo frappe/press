@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import calendar
+import hashlib
+import hmac
 import json
 import secrets
 from datetime import datetime
@@ -215,7 +217,8 @@ def send_mime_mail(data: str):
 
 	validate_plan(data_dict["sk_mail"])
 
-	api_key, domain = frappe.db.get_value("Press Settings", None, ["mailgun_api_key", "root_domain"])
+	api_key = get_decrypted_password("Press Settings", "Press Settings", "mailgun_api_key")
+	domain = frappe.db.get_single_value("Press Settings", "root_domain")
 
 	message: bytes = files["mime"].read()
 	check_spam(message)
@@ -260,12 +263,29 @@ def is_valid_mailgun_event(event_data):
 	return True
 
 
+def verify_mailgun_signature(signature: dict | None):
+	"""Reject events that Mailgun did not sign with the webhook signing key."""
+	key = get_decrypted_password(
+		"Press Settings", "Press Settings", "mailgun_webhook_signing_key", raise_exception=False
+	)
+	signature = signature if isinstance(signature, dict) else {}
+	received = str(signature.get("signature") or "")
+	if not key or not hmac.compare_digest(sign_mailgun_event(key, signature), received):
+		frappe.throw("Invalid Mailgun signature", frappe.AuthenticationError)
+
+
+def sign_mailgun_event(key: str, signature: dict) -> str:
+	message = f"{signature.get('timestamp', '')}{signature.get('token', '')}"
+	return hmac.new(key.encode(), message.encode(), hashlib.sha256).hexdigest()
+
+
 @frappe.whitelist(allow_guest=True)
 def event_log():
 	"""
 	log the webhook and forward it to site
 	"""
 	data = json.loads(frappe.request.data)
+	verify_mailgun_signature(data.get("signature"))
 	event_data = data.get("event-data")
 
 	if not is_valid_mailgun_event(event_data):
@@ -279,10 +299,10 @@ def event_log():
 			# TOOD: Investigate why this is happening
 			return None
 		message_id = headers["message-id"]
-		site = (
-			frappe.get_cached_value("Subscription", {"secret_key": secret_key}, "site")
-			or message_id.split("@")[1]
-		)
+		site = frappe.get_cached_value("Subscription", {"secret_key": secret_key}, "site")
+		if not site:
+			# Not sent through send_mime_mail, which needs a subscription
+			return None
 		status = event_data["event"]
 		delivery_message = (
 			event_data["delivery-status"]["message"] or event_data["delivery-status"]["description"]
@@ -318,7 +338,9 @@ def event_log():
 		requests.post(
 			f"https://{host_name}/api/method/email_delivery_service.controller.update_status",
 			data=data,
-		)
+			timeout=5,
+			stream=True,
+		).close()
 	except requests.exceptions.ConnectionError:
 		# site might be down or unreachable
 		pass

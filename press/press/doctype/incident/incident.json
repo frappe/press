@@ -14,6 +14,8 @@
 		"type",
 		"subtype",
 		"acknowledged_by",
+		"ignored",
+		"ignore_reason",
 		"column_break_smnd",
 		"server",
 		"resource_type",
@@ -199,6 +201,21 @@
 			"label": "Called Customer"
 		},
 		{
+			"default": "0",
+			"description": "Set with the Ignore Incident button. Stops phone calls to the Frappe Cloud team only. Customers still see the incident and get its emails and calls.",
+			"fieldname": "ignored",
+			"fieldtype": "Check",
+			"label": "Ignored",
+			"read_only": 1
+		},
+		{
+			"depends_on": "eval: doc.ignored",
+			"fieldname": "ignore_reason",
+			"fieldtype": "Small Text",
+			"label": "Ignore Reason",
+			"read_only": 1
+		},
+		{
 			"fieldname": "resolved_at",
 			"fieldtype": "Datetime",
 			"label": "Resolved At"
@@ -213,7 +230,7 @@
 	"index_web_pages_for_search": 1,
 	"is_published_field": "show_in_website",
 	"links": [],
-	"modified": "2026-03-13 13:38:20.041662",
+	"modified": "2026-09-30 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Incident",

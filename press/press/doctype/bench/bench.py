@@ -14,6 +14,7 @@ import pytz
 from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
+from frappe.query_builder.functions import Sum
 from frappe.utils import get_system_timezone
 
 from press.agent import Agent
@@ -456,17 +457,16 @@ class Bench(Document):
 		agent.force_update_bench_limits(self.name, self.get_limits())
 
 	def get_unused_port_offset(self):
-		benches = frappe.db.sql(
-			"""SELECT `port_offset` FROM `tabBench`
-			WHERE `tabBench`.server = %s
-			AND `tabBench`.status != 'Archived'
-			FOR UPDATE;
-			""",
-			(self.server,),
-			as_dict=True,
+		Bench = frappe.qb.DocType("Bench")
+		used_offsets = (
+			frappe.qb.from_(Bench)
+			.select(Bench.port_offset)
+			.where(Bench.server == self.server)
+			.where(Bench.status != "Archived")
+			.for_update()
+			.run(pluck=True)
 		)
 		all_offsets = range(0, 1000)
-		used_offsets = map(lambda x: x.port_offset, benches)
 		available_offsets = set(all_offsets) - set(used_offsets)
 		return min(available_offsets)
 
@@ -688,23 +688,19 @@ class Bench(Document):
 
 		= sum of cpu time per day
 		"""
+		SiteTable = frappe.qb.DocType("Site")
+		Subscription = frappe.qb.DocType("Subscription")
+		SitePlan = frappe.qb.DocType("Site Plan")
 		return (
-			frappe.db.sql_list(
-				# minimum plan is taken as 10
-				f"""
-			SELECT SUM(plan.cpu_time_per_day)
-			FROM tabSite site
-
-			JOIN tabSubscription subscription
-			ON site.name = subscription.document_name
-
-			JOIN `tabSite Plan` plan
-			ON subscription.plan = plan.name
-
-			WHERE site.bench = "{self.name}"
-			AND site.status in ("Active", "Pending", "Updating")
-				"""
-			)[0]
+			frappe.qb.from_(SiteTable)
+			.join(Subscription)
+			.on(SiteTable.name == Subscription.document_name)
+			.join(SitePlan)
+			.on(Subscription.plan == SitePlan.name)
+			.select(Sum(SitePlan.cpu_time_per_day))
+			.where(SiteTable.bench == self.name)
+			.where(SiteTable.status.isin(["Active", "Pending", "Updating"]))
+			.run(pluck=True)[0]
 			or 0
 		)
 
@@ -1557,26 +1553,29 @@ def try_archive(bench: str):
 
 
 def archive_obsolete_benches(group: str | None = None, server: str | None = None):
-	query_substr = ""
-	if group and server:
-		query_substr = f"AND bench.group = '{group}' AND bench.server = '{server}'"
-	benches = frappe.db.sql(
-		f"""
-		SELECT
-			bench.name, bench.server, bench.group, bench.candidate, bench.creation, bench.last_archive_failure, bench.resetting_bench, g.public, g.central_bench
-		FROM
-			tabBench bench
-		LEFT JOIN
-			`tabRelease Group` g
-		ON
-			bench.group = g.name
-		WHERE
-			bench.status = "Active" {query_substr}
-		ORDER BY
-			bench.server
-	""",
-		as_dict=True,
+	Bench = frappe.qb.DocType("Bench")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	query = (
+		frappe.qb.from_(Bench)
+		.left_join(ReleaseGroup)
+		.on(Bench.group == ReleaseGroup.name)
+		.select(
+			Bench.name,
+			Bench.server,
+			Bench.group,
+			Bench.candidate,
+			Bench.creation,
+			Bench.last_archive_failure,
+			Bench.resetting_bench,
+			ReleaseGroup.public,
+			ReleaseGroup.central_bench,
+		)
+		.where(Bench.status == "Active")
+		.orderby(Bench.server)
 	)
+	if group and server:
+		query = query.where((Bench.group == group) & (Bench.server == server))
+	benches = query.run(as_dict=True)
 
 	benches_by_server = groupby(benches, lambda x: x.server)
 	for server_benches in benches_by_server:

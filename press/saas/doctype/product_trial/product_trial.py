@@ -327,6 +327,8 @@ class ProductTrial(Document):
 			"standby_for_product": self.name,
 			"status": "Active",
 			"bench": ("in", latest_benches),
+			# A signup that matches no hybrid rule must not get a site built for one
+			"hybrid_for": ("is", "not set"),
 		}
 		if cluster:
 			filters["cluster"] = cluster

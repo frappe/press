@@ -541,7 +541,7 @@ class ProductTrialRequest(Document):
 			self.product_trial,
 			"redirect_to_after_login",
 		)
-		if site.additional_system_user_created and site.setup_wizard_complete:
+		if site.additional_system_user_created and site.is_setup_wizard_complete():
 			# go to setup wizard as admin only
 			# they'll log in as user after setup wizard
 			email = frappe.db.get_value("Team", self.team, "user")

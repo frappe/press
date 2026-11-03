@@ -1,3 +1,5 @@
 ---
-nginx_log: /var/log/nginx/access.log
-ignore_ips: ""
+fail2ban_ignore_ips: ""
+fail2ban_maxretry: 5
+fail2ban_findtime: 10m
+fail2ban_bantime: 1h

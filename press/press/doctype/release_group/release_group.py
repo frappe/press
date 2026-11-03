@@ -752,6 +752,25 @@ class ReleaseGroup(Document, TagHelpers):
 		if self.use_app_cache and not self.can_use_get_app_cache():
 			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.22.1 or later"))
 
+		self.warn_about_shared_asset_store()
+
+	def warn_about_shared_asset_store(self) -> None:
+		if not (self.public and self.use_app_cache):
+			return
+
+		if not (self.has_value_changed("public") or self.has_value_changed("use_app_cache")):
+			return
+
+		frappe.msgprint(
+			_(
+				"Builds of this group will share their JS and CSS through the asset store with every group"
+				" that uses the app cache. Each app's install code runs during the build, so a third party"
+				" app here can change the assets that other benches download."
+			),
+			title=_("Shared asset store"),
+			indicator="orange",
+		)
+
 	def _validate_dependency_format(self, dependency: str, version: str):
 		# Append patch version, except for node since nvm path breaks during build
 		if dependency != "NODE_VERSION" and version.count(".") == 1:
