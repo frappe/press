@@ -9,16 +9,44 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_to_date, now_datetime
 
+from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.app_source import AppSource
+from press.press.doctype.database_server.test_database_server import create_test_database_server
 from press.press.doctype.press_role.test_press_role import create_permission_role
+from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
+from press.press.doctype.subscription.test_subscription import create_test_subscription
 from press.press.doctype.team.test_team import create_test_press_admin_team, create_test_team
 from press.press.doctype.team.test_team_members import user_context
 from press.press.doctype.team_change.team_change import TeamChange, confirm_transfer
+
+
+def create_team_change(
+	from_team: str,
+	to_team: str,
+	resources: list[tuple[str, str]] | None = None,
+	transfer_type: str = "Specific Resources",
+	**fields,
+) -> TeamChange:
+	"""A desk transfer, as a System Manager makes it"""
+	return frappe.get_doc(
+		{
+			"doctype": "Team Change",
+			"transfer_type": transfer_type,
+			"from_team": from_team,
+			"to_team": to_team,
+			"reason": "Customer moved the account",
+			"resources": [
+				{"document_type": doctype, "document_name": name} for doctype, name in resources or []
+			],
+			**fields,
+		}
+	).insert()
 
 
 @patch.object(AppSource, "create_release", create_test_app_release)
@@ -260,3 +288,329 @@ class TestTeamChange(FrappeTestCase):
 			update_modified=False,
 		)
 		return job.name
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+@patch("press.press.doctype.site.site._change_dns_record", new=Mock())
+class TestAdminTeamChange(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		self.old_team = create_test_press_admin_team()
+		self.new_team = create_test_press_admin_team()
+		self.database_server = create_test_database_server()
+		self.server = create_test_server(database_server=self.database_server.name, team=self.old_team.name)
+		frappe.db.set_value("Database Server", self.database_server.name, "team", self.old_team.name)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def create_group_on_server(self):
+		group = create_test_release_group(
+			[create_test_app()], user=self.old_team.user, servers=[self.server.name]
+		)
+		bench = create_test_bench(group=group, server=self.server.name)
+		return group, bench
+
+	def create_server_snapshot(self) -> str:
+		"""Inserted straight into the db, so no cloud snapshot is taken"""
+		snapshot = frappe.get_doc(
+			doctype="Server Snapshot",
+			app_server=self.server.name,
+			database_server=self.database_server.name,
+			team=self.old_team.name,
+			status="Completed",
+			provider="AWS EC2",
+			cluster=self.server.cluster,
+		)
+		snapshot.db_insert()
+		return snapshot.name
+
+	def team_of(self, doctype: str, name: str) -> str:
+		return frappe.db.get_value(doctype, name, "team")
+
+	def transfer_server(self):
+		create_team_change(self.old_team.name, self.new_team.name, [("Server", self.server.name)]).transfer()
+
+	def full_account_transfer(self, **kwargs) -> TeamChange:
+		return create_team_change(
+			self.old_team.name, self.new_team.name, transfer_type="Full Account", **kwargs
+		)
+
+	def fetched_rows(self, team_change: TeamChange) -> list[tuple[str, str]]:
+		team_change.fetch_resources()
+		return [(row.document_type, row.document_name) for row in team_change.resources]
+
+	# Specific resources
+
+	def test_server_transfer_moves_server_database_server_virtual_machines_and_subscriptions(self):
+		plan = create_test_server_plan()
+		subscription = create_test_subscription(
+			self.server.name, plan.name, self.old_team.name, "Server", "Server Plan"
+		)
+
+		self.transfer_server()
+
+		self.assertEqual(self.team_of("Server", self.server.name), self.new_team.name)
+		self.assertEqual(self.team_of("Database Server", self.database_server.name), self.new_team.name)
+		self.assertEqual(self.team_of("Virtual Machine", self.server.virtual_machine), self.new_team.name)
+		self.assertEqual(
+			self.team_of("Virtual Machine", self.database_server.virtual_machine), self.new_team.name
+		)
+		self.assertEqual(self.team_of("Subscription", subscription.name), self.new_team.name)
+
+	def test_server_transfer_moves_its_snapshots_and_the_snapshot_billing_subscriptions(self):
+		snapshot = self.create_server_snapshot()
+		plan = frappe.get_doc(
+			doctype="Server Snapshot Plan",
+			name="Snapshot plan for the team transfer test",
+			provider="AWS EC2",
+			price_inr=10,
+			enabled=1,
+		).insert()
+		subscription = create_test_subscription(
+			snapshot, plan.name, self.old_team.name, "Server Snapshot", "Server Snapshot Plan"
+		)
+
+		self.transfer_server()
+
+		self.assertEqual(self.team_of("Server Snapshot", snapshot), self.new_team.name)
+		self.assertEqual(self.team_of("Subscription", subscription.name), self.new_team.name)
+
+	def test_server_transfer_skips_the_dashboard_blockers_and_moves_the_autoscale_secondary(self):
+		secondary = create_test_server(team=self.old_team.name)
+		frappe.db.set_value("Server", self.server.name, "secondary_server", secondary.name)
+		self.assertFalse(frappe.db.get_value("Team", self.new_team.name, "servers_enabled"))
+
+		self.transfer_server()
+
+		self.assertEqual(self.team_of("Server", self.server.name), self.new_team.name)
+		self.assertEqual(self.team_of("Server", secondary.name), self.new_team.name)
+
+	def test_server_transfer_moves_its_on_prem_failover_config(self):
+		failover = frappe.get_doc(
+			doctype="On-Prem Failover",
+			app_server=self.server.name,
+			database_server=self.database_server.name,
+			team=self.old_team.name,
+			cluster=self.server.cluster,
+		)
+		failover.set_new_name()
+		failover.db_insert()  # skip hooks, which would set up the wireguard network
+
+		self.transfer_server()
+
+		self.assertEqual(self.team_of("On-Prem Failover", failover.name), self.new_team.name)
+
+	def test_server_transfer_takes_the_source_teams_groups_benches_and_sites_on_it(self):
+		group, bench = self.create_group_on_server()
+		own_site = create_test_site(bench=bench.name, team=self.old_team.name)
+		archived_site = create_test_site(bench=bench.name, team=self.old_team.name)
+		frappe.db.set_value("Site", archived_site.name, "status", "Archived")
+		other_team_site = create_test_site(bench=bench.name, team=create_test_team().name)
+		other_team = self.team_of("Site", other_team_site.name)
+
+		self.transfer_server()
+
+		self.assertEqual(self.team_of("Release Group", group.name), self.new_team.name)
+		self.assertEqual(self.team_of("Bench", bench.name), self.new_team.name)
+		self.assertEqual(self.team_of("Site", own_site.name), self.new_team.name)
+		self.assertEqual(self.team_of("Site", archived_site.name), self.old_team.name)
+		self.assertEqual(self.team_of("Site", other_team_site.name), other_team)
+
+	# The second bench of a group asks the agent for the last image size
+	@patch.object(ReleaseGroup, "check_app_server_storage", new=Mock())
+	def test_server_transfer_leaves_a_group_that_also_runs_on_a_kept_server_with_the_old_team(self):
+		kept_server = create_test_server(team=self.old_team.name)
+		group = create_test_release_group(
+			[create_test_app()], user=self.old_team.user, servers=[self.server.name, kept_server.name]
+		)
+		bench_on_moved_server = create_test_bench(group=group, server=self.server.name)
+		bench_on_kept_server = create_test_bench(group=group, server=kept_server.name)
+		site_on_moved_server = create_test_site(bench=bench_on_moved_server.name, team=self.old_team.name)
+
+		self.assertIn(("Release Group", group.name), self.fetched_rows(self.full_account_transfer()))
+		self.transfer_server()
+
+		self.assertEqual(self.team_of("Server", self.server.name), self.new_team.name)
+		self.assertEqual(self.team_of("Site", site_on_moved_server.name), self.new_team.name)
+		self.assertEqual(self.team_of("Release Group", group.name), self.old_team.name)
+		self.assertEqual(self.team_of("Bench", bench_on_moved_server.name), self.old_team.name)
+		self.assertEqual(self.team_of("Bench", bench_on_kept_server.name), self.old_team.name)
+
+	def test_specific_transfer_moves_several_resources_of_different_types_at_once(self):
+		self.create_group_on_server()
+		site_elsewhere = create_test_site(team=self.old_team.name)
+		kept_site = create_test_site(team=self.old_team.name)
+
+		create_team_change(
+			self.old_team.name,
+			self.new_team.name,
+			[("Server", self.server.name), ("Site", site_elsewhere.name)],
+		).transfer()
+
+		self.assertEqual(self.team_of("Server", self.server.name), self.new_team.name)
+		self.assertEqual(self.team_of("Site", site_elsewhere.name), self.new_team.name)
+		self.assertEqual(self.team_of("Site", kept_site.name), self.old_team.name)
+
+	def test_release_group_transfer_moves_its_benches_but_not_its_deploy_history(self):
+		group, bench = self.create_group_on_server()
+
+		create_team_change(self.old_team.name, self.new_team.name, [("Release Group", group.name)]).transfer()
+
+		self.assertEqual(self.team_of("Release Group", group.name), self.new_team.name)
+		self.assertEqual(self.team_of("Bench", bench.name), self.new_team.name)
+		self.assertEqual(self.team_of("Deploy Candidate", bench.candidate), self.old_team.name)
+
+	def test_desk_transfer_gets_no_confirmation_key_or_expiry_and_records_who_ran_it(self):
+		team_change = create_team_change(
+			self.old_team.name, self.new_team.name, [("Server", self.server.name)]
+		)
+		team_change.transfer()
+
+		self.assertFalse(team_change.key)
+		self.assertFalse(team_change.expires_on)
+		self.assertEqual(team_change.transferred_by, "Administrator")
+		self.assertTrue(team_change.transferred_on)
+
+	@patch.object(frappe, "sendmail", new=Mock())
+	def test_desk_transfer_button_is_refused_on_a_dashboard_request(self):
+		site = create_test_site(team=self.old_team.name)
+		with user_context(self.old_team.user):
+			site.send_change_team_request(self.new_team.user, "")
+		request = frappe.get_last_doc("Team Change", {"document_name": site.name})
+
+		with self.assertRaisesRegex(frappe.ValidationError, "receiving team accepts from the emailed link"):
+			request.transfer()
+		self.assertEqual(self.team_of("Site", site.name), self.old_team.name)
+
+	def test_resource_of_another_team_is_rejected(self):
+		_, bench = self.create_group_on_server()
+		other_site = create_test_site(bench=bench.name, team=create_test_team().name)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "isn't owned by the source team"):
+			create_team_change(self.old_team.name, self.new_team.name, [("Site", other_site.name)])
+
+	def test_same_resource_listed_twice_is_rejected(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "listed more than once"):
+			create_team_change(
+				self.old_team.name,
+				self.new_team.name,
+				[("Server", self.server.name), ("Server", self.server.name)],
+			)
+
+	def test_transfer_with_no_resources_is_rejected(self):
+		team_change = create_team_change(self.old_team.name, self.new_team.name)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Add at least one resource"):
+			team_change.transfer()
+
+	def test_transfer_to_the_source_team_is_rejected(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "source team and the target team are the same"):
+			create_team_change(self.old_team.name, self.old_team.name, [("Server", self.server.name)])
+
+	def test_public_server_is_refused_when_the_team_change_is_saved(self):
+		frappe.db.set_value("Server", self.server.name, "public", 1)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "isn't public or self hosted"):
+			create_team_change(self.old_team.name, self.new_team.name, [("Server", self.server.name)])
+		self.assertEqual(self.team_of("Server", self.server.name), self.old_team.name)
+
+	def test_archived_site_is_refused_when_the_team_change_is_saved(self):
+		_, bench = self.create_group_on_server()
+		site = create_test_site(bench=bench.name, team=self.old_team.name)
+		frappe.db.set_value("Site", site.name, "status", "Archived")
+
+		with self.assertRaisesRegex(frappe.ValidationError, "An archived site can't be transferred"):
+			create_team_change(self.old_team.name, self.new_team.name, [("Site", site.name)])
+
+	def test_resource_picker_offers_only_movable_resources_of_the_source_team(self):
+		from press.press.doctype.team_change.transfer import transferable_doctypes, transferable_resources
+
+		broken_server = create_test_server(team=self.old_team.name)
+		frappe.db.set_value("Server", broken_server.name, "status", "Broken")
+		other_team_server = create_test_server(team=self.new_team.name)
+
+		offered = transferable_resources("Server", "", "name", 0, 50, {"team": self.old_team.name})
+
+		offered_names = [name for (name,) in offered]
+		self.assertIn(self.server.name, offered_names)
+		self.assertNotIn(broken_server.name, offered_names)
+		self.assertNotIn(other_team_server.name, offered_names)
+		self.assertEqual(
+			transferable_doctypes("DocType", "", "name", 0, 20, {}),
+			[["Server"], ["Release Group"], ["Site"]],
+		)
+
+	def test_resource_picker_is_refused_to_dashboard_users(self):
+		from press.press.doctype.team_change.transfer import transferable_resources
+
+		frappe.set_user(self.new_team.user)
+
+		# frappe.only_for lets every user through while tests run
+		with patch.dict(frappe.local.flags, {"in_test": False}), self.assertRaises(frappe.PermissionError):
+			transferable_resources("Server", "", "name", 0, 50, {"team": self.old_team.name})
+
+	def test_completed_transfer_cannot_be_saved_again(self):
+		team_change = create_team_change(
+			self.old_team.name, self.new_team.name, [("Server", self.server.name)]
+		)
+		team_change.transfer()
+
+		team_change.reason = "Edited after the transfer"
+		with self.assertRaisesRegex(frappe.ValidationError, "already complete"):
+			team_change.save()
+
+	def test_dashboard_user_cannot_run_the_admin_transfer(self):
+		team_change = create_team_change(
+			self.old_team.name, self.new_team.name, [("Server", self.server.name)]
+		)
+		frappe.set_user(self.old_team.user)
+
+		with patch.dict(frappe.local.flags, {"in_test": False}), self.assertRaises(frappe.PermissionError):
+			team_change.transfer()
+		frappe.set_user("Administrator")
+		self.assertEqual(self.team_of("Server", self.server.name), self.old_team.name)
+
+	# Full account
+
+	def test_full_account_fetch_leaves_out_what_moves_with_a_listed_server_and_moves_only_included_rows(
+		self,
+	):
+		group, bench = self.create_group_on_server()
+		moved_site = create_test_site(bench=bench.name, team=self.old_team.name)
+		# On a server the old team doesn't own, so only its row decides whether it moves
+		kept_site = create_test_site(team=self.old_team.name)
+		team_change = self.full_account_transfer()
+
+		self.assertCountEqual(
+			self.fetched_rows(team_change), [("Server", self.server.name), ("Site", kept_site.name)]
+		)
+		for row in team_change.resources:
+			row.include = row.document_name != kept_site.name
+		team_change.transfer()
+
+		self.assertEqual(self.team_of("Server", self.server.name), self.new_team.name)
+		self.assertEqual(self.team_of("Database Server", self.database_server.name), self.new_team.name)
+		self.assertEqual(self.team_of("Release Group", group.name), self.new_team.name)
+		self.assertEqual(self.team_of("Bench", bench.name), self.new_team.name)
+		self.assertEqual(self.team_of("Site", moved_site.name), self.new_team.name)
+		self.assertEqual(self.team_of("Site", kept_site.name), self.old_team.name)
+
+	def test_fetch_resources_is_only_for_a_full_account_transfer(self):
+		team_change = create_team_change(self.old_team.name, self.new_team.name)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Fetch Resources is for a full account transfer"):
+			team_change.fetch_resources()
+
+	def test_full_account_fetch_leaves_out_a_server_that_is_not_active_and_refuses_it_as_a_row(self):
+		frappe.db.set_value("Server", self.server.name, "status", "Broken")
+		team_change = self.full_account_transfer()
+
+		team_change.fetch_resources()
+		self.assertNotIn(self.server.name, [row.document_name for row in team_change.resources])
+
+		team_change.append("resources", {"document_type": "Server", "document_name": self.server.name})
+		with self.assertRaisesRegex(frappe.ValidationError, "Only an Active server"):
+			team_change.save()
+		self.assertEqual(self.team_of("Server", self.server.name), self.old_team.name)
