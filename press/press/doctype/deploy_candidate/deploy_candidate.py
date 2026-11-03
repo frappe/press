@@ -403,23 +403,28 @@ class DeployCandidate(Document):
 
 		For Example:
 		```
-		[deploy.dependencies.apt]
-		packages = [
+		[tool.frappe-cloud]
+		apt-dependencies = [
 			"ffmpeg",
 			"libsm6",
 			"libxext6",
 		]
 		```
 
-		For each app, these are grouped together into a single package row.
+		The legacy `[deploy.dependencies.apt]` table with a `packages` key
+		also works. For each app, these are grouped together into a single
+		package row.
 		"""
 		for app in self.apps:
 			pyproject = pmf[app.app]["pyproject"] or {}
-			deps = pyproject.get("deploy", {}).get("dependencies", {})
-			pkgs = deps.get("apt", {}).get("packages", [])
+			# Legacy key, not valid per PEP 518 (only [tool.*] is open to tools)
+			legacy_pkgs = (
+				pyproject.get("deploy", {}).get("dependencies", {}).get("apt", {}).get("packages", [])
+			)
+			tool_pkgs = pyproject.get("tool", {}).get("frappe-cloud", {}).get("apt-dependencies", [])
 
 			app_packages = []
-			for p in pkgs:
+			for p in [*legacy_pkgs, *tool_pkgs]:
 				p = p.strip()
 				if p in existing_apt_packages:
 					continue
