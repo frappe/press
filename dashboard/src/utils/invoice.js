@@ -13,6 +13,10 @@ async function fetchPaymentUrl(invoiceName) {
 	const response = await createResource({
 		url: 'press.api.client.run_doc_method',
 	}).submit({ dt: 'Invoice', dn: invoiceName, method: 'stripe_payment_url' })
-	if (!response.message) throw new Error('No payment link for this invoice')
+	if (!response.message) {
+		throw new Error(
+			'This invoice has no Stripe payment link. Contact support to pay it.',
+		)
+	}
 	return response.message
 }
