@@ -142,8 +142,8 @@
 						v-if="team.doc.receive_budget_alerts"
 						class="leading-5 text-ink-gray-7"
 					>
-						Alert threshold is set at {{ currency }}
-						{{ team.doc.monthly_alert_threshold }}
+						Alert threshold is set at
+						{{ currency + team.doc.monthly_alert_threshold }}
 						per month
 					</div>
 					<div v-else class="text-ink-gray-7">
