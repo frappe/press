@@ -92,7 +92,7 @@ class ServerTransfer:
 		return None
 
 	def _other_teams_sites_blocker(self) -> str | None:
-		if others := [site.name for site in self.sites if site.team != self.from_team]:
+		if others := [site["name"] for site in self.sites if site["team"] != self.from_team]:
 			return f"Sites of other teams are on this server: {', '.join(others)}. Move them off first."
 		return None
 
@@ -152,8 +152,8 @@ class ServerTransfer:
 		for group in own_groups:
 			transfer_release_group(group, to_team)
 		for site in self.sites:
-			if site.team == self.from_team:
-				transfer_site(site.name, to_team)
+			if site["team"] == self.from_team:
+				transfer_site(site["name"], to_team)
 		self._transfer_machines(to_team)
 		self._transfer_snapshots(to_team)
 		self._remove_old_team_settings()
