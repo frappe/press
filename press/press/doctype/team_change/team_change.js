@@ -15,6 +15,12 @@ frappe.ui.form.on('Team Change', {
 		}))
 	},
 
+	transfer_type(frm) {
+		// The balance option is hidden outside a full account transfer, so don't leave it ticked
+		if (frm.doc.transfer_type !== 'Full Account' && frm.doc.move_balance)
+			frm.set_value('move_balance', 0)
+	},
+
 	refresh(frm) {
 		// A dashboard request is accepted by the receiving team from the emailed link
 		if (frm.is_new() || frm.doc.transfer_completed || frm.doc.document_name)
