@@ -30,7 +30,7 @@
 			"fieldtype": "Select",
 			"in_list_view": 1,
 			"label": "Status",
-			"options": "Pending\nRunning\nSuccess\nFailure"
+			"options": "Pending\nRunning\nSuccess\nFailure\nSkipped"
 		},
 		{
 			"fieldname": "job_type",
@@ -59,7 +59,7 @@
 	"index_web_pages_for_search": 1,
 	"istable": 1,
 	"links": [],
-	"modified": "2026-02-15 15:40:56.990671",
+	"modified": "2026-11-02 18:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Incident Management",
 	"name": "Action Step",
