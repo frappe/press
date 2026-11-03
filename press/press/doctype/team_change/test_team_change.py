@@ -695,6 +695,31 @@ class TestAdminTeamChange(FrappeTestCase):
 		self.assertEqual(frappe.db.get_value("Invoice", invoice.name, "status"), "Paid")
 		self.assertEqual(self.balance_of(self.new_team.name), 300)
 
+	def test_balance_move_leaves_an_unpaid_invoice_with_a_shortfall_unpaid_with_the_credit_applied(self):
+		invoice = Invoice("Invoice", self.create_draft_invoice_with_usage(self.old_team.name, 200))
+		invoice.finalize_invoice()
+		self.assertEqual(invoice.status, "Unpaid")
+		self.old_team.allocate_credit_amount(80, source="Prepaid Credits")
+
+		self.full_account_transfer(move_balance=True).transfer()
+
+		status, applied, due = frappe.db.get_value(
+			"Invoice", invoice.name, ("status", "applied_credits", "amount_due")
+		)
+		self.assertEqual((status, applied, due), ("Unpaid", 80, 120))
+		self.assertEqual(self.balance_of(self.new_team.name), 0)
+
+	def test_balance_move_leaves_an_invoice_stripe_already_holds_and_moves_all_credit(self):
+		invoice = self.create_draft_invoice_with_usage(self.old_team.name, 200)
+		frappe.db.set_value("Invoice", invoice, "stripe_invoice_id", "in_test_held_by_stripe")
+		self.old_team.allocate_credit_amount(500, source="Prepaid Credits")
+
+		self.full_account_transfer(move_balance=True).transfer()
+
+		status, applied = frappe.db.get_value("Invoice", invoice, ("status", "applied_credits"))
+		self.assertEqual((status, applied), ("Draft", 0))
+		self.assertEqual(self.balance_of(self.new_team.name), 500)
+
 	@patch.object(Invoice, "create_razorpay_payment")
 	@patch.object(Invoice, "create_stripe_invoice")
 	def test_balance_move_on_card_settles_from_credit_only_and_leaves_the_shortfall_unpaid(
