@@ -5,6 +5,8 @@ from __future__ import annotations
 from itertools import groupby
 
 import frappe
+import razorpay
+import stripe as stripe_sdk
 from frappe import _  # Import this for translation functionality
 from frappe.core.utils import find
 from frappe.utils import fmt_money, get_request_site_address
@@ -354,18 +356,23 @@ def create_payment_intent_for_buying_credits(amount):
 
 	amount = round(amount, 2)
 	stripe = get_stripe()
-	intent = stripe.PaymentIntent.create(
-		amount=int(amount * 100),
-		currency=team.currency.lower(),
-		customer=team.stripe_customer_id,
-		description="Prepaid Credits",
-		metadata=metadata,
-		payment_method_options={
-			"card": {
-				"request_three_d_secure": "any" if team.is_trusted_team else "automatic",
-			}
-		},
-	)
+	try:
+		intent = stripe.PaymentIntent.create(
+			amount=int(amount * 100),
+			currency=team.currency.lower(),
+			customer=team.stripe_customer_id,
+			description="Prepaid Credits",
+			metadata=metadata,
+			payment_method_options={
+				"card": {
+					"request_three_d_secure": "any" if team.is_trusted_team else "automatic",
+				}
+			},
+		)
+	except stripe_sdk.error.InvalidRequestError as e:
+		if e.code == "amount_too_large":
+			frappe.throw(e.user_message)
+		raise
 	capture_pulse(
 		"prepaid_credits_purchase_attempted",
 		{
@@ -867,6 +874,7 @@ def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | Non
 	)
 
 	amount = round(amount, 2)
+	_validate_razorpay_order_limit(amount, team.currency)
 	data = {
 		"amount": int(amount * 100),
 		"currency": team.currency,
@@ -879,7 +887,11 @@ def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | Non
 	}
 
 	client = get_razorpay_client()
-	order = client.order.create(data=data)
+	try:
+		order = client.order.create(data=data)
+	except razorpay.errors.BadRequestError as e:
+		frappe.log_error(title="Razorpay order rejected", defer_insert=True)
+		frappe.throw(_("Razorpay could not create this order: {0}").format(e))
 
 	payment_record = frappe.get_doc(
 		{
@@ -895,6 +907,16 @@ def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | Non
 		"key_id": client.auth[0],
 		"payment_record": payment_record.name,
 	}
+
+
+def _validate_razorpay_order_limit(amount, currency):
+	limit = frappe.db.get_single_value("Press Settings", "razorpay_max_order_amount_inr")
+	if currency == "INR" and limit and amount > limit:
+		frappe.throw(
+			_(
+				"The total of {0} including GST is more than the {1} Razorpay accepts in one transaction. Please pay a smaller amount."
+			).format(fmt_money(amount, currency=currency), fmt_money(limit, currency=currency))
+		)
 
 
 def _validate_razorpay_order_type(transaction_type, amount, doc_name, currency):
