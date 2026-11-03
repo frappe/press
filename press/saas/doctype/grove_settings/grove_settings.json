@@ -59,7 +59,7 @@
 		},
 		{
 			"default": "Press Team",
-			"description": "The Grove Team trial keys are minted under. Registered at Grove on Enroll and again when this name changes; a key keeps the team it was minted under.",
+			"description": "The Grove Team trial keys are minted under. Create it at Grove first, on the Press Trial tier; a key keeps the team it was minted under.",
 			"fieldname": "trial_team",
 			"fieldtype": "Data",
 			"label": "Trial Team"
@@ -118,7 +118,7 @@
 	"grid_page_length": 50,
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-11-02 00:00:00",
+	"modified": "2026-11-03 13:13:30.117920",
 	"modified_by": "Administrator",
 	"module": "SaaS",
 	"name": "Grove Settings",

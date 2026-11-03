@@ -10,7 +10,6 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.app.test_app import create_test_app
 from press.saas.doctype.grove_settings import grove_settings
-from press.saas.doctype.grove_settings.grove_settings import PRESS_TIER
 from press.saas.doctype.product_trial.test_product_trial import create_test_product_trial
 
 
@@ -48,8 +47,7 @@ def enrolled(**fields):
 		}
 		| fields
 	)
-	with grove_replies({}):  # a changed trial team registers itself at Grove
-		settings.save()
+	settings.save()
 	return frappe.get_cached_doc("Grove Settings")
 
 
@@ -71,27 +69,18 @@ class TestGroveSettings(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_enroll_mints_the_credential_then_registers_the_team_on_its_tier(self):
+	def test_enroll_mints_the_credential_and_calls_grove_for_nothing_else(self):
 		enrolled(control_api_key="", control_api_secret="")
 		with grove_replies({"api_key": "K2", "api_secret": "S2"}) as post:  # pragma: allowlist secret
 			frappe.local.form_dict.bootstrap_secret = "boot"  # pragma: allowlist secret
 			grove_settings.enroll()
-		calls = [sent(post, i) for i in range(3)]
+		self.assertEqual(post.call_count, 1)
 		self.assertEqual(
-			calls[0],
+			sent(post),
 			(
 				"grove.api.control.create_control_client",
 				{"email": f"press@{frappe.local.site}", "token": "boot"},
 				None,
-			),
-		)
-		self.assertEqual(calls[1][:2], ("grove.api.teams.provision_team", {"team": "Press Team"}))
-		self.assertEqual(
-			calls[2],
-			(
-				"grove.api.teams.update_team",
-				{"team": "Press Team", "tier": PRESS_TIER},
-				{"Authorization": "token K2:S2"},
 			),
 		)
 		settings = frappe.get_single("Grove Settings")
@@ -135,28 +124,6 @@ class TestGroveSettings(FrappeTestCase):
 		self.assertEqual(
 			sent(post)[:2], ("grove.api.keys.update_caps", {"team": "Press Team", "caps": {"k1": 5}})
 		)
-
-	def test_a_changed_trial_team_is_registered_at_grove_and_a_quiet_save_is_not(self):
-		settings = enrolled()
-		with grove_replies({}) as post:
-			settings.trial_team = "Press Trials"
-			settings.save()
-		self.assertEqual(
-			[sent(post, i)[:2] for i in range(2)],
-			[
-				("grove.api.teams.provision_team", {"team": "Press Trials"}),
-				("grove.api.teams.update_team", {"team": "Press Trials", "tier": PRESS_TIER}),
-			],
-		)
-		with grove_replies({}) as post:
-			settings.trial_key_cap = 5
-			settings.save()
-		post.assert_not_called()
-		settings = enrolled(control_api_key="", control_api_secret="")
-		with grove_replies({}) as post:
-			settings.trial_team = "Press Trials 2"
-			settings.save()
-		post.assert_not_called()
 
 	def test_groves_own_refusal_is_what_the_caller_reads(self):
 		settings = enrolled()
