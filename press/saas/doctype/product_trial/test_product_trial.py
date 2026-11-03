@@ -2,6 +2,7 @@
 # See license.txt
 
 import typing
+from unittest.mock import Mock, patch
 
 import frappe
 from frappe.model.naming import make_autoname
@@ -18,6 +19,7 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
+from press.saas.doctype.product_trial.product_trial import archive_broken_standby_sites
 
 
 def create_test_product_trial(
@@ -141,3 +143,47 @@ class TestProductTrial(FrappeTestCase):
 		chosen = product.get_standby_site(account_request=self._account_request("Mexico"))
 
 		self.assertEqual(chosen, hybrid_site.name)
+
+	def _broken_standby_site(self, product, bench, hours_ago=3, is_standby=1):
+		site = create_test_site(bench=bench.name, standby_for_product=product.name, is_standby=is_standby)
+		modified = frappe.utils.add_to_date(None, hours=-hours_ago)
+		frappe.db.set_value(
+			"Site", site.name, {"status": "Broken", "modified": modified}, update_modified=False
+		)
+		return site
+
+	@patch("frappe.db.commit", new=Mock())
+	@patch("press.press.doctype.site.site.Site.archive")
+	def test_broken_standby_site_is_archived_without_backup(self, archive):
+		product = create_test_product_trial(create_test_app("test_broken_standby", "Test Broken Standby"))
+		_old_bench, bench = self._two_benches_on_same_server(product)
+		self._broken_standby_site(product, bench)
+
+		archive_broken_standby_sites()
+
+		archive.assert_called_once_with(reason="Broken standby site", force=True, create_offsite_backup=False)
+
+	@patch("frappe.db.commit", new=Mock())
+	@patch("press.press.doctype.site.site.Site.archive")
+	def test_recently_broken_or_handed_out_sites_are_not_archived(self, archive):
+		product = create_test_product_trial(create_test_app("test_broken_skip", "Test Broken Skip"))
+		_old_bench, bench = self._two_benches_on_same_server(product)
+		self._broken_standby_site(product, bench, hours_ago=0)
+		self._broken_standby_site(product, bench, is_standby=0)
+
+		archive_broken_standby_sites()
+
+		archive.assert_not_called()
+
+	@patch("frappe.db.commit", new=Mock())
+	@patch("press.saas.doctype.product_trial.product_trial.BROKEN_STANDBY_SITES_PER_SERVER", 1)
+	@patch("press.press.doctype.site.site.Site.archive")
+	def test_broken_standby_sites_are_archived_a_few_per_server(self, archive):
+		product = create_test_product_trial(create_test_app("test_broken_cap", "Test Broken Cap"))
+		_old_bench, bench = self._two_benches_on_same_server(product)
+		self._broken_standby_site(product, bench)
+		self._broken_standby_site(product, bench)
+
+		archive_broken_standby_sites()
+
+		self.assertEqual(archive.call_count, 1)
