@@ -130,6 +130,9 @@ class ProductTrial(Document):
 				apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps], standby_site)
 				site._update_configuration(apps_site_config, save=False)
 				site._update_configuration(get_plan_config(plan), save=False)
+				# fc_team rides in the communication secret's config job; the after-commit
+				# sync in Site.on_update then no-ops instead of raising a second job
+				site.sync_fc_team_config()
 				site.signup_time = frappe.utils.now()
 				communication_secret_job = site.generate_saas_communication_secret(
 					create_agent_job=True, save=False
