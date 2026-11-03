@@ -169,7 +169,17 @@ class TeamChange(Document):
 			)
 			frappe.db.set_value("TLS Certificate", {"name": ["in", tls_certificates]}, "team", self.to_team)
 
+<<<<<<< HEAD
 			frappe.db.set_value("Site Backup", {"site": self.document_name}, "team", self.to_team)
+=======
+	def validate_acceptance(self):
+		if self.is_expired:
+			frappe.throw(
+				f"This link has expired. Please ask the sender to send a new {self.label} transfer request."
+			)
+		for team in (self.from_team, self.to_team):
+			validate_team_enabled(team)
+>>>>>>> 305b610 (fix(team-change): Refuse a disabled team or a server it can't hold)
 
 <<<<<<< HEAD
 			frappe.db.set_value("Site Database User", {"site": self.document_name}, "team", self.to_team)
@@ -204,6 +214,14 @@ class TeamChange(Document):
 				"expires_on": format_datetime(self.expires_on, "d MMM yyyy, h:mm a"),
 				**extra_args,
 			},
+		)
+
+
+def validate_team_enabled(team: str):
+	if not frappe.db.get_value("Team", team, "enabled"):
+		frappe.throw(
+			f"The team {team} is disabled, so this transfer can't be completed. "
+			"Please make sure the team is enabled, then try again."
 		)
 
 

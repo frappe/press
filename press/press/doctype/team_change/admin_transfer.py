@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING
 import frappe
 
 from press.press.doctype.team_change.balance import move_balance, settle_open_invoices
+from press.press.doctype.team_change.server_transfer import can_have_servers
+from press.press.doctype.team_change.team_change import validate_team_enabled
 from press.press.doctype.team_change.transfer import TRANSFER_RULES, team_resources, validate_can_move
 
 if TYPE_CHECKING:
@@ -30,7 +32,17 @@ class AdminTransfer:
 			frappe.throw("A resource is listed more than once. Remove the duplicate row and save again.")
 		for doctype, name in documents:
 			validate_can_move(doctype, name, self.team_change.from_team)
+		validate_team_enabled(self.team_change.to_team)
+		self.validate_servers_allowed()
 		self.validate_balance_move()
+
+	def validate_servers_allowed(self):
+		to_team = self.team_change.to_team
+		if any(doctype == "Server" for doctype, _ in self.documents) and not can_have_servers(to_team):
+			frappe.throw(
+				f"The team {to_team} can't have dedicated servers, so a server can't move to it. "
+				"Turn on Servers Enabled for the team, or remove the Server rows."
+			)
 
 	def validate_balance_move(self):
 		team_change = self.team_change
