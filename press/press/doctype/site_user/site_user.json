@@ -30,7 +30,7 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2025-02-19 16:35:29.861290",
+	"modified": "2026-11-03 16:03:33.418657",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Site User",
@@ -51,5 +51,6 @@
 	],
 	"sort_field": "creation",
 	"sort_order": "DESC",
-	"states": []
+	"states": [],
+	"track_changes": 1
 }
