@@ -5,6 +5,11 @@ frappe.ui.form.on('Team', {
 	refresh: function (frm) {
 		frappe.dynamic_link = { doc: frm.doc, fieldname: 'name', doctype: 'Team' }
 		frappe.contacts.render_address_and_contact(frm)
+		frm.add_custom_button(
+			__('Transfer Account'),
+			() => press.new_team_change(frm.doc.name, 'Full Account'),
+			__('Actions'),
+		)
 
 		if (!frm.doc.erpnext_partner) {
 			frm.add_custom_button('Enable Partner Privileges', () =>

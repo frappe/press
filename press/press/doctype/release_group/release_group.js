@@ -4,6 +4,11 @@
 frappe.ui.form.on('Release Group', {
 	refresh: function (frm) {
 		frm.add_web_link(`/dashboard/groups/${frm.doc.name}`, __('Visit Dashboard'))
+		frm.add_custom_button(
+			__('Transfer to Team'),
+			() => press.new_team_change(frm.doc.team, 'Specific Resources', frm.doc),
+			__('Actions'),
+		)
 		;[
 			[__('Create Deploy Candidate'), 'create_deploy_candidate'],
 			[
