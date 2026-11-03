@@ -318,6 +318,17 @@ class ProductTrialRequest(Document):
 							reference_doctype=self.doctype,
 							reference_name=self.name,
 						)
+					self.assign_grove_key()
+
+	def assign_grove_key(self):
+		"""A Grove (AI) key from the product's pool for the new site, into its site config. None while
+		Grove Settings pauses assignment or the pool has no ready key (a product without a pool row never
+		has one), and the trial runs without AI. A request reaching Site Created again keeps the key its
+		site took."""
+		from press.saas.doctype.grove_trial_key.grove_trial_key import GroveTrialKey
+
+		if key := GroveTrialKey.assign(self):
+			key.write_config()
 
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):
