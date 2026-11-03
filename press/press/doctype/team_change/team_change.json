@@ -15,6 +15,10 @@
 		"transferred_on",
 		"resources_section",
 		"resources",
+		"balance_section",
+		"move_balance",
+		"exchange_rate",
+		"balance_moved",
 		"dashboard_request_section",
 		"document_type",
 		"document_name",
@@ -89,6 +93,35 @@
 			"options": "Team Change Resource"
 		},
 		{
+			"depends_on": "eval:doc.transfer_type=='Full Account'",
+			"fieldname": "balance_section",
+			"fieldtype": "Section Break",
+			"label": "Credit Balance"
+		},
+		{
+			"default": "0",
+			"description": "First the old team's credit pays its unpaid invoices and its current invoice, which closes today. The credit that is left moves to the new team, and each credit keeps its source (Prepaid, Free, ...).",
+			"fieldname": "move_balance",
+			"fieldtype": "Check",
+			"label": "Settle Invoices and Move Credit Balance"
+		},
+		{
+			"depends_on": "move_balance",
+			"description": "Value of 1 unit of the old team's currency in the new team's currency. Needed only when the currencies differ.",
+			"fieldname": "exchange_rate",
+			"fieldtype": "Float",
+			"label": "Exchange Rate",
+			"precision": "6"
+		},
+		{
+			"depends_on": "eval:doc.transfer_completed && doc.move_balance",
+			"description": "Credit moved after the invoices were settled, in the old team's currency",
+			"fieldname": "balance_moved",
+			"fieldtype": "Float",
+			"label": "Balance Moved",
+			"read_only": 1
+		},
+		{
 			"collapsible": 1,
 			"depends_on": "document_name",
 			"fieldname": "dashboard_request_section",
@@ -123,7 +156,7 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-11-03 12:30:00.000000",
+	"modified": "2026-11-03 13:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Team Change",
