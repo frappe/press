@@ -24,7 +24,7 @@ class ActionStep(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		status: DF.Literal["Pending", "Running", "Success", "Failure", "Skipped"]
 		step_name: DF.Data | None
 	# end: auto-generated types
 

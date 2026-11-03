@@ -5,8 +5,7 @@ import frappe
 from press.runner import Status as StepStatus
 
 if typing.TYPE_CHECKING:
-	from press.press.incident_management.doctype.action_step.action_step import ActionStep
-
+	from press.incident_management.doctype.action_step.action_step import ActionStep
 	from press.incident_management.doctype.incident_investigator.incident_investigator import (
 		IncidentInvestigator,
 	)
@@ -100,6 +99,10 @@ class IncidentPatternDetector:
 			incident_pattern.save()
 
 	def _detect_patterns(self, server: str, cause_subset: list[str]):
+		investigator_server = self.investigator.server
+		if not investigator_server:
+			return
+
 		IncidentInvestigator = frappe.qb.DocType("Incident Investigator")
 		InvestigationStep = frappe.qb.DocType("Investigation Step")
 
@@ -116,8 +119,9 @@ class IncidentPatternDetector:
 			.select(IncidentInvestigator.name)
 			.where(
 				(InvestigationStep.is_likely_cause == 1)
+				& (InvestigationStep.method.isin(self.INVESTIGATION_STEPS))
 				& (InvestigationStep.parentfield == parentfield)
-				& (IncidentInvestigator.server == self.investigator.server)
+				& (IncidentInvestigator.server == investigator_server)
 				& (IncidentInvestigator.creation >= self.detection_window)
 			)
 			.groupby(IncidentInvestigator.name)
@@ -127,10 +131,15 @@ class IncidentPatternDetector:
 		if len(matching_incidents_count) >= threshold:
 			self._create_pattern_record(
 				server_type=server,
-				server=self.investigator.server,
+				server=investigator_server,
 				cause_subset=cause_subset,
 				investigations=matching_incidents_count,
 			)
+
+	def _resource_causes(self, server_type: str) -> list[str]:
+		# Only resource causes lead to a plan upgrade, so a down MariaDB is left out
+		causes = self.investigator.likely_causes.get(server_type, [])
+		return [cause for cause in causes if cause in self.INVESTIGATION_STEPS]
 
 	def detect_patterns(self, step: "ActionStep"):
 		"""Detects if the current incident matches any known patterns of resource contention."""
@@ -138,8 +147,8 @@ class IncidentPatternDetector:
 		step.save()
 
 		try:
-			database_server_causes = self.investigator.likely_causes.get("database", [])
-			app_server_causes = self.investigator.likely_causes.get("server", [])
+			database_server_causes = self._resource_causes("database")
+			app_server_causes = self._resource_causes("server")
 			is_unified_server = frappe.db.get_value("Server", self.investigator.server, "is_unified_server")
 
 			# Detect patterns for application server causes

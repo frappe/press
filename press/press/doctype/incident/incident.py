@@ -73,6 +73,7 @@ CALL_THRESHOLD_SECONDS_NIGHT = (
 )
 CALL_REPEAT_INTERVAL_DAY = 15 * 60
 CALL_REPEAT_INTERVAL_NIGHT = 20 * 60
+WAIT_TIME_POST_INVESTIGATOR_ACTIONS_SECONDS = 5 * 60
 
 INCIDENT_BANNER_TITLE = "Incident on server: {0}"
 INCIDENT_BANNER_MESSAGE = "There is an ongoing incident affecting sites on {0}."
@@ -934,11 +935,15 @@ Likely due to insufficient balance or incorrect credentials""",
 		if investigator.status != "Completed":
 			return False
 
+		# A database that did not come back after the reboot needs a human now
+		if investigator.database_did_not_recover:
+			return True
+
 		# Investigation is completed and actions are taken wait before calling
 		if (
 			investigator.status == "Completed"
 			and investigator.action_steps
-			and (investigator.modified > frappe.utils.now_datetime() - timedelta(minutes=wait_time))
+			and (investigator.modified > frappe.utils.now_datetime() - timedelta(seconds=wait_time))
 		):
 			return False
 
@@ -980,7 +985,17 @@ def get_confirmation_threshold_duration():
 
 
 def get_wait_time_post_investigator_actions() -> int:
-	return cint(frappe.db.get_single_value("Incident Settings", "wait_time_post_investigator_actions") or 5)
+	"""Seconds to wait after the investigator acts, before a call. Night falls back to day."""
+	day = (
+		cint(frappe.db.get_single_value("Incident Settings", "wait_time_post_investigator_actions"))
+		or WAIT_TIME_POST_INVESTIGATOR_ACTIONS_SECONDS
+	)
+	if frappe.utils.now_datetime().hour in DAY_HOURS:
+		return day
+	return (
+		cint(frappe.db.get_single_value("Incident Settings", "wait_time_post_investigator_actions_night"))
+		or day
+	)
 
 
 def get_call_threshold_duration():

@@ -545,7 +545,7 @@ class TestIncident(FrappeTestCase):
 		investigator.db_set("status", "Completed")
 
 		self.assertEqual(
-			len(investigator.action_steps), 6
+			len(investigator.action_steps), 7
 		)  # Since `execute_incident_action` is not enabled we won't add pattern detector step
 		resolve_incidents()
 
@@ -553,12 +553,64 @@ class TestIncident(FrappeTestCase):
 		investigator.reload()  # datetime conversion
 		investigator.db_set(
 			"modified",
-			investigator.modified - timedelta(minutes=get_wait_time_post_investigator_actions()),
+			investigator.modified - timedelta(seconds=get_wait_time_post_investigator_actions()),
 			update_modified=False,
 		)
 
 		resolve_incidents()
 		mock_calls_create.assert_called_once()  # Now calls should happen since investigation actions have had enough time to show results
+
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=True))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=True))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.get_prometheus_client",
+		get_mock_prometheus_client,
+	)
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("completed").create,
+	)
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	def test_humans_are_called_without_the_post_action_wait_when_mariadb_did_not_come_back(
+		self, mock_calls_create
+	):
+		create_test_alertmanager_webhook_log()
+		incident = frappe.get_last_doc("Incident")
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
+		incident.db_set("status", "Acknowledged")
+		incident.reload()  # datetime conversion
+		incident.db_set(
+			"modified",
+			incident.modified - timedelta(seconds=CALL_REPEAT_INTERVAL_NIGHT + 10),
+			update_modified=False,
+		)
+		investigator.db_set("status", "Completed")  # modified is now, so the post-action wait is not over
+		wait_step = next(s for s in investigator.action_steps if s.method_name == "wait_for_database")
+		wait_step.db_set("status", "Failure")
+
+		resolve_incidents()
+		mock_calls_create.assert_called_once()
+
+	def test_wait_time_post_investigator_actions_uses_the_night_value_at_night(self):
+		frappe.db.set_single_value("Incident Settings", "wait_time_post_investigator_actions", 300)
+		frappe.db.set_single_value("Incident Settings", "wait_time_post_investigator_actions_night", 900)
+
+		with patch("frappe.utils.now_datetime", return_value=datetime(2026, 11, 2, 12, 0)):
+			self.assertEqual(get_wait_time_post_investigator_actions(), 300)
+		with patch("frappe.utils.now_datetime", return_value=datetime(2026, 11, 2, 2, 0)):
+			self.assertEqual(get_wait_time_post_investigator_actions(), 900)
+
+	def test_wait_time_post_investigator_actions_at_night_falls_back_to_the_day_value(self):
+		frappe.db.set_single_value("Incident Settings", "wait_time_post_investigator_actions", 300)
+		frappe.db.set_single_value("Incident Settings", "wait_time_post_investigator_actions_night", 0)
+
+		with patch("frappe.utils.now_datetime", return_value=datetime(2026, 11, 2, 2, 0)):
+			self.assertEqual(get_wait_time_post_investigator_actions(), 300)
 
 	def test_repeat_call_calls_acknowledging_person_first(self):
 		create_test_alertmanager_webhook_log(

@@ -41,6 +41,7 @@ class IncidentSettings(Document):
 		self_hosted_users: DF.Table[IncidentSettingsSelfHostedUser]
 		users: DF.Table[IncidentSettingsUser]
 		wait_time_post_investigator_actions: DF.Duration | None
+		wait_time_post_investigator_actions_night: DF.Duration | None
 	# end: auto-generated types
 
 	pass
