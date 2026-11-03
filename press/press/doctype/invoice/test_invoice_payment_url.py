@@ -19,7 +19,7 @@ STRIPE_URL = "https://invoice.stripe.com/i/test-invoice"
 def create_website_user() -> str:
 	"""A dashboard user. System users skip every team and role check."""
 	user = create_user(f"{frappe.generate_hash(length=8)}@example.com")
-	user.add_roles("Press User", "Press Admin")
+	user.add_roles("Press User")
 	return user.name
 
 
