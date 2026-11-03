@@ -95,6 +95,13 @@ class TestTeamChange(FrappeTestCase):
 		self.assertEqual(frappe.db.get_value("Release Group", group.name, "team"), self.to_team.name)
 		self.assertFalse(frappe.db.exists("Press Role Permission", {"release_group": group.name}))
 
+	def test_confirm_bench_transfer_moves_the_benches_of_the_group_too(self):
+		server, group, _ = self._server_with_group_and_site()
+		bench = frappe.get_last_doc("Bench", {"group": group.name, "server": server.name})
+		self._confirm(self._request(group))
+
+		self.assertEqual(frappe.db.get_value("Bench", bench.name, "team"), self.to_team.name)
+
 	def test_server_transfer_request_blocked_when_receiving_team_cannot_have_servers(self):
 		server = create_test_server(team=self.from_team.name)
 		self.to_team.db_set("servers_enabled", 0)
