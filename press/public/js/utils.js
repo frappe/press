@@ -71,3 +71,18 @@ function format_date_time(date_time, show_date = false, show_time = false) {
 
 	return render_date
 }
+
+// Open a new Team Change for `from_team`, with an optional first resource row
+press.new_team_change = function (from_team, transfer_type, resource) {
+	frappe.model.with_doctype('Team Change', () => {
+		const doc = frappe.model.get_new_doc('Team Change')
+		doc.from_team = from_team
+		doc.transfer_type = transfer_type
+		if (resource) {
+			const row = frappe.model.add_child(doc, 'resources')
+			row.document_type = resource.doctype
+			row.document_name = resource.name
+		}
+		frappe.set_route('Form', 'Team Change', doc.name)
+	})
+}
