@@ -105,8 +105,10 @@ class ProductTrial(Document):
 		team: str | None = None,
 		cluster: str | None = None,
 		account_request: str | None = None,
+		product_trial_request: str | None = None,
 	):
 		from press.press.doctype.site.site import Site, get_plan_config
+		from press.saas.doctype.grove_trial_key.grove_trial_key import GroveTrialKey
 
 		if Site.exists(subdomain, domain):
 			frappe.throw("A site with this subdomain already exists. Please choose a different subdomain.")
@@ -130,6 +132,10 @@ class ProductTrial(Document):
 				apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps], standby_site)
 				site._update_configuration(apps_site_config, save=False)
 				site._update_configuration(get_plan_config(plan), save=False)
+				# fc_team and the Grove key ride in the communication secret's config job; the
+				# after-commit sync in Site.on_update then no-ops instead of raising a second job
+				site.sync_fc_team_config()
+				GroveTrialKey.assign(site, self.name, product_trial_request)
 				site.signup_time = frappe.utils.now()
 				communication_secret_job = site.generate_saas_communication_secret(
 					create_agent_job=True, save=False
@@ -176,6 +182,8 @@ class ProductTrial(Document):
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
 			site.generate_saas_communication_secret(create_agent_job=False, save=False)
+			site.name = site_domain  # what the insert names it; the key's record takes it first
+			GroveTrialKey.assign(site, self.name, product_trial_request)
 			site.insert()
 			if agent_job_name := site.flags.get("new_site_agent_job_name", None):
 				agent_jobs.append({"agent_job": agent_job_name, "purpose": "Create Site"})

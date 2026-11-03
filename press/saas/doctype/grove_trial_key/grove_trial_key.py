@@ -12,9 +12,9 @@ from frappe.model.naming import make_autoname
 from frappe.utils import add_to_date, cint, flt, now_datetime
 
 if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 	from press.saas.doctype.grove_settings.grove_settings import GroveSettings
 	from press.saas.doctype.grove_trial_product.grove_trial_product import GroveTrialProduct
-	from press.saas.doctype.product_trial_request.product_trial_request import ProductTrialRequest
 
 # One batch per run keeps the job short.
 REFILL_BATCH_SIZE = 50
@@ -72,18 +72,16 @@ class GroveTrialKey(Document):
 		).insert(set_name=name, ignore_permissions=True)
 
 	@classmethod
-	def assign(cls, request: ProductTrialRequest) -> GroveTrialKey | None:
-		"""The oldest ready key of the request's product for its site; none on an empty pool or while
-		assignment is paused. A site that reached Site Created before keeps the key it took."""
-		if name := frappe.db.get_value("Grove Trial Key", {"site": request.site, "status": "Assigned"}):
-			return frappe.get_doc("Grove Trial Key", name)
-
+	def assign(cls, site: Site, product_trial: str, request: str | None = None) -> GroveTrialKey | None:
+		"""The oldest ready key of the product, taken for the site and written into its configuration;
+		the job the caller raises carries it. None on an empty pool or while assignment is paused: the
+		trial runs without AI."""
 		if frappe.db.get_single_value("Grove Settings", "pause_key_assignment"):
 			return None
 
 		name = frappe.db.get_value(
 			"Grove Trial Key",
-			{"status": "Available", "product_trial": request.product_trial},
+			{"status": "Available", "product_trial": product_trial},
 			order_by="creation asc",
 			for_update=True,
 			skip_locked=True,
@@ -91,26 +89,26 @@ class GroveTrialKey(Document):
 		if not name:
 			return None
 
-		key = frappe.get_doc("Grove Trial Key", name)
+		key = cls("Grove Trial Key", name)
 		key.db_set(
 			{
 				"status": "Assigned",
-				"site": request.site,
-				"product_trial_request": request.name,
+				"site": site.name,
+				"product_trial_request": request,
 				"assigned_at": now_datetime(),
 			}
 		)
+		key.write_config(site)
 		return key
 
-	def get_site_config(self) -> dict:
-		"""The site config entry apps read a Grove key from: the shape Central writes for its own
-		trial servers."""
-		return {"ai_keys": [{"gateway_url": self.gateway_url, "api_key": self.get_password("api_key")}]}
-
-	def write_config(self) -> None:
-		"""`ai_keys` into the site config, an agent job; safe to repeat."""
+	def write_config(self, site: Site) -> None:
+		"""`ai_keys` into the site's configuration, the shape Central writes for its own trial servers.
+		The caller saves: a new site carries it in its creation job, a standby site in its config job."""
 		ensure_site_config_key("ai_keys", "JSON")
-		frappe.get_doc("Site", self.site).update_site_config(self.get_site_config())
+		site._update_configuration(
+			{"ai_keys": [{"gateway_url": self.gateway_url, "api_key": self.get_password("api_key")}]},
+			save=False,
+		)
 
 	@classmethod
 	def queue_revoke(cls, **filters) -> None:

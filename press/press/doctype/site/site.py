@@ -2125,10 +2125,13 @@ class Site(Document, TagHelpers):
 
 		:returns: None if key not in config.
 		"""
-		key_obj = find(self.configuration, lambda x: x.key == key)
-		if key_obj:
-			return json.loads(key_obj.get("value"))
-		return None
+		row = find(self.configuration, lambda x: x.key == key)
+		if not row:
+			return None
+		# Only the structured types are JSON-encoded; a String or Password row holds its value raw
+		if isinstance(row.value, str) and (row.type or row.get_type()) in ("Number", "Boolean", "JSON"):
+			return json.loads(row.value)
+		return row.value
 
 	def add_domain_to_config(self, domain: str):
 		domains = set(self.get_config_value_for_key("domains") or [])

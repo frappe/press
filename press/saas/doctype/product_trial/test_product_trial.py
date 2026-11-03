@@ -1,7 +1,9 @@
 # Copyright (c) 2023, Frappe and Contributors
 # See license.txt
 
+import json
 import typing
+from unittest.mock import Mock, patch
 
 import frappe
 from frappe.model.naming import make_autoname
@@ -11,13 +13,17 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.app.app import App
 
 from press.press.doctype.account_request.test_account_request import create_test_account_request
+from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
+from press.press.doctype.site.site import Site
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
+from press.press.doctype.team.test_team import create_test_team
+from press.saas.doctype.product_trial.product_trial import ProductTrial
 
 
 def create_test_product_trial(
@@ -141,3 +147,72 @@ class TestProductTrial(FrappeTestCase):
 		chosen = product.get_standby_site(account_request=self._account_request("Mexico"))
 
 		self.assertEqual(chosen, hybrid_site.name)
+
+	def _grove_key(self, product):
+		# Circular at module level: the trial key tests import this module's product fixture
+		from press.saas.doctype.grove_trial_key.test_grove_trial_key import available
+
+		return available(product.name)
+
+	def _assert_key_taken(self, key, site: Site, config: dict):
+		self.assertEqual(
+			config["ai_keys"], [{"gateway_url": key.gateway_url, "api_key": key.get_password("api_key")}]
+		)
+		self.assertEqual(
+			(key.reload().status, key.site, key.product_trial_request), ("Assigned", site.name, "PTR-1")
+		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch.object(ProductTrial, "set_site_domain", new=Mock(return_value=[]))
+	def test_claiming_a_standby_site_pushes_fc_team_and_its_grove_key_in_the_secret_config_job(self):
+		product = create_test_product_trial(create_test_app("test_claim_standby", "Test Claim Standby"))
+		bench = create_test_bench(group=frappe.get_doc("Release Group", product.release_group))
+		standby = self._create_standby_site(product, bench)
+		team = create_test_team()
+		key = self._grove_key(product)
+		config_job_filters = {"site": standby.name, "job_type": "Update Site Configuration"}
+		config_jobs_before = frappe.db.count("Agent Job", config_job_filters)
+
+		# setup_trial_site commits the standby flag; keep the test's rows inside its transaction
+		with patch.object(frappe.db, "commit", new=Mock()):
+			site, _, is_standby = product.setup_trial_site(
+				"claimed", product.domain, team=team.name, product_trial_request="PTR-1"
+			)
+
+		self.assertTrue(is_standby)
+		self.assertEqual(site.name, standby.name)
+		jobs = frappe.get_all(
+			"Agent Job", filters=config_job_filters, pluck="request_data", order_by="creation desc"
+		)
+		self.assertEqual(len(jobs), config_jobs_before + 1)
+		config = json.loads(jobs[0])["config"]
+		self.assertEqual(config["fc_team"], team.name)
+		self.assertEqual(config["fc_communication_secret"], site.saas_communication_secret)
+		self._assert_key_taken(key, site, config)
+		# The after-commit sync that Site.on_update enqueues has nothing left to push
+		self.assertIsNone(site.sync_fc_team_config(create_agent_job=True))
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_a_new_trial_site_carries_its_grove_key_in_its_creation_job(self):
+		product = create_test_product_trial(create_test_app("test_new_trial", "Test New Trial"))
+		bench = create_test_bench(group=frappe.get_doc("Release Group", product.release_group))
+		key = self._grove_key(product)
+
+		def on_test_bench(site: Site):
+			site.bench, site.server = bench.name, bench.server
+
+		# The bench pick wants a cluster with proxy servers; the test has one bench
+		with patch.object(Site, "set_latest_bench", new=on_test_bench):
+			site, agent_jobs, is_standby = product.setup_trial_site(
+				"fresh",
+				product.domain,
+				team=create_test_team().name,
+				cluster=bench.cluster,
+				product_trial_request="PTR-1",
+			)
+
+		self.assertFalse(is_standby)
+		self.assertEqual(site.name, f"fresh.{product.domain}")
+		self.assertEqual(agent_jobs[0]["purpose"], "Create Site")
+		request_data = frappe.db.get_value("Agent Job", agent_jobs[0]["agent_job"], "request_data")
+		self._assert_key_taken(key, site, json.loads(request_data)["config"])
