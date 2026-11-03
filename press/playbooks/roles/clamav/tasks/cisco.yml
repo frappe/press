@@ -1,0 +1,61 @@
+---
+# Cisco's package is also named clamav. Removing libclamav9 takes Ubuntu's
+# clamav with it, and leaves Cisco's alone on later runs
+- name: Remove ClamAV from Ubuntu
+  apt:
+    pkg:
+      - clamav-freshclam
+      - clamav-base
+      - libclamav9
+    state: absent
+    purge: yes
+
+- name: Read installed ClamAV version
+  command: dpkg-query --show --showformat=${db:Status-Abbrev}${Version} clamav
+  register: installed_clamav
+  changed_when: false
+  failed_when: false
+
+# The package is 65 MB, so download it only when it is not installed fully
+- name: Install ClamAV {{ clamav_version }}
+  when: installed_clamav.stdout is not match('ii ' ~ clamav_version ~ '(-|$)')
+  block:
+    # In /root, so a non-root user cannot plant or swap the package
+    - name: Download ClamAV
+      get_url:
+        url: https://github.com/Cisco-Talos/clamav/releases/download/clamav-{{ clamav_version }}/clamav-{{ clamav_version }}.linux.{{ ansible_architecture }}.deb
+        dest: /root/clamav-{{ clamav_version }}.deb
+        checksum: '{{ clamav_checksums[ansible_architecture] }}'
+
+    - name: Install ClamAV
+      apt:
+        deb: /root/clamav-{{ clamav_version }}.deb
+  always:
+    - name: Remove ClamAV package
+      file:
+        path: /root/clamav-{{ clamav_version }}.deb
+        state: absent
+
+# The package creates no user, and freshclam writes definitions as clamav
+- name: Create ClamAV user
+  user:
+    name: clamav
+    system: yes
+    shell: /usr/sbin/nologin
+    create_home: no
+
+- name: Create virus definitions directory
+  file:
+    path: /usr/local/share/clamav
+    state: directory
+    owner: clamav
+    group: clamav
+    mode: 0755
+
+- name: Configure freshclam
+  copy:
+    dest: /usr/local/etc/freshclam.conf
+    content: |
+      LogTime yes
+      DatabaseMirror database.clamav.net
+    mode: 0644
