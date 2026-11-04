@@ -380,6 +380,18 @@ class AccountRequest(Document):
 		return properties
 
 
+AD_CLICK_URL_ARGS = ("gclid", "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content")
+
+
+def filter_ad_click_url_args(url_args: str | None) -> str | None:
+	"""Keep only the ad click ID and UTM params from the signup URL's query args."""
+	args = json.loads(url_args) if url_args else None
+	if not isinstance(args, dict):
+		return None
+	kept = {key: str(args[key])[:200] for key in AD_CLICK_URL_ARGS if args.get(key)}
+	return json.dumps(kept) if kept else None
+
+
 def expire_request_key():
 	"""
 	Expire account request keys that have passed their expiration time.

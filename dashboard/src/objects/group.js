@@ -50,6 +50,7 @@ export default {
 		getCertificate: 'get_certificate',
 		generateCertificate: 'generate_certificate',
 		sendTransferRequest: 'send_change_team_request',
+		getPrivateApps: 'get_private_apps',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
 		redeploy: 'redeploy',

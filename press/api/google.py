@@ -10,12 +10,13 @@ from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from oauthlib.oauth2 import AccessDeniedError
 
+from press.press.doctype.account_request.account_request import filter_ad_click_url_args
 from press.utils import log_error
 from press.utils.telemetry import capture
 
 
 @frappe.whitelist(allow_guest=True)
-def login(product: str | None = None, aid: str | None = None):
+def login(product: str | None = None, aid: str | None = None, url_args: str | None = None):
 	flow = google_oauth_flow()
 	authorization_url, state = flow.authorization_url()
 	minutes = 5
@@ -26,6 +27,8 @@ def login(product: str | None = None, aid: str | None = None):
 		# The Pulse anonymous id can't ride the round trip through Google, so park it
 		# on the flow's own state until the callback creates the account request.
 		payload["aid"] = aid
+	if url_args:
+		payload["url_args"] = url_args
 	frappe.cache().set_value(f"google_oauth_flow:{state}", payload, expires_in_sec=minutes * 60)
 	return authorization_url
 
@@ -113,6 +116,7 @@ def callback(code: str | None = None, state: str | None = None):  # noqa: C901
 		role="Press User",
 		oauth_signup=True,
 		pulse_anonymous_id=payload.get("aid"),
+		url_args=filter_ad_click_url_args(payload.get("url_args")),
 		product_trial=product_trial.name if product_trial else None,
 	)
 	account_request.insert(ignore_permissions=True)
