@@ -584,39 +584,19 @@ def buckets_of(period, bucket):
 
 
 def get_new_bench_duration_chart(period):
-	"""Successful New Bench jobs that ended in the period, like the Median Image Pull column."""
+	"""Minutes that successful New Bench jobs ran, summed by creation and stacked by cluster."""
 	jobs = frappe.get_all(
 		"Agent Job",
-		{"job_type": "New Bench", "status": "Success", "end": ("between", period.in_utc)},
-		["start", "end", "server"],
+		{"job_type": "New Bench", "status": "Success", "creation": ("between", (period.start, period.end))},
+		["creation", "start", "end", "server"],
 	)
 	cluster_of = get_cluster_of({job.server for job in jobs})
-	spans = [
-		((job.end - job.start).total_seconds(), cluster_of.get(job.server) or "No cluster")
+	events = [
+		(job.creation, cluster_of.get(job.server), (job.end - job.start).total_seconds() / 60)
 		for job in jobs
-		if job.start
+		if job.start and job.end
 	]
-	return duration_histogram("Successful New Bench jobs by duration", spans)
-
-
-def duration_histogram(title, spans):
-	"""Spans are (seconds, group) pairs, counted in about twelve whole-minute bins, stacked by group."""
-	longest = max((seconds for seconds, _ in spans), default=0)
-	width = max(60, math.ceil(longest / 12 / 60) * 60)
-	counts = Counter((int(seconds // width), group) for seconds, group in spans)
-	bins = range(max((index for index, _ in counts), default=-1) + 1)
-	groups = sorted({group for _, group in counts})
-	return {
-		"title": title,
-		"data": {
-			"labels": [f"{index * width // 60}-{(index + 1) * width // 60} min" for index in bins],
-			"datasets": [
-				{"name": group, "values": [counts[(index, group)] for index in bins]} for group in groups
-			],
-		},
-		"type": "bar",
-		"barOptions": {"stacked": 1},
-	}
+	return stacked_sum_chart("Minutes of successful New Bench jobs, by creation", period.seconds, events)
 
 
 def get_new_bench_failure_chart(period):
@@ -650,16 +630,24 @@ def get_failed_jobs(job_type, period):
 
 def stacked_chart(title, window, events):
 	"""Events per bucket, one stacked series per group. An event is a (moment, group) pair."""
+	return stacked_sum_chart(title, window, [(moment, group, 1) for moment, group in events])
+
+
+def stacked_sum_chart(title, window, events):
+	"""Values summed per bucket, one stacked series per group. An event is a (moment, group, value)."""
 	bucket = max(60, window // 12)
-	counts = Counter((floor_to_bucket(moment, bucket), group or "No cluster") for moment, group in events)
-	labels = sorted({moment for moment, _ in counts})
-	groups = sorted({group for _, group in counts})
+	totals = Counter()
+	for moment, group, value in events:
+		totals[(floor_to_bucket(moment, bucket), group or "No cluster")] += value
+	labels = sorted({moment for moment, _ in totals})
+	groups = sorted({group for _, group in totals})
 	return {
 		"title": f"{title} per {bucket // 60} minutes",
 		"data": {
 			"labels": time_labels(labels),
 			"datasets": [
-				{"name": group, "values": [counts[(label, group)] for label in labels]} for group in groups
+				{"name": group, "values": [round(totals[(label, group)], 1) for label in labels]}
+				for group in groups
 			],
 		},
 		"type": "bar",
