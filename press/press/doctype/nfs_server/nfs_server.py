@@ -8,6 +8,7 @@ from press.press.doctype.nfs_volume_attachment.nfs_volume_attachment import NFSV
 from press.press.doctype.nfs_volume_detachment.nfs_volume_detachment import NFSVolumeDetachment
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
 
 
@@ -68,6 +69,7 @@ class NFSServer(BaseServer):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
+					"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 					"server": self.name,
 					"workers": 1,
 					"domain": self.domain,
