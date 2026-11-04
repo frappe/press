@@ -36,6 +36,9 @@ MatchStrings = str | list[str]
 # Bench app directory in a traceback frame, app names are python module names
 APP_FRAME = re.compile(r"/apps/([a-z_][a-z0-9_]*)/")
 
+# `cp -LR sites/.` follows the sites/assets/<app> symlink into the app's public folder
+NODE_MODULES_SYMLINK = re.compile(r"cannot stat 'sites/\./assets/([a-z_][a-z0-9_]*)/node_modules'")
+
 if typing.TYPE_CHECKING:
 	# TYPE_CHECKING guard for code below cause DeployCandidate
 	# might cause circular import.
@@ -70,6 +73,7 @@ class JobErr(Enum):
 	APP_DEBUG = auto()
 	PKG_RESOURCES = auto()
 	DISK_FULL = auto()
+	NODE_MODULES_SYMLINK = auto()
 
 
 DOC_URLS = {
@@ -86,6 +90,7 @@ DOC_URLS = {
 	JobErr.APP_DEBUG: "https://frappecloud.com/docs/benches/debugging",
 	JobErr.PKG_RESOURCES: "https://docs.frappe.io/cloud/private-benches/common-issues/pkg-resources-error-when-updating-site",
 	JobErr.DISK_FULL: "https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#server-analytics",
+	JobErr.NODE_MODULES_SYMLINK: None,
 }
 
 
@@ -126,6 +131,7 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("Unknown command '\\-'.", update_with_unknown_command_hyphen_err),
 		('redis_host, redis_port = redis_url.split(":")', update_with_redis_unpack_error),
 		("Site might have lot of jobs in queue.", update_with_rq_jobs_in_queue_err),
+		("/node_modules': No such file or directory", update_with_node_modules_symlink_err),
 		# Keep last: matches any traceback, only actionable if the failing app is identifiable
 		("/apps/", update_with_app_failure_err),
 	]
@@ -411,6 +417,40 @@ def update_with_rq_jobs_in_queue_err(details: Details, job: AgentJob):
 	return True
 
 
+def update_with_node_modules_symlink_err(details: Details, job: AgentJob):
+	"""`bench build` symlinks <app>/public/node_modules to the app's node_modules.
+	If the app commits that symlink, it points to a path that does not exist on
+	the server and copying the sites folder out of the image fails."""
+	if job.job_type != "New Bench":
+		return False
+
+	match = NODE_MODULES_SYMLINK.search(f"{job.traceback or ''}\n{job.output or ''}")
+	if not match:
+		return False
+
+	app = match.group(1)
+	details["title"] = f"New Bench failed because of the {app} app"
+
+	details["message"] = (
+		f"<p>The <b>New Bench</b> job failed in the <b>Initialize Bench</b> step, because of an issue in the <b>{app}</b> app."
+		" Your sites continue to run on the old bench.</p>"
+		f"<p><b>Cause:</b> the {app} repository contains the symlink <code>{app}/public/node_modules</code>."
+		" The command <code>bench build</code> makes this symlink on a developer's computer, and it was committed by mistake."
+		" It points to a folder that does not exist on the server, so the bench can't be set up.</p>"
+		"<p><b>Fix:</b> remove the symlink from the app repository, then push the commit:</p>"
+		'<pre class="rounded-sm bg-surface-gray-2 p-3 text-xs">'
+		f"git rm --cached {app}/public/node_modules\n"
+		f"echo '{app}/public/node_modules' >> .gitignore\n"
+		"git commit -am 'chore: Remove node_modules symlink'</pre>"
+		"<p>Then deploy the bench group again with the new release of the app."
+		" If you don't own the app, ask its maintainer to make this change.</p>"
+	)
+
+	details["assistance_url"] = DOC_URLS[JobErr.NODE_MODULES_SYMLINK]
+
+	return True
+
+
 def has_newer_release(bench: str, app: str) -> bool:
 	"""False only if we know the bench is on the newest release of the app"""
 	deployed = frappe.db.get_value(
@@ -556,6 +596,8 @@ def send_job_failure_notification(job: AgentJob):
 
 	if job.site:
 		team = frappe.get_value("Site", job.site, "team")
+	elif job.job_type == "New Bench" and job.bench:
+		team = get_new_bench_team(job)
 	else:
 		if job.server_type not in ["Server", "Database Server"]:
 			return
@@ -570,6 +612,18 @@ def send_job_failure_notification(job: AgentJob):
 		return
 
 	create_job_failed_notification(job, team, notification_type)
+
+
+def get_new_bench_team(job: AgentJob) -> str | None:
+	"""The bench group owner fixes a broken app, even on a public server.
+
+	Public servers only notify on actionable errors, the rest are ours to fix."""
+	if (
+		frappe.db.get_value(job.server_type, job.server, "public")
+		and not get_details(job, "", "")["is_actionable"]
+	):
+		return None
+	return frappe.db.get_value("Bench", job.bench, "team")
 
 
 def get_notification_type(job: AgentJob) -> str:
