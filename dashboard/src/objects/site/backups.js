@@ -270,9 +270,12 @@ export function backupRecordsOptions() {
 								if (row.physical) {
 									confirmDialog({
 										title: 'Restore Physical Backup',
+										primaryAction: { theme: 'red' },
 										message: `Are you sure you want to restore your site's database from physical backup taken on <b>${dayjs(
 											row.creation,
-										).format('lll')}</b> ?`,
+										).format(
+											'lll',
+										)}</b> ?<br><br>This will overwrite all <b>data</b> & <b>apps</b> in your site with those from the backup.`,
 										onSuccess({ hide }) {
 											toast.promise(
 												site.restoreSiteFromPhysicalBackup.submit({
@@ -298,9 +301,12 @@ export function backupRecordsOptions() {
 								} else {
 									confirmDialog({
 										title: 'Restore Backup',
+										primaryAction: { theme: 'red' },
 										message: `Are you sure you want to restore your site to this offsite backup from <b>${dayjs(
 											row.creation,
-										).format('lll')}</b> ?`,
+										).format(
+											'lll',
+										)}</b> ?<br><br>This will overwrite all <b>data</b> & <b>apps</b> in your site with those from the backup.`,
 										onSuccess({ hide }) {
 											toast.promise(
 												site.restoreSiteFromFiles.submit({

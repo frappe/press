@@ -48,7 +48,17 @@
   args:
     chdir: /home/frappe/agent
 
+- name: Create Monitoring Password File
+  become: yes
+  become_user: frappe
+  file:
+    path: /home/frappe/agent/nginx/monitoring.htpasswd
+    state: touch
+    modification_time: preserve
+    access_time: preserve
+
+# No `htpasswd -c`: it truncates the file and drops the customer's scrape user
 - name: Setup Monitoring Authentication
   become: yes
   become_user: frappe
-  command: 'htpasswd -Bbc /home/frappe/agent/nginx/monitoring.htpasswd frappe {{ monitoring_password }}'
+  command: "htpasswd -Bb /home/frappe/agent/nginx/monitoring.htpasswd frappe {{ monitoring_password | quote }}"

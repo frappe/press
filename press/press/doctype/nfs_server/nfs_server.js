@@ -23,6 +23,8 @@ frappe.ui.form.on('NFS Server', {
 				true,
 				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
 			],
+			[__('Setup Fail2ban'), 'setup_fail2ban', true, frm.doc.is_server_setup],
+			[__('Remove Fail2ban'), 'remove_fail2ban', true, frm.doc.is_server_setup],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
