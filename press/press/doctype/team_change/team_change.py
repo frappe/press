@@ -32,19 +32,34 @@ class TeamChange(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		document_name: DF.DynamicLink
-		document_type: DF.Link
+		from press.press.doctype.team_change_resource.team_change_resource import TeamChangeResource
+
+		balance_moved: DF.Float
+		document_name: DF.DynamicLink | None
+		document_type: DF.Link | None
+		exchange_rate: DF.Float
 		expires_on: DF.Datetime | None
 		from_team: DF.Link
 		key: DF.Data | None
+		move_balance: DF.Check
 		reason: DF.LongText | None
+		resources: DF.Table[TeamChangeResource]
 		to_team: DF.Link
 		transfer_completed: DF.Check
+		transfer_type: DF.Literal["Specific Resources", "Full Account"]
+		transferred_by: DF.Link | None
+		transferred_on: DF.Datetime | None
 	# end: auto-generated types
 
 	@property
+	def is_dashboard_request(self) -> bool:
+		"""A customer's request for one document, accepted from the emailed link. Else a desk transfer."""
+		return bool(self.document_name)
+
+	@property
 	def label(self) -> str:
-		return DOCUMENT_LABELS.get(self.document_type, self.document_type)
+		doctype = self.document_type or ""
+		return DOCUMENT_LABELS.get(doctype, doctype)
 
 	@property
 	def is_expired(self) -> bool:
@@ -56,11 +71,33 @@ class TeamChange(Document):
 		return bool(self.transfer_completed) and self.has_value_changed("transfer_completed")
 
 	def before_insert(self):
+		if not self.is_dashboard_request:
+			return
 		self.validate_no_pending_request()
 		self.key = self.key or frappe.generate_hash("Team Change", 20)
 		self.expires_on = now_datetime() + LINK_VALIDITY
 
 	def validate(self):
+		self.validate_not_completed_before()
+		if self.from_team == self.to_team:
+			frappe.throw(
+				"The source team and the target team are the same. "
+				"Pick the team that should receive the resources as the Target Team."
+			)
+		if self.is_dashboard_request:
+			self.validate_dashboard_request()
+		else:
+			self.admin_transfer.validate()
+
+	def validate_not_completed_before(self):
+		before = self.get_doc_before_save()
+		if before and before.transfer_completed:
+			frappe.throw(
+				"This transfer is already complete and can't be changed. "
+				"Create a new Team Change to move more resources."
+			)
+
+	def validate_dashboard_request(self):
 		self.validate_owner()
 		if self.is_new() or self.is_being_accepted:
 			self.validate_document_can_move()
@@ -70,6 +107,36 @@ class TeamChange(Document):
 	def on_update(self):
 		if not self.is_being_accepted:
 			return
+		if self.is_dashboard_request:
+			self.move_requested_document()
+		else:
+			self.admin_transfer.move()
+
+	@frappe.whitelist()
+	def fetch_resources(self):
+		self.validate_desk_transfer()
+		self.admin_transfer.fetch_resources()
+
+	@frappe.whitelist()
+	def transfer(self):
+		self.validate_desk_transfer()
+		self.admin_transfer.transfer()
+
+	def validate_desk_transfer(self):
+		frappe.only_for("System Manager")
+		if self.is_dashboard_request:
+			frappe.throw(
+				"This is a dashboard request, which the receiving team accepts from the emailed link. "
+				"Create a new Team Change with the resources as rows to move them yourself."
+			)
+
+	@property
+	def admin_transfer(self):
+		from press.press.doctype.team_change.admin_transfer import AdminTransfer
+
+		return AdminTransfer(self)
+
+	def move_requested_document(self):
 		if self.document_type == "Site":
 			transfer_site(self.document_name, self.to_team)
 		elif self.document_type == "Release Group":
@@ -122,15 +189,14 @@ class TeamChange(Document):
 				f"This link has expired. Please ask the sender to send a new {self.label} transfer request."
 			)
 		for team in (self.from_team, self.to_team):
-			if not frappe.db.get_value("Team", team, "enabled"):
-				frappe.throw(f"The team {team} is disabled, so this {self.label} can't be transferred.")
+			validate_team_enabled(team)
 
 	def send_confirmation_email(self, title: str):
 		to_email = frappe.db.get_value("Team", self.to_team, "user")
 		extra_args = (
 			self.server_transfer.email_details(self.to_team) if self.document_type == "Server" else {}
 		)
-		link = get_url(f"/api/method/{CONFIRM_METHODS[self.document_type]}?key={self.key}")
+		link = get_url(f"/api/method/{CONFIRM_METHODS[self.document_type or '']}?key={self.key}")
 		if frappe.conf.developer_mode:
 			print(f"\n{self.label.capitalize()} transfer link for {to_email}\n{link}\n")
 
@@ -147,6 +213,14 @@ class TeamChange(Document):
 				"expires_on": format_datetime(self.expires_on, "d MMM yyyy, h:mm a"),
 				**extra_args,
 			},
+		)
+
+
+def validate_team_enabled(team: str):
+	if not frappe.db.get_value("Team", team, "enabled"):
+		frappe.throw(
+			f"The team {team} is disabled, so this transfer can't be completed. "
+			"Please make sure the team is enabled, then try again."
 		)
 
 
@@ -177,7 +251,7 @@ def request_transfer(doc: Document, team_mail_id: str, reason: str | None, title
 			"to_team": to_team,
 			"reason": reason or "",
 		}
-	).insert()
+	).insert(ignore_permissions=True)  # Team Change is System Manager only; ownership is checked above
 	team_change.send_confirmation_email(title)
 	return team_change
 
@@ -200,7 +274,8 @@ def confirm_transfer(key: str, document_type: str):
 
 	try:
 		team_change.transfer_completed = True
-		team_change.save()
+		# Team Change is System Manager only; the key and team membership are checked above
+		team_change.save(ignore_permissions=True)
 	except frappe.ValidationError as e:
 		frappe.db.rollback()
 		return _not_permitted(str(e), title=_("Transfer Not Completed"))
@@ -249,6 +324,8 @@ def transfer_site(site: str, to_team: str):
 
 def transfer_release_group(group: str, to_team: str):
 	frappe.db.set_value("Release Group", group, "team", to_team)
+	# Bench.team is fetched from the group only on insert, and the Bench permission query reads it
+	frappe.db.set_value("Bench", {"group": group}, "team", to_team)
 	frappe.db.delete("Press Role Permission", {"release_group": group})
 	# Skip onboarding for receiving team so they can access bench groups immediately
 	# Actual resource usage (servers/sites) will still require billing setup
