@@ -29,6 +29,7 @@ from press.press.doctype.cloud_provider.cloud_provider import get_cloud_provider
 from press.press.doctype.server_plan_type.server_plan_type import get_server_plan_types
 from press.press.doctype.site_plan.plan import Plan, filter_by_roles
 from press.press.doctype.team.team import get_child_team_members
+from press.press.doctype.team_change.team_change import confirm_transfer
 from press.utils import docs, get_current_team
 
 if TYPE_CHECKING:
@@ -500,12 +501,9 @@ def analytics(name, query, timezone, start, end, server_type=None):
 			lambda x: x["command"],
 		),
 		"database_connections": (
-			f"""{{__name__=~"mysql_global_status_threads_connected|mysql_global_variables_max_connections", instance="{name}"}}""",
-			lambda x: (
-				"Max Connections"
-				if x["__name__"] == "mysql_global_variables_max_connections"
-				else "Connected Clients"
-			),
+			# peak over the bucket, else a burst that hits max_connections between steps is invisible
+			f"""label_replace(max_over_time(mysql_global_status_threads_connected{{instance="{name}",job="mariadb"}}[{rate_interval}s]), "metric", "Connected Clients", "", "") or label_replace(mysql_global_variables_max_connections{{instance="{name}",job="mariadb"}}, "metric", "Max Connections", "", "")""",
+			lambda x: x["metric"],
 		),
 		"innodb_bp_size": (
 			f"""mysql_global_variables_innodb_buffer_pool_size{{instance='{name}'}}""",
@@ -581,6 +579,32 @@ def get_slow_logs_by_site(name, query, timezone, start, end):
 
 	# Not normalized: this chart groups by database name, not by query text
 	return get_slow_logs(name, query, timezone, start, end, timespan, timegrain, ResourceType.SERVER)
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+@redis_cache(ttl=10 * 60)
+def get_slow_logs_by_query(name, query, timezone, start, end):
+	"""Slow queries of one host. A replica gets its own slow log, so pick the host to compare primary and replica."""
+	from press.api.analytics import MAX_QUERIES, ResourceType, get_slow_logs
+
+	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
+	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
+	timespan, timegrain = auto_timespan_timegrain(start, end)
+
+	return get_slow_logs(
+		name,
+		query,
+		timezone,
+		start,
+		end,
+		timespan,
+		timegrain,
+		ResourceType.SERVER,
+		normalize=True,
+		max_no_of_paths=MAX_QUERIES,
+		group_by_query=True,
+	)
 
 
 def prometheus_instant_value(query: str) -> float | None:
@@ -907,6 +931,8 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 	return {
 		"plans": plans,
 		"types": server_plan_types,
+		# The disk a resize grows from, so the caller knows which plans offer a bigger one
+		"current_root_disk_size": current_root_disk_size,
 	}
 
 
@@ -1126,3 +1152,8 @@ def get_configured_autoscale_triggers(name) -> list[dict[str, float]] | None:
 		{"parent": name},
 		["name", "metric", "threshold", "action"],
 	)
+
+
+@frappe.whitelist(allow_guest=True)
+def confirm_server_transfer(key: str):
+	return confirm_transfer(key, "Server")

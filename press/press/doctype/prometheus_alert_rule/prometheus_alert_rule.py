@@ -12,6 +12,7 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.agent import Agent
+from press.press.doctype.press_job.press_job import get_job_class
 
 if TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
@@ -44,6 +45,7 @@ class PrometheusAlertRule(Document):
 		press_job_type: DF.Link | None
 		repeat_interval: DF.Data
 		route_preview: DF.Code | None
+		send_to_raven: DF.Check
 		severity: DF.Literal["Critical", "Warning", "Information"]
 		silent: DF.Check
 	# end: auto-generated types
@@ -141,6 +143,9 @@ class PrometheusAlertRule(Document):
 			labels = {}
 
 		arguments.update({"labels": labels})
+
+		if not get_job_class(job_name).should_react_to_alert(server, labels):
+			return None
 
 		if existing_jobs := frappe.get_all(
 			"Press Job",

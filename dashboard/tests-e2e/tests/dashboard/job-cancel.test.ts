@@ -78,15 +78,21 @@ function cancelButton(page: Page) {
 	return page.getByRole('button', { name: 'Cancel Job', exact: true })
 }
 
+function confirmButton(page: Page) {
+	return page.getByRole('dialog').getByRole('button', { name: 'Cancel Job' })
+}
+
+// frappe-ui gives a solid red button this background
+const RED_BUTTON = /bg-surface-red-5/
+
 test('cancels a running restore job from the job page', async ({ page }) => {
 	await mockJobPage(page, 'Restore Site', 'Running')
 
 	let cancelled = false
 	await page.route(
-		/\/api\/method\/press\.api\.client\.run_doc_method/,
+		/\/api\/method\/press\.press\.doctype\.agent_job\.agent_job\.cancel_job_from_dashboard/,
 		async (route) => {
-			const body = route.request().postDataJSON()
-			if (body?.dt === 'Agent Job' && body?.method === 'cancel_job') {
+			if (route.request().postDataJSON()?.name === JOB_NAME) {
 				cancelled = true
 			}
 			await fulfill(route, {})
@@ -94,15 +100,13 @@ test('cancels a running restore job from the job page', async ({ page }) => {
 	)
 
 	await cancelButton(page).click()
-	await page
-		.getByRole('dialog')
-		.getByRole('button', { name: 'Cancel Job' })
-		.click()
+	await expect(confirmButton(page)).toHaveClass(RED_BUTTON)
+	await confirmButton(page).click()
 
 	await expect.poll(() => cancelled).toBe(true)
 })
 
-test('warns about the recovery job when cancelling a site update', async ({
+test('explains the rollback without a red button when cancelling a site update', async ({
 	page,
 }) => {
 	await mockJobPage(page, 'Update Site Migrate', 'Running')
@@ -110,10 +114,9 @@ test('warns about the recovery job when cancelling a site update', async ({
 	await cancelButton(page).click()
 
 	await expect(
-		page.getByText(
-			'a recovery job will restore the backup and roll the site back',
-		),
+		page.getByText('the site will roll back to how it was before the update'),
 	).toBeVisible()
+	await expect(confirmButton(page)).not.toHaveClass(RED_BUTTON)
 })
 
 test('does not offer cancel for a site update that skipped backups', async ({

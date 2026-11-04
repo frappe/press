@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import inspect
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import frappe
@@ -147,6 +147,21 @@ class TestServerAnalyticsQuery(FrappeTestCase):
 		self.assertIn("[240s]", query)
 		self.assertNotIn("[90s]", query)
 
+	def test_connections_chart_plots_the_peak_of_each_step_not_a_point_sample(self):
+		# A burst that hits max_connections for a few seconds fell between the
+		# ~10 minute steps of a 3 day chart, so the chart showed no spike at all.
+		start = datetime(2024, 1, 1, 0, 0, 0)
+		end = start + timedelta(days=3)
+
+		query = self._capture_query(start, end, "database_connections")
+
+		window = get_rate_interval(prometheus_timegrain(start, end))
+		self.assertIn("max_over_time(mysql_global_status_threads_connected", query)
+		self.assertIn(f"[{window}s]", query)
+		label = self.captured["function"]
+		self.assertEqual(label({"metric": "Connected Clients"}), "Connected Clients")
+		self.assertEqual(label({"metric": "Max Connections"}), "Max Connections")
+
 	def test_rate_charts_never_use_a_sub_scrape_window(self):
 		start = datetime(2024, 1, 1, 0, 0, 0)
 		for chart in ("cpu", "network", "iops", "database_commands_count"):
@@ -216,3 +231,24 @@ class TestPrometheusQueryAlignment(FrappeTestCase):
 		self.assertEqual(values[0], 42)
 		self.assertIsNone(values[1])
 		self.assertNotIn(0, values)
+
+
+class TestGetRoundedBoundary(FrappeTestCase):
+	"""The helper was cached in redis. Two charts that ask for the same boundary at
+	the same time race in `redis_cache`, which then answers None, and the caller
+	crashed on `None.timestamp()`. Arithmetic this small does not need a cache."""
+
+	def test_the_helper_is_not_cached(self):
+		self.assertFalse(hasattr(get_rounded_boundary, "clear_cache"))
+
+	def test_a_time_inside_a_bucket_floors_to_the_start_of_that_bucket(self):
+		rounded = get_rounded_boundary(datetime(2024, 1, 1, 12, 3, 30, tzinfo=timezone.utc), 120)
+		self.assertEqual(rounded, datetime(2024, 1, 1, 12, 2, tzinfo=timezone.utc))
+
+	def test_a_time_on_a_boundary_stays_where_it_is(self):
+		rounded = get_rounded_boundary(datetime(2024, 1, 1, 12, 2, tzinfo=timezone.utc), 120)
+		self.assertEqual(rounded, datetime(2024, 1, 1, 12, 2, tzinfo=timezone.utc))
+
+	def test_a_timegrain_of_zero_is_refused(self):
+		with self.assertRaisesRegex(ValueError, "timegrain must be positive"):
+			get_rounded_boundary(datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc), 0)
