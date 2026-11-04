@@ -7,9 +7,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
-from telegram.error import NetworkError, RetryAfter
 
-from press.telegram_utils import Telegram
+from press.telegram_utils import NetworkError, RetryAfter, Telegram
 
 
 class TelegramMessage(Document):

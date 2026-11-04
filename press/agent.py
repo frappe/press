@@ -1141,6 +1141,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		host=None,
 		reference_doctype=None,
 		reference_name=None,
+		deduplicate=True,
 	):
 		"""
 		Check if job already exists in Undelivered, Pending, Running state
@@ -1151,7 +1152,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Press Settings", "disable_agent_job_deduplication", cache=True
 		)
 
-		if not disable_agent_job_deduplication:
+		if deduplicate and not disable_agent_job_deduplication:
 			existing_job = self.get_similar_in_execution_job(
 				job_type, path, bench, site, code_server, upstream, host, method
 			)

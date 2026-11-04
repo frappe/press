@@ -91,7 +91,7 @@ class TestPressRole(FrappeTestCase):
 		subdomain = frappe.generate_hash(length=8)
 		site_name = f"{subdomain}.frappe.cloud"
 		create_test_site_record(site_name, subdomain, team)
-		self.addCleanup(lambda: frappe.db.sql("DELETE FROM `tabSite` WHERE name = %s", (site_name,)))
+		self.addCleanup(lambda: frappe.db.delete("Site", {"name": site_name}))
 		return site_name
 
 	def test_add_resource_applies_on_top_of_a_concurrent_edit(self):
@@ -160,9 +160,7 @@ def get_users(role):
 
 def create_test_site_record(name, subdomain, team_name):
 	"""Insert a bare Site row without running any hooks. For use in tests only."""
-	frappe.db.sql(
-		"INSERT INTO `tabSite`"
-		" (name, team, subdomain, status, server, bench, cluster, `group`)"
-		" VALUES (%s, %s, %s, 'Active', 'test-server', 'test-bench', 'Default', 'test-group')",
-		(name, team_name, subdomain),
-	)
+	Site = frappe.qb.DocType("Site")
+	frappe.qb.into(Site).columns(
+		"name", "team", "subdomain", "status", "server", "bench", "cluster", "group"
+	).insert(name, team_name, subdomain, "Active", "test-server", "test-bench", "Default", "test-group").run()

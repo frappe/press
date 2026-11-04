@@ -262,7 +262,7 @@ def has_permission(doc, ptype, user):
 	Only team owners and admins can modify Press Roles. Other team members
 	can read roles but cannot create, update, or delete them.
 	"""
-	if ptype in ("write", "delete", "create") and role_guard.is_restricted():
+	if ptype in ("write", "delete", "create") and role_guard.is_plain_member():
 		return False
 
 	return True

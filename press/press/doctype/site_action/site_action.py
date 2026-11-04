@@ -16,7 +16,10 @@ from rq.timeouts import JobTimeoutException
 
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
+	create_platform_build_and_deploy,
+	stop_and_fail,
+)
 from press.press.doctype.site_migration.site_migration import get_ongoing_migration
 from press.utils.jobs import has_job_timeout_exceeded
 
@@ -635,6 +638,63 @@ class SiteAction(Document):
 
 		self.save(ignore_version=True)
 
+	@dashboard_whitelist()
+	def stop_action(self):
+		"""Fail a running action and stop the work its running step started."""
+		if self.status != "Running":
+			frappe.throw(
+				"Only a running migration can be stopped. This one is either waiting to start or has already finished."
+			)
+
+		step = self.current_running_step
+		if step:
+			self.stop_step(step)
+			step.status = StepStatus.Failure
+			step.error_message = f"Migration stopped by {frappe.session.user}"
+			step.end = now_datetime()
+
+		self._archive_newly_created_release_group()
+		self.fail()
+
+	def stop_step(self, step: SiteActionStep) -> None:
+		"""Stop whatever the step started, so nothing lands on the site after the action fails."""
+		if not step.reference_name:
+			return
+
+		if step.reference_doctype == "Deploy Candidate Build":
+			stop_and_fail(step.reference_name)
+			return
+
+		self.stop_pending_move(step)
+
+	def stop_pending_move(self, step: SiteActionStep) -> None:
+		"""End the move the step scheduled. The status alone says nothing: both a Site Update and a
+		Site Migration sit at Pending from the moment `start()` is called until the first job goes
+		out, and `start()` can leave them there without dispatching anything."""
+		move: SiteMigration | SiteUpdate = self.lock_move(step)
+		if move.has_started_moving_site():
+			frappe.throw(
+				f"The site is already being moved by {step.reference_doctype} {frappe.bold(move.name)}. "
+				"Stopping it now would leave the site between two benches. Wait for it to finish."
+			)
+
+		move.fail_with_notification(f"a stop requested by {frappe.session.user}")
+
+	def lock_move(self, step: SiteActionStep) -> SiteMigration | SiteUpdate:
+		"""Take the row `start()` holds while it dispatches, so the two cannot interleave. Never
+		wait for it: a held row means `start()` is underway, which is already an answer."""
+		try:
+			frappe.db.get_value(
+				step.reference_doctype, step.reference_name, "status", for_update=True, wait=False
+			)
+		except (frappe.QueryTimeoutError, frappe.QueryDeadlockError):
+			frappe.throw(
+				f"{step.reference_doctype} {frappe.bold(step.reference_name)} is starting right now. "
+				"Reload the page to get the latest status."
+			)
+
+		return frappe.get_doc(step.reference_doctype, step.reference_name)
+
 	@frappe.whitelist()
 	def execute(self):
 		if (
@@ -652,7 +712,8 @@ class SiteAction(Document):
 		# frappe.set_user(self.owner)
 		# frappe.local._current_team = frappe.get_cached_doc("Team", self.team)
 
-		if self.status == "Cancelled":
+		# A step enqueued before the action was cancelled or stopped must not run it anyway
+		if self.is_finished:
 			return
 
 		step = self.get_step(step_name)
@@ -740,7 +801,7 @@ class SiteAction(Document):
 		) and not self.is_preparation_steps_pending_or_running():
 			return
 
-		if self.status == "Cancelled":
+		if self.is_finished:
 			return
 
 		frappe.enqueue_doc(
@@ -752,6 +813,10 @@ class SiteAction(Document):
 			job_id=f"site_action||execute_step||{self.name}",
 			deduplicate=True,
 		)
+
+	@property
+	def is_finished(self) -> bool:
+		return self.status in ("Cancelled", "Failure", "Success")
 
 	@property
 	def current_running_step(self) -> SiteActionStep | None:

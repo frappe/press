@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import cstr
 
 from press.api.client import dashboard_whitelist
 from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.press_notification.reference import find_reference
 from press.utils.redact import redact_secrets
 
 
@@ -42,6 +44,7 @@ class PressNotification(Document):
 			"Support Access",
 			"Auto Scale",
 			"Malware Scan",
+			"Resource Access",
 		]
 	# end: auto-generated types
 
@@ -59,6 +62,23 @@ class PressNotification(Document):
 		"traceback",
 		"assistance_url",
 	)
+
+	@staticmethod
+	def get_list_query(query):
+		notifications = query.run(as_dict=True)
+		for notification in notifications:
+			redact_notification(notification)
+
+		return notifications
+
+	def get_doc(self, doc):
+		redact_notification(doc)
+
+	def before_insert(self):
+		if not self.reference_doctype:
+			self.reference_doctype, self.reference_name = find_reference(
+				self.document_type, self.document_name
+			)
 
 	def validate(self):
 		# Teams see the traceback in the dashboard's error dialog
@@ -78,6 +98,8 @@ class PressNotification(Document):
 			self.send_malware_found(
 				get_communication_info("Email", "Server Activity", "Server", self.reference_name)
 			)
+		elif self.type == "Resource Access":
+			self.send_resource_access()
 
 	def send_bench_deploy_failed(self, mails: list[str]):
 		"""Skip emails in case of warning"""
@@ -110,6 +132,18 @@ class PressNotification(Document):
 			},
 		)
 
+	def send_resource_access(self):
+		if self.reference_doctype == "Site":
+			mails = get_communication_info("Email", "Site Activity", "Site", str(self.reference_name))
+		else:
+			mails = get_communication_info("Email", "General", "Team", self.team)
+		frappe.sendmail(
+			recipients=mails,
+			subject=str(self.title),
+			template="resource_access",
+			args={"message": self.message, "link": f"dashboard/{resource_route(self)}"},
+		)
+
 	@dashboard_whitelist()
 	def mark_as_addressed(self):
 		self.read = True
@@ -122,18 +156,55 @@ class PressNotification(Document):
 		self.db_set("read", True)
 
 
+def notify_resource_access(
+	document: Document,
+	reference_doctype: str,
+	reference_name: str,
+	title: str,
+	message: str,
+	team: str | None = None,
+):
+	"""Tell the team that owns `reference_name`, or `team`, that someone got into it."""
+	team = team or cstr(frappe.db.get_value(reference_doctype, reference_name, "team"))
+	frappe.get_doc(
+		{
+			"doctype": "Press Notification",
+			"team": team,
+			"type": "Resource Access",
+			"class": "Warning",
+			"document_type": document.doctype,
+			"document_name": document.name,
+			"reference_doctype": reference_doctype,
+			"reference_name": reference_name,
+			"title": title,
+			"message": message,
+		}
+	).insert(ignore_permissions=True)
+	frappe.publish_realtime(
+		"press_notification", doctype="Press Notification", message={"team": team}, after_commit=True
+	)
+
+
+def resource_route(notification) -> str:
+	"""The dashboard page where the team can see the access."""
+	if notification.reference_doctype == "Site":
+		return f"sites/{notification.reference_name}/activity"
+	if notification.reference_doctype == "Server":
+		return f"servers/{notification.reference_name}/snapshots"
+	return f"groups/{notification.reference_name}"
+
+
+def notify_backup_access(
+	document: Document, reference_doctype: str, reference_name: str, site: str, team: str | None = None
+):
+	"""Tell the owning team that the session got a download link for a backup of `site`."""
+	message = f"{frappe.session.user} got a download link for a backup of {site}."
+	title = f"Backup of {site} accessed"
+	notify_resource_access(document, reference_doctype, reference_name, title, message, team)
+
+
 def create_new_notification(team, type, document_type, document_name, message):
 	if not frappe.db.exists("Press Notification", {"document_name": document_name}):
-		if document_type == "Agent Job":
-			reference_doctype = "Site"
-			reference_doc = frappe.db.get_value("Agent Job", document_name, "site")
-			if not reference_doc:
-				reference_doctype = "Server"
-				reference_doc = frappe.db.get_value("Agent Job", document_name, "server")
-		elif document_type == "Deploy Candidate":
-			reference_doctype = "Release Group"
-			reference_doc = frappe.db.get_value("Deploy Candidate", document_name, "group")
-
 		frappe.get_doc(
 			{
 				"doctype": "Press Notification",
@@ -142,8 +213,12 @@ def create_new_notification(team, type, document_type, document_name, message):
 				"document_type": document_type,
 				"document_name": document_name or 0,
 				"message": message,
-				"reference_doctype": reference_doctype,
-				"reference_name": reference_doc,
 			}
 		).insert()
 		frappe.publish_realtime("press_notification", doctype="Press Notification", message={"team": team})
+
+
+def redact_notification(notification: dict):
+	for field in ("message", "traceback"):
+		if notification.get(field):
+			notification[field] = redact_secrets(notification[field])

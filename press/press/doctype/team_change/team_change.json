@@ -5,22 +5,36 @@
 	"doctype": "DocType",
 	"engine": "InnoDB",
 	"field_order": [
-		"document_type",
-		"document_name",
+		"transfer_type",
 		"from_team",
 		"to_team",
-		"transfer_completed",
 		"reason",
+		"column_break_teams",
+		"transfer_completed",
+		"transferred_by",
+		"transferred_on",
+		"resources_section",
+		"resources",
+		"balance_section",
+		"move_balance",
+		"exchange_rate",
+		"balance_moved",
+		"dashboard_request_section",
+		"document_type",
+		"document_name",
+		"expires_on",
 		"key"
 	],
 	"fields": [
 		{
-			"fieldname": "document_type",
-			"fieldtype": "Link",
+			"default": "Specific Resources",
+			"description": "Full Account moves everything the source team owns, for example when a customer needs a new team after an email or billing address change.",
+			"fieldname": "transfer_type",
+			"fieldtype": "Select",
 			"in_list_view": 1,
 			"in_standard_filter": 1,
-			"label": "Document Type",
-			"options": "DocType",
+			"label": "Transfer Type",
+			"options": "Specific Resources\nFull Account",
 			"reqd": 1
 		},
 		{
@@ -28,7 +42,7 @@
 			"fieldtype": "Link",
 			"in_list_view": 1,
 			"in_standard_filter": 1,
-			"label": "From Team",
+			"label": "Source Team",
 			"options": "Team",
 			"reqd": 1
 		},
@@ -37,9 +51,91 @@
 			"fieldtype": "Link",
 			"in_list_view": 1,
 			"in_standard_filter": 1,
-			"label": "To Team",
+			"label": "Target Team",
 			"options": "Team",
 			"reqd": 1
+		},
+		{ "fieldname": "reason", "fieldtype": "Long Text", "label": "Reason" },
+		{ "fieldname": "column_break_teams", "fieldtype": "Column Break" },
+		{
+			"default": "0",
+			"fieldname": "transfer_completed",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Transfer Completed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "transferred_by",
+			"fieldtype": "Link",
+			"label": "Transferred By",
+			"options": "User",
+			"read_only": 1
+		},
+		{
+			"fieldname": "transferred_on",
+			"fieldtype": "Datetime",
+			"label": "Transferred On",
+			"read_only": 1
+		},
+		{
+			"depends_on": "eval:!doc.document_name",
+			"fieldname": "resources_section",
+			"fieldtype": "Section Break",
+			"label": "Resources"
+		},
+		{
+			"description": "Sites, servers and bench groups of the source team. For a full account transfer, use Fetch Resources and clear Include on what should stay. Only rows with Include checked move.",
+			"fieldname": "resources",
+			"fieldtype": "Table",
+			"label": "Resources",
+			"options": "Team Change Resource"
+		},
+		{
+			"depends_on": "eval:doc.transfer_type=='Full Account'",
+			"fieldname": "balance_section",
+			"fieldtype": "Section Break",
+			"label": "Credit Balance"
+		},
+		{
+			"default": "0",
+			"description": "First the old team's credit pays its unpaid invoices and its current invoice, which closes today. The credit that is left moves to the new team, and each credit keeps its source (Prepaid, Free, ...).",
+			"fieldname": "move_balance",
+			"fieldtype": "Check",
+			"label": "Settle Invoices and Move Credit Balance"
+		},
+		{
+			"depends_on": "move_balance",
+			"description": "Value of 1 unit of the old team's currency in the new team's currency. Needed only when the currencies differ.",
+			"fieldname": "exchange_rate",
+			"fieldtype": "Float",
+			"label": "Exchange Rate",
+			"precision": "6"
+		},
+		{
+			"depends_on": "eval:doc.transfer_completed && doc.move_balance",
+			"description": "Credit moved after the invoices were settled, in the old team's currency",
+			"fieldname": "balance_moved",
+			"fieldtype": "Float",
+			"label": "Balance Moved",
+			"read_only": 1
+		},
+		{
+			"collapsible": 1,
+			"depends_on": "document_name",
+			"fieldname": "dashboard_request_section",
+			"fieldtype": "Section Break",
+			"label": "Dashboard Request"
+		},
+		{
+			"fieldname": "document_type",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Document Type",
+			"options": "DocType",
+			"read_only": 1
 		},
 		{
 			"fieldname": "document_name",
@@ -47,22 +143,20 @@
 			"in_list_view": 1,
 			"label": "Document Name",
 			"options": "document_type",
-			"reqd": 1
+			"read_only": 1
 		},
 		{
-			"default": "0",
-			"fieldname": "transfer_completed",
-			"fieldtype": "Check",
-			"in_list_view": 1,
-			"in_standard_filter": 1,
-			"label": "Transfer Completed"
+			"description": "The confirmation link stops working after this time.",
+			"fieldname": "expires_on",
+			"fieldtype": "Datetime",
+			"label": "Expires On",
+			"read_only": 1
 		},
-		{ "fieldname": "reason", "fieldtype": "Long Text", "label": "Reason" },
 		{ "fieldname": "key", "fieldtype": "Data", "label": "Key", "read_only": 1 }
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2025-02-20 13:46:49.448661",
+	"modified": "2026-11-03 13:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Team Change",
@@ -79,20 +173,10 @@
 			"role": "System Manager",
 			"share": 1,
 			"write": 1
-		},
-		{
-			"create": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Press User",
-			"share": 1,
-			"write": 1
 		}
 	],
 	"sort_field": "modified",
 	"sort_order": "DESC",
-	"states": []
+	"states": [],
+	"track_changes": 1
 }
