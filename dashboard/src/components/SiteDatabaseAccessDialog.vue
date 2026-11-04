@@ -229,7 +229,7 @@ export default {
 								this.show = false;
 								confirmDialog({
 									title: 'Delete Database User',
-									message: `Are you sure you want to delete the database user ?<br>`,
+									message: `Are you sure you want to delete the database user?<br>`,
 									primaryAction: {
 										label: 'Delete',
 										variant: 'solid',
