@@ -546,7 +546,7 @@ def get_build_duration_by_cluster_chart(period, builds):
 
 
 def median_duration_chart(period, builds, group_of):
-	"""Stacked to stay readable with many servers. Read each segment, as medians do not add up."""
+	"""One line per group, as medians do not add up. A drop to zero is a bucket without a median."""
 	bucket = max(60, period.seconds // 12)
 	minutes = median_minutes(builds, bucket, group_of)
 	labels = buckets_of(period, bucket)
@@ -560,9 +560,8 @@ def median_duration_chart(period, builds, group_of):
 				for group in groups
 			],
 		},
-		"type": "bar",
+		"type": "line",
 		"axisOptions": TIME_AXIS,
-		"barOptions": {"stacked": 1},
 	}
 
 
