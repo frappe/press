@@ -1,4 +1,9 @@
-import type { Page, Route } from '@playwright/test'
+import type { Page, Request, Route } from '@playwright/test'
+
+type UptimeData = { date: string; value: number }[]
+type UptimeProvider = (
+	request: Request,
+) => UptimeData | Promise<UptimeData>
 
 export const SITE_NAME = 'test-analytics.fc.frappe.dev'
 
@@ -96,11 +101,20 @@ const siteMock = {
 	},
 }
 
-export async function mockAnalytics(page: Page) {
+export async function mockAnalytics(
+	page: Page,
+	uptime?: UptimeData | UptimeProvider,
+) {
 	await page.route(/\/api\/method\/press\.api\.analytics\./, async (route) => {
 		const method = new URL(route.request().url()).pathname.split('.').pop()!
-		const payload = analyticsPayloads[method]
-		if (payload === undefined) return route.continue()
+		const analyticsPayload = analyticsPayloads[method]
+		if (analyticsPayload === undefined) return route.continue()
+		const uptimeData =
+			typeof uptime === 'function' ? await uptime(route.request()) : uptime
+		const payload =
+			method === 'get' && uptimeData
+				? { ...(analyticsPayload as object), uptime: uptimeData }
+				: analyticsPayload
 		await route.fulfill({
 			status: 200,
 			contentType: 'application/json',

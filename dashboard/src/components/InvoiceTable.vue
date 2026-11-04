@@ -193,9 +193,10 @@ export default {
 					}
 				},
 				onSuccess(r) {
-					this.serverSnapshotServers[
-						this.$resources.fetchServerName.params.name
-					] = r?.app_server
+					// params is shared by every snapshot row, so key by the response
+					if (r?.app_server) {
+						this.serverSnapshotServers[r.name] = r.app_server
+					}
 				},
 			}
 		},
@@ -220,7 +221,11 @@ export default {
 	},
 	methods: {
 		fetchServer(snapshotName) {
-			return this.$resources.fetchServerName.submit(snapshotName)
+			// Called from the template: fill the cache first, or the re-render
+			// that submit() triggers calls this again in a loop
+			this.serverSnapshotServers[snapshotName] = snapshotName
+			this.$resources.fetchServerName.submit(snapshotName)
+			return snapshotName
 		},
 		formatPlan(plan) {
 			let planDoc = getPlans().find((p) => p.name === plan)

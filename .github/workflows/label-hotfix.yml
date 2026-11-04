@@ -1,0 +1,26 @@
+# Adds the hotfix label to PRs from ssiyad that target develop.
+# Uses pull_request_target so that it also works for PRs from forks. It does
+# not check out the PR code, so the write token is never exposed to it.
+
+name: Label Hotfix
+
+on:
+  pull_request_target:
+    types: [opened, reopened, edited]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    if: |
+      github.event.pull_request.user.login == 'ssiyad' &&
+      github.event.pull_request.base.ref == 'develop'
+
+    steps:
+      - name: Add hotfix label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr edit "$PR_URL" --add-label hotfix

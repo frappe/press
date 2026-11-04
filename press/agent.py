@@ -279,7 +279,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def new_site_from_backup(self, site: "Site", skip_failing_patches=False):
+	def new_site_from_backup(self, site: "Site", skip_failing_patches=False, skip_migrate=False):
 		site.check_space_on_server_for_restore()
 		apps = [app.app for app in site.apps]
 
@@ -319,6 +319,7 @@ class Agent:
 			"public": public_link,
 			"private": private_link,
 			"skip_failing_patches": skip_failing_patches,
+			"skip_migrate": skip_migrate,
 			"managed_database_config": self._get_managed_db_config(site),
 			"agent_job_timeout": self._get_restore_timeout(site),
 		}
@@ -402,6 +403,16 @@ class Agent:
 		return self.create_agent_job(
 			"Deactivate Site",
 			f"benches/{site.bench}/sites/{site.name}/deactivate",
+			bench=site.bench,
+			site=site.name,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def fix_global_search(self, site, reference_doctype=None, reference_name=None):
+		return self.create_agent_job(
+			"Fix global search",
+			f"benches/{site.bench}/sites/{site.name}/fix_global_search",
 			bench=site.bench,
 			site=site.name,
 			reference_doctype=reference_doctype,
@@ -1130,6 +1141,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		host=None,
 		reference_doctype=None,
 		reference_name=None,
+		deduplicate=True,
 	):
 		"""
 		Check if job already exists in Undelivered, Pending, Running state
@@ -1140,7 +1152,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Press Settings", "disable_agent_job_deduplication", cache=True
 		)
 
-		if not disable_agent_job_deduplication:
+		if deduplicate and not disable_agent_job_deduplication:
 			existing_job = self.get_similar_in_execution_job(
 				job_type, path, bench, site, code_server, upstream, host, method
 			)

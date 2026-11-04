@@ -91,7 +91,7 @@
 				$site.doc.status !== 'Archived'
 			"
 			class="col-span-1 lg:col-span-2"
-			title="Your site is currently on a shared bench. Upgrade plan to enjoy <a href='https://frappecloud.com/shared-hosting#benches' class='underline' target='_blank'>more benefits</a>."
+			:title="sharedBenchBannerTitle"
 			:id="$site.name"
 			type="gray"
 		>
@@ -204,9 +204,7 @@
 								<div class="text-sm text-ink-gray-6">
 									{{ currentUsageLoading ? '—' : currentUsage.cpu }}
 									{{ $format.plural(currentUsage.cpu, 'hour', 'hours') }}
-									<template
-										v-if="currentPlan"
-									>
+									<template v-if="currentPlan">
 										of {{ currentPlan?.cpu_time_per_day }} hours
 									</template>
 								</div>
@@ -375,8 +373,9 @@ import { getCachedDocumentResource, Progress, Tooltip } from 'frappe-ui'
 import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
 import InfoIcon from '~icons/lucide/info'
+import { getCheapestPrivateBenchPlan } from '../data/plans'
 import { renderDialog } from '../utils/components'
-import { trialDays } from '../utils/site'
+import { openInNewTab, trialDays } from '../utils/site'
 import { getToastErrorMessage } from '../utils/toast'
 import AlertBanner from './AlertBanner.vue'
 import BenchActionsDropdown from './BenchActionsDropdown.vue'
@@ -439,15 +438,11 @@ export default {
 			return this.$format.bytes(v, 2, 2)
 		},
 		loginAsAdmin() {
-			this.$site.loginAsAdmin
-				.submit({ reason: '' })
-				.then((url) => window.open(url, '_blank'))
+			openInNewTab(this.$site.loginAsAdmin.submit({ reason: '' }))
 		},
 		loginAsTeam() {
 			if (this.$site.doc?.additional_system_user_created) {
-				this.$site.loginAsTeam
-					.submit({ reason: '' })
-					.then((url) => window.open(url, '_blank'))
+				openInNewTab(this.$site.loginAsTeam.submit({ reason: '' }))
 			} else {
 				this.loginAsAdmin()
 			}
@@ -522,6 +517,13 @@ export default {
 		},
 	},
 	computed: {
+		sharedBenchBannerTitle() {
+			const plan = getCheapestPrivateBenchPlan(this.$site.doc.server_provider)
+			const benefits = plan
+				? `Plans from ${this.$format.planTitle(plan)}/mo in this region allow a private bench`
+				: 'Upgrade plan to enjoy more benefits'
+			return `Your site is currently on a shared bench. ${benefits}. <a href='https://frappecloud.com/shared-hosting#benches' class='underline' target='_blank'>Learn more</a>.`
+		},
 		siteInformation() {
 			return [
 				{
