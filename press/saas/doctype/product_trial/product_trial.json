@@ -240,6 +240,11 @@
 		{
 			"link_doctype": "Product Trial Request",
 			"link_fieldname": "product_trial"
+		},
+		{
+			"group": "AI",
+			"link_doctype": "Grove Trial Key",
+			"link_fieldname": "product_trial"
 		}
 	],
 	"modified_by": "Administrator",

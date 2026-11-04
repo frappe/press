@@ -52,7 +52,7 @@
 			"read_only": 1
 		},
 		{
-			"description": "Length of the day window: the backup interval, at least 24h, plus 6h, when the audit was made.",
+			"description": "Length of the day window when the audit was made. New audits use 24h.",
 			"fieldname": "day_window_hours",
 			"fieldtype": "Int",
 			"label": "Day Window (Hours)",
@@ -146,7 +146,7 @@
 			"read_only": 1
 		},
 		{
-			"description": "Sites due a scheduled backup with no successful logical or physical backup within the backup interval from Press Settings plus 6h (30h for a 24h interval). Sites back up once per interval, so the extra 6h allows for queue time. Pending, running and failed backups don't count.",
+			"description": "Sites due a scheduled backup with no successful logical or physical backup in the last 24h. Pending, running and failed backups don't count.",
 			"fieldname": "section_break_sites_without_success_in_day",
 			"fieldtype": "Section Break",
 			"label": "Sites Without a Successful Backup in a Day"
@@ -170,7 +170,7 @@
 			"read_only": 1
 		},
 		{
-			"description": "Running virtual machines with no completed daily snapshot in the last 24h. Excludes machines that are not running, were created in the last 24h, skip automated snapshots, or are on Frappe Compute or DigitalOcean (their snapshots aren't recorded on press). Rolling and physical backup snapshots don't count. One completed disk snapshot per machine is enough, even if it has more disks.",
+			"description": "Running virtual machines with no completed daily snapshot in the last 24h. Excludes machines that are not running, were created in the last 24h, skip automated snapshots, or are on a cloud provider whose snapshots aren't recorded here. Rolling and physical backup snapshots don't count. One completed disk snapshot per machine is enough, even if it has more disks.",
 			"fieldname": "section_break_servers_without_snapshot_in_day",
 			"fieldtype": "Section Break",
 			"label": "Servers Without a Snapshot in 24h"
@@ -185,7 +185,7 @@
 	"in_create": 1,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-10-23 19:00:00.000000",
+	"modified": "2026-10-27 18:30:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Backup Daily Audit",

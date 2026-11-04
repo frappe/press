@@ -141,7 +141,7 @@ def get_dns_provider_mname_rname(domain):
 	resolver = Resolver(configure=False)
 	resolver.nameservers = NAMESERVERS
 	try:
-		answer = resolver.resolve(domain, SOA)
+		answer = resolver.query(domain, SOA)
 		if len(answer) > 0:
 			mname = answer[0].mname.to_text()
 			rname = answer[0].rname.to_text()
@@ -177,7 +177,7 @@ def throw_for_caa_record(domain):
 	resolver = Resolver(configure=False)
 	resolver.nameservers = NAMESERVERS
 	try:
-		answer = resolver.resolve(domain, CAA)
+		answer = resolver.query(domain, CAA)
 		for rdata in answer:
 			if "letsencrypt.org" in rdata.to_text():
 				return True
@@ -208,7 +208,7 @@ def check_dns_cname(name, domain):
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
-		answer = resolver.resolve(domain, CNAME)
+		answer = resolver.query(domain, CNAME)
 		if len(answer) > 1:
 			raise MultipleCNAMERecords
 		mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
@@ -262,11 +262,11 @@ def check_dns_a(name, domain):
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
-		answer = resolver.resolve(domain, A)
+		answer = resolver.query(domain, A)
 		if len(answer) > 1:
 			raise MultipleARecords
 		domain_ip = answer[0].to_text()
-		site_ip = resolver.resolve(name, A)[0].to_text()
+		site_ip = resolver.query(name, A)[0].to_text()
 		result["answer"] = answer.rrset.to_text()
 		result["matched"] = check_for_ip_match(name, site_ip, domain_ip)
 	except MultipleARecords:
@@ -296,7 +296,7 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
-		answer = resolver.resolve(domain, AAAA)
+		answer = resolver.query(domain, AAAA)
 		if answer:
 			frappe.throw(
 				f"Domain {domain} has an AAAA record. This causes issues with https certificate generation. Please remove the same{get_dns_provider_link_substr(domain)}.",

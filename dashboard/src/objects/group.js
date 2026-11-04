@@ -45,11 +45,13 @@ export default {
 		deleteEnvironmentVariable: 'delete_environment_variable',
 		updateDependency: 'update_dependency',
 		addRegion: 'add_region',
+		removeRegion: 'remove_region',
 		deployedVersions: 'deployed_versions',
 		getAppVersions: 'get_app_versions',
 		getCertificate: 'get_certificate',
 		generateCertificate: 'generate_certificate',
 		sendTransferRequest: 'send_change_team_request',
+		getPrivateApps: 'get_private_apps',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
 		redeploy: 'redeploy',
@@ -611,6 +613,48 @@ export default {
 							},
 						},
 					],
+					rowActions({
+						row,
+						listResource: clusters,
+						documentResource: releaseGroup,
+					}) {
+						return [
+							{
+								label: 'Remove Region',
+								condition: () => clusters.data?.length > 1,
+								onClick() {
+									confirmDialog({
+										title: 'Remove Region',
+										message: `Are you sure you want to remove the region <b>${row.title}</b>? The benches in this region will be archived. Move or archive the sites in this region first.`,
+										primaryAction: {
+											label: 'Remove',
+											variant: 'solid',
+											theme: 'red',
+										},
+										onSuccess({ hide }) {
+											if (releaseGroup.removeRegion.loading) return
+											toast.promise(
+												releaseGroup.removeRegion.submit(
+													{ region: row.name },
+													{
+														onSuccess: () => {
+															clusters.reload()
+															hide()
+														},
+													},
+												),
+												{
+													loading: `Removing region ${row.title}...`,
+													success: () => `Region ${row.title} removed`,
+													error: (e) => getToastErrorMessage(e),
+												},
+											)
+										},
+									})
+								},
+							},
+						]
+					},
 					primaryAction({
 						listResource: clusters,
 						documentResource: releaseGroup,

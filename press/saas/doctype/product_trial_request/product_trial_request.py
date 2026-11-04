@@ -399,6 +399,7 @@ class ProductTrialRequest(Document):
 				team=self.team,
 				cluster=cluster,
 				account_request=self.account_request,
+				product_trial_request=self.name,
 			)
 			self.is_standby_site = is_standby_site
 			self.site = site.name

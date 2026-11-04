@@ -1,4 +1,4 @@
-# Taste
+# Coding guidelines
 
 Guidelines for writing good code in this project.
 

@@ -220,6 +220,7 @@ class PressSettings(Document):
 		raven_url: DF.Data | None
 		razorpay_key_id: DF.Data | None
 		razorpay_key_secret: DF.Password | None
+		razorpay_max_order_amount_inr: DF.Currency
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
 		redis_cache_size: DF.Int
