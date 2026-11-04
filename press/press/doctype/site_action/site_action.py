@@ -838,7 +838,6 @@ class SiteAction(Document):
 			row.pullable_hash = None
 		deploy_candidate.save()
 
-
 	def _ensure_no_duplicate_release_group_title(self, name: str) -> str:
 		if not name:
 			return frappe.generate_hash(length=10)

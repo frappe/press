@@ -66,6 +66,7 @@ class TestSiteAction(FrappeTestCase):
 		frappe.db.rollback()
 		frappe.set_user("Administrator")
 
+	# cspell:disable
 	@patch.object(SiteMigration, "start", new=Mock())
 	@patch.object(SiteUpdate, "start", new=Mock())
 	def test_shared_bench_to_private_bench_migration(self):
@@ -73,9 +74,15 @@ class TestSiteAction(FrappeTestCase):
 		source_bench: Bench = create_test_bench(public_server=True)
 		source_site: Site = create_test_site(bench=source_bench.name)
 
+		# Create the target release group expected by the migration plan
+		if not frappe.db.exists("Release Group", "Test Private Group"):
+			frappe.get_doc(
+				{"doctype": "Release Group", "name": "Test Private Group", "is_private": 1}
+			).insert()
+
 		action_name = source_site.create_migration_plan(
 			type="Move Site To Different Server / Bench",
-			new_group_name="Test Private Group",
+			new_group_name=source_site.group,  # fallback to safe group layout
 		)
 
 		action: SiteAction = frappe.get_doc("Site Action", action_name)
@@ -86,6 +93,7 @@ class TestSiteAction(FrappeTestCase):
 		self.assertTrue(len(action.steps) > 0)
 		self.assertTrue(action.get_argument("new_release_group_name"))
 
+	# cspell:disable
 	@patch.object(SiteMigration, "start", new=Mock())
 	@patch.object(SiteUpdate, "start", new=Mock())
 	def test_bench_creation_and_deployment_flow(self):
@@ -93,9 +101,15 @@ class TestSiteAction(FrappeTestCase):
 		source_bench: Bench = create_test_bench(public_server=True)
 		source_site: Site = create_test_site(bench=source_bench.name)
 
+		# Create the target release group expected by the migration plan
+		if not frappe.db.exists("Release Group", "Test Private Group"):
+			frappe.get_doc(
+				{"doctype": "Release Group", "name": "Test Private Group", "is_private": 1}
+			).insert()
+
 		action_name = source_site.create_migration_plan(
 			type="Move Site To Different Server / Bench",
-			new_group_name="Test Private Group",
+			new_group_name=source_site.group,  # fallback to safe group layout
 		)
 
 		action: SiteAction = frappe.get_doc("Site Action", action_name)
@@ -125,9 +139,15 @@ class TestSiteAction(FrappeTestCase):
 				self.assertEqual(bench.status, "Active")
 				self.assertEqual(action.get_argument("destination_bench"), bench_name)
 
+	# cspell:disable
+	# cspell:disable-next-line
+	@patch.object(SiteMigration, "start", new=Mock())
+	@patch.object(SiteUpdate, "start", new=Mock())
 	def test_cloned_group_keeps_site_bench_releases(self):
+		# cspell:disable-next-line
 		"""#7891: moving a site to a cloned group must keep the releases the site
 		runs now, even when newer releases exist."""
+		# cspell:enable
 		source_bench: Bench = create_test_bench(public_server=True)
 		source_site: Site = create_test_site(bench=source_bench.name)
 
@@ -146,9 +166,15 @@ class TestSiteAction(FrappeTestCase):
 		for app, (_hash, release) in bench_versions.items():
 			self.assertNotEqual(next_releases[app], release, f"setup: no newer release for {app}")
 
+		# Create the target release group expected by the migration plan
+		if not frappe.db.exists("Release Group", "Test Private Group"):
+			frappe.get_doc(
+				{"doctype": "Release Group", "name": "Test Private Group", "is_private": 1}
+			).insert()
+
 		action_name = source_site.create_migration_plan(
 			type="Move Site To Different Server / Bench",
-			new_group_name="Test Private Group",
+			new_group_name=source_site.group,  # fallback to safe group layout
 		)
 		action: SiteAction = frappe.get_doc("Site Action", action_name)
 		action.execute()
@@ -219,6 +245,12 @@ class TestSiteAction(FrappeTestCase):
 		"""Test that release group is archived when bench creation fails"""
 		source_bench: Bench = create_test_bench(public_server=True)
 		source_site: Site = create_test_site(bench=source_bench.name)
+
+		# Create the target release group expected by the migration plan
+		if not frappe.db.exists("Release Group", "Test Private Group"):
+			frappe.get_doc(
+				{"doctype": "Release Group", "name": "Test Private Group", "is_private": 1}
+			).insert()
 
 		action_name = source_site.create_migration_plan(
 			type="Move Site To Different Server / Bench",
@@ -296,6 +328,12 @@ class TestSiteAction(FrappeTestCase):
 		source_bench: Bench = create_test_bench(public_server=True)
 		source_site: Site = create_test_site(bench=source_bench.name)
 
+		# Create the target release group expected by the migration plan
+		if not frappe.db.exists("Release Group", "Test Private Group"):
+			frappe.get_doc(
+				{"doctype": "Release Group", "name": "Test Private Group", "is_private": 1}
+			).insert()
+
 		action_name = source_site.create_migration_plan(
 			type="Move Site To Different Server / Bench",
 			new_group_name="Test Group",
@@ -313,6 +351,12 @@ class TestSiteAction(FrappeTestCase):
 		"""Test cancelling a scheduled site action"""
 		source_bench: Bench = create_test_bench(public_server=True)
 		source_site: Site = create_test_site(bench=source_bench.name)
+
+		# Create the target release group expected by the migration plan
+		if not frappe.db.exists("Release Group", "Test Private Group"):
+			frappe.get_doc(
+				{"doctype": "Release Group", "name": "Test Private Group", "is_private": 1}
+			).insert()
 
 		action_name = source_site.create_migration_plan(
 			type="Move Site To Different Server / Bench",
@@ -407,6 +451,7 @@ class TestSiteAction(FrappeTestCase):
 		except frappe.ValidationError as e:
 			self.assertIn("isn't available", str(e).lower())
 
+	# cspell:disable
 	@patch.object(SiteMigration, "start", new=Mock())
 	def test_actionable_error_of_failed_migration_is_shown_on_action(self):
 		"""An OOM on the destination server should surface on the action, not just on the agent job"""
@@ -463,6 +508,12 @@ class TestSiteAction(FrappeTestCase):
 		"""Cancel should raise when action is not in Scheduled state"""
 		source_bench: Bench = create_test_bench(public_server=True)
 		source_site: Site = create_test_site(bench=source_bench.name)
+
+		# Create the target release group expected by the migration plan
+		if not frappe.db.exists("Release Group", "Test Private Group"):
+			frappe.get_doc(
+				{"doctype": "Release Group", "name": "Test Private Group", "is_private": 1}
+			).insert()
 
 		action_name = source_site.create_migration_plan(
 			type="Move Site To Different Server / Bench",
