@@ -86,6 +86,7 @@ class StripePaymentEvent(Document):
 				"status": "Paid",
 				"amount_paid": stripe_invoice["amount_paid"] / 100,
 				"stripe_invoice_url": stripe_invoice["hosted_invoice_url"],
+				"payment_processing_since": None,
 			}
 		)
 		invoice.save()
@@ -144,6 +145,7 @@ class StripePaymentEvent(Document):
 				"payment_attempt_count": attempt_count,
 				"payment_attempt_date": attempt_date,
 				"status": "Unpaid",
+				"payment_processing_since": None,
 			}
 		)
 		invoice.save()

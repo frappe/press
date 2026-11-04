@@ -36,6 +36,7 @@
 		"payment_attempt_count",
 		"payment_attempt_date",
 		"next_payment_attempt_date",
+		"payment_processing_since",
 		"payment_mode",
 		"write_off_amount",
 		"column_break_15",
@@ -447,6 +448,15 @@
 			"label": "Next Payment Attempt Date"
 		},
 		{
+			"allow_on_submit": 1,
+			"description": "Set while a card payment waits for the bank to confirm it",
+			"fieldname": "payment_processing_since",
+			"fieldtype": "Datetime",
+			"label": "Payment Processing Since",
+			"no_copy": 1,
+			"read_only": 1
+		},
+		{
 			"depends_on": "eval: doc.status=='Refunded'",
 			"fieldname": "refund_reason",
 			"fieldtype": "Data",
@@ -521,7 +531,7 @@
 			"link_fieldname": "invoice"
 		}
 	],
-	"modified": "2026-03-09 15:59:12.085407",
+	"modified": "2026-10-12 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Invoice",
