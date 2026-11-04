@@ -10,8 +10,14 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import frappe
-from frappe.query_builder.functions import Coalesce
-from frappe.utils import add_to_date, get_datetime, get_system_timezone, now_datetime, rounded
+from frappe.utils import (
+	add_to_date,
+	convert_utc_to_system_timezone,
+	get_datetime,
+	get_system_timezone,
+	now_datetime,
+	rounded,
+)
 
 from press.api.server import prometheus_query
 
@@ -62,6 +68,20 @@ class Period:
 	@property
 	def seconds(self):
 		return int((self.end - self.start).total_seconds())
+
+	@property
+	def in_utc(self):
+		"""Agent Job start and end are in UTC, the period is in system time."""
+		return (to_utc(self.start), to_utc(self.end))
+
+
+def to_utc(moment):
+	system = moment.replace(tzinfo=ZoneInfo(get_system_timezone()))
+	return system.astimezone(ZoneInfo("UTC")).replace(tzinfo=None)
+
+
+def from_utc(moment):
+	return convert_utc_to_system_timezone(moment).replace(tzinfo=None)
 
 
 def execute(filters=None):
@@ -407,7 +427,7 @@ def get_pull_seconds(period):
 		{
 			"job_type": "New Bench",
 			"status": "Success",
-			"end": ("between", (period.start, period.end)),
+			"end": ("between", period.in_utc),
 		},
 		["start", "end"],
 	)
@@ -526,7 +546,7 @@ def get_build_duration_by_cluster_chart(period, builds):
 
 
 def median_duration_chart(period, builds, group_of):
-	"""Bars side by side, as medians do not add up. A missing bar is a bucket without a median."""
+	"""One line per group, as medians do not add up. A drop to zero is a bucket without a median."""
 	bucket = max(60, period.seconds // 12)
 	minutes = median_minutes(builds, bucket, group_of)
 	labels = buckets_of(period, bucket)
@@ -540,7 +560,7 @@ def median_duration_chart(period, builds, group_of):
 				for group in groups
 			],
 		},
-		"type": "bar",
+		"type": "line",
 		"axisOptions": TIME_AXIS,
 	}
 
@@ -567,7 +587,7 @@ def get_new_bench_duration_chart(period):
 	"""Successful New Bench jobs that ended in the period, like the Median Image Pull column."""
 	jobs = frappe.get_all(
 		"Agent Job",
-		{"job_type": "New Bench", "status": "Success", "end": ("between", (period.start, period.end))},
+		{"job_type": "New Bench", "status": "Success", "end": ("between", period.in_utc)},
 		["start", "end", "server"],
 	)
 	cluster_of = get_cluster_of({job.server for job in jobs})
@@ -614,14 +634,18 @@ def get_builds_by_cluster_chart(window, builds):
 def get_failed_jobs(job_type, period):
 	"""Failed jobs, at the time they ended. A Delivery Failure has no end, so its creation counts."""
 	job = frappe.qb.DocType("Agent Job")
-	return (
+	utc_start, utc_end = period.in_utc
+	jobs = (
 		frappe.qb.from_(job)
-		.select(job.server, Coalesce(job.end, job.creation).as_("failed_at"))
+		.select(job.server, job.end, job.creation)
 		.where(job.job_type == job_type)
 		.where(job.status.isin(("Failure", "Delivery Failure")))
-		.where(Coalesce(job.end, job.creation)[period.start : period.end])
+		.where(job.end[utc_start:utc_end] | (job.end.isnull() & job.creation[period.start : period.end]))
 		.run(as_dict=True)
 	)
+	for failed in jobs:
+		failed.failed_at = from_utc(failed.end) if failed.end else failed.creation
+	return jobs
 
 
 def stacked_chart(title, window, events):

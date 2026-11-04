@@ -3,11 +3,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import get_datetime
 
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.server.test_server import create_test_server
@@ -20,6 +21,7 @@ from press.press.report.build_server_stats.build_server_stats import (
 	get_chart,
 	get_charts,
 	get_period,
+	get_pull_seconds,
 	get_selected_chart,
 	group_by_server,
 	last_number,
@@ -208,8 +210,20 @@ class TestOneMountpointPerDevice(FrappeTestCase):
 		)
 
 
+# Fixtures store Agent Job start and end in UTC, as the agent does. Literal, so a sign error in to_utc shows.
+IST_OFFSET = timedelta(hours=5, minutes=30)
+
+
 class TestAgentJobFailureCharts(FrappeTestCase):
 	def setUp(self):
+		# Not UTC, so a stamp read in the wrong timezone falls out of the period
+		for target in (
+			"frappe.utils.data.get_system_timezone",
+			f"{get_period.__module__}.get_system_timezone",
+		):
+			patcher = patch(target, return_value="Asia/Kolkata")
+			patcher.start()
+			self.addCleanup(patcher.stop)
 		self.period = get_period(
 			frappe._dict(from_datetime="2026-09-10 10:00:00", to_datetime="2026-09-10 11:00:00")
 		)
@@ -218,6 +232,7 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 		frappe.db.rollback()
 
 	def job(self, server, job_type, status, creation="2026-09-10 10:01:00", end=None, start=None):
+		"""Stamps are in system time. The agent sends start and end in UTC, so they are stored so."""
 		frappe.get_doc(
 			{
 				"doctype": "Agent Job",
@@ -226,8 +241,8 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 				"job_type": job_type,
 				"status": status,
 				"creation": creation,
-				"start": start,
-				"end": end,
+				"start": start and get_datetime(start) - IST_OFFSET,
+				"end": end and get_datetime(end) - IST_OFFSET,
 			}
 		).db_insert()
 
@@ -270,6 +285,25 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 		)
 
 		self.assertEqual(self.datasets("Remote Builder Failures by Build Server"), {"f1.frappe.cloud": [1]})
+
+	def test_a_failure_is_plotted_in_the_bucket_of_its_end_in_system_time_not_utc(self):
+		self.job("f1.frappe.cloud", "Run Remote Builder", "Failure", end="2026-09-10 15:20:00")
+		period = get_period(
+			frappe._dict(from_datetime="2026-09-10 10:00:00", to_datetime="2026-09-10 16:00:00")
+		)
+
+		chart = get_selected_chart("Remote Builder Failures by Build Server", period, [])
+
+		self.assertEqual(chart["data"]["labels"], ["15:00"])
+
+	def test_median_image_pull_counts_only_new_bench_jobs_that_ended_in_the_period(self):
+		for start, end in [
+			("2026-09-10 10:10:00", "2026-09-10 10:12:00"),
+			("2026-09-10 11:10:00", "2026-09-10 11:20:00"),
+		]:
+			self.job("f1.frappe.cloud", "New Bench", "Success", start=start, end=end)
+
+		self.assertEqual(get_pull_seconds(self.period), 120)
 
 	def test_every_chart_is_sent_with_builds_started_first_and_the_rest_named_under_it(self):
 		chart = get_charts(self.period, [])
@@ -402,6 +436,7 @@ class TestBuildDurationChart(FrappeTestCase):
 			self.datasets(chart),
 			{"f1.frappe.cloud": [5.0] + [0] * 11, "f2.frappe.cloud": [30.0, 60.0] + [0] * 10},
 		)
+		self.assertEqual(chart["type"], "line")
 
 	def test_a_bucket_with_a_build_still_running_has_no_bar_as_its_median_is_not_known_yet(self):
 		builds = [
