@@ -74,7 +74,7 @@ const toggleSort = () => {
 
 <template>
 	<Header class="sticky top-0 z-10 bg-surface-white mb-5">
-		<Breadcrumbs :items="[{ label: 'Servers', route: '/ser' }]" />
+		<Breadcrumbs :items="[{ label: 'Servers', route: '/servers' }]" />
 		<Button class="ml-auto mr-2" @click="servers.reload()">
 			<template #icon>
 				<lucide-refresh-ccw class="size-4" />
