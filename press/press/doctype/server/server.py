@@ -32,7 +32,7 @@ from press.agent import Agent
 from press.api.account import is_limits_exceeded
 from press.api.client import dashboard_whitelist
 from press.exceptions import VolumeResizeLimitError
-from press.guards import role_guard
+from press.guards import role_guard, team_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.add_on_storage_log.add_on_storage_log import (
 	insert_addon_storage_log,
@@ -50,6 +50,7 @@ from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server_monitoring import RAVEN_SERVER_ALERTS_CHANNEL
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
+from press.press.doctype.team_change.team_change import request_transfer
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
 from press.security import fail2ban
@@ -3426,19 +3427,39 @@ class Server(BaseServer):
 
 	def get_actions(self):
 		server_actions = super().get_actions()
+		group = "Application Server Actions" if not self.is_unified_server else "Server Actions"
 
-		return [
+		actions = [
 			{
 				"action": "Notification Settings",
 				"description": "Manage notification channels",
 				"button_label": "Manage",
 				"doc_method": "dummy",
-				"group": ("Application Server Actions" if not self.is_unified_server else "Server Actions"),
+				"group": group,
 				"server_doctype": "Server",
 				"server_name": self.name,
 			},
 			*server_actions,
 		]
+		if self.status == "Active" and not self.is_self_hosted:
+			actions.append(
+				{
+					"action": "Transfer server",
+					"description": "Transfer ownership of this server to another team",
+					"button_label": "Transfer",
+					"doc_method": "send_change_team_request",
+					"group": group,
+					"server_doctype": "Server",
+					"server_name": self.name,
+				}
+			)
+		return actions
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def send_change_team_request(self, team_mail_id: str, reason: str | None = None):
+		"""Send email to team to accept server transfer request"""
+		request_transfer(self, team_mail_id, reason, title=self.title or self.name)
 
 	def update_subscription(self):
 		subscription = self.subscription

@@ -29,7 +29,6 @@ from frappe.utils import (
 	cstr,
 	flt,
 	get_datetime,
-	get_url,
 	now_datetime,
 	sbool,
 	time_diff_in_hours,
@@ -47,7 +46,7 @@ from press.exceptions import (
 	SiteUnderMaintenance,
 	VolumeResizeLimitError,
 )
-from press.guards import role_guard
+from press.guards import role_guard, team_guard
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
@@ -63,6 +62,7 @@ from press.press.doctype.site.site_plan_utils import (
 	get_available_warranty_quota_for_server,
 	get_next_allowed_dedicated_product_warranty_change_date,
 )
+from press.press.doctype.team_change.team_change import request_transfer
 from press.saas.doctype.product_trial.product_trial import create_free_app_subscription
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
@@ -2369,52 +2369,10 @@ class Site(Document, TagHelpers):
 		return delete_remote_backup_objects(sites_remote_files)
 
 	@dashboard_whitelist()
+	@team_guard.only_admin()
 	def send_change_team_request(self, team_mail_id: str, reason: str):
 		"""Send email to team to accept site transfer request"""
-
-		if self.team != get_current_team():
-			frappe.throw(
-				"You don't seem to be a member of {self.team}. You should be a member of the team owning the site to initiate a site ownership transfer. Please verify with your team admin and retry."
-			)
-
-		if not frappe.db.exists("Team", {"user": team_mail_id, "enabled": 1}):
-			frappe.throw("No Active Team record found.")  # nosemgrep
-
-		old_team = frappe.db.get_value("Team", self.team, "user")
-
-		if old_team == team_mail_id:
-			frappe.throw(f"Site is already owned by the team {team_mail_id}")  # nosemgrep
-
-		key = frappe.generate_hash("Site Transfer Link", 20)
-		frappe.get_doc(
-			{
-				"doctype": "Team Change",
-				"document_type": "Site",
-				"document_name": self.name,
-				"to_team": frappe.db.get_value("Team", {"user": team_mail_id, "enabled": 1}),
-				"from_team": self.team,
-				"reason": reason,
-				"key": key,
-			}
-		).insert()
-
-		link = get_url(f"/api/method/press.api.site.confirm_site_transfer?key={key}")
-
-		if frappe.conf.developer_mode:
-			print(f"\nSite transfer link for {team_mail_id}\n{link}\n")
-
-		frappe.sendmail(
-			recipients=team_mail_id,
-			subject="Transfer Site Ownership Confirmation",
-			template="transfer_team_confirmation",
-			args={
-				"name": self.host_name or self.name,
-				"type": "site",
-				"old_team": old_team,
-				"new_team": team_mail_id,
-				"transfer_url": link,
-			},
-		)
+		request_transfer(self, team_mail_id, reason, title=self.host_name or self.name)
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
