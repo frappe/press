@@ -73,6 +73,7 @@ class SiteMigration(Document):
 		scheduled_time: DF.Datetime | None
 		site: DF.Link
 		skip_failing_patches: DF.Check
+		skip_migrate: DF.Check
 		source_bench: DF.Link
 		source_cluster: DF.Link
 		source_server: DF.Link
@@ -86,6 +87,10 @@ class SiteMigration(Document):
 		site: Site = frappe.get_doc("Site", self.site)
 		site.check_move_scheduled()
 		site.check_fatal_site_update()
+
+	def validate(self):
+		if self.skip_migrate:
+			self.skip_failing_patches = 1
 
 	def check_for_existing_domains(self):
 		"""
@@ -177,6 +182,11 @@ class SiteMigration(Document):
 
 	@frappe.whitelist()
 	def start(self):
+		# Hold the row for the rest of this transaction, so a stop cannot read "no job yet" and
+		# fail the migration between the save below and the first step job
+		if frappe.db.get_value("Site Migration", self.name, "status", for_update=True) == "Failure":
+			return
+
 		self.check_for_ongoing_agent_jobs()  # has to be before setting state to pending so it gets retried
 		previous_status = self.status
 		self.status = "Pending"
@@ -467,6 +477,16 @@ class SiteMigration(Document):
 			return  # callback will trigger fail
 		self.fail(*args, **kwargs)
 
+	def has_started_moving_site(self) -> bool:
+		"""True once a step has dispatched its agent job, so the site is on its way to the destination."""
+		return any(step.step_job for step in self.steps)
+
+	def fail_with_notification(self, reason: str):
+		"""End a migration that has not dispatched a job yet. Failure, as there is no Cancelled status."""
+		self.set_pending_steps_to_skipped()
+		self.db_set("status", "Failure")
+		self.send_fail_notification(reason)
+
 	def fail(self, reason: str | None = None, force_activate: bool = False):
 		self.status = "Failure"
 		self.save()
@@ -702,7 +722,9 @@ class SiteMigration(Document):
 				site.remove_dns_record(source_proxy)
 		elif self.is_standalone_migration:
 			site.create_dns_record()
-		return agent.new_site_from_backup(site, skip_failing_patches=self.skip_failing_patches)
+		return agent.new_site_from_backup(
+			site, skip_failing_patches=self.skip_failing_patches, skip_migrate=self.skip_migrate
+		)
 
 	def restore_site_on_destination_proxy(self):
 		"""Restore site on destination proxy"""

@@ -50,7 +50,7 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2024-09-23 12:27:14.065913",
+	"modified": "2026-11-03 16:03:33.418657",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Payment Dispute",
@@ -71,5 +71,6 @@
 	],
 	"sort_field": "modified",
 	"sort_order": "DESC",
-	"states": []
+	"states": [],
+	"track_changes": 1
 }

@@ -15,3 +15,4 @@
     - role: elasticsearch_exporter
     - role: kibana
     - role: filebeat_elasticsearch
+    - role: fail2ban

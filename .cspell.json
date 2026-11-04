@@ -826,6 +826,9 @@
 		"popen",
 		"syscheck",
 		"yara",
-		"yarac"
+		"yarac",
+		"certifi",
+		"frappectl",
+		"TCPOFO"
 	]
 }
