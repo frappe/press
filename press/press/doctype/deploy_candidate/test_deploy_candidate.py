@@ -440,3 +440,20 @@ def create_cache_test_apps(team: "Team") -> dict[str, "AppInfo"]:
 		apps[name] = dict(app=app, source=source, release=release)
 
 	return apps
+
+
+class TestDeployCandidateAptPackages(FrappeTestCase):
+	def test_apt_packages_are_read_from_legacy_and_tool_frappe_cloud_keys_without_duplicates(self):
+		pyproject = {
+			"tool": {"frappe-cloud": {"apt-dependencies": ["poppler-utils", "libmagic1"]}},
+			"deploy": {"dependencies": {"apt": {"packages": ["libmagic1", " ffmpeg "]}}},
+		}
+		candidate = frappe.new_doc("Deploy Candidate")
+		candidate.append("apps", {"app": "my_app"})
+
+		candidate._update_packages({"my_app": {"pyproject": pyproject}})
+
+		self.assertEqual(
+			[(row.package_manager, row.package) for row in candidate.packages],
+			[("apt", "libmagic1 ffmpeg poppler-utils")],
+		)
