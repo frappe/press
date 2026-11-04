@@ -667,6 +667,7 @@ class TestAgentJobNotifications(FrappeTestCase):
 		self.assertFalse(get_details(job, "", "")["is_actionable"])
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch("press.press.doctype.agent_job.agent_job_notifications.frappe.db.commit", new=Mock())
 	def test_new_bench_on_public_server_notifies_the_bench_team_of_a_broken_app(self):
 		job = self.new_bench_job(self.NODE_MODULES_OUTPUT)
 
@@ -679,6 +680,7 @@ class TestAgentJobNotifications(FrappeTestCase):
 		self.assertTrue(notification.is_actionable)
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch("press.press.doctype.agent_job.agent_job_notifications.frappe.db.commit", new=Mock())
 	def test_new_bench_on_public_server_does_not_notify_of_an_unknown_error(self):
 		job = self.new_bench_job("docker: Error response from daemon: pull access denied")
 
