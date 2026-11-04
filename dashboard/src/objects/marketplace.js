@@ -303,17 +303,29 @@ export default {
 							{
 								label: "Remove Version",
 								onClick() {
-									toast.promise(
-										app.removeVersion.submit({ version: row.version }),
-										{
-											loading: "Removing version...",
-											success: () => {
-												versions.reload();
-												return "Version removed successfully";
-											},
-											error: (e) => getToastErrorMessage(e),
+									confirmDialog({
+										title: `Remove ${row.version}`,
+										message: `Are you sure you want to remove <b>${row.version}</b>? Users will not be able to install this app on ${row.version} from the marketplace.`,
+										primaryAction: {
+											label: "Remove",
+											variant: "solid",
+											theme: "red",
 										},
-									);
+										onSuccess({ hide }) {
+											toast.promise(
+												app.removeVersion.submit({ version: row.version }),
+												{
+													loading: "Removing version...",
+													success: () => {
+														hide();
+														versions.reload();
+														return "Version removed successfully";
+													},
+													error: (e) => getToastErrorMessage(e),
+												},
+											);
+										},
+									});
 								},
 							},
 						];
