@@ -51,6 +51,7 @@
 		"paypal_enabled",
 		"column_break_123",
 		"razorpay_key_secret",
+		"razorpay_max_order_amount_inr",
 		"erpnext_authentication",
 		"erpnext_url",
 		"erpnext_api_key",
@@ -444,6 +445,12 @@
 			"fieldname": "razorpay_key_secret",
 			"fieldtype": "Password",
 			"label": "Razorpay Key Secret"
+		},
+		{
+			"description": "The most that one INR order can be, including GST. Leave empty for no check.",
+			"fieldname": "razorpay_max_order_amount_inr",
+			"fieldtype": "Currency",
+			"label": "Razorpay Max Order Amount (INR)"
 		},
 		{
 			"collapsible": 1,
@@ -1930,7 +1937,7 @@
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-10-23 13:05:58.242982",
+	"modified": "2026-10-30 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",

@@ -10,14 +10,15 @@ import razorpay
 import stripe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, flt, getdate, now
+from frappe.utils import flt, getdate, now
 from frappe.utils.data import fmt_money
 
 from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
 from press.press.doctype.auto_scale_record.auto_scale_record import calculate_secondary_server_price
 from press.press.doctype.communication_info.communication_info import get_communication_info
-from press.utils import log_error
+from press.press.doctype.invoice_item.invoice_item import get_item_description
+from press.utils import get_current_team, log_error
 from press.utils.billing import (
 	convert_stripe_money,
 	get_frappe_io_connection,
@@ -149,6 +150,7 @@ class Invoice(Document):
 		partner_customer = filters.get("partner_customer")
 		if partner_customer:
 			team_name = filters.get("team")
+			validate_partner_customer(team_name)
 			due_date = filters.get("due_date")
 			filters.pop("partner_customer")
 			query = (
@@ -893,24 +895,7 @@ class Invoice(Document):
 	def update_item_descriptions(self):
 		for item in self.items:
 			if not item.description:
-				how_many_days = f"{cint(item.quantity)} day{'s' if item.quantity > 1 else ''}"
-				if item.document_type == "Site" and item.plan:
-					site_name = item.document_name.split(".archived")[0]
-					plan = frappe.get_cached_value("Site Plan", item.plan, "plan_title")
-					item.description = f"{site_name} active for {how_many_days} on {plan} plan"
-				elif item.document_type in ["Server", "Database Server"]:
-					server_title = frappe.get_cached_value(item.document_type, item.document_name, "title")
-					if item.plan == "Add-on Storage plan":
-						item.description = f"{server_title} Storage Add-on for {how_many_days}"
-					else:
-						item.description = f"{server_title} active for {how_many_days}"
-				elif item.document_type == "Server Snapshot":
-					item.description = f"{item.document_name} stored for {how_many_days}"
-				elif item.document_type == "Marketplace App":
-					app_title = frappe.get_cached_value("Marketplace App", item.document_name, "title")
-					item.description = f"Marketplace app {app_title} active for {how_many_days}"
-				else:
-					item.description = "Prepaid Credits"
+				item.description = get_item_description(item)
 
 	def is_auto_scale_invoice_item(self, usage_record: UsageRecord) -> bool:
 		"""Check if this a secondary server usage record"""
@@ -1462,6 +1447,21 @@ class Invoice(Document):
 			return None
 		stripe = get_stripe()
 		return stripe.Invoice.retrieve(self.stripe_invoice_id)
+
+
+def validate_partner_customer(customer: str | None):
+	"""Throw unless the current team is the partner of the customer team."""
+	partner = get_current_team(get_doc=True)
+	is_customer = (
+		customer
+		and partner.erpnext_partner
+		and partner.partner_email
+		and frappe.db.exists(
+			"Team", {"name": customer, "erpnext_partner": 0, "partner_email": partner.partner_email}
+		)
+	)
+	if not is_customer:
+		frappe.throw(_("You can only view invoices of your own customers."), frappe.PermissionError)
 
 
 def finalize_monthly_draft_invoices():
