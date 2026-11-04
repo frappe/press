@@ -1,14 +1,18 @@
 ---
-# Cisco's package is also named clamav. Removing libclamav9 takes Ubuntu's
-# clamav with it, and leaves Cisco's alone on later runs
+# Cisco's package is also named clamav, so only versions from Ubuntu go. dpkg, not
+# apt, so a broken package elsewhere, such as shim-signed on AWS, does not fail this.
 - name: Remove ClamAV from Ubuntu
-  apt:
-    pkg:
-      - clamav-freshclam
-      - clamav-base
-      - libclamav9
-    state: absent
-    purge: yes
+  shell: |
+    packages=$(dpkg-query --show --showformat='${db:Status-Abbrev}\t${Package}\t${Version}\n' \
+      clamav clamav-base clamav-freshclam clamav-daemon clamav-milter clamdscan libclamav9 \
+      2>/dev/null \
+      | awk -F '\t' '$1 !~ /^.n/ && $3 ~ /ubuntu/ { print $2 }')
+    if [ -n "$packages" ]; then
+      dpkg --purge $packages
+      echo $packages
+    fi
+  register: ubuntu_clamav
+  changed_when: ubuntu_clamav.stdout != ''
 
 - name: Read installed ClamAV version
   command: dpkg-query --show --showformat=${db:Status-Abbrev}${Version} clamav
@@ -27,7 +31,7 @@
         dest: /root/clamav-{{ clamav_version }}.deb
         checksum: '{{ clamav_checksums[ansible_architecture] }}'
 
-    - name: Install ClamAV
+    - name: Install ClamAV from Cisco
       apt:
         deb: /root/clamav-{{ clamav_version }}.deb
   always:
@@ -52,7 +56,7 @@
     group: clamav
     mode: 0755
 
-- name: Configure freshclam
+- name: Configure freshclam of Cisco
   copy:
     dest: /usr/local/etc/freshclam.conf
     content: |
