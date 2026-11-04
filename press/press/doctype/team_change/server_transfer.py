@@ -30,11 +30,13 @@ class ServerTransfer:
 
 	@cached_property
 	def database_servers(self) -> list[str]:
-		primary = self.server.database_server
+		# An empty `primary` filter matches every primary database server, so stop here
+		if not (primary := self.server.database_server):
+			return []
 		replicas = frappe.get_all(
 			"Database Server", {"primary": primary, "status": ("!=", "Archived")}, pluck="name"
 		)
-		return [primary, *replicas] if primary else replicas
+		return [primary, *replicas]
 
 	@cached_property
 	def groups(self) -> list[str]:
@@ -67,6 +69,8 @@ class ServerTransfer:
 	def _server_state_blocker(self) -> str | None:
 		if self.server.is_self_hosted:
 			return "Self-hosted servers can't be transferred."
+		if self.server.is_managed_database:
+			return "Servers with a managed database can't be transferred. Please raise a support ticket."
 		if self.server.status != "Active":
 			return f"The server must be Active. It is {self.server.status} right now."
 		return None
