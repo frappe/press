@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import get_datetime
 
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.server.test_server import create_test_server
@@ -29,6 +30,7 @@ from press.press.report.build_server_stats.build_server_stats import (
 	seconds_of,
 	spread_colours,
 	time_labels,
+	to_utc,
 	with_clusters,
 )
 
@@ -210,6 +212,13 @@ class TestOneMountpointPerDevice(FrappeTestCase):
 
 class TestAgentJobFailureCharts(FrappeTestCase):
 	def setUp(self):
+		# Not UTC, so a stamp read in the wrong timezone falls out of the period
+		for target in (
+			"frappe.utils.data.get_system_timezone",
+			f"{get_period.__module__}.get_system_timezone",
+		):
+			patch(target, return_value="Asia/Kolkata").start()
+		self.addCleanup(patch.stopall)
 		self.period = get_period(
 			frappe._dict(from_datetime="2026-09-10 10:00:00", to_datetime="2026-09-10 11:00:00")
 		)
@@ -218,6 +227,7 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 		frappe.db.rollback()
 
 	def job(self, server, job_type, status, creation="2026-09-10 10:01:00", end=None, start=None):
+		"""Stamps are in system time. The agent sends start and end in UTC, so they are stored so."""
 		frappe.get_doc(
 			{
 				"doctype": "Agent Job",
@@ -226,8 +236,8 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 				"job_type": job_type,
 				"status": status,
 				"creation": creation,
-				"start": start,
-				"end": end,
+				"start": start and to_utc(get_datetime(start)),
+				"end": end and to_utc(get_datetime(end)),
 			}
 		).db_insert()
 
