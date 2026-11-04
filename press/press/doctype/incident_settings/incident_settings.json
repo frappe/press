@@ -139,7 +139,7 @@
 	"index_web_pages_for_search": 1,
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-06-02 15:33:07.990491",
+	"modified": "2026-11-03 16:03:33.418657",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Incident Settings",
@@ -159,5 +159,6 @@
 	"row_format": "Dynamic",
 	"sort_field": "modified",
 	"sort_order": "DESC",
-	"states": []
+	"states": [],
+	"track_changes": 1
 }

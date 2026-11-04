@@ -96,7 +96,7 @@ test('shows a plan without private bench support as disabled with the reason on 
 	await expect(unavailablePlan).toBeDisabled()
 
 	const availablePlan = dialog.getByRole('button', {
-		name: /Private Bench & Custom Apps/,
+		name: /Private Bench/,
 	})
 	await expect(availablePlan).toBeEnabled()
 })
@@ -106,7 +106,7 @@ test('shows every plan as available on a public bench', async ({ page }) => {
 	const dialog = await openChangePlanDialog(page)
 
 	await expect(
-		dialog.getByRole('button', { name: /Private Bench & Custom Apps/ }),
+		dialog.getByRole('button', { name: /Private Bench/ }),
 	).toBeVisible({ timeout: 10000 })
 	await expect(
 		dialog.getByText('Not available on a private bench'),

@@ -4,7 +4,7 @@
 
 <script>
 import PlansCards from './PlansCards.vue';
-import { getPlans } from '../data/plans';
+import { getPlans, planSupportsProvider } from '../data/plans';
 
 export default {
 	name: 'SitePlansCards',
@@ -25,11 +25,6 @@ export default {
 		PlansCards,
 	},
 	computed: {
-		providerForPlans() {
-			return ['Generic', 'Scaleway'].includes(this.selectedProvider)
-				? 'AWS EC2'
-				: this.selectedProvider;
-		},
 		currentPlan: {
 			get() {
 				return this.modelValue;
@@ -49,7 +44,7 @@ export default {
 			// Hide plans of other providers: each has its own price list
 			if (this.selectedProvider) {
 				plans = plans.filter((plan) =>
-					this.allows(plan.cloud_providers, this.providerForPlans),
+					planSupportsProvider(plan, this.selectedProvider),
 				);
 			}
 
@@ -96,7 +91,7 @@ export default {
 							value: plan.offsite_backups ? 'Offsite Backups' : '',
 						},
 						{
-							value: plan.private_benches ? 'Private Bench & Custom Apps' : '',
+							value: plan.private_benches ? 'Private Bench' : '',
 						},
 						{
 							value: plan.monitor_access ? 'Advanced Monitoring' : '',

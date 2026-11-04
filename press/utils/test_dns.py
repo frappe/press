@@ -1,11 +1,12 @@
 # Copyright (c) 2026, Frappe and Contributors
 # See license.txt
 
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
+from dns.resolver import Resolver
 from frappe.tests.utils import FrappeTestCase
 
-from press.utils.dns import _change_dns_record
+from press.utils.dns import _change_dns_record, check_dns_cname
 
 
 def route53_client(existing_records=()):
@@ -53,3 +54,13 @@ class TestChangeDNSRecord(FrappeTestCase):
 		self.change(client, "DELETE", "n1.fc.dev")
 		self.assertEqual(sent_record(client)["ResourceRecords"], [{"Value": "n1.fc.dev"}])
 		self.assertEqual(sent_record(client)["TTL"], 600)
+
+
+class TestCheckDNS(FrappeTestCase):
+	def test_cname_check_matches_with_the_installed_dnspython_resolver(self):
+		answer = MagicMock()
+		answer.__len__.return_value = 1
+		answer[0].to_text.return_value = "site.fc.dev."
+		with patch.object(Resolver, "query", return_value=answer):  # patch the real class, no mock attributes
+			result = check_dns_cname("site.fc.dev", "custom.example.com")
+		self.assertTrue(result["matched"], result["answer"])

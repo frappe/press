@@ -366,6 +366,11 @@ class SiteUpdate(Document):
 
 	@dashboard_whitelist()
 	def start(self):
+		# Hold the row for the rest of this transaction, so a stop cannot read "no job yet" and
+		# cancel the update between the save below and the agent request at the end
+		if frappe.db.get_value("Site Update", self.name, "status", for_update=True) == "Cancelled":
+			return
+
 		previous_status = self.status
 
 		self.status = "Pending"
@@ -410,6 +415,12 @@ class SiteUpdate(Document):
 		if not self.skipped_backups and frappe.db.get_value("Site", self.site, "is_standby"):
 			self.skipped_backups = True
 			self.save()
+
+	def has_started_moving_site(self) -> bool:
+		"""True once a job has been dispatched against the site, to back it up or to update it."""
+		return bool(
+			self.update_job or self.deactivate_site_job or self.site_backup or self.logical_replication_backup
+		)
 
 	def fail_with_notification(self, reason: str):
 		frappe.db.set_value("Site Update", self.name, "status", "Cancelled")
