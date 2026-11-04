@@ -29,6 +29,7 @@ class TestRolloutProgress(FrappeTestCase):
 		self.assertEqual(len(rows), 1)
 		self.assertEqual(rows[0].bench, fixture.new_bench.name)
 		self.assertEqual((rows[0].on_bench, rows[0].behind, rows[0].percent_on_bench), (1, 4, 20.0))
+		self.assertEqual(rows[0].standby_behind, 1)
 
 	def test_chart_adds_up_the_successful_moves_onto_the_candidate(self):
 		fixture = create_group_with_sites_behind()
@@ -58,5 +59,6 @@ class TestRolloutProgress(FrappeTestCase):
 		self.assertEqual(
 			(rows[0].bench_status, rows[0].behind, rows[0].percent_on_bench), ("Installing", None, None)
 		)
+		self.assertIsNone(rows[0].standby_behind)
 		values = {card["label"]: card["value"] for card in summary}
 		self.assertEqual(values["Sites Behind"], 0)

@@ -16,7 +16,7 @@ from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.query_builder.functions import Count
-from frappe.utils import cstr, flt, get_url, sbool
+from frappe.utils import cstr, flt, sbool
 from frappe.utils.caching import redis_cache
 from frappe.utils.data import add_to_date
 
@@ -26,7 +26,7 @@ from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.api.github import get_frappe_branch_major_version
 from press.exceptions import ImageNotFoundInRegistry, InsufficientSpaceOnServer, VolumeResizeLimitError
-from press.guards import role_guard
+from press.guards import role_guard, team_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
@@ -41,6 +41,7 @@ from press.press.doctype.site_config.site_config import (
 	decode_json_config_value,
 	parse_json_config_value,
 )
+from press.press.doctype.team_change.team_change import request_transfer
 from press.utils import (
 	fmt_timedelta,
 	get_app_tag,
@@ -49,6 +50,7 @@ from press.utils import (
 	get_last_doc,
 	log_error,
 )
+from press.utils.environment_variable import validate_environment_variable
 
 if TYPE_CHECKING:
 	from datetime import datetime
@@ -168,6 +170,7 @@ class ReleaseGroup(Document, TagHelpers):
 			query.where(ReleaseGroup.team == frappe.local.team().name)
 			.where(ReleaseGroup.enabled == 1)
 			.where(ReleaseGroup.public == 0)
+			.where(outside_archived_clusters())
 			.select(
 				site_count_query(server).as_("site_count"),
 				active_bench_count_query(server).as_("active_benches"),
@@ -265,6 +268,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_max_min_workers()
 		self.validate_feature_flags()
 		self.validate_dependencies()
+		self.validate_environment_variables()
 		if not self.redis_password:
 			self.set_redis_password()
 
@@ -742,9 +746,32 @@ class ReleaseGroup(Document, TagHelpers):
 				frappe.ValidationError,
 			)
 
+	def validate_environment_variables(self) -> None:
+		for variable in self.environment_variables:
+			validate_environment_variable(variable.key, variable.value)
+
 	def validate_feature_flags(self) -> None:
 		if self.use_app_cache and not self.can_use_get_app_cache():
 			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.22.1 or later"))
+
+		self.warn_about_shared_asset_store()
+
+	def warn_about_shared_asset_store(self) -> None:
+		if not (self.public and self.use_app_cache):
+			return
+
+		if not (self.has_value_changed("public") or self.has_value_changed("use_app_cache")):
+			return
+
+		frappe.msgprint(
+			_(
+				"Builds of this group will share their JS and CSS through the asset store with every group"
+				" that uses the app cache. Each app's install code runs during the build, so a third party"
+				" app here can change the assets that other benches download."
+			),
+			title=_("Shared asset store"),
+			indicator="orange",
+		)
 
 	def _validate_dependency_format(self, dependency: str, version: str):
 		# Append patch version, except for node since nvm path breaks during build
@@ -1210,54 +1237,16 @@ class ReleaseGroup(Document, TagHelpers):
 		return apps
 
 	@dashboard_whitelist()
+	@team_guard.only_admin()
 	def send_change_team_request(self, team_mail_id: str, reason: str):
 		"""Send email to team to accept bench transfer request"""
+		request_transfer(self, team_mail_id, reason, title=self.title or self.name)
 
-		if self.team != get_current_team():
-			frappe.throw(
-				"Only a member of the team that owns this bench group can transfer it. Please switch to the owning team and try again."
-			)
-
-		if not frappe.db.exists("Team", {"user": team_mail_id, "enabled": 1}):
-			frappe.throw(
-				"We couldn't find an active team with that email. Please check the address and make sure the recipient has an active Frappe Cloud account."
-			)
-
-		old_team = frappe.db.get_value("Team", self.team, "user")
-
-		if old_team == team_mail_id:
-			frappe.throw(f"Bench is already owned by the team {team_mail_id}")
-
-		key = frappe.generate_hash("Release Group Transfer Link", 20)
-		frappe.get_doc(
-			{
-				"doctype": "Team Change",
-				"document_type": "Release Group",
-				"document_name": self.name,
-				"to_team": frappe.db.get_value("Team", {"user": team_mail_id, "enabled": 1}),
-				"from_team": self.team,
-				"reason": reason or "",
-				"key": key,
-			}
-		).insert()
-
-		link = get_url(f"/api/method/press.api.bench.confirm_bench_transfer?key={key}")
-
-		if frappe.conf.developer_mode:
-			print(f"Bench transfer link for {team_mail_id}\n{link}\n")
-
-		frappe.sendmail(
-			recipients=team_mail_id,
-			subject="Transfer Bench Ownership Confirmation",
-			template="transfer_team_confirmation",
-			args={
-				"name": self.title or self.name,
-				"type": "bench",
-				"old_team": old_team,
-				"new_team": team_mail_id,
-				"transfer_url": link,
-			},
-		)
+	@dashboard_whitelist()
+	def get_private_apps(self) -> list[str]:
+		"""Apps from private repositories, which the new owner must connect to their own GitHub"""
+		sources = [app.source for app in self.apps]
+		return frappe.get_all("App Source", {"name": ("in", sources), "public": 0}, pluck="app_title")
 
 	@dashboard_whitelist()
 	@action_guard(ReleaseGroupActions.SSHAccess)
@@ -2092,6 +2081,8 @@ class ReleaseGroup(Document, TagHelpers):
 
 def site_count_query(server: str | None):
 	"""Count the sites of a group, on one server when the list is filtered by server."""
+	from press.press.doctype.cluster.cluster import archived_clusters
+
 	ReleaseGroup = frappe.qb.DocType("Release Group")
 	Site = frappe.qb.DocType("Site")
 
@@ -2100,12 +2091,17 @@ def site_count_query(server: str | None):
 		.select(Count("*"))
 		.where(Site.group == ReleaseGroup.name)
 		.where(Site.status != "Archived")
+		# A group spans regions. The sites list hides the archived ones, so a
+		# count that included them would promise rows the customer never sees.
+		.where(Site.cluster.notin(archived_clusters()))
 	)
 	return query.where(Site.server == server) if server else query
 
 
 def active_bench_count_query(server: str | None):
 	"""Count the active benches of a group, on one server when the list is filtered by server."""
+	from press.press.doctype.cluster.cluster import archived_clusters
+
 	ReleaseGroup = frappe.qb.DocType("Release Group")
 	Bench = frappe.qb.DocType("Bench")
 
@@ -2114,8 +2110,33 @@ def active_bench_count_query(server: str | None):
 		.select(Count("*"))
 		.where(Bench.group == ReleaseGroup.name)
 		.where(Bench.status == "Active")
+		# An unreachable bench must not be the one that labels the group Active.
+		.where(Bench.cluster.notin(archived_clusters()))
 	)
 	return query.where(Bench.server == server) if server else query
+
+
+def outside_archived_clusters():
+	"""A group is listed unless every one of its servers sits in an archived region.
+
+	A group that still has a server elsewhere keeps working there, so only a group
+	that is entirely in archived regions goes. A group with no servers yet stays.
+	"""
+	from press.press.doctype.cluster.cluster import archived_clusters
+
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
+	Server = frappe.qb.DocType("Server")
+
+	with_any_server = frappe.qb.from_(ReleaseGroupServer).select(ReleaseGroupServer.parent)
+	with_a_reachable_server = (
+		frappe.qb.from_(ReleaseGroupServer)
+		.join(Server)
+		.on(Server.name == ReleaseGroupServer.server)
+		.select(ReleaseGroupServer.parent)
+		.where(Server.cluster.notin(archived_clusters()))
+	)
+	return ReleaseGroup.name.notin(with_any_server) | ReleaseGroup.name.isin(with_a_reachable_server)
 
 
 @redis_cache(ttl=60)

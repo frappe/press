@@ -150,7 +150,7 @@
 			"link_fieldname": "reference_name"
 		}
 	],
-	"modified": "2026-02-26 23:07:56.340919",
+	"modified": "2026-10-16 11:53:36.349079",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Site Database User",
@@ -184,5 +184,6 @@
 	"row_format": "Dynamic",
 	"sort_field": "creation",
 	"sort_order": "DESC",
-	"states": []
+	"states": [],
+	"track_changes": 1
 }

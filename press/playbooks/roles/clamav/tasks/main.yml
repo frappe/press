@@ -1,28 +1,8 @@
-- name: Update APT Cache
-  apt:
-    update_cache: yes
+---
+# Focal only has ClamAV 0.103, which the CDN blocks since its end of life.
+# Imported, not included, so Press records each task and its error.
+- import_tasks: cisco.yml
+  when: ansible_distribution_release == 'focal'
 
-- name: Install ClamAV and related packages
-  apt:
-    pkg:
-      - clamav
-      - clamav-base
-    state:
-      latest
-
-- name: Configure freshclam
-  replace:
-    dest: /etc/clamav/freshclam.conf
-    regexp: '^{{ item.source_name }}'
-    replace: '{{ item.target_name }}'
-  with_items:
-    - { source_name: 'Example', target_name: '#Example' }
-    - { source_name: '#UpdateLogFile', target_name: 'UpdateLogFile' }
-    - { source_name: '#DatabaseDirectory', target_name: 'DatabaseDirectory' }
-    - { source_name: '#LogTime', target_name: 'LogTime' }
-
-- name: Disable automatic update of virus definitions
-  service:
-    name: clamav-freshclam
-    state: stopped
-    enabled: no
+- import_tasks: ubuntu.yml
+  when: ansible_distribution_release != 'focal'

@@ -13,12 +13,10 @@ import frappe.utils
 from frappe import _
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
-from frappe.query_builder.terms import ValueWrapper
 
 from press.agent import Agent
 from press.exceptions import SiteTooManyPendingBackups
 from press.guards import role_guard
-from press.guards.role_guard.document import has_user_permission
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.communication_info.communication_info import get_communication_info
@@ -126,12 +124,7 @@ class SiteBackup(Document):
 					)
 				)
 
-		if role_guard.is_restricted() and not has_user_permission("Site"):
-			permitted_sites = role_guard.permitted_documents("Site")
-			if not permitted_sites:
-				query = query.where(ValueWrapper(1) == 0)  # Hack!
-			else:
-				query = query.where(Backup.site.isin(permitted_sites))
+		query = role_guard.filter_permitted(query, "Site", Backup.site)
 
 		if not filters.get("status"):
 			query = query.where(Backup.status == "Success")
@@ -432,21 +425,22 @@ class SiteBackup(Document):
 		return False
 
 	def fix_global_search_indexes(self):
-		"""
-		Run this whenever Backup Job fails because of broken global search indexes and regenerate them.
-		"""
-		job = frappe.db.get_value("Agent Job", self.job, ["bench", "server", "output"], as_dict=True)
+		"""Rebuild __global_search when the backup failed because that table is crashed."""
+		job = frappe.db.get_value("Agent Job", self.job, ["output", "traceback"], as_dict=True)
+		if not is_global_search_crashed(f"{job.output or ''}\n{job.traceback or ''}"):
+			return
 
-		if job.output and "Couldn't execute 'show create table `__global_search`'" in job.output:
-			try:
-				agent = Agent(self.server)
-				agent.create_agent_job("Fix global search", "fix_global_search")
-			except Exception:
-				frappe.log_error(
-					"Failed to fix global search indexes",
-					reference_doctype=self.doctype,
-					reference_name=self.name,
-				)
+		try:
+			site = frappe.get_doc("Site", self.site)
+			Agent(site.server).fix_global_search(
+				site, reference_doctype=self.doctype, reference_name=self.name
+			)
+		except Exception:
+			frappe.log_error(
+				"Failed to fix global search indexes",
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
 
 	@classmethod
 	def offsite_backup_exists(cls, site: str, day: date) -> bool:
@@ -509,6 +503,13 @@ def track_offsite_backups(site: str, backup_data: dict, offsite_backup_data: dic
 		remote_files["site_config"],
 		remote_files["public"],
 		remote_files["private"],
+	)
+
+
+def is_global_search_crashed(output: str) -> bool:
+	# MyISAM marks __global_search crashed after an unclean MariaDB stop, and mariadb-dump stops on it
+	return "__global_search" in output and (
+		"marked as crashed" in output or "Couldn't execute 'show create table `__global_search`'" in output
 	)
 
 

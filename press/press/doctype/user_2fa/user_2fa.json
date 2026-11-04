@@ -67,7 +67,7 @@
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2025-06-21 16:04:54.476967",
+	"modified": "2026-10-16 11:53:36.349079",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "User 2FA",
@@ -102,5 +102,6 @@
 	"row_format": "Dynamic",
 	"sort_field": "creation",
 	"sort_order": "DESC",
-	"states": []
+	"states": [],
+	"track_changes": 1
 }
