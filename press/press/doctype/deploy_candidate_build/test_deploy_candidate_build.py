@@ -13,6 +13,7 @@ from press.api.bench import redeploy
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.bench.bench import Bench, process_bench_queue
+from press.press.doctype.deploy_candidate.docker_output_parsers import DockerBuildOutputParser
 from press.press.doctype.deploy_candidate.test_deploy_candidate import (
 	create_test_deploy_candidate,
 	create_test_deploy_candidate_build,
@@ -221,6 +222,60 @@ class TestDeployCandidateBuild(FrappeTestCase):
 		build = self.deploy_candidate_build
 		checkpoints = build._get_dockerfile_checkpoints(build._generate_dockerfile())
 		self.assertIn("setup-chromium", checkpoints)
+
+	def generate_dockerfile_with_app_cache(self, public: bool, no_cache: bool = False) -> str:
+		frappe.set_user("Administrator")
+		apps = [create_test_app(), create_test_app("erpnext", "ERPNext")]
+		candidate = create_test_deploy_candidate(create_test_release_group(apps, public=public))
+		candidate.db_set("use_app_cache", 1)
+		build = create_test_deploy_candidate_build(candidate, no_cache=no_cache)
+		build.candidate._set_app_cached_flags()
+		return build._generate_dockerfile()
+
+	def test_public_group_with_app_cache_installs_apps_through_the_asset_store(self, _mock_commit):
+		dockerfile = self.generate_dockerfile_with_app_cache(public=True)
+		self.assertIn("COPY get_cached_app.py /usr/local/bin/get_cached_app.py", dockerfile)
+		self.assertIn("/usr/local/bin/get_cached_app.py \\\n  erpnext \\", dockerfile)
+		self.assertIn("--mount=type=bind,source=stored_assets/erpnext,", dockerfile)
+		self.assertNotIn("build_token", dockerfile)
+
+	def test_asset_store_install_keeps_the_pip_and_yarn_download_cache(self, _mock_commit):
+		dockerfile = self.generate_dockerfile_with_app_cache(public=True)
+		erpnext_step = next(step for step in dockerfile.split("RUN ") if "#stage-apps-erpnext" in step)
+		self.assertIn("--mount=type=cache,sharing=locked,target=/home/frappe/.cache", erpnext_step)
+
+	def test_private_group_with_app_cache_also_installs_apps_through_the_asset_store(self, _mock_commit):
+		dockerfile = self.generate_dockerfile_with_app_cache(public=False)
+		self.assertIn("/usr/local/bin/get_cached_app.py \\\n  erpnext \\", dockerfile)
+		self.assertIn("--mount=type=bind,source=stored_assets/erpnext,", dockerfile)
+
+	def test_no_cache_build_of_a_public_group_skips_the_asset_store(self, _mock_commit):
+		dockerfile = self.generate_dockerfile_with_app_cache(public=True, no_cache=True)
+		self.assertNotIn("get_cached_app.py", dockerfile)
+
+	# Saving would insert the build, and after_insert needs a build server
+	@patch.object(DeployCandidateBuild, "save", new=Mock())
+	def test_package_the_agent_injects_into_the_dockerfile_gets_a_build_step_in_build_order(
+		self, _mock_commit
+	):
+		build = self.deploy_candidate_build
+		build.add_build_steps(build._generate_dockerfile())
+
+		DockerBuildOutputParser(build).parse_and_update(
+			[
+				"#5 [stage-0 2/35] RUN apt-get update `#stage-pre-essentials`\n",
+				"#5 DONE 1.0s\n",
+				"#10 [stage-0 10/35] RUN apt-get install --yes tesseract-ocr `#stage-pre-tesseract-ocr`\n",
+				"#10 DONE 2.1s\n",
+			]
+		)
+
+		slugs = [(step.stage_slug, step.step_slug) for step in build.build_steps]
+		self.assertEqual(slugs.index(("pre", "tesseract-ocr")), slugs.index(("pre", "essentials")) + 1)
+		step = build.get_first_step("step_slug", "tesseract-ocr")
+		self.assertEqual(
+			(step.stage, step.step, step.status), ("Setup Prerequisites", "tesseract-ocr", "Success")
+		)
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=Mock())
 	@patch.object(DeployCandidateBuild, "_process_run_build", new=Mock())

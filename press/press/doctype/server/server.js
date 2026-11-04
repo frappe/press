@@ -18,6 +18,11 @@ frappe.ui.form.on('Server', {
 			`/dashboard/servers/${frm.doc.name}`,
 			__('Visit Dashboard'),
 		)
+		frm.add_custom_button(
+			__('Transfer to Team'),
+			() => press.new_team_change(frm.doc.team, 'Specific Resources', frm.doc),
+			__('Actions'),
+		)
 
 		const ping_actions = [
 			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
@@ -238,13 +243,6 @@ frappe.ui.form.on('Server', {
 			[__('Create Image'), 'create_image', true, frm.doc.status == 'Active'],
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
 			[
-				__('Whitelist Server'),
-				'whitelist_ipaddress',
-				false,
-				frm.doc.is_server_setup,
-				__('Network'),
-			],
-			[
 				__('Agent Setup Proxy IP'),
 				'agent_set_proxy_ip',
 				false,
@@ -355,6 +353,20 @@ frappe.ui.form.on('Server', {
 				__('Setup'),
 			],
 			[
+				__('Setup Fail2ban'),
+				'setup_fail2ban',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
+				__('Remove Fail2ban'),
+				'remove_fail2ban',
+				true,
+				frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
 				__('Setup Auditd'),
 				'setup_auditd',
 				true,
@@ -401,23 +413,28 @@ frappe.ui.form.on('Server', {
 				frm.add_custom_button(
 					label,
 					() => {
-						if (typeof method === 'function') {
-							method()
-							return
-						}
 						if (confirm) {
 							frappe.confirm(
 								`Are you sure you want to ${label.toLowerCase()}?`,
-								() =>
+								() => {
+									if (typeof method === 'function') {
+										method()
+										return
+									}
 									frm.call(method).then((r) => {
 										if (r.message) {
 											frappe.msgprint(r.message)
 										} else {
 											frm.refresh()
 										}
-									}),
+									})
+								},
 							)
 						} else {
+							if (typeof method === 'function') {
+								method()
+								return
+							}
 							frm.call(method).then((r) => {
 								if (r.message) {
 									frappe.msgprint(r.message)

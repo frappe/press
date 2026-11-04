@@ -40,16 +40,16 @@ repos:
   - repo: local
     hooks:
       - id: commitlint
-        exclude: '.git'
         name: check commit message format
-        entry: npx commitlint --edit .git/COMMIT_EDITMSG
+        entry: npx commitlint --edit
         language: system
         stages: [commit-msg]
         always_run: true
 
+      # cspell skips files outside the work tree, such as a worktree's message file
       - id: cspell-commit-msg
         name: check commit message spelling
-        entry: npx cspell --config .cspell.json .git/COMMIT_EDITMSG
+        entry: bash -c 'npx cspell --config .cspell.json stdin < "$1"' --
         language: system
         stages: [commit-msg]
         always_run: true

@@ -12,6 +12,9 @@ import sqlparse
 from frappe.core.doctype.access_log.access_log import make_access_log
 from frappe.utils import convert_utc_to_timezone, get_system_timezone
 from frappe.utils.password import get_decrypted_password
+from sqlparse.exceptions import SQLParseError
+
+from press.utils.sql import format_sql
 
 
 def execute(filters=None):
@@ -142,27 +145,28 @@ def get_slow_query_logs(database, start_datetime, end_datetime, search_pattern, 
 	return out
 
 
+LITERAL = r"(?:'(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\"|-?\d+(?:\.\d+)?)"
+LITERAL_IN_LIST = re.compile(rf"\bIN\s*\(\s*{LITERAL}(?:\s*,\s*{LITERAL})*\s*\)", re.IGNORECASE)
+
+
 def normalize_query(query: str) -> str:
-	q = sqlparse.parse(query)[0]
+	# Long IN lists exceed the sqlparse token limit, so collapse them first
+	query = LITERAL_IN_LIST.sub("IN (?)", query)
+	try:
+		q = sqlparse.parse(query)[0]
+	except SQLParseError:
+		# Too large to parse. It is grouped only with identical queries
+		return query.strip()
 	for token in q.flatten():
 		token_type = str(token.ttype)
 		if "Token.Literal" in token_type or token_type == "Token.Keyword.Order":
 			token.value = "?"
 
 	# Format query consistently so identical queries can be matched
-	q = format_query(q, strip_comments=True)
+	q = format_sql(str(q), strip_comments=True)
 
 	# Transform IN parts like this: IN (?, ?, ?) -> IN (?)
 	return re.sub(r" IN \(\?[\s\n\?\,]*\)", " IN (?)", q, flags=re.IGNORECASE)
-
-
-def format_query(q, strip_comments=False):
-	return sqlparse.format(
-		str(q).strip(),
-		keyword_case="upper",
-		reindent=True,
-		strip_comments=strip_comments,
-	)
 
 
 def summarize_by_query(data):

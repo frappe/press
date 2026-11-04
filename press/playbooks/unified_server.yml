@@ -28,6 +28,7 @@
     - role: warning_banners
     - role: auditd
     - role: sshd_hardening
+    - role: fail2ban
     - role: pam
     - role: user_ssh_certificate
     - role: earlyoom_memory_limits
