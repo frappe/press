@@ -436,7 +436,7 @@ class TestBuildDurationChart(FrappeTestCase):
 			self.datasets(chart),
 			{"f1.frappe.cloud": [5.0] + [0] * 11, "f2.frappe.cloud": [30.0, 60.0] + [0] * 10},
 		)
-		self.assertEqual(chart["barOptions"], {"stacked": 1})
+		self.assertEqual(chart["type"], "line")
 
 	def test_a_bucket_with_a_build_still_running_has_no_bar_as_its_median_is_not_known_yet(self):
 		builds = [
