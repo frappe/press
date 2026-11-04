@@ -827,6 +827,8 @@
 		"syscheck",
 		"yara",
 		"yarac",
-		"certifi"
+		"certifi",
+		"frappectl",
+		"TCPOFO"
 	]
 }
