@@ -56,6 +56,7 @@ CHARTS = (
 	"New Bench Jobs by Cluster",
 	"New Bench Duration by Cluster",
 	"New Bench Failures by Cluster",
+	"Remote Builder Wait by Build Server",
 	"Prune Jobs by Server",
 )
 
@@ -458,6 +459,7 @@ def get_selected_chart(chart, period, builds):
 		"New Bench Jobs by Status": get_new_bench_jobs_chart,
 		"New Bench Jobs by Cluster": get_new_bench_jobs_by_cluster_chart,
 		"New Bench Duration by Cluster": get_new_bench_duration_chart,
+		"Remote Builder Wait by Build Server": get_remote_builder_wait_chart,
 		"Prune Jobs by Server": get_prune_chart,
 	}
 	if chart in charts_of_period:
@@ -546,13 +548,17 @@ def get_build_duration_by_cluster_chart(period, builds):
 
 
 def median_duration_chart(period, builds, group_of):
-	"""One line per group, as medians do not add up. A drop to zero is a bucket without a median."""
 	bucket = max(60, period.seconds // 12)
 	minutes = median_minutes(builds, bucket, group_of)
+	return median_chart("Median minutes of successful builds, by start", period, bucket, minutes)
+
+
+def median_chart(title, period, bucket, minutes):
+	"""One line per group, as medians do not add up. A drop to zero is a bucket without a median."""
 	labels = buckets_of(period, bucket)
 	groups = sorted({group for _, group in minutes})
 	return {
-		"title": f"Median minutes of successful builds, by start per {bucket // 60} minutes",
+		"title": f"{title} per {bucket // 60} minutes",
 		"data": {
 			"labels": time_labels(labels),
 			"datasets": [
@@ -575,6 +581,34 @@ def median_minutes(builds, bucket, group_of):
 		elif build.status == "Success" and build.build_end:
 			seconds.setdefault(key, []).append((build.build_end - build.build_start).total_seconds())
 	return {key: rounded(median(spans) / 60, 1) for key, spans in seconds.items() if key not in running}
+
+
+def get_remote_builder_wait_chart(period):
+	"""Median minutes from creation until a worker on the build server picks up the build."""
+	jobs = frappe.get_all(
+		"Agent Job",
+		{
+			"job_type": "Run Remote Builder",
+			"status": ("in", ("Pending", "Running", "Success", "Failure")),
+			"creation": ("between", (period.start, period.end)),
+		},
+		["creation", "start", "status", "server"],
+	)
+	bucket = max(60, period.seconds // 12)
+	title = "Median minutes Run Remote Builder jobs waited for a worker, by creation"
+	return median_chart(title, period, bucket, median_waits(jobs, bucket))
+
+
+def median_waits(jobs, bucket):
+	"""A job still in the agent's queue counts the minutes it has waited so far."""
+	waits = {}
+	for job in jobs:
+		if not job.start and job.status != "Pending":
+			continue
+		picked_up = from_utc(job.start) if job.start else now_datetime()
+		key = (floor_to_bucket(job.creation, bucket), job.server)
+		waits.setdefault(key, []).append((picked_up - job.creation).total_seconds() / 60)
+	return {key: rounded(median(minutes), 1) for key, minutes in waits.items()}
 
 
 def buckets_of(period, bucket):

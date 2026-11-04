@@ -379,6 +379,27 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 			self.datasets("New Bench Duration by Cluster"), {"Frankfurt": [0, 3], "Mumbai": [14.5, 0]}
 		)
 
+	def test_remote_builder_wait_is_the_median_from_creation_to_start_and_a_queued_job_counts_until_now(self):
+		f1 = create_test_server().name
+		f2 = create_test_server().name
+		day = "2026-09-10 "
+		for server, status, creation, start in [
+			(f1, "Success", "10:01:00", "10:03:00"),
+			(f1, "Running", "10:02:00", "10:06:00"),
+			(f2, "Failure", "10:31:00", "10:32:00"),
+			(f2, "Pending", "10:40:00", None),
+			(f2, "Delivery Failure", "10:41:00", None),
+			(f2, "Success", "09:58:00", "10:20:00"),
+		]:
+			self.job(server, "Run Remote Builder", status, day + creation, start=start and day + start)
+
+		with patch(f"{get_period.__module__}.now_datetime", return_value=datetime(2026, 9, 10, 10, 50)):
+			chart = get_selected_chart("Remote Builder Wait by Build Server", self.period, [])
+
+		datasets = {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
+		self.assertEqual(datasets[f1], [3] + [0] * 11)
+		self.assertEqual(datasets[f2], [0] * 6 + [1, 0, 10, 0, 0, 0])
+
 	def test_docker_and_registry_prune_plays_are_stacked_by_server_and_other_plays_are_left_out(self):
 		for server, playbook, creation in [
 			("f1.frappe.cloud", "docker_system_prune.yml", "2026-09-10 10:01:00"),
