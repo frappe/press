@@ -15,6 +15,8 @@ from ansible.inventory.manager import InventoryManager
 from ansible.module_utils.common.collections import ImmutableDict
 from ansible.parsing.dataloader import DataLoader
 from ansible.playbook import Playbook
+from ansible.playbook.block import Block
+from ansible.playbook.task import Task
 from ansible.plugins.action.async_status import ActionModule
 from ansible.plugins.callback import CallbackBase
 from ansible.utils.display import Display
@@ -288,18 +290,27 @@ class Ansible:
 		self.tasks = {}
 		self.task_list = []
 		for role in play.get_roles():
-			for block in role.get_task_blocks():
-				for task in block.block:
-					task_doc = frappe.get_doc(
-						{
-							"doctype": "Ansible Task",
-							"play": self.play,
-							"role": role.get_name(),
-							"task": task.name,
-						}
-					).insert()
-					self.tasks.setdefault(role.get_name(), {})[task.name] = task_doc.name
-					self.task_list.append(task_doc.name)
+			for task in tasks_of(role.get_task_blocks()):
+				task_doc = frappe.get_doc(
+					{
+						"doctype": "Ansible Task",
+						"play": self.play,
+						"role": role.get_name(),
+						"task": task.name,
+					}
+				).insert()
+				self.tasks.setdefault(role.get_name(), {})[task.name] = task_doc.name
+				self.task_list.append(task_doc.name)
+
+
+def tasks_of(blocks: list[Block]) -> typing.Iterator[Task]:
+	"""Every task in the blocks, also inside a `block:` or an `import_tasks`, which Ansible loads as blocks."""
+	for block in blocks:
+		for task in block.block + block.rescue + block.always:
+			if isinstance(task, Block):
+				yield from tasks_of([task])
+			else:
+				yield task
 
 
 class Status(str, Enum):

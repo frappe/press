@@ -18,6 +18,11 @@ frappe.ui.form.on('Server', {
 			`/dashboard/servers/${frm.doc.name}`,
 			__('Visit Dashboard'),
 		)
+		frm.add_custom_button(
+			__('Transfer to Team'),
+			() => press.new_team_change(frm.doc.team, 'Specific Resources', frm.doc),
+			__('Actions'),
+		)
 
 		const ping_actions = [
 			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
