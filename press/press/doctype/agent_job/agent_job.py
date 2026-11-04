@@ -34,12 +34,15 @@ from press.press.doctype.site_migration.site_migration import (
 )
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error, timer
+from press.utils.redact import redact_secrets
 from press.utils.user import as_administrator
 
 AGENT_LOG_KEY = "agent-jobs"
 AGENT_JOB_TIMEOUT_HOURS = 4
 
 BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
+
+FREE_TEXT_JOB_DATA_KEYS = ("output", "traceback", "command")
 
 # Jobs a team can cancel from the dashboard. Restricted to long running jobs whose
 # failure path Press already handles — Broken site, failed backup, or (for site
@@ -267,8 +270,24 @@ class AgentJob(Document):
 			)
 			doc.insert()
 
+	def validate_not_a_superseded_password_rotation(self):
+		# Resending an older rotation's db_password after a newer rotation would break the site
+		if self.job_type != "Update Site Configuration" or '"db_password"' not in (self.request_data or ""):
+			return
+		if frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "Update Site Configuration",
+				"site": self.site,
+				"creation": (">", self.creation),
+				"request_data": ("like", '%"db_password"%'),
+			},
+		):
+			frappe.throw("A newer database password rotation exists for this site. Retry that job instead.")
+
 	@frappe.whitelist()
 	def retry(self):
+		self.validate_not_a_superseded_password_rotation()
 		return frappe.get_doc(
 			{
 				"doctype": "Agent Job",
@@ -289,6 +308,7 @@ class AgentJob(Document):
 
 	@frappe.whitelist()
 	def retry_in_place(self):
+		self.validate_not_a_superseded_password_rotation()
 		self.enqueue_http_request()
 		frappe.db.commit()
 
@@ -341,8 +361,9 @@ class AgentJob(Document):
 		if not frappe.local.system_user():
 			self.validate_dashboard_cancellation()
 
-		agent = Agent(self.server, server_type=self.server_type)
-		agent.cancel_job(self.job_id)
+		with as_administrator():
+			Agent(self.server, server_type=self.server_type).cancel_job(self.job_id)
+		self.add_comment("Info", "Cancelled the job")
 
 	def validate_dashboard_cancellation(self):
 		if self.job_type not in DASHBOARD_CANCELLABLE_JOB_TYPES:
@@ -608,7 +629,7 @@ def populate_output_cache(polled_job, job):
 				output = command.get("output", "").strip()
 				if output:
 					lines.append(output)
-			frappe.cache.hset("agent_job_step_output", step.name, "\n".join(lines))
+			frappe.cache.hset("agent_job_step_output", step.name, redact_secrets("\n".join(lines)))
 
 
 def filter_active_servers(servers):
@@ -751,8 +772,20 @@ def lock_doc_updated_by_job(job_name):
 	return None
 
 
+def redact_job_data(data):
+	# Only the free text fields; other keys carry results that callbacks read back
+	if not isinstance(data, dict):
+		return data
+
+	return {
+		**data,
+		**{key: redact_secrets(data[key]) for key in FREE_TEXT_JOB_DATA_KEYS if key in data},
+	}
+
+
 def update_job(job_name, job):
-	job_data = json.dumps(job["data"], indent=4, sort_keys=True)
+	data = redact_job_data(job["data"])
+	job_data = json.dumps(data, indent=4, sort_keys=True)
 	frappe.db.set_value(
 		"Agent Job",
 		job_name,
@@ -762,8 +795,8 @@ def update_job(job_name, job):
 			"duration": job["duration"],
 			"status": job["status"],
 			"data": job_data,
-			"output": job["data"].get("output"),
-			"traceback": job["data"].get("traceback"),
+			"output": data.get("output"),
+			"traceback": data.get("traceback"),
 		},
 	)
 
@@ -792,13 +825,14 @@ def update_steps(job_name, job):
 
 
 def update_step(step_name, step):
-	step_data = json.dumps(step["data"], indent=4, sort_keys=True)
+	data = redact_job_data(step["data"])
+	step_data = json.dumps(data, indent=4, sort_keys=True)
 
 	output = None
 	traceback = None
-	if isinstance(step["data"], dict):
-		traceback = to_str(step["data"].get("traceback", ""))
-		output = to_str(step["data"].get("output", ""))
+	if isinstance(data, dict):
+		traceback = redact_secrets(to_str(data.get("traceback", "")))
+		output = redact_secrets(to_str(data.get("output", "")))
 
 	frappe.db.set_value(
 		"Agent Job Step",
@@ -816,11 +850,10 @@ def update_step(step_name, step):
 
 
 def skip_pending_steps(job_name):
-	frappe.db.sql(
-		"""UPDATE  `tabAgent Job Step` SET  status = 'Skipped'
-		WHERE status = 'Pending' AND agent_job = %s""",
-		job_name,
-	)
+	AgentJobStep = frappe.qb.DocType("Agent Job Step")
+	frappe.qb.update(AgentJobStep).set(AgentJobStep.status, "Skipped").where(
+		(AgentJobStep.status == "Pending") & (AgentJobStep.agent_job == job_name)
+	).run()
 
 
 def get_next_retry_at(job_retry_count):
@@ -1416,6 +1449,4 @@ def cancel_job_from_dashboard(name: str):
 		is_owned_by_team("Site", job.site, raise_exception=True)
 
 	job.validate_dashboard_cancellation()
-
-	with as_administrator():
-		job.cancel_job()
+	job.cancel_job()

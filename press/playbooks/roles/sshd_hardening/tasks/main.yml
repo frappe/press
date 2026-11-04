@@ -12,7 +12,7 @@
       state: present
       dest: /etc/ssh/sshd_config
       regexp: '^(#)?MaxAuthTries \d'
-      line: 'MaxAuthTries 6'
+      line: 'MaxAuthTries 4'
 
 - name: "Ensure SSH PermitEmptyPasswords is disabled"
   lineinfile:

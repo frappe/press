@@ -83,6 +83,18 @@
 			{
 				"supported_frappe_version": "Nightly",
 				"version": "24.12.0"
+			},
+			{
+				"supported_frappe_version": "Version 16",
+				"version": "24.22.1"
+			},
+			{
+				"supported_frappe_version": "Nightly",
+				"version": "24.22.1"
+			},
+			{
+				"supported_frappe_version": "Version 15",
+				"version": "24.22.1"
 			}
 		],
 		"title": "Node Version"
@@ -295,6 +307,22 @@
 			{
 				"supported_frappe_version": "Nightly",
 				"version": "25.2"
+			},
+			{
+				"supported_frappe_version": "Version 14",
+				"version": "26.2.2"
+			},
+			{
+				"supported_frappe_version": "Version 15",
+				"version": "26.2.2"
+			},
+			{
+				"supported_frappe_version": "Version 16",
+				"version": "26.2.2"
+			},
+			{
+				"supported_frappe_version": "Nightly",
+				"version": "26.2.2"
 			}
 		],
 		"title": "Pip Version"

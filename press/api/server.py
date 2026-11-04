@@ -29,6 +29,7 @@ from press.press.doctype.cloud_provider.cloud_provider import get_cloud_provider
 from press.press.doctype.server_plan_type.server_plan_type import get_server_plan_types
 from press.press.doctype.site_plan.plan import Plan, filter_by_roles
 from press.press.doctype.team.team import get_child_team_members
+from press.press.doctype.team_change.team_change import confirm_transfer
 from press.utils import docs, get_current_team
 
 if TYPE_CHECKING:
@@ -500,12 +501,9 @@ def analytics(name, query, timezone, start, end, server_type=None):
 			lambda x: x["command"],
 		),
 		"database_connections": (
-			f"""{{__name__=~"mysql_global_status_threads_connected|mysql_global_variables_max_connections", instance="{name}"}}""",
-			lambda x: (
-				"Max Connections"
-				if x["__name__"] == "mysql_global_variables_max_connections"
-				else "Connected Clients"
-			),
+			# peak over the bucket, else a burst that hits max_connections between steps is invisible
+			f"""label_replace(max_over_time(mysql_global_status_threads_connected{{instance="{name}",job="mariadb"}}[{rate_interval}s]), "metric", "Connected Clients", "", "") or label_replace(mysql_global_variables_max_connections{{instance="{name}",job="mariadb"}}, "metric", "Max Connections", "", "")""",
+			lambda x: x["metric"],
 		),
 		"innodb_bp_size": (
 			f"""mysql_global_variables_innodb_buffer_pool_size{{instance='{name}'}}""",
@@ -1154,3 +1152,8 @@ def get_configured_autoscale_triggers(name) -> list[dict[str, float]] | None:
 		{"parent": name},
 		["name", "metric", "threshold", "action"],
 	)
+
+
+@frappe.whitelist(allow_guest=True)
+def confirm_server_transfer(key: str):
+	return confirm_transfer(key, "Server")
