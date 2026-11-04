@@ -145,6 +145,13 @@ class TestTeamChange(FrappeTestCase):
 			self._request(server)
 		self.assertIn("Self-hosted servers can't be transferred", str(cm.exception))
 
+	def test_server_transfer_request_blocked_for_server_with_managed_database(self):
+		server = create_test_server(team=self.from_team.name)
+		server.db_set({"is_managed_database": 1, "database_server": ""})
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._request(server)
+		self.assertIn("Servers with a managed database can't be transferred", str(cm.exception))
+
 	def test_server_transfer_request_blocked_when_bench_group_also_runs_on_another_server(self):
 		server = create_test_server(team=self.from_team.name)
 		other_server = create_test_server(team=self.from_team.name)
@@ -390,6 +397,18 @@ class TestAdminTeamChange(FrappeTestCase):
 
 		self.assertEqual(self.team_of("Server Snapshot", snapshot), self.new_team.name)
 		self.assertEqual(self.team_of("Subscription", subscription.name), self.new_team.name)
+
+	def test_server_transfer_without_database_server_leaves_every_other_database_server_alone(self):
+		other_team = create_test_press_admin_team()
+		other_database_server = create_test_database_server()
+		frappe.db.set_value("Database Server", other_database_server.name, "team", other_team.name)
+		frappe.db.set_value("Server", self.server.name, "database_server", "")
+
+		self.transfer_server()
+
+		self.assertEqual(self.team_of("Server", self.server.name), self.new_team.name)
+		self.assertEqual(self.team_of("Database Server", other_database_server.name), other_team.name)
+		self.assertEqual(self.team_of("Database Server", self.database_server.name), self.old_team.name)
 
 	def test_server_transfer_skips_the_dashboard_blockers_and_moves_the_autoscale_secondary(self):
 		secondary = create_test_server(team=self.old_team.name)
