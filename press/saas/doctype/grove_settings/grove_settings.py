@@ -15,9 +15,6 @@ from frappe.utils import cint
 if TYPE_CHECKING:
 	from press.saas.doctype.grove_trial_product.grove_trial_product import GroveTrialProduct
 
-# Trial keys go under the trial team named in Grove Settings, on a tier of its own: unlimited
-# keys, a large spend limit and trial rate limits, tuned at Grove. Press names both; Grove owns the values.
-PRESS_TIER = "Press Trial"
 # Connect, read: a job must not hang on a Grove that is down.
 TIMEOUT = (30, 90)
 # What a Grove that is down or in maintenance answers.
@@ -63,15 +60,6 @@ class GroveSettings(Document):
 			frappe.throw(_("One pool row per product."))
 		if any(cint(row.pool_size) for row in self.trial_products) and not self.trial_key_geography:
 			frappe.throw(_("Set Trial Key Geography before sizing a pool."))
-
-	def on_update(self):
-		if self.is_enrolled and self.has_value_changed("trial_team"):
-			self.register_trial_team()
-
-	def register_trial_team(self):
-		"""The trial team at Grove, on its tier: an upsert, so a name already there is fine."""
-		self.call("grove.api.teams.provision_team", team=self.trial_team)
-		self.call("grove.api.teams.update_team", team=self.trial_team, tier=PRESS_TIER)
 
 	def set_credential(self, credential: dict):
 		self.control_api_key = credential["api_key"]
@@ -145,8 +133,7 @@ def refusal_message(response: requests.Response) -> str | None:
 @frappe.whitelist(methods=["POST"])
 def enroll():
 	"""Desk button: exchange the bootstrap secret Grove was given for Press's own control
-	credential, then register the trial team on its tier. The secret is popped from the raw request,
-	so it is never logged."""
+	credential. The secret is popped from the raw request, so it is never logged."""
 	frappe.only_for("System Manager")
 	secret = frappe.local.form_dict.pop("bootstrap_secret", None)
 	if not secret:
@@ -160,7 +147,6 @@ def enroll():
 		f"{settings.base_url}/api/method/grove.api.control.create_control_client", json=body, timeout=TIMEOUT
 	)
 	settings.set_credential(read(response))
-	settings.register_trial_team()
 
 
 @frappe.whitelist(methods=["POST"])
