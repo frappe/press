@@ -3,41 +3,59 @@
 
 
 import frappe
-import telegram
+import requests
+from frappe.utils import get_url
+from frappe.utils.password import get_decrypted_password
 
 from press.utils import log_error
+
+API_URL = "https://api.telegram.org/bot{token}/{method}"
+MAX_MESSAGE_LENGTH = 4096
+
+
+class TelegramError(Exception):
+	pass
+
+
+class NetworkError(TelegramError):
+	"""A failure that can go away on retry, like a timeout or a server error"""
+
+
+class RetryAfter(TelegramError):
+	def __init__(self, retry_after: int):
+		super().__init__(f"Flood control exceeded. Retry in {retry_after} seconds")
+		self.retry_after = retry_after
 
 
 class Telegram:
 	def __init__(self, topic: str | None = None, group: str | None = None):
-		settings = frappe.db.get_value(
-			"Press Settings",
-			None,
-			["telegram_bot_token", "telegram_alerts_chat_group"],
-			as_dict=True,
-		)
-		self.group = group or settings.telegram_alerts_chat_group
-		telegram_group = frappe.db.get_value("Telegram Group", self.group, ["token", "chat_id"])
-		token, chat_id = telegram_group if telegram_group else (None, None)
-		self.token = token or settings.telegram_bot_token
-		self.chat_id = chat_id
+		self.group = group or frappe.db.get_single_value("Press Settings", "telegram_alerts_chat_group")
+		self.chat_id = frappe.db.get_value("Telegram Group", self.group, "chat_id")
+		self.token = self.get_token()
 		self.topic = topic
 		self.topic_id = frappe.db.get_value(
 			"Telegram Group Topic", {"parent": self.group, "topic": topic}, "topic_id"
+		)
+
+	def get_token(self) -> str | None:
+		if self.group and (
+			token := get_decrypted_password("Telegram Group", self.group, "token", raise_exception=False)
+		):
+			return token
+		return get_decrypted_password(
+			"Press Settings", "Press Settings", "telegram_bot_token", raise_exception=False
 		)
 
 	def send(self, message, html=False, reraise=False):
 		if not message:
 			return None
 		try:
-			text = message[: telegram.MAX_MESSAGE_LENGTH]
-			parse_mode = self._get_parse_mode(html)
-			return self.bot.send_message(
+			return self.call(
+				"sendMessage",
 				chat_id=self.chat_id,
-				text=text,
-				parse_mode=parse_mode,
+				text=message[:MAX_MESSAGE_LENGTH],
+				parse_mode="HTML" if html else "Markdown",
 				message_thread_id=self.topic_id,
-				timeout=3,
 			)
 		except Exception:
 			if reraise:
@@ -50,14 +68,25 @@ class Telegram:
 				topic_id=self.topic_id,
 			)
 
-	def _get_parse_mode(self, html):
-		if html:
-			return telegram.ParseMode.HTML
-		return telegram.ParseMode.MARKDOWN
+	def call(self, method: str, **parameters):
+		"""Call a Telegram Bot API method and return its result"""
+		parameters = {key: value for key, value in parameters.items() if value is not None}
+		try:
+			response = requests.post(
+				API_URL.format(token=self.token, method=method), json=parameters, timeout=3
+			)
+		except requests.RequestException as e:
+			# The URL in the error holds the bot token
+			raise NetworkError(str(e).replace(self.token or "<token>", "<token>")) from None
+		return parse_response(response)
 
 	@property
-	def bot(self):
-		return telegram.Bot(token=self.token)
+	def username(self) -> str:
+		return self.call("getMe")["username"]
+
+	def set_webhook(self, secret_token: str):
+		url = get_url("/api/method/press.api.telegram.hook")
+		self.call("setWebhook", url=url, secret_token=secret_token)
 
 	def respond(self, message):
 		if not message:
@@ -82,7 +111,7 @@ class Telegram:
 
 		mention = text[begin:end]
 		# Only respond to messages mentioning the bot
-		if mention != f"@{self.bot.username}":
+		if mention != f"@{self.username}":
 			return
 
 		command = text.replace(mention, "")
@@ -93,6 +122,8 @@ class Telegram:
 	def process(self, command):
 		arguments = command.split(" ")
 
+		if len(arguments) >= 4 and frappe.unscrub(arguments[0]) not in ALLOWED_DOCTYPES:
+			return show_help_message()
 		if len(arguments) == 1:
 			commands = {
 				"help": show_help_message,
@@ -115,6 +146,22 @@ class Telegram:
 		return what()
 
 
+def parse_response(response: requests.Response):
+	"""Raise like python-telegram-bot 13 did, so callers keep their retry rules"""
+	try:
+		data = response.json()
+	except ValueError:
+		data = {}
+	if data.get("ok"):
+		return data["result"]
+	if retry_after := (data.get("parameters") or {}).get("retry_after"):
+		raise RetryAfter(retry_after)
+	description = f"{data.get('description', 'Unknown error')} ({response.status_code})"
+	if response.status_code in (401, 403, 404, 409):
+		raise TelegramError(description)
+	raise NetworkError(description)
+
+
 def set_value(doctype, name, field, value, *args):
 	try:
 		document = frappe.get_doc(doctype, name)
@@ -132,7 +179,8 @@ def get_value(doctype, name, field, *args):
 
 
 def execute(doctype, name, method, *args):
-	# return "EXECUTE", doctype, name, method
+	if method == "get_password":
+		return "Reading passwords is not allowed"
 	try:
 		document = frappe.get_doc(doctype, name)
 		return document.run_method(method, *args)
@@ -147,6 +195,8 @@ def show_help_message(*args):
 def what(*args):
 	return "What are you talking about?"
 
+
+ALLOWED_DOCTYPES = ("Site", "Bench", "Server", "Proxy Server", "Database Server")
 
 HELP_MESSAGE = """Try one of these
 

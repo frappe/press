@@ -1,0 +1,123 @@
+{
+	"actions": [],
+	"autoname": "hash",
+	"creation": "2026-10-04 12:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"site",
+		"domain",
+		"team",
+		"status",
+		"expires_at",
+		"column_break_approval",
+		"requester_ip",
+		"approved_by",
+		"approved_at",
+		"failed_attempts",
+		"column_break_chdn"
+	],
+	"fields": [
+		{
+			"fieldname": "site",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Site",
+			"options": "Site",
+			"read_only": 1
+		},
+		{
+			"fieldname": "domain",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Domain",
+			"read_only": 1
+		},
+		{
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"in_standard_filter": 1,
+			"label": "Team",
+			"options": "Team",
+			"read_only": 1
+		},
+		{
+			"default": "Pending",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Status",
+			"options": "Pending\nApproved\nRejected\nRevoked",
+			"read_only": 1
+		},
+		{
+			"fieldname": "expires_at",
+			"fieldtype": "Datetime",
+			"in_list_view": 1,
+			"label": "Expires At",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_approval",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "requester_ip",
+			"fieldtype": "Data",
+			"label": "Requester IP",
+			"read_only": 1
+		},
+		{
+			"fieldname": "approved_by",
+			"fieldtype": "Link",
+			"label": "Approved By",
+			"options": "User",
+			"read_only": 1
+		},
+		{
+			"fieldname": "approved_at",
+			"fieldtype": "Datetime",
+			"label": "Approved At",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "failed_attempts",
+			"fieldtype": "Int",
+			"label": "Failed Attempts",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_chdn",
+			"fieldtype": "Column Break"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-10-04 23:30:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "V1 Migration Request",
+	"naming_rule": "Random",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": []
+}

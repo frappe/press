@@ -134,6 +134,8 @@ const options = ref({
 		bottom: data.value.datasets.length > 1 ? 60 : 30, // if there's legend show more space for it
 	},
 	toolbox: {
+		// Hidden: `show: false` would drop the drag-to-zoom cursor with it.
+		itemSize: 0,
 		feature: {
 			dataZoom: {
 				yAxisIndex: false,
