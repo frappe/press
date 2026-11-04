@@ -22,7 +22,9 @@
 		"is_server_setup",
 		"is_wazuh_agent_installed",
 		"wazuh_agent_status",
+		"wazuh_install_last_attempt",
 		"is_auditd_setup",
+		"enable_malware_scan",
 		"is_server_prepared",
 		"is_server_renamed",
 		"is_provisioning_press_job_completed",
@@ -48,7 +50,6 @@
 		"auto_increase_storage",
 		"auto_add_storage_min",
 		"auto_add_storage_max",
-		"storage_alert_threshold_percent",
 		"networking_section",
 		"ip",
 		"is_static_ip",
@@ -174,11 +175,24 @@
 			"read_only": 1
 		},
 		{
+			"fieldname": "wazuh_install_last_attempt",
+			"fieldtype": "Datetime",
+			"label": "Wazuh Install Last Attempt",
+			"read_only": 1
+		},
+		{
 			"default": "0",
 			"fieldname": "is_auditd_setup",
 			"fieldtype": "Check",
 			"label": "Is Auditd Setup",
 			"read_only": 1
+		},
+		{
+			"default": "0",
+			"description": "Scan uploaded site files with ClamAV every day. Needs at least 8 GB of RAM. Alerts go through a Webhook on Malware Scan.",
+			"fieldname": "enable_malware_scan",
+			"fieldtype": "Check",
+			"label": "Enable ClamAV Scan"
 		},
 		{
 			"default": "0",
@@ -533,7 +547,7 @@
 		},
 		{
 			"default": "0",
-			"description": "Stream backups directly to offsite storage instead of staging them on the server",
+			"description": "Stream backups directly to offsite storage instead of staging them on the server. Set during provisioning once rclone is installed",
 			"fieldname": "stream_backups",
 			"fieldtype": "Check",
 			"label": "Stream Backups"
@@ -590,14 +604,6 @@
 			"fieldname": "auto_add_storage_max",
 			"fieldtype": "Int",
 			"label": "Auto Add Storage Max",
-			"non_negative": 1
-		},
-		{
-			"default": "90",
-			"description": "Notify the team when disk usage crosses this percentage of capacity",
-			"fieldname": "storage_alert_threshold_percent",
-			"fieldtype": "Int",
-			"label": "Storage Alert Threshold Percent",
 			"non_negative": 1
 		},
 		{
@@ -861,7 +867,7 @@
 			"link_fieldname": "app_server"
 		}
 	],
-	"modified": "2026-09-08 12:00:00.000000",
+	"modified": "2026-10-07 13:40:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Server",

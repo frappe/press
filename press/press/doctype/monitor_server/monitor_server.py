@@ -14,6 +14,7 @@ from requests.auth import HTTPBasicAuth
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
 
 
@@ -51,6 +52,7 @@ class MonitorServer(BaseServer):
 		hostname: DF.Data
 		ip: DF.Data | None
 		is_server_setup: DF.Check
+		is_wazuh_agent_installed: DF.Check
 		monitoring_password: DF.Password | None
 		node_exporter_dashboard_path: DF.Data | None
 		only_monitor_uptime_metrics: DF.Check
@@ -67,6 +69,8 @@ class MonitorServer(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
+		wazuh_agent_status: DF.Data | None
+		wazuh_install_last_attempt: DF.Datetime | None
 		webhook_token: DF.Data | None
 	# end: auto-generated types
 
@@ -137,6 +141,7 @@ class MonitorServer(BaseServer):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
+					"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 					"server": self.name,
 					"workers": 1,
 					"domain": self.domain,

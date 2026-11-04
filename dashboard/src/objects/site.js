@@ -13,6 +13,7 @@ import { confirmDialog, icon, renderDialog } from '../utils/components'
 import { isMobile } from '../utils/device'
 import { date, escapeHtml } from '../utils/format'
 import { getDocResource } from '../utils/resource'
+import { openInNewTab } from '../utils/site'
 import { getToastErrorMessage } from '../utils/toast'
 import { getFrappeUpdateBanner, getUpsellBanner } from './common'
 import { getAppsTab } from './common/apps'
@@ -59,7 +60,6 @@ function confirmRestoreTables(site) {
 		message: `The ${jobLink(site, site.doc?.fatal_update?.update_job, 'last update')} failed and the ${jobLink(site, site.doc?.fatal_update?.recover_job, 'automatic recovery')} could not restore the tables.<br><br>Re-attempt the recovery manually?<br><br>The site database goes back to <b>${date(site.doc?.fatal_update?.update_start, 'lll')}</b>, when the last update started. <b>Any data written to the site after that time is lost.</b> You cannot undo this.`,
 		primaryAction: {
 			label: 'Restore Tables',
-			theme: 'red',
 		},
 		onSuccess({ hide }) {
 			if (site.restoreTables.loading) return
@@ -1218,6 +1218,7 @@ export default {
 					},
 					condition() {
 						return (
+							!canRestoreTables(site) &&
 							!site.doc?.has_scheduled_updates &&
 							site.doc.update_information?.update_available &&
 							['Active', 'Inactive', 'Suspended', 'Broken'].includes(
@@ -1316,15 +1317,10 @@ export default {
 					condition: () =>
 						site.doc.status === 'Active' && !site.doc?.setup_wizard_complete,
 					onClick() {
-						if (site.doc.additional_system_user_created) {
-							site.loginAsTeam
-								.submit({ reason: '' })
-								.then((url) => window.open(url, '_blank'))
-						} else {
-							site.loginAsAdmin
-								.submit({ reason: '' })
-								.then((url) => window.open(url, '_blank'))
-						}
+						const login = site.doc.additional_system_user_created
+							? site.loginAsTeam
+							: site.loginAsAdmin
+						openInNewTab(login.submit({ reason: '' }))
 					},
 				},
 				{
@@ -1371,13 +1367,9 @@ export default {
 												'Reason is required. Enter why you are logging in as Administrator before continuing.',
 											)
 										}
-										return site.loginAsAdmin
-											.submit({ reason: values.reason })
-											.then((result) => {
-												let url = result
-												window.open(url, '_blank')
-												hide()
-											})
+										return openInNewTab(
+											site.loginAsAdmin.submit({ reason: values.reason }),
+										).then(() => hide())
 									},
 								})
 							},
@@ -1392,16 +1384,19 @@ export default {
 		{
 			name: 'Site Backup Audit Trail',
 			path: 'backups/audit-trail',
+			meta: { title: 'Backup Audit Trail' },
 			component: () => import('../components/site/SiteBackupAuditTrail.vue'),
 		},
 		{
 			name: 'Site Update',
 			path: 'updates/:id',
+			meta: { title: 'Update' },
 			component: () => import('../pages/SiteUpdate.vue'),
 		},
 		{
 			name: 'Site Migration',
 			path: 'migrations/:id',
+			meta: { title: 'Migration' },
 			component: () => import('../pages/SiteMigration.vue'),
 		},
 	],

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import session from './data/session'
 import { getTeam } from './data/team'
 import generateRoutes from './objects/generateRoutes'
+import { routeTitle } from './utils/title'
 
 let router = createRouter({
 	history: createWebHistory('/dashboard/'),
@@ -24,51 +25,52 @@ let router = createRouter({
 			path: '/welcome',
 			name: 'Welcome',
 			component: () => import('./pages/Welcome.vue'),
-			meta: { hideSidebar: true },
+			meta: { hideSidebar: true, title: 'Welcome' },
 		},
 		{
 			path: '/quickstart',
 			name: 'Quickstart',
 			component: () => import('./pages/Quickstart.vue'),
-			meta: { hideSidebar: true },
+			meta: { hideSidebar: true, title: 'Quickstart' },
 		},
 		{
 			path: '/login',
 			name: 'Login',
 			component: () => import('./pages/LoginSignup.vue'),
-			meta: { isLoginPage: true },
+			meta: { isLoginPage: true, title: 'Login' },
 		},
 		{
 			path: '/signup',
 			name: 'Signup',
 			component: () => import('./pages/LoginSignup.vue'),
-			meta: { isLoginPage: true },
+			meta: { isLoginPage: true, title: 'Sign Up' },
 		},
 		{
 			path: '/site-login',
 			name: 'Site Login',
 			component: () => import('./pages/SiteLogin.vue'),
-			meta: { hideSidebar: true },
+			meta: { hideSidebar: true, title: 'Site Login' },
 		},
 		{
 			path: '/setup-account/:requestKey/:joinRequest?',
 			name: 'Setup Account',
 			component: () => import('./pages/SetupAccount.vue'),
 			props: true,
-			meta: { isLoginPage: true },
+			meta: { isLoginPage: true, title: 'Setup Account' },
 		},
 		{
 			path: '/accept-invite/:requestKey/:joinRequest?',
 			name: 'Team Invite',
 			component: () => import('./pages/SetupAccount.vue'),
 			props: true,
+			meta: { title: 'Team Invite' },
 		},
 		{
 			path: '/reset-password/:requestKey',
 			name: 'Reset Password',
 			component: () => import('./pages/ResetPassword.vue'),
 			props: true,
-			meta: { isLoginPage: true },
+			meta: { isLoginPage: true, title: 'Reset Password' },
 		},
 		{
 			path: '/checkout/:secretKey',
@@ -77,6 +79,7 @@ let router = createRouter({
 			props: true,
 			meta: {
 				isLoginPage: true,
+				title: 'Checkout',
 			},
 		},
 		{
@@ -86,6 +89,7 @@ let router = createRouter({
 			props: true,
 			meta: {
 				hideSidebar: true,
+				title: 'Manage Subscription',
 			},
 		},
 		{
@@ -95,18 +99,21 @@ let router = createRouter({
 			props: true,
 			meta: {
 				hideSidebar: true,
+				title: 'Enable 2FA',
 			},
 		},
 		{
 			name: 'New Site',
 			path: '/sites/new',
 			component: () => import('./pages/NewSite.vue'),
+			meta: { title: 'New Site' },
 		},
 		{
 			name: 'Release Group New Site',
 			path: '/groups/:bench/sites/new',
 			component: () => import('./pages/NewSite.vue'),
 			props: true,
+			meta: { title: 'New Site' },
 		},
 
 		{
@@ -114,53 +121,63 @@ let router = createRouter({
 			path: '/servers/:server/sites/new',
 			component: () => import('./pages/NewSite.vue'),
 			props: true,
+			meta: { title: 'New Site' },
 		},
 		{
 			name: 'New Release Group',
 			path: '/groups/new',
 			component: () => import('./pages/NewReleaseGroup.vue'),
+			meta: { title: 'New Bench' },
 		},
 		{
 			name: 'Server New Release Group',
 			path: '/servers/:server/groups/new',
 			component: () => import('./pages/NewReleaseGroup.vue'),
 			props: true,
+			meta: { title: 'New Bench' },
 		},
 		{
 			name: 'New Server',
 			path: '/servers/new',
 			component: () => import('./pages/NewServer.vue'),
+			meta: { title: 'New Server' },
 		},
 		{
 			name: 'PartnerNewPayout',
 			path: '/payment-payout/New',
 			component: () => import('./pages/PartnerNewPayout.vue'),
+			meta: { title: 'New Payout' },
 		},
 		{
 			name: 'PartnerLeadDetails',
 			path: '/partner-lead/:leadId',
 			component: () => import('./pages/PartnerLeadDetails.vue'),
+			meta: { title: (route) => route.params.leadId },
 			children: [
 				{
 					name: 'LeadOverview',
 					path: '',
 					component: () =>
 						import('./components/partners/PartnerLeadOverview.vue'),
+					meta: { title: 'Overview' },
 				},
 				{
 					name: 'LeadDealDetails',
 					path: 'deal-info',
 					component: () => import('./components/partners/LeadDealDetails.vue'),
+					meta: { title: 'Follow-up' },
 				},
 				{
 					name: 'LeadFollowUp',
 					path: 'follow-up',
 					component: () => import('./components/partners/LeadFollowup.vue'),
+					meta: { title: 'Follow-up' },
 				},
 				{
 					name: 'LeadActivities',
 					path: 'activities',
 					component: () => import('./components/partners/LeadActivities.vue'),
+					meta: { title: 'Activities' },
 				},
 			],
 		},
@@ -168,56 +185,67 @@ let router = createRouter({
 			name: 'Billing',
 			path: '/billing',
 			component: () => import('./pages/Billing.vue'),
+			meta: { title: 'Billing' },
 			children: [
 				{
 					name: 'BillingOverview',
 					path: '',
 					component: () => import('./pages/BillingOverview.vue'),
+					meta: { title: 'Overview' },
 				},
 				{
 					name: 'BillingForecast',
 					path: 'forecast',
 					component: () => import('./pages/BillingForecast.vue'),
+					meta: { title: 'Forecast' },
 				},
 				{
 					name: 'BillingInvoices',
 					path: 'invoices',
 					component: () => import('./pages/BillingInvoices.vue'),
+					meta: { title: 'Invoices' },
 				},
 				{
 					name: 'BillingBalances',
 					path: 'balances',
 					component: () => import('./pages/BillingBalances.vue'),
+					meta: { title: 'Balances' },
 				},
 				{
 					name: 'BillingPaymentMethods',
 					path: 'payment-methods',
 					component: () => import('./pages/BillingPaymentMethods.vue'),
+					meta: { title: 'Payment Methods' },
 				},
 				{
 					name: 'BillingMarketplacePayouts',
 					path: 'payouts',
 					component: () => import('./pages/BillingMarketplacePayouts.vue'),
+					meta: { title: 'Marketplace Payouts' },
 				},
 				{
 					name: 'BillingSubscriptions',
 					path: 'subscriptions',
 					component: () => import('./pages/BillingSubscriptions.vue'),
+					meta: { title: 'Subscriptions' },
 				},
 				{
 					name: 'BillingTiers',
 					path: 'tiers',
 					component: () => import('./pages/BillingTiers.vue'),
+					meta: { title: 'Limits' },
 				},
 				{
 					name: 'BillingMpesaInvoices',
 					path: 'mpesa-invoices',
 					component: () => import('./pages/BillingMpesaInvoices.vue'),
+					meta: { title: 'Mpesa Invoices' },
 				},
 				{
 					name: 'BillingUPIAutopay',
 					path: 'upi-autopay',
 					component: () => import('./pages/BillingUPIAutopay.vue'),
+					meta: { title: 'UPI Autopay' },
 				},
 			],
 		},
@@ -226,23 +254,27 @@ let router = createRouter({
 			name: 'Settings',
 			redirect: { name: 'SettingsProfile' },
 			component: () => import('./pages/Settings.vue'),
+			meta: { title: 'Settings' },
 			children: [
 				{
 					name: 'SettingsProfile',
 					path: 'profile',
 					component: () =>
 						import('./components/settings/profile/ProfileSettings.vue'),
+					meta: { title: 'Profile' },
 				},
 				{
 					name: 'SettingsTeam',
 					path: 'team',
 					component: () => import('./components/settings/TeamSettings.vue'),
+					meta: { title: 'Team' },
 				},
 				{
 					name: 'SettingsDeveloper',
 					path: 'developer',
 					component: () =>
 						import('./components/settings/DeveloperSettings.vue'),
+					meta: { title: 'Developer' },
 				},
 				{
 					name: 'SettingsPermission',
@@ -250,6 +282,7 @@ let router = createRouter({
 					component: () =>
 						import('./components/settings/SettingsPermissions.vue'),
 					redirect: { name: 'SettingsPermissionRoles' },
+					meta: { title: 'Roles' },
 					children: [
 						{
 							path: 'roles',
@@ -270,33 +303,39 @@ let router = createRouter({
 					path: 'partner-admin',
 					redirect: { name: 'PartnerList' },
 					component: () => import('./pages/PartnerAdmin.vue'),
+					meta: { title: 'Partner Admin' },
 					children: [
 						{
 							name: 'PartnerList',
 							path: 'partner-list',
 							component: () => import('./pages/PartnerList.vue'),
+							meta: { title: 'Partner List' },
 						},
 						{
 							name: 'CertificateList',
 							path: 'certificate-list',
 							component: () => import('./pages/PartnerAdminCertificates.vue'),
+							meta: { title: 'Certificates' },
 						},
 						{
 							name: 'PartnerAdminLeads',
 							path: 'partner-admin-lead-list',
 							component: () => import('./pages/PartnerAdminLeads.vue'),
+							meta: { title: 'Leads' },
 						},
 						{
 							name: 'PartnerAdminResources',
 							path: 'admin-resources',
 							component: () =>
 								import('./components/partners/PartnerResources.vue'),
+							meta: { title: 'Resources' },
 						},
 						{
 							name: 'PartnerAdminAudits',
 							path: 'admin-audits',
 							component: () =>
 								import('./components/partners/PartnerAdminAudits.vue'),
+							meta: { title: 'Audits' },
 						},
 					],
 				},
@@ -307,16 +346,19 @@ let router = createRouter({
 			path: '/status',
 			component: () => import('./pages/PrivateStatusPage.vue'),
 			redirect: { name: 'OngoingIncidents' },
+			meta: { title: 'Status' },
 			children: [
 				{
 					name: 'OngoingIncidents',
 					path: 'ongoing-incidents',
 					component: () => import('./components/status/PrivateIncident.vue'),
+					meta: { title: 'Ongoing Incidents' },
 				},
 				{
 					name: 'IncidentHistory',
 					path: 'incident-history',
 					component: () => import('./components/status/PrivateIncident.vue'),
+					meta: { title: 'Incident History' },
 				},
 			],
 		},
@@ -325,60 +367,71 @@ let router = createRouter({
 			path: '/partners',
 			redirect: { name: 'PartnerOverview' },
 			component: () => import('./pages/Partners.vue'),
+			meta: { title: 'Partnership' },
 			children: [
 				{
 					name: 'PartnerOverview',
 					path: 'overview',
 					component: () => import('./components/partners/PartnerOverview.vue'),
+					meta: { title: 'Overview' },
 				},
 				{
 					name: 'PartnerWebsiteDetails',
 					path: 'website-details',
 					component: () =>
 						import('./components/partners/PartnerWebsiteDetails.vue'),
+					meta: { title: 'Website Details' },
 				},
 				{
 					name: 'PartnerCustomers',
 					path: 'customers',
 					component: () => import('./components/partners/PartnerCustomers.vue'),
+					meta: { title: 'Customers' },
 				},
 				{
 					name: 'PartnerLeads',
 					path: 'partner-leads',
 					component: () => import('./components/partners/PartnerLeads.vue'),
+					meta: { title: 'Leads' },
 				},
 				{
 					name: 'PartnerCertificates',
 					path: 'certificates',
 					component: () =>
 						import('./components/partners/PartnerCertificates.vue'),
+					meta: { title: 'Certifications' },
 				},
 				{
 					name: 'PartnerResources',
 					path: 'resources',
 					component: () => import('./components/partners/PartnerResources.vue'),
+					meta: { title: 'Resources' },
 				},
 				{
 					name: 'PartnerContributions',
 					path: 'contributions',
 					component: () =>
 						import('./components/partners/PartnerContributionList.vue'),
+					meta: { title: 'Contributions' },
 				},
 				{
 					name: 'PartnerAudits',
 					path: 'audits',
 					component: () => import('./components/partners/PartnerAudits.vue'),
+					meta: { title: 'Audits' },
 				},
 				{
 					name: 'PartnerNCList',
 					path: 'audit/:partner_audit?',
 					component: () => import('./components/partners/PartnerNCList.vue'),
 					props: true,
+					meta: { title: 'Audit' },
 					children: [
 						{
 							name: 'PartnerNCSummary',
 							path: 'nc-summary/:nc?',
 							props: true,
+							meta: { title: 'Non-conformance Summary' },
 							component: () =>
 								import('./components/partners/PartnerNCSummary.vue'),
 						},
@@ -389,16 +442,19 @@ let router = createRouter({
 					path: 'local-payment-setup',
 					component: () =>
 						import('./components/partners/PartnerLocalPaymentSetup.vue'),
+					meta: { title: 'Local Payment Setup' },
 				},
 				{
 					name: 'PartnerPayout',
 					path: 'payment-payout',
 					component: () => import('./components/partners/PartnerPayout.vue'),
+					meta: { title: 'Partner Payout' },
 				},
 				{
 					name: 'PartnerDashboard',
 					path: 'partner-dashboard',
 					component: () => import('./components/partners/PartnerDashboard.vue'),
+					meta: { title: 'Dashboard' },
 				},
 			],
 		},
@@ -406,31 +462,33 @@ let router = createRouter({
 			name: 'Partner Onboarding',
 			path: '/partner-onboarding',
 			component: () => import('@/onboarding/PartnerOnboarding.vue'),
+			meta: { title: 'Partner Onboarding' },
 		},
 		{
 			name: 'Signup Create Site',
 			path: '/create-site',
 			redirect: { name: 'Home' },
+			meta: { title: 'Create Site' },
 			children: [
 				{
 					name: 'SignupAppSelector',
 					path: 'app-selector',
 					component: () => import('./pages/signup/AppSelector.vue'),
-					meta: { hideSidebar: true },
+					meta: { hideSidebar: true, title: 'Select App' },
 				},
 				{
 					name: 'SignupSetup',
 					path: ':productId/setup',
 					component: () => import('./pages/signup/SetupSite.vue'),
 					props: true,
-					meta: { hideSidebar: true },
+					meta: { hideSidebar: true, title: 'Set Up Site' },
 				},
 				{
 					name: 'SignupLoginToSite',
 					path: ':productId/login-to-site',
 					component: () => import('./pages/signup/LoginToSite.vue'),
 					props: true,
-					meta: { hideSidebar: true },
+					meta: { hideSidebar: true, title: 'Log In To Site' },
 				},
 			],
 		},
@@ -439,24 +497,28 @@ let router = createRouter({
 			path: '/impersonate/:teamId',
 			component: () => import('./pages/Impersonate.vue'),
 			props: true,
+			meta: { title: 'Impersonate' },
 		},
 		{
 			name: 'InstallApp',
 			path: '/install-app/:app',
 			component: () => import('./pages/InstallApp.vue'),
 			props: true,
+			meta: { title: 'Install App' },
 		},
 		{
 			name: 'CreateSiteForMarketplaceApp',
 			path: '/create-site/:app',
 			component: () => import('./pages/CreateSiteForMarketplaceApp.vue'),
 			props: true,
+			meta: { title: 'Create Site' },
 		},
 		{
 			name: 'NewSiteProgress',
 			path: '/sites/new/progress/:siteGroupDeployName',
 			component: () => import('./pages/NewSiteProgress.vue'),
 			props: true,
+			meta: { title: 'New Site' },
 		},
 		{
 			path: '/developer-reply/:marketplaceApp/:reviewId',
@@ -464,38 +526,45 @@ let router = createRouter({
 			component: () =>
 				import('./components/marketplace/ReplyMarketplaceApp.vue'),
 			props: true,
+			meta: { title: 'Reply to Review' },
 		},
 		{
 			path: '/sql-playground',
 			name: 'SQL Playground',
 			component: () =>
 				import('./pages/devtools/database/DatabaseSQLPlayground.vue'),
+			meta: { title: 'SQL Playground' },
 		},
 		{
 			path: '/enable-bench-groups',
 			name: 'Enable Benches',
 			component: () => import('./pages/EnableBenchGroups.vue'),
+			meta: { title: 'Enable Benches' },
 		},
 		{
 			path: '/enable-servers',
 			name: 'Enable Servers',
 			component: () => import('./pages/EnableServers.vue'),
+			meta: { title: 'Enable Servers' },
 		},
 		{
 			path: '/database-analyzer',
 			name: 'DB Analyzer',
 			component: () => import('./pages/devtools/database/DatabaseAnalyzer.vue'),
+			meta: { title: 'Database Analyzer' },
 		},
 		{
 			path: '/binlog-browser',
 			name: 'Binlog Browser',
 			component: () => import('./pages/devtools/database/BinlogBrowser.vue'),
+			meta: { title: 'Binlog Browser' },
 		},
 		{
 			path: '/log-browser/:mode?/:docName?/:logId?',
 			name: 'Log Browser',
 			component: () => import('./pages/devtools/log-browser/LogBrowser.vue'),
 			props: true,
+			meta: { title: 'Log Browser' },
 		},
 		...generateRoutes(),
 		// TODO: makeshift redirect fixes for /insights paths
@@ -551,8 +620,14 @@ let router = createRouter({
 			path: '/:pathMatch(.*)*',
 			name: '404',
 			component: () => import('./pages/404.vue'),
+			meta: { title: 'Page Not Found' },
 		},
 	],
+})
+
+// Pages that load a document refine this in their own pageMeta()
+router.afterEach((to) => {
+	document.title = routeTitle(to)
 })
 
 router.beforeEach(async (to, from, next) => {

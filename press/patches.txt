@@ -172,3 +172,8 @@ press.patches.v0_8_0.set_team_on_remote_file
 press.patches.v0_8_0.add_disk_full_alert_rule
 press.patches.v0_8_0.unset_rate_limit_for_dedicated_server_sites
 press.patches.v0_8_0.backfill_site_version_audits
+press.patches.v0_8_0.set_reference_on_press_notifications
+press.patches.v0_8_0.encrypt_telegram_bot_tokens
+press.patches.v0_8_0.encrypt_mailgun_api_key
+# run by hand after deploy, with the execute command
+# press.patches.v0_8_0.bump_v16_nightly_node_version_to_24_22_1

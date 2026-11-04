@@ -1,41 +1,44 @@
 <script setup lang="ts">
 import {
-	createResource,
-	createListResource,
-	createDocumentResource,
-	getCachedDocumentResource,
-	Button,
-	Dropdown,
 	Badge,
+	Button,
+	createDocumentResource,
+	createListResource,
+	createResource,
+	Dropdown,
+	getCachedDocumentResource,
 } from 'frappe-ui'
-
-import { toast } from 'vue-sonner'
-import Tabs from '@/components/common/Tabs.vue'
-
-import CopyBtn from '@/components/utils/CopyBtn.vue'
-import Scrollbar from '@/components/common/Scrollbar.vue'
-import Collapsable from '@/components/common/Collapsable.vue'
-import StatusIcon from './StatusIcon.vue'
-import AppVersionsDialog from '@/dialogs/AppVersionsDialog.vue'
-import Stages from './Stages.vue'
-import Loader from './Loader.vue'
-
 import {
-	h,
-	ref,
-	reactive,
 	computed,
-	watch,
+	h,
 	nextTick,
 	onBeforeUnmount,
+	reactive,
+	ref,
+	watch,
 } from 'vue'
-import { confirmDialog, renderDialog } from '@/utils/components'
+import { useRouter } from 'vue-router'
+import { toast } from 'vue-sonner'
+import Collapsable from '@/components/common/Collapsable.vue'
+import Scrollbar from '@/components/common/Scrollbar.vue'
+import Tabs from '@/components/common/Tabs.vue'
+import CopyBtn from '@/components/utils/CopyBtn.vue'
 import { getTeam } from '@/data/team'
-
-import { secsToDuration, date, duration, sanitizeHtml } from '@/utils/format'
+import AppVersionsDialog from '@/dialogs/AppVersionsDialog.vue'
+import { confirmDialog, renderDialog } from '@/utils/components'
+import {
+	date,
+	finishedDuration,
+	sanitizeHtml,
+	secsToDuration,
+} from '@/utils/format'
+import Loader from './Loader.vue'
+import Stages from './Stages.vue'
+import StatusIcon from './StatusIcon.vue'
 
 const team = getTeam()
 const socket = window.$socket
+const router = useRouter()
 
 interface Props {
 	deployview: boolean
@@ -115,6 +118,7 @@ const notifApiFields = {
 		'message',
 		'document_name',
 		'class',
+		'traceback',
 		'assistance_url',
 	],
 	filters: { document_type: 'Deploy Candidate Build', is_actionable: true },
@@ -133,21 +137,40 @@ watch(
 	() => errList.value,
 	(x) => {
 		if (x.length > 0) tabState.value = 'Issues'
+
+		const traceback = x.find((error) => error.traceback)?.traceback
+
+		if (traceback)
+			setOutput({ val: traceback, status: 'Failure', id: 'traceback' })
+		else if (output.id === 'traceback') setOutput({ val: null })
 	},
 )
+
+// the page itself opens for support, so the banners must too
+const supportFilter = {
+	skip_team_filter_for_system_user_and_support_agent: true,
+}
 
 const fetchSetErrs = () => {
 	const errids = buildIds.value?.length > 0 ? buildIds.value : [props.id]
 
 	errors.update({
 		cache: ['Press Notification Error', 'Deploy Candidate Build', errids],
-		filters: { document_name: ['in', errids], class: 'Error' },
+		filters: {
+			document_name: ['in', errids],
+			class: 'Error',
+			...supportFilter,
+		},
 	})
 	errors.fetch()
 
 	warnings.update({
 		cache: ['Press Notification Warning', 'Deploy Candidate Build', errids],
-		filters: { document_name: ['in', errids], class: 'Warning' },
+		filters: {
+			document_name: ['in', errids],
+			class: 'Warning',
+			...supportFilter,
+		},
 	})
 	warnings.fetch()
 }
@@ -435,6 +458,66 @@ const stopPipeline = () => {
 		},
 	})
 }
+
+const activeBuild = computed(
+	() =>
+		builds.value[activeBuildId.value]?.doc ??
+		getCachedDocumentResource('Release Group', props.name)?.doc
+			?.deploy_information?.last_deploy,
+)
+
+const redeployDialogs = {
+	cache: {
+		title: 'Redeploy Without Cache',
+		message: `
+				This deploy failed due to a build cache issue.<br><br>
+				<div class="text-bg-base bg-surface-gray-2 p-2 rounded-md">
+				This will start a <strong>fresh build with the Docker build cache disabled</strong>,
+				which can take significantly longer than a cached build.
+				</div>
+				`,
+	},
+	retry: {
+		title: 'Redeploy',
+		message:
+			'This will run the build again with the same app releases.<br><br>Use this if the build failed for a temporary reason, like a network timeout. If an app caused the failure, push a fix and deploy the new release instead.',
+	},
+}
+
+const redeploy = (noCache: boolean) => {
+	const dialog = redeployDialogs[noCache ? 'cache' : 'retry']
+
+	confirmDialog({
+		...dialog,
+		primaryAction: {
+			label: dialog.title,
+			variant: 'solid',
+			theme: 'red',
+			onClick({ hide }) {
+				return createResource({
+					url: 'press.api.bench.redeploy',
+					params: {
+						name: props.name,
+						dc_name: activeBuild.value.name,
+						no_cache: noCache,
+					},
+				})
+					.fetch()
+					.then((newBuild) => {
+						hide()
+						router.push({
+							name: 'Deploy Candidate',
+							params: { id: newBuild, name: props.name },
+						})
+					})
+					.catch(() => {
+						hide()
+						toast.error(`Unable to ${dialog.title.toLowerCase()}`)
+					})
+			},
+		},
+	})
+}
 </script>
 
 <template>
@@ -488,6 +571,13 @@ const stopPipeline = () => {
 				Stop Deploy
 			</Button>
 
+			<Button
+				@click="redeploy(activeBuild.is_cache_failure)"
+				v-if="!deployview && activeBuild && !['Draft', 'Preparing', 'Running', 'Pending'].includes(activeBuild.status)"
+			>
+				{{ activeBuild.is_cache_failure ? 'Redeploy Without Cache' : 'Redeploy' }}
+			</Button>
+
 			<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
 				<Button>
 					<template #icon>
@@ -526,7 +616,7 @@ const stopPipeline = () => {
 			<div class="flex flex-col gap-2 rounded">
 				<b> Duration </b>
 				<span>
-					{{ deployview ? duration( builds[activeBuildId]?.doc?.build_duration) || '-' : secsToDuration(pipeline?.doc?.steps?.duration) || '-' }}
+					{{ deployview ? finishedDuration(builds[activeBuildId]?.doc?.build_duration, builds[activeBuildId]?.doc?.status) || '-' : secsToDuration(pipeline?.doc?.steps?.duration) || '-' }}
 				</span>
 			</div>
 		</section>
@@ -585,7 +675,10 @@ const stopPipeline = () => {
 								class="rounded px-3 py-2 bg-surface-red-1 flex flex-col gap-2"
 								:class='x.class == "Error" ? " bg-surface-red-1 text-ink-red-4" : "bg-surface-amber-1 text-ink-amber-3"'
 							>
-								<p v-html="sanitizeHtml(x.message)" class="leading-relaxed text-sm" />
+								<p
+									v-html="sanitizeHtml(x.message)"
+									class="leading-relaxed text-sm"
+								/>
 
 								<a
 									:href="x.assistance_url"
@@ -631,6 +724,6 @@ const stopPipeline = () => {
 
 <style scoped>
 .smallbtn {
-	@apply hover:bg-surface-gray-3 dark:hover:bg-surface-gray-2 p-1 rounded hover:text-ink-gray-9
+	@apply hover:bg-surface-gray-3 dark:hover:bg-surface-gray-2 p-1 rounded hover:text-ink-gray-9;
 }
 </style>

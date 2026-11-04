@@ -21,6 +21,10 @@ import registerGlobalComponents from './components/global/register';
 import './vendor/posthog.js';
 import { pulse } from './telemetry/pulse.js';
 
+// Temporarily kills browser-side Sentry (init, tracing, replay, envelopes).
+// Flip back to false to re-enable.
+const DISABLE_SENTRY = true;
+
 const request = (options) => {
 	const _options = options || {};
 	_options.headers = options.headers || {};
@@ -68,7 +72,10 @@ getInitialData().then(() => {
 		unreadSupportNotificationsCount.fetch();
 	}
 
-	if (window.press_dashboard_sentry_dsn.includes('https://')) {
+	if (
+		!DISABLE_SENTRY &&
+		window.press_dashboard_sentry_dsn.includes('https://')
+	) {
 		Sentry.init({
 			app,
 			dsn: window.press_dashboard_sentry_dsn,

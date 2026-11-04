@@ -10,6 +10,7 @@ from frappe.frappeclient import FrappeClient
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
 
 
@@ -33,6 +34,7 @@ class RegistryServer(BaseServer):
 		ip: DF.Data
 		is_mirror: DF.Check
 		is_server_setup: DF.Check
+		is_wazuh_agent_installed: DF.Check
 		monitoring_password: DF.Password | None
 		plan: DF.Link | None
 		private_ip: DF.Data
@@ -50,6 +52,8 @@ class RegistryServer(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
+		wazuh_agent_status: DF.Data | None
+		wazuh_install_last_attempt: DF.Datetime | None
 	# end: auto-generated types
 
 	def validate(self):
@@ -104,6 +108,7 @@ class RegistryServer(BaseServer):
 			"region": self.region,
 			"bucket_name": self.bucket_name,
 			"proxy_pass": self.proxy_pass,
+			"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 		}
 		try:
 			ansible = Ansible(

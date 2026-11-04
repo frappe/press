@@ -28,7 +28,8 @@ if TYPE_CHECKING:
 
 
 DEFAULT_GITHUB_REDIRECT_PATH = "/dashboard"
-GITHUB_OAUTH_STATE_MAX_AGE = timedelta(minutes=10)
+GITHUB_OAUTH_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
+GITHUB_OAUTH_STATE_MAX_AGE = timedelta(minutes=30)
 
 
 class GithubFetchError(Exception):
@@ -163,6 +164,12 @@ def get_access_token(installation_id: str | None = None):
 
 
 @frappe.whitelist()
+def get_installation_url(redirect_url: str | None = None):
+	# Minted on click, so the state's validity window starts when the user leaves for GitHub
+	return get_installation_data(get_current_team(), redirect_url)
+
+
+@frappe.whitelist()
 def clear_token_and_get_installation_url(redirect_url: str | None = None):
 	team = get_current_team()
 	clear_current_team_access_token(team)
@@ -175,14 +182,12 @@ def clear_current_team_access_token(team: str | None = None):
 
 
 @frappe.whitelist()
-def options(redirect_url: str | None = None):
+def options():
 	team = get_current_team()
 	token = frappe.db.get_value("Team", team, "github_access_token")
-	installation_data = get_installation_data(team, redirect_url)
 
 	return {
 		"authorized": bool(token),
-		**installation_data,
 		"installations": installations(token) if token else [],
 	}
 
@@ -213,12 +218,26 @@ def get_safe_github_redirect_url(redirect_url: str | None = None) -> str:
 	return redirect_path
 
 
+def get_github_authorize_url(state: str) -> str:
+	"""User-authorization URL used to obtain a fresh OAuth code (and token).
+
+	GitHub redirects back to the app's registered callback (/github/authorize),
+	so we don't pass a redirect_uri and avoid a callback URL mismatch.
+	"""
+	client_id = frappe.db.get_single_value("Press Settings", "github_app_client_id")
+	return f"{GITHUB_OAUTH_AUTHORIZE_URL}?{urlencode({'client_id': client_id, 'state': state})}"
+
+
 def get_github_callback_login_redirect(code: str | None, state: str | None) -> str:
 	login_url = "/dashboard/login"
-	if not (code and state):
+	if not state:
 		return frappe.utils.get_url(login_url)
 
-	callback_url = f"/github/authorize?{urlencode({'code': code, 'state': state})}"
+	params = {}
+	if code:
+		params["code"] = code
+	params["state"] = state
+	callback_url = f"/github/authorize?{urlencode(params)}"
 	return frappe.utils.get_url(f"{login_url}?{urlencode({'redirect': callback_url})}")
 
 
@@ -446,7 +465,7 @@ def _get_compatible_frappe_version_from_pyproject(
 	owner: str, repository: str, branch_info: dict, headers: dict[str, str]
 ) -> str:
 	"""Get frappe version from pyproject.toml file."""
-	compatible_frappe_version = None
+	compatible_frappe_version: str | None = None
 	pyproject = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/contents/pyproject.toml",
 		params={"ref": branch_info["name"]},

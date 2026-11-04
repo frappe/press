@@ -458,13 +458,20 @@ def update_with_check_for_update_message(details: Details, job: AgentJob, app: s
 
 
 def get_failing_app_and_source(job: AgentJob) -> tuple[str, str] | None:
-	"""Innermost app in the traceback that is installed on the bench, with its app source"""
+	"""Innermost app in the traceback that is installed on the bench, with its app source
+
+	Frappe is never the failing app. Every error passes through framework frames
+	(patch handler, database layer). So the innermost frame is frappe even when
+	another app raised the error. Frappe always has a newer release, so the banner
+	showed on every failed update."""
 	text = f"{job.traceback or ''}\n{job.output or ''}"
 	group = frappe.db.get_value("Bench", job.bench, "group")
 	if not group:
 		return None
 
 	for app in reversed(APP_FRAME.findall(text)):
+		if app == "frappe":
+			continue
 		source = frappe.db.get_value("Release Group App", {"parent": group, "app": app}, "source")
 		if source:
 			return app, source

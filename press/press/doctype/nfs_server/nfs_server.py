@@ -8,6 +8,7 @@ from press.press.doctype.nfs_volume_attachment.nfs_volume_attachment import NFSV
 from press.press.doctype.nfs_volume_detachment.nfs_volume_detachment import NFSVolumeDetachment
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
 
 
@@ -29,6 +30,7 @@ class NFSServer(BaseServer):
 		ip: DF.Data
 		is_server_prepared: DF.Check
 		is_server_setup: DF.Check
+		is_wazuh_agent_installed: DF.Check
 		monitoring_password: DF.Password | None
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
@@ -40,6 +42,8 @@ class NFSServer(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
+		wazuh_agent_status: DF.Data | None
+		wazuh_install_last_attempt: DF.Datetime | None
 	# end: auto-generated types
 
 	def validate(self):
@@ -65,6 +69,7 @@ class NFSServer(BaseServer):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
+					"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 					"server": self.name,
 					"workers": 1,
 					"domain": self.domain,

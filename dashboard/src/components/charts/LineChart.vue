@@ -134,6 +134,8 @@ const options = ref({
 		bottom: data.value.datasets.length > 1 ? 60 : 30, // if there's legend show more space for it
 	},
 	toolbox: {
+		// Hidden: `show: false` would drop the drag-to-zoom cursor with it.
+		itemSize: 0,
 		feature: {
 			dataZoom: {
 				yAxisIndex: false,
@@ -155,7 +157,7 @@ const options = ref({
 					color +
 					'"></span>'
 
-				tooltip += `<p>${colorSpan(chartTheme.value[i])}  ${getUnit(
+				tooltip += `<p>${colorSpan(chartTheme.value[i % chartTheme.value.length])}  ${getUnit(
 					value[1],
 					unit.value,
 				)} ${
@@ -209,6 +211,9 @@ const options = ref({
 		show: data.value.datasets.length > 1,
 	},
 	series: data.value.datasets.map((dataset, i) => {
+		// More series than colours breaks the area gradient: zrender can't
+		// animate an undefined stop colour, and the chart freezes on hover.
+		const color = chartTheme.value[i % chartTheme.value.length]
 		return {
 			name: dataset.name || unit,
 			type: 'line',
@@ -216,7 +221,6 @@ const options = ref({
 			showSymbol: false,
 			data: dataset.dataset || dataset,
 			markLine: data.value.markLine,
-			connectNulls: true,
 			emphasis: {
 				itemStyle: {
 					shadowBlur: 10,
@@ -225,16 +229,17 @@ const options = ref({
 				},
 			},
 			lineStyle: {
-				color: chartTheme.value[i],
+				color,
+				width: 1,
 			},
 			itemStyle: {
-				color: chartTheme.value[i],
+				color,
 			},
 			areaStyle: {
 				color: new graphic.LinearGradient(0, 0, 0, 1, [
 					{
 						offset: 0,
-						color: chartTheme.value[i],
+						color,
 					},
 					{
 						offset: 1,

@@ -13,7 +13,6 @@
 		"description",
 		"section_break_4",
 		"expression",
-		"split_by_server_storage_threshold",
 		"column_break_6",
 		"labels",
 		"annotations",
@@ -32,7 +31,8 @@
 		"ignore_on_clusters",
 		"column_break_oetk",
 		"only_on_shared",
-		"silent"
+		"silent",
+		"send_to_raven"
 	],
 	"fields": [
 		{
@@ -47,12 +47,6 @@
 			"fieldtype": "Code",
 			"in_list_view": 1,
 			"label": "Expression"
-		},
-		{
-			"description": "Emit one rule per storage alert threshold configured on servers. Use <code>{{ threshold }}</code> and <code>{{ instances }}</code> in the expression.",
-			"fieldname": "split_by_server_storage_threshold",
-			"fieldtype": "Check",
-			"label": "Split By Server Storage Threshold"
 		},
 		{
 			"default": "{}",
@@ -176,13 +170,20 @@
 			"fieldname": "silent",
 			"fieldtype": "Check",
 			"label": "Silent"
+		},
+		{
+			"default": "0",
+			"description": "Post alerts to the #alerts channel in Raven",
+			"fieldname": "send_to_raven",
+			"fieldtype": "Check",
+			"label": "Send to Raven"
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"links": [
 		{ "link_doctype": "Alertmanager Webhook Log", "link_fieldname": "alert" }
 	],
-	"modified": "2026-09-08 12:00:00.000000",
+	"modified": "2026-10-06 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Prometheus Alert Rule",

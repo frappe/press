@@ -3,7 +3,7 @@
 
 frappe.ui.form.on('Registry Server', {
 	refresh: function (frm) {
-		[
+		;[
 			[__('Ping Ansible'), 'ping_ansible', true],
 			[__('Ping Ansible Unprepared'), 'ping_ansible_unprepared', true],
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
@@ -34,6 +34,20 @@ frappe.ui.form.on('Registry Server', {
 				frm.doc.is_server_setup &&
 					(!frm.doc.frappe_public_key || !frm.doc.root_public_key),
 			],
+			[
+				__('Install Wazuh Agent'),
+				'install_wazuh_agent',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Uninstall Wazuh Agent'),
+				'uninstall_wazuh_agent',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_wazuh_agent_installed,
+			],
+			[__('Setup Fail2ban'), 'setup_fail2ban', true, frm.doc.is_server_setup],
+			[__('Remove Fail2ban'), 'remove_fail2ban', true, frm.doc.is_server_setup],
 		].forEach(([label, method, confirm, condition]) => {
 			if (
 				typeof condition === 'undefined' ||
@@ -48,24 +62,24 @@ frappe.ui.form.on('Registry Server', {
 								() =>
 									frm.call(method).then((r) => {
 										if (r.message) {
-											frappe.msgprint(r.message);
+											frappe.msgprint(r.message)
 										} else {
-											frm.refresh();
+											frm.refresh()
 										}
 									}),
-							);
+							)
 						} else {
 							frm.call(method).then((r) => {
 								if (r.message) {
-									frappe.msgprint(r.message);
+									frappe.msgprint(r.message)
 								} else {
-									frm.refresh();
+									frm.refresh()
 								}
-							});
+							})
 						}
 					},
 					__('Actions'),
-				);
+				)
 			}
 			if (method == 'create_registry_mirror') {
 				frm.add_custom_button(
@@ -127,14 +141,14 @@ frappe.ui.form.on('Registry Server', {
 										private_ip,
 										proxy_pass,
 									})
-									.then((r) => frm.refresh());
+									.then((r) => frm.refresh())
 							},
 							__('Create Mirror Registry'),
-						);
+						)
 					},
 					__('Actions'),
-				);
+				)
 			}
-		});
+		})
 	},
-});
+})

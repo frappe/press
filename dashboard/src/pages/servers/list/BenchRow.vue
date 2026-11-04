@@ -39,12 +39,13 @@ const sites = createListResource({
 	fields: ['name', 'status', 'bench', 'creation', 'host_name'],
 	filters: {
 		group: props.data.name,
+		server: props.server.name,
 		host_name: ['is', 'set'],
 		skip_team_filter_for_system_user_and_support_agent: true,
 	},
 	orderBy: 'creation desc',
 	pageLength: 5,
-	cache: ['sitesRes', props.data.name],
+	cache: ['sitesRes', props.data.name, props.server.name],
 	auto: true,
 })
 

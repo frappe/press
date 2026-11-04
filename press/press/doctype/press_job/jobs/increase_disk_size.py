@@ -1,15 +1,48 @@
+from __future__ import annotations
+
 from contextlib import suppress
+from typing import TYPE_CHECKING
 
 import frappe
+from frappe.utils import add_to_date
 
 from press.press.doctype.press_job.press_job import PressJob
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 
+if TYPE_CHECKING:
+	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.server.server import Server
+
+WARNING_INTERVAL_HOURS = 24
+
 
 class IncreaseDiskSizeJob(PressJob):
+	@classmethod
+	def should_react_to_alert(cls, server: Server | DatabaseServer, labels: dict) -> bool:
+		mountpoint = labels.get("mountpoint")
+		if server.can_auto_increase_storage(mountpoint):
+			return True
+
+		# Without auto increase the job only warns the team, so do that once a day
+		# per mountpoint instead of on every re-fire of the alert.
+		link_field = "server" if server.doctype == "Server" else "database_server"
+		return not frappe.db.exists(
+			"Add On Storage Log",
+			{
+				link_field: server.name,
+				# Same fallback the warning log is written with
+				"mountpoint": mountpoint or server.guess_data_disk_mountpoint(),
+				"is_warning": True,
+				"creation": (">", add_to_date(None, hours=-WARNING_INTERVAL_HOURS)),
+			},
+		)
+
 	@flow
 	def execute(self):
-		self.increase_disk_size()
+		if not self.increase_disk_size():
+			# Nothing was resized, so skip the partition wait and avoid restarting
+			# every bench, which would interrupt running jobs and backups.
+			return
 
 		provider = self.server_doc.provider
 		if provider == "AWS EC2":
@@ -20,16 +53,16 @@ class IncreaseDiskSizeJob(PressJob):
 			self.wait_for_server_to_be_accessible_oci()
 			self.add_glass_file_oci()
 
+		# TODO: Enable after a manual trial with the button on Server
+		# self.restore_truncated_configs()
+
 		if self.server_type == "Server":
 			self.restart_active_benches()
 
 	@task
-	def increase_disk_size(self):
+	def increase_disk_size(self) -> bool:
 		mountpoint = self.arguments_dict.labels.get("mountpoint")
-		self.server_doc.calculated_increase_disk_size(mountpoint=mountpoint)
-
-		if not frappe.db.get_value(self.server_type, self.server, "auto_increase_storage"):
-			return
+		return self.server_doc.calculated_increase_disk_size(mountpoint=mountpoint)
 
 	@task
 	def wait_for_partition_to_resize_for_aws_ec2(self):
@@ -88,6 +121,10 @@ class IncreaseDiskSizeJob(PressJob):
 			return
 
 		self.server_doc._add_glass_file()
+
+	@task(queue="long", timeout=900)
+	def restore_truncated_configs(self):
+		self.server_doc.restore_truncated_configs()
 
 	@task
 	def restart_active_benches(self):
