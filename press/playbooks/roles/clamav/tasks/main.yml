@@ -1,9 +1,8 @@
 ---
-# Focal only has ClamAV 0.103, which the CDN blocks since its end of life
-- name: Install ClamAV from Cisco
-  include_tasks: cisco.yml
+# Focal only has ClamAV 0.103, which the CDN blocks since its end of life.
+# Imported, not included, so Press records each task and its error.
+- import_tasks: cisco.yml
   when: ansible_distribution_release == 'focal'
 
-- name: Install ClamAV from Ubuntu
-  include_tasks: ubuntu.yml
+- import_tasks: ubuntu.yml
   when: ansible_distribution_release != 'focal'
