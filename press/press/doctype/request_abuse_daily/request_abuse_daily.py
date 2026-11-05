@@ -41,6 +41,20 @@ class RequestAbuseDaily(Document):
 		unique_ips: DF.Int
 	# end: auto-generated types
 
+	@staticmethod
+	def clear_old_logs(days: int = 90):
+		cutoff = add_days(nowdate(), -days)
+		summaries = frappe.qb.DocType("Request Abuse Daily")
+		ips = frappe.qb.DocType("Request Abuse Daily IP")
+		expired = frappe.qb.from_(summaries).select(summaries.name).where(summaries.date < cutoff)
+		(
+			frappe.qb.from_(ips)
+			.delete()
+			.where(ips.parent.isin(expired))
+			.where(ips.parenttype == "Request Abuse Daily")
+		).run()
+		frappe.db.delete("Request Abuse Daily", {"date": ("<", cutoff)})
+
 	def record(self, response: dict):
 		"""Fill the counters from one day of nginx logs of the site."""
 		statuses = status_counts(response)
