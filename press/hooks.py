@@ -441,7 +441,7 @@ scheduler_events = {
 			"press.press.doctype.build_metric.build_metric.create_build_metric",
 			"press.saas.doctype.product_trial_request.product_trial_request.gather_weekly_stats",
 		],
-		"45 23 28-31 * *": [
+		"5 0 1 * *": [
 			"press.press.doctype.enterprise_contract.partner_contribution.send_partner_transactions",
 		],
 		"*/30 * 1 * *": [

@@ -27,9 +27,9 @@ from press.press.doctype.enterprise_contract.enterprise_contract import (
 	team_contracts,
 )
 from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan import enabled_plans, gst_split
-from press.utils import get_current_team, get_valid_teams_for_user
+from press.utils import get_current_team, is_partner_user
 
-PARTNER_ORDER = "Partners can't place Enterprise orders. Please ask the customer to place the order from their own account."
+PARTNER_ORDER_BLOCKED = "Partners can't place Enterprise orders. Please ask the customer to place the order from their own account."
 
 
 def contracts_enabled(fn):
@@ -57,7 +57,7 @@ def get():
 		"credit_balance": purchased_credit(team.name),
 		"gst_split": gst_split(team.billing_address),
 		"contracts": team_contracts(team.name),
-		"order_blocked": PARTNER_ORDER if is_partner(team) else None,
+		"order_blocked": PARTNER_ORDER_BLOCKED if is_partner_user(frappe.session.user) else None,
 	}
 
 
@@ -77,8 +77,8 @@ def get_contract(name: str):
 @contracts_enabled
 def submit(order: dict | str, return_url: str, use_credits: bool = False):
 	team = get_current_team(get_doc=True)
-	if is_partner(team):
-		frappe.throw(PARTNER_ORDER)
+	if is_partner_user(frappe.session.user):
+		frappe.throw(PARTNER_ORDER_BLOCKED)
 	# Taken first, so that an order placed at the same time cannot start a session we then miss.
 	lock_team_orders(team.name)
 	if close_awaiting_checkout():
@@ -149,17 +149,6 @@ def cancel_order():
 		return {"message": ALREADY_PAID}
 	contract.cancel_order()
 	return {"message": None}
-
-
-# A partner team, or a partner's member acting in a customer's team.
-def is_partner(team) -> bool:
-	if team.erpnext_partner:
-		return True
-	user = frappe.session.user
-	if frappe.db.exists("Team", {"user": user, "erpnext_partner": 1}):
-		return True
-	member_of = [row.name for row in get_valid_teams_for_user(user)]
-	return bool(member_of and frappe.db.exists("Team", {"name": ("in", member_of), "erpnext_partner": 1}))
 
 
 def awaiting_payment_contract() -> EnterpriseContract:
