@@ -82,6 +82,7 @@ class EnterpriseContract(Document):
 		contact_person: DF.Data | None
 		currency: DF.Link
 		designation: DF.Data | None
+		exclude_from_partner_contribution: DF.Check
 		legal_entities_covered: DF.SmallText | None
 		payment_gateway: DF.Literal["Stripe", "Bank Transfer"]
 		payments: DF.Table[EnterpriseContractPayment]
@@ -101,13 +102,19 @@ class EnterpriseContract(Document):
 		self.validate_no_open_contract()
 		if not self.plan_doc.enabled:
 			frappe.throw("This plan is no longer available. Please choose another plan.")
-		if self.currency == "INR" and not bank_transfer_details():
+		# Staff create a contract in Desk after the payment is in, so only a dashboard order needs these.
+		if self.flags.ordered_on_dashboard and self.currency == "INR" and not bank_transfer_details():
 			frappe.throw("Bank transfer details are not set up yet. Please contact support.")
 		self.cancel_unpaid_contracts()
 		self.set_billing_details()
 		self.start_date = today()
 		self.yearly_price = self.plan_doc.get_price(self.currency)
 		self.payment_gateway = "Bank Transfer" if self.currency == "INR" else "Stripe"
+
+	def after_insert(self):
+		# A contract staff create in Desk must be visible to the team on the dashboard.
+		if not self.flags.ordered_on_dashboard:
+			frappe.db.set_value("Team", self.team, "enable_enterprise_contracts", 1)
 
 	def validate(self):
 		self.validate_price_lock_years()
@@ -226,11 +233,14 @@ class EnterpriseContract(Document):
 		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
-	def confirm_bank_transfer(self):
+	def confirm_bank_transfer(self, reference: str | None = None):
 		frappe.only_for("System Manager")
-		if not self.transfer_reference:
-			frappe.throw("The customer has not entered a UTR yet")
-		self.record_payment(reference=self.transfer_reference)
+		if reference:
+			self.submit_transfer_reference(reference)
+		if utr := self.transfer_reference:
+			self.record_payment(reference=utr)
+			return
+		frappe.throw("Enter the UTR from the bank statement to record this transfer")
 
 	def next_period_start(self):
 		if not self.payments:
@@ -310,6 +320,7 @@ def create_contract(team: Team, order: dict) -> EnterpriseContract:
 			**{field: order.get(field) for field in ORDER_FIELDS},
 		}
 	)
+	contract.flags.ordered_on_dashboard = True
 	# Team members have no create permission; the API checks billing access.
 	contract.insert(ignore_permissions=True)
 	return contract

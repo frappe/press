@@ -25,6 +25,7 @@
 		"column_break_customer",
 		"billing_partner",
 		"legal_entities_covered",
+		"exclude_from_partner_contribution",
 		"address_section",
 		"billing_address",
 		"agreement_section",
@@ -83,7 +84,9 @@
 			"fieldtype": "Link",
 			"label": "Currency",
 			"options": "Currency",
-			"reqd": 1
+			"reqd": 1,
+			"fetch_from": "team.currency",
+			"fetch_if_empty": 1
 		},
 		{
 			"description": "Price at the time of order. It applies to every renewal in the price lock period.",
@@ -167,6 +170,13 @@
 			"label": "Legal Entities Covered"
 		},
 		{
+			"default": "0",
+			"description": "Leave this contract out of partner contribution, on frappe.io and on the partner pages",
+			"fieldname": "exclude_from_partner_contribution",
+			"fieldtype": "Check",
+			"label": "Exclude from Partner Contribution"
+		},
+		{
 			"fieldname": "address_section",
 			"fieldtype": "Section Break",
 			"label": "Billing Address"
@@ -223,7 +233,7 @@
 			"read_only": 1
 		},
 		{
-			"description": "UTR the customer entered after paying by NEFT/RTGS. Check it against the bank statement, then use Confirm Bank Transfer.",
+			"description": "UTR of the NEFT/RTGS payment, entered by the customer or by staff with Record Bank Transfer. Check it against the bank statement before you confirm.",
 			"fieldname": "transfer_reference",
 			"fieldtype": "Data",
 			"label": "Transfer UTR",
@@ -242,7 +252,7 @@
 		}
 	],
 	"links": [],
-	"modified": "2026-10-29 18:00:00.000000",
+	"modified": "2026-11-05 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Enterprise Contract",
@@ -270,5 +280,6 @@
 	"sort_order": "DESC",
 	"states": [],
 	"title_field": "billing_name",
-	"track_changes": 1
+	"track_changes": 1,
+	"default_print_format": "Enterprise Contract"
 }

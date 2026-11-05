@@ -66,7 +66,7 @@
 			"label": "Paid On"
 		},
 		{
-			"description": "Set once the invoice is synced from frappe.io",
+			"description": "Number of the frappe.io tax invoice for this payment. The customer sees it on the contract page.",
 			"fieldname": "frappe_invoice",
 			"fieldtype": "Data",
 			"in_list_view": 1,
@@ -75,12 +75,13 @@
 		{
 			"fieldname": "invoice_pdf",
 			"fieldtype": "Attach",
-			"label": "Invoice PDF"
+			"label": "Invoice PDF",
+			"description": "PDF of the tax invoice. The customer downloads it from the contract page."
 		}
 	],
 	"istable": 1,
 	"links": [],
-	"modified": "2026-11-02 18:00:00.000000",
+	"modified": "2026-11-05 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Enterprise Contract Payment",
