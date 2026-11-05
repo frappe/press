@@ -100,12 +100,9 @@ class EnterpriseContract(Document):
 
 	def before_insert(self):
 		self.validate_no_open_contract()
+		self.validate_no_awaiting_order()
 		if not self.plan_doc.enabled:
 			frappe.throw("This plan is no longer available. Please choose another plan.")
-		# Staff create a contract in Desk after the payment is in, so only a dashboard order needs these.
-		if self.flags.ordered_on_dashboard and self.currency == "INR" and not bank_transfer_details():
-			frappe.throw("Bank transfer details are not set up yet. Please contact support.")
-		self.cancel_unpaid_contracts()
 		self.set_billing_details()
 		self.start_date = today()
 		self.yearly_price = self.plan_doc.get_price(self.currency)
@@ -113,8 +110,7 @@ class EnterpriseContract(Document):
 
 	def after_insert(self):
 		# A contract staff create in Desk must be visible to the team on the dashboard.
-		if not self.flags.ordered_on_dashboard:
-			frappe.db.set_value("Team", self.team, "enable_enterprise_contracts", 1)
+		frappe.db.set_value("Team", self.team, "enable_enterprise_contracts", 1)
 
 	def validate(self):
 		self.validate_price_lock_years()
@@ -141,15 +137,14 @@ class EnterpriseContract(Document):
 		if frappe.db.get_value("Enterprise Contract", filters, "name", for_update=True):
 			frappe.throw("This team already has an Enterprise contract")
 
-	# An order the customer abandoned at checkout is replaced by the new one.
-	# The API has closed its Stripe session by now, because a paid one must not raise here.
-	def cancel_unpaid_contracts(self):
-		frappe.db.set_value(
-			"Enterprise Contract",
-			{"team": self.team, "status": "Awaiting Payment"},
-			"status",
-			"Cancelled",
-		)
+	# A dashboard order has cancelled the old one by now. In Desk, staff must settle it first,
+	# because it can hold a UTR or a Stripe session that is still payable.
+	def validate_no_awaiting_order(self):
+		filters = {"team": self.team, "status": "Awaiting Payment"}
+		if name := frappe.db.get_value("Enterprise Contract", filters, "name"):
+			frappe.throw(
+				f"This team has order {name} waiting for payment. Record its payment or cancel it, then create the contract."
+			)
 
 	def validate_price_lock_years(self):
 		self.price_lock_years = cint(self.price_lock_years)
@@ -312,18 +307,27 @@ def lock_team_orders(team: str):
 
 def create_contract(team: Team, order: dict) -> EnterpriseContract:
 	lock_team_orders(team.name)
+	if team.currency == "INR" and not bank_transfer_details():
+		frappe.throw("Bank transfer details are not set up yet. Please contact support.")
+	cancel_unpaid_orders(team.name)
 	contract = frappe.get_doc(
 		{
 			"doctype": "Enterprise Contract",
 			"team": team.name,
-			"currency": team.currency,
 			**{field: order.get(field) for field in ORDER_FIELDS},
 		}
 	)
-	contract.flags.ordered_on_dashboard = True
 	# Team members have no create permission; the API checks billing access.
 	contract.insert(ignore_permissions=True)
 	return contract
+
+
+# An order the customer abandoned at checkout is replaced by the new one.
+# The API has closed its Stripe session by now, because a paid one must not raise here.
+def cancel_unpaid_orders(team: str):
+	frappe.db.set_value(
+		"Enterprise Contract", {"team": team, "status": "Awaiting Payment"}, "status", "Cancelled"
+	)
 
 
 def bank_transfer_details() -> dict | None:

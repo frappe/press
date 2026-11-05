@@ -82,12 +82,9 @@ def partner_transaction(share: frappe._dict, month) -> dict:
 	}
 
 
-# Sends each month once, on its last day, before invoices are finalized on the 1st.
-# The cron also fires on the 28th to 30th, so other days return. To retry a failed run, run it again that day.
+# Runs on the 1st for the month that just ended. frappe.io updates by reference, so a rerun is safe.
 def send_partner_transactions():
-	month = getdate()
-	if month != getdate(get_last_day(month)):
-		return
+	month = add_months(getdate(), -1)
 	partners = frappe.get_all("Team", {"enabled": 1, "erpnext_partner": 1}, pluck="partner_email")
 	transactions = [partner_transaction(share, month) for share in contract_shares(month, partners)]
 	if transactions:

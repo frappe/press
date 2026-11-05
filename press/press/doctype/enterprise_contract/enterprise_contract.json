@@ -109,6 +109,7 @@
 			"reqd": 1
 		},
 		{
+			"default": "Today",
 			"description": "Day the first payment was recorded",
 			"fieldname": "start_date",
 			"fieldtype": "Date",
