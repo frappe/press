@@ -252,6 +252,8 @@ scheduler_events = {
 		"press.press.doctype.invoice.invoice.sync_paid_invoices_to_frappeio",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_card_invoices",
 		"press.press.doctype.cloud_usage_anomaly.cloud_usage_anomaly.run_daily_pipeline",
+		"press.press.doctype.wazuh_server_report.wazuh_server_report.sync_wazuh_reports",
+		"press.press.doctype.request_abuse_daily.request_abuse_daily.record_yesterday",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -512,6 +514,7 @@ export_python_type_annotations = True
 
 default_log_clearing_doctypes = {
 	"Alertmanager Webhook Log": 60,
+	"Request Abuse Daily": 90,
 }
 
 

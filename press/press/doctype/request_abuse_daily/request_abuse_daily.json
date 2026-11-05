@@ -1,0 +1,112 @@
+{
+	"actions": [],
+	"creation": "2026-11-05 18:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"date",
+		"site",
+		"column_break_totals",
+		"requests",
+		"unique_ips",
+		"responses_section",
+		"rate_limited",
+		"unauthorized",
+		"column_break_responses",
+		"forbidden",
+		"server_errors",
+		"top_ips_section",
+		"top_ips"
+	],
+	"fields": [
+		{
+			"fieldname": "date",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"label": "Date",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"description": "Host as seen by nginx",
+			"fieldname": "site",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Site",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{ "fieldname": "column_break_totals", "fieldtype": "Column Break" },
+		{ "fieldname": "requests", "fieldtype": "Int", "label": "Requests" },
+		{ "fieldname": "unique_ips", "fieldtype": "Int", "label": "Unique IPs" },
+		{
+			"fieldname": "responses_section",
+			"fieldtype": "Section Break",
+			"label": "Responses"
+		},
+		{
+			"description": "HTTP 429",
+			"fieldname": "rate_limited",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Rate Limited"
+		},
+		{
+			"description": "HTTP 401",
+			"fieldname": "unauthorized",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Unauthorized"
+		},
+		{ "fieldname": "column_break_responses", "fieldtype": "Column Break" },
+		{
+			"description": "HTTP 403",
+			"fieldname": "forbidden",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Forbidden"
+		},
+		{
+			"description": "HTTP 5xx",
+			"fieldname": "server_errors",
+			"fieldtype": "Int",
+			"label": "Server Errors"
+		},
+		{
+			"fieldname": "top_ips_section",
+			"fieldtype": "Section Break",
+			"label": "Most Rate Limited IPs"
+		},
+		{
+			"fieldname": "top_ips",
+			"fieldtype": "Table",
+			"label": "Top IPs",
+			"options": "Request Abuse Daily IP"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-11-05 18:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Request Abuse Daily",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
+}
