@@ -8,11 +8,13 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import frappe
+from frappe.core.doctype.log_settings.log_settings import LogSettings, LogType
 from frappe.tests.utils import FrappeTestCase
-from frappe.utils import get_system_timezone
+from frappe.utils import add_days, get_system_timezone, nowdate
 
 from press.press.doctype.press_settings.test_press_settings import create_test_press_settings
 from press.press.doctype.request_abuse_daily.request_abuse_daily import (
+	RequestAbuseDaily,
 	day_bounds_in_milliseconds,
 	record_day,
 	record_yesterday,
@@ -165,3 +167,61 @@ class TestRequestAbuseDaily(FrappeTestCase):
 	def test_day_bounds_refuse_a_missing_date_instead_of_summarising_today(self):
 		with self.assertRaisesRegex(frappe.ValidationError, "date is required"):
 			day_bounds_in_milliseconds(None)
+
+	def make_summary_with_ip(self, days_ago: int) -> str:
+		summary = RequestAbuseDaily(
+			{
+				"doctype": "Request Abuse Daily",
+				"date": add_days(nowdate(), -days_ago),
+				"site": f"retention-{days_ago}.example.com",
+			}
+		)
+		summary.append("top_ips", {"ip": "192.0.2.1", "rate_limited": 1})
+		summary.insert()
+		return str(summary.name)
+
+	def test_request_abuse_daily_supports_log_settings(self):
+		self.assertTrue(issubclass(RequestAbuseDaily, LogType))
+		self.assertIn(90, frappe.get_hooks("default_log_clearing_doctypes")["Request Abuse Daily"])
+
+	def test_log_settings_runs_the_cleanup_for_the_configured_retention_period(self):
+		old = self.make_summary_with_ip(31)
+		recent = self.make_summary_with_ip(29)
+		settings = LogSettings({"doctype": "Log Settings"})
+		settings.append("logs_to_clear", {"ref_doctype": "Request Abuse Daily", "days": 30})
+
+		with patch.object(frappe.db, "commit") as commit:
+			settings.clear_logs()
+
+		commit.assert_called_once()
+		self.assertFalse(frappe.db.exists("Request Abuse Daily", old))
+		self.assertEqual(frappe.db.count("Request Abuse Daily IP", {"parent": old}), 0)
+		self.assertTrue(frappe.db.exists("Request Abuse Daily", recent))
+		self.assertEqual(frappe.db.count("Request Abuse Daily IP", {"parent": recent}), 1)
+
+	def test_clear_old_logs_removes_expired_summaries_and_ips_but_keeps_the_cutoff_day(self):
+		old = self.make_summary_with_ip(91)
+		boundary = self.make_summary_with_ip(90)
+		recent = self.make_summary_with_ip(1)
+
+		RequestAbuseDaily.clear_old_logs(90)
+
+		self.assertFalse(frappe.db.exists("Request Abuse Daily", old))
+		self.assertEqual(frappe.db.count("Request Abuse Daily IP", {"parent": old}), 0)
+		for name in (boundary, recent):
+			self.assertTrue(frappe.db.exists("Request Abuse Daily", name))
+			self.assertEqual(frappe.db.count("Request Abuse Daily IP", {"parent": name}), 1)
+
+	def test_failed_retention_cleanup_can_roll_back_the_ip_deletion(self):
+		old = self.make_summary_with_ip(91)
+		frappe.db.savepoint("request_abuse_retention_test")
+		with (
+			patch.object(frappe.db, "delete", side_effect=RuntimeError("delete failed")),
+			self.assertRaisesRegex(RuntimeError, "delete failed"),
+		):
+			RequestAbuseDaily.clear_old_logs(90)
+		self.assertEqual(frappe.db.count("Request Abuse Daily IP", {"parent": old}), 0)
+		frappe.db.rollback(save_point="request_abuse_retention_test")
+
+		self.assertTrue(frappe.db.exists("Request Abuse Daily", old))
+		self.assertEqual(frappe.db.count("Request Abuse Daily IP", {"parent": old}), 1)
