@@ -32,7 +32,13 @@ def create_team_with_billing_address(country: str):
 		}
 	).insert(ignore_permissions=True)
 	frappe.db.set_value(
-		"Team", team.name, {"billing_name": "Acme Industries", "billing_address": address.name}
+		"Team",
+		team.name,
+		{
+			"billing_name": "Acme Industries",
+			"billing_address": address.name,
+			"enable_enterprise_contracts": 1,
+		},
 	)
 	return team
 
@@ -193,7 +199,7 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 	def test_bank_transfer_cannot_be_confirmed_before_the_customer_enters_a_utr(self):
 		contract = create_contract(self.team, self.make_order())
 
-		with self.assertRaisesRegex(frappe.ValidationError, "has not entered a UTR"):
+		with self.assertRaisesRegex(frappe.ValidationError, "Enter the UTR"):
 			contract.confirm_bank_transfer()
 
 	def test_inr_order_is_rejected_when_bank_details_are_not_set_up(self):

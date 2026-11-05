@@ -222,7 +222,6 @@ scheduler_events = {
 		"press.press.doctype.mariadb_audit_log.mariadb_audit_log.delete_expired_audit_logs",
 		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
 		"press.press.doctype.team.team.check_budget_alerts",
-		"press.press.doctype.enterprise_contract.partner_contribution.send_partner_transactions",
 		"press.press.doctype.site.site.archive_creation_failed_sites",
 		"press.press.doctype.server.server.process_running_benches_on_server",
 	],
@@ -445,6 +444,9 @@ scheduler_events = {
 		"0 9 * * 2": [
 			"press.press.doctype.build_metric.build_metric.create_build_metric",
 			"press.saas.doctype.product_trial_request.product_trial_request.gather_weekly_stats",
+		],
+		"45 23 28-31 * *": [
+			"press.press.doctype.enterprise_contract.partner_contribution.send_partner_transactions",
 		],
 		"*/30 * 1 * *": [
 			"press.press.doctype.invoice.invoice.finalize_monthly_draft_invoices",

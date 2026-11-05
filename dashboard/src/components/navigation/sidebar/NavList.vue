@@ -161,7 +161,9 @@ const list = computed(() => {
 			icon: LucideFileSignature,
 			route: '/contracts',
 			isActive: ['Contracts', 'Contract'].includes(routeName),
-			condition: $team.doc?.is_desk_user || $session.hasBillingAccess,
+			condition:
+				$team.doc?.enable_enterprise_contracts &&
+				($team.doc?.is_desk_user || $session.hasBillingAccess),
 			disabled: enforce2FA,
 		},
 

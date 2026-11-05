@@ -50,6 +50,7 @@ def contract_shares(month, partner_emails: list[str]) -> list[frappe._dict]:
 			payment.amount,
 		)
 		.where(contract.status.isin(OPEN_STATUSES))
+		.where(contract.exclude_from_partner_contribution == 0)
 		.where(team.enabled == 1)
 		.where(team.partner_email.isin(partner_emails))
 		.where(payment.period_start >= add_months(month, 1 - MONTHS_IN_YEAR))
@@ -81,25 +82,16 @@ def partner_transaction(share: frappe._dict, month) -> dict:
 	}
 
 
-# Runs at 00:00, so only the run on the 1st can send a payment made on the last day of the month before.
-# frappe.io updates by reference, so a failed day is retried by the next run in that month.
+# Sends each month once, on its last day, before invoices are finalized on the 1st.
+# The cron also fires on the 28th to 30th, so other days return. To retry a failed run, run it again that day.
 def send_partner_transactions():
-	if not frappe.db.get_single_value("Press Settings", "send_contract_partner_transactions"):
+	month = getdate()
+	if month != getdate(get_last_day(month)):
 		return
 	partners = frappe.get_all("Team", {"enabled": 1, "erpnext_partner": 1}, pluck="partner_email")
-	transactions = [
-		partner_transaction(share, month)
-		for month in months_to_send()
-		for share in contract_shares(month, partners)
-	]
+	transactions = [partner_transaction(share, month) for share in contract_shares(month, partners)]
 	if transactions:
 		post_transactions(transactions)
-
-
-# Other days send only this month: resending a past month would double count after a partner change.
-def months_to_send() -> list:
-	run_date = getdate()
-	return [add_months(run_date, -1), run_date] if run_date.day == 1 else [run_date]
 
 
 def post_transactions(transactions: list[dict]):
