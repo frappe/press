@@ -59,16 +59,19 @@ CUSTOMER_TYPES = ["Active", "Inactive", "Signup"]
 
 def execute(filters=None):
 	frappe.only_for("System Manager")
-	region = (filters or {}).get("region")
+	filters = filters or {}
+	region = filters.get("region")
 	if region not in REGIONS:
 		frappe.throw(f"Select a Region. Options: {', '.join(REGIONS)}")
 
 	columns = frappe.get_doc("Report", "Customer Emails").get_columns()
-	return columns, get_rows(REGIONS[region])
+	return columns, get_rows(REGIONS[region], filters.get("customer_type"))
 
 
-def get_rows(region: dict) -> list[dict]:
+def get_rows(region: dict, customer_type: str | None = None) -> list[dict]:
 	rows = [row for row in get_customers().values() if is_in_region(row["countries"], region)]
+	if customer_type:
+		rows = [row for row in rows if row["customer_type"] == customer_type]
 	rows.sort(key=lambda row: (CUSTOMER_TYPES.index(row["customer_type"]), row["email"]))
 	return [
 		{
