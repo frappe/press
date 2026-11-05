@@ -12,7 +12,7 @@ from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.team.test_team_members import add_team_member
-from press.press.report.customer_emails.customer_emails import REGIONS, execute
+from press.press.report.customer_emails.customer_emails import CUSTOMER_TYPES, REGIONS, execute
 
 
 def get_emails(region: str) -> dict[str, dict]:
@@ -90,11 +90,29 @@ class TestCustomerEmails(FrappeTestCase):
 
 		self.assertNotIn(team.user, get_emails("All customers"))
 
+	def test_customer_type_filter_keeps_only_customers_of_that_type(self):
+		active_team = create_test_team(country="India")
+		create_test_site(team=active_team.name)
+		inactive_team = create_test_team(country="India")
+
+		_, rows = execute({"region": "Non-EU customers", "customer_type": "Active"})
+		emails = {row["email"] for row in rows}
+
+		self.assertIn(active_team.user, emails)
+		self.assertNotIn(inactive_team.user, emails)
+		self.assertEqual({row["customer_type"] for row in rows}, {"Active"})
+
 	def test_region_filter_options_match_the_regions_in_code(self):
 		report = frappe.get_doc("Report", "Customer Emails")
 		options = report.filters[0].options.strip().split("\n")
 
 		self.assertEqual(options, list(REGIONS))
+
+	def test_customer_type_filter_options_match_the_customer_types_in_code(self):
+		report = frappe.get_doc("Report", "Customer Emails")
+		options = report.filters[1].options.strip().split("\n")
+
+		self.assertEqual(options, CUSTOMER_TYPES)
 
 	def test_unknown_region_is_rejected(self):
 		with self.assertRaisesRegex(frappe.ValidationError, "Select a Region"):
