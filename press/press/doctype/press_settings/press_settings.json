@@ -28,7 +28,6 @@
 		"invoicing_column",
 		"gst_percentage",
 		"gst_home_state",
-		"send_contract_partner_transactions",
 		"npo_discount",
 		"autoscale_discount",
 		"column_break_qfwx",
@@ -1285,13 +1284,6 @@
 			"fieldname": "gst_home_state",
 			"fieldtype": "Data",
 			"label": "GST Home State"
-		},
-		{
-			"default": "0",
-			"description": "Send each Enterprise Contract's monthly share to frappe.io as a Partner Transaction. Turn on after frappe.io accepts the Enterprise Contract transaction type.",
-			"fieldname": "send_contract_partner_transactions",
-			"fieldtype": "Check",
-			"label": "Send Contract Partner Transactions"
 		},
 		{
 			"fieldname": "column_break_tcmy",

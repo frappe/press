@@ -50,6 +50,12 @@
 				/>
 				<ContractList v-if="listed.length" :contracts="listed" />
 			</div>
+			<div
+				v-else-if="contract.data.order_blocked"
+				class="py-24 text-center text-base text-ink-gray-6"
+			>
+				{{ contract.data.order_blocked }}
+			</div>
 			<OrderForm
 				v-else-if="contract.data.plans.length"
 				:plans="contract.data.plans"
@@ -94,7 +100,10 @@ const listed = computed(() =>
 	contracts.value.filter((row) => row.status !== 'Awaiting Payment'),
 )
 const canOrder = computed(
-	() => !current.value && contract.data?.plans.length > 0,
+	() =>
+		!current.value &&
+		!contract.data?.order_blocked &&
+		contract.data?.plans.length > 0,
 )
 const ordering = ref(false)
 const showForm = computed(

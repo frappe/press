@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import functools
 from urllib.parse import urlparse
 
 import frappe
@@ -26,11 +27,26 @@ from press.press.doctype.enterprise_contract.enterprise_contract import (
 	team_contracts,
 )
 from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan import enabled_plans, gst_split
-from press.utils import get_current_team
+from press.utils import get_current_team, get_valid_teams_for_user
+
+PARTNER_ORDER = "Partners can't place Enterprise orders. Please ask the customer to place the order from their own account."
+
+
+def contracts_enabled(fn):
+	@functools.wraps(fn)
+	def inner(*args, **kwargs):
+		if not frappe.db.get_value("Team", get_current_team(), "enable_enterprise_contracts"):
+			frappe.throw(
+				"Enterprise contracts are not enabled for this team. Please contact support to enable them."
+			)
+		return fn(*args, **kwargs)
+
+	return inner
 
 
 @frappe.whitelist()
 @role_guard.api("billing")
+@contracts_enabled
 def get():
 	team = get_current_team(get_doc=True)
 	name = open_contract_name(team.name)
@@ -41,11 +57,13 @@ def get():
 		"credit_balance": purchased_credit(team.name),
 		"gst_split": gst_split(team.billing_address),
 		"contracts": team_contracts(team.name),
+		"order_blocked": PARTNER_ORDER if is_partner(team) else None,
 	}
 
 
 @frappe.whitelist()
 @role_guard.api("billing")
+@contracts_enabled
 def get_contract(name: str):
 	if not frappe.db.exists(
 		"Enterprise Contract", {"name": name, "team": get_current_team(), "status": ("in", OPEN_STATUSES)}
@@ -56,8 +74,11 @@ def get_contract(name: str):
 
 @frappe.whitelist()
 @role_guard.api("billing")
+@contracts_enabled
 def submit(order: dict | str, return_url: str, use_credits: bool = False):
 	team = get_current_team(get_doc=True)
+	if is_partner(team):
+		frappe.throw(PARTNER_ORDER)
 	# Taken first, so that an order placed at the same time cannot start a session we then miss.
 	lock_team_orders(team.name)
 	if close_awaiting_checkout():
@@ -73,6 +94,7 @@ def submit(order: dict | str, return_url: str, use_credits: bool = False):
 
 @frappe.whitelist()
 @role_guard.api("billing")
+@contracts_enabled
 def pay(return_url: str):
 	contract = awaiting_payment_contract()
 	if close_checkout(contract):
@@ -82,6 +104,7 @@ def pay(return_url: str):
 
 @frappe.whitelist()
 @role_guard.api("billing")
+@contracts_enabled
 def pay_with_credits():
 	# Locked so that a double click debits the credits once.
 	contract = awaiting_payment_contract()
@@ -93,6 +116,7 @@ def pay_with_credits():
 
 @frappe.whitelist()
 @role_guard.api("billing")
+@contracts_enabled
 def verify_payment(params: dict | str):
 	name = open_contract_name(get_current_team())
 	if not name:
@@ -109,6 +133,7 @@ def verify_payment(params: dict | str):
 
 @frappe.whitelist()
 @role_guard.api("billing")
+@contracts_enabled
 def submit_transfer_reference(reference: str):
 	contract = awaiting_payment_contract()
 	contract.submit_transfer_reference(reference)
@@ -117,12 +142,24 @@ def submit_transfer_reference(reference: str):
 
 @frappe.whitelist()
 @role_guard.api("billing")
+@contracts_enabled
 def cancel_order():
 	contract = awaiting_payment_contract()
 	if close_checkout(contract):
 		return {"message": ALREADY_PAID}
 	contract.cancel_order()
 	return {"message": None}
+
+
+# A partner team, or a partner's member acting in a customer's team.
+def is_partner(team) -> bool:
+	if team.erpnext_partner:
+		return True
+	user = frappe.session.user
+	if frappe.db.exists("Team", {"user": user, "erpnext_partner": 1}):
+		return True
+	member_of = [row.name for row in get_valid_teams_for_user(user)]
+	return bool(member_of and frappe.db.exists("Team", {"name": ("in", member_of), "erpnext_partner": 1}))
 
 
 def awaiting_payment_contract() -> EnterpriseContract:

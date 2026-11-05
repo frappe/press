@@ -38,7 +38,6 @@ class TestPartnerContribution(EnterpriseContractTestCase):
 			{"erpnext_partner": 1, "partner_email": self.partner.user},
 		)
 		frappe.db.set_value("Team", self.team.name, "partner_email", self.partner.user)
-		frappe.db.set_single_value("Press Settings", "send_contract_partner_transactions", 1)
 		self.addCleanup(frappe.set_user, "Administrator")
 
 	def paid_contract(self, team=None, reference="pay_1"):
@@ -46,8 +45,10 @@ class TestPartnerContribution(EnterpriseContractTestCase):
 		contract.record_payment(reference=reference)
 		return contract
 
-	def sent_transactions(self) -> list[dict]:
-		with patch(CONNECTION) as connection:
+	# The job sends only on a month's last day, so it runs on this month's by default.
+	def sent_transactions(self, run_at: str | None = None) -> list[dict]:
+		run_at = run_at or f"{get_last_day(today())} 23:45:00"
+		with freeze_time(run_at), patch(CONNECTION) as connection:
 			connection.return_value = MagicMock(url="https://frappe.test", headers={})
 			send_partner_transactions()
 		post = connection.return_value.session.post
@@ -96,25 +97,27 @@ class TestPartnerContribution(EnterpriseContractTestCase):
 			],
 		)
 
-	def test_payment_on_a_months_last_day_is_sent_by_the_run_on_the_first_but_not_on_the_second(self):
+	def test_job_sends_once_a_month_on_its_last_day_including_a_payment_made_that_day(self):
 		with freeze_time("2026-01-31 18:00:00", tick=True):
 			contract = self.paid_contract()
-		with freeze_time("2026-02-01 00:00:00"):
-			first_day_run = self.sent_transactions()
-		with freeze_time("2026-02-02 00:00:00"):
-			second_day_run = self.sent_transactions()
 
+		self.assertEqual(self.sent_transactions("2026-01-30 23:45:00"), [])
 		self.assertEqual(
-			[(row["invoice_id"], row["due_date"]) for row in first_day_run],
-			[(f"{contract.name}-2026-01", "2026-01-31"), (f"{contract.name}-2026-02", "2026-02-28")],
+			[(row["invoice_id"], row["due_date"]) for row in self.sent_transactions("2026-01-31 23:45:00")],
+			[(f"{contract.name}-2026-01", "2026-01-31")],
 		)
-		self.assertEqual([row["invoice_id"] for row in second_day_run], [f"{contract.name}-2026-02"])
+		self.assertEqual(
+			[row["invoice_id"] for row in self.sent_transactions("2026-02-28 23:45:00")],
+			[f"{contract.name}-2026-02"],
+		)
 
-	def test_job_sends_nothing_while_the_press_setting_is_off(self):
-		self.paid_contract()
-		frappe.db.set_single_value("Press Settings", "send_contract_partner_transactions", 0)
+	def test_job_and_partner_pages_leave_out_a_contract_excluded_from_partner_contribution(self):
+		contract = self.paid_contract()
+		frappe.db.set_value("Enterprise Contract", contract.name, "exclude_from_partner_contribution", 1)
 
 		self.assertEqual(self.sent_transactions(), [])
+		frappe.set_user(self.partner.user)
+		self.assertEqual(get_current_month_partner_contribution(self.partner.user), 0)
 
 	def test_job_skips_a_customer_whose_partner_email_is_not_an_enabled_partner(self):
 		self.paid_contract()
@@ -142,7 +145,10 @@ class TestPartnerContribution(EnterpriseContractTestCase):
 			connection.return_value = MagicMock(url="https://frappe.test", headers={})
 			response = connection.return_value.session.post.return_value
 			response.raise_for_status.side_effect = ConnectionError("frappe.io is down")
-			with self.assertRaisesRegex(ConnectionError, "frappe.io is down"):
+			with (
+				freeze_time(f"{get_last_day(today())} 23:45:00"),
+				self.assertRaisesRegex(ConnectionError, "frappe.io is down"),
+			):
 				send_partner_transactions()
 
 	def test_partner_pages_convert_the_contract_share_to_the_partner_currency(self):

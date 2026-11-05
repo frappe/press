@@ -98,6 +98,7 @@ class Team(Document):
 		default_razorpay_mandate: DF.Link | None
 		discounts: DF.Table[InvoiceDiscount]
 		enable_inplace_updates: DF.Check
+		enable_enterprise_contracts: DF.Check
 		enable_performance_tuning: DF.Check
 		enabled: DF.Check
 		end_date: DF.Date | None
@@ -177,6 +178,7 @@ class Team(Document):
 		"parent_team",
 		"is_developer",
 		"enable_performance_tuning",
+		"enable_enterprise_contracts",
 		"enable_inplace_updates",
 		"servers_enabled",
 		"benches_enabled",
