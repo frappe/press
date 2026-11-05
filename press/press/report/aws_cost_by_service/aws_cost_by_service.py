@@ -37,6 +37,9 @@ def execute(filters=None):
 
 
 def get_months(lookback_months):
+	# Three months minimum: the current part month, plus the two complete months the
+	# change column compares.
+	lookback_months = max(lookback_months, 3)
 	first_of_this_month = get_first_day(getdate())
 	return [add_months(first_of_this_month, -i) for i in range(lookback_months - 1, -1, -1)]
 
@@ -94,11 +97,17 @@ def build_tree_rows(cost_by_service, months):
 	breakdown (indent 1) — the pre-order, parent-then-children layout the
 	framework's tree report view expects (frappe-datatable reads `indent` off
 	each row and infers the tree structure purely from row order)."""
-	current_month, previous_month = str(months[-1]), str(months[-2])
+	# The last month in the window is only billed up to today. Comparing a part month
+	# against a whole one reports every service as collapsing, so the change is measured
+	# between the two most recent complete months instead. Use Cloud Cost Drilldown to
+	# see what the current month is doing day by day.
+	current_month, previous_month = str(months[-2]), str(months[-3])
 	service_totals = get_service_totals(cost_by_service)
 
+	# Ordered by the month in progress, which is what someone opening this wants to see
+	# first even though the change column deliberately ignores it.
 	services_sorted = sorted(
-		service_totals.items(), key=lambda item: item[1].get(current_month, 0), reverse=True
+		service_totals.items(), key=lambda item: item[1].get(str(months[-1]), 0), reverse=True
 	)
 
 	rows = []
@@ -107,7 +116,7 @@ def build_tree_rows(cost_by_service, months):
 
 		breakdown_sorted = sorted(
 			cost_by_service[service].items(),
-			key=lambda item: item[1].get(current_month, 0),
+			key=lambda item: item[1].get(str(months[-1]), 0),
 			reverse=True,
 		)
 		for breakdown_value, cost_by_month in breakdown_sorted:
@@ -179,18 +188,30 @@ def get_columns(months, breakdown_label):
 		}
 	]
 	for month in months:
+		partial = month == months[-1]
 		columns.append(
 			{
 				"fieldname": month_fieldname(month),
-				"label": month_label(month),
+				"label": f"{month_label(month)} (MTD)" if partial else month_label(month),
 				"fieldtype": "Currency",
-				"width": 110,
+				"width": 130 if partial else 110,
 			}
 		)
+	complete = month_label(months[-2])
 	columns.extend(
 		[
-			{"fieldname": "change_amount", "label": "Change ($)", "fieldtype": "Currency", "width": 110},
-			{"fieldname": "change_percent", "label": "Change (%)", "fieldtype": "Percent", "width": 100},
+			{
+				"fieldname": "change_amount",
+				"label": f"Change to {complete} ($)",
+				"fieldtype": "Currency",
+				"width": 150,
+			},
+			{
+				"fieldname": "change_percent",
+				"label": f"Change to {complete} (%)",
+				"fieldtype": "Percent",
+				"width": 150,
+			},
 			{
 				"fieldname": "notable_change",
 				"label": f"Notable Change (>{JUMP_THRESHOLD_PERCENT}%)",
@@ -228,7 +249,7 @@ def get_report_summary(rows, months):
 	return [
 		{
 			"value": total_current,
-			"label": f"Total Cost — {month_label(months[-1])} (USD)",
+			"label": f"Total Cost — {month_label(months[-1])} to date (USD)",
 			"datatype": "Currency",
 			"indicator": "blue",
 		},

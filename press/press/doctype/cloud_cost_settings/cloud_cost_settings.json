@@ -1,0 +1,134 @@
+{
+	"actions": [],
+	"allow_rename": 0,
+	"creation": "2026-08-18 10:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"enabled",
+		"section_break_ingest",
+		"restatement_days",
+		"retention_days",
+		"column_break_ingest",
+		"backfill_months",
+		"section_break_noise",
+		"minimum_daily_cost_impact",
+		"column_break_noise",
+		"minimum_series_cost",
+		"section_break_do_rates",
+		"do_volume_rate",
+		"column_break_do",
+		"do_snapshot_rate"
+	],
+	"fields": [
+		{
+			"default": "0",
+			"description": "Runs the daily ingest, driver collection and anomaly detection pipeline. Accounts are read from Press Settings and your clusters; there is nothing to configure.",
+			"fieldname": "enabled",
+			"fieldtype": "Check",
+			"label": "Enabled"
+		},
+		{
+			"fieldname": "section_break_ingest",
+			"fieldtype": "Section Break",
+			"label": "Ingest"
+		},
+		{
+			"default": "5",
+			"description": "AWS restates recent days. Every run re-fetches this many trailing days and replaces what it stored.",
+			"fieldname": "restatement_days",
+			"fieldtype": "Int",
+			"label": "Restatement Days"
+		},
+		{
+			"default": "550",
+			"description": "Daily cost rows older than this are deleted. 0 keeps everything.",
+			"fieldname": "retention_days",
+			"fieldtype": "Int",
+			"label": "Retention Days"
+		},
+		{
+			"fieldname": "column_break_ingest",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "14",
+			"description": "How far back Backfill History reaches. Cost Explorer charges $0.01 per request and holds 14 months of daily data.",
+			"fieldname": "backfill_months",
+			"fieldtype": "Int",
+			"label": "Backfill Months"
+		},
+		{
+			"fieldname": "section_break_noise",
+			"fieldtype": "Section Break",
+			"label": "What Is Worth Reporting",
+			"description": "Everything else about detection is fixed in code. These two decide how much money a change has to be worth before anyone hears about it."
+		},
+		{
+			"default": "20",
+			"description": "Anomalies costing less than this per day are not recorded, however large the percentage.",
+			"fieldname": "minimum_daily_cost_impact",
+			"fieldtype": "Currency",
+			"label": "Minimum Daily Cost Impact (USD)"
+		},
+		{
+			"fieldname": "column_break_noise",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "5",
+			"description": "Series averaging less than this per day are ignored entirely.",
+			"fieldname": "minimum_series_cost",
+			"fieldtype": "Currency",
+			"label": "Minimum Series Cost (USD/day)"
+		},
+		{
+			"fieldname": "section_break_do_rates",
+			"fieldtype": "Section Break",
+			"label": "DigitalOcean Rates",
+			"description": "DigitalOcean publishes no price API for block storage or snapshots, so these are the rates we are charged."
+		},
+		{
+			"default": "0.10",
+			"fieldname": "do_volume_rate",
+			"fieldtype": "Currency",
+			"label": "Volume Rate (USD per GB-month)",
+			"precision": "4"
+		},
+		{
+			"fieldname": "column_break_do",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "0.06",
+			"fieldname": "do_snapshot_rate",
+			"fieldtype": "Currency",
+			"label": "Snapshot Rate (USD per GB-month)",
+			"precision": "4"
+		}
+	],
+	"index_web_pages_for_search": 0,
+	"issingle": 1,
+	"links": [],
+	"modified": "2026-08-18 10:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Cloud Cost Settings",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": []
+}
