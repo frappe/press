@@ -1,0 +1,132 @@
+{
+	"actions": [],
+	"autoname": "format:{server_type}-{server}",
+	"creation": "2026-11-05 18:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"server_type",
+		"server",
+		"synced_at",
+		"column_break_agent",
+		"agent_id",
+		"agent_status",
+		"agent_version",
+		"operating_system",
+		"last_keep_alive",
+		"vulnerabilities_section",
+		"vulnerabilities_critical",
+		"vulnerabilities_high",
+		"column_break_vulnerabilities",
+		"vulnerabilities_medium",
+		"vulnerabilities_low",
+		"sca_section",
+		"sca_policies"
+	],
+	"fields": [
+		{
+			"fieldname": "server_type",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Server Type",
+			"options": "Server\nDatabase Server\nProxy Server\nMonitor Server\nLog Server\nRegistry Server\nAnalytics Server\nTrace Server\nNAT Server\nNFS Server",
+			"reqd": 1
+		},
+		{
+			"fieldname": "server",
+			"fieldtype": "Dynamic Link",
+			"in_list_view": 1,
+			"label": "Server",
+			"options": "server_type",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{ "fieldname": "synced_at", "fieldtype": "Datetime", "label": "Synced At" },
+		{ "fieldname": "column_break_agent", "fieldtype": "Column Break" },
+		{ "fieldname": "agent_id", "fieldtype": "Data", "label": "Agent ID" },
+		{
+			"fieldname": "agent_status",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Agent Status"
+		},
+		{
+			"fieldname": "agent_version",
+			"fieldtype": "Data",
+			"label": "Agent Version"
+		},
+		{
+			"fieldname": "operating_system",
+			"fieldtype": "Data",
+			"label": "Operating System"
+		},
+		{
+			"fieldname": "last_keep_alive",
+			"fieldtype": "Datetime",
+			"label": "Last Keep Alive"
+		},
+		{
+			"fieldname": "vulnerabilities_section",
+			"fieldtype": "Section Break",
+			"label": "Open Vulnerabilities"
+		},
+		{
+			"fieldname": "vulnerabilities_critical",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Critical"
+		},
+		{
+			"fieldname": "vulnerabilities_high",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "High"
+		},
+		{
+			"fieldname": "column_break_vulnerabilities",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "vulnerabilities_medium",
+			"fieldtype": "Int",
+			"label": "Medium"
+		},
+		{ "fieldname": "vulnerabilities_low", "fieldtype": "Int", "label": "Low" },
+		{
+			"fieldname": "sca_section",
+			"fieldtype": "Section Break",
+			"label": "Security Configuration Assessment"
+		},
+		{
+			"fieldname": "sca_policies",
+			"fieldtype": "Table",
+			"label": "SCA Policies",
+			"options": "Wazuh SCA Policy Result"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-11-05 18:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Wazuh Server Report",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
+}
