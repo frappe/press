@@ -623,6 +623,41 @@ class TestAgentJobNotifications(FrappeTestCase):
 		self.assertFalse(details["is_actionable"])
 		self.assertIsNone(details["assistance_url"])
 
+	FOLDER_IN_BACKUPS_TRACEBACK = (
+		'  File "apps/frappe/frappe/utils/backups.py", line 662, in delete_temp_backups\n'
+		"    os.remove(this_file_path)\n"
+		"IsADirectoryError: [Errno 21] Is a directory: './test.frappe.dev/private/backups/uom-night-20261102'"
+	)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_folder_in_backups_folder_names_the_folder_to_delete(self):
+		details = get_details(self.backup_job(self.FOLDER_IN_BACKUPS_TRACEBACK), "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Backup failed because of a folder in the backups folder")
+		self.assertIn("<code>./test.frappe.dev/private/backups/uom-night-20261102</code>", details["message"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_folder_error_outside_backups_folder_is_not_actionable(self):
+		traceback = "IsADirectoryError: [Errno 21] Is a directory: './test.frappe.dev/public/files/reports'"
+
+		details = get_details(self.backup_job(traceback), "", "")
+
+		self.assertFalse(details["is_actionable"])
+
+	def backup_job(self, traceback: str) -> AgentJob:
+		site = create_test_site()
+		return frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Backup Site",
+				"site": site.name,
+				"server_type": "Server",
+				"server": site.server,
+				"traceback": traceback,
+			}
+		)
+
 	def site_with_app(
 		self, app_name: str, owned_by_site_team: bool = True, newer_release: bool = False
 	) -> tuple[str, str]:
