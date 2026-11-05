@@ -57,7 +57,7 @@ def get():
 		"credit_balance": purchased_credit(team.name),
 		"gst_split": gst_split(team.billing_address),
 		"contracts": team_contracts(team.name),
-		"order_blocked": PARTNER_ORDER_BLOCKED if is_partner_user(frappe.session.user) else None,
+		"order_blocked": PARTNER_ORDER_BLOCKED if acts_as_partner(team) else None,
 	}
 
 
@@ -77,7 +77,7 @@ def get_contract(name: str):
 @contracts_enabled
 def submit(order: dict | str, return_url: str, use_credits: bool = False):
 	team = get_current_team(get_doc=True)
-	if is_partner_user(frappe.session.user):
+	if acts_as_partner(team):
 		frappe.throw(PARTNER_ORDER_BLOCKED)
 	# Taken first, so that an order placed at the same time cannot start a session we then miss.
 	lock_team_orders(team.name)
@@ -149,6 +149,11 @@ def cancel_order():
 		return {"message": ALREADY_PAID}
 	contract.cancel_order()
 	return {"message": None}
+
+
+# A partner team, or a partner's owner or member acting in a customer's team.
+def acts_as_partner(team) -> bool:
+	return bool(team.erpnext_partner) or is_partner_user(frappe.session.user)
 
 
 def awaiting_payment_contract() -> EnterpriseContract:

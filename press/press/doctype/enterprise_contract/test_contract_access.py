@@ -62,6 +62,12 @@ class TestContractAccess(EnterpriseContractTestCase):
 		self.assertTrue(is_partner_user(partner.user))
 		self.assertFalse(is_partner_user(self.team.user))
 
+	def test_staff_acting_in_a_partner_team_cannot_order_for_it(self):
+		partner = frappe.get_doc("Team", self.create_partner_team().name)
+
+		self.assertFalse(is_partner_user("Administrator"))
+		self.assertTrue(contract_api.acts_as_partner(partner))
+
 	def test_contract_created_by_staff_needs_no_bank_details_and_shows_on_the_teams_dashboard(self):
 		team = create_team_with_billing_address("India")
 		frappe.db.set_value("Team", team.name, "enable_enterprise_contracts", 0)
