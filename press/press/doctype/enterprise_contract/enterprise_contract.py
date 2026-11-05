@@ -104,7 +104,6 @@ class EnterpriseContract(Document):
 		if not self.plan_doc.enabled:
 			frappe.throw("This plan is no longer available. Please choose another plan.")
 		self.set_billing_details()
-		self.start_date = today()
 		self.yearly_price = self.plan_doc.get_price(self.currency)
 		self.payment_gateway = "Bank Transfer" if self.currency == "INR" else "Stripe"
 
@@ -143,7 +142,7 @@ class EnterpriseContract(Document):
 		filters = {"team": self.team, "status": "Awaiting Payment"}
 		if name := frappe.db.get_value("Enterprise Contract", filters, "name"):
 			frappe.throw(
-				f"This team has order {name} waiting for payment. Record its payment or cancel it, then create the contract."
+				f"This team has order {name} waiting for payment. Confirm its bank transfer, or ask the customer to cancel it on the dashboard, then create the contract."
 			)
 
 	def validate_price_lock_years(self):
