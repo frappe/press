@@ -10,6 +10,7 @@ from press.press.doctype.enterprise_contract.test_enterprise_contract import (
 	create_team_with_billing_address,
 )
 from press.press.doctype.team.test_team import create_test_team
+from press.utils import is_partner_user
 
 
 class TestContractAccess(EnterpriseContractTestCase):
@@ -41,7 +42,7 @@ class TestContractAccess(EnterpriseContractTestCase):
 		)
 		frappe.set_user(partner.user)
 
-		self.assertEqual(contract_api.get()["order_blocked"], contract_api.PARTNER_ORDER)
+		self.assertEqual(contract_api.get()["order_blocked"], contract_api.PARTNER_ORDER_BLOCKED)
 		with self.assertRaisesRegex(frappe.ValidationError, "Partners can't place Enterprise orders"):
 			contract_api.submit(self.make_order(), return_url="https://press.test/contracts")
 		self.assertFalse(frappe.db.exists("Enterprise Contract", {"team": partner.name}))
@@ -56,12 +57,10 @@ class TestContractAccess(EnterpriseContractTestCase):
 			parentfield="team_members",
 			user=member,
 		).db_insert()
-		customer = frappe.get_doc("Team", self.team.name)
 
-		frappe.set_user(member)
-		self.assertTrue(contract_api.is_partner(customer))
-		frappe.set_user(self.team.user)
-		self.assertFalse(contract_api.is_partner(customer))
+		self.assertTrue(is_partner_user(member))
+		self.assertTrue(is_partner_user(partner.user))
+		self.assertFalse(is_partner_user(self.team.user))
 
 	def test_contract_created_by_staff_needs_no_bank_details_and_shows_on_the_teams_dashboard(self):
 		team = create_team_with_billing_address("India")
@@ -89,6 +88,16 @@ class TestContractAccess(EnterpriseContractTestCase):
 		self.assertEqual(contract.transfer_reference, "UTR000000000009")
 		self.assertEqual(contract.payments[0].payment_reference, "UTR000000000009")
 		self.assertEqual(contract.as_dashboard()["payments"][0]["frappe_invoice"], "ACC-SINV-2026-00042")
+
+	def test_staff_cannot_create_a_contract_while_the_team_has_an_order_waiting_for_payment(self):
+		order = frappe.get_doc(
+			doctype="Enterprise Contract", team=self.team.name, **self.make_order()
+		).insert()
+		order.submit_transfer_reference("UTR000000000011")
+
+		with self.assertRaisesRegex(frappe.ValidationError, f"order {order.name} waiting for payment"):
+			frappe.get_doc(doctype="Enterprise Contract", team=self.team.name, **self.make_order()).insert()
+		self.assertEqual(order.reload().status, "Awaiting Payment")
 
 	def test_print_format_shows_the_customer_plan_and_payment_with_its_tax_invoice(self):
 		frappe.db.set_single_value("Press Settings", "gst_home_state", "Karnataka")

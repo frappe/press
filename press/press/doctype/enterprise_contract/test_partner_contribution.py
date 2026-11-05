@@ -45,9 +45,9 @@ class TestPartnerContribution(EnterpriseContractTestCase):
 		contract.record_payment(reference=reference)
 		return contract
 
-	# The job sends only on a month's last day, so it runs on this month's by default.
+	# The job sends the month before its run, so by default it runs on the 1st of next month.
 	def sent_transactions(self, run_at: str | None = None) -> list[dict]:
-		run_at = run_at or f"{get_last_day(today())} 23:45:00"
+		run_at = run_at or f"{get_first_day(add_months(today(), 1))} 00:05:00"
 		with freeze_time(run_at), patch(CONNECTION) as connection:
 			connection.return_value = MagicMock(url="https://frappe.test", headers={})
 			send_partner_transactions()
@@ -97,17 +97,16 @@ class TestPartnerContribution(EnterpriseContractTestCase):
 			],
 		)
 
-	def test_job_sends_once_a_month_on_its_last_day_including_a_payment_made_that_day(self):
-		with freeze_time("2026-01-31 18:00:00", tick=True):
+	def test_job_on_the_first_sends_the_month_that_ended_including_a_payment_late_on_its_last_day(self):
+		with freeze_time("2026-01-31 23:50:00", tick=True):
 			contract = self.paid_contract()
 
-		self.assertEqual(self.sent_transactions("2026-01-30 23:45:00"), [])
 		self.assertEqual(
-			[(row["invoice_id"], row["due_date"]) for row in self.sent_transactions("2026-01-31 23:45:00")],
+			[(row["invoice_id"], row["due_date"]) for row in self.sent_transactions("2026-02-01 00:05:00")],
 			[(f"{contract.name}-2026-01", "2026-01-31")],
 		)
 		self.assertEqual(
-			[row["invoice_id"] for row in self.sent_transactions("2026-02-28 23:45:00")],
+			[row["invoice_id"] for row in self.sent_transactions("2026-03-01 00:05:00")],
 			[f"{contract.name}-2026-02"],
 		)
 
@@ -146,7 +145,7 @@ class TestPartnerContribution(EnterpriseContractTestCase):
 			response = connection.return_value.session.post.return_value
 			response.raise_for_status.side_effect = ConnectionError("frappe.io is down")
 			with (
-				freeze_time(f"{get_last_day(today())} 23:45:00"),
+				freeze_time(f"{get_first_day(add_months(today(), 1))} 00:05:00"),
 				self.assertRaisesRegex(ConnectionError, "frappe.io is down"),
 			):
 				send_partner_transactions()
