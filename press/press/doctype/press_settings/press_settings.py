@@ -281,6 +281,8 @@ class PressSettings(Document):
 		wazuh_api_url: DF.Data | None
 		wazuh_api_username: DF.Data | None
 		wazuh_api_verify_tls: DF.Check
+		wazuh_indexer_password: DF.Password | None
+		wazuh_indexer_username: DF.Data | None
 		wazuh_server: DF.Data | None
 		webroot_directory: DF.Data | None
 	# end: auto-generated types
