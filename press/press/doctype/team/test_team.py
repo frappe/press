@@ -11,7 +11,8 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
 )
-from press.press.doctype.team.team import Team
+from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.team.team import Team, check_budget_alerts
 
 
 def allow_server_creation(team: Team):
@@ -313,3 +314,43 @@ class TestTeam(FrappeTestCase):
 		second = team.create_upcoming_invoice(date)
 
 		self.assertEqual(second.name, first.name)
+
+
+class TestBudgetAlerts(FrappeTestCase):
+	def setUp(self):
+		# Recipients are cached, and teams reuse emails across tests
+		get_communication_info.clear_cache()
+		self.team = create_test_team()
+		self.team.db_set({"receive_budget_alerts": 1, "monthly_alert_threshold": 10})
+		self.create_invoice_over_threshold()
+
+	def tearDown(self):
+		frappe.db.rollback()
+		get_communication_info.clear_cache()
+
+	def create_invoice_over_threshold(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=frappe.utils.get_first_day(frappe.utils.getdate()),
+			period_end=frappe.utils.get_last_day(frappe.utils.getdate()),
+		).insert()
+		invoice.db_set("total", 100)
+
+	def add_billing_email(self, email: str):
+		self.team.append("communication_infos", {"channel": "Email", "type": "Billing", "value": email})
+		self.team.save()
+		get_communication_info.clear_cache()
+
+	def alert(self) -> list[str]:
+		with patch.object(frappe, "sendmail") as sendmail:
+			check_budget_alerts()
+		return sendmail.call_args.kwargs["recipients"]
+
+	def test_budget_alert_goes_to_the_billing_contact_when_one_is_set(self):
+		self.add_billing_email("billing@example.com")
+
+		self.assertEqual(self.alert(), ["billing@example.com"])
+
+	def test_budget_alert_goes_to_the_team_owner_without_a_billing_contact(self):
+		self.assertEqual(self.alert(), [self.team.user])
