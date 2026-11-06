@@ -100,6 +100,8 @@
 import { createListResource, createResource } from 'frappe-ui'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { toast } from 'vue-sonner'
+import { getToastErrorMessage } from '../../utils/toast'
 import RoleCreateDialog from './RoleCreateDialog.vue'
 
 const showCreateDialog = ref(false)
@@ -137,6 +139,9 @@ const insert = createResource({
 	onSuccess: () => {
 		roles.reload()
 		showCreateDialog.value = false
+	},
+	onError: (error) => {
+		toast.error(getToastErrorMessage(error, 'Failed to create the role'))
 	},
 })
 
