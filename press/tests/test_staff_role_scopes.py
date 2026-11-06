@@ -85,6 +85,11 @@ SECRET_FIELDS = {
 	"Saas App Subscription": ["secret_key"],
 }
 
+SCRIPT_FIELDS = {
+	"Dashboard Banner": ["action_script"],
+	"Product Trial": ["suspension_email_content", "email_header_content", "email_account"],
+}
+
 SSH_DOCTYPES = {"SSH Access Audit", "SSH Certificate", "SSH Key", "User SSH Certificate", "User SSH Key"}
 
 SUPPORT_READS = [
@@ -267,6 +272,14 @@ class TestStaffRoleScopes(FrappeTestCase):
 					"Press Infrastructure Manager",
 				}
 				self.assertEqual(leaked, set())
+
+	def test_only_system_managers_reach_fields_that_run_as_a_script_or_template(self):
+		for doctype, fieldnames in SCRIPT_FIELDS.items():
+			meta = frappe.get_meta(doctype)
+			with self.subTest(doctype=doctype):
+				self.assertEqual({meta.get_field(fieldname).permlevel for fieldname in fieldnames}, {1})
+				roles = frappe.get_all("DocPerm", {"parent": doctype, "permlevel": 1}, pluck="role")
+				self.assertEqual(set(roles), {"System Manager"})
 
 	def test_support_manager_cannot_impersonate_a_team_member(self):
 		team = create_test_team()

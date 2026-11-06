@@ -109,6 +109,11 @@ The `action_script` field of Dashboard Banner is at permlevel 1, which only
 System Manager can read or write. The script runs as JavaScript in every
 customer's dashboard. Press Product Manager can still create banners.
 
+The Product Trial fields `suspension_email_content`, `email_header_content` and
+`email_account` are at permlevel 1 for the same reason. The server renders the
+suspension email as Jinja, which can read any table. The header is raw HTML in
+the sign-up email. The email account picks the sender of trial emails.
+
 These methods return secrets and stay System Manager only: `show_agent_password`
 on servers, `show_admin_password` on Site, the password methods on monitor,
 analytics, registry, log and trace servers, and
