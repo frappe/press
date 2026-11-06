@@ -1,0 +1,165 @@
+# Copyright (c) 2026, Frappe and Contributors
+# See license.txt
+
+from unittest.mock import patch
+
+import frappe
+from frappe.tests.utils import FrappeTestCase
+
+from press.press.doctype.team.team import Team
+from press.press.doctype.team.test_team import create_test_team
+from press.press.doctype.team_deletion_request.team_deletion_request import TeamDeletionRequest
+
+SCOPE_ROLES = {
+	"Press Support Manager",
+	"Press Infrastructure Manager",
+	"Press Release Manager",
+	"Press Billing Manager",
+	"Press Security Manager",
+	"Press Product Manager",
+	"Press Marketplace Manager",
+	"Partner Manager",
+}
+
+SYSTEM_MANAGER_ONLY = {
+	"Ansible Console",
+	"Ansible Console Log",
+	"Bench Shell",
+	"Bench Shell Log",
+	"Build Cache Shell",
+	"Certificate Authority",
+	"Mail Setup",
+	"Mpesa Setup",
+	"Payment Gateway",
+	"Press Settings",
+	"Saas Remote Login",
+	"Serial Console Log",
+	"Site Access Token",
+	"SSH Certificate Authority",
+	"Telegram Group",
+}
+
+SECURITY_READ_ONLY = {
+	"Audit Log",
+	"Cookie Preference Log",
+	"MariaDB Audit Log",
+	"Site User Session",
+	"SQL Playground Log",
+	"SSH Certificate",
+	"SSH Key",
+	"User 2FA",
+	"User SSH Certificate",
+	"User SSH Key",
+}
+
+PROFILE_SCOPES = {
+	"Press Support Engineer": (["Site", "Team", "Site Backup", "Release Group"], ["Server", "Invoice"]),
+	"Press Site Reliability Engineer": (["Server", "Agent Job", "Site", "Bench"], ["Invoice", "Audit Log"]),
+	"Press Security Engineer": (["SSH Access Audit", "Wazuh Vulnerability", "Server"], ["Site", "Invoice"]),
+	"Press Finance": (["Invoice", "Site Plan", "Payout Order"], ["Site", "Server", "Team"]),
+	"Press Product Team": (["Product Trial", "Saas App", "Dashboard Banner"], ["Site", "Invoice"]),
+	"Press Marketplace Team": (["Marketplace App", "App Release Approval Request"], ["Server", "Invoice"]),
+	"Press Partnerships": (["Partner Lead", "Partner Tier", "ERPNext Consultant"], ["Site", "Invoice"]),
+}
+
+
+def create_staff_user(*role_profiles: str) -> str:
+	user = frappe.new_doc("User")
+	user.email = frappe.mock("email")
+	user.first_name = "Staff"
+	user.send_welcome_email = 0
+	for role_profile in role_profiles:
+		user.append("role_profiles", {"role_profile": role_profile})
+	user.insert(ignore_permissions=True)
+	return user.name
+
+
+def press_doctype_roles() -> dict[str, set[str]]:
+	modules = frappe.get_all("Module Def", {"app_name": "press"}, pluck="name")
+	doctypes = frappe.get_all("DocType", {"module": ("in", modules), "istable": 0, "custom": 0}, pluck="name")
+	roles = {doctype: set() for doctype in doctypes}
+	for permission in frappe.get_all("DocPerm", {"parent": ("in", doctypes)}, ["parent", "role"]):
+		roles[permission.parent].add(permission.role)
+	return roles
+
+
+class TestStaffRoleScopes(FrappeTestCase):
+	"""Staff reach each scope through a scope role, not through System Manager."""
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def test_every_press_doctype_open_to_system_manager_also_grants_a_scope_role(self):
+		missing = [
+			doctype
+			for doctype, roles in press_doctype_roles().items()
+			if "System Manager" in roles and doctype not in SYSTEM_MANAGER_ONLY and not roles & SCOPE_ROLES
+		]
+		self.assertEqual(
+			missing, [], "Add a scope role to these DocTypes, or list them as System Manager only"
+		)
+
+	def test_shell_and_secret_doctypes_grant_no_scope_role(self):
+		roles = press_doctype_roles()
+		leaked = {doctype: roles[doctype] & SCOPE_ROLES for doctype in SYSTEM_MANAGER_ONLY}
+		self.assertEqual({doctype: found for doctype, found in leaked.items() if found}, {})
+
+	def test_role_profile_reads_its_own_scope_and_not_other_scopes(self):
+		for profile, (allowed, denied) in PROFILE_SCOPES.items():
+			user = create_staff_user(profile)
+			with self.subTest(profile=profile):
+				self.assertEqual(frappe.db.get_value("User", user, "user_type"), "System User")
+				for doctype in allowed:
+					self.assertTrue(
+						frappe.has_permission(doctype, "read", user=user), f"{profile} reads {doctype}"
+					)
+				for doctype in denied:
+					self.assertFalse(
+						frappe.has_permission(doctype, "read", user=user), f"{profile} reads {doctype}"
+					)
+
+	def test_no_role_profile_reads_shell_or_secret_doctypes(self):
+		user = create_staff_user(*PROFILE_SCOPES)
+		readable = [
+			doctype for doctype in SYSTEM_MANAGER_ONLY if frappe.has_permission(doctype, "read", user=user)
+		]
+		self.assertEqual(readable, [])
+
+	def test_security_manager_cannot_change_ssh_keys_certificates_audit_logs_or_2fa(self):
+		user = create_staff_user("Press Security Engineer")
+		for doctype in SECURITY_READ_ONLY:
+			with self.subTest(doctype=doctype):
+				self.assertTrue(frappe.has_permission(doctype, "read", user=user))
+				for ptype in ("write", "create", "delete"):
+					self.assertFalse(frappe.has_permission(doctype, ptype, user=user), ptype)
+
+	def test_support_manager_cannot_impersonate_a_team_member(self):
+		team = create_test_team()
+		team.append("team_members", {"user": team.user})
+		team.save()
+		member = team.team_members[-1].name
+		frappe.set_user(create_staff_user("Press Support Engineer"))
+		with patch.dict(frappe.local.flags, {"in_test": False}), self.assertRaises(frappe.PermissionError):
+			Team("Team", team.name).impersonate(member, "Debugging")
+		self.assertFalse(frappe.db.exists("Team Member Impersonation", {"team": team.name}))
+
+	def test_support_manager_cannot_add_themselves_to_a_customer_team(self):
+		team = create_test_team()
+		support_user = create_staff_user("Press Support Engineer")
+		frappe.set_user(support_user)
+		team = Team("Team", team.name)
+		team.append("team_members", {"user": support_user})
+		with self.assertRaisesRegex(frappe.PermissionError, "Only team owner or admins can make changes"):
+			team.save()
+
+	def test_support_manager_can_request_deletion_of_a_team_they_do_not_own(self):
+		request = TeamDeletionRequest({"doctype": "Team Deletion Request", "team": create_test_team().name})
+		frappe.set_user(create_staff_user("Press Support Engineer"))
+		request.validate_team_owner()
+
+	def test_billing_manager_cannot_request_deletion_of_a_team_they_do_not_own(self):
+		request = TeamDeletionRequest({"doctype": "Team Deletion Request", "team": create_test_team().name})
+		frappe.set_user(create_staff_user("Press Finance"))
+		with self.assertRaisesRegex(frappe.PermissionError, "You need to be a Team owner"):
+			request.validate_team_owner()

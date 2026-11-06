@@ -36,7 +36,6 @@ from press.utils.billing import (
 )
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture, capture_pulse
-from press.utils.user import is_system_manager
 
 from .team_members import get_invitations, get_roles
 
@@ -298,7 +297,7 @@ class Team(Document):
 			return
 		if not self.has_value_changed("relaxed_permissions"):
 			return
-		if is_system_manager() or self.is_team_owner() or self.is_admin_user():
+		if "System Manager" in frappe.get_roles() or self.is_team_owner() or self.is_admin_user():
 			return
 		frappe.throw(
 			_(
@@ -319,7 +318,7 @@ class Team(Document):
 			return
 		if not self.has_value_changed("team_members"):
 			return
-		if is_system_manager() or self.is_team_owner() or self.is_admin_user():
+		if "System Manager" in frappe.get_roles() or self.is_team_owner() or self.is_admin_user():
 			return
 		frappe.throw(
 			_(
@@ -737,7 +736,7 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def ban(self):
-		frappe.only_for("System Manager")
+		frappe.only_for(["System Manager", "Press Support Manager"])
 		self.banned = 1
 		self.enabled = 0
 		linked_user = frappe.get_doc("User", self.user)

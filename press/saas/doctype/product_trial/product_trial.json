@@ -278,6 +278,10 @@
 	],
 	"modified": "2026-07-14 10:38:02.060593",
 	"modified_by": "Administrator",
+<<<<<<< HEAD
+=======
+	"modified": "2026-11-06 12:30:00.000000",
+>>>>>>> 9043026 (feat(permissions): Scope staff access by role instead of System Manager)
 	"module": "SaaS",
 	"name": "Product Trial",
 	"naming_rule": "Set by user",
@@ -302,6 +306,18 @@
 			"read": 1,
 			"report": 1,
 			"role": "Site Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Product Manager",
 			"share": 1,
 			"write": 1
 		}

@@ -82,7 +82,7 @@ class BackupDailyAudit(Document):
 
 	@frappe.whitelist()
 	def refresh_lists(self):
-		frappe.only_for("System Manager")
+		frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
