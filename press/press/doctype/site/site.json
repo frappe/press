@@ -801,11 +801,7 @@
 			"link_fieldname": "site"
 		}
 	],
-<<<<<<< HEAD
-	"modified": "2026-09-22 12:00:00.000000",
-=======
 	"modified": "2026-11-06 12:00:00.000000",
->>>>>>> 0f94597 (perf(schema): Index columns that slow queries scan in full)
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Site",

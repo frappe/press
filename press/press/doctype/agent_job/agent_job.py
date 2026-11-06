@@ -39,12 +39,9 @@ from press.utils.user import as_administrator
 
 AGENT_LOG_KEY = "agent-jobs"
 AGENT_JOB_TIMEOUT_HOURS = 4
-<<<<<<< HEAD
 CALLBACK_FAILURE_LIMIT = 5000
-=======
 # fail_old_jobs gives up on a job this old, so the poller skips it too
 STUCK_JOB_DAYS = 2
->>>>>>> 39536b9 (perf(agent-job): Poll only jobs from the last 2 days)
 
 BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
 
