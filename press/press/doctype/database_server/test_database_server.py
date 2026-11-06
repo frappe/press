@@ -124,8 +124,12 @@ class TestDatabaseServer(FrappeTestCase):
 		server.memory_max = 2
 		server.save()
 
-		self.assertIsNone(Mock_Ansible.call_args.kwargs["variables"]["memory_high"])
-		self.assertEqual(Mock_Ansible.call_args.kwargs["variables"]["memory_max"], 2)
+		memory_limits_play = find(
+			Mock_Ansible.call_args_list,
+			lambda call: call.kwargs["playbook"] == "database_memory_limits.yml",
+		)
+		self.assertIsNone(memory_limits_play.kwargs["variables"]["memory_high"])
+		self.assertEqual(memory_limits_play.kwargs["variables"]["memory_max"], 2)
 
 	def test_mariadb_systemd_templates_omit_memory_high_on_unified_server(self):
 		memory_conf = frappe.render_template(
@@ -274,7 +278,7 @@ class TestDatabaseServer(FrappeTestCase):
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	def test_adjust_memory_config_leaves_memory_high_unset_on_unified_server(self):
+	def test_adjust_memory_config_sets_memory_high_to_zero_on_unified_server(self):
 		server = create_test_database_server()
 		server.is_unified_server = True
 		server.save()
