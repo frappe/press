@@ -53,6 +53,12 @@ only.
 - Press Settings, Payment Gateway, Mpesa Setup, Mail Setup, Telegram Group
 - Saas Remote Login, Site Access Token
 
+Press Infrastructure Manager only reads these DocTypes:
+
+- Agent Job: creating or editing a job sends any request to a server agent,
+  which reaches the build cache shell and customer databases.
+- Press Job Type: its step scripts run through `safe_exec`.
+
 These actions also stay System Manager only: `Team.impersonate`,
 `Site.forcefully_remove_site`, `Managed Database Service.show_root_password`,
 the MCP endpoint, and Grove credential rotation. `frappe.client.get_password`
