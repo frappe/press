@@ -397,12 +397,15 @@ PersistentKeepalive = 25
 				"mariadb_root_password": self.database_server_doc.get_password("mariadb_root_password"),
 			},
 		)
+		# The play stops lsyncd first, so clear its state before the play runs.
+		# A failed, timed out or killed run then starts lsyncd again on retry.
+		self.db_set(
+			{"is_lsyncd_running_for_db": False, "db_lsyncd_started_on": None, "db_lsyncd_stop_at": None},
+			commit=True,
+		)
 		play = ansible.run()
 
 		if play.status != "Success":
-			# The play stops lsyncd first, so the retry must start it again
-			self.reset_db_lsyncd_state()
-			self.save()
 			frappe.throw(
 				"Failed to perform the final database sync. Please check the database server logs and retry the failover."
 			)
