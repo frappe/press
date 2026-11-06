@@ -13,7 +13,8 @@ Manager only to the few admins who need shells and secrets.
 | Press Infrastructure Manager | Servers, virtual machines, clusters, agent jobs, Press jobs, monitoring, incidents, cloud cost |
 | Press Release Manager | Apps, app sources, app releases, release groups, benches, deploy candidates, builds, deploys |
 | Press Billing Manager | Invoices, payments, payouts, subscriptions, usage records, plans |
-| Press Security Manager | SSH audits, Wazuh, malware scans, abuse reports, blocked domains, audit logs (read only) |
+| Press Security Manager | Wazuh, malware scans, abuse reports, blocked domains, audit logs and User 2FA (read only) |
+| Press SSH Manager | SSH keys, SSH certificates, SSH access audits |
 | Press Product Manager | SaaS apps, product trials, dashboard banners, notifications, feedback |
 | Press Marketplace Manager | Marketplace apps, app reviews, release approvals |
 | Partner Manager | Partners, partner leads, certificates, consultants |
@@ -28,6 +29,7 @@ a Site. Add a second scope role or a second Role Profile when a job needs both.
 | Press Support Engineer | Support, Release |
 | Press Site Reliability Engineer | Infrastructure, Release, Support |
 | Press Security Engineer | Security, Infrastructure |
+| Press SSH Access Manager | SSH Manager |
 | Press Finance | Billing |
 | Press Product Team | Product |
 | Press Marketplace Team | Marketplace |
@@ -43,6 +45,11 @@ scope role:
 - Ansible Console, Bench Shell, Build Cache Shell, and their logs
 - Serial Console Log
 - Certificate Authority, SSH Certificate Authority
+
+An SSH certificate gives shell access to servers, so Press SSH Manager is a
+role of its own, in its own Role Profile. No other profile includes it. The
+SSH Certificate Authority, which holds the signing key, stays System Manager
+only.
 - Press Settings, Payment Gateway, Mpesa Setup, Mail Setup, Telegram Group
 - Saas Remote Login, Site Access Token
 

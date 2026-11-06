@@ -127,5 +127,20 @@
     "role": "Partner Manager"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Role Profile",
+  "modified": "2026-11-06 14:00:00.000000",
+  "name": "Press SSH Access Manager",
+  "role_profile": "Press SSH Access Manager",
+  "roles": [
+   {
+    "parent": "Press SSH Access Manager",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Press SSH Manager"
+   }
+  ]
  }
 ]

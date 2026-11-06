@@ -17,6 +17,7 @@ SCOPE_ROLES = {
 	"Press Billing Manager",
 	"Press Security Manager",
 	"Press Product Manager",
+	"Press SSH Manager",
 	"Press Marketplace Manager",
 	"Partner Manager",
 }
@@ -45,17 +46,16 @@ SECURITY_READ_ONLY = {
 	"MariaDB Audit Log",
 	"Site User Session",
 	"SQL Playground Log",
-	"SSH Certificate",
-	"SSH Key",
 	"User 2FA",
-	"User SSH Certificate",
-	"User SSH Key",
 }
+
+SSH_DOCTYPES = {"SSH Access Audit", "SSH Certificate", "SSH Key", "User SSH Certificate", "User SSH Key"}
 
 PROFILE_SCOPES = {
 	"Press Support Engineer": (["Site", "Team", "Site Backup", "Release Group"], ["Server", "Invoice"]),
 	"Press Site Reliability Engineer": (["Server", "Agent Job", "Site", "Bench"], ["Invoice", "Audit Log"]),
-	"Press Security Engineer": (["SSH Access Audit", "Wazuh Vulnerability", "Server"], ["Site", "Invoice"]),
+	"Press Security Engineer": (["Wazuh Vulnerability", "Audit Log", "Server"], ["Site", "SSH Certificate"]),
+	"Press SSH Access Manager": (sorted(SSH_DOCTYPES), ["Server", "Site", "Audit Log"]),
 	"Press Finance": (["Invoice", "Site Plan", "Payout Order"], ["Site", "Server", "Team"]),
 	"Press Product Team": (["Product Trial", "Saas App", "Dashboard Banner"], ["Site", "Invoice"]),
 	"Press Marketplace Team": (["Marketplace App", "App Release Approval Request"], ["Server", "Invoice"]),
@@ -126,7 +126,15 @@ class TestStaffRoleScopes(FrappeTestCase):
 		]
 		self.assertEqual(readable, [])
 
-	def test_security_manager_cannot_change_ssh_keys_certificates_audit_logs_or_2fa(self):
+	def test_only_the_ssh_profile_can_create_ssh_certificates_and_keys(self):
+		for profile in PROFILE_SCOPES:
+			user = create_staff_user(profile)
+			with self.subTest(profile=profile):
+				for doctype in SSH_DOCTYPES:
+					can_create = frappe.has_permission(doctype, "create", user=user)
+					self.assertEqual(can_create, profile == "Press SSH Access Manager", doctype)
+
+	def test_security_manager_cannot_change_audit_logs_or_2fa(self):
 		user = create_staff_user("Press Security Engineer")
 		for doctype in SECURITY_READ_ONLY:
 			with self.subTest(doctype=doctype):
