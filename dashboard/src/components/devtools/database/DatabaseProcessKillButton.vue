@@ -13,6 +13,7 @@
 </template>
 <script>
 import { toast } from 'vue-sonner';
+import { getToastErrorMessage } from '../../../utils/toast';
 export default {
 	props: {
 		row: { type: Object, required: true },
@@ -41,6 +42,9 @@ export default {
 				onSuccess: (data) => {
 					this.isKilled = true;
 					toast.success('Database Process Killed');
+				},
+				onError: (error) => {
+					toast.error(getToastErrorMessage(error, 'Failed to kill the process'));
 				},
 				auto: false,
 			};
