@@ -6,8 +6,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import get_url
 
+from press.access.staff_roles import needs_staff_role
 from press.api.client import dashboard_whitelist
-from press.utils.user import only_for_staff_with
 
 
 class PartnerApprovalRequest(Document):
@@ -59,8 +59,8 @@ class PartnerApprovalRequest(Document):
 				customer.save(ignore_permissions=True)
 
 	@dashboard_whitelist()
+	@needs_staff_role("Partner Manager")
 	def approve_partner_request(self):
-		only_for_staff_with(["Partner Manager"])
 		if self.status == "Pending":
 			self.approved_by_partner = True
 			self.save(ignore_permissions=True)

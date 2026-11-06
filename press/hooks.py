@@ -494,6 +494,8 @@ on_login = "press.overrides.on_login"
 
 before_request = [
 	"press.overrides.before_request",
+	"press.access.staff_roles.use_saved_document",
+	"press.access.staff_roles.check_staff_role",
 	"press.telemetry.monitor.add_user_context",
 	"press.telemetry.sentry.add_user_context",
 ]

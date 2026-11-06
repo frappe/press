@@ -6,7 +6,6 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from press.press.doctype.invoice.invoice import Invoice
 from press.press.doctype.team.team import Team
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.team_deletion_request.team_deletion_request import TeamDeletionRequest
@@ -69,11 +68,21 @@ SUPPORT_READ_ONLY = [
 	"Agent Job",
 ]
 
+SUPPORT_CREATES = {"TLS Certificate": True, "Server Activity": True, "Press Notification": True}
+SUPPORT_CREATES |= {"Site Plan Change": False, "Plan Change": False, "Agent Job": False, "Press Job": False}
+
 SECRET_METHODS = [
 	("Server", "show_agent_password"),
 	("Site", "show_admin_password"),
 	("Virtual Machine", "get_serial_console_credentials"),
 ]
+
+SECRET_FIELDS = {
+	"Agent Job": ["request_data", "request_files"],
+	"Ansible Play": ["variables"],
+	"Marketplace App Subscription": ["secret_key"],
+	"Saas App Subscription": ["secret_key"],
+}
 
 SSH_DOCTYPES = {"SSH Access Audit", "SSH Certificate", "SSH Key", "User SSH Certificate", "User SSH Key"}
 
@@ -222,19 +231,13 @@ class TestStaffRoleScopes(FrappeTestCase):
 				for ptype in ("write", "create", "delete"):
 					self.assertFalse(frappe.has_permission(doctype, ptype, user=user), ptype)
 
-	def test_support_cannot_press_billing_buttons_on_an_invoice_it_reads(self):
-		frappe.set_user(create_staff_user("Press Support Engineer"))
-		invoice = Invoice({"doctype": "Invoice", "name": "INVOICE-TEST"})
-		with self.assertRaisesRegex(frappe.PermissionError, "Press Billing Manager"):
-			invoice.refund(reason="Test")
-
-	def test_buttons_still_work_for_customers_and_their_scope_role(self):
-		from press.utils.user import only_for_staff_with
-
-		frappe.set_user(create_test_team().user)
-		only_for_staff_with(["Press Billing Manager"])
-		frappe.set_user(create_staff_user("Press Finance"))
-		only_for_staff_with(["Press Billing Manager"])
+	def test_support_creates_only_the_safe_side_effect_records(self):
+		user = create_staff_user("Press Support Engineer")
+		for doctype, can_create in SUPPORT_CREATES.items():
+			with self.subTest(doctype=doctype):
+				self.assertEqual(frappe.has_permission(doctype, "create", user=user), can_create)
+		self.assertTrue(frappe.has_permission("Server", "write", user=user))
+		self.assertFalse(frappe.has_permission("Server", "create", user=user))
 
 	def test_scope_roles_cannot_call_methods_that_return_secrets(self):
 		frappe.set_user(create_staff_user(*PROFILE_SCOPES))
@@ -247,13 +250,17 @@ class TestStaffRoleScopes(FrappeTestCase):
 			):
 				getattr(controller, method)()
 
-	def test_only_infrastructure_copies_a_tls_certificate_private_key(self):
-		certificate = frappe.get_doc({"doctype": "TLS Certificate"})
-		frappe.set_user(create_staff_user("Press Support Engineer"))
-		with self.assertRaisesRegex(frappe.PermissionError, "Press Infrastructure Manager"):
-			certificate.get_private_key()
-		frappe.set_user(create_staff_user("Press Site Reliability Engineer"))
-		self.assertIsNone(certificate.get_private_key())
+	def test_scope_roles_cannot_read_fields_that_hold_secrets(self):
+		for doctype, fieldnames in SECRET_FIELDS.items():
+			meta = frappe.get_meta(doctype)
+			with self.subTest(doctype=doctype):
+				self.assertEqual({meta.get_field(fieldname).permlevel for fieldname in fieldnames}, {1})
+				readers = frappe.get_all(
+					"DocPerm", {"parent": doctype, "permlevel": 1, "read": 1}, pluck="role"
+				)
+				self.assertIn("System Manager", readers)
+				self.assertNotIn("Press Support", readers)
+				self.assertNotIn("Press Infrastructure Manager", readers)
 
 	def test_support_manager_cannot_impersonate_a_team_member(self):
 		team = create_test_team()

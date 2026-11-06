@@ -7,7 +7,7 @@ import frappe
 import requests
 from frappe.model.document import Document
 
-from press.utils.user import only_for_staff_with
+from press.access.staff_roles import needs_staff_role
 
 if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
@@ -128,8 +128,8 @@ class MarketplaceAppSubscription(Document):
 		site_doc.update_site_config(config)
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def activate(self):
-		only_for_staff_with(["Press Marketplace Manager"])
 		if self.status == "Active":
 			frappe.throw("This subscription is already active. No further action is needed.")
 

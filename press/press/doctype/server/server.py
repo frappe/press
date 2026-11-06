@@ -28,6 +28,7 @@ from frappe.utils.password import get_decrypted_password
 from frappe.utils.synchronization import filelock
 from frappe.utils.user import is_system_user
 
+from press.access.staff_roles import needs_staff_role
 from press.agent import Agent
 from press.api.account import is_limits_exceeded
 from press.api.client import dashboard_whitelist
@@ -1723,7 +1724,7 @@ class BaseServer(Document, TagHelpers):
 				"virtual_machine": self.virtual_machine,
 				"arguments": json.dumps(arguments, indent=2, sort_keys=True),
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 
 	def get_certificate(self):
 		certificate_name = frappe.db.get_value(
@@ -4085,6 +4086,7 @@ class Server(BaseServer):
 		)
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Infrastructure Manager")
 	def generate_on_prem_failover_config(self):
 		if not self.enable_on_prem_failover_support:
 			frappe.throw("On-Prem Failover support is not enabled for this server.")  # nosemgrep

@@ -12,13 +12,13 @@ from frappe.model.document import Document
 from frappe.query_builder.functions import Coalesce, Count
 from frappe.utils import cint, flt
 
+from press.access.staff_roles import needs_staff_role
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.s3_storage_plan.s3_storage_plan import AUDIT_LOG_STORAGE_PLAN
 from press.press.doctype.site_plan.site_plan import SitePlan
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
-from press.utils.user import only_for_staff_with
 
 if TYPE_CHECKING:
 	from frappe.types import DF
@@ -156,8 +156,8 @@ class Subscription(Document):
 		return False
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def create_usage_record(self, date: DF.Date | None = None):  # noqa: C901
-		only_for_staff_with(["Press Billing Manager"])
 		cannot_charge = not self.can_charge_for_subscription()
 		if cannot_charge:
 			return None

@@ -13,6 +13,7 @@ from frappe.model.document import Document
 from frappe.utils import flt, getdate, now
 from frappe.utils.data import fmt_money
 
+from press.access.staff_roles import needs_staff_role
 from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
 from press.guards import role_guard
@@ -30,7 +31,6 @@ from press.utils.billing import (
 )
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture_pulse
-from press.utils.user import only_for_staff_with
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.usage_record.usage_record import UsageRecord
@@ -293,8 +293,8 @@ class Invoice(Document):
 		self.apply_taxes_if_applicable()
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def finalize_invoice(self):  # noqa: C901
-		only_for_staff_with(["Press Billing Manager"])
 		if self.type == "Prepaid Credits":
 			return
 
@@ -827,8 +827,8 @@ class Invoice(Document):
 		return f"Frappe Cloud Subscription ({period_string})"
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def finalize_stripe_invoice(self):
-		only_for_staff_with(["Press Billing Manager"])
 		stripe = get_stripe()
 		try:
 			stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
@@ -1182,8 +1182,8 @@ class Invoice(Document):
 		)
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def create_invoice_on_frappeio(self):  # noqa: C901
-		only_for_staff_with(["Press Billing Manager"])
 		if self.flags.skip_frappe_invoice:
 			return None
 		if self.status != "Paid":
@@ -1393,8 +1393,8 @@ class Invoice(Document):
 			frappe.log_error(str(e), "Error fetching Sales Invoice PDF on external site")
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def refund(self, reason):
-		only_for_staff_with(["Press Billing Manager"])
 		stripe = get_stripe()
 		charge = None
 		if self.type in ["Subscription", "Service"]:
@@ -1419,8 +1419,8 @@ class Invoice(Document):
 		self.add_comment(text=f"Refund reason: {reason}")
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def change_stripe_invoice_status(self, status):
-		only_for_staff_with(["Press Billing Manager"])
 		stripe = get_stripe()
 		try:
 			if status == "Paid":
@@ -1436,8 +1436,8 @@ class Invoice(Document):
 			raise
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def refresh_stripe_payment_link(self):
-		only_for_staff_with(["Press Billing Manager"])
 		stripe = get_stripe()
 		try:
 			stripe_invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
