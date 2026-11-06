@@ -116,8 +116,12 @@ def check_method_roles(doctype: str, function):
 
 
 def reads_only(doctype: str) -> bool:
-	"""Whether the user reads `doctype` only through a read-only role, such as Press Support."""
-	roles = {perm.role for perm in get_valid_perms(doctype) if perm.read and not perm.permlevel}
+	"""Whether the user reads `doctype` only through a read-only role, such as Press Support.
+
+	An `if_owner` row gives nothing on records of other users, so it does not count.
+	"""
+	perms = get_valid_perms(doctype)
+	roles = {perm.role for perm in perms if perm.read and not perm.permlevel and not perm.if_owner}
 	return bool(roles) and roles <= READ_ONLY_ROLES
 
 
