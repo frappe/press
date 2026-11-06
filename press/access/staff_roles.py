@@ -3,11 +3,17 @@ import re
 import frappe
 from frappe import _
 from frappe.model.base_document import get_controller
+from frappe.permissions import get_valid_perms
 
 from press.utils.user import is_desk_user
 
 DOCUMENT_METHODS = {"run_doc_method", "frappe.handler.run_doc_method", "frappe.api.v2.run_doc_method"}
 DOCUMENT_KEYS = ("docs", "document")
+DASHBOARD_METHODS = {
+	"press.api.client.run_doc_method": ("dt", None),
+	"press.api.client.delete": ("doctype", "delete"),
+}
+READ_ONLY_ROLES = {"Press Support"}
 METHOD_PATH = re.compile(r"^/api/(?:v1/|v2/)?method/(.+?)/?$")
 RESOURCE_PATH = re.compile(r"^/api/(?:v1/)?resource/([^/]+)/.+$")
 DOCUMENT_PATH = re.compile(r"^/api/v2/document/([^/]+)/.+/method/([^/]+)/?$")
@@ -25,6 +31,12 @@ def needs_staff_role(*roles: str):
 		return method
 
 	return mark
+
+
+def safe_for_readers(method):
+	"""Mark a whitelisted document method that only reads, so read-only staff can call it."""
+	method.is_safe_for_readers = True
+	return method
 
 
 def is_staff() -> bool:
@@ -70,6 +82,9 @@ def get_requested_document_methods() -> list[tuple[str, str]]:
 		if form.get("dt"):
 			doctypes.append(form.dt)
 		return [(doctype, form.get("method")) for doctype in doctypes]
+	if (requested := get_requested_method()) in DASHBOARD_METHODS:
+		doctype_key, method = DASHBOARD_METHODS[requested]
+		return [(form.get(doctype_key), method or form.get("method"))]
 	path = get_request_path() or ""
 	if match := DOCUMENT_PATH.match(path):
 		return [(match.group(1), match.group(2))]
@@ -79,20 +94,31 @@ def get_requested_document_methods() -> list[tuple[str, str]]:
 
 
 def check_staff_role():
-	"""Stop desk staff who call a marked document method without its role.
+	"""Stop desk staff who call a document method that their roles do not allow.
 
 	Only the method that the request names is checked, so the same method still
 	works when Press code calls it, or when a customer calls it from the dashboard.
 	"""
 	if not is_staff():
 		return
-	user_roles = set(frappe.get_roles())
 	for doctype, method in get_requested_document_methods():
-		roles = getattr(getattr(get_controller(doctype), method or "", None), "staff_roles", None)
-		if roles and not {*roles, "System Manager"} & user_roles:
-			frappe.throw(
-				_("You need one of these roles: {0}").format(", ".join(roles)), frappe.PermissionError
-			)
+		if doctype and method and (function := getattr(get_controller(doctype), method, None)):
+			check_method_roles(doctype, function)
+
+
+def check_method_roles(doctype: str, function):
+	"""A `needs_staff_role` method needs one of its roles. Readers call only `safe_for_readers` methods."""
+	roles = getattr(function, "staff_roles", None)
+	if roles and not {*roles, "System Manager"} & set(frappe.get_roles()):
+		frappe.throw(_("You need one of these roles: {0}").format(", ".join(roles)), frappe.PermissionError)
+	if not getattr(function, "is_safe_for_readers", False) and reads_only(doctype):
+		frappe.throw(_("You can only read {0}").format(_(doctype)), frappe.PermissionError)
+
+
+def reads_only(doctype: str) -> bool:
+	"""Whether the user reads `doctype` only through a read-only role, such as Press Support."""
+	roles = {perm.role for perm in get_valid_perms(doctype) if perm.read and not perm.permlevel}
+	return bool(roles) and roles <= READ_ONLY_ROLES
 
 
 def use_saved_document():

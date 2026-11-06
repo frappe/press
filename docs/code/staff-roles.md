@@ -9,7 +9,8 @@ Manager only to the few admins who need shells and secrets.
 
 | Role | Scope |
 |------|-------|
-| Press Support | The common support work. Full access to teams, sites, backups, updates, domains, webhooks, apps, release groups, benches and deploys. Read, write and every button on servers, database servers, proxy servers and virtual machines, but not create or delete. Create on TLS certificates, server activities and Press notifications, which buttons make as a side effect. Read only on agent jobs, Press jobs, incidents, restorations, TLS certificates, billing, Marketplace, Product and Partner records |
+| Press Support | First-line support (L1) that finds issues. Reads everything that Press Support Engineer reads and changes nothing. Presses only buttons marked `@safe_for_readers`. Can also run the MariaDB and customer email reports, request team deletion, transfer resources between teams and rotate site passwords |
+| Press Support Engineer | Engineering support (L2). Full access to teams, sites, backups, updates, domains, webhooks, apps, release groups, benches and deploys. Read, write and every button on servers, database servers, proxy servers and virtual machines, but not create or delete. Create on TLS certificates, server activities and Press notifications, which buttons make as a side effect. Read only on agent jobs, Press jobs, incidents, restorations, TLS certificates, billing, Marketplace, Product and Partner records |
 | Press Infrastructure Manager | Servers, virtual machines, clusters, agent jobs, Press jobs, monitoring, incidents, cloud cost |
 | Press Release Manager | Apps, app sources, app releases, release groups, benches, deploy candidates, builds, deploys |
 | Press Billing Manager | Invoices, payments, payouts, subscriptions, usage records, plans |
@@ -19,7 +20,7 @@ Manager only to the few admins who need shells and secrets.
 | Press Marketplace Manager | Marketplace apps, app reviews, release approvals |
 | Partner Manager | Partners, partner leads, certificates, consultants |
 
-Except for Press Support, the scopes do not share read access. For example, a
+Except for the two support roles, the scopes do not share read access. For example, a
 Billing Manager cannot open a Site. Add a second scope role or a second Role
 Profile when a job needs both.
 
@@ -31,8 +32,16 @@ Subscription, Product Trial Request and Partner Approval Request, the TLS
 Certificate private key, and the on-prem failover config on Server. The
 `check_staff_role` `before_request` hook stops desk staff without that role when
 they call the method from desk. Press code that calls the method, and customers
-on the dashboard, are not affected. Press Support can press the buttons on agent
-jobs, Press jobs, restorations and incidents.
+on the dashboard, are not affected. Press Support Engineer can press the
+buttons on agent jobs, Press jobs, restorations and incidents.
+
+Press Support is listed in `READ_ONLY_ROLES`. When a staff user reads a DocType
+only through a read-only role, `check_staff_role` lets them call only the
+methods marked `@safe_for_readers`, such as `Site.get_backup_schedule` or
+`Server.ping_agent`. Mark a method safe only when it changes no record, queues
+no job and returns no secret. The rule also covers `press.api.client.run_doc_method`
+and `press.api.client.delete`. Other dashboard APIs still let every System User
+through, so Press Support is read only in desk but not yet on the dashboard.
 
 Desk sends the whole form with a button call, and Frappe checks only read
 access. So `use_saved_document`, also a `before_request` hook, runs the button
@@ -55,8 +64,9 @@ Agent Job `request_data` and `request_files`, Ansible Play `variables`, and the
 
 | Role Profile | Roles |
 |--------------|-------|
-| Press Support Engineer | Support |
-| Press Site Reliability Engineer | Infrastructure, Support |
+| Press Support | Press Support (L1) |
+| Press Support Engineer | Press Support Engineer (L2) |
+| Press Site Reliability Engineer | Infrastructure, Press Support Engineer |
 | Press Security Engineer | Security, Infrastructure |
 | Press SSH Access Manager | SSH Manager |
 | Press Finance | Billing |
@@ -92,7 +102,7 @@ Press Infrastructure Manager only reads these DocTypes:
   loaded with `pickle`. The workflow engine inserts these records itself, so
   Press Jobs still work.
 
-Press Release Manager and Press Support only read App Rename, because site updates run its
+Press Release Manager and the support roles only read App Rename, because site updates run its
 before-migrate and rollback scripts on customer benches.
 
 The `action_script` field of Dashboard Banner is at permlevel 1, which only

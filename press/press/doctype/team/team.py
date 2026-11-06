@@ -16,6 +16,7 @@ from frappe.query_builder.functions import Count, GroupConcat
 from frappe.rate_limiter import rate_limit
 from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_form, getdate, random_string
 
+from press.access.staff_roles import safe_for_readers
 from press.access.utils import is_outside_employee
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
@@ -272,6 +273,7 @@ class Team(Document):
 		load_address_and_contact(self)
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_home_data(self):
 		return {
 			"sites": frappe.db.get_all(
@@ -736,7 +738,7 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def ban(self):
-		frappe.only_for(["System Manager", "Press Support"])
+		frappe.only_for(["System Manager", "Press Support Engineer"])
 		self.banned = 1
 		self.enabled = 0
 		linked_user = frappe.get_doc("User", self.user)
@@ -844,6 +846,7 @@ class Team(Document):
 		return self.razorpay_customer_id
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_communication_infos(self):
 		return (
 			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
@@ -1098,10 +1101,12 @@ class Team(Document):
 		return check_is_admin_user(self.name)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_team_members(self):
 		return get_team_members(self.name)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def members(self):
 		users = [member.user for member in self.team_members]
 
@@ -1301,6 +1306,7 @@ class Team(Document):
 		)
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_balance(self):
 		res = frappe.get_all(
 			"Balance Transaction",

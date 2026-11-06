@@ -18,6 +18,7 @@ from frappe.core.utils import find
 from frappe.utils import cint, flt, now_datetime
 from frappe.utils.password import get_decrypted_password
 
+from press.access.staff_roles import safe_for_readers
 from press.api.client import dashboard_whitelist
 from press.exceptions import MonitorServerDown
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -787,6 +788,7 @@ class DatabaseServer(BaseServer):
 			self.save(ignore_permissions=True)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_mariadb_variable_value(  # noqa: C901
 		self, variable: str, return_default_if_not_found: bool = False
 	) -> str | int | float | None:
@@ -1589,6 +1591,7 @@ class DatabaseServer(BaseServer):
 		frappe.db.set_value("Subscription", self.audit_log_subscription, "enabled", cint(bool(billable)))
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_audit_logs(self, start: int = 0, limit: int = 10):
 		return {
 			"logs": frappe.get_all(
@@ -2238,6 +2241,7 @@ class DatabaseServer(BaseServer):
 		return "System"
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_mariadb_variables(self):
 		try:
 			agent = Agent(self.name, "Database Server")
@@ -2257,6 +2261,7 @@ class DatabaseServer(BaseServer):
 		return self.agent.fetch_binlog_list()
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_binlogs_info(self):
 		data = self.get_binlogs_raw_data()
 		binlogs = data.get("binlogs_in_disk", [])
@@ -2270,6 +2275,7 @@ class DatabaseServer(BaseServer):
 		return [binlog for binlog in binlogs if binlog.get("name") != current_binlog]
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_binlog_summary(self):
 		binlogs_in_disk = self.get_binlogs_raw_data().get("binlogs_in_disk", [])
 		no_of_binlogs = len(binlogs_in_disk)
@@ -2295,6 +2301,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		frappe.msgprint(message, "Binlog Summary")
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_binlogs_indexing_status(self):
 		if not self.enable_binlog_indexing:
 			frappe.throw(

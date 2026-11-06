@@ -15,7 +15,7 @@ from frappe.utils.safe_exec import safe_exec
 from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
 
-from press.access.staff_roles import needs_staff_role
+from press.access.staff_roles import needs_staff_role, safe_for_readers
 from press.api.client import dashboard_whitelist
 from press.api.github import app, get_access_token
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
@@ -697,6 +697,7 @@ class MarketplaceApp(WebsiteGenerator):
 		return result[0] if result else {"usd_amount": 0, "inr_amount": 0}
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def site_installs(self):
 		site = frappe.qb.DocType("Site")
 		site_app = frappe.qb.DocType("Site App")
@@ -717,6 +718,7 @@ class MarketplaceApp(WebsiteGenerator):
 		return query.run(as_dict=True)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def listing_details(self):
 		return {
 			"support": self.support,

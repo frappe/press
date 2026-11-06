@@ -127,3 +127,38 @@ class TestStaffRoles(FrappeTestCase):
 		self.assertEqual(
 			[frappe.parse_json(form[key])["modified"] for key in ("docs", "document")], [saved, saved]
 		)
+
+	def test_press_support_reads_what_engineers_read_and_changes_nothing(self):
+		user = create_staff_user("Press Support")
+		doctypes = frappe.get_all(
+			"DocPerm", {"role": "Press Support Engineer", "read": 1, "permlevel": 0}, pluck="parent"
+		)
+		for doctype in doctypes:
+			with self.subTest(doctype=doctype):
+				self.assertTrue(frappe.has_permission(doctype, "read", user=user))
+		changes = ("write", "create", "delete", "submit", "cancel", "amend", "import")
+		for permission in frappe.get_all("DocPerm", {"role": "Press Support"}, ["*"]):
+			with self.subTest(doctype=permission.parent):
+				self.assertEqual([ptype for ptype in changes if permission[ptype]], [])
+
+	def test_press_support_presses_only_buttons_safe_for_readers(self):
+		frappe.set_user(create_staff_user("Press Support"))
+		press_desk_button("/api/method/run_doc_method", "Site", "get_backup_schedule")
+		press_desk_button("/api/v2/document/Server/x/method/ping_agent/", "Server", "ping_agent")
+		blocked = [
+			("/api/method/run_doc_method", {"method": "archive", "dt": "Site", "dn": "x"}),
+			("/api/v2/document/Agent Job/x/method/retry/", {}),
+			("/api/method/press.api.client.run_doc_method", {"dt": "Site", "dn": "x", "method": "archive"}),
+			("/api/method/press.api.client.delete", {"doctype": "Site", "name": "x"}),
+		]
+		for path, form in blocked:
+			with self.subTest(path=path), self.assertRaisesRegex(frappe.PermissionError, "only read"):
+				run_hook(check_staff_role, path, form)
+
+	def test_roles_that_are_not_read_only_still_press_every_button(self):
+		for profiles in [("Press Support Engineer",), ("Press Support", "Press Site Reliability Engineer")]:
+			frappe.set_user(create_staff_user(*profiles))
+			with self.subTest(profiles=profiles):
+				run_hook(check_staff_role, "/api/v2/document/Agent Job/x/method/retry/", {})
+				run_hook(check_staff_role, "/api/method/run_doc_method", {"method": "archive", "dt": "Site"})
+			frappe.set_user("Administrator")

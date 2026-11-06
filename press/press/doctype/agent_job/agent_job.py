@@ -21,6 +21,7 @@ from frappe.utils import (
 	now_datetime,
 )
 
+from press.access.staff_roles import safe_for_readers
 from press.access.support_access import has_support_access
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
@@ -316,6 +317,7 @@ class AgentJob(Document):
 		frappe.db.commit()
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_agent_endpoint(self):
 		return Agent(self.server, server_type=self.server_type).get_request_url(f"jobs/{self.job_id}")
 

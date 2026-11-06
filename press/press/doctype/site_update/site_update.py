@@ -17,6 +17,7 @@ from frappe.utils import convert_utc_to_system_timezone
 from frappe.utils.caching import site_cache
 from frappe.utils.data import cint
 
+from press.access.staff_roles import safe_for_readers
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import SiteAlreadyArchived, SiteUnderMaintenance
@@ -727,6 +728,7 @@ class SiteUpdate(Document):
 				frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_steps(self):  # noqa: C901
 		"""
 		{

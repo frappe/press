@@ -280,12 +280,16 @@
 	"modified_by": "Administrator",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 	"modified": "2026-11-06 12:30:00.000000",
 >>>>>>> 9043026 (feat(permissions): Scope staff access by role instead of System Manager)
 =======
 	"modified": "2026-11-06 18:00:00.000000",
 >>>>>>> 20c9b39 (feat(permissions): Make Press Support the role for common staff work)
+=======
+	"modified": "2026-11-06 21:00:00.000000",
+>>>>>>> 3b666c5 (feat(permissions): Split support into Press Support (L1) and Press Support Engineer (L2))
 	"module": "SaaS",
 	"name": "Product Trial",
 	"naming_rule": "Set by user",
@@ -324,6 +328,13 @@
 			"role": "Press Product Manager",
 			"share": 1,
 			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support Engineer"
 		},
 		{
 			"export": 1,

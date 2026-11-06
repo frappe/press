@@ -248,7 +248,9 @@ COLUMNS = [
 
 
 def execute(filters=None):
-	frappe.only_for(["System Manager", "Site Manager", "Press User", "Press Support"])
+	frappe.only_for(
+		["System Manager", "Site Manager", "Press User", "Press Support", "Press Support Engineer"]
+	)
 	filters.database = frappe.db.get_value("Site", filters.site, "database_name")
 	if not filters.database:
 		frappe.throw(

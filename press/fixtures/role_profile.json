@@ -2,12 +2,12 @@
  {
   "docstatus": 0,
   "doctype": "Role Profile",
-  "modified": "2026-11-06 18:00:00.000000",
-  "name": "Press Support Engineer",
-  "role_profile": "Press Support Engineer",
+  "modified": "2026-11-06 21:00:00.000000",
+  "name": "Press Support",
+  "role_profile": "Press Support",
   "roles": [
    {
-    "parent": "Press Support Engineer",
+    "parent": "Press Support",
     "parentfield": "roles",
     "parenttype": "Role Profile",
     "role": "Press Support"
@@ -17,7 +17,22 @@
  {
   "docstatus": 0,
   "doctype": "Role Profile",
-  "modified": "2026-11-06 18:00:00.000000",
+  "modified": "2026-11-06 21:00:00.000000",
+  "name": "Press Support Engineer",
+  "role_profile": "Press Support Engineer",
+  "roles": [
+   {
+    "parent": "Press Support Engineer",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Press Support Engineer"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Role Profile",
+  "modified": "2026-11-06 21:00:00.000000",
   "name": "Press Site Reliability Engineer",
   "role_profile": "Press Site Reliability Engineer",
   "roles": [
@@ -31,7 +46,7 @@
     "parent": "Press Site Reliability Engineer",
     "parentfield": "roles",
     "parenttype": "Role Profile",
-    "role": "Press Support"
+    "role": "Press Support Engineer"
    }
   ]
  },

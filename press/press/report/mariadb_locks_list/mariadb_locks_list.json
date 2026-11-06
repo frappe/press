@@ -26,7 +26,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letterhead": null,
- "modified": "2026-11-06 12:30:00.000000",
+ "modified": "2026-11-06 21:00:00.000000",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Locks List",
@@ -38,6 +38,9 @@
  "roles": [
   {
    "role": "System Manager"
+  },
+  {
+   "role": "Press Support Engineer"
   },
   {
    "role": "Press Support"

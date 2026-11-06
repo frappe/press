@@ -22,6 +22,7 @@ from tenacity import RetryError, retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_not_result
 from twilio.base.exceptions import TwilioRestException
 
+from press.access.staff_roles import safe_for_readers
 from press.api.server import prometheus_query
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.bench.bench import Bench
@@ -771,6 +772,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		self.send_mail(subject, message)
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_email_subject(self):
 		title = str(frappe.db.get_value("Server", self.server, "title"))
 		name = title.removesuffix(" - Application") or self.server
@@ -969,6 +971,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		return self.monitor_server.get_sites_down_for_server(str(self.server))
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_down_site(self):
 		return self.sites_down[0] if self.sites_down else None
 
