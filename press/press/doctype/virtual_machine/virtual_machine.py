@@ -848,6 +848,7 @@ class VirtualMachine(Document):
 				"ansible_memtotal_mb": memory,
 				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
 				"db_port": database_server.db_port or 3306,
+				"is_unified_server": True,
 			}
 
 		return None
