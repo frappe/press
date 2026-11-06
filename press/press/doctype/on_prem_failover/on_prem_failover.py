@@ -97,9 +97,7 @@ class OnPremFailover(Document):
 			self.is_on_prem_server_ssh_from_app_server_working = False
 			self.is_on_prem_server_reachable_from_db_server = False
 			self.is_on_prem_server_ssh_from_db_server_working = False
-			self.is_lsyncd_running_for_db = False
-			self.db_lsyncd_started_on = None
-			self.db_lsyncd_stop_at = None
+			self.reset_db_lsyncd_state()
 			self.save()
 
 	def setup_wireguard_on_app_server(self):
@@ -402,9 +400,17 @@ PersistentKeepalive = 25
 		play = ansible.run()
 
 		if play.status != "Success":
+			# The play stops lsyncd first, so the retry must start it again
+			self.reset_db_lsyncd_state()
+			self.save()
 			frappe.throw(
 				"Failed to perform the final database sync. Please check the database server logs and retry the failover."
 			)
+
+	def reset_db_lsyncd_state(self):
+		self.is_lsyncd_running_for_db = False
+		self.db_lsyncd_started_on = None
+		self.db_lsyncd_stop_at = None
 
 	def setup_and_configure_database_replica(self):
 		frappe.enqueue_doc(
