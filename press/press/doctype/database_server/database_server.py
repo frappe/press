@@ -2441,7 +2441,24 @@ systemctl restart mariadb
 		if binlog_limit_in_gb == 0:
 			return
 
+		if self.has_open_binlog_purge_job():
+			return
+
 		self.agent.purge_binlogs_by_size_limit(self, max_binlog_gb=binlog_limit_in_gb)
+
+	def has_open_binlog_purge_job(self) -> bool:
+		"""Agent job deduplication is off by default, so an undelivered purge would pile up every 10 minutes."""
+		return bool(
+			frappe.db.exists(
+				"Agent Job",
+				{
+					"job_type": "Purge Binlogs By Size Limit",
+					"status": ("in", ("Undelivered", "Pending", "Running")),
+					"server_type": self.doctype,
+					"server": self.name,
+				},
+			)
+		)
 
 	@dashboard_whitelist()
 	def enable_binlog_indexing_service(self):
