@@ -92,6 +92,7 @@ import {
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { getTeam } from '../data/team'
+import { getToastErrorMessage } from '../utils/toast'
 import Link from './Link.vue'
 
 const props = defineProps<{
@@ -162,6 +163,9 @@ const update = createResource({
 	onSuccess: (data: any) => {
 		toast.success(`Request ${data.status}`)
 		open.value = false
+	},
+	onError: (error: any) => {
+		toast.error(getToastErrorMessage(error, 'Failed to update the request'))
 	},
 })
 
