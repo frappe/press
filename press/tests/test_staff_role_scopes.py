@@ -49,6 +49,11 @@ SECURITY_READ_ONLY = {
 	"User 2FA",
 }
 
+SCOPE_READ_ONLY = {
+	"Agent Job": "sends any request to a server agent",
+	"Press Job Type": "holds step scripts that PressJobStep.execute runs",
+}
+
 SSH_DOCTYPES = {"SSH Access Audit", "SSH Certificate", "SSH Key", "User SSH Certificate", "User SSH Key"}
 
 PROFILE_SCOPES = {
@@ -125,6 +130,20 @@ class TestStaffRoleScopes(FrappeTestCase):
 			doctype for doctype in SYSTEM_MANAGER_ONLY if frappe.has_permission(doctype, "read", user=user)
 		]
 		self.assertEqual(readable, [])
+
+	def test_scope_roles_only_read_doctypes_that_run_requests_or_scripts(self):
+		ptypes = ("write", "create", "delete", "submit", "cancel", "amend")
+		for doctype in SCOPE_READ_ONLY:
+			for permission in frappe.get_all("DocPerm", {"parent": doctype, "role": ("in", SCOPE_ROLES)}, ["*"]):
+				with self.subTest(doctype=doctype, role=permission.role):
+					self.assertEqual([ptype for ptype in ptypes if permission[ptype]], [])
+
+	def test_infrastructure_manager_cannot_insert_an_agent_job(self):
+		frappe.set_user(create_staff_user("Press Site Reliability Engineer"))
+		self.assertTrue(frappe.has_permission("Agent Job", "read"))
+		job = frappe.get_doc({"doctype": "Agent Job", "request_path": "ping", "request_method": "GET"})
+		with self.assertRaises(frappe.PermissionError):
+			job.insert()
 
 	def test_only_the_ssh_profile_can_create_ssh_certificates_and_keys(self):
 		for profile in PROFILE_SCOPES:
