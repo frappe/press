@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from hcloud import APIException
 
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
@@ -123,20 +124,25 @@ class TestVirtualMachine(FrappeTestCase):
 				allocated_ips.add(ip)
 
 
-class TestHetznerAttachToFirewall(FrappeTestCase):
-	def attach(self, applied_server_ids: list[int]) -> MagicMock:
+class TestHetznerFirewallRetry(FrappeTestCase):
+	def firewall_call(self, method: str, error_code: str | None):
 		vm = frappe.get_doc({"doctype": "Virtual Machine", "cloud_provider": "Hetzner", "instance_id": "42"})
 		firewall = MagicMock()
-		firewall.applied_to = [MagicMock(server=MagicMock(id=id)) for id in applied_server_ids]
+		hetzner_method = {
+			"attach_to_firewall": "apply_to_resources",
+			"detach_from_firewall": "remove_from_resources",
+		}
+		if error_code:
+			getattr(firewall, hetzner_method[method]).side_effect = APIException(error_code, "", None)
 		with patch.object(VirtualMachine, "client") as client:
 			client.return_value.firewalls.get_by_id.return_value = firewall
-			vm.attach_to_firewall(7)
-		return firewall
+			getattr(vm, method)(7)
 
-	def test_attach_to_firewall_applies_firewall_when_server_not_attached(self):
-		firewall = self.attach(applied_server_ids=[99])
-		firewall.apply_to_resources.assert_called_once()
+	def test_attach_and_detach_ignore_already_done_errors_so_retries_do_not_fail(self):
+		self.firewall_call("attach_to_firewall", "firewall_already_applied")
+		self.firewall_call("detach_from_firewall", "firewall_already_removed")
 
-	def test_attach_to_firewall_skips_when_server_already_attached_so_retries_do_not_fail(self):
-		firewall = self.attach(applied_server_ids=[99, 42])
-		firewall.apply_to_resources.assert_not_called()
+	def test_attach_and_detach_raise_other_errors(self):
+		for method in ("attach_to_firewall", "detach_from_firewall"):
+			with self.assertRaises(APIException):
+				self.firewall_call(method, "forbidden")
