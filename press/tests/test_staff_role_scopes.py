@@ -12,6 +12,7 @@ from press.press.doctype.team_deletion_request.team_deletion_request import Team
 
 SCOPE_ROLES = {
 	"Press Support",
+	"Press Support Engineer",
 	"Press Infrastructure Manager",
 	"Press Release Manager",
 	"Press Billing Manager",
@@ -86,20 +87,21 @@ SECRET_FIELDS = {
 
 SSH_DOCTYPES = {"SSH Access Audit", "SSH Certificate", "SSH Key", "User SSH Certificate", "User SSH Key"}
 
+SUPPORT_READS = [
+	"Site",
+	"Team",
+	"Release Group",
+	"Server",
+	"Agent Job",
+	"Invoice",
+	"Marketplace App",
+	"Partner Lead",
+]
+SUPPORT_DENIED = ["Payout Order", "Audit Log", "Wazuh Vulnerability", "SSH Certificate", "Cluster"]
+
 PROFILE_SCOPES = {
-	"Press Support Engineer": (
-		[
-			"Site",
-			"Team",
-			"Release Group",
-			"Server",
-			"Agent Job",
-			"Invoice",
-			"Marketplace App",
-			"Partner Lead",
-		],
-		["Payout Order", "Audit Log", "Wazuh Vulnerability", "SSH Certificate", "Cluster"],
-	),
+	"Press Support": (SUPPORT_READS, SUPPORT_DENIED),
+	"Press Support Engineer": (SUPPORT_READS, SUPPORT_DENIED),
 	"Press Site Reliability Engineer": (
 		["Server", "Agent Job", "Site", "Bench"],
 		["Payout Order", "Audit Log"],
@@ -259,8 +261,12 @@ class TestStaffRoleScopes(FrappeTestCase):
 					"DocPerm", {"parent": doctype, "permlevel": 1, "read": 1}, pluck="role"
 				)
 				self.assertIn("System Manager", readers)
-				self.assertNotIn("Press Support", readers)
-				self.assertNotIn("Press Infrastructure Manager", readers)
+				leaked = set(readers) & {
+					"Press Support",
+					"Press Support Engineer",
+					"Press Infrastructure Manager",
+				}
+				self.assertEqual(leaked, set())
 
 	def test_support_manager_cannot_impersonate_a_team_member(self):
 		team = create_test_team()
@@ -281,10 +287,11 @@ class TestStaffRoleScopes(FrappeTestCase):
 		with self.assertRaisesRegex(frappe.PermissionError, "Only team owner or admins can make changes"):
 			team.save()
 
-	def test_support_manager_can_request_deletion_of_a_team_they_do_not_own(self):
+	def test_support_can_request_deletion_of_a_team_they_do_not_own(self):
 		request = TeamDeletionRequest({"doctype": "Team Deletion Request", "team": create_test_team().name})
-		frappe.set_user(create_staff_user("Press Support Engineer"))
-		request.validate_team_owner()
+		for profile in ("Press Support", "Press Support Engineer"):
+			frappe.set_user(create_staff_user(profile))
+			request.validate_team_owner()
 
 	def test_billing_manager_cannot_request_deletion_of_a_team_they_do_not_own(self):
 		request = TeamDeletionRequest({"doctype": "Team Deletion Request", "team": create_test_team().name})

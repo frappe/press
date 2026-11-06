@@ -105,7 +105,7 @@
 	"links": [
 		{ "link_doctype": "Usage Record", "link_fieldname": "subscription" }
 	],
-	"modified": "2026-11-06 18:00:00.000000",
+	"modified": "2026-11-06 21:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Subscription",
@@ -136,6 +136,13 @@
 			"role": "Press Billing Manager",
 			"share": 1,
 			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support Engineer"
 		},
 		{
 			"export": 1,
