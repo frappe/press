@@ -40,6 +40,8 @@ from press.utils.user import as_administrator
 AGENT_LOG_KEY = "agent-jobs"
 AGENT_JOB_TIMEOUT_HOURS = 4
 CALLBACK_FAILURE_LIMIT = 5000
+# fail_old_jobs gives up on a job this old, so the poller skips it too
+STUCK_JOB_DAYS = 2
 
 BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
 
@@ -663,7 +665,10 @@ def poll_pending_jobs():
 	"""
 	Poll pending job fetches the status of Pending Jobs from all servers.
 	"""
-	filters = {"status": ("in", ["Pending", "Running", "Undelivered"])}
+	filters = {
+		"status": ("in", ["Pending", "Running", "Undelivered"]),
+		"creation": (">=", add_days(None, -STUCK_JOB_DAYS)),
+	}
 	if random.random() > 0.1:
 		# Experimenting with fewer polls (only for backup jobs)
 		# Reduce poll frequency for Backup Site jobs
@@ -703,7 +708,7 @@ def fail_old_jobs():
 		{
 			"status": ("in", ["Pending", "Running"]),
 			"job_id": ("!=", 0),
-			"creation": ("<", add_days(None, -2)),
+			"creation": ("<", add_days(None, -STUCK_JOB_DAYS)),
 		},
 		limit=100,
 		order_by="RAND()",
@@ -715,7 +720,7 @@ def fail_old_jobs():
 		"Agent Job",
 		{
 			"job_id": 0,
-			"creation": ("<", add_days(None, -2)),
+			"creation": ("<", add_days(None, -STUCK_JOB_DAYS)),
 			"status": ("!=", "Delivery Failure"),
 		},
 		limit=100,
@@ -1333,6 +1338,8 @@ def update_job_step_status():
 
 def on_doctype_update():
 	frappe.db.add_index("Agent Job", ["status", "server"])
+	# Covers poll_pending_jobs, so it reads no table rows
+	frappe.db.add_index("Agent Job", ["status", "creation", "job_type", "server", "server_type"])
 	frappe.db.add_index("Agent Job", ["reference_doctype", "reference_name"])
 	# We don't need modified index, it's harmful on constantly updating tables
 	frappe.db.sql_ddl("drop index if exists modified on `tabAgent Job`")

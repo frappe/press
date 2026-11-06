@@ -359,11 +359,12 @@
 			"fieldtype": "Link",
 			"label": "Build",
 			"options": "Deploy Candidate Build",
-			"read_only": 1
+			"read_only": 1,
+			"search_index": 1
 		}
 	],
 	"links": [],
-	"modified": "2026-02-23 20:57:55.325786",
+	"modified": "2026-11-06 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Bench",
