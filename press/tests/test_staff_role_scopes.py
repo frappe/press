@@ -6,12 +6,13 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.press.doctype.invoice.invoice import Invoice
 from press.press.doctype.team.team import Team
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.team_deletion_request.team_deletion_request import TeamDeletionRequest
 
 SCOPE_ROLES = {
-	"Press Support Manager",
+	"Press Support",
 	"Press Infrastructure Manager",
 	"Press Release Manager",
 	"Press Billing Manager",
@@ -59,11 +60,41 @@ SCOPE_READ_ONLY = {
 	"Press Workflow Test": "runs workflow engine test code",
 }
 
+SUPPORT_READ_ONLY = [
+	"Invoice",
+	"Subscription",
+	"Marketplace App",
+	"Product Trial",
+	"Partner Lead",
+	"Agent Job",
+]
+
+SECRET_METHODS = [
+	("Server", "show_agent_password"),
+	("Site", "show_admin_password"),
+	("Virtual Machine", "get_serial_console_credentials"),
+]
+
 SSH_DOCTYPES = {"SSH Access Audit", "SSH Certificate", "SSH Key", "User SSH Certificate", "User SSH Key"}
 
 PROFILE_SCOPES = {
-	"Press Support Engineer": (["Site", "Team", "Site Backup", "Release Group"], ["Server", "Invoice"]),
-	"Press Site Reliability Engineer": (["Server", "Agent Job", "Site", "Bench"], ["Invoice", "Audit Log"]),
+	"Press Support Engineer": (
+		[
+			"Site",
+			"Team",
+			"Release Group",
+			"Server",
+			"Agent Job",
+			"Invoice",
+			"Marketplace App",
+			"Partner Lead",
+		],
+		["Payout Order", "Audit Log", "Wazuh Vulnerability", "SSH Certificate", "Cluster"],
+	),
+	"Press Site Reliability Engineer": (
+		["Server", "Agent Job", "Site", "Bench"],
+		["Payout Order", "Audit Log"],
+	),
 	"Press Security Engineer": (["Wazuh Vulnerability", "Audit Log", "Server"], ["Site", "SSH Certificate"]),
 	"Press SSH Access Manager": (sorted(SSH_DOCTYPES), ["Server", "Site", "Audit Log"]),
 	"Press Finance": (["Invoice", "Site Plan", "Payout Order"], ["Site", "Server", "Team"]),
@@ -182,6 +213,47 @@ class TestStaffRoleScopes(FrappeTestCase):
 				self.assertTrue(frappe.has_permission(doctype, "read", user=user))
 				for ptype in ("write", "create", "delete"):
 					self.assertFalse(frappe.has_permission(doctype, ptype, user=user), ptype)
+
+	def test_support_reads_billing_and_other_scopes_but_cannot_change_them(self):
+		user = create_staff_user("Press Support Engineer")
+		for doctype in SUPPORT_READ_ONLY:
+			with self.subTest(doctype=doctype):
+				self.assertTrue(frappe.has_permission(doctype, "read", user=user))
+				for ptype in ("write", "create", "delete"):
+					self.assertFalse(frappe.has_permission(doctype, ptype, user=user), ptype)
+
+	def test_support_cannot_press_billing_buttons_on_an_invoice_it_reads(self):
+		frappe.set_user(create_staff_user("Press Support Engineer"))
+		invoice = Invoice({"doctype": "Invoice", "name": "INVOICE-TEST"})
+		with self.assertRaisesRegex(frappe.PermissionError, "Press Billing Manager"):
+			invoice.refund(reason="Test")
+
+	def test_buttons_still_work_for_customers_and_their_scope_role(self):
+		from press.utils.user import only_for_staff_with
+
+		frappe.set_user(create_test_team().user)
+		only_for_staff_with(["Press Billing Manager"])
+		frappe.set_user(create_staff_user("Press Finance"))
+		only_for_staff_with(["Press Billing Manager"])
+
+	def test_scope_roles_cannot_call_methods_that_return_secrets(self):
+		frappe.set_user(create_staff_user(*PROFILE_SCOPES))
+		for doctype, method in SECRET_METHODS:
+			controller = frappe.get_doc({"doctype": doctype})
+			with (
+				self.subTest(method=method),
+				patch.dict(frappe.local.flags, {"in_test": False}),
+				self.assertRaises(frappe.PermissionError),
+			):
+				getattr(controller, method)()
+
+	def test_only_infrastructure_copies_a_tls_certificate_private_key(self):
+		certificate = frappe.get_doc({"doctype": "TLS Certificate"})
+		frappe.set_user(create_staff_user("Press Support Engineer"))
+		with self.assertRaisesRegex(frappe.PermissionError, "Press Infrastructure Manager"):
+			certificate.get_private_key()
+		frappe.set_user(create_staff_user("Press Site Reliability Engineer"))
+		self.assertIsNone(certificate.get_private_key())
 
 	def test_support_manager_cannot_impersonate_a_team_member(self):
 		team = create_test_team()

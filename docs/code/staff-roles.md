@@ -9,7 +9,7 @@ Manager only to the few admins who need shells and secrets.
 
 | Role | Scope |
 |------|-------|
-| Press Support Manager | Teams, sites, site backups, site updates, domains, support access, webhooks |
+| Press Support | The common support work. Full access to teams, sites, backups, updates, domains, webhooks, apps, release groups, benches and deploys. Read and every button on servers, database servers, proxy servers and virtual machines. Read only on agent jobs, Press jobs, incidents, restorations, TLS certificates, billing, Marketplace, Product and Partner records |
 | Press Infrastructure Manager | Servers, virtual machines, clusters, agent jobs, Press jobs, monitoring, incidents, cloud cost |
 | Press Release Manager | Apps, app sources, app releases, release groups, benches, deploy candidates, builds, deploys |
 | Press Billing Manager | Invoices, payments, payouts, subscriptions, usage records, plans |
@@ -19,15 +19,25 @@ Manager only to the few admins who need shells and secrets.
 | Press Marketplace Manager | Marketplace apps, app reviews, release approvals |
 | Partner Manager | Partners, partner leads, certificates, consultants |
 
-The scopes do not share read access. For example, a Billing Manager cannot open
-a Site. Add a second scope role or a second Role Profile when a job needs both.
+Except for Press Support, the scopes do not share read access. For example, a
+Billing Manager cannot open a Site. Add a second scope role or a second Role
+Profile when a job needs both.
+
+Read only on a DocType does not stop the buttons on it, because Frappe runs a
+whitelisted document method for any user who can read the record. So the
+buttons on Invoice, Subscription, Marketplace App, Marketplace App
+Subscription, Product Trial Request, Press Notification, Partner Approval
+Request and the TLS Certificate private key call `only_for_staff_with`. This
+helper stops desk users without the owning scope role and lets customers
+through. Press Support can press the buttons on agent jobs, Press jobs,
+restorations and incidents.
 
 ## Role Profiles
 
 | Role Profile | Roles |
 |--------------|-------|
-| Press Support Engineer | Support, Release |
-| Press Site Reliability Engineer | Infrastructure, Release, Support |
+| Press Support Engineer | Support |
+| Press Site Reliability Engineer | Infrastructure, Support |
 | Press Security Engineer | Security, Infrastructure |
 | Press SSH Access Manager | SSH Manager |
 | Press Finance | Billing |
@@ -63,12 +73,17 @@ Press Infrastructure Manager only reads these DocTypes:
   loaded with `pickle`. The workflow engine inserts these records itself, so
   Press Jobs still work.
 
-Press Release Manager only reads App Rename, because site updates run its
+Press Release Manager and Press Support only read App Rename, because site updates run its
 before-migrate and rollback scripts on customer benches.
 
 The `action_script` field of Dashboard Banner is at permlevel 1, which only
 System Manager can read or write. The script runs as JavaScript in every
 customer's dashboard. Press Product Manager can still create banners.
+
+These methods return secrets and stay System Manager only: `show_agent_password`
+on servers, `show_admin_password` on Site, the password methods on monitor,
+analytics, registry, log and trace servers, and
+`VirtualMachine.get_serial_console_credentials`.
 
 These actions also stay System Manager only: `Team.impersonate`,
 `Site.forcefully_remove_site`, `Managed Database Service.show_root_password`,

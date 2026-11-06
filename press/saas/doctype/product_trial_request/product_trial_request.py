@@ -19,6 +19,7 @@ from press.api.client import dashboard_whitelist
 from press.press.doctype.root_domain.root_domain import get_domains
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error, validate_subdomain
+from press.utils.user import only_for_staff_with
 
 if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
@@ -321,6 +322,7 @@ class ProductTrialRequest(Document):
 
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):
+		only_for_staff_with(["Press Product Manager"])
 		import json
 
 		try:
@@ -381,6 +383,7 @@ class ProductTrialRequest(Document):
 			subdomain (str): The subdomain for the new site.
 			domain (str): The domain for the new site.
 		"""
+		only_for_staff_with(["Press Product Manager"])
 		if self.status != "Pending":
 			return
 
@@ -536,6 +539,7 @@ class ProductTrialRequest(Document):
 
 	@dashboard_whitelist()
 	def get_login_sid(self):
+		only_for_staff_with(["Press Product Manager"])
 		site: Site = frappe.get_doc("Site", self.site)
 		redirect_to_after_login = frappe.db.get_value(
 			"Product Trial",

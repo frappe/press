@@ -736,7 +736,7 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def ban(self):
-		frappe.only_for(["System Manager", "Press Support Manager"])
+		frappe.only_for(["System Manager", "Press Support"])
 		self.banned = 1
 		self.enabled = 0
 		linked_user = frappe.get_doc("User", self.user)

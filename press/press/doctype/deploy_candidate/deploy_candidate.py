@@ -709,7 +709,7 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype("D
 
 @frappe.whitelist()
 def toggle_builds(suspend):
-	frappe.only_for(["System Manager", "Press Release Manager"])
+	frappe.only_for(["System Manager", "Press Release Manager", "Press Support"])
 	frappe.db.set_single_value("Press Settings", "suspend_builds", suspend)
 
 

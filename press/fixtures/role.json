@@ -54,9 +54,9 @@
   "home_page": null,
   "is_custom": 0,
   "modified": "2026-11-06 12:30:00.000000",
-  "name": "Press Support Manager",
+  "name": "Press Support",
   "restrict_to_domain": null,
-  "role_name": "Press Support Manager",
+  "role_name": "Press Support",
   "two_factor_auth": 0
  },
  {

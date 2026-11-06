@@ -10,6 +10,7 @@ from press.api.client import dashboard_whitelist
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.press_notification.reference import find_reference
 from press.utils.redact import redact_secrets
+from press.utils.user import only_for_staff_with
 
 
 class PressNotification(Document):
@@ -146,6 +147,7 @@ class PressNotification(Document):
 
 	@dashboard_whitelist()
 	def mark_as_addressed(self):
+		only_for_staff_with(["Press Product Manager"])
 		self.read = True
 		self.is_addressed = True
 		self.save()
@@ -153,6 +155,7 @@ class PressNotification(Document):
 
 	@dashboard_whitelist()
 	def mark_as_read(self):
+		only_for_staff_with(["Press Product Manager"])
 		self.db_set("read", True)
 
 

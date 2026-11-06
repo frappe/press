@@ -21,7 +21,7 @@ except ImportError:
 
 
 def execute(filters=None):
-	frappe.only_for(["System Manager", "Site Manager", "Press Support Manager"])
+	frappe.only_for(["System Manager", "Site Manager", "Press Support"])
 	filters.database = frappe.get_doc("Site", filters.site).fetch_info()["config"]["db_name"]
 
 	make_access_log(

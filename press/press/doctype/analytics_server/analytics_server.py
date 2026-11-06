@@ -117,4 +117,5 @@ class AnalyticsServer(BaseServer):
 
 	@frappe.whitelist()
 	def show_plausible_password(self):
+		frappe.only_for("System Manager")
 		return self.get_password("plausible_password")

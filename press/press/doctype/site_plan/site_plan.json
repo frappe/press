@@ -306,10 +306,14 @@
 	"index_web_pages_for_search": 1,
 	"links": [],
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"modified": "2026-07-14 10:29:13.886035",
 =======
 	"modified": "2026-11-06 12:30:00.000000",
 >>>>>>> 9043026 (feat(permissions): Scope staff access by role instead of System Manager)
+=======
+	"modified": "2026-11-06 18:00:00.000000",
+>>>>>>> 20c9b39 (feat(permissions): Make Press Support the role for common staff work)
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Site Plan",
@@ -348,6 +352,13 @@
 			"role": "Press Billing Manager",
 			"share": 1,
 			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support"
 		}
 	],
 	"quick_entry": 1,

@@ -1961,6 +1961,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def show_agent_password(self) -> str:
+		frappe.only_for("System Manager")
 		return self.get_password("agent_password")
 
 	@property
