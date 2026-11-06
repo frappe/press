@@ -623,6 +623,79 @@ class TestAgentJobNotifications(FrappeTestCase):
 		self.assertFalse(details["is_actionable"])
 		self.assertIsNone(details["assistance_url"])
 
+<<<<<<< HEAD
+=======
+	DISK_FULL_TRACEBACK = (
+		"redis.exceptions.ResponseError: MISCONF Errors writing to the AOF file: No space left on device"
+	)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_disk_full_on_dedicated_server_links_the_disk_chart(self):
+		job = self.restore_job(public=False)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Server disk full")
+		self.assertIn(f"/dashboard/servers/{job.server}/analytics", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.DISK_FULL])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_disk_full_on_public_server_is_not_actionable(self):
+		details = get_details(self.restore_job(public=True), "", "")
+
+		self.assertFalse(details["is_actionable"])
+
+	FOLDER_IN_BACKUPS_TRACEBACK = (
+		'  File "apps/frappe/frappe/utils/backups.py", line 662, in delete_temp_backups\n'
+		"    os.remove(this_file_path)\n"
+		"IsADirectoryError: [Errno 21] Is a directory: './test.frappe.dev/private/backups/uom-night-20261102'"
+	)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_folder_in_backups_folder_names_the_folder_to_delete(self):
+		details = get_details(self.backup_job(self.FOLDER_IN_BACKUPS_TRACEBACK), "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Backup failed because of a folder in the backups folder")
+		self.assertIn("<code>./test.frappe.dev/private/backups/uom-night-20261102</code>", details["message"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_folder_error_outside_backups_folder_is_not_actionable(self):
+		traceback = "IsADirectoryError: [Errno 21] Is a directory: './test.frappe.dev/public/files/reports'"
+
+		details = get_details(self.backup_job(traceback), "", "")
+
+		self.assertFalse(details["is_actionable"])
+
+	def backup_job(self, traceback: str) -> AgentJob:
+		site = create_test_site()
+		return frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Backup Site",
+				"site": site.name,
+				"server_type": "Server",
+				"server": site.server,
+				"traceback": traceback,
+			}
+		)
+
+	def restore_job(self, public: bool) -> AgentJob:
+		site = create_test_site()
+		frappe.db.set_value("Server", site.server, "public", public)
+		return frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Restore Site",
+				"site": site.name,
+				"server_type": "Server",
+				"server": site.server,
+				"traceback": self.DISK_FULL_TRACEBACK,
+			}
+		)
+
+>>>>>>> 7904ca9 (fix(agent-job): Tell the team to remove folders from private/backups)
 	def site_with_app(
 		self, app_name: str, owned_by_site_team: bool = True, newer_release: bool = False
 	) -> tuple[str, str]:
