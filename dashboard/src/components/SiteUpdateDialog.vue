@@ -48,7 +48,7 @@
 			<div v-else class="text-center text-base text-ink-gray-6">
 				No apps to update
 			</div>
-			<ErrorMessage class="mt-4" :message="$site.scheduleUpdate.error" />
+			<ErrorMessage class="mt-4" :message="scheduleUpdateError" />
 		</template>
 		<template #actions>
 			<Button
@@ -67,7 +67,7 @@
 				:label="`Update ${
 					scheduledTime ? `at ${scheduledTimeInLocal}` : 'Now'
 				}`"
-				@click="scheduleUpdate"
+				@click="scheduleUpdate()"
 			/>
 		</template>
 	</Dialog>
@@ -78,6 +78,7 @@ import DateTimeControl from './DateTimeControl.vue';
 import GenericList from './GenericList.vue';
 import dayjs, { dayjsIST } from '../utils/dayjs';
 import { toast } from 'vue-sonner';
+import { confirmDialog } from '../utils/components';
 
 export default {
 	name: 'SiteUpdateDialog',
@@ -222,18 +223,24 @@ export default {
 		siteUpdate() {
 			return this.$resources.siteUpdate;
 		},
+		scheduleUpdateError() {
+			// The confirmation dialog shows this one instead
+			const error = this.$site.scheduleUpdate.error;
+			return error?.exc_type === 'SiteBackupInProgress' ? null : error;
+		},
 		dialogTitle() {
 			if (this.existingUpdate) return 'Edit Scheduled Update';
 			else return 'Updates Available';
 		},
 	},
 	methods: {
-		scheduleUpdate() {
-			this.$site.scheduleUpdate.submit(
+		scheduleUpdate(cancelOngoingBackups = false) {
+			return this.$site.scheduleUpdate.submit(
 				{
 					skip_failing_patches: this.skipFailingPatches,
 					skip_backups: this.skipBackups,
 					scheduled_time: this.scheduledTimeInIST,
+					cancel_ongoing_backups: cancelOngoingBackups,
 				},
 				{
 					onSuccess: () => {
@@ -241,8 +248,25 @@ export default {
 						this.show = false;
 						this.$router.push({ name: 'Site Detail Updates' });
 					},
+					onError: (error) => {
+						if (error?.exc_type === 'SiteBackupInProgress') {
+							this.confirmCancelOngoingBackups(error);
+						}
+					},
 				},
 			);
+		},
+		confirmCancelOngoingBackups(error) {
+			confirmDialog({
+				title: 'Backup in progress',
+				message: `${error.messages?.[0] ?? ''}<br><br>The cancelled backups will be marked as failed.`,
+				primaryAction: {
+					label: 'Cancel backups and update',
+					variant: 'solid',
+					theme: 'red',
+					onClick: ({ hide }) => this.scheduleUpdate(true).then(hide),
+				},
+			});
 		},
 		editUpdate() {
 			toast.promise(
