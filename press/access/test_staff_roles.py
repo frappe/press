@@ -43,7 +43,7 @@ def run_hook(hook, path: str, form: dict) -> dict:
 def send_form(document: dict) -> dict:
 	"""The document that a desk button call runs on after `use_saved_document`."""
 	form = run_hook(use_saved_document, "/api/method/run_doc_method", {"docs": json.dumps(document)})
-	return frappe.parse_json(form.docs)
+	return frappe.parse_json(form["docs"])
 
 
 class TestStaffRoles(FrappeTestCase):
@@ -148,6 +148,10 @@ class TestStaffRoles(FrappeTestCase):
 		blocked = [
 			("/api/method/run_doc_method", {"method": "archive", "dt": "Site", "dn": "x"}),
 			("/api/v2/document/Agent Job/x/method/retry/", {}),
+			(
+				"/api/method/run_doc_method",
+				{"method": "delete_remote_object", "dt": "Remote File", "dn": "x"},
+			),
 			("/api/method/press.api.client.run_doc_method", {"dt": "Site", "dn": "x", "method": "archive"}),
 			("/api/method/press.api.client.delete", {"doctype": "Site", "name": "x"}),
 		]
