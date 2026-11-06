@@ -42,6 +42,11 @@ frappe.ui.form.on('Cluster', {
 					frm.doc.vpc_id &&
 					!frm.doc.vpc_flow_logs_enabled,
 			],
+			[
+				__('Disable VPC Flow Logs'),
+				'disable_vpc_flow_logs',
+				frm.doc.vpc_flow_logs_enabled,
+			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

@@ -121,3 +121,43 @@ class TestVirtualMachine(FrappeTestCase):
 				ip = vm_doc.get_private_ip()
 				self.assertTrue(ip not in allocated_ips)
 				allocated_ips.add(ip)
+
+	def test_update_name_tag_tags_instance_and_all_attached_volumes(self):
+		vm = create_test_virtual_machine(has_data_volume=True)
+		vm.reload()
+		with patch.object(VirtualMachine, "client") as client:
+			vm.update_name_tag()
+
+		client().create_tags.assert_called_once_with(
+			Resources=[vm.instance_id, *(volume.volume_id for volume in vm.volumes)],
+			Tags=[{"Key": "Name", "Value": f"Frappe Cloud - {vm.name}"}],
+		)
+
+	def test_update_name_tag_uses_server_name_when_virtual_machine_has_server(self):
+		vm = create_test_virtual_machine()
+		server = vm.create_database_server()
+		vm.reload()
+		with patch.object(VirtualMachine, "client") as client:
+			vm.update_name_tag()
+
+		client().create_tags.assert_called_once_with(
+			Resources=[vm.instance_id, vm.volumes[0].volume_id],
+			Tags=[{"Key": "Name", "Value": f"Frappe Cloud - {server.name}"}],
+		)
+
+	def test_attach_volume_tags_new_volume_with_name_tag(self):
+		vm = create_test_virtual_machine()
+		with patch.object(VirtualMachine, "client") as client, patch.object(VirtualMachine, "sync"):
+			vm.attach_volume("vol-new")
+
+		client().create_tags.assert_called_once_with(
+			Resources=["vol-new"], Tags=[{"Key": "Name", "Value": f"Frappe Cloud - {vm.name}"}]
+		)
+
+	def test_attach_volume_does_not_attach_when_tagging_fails(self):
+		vm = create_test_virtual_machine()
+		with patch.object(VirtualMachine, "client") as client, patch.object(VirtualMachine, "sync"):
+			client().create_tags.side_effect = Exception("Tagging failed")
+			self.assertRaisesRegex(Exception, "Tagging failed", vm.attach_volume, "vol-new")
+
+		client().attach_volume.assert_not_called()

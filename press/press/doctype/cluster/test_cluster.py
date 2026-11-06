@@ -304,6 +304,55 @@ class TestClusterVPCFlowLogs(TestCluster):
 			frappe.ValidationError, "only supported on AWS EC2", cluster.setup_vpc_flow_logs
 		)
 
+	def _cluster_with_flow_log(self) -> Cluster:
+		"""An Active AWS cluster whose VPC has a real (moto) flow log."""
+		cluster = self._active_aws_cluster_with_vpc()
+		boto3.client("s3", region_name="us-east-1").create_bucket(Bucket=cluster.vpc_flow_logs_s3_bucket)
+		cluster.setup_vpc_flow_logs()
+		return cluster
+
+	@mock_aws
+	def test_disable_vpc_flow_logs_deletes_flow_log_in_aws_and_clears_fields(self):
+		cluster = self._cluster_with_flow_log()
+		cluster.disable_vpc_flow_logs()
+
+		self.assertFalse(cluster.vpc_flow_logs_enabled)
+		self.assertIsNone(cluster.flow_log_id)
+		self.assertEqual(cluster.get_aws_client().describe_flow_logs()["FlowLogs"], [])
+
+	@mock_aws
+	def test_disable_vpc_flow_logs_succeeds_when_flow_log_already_deleted_in_aws(self):
+		cluster = self._cluster_with_flow_log()
+		cluster.get_aws_client().delete_flow_logs(FlowLogIds=[cluster.flow_log_id])
+		cluster.disable_vpc_flow_logs()
+
+		self.assertFalse(cluster.vpc_flow_logs_enabled)
+		self.assertIsNone(cluster.flow_log_id)
+
+	@mock_aws
+	def test_disable_vpc_flow_logs_throws_and_keeps_fields_when_aws_rejects_delete(self):
+		cluster = self._cluster_with_flow_log()
+		flow_log_id = cluster.flow_log_id
+		client = MagicMock()
+		client.describe_flow_logs.return_value = {"FlowLogs": [{"FlowLogId": flow_log_id}]}
+		client.delete_flow_logs.return_value = {
+			"Unsuccessful": [{"Error": {"Code": "UnauthorizedOperation", "Message": "Not allowed"}}]
+		}
+		with patch.object(Cluster, "get_aws_client", return_value=client):
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"Failed to delete VPC Flow Logs: Not allowed",
+				cluster.disable_vpc_flow_logs,
+			)
+
+		self.assertTrue(cluster.vpc_flow_logs_enabled)
+		self.assertEqual(cluster.flow_log_id, flow_log_id)
+
+	@mock_aws
+	def test_disable_vpc_flow_logs_throws_when_not_enabled(self):
+		cluster = self._active_aws_cluster_with_vpc()
+		self.assertRaisesRegex(frappe.ValidationError, "not enabled", cluster.disable_vpc_flow_logs)
+
 
 def hetzner_server_type(name: str, **availability_by_location: bool) -> ServerType:
 	return ServerType(
