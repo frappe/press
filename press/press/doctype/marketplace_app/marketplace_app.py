@@ -15,6 +15,7 @@ from frappe.utils.safe_exec import safe_exec
 from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
 
+from press.access.staff_roles import needs_staff_role
 from press.api.client import dashboard_whitelist
 from press.api.github import app, get_access_token
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
@@ -28,7 +29,6 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 )
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 from press.utils import docs, get_current_team, get_last_doc
-from press.utils.user import only_for_staff_with
 
 if TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
@@ -119,8 +119,8 @@ class MarketplaceApp(WebsiteGenerator):
 		self.name = self.app
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def delete(self):
-		only_for_staff_with(["Press Marketplace Manager"])
 		if self.status != "Draft":
 			frappe.throw(
 				f"Only apps in Draft status can be deleted. Published apps must be unpublished first — please contact support to take this app down. {docs.doc_link(docs.MARKETPLACE)}."
@@ -140,14 +140,14 @@ class MarketplaceApp(WebsiteGenerator):
 		frappe.db.delete("Marketplace App Audit", {"marketplace_app": self.name})
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def create_approval_request(self, app_release: str):
 		"""Create a new Approval Request for given `app_release`"""
-		only_for_staff_with(["Press Marketplace Manager"])
 		AppReleaseApprovalRequest.create(self.app, app_release)
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def cancel_approval_request(self, app_release: str):
-		only_for_staff_with(["Press Marketplace Manager"])
 		approval_requests = frappe.get_all(
 			"App Release Approval Request",
 			filters={"app_release": app_release},
@@ -163,9 +163,9 @@ class MarketplaceApp(WebsiteGenerator):
 		frappe.get_doc("App Release Approval Request", approval_requests[0]).cancel()
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def yank_app_release(self, app_release: str, hash: str):
 		"""Yank app release, this commit hash won't show for any new updates even if in approved state"""
-		only_for_staff_with(["Press Marketplace Manager"])
 		team = get_current_team()
 		# We somehow need to let people know that the app release is yanked to everyone on that current release?
 		# For now mark that particular release as yanked atleast?
@@ -177,9 +177,9 @@ class MarketplaceApp(WebsiteGenerator):
 		).insert()
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def unyank_app_release(self, hash: str):
 		"""Allow support for unyanking app release (https://peps.pythondiscord.com/pep-0592/)"""
-		only_for_staff_with(["Press Marketplace Manager"])
 		frappe.get_doc("Yanked App Release", {"hash": hash}).delete()
 
 	def before_insert(self):
@@ -361,8 +361,8 @@ class MarketplaceApp(WebsiteGenerator):
 		self.save()
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def add_version(self, version: str, repo_owner: str, repo_name: str, branch: str):
-		only_for_staff_with(["Press Marketplace Manager"])
 		existing_source = frappe.db.exists(
 			"App Source",
 			[
@@ -431,8 +431,8 @@ class MarketplaceApp(WebsiteGenerator):
 		self.save()
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def remove_version(self, version: str):
-		only_for_staff_with(["Press Marketplace Manager"])
 		if self.status == "Published" and len(self.sources) == 1:
 			frappe.throw("Failed to remove. Need at least 1 version for a published app")
 
@@ -730,15 +730,15 @@ class MarketplaceApp(WebsiteGenerator):
 		}
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def mark_app_ready_for_review(self):
 		# TODO: Start security check and auto deploy process here
-		only_for_staff_with(["Press Marketplace Manager"])
 		self.status = "In Review"
 		self.save()
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def update_listing(self, *args):
-		only_for_staff_with(["Press Marketplace Manager"])
 		data = frappe._dict(args[0])
 		self.title = data.get("title") or self.title
 		self.description = data.get("description")

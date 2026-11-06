@@ -21,20 +21,6 @@ def is_system_manager(user: str | None = None) -> bool:
 	return user_doc.user_type == "System User" or bool(user_doc.get("roles", {"role": "System Manager"}))
 
 
-def only_for_staff_with(roles: list[str]) -> None:
-	"""Stop desk staff who have none of `roles` and no System Manager. Customers pass.
-
-	A whitelisted document method needs only read permission, so read-only staff
-	could otherwise press every button on a record.
-	"""
-	if frappe.session.user == "Administrator" or not is_desk_user():
-		return
-	if not {*roles, "System Manager"} & set(frappe.get_roles()):
-		frappe.throw(
-			frappe._("You need one of these roles: {0}").format(", ".join(roles)), frappe.PermissionError
-		)
-
-
 def is_desk_user(user: str | None = None) -> bool:
 	"""
 	Checks if the given user is a system user.

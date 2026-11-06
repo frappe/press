@@ -9,7 +9,7 @@ Manager only to the few admins who need shells and secrets.
 
 | Role | Scope |
 |------|-------|
-| Press Support | The common support work. Full access to teams, sites, backups, updates, domains, webhooks, apps, release groups, benches and deploys. Read and every button on servers, database servers, proxy servers and virtual machines. Read only on agent jobs, Press jobs, incidents, restorations, TLS certificates, billing, Marketplace, Product and Partner records |
+| Press Support | The common support work. Full access to teams, sites, backups, updates, domains, webhooks, apps, release groups, benches and deploys. Read, write and every button on servers, database servers, proxy servers and virtual machines, but not create or delete. Create on TLS certificates, server activities and Press notifications, which buttons make as a side effect. Read only on agent jobs, Press jobs, incidents, restorations, TLS certificates, billing, Marketplace, Product and Partner records |
 | Press Infrastructure Manager | Servers, virtual machines, clusters, agent jobs, Press jobs, monitoring, incidents, cloud cost |
 | Press Release Manager | Apps, app sources, app releases, release groups, benches, deploy candidates, builds, deploys |
 | Press Billing Manager | Invoices, payments, payouts, subscriptions, usage records, plans |
@@ -24,13 +24,32 @@ Billing Manager cannot open a Site. Add a second scope role or a second Role
 Profile when a job needs both.
 
 Read only on a DocType does not stop the buttons on it, because Frappe runs a
-whitelisted document method for any user who can read the record. So the
-buttons on Invoice, Subscription, Marketplace App, Marketplace App
-Subscription, Product Trial Request, Press Notification, Partner Approval
-Request and the TLS Certificate private key call `only_for_staff_with`. This
-helper stops desk users without the owning scope role and lets customers
-through. Press Support can press the buttons on agent jobs, Press jobs,
-restorations and incidents.
+whitelisted document method for any user who can read the record. So
+`@needs_staff_role(...)` in `press/access/staff_roles.py` marks the buttons that
+belong to one scope: on Invoice, Subscription, Marketplace App, Marketplace App
+Subscription, Product Trial Request and Partner Approval Request, the TLS
+Certificate private key, and the on-prem failover config on Server. The
+`check_staff_role` `before_request` hook stops desk staff without that role when
+they call the method from desk. Press code that calls the method, and customers
+on the dashboard, are not affected. Press Support can press the buttons on agent
+jobs, Press jobs, restorations and incidents.
+
+Desk sends the whole form with a button call, and Frappe checks only read
+access. So `use_saved_document`, also a `before_request` hook, runs the button
+on the saved record when the staff user cannot write it, and refuses a new
+record that they cannot create. This is why the engine code for Agent Job,
+Agent Job Step, Ansible Play, Ansible Task, Press Job, Press Job Step and the
+`StepHandler` in `press/runner.py` can insert and save with
+`ignore_permissions`: read-only staff press their buttons without create or
+write rights, and still cannot change what the engine sends.
+
+Plan changes stay with Billing: Support cannot create a Site Plan Change or a
+Plan Change, because both write a Subscription.
+
+These fields hold secrets in plain text and are at permlevel 1. Of the staff
+roles, only System Manager and the owning scope role read them:
+Agent Job `request_data` and `request_files`, Ansible Play `variables`, and the
+`secret_key` of Marketplace App Subscription and Saas App Subscription.
 
 ## Role Profiles
 
