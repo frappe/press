@@ -83,7 +83,8 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 			frappe.rename_doc("Team", self.team, self.name)
 
 	def validate_team_owner(self):
-		if self.team_doc.user == frappe.session.user or "System Manager" in frappe.get_roles():
+		staff_roles = {"System Manager", "Press Support Manager"}
+		if self.team_doc.user == frappe.session.user or staff_roles.intersection(frappe.get_roles()):
 			return
 
 		frappe.throw("You need to be a Team owner to request account deletion", exc=frappe.PermissionError)

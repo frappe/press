@@ -10,7 +10,7 @@ from frappe.utils import cint, flt
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 	data = get_data(filters)
 	columns = frappe.get_doc("Report", "AWS Instance Pricing").get_columns()
 	return columns, data

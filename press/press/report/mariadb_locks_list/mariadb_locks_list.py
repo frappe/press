@@ -7,7 +7,7 @@ from press.agent import Agent
 
 
 def execute(filters=None):
-	frappe.only_for(("System Manager", "Support Team"))
+	frappe.only_for(["System Manager", "Support Team", "Press Support Manager"])
 	data = get_data(filters)
 	return get_columns(), data
 

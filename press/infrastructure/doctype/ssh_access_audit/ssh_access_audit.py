@@ -62,7 +62,7 @@ class SSHAccessAudit(Document):
 
 	@frappe.whitelist()
 	def run(self):
-		frappe.only_for("System Manager")
+		frappe.only_for(["System Manager", "Press Security Manager"])
 		self.status = "Running"
 		self.save()
 		frappe.enqueue_doc(

@@ -10,7 +10,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letterhead": null,
- "modified": "2025-08-29 19:46:33.884456",
+ "modified": "2026-11-06 12:30:00.000000",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Endpoints Audit",
@@ -22,6 +22,9 @@
  "roles": [
   {
    "role": "System Manager"
+  },
+  {
+   "role": "Press Support Manager"
   }
  ],
  "timeout": 0
