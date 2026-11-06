@@ -58,6 +58,17 @@ Press Infrastructure Manager only reads these DocTypes:
 - Agent Job: creating or editing a job sends any request to a server agent,
   which reaches the build cache shell and customer databases.
 - Press Job Type: its step scripts run through `safe_exec`.
+- Press Workflow, Press Workflow Task, Press Workflow Object and Press Workflow
+  Test: a task calls the method and arguments that it names, and objects are
+  loaded with `pickle`. The workflow engine inserts these records itself, so
+  Press Jobs still work.
+
+Press Release Manager only reads App Rename, because site updates run its
+before-migrate and rollback scripts on customer benches.
+
+The `action_script` field of Dashboard Banner is at permlevel 1, which only
+System Manager can read or write. The script runs as JavaScript in every
+customer's dashboard. Press Product Manager can still create banners.
 
 These actions also stay System Manager only: `Team.impersonate`,
 `Site.forcefully_remove_site`, `Managed Database Service.show_root_password`,
