@@ -331,7 +331,7 @@ class Bench(Document):
 				"Managed Database Service", self.managed_database_service, "port"
 			)
 
-		self.add_flow_server_manager(config, candidate)
+		self.add_flow_server_manager(config)
 
 		press_settings_common_site_config: str = frappe.db.get_single_value(
 			"Press Settings", "bench_configuration"
@@ -369,10 +369,16 @@ class Bench(Document):
 		self.add_limits(bench_config)
 		self.update_bench_config_with_rg_config(bench_config)
 
-	def add_flow_server_manager(self, config: dict, candidate: "DeployCandidate"):
+	def add_flow_server_manager(self, config: dict):
 		# agent reads this key and runs Flow's agent server under supervisor
-		if candidate.has_app("frappe/flow"):
+		if self.needs_flow_server_manager():
 			config["flow_server_manager"] = "supervisor"
+
+	def needs_flow_server_manager(self) -> bool:
+		# only new v16+ benches get the key; existing benches keep what they have
+		if self.is_new():
+			return self.is_this_version_or_above(16)
+		return "flow_server_manager" in json.loads(self.config or "{}")
 
 	def update_bench_config_with_rq_port(self, bench_config):
 		if self.is_new():
