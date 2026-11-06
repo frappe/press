@@ -121,3 +121,22 @@ class TestVirtualMachine(FrappeTestCase):
 				ip = vm_doc.get_private_ip()
 				self.assertTrue(ip not in allocated_ips)
 				allocated_ips.add(ip)
+
+
+class TestHetznerAttachToFirewall(FrappeTestCase):
+	def attach(self, applied_server_ids: list[int]) -> MagicMock:
+		vm = frappe.get_doc({"doctype": "Virtual Machine", "cloud_provider": "Hetzner", "instance_id": "42"})
+		firewall = MagicMock()
+		firewall.applied_to = [MagicMock(server=MagicMock(id=id)) for id in applied_server_ids]
+		with patch.object(VirtualMachine, "client") as client:
+			client.return_value.firewalls.get_by_id.return_value = firewall
+			vm.attach_to_firewall(7)
+		return firewall
+
+	def test_attach_to_firewall_applies_firewall_when_server_not_attached(self):
+		firewall = self.attach(applied_server_ids=[99])
+		firewall.apply_to_resources.assert_called_once()
+
+	def test_attach_to_firewall_skips_when_server_already_attached_so_retries_do_not_fail(self):
+		firewall = self.attach(applied_server_ids=[99, 42])
+		firewall.apply_to_resources.assert_not_called()

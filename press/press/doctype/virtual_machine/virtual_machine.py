@@ -2734,9 +2734,13 @@ class VirtualMachine(Document):
 
 			client = self.client()
 			firewall = client.firewalls.get_by_id(firewall_id)
-			firewall.apply_to_resources(
-				resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
-			)
+			applied_server_ids = {
+				resource.server.id for resource in firewall.applied_to or [] if resource.server
+			}
+			if cint(self.instance_id) not in applied_server_ids:
+				firewall.apply_to_resources(
+					resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
+				)
 
 	def detach_from_firewall(self, firewall_id: str | int):
 		if self.cloud_provider == "AWS EC2":
