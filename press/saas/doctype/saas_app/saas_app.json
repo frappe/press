@@ -113,7 +113,7 @@
 		{ "link_doctype": "Saas App Plan", "link_fieldname": "app" },
 		{ "link_doctype": "Saas App Subscription", "link_fieldname": "app" }
 	],
-	"modified": "2026-11-06 12:30:00.000000",
+	"modified": "2026-11-06 18:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "SaaS",
 	"name": "Saas App",
@@ -142,6 +142,13 @@
 			"role": "Press Product Manager",
 			"share": 1,
 			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support"
 		}
 	],
 	"sort_field": "modified",

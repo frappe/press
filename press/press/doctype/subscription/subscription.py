@@ -18,6 +18,7 @@ from press.press.doctype.s3_storage_plan.s3_storage_plan import AUDIT_LOG_STORAG
 from press.press.doctype.site_plan.site_plan import SitePlan
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
+from press.utils.user import only_for_staff_with
 
 if TYPE_CHECKING:
 	from frappe.types import DF
@@ -156,6 +157,7 @@ class Subscription(Document):
 
 	@frappe.whitelist()
 	def create_usage_record(self, date: DF.Date | None = None):  # noqa: C901
+		only_for_staff_with(["Press Billing Manager"])
 		cannot_charge = not self.can_charge_for_subscription()
 		if cannot_charge:
 			return None

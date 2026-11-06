@@ -18,7 +18,7 @@ from press.utils.sql import format_sql
 
 
 def execute(filters=None):
-	frappe.only_for(["System Manager", "Site Manager", "Press User", "Press Support Manager"])
+	frappe.only_for(["System Manager", "Site Manager", "Press User", "Press Support"])
 	filters.database = frappe.db.get_value("Site", filters.site, "database_name")
 
 	make_access_log(

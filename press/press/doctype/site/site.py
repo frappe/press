@@ -1578,7 +1578,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def rotate_database_password(self):
-		frappe.only_for(["System Manager", "Press Support Manager"], message=True)
+		frappe.only_for(["System Manager", "Press Support"], message=True)
 		self.validate_no_password_rotation_in_progress()
 		frappe.enqueue_doc(
 			self.doctype,
@@ -1645,7 +1645,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def rotate_saas_communication_secret(self):
-		frappe.only_for(["System Manager", "Press Support Manager"], message=True)
+		frappe.only_for(["System Manager", "Press Support"], message=True)
 		self.validate_communication_secret_can_rotate()
 		self.saas_communication_secret = frappe.generate_hash(length=32)
 		config = {"fc_communication_secret": self.saas_communication_secret}
@@ -2044,7 +2044,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def move_to_bench(self, bench, deactivate=True, skip_failing_patches=False):
-		frappe.only_for(["System Manager", "Press Support Manager"])
+		frappe.only_for(["System Manager", "Press Support"])
 		self.ready_for_move()
 
 		if bench == self.bench:
@@ -2507,6 +2507,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def show_admin_password(self):
+		frappe.only_for("System Manager")
 		frappe.msgprint(self.get_password("admin_password"), title="Password", indicator="green")
 
 	def get_connection_as_admin(self):

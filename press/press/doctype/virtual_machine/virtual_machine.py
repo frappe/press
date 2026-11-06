@@ -2670,6 +2670,7 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def get_serial_console_credentials(self):
+		frappe.only_for("System Manager")
 		client = self.client("ec2-instance-connect")
 		client.send_serial_console_ssh_public_key(
 			InstanceId=self.instance_id,

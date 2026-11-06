@@ -7,6 +7,8 @@ import frappe
 import requests
 from frappe.model.document import Document
 
+from press.utils.user import only_for_staff_with
+
 if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
 
@@ -127,6 +129,7 @@ class MarketplaceAppSubscription(Document):
 
 	@frappe.whitelist()
 	def activate(self):
+		only_for_staff_with(["Press Marketplace Manager"])
 		if self.status == "Active":
 			frappe.throw("This subscription is already active. No further action is needed.")
 

@@ -26,6 +26,7 @@ from press.press.doctype.communication_info.communication_info import get_commun
 from press.runner import Ansible
 from press.utils import get_current_team, log_error
 from press.utils.dns import check_dns_cname_a
+from press.utils.user import only_for_staff_with
 
 if TYPE_CHECKING:
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
@@ -285,6 +286,7 @@ class TLSCertificate(Document):
 		Exposure is unchanged from when this was a Code field the button read
 		directly — both require read permission on the certificate.
 		"""
+		only_for_staff_with(["Press Infrastructure Manager"])
 		return self.get_password("private_key", raise_exception=False)
 
 	def _get_private_key_object(self):
