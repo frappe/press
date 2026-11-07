@@ -11,7 +11,7 @@ from frappe.oauth import get_cookie_dict_from_headers
 def update_preferences(preferences):
 	preferences_dict = json.loads(preferences)
 
-	if not frappe.local.cookie_manager:
+	if not getattr(frappe.local, "cookie_manager", None):
 		frappe.local.cookie_manager = CookieManager()
 
 	cookie_manager = frappe.local.cookie_manager
