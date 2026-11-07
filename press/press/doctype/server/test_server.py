@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import typing
 from unittest.mock import MagicMock, Mock, patch
@@ -108,6 +109,83 @@ def create_test_server(
 
 @patch.object(BaseServer, "after_insert", new=Mock())
 class TestServer(FrappeTestCase):
+	def _make_build_only_server_config(self, server):
+		server.is_build_only = 1
+		server.is_self_hosted = 1
+		server.use_for_build = 1
+		server.public = 0
+		server.use_for_new_benches = 0
+		server.use_for_new_sites = 0
+		server.staging = 0
+		server.build_docker_host = "unix:///run/albasar-build/docker.sock"
+		server.build_docker_root = "/srv/albasar-build/mnt/docker"
+		server.build_agent_endpoint = f"https://{server.name}:9443"
+		server.build_agent_port = 9443
+		server.build_agent_bind_address = "100.106.180.55"
+		server.ip = "100.106.180.55"
+		key_type = b"ssh-ed25519"
+		key_blob = len(key_type).to_bytes(4, "big") + key_type + (32).to_bytes(4, "big") + b"x" * 32
+		server.build_ssh_host_public_key = f"ssh-ed25519 {base64.b64encode(key_blob).decode()}"
+		server.build_agent_repository_url = "https://github.com/frappe/agent.git"
+		server.build_agent_repository_ref = "a" * 40
+		server.build_docker_service = "albasar-build-dockerd.service"
+		server.build_cpu_quota_percent = 200
+		server.build_memory_limit_mb = 8192
+		server.build_io_weight = 100
+		server.build_storage_mount = "/srv/albasar-build/mnt"
+		server.build_storage_limit_gib = 32
+		return server
+
+	def test_build_only_configuration_requires_isolated_build_settings(self):
+		server = self._make_build_only_server_config(create_test_server())
+		server.validate_build_only_configuration()
+
+	def test_build_only_rejects_default_docker_socket(self):
+		server = self._make_build_only_server_config(create_test_server())
+		server.build_docker_host = "unix:///var/run/docker.sock"
+		with self.assertRaises(frappe.ValidationError):
+			server.validate_build_only_configuration()
+
+	def test_build_only_cannot_be_attached_to_existing_service_roles(self):
+		server = self._make_build_only_server_config(create_test_server())
+		server.database_server = "existing-database-server"
+		with self.assertRaises(frappe.ValidationError):
+			server.validate_build_only_configuration()
+
+	def test_build_only_rejects_non_https_or_foreign_agent_endpoint(self):
+		server = self._make_build_only_server_config(create_test_server())
+		server.build_agent_endpoint = "http://elsewhere.example:9443"
+		with self.assertRaises(frappe.ValidationError):
+			server.validate_build_only_configuration()
+
+	def test_build_only_rejects_wildcard_or_non_tailnet_bind_address(self):
+		for address in ("0.0.0.0", "127.0.0.1", "192.0.2.10", "2001:db8::1"):
+			server = self._make_build_only_server_config(create_test_server())
+			server.build_agent_bind_address = address
+			with self.subTest(address=address), self.assertRaises(frappe.ValidationError):
+				server.validate_build_only_configuration()
+
+	def test_build_only_rejects_non_tailnet_ssh_host(self):
+		server = self._make_build_only_server_config(create_test_server())
+		server.ip = "31.97.157.173"
+		with self.assertRaises(frappe.ValidationError):
+			server.validate_build_only_configuration()
+
+	def test_build_only_rejects_malformed_ssh_host_key(self):
+		server = self._make_build_only_server_config(create_test_server())
+		server.build_ssh_host_public_key = "ssh-ed25519 not-base64!"
+		with self.assertRaises(frappe.ValidationError):
+			server.validate_build_only_configuration()
+
+	@patch("frappe.db.get_value", return_value=(1, "https://build.example:9443"))
+	def test_build_only_agent_uses_its_dedicated_endpoint(self, get_value):
+		agent = Agent("builder.example")
+		self.assertEqual(
+			agent.get_request_url("builder/build"),
+			"https://build.example:9443/agent/builder/build",
+		)
+		get_value.assert_called_once_with("Server", "builder.example", ("is_build_only", "build_agent_endpoint"))
+
 	def test_create_generic_server(self):
 		create_test_press_settings()
 		proxy_server = create_test_proxy_server()

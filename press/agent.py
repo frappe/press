@@ -1073,6 +1073,15 @@ class Agent:
 		return json_response
 
 	def get_request_url(self, path):
+		if self.server_type == "Server":
+			build_only, endpoint = frappe.db.get_value(
+				"Server", self.server, ("is_build_only", "build_agent_endpoint")
+			)
+			if build_only:
+				if not endpoint:
+					frappe.throw("Build-only Server is missing its dedicated Agent endpoint")
+				return f"{endpoint.rstrip('/')}/agent/{path.lstrip('/')}"
+
 		if self.server_type in ("Server", "Database Server"):
 			proxy = None
 			server_ip, server_private_ip, server_cluster = frappe.db.get_value(

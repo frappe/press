@@ -1,0 +1,14 @@
+bind 127.0.0.1
+port 25026
+protected-mode yes
+daemonize no
+supervised no
+dir /home/press-build/agent/redis-data
+appendonly yes
+appendfsync everysec
+save 900 1
+save 300 10
+save 60 10000
+maxmemory 256mb
+maxmemory-policy noeviction
+logfile ""

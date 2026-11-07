@@ -1,0 +1,18 @@
+---
+- name: Restart build-agent Redis
+  ansible.builtin.systemd_service:
+    name: press-build-agent-redis.service
+    state: restarted
+    daemon_reload: true
+
+- name: Restart build-agent web
+  ansible.builtin.systemd_service:
+    name: press-build-agent-web.service
+    state: restarted
+    daemon_reload: true
+
+- name: Restart build-agent worker
+  ansible.builtin.systemd_service:
+    name: press-build-agent-worker.service
+    state: restarted
+    daemon_reload: true
