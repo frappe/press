@@ -480,6 +480,7 @@ class Site(Document, TagHelpers):
 				get_next_allowed_dedicated_product_warranty_change_date(self.name)
 			)
 			doc.dedicated_server_warranty_limit = get_available_warranty_quota_for_server(self.server)
+			doc.dedicated_server_price_usd = self.get_dedicated_server_price()
 
 		doc.suspension_reason = (
 			frappe.db.get_value("Site Activity", {"site": self.name, "action": "Suspend Site"}, "reason")
@@ -3269,6 +3270,11 @@ class Site(Document, TagHelpers):
 
 		validate_plan(self.server, self.name, plan)
 		self.change_plan(plan)
+
+	def get_dedicated_server_price(self) -> float:
+		from press.api.site import get_dedicated_server_price
+
+		return get_dedicated_server_price(self.server)
 
 	@dashboard_whitelist()
 	def last_plan_change(self):
