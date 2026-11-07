@@ -123,7 +123,7 @@ class TeamChange(Document):
 		self.admin_transfer.transfer()
 
 	def validate_desk_transfer(self):
-		frappe.only_for("System Manager")
+		frappe.only_for(["System Manager", "Press Support", "Press Support Engineer"])
 		if self.is_dashboard_request:
 			frappe.throw(
 				"This is a dashboard request, which the receiving team accepts from the emailed link. "

@@ -22,6 +22,7 @@ from frappe.utils.data import add_to_date
 
 from press.access.actions import ReleaseGroupActions
 from press.access.decorators import action_guard
+from press.access.staff_roles import safe_for_readers
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.api.github import get_frappe_branch_major_version
@@ -1092,6 +1093,7 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def deploy_information(self):
 		out = frappe._dict(update_available=False)
 		last_deployed_bench = get_last_doc(
@@ -1134,6 +1136,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return out
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def deployed_versions(self):
 		Bench = frappe.qb.DocType("Bench")
 		Server = frappe.qb.DocType("Server")
@@ -1217,6 +1220,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return deployed_versions
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_app_versions(self, bench):
 		apps = frappe.db.get_all(
 			"Bench App",
@@ -1244,6 +1248,7 @@ class ReleaseGroup(Document, TagHelpers):
 		request_transfer(self, team_mail_id, reason, title=self.title or self.name)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_private_apps(self) -> list[str]:
 		"""Apps from private repositories, which the new owner must connect to their own GitHub"""
 		sources = [app.source for app in self.apps]

@@ -1179,7 +1179,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 				"reference_doctype": reference_doctype,
 				"reference_name": reference_name,
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 		return job
 
 	def get_similar_in_execution_job(
