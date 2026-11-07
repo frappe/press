@@ -12,7 +12,9 @@
 		"to_plan",
 		"column_break_6",
 		"type",
-		"timestamp"
+		"timestamp",
+		"from_plan_snapshot",
+		"to_plan_snapshot"
 	],
 	"fields": [
 		{
@@ -68,10 +70,22 @@
 			"fieldname": "timestamp",
 			"fieldtype": "Datetime",
 			"label": "Timestamp"
+		},
+		{
+			"fieldname": "from_plan_snapshot",
+			"fieldtype": "JSON",
+			"label": "From Plan Snapshot",
+			"read_only": 1
+		},
+		{
+			"fieldname": "to_plan_snapshot",
+			"fieldtype": "JSON",
+			"label": "To Plan Snapshot",
+			"read_only": 1
 		}
 	],
 	"links": [],
-	"modified": "2024-02-19 14:03:40.310425",
+	"modified": "2026-09-23 16:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Plan Change",
