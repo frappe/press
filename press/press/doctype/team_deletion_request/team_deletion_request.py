@@ -16,6 +16,16 @@ def handle_exception(self):
 	frappe.db.commit()
 
 
+def handle_exc(method):
+	def after_execute(self):
+		try:
+			method(self)
+		except Exception:
+			handle_exception(self)
+
+	return after_execute
+
+
 class TeamDeletionRequest(PersonalDataDeletionRequest):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -64,15 +74,6 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 
 	def on_update(self):
 		self.finish_up()
-
-	def handle_exc(foo):
-		def after_execute(self):
-			try:
-				foo(self)
-			except Exception:
-				handle_exception(self)
-
-		return after_execute
 
 	@property
 	def team_doc(self):
