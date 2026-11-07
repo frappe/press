@@ -295,6 +295,9 @@ def get_app_source_from_supported_versions(
 	version_numbers = frappe.get_all(
 		"Frappe Version", {"name": ("in", supported_versions)}, ["name", "number"]
 	)
+	if not version_numbers:
+		return None
+
 	version_numbers = sorted(version_numbers, key=lambda x: x["number"], reverse=True)
 
 	app_source = frappe.qb.DocType("App Source")
