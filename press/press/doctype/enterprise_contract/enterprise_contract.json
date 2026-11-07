@@ -1,0 +1,286 @@
+{
+	"actions": [],
+	"autoname": "EC-.#####",
+	"creation": "2026-10-29 13:45:00.000000",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"team",
+		"status",
+		"column_break_plan",
+		"plan",
+		"plan_title",
+		"currency",
+		"yearly_price",
+		"price_lock_section",
+		"price_lock_years",
+		"start_date",
+		"column_break_lock",
+		"price_locked_until",
+		"customer_section",
+		"billing_name",
+		"billing_email",
+		"contact_person",
+		"designation",
+		"column_break_customer",
+		"billing_partner",
+		"legal_entities_covered",
+		"exclude_from_partner_contribution",
+		"address_section",
+		"billing_address",
+		"agreement_section",
+		"agreement_date",
+		"column_break_agreement",
+		"signed_contract",
+		"payment_gateway_section",
+		"payment_gateway",
+		"column_break_checkout",
+		"checkout_reference",
+		"transfer_reference",
+		"payments_section",
+		"payments"
+	],
+	"fields": [
+		{
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Team",
+			"options": "Team",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"default": "Awaiting Payment",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Status",
+			"options": "Awaiting Payment\nPending Signature\nActive\nCancelled"
+		},
+		{
+			"fieldname": "column_break_plan",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "plan",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Plan",
+			"options": "Enterprise Warranty Plan",
+			"reqd": 1
+		},
+		{
+			"fetch_from": "plan.title",
+			"fieldname": "plan_title",
+			"fieldtype": "Data",
+			"label": "Plan",
+			"read_only": 1
+		},
+		{
+			"fieldname": "currency",
+			"fieldtype": "Link",
+			"label": "Currency",
+			"options": "Currency",
+			"reqd": 1,
+			"fetch_from": "team.currency",
+			"fetch_if_empty": 1
+		},
+		{
+			"description": "Price at the time of order. It applies to every renewal in the price lock period.",
+			"fieldname": "yearly_price",
+			"fieldtype": "Currency",
+			"label": "Yearly Price",
+			"options": "currency",
+			"read_only": 1
+		},
+		{
+			"fieldname": "price_lock_section",
+			"fieldtype": "Section Break",
+			"label": "Price Lock"
+		},
+		{
+			"default": "1",
+			"fieldname": "price_lock_years",
+			"fieldtype": "Int",
+			"label": "Price Lock Period (Years)",
+			"reqd": 1
+		},
+		{
+			"default": "Today",
+			"description": "Day the first payment was recorded",
+			"fieldname": "start_date",
+			"fieldtype": "Date",
+			"label": "Start Date",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fieldname": "column_break_lock",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "price_locked_until",
+			"fieldtype": "Date",
+			"label": "Price Locked Until",
+			"read_only": 1
+		},
+		{
+			"fieldname": "customer_section",
+			"fieldtype": "Section Break",
+			"label": "Customer Details"
+		},
+		{
+			"description": "Copied from the team's billing details when the order is placed",
+			"fieldname": "billing_name",
+			"fieldtype": "Data",
+			"label": "Billing Name",
+			"read_only": 1
+		},
+		{
+			"fieldname": "billing_email",
+			"fieldtype": "Data",
+			"label": "Billing Email",
+			"options": "Email",
+			"reqd": 1
+		},
+		{
+			"fieldname": "contact_person",
+			"fieldtype": "Data",
+			"label": "Contact Person"
+		},
+		{
+			"fieldname": "designation",
+			"fieldtype": "Data",
+			"label": "Designation"
+		},
+		{
+			"fieldname": "column_break_customer",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "billing_partner",
+			"fieldtype": "Data",
+			"label": "Billing Partner"
+		},
+		{
+			"fieldname": "legal_entities_covered",
+			"fieldtype": "Small Text",
+			"label": "Legal Entities Covered"
+		},
+		{
+			"default": "0",
+			"description": "Leave this contract out of partner contribution, on frappe.io and on the partner pages",
+			"fieldname": "exclude_from_partner_contribution",
+			"fieldtype": "Check",
+			"label": "Exclude from Partner Contribution"
+		},
+		{
+			"fieldname": "address_section",
+			"fieldtype": "Section Break",
+			"label": "Billing Address"
+		},
+		{
+			"description": "The team's billing address when the order is placed",
+			"fieldname": "billing_address",
+			"fieldtype": "Link",
+			"label": "Billing Address",
+			"options": "Address",
+			"read_only": 1
+		},
+		{
+			"fieldname": "agreement_section",
+			"fieldtype": "Section Break",
+			"label": "Agreement"
+		},
+		{
+			"fieldname": "agreement_date",
+			"fieldtype": "Date",
+			"label": "Agreement Date"
+		},
+		{
+			"fieldname": "column_break_agreement",
+			"fieldtype": "Column Break"
+		},
+		{
+			"description": "Contract PDF signed on frappe.io. The contract turns Active once this and the agreement date are set.",
+			"fieldname": "signed_contract",
+			"fieldtype": "Attach",
+			"label": "Signed Contract"
+		},
+		{
+			"fieldname": "payment_gateway_section",
+			"fieldtype": "Section Break",
+			"label": "Checkout"
+		},
+		{
+			"fieldname": "payment_gateway",
+			"fieldtype": "Select",
+			"label": "Payment Gateway",
+			"options": "Stripe\nBank Transfer",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_checkout",
+			"fieldtype": "Column Break"
+		},
+		{
+			"description": "Stripe Checkout Session of the latest payment attempt",
+			"fieldname": "checkout_reference",
+			"fieldtype": "Data",
+			"label": "Checkout Reference",
+			"read_only": 1
+		},
+		{
+			"description": "UTR of the NEFT/RTGS payment, entered by the customer or by staff with Record Bank Transfer. Check it against the bank statement before you confirm.",
+			"fieldname": "transfer_reference",
+			"fieldtype": "Data",
+			"label": "Transfer UTR",
+			"read_only": 1
+		},
+		{
+			"fieldname": "payments_section",
+			"fieldtype": "Section Break",
+			"label": "Payments"
+		},
+		{
+			"fieldname": "payments",
+			"fieldtype": "Table",
+			"label": "Payments",
+			"options": "Enterprise Contract Payment"
+		}
+	],
+	"links": [],
+	"modified": "2026-11-05 12:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Enterprise Contract",
+	"naming_rule": "Expression (old style)",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"read": 1,
+			"role": "Press User"
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "billing_name",
+	"track_changes": 1,
+	"default_print_format": "Enterprise Contract"
+}

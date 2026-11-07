@@ -1,0 +1,147 @@
+<template>
+	<div
+		class="flex flex-col rounded-lg text-base text-ink-gray-9 shadow dark:border"
+	>
+		<div class="flex items-start justify-between gap-4 px-4 py-3">
+			<div class="flex flex-col gap-1.5">
+				<div class="text-lg font-semibold">{{ contract.plan_title }} plan</div>
+				<div class="text-ink-gray-7">
+					{{ contract.billing_name }}
+					· {{ contract.name }}
+				</div>
+			</div>
+			<div class="flex items-center gap-2">
+				<Button
+					v-if="!contract.transfer_reference"
+					label="Cancel order"
+					variant="ghost"
+					:loading="cancelOrder.loading"
+					@click="cancelOrder.submit()"
+				/>
+				<Badge size="lg" theme="orange" label="Awaiting payment" />
+			</div>
+		</div>
+		<ContractProgress class="px-4 pb-4 pt-1" :status="contract.status" />
+
+		<div
+			v-if="canUseCredits"
+			class="m-1.5 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface-gray-1 px-2.5 py-2"
+		>
+			<div class="flex items-center gap-2 text-ink-gray-8">
+				<LucideWallet class="h-4 w-4" />
+				<span>
+					Or pay
+					<span class="font-medium text-ink-gray-9">{{ creditPrice }}</span>
+					from your credit balance{{ contract.currency === 'INR' ? ', with no GST' : '' }}.
+				</span>
+			</div>
+			<Button
+				label="Pay with Credits"
+				:loading="payWithCredits.loading"
+				@click="payWithCredits.submit()"
+			/>
+		</div>
+
+		<BankTransfer
+			v-if="contract.payment_gateway === 'Bank Transfer'"
+			:contract="contract"
+			:bank="bank"
+			@submitted="emit('updated')"
+		/>
+		<div
+			v-else
+			class="m-1.5 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface-gray-1 px-2.5 py-2"
+		>
+			<div class="flex items-center gap-2 text-ink-gray-8">
+				<LucideCreditCard class="h-4 w-4" />
+				<span>
+					Your order is saved. Pay
+					<span class="font-medium text-ink-gray-9">{{ total }}</span>
+					on Stripe to place it.
+				</span>
+			</div>
+			<Button
+				variant="solid"
+				:loading="redirecting"
+				loadingText="Redirecting to Stripe..."
+				@click="payNow"
+			>
+				Pay {{ total }}
+			</Button>
+		</div>
+		<ErrorMessage
+			class="px-4 pb-3"
+			:message="pay.error || cancelOrder.error || payWithCredits.error"
+		/>
+	</div>
+</template>
+
+<script setup>
+import { Badge, Button, createResource, ErrorMessage } from 'frappe-ui'
+import { computed, ref } from 'vue'
+import { toast } from 'vue-sonner'
+import { getTeam } from '../../data/team'
+import BankTransfer from './BankTransfer.vue'
+import ContractProgress from './ContractProgress.vue'
+import { contractsReturnUrl } from './checkout'
+import { money } from './format'
+
+const props = defineProps({
+	contract: { type: Object, required: true },
+	bank: { type: Object, default: null },
+	// Purchased credits only; free credits do not pay for a contract.
+	creditBalance: { type: Number, default: 0 },
+})
+const emit = defineEmits(['updated'])
+
+const team = getTeam()
+const redirecting = ref(false)
+const creditPrice = computed(() =>
+	money(props.contract.amount_due_with_credits.total, props.contract.currency),
+)
+// Hidden once a bank transfer is on its way, so the year is not paid twice.
+const canUseCredits = computed(
+	() =>
+		!props.contract.transfer_reference &&
+		props.creditBalance >= props.contract.amount_due_with_credits.total,
+)
+
+const payWithCredits = createResource({
+	url: 'press.api.enterprise_contract.pay_with_credits',
+	// A message when the last checkout turns out to be paid already.
+	onSuccess: ({ message }) => {
+		if (message) toast.info(message)
+		team.reload()
+		emit('updated')
+	},
+})
+const total = computed(() =>
+	money(props.contract.amount_due.total, props.contract.currency),
+)
+
+const pay = createResource({
+	url: 'press.api.enterprise_contract.pay',
+	makeParams: () => ({ return_url: contractsReturnUrl() }),
+	// No checkout URL when the last checkout turns out to be paid already.
+	onSuccess: ({ checkout_url, message }) => {
+		if (checkout_url) return window.location.assign(checkout_url)
+		redirecting.value = false
+		if (message) toast.info(message)
+		emit('updated')
+	},
+	onError: () => (redirecting.value = false),
+})
+
+const cancelOrder = createResource({
+	url: 'press.api.enterprise_contract.cancel_order',
+	onSuccess: ({ message }) => {
+		if (message) toast.info(message)
+		emit('updated')
+	},
+})
+
+function payNow() {
+	redirecting.value = true
+	pay.submit()
+}
+</script>

@@ -23,6 +23,8 @@ from press.guards.team_guard import only_admin
 from press.partner.doctype.partner_onboarding.partner_onboarding import has_partner_onboarding
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.enterprise_contract.checkout import PAYMENT_FOR as ENTERPRISE_CONTRACT_PAYMENT
+from press.press.doctype.enterprise_contract.checkout import record_webhook_payment
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import get_valid_teams_for_user, has_role, log_error
 from press.utils import is_admin_user as check_is_admin_user
@@ -96,6 +98,7 @@ class Team(Document):
 		default_razorpay_mandate: DF.Link | None
 		discounts: DF.Table[InvoiceDiscount]
 		enable_inplace_updates: DF.Check
+		enable_enterprise_contracts: DF.Check
 		enable_performance_tuning: DF.Check
 		enabled: DF.Check
 		end_date: DF.Date | None
@@ -175,6 +178,7 @@ class Team(Document):
 		"parent_team",
 		"is_developer",
 		"enable_performance_tuning",
+		"enable_enterprise_contracts",
 		"enable_inplace_updates",
 		"servers_enabled",
 		"benches_enabled",
@@ -1857,6 +1861,11 @@ def process_stripe_webhook(doc, method):
 
 	if payment_for and payment_for == "micro_debit_test_charge":
 		process_micro_debit_test_charge(event)
+		return
+
+	if payment_for == ENTERPRISE_CONTRACT_PAYMENT:
+		# Paid on the contract itself, not added to team credits.
+		record_webhook_payment(payment_intent)
 		return
 
 	handle_payment_intent_succeeded(payment_intent)
