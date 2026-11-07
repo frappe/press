@@ -159,7 +159,8 @@ class AlertmanagerWebhookLog(Document):
 		return {}
 
 	def react(self):
-		for instance in instances_in_payload(self.payload):
+		# A firing group still lists alerts that have resolved, so react only to the firing ones
+		for instance in instances_in_payload(self.payload, "firing"):
 			reaction_job = self.react_for_instance(instance)
 			if reaction_job:
 				self.append("reaction_jobs", reaction_job)
@@ -338,8 +339,12 @@ class AlertmanagerWebhookLog(Document):
 			log_error("Incident creation failed")
 
 
-def instances_in_payload(payload: str) -> set[str]:
-	return {alert["labels"]["instance"] for alert in json.loads(payload)["alerts"]}
+def instances_in_payload(payload: str, status: Literal["firing", "resolved"] | None = None) -> set[str]:
+	return {
+		alert["labels"]["instance"]
+		for alert in json.loads(payload)["alerts"]
+		if status is None or alert["status"] == status
+	}
 
 
 def disk_full_servers() -> set[str]:
@@ -360,8 +365,8 @@ def disk_full_servers() -> set[str]:
 
 	instances: set[str] = set()
 	for log in logs:
-		alerted = instances_in_payload(log.payload)
-		instances = instances | alerted if log.status == "Firing" else instances - alerted
+		instances |= instances_in_payload(log.payload, "firing")
+		instances -= instances_in_payload(log.payload, "resolved")
 	return app_servers_of(instances)
 
 
