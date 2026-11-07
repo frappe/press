@@ -5,6 +5,8 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
 
 class PlanChange(Document):
 	dashboard_fields = ("from_plan", "to_plan", "type", "timestamp", "document_type", "document_name")
@@ -42,6 +44,7 @@ class PlanChange(Document):
 			return
 
 		self.change_subscription_plan()
+		self.update_addon_storage_subscription()
 
 	def create_subscription(self):
 		frappe.get_doc(
@@ -74,3 +77,9 @@ class PlanChange(Document):
 		}
 		subscription.enabled = 1
 		subscription.save()
+
+	def update_addon_storage_subscription(self):
+		"""Re-bill add-on storage against the new plan's included disk"""
+		virtual_machine = frappe.db.get_value(self.document_type, self.document_name, "virtual_machine")
+		if virtual_machine:
+			VirtualMachine("Virtual Machine", virtual_machine).update_subscription_for_addon_storage()

@@ -493,9 +493,8 @@ class VirtualMachine(Document):
 			# Add on storage was added or updated
 			increment = self.disk_size - server_plan_size
 			self._handle_updated_addon_storage(server, increment)
-		elif self.disk_size == server_plan_size:
-			# Server was upgraded or downgraded from plan change
-			# Remove the existing add-on storage subscription
+		elif server_plan_size and self.disk_size <= server_plan_size:
+			# The plan's included disk covers the whole disk, so no add-on is billed
 			self._plan_change_addon_storage(server)
 		return
 
