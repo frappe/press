@@ -21,15 +21,20 @@ if TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
+def before_today(hours: float):
+	"""A time `hours` before today began, so inside yesterday's window for under 24."""
+	return frappe.utils.add_to_date(frappe.utils.get_datetime(frappe.utils.today()), hours=-hours)
+
+
 def create_test_backup_job(
 	site: Site,
 	status: str,
-	hours_ago: float = 0,
+	hours_before_today: float = 1,
 	job_type: str = "Backup Site",
 	owner: str = "Administrator",
 ):
 	"""Backup agent job inserted straight into the db, so no steps or HTTP request get queued."""
-	creation = frappe.utils.add_to_date(None, hours=-hours_ago)
+	creation = before_today(hours_before_today)
 	frappe.get_doc(
 		{
 			"doctype": "Agent Job",
@@ -49,9 +54,9 @@ def create_test_backup_job(
 	).db_insert()
 
 
-def create_test_snapshot(machine: VirtualMachine, status: str, hours_ago: float = 0, **flags) -> str:
+def create_test_snapshot(machine: VirtualMachine, status: str, hours_before_today: float = 1, **flags) -> str:
 	"""Virtual disk snapshot inserted straight into the db, so no cloud calls are made."""
-	creation = frappe.utils.add_to_date(None, hours=-hours_ago)
+	creation = before_today(hours_before_today)
 	snapshot = frappe.get_doc(
 		{
 			"doctype": "Virtual Disk Snapshot",
@@ -87,20 +92,20 @@ class TestBackupDailyAudit(FrappeTestCase):
 		site: str,
 		count: int,
 		status: str = "Failure",
-		hours_ago: float = 0,
+		hours_before_today: float = 1,
 		owner: str = "Administrator",
 	):
-		creation = frappe.utils.add_to_date(None, hours=-hours_ago)
+		creation = before_today(hours_before_today)
 		for _ in range(count):
 			backup = create_test_site_backup(site=site, status=status, creation=creation, offsite=False)
 			backup.db_set("owner", owner)
 
-	def _create_physical_backup(self, snapshot_status: str, hours_ago: float = 0):
+	def _create_physical_backup(self, snapshot_status: str, hours_before_today: float = 1):
 		snapshot = create_test_snapshot(self._create_machine(), snapshot_status, physical_backup=True)
 		backup = create_test_site_backup(
 			site=self.idle_site.name,
 			status="Success",
-			creation=frappe.utils.add_to_date(None, hours=-hours_ago),
+			creation=before_today(hours_before_today),
 			offsite=False,
 		)
 		backup.db_set({"physical": True, "database_snapshot": snapshot})
@@ -128,13 +133,13 @@ class TestBackupDailyAudit(FrappeTestCase):
 		audit = self._record_audit()
 
 		self.assertEqual(str(audit.audit_date), frappe.utils.today())
-		self.assertIsNotNone(audit.window_end)
+		self.assertEqual(frappe.utils.get_datetime(audit.window_end), before_today(0))
 
 	def test_refresh_keeps_the_window_and_counts_only_backups_inside_it(self):
 		audit = self._record_audit()
-		window_end = frappe.utils.add_to_date(None, hours=-2)
+		window_end = before_today(2)
 		audit.db_set("window_end", window_end)
-		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=1)
+		self._create_backups(self.idle_site.name, 1, status="Success", hours_before_today=1)
 
 		audit.reload()
 		audit.recollect()
@@ -142,13 +147,13 @@ class TestBackupDailyAudit(FrappeTestCase):
 		self.assertIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_day])
 		self.assertEqual(frappe.utils.get_datetime(audit.window_end), window_end)
 
-		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=3)
+		self._create_backups(self.idle_site.name, 1, status="Success", hours_before_today=3)
 		audit.recollect()
 
 		self.assertNotIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_day])
 
 	def test_refresh_keeps_the_day_window_length_the_audit_was_made_with(self):
-		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=26)
+		self._create_backups(self.idle_site.name, 1, status="Success", hours_before_today=26)
 		audit = self._record_audit()
 		audit.db_set("day_window_hours", 30)
 
@@ -188,7 +193,7 @@ class TestBackupDailyAudit(FrappeTestCase):
 		listed = [row.virtual_machine for row in audit.servers_without_snapshot_in_day]
 		self.assertIn(machine.name, listed)
 
-		create_test_snapshot(machine, "Completed", hours_ago=1)
+		create_test_snapshot(machine, "Completed", hours_before_today=1)
 		audit.recollect()
 
 		self.assertNotIn(machine.name, [row.virtual_machine for row in audit.servers_without_snapshot_in_day])
@@ -198,7 +203,7 @@ class TestBackupDailyAudit(FrappeTestCase):
 		for status in ("Success", "Success", "Success", "Failure", "Delivery Failure"):
 			create_test_backup_job(self.idle_site, status)
 		create_test_backup_job(self.idle_site, "Running")
-		create_test_backup_job(self.idle_site, "Success", hours_ago=25)
+		create_test_backup_job(self.idle_site, "Success", hours_before_today=25)
 		create_test_backup_job(self.idle_site, "Failure", job_type="Add Domain")
 
 		audit = self._record_audit()
@@ -238,7 +243,7 @@ class TestBackupDailyAudit(FrappeTestCase):
 		self.assertNotIn(self.idle_site.name, [row.site for row in audit.sites_with_frequent_failures])
 
 	def test_site_with_no_successful_backup_is_listed_with_failures_and_last_successful_backup(self):
-		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=4 * 24)
+		self._create_backups(self.idle_site.name, 1, status="Success", hours_before_today=4 * 24)
 		self._create_backups(self.idle_site.name, 2)
 
 		audit = self._record_audit()
@@ -264,15 +269,24 @@ class TestBackupDailyAudit(FrappeTestCase):
 		self.assertNotIn(self.idle_site.name, in_day)
 		self.assertNotIn(self.idle_site.name, in_3_days)
 
-	def test_site_backed_up_just_over_24_hours_ago_is_listed_for_the_last_day(self):
-		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=25)
+	def test_backup_taken_today_does_not_count_for_yesterday_or_the_last_3_days(self):
+		self._create_backups(self.idle_site.name, 1, status="Success", hours_before_today=4 * 24)
+		create_test_site_backup(site=self.idle_site.name, status="Success", offsite=False)
+
+		in_day, in_3_days = self._listed_sites()
+
+		self.assertIn(self.idle_site.name, in_day)
+		self.assertIn(self.idle_site.name, in_3_days)
+
+	def test_site_backed_up_only_before_yesterday_is_listed_for_yesterday(self):
+		self._create_backups(self.idle_site.name, 1, status="Success", hours_before_today=25)
 
 		in_day, _ = self._listed_sites()
 
 		self.assertIn(self.idle_site.name, in_day)
 
 	def test_site_with_a_successful_backup_two_days_ago_is_listed_for_the_last_day_only(self):
-		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=2 * 24)
+		self._create_backups(self.idle_site.name, 1, status="Success", hours_before_today=2 * 24)
 
 		in_day, in_3_days = self._listed_sites()
 
@@ -280,15 +294,15 @@ class TestBackupDailyAudit(FrappeTestCase):
 		self.assertNotIn(self.idle_site.name, in_3_days)
 
 	def test_pending_and_running_backups_are_not_a_success(self):
-		self._create_backups(self.idle_site.name, 1, status="Pending", hours_ago=3)
-		self._create_backups(self.idle_site.name, 1, status="Running", hours_ago=3)
+		self._create_backups(self.idle_site.name, 1, status="Pending", hours_before_today=3)
+		self._create_backups(self.idle_site.name, 1, status="Running", hours_before_today=3)
 
 		in_day, _ = self._listed_sites()
 
 		self.assertIn(self.idle_site.name, in_day)
 
 	def test_physical_backup_with_a_completed_snapshot_counts_as_a_success(self):
-		self._create_physical_backup("Completed", hours_ago=4 * 24)
+		self._create_physical_backup("Completed", hours_before_today=4 * 24)
 		self._create_physical_backup("Completed")
 
 		audit = self._record_audit()
@@ -297,7 +311,7 @@ class TestBackupDailyAudit(FrappeTestCase):
 		self.assertNotIn(self.idle_site.name, [row.site for row in audit.sites_without_success_in_3_days])
 
 	def test_physical_backup_whose_snapshot_has_not_completed_is_not_a_success(self):
-		self._create_physical_backup("Completed", hours_ago=4 * 24)
+		self._create_physical_backup("Completed", hours_before_today=4 * 24)
 		for status in ("Pending", "Error", "Unavailable"):
 			self._create_physical_backup(status)
 
@@ -311,7 +325,7 @@ class TestBackupDailyAudit(FrappeTestCase):
 
 	def test_day_window_is_24_hours_whatever_the_backup_interval(self):
 		frappe.db.set_single_value("Press Settings", "backup_interval", 48)
-		self._create_backups(self.idle_site.name, 1, status="Success", hours_ago=25)
+		self._create_backups(self.idle_site.name, 1, status="Success", hours_before_today=25)
 
 		audit = self._record_audit()
 
@@ -330,7 +344,7 @@ class TestBackupDailyAudit(FrappeTestCase):
 		self.assertIn(self.idle_site.name, in_day)
 
 	def test_failed_backups_are_counted_within_each_window(self):
-		self._create_backups(self.idle_site.name, 1, hours_ago=25)
+		self._create_backups(self.idle_site.name, 1, hours_before_today=25)
 
 		audit = self._record_audit()
 
@@ -346,7 +360,7 @@ class TestBackupDailyAudit(FrappeTestCase):
 		self.assertIn(self.two_day_old_site.name, in_day)
 		self.assertNotIn(self.two_day_old_site.name, in_3_days)
 
-	def test_site_activated_within_the_window_is_not_listed(self):
+	def test_site_activated_since_the_window_began_is_not_listed(self):
 		log_site_activity(self.idle_site.name, "Activate Site")
 
 		in_day, in_3_days = self._listed_sites()
@@ -400,7 +414,7 @@ class TestBackupDailyAudit(FrappeTestCase):
 
 	def test_failures_under_the_threshold_or_older_than_a_day_are_not_frequent(self):
 		self._create_backups(self.idle_site.name, 2)
-		self._create_backups(self.two_day_old_site.name, 3, hours_ago=25)
+		self._create_backups(self.two_day_old_site.name, 3, hours_before_today=25)
 
 		listed = [row.site for row in self._record_audit().sites_with_frequent_failures]
 
@@ -421,7 +435,7 @@ class TestBackupDailyAudit(FrappeTestCase):
 
 	def test_server_without_a_completed_snapshot_is_listed_with_failures_and_last_snapshot(self):
 		machine = self._create_machine()
-		create_test_snapshot(machine, "Completed", hours_ago=30)
+		create_test_snapshot(machine, "Completed", hours_before_today=30)
 		create_test_snapshot(machine, "Error")
 		create_test_snapshot(machine, "Pending")
 

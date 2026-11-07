@@ -69,7 +69,8 @@ class BackupDailyAudit(Document):
 		"""Fill every list for the windows ending at `window_end`, now for a new audit.
 		A refresh passes the sites and machines already `listed`, so it re-checks only those."""
 		listed = listed or {}
-		self.window_end = self.window_end or frappe.utils.now_datetime()
+		# Windows are whole days in the system time zone, so today's backups never count
+		self.window_end = self.window_end or frappe.utils.get_datetime(frappe.utils.today())
 		self.day_window_hours = self.day_window_hours or DAY_WINDOW_HOURS
 		self.audit_date = frappe.utils.getdate(self.window_end)
 		for table in TABLES:
@@ -141,7 +142,7 @@ class BackupDailyAudit(Document):
 			)
 
 	def set_job_counts(self):
-		"""Backup Site agent jobs created in the 24h window that have finished, by outcome."""
+		"""Backup Site agent jobs created the day before the audit date that have finished, by outcome."""
 		counts = dict(
 			frappe.get_all(
 				"Agent Job",
@@ -196,12 +197,12 @@ def get_sites_without_successful_backup(
 	sites_with_success = (
 		query.select(backup.site).distinct().where(backup.creation.between(since, until)).run(pluck=True)
 	)
-	return sorted(set(candidates) - set(sites_with_success) - set(get_sites_started_within(since, until)))
+	return sorted(set(candidates) - set(sites_with_success) - set(get_sites_started_since(since)))
 
 
-def get_sites_started_within(since: datetime, until: datetime) -> list[str]:
-	"""Sites activated, or claimed from a standby pool at signup, in the window, so not due a backup all along."""
-	window = ("between", [since, until])
+def get_sites_started_since(since: datetime) -> list[str]:
+	"""Sites activated, or claimed from a standby pool at signup, since the window began, so not due all along."""
+	window = (">=", since)
 	activated_sites = frappe.get_all(
 		"Site Activity", {"action": "Activate Site", "creation": window}, pluck="site"
 	)
