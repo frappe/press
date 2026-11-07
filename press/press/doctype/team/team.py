@@ -2149,7 +2149,7 @@ def send_budget_alert_email(team_info, invoice):
 		subject = f"Frappe Cloud Budget Alert for {team_user}"
 
 		frappe.sendmail(
-			recipients=team_user,
+			recipients=get_communication_info("Email", "Billing", "Team", team_info["name"]),
 			subject=subject,
 			template="budget_alert",
 			args={
