@@ -1,4 +1,5 @@
 <template>
+	<ErrorMessage class="m-2" :message="$resources.changeSitePlan.error" />
 	<div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
 		<div
 			v-for="plan in subscription.plans"
@@ -61,6 +62,9 @@ export default {
 		changeSitePlan() {
 			return {
 				url: 'press.api.developer.marketplace.change_site_plan',
+				onSuccess: () => {
+					this.$emit('update:step', 4);
+				},
 			};
 		},
 	},
@@ -75,7 +79,6 @@ export default {
 						secret_key: this.secretKey,
 						plan: plan.name,
 					});
-					this.$emit('update:step', 4);
 				} else {
 					this.$emit('update:step', 3);
 				}
