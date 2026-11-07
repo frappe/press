@@ -11,7 +11,6 @@ from frappe.core.utils import find
 
 from press.api.bench import options
 from press.api.site import (
-	is_marketplace_app_source,
 	is_prepaid_marketplace_app,
 	protected,
 )
@@ -20,6 +19,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	MarketplaceApp,
 	get_plans_for_app,
 	get_total_installs_by_app,
+	is_marketplace_app_source,
 )
 from press.utils import docs, get_app_tag, get_current_team, get_last_doc, is_user_part_of_team, unique
 from press.utils.billing import get_frappe_io_connection

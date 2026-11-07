@@ -104,6 +104,7 @@ class MarketplaceAppPlan(Plan):
 	def create_marketplace_app_subscription(
 		site_name, app_name, plan_name, team_name, while_site_creation=False
 	):
+		validate_marketplace_app_on_site(app_name, site_name)
 		marketplace_app = frappe.db.get_value("Marketplace App", {"app": app_name})
 		subscription = frappe.db.exists(
 			"Subscription",
@@ -140,6 +141,21 @@ class MarketplaceAppPlan(Plan):
 				"team": team_name,
 			}
 		).insert(ignore_permissions=True)
+
+
+def validate_marketplace_app_on_site(app_name: str, site_name: str):
+	"""Reject a marketplace plan for an app not sourced from the marketplace.
+
+	A custom app on a private bench can share an id with a published Marketplace
+	App. The App Source on the site's bench is what tells them apart, so the plan
+	is allowed only when that source is a registered marketplace source.
+	"""
+	from press.press.doctype.marketplace_app.marketplace_app import is_marketplace_app_source
+
+	bench = frappe.db.get_value("Site", site_name, "bench")
+	source = frappe.db.get_value("Bench App", {"parent": bench, "app": app_name}, "source")
+	if not is_marketplace_app_source(source):
+		frappe.throw(f"{app_name} on site {site_name} is not a Marketplace App. It cannot have a plan.")
 
 
 def get_app_plan_features(app_plan: str) -> list[str]:
