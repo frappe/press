@@ -263,7 +263,8 @@ jobs:
   ui-tests:
     needs: [changes, install]
     name: Client
-    runs-on: ubuntu-latest
+    # Playwright 1.54 cannot install Chromium on ubuntu-latest (26.04)
+    runs-on: ubuntu-24.04
     env:
       PRESS_ADMIN_USER_EMAIL: playwright@example.com
       PRESS_ADMIN_USER_PASSWORD: playwright
