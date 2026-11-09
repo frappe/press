@@ -2803,6 +2803,11 @@ class Site(Document, TagHelpers):
 				self.save()
 
 	@frappe.whitelist()
+	def empty_creation_failed(self):
+		"""Unblock site actions on a working site that a failed restore marked as failed"""
+		self.db_set("creation_failed", None)
+
+	@frappe.whitelist()
 	def set_status_based_on_ping(self):
 		if self.status in ("Active", "Archived", "Inactive", "Suspended"):
 			return

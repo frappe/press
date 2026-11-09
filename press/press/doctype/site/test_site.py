@@ -204,6 +204,23 @@ class TestSite(FrappeTestCase):
 		site.get_doc(doc)
 		self.assertEqual(doc.frappe_updated_on, commit_time)
 
+	def test_empty_creation_failed_lets_the_team_run_site_actions_again(self):
+		site = create_test_site()
+		site.db_set("creation_failed", frappe.utils.now())
+		team_user = frappe.db.get_value("Team", site.team, "user")
+		frappe.db.set_value("User", team_user, "user_type", "Website User")
+		frappe.clear_cache(doctype="User")
+
+		frappe.set_user(team_user)
+		self.assertRaisesRegex(frappe.ValidationError, "site creation has failed", site.migrate)
+
+		frappe.set_user("Administrator")
+		site.empty_creation_failed()
+
+		self.assertIsNone(frappe.db.get_value("Site", site.name, "creation_failed"))
+		frappe.set_user(team_user)
+		site.migrate()
+
 	def test_restore_site_from_files_rejects_remote_file_of_another_team(self):
 		from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 		from press.press.doctype.team.test_team import create_test_team
