@@ -8,6 +8,7 @@ from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_to_date, now_datetime
 
 from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.site.site import Site
 from press.press.doctype.site.test_site import create_test_site
 from press.saas.doctype.grove_settings.grove_settings import GroveSettings
 from press.saas.doctype.grove_settings.test_grove_settings import enrolled, pool_rows, product_trial
@@ -40,19 +41,13 @@ def available(product: str = PRODUCT) -> GroveTrialKey:
 	).insert()
 
 
-def request_for(site: str, name: str = "PTR-1", product: str = PRODUCT) -> Mock:
-	"""What `assign` reads off a Product Trial Request."""
-	request = Mock(site=site, product_trial=product_trial(product))
-	request.name = name
-	return request
+def site_named(name: str) -> Site:
+	"""A site before its insert, as `assign` takes one: a name and an empty configuration."""
+	return frappe.get_doc(doctype="Site", name=name)
 
 
 def pools(sizes: dict[str, int], groups: dict[str, str] | None = None, **fields):
 	return enrolled(trial_products=pool_rows(sizes, groups), **fields)
-
-
-def ai_keys_of(site: str) -> list | None:
-	return frappe.get_doc("Site", site).get_config_value_for_key("ai_keys")
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
@@ -185,37 +180,37 @@ class TestGroveTrialKey(FrappeTestCase):
 		retry_revokes.assert_called_once()
 		self.provision.assert_not_called()
 
-	def test_a_site_takes_the_oldest_key_of_its_product_and_a_repeated_site_created_keeps_it(self):
+	def test_a_site_takes_the_oldest_key_of_its_product_into_its_configuration(self):
 		first, second, others = available(), available(), available(OTHER)
+		site = site_named("a.test")
 
-		taken = GroveTrialKey.assign(request_for("a.test"))
-		again = GroveTrialKey.assign(request_for("a.test", "PTR-2"))
-		other = GroveTrialKey.assign(request_for("b.test", "PTR-3"))
+		taken = GroveTrialKey.assign(site, PRODUCT, "PTR-1")
+		other = GroveTrialKey.assign(site_named("b.test"), PRODUCT)
 
-		self.assertEqual((taken.name, again.name, other.name), (first.name, first.name, second.name))
+		self.assertEqual((taken.name, other.name), (first.name, second.name))
 		first.reload()
 		self.assertEqual(
 			(first.status, first.site, first.product_trial_request), ("Assigned", "a.test", "PTR-1")
 		)
-		self.assertIsNone(GroveTrialKey.assign(request_for("c.test", "PTR-4")))
-		self.assertEqual(GroveTrialKey.assign(request_for("d.test", "PTR-5", OTHER)).name, others.name)
+		self.assertEqual(
+			site.get_config_value_for_key("ai_keys"),
+			[{"gateway_url": GATEWAY, "api_key": f"gr_{first.grove_key}"}],
+		)
+		self.assertIsNone(GroveTrialKey.assign(site_named("c.test"), PRODUCT))
+		self.assertEqual(GroveTrialKey.assign(site_named("d.test"), OTHER).name, others.name)
 
 	def test_paused_assignment_leaves_the_ready_key_in_the_pool(self):
 		key = available()
 		pools({PRODUCT: 3}, pause_key_assignment=1)
 
-		self.assertIsNone(GroveTrialKey.assign(request_for("a.test")))
+		self.assertIsNone(GroveTrialKey.assign(site_named("a.test"), PRODUCT))
 		self.assertEqual(key.reload().status, "Available")
 
-	def test_the_key_goes_into_the_site_config_as_an_internal_key(self):
-		site = create_test_site()
-		key = available()
-		GroveTrialKey.assign(request_for(site.name))
+	def test_the_key_is_written_under_an_internal_site_config_key(self):
+		available()
 
-		key.reload()
-		key.write_config()
+		GroveTrialKey.assign(site_named("a.test"), PRODUCT)
 
-		self.assertEqual(ai_keys_of(site.name), [{"gateway_url": GATEWAY, "api_key": f"gr_{key.grove_key}"}])
 		self.assertEqual(
 			frappe.db.get_value("Site Config Key", "ai_keys", ["internal", "type"], as_dict=True),
 			{"internal": 1, "type": "JSON"},
@@ -226,7 +221,7 @@ class TestGroveTrialKey(FrappeTestCase):
 		with self.assertRaisesRegex(frappe.ValidationError, "running trial site"):
 			key.raise_cap(5)
 
-		GroveTrialKey.assign(request_for("a.test"))
+		GroveTrialKey.assign(site_named("a.test"), PRODUCT)
 		key.reload().raise_cap(5)
 		self.update_caps.assert_called_once_with("Press Team", {key.grove_key: 5})
 		self.assertEqual(key.reload().cap, 5)
@@ -243,8 +238,8 @@ class TestGroveTrialKey(FrappeTestCase):
 		pools({PRODUCT: 0})
 		aged, fresh = available(), available()
 		available()
-		GroveTrialKey.assign(request_for("a.test"))
-		GroveTrialKey.assign(request_for("b.test", "PTR-2"))
+		GroveTrialKey.assign(site_named("a.test"), PRODUCT)
+		GroveTrialKey.assign(site_named("b.test"), PRODUCT)
 
 		self.age_assignment(aged)
 		with patch(f"{MODULE}.frappe.enqueue"):
@@ -261,8 +256,8 @@ class TestGroveTrialKey(FrappeTestCase):
 	def test_an_archived_sites_key_is_queued_for_revoke_hourly_and_the_job_revokes_it(self):
 		site = create_test_site()
 		gone, alive = available(), available()
-		GroveTrialKey.assign(request_for(site.name))
-		GroveTrialKey.assign(request_for(create_test_site(bench=site.bench).name, "PTR-2"))
+		GroveTrialKey.assign(site, PRODUCT)
+		GroveTrialKey.assign(create_test_site(bench=site.bench), PRODUCT)
 		frappe.db.set_value("Site", site.name, "status", "Archived")
 
 		with patch(f"{MODULE}.frappe.enqueue") as enqueue:

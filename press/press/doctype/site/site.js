@@ -21,6 +21,11 @@ frappe.ui.form.on('Site', {
 		})
 	},
 	refresh: async function (frm) {
+		frm.add_custom_button(
+			__('Transfer to Team'),
+			() => press.new_team_change(frm.doc.team, 'Specific Resources', frm.doc),
+			__('Actions'),
+		)
 		frm.dashboard.set_headline_alert(
 			`<div class="container-fluid">
 				<div class="row">
@@ -160,6 +165,11 @@ frappe.ui.form.on('Site', {
 				),
 			],
 			[__('Show Admin Password'), 'show_admin_password'],
+			[
+				__('Empty Creation Failed'),
+				'empty_creation_failed',
+				frm.doc.creation_failed,
+			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

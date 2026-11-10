@@ -204,6 +204,23 @@ class TestSite(FrappeTestCase):
 		site.get_doc(doc)
 		self.assertEqual(doc.frappe_updated_on, commit_time)
 
+	def test_empty_creation_failed_lets_the_team_run_site_actions_again(self):
+		site = create_test_site()
+		site.db_set("creation_failed", frappe.utils.now())
+		team_user = frappe.db.get_value("Team", site.team, "user")
+		frappe.db.set_value("User", team_user, "user_type", "Website User")
+		frappe.clear_cache(doctype="User")
+
+		frappe.set_user(team_user)
+		self.assertRaisesRegex(frappe.ValidationError, "site creation has failed", site.migrate)
+
+		frappe.set_user("Administrator")
+		site.empty_creation_failed()
+
+		self.assertIsNone(frappe.db.get_value("Site", site.name, "creation_failed"))
+		frappe.set_user(team_user)
+		site.migrate()
+
 	def test_restore_site_from_files_rejects_remote_file_of_another_team(self):
 		from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 		from press.press.doctype.team.test_team import create_test_team
@@ -226,6 +243,15 @@ class TestSite(FrappeTestCase):
 		site = create_test_site("testsubdomain")
 		site.host_name = "balu.codes"  # domain that doesn't exist
 		self.assertRaises(frappe.exceptions.ValidationError, site.save)
+
+	def test_deactivate_on_trial_plan_names_the_site_in_the_error(self):
+		site = create_test_site("trial-site")
+		site.db_set("plan", create_test_plan("Site", is_trial_plan=True).name)
+
+		with self.assertRaises(frappe.ValidationError) as context:
+			site.deactivate()
+
+		self.assertIn(f"The site {site.name} is currently on a trial plan", str(context.exception))
 
 	def test_db_server_restore_space_includes_app_space_on_unified_server(self):
 		"""On a unified server (shared disk) the db requirement must include app space."""

@@ -3,8 +3,13 @@
 
 frappe.ui.form.on('Team', {
 	refresh: function (frm) {
-		frappe.dynamic_link = { doc: frm.doc, fieldname: 'name', doctype: 'Team' };
-		frappe.contacts.render_address_and_contact(frm);
+		frappe.dynamic_link = { doc: frm.doc, fieldname: 'name', doctype: 'Team' }
+		frappe.contacts.render_address_and_contact(frm)
+		frm.add_custom_button(
+			__('Transfer Account'),
+			() => press.new_team_change(frm.doc.name, 'Full Account'),
+			__('Actions'),
+		)
 
 		if (!frm.doc.erpnext_partner) {
 			frm.add_custom_button('Enable Partner Privileges', () =>
@@ -19,7 +24,7 @@ frappe.ui.form.on('Team', {
 							}),
 						),
 				),
-			);
+			)
 		} else {
 			frm.add_custom_button('Disable Partner Privileges', () =>
 				frappe.confirm(
@@ -32,11 +37,11 @@ frappe.ui.form.on('Team', {
 									frm.doc.payment_mode === 'Partner Credits'
 										? 'Payment mode is still Partner Credits. If the credits are low for setteling invoices, you can change the payment mode.'
 										: '',
-							});
-							frm.refresh();
+							})
+							frm.refresh()
 						}),
 				),
-			);
+			)
 		}
 
 		frm.add_custom_button(
@@ -46,18 +51,18 @@ frappe.ui.form.on('Team', {
 					{ fieldtype: 'Data', label: 'Reason', fieldname: 'reason', reqd: 1 },
 					({ reason }) => {
 						frm.call('suspend_sites', { reason }).then((r) => {
-							const sites = r.message;
-							let how_many = 'No';
+							const sites = r.message
+							let how_many = 'No'
 							if (sites) {
-								how_many = sites.length;
+								how_many = sites.length
 							}
-							frappe.show_alert(`${how_many} sites were suspended.`);
-						});
+							frappe.show_alert(`${how_many} sites were suspended.`)
+						})
 					},
-				);
+				)
 			},
 			'Dangerous Actions',
-		);
+		)
 		frm.add_custom_button(
 			'Unsuspend Sites',
 			() => {
@@ -65,23 +70,23 @@ frappe.ui.form.on('Team', {
 					{ fieldtype: 'Data', label: 'Reason', fieldname: 'reason', reqd: 1 },
 					({ reason }) => {
 						frm.call('unsuspend_sites', { reason }).then((r) => {
-							const sites = r.message;
-							let how_many = 'No';
+							const sites = r.message
+							let how_many = 'No'
 							if (sites) {
-								how_many = sites.length;
+								how_many = sites.length
 							}
-							frappe.show_alert(`${how_many} sites were unsuspended.`);
-						});
+							frappe.show_alert(`${how_many} sites were unsuspended.`)
+						})
 					},
-				);
+				)
 			},
 			'Actions',
-		);
+		)
 
 		frm.add_custom_button('Impersonate Team', () => {
-			let team = frm.doc.name;
-			window.open(`/dashboard/impersonate/${team}`);
-		});
+			let team = frm.doc.name
+			window.open(`/dashboard/impersonate/${team}`)
+		})
 
 		if (frm.doc.payment_mode === 'Partner Credits') {
 			frm.add_custom_button('Get Partner Credits', () =>
@@ -90,9 +95,9 @@ frappe.ui.form.on('Team', {
 						title: 'Credit Balance Fetched Successfully',
 						message: `Available Credits on frappe.io: <strong>${frm.doc.currency} ${d.message}</strong>`,
 						indicator: 'green',
-					});
+					})
 				}),
-			);
+			)
 		}
 
 		frm.add_custom_button(
@@ -101,12 +106,12 @@ frappe.ui.form.on('Team', {
 				frappe.confirm(
 					`Are you sure you want to ban ${frm.doc.name.bold()}? This will disable the team and linked user. All sites linked to the team will be suspended. This action cannot be undone.`,
 					() => frm.call('ban').then(() => frm.refresh()),
-				);
+				)
 			},
 			'Dangerous Actions',
-		);
+		)
 	},
-});
+})
 
 frappe.ui.form.on('Team Member', {
 	impersonate: function (frm, doctype, member) {
@@ -125,10 +130,10 @@ frappe.ui.form.on('Team Member', {
 			],
 			({ reason }) => {
 				frm.call('impersonate', { reason, member }).then((r) => {
-					location.href = '/dashboard';
-				});
+					location.href = '/dashboard'
+				})
 			},
 			'Impersonate User',
-		);
+		)
 	},
-});
+})

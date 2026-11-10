@@ -15,6 +15,7 @@ from frappe.utils.caching import redis_cache
 from frappe.utils.data import add_to_date, now_datetime
 from frappe.utils.telemetry import init_telemetry
 
+from press.access.staff_roles import needs_staff_role
 from press.api.client import dashboard_whitelist
 from press.press.doctype.root_domain.root_domain import get_domains
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
@@ -318,19 +319,9 @@ class ProductTrialRequest(Document):
 							reference_doctype=self.doctype,
 							reference_name=self.name,
 						)
-					self.assign_grove_key()
-
-	def assign_grove_key(self):
-		"""A Grove (AI) key from the product's pool for the new site, into its site config. None while
-		Grove Settings pauses assignment or the pool has no ready key (a product without a pool row never
-		has one), and the trial runs without AI. A request reaching Site Created again keeps the key its
-		site took."""
-		from press.saas.doctype.grove_trial_key.grove_trial_key import GroveTrialKey
-
-		if key := GroveTrialKey.assign(self):
-			key.write_config()
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Product Manager")
 	def get_setup_wizard_payload(self):
 		import json
 
@@ -385,6 +376,7 @@ class ProductTrialRequest(Document):
 			frappe.throw("The domain is invalid. Please enter a valid domain name.")
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Product Manager")
 	def create_site(self, subdomain: str, domain: str):
 		"""
 		Trigger the site creation process for the product trial request.
@@ -410,6 +402,7 @@ class ProductTrialRequest(Document):
 				team=self.team,
 				cluster=cluster,
 				account_request=self.account_request,
+				product_trial_request=self.name,
 			)
 			self.is_standby_site = is_standby_site
 			self.site = site.name
@@ -545,6 +538,7 @@ class ProductTrialRequest(Document):
 		return response.status_code == 200
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Product Manager")
 	def get_login_sid(self):
 		site: Site = frappe.get_doc("Site", self.site)
 		redirect_to_after_login = frappe.db.get_value(

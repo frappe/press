@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from functools import cached_property
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.utils import add_to_date, fmt_money, now_datetime
@@ -12,6 +13,9 @@ from press.press.doctype.communication_info.communication_info import get_commun
 from press.press.doctype.server.server import Server
 from press.press.doctype.team.team import Team
 from press.press.doctype.team_change.team_change import transfer_release_group, transfer_site
+
+if TYPE_CHECKING:
+	from collections.abc import Sequence
 
 RUNNING_JOB_STATUSES = ("Pending", "Running")
 RUNNING_JOB_WINDOW_HOURS = 24
@@ -26,11 +30,13 @@ class ServerTransfer:
 
 	@cached_property
 	def database_servers(self) -> list[str]:
-		primary = self.server.database_server
+		# An empty `primary` filter matches every primary database server, so stop here
+		if not (primary := self.server.database_server):
+			return []
 		replicas = frappe.get_all(
 			"Database Server", {"primary": primary, "status": ("!=", "Archived")}, pluck="name"
 		)
-		return [primary, *replicas] if primary else replicas
+		return [primary, *replicas]
 
 	@cached_property
 	def groups(self) -> list[str]:
@@ -39,7 +45,7 @@ class ServerTransfer:
 		)
 
 	@cached_property
-	def sites(self) -> list[dict]:
+	def sites(self) -> list[frappe._dict]:
 		return frappe.get_all(
 			"Site", {"server": self.server.name, "status": ("!=", "Archived")}, ["name", "team"]
 		)
@@ -63,6 +69,8 @@ class ServerTransfer:
 	def _server_state_blocker(self) -> str | None:
 		if self.server.is_self_hosted:
 			return "Self-hosted servers can't be transferred."
+		if self.server.is_managed_database:
+			return "Servers with a managed database can't be transferred. Please raise a support ticket."
 		if self.server.status != "Active":
 			return f"The server must be Active. It is {self.server.status} right now."
 		return None
@@ -122,7 +130,7 @@ class ServerTransfer:
 		return None
 
 	def _servers_not_enabled_blocker(self, to_team: str) -> str | None:
-		if not frappe.db.get_value("Team", to_team, "servers_enabled"):
+		if not can_have_servers(to_team):
 			return "The receiving team can't have dedicated servers yet. They need to contact support to enable it."
 		return None
 
@@ -146,6 +154,11 @@ class ServerTransfer:
 		return fmt_money(total, currency=currency)
 
 	def transfer(self, to_team: str):
+		self._transfer_hosted(to_team)
+		self.transfer_family(to_team)
+
+	def _transfer_hosted(self, to_team: str):
+		# The blockers made sure nothing here runs on another server or belongs to another team
 		own_groups = frappe.get_all(
 			"Release Group", {"name": ("in", self.groups), "team": self.from_team}, pluck="name"
 		)
@@ -154,12 +167,20 @@ class ServerTransfer:
 		for site in self.sites:
 			if site.team == self.from_team:
 				transfer_site(site.name, to_team)
+
+	def transfer_family(self, to_team: str):
+		"""Move the servers, their machines, subscriptions and snapshots, but not what runs on them."""
 		self._transfer_machines(to_team)
 		self._transfer_snapshots(to_team)
 		self._remove_old_team_settings()
 
+	@cached_property
+	def app_servers(self) -> list[str]:
+		"""The server and its autoscaling secondary, which the customer blockers refuse."""
+		return [name for name in (self.server.name, self.server.secondary_server) if name]
+
 	def _transfer_machines(self, to_team: str):
-		machines = {"Server": [self.server.name], "Database Server": self.database_servers}
+		machines = {"Server": self.app_servers, "Database Server": self.database_servers}
 		for doctype, names in machines.items():
 			virtual_machines = frappe.get_all(doctype, {"name": ("in", names)}, pluck="virtual_machine")
 			_set_team(doctype, names, to_team)
@@ -176,7 +197,11 @@ class ServerTransfer:
 		get_communication_info.clear_cache()
 
 
-def _set_team(doctype: str, names: list[str | None], to_team: str):
+def can_have_servers(team: str) -> bool:
+	return bool(frappe.db.get_value("Team", team, "servers_enabled"))
+
+
+def _set_team(doctype: str, names: Sequence[str | None], to_team: str):
 	"""Move the records, and the subscriptions that bill for them, to `to_team`."""
 	if not (names := [name for name in names if name]):
 		return

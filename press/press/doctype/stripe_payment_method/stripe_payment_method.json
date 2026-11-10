@@ -105,7 +105,7 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2024-06-26 10:29:16.449579",
+	"modified": "2026-11-06 12:30:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Stripe Payment Method",
@@ -124,7 +124,19 @@
 			"share": 1,
 			"write": 1
 		},
-		{ "create": 1, "delete": 1, "read": 1, "role": "Press User", "write": 1 }
+		{ "create": 1, "delete": 1, "read": 1, "role": "Press User", "write": 1 },
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Billing Manager",
+			"share": 1,
+			"write": 1
+		}
 	],
 	"quick_entry": 1,
 	"search_fields": "team, name_on_card, last_4, expiry_month, expiry_year",

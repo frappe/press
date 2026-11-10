@@ -577,9 +577,12 @@ class ReleasePipeline(WorkflowBuilder):
 			parsed_supported_frappe_version = parse_frappe_version(
 				version_string=supported_frappe_version,
 				app_title="frappe",
-				ease_versioning_constrains=False,
+				ease_versioning_constrains=True,
 			)
 		except frappe.ValidationError:
+			return []
+
+		if not parsed_supported_frappe_version:
 			return []
 
 		# Dependencies go right before the app that needs them, so they are built first

@@ -21,6 +21,7 @@ from frappe.utils import (
 	now_datetime,
 )
 
+from press.access.staff_roles import safe_for_readers
 from press.access.support_access import has_support_access
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
@@ -39,6 +40,8 @@ from press.utils.user import as_administrator
 
 AGENT_LOG_KEY = "agent-jobs"
 AGENT_JOB_TIMEOUT_HOURS = 4
+# fail_old_jobs gives up on a job this old, so the poller skips it too
+STUCK_JOB_DAYS = 2
 
 BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
 
@@ -201,7 +204,7 @@ class AgentJob(Document):
 			]
 
 			self.status = "Pending"
-			self.save()
+			self.save(ignore_permissions=True)
 		except AgentRequestSkippedException:
 			self.retry_count = 0
 			self.set_status_and_next_retry_at()
@@ -209,7 +212,7 @@ class AgentJob(Document):
 		except Exception:
 			if 400 <= cint(self.flags.get("status_code", 0)) <= 499:
 				self.status = "Failure"
-				self.save()
+				self.save(ignore_permissions=True)
 				frappe.db.commit()
 
 				process_job_updates(self.name)
@@ -253,7 +256,7 @@ class AgentJob(Document):
 		self.status = "Undelivered"
 		self.next_retry_at = next_retry_at
 
-		self.save()
+		self.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	def create_agent_job_steps(self):
@@ -268,7 +271,7 @@ class AgentJob(Document):
 					"duration": "00:00:00",
 				}
 			)
-			doc.insert()
+			doc.insert(ignore_permissions=True)
 
 	def validate_not_a_superseded_password_rotation(self):
 		# Resending an older rotation's db_password after a newer rotation would break the site
@@ -304,7 +307,7 @@ class AgentJob(Document):
 				"request_files": self.request_files,
 				"request_method": self.request_method,
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def retry_in_place(self):
@@ -313,6 +316,7 @@ class AgentJob(Document):
 		frappe.db.commit()
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_agent_endpoint(self):
 		return Agent(self.server, server_type=self.server_type).get_request_url(f"jobs/{self.job_id}")
 
@@ -341,13 +345,13 @@ class AgentJob(Document):
 	@frappe.whitelist()
 	def succeed_and_process_job_updates(self):
 		self.status = "Success"
-		self.save()
+		self.save(ignore_permissions=True)
 		self.process_job_updates()
 
 	@frappe.whitelist()
 	def fail_and_process_job_updates(self):
 		self.status = "Failure"
-		self.save()
+		self.save(ignore_permissions=True)
 		self.process_job_updates()
 
 	@frappe.whitelist()
@@ -662,7 +666,10 @@ def poll_pending_jobs():
 	"""
 	Poll pending job fetches the status of Pending Jobs from all servers.
 	"""
-	filters = {"status": ("in", ["Pending", "Running", "Undelivered"])}
+	filters = {
+		"status": ("in", ["Pending", "Running", "Undelivered"]),
+		"creation": (">=", add_days(None, -STUCK_JOB_DAYS)),
+	}
 	if random.random() > 0.1:
 		# Experimenting with fewer polls (only for backup jobs)
 		# Reduce poll frequency for Backup Site jobs
@@ -702,7 +709,7 @@ def fail_old_jobs():
 		{
 			"status": ("in", ["Pending", "Running"]),
 			"job_id": ("!=", 0),
-			"creation": ("<", add_days(None, -2)),
+			"creation": ("<", add_days(None, -STUCK_JOB_DAYS)),
 		},
 		limit=100,
 		order_by="RAND()",
@@ -714,7 +721,7 @@ def fail_old_jobs():
 		"Agent Job",
 		{
 			"job_id": 0,
-			"creation": ("<", add_days(None, -2)),
+			"creation": ("<", add_days(None, -STUCK_JOB_DAYS)),
 			"status": ("!=", "Delivery Failure"),
 		},
 		limit=100,
@@ -1323,6 +1330,8 @@ def update_job_step_status():
 
 def on_doctype_update():
 	frappe.db.add_index("Agent Job", ["status", "server"])
+	# Covers poll_pending_jobs, so it reads no table rows
+	frappe.db.add_index("Agent Job", ["status", "creation", "job_type", "server", "server_type"])
 	frappe.db.add_index("Agent Job", ["reference_doctype", "reference_name"])
 	# We don't need modified index, it's harmful on constantly updating tables
 	frappe.db.sql_ddl("drop index if exists modified on `tabAgent Job`")

@@ -22,7 +22,7 @@ def send_developer_email(email, app_name, repository_url):
 
 @frappe.whitelist()
 def send_emails(columns, data):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Marketplace Manager"])
 	data = json.loads(data)
 	for row in data:
 		visibility = row.get("visibility")
@@ -62,7 +62,7 @@ def check_repository_visibility(repository_url, personal_access_token):
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Marketplace Manager"])
 
 	columns = [
 		{"fieldname": "app_name", "label": "Application Name", "fieldtype": "Data", "width": 200},

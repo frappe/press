@@ -736,3 +736,66 @@ class TestReleaseGroup(FrappeTestCase):
 
 		self.assertEqual(counts_on(first_server), (1, 1))
 		self.assertEqual(counts_on(second_server), (2, 2))
+
+	def _create_group_in_two_regions(self):
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.server.test_server import create_test_server
+
+		second_cluster = create_test_cluster("Jeddah", public=True).name
+		first_server = create_test_server(cluster="Default").name
+		second_server = create_test_server(cluster=second_cluster).name
+		group = create_test_release_group([create_test_app()], servers=[first_server, second_server])
+		return group, second_cluster, second_server
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_remove_region_unlinks_its_servers_and_archives_its_benches(self):
+		from press.press.doctype.site.test_site import create_test_bench
+
+		group, region, server = self._create_group_in_two_regions()
+		bench = create_test_bench(group=group, server=server)
+		frappe.db.set_value("Agent Job", {"bench": bench.name}, "status", "Success")
+
+		group.remove_region(region)
+		group.reload()
+
+		self.assertNotIn(server, [row.server for row in group.servers])
+		self.assertNotIn(region, group.get_clusters())
+		self.assertEqual(frappe.db.get_value("Bench", bench.name, "status"), "Pending")
+		self.assertTrue(frappe.db.exists("Agent Job", {"bench": bench.name, "job_type": "Archive Bench"}))
+
+	def test_remove_region_rejects_the_only_region_of_the_group(self):
+		from press.press.doctype.server.test_server import create_test_server
+
+		server = create_test_server(cluster="Default").name
+		group = create_test_release_group([create_test_app()], servers=[server])
+
+		with self.assertRaisesRegex(frappe.ValidationError, "You cannot remove the only region"):
+			group.remove_region("Default")
+		self.assertEqual([row.server for row in group.servers], [server])
+
+	def test_remove_region_rejects_a_region_that_still_has_sites(self):
+		from press.press.doctype.site.test_site import create_test_bench, create_test_site
+
+		group, region, server = self._create_group_in_two_regions()
+		create_test_site(bench=create_test_bench(group=group, server=server).name)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Move or archive the sites in region"):
+			group.remove_region(region)
+		self.assertIn(region, group.get_clusters())
+
+	def test_remove_region_rejects_a_region_with_a_deploy_in_progress(self):
+		from press.press.doctype.site.test_site import create_test_bench
+
+		group, region, server = self._create_group_in_two_regions()
+		bench = create_test_bench(group=group, server=server)
+		frappe.db.set_value("Bench", bench.name, "status", "Installing")
+
+		with self.assertRaisesRegex(frappe.ValidationError, "A deploy is in progress in region"):
+			group.remove_region(region)
+		self.assertIn(region, group.get_clusters())
+
+	def test_remove_region_rejects_a_region_outside_the_group(self):
+		group, _, _ = self._create_group_in_two_regions()
+
+		with self.assertRaisesRegex(frappe.ValidationError, "is not part of this bench group"):
+			group.remove_region("Mumbai")
