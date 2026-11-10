@@ -3620,39 +3620,6 @@ class Site(Document, TagHelpers):
 		):
 			frappe.throw("Database Access is already being enabled on this site. Please check after a while.")
 
-<<<<<<< HEAD
-=======
-	@dashboard_whitelist()
-	@safe_for_readers
-	def get_auto_update_window(self):
-		"""Tell when an automatic update of this site can start.
-
-		The dashboard shows this, because the user cannot see the update window
-		anywhere else.
-		"""
-		from press.press.doctype.site_update.site_update import (
-			DEFAULT_SITE_TIMEZONE,
-			get_deploy_hour_windows,
-		)
-
-		if self.only_update_at_specified_time:
-			# This schedule runs on the clock of the platform, not of the site.
-			return {
-				"timezone": get_system_timezone(),
-				"windows": None,
-				"frequency": self.update_trigger_frequency,
-				"time": self.update_trigger_time,
-				"weekday": self.update_on_weekday,
-				"day_of_month": self.update_on_day_of_month,
-				"end_of_month": self.update_end_of_month,
-			}
-
-		return {
-			"timezone": self.timezone or DEFAULT_SITE_TIMEZONE,
-			"windows": get_deploy_hour_windows(),
-		}
-
->>>>>>> 3b666c5 (feat(permissions): Split support into Press Support (L1) and Press Support Engineer (L2))
 	def get_auto_update_info(self):
 		fields = [
 			"auto_updates_scheduled",

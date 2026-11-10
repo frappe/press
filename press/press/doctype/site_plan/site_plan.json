@@ -305,19 +305,7 @@
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	"modified": "2026-07-14 10:29:13.886035",
-=======
-	"modified": "2026-11-06 12:30:00.000000",
->>>>>>> 9043026 (feat(permissions): Scope staff access by role instead of System Manager)
-=======
-	"modified": "2026-11-06 18:00:00.000000",
->>>>>>> 20c9b39 (feat(permissions): Make Press Support the role for common staff work)
-=======
 	"modified": "2026-11-06 21:00:00.000000",
->>>>>>> 3b666c5 (feat(permissions): Split support into Press Support (L1) and Press Support Engineer (L2))
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Site Plan",
