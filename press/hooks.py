@@ -456,6 +456,7 @@ fixtures = [
 	"MariaDB Variable",
 	"Cloud Region",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
+	{"dt": "Role Profile", "filters": [["role_profile", "like", "Press%"]]},
 	"Site Config Key Blacklist",
 	"Press Method Permission",
 	"Bench Dependency",
@@ -491,6 +492,8 @@ on_login = "press.overrides.on_login"
 
 before_request = [
 	"press.overrides.before_request",
+	"press.access.staff_roles.use_saved_document",
+	"press.access.staff_roles.check_staff_role",
 	"press.telemetry.monitor.add_user_context",
 	"press.telemetry.sentry.add_user_context",
 ]

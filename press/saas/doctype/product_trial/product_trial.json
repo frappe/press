@@ -182,7 +182,8 @@
 			"fieldname": "email_account",
 			"fieldtype": "Link",
 			"label": "Account",
-			"options": "Email Account"
+			"options": "Email Account",
+			"permlevel": 1
 		},
 		{
 			"fieldname": "column_break_gokr",
@@ -210,6 +211,7 @@
 			"fieldtype": "Code",
 			"label": "Header Content",
 			"options": "html",
+			"permlevel": 1,
 			"reqd": 1
 		},
 		{
@@ -234,7 +236,8 @@
 			"default": "{% import \"templates/emails/macros.html\" as utils %}\n\n{% block content %}\n\n\t<div class=\"bg-white\">\n\t\t<p class=\"mb-6\">\n\t\t    The trial period of your {{ product.title }} site <strong>{{ site.host_name }}</strong> has ended on {{ frappe.utils.getdate(site.trial_end_date).strftime('%d %B, %Y') }}.\n\t\t    Your site will now be suspended. Choose a plan and add your billing information for your site to resume service.\n\t\t</p>\n\t\t{{ utils.button('Open Dashboard', frappe.get_url('/dashboard/sites/' + site.name)) }}\n\t\t{{ utils.separator() }}\n\t\t{{ utils.signature() }}\n\t</div>\n\n{% endblock %}\n",
 			"fieldname": "suspension_email_content",
 			"fieldtype": "HTML Editor",
-			"label": "Content"
+			"label": "Content",
+			"permlevel": 1
 		},
 		{
 			"fieldname": "section_break_klpr",
@@ -276,7 +279,7 @@
 			"link_fieldname": "product_trial"
 		}
 	],
-	"modified": "2026-07-14 10:38:02.060593",
+	"modified": "2026-11-06 22:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "SaaS",
 	"name": "Product Trial",
@@ -303,6 +306,38 @@
 			"report": 1,
 			"role": "Site Manager",
 			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Product Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support Engineer"
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support"
+		},
+		{
+			"permlevel": 1,
+			"read": 1,
+			"role": "System Manager",
 			"write": 1
 		}
 	],

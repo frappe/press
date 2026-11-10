@@ -19,7 +19,7 @@ BREAKDOWN_DIMENSIONS = {
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 	filters = filters or {}
 	months = get_months(cint(filters.get("lookback_months")) or 6)
 	breakdown_label = filters.get("breakdown_by") or "Usage Type"

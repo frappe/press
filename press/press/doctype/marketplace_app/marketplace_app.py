@@ -15,6 +15,7 @@ from frappe.utils.safe_exec import safe_exec
 from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
 
+from press.access.staff_roles import needs_staff_role, safe_for_readers
 from press.api.client import dashboard_whitelist
 from press.api.github import app, get_access_token
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
@@ -118,6 +119,7 @@ class MarketplaceApp(WebsiteGenerator):
 		self.name = self.app
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def delete(self):
 		if self.status != "Draft":
 			frappe.throw(
@@ -138,11 +140,13 @@ class MarketplaceApp(WebsiteGenerator):
 		frappe.db.delete("Marketplace App Audit", {"marketplace_app": self.name})
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def create_approval_request(self, app_release: str):
 		"""Create a new Approval Request for given `app_release`"""
 		AppReleaseApprovalRequest.create(self.app, app_release)
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def cancel_approval_request(self, app_release: str):
 		approval_requests = frappe.get_all(
 			"App Release Approval Request",
@@ -159,6 +163,7 @@ class MarketplaceApp(WebsiteGenerator):
 		frappe.get_doc("App Release Approval Request", approval_requests[0]).cancel()
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def yank_app_release(self, app_release: str, hash: str):
 		"""Yank app release, this commit hash won't show for any new updates even if in approved state"""
 		team = get_current_team()
@@ -172,6 +177,7 @@ class MarketplaceApp(WebsiteGenerator):
 		).insert()
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def unyank_app_release(self, hash: str):
 		"""Allow support for unyanking app release (https://peps.pythondiscord.com/pep-0592/)"""
 		frappe.get_doc("Yanked App Release", {"hash": hash}).delete()
@@ -355,6 +361,7 @@ class MarketplaceApp(WebsiteGenerator):
 		self.save()
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def add_version(self, version: str, repo_owner: str, repo_name: str, branch: str):
 		existing_source = frappe.db.exists(
 			"App Source",
@@ -424,6 +431,7 @@ class MarketplaceApp(WebsiteGenerator):
 		self.save()
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def remove_version(self, version: str):
 		if self.status == "Published" and len(self.sources) == 1:
 			frappe.throw("Failed to remove. Need at least 1 version for a published app")
@@ -689,6 +697,7 @@ class MarketplaceApp(WebsiteGenerator):
 		return result[0] if result else {"usd_amount": 0, "inr_amount": 0}
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def site_installs(self):
 		site = frappe.qb.DocType("Site")
 		site_app = frappe.qb.DocType("Site App")
@@ -709,6 +718,7 @@ class MarketplaceApp(WebsiteGenerator):
 		return query.run(as_dict=True)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def listing_details(self):
 		return {
 			"support": self.support,
@@ -722,12 +732,14 @@ class MarketplaceApp(WebsiteGenerator):
 		}
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def mark_app_ready_for_review(self):
 		# TODO: Start security check and auto deploy process here
 		self.status = "In Review"
 		self.save()
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Marketplace Manager")
 	def update_listing(self, *args):
 		data = frappe._dict(args[0])
 		self.title = data.get("title") or self.title
