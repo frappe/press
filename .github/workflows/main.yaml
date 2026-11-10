@@ -161,7 +161,7 @@ jobs:
 
   install:
     name: Setup Bench
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Same image as the jobs that restore bench-dir
     needs: changes
     if: needs.changes.outputs.changed-python == 'true' || needs.changes.outputs.changed-json == 'true' || needs.changes.outputs.changed-js-vue == 'true' || needs.changes.outputs.changed-build == 'true'
 
@@ -410,7 +410,7 @@ jobs:
   server-tests:
     needs: [changes, install]
     name: Server
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Same image as install, which builds bench-dir
     strategy:
       fail-fast: false
       matrix:
