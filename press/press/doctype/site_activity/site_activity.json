@@ -47,7 +47,7 @@
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-03-04 16:45:57.739576",
+	"modified": "2026-11-06 21:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Site Activity",
@@ -65,7 +65,26 @@
 			"share": 1,
 			"write": 1
 		},
-		{ "create": 1, "role": "Press User" }
+		{ "create": 1, "role": "Press User" },
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support Engineer",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support"
+		}
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",
