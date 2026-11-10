@@ -7,6 +7,7 @@ import json
 import frappe
 from frappe.utils import unique
 
+from press.access.staff_roles import safe_for_readers
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.security import fail2ban
@@ -505,6 +506,7 @@ class ProxyServer(BaseServer):
 		return "Added a dashboard banner and queued reduction of dns record ttl on sites"
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_memory_limits(self):
 		if self.mem_limits:
 			return json.loads(self.mem_limits)

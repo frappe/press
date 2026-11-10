@@ -9,7 +9,7 @@
  "filters": [],
  "idx": 0,
  "is_standard": "Yes",
- "modified": "2023-01-23 10:44:06.770366",
+ "modified": "2026-11-06 12:30:00.000000",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Shared App Server Stats",
@@ -27,6 +27,9 @@
   },
   {
    "role": "Press User"
+  },
+  {
+   "role": "Press Infrastructure Manager"
   }
  ]
 }

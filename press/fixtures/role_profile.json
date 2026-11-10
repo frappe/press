@@ -1,0 +1,149 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Role Profile",
+  "modified": "2026-11-06 21:00:00.000000",
+  "name": "Press Support",
+  "role_profile": "Press Support",
+  "roles": [
+   {
+    "parent": "Press Support",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Press Support"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Role Profile",
+  "modified": "2026-11-06 21:00:00.000000",
+  "name": "Press Support Engineer",
+  "role_profile": "Press Support Engineer",
+  "roles": [
+   {
+    "parent": "Press Support Engineer",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Press Support Engineer"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Role Profile",
+  "modified": "2026-11-06 21:00:00.000000",
+  "name": "Press Site Reliability Engineer",
+  "role_profile": "Press Site Reliability Engineer",
+  "roles": [
+   {
+    "parent": "Press Site Reliability Engineer",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Press Infrastructure Manager"
+   },
+   {
+    "parent": "Press Site Reliability Engineer",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Press Support Engineer"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Role Profile",
+  "modified": "2026-11-06 12:30:00.000000",
+  "name": "Press Security Engineer",
+  "role_profile": "Press Security Engineer",
+  "roles": [
+   {
+    "parent": "Press Security Engineer",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Press Security Manager"
+   },
+   {
+    "parent": "Press Security Engineer",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Press Infrastructure Manager"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Role Profile",
+  "modified": "2026-11-06 12:30:00.000000",
+  "name": "Press Finance",
+  "role_profile": "Press Finance",
+  "roles": [
+   {
+    "parent": "Press Finance",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Press Billing Manager"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Role Profile",
+  "modified": "2026-11-06 12:30:00.000000",
+  "name": "Press Product Team",
+  "role_profile": "Press Product Team",
+  "roles": [
+   {
+    "parent": "Press Product Team",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Press Product Manager"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Role Profile",
+  "modified": "2026-11-06 12:30:00.000000",
+  "name": "Press Marketplace Team",
+  "role_profile": "Press Marketplace Team",
+  "roles": [
+   {
+    "parent": "Press Marketplace Team",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Press Marketplace Manager"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Role Profile",
+  "modified": "2026-11-06 12:30:00.000000",
+  "name": "Press Partnerships",
+  "role_profile": "Press Partnerships",
+  "roles": [
+   {
+    "parent": "Press Partnerships",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Partner Manager"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Role Profile",
+  "modified": "2026-11-06 14:00:00.000000",
+  "name": "Press SSH Access Manager",
+  "role_profile": "Press SSH Access Manager",
+  "roles": [
+   {
+    "parent": "Press SSH Access Manager",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Press SSH Manager"
+   }
+  ]
+ }
+]
