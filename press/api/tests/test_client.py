@@ -50,6 +50,7 @@ class TestOwnershipPolicy(FrappeTestCase):
 				or doctype in ownership.TEAM_FIELDS
 				or doctype in ownership.USER_FIELDS
 				or doctype in ownership.LINKED_OWNERS
+				or doctype in ownership.ANY_LINKED_OWNERS
 				or doctype in ownership.DYNAMICALLY_LINKED_OWNERS
 			):
 				continue
@@ -74,7 +75,11 @@ class TestOwnershipPolicy(FrappeTestCase):
 			self.assertTrue(frappe.get_meta(doctype).has_field(fieldname))
 
 	def test_linked_owners_point_at_doctypes_that_carry_a_team(self):
-		for doctype, (link_field, linked_doctype) in ownership.LINKED_OWNERS.items():
+		links = [(doctype, link) for doctype, link in ownership.LINKED_OWNERS.items()]
+		links += [
+			(doctype, link) for doctype, options in ownership.ANY_LINKED_OWNERS.items() for link in options
+		]
+		for doctype, (link_field, linked_doctype) in links:
 			self.assertTrue(frappe.get_meta(doctype).has_field(link_field))
 			self.assertTrue(
 				frappe.get_meta(linked_doctype).has_field("team"),
@@ -250,6 +255,40 @@ class TestJobAndPlayAccess(FrappeTestCase):
 
 	def test_get_denies_an_agent_job_belonging_to_another_team(self):
 		_, job = self.create_job_on_bench_of(self.other_team)
+
+		sign_in_as(self.team)
+		with self.assertRaises(frappe.PermissionError):
+			get("Agent Job", job.name)
+
+	def test_get_returns_an_agent_job_on_my_bench_without_a_docperm_read(self):
+		_, job = self.create_job_on_bench_of(self.team)
+
+		sign_in_as(self.team)
+		self.assertFalse(frappe.has_permission("Agent Job", "read", job.name))
+		self.assertEqual(get("Agent Job", job.name).name, job.name)
+
+	def test_get_returns_an_ansible_play_on_my_server_without_a_docperm_read(self):
+		server = create_test_server(team=self.team.name)
+		play = create_test_ansible_play("Set mysqld variable", "mysqld.yml", "Server", server.name)
+
+		sign_in_as(self.team)
+		self.assertEqual(get("Ansible Play", play.name).name, play.name)
+
+	def create_site_job_on_shared_bench(self, site_team):
+		bench, job = self.create_job_on_bench_of(self.other_team)
+		site = create_test_site(bench=bench.name, team=site_team.name)
+		job.db_set("site", site.name)
+		return job
+
+	def test_get_returns_the_job_of_my_site_on_a_bench_another_team_owns(self):
+		job = self.create_site_job_on_shared_bench(site_team=self.team)
+
+		sign_in_as(self.team)
+		self.assertEqual(get("Agent Job", job.name).name, job.name)
+
+	def test_get_denies_the_job_of_another_teams_site_on_a_shared_bench(self):
+		third_team = create_test_press_admin_team()
+		job = self.create_site_job_on_shared_bench(site_team=third_team)
 
 		sign_in_as(self.team)
 		with self.assertRaises(frappe.PermissionError):
