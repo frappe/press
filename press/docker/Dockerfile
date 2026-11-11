@@ -252,7 +252,7 @@ ENV {{v.key}} {{ v.value }}
 {% endfor %}
 
 {% if use_asset_store %}
-COPY get_cached_app.py /usr/local/bin/get_cached_app.py
+COPY get_cached_app.py run_hooks.py* /usr/local/bin
 {% endif %}
 
 # Install Frappe app
