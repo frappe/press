@@ -2038,6 +2038,11 @@ class Site(Document, TagHelpers):
 
 		return site_migration
 
+	@property
+	def serves_requests_before_update(self) -> bool:
+		"""A broken site still serves requests, so an update must not leave it in maintenance mode."""
+		return self.status_before_update in ("Active", "Broken")
+
 	def reset_previous_status(self, fix_broken=False):
 		if self.status == "Archived":
 			return

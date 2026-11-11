@@ -429,10 +429,9 @@ class Agent:
 		before_migrate_scripts=None,
 		skip_search_index=True,
 	):
-		activate = site.status_before_update in ("Active", "Broken")
 		data = {
 			"target": target,
-			"activate": activate,
+			"activate": site.serves_requests_before_update,
 			"skip_failing_patches": skip_failing_patches,
 			"skip_backups": skip_backups,
 			"before_migrate_scripts": before_migrate_scripts,
@@ -447,8 +446,7 @@ class Agent:
 		)
 
 	def restore_site_tables(self, site):
-		activate = site.status_before_update == "Active"
-		data = {"activate": activate}
+		data = {"activate": site.serves_requests_before_update}
 		return self.create_agent_job(
 			"Restore Site Tables",
 			f"benches/{site.bench}/sites/{site.name}/update/migrate/restore",
