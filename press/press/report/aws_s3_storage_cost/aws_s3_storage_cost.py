@@ -29,7 +29,7 @@ STORAGE_TYPES = {
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 	filters = filters or {}
 
 	buckets = get_buckets(filters)

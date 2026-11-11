@@ -161,7 +161,7 @@ jobs:
 
   install:
     name: Setup Bench
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Same image as the jobs that restore bench-dir
     needs: changes
     if: needs.changes.outputs.changed-python == 'true' || needs.changes.outputs.changed-json == 'true' || needs.changes.outputs.changed-js-vue == 'true' || needs.changes.outputs.changed-build == 'true'
 
@@ -190,6 +190,9 @@ jobs:
         with:
           node-version: 22
           check-latest: true
+
+      - name: Refresh apt index
+        run: sudo apt-get update
 
       - name: Cache apt
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -260,7 +263,8 @@ jobs:
   ui-tests:
     needs: [changes, install]
     name: Client
-    runs-on: ubuntu-latest
+    # Playwright 1.54 cannot install Chromium on ubuntu-latest (26.04)
+    runs-on: ubuntu-24.04
     env:
       PRESS_ADMIN_USER_EMAIL: playwright@example.com
       PRESS_ADMIN_USER_PASSWORD: playwright
@@ -312,6 +316,9 @@ jobs:
         with:
           node-version: 18
           check-latest: true
+
+      - name: Refresh apt index
+        run: sudo apt-get update
 
       - name: Cache apt
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -403,7 +410,7 @@ jobs:
   server-tests:
     needs: [changes, install]
     name: Server
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Same image as install, which builds bench-dir
     strategy:
       fail-fast: false
       matrix:
@@ -449,6 +456,9 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.10.20'
+
+      - name: Refresh apt index
+        run: sudo apt-get update
 
       - name: Cache apt
         uses: awalsh128/cache-apt-pkgs-action@latest

@@ -8,6 +8,7 @@ import re
 import subprocess
 from datetime import datetime
 from ipaddress import ip_network
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 import frappe
@@ -18,6 +19,7 @@ from frappe.core.utils import find
 from frappe.utils import cint, flt, now_datetime
 from frappe.utils.password import get_decrypted_password
 
+from press.access.staff_roles import safe_for_readers
 from press.api.client import dashboard_whitelist
 from press.exceptions import MonitorServerDown
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -28,6 +30,7 @@ from press.press.doctype.database_server_mariadb_variable.database_server_mariad
 from press.press.doctype.s3_storage_plan.s3_storage_plan import AUDIT_LOG_STORAGE_PLAN
 from press.press.doctype.server.server import PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN, Agent, BaseServer, Server
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import get_press_base_url, log_error
 from press.utils.database import find_db_disk_info, parse_du_output_of_mysql_directory
 from press.utils.jobs import has_job_timeout_exceeded
@@ -732,7 +735,9 @@ class DatabaseServer(BaseServer):
 		update_variables_synchronously: bool = False,  # This will run the job in same thread
 	):
 		"""Add or update MariaDB variable on the server"""
-		if not skip and not value:
+		if not skip and (
+			(value_type == "value_int" and value is None) or (value_type != "value_int" and not value)
+		):
 			frappe.throw("Please provide a value for this MariaDB variable, or mark it as skippable.")
 
 		self.flags.update_mariadb_system_variables_synchronously = update_variables_synchronously
@@ -780,6 +785,7 @@ class DatabaseServer(BaseServer):
 			self.save(ignore_permissions=True)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_mariadb_variable_value(  # noqa: C901
 		self, variable: str, return_default_if_not_found: bool = False
 	) -> str | int | float | None:
@@ -888,6 +894,7 @@ class DatabaseServer(BaseServer):
 				user=self.ssh_user or "root",
 				port=self.ssh_port or 22,
 				variables={
+					"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 					"server_type": self.doctype,
 					"server": self.name,
 					"workers": "2",
@@ -1572,6 +1579,7 @@ class DatabaseServer(BaseServer):
 		frappe.db.set_value("Subscription", self.audit_log_subscription, "enabled", cint(bool(billable)))
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_audit_logs(self, start: int = 0, limit: int = 10):
 		return {
 			"logs": frappe.get_all(
@@ -2221,6 +2229,7 @@ class DatabaseServer(BaseServer):
 		return "System"
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_mariadb_variables(self):
 		try:
 			agent = Agent(self.name, "Database Server")
@@ -2240,6 +2249,7 @@ class DatabaseServer(BaseServer):
 		return self.agent.fetch_binlog_list()
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_binlogs_info(self):
 		data = self.get_binlogs_raw_data()
 		binlogs = data.get("binlogs_in_disk", [])
@@ -2253,6 +2263,7 @@ class DatabaseServer(BaseServer):
 		return [binlog for binlog in binlogs if binlog.get("name") != current_binlog]
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_binlog_summary(self):
 		binlogs_in_disk = self.get_binlogs_raw_data().get("binlogs_in_disk", [])
 		no_of_binlogs = len(binlogs_in_disk)
@@ -2278,6 +2289,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		frappe.msgprint(message, "Binlog Summary")
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_binlogs_indexing_status(self):
 		if not self.enable_binlog_indexing:
 			frappe.throw(
@@ -2339,40 +2351,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 		proxy = frappe.db.get_value("Proxy Server", {"status": "Active", "cluster": self.cluster}, "name")
 
-		script = f"""
-#!/usr/bin/env bash
-set -e
-
-BINLOG_DIR="/var/lib/mysql"
-INDEX_FILE="$BINLOG_DIR/mysql-bin.index"
-DELETE_N="${1:-0}"
-
-[ "$DELETE_N" -eq 0 ] && exit 0
-
-# List only actual binlog files (exclude index!)
-BINLOGS=$(ls "$BINLOG_DIR"/mysql-bin.[0-9]* 2>/dev/null | sort -V || true)
-
-TOTAL=$(printf "%s\n" $BINLOGS | wc -l)
-[ "$TOTAL" -eq 0 ] && exit 0
-
-# Cap delete count
-[ "$DELETE_N" -gt "$TOTAL" ] && DELETE_N="$TOTAL"
-
-TO_DELETE=$(printf "%s\n" $BINLOGS | head -n "$DELETE_N")
-
-# Delete binlogs
-rm -f $TO_DELETE
-
-# Fix index if it exists
-if [ -f "$INDEX_FILE" ]; then
-  grep -vF -f <(printf "%s\n" $TO_DELETE) "$INDEX_FILE" > "$INDEX_FILE.tmp"
-  mv "$INDEX_FILE.tmp" "$INDEX_FILE"
-  chown mysql:mysql "$INDEX_FILE"
-fi
-
-# Restart mariadb, as it could be stuck due to full disk
-systemctl restart mariadb
-"""
+		script = Path(__file__).with_name("force_purge_binlogs.sh").read_text()
 
 		is_failed = False
 		try:
@@ -2399,8 +2378,8 @@ systemctl restart mariadb
 				stderr=subprocess.STDOUT,
 				timeout=120,
 			)
-		except Exception:
-			log_error("Failed to purge binlogs on server")
+		except Exception as e:
+			log_error("Failed to purge binlogs on server", output=getattr(e, "output", None))
 			is_failed = True
 
 		if is_failed:
@@ -2424,7 +2403,26 @@ systemctl restart mariadb
 		if binlog_limit_in_gb == 0:
 			return
 
+		if self.has_open_binlog_purge_job():
+			return
+
 		self.agent.purge_binlogs_by_size_limit(self, max_binlog_gb=binlog_limit_in_gb)
+
+	def has_open_binlog_purge_job(self) -> bool:
+		"""Agent job deduplication is off by default, so an undelivered purge would pile up every 10 minutes.
+		Older open jobs are stuck, and must not stop the purge forever."""
+		return bool(
+			frappe.db.exists(
+				"Agent Job",
+				{
+					"job_type": "Purge Binlogs By Size Limit",
+					"status": ("in", ("Undelivered", "Pending", "Running")),
+					"server_type": self.doctype,
+					"server": self.name,
+					"creation": (">", frappe.utils.add_to_date(None, hours=-1)),
+				},
+			)
+		)
 
 	@dashboard_whitelist()
 	def enable_binlog_indexing_service(self):

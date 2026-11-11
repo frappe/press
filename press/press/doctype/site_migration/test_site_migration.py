@@ -1,6 +1,7 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
+import json
 from unittest.mock import patch
 
 import frappe
@@ -110,6 +111,37 @@ class TestSiteMigration(FrappeTestCase):
 		self.assertEqual(site.status, "Active")
 		self.assertEqual(site.bench, bench.name)
 		self.assertEqual(site.server, bench.server)
+
+	def test_skip_migrate_turns_on_skip_failing_patches_and_reaches_the_restore(self):
+		with patch.object(Site, "after_insert"), patch.object(Site, "on_update"):
+			site = create_test_site()
+		bench = create_test_bench()
+
+		with (
+			fake_agent_job("Update Site Configuration"),
+			fake_agent_job("Backup Site", data=BACKUP_JOB_RES),
+			fake_agent_job("New Site from Backup"),
+		):
+			site_migration: SiteMigration = frappe.get_doc(
+				{
+					"doctype": "Site Migration",
+					"site": site.name,
+					"destination_bench": bench.name,
+					"skip_migrate": 1,
+				}
+			).insert()
+			self.assertTrue(site_migration.skip_failing_patches)
+			poll_pending_jobs()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		request_data = json.loads(
+			frappe.db.get_value(
+				"Agent Job", {"job_type": "New Site from Backup", "site": site.name}, "request_data"
+			)
+		)
+		self.assertTrue(request_data["skip_migrate"])
+		self.assertTrue(request_data["skip_failing_patches"])
 
 	def test_site_is_activated_on_failure_when_possible(self):
 		with patch.object(Site, "after_insert"), patch.object(Site, "on_update"):
@@ -303,3 +335,26 @@ class TestSiteMigration(FrappeTestCase):
 			r".*Site has encountered a fatal error during last update*",
 			site_migration.insert,
 		)
+
+	def test_a_failed_migration_does_not_start_and_dispatch_a_job(self):
+		"""A stop that wins the row must not be undone by the `start()` it was racing"""
+		with patch.object(Site, "after_insert"), patch.object(Site, "on_update"):
+			site = create_test_site()
+
+		# Scheduled, so `after_insert` does not start it before the stop below gets a chance to
+		site_migration: SiteMigration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": site.name,
+				"destination_bench": create_test_bench().name,
+				"scheduled_time": frappe.utils.add_to_date(minutes=30),
+			}
+		).insert()
+		site_migration.db_set("status", "Failure")
+		site_migration.reload()
+
+		site_migration.start()
+
+		site_migration.reload()
+		self.assertEqual(site_migration.status, "Failure")
+		self.assertTrue(all(not step.step_job for step in site_migration.steps))

@@ -21,10 +21,10 @@
 </template>
 
 <script setup>
-import { getCachedDocumentResource } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import { confirmDialog } from '../../utils/components';
-import router from '../../router';
+import { getCachedDocumentResource } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import router from '../../router'
+import { confirmDialog } from '../../utils/components'
 
 const props = defineProps({
 	benchName: { type: String, required: true },
@@ -34,21 +34,18 @@ const props = defineProps({
 	buttonLabel: { type: String, required: true },
 	group: { type: String, required: false },
 	linkedVersionUpgrade: { type: Boolean, required: false, default: false },
-});
+})
 
-const releaseGroup = getCachedDocumentResource(
-	'Release Group',
-	props.benchName,
-);
+const releaseGroup = getCachedDocumentResource('Release Group', props.benchName)
 
 function getBenchActionHandler(action) {
 	const actionHandlers = {
 		'Rename Bench': onRenameBench,
 		'Transfer Bench': onTransferBench,
 		'Drop Bench': onDropBench,
-	};
+	}
 	if (actionHandlers[action]) {
-		actionHandlers[action].call(this);
+		actionHandlers[action].call(this)
 	}
 }
 
@@ -70,7 +67,7 @@ function onRenameBench() {
 						},
 						{
 							onSuccess() {
-								hide();
+								hide()
 							},
 						},
 					),
@@ -79,17 +76,31 @@ function onRenameBench() {
 						success: 'Bench renamed successfully',
 						error: 'Failed to rename bench',
 					},
-				);
+				)
 			} else {
-				toast.error('Please enter a valid bench name');
+				toast.error('Please enter a valid bench name')
 			}
 		},
-	});
+	})
 }
 
-function onTransferBench() {
+function privateAppsWarning(apps) {
+	if (!apps?.length) return ''
+	const names = apps
+		.map((app) => app.replace(/</g, '&lt;').replace(/>/g, '&gt;'))
+		.join(', ')
+	return `<div class="rounded-md bg-surface-amber-1 p-3 text-sm text-ink-amber-3">
+		This bench uses apps from private repositories: <strong>${names}</strong>.
+		After the transfer, the new owner must connect their own GitHub access to these
+		repositories, or new deploys will fail.
+	</div>`
+}
+
+async function onTransferBench() {
+	const privateApps = await releaseGroup.getPrivateApps.submit()
 	confirmDialog({
 		title: 'Transfer Bench Ownership',
+		message: privateAppsWarning(privateApps),
 		fields: [
 			{
 				label:
@@ -107,26 +118,26 @@ function onTransferBench() {
 			variant: 'solid',
 			onClick: ({ hide, values }) => {
 				if (!values.email) {
-					throw new Error('Please enter a valid email address');
+					throw new Error('Please enter a valid email address')
 				}
 
 				return releaseGroup.sendTransferRequest
 					.submit({ team_mail_id: values.email, reason: values.reason || '' })
 					.then(() => {
-						hide();
+						hide()
 						toast.success(
 							`Transfer request sent to ${values.email} successfully.`,
-						);
-					});
+						)
+					})
 			},
 		},
-	});
+	})
 }
 
 function onDropBench() {
 	let message = `Are you sure you want to drop the bench <b>${
 		releaseGroup.doc.title || releaseGroup.name
-	}</b>?`;
+	}</b>?`
 
 	if (props.linkedVersionUpgrade) {
 		message = `
@@ -135,7 +146,7 @@ function onDropBench() {
 				<p class="mt-1">This bench was created for upgrading your site's version and dropping this will cancel the site upgrade as well.</p>
 			</div>
 			${message}
-		`;
+		`
 	}
 
 	confirmDialog({
@@ -151,15 +162,15 @@ function onDropBench() {
 			label: 'Drop',
 			theme: 'red',
 			onClick: ({ hide, values }) => {
-				if (releaseGroup.delete.loading) return;
+				if (releaseGroup.delete.loading) return
 				if (values.confirmBenchName !== releaseGroup.doc.title) {
-					throw new Error('Bench name does not match');
+					throw new Error('Bench name does not match')
 				}
 				toast.promise(
 					releaseGroup.delete.submit(null, {
 						onSuccess: () => {
-							hide();
-							router.push({ name: 'Release Group List' });
+							hide()
+							router.push({ name: 'Release Group List' })
 						},
 					}),
 					{
@@ -170,9 +181,9 @@ function onDropBench() {
 								? error.messages.join('\n')
 								: 'Failed to drop bench',
 					},
-				);
+				)
 			},
 		},
-	});
+	})
 }
 </script>

@@ -51,6 +51,7 @@
 		"paypal_enabled",
 		"column_break_123",
 		"razorpay_key_secret",
+		"razorpay_max_order_amount_inr",
 		"erpnext_authentication",
 		"erpnext_url",
 		"erpnext_api_key",
@@ -153,8 +154,11 @@
 		"telegram_chat_id",
 		"column_break_65",
 		"telegram_bot_token",
+		"telegram_webhook_secret",
+		"set_telegram_webhook",
 		"mailgun_settings_section",
 		"mailgun_api_key",
+		"mailgun_webhook_signing_key",
 		"root_domain",
 		"column_break_117",
 		"default_outgoing_id",
@@ -237,6 +241,7 @@
 		"use_staging_ca",
 		"ssh_section",
 		"ssh_certificate_authority",
+		"fail2ban_ignore_ips",
 		"bench_section",
 		"redis_cache_size",
 		"set_redis_password",
@@ -299,6 +304,8 @@
 		"wazuh_api_username",
 		"wazuh_api_password",
 		"wazuh_api_verify_tls",
+		"wazuh_indexer_username",
+		"wazuh_indexer_password",
 		"dashboard_tab",
 		"latest_blog_url"
 	],
@@ -441,6 +448,12 @@
 			"fieldname": "razorpay_key_secret",
 			"fieldtype": "Password",
 			"label": "Razorpay Key Secret"
+		},
+		{
+			"description": "The most that one INR order can be, including GST. Leave empty for no check.",
+			"fieldname": "razorpay_max_order_amount_inr",
+			"fieldtype": "Currency",
+			"label": "Razorpay Max Order Amount (INR)"
 		},
 		{
 			"collapsible": 1,
@@ -833,8 +846,19 @@
 		},
 		{
 			"fieldname": "telegram_bot_token",
-			"fieldtype": "Data",
+			"fieldtype": "Password",
 			"label": "Telegram Bot Token"
+		},
+		{
+			"fieldname": "telegram_webhook_secret",
+			"fieldtype": "Password",
+			"label": "Telegram Webhook Secret",
+			"read_only": 1
+		},
+		{
+			"fieldname": "set_telegram_webhook",
+			"fieldtype": "Button",
+			"label": "Set Telegram Webhook"
 		},
 		{
 			"fieldname": "mailgun_settings_section",
@@ -843,8 +867,14 @@
 		},
 		{
 			"fieldname": "mailgun_api_key",
-			"fieldtype": "Data",
+			"fieldtype": "Password",
 			"label": "Api Key"
+		},
+		{
+			"description": "Mailgun signs every webhook event with this key. Find it under Sending, Webhooks.",
+			"fieldname": "mailgun_webhook_signing_key",
+			"fieldtype": "Password",
+			"label": "Webhook Signing Key"
 		},
 		{
 			"fieldname": "root_domain",
@@ -1032,6 +1062,12 @@
 			"fieldtype": "Link",
 			"label": "SSH Certificate Authority",
 			"options": "SSH Certificate Authority"
+		},
+		{
+			"description": "Press host IPs or networks that Fail2Ban never bans on servers, one per line. Proxy servers, bastion servers and private networks are added automatically.",
+			"fieldname": "fail2ban_ignore_ips",
+			"fieldtype": "Small Text",
+			"label": "Fail2Ban Ignore IPs"
 		},
 		{
 			"collapsible": 1,
@@ -1653,6 +1689,17 @@
 			"label": "Wazuh API Verify TLS"
 		},
 		{
+			"description": "A read-only user on the Wazuh indexer. The connection uses the API host.",
+			"fieldname": "wazuh_indexer_username",
+			"fieldtype": "Data",
+			"label": "Wazuh Indexer Username"
+		},
+		{
+			"fieldname": "wazuh_indexer_password",
+			"fieldtype": "Password",
+			"label": "Wazuh Indexer Password"
+		},
+		{
 			"fieldname": "dashboard_tab",
 			"fieldtype": "Tab Break",
 			"label": "Dashboard"
@@ -1912,7 +1959,7 @@
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-09-11 13:26:41.047658",
+	"modified": "2026-10-30 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",

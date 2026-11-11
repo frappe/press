@@ -202,12 +202,13 @@
 			"fieldtype": "Code",
 			"label": "Action Script",
 			"mandatory_depends_on": "eval:!!doc.has_action",
-			"options": "JS"
+			"options": "JS",
+			"permlevel": 1
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-05-04 02:58:17.388108",
+	"modified": "2026-11-06 16:30:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Dashboard Banner",
@@ -221,6 +222,22 @@
 			"print": 1,
 			"read": 1,
 			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"permlevel": 1,
+			"read": 1,
+			"role": "System Manager",
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"role": "Press Product Manager",
 			"share": 1,
 			"write": 1
 		}

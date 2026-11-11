@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import frappe
 import pytz
-import sqlparse
 from frappe.core.doctype.access_log.access_log import make_access_log
 from frappe.utils import (
 	get_datetime,
@@ -13,6 +12,7 @@ from frappe.utils import (
 )
 
 from press.agent import Agent
+from press.utils.sql import format_sql
 
 try:
 	from frappe.utils import convert_utc_to_user_timezone
@@ -21,7 +21,7 @@ except ImportError:
 
 
 def execute(filters=None):
-	frappe.only_for(["System Manager", "Site Manager"])
+	frappe.only_for(["System Manager", "Site Manager", "Press Support", "Press Support Engineer"])
 	filters.database = frappe.get_doc("Site", filters.site).fetch_info()["config"]["db_name"]
 
 	make_access_log(
@@ -73,7 +73,7 @@ def get_data(filters):
 		rows = agent.post(f"database/binary/logs/{file}", data=data)
 		for row in rows or []:
 			if filters.format_queries:
-				row["query"] = sqlparse.format(row["query"].strip(), keyword_case="upper", reindent=True)
+				row["query"] = format_sql(row["query"])
 			row["timestamp"] = get_datetime_str(convert_utc_to_user_timezone(get_datetime(row["timestamp"])))
 			results.append(row)
 

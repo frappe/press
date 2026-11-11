@@ -10,7 +10,7 @@ from frappe.utils import cint, flt
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 	data = get_data(filters)
 	columns = frappe.get_doc("Report", "AWS Instance Pricing").get_columns()
 	return columns, data
@@ -20,9 +20,7 @@ def get_data(filters):
 	if filters.cluster:
 		clusters = [filters.cluster]
 	else:
-		clusters = frappe.get_all(
-			"Cluster", filters={"public": 1, "cloud_provider": "AWS EC2"}, pluck="name"
-		)
+		clusters = frappe.get_all("Cluster", filters={"public": 1, "cloud_provider": "AWS EC2"}, pluck="name")
 	data = []
 	for cluster in clusters:
 		data.extend(get_cluster_data(filters, cluster))
@@ -31,6 +29,22 @@ def get_data(filters):
 
 def get_cluster_data(filters, cluster_name):
 	cluster = frappe.get_doc("Cluster", cluster_name)
+	rows = get_on_demand_rows(filters, cluster)
+
+	latest_generation = max(row["generation"] for row in rows)
+	for row in rows:
+		if row["generation"] == latest_generation:
+			row["is_latest_generation"] = True
+
+	if filters.latest_generation_only:
+		rows = [row for row in rows if row.get("is_latest_generation")]
+
+	add_savings_plan_rates(cluster, rows)
+	rows.sort(key=lambda x: (x["instance_type"], x["vcpu"], x["memory"]))
+	return rows
+
+
+def get_on_demand_rows(filters, cluster):
 	client = boto3.client(
 		"pricing",
 		region_name="ap-south-1",
@@ -64,47 +78,45 @@ def get_cluster_data(filters, cluster_name):
 	rows = []
 	for response in response_iterator:
 		for item in response["PriceList"]:
-			product = json.loads(item)
-			if filters.processor:
-				if filters.processor not in product["product"]["attributes"]["physicalProcessor"]:
-					continue
+			row = get_on_demand_row(filters, cluster, json.loads(item))
+			if row:
+				rows.append(row)
+	return rows
 
-			row = {
-				"cluster": cluster.name,
-				"instance_type": product["product"]["attributes"]["instanceType"].split(".")[0],
-				"instance": product["product"]["attributes"]["instanceType"],
-				"vcpu": cint(product["product"]["attributes"]["vcpu"], 0),
-				"memory": flt(product["product"]["attributes"]["memory"][:-4]),
-			}
-			for term in product["terms"].get("OnDemand", {}).values():
-				row["on_demand"] = (
-					flt(list(term["priceDimensions"].values())[0]["pricePerUnit"]["USD"]) * 750
-				)
-			instance_type = parse_instance_type(row["instance"])
-			if not instance_type:
-				continue
 
-			family, generation, processor, size = instance_type
+def get_on_demand_row(filters, cluster, product):
+	attributes = product["product"]["attributes"]
+	if filters.processor and filters.processor not in attributes["physicalProcessor"]:
+		return None
 
-			row.update(
-				{
-					"family": family,
-					"generation": generation,
-					"processor": processor,
-					"size": size,
-					"size_multiplier": parse_size_multiplier(size),
-				}
-			)
-			rows.append(row)
+	row = {
+		"cluster": cluster.name,
+		"instance_type": attributes["instanceType"].split(".")[0],
+		"instance": attributes["instanceType"],
+		"vcpu": cint(attributes["vcpu"], 0),
+		"memory": flt(attributes["memory"][:-4]),
+	}
+	for term in product["terms"].get("OnDemand", {}).values():
+		row["on_demand"] = flt(next(iter(term["priceDimensions"].values()))["pricePerUnit"]["USD"]) * 750
+	instance_type = parse_instance_type(row["instance"])
+	if not instance_type:
+		return None
 
-	latest_generation = max(row["generation"] for row in rows)
-	for row in rows:
-		if row["generation"] == latest_generation:
-			row["is_latest_generation"] = True
+	family, generation, processor, size = instance_type
 
-	if filters.latest_generation_only:
-		rows = [row for row in rows if row.get("is_latest_generation")]
+	row.update(
+		{
+			"family": family,
+			"generation": generation,
+			"processor": processor,
+			"size": size,
+			"size_multiplier": parse_size_multiplier(size),
+		}
+	)
+	return row
 
+
+def add_savings_plan_rates(cluster, rows):
 	client = boto3.client(
 		"savingsplans",
 		aws_access_key_id=cluster.aws_access_key_id,
@@ -129,13 +141,8 @@ def get_cluster_data(filters, cluster_name):
 			instance = find(rate["properties"], lambda x: x["name"] == "instanceType")["value"]
 			row = find(rows, lambda x: x["instance"] == instance)
 			years = rate["savingsPlanOffering"]["durationSeconds"] // 31536000
-			plan = (
-				"compute" if rate["savingsPlanOffering"]["planType"] == "Compute" else "instance"
-			)
+			plan = "compute" if rate["savingsPlanOffering"]["planType"] == "Compute" else "instance"
 			row[f"{years}yr_{plan}"] = flt(rate["rate"]) * 750
-
-	rows.sort(key=lambda x: (x["instance_type"], x["vcpu"], x["memory"]))
-	return rows
 
 
 FAMILIES = [
@@ -168,7 +175,7 @@ def parse_instance_type(instance_type):
 	instance_type, size = instance_type.split(".")
 	# Skip metal instances
 	if "metal" in size:
-		return
+		return None
 
 	family = None
 	for ff in FAMILIES:
@@ -178,7 +185,7 @@ def parse_instance_type(instance_type):
 
 	# Ignore other instance families
 	if family not in PREFERRED_FAMILIES:
-		return
+		return None
 
 	rest = instance_type.removeprefix(family)
 	generation = int(rest[0])
@@ -192,7 +199,7 @@ def parse_instance_type(instance_type):
 		processor = "i"
 
 	if rest:
-		return
+		return None
 
 	return family, generation, processor, size
 
@@ -205,6 +212,5 @@ def parse_size_multiplier(size):
 	}
 	if size in SIZES:
 		return SIZES[size]
-	else:
-		size = size.removesuffix("xlarge")
-		return float(size)
+	size = size.removesuffix("xlarge")
+	return float(size)

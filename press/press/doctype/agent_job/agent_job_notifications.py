@@ -36,6 +36,9 @@ MatchStrings = str | list[str]
 # Bench app directory in a traceback frame, app names are python module names
 APP_FRAME = re.compile(r"/apps/([a-z_][a-z0-9_]*)/")
 
+# Path in the error that Frappe raises when it tries to delete a folder as an old backup file
+BACKUP_FOLDER_PATH = re.compile(r"IsADirectoryError: .*?'([^']*/private/backups/[^']+)'")
+
 if typing.TYPE_CHECKING:
 	# TYPE_CHECKING guard for code below cause DeployCandidate
 	# might cause circular import.
@@ -69,6 +72,7 @@ class JobErr(Enum):
 	APP_UPDATE = auto()
 	APP_DEBUG = auto()
 	PKG_RESOURCES = auto()
+	DISK_FULL = auto()
 
 
 DOC_URLS = {
@@ -84,6 +88,7 @@ DOC_URLS = {
 	JobErr.APP_UPDATE: "https://docs.frappe.io/cloud/benches/updating_a_bench",
 	JobErr.APP_DEBUG: "https://frappecloud.com/docs/benches/debugging",
 	JobErr.PKG_RESOURCES: "https://docs.frappe.io/cloud/private-benches/common-issues/pkg-resources-error-when-updating-site",
+	JobErr.DISK_FULL: "https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#server-analytics",
 }
 
 
@@ -111,6 +116,8 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("returned non-zero exit status 137", update_with_oom_err),
 		("returned non-zero exit status 143", update_with_oom_err),
 		("b'Terminated\\n'", update_with_oom_err),
+		# Before the tar/gzip handlers: a full disk also truncates extracted backups
+		("No space left on device", update_with_disk_full_err),
 		("Row size too large", update_with_row_size_too_large_err),
 		("Data truncated for column", update_with_data_truncated_for_column_err),
 		("BrokenPipeError", update_with_broken_pipe_err),
@@ -122,6 +129,7 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("Unknown command '\\-'.", update_with_unknown_command_hyphen_err),
 		('redis_host, redis_port = redis_url.split(":")', update_with_redis_unpack_error),
 		("Site might have lot of jobs in queue.", update_with_rq_jobs_in_queue_err),
+		(["IsADirectoryError", "/private/backups/"], update_with_folder_in_backups_err),
 		# Keep last: matches any traceback, only actionable if the failing app is identifiable
 		("/apps/", update_with_app_failure_err),
 	]
@@ -243,6 +251,33 @@ def update_with_oom_err(
 	if not frappe.db.get_value(job.server_type, job.server, "public"):
 		return True
 	return False
+
+
+def update_with_disk_full_err(details: Details, job: AgentJob):
+	# Only dedicated servers, users can't add storage to a public server
+	if job.on_public_server:
+		return False
+
+	details["title"] = "Server disk full"
+
+	details["message"] = (
+		f"<p>The server ran out of disk space while the {job.job_type} job was running.</p>"
+		f'<p>Check the <i>Disk Space</i> chart in the <a class="underline" href="{get_disk_chart_url(job)}">server analytics</a>.'
+		" Free up space or increase the storage of the server, then retry the job.</p>"
+	)
+
+	details["assistance_url"] = DOC_URLS[JobErr.DISK_FULL]
+
+	return True
+
+
+def get_disk_chart_url(job: AgentJob) -> str:
+	"""Database server charts are a tab of the app server's analytics page"""
+	if job.server_type != "Database Server":
+		return f"/dashboard/servers/{job.server}/analytics"
+
+	app_server = frappe.db.get_value("Server", {"database_server": job.server}, "name")
+	return f"/dashboard/servers/{app_server}/analytics?server={job.server}"
 
 
 def update_with_row_size_too_large_err(details: Details, job: AgentJob):
@@ -378,6 +413,26 @@ def update_with_rq_jobs_in_queue_err(details: Details, job: AgentJob):
 	details["assistance_url"] = DOC_URLS[JobErr.RQ_JOBS_IN_QUEUE]
 
 	return True
+
+
+def update_with_folder_in_backups_err(details: Details, job: AgentJob):
+	"""Frappe deletes old files in private/backups before a backup, and fails on a folder"""
+	details["title"] = "Backup failed because of a folder in the backups folder"
+
+	details["message"] = (
+		f"<p>The backup of site <b>{job.site}</b> failed because of the folder <code>{get_backup_folder_path(job)}</code>.</p>"
+		"<p>Before each backup, Frappe deletes old files in the <code>private/backups</code> folder of the site."
+		" It cannot delete a folder, so the backup stops.</p>"
+		"<p>Delete all folders in <code>private/backups</code>, or move them to a different location. Then take the backup again."
+		" If an app or a script makes these folders, change it to use a different location.</p>"
+	)
+
+	return True
+
+
+def get_backup_folder_path(job: AgentJob) -> str:
+	match = BACKUP_FOLDER_PATH.search(f"{job.traceback or ''}\n{job.output or ''}")
+	return match.group(1) if match else "private/backups"
 
 
 def has_newer_release(bench: str, app: str) -> bool:

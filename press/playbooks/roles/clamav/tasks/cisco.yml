@@ -1,0 +1,65 @@
+---
+# Cisco's package is also named clamav, so only versions from Ubuntu go. dpkg, not
+# apt, so a broken package elsewhere, such as shim-signed on AWS, does not fail this.
+- name: Remove ClamAV from Ubuntu
+  shell: |
+    packages=$(dpkg-query --show --showformat='${db:Status-Abbrev}\t${Package}\t${Version}\n' \
+      clamav clamav-base clamav-freshclam clamav-daemon clamav-milter clamdscan libclamav9 \
+      2>/dev/null \
+      | awk -F '\t' '$1 !~ /^.n/ && $3 ~ /ubuntu/ { print $2 }')
+    if [ -n "$packages" ]; then
+      dpkg --purge $packages
+      echo $packages
+    fi
+  register: ubuntu_clamav
+  changed_when: ubuntu_clamav.stdout != ''
+
+- name: Read installed ClamAV version
+  command: dpkg-query --show --showformat=${db:Status-Abbrev}${Version} clamav
+  register: installed_clamav
+  changed_when: false
+  failed_when: false
+
+# The package is 65 MB, so download it only when it is not installed fully
+- name: Install ClamAV {{ clamav_version }}
+  when: installed_clamav.stdout is not match('ii ' ~ clamav_version ~ '(-|$)')
+  block:
+    # In /root, so a non-root user cannot plant or swap the package
+    - name: Download ClamAV
+      get_url:
+        url: https://github.com/Cisco-Talos/clamav/releases/download/clamav-{{ clamav_version }}/clamav-{{ clamav_version }}.linux.{{ ansible_architecture }}.deb
+        dest: /root/clamav-{{ clamav_version }}.deb
+        checksum: '{{ clamav_checksums[ansible_architecture] }}'
+
+    - name: Install ClamAV from Cisco
+      apt:
+        deb: /root/clamav-{{ clamav_version }}.deb
+  always:
+    - name: Remove ClamAV package
+      file:
+        path: /root/clamav-{{ clamav_version }}.deb
+        state: absent
+
+# The package creates no user, and freshclam writes definitions as clamav
+- name: Create ClamAV user
+  user:
+    name: clamav
+    system: yes
+    shell: /usr/sbin/nologin
+    create_home: no
+
+- name: Create virus definitions directory
+  file:
+    path: /usr/local/share/clamav
+    state: directory
+    owner: clamav
+    group: clamav
+    mode: 0755
+
+- name: Configure freshclam of Cisco
+  copy:
+    dest: /usr/local/etc/freshclam.conf
+    content: |
+      LogTime yes
+      DatabaseMirror database.clamav.net
+    mode: 0644

@@ -10,14 +10,17 @@ import razorpay
 import stripe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, flt, getdate
+from frappe.utils import flt, getdate, now
 from frappe.utils.data import fmt_money
 
+from press.access.staff_roles import needs_staff_role
 from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
+from press.guards import role_guard
 from press.press.doctype.auto_scale_record.auto_scale_record import calculate_secondary_server_price
 from press.press.doctype.communication_info.communication_info import get_communication_info
-from press.utils import log_error
+from press.press.doctype.invoice_item.invoice_item import get_item_description
+from press.utils import get_current_team, log_error
 from press.utils.billing import (
 	convert_stripe_money,
 	get_frappe_io_connection,
@@ -149,6 +152,7 @@ class Invoice(Document):
 		partner_customer = filters.get("partner_customer")
 		if partner_customer:
 			team_name = filters.get("team")
+			validate_partner_customer(team_name)
 			due_date = filters.get("due_date")
 			filters.pop("partner_customer")
 			query = (
@@ -220,11 +224,11 @@ class Invoice(Document):
 			item.plan = f"Audit Log Storage {currency_symbol}{s3_plan}/GB"
 
 	@dashboard_whitelist()
+	@role_guard.api("billing")
 	def stripe_payment_url(self):
 		if not self.stripe_invoice_id:
-			return
-		frappe.response.location = self.get_stripe_payment_url()
-		frappe.response.type = "redirect"
+			return None
+		return self.get_stripe_payment_url()
 
 	def get_stripe_payment_url(self):
 		stripe_link_expired = (
@@ -289,6 +293,7 @@ class Invoice(Document):
 		self.apply_taxes_if_applicable()
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def finalize_invoice(self):  # noqa: C901
 		if self.type == "Prepaid Credits":
 			return
@@ -495,26 +500,17 @@ class Invoice(Document):
 
 	def after_insert(self):
 		if self.get("amended_from"):
-			values = {
-				"modified": frappe.utils.now(),
-				"modified_by": frappe.session.user,
-				"new_invoice": self.name,
-				"old_invoice": self.amended_from,
-			}
-			# link usage records of old cancelled invoice to the new amended invoice
-			frappe.db.sql(
-				"""
-				UPDATE
-					`tabUsage Record`
-				SET
-					`invoice` = %(new_invoice)s,
-					`modified` = %(modified)s,
-					`modified_by` = %(modified_by)s
-				WHERE
-					`invoice` = %(old_invoice)s
-				""",
-				values=values,
-			)
+			self.relink_usage_records_from_amended_invoice()
+
+	def relink_usage_records_from_amended_invoice(self):
+		UsageRecord = frappe.qb.DocType("Usage Record")
+		(
+			frappe.qb.update(UsageRecord)
+			.set(UsageRecord.invoice, self.name)
+			.set(UsageRecord.modified, now())
+			.set(UsageRecord.modified_by, frappe.session.user)
+			.where(UsageRecord.invoice == self.amended_from)
+		).run()
 
 	def create_stripe_invoice(self):
 		if self.stripe_invoice_id:
@@ -831,6 +827,7 @@ class Invoice(Document):
 		return f"Frappe Cloud Subscription ({period_string})"
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def finalize_stripe_invoice(self):
 		stripe = get_stripe()
 		try:
@@ -902,24 +899,7 @@ class Invoice(Document):
 	def update_item_descriptions(self):
 		for item in self.items:
 			if not item.description:
-				how_many_days = f"{cint(item.quantity)} day{'s' if item.quantity > 1 else ''}"
-				if item.document_type == "Site" and item.plan:
-					site_name = item.document_name.split(".archived")[0]
-					plan = frappe.get_cached_value("Site Plan", item.plan, "plan_title")
-					item.description = f"{site_name} active for {how_many_days} on {plan} plan"
-				elif item.document_type in ["Server", "Database Server"]:
-					server_title = frappe.get_cached_value(item.document_type, item.document_name, "title")
-					if item.plan == "Add-on Storage plan":
-						item.description = f"{server_title} Storage Add-on for {how_many_days}"
-					else:
-						item.description = f"{server_title} active for {how_many_days}"
-				elif item.document_type == "Server Snapshot":
-					item.description = f"{item.document_name} stored for {how_many_days}"
-				elif item.document_type == "Marketplace App":
-					app_title = frappe.get_cached_value("Marketplace App", item.document_name, "title")
-					item.description = f"Marketplace app {app_title} active for {how_many_days}"
-				else:
-					item.description = "Prepaid Credits"
+				item.description = get_item_description(item)
 
 	def is_auto_scale_invoice_item(self, usage_record: UsageRecord) -> bool:
 		"""Check if this a secondary server usage record"""
@@ -1202,6 +1182,7 @@ class Invoice(Document):
 		)
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def create_invoice_on_frappeio(self):  # noqa: C901
 		if self.flags.skip_frappe_invoice:
 			return None
@@ -1412,6 +1393,7 @@ class Invoice(Document):
 			frappe.log_error(str(e), "Error fetching Sales Invoice PDF on external site")
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def refund(self, reason):
 		stripe = get_stripe()
 		charge = None
@@ -1437,6 +1419,7 @@ class Invoice(Document):
 		self.add_comment(text=f"Refund reason: {reason}")
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def change_stripe_invoice_status(self, status):
 		stripe = get_stripe()
 		try:
@@ -1453,6 +1436,7 @@ class Invoice(Document):
 			raise
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def refresh_stripe_payment_link(self):
 		stripe = get_stripe()
 		try:
@@ -1471,6 +1455,21 @@ class Invoice(Document):
 			return None
 		stripe = get_stripe()
 		return stripe.Invoice.retrieve(self.stripe_invoice_id)
+
+
+def validate_partner_customer(customer: str | None):
+	"""Throw unless the current team is the partner of the customer team."""
+	partner = get_current_team(get_doc=True)
+	is_customer = (
+		customer
+		and partner.erpnext_partner
+		and partner.partner_email
+		and frappe.db.exists(
+			"Team", {"name": customer, "erpnext_partner": 0, "partner_email": partner.partner_email}
+		)
+	)
+	if not is_customer:
+		frappe.throw(_("You can only view invoices of your own customers."), frappe.PermissionError)
 
 
 def finalize_monthly_draft_invoices():

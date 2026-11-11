@@ -2,14 +2,14 @@
 # For license information, please see license.txt
 
 import frappe
-import sqlparse
 from frappe.utils import cint
 
 from press.agent import Agent
+from press.utils.sql import format_sql
 
 
 def execute(filters=None):
-	frappe.only_for(["System Manager", "Site Manager"])
+	frappe.only_for(["System Manager", "Site Manager", "Press Support", "Press Support Engineer"])
 
 	columns = [
 		{
@@ -83,15 +83,13 @@ def get_data(filters):
 	rows = agent.post("database/processes", data=data)
 
 	for row in rows:
-		row["Info"] = sqlparse.format(
-			(row["Info"] or "").strip(), keyword_case="upper", reindent=True
-		)
+		row["Info"] = format_sql(row["Info"] or "")
 	return rows
 
 
 @frappe.whitelist()
 def kill(database_server, kill_threshold):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Support", "Press Support Engineer"])
 	server = frappe.get_doc("Database Server", database_server)
 	agent = Agent(server.name, "Database Server")
 

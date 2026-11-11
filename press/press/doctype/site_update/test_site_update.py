@@ -713,6 +713,35 @@ class TestSiteUpdate(FrappeTestCase):
 		return create_test_site(bench=bench1.name)
 
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_recovery_of_failed_update_on_broken_site_disables_maintenance_mode(self):
+		site = self._migrate_site_with_difference()
+		frappe.db.set_value("Site", site.name, "status", "Broken")
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Backup Site Tables", "status": "Success"},
+						{"name": "Move Site", "status": "Success"},
+						{"name": "Migrate Site", "status": "Failure"},
+					],
+				},
+				"Recover Failed Site Migrate": {"status": "Success"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		recover_job = frappe.get_value("Site Update", site_update, "recover_job")
+		request_data = json.loads(frappe.get_value("Agent Job", recover_job, "request_data"))
+		self.assertTrue(
+			request_data["activate"],
+			"The update put a broken site in maintenance mode, so recovery must take it out again",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 	def test_skipped_backups_update_failure_goes_fatal_without_attempting_recovery(self):
 		# With backups skipped there is no backup to roll back to, so a failed update must
 		# go straight to Fatal — no recover job and no table restore.
@@ -986,3 +1015,18 @@ class TestSiteUpdate(FrappeTestCase):
 		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
 
 		self.assertTrue(site.schedule_update())
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_a_cancelled_update_does_not_start_and_dispatch_a_job(self):
+		"""A stop that wins the row must not be undone by the `start()` it was racing"""
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench.name)
+		update = create_test_site_update(site.name, group.name, "Cancelled", ignore_validate=True)
+
+		update.start()
+
+		update.reload()
+		self.assertEqual(update.status, "Cancelled")
+		self.assertIsNone(update.update_job)

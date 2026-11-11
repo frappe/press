@@ -74,7 +74,7 @@ class TestBackupHistory(FrappeTestCase):
 		get_backup_history(self.site.name, start, end)
 		return get_backup_history(self.site.name, start, end)
 
-	def given_undelivered_job(self, minutes_ago: int):
+	def given_undelivered_job(self, minutes_ago: int, status: str = "Undelivered"):
 		"""A job the agent never acknowledged, which leaves job_id at 0."""
 		if not frappe.db.exists("Agent Job Type", AGENT_JOB_TYPE):
 			frappe.get_doc(
@@ -93,7 +93,7 @@ class TestBackupHistory(FrappeTestCase):
 				"server_type": "Server",
 				"server": self.server,
 				"site": self.site.name,
-				"status": "Undelivered",
+				"status": status,
 				"job_type": AGENT_JOB_TYPE,
 				"request_method": "POST",
 				"request_path": "server/backup-jobs",
@@ -633,6 +633,27 @@ class TestBackupHistory(FrappeTestCase):
 
 	def test_a_job_left_undelivered_is_not_waited_on(self):
 		self.given_undelivered_job(minutes_ago=5)
+
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_not_called()
+
+	def test_an_old_delivery_failure_does_not_stop_asking_the_server(self):
+		self.given_undelivered_job(minutes_ago=24 * 60, status="Delivery Failure")
+
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_called_once()
+
+	def test_an_old_failure_without_a_job_id_does_not_stop_asking_the_server(self):
+		self.given_undelivered_job(minutes_ago=24 * 60, status="Failure")
+
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_called_once()
+
+	def test_a_job_still_retrying_delivery_for_a_day_is_not_waited_on(self):
+		self.given_undelivered_job(minutes_ago=24 * 60)
 
 		self.audit_trail("2023-10-02", "2023-10-02")
 
