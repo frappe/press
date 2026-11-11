@@ -16,6 +16,9 @@ class TestSetClusterBackupBucket(FrappeTestCase):
 		# Sites installed after the field was removed never had the column; add it as old sites have it
 		if not frappe.db.has_column("Backup Bucket", "cluster"):
 			add_column("Backup Bucket", "cluster", "Link")
+			# add_column keeps the cached column list, so has_column in the patch would miss the new column
+			assert frappe.client_cache is not None
+			frappe.client_cache.delete_value("table_columns::tabBackup Bucket")
 
 	def tearDown(self):
 		frappe.db.rollback()
