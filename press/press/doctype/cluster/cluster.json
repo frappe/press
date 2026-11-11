@@ -77,6 +77,8 @@
 		"enable_periodic_flush_table",
 		"flush_table_execution_hour",
 		"column_break_vgmf",
+		"backups_section",
+		"backup_bucket",
 		"location_section",
 		"country"
 	],
@@ -451,6 +453,18 @@
 			"label": "Enable Periodic FLUSH TABLE"
 		},
 		{
+			"fieldname": "backups_section",
+			"fieldtype": "Section Break",
+			"label": "Backups"
+		},
+		{
+			"description": "Offsite backups of the sites and servers in this cluster go to this bucket",
+			"fieldname": "backup_bucket",
+			"fieldtype": "Link",
+			"label": "Backup Bucket",
+			"options": "Backup Bucket"
+		},
+		{
 			"fieldname": "location_section",
 			"fieldtype": "Section Break",
 			"label": "Location"
@@ -555,7 +569,7 @@
 			"link_fieldname": "document_name"
 		}
 	],
-	"modified": "2026-11-06 12:30:00.000000",
+	"modified": "2026-11-11 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Cluster",

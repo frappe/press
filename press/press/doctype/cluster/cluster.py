@@ -73,6 +73,7 @@ class Cluster(Document):
 		availability_zone: DF.Data | None
 		aws_access_key_id: DF.Data | None
 		aws_secret_access_key: DF.Password | None
+		backup_bucket: DF.Link | None
 		beta: DF.Check
 		by_default_select_unified_mode: DF.Check
 		cidr_block: DF.Data | None
@@ -173,6 +174,7 @@ class Cluster(Document):
 		return None
 
 	def validate(self):
+		self.validate_backup_bucket()
 		self.validate_flush_table_execution_hour()
 		self.validate_monitoring_password()
 		self.validate_cidr_block()
@@ -184,6 +186,11 @@ class Cluster(Document):
 			self.validate_hetzner_api_token()
 		elif self.cloud_provider == "Frappe Compute":
 			self.validate_frappe_compute_credentials()
+
+	def validate_backup_bucket(self):
+		"""A new cluster names its bucket, so its backups never fall back to the Press Settings region."""
+		if self.is_new() and not self.backup_bucket and not frappe.flags.in_install:
+			frappe.throw("Set the Backup Bucket for the new cluster", frappe.MandatoryError)
 
 	def validate_frappe_compute_credentials(self):
 		api_secret = self.get_password("frappe_compute_api_secret")
