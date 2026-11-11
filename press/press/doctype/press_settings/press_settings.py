@@ -220,6 +220,7 @@ class PressSettings(Document):
 		raven_url: DF.Data | None
 		razorpay_key_id: DF.Data | None
 		razorpay_key_secret: DF.Password | None
+		razorpay_max_order_amount_inr: DF.Currency
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
 		redis_cache_size: DF.Int
@@ -280,6 +281,8 @@ class PressSettings(Document):
 		wazuh_api_url: DF.Data | None
 		wazuh_api_username: DF.Data | None
 		wazuh_api_verify_tls: DF.Check
+		wazuh_indexer_password: DF.Password | None
+		wazuh_indexer_username: DF.Data | None
 		wazuh_server: DF.Data | None
 		webroot_directory: DF.Data | None
 	# end: auto-generated types

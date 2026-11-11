@@ -93,7 +93,7 @@
 	],
 	"icon": "fa fa-file",
 	"links": [],
-	"modified": "2025-03-18 10:10:24.353402",
+	"modified": "2026-11-06 21:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Remote File",
@@ -124,6 +124,26 @@
 			"role": "All",
 			"share": 1,
 			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"import": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support Engineer",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support"
 		}
 	],
 	"search_fields": "file_name",

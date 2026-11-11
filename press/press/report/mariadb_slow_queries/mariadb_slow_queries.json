@@ -9,7 +9,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letterhead": null,
- "modified": "2024-12-23 11:36:40.301426",
+ "modified": "2026-11-06 21:00:00.000000",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Slow Queries",
@@ -24,6 +24,12 @@
   },
   {
    "role": "Site Manager"
+  },
+  {
+   "role": "Press Support Engineer"
+  },
+  {
+   "role": "Press Support"
   }
  ],
  "timeout": 0

@@ -20,6 +20,12 @@ if TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 WIREGUARD_DEFAULT_PORT = 51820
+ASSUMED_SYNC_SPEED_BYTES_PER_SECOND = 5 * 1024 * 1024
+
+
+def estimate_initial_sync_seconds(disk_used_kib: int) -> float:
+	# disk_used comes from `df`, which reports 1K blocks
+	return disk_used_kib * 1024 / ASSUMED_SYNC_SPEED_BYTES_PER_SECOND
 
 
 class OnPremFailover(Document):
@@ -91,9 +97,7 @@ class OnPremFailover(Document):
 			self.is_on_prem_server_ssh_from_app_server_working = False
 			self.is_on_prem_server_reachable_from_db_server = False
 			self.is_on_prem_server_ssh_from_db_server_working = False
-			self.is_lsyncd_running_for_db = False
-			self.db_lsyncd_started_on = None
-			self.db_lsyncd_stop_at = None
+			self.reset_db_lsyncd_state()
 			self.save()
 
 	def setup_wireguard_on_app_server(self):
@@ -366,9 +370,7 @@ PersistentKeepalive = 25
 			# TODO: Perform network testing and setup db_lsyncd_stop_at accordingly
 			try:
 				usage: dict = self.database_server_doc.get_storage_usage()
-				disk_usage = usage.get("disk_used", 0)
-				# Assuming 5 MB/s transfer speed for estimation
-				estimated_seconds = disk_usage / (5 * 1024 * 1024)
+				estimated_seconds = estimate_initial_sync_seconds(usage.get("disk_used", 0))
 				self.db_lsyncd_stop_at = add_to_date(self.db_lsyncd_started_on, seconds=estimated_seconds)
 			except Exception:
 				self.db_lsyncd_stop_at = add_to_date(self.db_lsyncd_started_on, hours=1)
@@ -395,12 +397,23 @@ PersistentKeepalive = 25
 				"mariadb_root_password": self.database_server_doc.get_password("mariadb_root_password"),
 			},
 		)
+		# The play stops lsyncd first, so clear its state before the play runs.
+		# A failed, timed out or killed run then starts lsyncd again on retry.
+		self.db_set(
+			{"is_lsyncd_running_for_db": False, "db_lsyncd_started_on": None, "db_lsyncd_stop_at": None},
+			commit=True,
+		)
 		play = ansible.run()
 
 		if play.status != "Success":
 			frappe.throw(
 				"Failed to perform the final database sync. Please check the database server logs and retry the failover."
 			)
+
+	def reset_db_lsyncd_state(self):
+		self.is_lsyncd_running_for_db = False
+		self.db_lsyncd_started_on = None
+		self.db_lsyncd_stop_at = None
 
 	def setup_and_configure_database_replica(self):
 		frappe.enqueue_doc(

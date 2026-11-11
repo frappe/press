@@ -54,7 +54,7 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2025-02-03 15:48:45.990977",
+	"modified": "2026-11-06 21:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Feedback",
@@ -72,7 +72,33 @@
 			"share": 1,
 			"write": 1
 		},
-		{ "create": 1, "role": "Press User" }
+		{ "create": 1, "role": "Press User" },
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Product Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support Engineer"
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support"
+		}
 	],
 	"quick_entry": 1,
 	"sort_field": "modified",
