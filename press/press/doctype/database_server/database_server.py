@@ -2454,7 +2454,8 @@ systemctl restart mariadb
 		self.agent.purge_binlogs_by_size_limit(self, max_binlog_gb=binlog_limit_in_gb)
 
 	def has_open_binlog_purge_job(self) -> bool:
-		"""Agent job deduplication is off by default, so an undelivered purge would pile up every 10 minutes."""
+		"""Agent job deduplication is off by default, so an undelivered purge would pile up every 10 minutes.
+		Older open jobs are stuck, and must not stop the purge forever."""
 		return bool(
 			frappe.db.exists(
 				"Agent Job",
@@ -2463,6 +2464,7 @@ systemctl restart mariadb
 					"status": ("in", ("Undelivered", "Pending", "Running")),
 					"server_type": self.doctype,
 					"server": self.name,
+					"creation": (">", frappe.utils.add_to_date(None, hours=-1)),
 				},
 			)
 		)

@@ -266,3 +266,41 @@ class TestDatabaseServer(FrappeTestCase):
 		from press.api.server import prometheus_instant_value
 
 		self.assertIsNone(prometheus_instant_value('mysql_up{instance="m1",job="mariadb"}'))
+
+	@patch.object(Agent, "purge_binlogs_by_size_limit")
+	def test_binlog_purge_skipped_while_a_recent_purge_job_is_open(self, purge: Mock):
+		server = create_test_database_server()
+		create_test_binlog_purge_job(server, "Undelivered", hours_ago=0.1)
+
+		server.purge_binlogs_by_configured_size_limit()
+
+		purge.assert_not_called()
+
+	@patch.object(Agent, "purge_binlogs_by_size_limit")
+	def test_binlog_purge_runs_when_the_open_purge_job_is_older_than_an_hour(self, purge: Mock):
+		# An undelivered job from months ago used to skip the purge forever, and the disk filled up.
+		server = create_test_database_server()
+		create_test_binlog_purge_job(server, "Undelivered", hours_ago=24 * 30)
+
+		server.purge_binlogs_by_configured_size_limit()
+
+		purge.assert_called_once()
+
+
+def create_test_binlog_purge_job(server: DatabaseServer, status: str, hours_ago: float):
+	"""Purge agent job inserted straight into the db, so no HTTP request gets queued."""
+	creation = frappe.utils.add_to_date(None, hours=-hours_ago)
+	frappe.get_doc(
+		{
+			"doctype": "Agent Job",
+			"job_type": "Purge Binlogs By Size Limit",
+			"status": status,
+			"server": server.name,
+			"server_type": "Database Server",
+			"request_method": "POST",
+			"request_path": "database/binlogs/purge_by_size_limit",
+			"request_data": "{}",
+			"creation": creation,
+			"modified": creation,
+		}
+	).db_insert()
