@@ -43,10 +43,10 @@
 			class="w-full"
 			:disabled="!canPay || !agreedToTerms"
 			:loading="paying"
-			:loadingText="method.loadingText"
+			loadingText="Placing order..."
 			@click="emit('pay')"
 		>
-			{{ method.button }}
+			Place Order
 		</Button>
 		<p class="text-p-sm text-ink-gray-6">{{ method.note }}</p>
 	</div>
@@ -63,7 +63,6 @@ const props = defineProps({
 	billingName: { type: String, default: '' },
 	gstSplit: { type: String, default: null },
 	canPay: { type: Boolean, default: false },
-	useCredits: { type: Boolean, default: false },
 	lockedUntil: { type: Object, required: true },
 	paying: { type: Boolean, default: false },
 	error: { type: [String, Object], default: null },
@@ -72,35 +71,20 @@ const emit = defineEmits(['pay'])
 
 const agreedToTerms = ref(false)
 
-const methods = {
-	credits: {
-		label: 'Credits',
-		button: 'Pay with Credits',
-		loadingText: 'Paying...',
-		note: 'The full year is paid from your credit balance. GST was charged when you bought the credits.',
-	},
-	bank: {
-		label: 'Bank transfer (NEFT / RTGS)',
-		button: 'Place Order',
-		loadingText: 'Placing order...',
-		note: 'Next, you will see our bank details to pay by NEFT or RTGS.',
-	},
-	stripe: {
-		label: 'Card via Stripe',
-		button: 'Pay on Stripe',
-		loadingText: 'Redirecting to Stripe...',
-		note: 'You will be redirected to Stripe to complete the payment.',
-	},
-}
-
-const method = computed(() => {
-	if (props.useCredits) return methods.credits
-	return props.plan.currency === 'INR' ? methods.bank : methods.stripe
-})
-
-const payToday = computed(() =>
-	props.useCredits ? props.plan.amount_due_with_credits : props.plan.amount_due,
+// Paid on the contract page once the order is placed.
+const method = computed(() =>
+	props.plan.currency === 'INR'
+		? {
+				label: 'Bank transfer (NEFT / RTGS) or credits',
+				note: 'Next, you will see our bank details. You can also pay from your credit balance.',
+			}
+		: {
+				label: 'Card or credits',
+				note: 'Next, pay with your saved card, a new card, or your credit balance.',
+			},
 )
+
+const payToday = computed(() => props.plan.amount_due)
 
 const rows = computed(() => {
 	const years = Number(props.order.price_lock_years)

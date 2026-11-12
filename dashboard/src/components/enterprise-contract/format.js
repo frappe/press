@@ -10,8 +10,19 @@ export function money(amount, currencyCode) {
 	return currency(amount, currencyCode, 0)
 }
 
+// Contract statuses shown in the colours of the Sites list.
+const SITE_STATUS_FOR = {
+	'Awaiting Payment': 'AwaitingApproval',
+	'Pending Signature': 'Draft',
+}
+
 export function contractStatusBadge(status) {
-	return getSiteStatusBadge(status === 'Pending Signature' ? 'Draft' : status)
+	return getSiteStatusBadge(SITE_STATUS_FOR[status] || status)
+}
+
+// The page header shows a filled badge, like the Site page, so Active needs a colour.
+export function contractHeaderTheme(status) {
+	return { Active: 'green', Cancelled: 'gray' }[status] || 'orange'
 }
 
 export function gstLines(gst, split) {

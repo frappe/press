@@ -104,25 +104,6 @@
 				</p>
 			</div>
 
-			<div v-if="canUseCredits">
-				<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
-					Select Payment Method
-				</h2>
-				<div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-					<button
-						v-for="method in paymentMethods"
-						:key="method.label"
-						:class="tileClass(useCredits === method.credits)"
-						@click="useCredits = method.credits"
-					>
-						<div class="px-4 py-3">
-							<div class="text-lg text-ink-gray-9">{{ method.label }}</div>
-							<div class="text-sm text-ink-gray-6">{{ method.hint }}</div>
-						</div>
-					</button>
-				</div>
-			</div>
-
 			<div>
 				<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 					Billing Partner
@@ -142,7 +123,6 @@
 			:billing-name="team.doc.billing_details?.billing_name"
 			:gst-split="gstSplit"
 			:can-pay="hasBillingAddress"
-			:use-credits="useCredits"
 			:locked-until="lockedUntil(Number(order.price_lock_years))"
 			:paying="paying"
 			:error="submit.error"
@@ -159,14 +139,11 @@ import { getTeam } from '../../data/team'
 import { dayjsLocal as dayjs } from '../../utils/dayjs'
 import BillingDetailsCard from './BillingDetailsCard.vue'
 import CustomerFields from './CustomerFields.vue'
-import { contractsReturnUrl } from './checkout'
 import { formatDate, money } from './format'
 import OrderSummary from './OrderSummary.vue'
 
 const props = defineProps({
 	plans: { type: Array, required: true },
-	// Purchased credits only; free credits do not pay for a contract.
-	creditBalance: { type: Number, default: 0 },
 	gstSplit: { type: String, default: null },
 })
 const emit = defineEmits(['placed', 'billingSaved'])
@@ -174,49 +151,21 @@ const emit = defineEmits(['placed', 'billingSaved'])
 const team = getTeam()
 const order = reactive(newOrder())
 const paying = ref(false)
-const useCredits = ref(false)
 
 const plan = computed(() => props.plans.find((p) => p.name === order.plan))
 const hasBillingAddress = computed(() =>
 	Boolean(team.doc.billing_details?.name),
 )
-// Credits pay the full year only; part payments are not allowed.
-const canUseCredits = computed(
-	() => props.creditBalance >= plan.value.amount_due_with_credits.total,
-)
-const paymentMethods = computed(() => {
-	const isIndia = plan.value.currency === 'INR'
-	const balance = money(props.creditBalance, plan.value.currency)
-	return [
-		{
-			credits: false,
-			label: isIndia ? 'Bank Transfer' : 'Card',
-			hint: isIndia ? 'NEFT or RTGS, plus GST' : 'Pay on Stripe',
-		},
-		{
-			credits: true,
-			label: 'Credits',
-			hint: isIndia ? `Balance ${balance}, no GST` : `Balance ${balance}`,
-		},
-	]
-})
-
 const price = computed(() =>
 	money(plan.value.yearly_price, plan.value.currency),
 )
 
 const submit = createResource({
 	url: 'press.api.enterprise_contract.submit',
-	makeParams: () => ({
-		order,
-		return_url: contractsReturnUrl(),
-		use_credits: useCredits.value,
-	}),
-	onSuccess: ({ checkout_url, message }) => {
-		if (checkout_url) return window.location.assign(checkout_url)
+	makeParams: () => ({ order }),
+	onSuccess: ({ contract, message }) => {
 		if (message) toast.info(message)
-		if (useCredits.value) team.reload()
-		emit('placed')
+		emit('placed', contract)
 	},
 	onError: () => (paying.value = false),
 })
@@ -238,14 +187,13 @@ function newOrder() {
 function selectPlan(selected) {
 	order.plan = selected.name
 	order.price_lock_years = 1
-	useCredits.value = false
 }
 
 function lockedUntil(years) {
 	return dayjs().add(years, 'year').subtract(1, 'day')
 }
 
-// Loading stays on until the browser leaves for Stripe or the page shows bank details.
+// Loading stays on until the contract page opens.
 function pay() {
 	paying.value = true
 	submit.submit()
