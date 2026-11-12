@@ -31,7 +31,7 @@ class TestContractAccess(EnterpriseContractTestCase):
 		with self.assertRaisesRegex(frappe.ValidationError, "not enabled for this team"):
 			contract_api.get()
 		with self.assertRaisesRegex(frappe.ValidationError, "not enabled for this team"):
-			contract_api.submit(self.make_order(), return_url="https://press.test/contracts")
+			contract_api.submit(self.make_order())
 		self.assertFalse(frappe.db.exists("Enterprise Contract", {"team": self.team.name}))
 
 	def test_partner_team_sees_why_it_cannot_order_and_its_order_is_rejected(self):
@@ -45,7 +45,7 @@ class TestContractAccess(EnterpriseContractTestCase):
 
 		self.assertEqual(contract_api.get()["order_blocked"], contract_api.PARTNER_ORDER_BLOCKED)
 		with self.assertRaisesRegex(frappe.ValidationError, "Partners can't place Enterprise orders"):
-			contract_api.submit(self.make_order(), return_url="https://press.test/contracts")
+			contract_api.submit(self.make_order())
 		self.assertFalse(frappe.db.exists("Enterprise Contract", {"team": partner.name}))
 
 	def test_member_of_a_partner_team_counts_as_a_partner_in_a_customer_team(self):
@@ -92,7 +92,7 @@ class TestContractAccess(EnterpriseContractTestCase):
 
 		contract = EnterpriseContract("Enterprise Contract", contract.name)
 		self.assertEqual(contract.status, "Pending Signature")
-		self.assertEqual(contract.transfer_reference, "UTR000000000009")
+		self.assertIsNone(contract.transfer_reference)
 		self.assertEqual(contract.payments[0].payment_reference, "UTR000000000009")
 		self.assertEqual(contract.as_dashboard()["payments"][0]["frappe_invoice"], "ACC-SINV-2026-00042")
 

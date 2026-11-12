@@ -4,20 +4,20 @@
 from __future__ import annotations
 
 import functools
-from urllib.parse import urlparse
+from typing import Literal
 
 import frappe
-from frappe.utils import get_url
 
 from press.guards import role_guard
-from press.press.doctype.enterprise_contract.checkout import (
-	close_checkout,
-	paid_checkout_reference,
-	start_stripe_checkout,
+from press.press.doctype.enterprise_contract.card_payment import (
+	close_card_payment,
+	record_paid_intent,
+	saved_card,
+	start_card_payment,
 )
 from press.press.doctype.enterprise_contract.enterprise_contract import (
 	ALREADY_PAID,
-	OPEN_STATUSES,
+	VISIBLE_STATUSES,
 	EnterpriseContract,
 	bank_transfer_details,
 	create_contract,
@@ -27,9 +27,14 @@ from press.press.doctype.enterprise_contract.enterprise_contract import (
 	team_contracts,
 )
 from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan import enabled_plans, gst_split
-from press.utils import get_current_team, is_partner_user
+from press.utils import get_current_team, is_partner_user, is_user_part_of_team
 
 PARTNER_ORDER_BLOCKED = "Partners can't place Enterprise orders. Please ask the customer to place the order from their own account."
+PARTNER_PAYMENT_BLOCKED = (
+	"Partners can't pay for Enterprise contracts. Please ask the customer to pay from their own account."
+)
+CARD_CUSTOMER_ONLY = "Only a member of this team can pay by card."
+NOTHING_DUE = "Nothing is due on your contract right now."
 
 
 def contracts_enabled(fn):
@@ -49,12 +54,9 @@ def contracts_enabled(fn):
 @contracts_enabled
 def get():
 	team = get_current_team(get_doc=True)
-	name = open_contract_name(team.name)
 	return {
 		"plans": enabled_plans(team.currency),
-		"contract": EnterpriseContract("Enterprise Contract", name).as_dashboard() if name else None,
-		"bank_transfer": bank_transfer_details() if team.currency == "INR" else None,
-		"credit_balance": purchased_credit(team.name),
+		"open_contract": open_contract_name(team.name),
 		"gst_split": gst_split(team.billing_address),
 		"contracts": team_contracts(team.name),
 		"order_blocked": PARTNER_ORDER_BLOCKED if acts_as_partner(team) else None,
@@ -65,69 +67,73 @@ def get():
 @role_guard.api("billing")
 @contracts_enabled
 def get_contract(name: str):
-	if not frappe.db.exists(
-		"Enterprise Contract", {"name": name, "team": get_current_team(), "status": ("in", OPEN_STATUSES)}
-	):
+	team = get_current_team(get_doc=True)
+	if not frappe.db.exists("Enterprise Contract", {"name": name, "team": team.name}):
 		frappe.throw("We could not find this contract. Please open it from the Contracts list.")
-	return EnterpriseContract("Enterprise Contract", name).as_dashboard()
+	return {
+		"contract": EnterpriseContract("Enterprise Contract", name).as_dashboard(),
+		**payment_options(team),
+	}
 
 
+# What the dashboard can offer to pay with, for an order or a renewal.
+def payment_options(team) -> dict:
+	inr = team.currency == "INR"
+	card = None if inr else saved_card(team.name)
+	return {
+		"bank_transfer": bank_transfer_details() if inr else None,
+		"saved_card": {"brand": card["brand"], "last_4": card["last_4"]} if card else None,
+		"credit_balance": purchased_credit(team.name),
+		"payment_blocked": PARTNER_PAYMENT_BLOCKED if acts_as_partner(team) else None,
+		"card_blocked": None if inr or is_customer(team) else CARD_CUSTOMER_ONLY,
+	}
+
+
+# Places the order only. The dashboard then pays it on the contract page.
 @frappe.whitelist()
 @role_guard.api("billing")
 @contracts_enabled
-def submit(order: dict | str, return_url: str, use_credits: bool = False):
+def submit(order: dict | str):
 	team = get_current_team(get_doc=True)
 	if acts_as_partner(team):
 		frappe.throw(PARTNER_ORDER_BLOCKED)
-	# Taken first, so that an order placed at the same time cannot start a session we then miss.
+	# Taken first, so that an order placed at the same time cannot start a payment we then miss.
 	lock_team_orders(team.name)
-	if close_awaiting_checkout():
-		return {"checkout_url": None, "message": ALREADY_PAID}
+	if close_awaiting_card_payment():
+		return {"contract": open_contract_name(team.name), "message": ALREADY_PAID}
 	contract = create_contract(team, frappe.parse_json(order))
-	if frappe.utils.sbool(use_credits):
+	return {"contract": contract.name, "message": None}
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+@contracts_enabled
+def pay(method: Literal["saved_card", "new_card", "credits"]):
+	team = get_current_team(get_doc=True)
+	if acts_as_partner(team):
+		frappe.throw(PARTNER_PAYMENT_BLOCKED)
+	# Locked so that a double click pays once.
+	contract = payable_contract()
+	if close_card_payment(contract):
+		return {"payment": None, "message": ALREADY_PAID}
+	if method == "credits":
 		contract.pay_with_credits()
-		return {"checkout_url": None}
-	if contract.payment_gateway == "Bank Transfer":
-		return {"checkout_url": None}
-	return {"checkout_url": start_checkout(contract, return_url)}
+		return {"payment": None, "message": None}
+	validate_card_payment(team, contract)
+	return {"payment": start_card_payment(contract, use_saved_card=method == "saved_card"), "message": None}
 
 
+# Called after the dashboard confirms a card payment, in case the webhook is late.
 @frappe.whitelist()
 @role_guard.api("billing")
 @contracts_enabled
-def pay(return_url: str):
-	contract = awaiting_payment_contract()
-	if close_checkout(contract):
-		return {"checkout_url": None, "message": ALREADY_PAID}
-	return {"checkout_url": start_checkout(contract, return_url)}
-
-
-@frappe.whitelist()
-@role_guard.api("billing")
-@contracts_enabled
-def pay_with_credits():
-	# Locked so that a double click debits the credits once.
-	contract = awaiting_payment_contract()
-	if close_checkout(contract):
-		return {**contract.as_dashboard(), "message": ALREADY_PAID}
-	contract.pay_with_credits()
-	return contract.as_dashboard()
-
-
-@frappe.whitelist()
-@role_guard.api("billing")
-@contracts_enabled
-def verify_payment(params: dict | str):
+def confirm_card_payment():
 	name = open_contract_name(get_current_team())
 	if not name:
-		frappe.throw("No Enterprise order found")
-	# Locked so that two returns from the gateway record the payment once.
+		frappe.throw("No Enterprise contract found")
+	# Locked so that the webhook and this record the payment once.
 	contract = EnterpriseContract("Enterprise Contract", name, for_update=True)
-	if contract.status == "Awaiting Payment":
-		validate_online_checkout(contract)
-		reference = paid_checkout_reference(contract, frappe.parse_json(params).get("session_id"))
-		if reference:
-			contract.record_payment(reference=reference)
+	record_paid_intent(contract)
 	return contract.as_dashboard()
 
 
@@ -135,7 +141,9 @@ def verify_payment(params: dict | str):
 @role_guard.api("billing")
 @contracts_enabled
 def submit_transfer_reference(reference: str):
-	contract = awaiting_payment_contract()
+	if acts_as_partner(get_current_team(get_doc=True)):
+		frappe.throw(PARTNER_PAYMENT_BLOCKED)
+	contract = payable_contract()
 	contract.submit_transfer_reference(reference)
 	return contract.as_dashboard()
 
@@ -144,8 +152,11 @@ def submit_transfer_reference(reference: str):
 @role_guard.api("billing")
 @contracts_enabled
 def cancel_order():
-	contract = awaiting_payment_contract()
-	if close_checkout(contract):
+	name = awaiting_contract_name()
+	if not name:
+		frappe.throw("No Enterprise order is waiting for payment")
+	contract = EnterpriseContract("Enterprise Contract", name, for_update=True)
+	if close_card_payment(contract):
 		return {"message": ALREADY_PAID}
 	contract.cancel_order()
 	return {"message": None}
@@ -156,20 +167,42 @@ def acts_as_partner(team) -> bool:
 	return bool(team.erpnext_partner) or is_partner_user(frappe.session.user)
 
 
-def awaiting_payment_contract() -> EnterpriseContract:
-	name = awaiting_contract_name()
+# The team's owner or a member, not staff or a partner acting in it.
+def is_customer(team) -> bool:
+	return is_user_part_of_team(frappe.session.user, team.name)
+
+
+def validate_card_payment(team, contract: EnterpriseContract):
+	if contract.payment_gateway != "Stripe":
+		frappe.throw(
+			"This contract is paid by bank transfer. Please use the bank details on the contract page."
+		)
+	if not is_customer(team):
+		frappe.throw(CARD_CUSTOMER_ONLY)
+
+
+# The team's order, or its contract with the renewal open. A locking read, so that a
+# request which waited sees the payment another one just made.
+def payable_contract() -> EnterpriseContract:
+	name = frappe.db.get_value(
+		"Enterprise Contract",
+		{"team": get_current_team(), "status": ("in", VISIBLE_STATUSES)},
+		"name",
+		for_update=True,
+	)
 	if not name:
-		frappe.throw("No Enterprise order is waiting for payment")
-	return EnterpriseContract("Enterprise Contract", name, for_update=True)
+		frappe.throw(NOTHING_DUE)
+	contract = EnterpriseContract("Enterprise Contract", name, for_update=True)
+	contract.validate_payment_due()
+	return contract
 
 
 # Recorded instead of raised, because an error rolls the recorded payment back.
-def close_awaiting_checkout() -> bool:
+def close_awaiting_card_payment() -> bool:
 	name = awaiting_contract_name()
-	return bool(name) and close_checkout(EnterpriseContract("Enterprise Contract", name, for_update=True))
+	return bool(name) and close_card_payment(EnterpriseContract("Enterprise Contract", name, for_update=True))
 
 
-# A locking read, so that a request which waited sees the order another one just cancelled or paid.
 def awaiting_contract_name() -> str | None:
 	return frappe.db.get_value(
 		"Enterprise Contract",
@@ -177,24 +210,3 @@ def awaiting_contract_name() -> str | None:
 		"name",
 		for_update=True,
 	)
-
-
-def start_checkout(contract: EnterpriseContract, return_url: str) -> str:
-	validate_return_url(return_url, frappe.request.host)
-	validate_online_checkout(contract)
-	reference, url = start_stripe_checkout(contract, return_url)
-	contract.db_set("checkout_reference", reference)
-	return url
-
-
-def validate_online_checkout(contract: EnterpriseContract):
-	if contract.payment_gateway != "Stripe":
-		frappe.throw(f"{contract.payment_gateway} has no online checkout")
-
-
-# The gateway sends the customer back here, so it must be this site. host_name in
-# site config can differ from the host the dashboard is served on, so both count.
-def validate_return_url(return_url: str, request_host: str | None = None):
-	hostnames = {urlparse(get_url()).hostname, (request_host or "").split(":")[0]}
-	if urlparse(return_url).hostname not in hostnames:
-		frappe.throw("This return URL is not on this site. Please reload the page and try again.")
