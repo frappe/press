@@ -73,20 +73,13 @@ class EnterpriseContractTestCase(FrappeTestCase):
 
 
 class TestEnterpriseContract(EnterpriseContractTestCase):
-	def test_only_the_owning_team_can_open_a_paid_contract(self):
+	def test_only_the_owning_team_can_open_its_contract_from_the_order_on(self):
 		contract = create_contract(self.team, self.make_order())
 		other_team = create_team_with_billing_address("India")
 		self.addCleanup(frappe.set_user, "Administrator")
 
 		frappe.set_user(self.team.user)
-		with self.assertRaisesRegex(frappe.ValidationError, "could not find this contract"):
-			get_contract(contract.name)
-
-		frappe.set_user("Administrator")
-		contract.record_payment(reference="UTR000000000003")
-
-		frappe.set_user(self.team.user)
-		self.assertEqual(get_contract(contract.name)["name"], contract.name)
+		self.assertEqual(get_contract(contract.name)["contract"]["name"], contract.name)
 
 		frappe.set_user(other_team.user)
 		with self.assertRaisesRegex(frappe.ValidationError, "could not find this contract"):
@@ -96,7 +89,7 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 		cancelled = create_contract(self.team, self.make_order())
 		cancelled.cancel_order()
 		paid = create_contract(self.team, self.make_order())
-		paid.record_payment(reference="UTR000000000002")
+		paid.record_payment(reference="UTR000000000002", paid_with="Bank transfer")
 		other_team = create_team_with_billing_address("India")
 		create_contract(other_team, self.make_order())
 
@@ -107,7 +100,7 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 	def test_payment_keeps_its_gst_split_when_the_billing_state_changes(self):
 		frappe.db.set_single_value("Press Settings", "gst_home_state", "Maharashtra")
 		contract = create_contract(self.team, self.make_order())
-		contract.record_payment(reference="UTR000000000001")
+		contract.record_payment(reference="UTR000000000001", paid_with="Bank transfer")
 
 		frappe.db.set_value("Address", contract.billing_address, "state", "Karnataka")
 		frappe.db.set_single_value("Press Settings", "gst_home_state", None)
@@ -184,7 +177,7 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 	def test_stripe_order_rejects_a_bank_transfer_utr(self):
 		contract = create_contract(create_team_with_billing_address("United States"), self.make_order())
 
-		with self.assertRaisesRegex(frappe.ValidationError, "This order is paid online"):
+		with self.assertRaisesRegex(frappe.ValidationError, "paid by card or credits"):
 			contract.submit_transfer_reference("HDFCR52026102912345678")
 
 	def test_order_with_a_utr_cannot_be_cancelled_by_the_customer(self):
@@ -216,7 +209,7 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 
 	def test_payment_moves_order_to_pending_signature_and_covers_one_year(self):
 		contract = create_contract(self.team, self.make_order())
-		contract.record_payment(reference="pay_1")
+		contract.record_payment(reference="pay_1", paid_with="Bank transfer")
 
 		payment = contract.payments[0]
 		self.assertEqual(contract.status, "Pending Signature")
@@ -267,8 +260,8 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 
 	def test_same_gateway_payment_returned_twice_is_recorded_once(self):
 		contract = create_contract(self.team, self.make_order())
-		contract.record_payment(reference="pay_1")
-		contract.record_payment(reference="pay_1")
+		contract.record_payment(reference="pay_1", paid_with="Bank transfer")
+		contract.record_payment(reference="pay_1", paid_with="Bank transfer")
 
 		self.assertEqual(len(contract.payments), 1)
 
@@ -277,15 +270,15 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 		self.plan.price_inr = 2600000  # List price goes up after the order.
 		self.plan.save()
 
-		contract.record_payment(reference="pay_1")
+		contract.record_payment(reference="pay_1", paid_with="Bank transfer")
 		self.assertEqual(contract.renewal_price(), 2400000)
 
-		contract.record_payment(reference="pay_2")
+		contract.record_payment(reference="pay_2", paid_with="Bank transfer")
 		self.assertEqual(contract.renewal_price(), 2600000)
 
 	def test_contract_turns_active_once_frappe_attaches_signed_pdf_and_agreement_date(self):
 		contract = create_contract(self.team, self.make_order())
-		contract.record_payment(reference="pay_1")
+		contract.record_payment(reference="pay_1", paid_with="Bank transfer")
 
 		contract.agreement_date = "2026-11-03"
 		contract.save()
@@ -302,7 +295,9 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 		self.assertEqual(frappe.db.get_value("Enterprise Contract", abandoned.name, "status"), "Cancelled")
 
 	def test_new_order_is_rejected_when_team_has_a_paid_contract(self):
-		create_contract(self.team, self.make_order()).record_payment(reference="pay_1")
+		create_contract(self.team, self.make_order()).record_payment(
+			reference="pay_1", paid_with="Bank transfer"
+		)
 
 		with self.assertRaisesRegex(frappe.ValidationError, "already has an Enterprise contract"):
 			create_contract(self.team, self.make_order())
@@ -316,15 +311,15 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 		contract.db_set("start_date", add_days(today(), -3))  # Ordered three days ago.
 
 		contract.reload()
-		contract.record_payment(reference="pay_1")
+		contract.record_payment(reference="pay_1", paid_with="Bank transfer")
 
 		self.assertEqual(getdate(contract.start_date), getdate(today()))
 		self.assertEqual(getdate(contract.price_locked_until), getdate(add_days(add_years(today(), 3), -1)))
 
 	def test_dashboard_view_lists_latest_payment_first_with_next_renewal(self):
 		contract = create_contract(self.team, self.make_order())
-		contract.record_payment(reference="pay_1")
-		contract.record_payment(reference="pay_2")
+		contract.record_payment(reference="pay_1", paid_with="Bank transfer")
+		contract.record_payment(reference="pay_2", paid_with="Bank transfer")
 
 		view = EnterpriseContract("Enterprise Contract", contract.name).as_dashboard()
 

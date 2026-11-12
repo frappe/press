@@ -42,7 +42,7 @@ class TestPartnerContribution(EnterpriseContractTestCase):
 
 	def paid_contract(self, team=None, reference="pay_1"):
 		contract = create_contract(team or self.team, self.make_order())
-		contract.record_payment(reference=reference)
+		contract.record_payment(reference=reference, paid_with="Bank transfer")
 		return contract
 
 	# The job sends the month before its run, so by default it runs on the 1st of next month.
@@ -134,7 +134,7 @@ class TestPartnerContribution(EnterpriseContractTestCase):
 		contract = create_contract(self.team, self.make_order())
 		self.assertEqual(self.sent_transactions(), [])
 
-		contract.record_payment(reference="pay_1")
+		contract.record_payment(reference="pay_1", paid_with="Bank transfer")
 		frappe.db.set_value("Enterprise Contract", contract.name, "status", "Cancelled")
 		self.assertEqual(self.sent_transactions(), [])
 

@@ -3,9 +3,11 @@
 
 frappe.ui.form.on('Enterprise Contract', {
 	refresh(frm) {
+		// Due for a new order, or for a renewal once its window is open. Card renewals are the
+		// customer's to make on the dashboard; staff record bank transfers only.
 		if (
 			!frm.perm[0]?.write ||
-			frm.doc.status !== 'Awaiting Payment' ||
+			!frm.doc.__onload?.payment_due ||
 			frm.doc.payment_gateway !== 'Bank Transfer'
 		)
 			return

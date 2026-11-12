@@ -35,7 +35,7 @@
 		"payment_gateway_section",
 		"payment_gateway",
 		"column_break_checkout",
-		"checkout_reference",
+		"payment_intent",
 		"transfer_reference",
 		"payments_section",
 		"payments"
@@ -213,7 +213,7 @@
 		{
 			"fieldname": "payment_gateway_section",
 			"fieldtype": "Section Break",
-			"label": "Checkout"
+			"label": "Payment"
 		},
 		{
 			"fieldname": "payment_gateway",
@@ -227,10 +227,10 @@
 			"fieldtype": "Column Break"
 		},
 		{
-			"description": "Stripe Checkout Session of the latest payment attempt",
-			"fieldname": "checkout_reference",
+			"description": "Stripe PaymentIntent of the latest card payment, started by the customer on the dashboard",
+			"fieldname": "payment_intent",
 			"fieldtype": "Data",
-			"label": "Checkout Reference",
+			"label": "Stripe Payment Intent",
 			"read_only": 1
 		},
 		{
@@ -253,7 +253,7 @@
 		}
 	],
 	"links": [],
-	"modified": "2026-11-12 19:30:00.000000",
+	"modified": "2026-11-13 10:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Enterprise Contract",
