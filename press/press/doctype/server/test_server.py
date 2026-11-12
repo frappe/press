@@ -17,6 +17,7 @@ from press.agent import Agent
 from press.api.client import get_list
 from press.exceptions import ArchiveBenchError
 from press.overrides import before_request
+from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
@@ -486,6 +487,20 @@ class TestServer(FrappeTestCase):
 		server.configure_auto_add_storage(server=server.name, enabled=False)
 
 		self.assertFalse(frappe.db.get_value("Server", server.name, "auto_increase_storage"))
+
+	def test_auto_increase_storage_stops_after_extend_ec2_volume_play_fails(self):
+		server = create_test_server(auto_increase_storage=True, provider="AWS EC2")
+		create_test_ansible_play("Extend EC2 Volume", server=server.name, status="Failure")
+
+		self.assertFalse(server.can_auto_increase_storage("/"))
+		self.assertIn("Extend EC2 Volume play failed", server.disk_increase_skip_reason())
+
+	def test_auto_increase_storage_resumes_after_extend_ec2_volume_play_succeeds(self):
+		server = create_test_server(auto_increase_storage=True, provider="AWS EC2")
+		create_test_ansible_play("Extend EC2 Volume", server=server.name, status="Failure")
+		create_test_ansible_play("Extend EC2 Volume", server=server.name, status="Success")
+
+		self.assertTrue(server.can_auto_increase_storage("/"))
 
 	def test_configure_auto_storage_rejects_another_teams_database_server(self):
 		"""The dashboard API only team-checks the app server. A Press User must not be able to
