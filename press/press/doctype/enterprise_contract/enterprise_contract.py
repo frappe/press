@@ -259,7 +259,9 @@ class EnterpriseContract(Document):
 
 	def cancel_order(self):
 		if self.status != "Awaiting Payment":
-			frappe.throw("Only an order waiting for payment can be cancelled")
+			frappe.throw(
+				"Only an order waiting for payment can be cancelled. A paid contract stays until its year ends."
+			)
 		if self.transfer_reference:
 			frappe.throw("You have already sent a bank transfer for this order. Please contact support.")
 		self.status = "Cancelled"
