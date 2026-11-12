@@ -148,9 +148,14 @@ class TestEnterpriseContract(EnterpriseContractTestCase):
 		self.assertEqual(getdate(contract.price_locked_until), getdate(add_days(add_years(today(), 3), -1)))
 
 	def test_us_team_order_is_priced_in_usd_without_gst_and_paid_via_stripe(self):
+		# Frappe Cloud's own site defaults to INR; that must not decide a USD team's contract.
+		previous = frappe.db.get_default("currency")
+		frappe.db.set_default("currency", "INR")
+		self.addCleanup(frappe.db.set_default, "currency", previous)
 		team = create_team_with_billing_address("United States")
 		contract = create_contract(team, self.make_order())
 
+		self.assertEqual(contract.currency, "USD")
 		self.assertEqual(contract.payment_gateway, "Stripe")
 		self.assertEqual(contract.amount_due(), {"amount": 25000, "gst": 0, "total": 25000})
 

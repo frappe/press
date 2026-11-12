@@ -104,6 +104,8 @@ class EnterpriseContract(Document):
 		if not self.plan_doc.enabled:
 			frappe.throw("This plan is no longer available. Please choose another plan.")
 		self.set_billing_details()
+		# Set here, not by fetch: the site's default currency fills the field first.
+		self.currency = frappe.db.get_value("Team", self.team, "currency")
 		self.yearly_price = self.plan_doc.get_price(self.currency)
 		self.payment_gateway = "Bank Transfer" if self.currency == "INR" else "Stripe"
 
