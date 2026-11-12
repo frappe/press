@@ -1,51 +1,45 @@
 <template>
-	<div
-		class="flex flex-col rounded-lg text-base text-ink-gray-9 shadow dark:border"
-	>
-		<div class="px-4 py-3 text-lg font-semibold">Payments</div>
-		<div
-			class="grid grid-cols-3 border-y bg-surface-gray-1 px-4 py-2 text-sm text-ink-gray-6"
-		>
-			<span>Period</span>
-			<span>Amount paid</span>
-			<span class="text-right">frappe.io invoice</span>
+	<div class="rounded-md border">
+		<div class="h-12 border-b px-5 py-4">
+			<h2 class="text-lg font-medium text-ink-gray-9">Payments</h2>
 		</div>
-		<div class="divide-y">
-			<div
-				v-for="payment in contract.payments"
-				:key="payment.payment_reference"
-				class="grid grid-cols-3 items-center px-4 py-3"
-			>
-				<div>
-					<div>
-						{{ formatDate(payment.period_start) }}
-						– {{ formatDate(payment.period_end) }}
-					</div>
-					<div class="text-sm text-ink-gray-6">
-						Paid {{ formatDate(payment.paid_on) }}
-					</div>
+		<div
+			v-if="!contract.payments.length"
+			class="px-5 py-6 text-base text-ink-gray-6"
+		>
+			No payments yet
+		</div>
+		<div
+			v-for="payment in contract.payments"
+			:key="payment.payment_reference"
+			class="flex items-start justify-between gap-4 px-5 py-3 text-base last:pb-5 even:bg-surface-gray-1"
+		>
+			<div>
+				<div class="text-ink-gray-9">
+					{{ formatDate(payment.period_start) }}
+					–
+					{{ formatDate(payment.period_end) }}
 				</div>
-				<div>
-					<div>
-						{{ money(payment.amount_paid || payment.amount, contract.currency) }}
-					</div>
-					<div v-if="payment.gst" class="text-sm text-ink-gray-6">
-						incl.
-						{{ gstText(payment.gst, payment.gst_split, contract.currency) }}
-					</div>
+				<div class="mt-1 text-sm text-ink-gray-6">
+					{{ payment.paid_with || 'Paid' }}
+					· {{ formatDate(payment.paid_on) }}
 				</div>
-				<div class="flex justify-end">
-					<Button
-						v-if="payment.invoice_pdf"
-						:label="payment.frappe_invoice || 'Invoice'"
-						:link="payment.invoice_pdf"
-					>
-						<template #prefix><LucideDownload class="h-4 w-4" /></template>
-					</Button>
-					<span v-else-if="payment.frappe_invoice" class="text-ink-gray-8">
-						{{ payment.frappe_invoice }}
-					</span>
-					<span v-else class="text-ink-gray-6">Sent by email</span>
+			</div>
+			<div class="text-right">
+				<div class="text-ink-gray-9">
+					{{ money(payment.amount_paid || payment.amount, contract.currency) }}
+				</div>
+				<a
+					v-if="payment.invoice_pdf"
+					class="mt-1 inline-flex items-center gap-1 text-sm text-ink-gray-7 underline"
+					:href="payment.invoice_pdf"
+					target="_blank"
+				>
+					{{ payment.frappe_invoice || 'Tax invoice' }}
+					<LucideDownload class="size-3.5" />
+				</a>
+				<div v-else class="mt-1 text-sm text-ink-gray-6">
+					{{ payment.frappe_invoice || 'Invoice sent by email' }}
 				</div>
 			</div>
 		</div>
@@ -53,8 +47,7 @@
 </template>
 
 <script setup>
-import { Button } from 'frappe-ui'
-import { formatDate, gstText, money } from './format'
+import { formatDate, money } from './format'
 
 defineProps({ contract: { type: Object, required: true } })
 </script>

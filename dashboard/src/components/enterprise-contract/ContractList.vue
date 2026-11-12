@@ -34,13 +34,11 @@
 					<tr v-for="row in visible" :key="row.name" class="*:border-b">
 						<td class="font-medium">
 							<router-link
-								v-if="hasDetails(row)"
 								class="hover:underline"
 								:to="{ name: 'Contract', params: { name: row.name } }"
 							>
 								{{ row.name }}
 							</router-link>
-							<template v-else>{{ row.name }}</template>
 						</td>
 						<td>
 							<Badge
@@ -57,9 +55,9 @@
 						</td>
 						<td>{{ row.plan_title }}</td>
 						<td>{{ money(row.yearly_price, row.currency) }}</td>
-						<td>{{ hasDetails(row) ? formatDate(row.start_date) : '—' }}</td>
+						<td>{{ isPaid(row) ? formatDate(row.start_date) : '—' }}</td>
 						<td>
-							{{ hasDetails(row) ? formatDate(row.price_locked_until) : '—' }}
+							{{ isPaid(row) ? formatDate(row.price_locked_until) : '—' }}
 						</td>
 					</tr>
 				</tbody>
@@ -92,10 +90,12 @@ const props = defineProps({
 // Matches OPEN_STATUSES on the server.
 const OPEN_STATUSES = ['Pending Signature', 'Active']
 
-const statusOptions = [...OPEN_STATUSES, 'Cancelled'].map((label) => ({
-	label,
-	value: label,
-}))
+const statusOptions = ['Awaiting Payment', ...OPEN_STATUSES, 'Cancelled'].map(
+	(label) => ({
+		label,
+		value: label,
+	}),
+)
 
 const search = ref('')
 const selectedStatuses = ref([])
@@ -110,8 +110,8 @@ const visible = computed(() => {
 	)
 })
 
-// Only an open contract has an agreement and payments to show.
-const hasDetails = (row) => OPEN_STATUSES.includes(row.status)
+// The dates are set when the first payment lands.
+const isPaid = (row) => OPEN_STATUSES.includes(row.status)
 </script>
 
 <style scoped>
