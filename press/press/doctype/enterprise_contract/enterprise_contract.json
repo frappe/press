@@ -83,10 +83,10 @@
 			"fieldname": "currency",
 			"fieldtype": "Link",
 			"label": "Currency",
+			"description": "The team's currency, set when the contract is created",
 			"options": "Currency",
-			"reqd": 1,
-			"fetch_from": "team.currency",
-			"fetch_if_empty": 1
+			"read_only": 1,
+			"reqd": 1
 		},
 		{
 			"description": "Price at the time of order. It applies to every renewal in the price lock period.",
