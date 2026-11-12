@@ -28,6 +28,7 @@ from press.press.doctype.enterprise_contract.enterprise_contract import (
 )
 from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan import enabled_plans, gst_split
 from press.utils import get_current_team, is_partner_user, is_user_part_of_team
+from press.utils.billing import get_publishable_key
 
 PARTNER_ORDER_BLOCKED = "Partners can't place Enterprise orders. Please ask the customer to place the order from their own account."
 PARTNER_PAYMENT_BLOCKED = (
@@ -86,6 +87,7 @@ def payment_options(team) -> dict:
 		"credit_balance": purchased_credit(team.name),
 		"payment_blocked": PARTNER_PAYMENT_BLOCKED if acts_as_partner(team) else None,
 		"card_blocked": None if inr or is_customer(team) else CARD_CUSTOMER_ONLY,
+		"publishable_key": None if inr else get_publishable_key(),
 	}
 
 

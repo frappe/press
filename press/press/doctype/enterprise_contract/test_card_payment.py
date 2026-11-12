@@ -49,7 +49,6 @@ def send_payment_webhook(contract: str, payment_intent: str):
 
 
 def add_saved_card(team: str):
-	frappe.db.set_value("Team", team, "stripe_customer_id", "cus_test")
 	frappe.get_doc(
 		doctype="Stripe Payment Method",
 		name=frappe.generate_hash(length=10),
@@ -69,6 +68,7 @@ class CardPaymentTestCase(EnterpriseContractTestCase):
 	def setUp(self):
 		super().setUp()
 		self.team = create_team_with_billing_address("United States")
+		frappe.db.set_value("Team", self.team.name, "stripe_customer_id", "cus_test")
 		self.contract = create_contract(self.team, self.make_order())
 		frappe.set_user(self.team.user)
 		self.addCleanup(frappe.set_user, "Administrator")
@@ -87,6 +87,8 @@ class TestCardPayment(CardPaymentTestCase):
 			(params["payment_method"], params["confirm"], params["amount"], params["customer"]),
 			("pm_saved", True, 2500000, "cus_test"),
 		)
+		# Only cards, so Stripe never needs a return URL for a redirect.
+		self.assertEqual(params["payment_method_types"], ["card"])
 		self.assertEqual(response["payment"]["status"], "succeeded")
 		self.contract.reload()
 		self.assertEqual(self.contract.status, "Pending Signature")
@@ -106,6 +108,17 @@ class TestCardPayment(CardPaymentTestCase):
 		self.assertEqual([p.payment_reference for p in self.contract.reload().payments], ["pi_3ds"])
 		self.assertEqual(payment_logs(self.contract.name), [])
 
+	def test_payment_shows_the_card_on_api_versions_that_return_no_charges(self):
+		paid = {**intent("pi_new_api", "succeeded"), "charges": None, "payment_method": "pm_once"}
+		with patch_stripe(retrieve=paid) as get_stripe:
+			get_stripe.return_value.PaymentMethod.retrieve.return_value = {
+				"card": {"brand": "mastercard", "last4": "4444"}
+			}
+			self.contract.db_set("payment_intent", "pi_new_api")
+			contract_api.confirm_card_payment()
+
+		self.assertEqual(self.contract.reload().payments[0].paid_with, "Mastercard •4444")
+
 	def test_pay_once_leaves_the_card_to_the_page_and_saves_nothing(self):
 		with patch_stripe(create=intent("pi_once", "requires_payment_method")) as get_stripe:
 			response = contract_api.pay("new_card")
@@ -115,6 +128,21 @@ class TestCardPayment(CardPaymentTestCase):
 		self.assertNotIn("setup_future_usage", params)
 		self.assertEqual(response["payment"]["client_secret"], "pi_once_secret")
 		self.assertEqual(self.contract.reload().payment_intent, "pi_once")
+
+	def test_pay_once_for_a_team_without_a_stripe_customer_creates_one_with_the_billing_address(self):
+		# Indian rules for export payments need the customer's name and address on Stripe.
+		frappe.db.set_value("Team", self.team.name, "stripe_customer_id", None)
+		with (
+			patch_stripe(create=intent("pi_once", "requires_payment_method")) as get_stripe,
+			patch("press.press.doctype.team.team.get_stripe", return_value=get_stripe.return_value),
+		):
+			get_stripe.return_value.Customer.create.return_value = frappe._dict(id="cus_new")
+			contract_api.pay("new_card")
+
+		client = get_stripe.return_value
+		self.assertEqual(client.PaymentIntent.create.call_args.kwargs["customer"], "cus_new")
+		address = client.Customer.modify.call_args.kwargs["address"]
+		self.assertEqual((address["line1"], address["country"]), ("12 MG Road", "US"))
 
 	def test_declined_saved_card_shows_the_bank_message_and_the_order_keeps_waiting(self):
 		add_saved_card(self.team.name)

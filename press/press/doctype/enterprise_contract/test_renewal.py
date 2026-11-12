@@ -63,6 +63,20 @@ class TestRenewal(EnterpriseContractTestCase):
 		)
 		self.assertIsNone(contract.transfer_reference)
 
+	def test_utr_left_on_a_contract_paid_before_it_was_cleared_does_not_block_the_renewal(self):
+		# Contracts paid before the UTR was cleared on payment still hold it.
+		frappe.db.set_value(
+			"Enterprise Contract", self.contract.name, "transfer_reference", "UTR000000000101"
+		)
+		self.end_paid_year_in(10)
+
+		self.assertIsNone(self.contract.as_dashboard()["transfer_reference"])
+		contract_api.submit_transfer_reference("UTR000000000107")
+		frappe.set_user("Administrator")
+		EnterpriseContract("Enterprise Contract", self.contract.name).confirm_bank_transfer()
+
+		self.assertEqual(self.contract.reload().payments[-1].payment_reference, "UTR000000000107")
+
 	def test_staff_cannot_record_a_transfer_before_the_renewal_window(self):
 		frappe.set_user("Administrator")
 
@@ -107,7 +121,7 @@ class TestContractActivity(EnterpriseContractTestCase):
 				("Payment received", "Success"),
 				("Agreement signed by Frappe", "Success"),
 				("Contract active", "Success"),
-				("Renewal", "Pending"),
+				("Next renewal", "Pending"),
 			],
 		)
 		self.assertIn("Bank transfer", activity[1]["description"])
