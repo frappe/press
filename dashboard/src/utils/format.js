@@ -133,7 +133,9 @@ export function userCurrency(value, fractions = 2) {
 }
 
 export function currency(value, currency, fractions = 2) {
-	return new Intl.NumberFormat('en-US', {
+	// Rupees group in lakhs and crores: ₹24,00,000, not ₹2,400,000.
+	const locale = currency === 'INR' ? 'en-IN' : 'en-US'
+	return new Intl.NumberFormat(locale, {
 		style: 'currency',
 		currency,
 		maximumFractionDigits: fractions,

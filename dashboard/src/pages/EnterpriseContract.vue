@@ -48,7 +48,8 @@
 					:credit-balance="contract.data.credit_balance"
 					@updated="contract.reload()"
 				/>
-				<ContractList v-if="listed.length" :contracts="listed" />
+				<!-- Past contracts stay hidden until the new order is paid. -->
+				<ContractList v-else :contracts="contracts" />
 			</div>
 			<div
 				v-else-if="contract.data.order_blocked"
@@ -95,10 +96,6 @@ const contract = createResource({ url: 'press.api.enterprise_contract.get' })
 const current = computed(() => contract.data?.contract)
 const contracts = computed(() => contract.data?.contracts || [])
 const awaiting = computed(() => current.value?.status === 'Awaiting Payment')
-// The awaiting order has its own card above the list.
-const listed = computed(() =>
-	contracts.value.filter((row) => row.status !== 'Awaiting Payment'),
-)
 const canOrder = computed(
 	() =>
 		!current.value &&
