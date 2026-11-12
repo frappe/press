@@ -34,8 +34,12 @@ PARTNER_ORDER_BLOCKED = "Partners can't place Enterprise orders. Please ask the 
 PARTNER_PAYMENT_BLOCKED = (
 	"Partners can't pay for Enterprise contracts. Please ask the customer to pay from their own account."
 )
-CARD_CUSTOMER_ONLY = "Only a member of this team can pay by card."
-NOTHING_DUE = "Nothing is due on your contract right now."
+CARD_CUSTOMER_ONLY = (
+	"Only a member of this team can pay by card. Please ask the team owner to pay from their account."
+)
+NOTHING_DUE = (
+	"Nothing is due on your contract right now. You can renew from the contract page once its renewal opens."
+)
 
 
 def contracts_enabled(fn):
