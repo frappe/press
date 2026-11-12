@@ -1284,7 +1284,9 @@ class Site(Document, TagHelpers):
 			+ public_file_size
 			+ private_file_size
 		)  # 8 times db size for extraction; estimated
-		return space_for_download + space_for_extracted_files
+		# frappe 14-16 copy each archive into the site folder before extract, then remove the copy
+		space_for_archive_copy = max(public_file_size, private_file_size)
+		return space_for_download + space_for_extracted_files + space_for_archive_copy
 
 	def get_restore_space_required_on_db(self, db_file_size: int = 0) -> int:
 		"""Returns the space required on the database server for restoration."""

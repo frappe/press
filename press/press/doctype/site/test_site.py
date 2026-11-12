@@ -253,6 +253,15 @@ class TestSite(FrappeTestCase):
 
 		self.assertIn(f"The site {site.name} is currently on a trial plan", str(context.exception))
 
+	def test_restore_space_on_app_counts_a_copy_of_the_larger_file_archive(self):
+		"""frappe copies one archive at a time into the site folder before it extracts it."""
+		site = frappe.new_doc("Site")
+		with patch.object(Site, "is_this_version_or_above", return_value=True):
+			required = site.get_restore_space_required_on_app(
+				db_file_size=10, public_file_size=100, private_file_size=1000
+			)
+		self.assertEqual(required, 10 + 2 * (100 + 1000) + 1000)
+
 	def test_db_server_restore_space_includes_app_space_on_unified_server(self):
 		"""On a unified server (shared disk) the db requirement must include app space."""
 		site = frappe.new_doc("Site")
