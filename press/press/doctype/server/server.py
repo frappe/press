@@ -2658,14 +2658,29 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 	def can_auto_increase_storage(self, mountpoint: str | None) -> bool:
 		"""Whether a disk alert on this mountpoint should resize it without asking the team"""
-		if self.provider not in DISK_RESIZE_PROVIDERS:
+		if self.provider not in DISK_RESIZE_PROVIDERS or self.failed_volume_extend_play():
 			return False
 		return bool(self.auto_increase_storage or (self.has_data_volume and mountpoint == "/"))
 
 	def disk_increase_skip_reason(self) -> str:
 		if self.provider not in DISK_RESIZE_PROVIDERS:
 			return f"Press can't resize disks on provider {self.provider}"
+		if self.failed_volume_extend_play():
+			return "the last Extend EC2 Volume play failed, so a bigger volume would not reach the filesystem"
 		return "auto disk increase disabled by user"
+
+	def failed_volume_extend_play(self) -> str | None:
+		"""The last Extend EC2 Volume play if it failed: the filesystem missed the resize, e.g. MBR at 2 TiB"""
+		if self.provider != "AWS EC2":
+			return None
+		play = frappe.db.get_value(
+			"Ansible Play",
+			{"server": self.name, "play": "Extend EC2 Volume"},
+			["name", "status"],
+			order_by="creation desc",
+			as_dict=True,
+		)
+		return play.name if play and play.status == "Failure" else None
 
 	def calculated_increase_disk_size(
 		self,
