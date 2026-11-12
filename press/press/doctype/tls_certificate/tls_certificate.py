@@ -89,6 +89,9 @@ class TLSCertificate(Document):
 		if self.has_value_changed("rsa_key_size"):
 			self.obtain_certificate()
 
+		if self.provider == "Other":
+			self._update_secondary_wildcard_domains()
+
 	@frappe.whitelist()
 	def obtain_certificate(self):
 		if self.provider != "Let's Encrypt":
