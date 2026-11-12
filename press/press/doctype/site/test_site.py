@@ -688,38 +688,6 @@ class TestSite(FrappeTestCase):
 			["key1", "key2"],
 		)
 
-	def test_config_update_that_drops_encryption_key_doesnt_remove_it_from_site(self):
-		site = create_test_site()
-		site._set_configuration(
-			[
-				{"key": "encryption_key", "value": Fernet.generate_key().decode(), "type": "Password"},
-				{"key": "key1", "value": "value1", "type": "String"},
-			]
-		)
-		site.delete_multiple_config(["key1", "encryption_key"])
-		update_job = frappe.get_last_doc(
-			"Agent Job", {"job_type": "Update Site Configuration", "site": site.name}
-		)
-		self.assertEqual(json.loads(update_job.request_data).get("remove"), ["key1"])
-
-	def test_invalid_encryption_key_is_rejected(self):
-		site = create_test_site()
-		self.assertRaisesRegex(
-			frappe.exceptions.ValidationError,
-			"not a valid encryption key",
-			site._update_configuration,
-			{"encryption_key": "not-a-key"},
-		)
-
-	def test_masked_encryption_key_is_rejected(self):
-		site = create_test_site()
-		self.assertRaisesRegex(
-			frappe.exceptions.ValidationError,
-			"not a valid encryption key",
-			site._update_configuration,
-			{"backup_encryption_key": "*******"},
-		)
-
 	def test_apps_are_reordered_to_follow_bench_order(self):
 		app1 = create_test_app()
 		app2 = create_test_app("erpnext", "ERPNext")
@@ -1409,16 +1377,68 @@ class TestSiteConfigEncryptionKeyValidation(FrappeTestCase):
 		frappe.db.rollback()
 
 	def test_encryption_key_that_is_not_a_fernet_key_is_rejected(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"not a valid encryption key",
+			self.site.update_config,
+			{"encryption_key": "not-a-fernet-key"},
+		)
+		self.site.reload()
+		self.assertNotIn("encryption_key", json.loads(self.site.config))
+
+	def test_encryption_key_that_is_not_a_fernet_key_is_rejected_on_full_config_write(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"not a valid encryption key",
+			self.site.update_site_config,
+			[{"key": "encryption_key", "value": "not-a-fernet-key", "type": "Password"}],
+		)
+
+	def test_literal_masked_encryption_key_is_rejected(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"not a valid encryption key",
+			self.site.update_site_config,
+			{"encryption_key": "*******"},
+		)
+
+	def test_backup_encryption_key_accepts_a_gpg_passphrase(self):
+		self.site.update_config({"backup_encryption_key": "my-backup-passphrase"})
+		self.assertEqual(json.loads(self.site.config)["backup_encryption_key"], "my-backup-passphrase")
+
+	def test_sync_saves_an_encryption_key_from_the_server_that_is_not_a_fernet_key(self):
+		self.site._sync_config_info({"encryption_key": "not-a-fernet-key"})
+		self.site.save()
+		self.assertEqual(json.loads(self.site.config)["encryption_key"], "not-a-fernet-key")
+
+	def test_full_config_write_keeps_encryption_keys_that_the_caller_did_not_send(self):
+		value = Fernet.generate_key().decode()
+		self.site.update_config({"encryption_key": value, "backup_encryption_key": "passphrase"})
+		self.site.update_site_config([{"key": "key1", "value": "value1", "type": "String"}])
+		config = json.loads(self.site.config)
+		self.assertEqual(config["encryption_key"], value)
+		self.assertEqual(config["backup_encryption_key"], "passphrase")
+		self.assertEqual(config["key1"], "value1")
+
+	def test_delete_multiple_config_never_asks_the_agent_to_remove_the_encryption_key(self):
+		self.site.update_config({"encryption_key": Fernet.generate_key().decode(), "key1": "value1"})
+		self.site.delete_multiple_config(["key1", "encryption_key"])
+		update_job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Update Site Configuration", "site": self.site.name}
+		)
+		self.assertEqual(json.loads(update_job.request_data).get("remove"), ["key1"])
+		self.assertIn("encryption_key", json.loads(self.site.config))
+
+	def test_encryption_key_cannot_be_deleted_from_the_dashboard(self):
+		self.site.update_config({"encryption_key": Fernet.generate_key().decode()})
 		for key in ENCRYPTION_KEYS:
 			with self.subTest(key=key):
 				self.assertRaisesRegex(
 					frappe.ValidationError,
-					"not a valid encryption key",
-					self.site.update_config,
-					{key: "not-a-fernet-key"},
+					f"You cannot delete <b>{key}</b>",
+					self.site.delete_config,
+					key,
 				)
-				self.site.reload()
-				self.assertNotIn(key, json.loads(self.site.config))
 
 	def test_fernet_encryption_key_is_saved(self):
 		value = Fernet.generate_key().decode()

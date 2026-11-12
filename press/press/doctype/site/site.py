@@ -148,8 +148,7 @@ SERVER_SCRIPT_DISABLED_VERSION = (
 )
 TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
 
-# Losing these makes every secret stored on the site unreadable. Frappe silently
-# generates a new encryption_key when the old one is gone.
+# Press never removes these. Without them, stored secrets and encrypted backups are unreadable.
 ENCRYPTION_KEYS = ("encryption_key", "backup_encryption_key")
 
 # Fallback when max_statement_time isn't explicitly set on the database server.
@@ -170,6 +169,21 @@ KEEP_BACKUP_TIME: Any = object()
 STREAMING_BACKUP_REQUIREMENTS = {
 	"minimum_frappe_version": 13,
 }
+
+
+def _config_row(config: dict) -> dict | None:
+	"""A configuration row for a full config write, or None if the value is empty."""
+	value = config.get("value")
+	if isinstance(value, dict | list):
+		value = json.dumps(value)
+	if value is None or cstr(value).strip() == "":
+		return None
+	return {"key": config.get("key"), "value": value, "type": config.get("type")}
+
+
+def _keep_on_full_config_write(key: str, new_keys: set[str]) -> bool:
+	"""Keys a dashboard user cannot see, and encryption keys the caller did not send."""
+	return key in get_client_blacklisted_keys() or (key in ENCRYPTION_KEYS and key not in new_keys)
 
 
 class Site(Document, TagHelpers):
@@ -672,32 +686,13 @@ class Site(Document, TagHelpers):
 			self._validate_host_name()
 
 	def validate_site_config(self):
-		old_config = json.loads(self.config)
-		self._set_keys_removed_in_last_update(old_config)
-		self._validate_changed_encryption_keys(old_config)
+		# update site._keys_removed_in_last_update value
+		old_keys = json.loads(self.config)
+		new_keys = [x.key for x in self.configuration]
+		self._keys_removed_in_last_update = json.dumps([x for x in old_keys if x not in new_keys])
 
 		# generate site.config from site.configuration
 		self.update_config_preview()
-
-	def _set_keys_removed_in_last_update(self, old_config: dict):
-		"""Keys the agent must delete from the site's site_config.json.
-
-		Encryption keys are never removed. A caller that replaces the whole
-		configuration (see _set_configuration) drops every key it doesn't send,
-		and dropping this one costs the site every secret it has stored.
-		"""
-		new_keys = [x.key for x in self.configuration]
-		removed_keys = [x for x in old_config if x not in new_keys and x not in ENCRYPTION_KEYS]
-		self._keys_removed_in_last_update = json.dumps(removed_keys)
-
-	def _validate_changed_encryption_keys(self, old_config: dict):
-		"""Validate encryption keys the current save changes.
-
-		Only changed values, so a site that already holds a bad key stays saveable.
-		"""
-		for row in self.configuration:
-			if row.key in ENCRYPTION_KEYS and row.value != old_config.get(row.key):
-				self.validate_encryption_key(row.key, row.value)
 
 		# create an agent request if config has been updated
 		# if not self.is_new() and self.has_value_changed("config"):
@@ -2942,24 +2937,17 @@ class Site(Document, TagHelpers):
 		Args:
 		config (list): List of dicts with key, value, and type
 		"""
-		blacklisted_config = [x for x in self.configuration if x.key in get_client_blacklisted_keys()]
+		new_rows = [row for row in map(_config_row, config) if row]
+		new_keys = {row["key"] for row in new_rows}
+		kept_rows = [x for x in self.configuration if _keep_on_full_config_write(x.key, new_keys)]
 		self.configuration = []
 
-		# Maintain keys that aren't accessible to Dashboard user
-		for i, _config in enumerate(blacklisted_config):
-			_config.idx = i + 1
-			self.configuration.append(_config)
+		for i, row in enumerate(kept_rows):
+			row.idx = i + 1
+			self.configuration.append(row)
 
-		for d in config:
-			d = frappe._dict(d)
-			if isinstance(d.value, (dict, list)):
-				value = json.dumps(d.value)
-			else:
-				value = d.value
-			# Value is mandatory, skip None and empty strings
-			if value is None or cstr(value).strip() == "":
-				continue
-			self.append("configuration", {"key": d.key, "value": value, "type": d.type})
+		for row in new_rows:
+			self.append("configuration", row)
 		self.save()
 
 	def _update_configuration(self, config, save=True):
@@ -2996,9 +2984,16 @@ class Site(Document, TagHelpers):
 				f"You <a class='underline' href='https://docs.frappe.io/cloud/enable-server-script'>cannot enable server scripts</a> on public benches. Please move to a <a class='underline' href='{PRIVATE_BENCH_DOC}'>private bench</a>."
 			)
 
-	def validate_encryption_key(self, key: str, value: Any):
-		if key not in ENCRYPTION_KEYS:
-			return
+	def _validate_changed_encryption_key(self, config: dict | list):
+		"""Check an encryption_key that the caller changes. Values synced from the server are not checked."""
+		if isinstance(config, list):
+			config = {row["key"]: row["value"] for row in config}
+		value = config.get("encryption_key")
+		if value and value != json.loads(self.config or "{}").get("encryption_key"):
+			self.validate_encryption_key(value)
+
+	def validate_encryption_key(self, value: Any):
+		# backup_encryption_key is not checked. Frappe uses it as a gpg passphrase, so any string works.
 		from cryptography.fernet import Fernet
 
 		try:
@@ -3066,6 +3061,12 @@ class Site(Document, TagHelpers):
 		"""Deletes a key from site configuration, meant for dashboard and API users"""
 		if key in get_client_blacklisted_keys():
 			return None
+		if key in ENCRYPTION_KEYS:
+			frappe.throw(
+				_(
+					"You cannot delete <b>{0}</b>. The site needs it to read the data that it encrypted."
+				).format(key)
+			)
 
 		updated_config = []
 		for row in self.configuration:
@@ -3099,6 +3100,7 @@ class Site(Document, TagHelpers):
 		"""
 		if config is None:
 			config = {}
+		self._validate_changed_encryption_key(config)
 		if isinstance(config, list):
 			self._set_configuration(config)
 		else:
