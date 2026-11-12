@@ -230,7 +230,8 @@ class EnterpriseContract(Document):
 
 	@frappe.whitelist()
 	def confirm_bank_transfer(self, reference: str | None = None):
-		frappe.only_for("System Manager")
+		# Staff with write access (System Manager, Press Billing Manager); customers only read.
+		self.check_permission("write")
 		if reference:
 			self.submit_transfer_reference(reference)
 		if utr := self.transfer_reference:

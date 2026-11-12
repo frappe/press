@@ -4,12 +4,13 @@
 import frappe
 
 from press.api import enterprise_contract as contract_api
-from press.press.doctype.enterprise_contract.enterprise_contract import EnterpriseContract
+from press.press.doctype.enterprise_contract.enterprise_contract import EnterpriseContract, create_contract
 from press.press.doctype.enterprise_contract.test_enterprise_contract import (
 	EnterpriseContractTestCase,
 	create_team_with_billing_address,
 )
 from press.press.doctype.team.test_team import create_test_team
+from press.tests.test_staff_role_scopes import create_staff_user
 from press.utils import is_partner_user
 
 
@@ -94,6 +95,22 @@ class TestContractAccess(EnterpriseContractTestCase):
 		self.assertEqual(contract.transfer_reference, "UTR000000000009")
 		self.assertEqual(contract.payments[0].payment_reference, "UTR000000000009")
 		self.assertEqual(contract.as_dashboard()["payments"][0]["frappe_invoice"], "ACC-SINV-2026-00042")
+
+	def test_finance_staff_record_a_bank_transfer_and_support_staff_cannot(self):
+		# A fresh copy: insert(ignore_permissions=True) leaves that flag on the created doc.
+		contract = frappe.get_doc("Enterprise Contract", create_contract(self.team, self.make_order()).name)
+		support = create_staff_user("Press Support")
+		finance = create_staff_user("Press Finance")
+
+		frappe.set_user(support)
+		self.assertTrue(frappe.has_permission("Enterprise Contract", "read", contract.name))
+		with self.assertRaises(frappe.PermissionError):
+			contract.confirm_bank_transfer("UTR000000000011")
+
+		frappe.set_user(finance)
+		contract.confirm_bank_transfer("UTR000000000011")
+
+		self.assertEqual(contract.status, "Pending Signature")
 
 	def test_staff_cannot_create_a_contract_while_the_team_has_an_order_waiting_for_payment(self):
 		order = frappe.get_doc(

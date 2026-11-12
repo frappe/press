@@ -4,6 +4,7 @@
 frappe.ui.form.on('Enterprise Contract', {
 	refresh(frm) {
 		if (
+			!frm.perm[0]?.write ||
 			frm.doc.status !== 'Awaiting Payment' ||
 			frm.doc.payment_gateway !== 'Bank Transfer'
 		)
