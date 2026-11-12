@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 
 AUTO_RETRY_LIMIT = 5
 MANUAL_RETRY_LIMIT = 8
+CERTIFICATE_FIELDS = ("certificate", "intermediate_chain", "full_chain", "private_key")
 
 
 class TLSCertificate(Document):
@@ -89,8 +90,11 @@ class TLSCertificate(Document):
 		if self.has_value_changed("rsa_key_size"):
 			self.obtain_certificate()
 
-		if self.provider == "Other":
+		if self.provider == "Other" and self.wildcard and self._certificate_changed():
 			self._update_secondary_wildcard_domains()
+
+	def _certificate_changed(self) -> bool:
+		return any(self.has_value_changed(field) for field in CERTIFICATE_FIELDS)
 
 	@frappe.whitelist()
 	def obtain_certificate(self):
@@ -277,8 +281,7 @@ class TLSCertificate(Document):
 		self.expires_on = datetime.strptime(x509.get_notAfter().decode(), "%Y%m%d%H%M%SZ")
 
 	def configure_full_chain(self):
-		if not self.full_chain:
-			self.full_chain = f"{self.certificate}\n{self.intermediate_chain}"
+		self.full_chain = f"{self.certificate}\n{self.intermediate_chain or ''}".strip()
 
 	@frappe.whitelist()
 	@needs_staff_role("Press Infrastructure Manager")
