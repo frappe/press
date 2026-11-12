@@ -120,8 +120,9 @@ class EnterpriseContract(Document):
 		frappe.db.set_value("Team", self.team, "enable_enterprise_contracts", 1)
 
 	def onload(self):
-		# Desk shows the bank transfer buttons from this.
+		# Desk shows the bank transfer buttons from these.
 		self.set_onload("payment_due", self.payment_due())
+		self.set_onload("pending_transfer_reference", self.pending_transfer_reference())
 
 	def validate(self):
 		self.validate_price_lock_years()
@@ -204,6 +205,13 @@ class EnterpriseContract(Document):
 		transaction.submit()
 		self.record_payment(reference=transaction.name, paid_with="Credits", with_gst=False)
 
+	# The UTR waiting to be confirmed. One that is already on a payment was left by a
+	# contract paid before the UTR was cleared on payment, so it waits for nothing.
+	def pending_transfer_reference(self) -> str | None:
+		if self.transfer_reference and not self.has_payment(self.transfer_reference):
+			return self.transfer_reference
+		return None
+
 	def has_payment(self, reference: str) -> bool:
 		return any(row.payment_reference == reference for row in self.payments)
 
@@ -265,7 +273,7 @@ class EnterpriseContract(Document):
 		self.validate_payment_due()
 		if reference:
 			self.submit_transfer_reference(reference)
-		if utr := self.transfer_reference:
+		if utr := self.pending_transfer_reference():
 			self.record_payment(reference=utr, paid_with="Bank transfer")
 			return
 		frappe.throw("Enter the UTR from the bank statement to record this transfer")
@@ -283,6 +291,7 @@ class EnterpriseContract(Document):
 	def as_dashboard(self) -> dict:
 		return {
 			**{field: self.get(field) for field in DASHBOARD_FIELDS},
+			"transfer_reference": self.pending_transfer_reference(),
 			"payments": [payment_for_dashboard(row) for row in reversed(self.payments)],
 			"next_renewal": {"date": self.next_period_start(), "amount": self.renewal_price()},
 			"amount_due": self.amount_due(),
@@ -327,8 +336,8 @@ def contract_activity(contract: EnterpriseContract) -> list[dict]:
 def payment_step(contract: EnterpriseContract, row, title: str) -> dict:
 	if row:
 		return step(f"{title} received", "Success", row.paid_on, f"{row.paid_with} · {period_text(row)}")
-	if contract.transfer_reference:
-		return step(title, "Running", None, f"Verifying bank transfer, UTR {contract.transfer_reference}")
+	if utr := contract.pending_transfer_reference():
+		return step(title, "Running", None, f"Verifying bank transfer, UTR {utr}")
 	return step(title, "Pending", None, "Waiting for your payment")
 
 
@@ -342,12 +351,12 @@ def signature_step(contract: EnterpriseContract) -> dict:
 
 def renewal_step(contract: EnterpriseContract) -> dict:
 	start = formatdate(contract.next_period_start(), "d MMM yyyy")
-	if contract.transfer_reference:
-		return step("Renewal", "Running", None, f"Verifying bank transfer, UTR {contract.transfer_reference}")
+	if utr := contract.pending_transfer_reference():
+		return step("Next renewal", "Running", None, f"Verifying bank transfer, UTR {utr}")
 	if contract.renewal_open():
-		return step("Renewal", "Pending", None, f"Renewal is open. Renew before {start}.")
+		return step("Next renewal", "Pending", None, f"Renewal is open. Renew before {start}.")
 	opens = formatdate(contract.renewal_opens_on(), "d MMM yyyy")
-	return step("Renewal", "Pending", None, f"Next year starts {start}. Renewal opens on {opens}.")
+	return step("Next renewal", "Pending", None, f"Next year starts {start}. Renewal opens on {opens}.")
 
 
 def payment_for_dashboard(row) -> dict:

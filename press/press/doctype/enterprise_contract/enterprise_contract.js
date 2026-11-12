@@ -11,12 +11,11 @@ frappe.ui.form.on('Enterprise Contract', {
 			frm.doc.payment_gateway !== 'Bank Transfer'
 		)
 			return
-		if (frm.doc.transfer_reference) {
+		const utr = frm.doc.__onload.pending_transfer_reference
+		if (utr) {
 			frm.add_custom_button(__('Confirm Bank Transfer'), () =>
 				frappe.confirm(
-					__('Is UTR {0} on the bank statement for the full amount?', [
-						frm.doc.transfer_reference,
-					]),
+					__('Is UTR {0} on the bank statement for the full amount?', [utr]),
 					() => confirm_transfer(frm),
 				),
 			)

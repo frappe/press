@@ -43,7 +43,9 @@ def start_card_payment(contract: EnterpriseContract, use_saved_card: bool) -> di
 	params = {
 		"amount": round(contract.amount_due()["total"] * 100),
 		"currency": contract.currency.lower(),
-		"customer": frappe.db.get_value("Team", contract.team, "stripe_customer_id") or None,
+		# Cards only: the payment is made on the page, so nothing redirects and no return URL is needed.
+		"payment_method_types": ["card"],
+		"customer": stripe_customer(contract.team),
 		"description": description(contract),
 		"metadata": {"payment_for": PAYMENT_FOR, "enterprise_contract": contract.name},
 	}
@@ -61,6 +63,16 @@ def start_card_payment(contract: EnterpriseContract, use_saved_card: bool) -> di
 		"client_secret": intent["client_secret"],
 		"publishable_key": get_publishable_key(),
 	}
+
+
+# Indian rules for export payments need the customer's name and address on Stripe. Press keeps
+# them in sync once a team has a Stripe customer; a team that never added a card gets one here.
+def stripe_customer(team_name: str) -> str:
+	team = frappe.get_doc("Team", team_name)
+	if not team.stripe_customer_id:
+		team.create_stripe_customer()
+		team.update_billing_details_on_stripe()
+	return team.stripe_customer_id
 
 
 # Called once the dashboard has confirmed the intent, in case the webhook is late.
@@ -112,9 +124,25 @@ def record_intent(contract: EnterpriseContract, intent: dict):
 
 
 def intent_card_label(intent: dict) -> str:
-	charges = (intent.get("charges") or {}).get("data") or []
-	card = charges[0].get("payment_method_details", {}).get("card") if charges else None
+	card = charge_card(intent) or payment_method_card(intent.get("payment_method"))
 	return card_label(card) if card else "Card"
+
+
+# Older Stripe API versions return the charges on the intent.
+def charge_card(intent: dict) -> dict | None:
+	charges = (intent.get("charges") or {}).get("data") or []
+	return charges[0].get("payment_method_details", {}).get("card") if charges else None
+
+
+# Newer ones do not, so the card is read from the payment method. The label is only for
+# display, so a failed lookup shows "Card" rather than losing the recorded payment.
+def payment_method_card(payment_method: str | None) -> dict | None:
+	if not payment_method:
+		return None
+	try:
+		return get_stripe().PaymentMethod.retrieve(payment_method).get("card")
+	except stripe.error.StripeError:
+		return None
 
 
 # The money was taken but the contract is not waiting for it, so staff must refund it.
