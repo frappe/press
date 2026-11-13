@@ -29,7 +29,7 @@ class CloudCostSettings(Document):
 		"""Cost Explorer holds fourteen months of daily data and charges a cent a
 		request, so this is a deliberate button rather than something the scheduler
 		decides to do."""
-		frappe.only_for("System Manager")
+		frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 		frappe.enqueue_doc(self.doctype, self.name, "_backfill_cost_history", queue="long", timeout=3600)
 		return f"Queued. Loading {self.backfill_months or 14} months of daily cost."
 
@@ -42,7 +42,7 @@ class CloudCostSettings(Document):
 	def backfill_driver_history(self):
 		"""Remote File rows are never deleted, so the upload series can be rebuilt for
 		the whole history rather than starting from today like the other drivers."""
-		frappe.only_for("System Manager")
+		frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 		frappe.enqueue_doc(self.doctype, self.name, "_backfill_driver_history", queue="long", timeout=3600)
 		return "Queued. Rebuilding the backup upload series from Remote File."
 

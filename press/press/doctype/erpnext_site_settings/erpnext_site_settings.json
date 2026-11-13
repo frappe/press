@@ -71,7 +71,7 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2022-06-20 06:58:05.388164",
+	"modified": "2026-11-06 21:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "ERPNext Site Settings",
@@ -89,6 +89,25 @@
 			"role": "System Manager",
 			"share": 1,
 			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support Engineer",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support"
 		}
 	],
 	"sort_field": "modified",
