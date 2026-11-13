@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import add_days, add_years, cint, getdate, now_datetime, today
+from frappe.utils import add_days, add_years, cint, formatdate, getdate, now_datetime, today
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.balance_transaction.balance_transaction import unallocated_credit
@@ -187,7 +187,10 @@ class EnterpriseContract(Document):
 
 	def validate_payment_due(self):
 		if not self.payment_due():
-			frappe.throw(f"Nothing is due on this contract now. Renewal opens on {self.renewal_opens_on()}.")
+			opens = formatdate(self.renewal_opens_on(), "d MMM yyyy")
+			frappe.throw(
+				f"Nothing is due on this contract now. Renewal opens on {opens}. You can renew from the contract page then."
+			)
 
 	def pay_with_credits(self):
 		self.validate_payment_due()
