@@ -434,7 +434,7 @@
 			"link_fieldname": "marketplace_app"
 		}
 	],
-	"modified": "2026-05-30 08:44:57.088090",
+	"modified": "2026-11-06 21:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Marketplace App",
@@ -472,6 +472,20 @@
 			"role": "Press User",
 			"select": 1,
 			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support Engineer"
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support"
 		}
 	],
 	"row_format": "Dynamic",
