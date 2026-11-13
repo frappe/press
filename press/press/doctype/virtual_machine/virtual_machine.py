@@ -42,6 +42,7 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
+from press.access.staff_roles import safe_for_readers
 from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
@@ -2344,6 +2345,7 @@ class VirtualMachine(Document):
 		self.save()
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_ebs_performance(self):
 		if self.cloud_provider == "AWS EC2":
 			volume = self.volumes[0]
@@ -2364,6 +2366,7 @@ class VirtualMachine(Document):
 		self.sync()
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_oci_volume_performance(self):
 		if self.cloud_provider == "OCI":
 			volume = self.volumes[0]
@@ -2670,6 +2673,7 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def get_serial_console_credentials(self):
+		frappe.only_for("System Manager")
 		client = self.client("ec2-instance-connect")
 		client.send_serial_console_ssh_public_key(
 			InstanceId=self.instance_id,
