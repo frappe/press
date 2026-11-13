@@ -178,50 +178,77 @@ const banner = computed(() => {
 	return null
 })
 
-const summary = computed(() => {
+// Unpaid, lapsed, in its first year, or in a renewed year.
+const periodState = computed(() => {
+	if (!current.value) return 'unpaid'
+	if (props.contract.lapsed) return 'lapsed'
+	return current.value === latest.value ? 'current' : 'renewed'
+})
+
+// The 'Current period' and 'Next renewal' cards for each period state.
+const periodCards = computed(() => {
 	const c = props.contract
 	const paid = current.value
+	const renewalAmount = money(c.next_renewal.amount, c.currency)
+	const dueRenewal = {
+		value: formatDate(c.next_renewal.date),
+		hint: `${renewalAmount}, opens ${formatDate(c.renewal_opens_on)}`,
+	}
+	const paidPeriod = paid
+		? `${formatDate(paid.period_start)} – ${formatDate(paid.period_end)}`
+		: ''
+	return {
+		unpaid: {
+			period: {
+				value: 'Starts on payment',
+				hint: 'One year from the day you pay',
+			},
+			renewal: { value: '—', hint: 'After the first year' },
+		},
+		lapsed: {
+			period: {
+				value: 'Not covered',
+				hint: `Warranty ended ${formatDate(latest.value?.period_end)}`,
+			},
+			renewal: {
+				value: 'Open now',
+				hint: `${renewalAmount}, one year from the day you pay`,
+			},
+		},
+		current: {
+			period: {
+				value: paidPeriod,
+				hint: `Contract started ${formatDate(c.start_date)}`,
+			},
+			renewal: dueRenewal,
+		},
+		renewed: {
+			period: {
+				value: paidPeriod,
+				hint: `Renewed, paid until ${formatDate(latest.value?.period_end)}`,
+			},
+			renewal: dueRenewal,
+		},
+	}[periodState.value]
+})
+
+const summary = computed(() => {
+	const c = props.contract
 	return [
 		{
 			label: 'Plan',
 			value: `${c.plan_title}`,
 			hint: `${money(c.yearly_price, c.currency)} / year, excluding taxes`,
 		},
-		{
-			label: 'Current period',
-			value: c.lapsed
-				? 'Not covered'
-				: paid
-					? `${formatDate(paid.period_start)} – ${formatDate(paid.period_end)}`
-					: 'Starts on payment',
-			hint: c.lapsed
-				? `Warranty ended ${formatDate(latest.value.period_end)}`
-				: !paid
-					? 'One year from the day you pay'
-					: paid === latest.value
-						? `Contract started ${formatDate(c.start_date)}`
-						: `Renewed, paid until ${formatDate(latest.value.period_end)}`,
-		},
+		{ label: 'Current period', ...periodCards.value.period },
 		{
 			label: 'Price lock',
-			value: paid
+			value: current.value
 				? `Until ${formatDate(c.price_locked_until)}`
 				: `${c.price_lock_years} year${c.price_lock_years > 1 ? 's' : ''}`,
 			hint: `Renewals in this period keep ${money(c.yearly_price, c.currency)} / year`,
 		},
-		{
-			label: 'Next renewal',
-			value: c.lapsed
-				? 'Open now'
-				: paid
-					? formatDate(c.next_renewal.date)
-					: '—',
-			hint: c.lapsed
-				? `${money(c.next_renewal.amount, c.currency)}, one year from the day you pay`
-				: paid
-					? `${money(c.next_renewal.amount, c.currency)}, opens ${formatDate(c.renewal_opens_on)}`
-					: 'After the first year',
-		},
+		{ label: 'Next renewal', ...periodCards.value.renewal },
 	]
 })
 
