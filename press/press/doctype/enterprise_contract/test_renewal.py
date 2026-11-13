@@ -47,6 +47,18 @@ class TestRenewal(EnterpriseContractTestCase):
 		self.assertEqual((renewal.amount, renewal.paid_with), (2400000, "Credits"))
 		self.assertFalse(self.contract.payment_due())
 
+	def test_credits_cannot_pay_a_renewal_whose_bank_transfer_is_being_verified(self):
+		self.end_paid_year_in(10)
+		contract_api.submit_transfer_reference("UTR000000000108")
+		self.team.allocate_credit_amount(3000000, source="Prepaid Credits")
+
+		with self.assertRaisesRegex(frappe.ValidationError, "already sent a bank transfer.*UTR000000000108"):
+			contract_api.pay("credits")
+
+		self.contract.reload()
+		self.assertEqual(len(self.contract.payments), 1)
+		self.assertEqual(self.contract.pending_transfer_reference(), "UTR000000000108")
+
 	def test_staff_record_a_renewal_bank_transfer_the_customer_sent(self):
 		self.end_paid_year_in(10)
 		contract_api.submit_transfer_reference("utr000000000103")
