@@ -166,6 +166,7 @@ class RegistryServer(BaseServer):
 	@frappe.whitelist()
 	def show_registry_password(self):
 		"""Show registry password"""
+		frappe.only_for("System Manager")
 		frappe.msgprint(self.get_password("registry_password"))
 
 	@frappe.whitelist()
