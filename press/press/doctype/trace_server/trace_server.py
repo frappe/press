@@ -151,4 +151,5 @@ class TraceServer(BaseServer):
 
 	@frappe.whitelist()
 	def show_sentry_password(self):
+		frappe.only_for("System Manager")
 		return self.get_password("sentry_admin_password")

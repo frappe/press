@@ -1,7 +1,11 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
-
+import os
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
@@ -11,6 +15,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent
 from press.exceptions import MonitorServerDown
+from press.press.doctype.database_server import database_server
 from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
@@ -266,3 +271,129 @@ class TestDatabaseServer(FrappeTestCase):
 		from press.api.server import prometheus_instant_value
 
 		self.assertIsNone(prometheus_instant_value('mysql_up{instance="m1",job="mariadb"}'))
+
+	@patch.object(Agent, "purge_binlogs_by_size_limit")
+	def test_binlog_purge_skipped_while_a_recent_purge_job_is_open(self, purge: Mock):
+		server = create_test_database_server()
+		create_test_binlog_purge_job(server, "Undelivered", hours_ago=0.1)
+
+		server.purge_binlogs_by_configured_size_limit()
+
+		purge.assert_not_called()
+
+	@patch.object(Agent, "purge_binlogs_by_size_limit")
+	def test_binlog_purge_runs_when_the_open_purge_job_is_older_than_an_hour(self, purge: Mock):
+		# An undelivered job from months ago used to skip the purge forever, and the disk filled up.
+		server = create_test_database_server()
+		create_test_binlog_purge_job(server, "Undelivered", hours_ago=24 * 30)
+
+		server.purge_binlogs_by_configured_size_limit()
+
+		purge.assert_called_once()
+
+
+def create_test_binlog_purge_job(server: DatabaseServer, status: str, hours_ago: float):
+	"""Purge agent job inserted straight into the db, so no HTTP request gets queued."""
+	creation = frappe.utils.add_to_date(None, hours=-hours_ago)
+	frappe.get_doc(
+		{
+			"doctype": "Agent Job",
+			"job_type": "Purge Binlogs By Size Limit",
+			"status": status,
+			"server": server.name,
+			"server_type": "Database Server",
+			"request_method": "POST",
+			"request_path": "database/binlogs/purge_by_size_limit",
+			"request_data": "{}",
+			"creation": creation,
+			"modified": creation,
+		}
+	).db_insert()
+
+
+class TestForcePurgeBinlogsScript(FrappeTestCase):
+	def setUp(self):
+		self.binlog_dir = Path(tempfile.mkdtemp())
+		self.addCleanup(shutil.rmtree, self.binlog_dir)
+		stub_bin = self.binlog_dir / "bin"
+		stub_bin.mkdir()
+		(stub_bin / "systemctl").write_text(f'#!/bin/sh\necho "$@" > {self.binlog_dir}/systemctl.log\n')
+		(stub_bin / "systemctl").chmod(0o755)
+		# Prints the checkpoint file if a test sets one, else the binlog it reads, as after a clean rotation
+		(stub_bin / "mysqlbinlog").write_text(
+			f'#!/bin/sh\ncp="$(cat {self.binlog_dir}/checkpoint 2>/dev/null || basename "$1")"\n'
+			'echo "# at 256 Binlog checkpoint $cp"\n'
+		)
+		(stub_bin / "mysqlbinlog").chmod(0o755)
+		self.env = {
+			**os.environ,
+			"BINLOG_DIR": str(self.binlog_dir),
+			"PATH": f"{stub_bin}:{os.environ['PATH']}",
+		}
+
+	def create_binlogs(self, count: int):
+		names = [f"mysql-bin.{number:06d}" for number in range(1, count + 1)]
+		for name in names:
+			(self.binlog_dir / name).write_text("binlog")
+		(self.binlog_dir / "mysql-bin.index").write_text("".join(f"{self.binlog_dir}/{n}\n" for n in names))
+
+	def run_script(self, no_of_binlogs: int) -> subprocess.CompletedProcess:
+		script = Path(database_server.__file__).with_name("force_purge_binlogs.sh")
+		return subprocess.run(
+			["bash", str(script), str(no_of_binlogs)], env=self.env, capture_output=True, text=True
+		)
+
+	def binlogs_on_disk(self) -> list[str]:
+		return sorted(p.name for p in self.binlog_dir.glob("mysql-bin.[0-9]*"))
+
+	def binlogs_in_index(self) -> list[str]:
+		return [Path(line).name for line in (self.binlog_dir / "mysql-bin.index").read_text().splitlines()]
+
+	def test_force_purge_keeps_the_newest_binlog_when_asked_to_delete_all(self):
+		# Crash recovery reads the newest binlog. Without it, MariaDB did not start after a disk-full crash.
+		self.create_binlogs(3)
+
+		result = self.run_script(130)
+
+		self.assertEqual(result.returncode, 0, result.stderr)
+		self.assertEqual(self.binlogs_on_disk(), ["mysql-bin.000003"])
+		self.assertEqual(self.binlogs_in_index(), ["mysql-bin.000003"])
+		self.assertEqual((self.binlog_dir / "systemctl.log").read_text().strip(), "restart mariadb")
+
+	def test_force_purge_removes_deleted_binlogs_from_the_index(self):
+		# The old script left the index unchanged when it emptied it, so MariaDB failed on a missing file.
+		self.create_binlogs(5)
+
+		self.run_script(2)
+
+		self.assertEqual(self.binlogs_on_disk(), ["mysql-bin.000003", "mysql-bin.000004", "mysql-bin.000005"])
+		self.assertEqual(self.binlogs_in_index(), self.binlogs_on_disk())
+		self.assertFalse((self.binlog_dir / "mysql-bin.index.tmp").exists())
+
+	def test_force_purge_fails_without_a_change_when_only_the_newest_binlog_is_left(self):
+		self.create_binlogs(1)
+
+		result = self.run_script(5)
+
+		self.assertEqual(result.returncode, 1)
+		self.assertIn("Nothing to purge", result.stderr)
+		self.assertEqual(self.binlogs_on_disk(), ["mysql-bin.000001"])
+		self.assertFalse((self.binlog_dir / "systemctl.log").exists())
+
+	def test_force_purge_keeps_the_binlogs_from_the_last_checkpoint_onward(self):
+		# After a rotation the checkpoint can still point one binlog back, and recovery reads from there.
+		self.create_binlogs(5)
+		(self.binlog_dir / "checkpoint").write_text("mysql-bin.000004")
+
+		self.run_script(130)
+
+		self.assertEqual(self.binlogs_on_disk(), ["mysql-bin.000004", "mysql-bin.000005"])
+		self.assertEqual(self.binlogs_in_index(), self.binlogs_on_disk())
+
+	def test_force_purge_keeps_the_newest_two_binlogs_when_the_checkpoint_cannot_be_read(self):
+		self.create_binlogs(5)
+		(self.binlog_dir / "checkpoint").write_text("")
+
+		self.run_script(130)
+
+		self.assertEqual(self.binlogs_on_disk(), ["mysql-bin.000004", "mysql-bin.000005"])

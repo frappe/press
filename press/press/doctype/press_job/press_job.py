@@ -204,7 +204,7 @@ class PressJob(WorkflowBuilder):
 				save = True
 
 			if save:
-				self.save()
+				self.save(ignore_permissions=True)
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -228,14 +228,14 @@ class PressJob(WorkflowBuilder):
 
 	def on_workflow_success(self, workflow: "PressWorkflow"):
 		self.status = "Success"
-		self.save()
+		self.save(ignore_permissions=True)
 
 		if hasattr(self, "on_press_job_success"):
 			self.on_press_job_success(workflow)
 
 	def on_workflow_failure(self, workflow: "PressWorkflow"):
 		self.status = "Failure"
-		self.save()
+		self.save(ignore_permissions=True)
 
 		if hasattr(self, "on_press_job_failure"):
 			self.on_press_job_failure(workflow)
@@ -247,6 +247,6 @@ class PressJob(WorkflowBuilder):
 			return
 
 		self.status = "Pending"
-		self.save()
+		self.save(ignore_permissions=True)
 		self.start_workflow()
 		frappe.db.commit()  # nosemgrep

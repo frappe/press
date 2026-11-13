@@ -9,7 +9,7 @@ from frappe.utils import cint
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 	columns = frappe.get_doc("Report", "AWS Rightsizing Recommendation").get_columns()
 	resource_type = filters.get("resource_type")
 	columns_to_remove = []

@@ -121,7 +121,7 @@
 	"is_standard": "Yes",
 	"json": "",
 	"letterhead": null,
-	"modified": "2026-08-15 12:00:00.000000",
+	"modified": "2026-11-06 12:30:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "AWS VM Cost Utilization",
@@ -133,6 +133,9 @@
 	"roles": [
 		{
 			"role": "System Manager"
+		},
+		{
+			"role": "Press Infrastructure Manager"
 		}
 	]
 }

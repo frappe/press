@@ -29,7 +29,7 @@ BILLABLE_STATES = ["pending", "running", "stopping", "stopped", "shutting-down"]
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 	filters = filters or {}
 	columns = frappe.get_doc("Report", "AWS VM Cost Utilization").get_columns()
 	data = get_data(filters)

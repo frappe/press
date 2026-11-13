@@ -42,6 +42,7 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
+from press.access.staff_roles import safe_for_readers
 from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
@@ -2344,6 +2345,7 @@ class VirtualMachine(Document):
 		self.save()
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_ebs_performance(self):
 		if self.cloud_provider == "AWS EC2":
 			volume = self.volumes[0]
@@ -2364,6 +2366,7 @@ class VirtualMachine(Document):
 		self.sync()
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_oci_volume_performance(self):
 		if self.cloud_provider == "OCI":
 			volume = self.volumes[0]
@@ -2670,6 +2673,7 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def get_serial_console_credentials(self):
+		frappe.only_for("System Manager")
 		client = self.client("ec2-instance-connect")
 		client.send_serial_console_ssh_public_key(
 			InstanceId=self.instance_id,
@@ -2704,7 +2708,7 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_instance_attribute(
 				InstanceId=self.instance_id,
-				Groups=[*self.get_security_groups(), firewall_id],
+				Groups=list(dict.fromkeys([*self.get_security_groups(), firewall_id])),
 			)
 
 		elif self.cloud_provider == "OCI":
@@ -2734,9 +2738,14 @@ class VirtualMachine(Document):
 
 			client = self.client()
 			firewall = client.firewalls.get_by_id(firewall_id)
-			firewall.apply_to_resources(
-				resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
-			)
+			try:
+				firewall.apply_to_resources(
+					resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
+				)
+			except APIException as e:
+				# A retry finds the firewall already applied
+				if e.code != "firewall_already_applied":
+					raise
 
 	def detach_from_firewall(self, firewall_id: str | int):
 		if self.cloud_provider == "AWS EC2":
@@ -2772,10 +2781,14 @@ class VirtualMachine(Document):
 
 			client = self.client()
 			firewall = client.firewalls.get_by_id(firewall_id)
-
-			firewall.remove_from_resources(
-				resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
-			)
+			try:
+				firewall.remove_from_resources(
+					resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
+				)
+			except APIException as e:
+				# A retry finds the firewall already removed
+				if e.code != "firewall_already_removed":
+					raise
 
 	@classmethod
 	def bulk_sync_aws(cls):
