@@ -102,6 +102,8 @@ def close_card_payment(contract: EnterpriseContract) -> bool:
 			return True
 		if intents.retrieve(contract.payment_intent)["status"] != "canceled":
 			raise
+	# A cancelled intent is not an unfinished payment, so a later renewal must not offer a retry.
+	contract.db_set("payment_intent", None)
 	return False
 
 

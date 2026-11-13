@@ -5,9 +5,14 @@ from unittest.mock import MagicMock, patch
 
 import frappe
 import stripe
+from frappe.utils import add_days, today
 
 from press.api import enterprise_contract as contract_api
-from press.press.doctype.enterprise_contract.enterprise_contract import ALREADY_PAID, create_contract
+from press.press.doctype.enterprise_contract.enterprise_contract import (
+	ALREADY_PAID,
+	EnterpriseContract,
+	create_contract,
+)
 from press.press.doctype.enterprise_contract.test_enterprise_contract import (
 	EnterpriseContractTestCase,
 	create_team_with_billing_address,
@@ -256,6 +261,18 @@ class TestClosingCardPayment(CardPaymentTestCase):
 
 		get_stripe.return_value.PaymentIntent.cancel.assert_called_once_with("pi_open")
 		self.assertEqual(self.contract.reload().payments[0].paid_with, "Credits")
+
+	def test_renewal_after_an_abandoned_card_payment_paid_with_credits_shows_no_unfinished_payment(self):
+		self.team.allocate_credit_amount(30000, source="Prepaid Credits")
+		with patch_stripe(retrieve=intent("pi_open", "requires_payment_method")):
+			contract_api.pay("credits")
+
+		row = self.contract.reload().payments[-1]
+		frappe.db.set_value("Enterprise Contract Payment", row.name, "period_end", add_days(today(), 10))
+		contract = EnterpriseContract("Enterprise Contract", self.contract.name)
+
+		self.assertTrue(contract.renewal_open())
+		self.assertFalse(contract.payment_unfinished())
 
 	def test_new_order_cancels_the_intent_of_the_order_it_replaces(self):
 		with patch_stripe(retrieve=intent("pi_open", "requires_payment_method")) as get_stripe:
