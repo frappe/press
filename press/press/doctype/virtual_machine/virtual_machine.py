@@ -42,7 +42,8 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
-from press.access.staff_roles import safe_for_readers
+from press.access.server_console import check_console_access, check_console_role, has_system_manager_role
+from press.access.staff_roles import needs_staff_role, safe_for_readers
 from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
@@ -2672,8 +2673,9 @@ class VirtualMachine(Document):
 		return groups
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Infrastructure Manager")
 	def get_serial_console_credentials(self):
-		frappe.only_for("System Manager")
+		self.check_serial_console_access()
 		client = self.client("ec2-instance-connect")
 		client.send_serial_console_ssh_public_key(
 			InstanceId=self.instance_id,
@@ -2689,7 +2691,18 @@ class VirtualMachine(Document):
 			"command": f"ssh {username}@{host}",
 		}
 
+	def check_serial_console_access(self):
+		"""Staff without System Manager reach the serial console only of a server they can reach."""
+		check_console_role()
+		if has_system_manager_role():
+			return
+		server = self.get_server()
+		if not server:
+			frappe.throw(f"Virtual Machine {self.name} has no server", frappe.PermissionError)
+		check_console_access(server.doctype, server.name)
+
 	@frappe.whitelist()
+	@needs_staff_role("Press Infrastructure Manager")
 	def reboot_with_serial_console(self):
 		if self.cloud_provider == "AWS EC2":
 			self.get_server().reboot_with_serial_console()
