@@ -28,6 +28,7 @@ from frappe.utils.password import get_decrypted_password
 from frappe.utils.synchronization import filelock
 from frappe.utils.user import is_system_user
 
+from press.access.server_console import check_console_access
 from press.access.staff_roles import needs_staff_role, safe_for_readers
 from press.agent import Agent
 from press.api.account import is_limits_exceeded
@@ -2033,15 +2034,18 @@ class BaseServer(Document, TagHelpers):
 		return real_ram
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Infrastructure Manager")
 	def reboot_with_serial_console(self):
 		if self.provider != "AWS EC2":
 			raise NotImplementedError
+		check_console_access(self.doctype, self.name)
 		console = frappe.new_doc("Serial Console Log")
 		console.server_type = self.doctype
 		console.server = self.name
 		console.virtual_machine = self.virtual_machine
 		console.action = "reboot"
-		console.save()
+		# Staff only read their logs, so the console writes the log for them.
+		console.save(ignore_permissions=True)
 		console.reload()
 		console.run_sysrq()
 		# TODO: Enable after a manual trial with the button on Server

@@ -485,7 +485,10 @@ override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
 # 	"Task": "press.task.get_dashboard_data"
 # }
 
-override_doctype_class = {"User": "press.overrides.CustomUser"}
+override_doctype_class = {
+	"User": "press.overrides.CustomUser",
+	"System Console": "press.access.data_console.PressSystemConsole",
+}
 
 # on_logout = "press.overrides.on_logout"
 on_login = "press.overrides.on_login"

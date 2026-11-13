@@ -34,6 +34,7 @@ class SupportAccess(Document):
 		requested_by: DF.Link | None
 		requested_team: DF.Link | None
 		resources: DF.Table[SupportAccessResource]
+		server_ssh: DF.Check
 		site_domains: DF.Check
 		site_release_group: DF.Check
 		status: DF.Literal["Pending", "Accepted", "Rejected", "Forfeited", "Revoked", "Expired"]
@@ -53,6 +54,7 @@ class SupportAccess(Document):
 		"status",
 		"target_team",
 		"bench_ssh",
+		"server_ssh",
 	)
 
 	# What the target team answers a request with. `validate_status_change` and
@@ -66,6 +68,7 @@ class SupportAccess(Document):
 		"site_domains",
 		"site_release_group",
 		"bench_ssh",
+		"server_ssh",
 	)
 
 	def get_list_query(query, filters: dict | None, **args):

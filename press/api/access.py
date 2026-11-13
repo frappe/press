@@ -50,6 +50,8 @@ def status(doctype: str, docname: str):
 				return ["site_domains", "login_as_administrator", "site_release_group", "bench_ssh"]
 			case "Release Group":
 				return ["bench_ssh"]
+			case "Server":
+				return ["server_ssh"]
 			case _:
 				return []
 

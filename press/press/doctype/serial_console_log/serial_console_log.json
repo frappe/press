@@ -85,7 +85,7 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2024-06-12 20:07:15.077206",
+	"modified": "2026-11-13 18:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Serial Console Log",
@@ -102,6 +102,11 @@
 			"role": "System Manager",
 			"share": 1,
 			"write": 1
+		},
+		{
+			"if_owner": 1,
+			"read": 1,
+			"role": "Press Infrastructure Manager"
 		}
 	],
 	"sort_field": "modified",
