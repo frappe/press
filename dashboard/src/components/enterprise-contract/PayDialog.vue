@@ -79,7 +79,7 @@ const props = defineProps({
 	contract: { type: Object, required: true },
 	options: { type: Object, required: true },
 })
-const emit = defineEmits(['paid', 'cardSaved'])
+const emit = defineEmits(['cardSaved'])
 const show = defineModel({ type: Boolean })
 
 const selected = ref(null)
@@ -252,8 +252,8 @@ function onCardSaved() {
 function done(message) {
 	if (message) toast.info(message)
 	else toast.success(isRenewal.value ? 'Contract renewed' : 'Payment received')
+	// Closing reloads the contract page.
 	show.value = false
-	emit('paid')
 }
 
 const busy = computed(() => pay.loading || confirming.value || confirm.loading)
