@@ -2,7 +2,7 @@
 # See license.txt
 
 import frappe
-from frappe.utils import add_days, getdate, today
+from frappe.utils import add_days, formatdate, getdate, today
 
 from press.api import enterprise_contract as contract_api
 from press.press.doctype.enterprise_contract.enterprise_contract import (
@@ -31,7 +31,8 @@ class TestRenewal(EnterpriseContractTestCase):
 		self.end_paid_year_in(RENEWAL_WINDOW_DAYS + 1)
 
 		self.assertFalse(self.contract.payment_due())
-		with self.assertRaisesRegex(frappe.ValidationError, "Nothing is due.*Renewal opens on"):
+		opens = formatdate(self.contract.renewal_opens_on(), "d MMM yyyy")
+		with self.assertRaisesRegex(frappe.ValidationError, f"Nothing is due.*Renewal opens on {opens}\\."):
 			contract_api.submit_transfer_reference("UTR000000000102")
 
 	def test_customer_renews_with_credits_for_the_next_year_once_the_window_opens(self):
