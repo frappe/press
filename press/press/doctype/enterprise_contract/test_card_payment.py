@@ -108,6 +108,23 @@ class TestCardPayment(CardPaymentTestCase):
 		self.assertEqual([p.payment_reference for p in self.contract.reload().payments], ["pi_3ds"])
 		self.assertEqual(payment_logs(self.contract.name), [])
 
+	def test_payment_closed_before_it_finished_is_retried_on_the_same_contract(self):
+		add_saved_card(self.team.name)
+		with patch_stripe(create=intent("pi_closed", "requires_action")):
+			contract_api.pay("saved_card")
+		# The customer closed the 3-D Secure window, so the page offers a retry.
+		self.assertTrue(contract_api.get_contract(self.contract.name)["contract"]["payment_unfinished"])
+
+		with patch_stripe(
+			create=intent("pi_retry", "succeeded"), retrieve=intent("pi_closed", "requires_action")
+		) as get_stripe:
+			contract_api.pay("saved_card")
+
+		get_stripe.return_value.PaymentIntent.cancel.assert_called_once_with("pi_closed")
+		dashboard = contract_api.get_contract(self.contract.name)["contract"]
+		self.assertEqual([p["payment_reference"] for p in dashboard["payments"]], ["pi_retry"])
+		self.assertFalse(dashboard["payment_unfinished"])
+
 	def test_payment_shows_the_card_on_api_versions_that_return_no_charges(self):
 		paid = {**intent("pi_new_api", "succeeded"), "charges": None, "payment_method": "pm_once"}
 		with patch_stripe(retrieve=paid) as get_stripe:

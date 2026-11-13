@@ -143,6 +143,12 @@ const banner = computed(() => {
 			type: 'info',
 			title: `We are verifying your bank transfer (UTR ${c.transfer_reference}). This usually takes 1–2 working days.`,
 		}
+	if (c.payment_unfinished)
+		return {
+			type: 'warning',
+			title: `Your last card payment of <b>${total}</b> was not completed. You can try again.`,
+			action: props.canPay ? 'Retry payment' : null,
+		}
 	if (c.status === 'Awaiting Payment')
 		return {
 			type: 'info',

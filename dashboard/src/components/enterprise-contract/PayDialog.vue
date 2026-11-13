@@ -105,7 +105,7 @@ let cardElement = null
 
 const isRenewal = computed(() => props.contract.payments.length > 0)
 const title = computed(() =>
-	isRenewal.value ? 'Renew contract' : 'Pay for your order',
+	isRenewal.value ? 'Renew Contract' : 'Pay for your order',
 )
 const subtitle = computed(() => {
 	const start = formatDate(props.contract.next_renewal.date)
@@ -175,6 +175,16 @@ watch(
 	},
 	{ immediate: true },
 )
+
+// The dialog's body is removed on close, and the card field with it. Start clean on the
+// next open, so that a payment can be retried.
+watch(show, (open) => {
+	if (open) return
+	cardElement?.destroy()
+	cardElement = null
+	selected.value = null
+	errorMessage.value = null
+})
 
 watch(selected, async (key) => {
 	errorMessage.value = null
