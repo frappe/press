@@ -2537,7 +2537,7 @@ class Site(Document, TagHelpers):
 				frappe.throw(f"User {user} does not exist in the site", frappe.ValidationError)  # nosemgrep
 			elif "certificate has expired" in str(e):
 				frappe.throw(
-					"SSL certificate for the {self.name} has expired. Please reach out to us at <a href='https://support.frappe.io/'>support.frappe.io</a> if it is not automatically generated in a few minutes.",
+					f"SSL certificate for the {self.name} has expired. Please reach out to us at <a href='https://support.frappe.io/'>support.frappe.io</a> if it is not automatically generated in a few minutes.",
 					frappe.ValidationError,
 				)
 			elif "no space left on device" in str(e):
