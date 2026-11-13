@@ -17,14 +17,28 @@
   retries: 5
   delay: 120
 
+- name: Create APT Keyrings Directory
+  file:
+    dest: /etc/apt/keyrings
+    state: directory
+    mode: 0755
+
 - name: Add Elasticsearch Repository Key
-  apt_key:
+  get_url:
     url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
-    state: present
+    dest: /etc/apt/keyrings/elasticsearch.asc
+    mode: 0644
+    force: yes
+
+# An unsigned entry for the same source makes apt fail with conflicting Signed-By
+- name: Remove Unsigned Elasticsearch Repository
+  apt_repository:
+    repo: deb https://artifacts.elastic.co/packages/7.x/apt stable main
+    state: absent
 
 - name: Add Elasticsearch Repository
   apt_repository:
-    repo: deb https://artifacts.elastic.co/packages/7.x/apt stable main
+    repo: deb [signed-by=/etc/apt/keyrings/elasticsearch.asc] https://artifacts.elastic.co/packages/7.x/apt stable main
     state: present
 
 - name: Remove new Elasticsearch Repository
