@@ -11,24 +11,33 @@
 		<ErrorMessage message="You aren't permitted to create new sites" />
 	</div>
 
-	<div
-		v-else-if="spendingLimitExceeded"
-		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-ink-gray-6"
-	>
-		<LucideAlertTriangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
-		<p>
-			Your spending limit has been exceeded. Please
-			<a href="https://support.frappe.io" target="_blank">contact support</a>
-			to increase your limit.
+	<div v-else-if="spendingLimitExceeded" class="mt-60 text-center">
+		<lucide-wallet
+			class="mx-auto mb-3 box-content size-5 rounded-lg bg-surface-gray-1 p-2.5 text-ink-gray-5"
+		/>
+
+		<h2 class="text-base font-medium text-ink-gray-8">
+			Spending limit exceeded
+		</h2>
+
+		<p class="mt-1.5 text-p-sm text-ink-gray-6">
+			<a class="underline" href="https://support.frappe.io" target="_blank">
+				Contact support
+			</a>
+			to increase your limit
 		</p>
 	</div>
 
-	<div
-		v-else-if="hasUnpaidInvoices"
-		class="mx-auto mt-60 w-fit rounded-md border border-dashed px-12 py-8 text-center text-ink-gray-6"
-	>
-		<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
-		<p>Please settle your outstanding invoices to create new sites.</p>
+	<div v-else-if="hasUnpaidInvoices" class="mt-60 text-center">
+		<lucide-receipt
+			class="mx-auto mb-3 box-content size-5 rounded-lg bg-surface-gray-1 p-2.5 text-ink-gray-5"
+		/>
+
+		<h2 class="text-base font-medium text-ink-gray-8">Unpaid invoices</h2>
+
+		<p class="mt-1.5 text-p-sm text-ink-gray-6">
+			Settle your outstanding invoices to create new sites
+		</p>
 	</div>
 
 	<div v-else class="mx-auto max-w-2xl px-5">
@@ -41,6 +50,21 @@
 		<div v-if="$route.name === 'NewBenchSite' && !bench">
 			<div class="py-4 text-base text-ink-gray-6">Something went wrong</div>
 		</div>
+
+		<div v-else-if="siteCreationBlockedReason" class="mt-60 text-center">
+			<lucide-globe-lock
+				class="mx-auto mb-3 box-content size-5 rounded-lg bg-surface-gray-1 p-2.5 text-ink-gray-5"
+			/>
+
+			<h2 class="text-base font-medium text-ink-gray-8">
+				Can't create a site here
+			</h2>
+
+			<p class="mt-1.5 text-p-sm text-ink-gray-6">
+				{{ siteCreationBlockedReason }}
+			</p>
+		</div>
+
 		<div v-else-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<NewSiteAppSelector
 				:availableApps="selectedVersionAppOptions"
@@ -724,6 +748,15 @@ export default {
 		options() {
 			return this.$resources.options.data
 		},
+		siteCreationBlockedReason() {
+			const error = this.$resources.options.error
+
+			if (error) return error.messages?.join(', ') || error.message
+
+			if (this.options?.versions.length === 0) {
+				return 'No active bench on a server your team can access'
+			}
+		},
 		domain() {
 			return (
 				this.options?.cluster_specific_root_domains?.find(
@@ -790,7 +823,9 @@ export default {
 				...(this.selectedVersion?.group?.clusters || []),
 				...(this.options.additional_clusters || []),
 			]
-			return allClusters.find((c) => c.name === this.cluster)?.title
+			return (
+				allClusters.find((c) => c.name === this.cluster)?.title || this.cluster
+			)
 		},
 		filteredClusters() {
 			if (!this.selectedVersion?.group?.clusters) return []

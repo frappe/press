@@ -335,7 +335,7 @@ class Bench(Document):
 				"Managed Database Service", self.managed_database_service, "port"
 			)
 
-		self.add_flow_server_manager(config, candidate)
+		self.add_flow_server_manager(config)
 
 		press_settings_common_site_config: str = frappe.db.get_single_value(
 			"Press Settings", "bench_configuration"
@@ -373,10 +373,19 @@ class Bench(Document):
 		self.add_limits(bench_config)
 		self.update_bench_config_with_rg_config(bench_config)
 
-	def add_flow_server_manager(self, config: dict, candidate: "DeployCandidate"):
-		# agent reads this key and runs Flow's agent server under supervisor
-		if candidate.has_app("frappe/flow"):
+	def add_flow_server_manager(self, config: dict):
+		# agent reads this key and runs Flow's agent server under supervisor.
+		# validate rebuilds config on each save, so keep the value a bench has
+		# already. This lets us turn off a crashing Flow server on one bench.
+		existing = json.loads(self.config or "{}")
+		if "flow_server_manager" in existing:
+			config["flow_server_manager"] = existing["flow_server_manager"]
+		elif self.is_new() and self.is_nightly():
 			config["flow_server_manager"] = "supervisor"
+
+	def is_nightly(self) -> bool:
+		# Flow ships inside frappe, and only Nightly has it for now
+		return frappe.db.get_value("Release Group", self.group, "version") == "Nightly"
 
 	def update_bench_config_with_rq_port(self, bench_config):
 		if self.is_new():

@@ -122,7 +122,7 @@ def create_or_rename_saas_site(app, account_request):
 
 @frappe.whitelist()
 def new_saas_site(subdomain, app):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Product Manager"])
 
 	pooled_site = get_pooled_saas_site(app)
 	if pooled_site:

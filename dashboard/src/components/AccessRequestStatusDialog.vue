@@ -18,18 +18,13 @@
 	>
 		<template #body-content>
 			<div class="space-y-4 text-base">
-				<div
-					class="py-3 px-4 font-medium text-green-800 bg-green-50 rounded border border-green-200"
-				>
-					<p>You have access to this resource via access request.</p>
-				</div>
 				<div class="space-y-2">
 					<p><span class="font-medium">Type:</span> {{ props.doctype }}</p>
 					<p><span class="font-medium">Resource:</span> {{ props.docname }}</p>
 					<p>
 						<span class="font-medium">Expiry:</span>
-						<Tooltip :text="dayjsLocal(status.data?.until).format('LLLL')">
-							<span>{{ dayjsLocal(status.data?.until).fromNow() }}</span>
+						<Tooltip :text="dayjsLocal(props.access.until).format('LLLL')">
+							<span>{{ dayjsLocal(props.access.until).fromNow() }}</span>
 						</Tooltip>
 					</p>
 				</div>
@@ -40,7 +35,7 @@
 						<div class="col-span-2 py-2 px-3">Expiry</div>
 					</div>
 					<div
-						v-for="permission in status.data?.permissions"
+						v-for="permission in props.access.permissions"
 						class="grid grid-cols-5 divide-x"
 					>
 						<div class="col-span-2 py-2 px-3 font-medium">
@@ -64,28 +59,28 @@
 	</Dialog>
 </template>
 
-<script setup lang="ts">
-import { createResource, Tooltip } from 'frappe-ui';
-import { ref } from 'vue';
-import { dayjsLocal } from '../utils/dayjs';
+<script lang="ts">
+type Permission = { name: string; allowed: boolean; until: string | null }
 
+// An active grant, as `press.api.access.status` returns it.
+export type Access = { until: string; permissions: Permission[] }
+</script>
+
+<script setup lang="ts">
+import { Tooltip } from 'frappe-ui'
+import { ref } from 'vue'
+import { dayjsLocal } from '../utils/dayjs'
+
+// The caller opens this dialog only when a grant exists.
 const props = defineProps<{
-	doctype: string;
-	docname: string;
-}>();
+	doctype: string
+	docname: string
+	access: Access
+}>()
 
 const emit = defineEmits<{
-	openRequestDialog: [];
-}>();
+	openRequestDialog: []
+}>()
 
-const open = ref(true);
-
-const status = createResource({
-	url: 'press.api.access.status',
-	auto: true,
-	params: {
-		doctype: props.doctype,
-		docname: props.docname,
-	},
-});
+const open = ref(true)
 </script>
