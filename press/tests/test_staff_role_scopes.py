@@ -23,11 +23,16 @@ SCOPE_ROLES = {
 	"Partner Manager",
 }
 
+# A scope role that opens a shell, under the consent rules in press/access
+SHELL_ROLES = {
+	"Press Infrastructure Manager": {"Ansible Console", "Ansible Console Log", "Serial Console Log"},
+	"Press Support Engineer": {"Bench Shell", "Bench Shell Log"},
+}
+
+# Reaches only self-hosted servers. No Role Profile includes it.
+HYBRID_ROLE = "Press Hybrid Server Manager"
+
 SYSTEM_MANAGER_ONLY = {
-	"Ansible Console",
-	"Ansible Console Log",
-	"Bench Shell",
-	"Bench Shell Log",
 	"Build Cache Shell",
 	"Certificate Authority",
 	"Mail Setup",
@@ -35,7 +40,6 @@ SYSTEM_MANAGER_ONLY = {
 	"Payment Gateway",
 	"Press Settings",
 	"Saas Remote Login",
-	"Serial Console Log",
 	"Site Access Token",
 	"SSH Certificate Authority",
 	"Telegram Group",
@@ -75,7 +79,6 @@ SUPPORT_CREATES |= {"Site Plan Change": False, "Plan Change": False, "Agent Job"
 SECRET_METHODS = [
 	("Server", "show_agent_password"),
 	("Site", "show_admin_password"),
-	("Virtual Machine", "get_serial_console_credentials"),
 ]
 
 SECRET_FIELDS = {
@@ -134,7 +137,7 @@ def create_staff_user(*role_profiles: str) -> str:
 def press_doctype_roles() -> dict[str, set[str]]:
 	modules = frappe.get_all("Module Def", {"app_name": "press"}, pluck="name")
 	doctypes = frappe.get_all("DocType", {"module": ("in", modules), "istable": 0, "custom": 0}, pluck="name")
-	roles = {doctype: set() for doctype in doctypes}
+	roles: dict[str, set[str]] = {doctype: set() for doctype in doctypes}
 	for permission in frappe.get_all("DocPerm", {"parent": ("in", doctypes)}, ["parent", "role"]):
 		roles[permission.parent].add(permission.role)
 	return roles
@@ -161,6 +164,23 @@ class TestStaffRoleScopes(FrappeTestCase):
 		roles = press_doctype_roles()
 		leaked = {doctype: roles[doctype] & SCOPE_ROLES for doctype in SYSTEM_MANAGER_ONLY}
 		self.assertEqual({doctype: found for doctype, found in leaked.items() if found}, {})
+
+	def test_shell_doctypes_grant_only_their_own_scope_role(self):
+		roles = press_doctype_roles()
+		for role, doctypes in SHELL_ROLES.items():
+			for doctype in doctypes:
+				with self.subTest(doctype=doctype):
+					self.assertEqual(roles[doctype], {"System Manager", role})
+
+	def test_hybrid_role_grants_only_its_own_ssh_doctypes(self):
+		granted = set(frappe.get_all("DocPerm", {"role": HYBRID_ROLE}, pluck="parent"))
+		self.assertEqual(granted, {"User SSH Certificate", "User SSH Key"})
+
+	def test_no_role_profile_includes_the_hybrid_role(self):
+		profiles = frappe.get_all(
+			"Has Role", {"parenttype": "Role Profile", "role": HYBRID_ROLE}, pluck="parent"
+		)
+		self.assertEqual(profiles, [])
 
 	def test_role_profile_reads_its_own_scope_and_not_other_scopes(self):
 		for profile, (allowed, denied) in PROFILE_SCOPES.items():
@@ -214,13 +234,17 @@ class TestStaffRoleScopes(FrappeTestCase):
 		default_script = frappe.get_meta("Dashboard Banner").get_field("action_script").default
 		self.assertEqual(banner.action_script, default_script)
 
-	def test_only_the_ssh_profile_can_create_ssh_certificates_and_keys(self):
+	def test_only_ssh_and_infrastructure_profiles_can_create_ssh_certificates_and_keys(self):
+		own_only = {"Press Site Reliability Engineer", "Press Security Engineer"}
 		for profile in PROFILE_SCOPES:
 			user = create_staff_user(profile)
 			with self.subTest(profile=profile):
 				for doctype in SSH_DOCTYPES:
 					can_create = frappe.has_permission(doctype, "create", user=user)
-					self.assertEqual(can_create, profile == "Press SSH Access Manager", doctype)
+					expected = profile == "Press SSH Access Manager" or (
+						profile in own_only and doctype in {"User SSH Certificate", "User SSH Key"}
+					)
+					self.assertEqual(can_create, expected, doctype)
 
 	def test_security_manager_cannot_change_audit_logs_or_2fa(self):
 		user = create_staff_user("Press Security Engineer")

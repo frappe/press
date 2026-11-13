@@ -130,8 +130,12 @@ class TestStaffRoles(FrappeTestCase):
 
 	def test_press_support_reads_what_engineers_read_and_changes_nothing(self):
 		user = create_staff_user("Press Support")
+		# The bench shell and its logs hold command output from customer benches, so L1 gets neither
+		shell = ("not in", ["Bench Shell", "Bench Shell Log"])
 		doctypes = frappe.get_all(
-			"DocPerm", {"role": "Press Support Engineer", "read": 1, "permlevel": 0}, pluck="parent"
+			"DocPerm",
+			{"role": "Press Support Engineer", "read": 1, "permlevel": 0, "parent": shell},
+			pluck="parent",
 		)
 		for doctype in doctypes:
 			with self.subTest(doctype=doctype):
