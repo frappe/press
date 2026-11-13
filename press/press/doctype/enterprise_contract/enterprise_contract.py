@@ -190,6 +190,7 @@ class EnterpriseContract(Document):
 
 	def pay_with_credits(self):
 		self.validate_payment_due()
+		self.validate_no_pending_transfer()
 		amount = self.amount_due(with_gst=False)["amount"]
 		if purchased_credit(self.team) < amount:
 			frappe.throw(
@@ -215,6 +216,13 @@ class EnterpriseContract(Document):
 		if self.transfer_reference and not self.has_payment(self.transfer_reference):
 			return self.transfer_reference
 		return None
+
+	# A period with a UTR waiting to be confirmed must not be paid a second time.
+	def validate_no_pending_transfer(self):
+		if utr := self.pending_transfer_reference():
+			frappe.throw(
+				f"You have already sent a bank transfer (UTR {utr}) for this contract. We confirm it in 1 to 2 working days. To pay another way, please contact support."
+			)
 
 	def has_payment(self, reference: str) -> bool:
 		return any(row.payment_reference == reference for row in self.payments)

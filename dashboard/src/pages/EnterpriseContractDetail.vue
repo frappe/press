@@ -124,7 +124,9 @@ const contract = computed(() => resource.data?.contract)
 const canPay = computed(() => {
 	const c = contract.value
 	const options = resource.data
-	if (!c?.payment_due || options.payment_blocked) return false
+	// A bank transfer being verified must not be paid a second time.
+	if (!c?.payment_due || c.transfer_reference || options.payment_blocked)
+		return false
 	const cards = c.payment_gateway === 'Stripe' && !options.card_blocked
 	return cards || options.credit_balance >= c.amount_due_with_credits.total
 })

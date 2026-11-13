@@ -127,6 +127,7 @@ const payAmount = computed(() =>
 const methods = computed(() => {
 	const { options, contract } = props
 	const list = []
+	if (contract.transfer_reference) return list
 	const cards = contract.payment_gateway === 'Stripe' && !options.card_blocked
 	if (cards && options.saved_card) {
 		const card = options.saved_card
