@@ -91,6 +91,55 @@ class TestRenewal(EnterpriseContractTestCase):
 		)
 		self.assertIsNone(contract.transfer_reference)
 
+	def set_utr_submitted_on(self, date):
+		frappe.db.set_value("Enterprise Contract", self.contract.name, "transfer_submitted_on", date)
+
+	# The list price goes up after `date`; the contract keeps its price until then.
+	def lock_price_until(self, date):
+		frappe.db.set_value("Enterprise Contract", self.contract.name, "price_locked_until", date)
+		frappe.db.set_value("Enterprise Warranty Plan", self.plan.name, "price_inr", 2600000)
+		frappe.clear_document_cache("Enterprise Warranty Plan", self.plan.name)
+
+	def confirm_utr_as_staff(self):
+		frappe.set_user("Administrator")
+		EnterpriseContract("Enterprise Contract", self.contract.name).confirm_bank_transfer()
+		return self.contract.reload().payments[-1]
+
+	def test_utr_sent_before_the_paid_year_ended_continues_the_year_when_confirmed_after_it(self):
+		self.end_paid_year_in(1)
+		contract_api.submit_transfer_reference("UTR000000000109")
+		self.assertEqual(str(self.contract.reload().transfer_submitted_on), today())
+		# Five days pass before staff confirm it: the UTR came one day before the year ended.
+		self.end_paid_year_in(-4)
+		self.set_utr_submitted_on(add_days(today(), -5))
+		self.lock_price_until(add_days(today(), -3))
+
+		renewal = self.confirm_utr_as_staff()
+
+		self.assertEqual(getdate(renewal.period_start), getdate(add_days(today(), -3)))
+		self.assertEqual(renewal.amount, 2400000)
+		self.assertIsNone(self.contract.transfer_submitted_on)
+
+	def test_utr_sent_after_the_paid_year_ended_starts_on_the_day_it_was_sent_not_when_confirmed(self):
+		self.end_paid_year_in(-10)
+		contract_api.submit_transfer_reference("UTR000000000110")
+		self.set_utr_submitted_on(add_days(today(), -3))
+		self.lock_price_until(add_days(today(), -3))
+
+		renewal = self.confirm_utr_as_staff()
+
+		self.assertEqual(getdate(renewal.period_start), getdate(add_days(today(), -3)))
+		self.assertEqual(renewal.amount, 2400000)
+
+	def test_utr_without_a_submitted_date_from_old_contracts_starts_on_the_confirm_day(self):
+		self.end_paid_year_in(-10)
+		contract_api.submit_transfer_reference("UTR000000000111")
+		self.set_utr_submitted_on(None)
+
+		renewal = self.confirm_utr_as_staff()
+
+		self.assertEqual(getdate(renewal.period_start), getdate(today()))
+
 	def test_utr_left_on_a_contract_paid_before_it_was_cleared_does_not_block_the_renewal(self):
 		# Contracts paid before the UTR was cleared on payment still hold it.
 		frappe.db.set_value(

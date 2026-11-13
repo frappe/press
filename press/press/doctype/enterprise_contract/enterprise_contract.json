@@ -37,6 +37,7 @@
 		"column_break_checkout",
 		"payment_intent",
 		"transfer_reference",
+		"transfer_submitted_on",
 		"payments_section",
 		"payments"
 	],
@@ -241,6 +242,14 @@
 			"read_only": 1
 		},
 		{
+			"description": "The day the UTR was entered. A renewal confirmed later still starts from this day.",
+			"fieldname": "transfer_submitted_on",
+			"fieldtype": "Date",
+			"hidden": 1,
+			"label": "Transfer Submitted On",
+			"read_only": 1
+		},
+		{
 			"fieldname": "payments_section",
 			"fieldtype": "Section Break",
 			"label": "Payments"
@@ -253,7 +262,7 @@
 		}
 	],
 	"links": [],
-	"modified": "2026-11-13 10:00:00.000000",
+	"modified": "2026-11-13 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Enterprise Contract",

@@ -102,6 +102,7 @@ class EnterpriseContract(Document):
 		status: DF.Literal["Awaiting Payment", "Pending Signature", "Active", "Cancelled"]
 		team: DF.Link
 		transfer_reference: DF.Data | None
+		transfer_submitted_on: DF.Date | None
 		yearly_price: DF.Currency
 	# end: auto-generated types
 
@@ -259,6 +260,7 @@ class EnterpriseContract(Document):
 		if reference == self.transfer_reference:
 			# The UTR is on the payment now; a renewal transfer gets a new one.
 			self.transfer_reference = None
+			self.transfer_submitted_on = None
 		# Team members only have read access; callers check billing access.
 		self.save(ignore_permissions=True)
 
@@ -270,6 +272,7 @@ class EnterpriseContract(Document):
 		if not UTR_PATTERN.fullmatch(reference):
 			frappe.throw("Enter the 12 to 22 character UTR number from your bank")
 		self.transfer_reference = reference
+		self.transfer_submitted_on = today()
 		# Team members only have read access; callers check billing access.
 		self.save(ignore_permissions=True)
 
@@ -300,7 +303,13 @@ class EnterpriseContract(Document):
 	def next_period_start(self):
 		if not self.payments:
 			return getdate(self.start_date)
-		return max(add_days(self.paid_until(), 1), getdate(today()))
+		return max(add_days(self.paid_until(), 1), self.paid_on_date())
+
+	# A UTR counts from the day the customer sent it, not the day staff confirm it.
+	def paid_on_date(self):
+		if self.pending_transfer_reference() and self.transfer_submitted_on:
+			return getdate(self.transfer_submitted_on)
+		return getdate(today())
 
 	def paid_until(self):
 		return getdate(self.payments[-1].period_end) if self.payments else None
