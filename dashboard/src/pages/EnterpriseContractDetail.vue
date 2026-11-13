@@ -70,7 +70,6 @@
 		v-model="showPay"
 		:contract="contract"
 		:options="resource.data"
-		@paid="resource.reload()"
 		@card-saved="resource.reload()"
 	/>
 </template>
