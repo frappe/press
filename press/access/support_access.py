@@ -4,7 +4,7 @@ from frappe.utils import cstr
 
 from press import utils as press_utils
 from press.access import utils as access_utils
-from press.access.actions import ACTIONS_RULES, ReleaseGroupActions, SiteActions
+from press.access.actions import ACTIONS_RULES, ReleaseGroupActions, ServerActions, SiteActions
 
 TAB_DF_MAP = {
 	"Site": {
@@ -15,6 +15,9 @@ TAB_DF_MAP = {
 ACTION_DF_MAP = {
 	"Release Group": {
 		ReleaseGroupActions.SSHAccess.value: "bench_ssh",
+	},
+	"Server": {
+		ServerActions.SSHAccess.value: "server_ssh",
 	},
 	"Site": {
 		SiteActions.LoginAsAdmin.value: "login_as_administrator",
