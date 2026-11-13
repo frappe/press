@@ -197,6 +197,20 @@ class TestCardPayment(CardPaymentTestCase):
 			contract_api.pay("saved_card")
 		get_stripe.return_value.PaymentIntent.create.assert_not_called()
 
+	def test_staff_acting_in_the_team_are_offered_only_credits(self):
+		add_saved_card(self.team.name)
+		self.team.allocate_credit_amount(30000, source="Prepaid Credits")
+		frappe.set_user("Administrator")
+		team = self.team.name
+
+		with patch(
+			"press.api.enterprise_contract.get_current_team",
+			side_effect=lambda get_doc=False: frappe.get_doc("Team", team) if get_doc else team,
+		):
+			options = contract_api.get_contract(self.contract.name)
+
+		self.assertEqual(options["payment_methods"], ["credits"])
+
 	def test_bank_transfer_contract_cannot_be_paid_by_card(self):
 		indian_team = create_team_with_billing_address("India")
 		create_contract(indian_team, self.make_order())
@@ -210,7 +224,8 @@ class TestCardPayment(CardPaymentTestCase):
 
 		options = contract_api.get_contract(self.contract.name)
 
-		self.assertEqual(options["saved_card"], {"brand": "visa", "last_4": "4242"})
+		self.assertEqual(options["saved_card"], {"label": "Visa •4242"})
+		self.assertEqual(options["payment_methods"], ["saved_card", "save_card", "new_card"])
 		self.assertIsNone(options["card_blocked"])
 		self.assertIsNone(options["bank_transfer"])
 

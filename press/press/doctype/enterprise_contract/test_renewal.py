@@ -59,6 +59,7 @@ class TestRenewal(EnterpriseContractTestCase):
 		self.contract.reload()
 		self.assertEqual(len(self.contract.payments), 1)
 		self.assertEqual(self.contract.pending_transfer_reference(), "UTR000000000108")
+		self.assertEqual(contract_api.get_contract(self.contract.name)["payment_methods"], [])
 
 	def test_staff_record_a_renewal_bank_transfer_the_customer_sent(self):
 		self.end_paid_year_in(10)
