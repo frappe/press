@@ -190,6 +190,17 @@ class TestContractActivity(EnterpriseContractTestCase):
 			dashboard_contract.as_dashboard()["activity"][0]["description"], f"by {self.team.user}"
 		)
 
+	def test_payment_with_no_method_shows_only_its_period(self):
+		# Rows added before the field existed, or by staff in Desk, have no "Paid With".
+		paid = create_contract(self.team, self.make_order())
+		paid.confirm_bank_transfer(reference="UTR000000000109")
+		frappe.db.set_value("Enterprise Contract Payment", paid.payments[0].name, "paid_with", None)
+		contract = EnterpriseContract("Enterprise Contract", paid.name)
+
+		description = contract.as_dashboard()["activity"][1]["description"]
+		self.assertNotIn("None", description)
+		self.assertTrue(description.startswith(formatdate(contract.payments[0].period_start, "d MMM yyyy")))
+
 	def test_utr_under_verification_shows_as_in_progress(self):
 		contract = create_contract(self.team, self.make_order())
 		contract.submit_transfer_reference("UTR000000000105")
