@@ -462,7 +462,7 @@ class TestSupportAgentTeamFilter(FrappeTestCase):
 		).insert(ignore_permissions=True)
 
 	def make_support_agent(self, team):
-		frappe.get_doc("User", team.user).add_roles("Press Support Agent")
+		frappe.get_doc("User", team.user).add_roles("Press Employee")
 
 	def banner_filters(self, skip_team_filter):
 		return {

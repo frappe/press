@@ -62,7 +62,7 @@ class TestDataConsole(FrappeTestCase):
 		# The console commits and rolls back by itself, which would drop the test users
 		self.commit = patch.object(frappe.db, "commit").start()
 		self.rollback = patch.object(frappe.db, "rollback").start()
-		self.switch_to("Press Support", "Press Infrastructure Manager")
+		self.switch_to("Press Support L1", "Press Infrastructure Manager")
 
 	def tearDown(self):
 		patch.stopall()
@@ -150,7 +150,7 @@ class TestDataConsole(FrappeTestCase):
 		self.assertEqual(frappe.get_last_doc("Console Log").get("script"), "select * from `__Auth`")
 
 	def test_user_without_data_console_role_cannot_run_sql(self):
-		self.switch_to("Press Support")
+		self.switch_to("Press Support L1")
 		self.assert_refused("select 1", "You need the System Manager role to use the System Console")
 
 	def test_system_manager_is_not_limited_by_the_sql_guard(self):

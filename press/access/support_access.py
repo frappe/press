@@ -100,7 +100,7 @@ def has_support_access(doctype: str, docname: str) -> bool:
 
 def has_grant(doctype: str, docname: str, rule: str | None) -> bool:
 	"""Whether an accepted Support Access lets an employee or support agent use `rule`."""
-	if not (press_utils._system_user() or press_utils.has_role("Press Support Agent")):
+	if not (press_utils._system_user() or press_utils.has_role("Press Employee")):
 		return False
 
 	return any(

