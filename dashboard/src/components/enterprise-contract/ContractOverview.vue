@@ -90,7 +90,7 @@ import { dayjsLocal as dayjs } from '../../utils/dayjs'
 import AlertBanner from '../AlertBanner.vue'
 import BankTransfer from './BankTransfer.vue'
 import ContractPayments from './ContractPayments.vue'
-import { formatDate, money } from './format'
+import { formatDate, money, payActionLabel } from './format'
 
 const props = defineProps({
 	contract: { type: Object, required: true },
@@ -147,7 +147,7 @@ const banner = computed(() => {
 		return {
 			type: 'warning',
 			title: `Your last card payment of <b>${total}</b> was not completed. You can try again.`,
-			action: props.canPay ? 'Retry payment' : null,
+			action: props.canPay ? payActionLabel(c) : null,
 		}
 	if (c.status === 'Awaiting Payment')
 		return {
@@ -155,13 +155,13 @@ const banner = computed(() => {
 			title: isBank.value
 				? `Your order is saved. Transfer <b>${total}</b> to the bank account below, then enter the UTR.`
 				: `Your order is saved. Pay <b>${total}</b> to start your contract.`,
-			action: props.canPay ? 'Pay now' : null,
+			action: props.canPay ? payActionLabel(c) : null,
 		}
 	if (c.payment_due)
 		return {
 			type: 'warning',
 			title: `Your paid year ends on ${formatDate(latest.value.period_end)}. Renew for <b>${total}</b> to keep your warranty.`,
-			action: props.canPay ? 'Renew' : null,
+			action: props.canPay ? payActionLabel(c) : null,
 		}
 	if (c.status === 'Pending Signature')
 		return {

@@ -26,7 +26,7 @@ UTR_PATTERN = re.compile(r"[A-Z0-9]{12,22}")
 # Credits the team paid for. Free and promotional credits do not pay for a contract.
 PURCHASED_CREDIT_SOURCES = ("Prepaid Credits", "Transferred Credits")
 OPEN_STATUSES = ("Pending Signature", "Active")
-ALREADY_PAID = "This payment is already done. Your contract shows it now."
+ALREADY_PAID = "This contract is already paid."
 # A contract can be renewed this many days before its paid year ends.
 RENEWAL_WINDOW_DAYS = 30
 VISIBLE_STATUSES = ("Awaiting Payment", *OPEN_STATUSES)

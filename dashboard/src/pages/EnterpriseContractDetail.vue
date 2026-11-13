@@ -92,7 +92,10 @@ import LucideActivity from '~icons/lucide/activity'
 import LucideHouse from '~icons/lucide/house'
 import ContractActivity from '../components/enterprise-contract/ContractActivity.vue'
 import ContractOverview from '../components/enterprise-contract/ContractOverview.vue'
-import { contractHeaderTheme } from '../components/enterprise-contract/format'
+import {
+	contractHeaderTheme,
+	payActionLabel,
+} from '../components/enterprise-contract/format'
 import PayDialog from '../components/enterprise-contract/PayDialog.vue'
 import Header from '../components/Header.vue'
 
@@ -127,10 +130,7 @@ watch(showPay, (open) => {
 	if (!open) resource.reload()
 })
 
-const payLabel = computed(() => {
-	if (contract.value.payment_unfinished) return 'Retry payment'
-	return contract.value.payments.length ? 'Renew Contract' : 'Pay now'
-})
+const payLabel = computed(() => payActionLabel(contract.value))
 
 const cancelOrder = createResource({
 	url: 'press.api.enterprise_contract.cancel_order',

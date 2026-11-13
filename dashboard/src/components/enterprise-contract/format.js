@@ -10,6 +10,12 @@ export function money(amount, currencyCode) {
 	return currency(amount, currencyCode, 0)
 }
 
+// One label per payment action, for the header button, the banner and the Pay dialog.
+export function payActionLabel(contract) {
+	if (contract.payment_unfinished) return 'Retry Payment'
+	return contract.payments.length ? 'Renew Contract' : 'Pay Now'
+}
+
 // Contract statuses shown in the colours of the Sites list.
 const SITE_STATUS_FOR = {
 	'Awaiting Payment': 'AwaitingApproval',

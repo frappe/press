@@ -73,7 +73,7 @@ import LucidePlus from '~icons/lucide/plus'
 import LucideWallet from '~icons/lucide/wallet'
 import { getStripeErrorMessage } from '../../utils/stripeError'
 import AddCardDialog from '../billing/AddCardDialog.vue'
-import { formatDate, money } from './format'
+import { formatDate, money, payActionLabel } from './format'
 
 const props = defineProps({
 	contract: { type: Object, required: true },
@@ -91,9 +91,7 @@ let stripe = null
 let cardElement = null
 
 const isRenewal = computed(() => props.contract.payments.length > 0)
-const title = computed(() =>
-	isRenewal.value ? 'Renew Contract' : 'Pay for your order',
-)
+const title = computed(() => payActionLabel(props.contract))
 const subtitle = computed(() => {
 	const start = formatDate(props.contract.next_renewal.date)
 	return isRenewal.value
