@@ -163,7 +163,7 @@ function onDropBench() {
 			theme: 'red',
 			onClick: ({ hide, values }) => {
 				if (releaseGroup.delete.loading) return
-				if (values.confirmBenchName !== releaseGroup.doc.title) {
+				if (values.confirmBenchName?.trim() !== releaseGroup.doc.title.trim()) {
 					throw new Error('Bench name does not match')
 				}
 				toast.promise(
