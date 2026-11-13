@@ -279,35 +279,57 @@ class OffsiteBackupCheck(Audit):
 	audit_type = "Offsite Backup Check"
 	list_key = "Offsite Backup Remote Files unavailable in remote"
 
-	def _get_all_files_in_s3(self) -> list[str]:
-		all_files = []
-		settings = frappe.get_single("Press Settings")
-		s3 = settings.boto3_offsite_backup_session.resource("s3")
-		for s3_object in s3.Bucket(settings.aws_s3_bucket).objects.all():
-			all_files.append(s3_object.key)
-		return all_files
+	def _get_all_files_in_s3(self, bucket_name: str) -> set[str]:
+		from press.press.doctype.site_backup.backup_history import (
+			get_offsite_credentials,
+			get_s3_client,
+			resolve_bucket,
+		)
+
+		credentials = get_offsite_credentials()
+		if not credentials:
+			raise frappe.ValidationError("Set the offsite backup credentials in Press Settings")
+		bucket = resolve_bucket(bucket_name)
+		pages = (
+			get_s3_client(bucket, credentials)
+			.get_paginator("list_objects_v2")
+			.paginate(Bucket=bucket["name"])
+		)
+		return {s3_object["Key"] for page in pages for s3_object in page.get("Contents", [])}
 
 	def __init__(self):
 		log = {self.list_key: []}
 		status = "Success"
-		all_files = self._get_all_files_in_s3()
+		for bucket_name, remote_files in self._get_offsite_remote_files_by_bucket().items():
+			all_files = self._get_all_files_in_s3(bucket_name)
+			for remote_file in remote_files:
+				if remote_file["file_path"] not in all_files:
+					status = "Failure"
+					log[self.list_key].append(remote_file)
+		self.log(log, status)
+
+	def _get_offsite_remote_files_by_bucket(self) -> dict[str, list[dict]]:
+		"""Each bucket holds only its own files, so each file is checked against its own bucket."""
+		default_bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
 		RemoteFile = frappe.qb.DocType("Remote File")
 		SiteBackup = frappe.qb.DocType("Site Backup")
 		offsite_remote_files = (
 			frappe.qb.from_(RemoteFile)
 			.join(SiteBackup)
 			.on(SiteBackup.site == RemoteFile.site)
-			.select(RemoteFile.name, RemoteFile.file_path, SiteBackup.site)
+			.select(RemoteFile.name, RemoteFile.file_path, RemoteFile.bucket, SiteBackup.site)
 			.where(SiteBackup.status == "Success")
 			.where(SiteBackup.files_availability == "Available")
 			.where(SiteBackup.offsite == 1)
 			.run(as_dict=True)
 		)
+		by_bucket: dict[str, list[dict]] = {}
 		for remote_file in offsite_remote_files:
-			if remote_file["file_path"] not in all_files:
-				status = "Failure"
-				log[self.list_key].append(remote_file)
-		self.log(log, status)
+			bucket_name = remote_file.pop("bucket") or default_bucket
+			if not bucket_name:
+				raise frappe.ValidationError("Set the offsite backup bucket in Press Settings")
+			by_bucket.setdefault(str(bucket_name), []).append(remote_file)
+		return by_bucket
 
 
 def get_teams_with_paid_sites():

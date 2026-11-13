@@ -618,8 +618,9 @@ def _send_backup_failure_email_to_user(site_backup: SiteBackup):
 
 
 def get_backup_bucket(cluster, region=False):
+	bucket_name = frappe.db.get_value("Cluster", cluster, "backup_bucket")
 	bucket_for_cluster = frappe.get_all(
-		"Backup Bucket", {"cluster": cluster}, ["name", "region", "endpoint_url"], limit=1
+		"Backup Bucket", {"name": bucket_name}, ["name", "region", "endpoint_url"], limit=1
 	)
 
 	# `provider` and `endpoint_url` are only configured globally on Press Settings, so the
