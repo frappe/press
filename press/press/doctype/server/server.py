@@ -28,10 +28,11 @@ from frappe.utils.password import get_decrypted_password
 from frappe.utils.synchronization import filelock
 from frappe.utils.user import is_system_user
 
+from press.access.staff_roles import needs_staff_role, safe_for_readers
 from press.agent import Agent
 from press.api.account import is_limits_exceeded
 from press.api.client import dashboard_whitelist
-from press.exceptions import VolumeResizeLimitError
+from press.exceptions import OngoingAgentJob, VolumeResizeLimitError
 from press.guards import role_guard, team_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.add_on_storage_log.add_on_storage_log import (
@@ -267,6 +268,7 @@ class BaseServer(Document, TagHelpers):
 		return doc
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_communication_infos(self):
 		return (
 			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
@@ -289,6 +291,7 @@ class BaseServer(Document, TagHelpers):
 		update_infos("Server", self.name, values)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_storage_usage(self):
 		"""Get storage usage of the application server"""
 		try:
@@ -745,11 +748,13 @@ class BaseServer(Document, TagHelpers):
 		return settings.branch or "master"
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def ping_agent(self):
 		agent = Agent(self.name, self.doctype)
 		return agent.ping()
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def ping_mariadb(self) -> bool:
 		try:
 			agent = Agent(self.name, self.doctype)
@@ -1123,16 +1128,24 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def cleanup_unused_files(self, force: bool = True):
 		# User-triggered cleanup forces; the scheduled sweep passes force=False.
+		if self.running_cleanup_job():
+			frappe.throw(
+				"A cleanup job is already running on this server. Please wait for it to finish before starting another.",
+				OngoingAgentJob,
+			)
+
+		self._cleanup_unused_files(force=force)
+
+	@dashboard_whitelist()
+	def running_cleanup_job(self) -> str | None:
+		"""The cleanup job that blocks a new cleanup. The dashboard links to it."""
 		with suppress(frappe.DoesNotExistError):
 			cleanup_job: "AgentJob" = frappe.get_last_doc(
 				"Agent Job", {"server": self.name, "job_type": "Cleanup Unused Files"}
 			)
 			if cleanup_job.status in ["Running", "Pending"]:
-				frappe.throw(
-					"A cleanup job is already running on this server. Please wait for it to finish before starting another."
-				)
-
-		self._cleanup_unused_files(force=force)
+				return cleanup_job.name
+		return None
 
 	def is_build_server(self) -> bool:
 		# Not a field in all subclasses
@@ -1723,7 +1736,7 @@ class BaseServer(Document, TagHelpers):
 				"virtual_machine": self.virtual_machine,
 				"arguments": json.dumps(arguments, indent=2, sort_keys=True),
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 
 	def get_certificate(self):
 		certificate_name = frappe.db.get_value(
@@ -1959,11 +1972,13 @@ class BaseServer(Document, TagHelpers):
 		update_server_tls_certifcate(self, certificate, throw_on_failure=throw_on_failure)
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def show_agent_version(self) -> str:
 		return self.agent.get_version()["commit"]
 
 	@frappe.whitelist()
 	def show_agent_password(self) -> str:
+		frappe.only_for("System Manager")
 		return self.get_password("agent_password")
 
 	@property
@@ -4084,6 +4099,7 @@ class Server(BaseServer):
 		)
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Infrastructure Manager")
 	def generate_on_prem_failover_config(self):
 		if not self.enable_on_prem_failover_support:
 			frappe.throw("On-Prem Failover support is not enabled for this server.")  # nosemgrep

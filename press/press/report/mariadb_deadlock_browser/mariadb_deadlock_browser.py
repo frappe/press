@@ -88,8 +88,8 @@ def fetch_mariadb_error_logs(
 		return []
 
 	# prepare logs
-	log_map = {}
-	log_timestamp = {}
+	log_map: dict[str, list[tuple[int, str]]] = {}
+	log_timestamp: dict[str, str] = {}
 
 	for record in data.get("hits", {}).get("hits", []):
 		if record["_source"]["mysql"] and record["_source"]["mysql"]["thread_id"]:
@@ -105,8 +105,7 @@ def fetch_mariadb_error_logs(
 
 	for thread_id in log_map:
 		# sort in order of offset
-		records = sorted(log_map[thread_id], key=lambda x: x[0])
-		records = [x[1] for x in records]
+		records = [x[1] for x in sorted(log_map[thread_id], key=lambda x: x[0])]
 		logs.append((log_timestamp[thread_id], "".join(records)))
 
 	return logs
@@ -124,27 +123,34 @@ trx_id_pattern = re.compile(r"trx id (\d+)")
 db_table_pattern = re.compile(r"table `([^`]+)`.`([^`]+)`")
 
 
+def search(pattern: re.Pattern[str], text: str) -> re.Match[str]:
+	found = pattern.search(text)
+	if not found:
+		raise ValueError(f"No match for {pattern.pattern!r}")
+	return found
+
+
 class DatabaseTransactionLog:
 	@staticmethod
 	def parse(data: str, database: str):
-		transaction_info = actual_transaction_pattern.search(data).group(1)
-		found_database = db_table_pattern.search(transaction_info).group(1)
+		transaction_info = search(actual_transaction_pattern, data).group(1)
+		found_database = search(db_table_pattern, transaction_info).group(1)
 		if database != found_database:
 			return None
 
 		return DatabaseTransactionLog(data)
 
 	def __init__(self, data: str):
-		self.transaction_id = transaction_id_pattern.search(data).group(1)
-		actual_transaction_info = actual_transaction_pattern.search(data).group(1)
-		db_table_info = db_table_pattern.search(actual_transaction_info)
+		self.transaction_id = search(transaction_id_pattern, data).group(1)
+		actual_transaction_info = search(actual_transaction_pattern, data).group(1)
+		db_table_info = search(db_table_pattern, actual_transaction_info)
 		self.database = db_table_info.group(1)
 		self.table = db_table_info.group(2)
-		self.query = query_pattern.search(data).group(1)
+		self.query = search(query_pattern, data).group(1)
 
-		conflicted_transaction_info = conflicted_transaction_pattern.search(data).group(1)
-		self.conflicted_transaction_id = trx_id_pattern.search(conflicted_transaction_info).group(1)
-		conflicted_db_table = db_table_pattern.search(conflicted_transaction_info)
+		conflicted_transaction_info = search(conflicted_transaction_pattern, data).group(1)
+		self.conflicted_transaction_id = search(trx_id_pattern, conflicted_transaction_info).group(1)
+		conflicted_db_table = search(db_table_pattern, conflicted_transaction_info)
 		self.conflicted_table = conflicted_db_table.group(2)
 
 
@@ -179,7 +185,7 @@ def deadlock_summary(transactions: list[DatabaseTransactionLog]) -> list[dict]:
 	for transaction in transactions:
 		transaction_map[transaction.transaction_id] = transaction
 
-	deadlock_transaction_ids = {}
+	deadlock_transaction_ids: dict[str, str] = {}
 
 	for transaction in transactions:
 		# usually if there is a deadlock, there will be two records
@@ -248,7 +254,9 @@ COLUMNS = [
 
 
 def execute(filters=None):
-	frappe.only_for(["System Manager", "Site Manager", "Press User"])
+	frappe.only_for(
+		["System Manager", "Site Manager", "Press User", "Press Support", "Press Support Engineer"]
+	)
 	filters.database = frappe.db.get_value("Site", filters.site, "database_name")
 	if not filters.database:
 		frappe.throw(

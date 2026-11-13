@@ -3,7 +3,7 @@ frappe.listview_settings['Deploy Candidate'] = {
 };
 
 function show_toggle_builds_button(list_view) {
-	if (!has_common(frappe.user_roles, ['Administrator', 'System Manager']))
+	if (!has_common(frappe.user_roles, ['Administrator', 'System Manager', 'Press Release Manager', 'Press Support Engineer']))
 		return;
 
 	frappe.db
