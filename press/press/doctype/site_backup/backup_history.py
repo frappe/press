@@ -262,14 +262,14 @@ def request_agent_backup_jobs(server: str, site: str, start: date, end: date) ->
 
 
 def has_stuck_request(server: str) -> bool:
-	"""A job the agent never gave an id to never reached it, delivery failure included."""
+	"""A job still retrying delivery. A failed one silenced the server when it finished."""
 	return bool(
 		frappe.db.exists(
 			"Agent Job",
 			{
 				"job_type": AGENT_JOB_TYPE,
 				"server": server,
-				"job_id": 0,
+				"status": "Undelivered",
 				"creation": (
 					"<",
 					frappe.utils.add_to_date(None, seconds=-UNDELIVERED_GRACE_SECONDS),

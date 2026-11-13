@@ -244,6 +244,7 @@ class MonitorServer(BaseServer):
 
 	@frappe.whitelist()
 	def show_grafana_password(self):
+		frappe.only_for("System Manager")
 		return self.get_password("grafana_password")
 
 	@property

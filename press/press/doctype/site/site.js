@@ -165,6 +165,11 @@ frappe.ui.form.on('Site', {
 				),
 			],
 			[__('Show Admin Password'), 'show_admin_password'],
+			[
+				__('Empty Creation Failed'),
+				'empty_creation_failed',
+				frm.doc.creation_failed,
+			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

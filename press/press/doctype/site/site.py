@@ -38,6 +38,7 @@ from frappe.utils.caching import redis_cache
 
 from press.access.actions import SiteActions
 from press.access.decorators import action_guard
+from press.access.staff_roles import safe_for_readers
 from press.access.support_access import has_support_access
 from press.access.utils import is_outside_employee
 from press.exceptions import (
@@ -391,6 +392,7 @@ class Site(Document, TagHelpers):
 		return Agent(self.database_server_name, server_type="Database Server")
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def is_replica_server_available(self) -> bool:
 		return bool(
 			frappe.db.exists(
@@ -798,6 +800,7 @@ class Site(Document, TagHelpers):
 				)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_backup_schedule(self) -> dict:
 		"""Times are on the server's clock, same as the scheduler reads them."""
 		return {
@@ -1412,6 +1415,7 @@ class Site(Document, TagHelpers):
 		return job.name
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def last_migrate_failed(self):
 		"""Returns `True` if the last site update's(`Migrate` deploy type) migrate site job step failed, `False` otherwise"""
 
@@ -1578,7 +1582,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def rotate_database_password(self):
-		frappe.only_for("System Manager", message=True)
+		frappe.only_for(["System Manager", "Press Support", "Press Support Engineer"], message=True)
 		self.validate_no_password_rotation_in_progress()
 		frappe.enqueue_doc(
 			self.doctype,
@@ -1645,7 +1649,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def rotate_saas_communication_secret(self):
-		frappe.only_for("System Manager", message=True)
+		frappe.only_for(["System Manager", "Press Support", "Press Support Engineer"], message=True)
 		self.validate_communication_secret_can_rotate()
 		self.saas_communication_secret = frappe.generate_hash(length=32)
 		config = {"fc_communication_secret": self.saas_communication_secret}
@@ -2044,7 +2048,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def move_to_bench(self, bench, deactivate=True, skip_failing_patches=False):
-		frappe.only_for("System Manager")
+		frappe.only_for(["System Manager", "Press Support Engineer"])
 		self.ready_for_move()
 
 		if bench == self.bench:
@@ -2101,6 +2105,11 @@ class Site(Document, TagHelpers):
 			site_migration.start()
 
 		return site_migration
+
+	@property
+	def serves_requests_before_update(self) -> bool:
+		"""A broken site still serves requests, so an update must not leave it in maintenance mode."""
+		return self.status_before_update in ("Active", "Broken")
 
 	def reset_previous_status(self, fix_broken=False):
 		if self.status == "Archived":
@@ -2507,6 +2516,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def show_admin_password(self):
+		frappe.only_for("System Manager")
 		frappe.msgprint(self.get_password("admin_password"), title="Password", indicator="green")
 
 	def get_connection_as_admin(self):
@@ -2869,6 +2879,11 @@ class Site(Document, TagHelpers):
 					now_datetime(), seconds=exponential_backoff_duration
 				)
 				self.save()
+
+	@frappe.whitelist()
+	def empty_creation_failed(self):
+		"""Unblock site actions on a working site that a failed restore marked as failed"""
+		self.db_set("creation_failed", None)
 
 	@frappe.whitelist()
 	def set_status_based_on_ping(self):
@@ -3271,6 +3286,7 @@ class Site(Document, TagHelpers):
 		self.change_plan(plan)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def last_plan_change(self):
 		"""Most recent plan change for this site, for showing 'last changed on' in the dashboard."""
 		return frappe.db.get_value(
@@ -3686,6 +3702,7 @@ class Site(Document, TagHelpers):
 			frappe.throw("Database Access is already being enabled on this site. Please check after a while.")
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_auto_update_window(self):
 		"""Tell when an automatic update of this site can start.
 
@@ -3789,6 +3806,7 @@ class Site(Document, TagHelpers):
 		}
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_database_performance_report(self):
 		from press.press.report.mariadb_slow_queries.mariadb_slow_queries import get_data as get_slow_queries
 
@@ -4134,10 +4152,12 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@redis_cache(ttl=60)
+	@safe_for_readers
 	def get_current_usage(self):
 		return self.current_usage
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_actions(self):
 		actions = [
 			{
@@ -4338,6 +4358,7 @@ class Site(Document, TagHelpers):
 		}
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def fetch_database_processes(self):
 		agent = Agent(self.server)
 		if agent.should_skip_requests():
@@ -4572,6 +4593,7 @@ class Site(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def binlog_indexing_service_status(self):
 		hosted_on_shared_server = bool(
 			frappe.db.get_value("Database Server", self.database_server_name, "public", cache=True)
@@ -4726,6 +4748,7 @@ class Site(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_communication_infos(self):
 		return (
 			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
@@ -4742,6 +4765,7 @@ class Site(Document, TagHelpers):
 		update_infos("Site", self.name, values)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_migration_options(self):  # noqa
 		release_group: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		version = frappe.db.get_value("Release Group", self.group, "version")

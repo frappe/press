@@ -16,6 +16,16 @@ def handle_exception(self):
 	frappe.db.commit()
 
 
+def handle_exc(method):
+	def after_execute(self):
+		try:
+			method(self)
+		except Exception:
+			handle_exception(self)
+
+	return after_execute
+
+
 class TeamDeletionRequest(PersonalDataDeletionRequest):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -65,15 +75,6 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 	def on_update(self):
 		self.finish_up()
 
-	def handle_exc(foo):
-		def after_execute(self):
-			try:
-				foo(self)
-			except Exception:
-				handle_exception(self)
-
-		return after_execute
-
 	@property
 	def team_doc(self):
 		return frappe.get_cached_doc("Team", self.team)
@@ -83,7 +84,8 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 			frappe.rename_doc("Team", self.team, self.name)
 
 	def validate_team_owner(self):
-		if self.team_doc.user == frappe.session.user or "System Manager" in frappe.get_roles():
+		staff_roles = {"System Manager", "Press Support", "Press Support Engineer"}
+		if self.team_doc.user == frappe.session.user or staff_roles.intersection(frappe.get_roles()):
 			return
 
 		frappe.throw("You need to be a Team owner to request account deletion", exc=frappe.PermissionError)
