@@ -17,6 +17,7 @@ from press.press.doctype.enterprise_warranty_plan.enterprise_warranty_plan impor
 	amount_due,
 	gst_split,
 )
+from press.utils import is_user_part_of_team
 
 if TYPE_CHECKING:
 	from press.press.doctype.team.team import Team
@@ -330,7 +331,7 @@ def period_text(row) -> str:
 # What has happened to the contract and what comes next, oldest first. Status values are
 # the ones the dashboard's pipeline icons use.
 def contract_activity(contract: EnterpriseContract) -> list[dict]:
-	steps = [step("Order placed", "Success", contract.creation, f"by {contract.owner}")]
+	steps = [step("Order placed", "Success", contract.creation, placed_by(contract))]
 	if contract.status == "Cancelled":
 		return [*steps, step("Order cancelled", "Failed", contract.modified)]
 	first, *renewals = contract.payments or [None]
@@ -346,6 +347,11 @@ def contract_activity(contract: EnterpriseContract) -> list[dict]:
 	if contract.payments:
 		steps.append(renewal_step(contract))
 	return steps
+
+
+# Staff who created the contract in Desk are not named to the customer.
+def placed_by(contract: EnterpriseContract) -> str:
+	return f"by {contract.owner}" if is_user_part_of_team(contract.owner, contract.team) else ""
 
 
 def payment_step(contract: EnterpriseContract, row, title: str) -> dict:
