@@ -120,16 +120,8 @@ const resource = createResource({
 })
 const contract = computed(() => resource.data?.contract)
 
-// Card or credits; a bank transfer is paid from the bank details on the overview.
-const canPay = computed(() => {
-	const c = contract.value
-	const options = resource.data
-	// A bank transfer being verified must not be paid a second time.
-	if (!c?.payment_due || c.transfer_reference || options.payment_blocked)
-		return false
-	const cards = c.payment_gateway === 'Stripe' && !options.card_blocked
-	return cards || options.credit_balance >= c.amount_due_with_credits.total
-})
+// The server decides what can be paid with; a bank transfer is paid from the overview.
+const canPay = computed(() => Boolean(resource.data?.payment_methods.length))
 
 // A payment left unfinished when the dialog closed shows up as a retry.
 watch(showPay, (open) => {

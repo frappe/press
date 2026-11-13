@@ -30,8 +30,8 @@ def saved_card(team: str) -> dict | None:
 	)
 
 
-def card_label(card: dict) -> str:
-	return f"{(card.get('brand') or 'Card').title()} •{card.get('last_4') or card.get('last4')}"
+def card_label(brand: str | None, last_4: str) -> str:
+	return f"{(brand or 'Card').title()} •{last_4}"
 
 
 # With a saved card the intent is confirmed here, so it is paid now or needs 3-D Secure.
@@ -127,7 +127,7 @@ def record_intent(contract: EnterpriseContract, intent: dict):
 
 def intent_card_label(intent: dict) -> str:
 	card = charge_card(intent) or payment_method_card(intent.get("payment_method"))
-	return card_label(card) if card else "Card"
+	return card_label(card.get("brand"), card["last4"]) if card else "Card"
 
 
 # Older Stripe API versions return the charges on the intent.

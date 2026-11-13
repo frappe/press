@@ -10,6 +10,7 @@ import frappe
 
 from press.guards import role_guard
 from press.press.doctype.enterprise_contract.card_payment import (
+	card_label,
 	close_card_payment,
 	record_paid_intent,
 	saved_card,
@@ -73,24 +74,38 @@ def get_contract(name: str):
 	team = get_current_team(get_doc=True)
 	if not frappe.db.exists("Enterprise Contract", {"name": name, "team": team.name}):
 		frappe.throw("We could not find this contract. Please open it from the Contracts list.")
-	return {
-		"contract": EnterpriseContract("Enterprise Contract", name).as_dashboard(),
-		**payment_options(team),
-	}
+	contract = EnterpriseContract("Enterprise Contract", name)
+	return {"contract": contract.as_dashboard(), **payment_options(team, contract)}
 
 
 # What the dashboard can offer to pay with, for an order or a renewal.
-def payment_options(team) -> dict:
+def payment_options(team, contract: EnterpriseContract) -> dict:
 	inr = team.currency == "INR"
 	card = None if inr else saved_card(team.name)
+	credit_balance = purchased_credit(team.name)
 	return {
 		"bank_transfer": bank_transfer_details() if inr else None,
-		"saved_card": {"brand": card["brand"], "last_4": card["last_4"]} if card else None,
-		"credit_balance": purchased_credit(team.name),
+		"saved_card": {"label": card_label(card["brand"], card["last_4"])} if card else None,
+		"credit_balance": credit_balance,
 		"payment_blocked": PARTNER_PAYMENT_BLOCKED if acts_as_partner(team) else None,
 		"card_blocked": None if inr or is_customer(team) else CARD_CUSTOMER_ONLY,
 		"publishable_key": None if inr else get_publishable_key(),
+		"payment_methods": payment_methods(team, contract, bool(card), credit_balance),
 	}
+
+
+# The methods the Pay dialog offers, in its order. A bank transfer is paid from the overview.
+def payment_methods(
+	team, contract: EnterpriseContract, has_saved_card: bool, credit_balance: float
+) -> list[str]:
+	if not contract.payment_due() or contract.pending_transfer_reference() or acts_as_partner(team):
+		return []
+	methods = []
+	if contract.payment_gateway == "Stripe" and is_customer(team):
+		methods = ["saved_card", "save_card", "new_card"] if has_saved_card else ["save_card", "new_card"]
+	if credit_balance >= contract.amount_due(with_gst=False)["total"]:
+		methods.append("credits")
+	return methods
 
 
 # Places the order only. The dashboard then pays it on the contract page.

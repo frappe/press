@@ -4,13 +4,6 @@
 			<div class="space-y-4 text-base">
 				<div class="text-ink-gray-7">{{ subtitle }}</div>
 
-				<div
-					v-if="options.card_blocked && !methods.length"
-					class="text-ink-gray-8"
-				>
-					{{ options.card_blocked }}
-				</div>
-
 				<div class="space-y-2">
 					<button
 						v-for="m in methods"
@@ -43,10 +36,7 @@
 					/>
 				</label>
 
-				<div
-					v-if="options.card_blocked && methods.length"
-					class="text-p-sm text-ink-gray-6"
-				>
+				<div v-if="options.card_blocked" class="text-p-sm text-ink-gray-6">
 					{{ options.card_blocked }}
 				</div>
 				<ErrorMessage :message="errorMessage || pay.error || confirm.error" />
@@ -92,9 +82,6 @@ const props = defineProps({
 const emit = defineEmits(['paid', 'cardSaved'])
 const show = defineModel({ type: Boolean })
 
-const capitalize = (text) =>
-	text ? text[0].toUpperCase() + text.slice(1) : 'Card'
-
 const selected = ref(null)
 const showAddCard = ref(false)
 const errorMessage = ref(null)
@@ -124,49 +111,39 @@ const payAmount = computed(() =>
 	selected.value === 'credits' ? creditTotal.value : cardTotal.value,
 )
 
-const methods = computed(() => {
+// Shown in the order the server lists them, which is also the rule for what is offered.
+const methods = computed(() =>
+	props.options.payment_methods.map((key) => ({ key, ...methodDetails(key) })),
+)
+
+function methodDetails(key) {
 	const { options, contract } = props
-	const list = []
-	if (contract.transfer_reference) return list
-	const cards = contract.payment_gateway === 'Stripe' && !options.card_blocked
-	if (cards && options.saved_card) {
-		const card = options.saved_card
-		list.push({
-			key: 'saved_card',
+	return {
+		saved_card: {
 			icon: LucideCreditCard,
-			label: `${capitalize(card.brand)} •${card.last_4}`,
+			label: options.saved_card?.label,
 			hint: "Your team's default card. It also pays your monthly Frappe Cloud invoices.",
 			amount: cardTotal.value,
-		})
-	}
-	if (cards) {
-		list.push(
-			{
-				key: 'save_card',
-				icon: LucidePlus,
-				label: options.saved_card ? 'Save a different card' : 'Save a card',
-				hint: "The card becomes your team's default payment method. Your monthly Frappe Cloud invoices will be charged to it too, and you can use it to renew this contract.",
-			},
-			{
-				key: 'new_card',
-				icon: LucideCreditCard,
-				label: 'Pay once with a card',
-				hint: 'Charges the card for this payment only. The card is not saved, and your monthly invoices are not changed.',
-				amount: cardTotal.value,
-			},
-		)
-	}
-	if (options.credit_balance >= contract.amount_due_with_credits.total) {
-		list.push({
-			key: 'credits',
+		},
+		save_card: {
+			icon: LucidePlus,
+			label: options.saved_card ? 'Save a different card' : 'Save a card',
+			hint: "The card becomes your team's default payment method. Your monthly Frappe Cloud invoices will be charged to it too, and you can use it to renew this contract.",
+		},
+		new_card: {
+			icon: LucideCreditCard,
+			label: 'Pay once with a card',
+			hint: 'Charges the card for this payment only. The card is not saved, and your monthly invoices are not changed.',
+			amount: cardTotal.value,
+		},
+		credits: {
 			icon: LucideWallet,
 			label: 'Credits',
 			hint: `Balance ${money(options.credit_balance, contract.currency)}.${contract.currency === 'INR' ? ' No GST, it was charged when you bought the credits.' : ''}`,
 			amount: creditTotal.value,
-		})
-	}
-	return list
-})
+		},
+	}[key]
+}
 
 watch(
 	[show, methods],
