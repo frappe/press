@@ -112,6 +112,7 @@ press.patches.v0_7_0.convert_marketplace_description_to_html
 press.press.doctype.team.patches.remove_invalid_email_addresses
 press.saas.doctype.product_trial.patches.rename_saas_product_doctypes_to_product_trial
 press.patches.v0_8_0.encrypt_tls_private_keys_at_rest
+press.patches.v0_8_0.rename_support_roles
 
 [post_model_sync]
 press.patches.v0_7_0.rename_plan_to_site_plan

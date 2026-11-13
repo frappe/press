@@ -172,7 +172,7 @@
 			"print": 1,
 			"read": 1,
 			"report": 1,
-			"role": "Press Support Agent",
+			"role": "Press Employee",
 			"share": 1
 		},
 		{
@@ -202,7 +202,7 @@
 			"print": 1,
 			"read": 1,
 			"report": 1,
-			"role": "Press Support"
+			"role": "Press Support L1"
 		}
 	],
 	"row_format": "Dynamic",

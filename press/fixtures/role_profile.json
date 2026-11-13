@@ -2,15 +2,36 @@
  {
   "docstatus": 0,
   "doctype": "Role Profile",
-  "modified": "2026-11-06 21:00:00.000000",
-  "name": "Press Support",
-  "role_profile": "Press Support",
+  "modified": "2026-11-13 22:00:00.000000",
+  "name": "Press Employee",
+  "role_profile": "Press Employee",
   "roles": [
    {
-    "parent": "Press Support",
+    "parent": "Press Employee",
     "parentfield": "roles",
     "parenttype": "Role Profile",
-    "role": "Press Support"
+    "role": "Press Employee"
+   },
+   {
+    "parent": "Press Employee",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Press User"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Role Profile",
+  "modified": "2026-11-13 21:00:00.000000",
+  "name": "Press Support L1",
+  "role_profile": "Press Support L1",
+  "roles": [
+   {
+    "parent": "Press Support L1",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Press Support L1"
    }
   ]
  },
