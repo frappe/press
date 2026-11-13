@@ -2,7 +2,7 @@
 # See license.txt
 
 import frappe
-from frappe.utils import add_days, formatdate, getdate, today
+from frappe.utils import add_days, add_years, formatdate, getdate, today
 
 from press.api import enterprise_contract as contract_api
 from press.press.doctype.enterprise_contract.enterprise_contract import (
@@ -47,6 +47,20 @@ class TestRenewal(EnterpriseContractTestCase):
 		self.assertEqual(getdate(renewal.period_start), getdate(add_days(today(), RENEWAL_WINDOW_DAYS)))
 		self.assertEqual((renewal.amount, renewal.paid_with), (2400000, "Credits"))
 		self.assertFalse(self.contract.payment_due())
+
+	def test_renewal_after_the_paid_year_ended_starts_on_the_day_it_is_paid(self):
+		self.end_paid_year_in(-100)
+		self.team.allocate_credit_amount(3000000, source="Prepaid Credits")
+		dashboard = contract_api.get_contract(self.contract.name)["contract"]
+		self.assertTrue(dashboard["lapsed"])
+		self.assertIn("Your warranty ended on", dashboard["activity"][-1]["description"])
+
+		contract_api.pay("credits")
+
+		renewal = self.contract.reload().payments[-1]
+		self.assertEqual(getdate(renewal.period_start), getdate(today()))
+		self.assertEqual(getdate(renewal.period_end), getdate(add_days(add_years(today(), 1), -1)))
+		self.assertFalse(contract_api.get_contract(self.contract.name)["contract"]["lapsed"])
 
 	def test_credits_cannot_pay_a_renewal_whose_bank_transfer_is_being_verified(self):
 		self.end_paid_year_in(10)

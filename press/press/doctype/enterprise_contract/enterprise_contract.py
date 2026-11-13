@@ -296,10 +296,17 @@ class EnterpriseContract(Document):
 			return
 		frappe.throw("Enter the UTR from the bank statement to record this transfer")
 
+	# A renewal paid after the paid year ended starts on the day it is paid; the gap is not covered.
 	def next_period_start(self):
 		if not self.payments:
 			return getdate(self.start_date)
-		return add_days(getdate(self.payments[-1].period_end), 1)
+		return max(add_days(self.paid_until(), 1), getdate(today()))
+
+	def paid_until(self):
+		return getdate(self.payments[-1].period_end) if self.payments else None
+
+	def lapsed(self) -> bool:
+		return bool(self.payments) and getdate(today()) > self.paid_until()
 
 	def renewal_price(self):
 		if getdate(self.next_period_start()) <= getdate(self.price_locked_until):
@@ -317,6 +324,7 @@ class EnterpriseContract(Document):
 			"gst_split": gst_split(self.billing_address),
 			"payment_due": self.payment_due(),
 			"payment_unfinished": self.payment_unfinished(),
+			"lapsed": self.lapsed(),
 			"renewal_opens_on": self.renewal_opens_on(),
 			"coverage": (self.plan_doc.coverage or "").strip().splitlines(),
 			"activity": contract_activity(self),

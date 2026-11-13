@@ -157,6 +157,12 @@ const banner = computed(() => {
 				: `Your order is saved. Pay <b>${total}</b> to start your contract.`,
 			action: props.canPay ? payActionLabel(c) : null,
 		}
+	if (c.lapsed)
+		return {
+			type: 'warning',
+			title: `Your warranty ended on ${formatDate(latest.value.period_end)}. Renew for <b>${total}</b> to restart it. The new year starts on the day you pay.`,
+			action: props.canPay ? payActionLabel(c) : null,
+		}
 	if (c.payment_due)
 		return {
 			type: 'warning',
@@ -183,14 +189,18 @@ const summary = computed(() => {
 		},
 		{
 			label: 'Current period',
-			value: paid
-				? `${formatDate(paid.period_start)} – ${formatDate(paid.period_end)}`
-				: 'Starts on payment',
-			hint: !paid
-				? 'One year from the day you pay'
-				: paid === latest.value
-					? `Contract started ${formatDate(c.start_date)}`
-					: `Renewed, paid until ${formatDate(latest.value.period_end)}`,
+			value: c.lapsed
+				? 'Not covered'
+				: paid
+					? `${formatDate(paid.period_start)} – ${formatDate(paid.period_end)}`
+					: 'Starts on payment',
+			hint: c.lapsed
+				? `Warranty ended ${formatDate(latest.value.period_end)}`
+				: !paid
+					? 'One year from the day you pay'
+					: paid === latest.value
+						? `Contract started ${formatDate(c.start_date)}`
+						: `Renewed, paid until ${formatDate(latest.value.period_end)}`,
 		},
 		{
 			label: 'Price lock',
@@ -201,10 +211,16 @@ const summary = computed(() => {
 		},
 		{
 			label: 'Next renewal',
-			value: paid ? formatDate(c.next_renewal.date) : '—',
-			hint: paid
-				? `${money(c.next_renewal.amount, c.currency)}, opens ${formatDate(c.renewal_opens_on)}`
-				: 'After the first year',
+			value: c.lapsed
+				? 'Open now'
+				: paid
+					? formatDate(c.next_renewal.date)
+					: '—',
+			hint: c.lapsed
+				? `${money(c.next_renewal.amount, c.currency)}, one year from the day you pay`
+				: paid
+					? `${money(c.next_renewal.amount, c.currency)}, opens ${formatDate(c.renewal_opens_on)}`
+					: 'After the first year',
 		},
 	]
 })

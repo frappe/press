@@ -69,6 +69,14 @@ def renewal_step(contract: EnterpriseContract) -> dict:
 	start = formatdate(contract.next_period_start(), "d MMM yyyy")
 	if utr := contract.pending_transfer_reference():
 		return step("Next renewal", "Running", None, f"Verifying bank transfer, UTR {utr}")
+	if contract.lapsed():
+		ended = formatdate(contract.paid_until(), "d MMM yyyy")
+		return step(
+			"Next renewal",
+			"Pending",
+			None,
+			f"Your warranty ended on {ended}. Renew to restart it from the day you pay.",
+		)
 	if contract.renewal_open():
 		return step("Next renewal", "Pending", None, f"Renewal is open. Renew before {start}.")
 	opens = formatdate(contract.renewal_opens_on(), "d MMM yyyy")
