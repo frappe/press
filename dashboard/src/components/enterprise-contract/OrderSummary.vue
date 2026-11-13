@@ -18,11 +18,11 @@
 			<div class="text-base text-ink-gray-7">Pay Today</div>
 			<div class="flex flex-col space-y-1">
 				<div class="text-lg font-semibold">
-					{{ money(payToday.total, plan.currency) }}
+					{{ money(plan.amount_due.total, plan.currency) }}
 				</div>
 				<div class="text-base font-medium text-ink-gray-7">
-					{{ payToday.gst
-							? `${money(payToday.amount, plan.currency)} + ${gstText(payToday.gst, gstSplit, plan.currency)}`
+					{{ plan.amount_due.gst
+							? `${money(plan.amount_due.amount, plan.currency)} + ${gstText(plan.amount_due.gst, gstSplit, plan.currency)}`
 							: 'for the first year' }}
 				</div>
 			</div>
@@ -83,8 +83,6 @@ const method = computed(() =>
 				note: 'Next, pay with your saved card, a new card, or your credit balance.',
 			},
 )
-
-const payToday = computed(() => props.plan.amount_due)
 
 const rows = computed(() => {
 	const years = Number(props.order.price_lock_years)
