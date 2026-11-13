@@ -262,6 +262,23 @@ class TestClosingCardPayment(CardPaymentTestCase):
 		get_stripe.return_value.PaymentIntent.cancel.assert_called_once_with("pi_open")
 		self.assertEqual(self.contract.reload().payments[0].paid_with, "Credits")
 
+	def test_staff_refused_a_card_payment_leave_the_customers_open_intent_alone(self):
+		frappe.set_user("Administrator")
+		team = self.team.name
+
+		with (
+			patch(
+				"press.api.enterprise_contract.get_current_team",
+				side_effect=lambda get_doc=False: frappe.get_doc("Team", team) if get_doc else team,
+			),
+			patch_stripe(retrieve=intent("pi_open", "requires_action")) as get_stripe,
+			self.assertRaisesRegex(frappe.ValidationError, contract_api.CARD_CUSTOMER_ONLY),
+		):
+			contract_api.pay("new_card")
+
+		get_stripe.return_value.PaymentIntent.cancel.assert_not_called()
+		self.assertEqual(self.contract.reload().payment_intent, "pi_open")
+
 	def test_renewal_after_an_abandoned_card_payment_paid_with_credits_shows_no_unfinished_payment(self):
 		self.team.allocate_credit_amount(30000, source="Prepaid Credits")
 		with patch_stripe(retrieve=intent("pi_open", "requires_payment_method")):
