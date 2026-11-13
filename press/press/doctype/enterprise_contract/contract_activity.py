@@ -51,7 +51,8 @@ def placed_by(contract: EnterpriseContract) -> str:
 
 def payment_step(contract: EnterpriseContract, row, title: str) -> dict:
 	if row:
-		return step(f"{title} received", "Success", row.paid_on, f"{row.paid_with} · {period_text(row)}")
+		description = " · ".join(filter(None, (row.paid_with, period_text(row))))
+		return step(f"{title} received", "Success", row.paid_on, description)
 	if utr := contract.pending_transfer_reference():
 		return step(title, "Running", None, f"Verifying bank transfer, UTR {utr}")
 	return step(title, "Pending", None, "Waiting for your payment")
