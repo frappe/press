@@ -218,7 +218,7 @@
 			"link_fieldname": "deploy_candidate"
 		}
 	],
-	"modified": "2026-01-21 13:27:04.037360",
+	"modified": "2026-11-06 21:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Deploy Candidate",
@@ -236,7 +236,38 @@
 			"share": 1,
 			"write": 1
 		},
-		{ "create": 1, "read": 1, "role": "Press User", "write": 1 }
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 },
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Release Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support Engineer",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support"
+		}
 	],
 	"row_format": "Dynamic",
 	"rows_threshold_for_grid_search": 20,
