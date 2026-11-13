@@ -113,6 +113,18 @@ class TestContractActivity(EnterpriseContractTestCase):
 			],
 		)
 
+	def test_order_placed_names_a_team_member_but_not_staff_who_created_it_in_desk(self):
+		desk_contract = create_contract(self.team, self.make_order())
+		self.assertEqual(desk_contract.as_dashboard()["activity"][0]["description"], "")
+		desk_contract.cancel_order()
+
+		frappe.set_user(self.team.user)
+		self.addCleanup(frappe.set_user, "Administrator")
+		dashboard_contract = create_contract(self.team, self.make_order())
+		self.assertEqual(
+			dashboard_contract.as_dashboard()["activity"][0]["description"], f"by {self.team.user}"
+		)
+
 	def test_utr_under_verification_shows_as_in_progress(self):
 		contract = create_contract(self.team, self.make_order())
 		contract.submit_transfer_reference("UTR000000000105")
