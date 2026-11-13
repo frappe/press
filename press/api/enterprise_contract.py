@@ -120,12 +120,14 @@ def pay(method: Literal["saved_card", "new_card", "credits"]):
 		frappe.throw(PARTNER_PAYMENT_BLOCKED)
 	# Locked so that a double click pays once.
 	contract = payable_contract()
+	# Checked first, so that a refused card payment does not cancel the customer's open intent.
+	if method != "credits":
+		validate_card_payment(team, contract)
 	if close_card_payment(contract):
 		return {"payment": None, "message": ALREADY_PAID}
 	if method == "credits":
 		contract.pay_with_credits()
 		return {"payment": None, "message": None}
-	validate_card_payment(team, contract)
 	return {"payment": start_card_payment(contract, use_saved_card=method == "saved_card"), "message": None}
 
 
