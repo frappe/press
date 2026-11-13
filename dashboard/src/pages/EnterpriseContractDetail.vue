@@ -18,7 +18,7 @@
 				<Button
 					v-if="canPay"
 					variant="solid"
-					:label="contract.payments.length ? 'Renew' : 'Pay now'"
+					:label="payLabel"
 					@click="showPay = true"
 				/>
 				<Dropdown v-if="menu.length" :options="menu">
@@ -86,7 +86,7 @@ import {
 	Spinner,
 	Tabs,
 } from 'frappe-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import LucideActivity from '~icons/lucide/activity'
@@ -127,6 +127,16 @@ const canPay = computed(() => {
 	if (!c?.payment_due || options.payment_blocked) return false
 	const cards = c.payment_gateway === 'Stripe' && !options.card_blocked
 	return cards || options.credit_balance >= c.amount_due_with_credits.total
+})
+
+// A payment left unfinished when the dialog closed shows up as a retry.
+watch(showPay, (open) => {
+	if (!open) resource.reload()
+})
+
+const payLabel = computed(() => {
+	if (contract.value.payment_unfinished) return 'Retry payment'
+	return contract.value.payments.length ? 'Renew Contract' : 'Pay now'
 })
 
 const cancelOrder = createResource({

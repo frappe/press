@@ -180,6 +180,10 @@ class EnterpriseContract(Document):
 	def payment_due(self) -> bool:
 		return self.status == "Awaiting Payment" or self.renewal_open()
 
+	# A card payment was started but not finished, for example when its window was closed.
+	def payment_unfinished(self) -> bool:
+		return bool(self.payment_due() and self.payment_intent and not self.has_payment(self.payment_intent))
+
 	def validate_payment_due(self):
 		if not self.payment_due():
 			frappe.throw(f"Nothing is due on this contract now. Renewal opens on {self.renewal_opens_on()}.")
@@ -300,6 +304,7 @@ class EnterpriseContract(Document):
 			"amount_due_with_credits": self.amount_due(with_gst=False),
 			"gst_split": gst_split(self.billing_address),
 			"payment_due": self.payment_due(),
+			"payment_unfinished": self.payment_unfinished(),
 			"renewal_opens_on": self.renewal_opens_on(),
 			"coverage": (self.plan_doc.coverage or "").strip().splitlines(),
 			"activity": contract_activity(self),
