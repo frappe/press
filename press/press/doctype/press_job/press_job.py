@@ -7,7 +7,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 import frappe
-from frappe.utils import now_datetime
+from frappe.utils import add_to_date, now_datetime
 
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 	from press.workflow_engine.doctype.press_workflow.press_workflow import PressWorkflow
 
 _JOBS_REGISTRY: dict[str, type] = {}
+STUCK_JOB_MINUTES = 30
 
 
 def _init_jobs_registry() -> None:
@@ -173,7 +174,17 @@ class PressJob(WorkflowBuilder):
 
 	def before_insert(self):
 		frappe.db.get_value(self.server_type, self.server, "status", for_update=True)
-		if existing_jobs := frappe.db.get_all(
+		if self.job_type == "Archive Server":
+			self.validate_archive_job()
+			return
+
+		if existing_jobs := self.active_jobs():
+			frappe.throw(
+				f"A {existing_jobs[0].job_type} job is already {existing_jobs[0].status}. Please wait for the same."
+			)
+
+	def active_jobs(self) -> list[dict]:
+		return frappe.get_all(
 			self.doctype,
 			{
 				"status": ("in", ["Pending", "Running"]),
@@ -181,9 +192,24 @@ class PressJob(WorkflowBuilder):
 				"server": self.server,
 			},
 			["job_type", "status"],
-		):
+		)
+
+	def validate_archive_job(self) -> None:
+		recent_archive_job = frappe.get_all(
+			self.doctype,
+			{
+				"status": ("in", ["Pending", "Running"]),
+				"job_type": "Archive Server",
+				"server_type": self.server_type,
+				"server": self.server,
+				"creation": (">", add_to_date(now_datetime(), minutes=-STUCK_JOB_MINUTES)),
+			},
+			["status"],
+			limit=1,
+		)
+		if recent_archive_job:
 			frappe.throw(
-				f"A {existing_jobs[0].job_type} job is already {existing_jobs[0].status}. Please wait for the same."
+				f"An Archive Server job is already {recent_archive_job[0].status}. Please wait for the same."
 			)
 
 	def after_insert(self):
