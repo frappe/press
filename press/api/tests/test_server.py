@@ -19,7 +19,7 @@ from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.database_server.test_database_server import create_test_database_server
 from press.press.doctype.press_job.jobs.resize_server import ResizeServerJob
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
-from press.press.doctype.server.server import BaseServer
+from press.press.doctype.server.server import BaseServer, Server
 from press.press.doctype.team.test_team import allow_server_creation, create_test_press_admin_team
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
@@ -145,6 +145,7 @@ def successful_wait_for_cloud_init(self: BaseServer, *args, **kwargs):
 @patch.object(BaseServer, "update_tls_certificate", new=successful_tls_certificate)
 @patch.object(BaseServer, "update_agent_ansible", new=successful_update_agent_ansible)
 @patch.object(BaseServer, "_update_agent_ansible", new=successful_update_agent_ansible)
+@patch.object(Server, "_setup_agent_volume", new=Mock())
 @patch.object(Cluster, "check_machine_availability", new=available_check_machine_availability)
 class TestAPIServer(FrappeTestCase):
 	@patch.object(Cluster, "provision_on_aws_ec2", new=Mock())
