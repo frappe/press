@@ -275,7 +275,7 @@ export function backupRecordsOptions() {
 											row.creation,
 										).format(
 											'lll',
-										)}</b> ?<br><br>This will overwrite all <b>data</b> & <b>apps</b> in your site with those from the backup.`,
+										)}</b>?<br><br>This will overwrite all <b>data</b> & <b>apps</b> in your site with those from the backup.`,
 										onSuccess({ hide }) {
 											toast.promise(
 												site.restoreSiteFromPhysicalBackup.submit({
@@ -306,7 +306,7 @@ export function backupRecordsOptions() {
 											row.creation,
 										).format(
 											'lll',
-										)}</b> ?<br><br>This will overwrite all <b>data</b> & <b>apps</b> in your site with those from the backup.`,
+										)}</b>?<br><br>This will overwrite all <b>data</b> & <b>apps</b> in your site with those from the backup.`,
 										onSuccess({ hide }) {
 											toast.promise(
 												site.restoreSiteFromFiles.submit({

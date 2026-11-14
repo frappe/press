@@ -139,7 +139,7 @@
 				</div>
 				<!-- Message -->
 				<AlertBanner
-					title="Do you want to cleanup the reclaimable space ?"
+					title="Do you want to cleanup the reclaimable space?"
 					type="info"
 					:showIcon="false"
 					class="my-3"
@@ -968,8 +968,8 @@ export default {
 			confirmDialog({
 				title: 'Optimize Database Tables',
 				message: tableName
-					? `Do you want to optimize the table <strong>${tableName}</strong> to reclaim space ?<br>`
-					: `Frappe Cloud will find tables where reclaimable space exceeds 100 MB or 20% of the table size.<br>Are you sure you want to optimize the database tables ?<br>`,
+					? `Do you want to optimize the table <strong>${tableName}</strong> to reclaim space?<br>`
+					: `Frappe Cloud will find tables where reclaimable space exceeds 100 MB or 20% of the table size.<br>Are you sure you want to optimize the database tables?<br>`,
 				primaryAction: {
 					label: 'Optimize',
 					variant: 'solid',
