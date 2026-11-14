@@ -252,6 +252,8 @@ scheduler_events = {
 		"press.press.doctype.invoice.invoice.sync_paid_invoices_to_frappeio",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_card_invoices",
 		"press.press.doctype.cloud_usage_anomaly.cloud_usage_anomaly.run_daily_pipeline",
+		"press.press.doctype.wazuh_server_report.wazuh_server_report.sync_wazuh_reports",
+		"press.press.doctype.request_abuse_daily.request_abuse_daily.record_yesterday",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -456,6 +458,7 @@ fixtures = [
 	"MariaDB Variable",
 	"Cloud Region",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
+	{"dt": "Role Profile", "filters": [["role_profile", "like", "Press%"]]},
 	"Site Config Key Blacklist",
 	"Press Method Permission",
 	"Bench Dependency",
@@ -491,6 +494,8 @@ on_login = "press.overrides.on_login"
 
 before_request = [
 	"press.overrides.before_request",
+	"press.access.staff_roles.use_saved_document",
+	"press.access.staff_roles.check_staff_role",
 	"press.telemetry.monitor.add_user_context",
 	"press.telemetry.sentry.add_user_context",
 ]
@@ -512,6 +517,7 @@ export_python_type_annotations = True
 
 default_log_clearing_doctypes = {
 	"Alertmanager Webhook Log": 60,
+	"Request Abuse Daily": 90,
 }
 
 

@@ -19,7 +19,7 @@
  "is_standard": "Yes",
  "letter_head": "",
  "letterhead": null,
- "modified": "2023-10-20 11:26:37.053554",
+ "modified": "2026-11-06 21:00:00.000000",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench Memory Limits",
@@ -42,6 +42,15 @@
   },
   {
    "role": "Site Manager"
+  },
+  {
+   "role": "Press Release Manager"
+  },
+  {
+   "role": "Press Support Engineer"
+  },
+  {
+   "role": "Press Support"
   }
  ]
 }

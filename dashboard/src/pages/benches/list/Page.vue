@@ -37,7 +37,11 @@ const applyFilter = (key: string, val: any) => {
 	<div class="flex flex-col h-full">
 		<Header class="bg-surface-white shrink-0">
 			<Breadcrumbs :items="[{ label: 'Benches', route: '/groups' }]" />
-			<Button class="ml-auto mr-2" @click="groups.reload()">
+			<Button
+				class="ml-auto mr-2"
+				:loading="groups.list?.loading"
+				@click="groups.reload()"
+			>
 				<template #icon><lucide-refresh-ccw class="size-4" /></template>
 			</Button>
 			<Button :route="{ name: 'New Release Group' }" variant="solid"

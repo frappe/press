@@ -26,7 +26,7 @@ DEFAULT_CURRENCY = "USD"
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 	filters = frappe._dict(filters or {})
 	filters.currency = filters.currency or DEFAULT_CURRENCY
 	group_field = GROUP_FIELDS.get(filters.group_by or "Service", "service")

@@ -303,6 +303,8 @@
 		"wazuh_api_username",
 		"wazuh_api_password",
 		"wazuh_api_verify_tls",
+		"wazuh_indexer_username",
+		"wazuh_indexer_password",
 		"dashboard_tab",
 		"latest_blog_url"
 	],
@@ -1676,6 +1678,17 @@
 			"fieldname": "wazuh_api_verify_tls",
 			"fieldtype": "Check",
 			"label": "Wazuh API Verify TLS"
+		},
+		{
+			"description": "A read-only user on the Wazuh indexer. The connection uses the API host.",
+			"fieldname": "wazuh_indexer_username",
+			"fieldtype": "Data",
+			"label": "Wazuh Indexer Username"
+		},
+		{
+			"fieldname": "wazuh_indexer_password",
+			"fieldtype": "Password",
+			"label": "Wazuh Indexer Password"
 		},
 		{
 			"fieldname": "dashboard_tab",

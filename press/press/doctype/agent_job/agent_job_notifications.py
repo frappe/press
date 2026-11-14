@@ -39,6 +39,9 @@ APP_FRAME = re.compile(r"/apps/([a-z_][a-z0-9_]*)/")
 # `cp -LR sites/.` follows the sites/assets/<app> symlink into the app's public folder
 NODE_MODULES_SYMLINK = re.compile(r"cannot stat 'sites/\./assets/([a-z_][a-z0-9_]*)/node_modules'")
 
+# Path in the error that Frappe raises when it tries to delete a folder as an old backup file
+BACKUP_FOLDER_PATH = re.compile(r"IsADirectoryError: .*?'([^']*/private/backups/[^']+)'")
+
 if typing.TYPE_CHECKING:
 	# TYPE_CHECKING guard for code below cause DeployCandidate
 	# might cause circular import.
@@ -132,6 +135,7 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		('redis_host, redis_port = redis_url.split(":")', update_with_redis_unpack_error),
 		("Site might have lot of jobs in queue.", update_with_rq_jobs_in_queue_err),
 		("/node_modules': No such file or directory", update_with_node_modules_symlink_err),
+		(["IsADirectoryError", "/private/backups/"], update_with_folder_in_backups_err),
 		# Keep last: matches any traceback, only actionable if the failing app is identifiable
 		("/apps/", update_with_app_failure_err),
 	]
@@ -449,6 +453,26 @@ def update_with_node_modules_symlink_err(details: Details, job: AgentJob):
 	details["assistance_url"] = DOC_URLS[JobErr.NODE_MODULES_SYMLINK]
 
 	return True
+
+
+def update_with_folder_in_backups_err(details: Details, job: AgentJob):
+	"""Frappe deletes old files in private/backups before a backup, and fails on a folder"""
+	details["title"] = "Backup failed because of a folder in the backups folder"
+
+	details["message"] = (
+		f"<p>The backup of site <b>{job.site}</b> failed because of the folder <code>{get_backup_folder_path(job)}</code>.</p>"
+		"<p>Before each backup, Frappe deletes old files in the <code>private/backups</code> folder of the site."
+		" It cannot delete a folder, so the backup stops.</p>"
+		"<p>Delete all folders in <code>private/backups</code>, or move them to a different location. Then take the backup again."
+		" If an app or a script makes these folders, change it to use a different location.</p>"
+	)
+
+	return True
+
+
+def get_backup_folder_path(job: AgentJob) -> str:
+	match = BACKUP_FOLDER_PATH.search(f"{job.traceback or ''}\n{job.output or ''}")
+	return match.group(1) if match else "private/backups"
 
 
 def has_newer_release(bench: str, app: str) -> bool:

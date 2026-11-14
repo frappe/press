@@ -79,7 +79,7 @@ def upload_assets_to_store(client: Any, bucket: str, file_obj: BinaryIO, file_na
 @frappe.whitelist()
 def upload_asset():
 	# Builds trust stored assets for every public bench, so only staff may upload
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Release Manager", "Press Support Engineer"])
 
 	files = frappe.request.files
 	if not files or "asset_file" not in files:
