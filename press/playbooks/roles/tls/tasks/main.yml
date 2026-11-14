@@ -25,13 +25,22 @@
     name: nginx
     state: restarted
 
+# `is_proxy_server` is derived from `proxysql_admin_password`, which
+# ProxyServer.validate_proxysql_admin_password() generates whenever it is unset.
+# It is therefore true for every Proxy Server that has ever been saved, whether or
+# not ProxySQL is installed on the machine, so check for ProxySQL itself as well.
+- name: Check whether ProxySQL is installed
+  stat:
+    path: /home/frappe/proxysql
+  register: proxysql_directory
+
 - name: Copy ProxySQL TLS (Private Key)
   copy:
     src: /home/frappe/agent/tls/privkey.pem
     dest: /home/frappe/proxysql/proxysql-key.pem
     mode: 0600
     remote_src: yes
-  when: is_proxy_server | bool
+  when: is_proxy_server | bool and proxysql_directory.stat.exists
 
 - name: Copy ProxySQL TLS (CA Certificate)
   copy:
@@ -39,7 +48,7 @@
     dest: /home/frappe/proxysql/proxysql-ca.pem
     mode: 0600
     remote_src: yes
-  when: is_proxy_server | bool
+  when: is_proxy_server | bool and proxysql_directory.stat.exists
 
 - name: Copy ProxySQL TLS (Server Certificate)
   copy:
@@ -47,7 +56,7 @@
     dest: /home/frappe/proxysql/proxysql-cert.pem
     mode: 0600
     remote_src: yes
-  when: is_proxy_server | bool
+  when: is_proxy_server | bool and proxysql_directory.stat.exists
 
 - name: Enable ProxySQL Auditing
   mysql_query:
@@ -57,4 +66,4 @@
     login_port: 6032
     query:
       - PROXYSQL RELOAD TLS
-  when: is_proxy_server | bool
+  when: is_proxy_server | bool and proxysql_directory.stat.exists
