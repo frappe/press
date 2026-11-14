@@ -100,6 +100,16 @@ def create_test_alertmanager_webhook_log(
 	).insert()
 
 
+def add_alert_to_log(log: AlertmanagerWebhookLog, instance: str, status: str):
+	payload = json.loads(log.payload)
+	alert = json.loads(json.dumps(payload["alerts"][0]))
+	alert["labels"]["instance"] = instance
+	alert["status"] = status
+	payload["alerts"].append(alert)
+	log.payload = json.dumps(payload)
+	log.save()
+
+
 class TestDiskFullServers(FrappeTestCase):
 	def setUp(self):
 		self.rule = create_test_prometheus_alert_rule(name=DISK_FULL_ALERT)
@@ -131,6 +141,15 @@ class TestDiskFullServers(FrappeTestCase):
 		self.disk_full_alert(other_server.name, "firing")
 
 		self.disk_full_alert(self.server.name, "resolved")
+
+		self.assertEqual(disk_full_servers(), {other_server.name})
+
+	def test_resolved_alert_in_a_firing_group_stops_reporting_the_server(self):
+		other_server = create_test_server()
+		self.disk_full_alert(self.server.name, "firing")
+
+		log = self.disk_full_alert(other_server.name, "firing")
+		add_alert_to_log(log, self.server.name, "resolved")
 
 		self.assertEqual(disk_full_servers(), {other_server.name})
 
@@ -208,3 +227,24 @@ class TestRavenNotification(FrappeTestCase):
 		message, channel = send_raven_message.call_args.args
 		self.assertEqual(channel, "Frappe Cloud-alerts")
 		self.assertIn(self.rule.name, message)
+
+
+@patch("press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log.enqueue_doc")
+class TestReaction(FrappeTestCase):
+	def setUp(self):
+		self.rule = create_test_prometheus_alert_rule()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	@patch(
+		"press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log.AlertmanagerWebhookLog.react_for_instance",
+		return_value={},
+	)
+	def test_firing_group_reacts_only_to_its_firing_alerts(self, react_for_instance, enqueue_doc):
+		log = create_test_alertmanager_webhook_log(alert=self.rule, instance="still-full.frappe.cloud")
+		add_alert_to_log(log, "already-resized.frappe.cloud", "resolved")
+
+		log.react()
+
+		react_for_instance.assert_called_once_with("still-full.frappe.cloud")
