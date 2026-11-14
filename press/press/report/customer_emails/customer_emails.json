@@ -38,13 +38,21 @@
 			"mandatory": 1,
 			"options": "\nEU customers\nNon-EU customers\nAll customers",
 			"wildcard_filter": 0
+		},
+		{
+			"fieldname": "customer_type",
+			"fieldtype": "Select",
+			"label": "Customer Type",
+			"mandatory": 0,
+			"options": "\nActive\nInactive\nSignup",
+			"wildcard_filter": 0
 		}
 	],
 	"idx": 0,
 	"is_standard": "Yes",
 	"json": "",
 	"letterhead": null,
-	"modified": "2026-11-06 21:00:00.000000",
+	"modified": "2026-11-14 00:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Customer Emails",
