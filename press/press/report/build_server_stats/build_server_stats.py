@@ -56,6 +56,7 @@ CHARTS = (
 	"New Bench Jobs by Cluster",
 	"New Bench Duration by Cluster",
 	"New Bench Failures by Cluster",
+	"Remote Builder Wait by Build Server",
 	"Prune Jobs by Server",
 )
 
@@ -458,6 +459,7 @@ def get_selected_chart(chart, period, builds):
 		"New Bench Jobs by Status": get_new_bench_jobs_chart,
 		"New Bench Jobs by Cluster": get_new_bench_jobs_by_cluster_chart,
 		"New Bench Duration by Cluster": get_new_bench_duration_chart,
+		"Remote Builder Wait by Build Server": get_remote_builder_wait_chart,
 		"Prune Jobs by Server": get_prune_chart,
 	}
 	if chart in charts_of_period:
@@ -546,13 +548,17 @@ def get_build_duration_by_cluster_chart(period, builds):
 
 
 def median_duration_chart(period, builds, group_of):
-	"""One line per group, as medians do not add up. A drop to zero is a bucket without a median."""
 	bucket = max(60, period.seconds // 12)
 	minutes = median_minutes(builds, bucket, group_of)
+	return median_chart("Median minutes of successful builds, by start", period, bucket, minutes)
+
+
+def median_chart(title, period, bucket, minutes):
+	"""One line per group, as medians do not add up. A drop to zero is a bucket without a median."""
 	labels = buckets_of(period, bucket)
 	groups = sorted({group for _, group in minutes})
 	return {
-		"title": f"Median minutes of successful builds, by start per {bucket // 60} minutes",
+		"title": f"{title} per {bucket // 60} minutes",
 		"data": {
 			"labels": time_labels(labels),
 			"datasets": [
@@ -577,6 +583,34 @@ def median_minutes(builds, bucket, group_of):
 	return {key: rounded(median(spans) / 60, 1) for key, spans in seconds.items() if key not in running}
 
 
+def get_remote_builder_wait_chart(period):
+	"""Median minutes from creation until a worker on the build server picks up the build."""
+	jobs = frappe.get_all(
+		"Agent Job",
+		{
+			"job_type": "Run Remote Builder",
+			"status": ("in", ("Pending", "Running", "Success", "Failure")),
+			"creation": ("between", (period.start, period.end)),
+		},
+		["creation", "start", "status", "server"],
+	)
+	bucket = max(60, period.seconds // 12)
+	title = "Median minutes Run Remote Builder jobs waited for a worker, by creation"
+	return median_chart(title, period, bucket, median_waits(jobs, bucket))
+
+
+def median_waits(jobs, bucket):
+	"""A job still in the agent's queue counts the minutes it has waited so far."""
+	waits = {}
+	for job in jobs:
+		if not job.start and job.status != "Pending":
+			continue
+		picked_up = from_utc(job.start) if job.start else now_datetime()
+		key = (floor_to_bucket(job.creation, bucket), job.server)
+		waits.setdefault(key, []).append((picked_up - job.creation).total_seconds() / 60)
+	return {key: rounded(median(minutes), 1) for key, minutes in waits.items()}
+
+
 def buckets_of(period, bucket):
 	"""Every bucket of the period, so the time axis is even, also where nothing happened."""
 	first = int(period.start.timestamp()) // bucket * bucket
@@ -584,39 +618,19 @@ def buckets_of(period, bucket):
 
 
 def get_new_bench_duration_chart(period):
-	"""Successful New Bench jobs that ended in the period, like the Median Image Pull column."""
+	"""Minutes that successful New Bench jobs ran, summed by creation and stacked by cluster."""
 	jobs = frappe.get_all(
 		"Agent Job",
-		{"job_type": "New Bench", "status": "Success", "end": ("between", period.in_utc)},
-		["start", "end", "server"],
+		{"job_type": "New Bench", "status": "Success", "creation": ("between", (period.start, period.end))},
+		["creation", "start", "end", "server"],
 	)
 	cluster_of = get_cluster_of({job.server for job in jobs})
-	spans = [
-		((job.end - job.start).total_seconds(), cluster_of.get(job.server) or "No cluster")
+	events = [
+		(job.creation, cluster_of.get(job.server), (job.end - job.start).total_seconds() / 60)
 		for job in jobs
-		if job.start
+		if job.start and job.end
 	]
-	return duration_histogram("Successful New Bench jobs by duration", spans)
-
-
-def duration_histogram(title, spans):
-	"""Spans are (seconds, group) pairs, counted in about twelve whole-minute bins, stacked by group."""
-	longest = max((seconds for seconds, _ in spans), default=0)
-	width = max(60, math.ceil(longest / 12 / 60) * 60)
-	counts = Counter((int(seconds // width), group) for seconds, group in spans)
-	bins = range(max((index for index, _ in counts), default=-1) + 1)
-	groups = sorted({group for _, group in counts})
-	return {
-		"title": title,
-		"data": {
-			"labels": [f"{index * width // 60}-{(index + 1) * width // 60} min" for index in bins],
-			"datasets": [
-				{"name": group, "values": [counts[(index, group)] for index in bins]} for group in groups
-			],
-		},
-		"type": "bar",
-		"barOptions": {"stacked": 1},
-	}
+	return stacked_sum_chart("Minutes of successful New Bench jobs, by creation", period.seconds, events)
 
 
 def get_new_bench_failure_chart(period):
@@ -650,16 +664,24 @@ def get_failed_jobs(job_type, period):
 
 def stacked_chart(title, window, events):
 	"""Events per bucket, one stacked series per group. An event is a (moment, group) pair."""
+	return stacked_sum_chart(title, window, [(moment, group, 1) for moment, group in events])
+
+
+def stacked_sum_chart(title, window, events):
+	"""Values summed per bucket, one stacked series per group. An event is a (moment, group, value)."""
 	bucket = max(60, window // 12)
-	counts = Counter((floor_to_bucket(moment, bucket), group or "No cluster") for moment, group in events)
-	labels = sorted({moment for moment, _ in counts})
-	groups = sorted({group for _, group in counts})
+	totals = Counter()
+	for moment, group, value in events:
+		totals[(floor_to_bucket(moment, bucket), group or "No cluster")] += value
+	labels = sorted({moment for moment, _ in totals})
+	groups = sorted({group for _, group in totals})
 	return {
 		"title": f"{title} per {bucket // 60} minutes",
 		"data": {
 			"labels": time_labels(labels),
 			"datasets": [
-				{"name": group, "values": [counts[(label, group)] for label in labels]} for group in groups
+				{"name": group, "values": [round(totals[(label, group)], 1) for label in labels]}
+				for group in groups
 			],
 		},
 		"type": "bar",
