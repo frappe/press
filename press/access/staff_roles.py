@@ -13,7 +13,7 @@ DASHBOARD_METHODS = {
 	"press.api.client.run_doc_method": ("dt", None),
 	"press.api.client.delete": ("doctype", "delete"),
 }
-READ_ONLY_ROLES = {"Press Support"}
+READ_ONLY_ROLES = {"Press Support L1"}
 METHOD_PATH = re.compile(r"^/api/(?:v1/|v2/)?method/(.+?)/?$")
 RESOURCE_PATH = re.compile(r"^/api/(?:v1/)?resource/([^/]+)/.+$")
 DOCUMENT_PATH = re.compile(r"^/api/v2/document/([^/]+)/.+/method/([^/]+)/?$")
@@ -116,7 +116,7 @@ def check_method_roles(doctype: str, function):
 
 
 def reads_only(doctype: str) -> bool:
-	"""Whether the user reads `doctype` only through a read-only role, such as Press Support.
+	"""Whether the user reads `doctype` only through a read-only role, such as Press Support L1.
 
 	An `if_owner` row gives nothing on records of other users, so it does not count.
 	"""

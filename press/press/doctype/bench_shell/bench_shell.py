@@ -5,10 +5,17 @@ import json
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
+from frappe.utils import cstr
+
+from press.access.actions import ReleaseGroupActions
+from press.access.support_access import can_perform
 
 if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
+
+ALLOWED_ROLES = ["System Manager", "Press Support Engineer"]
 
 
 class BenchShell(Document):
@@ -33,7 +40,7 @@ class BenchShell(Document):
 	# end: auto-generated types
 
 	def run_command(self):
-		frappe.only_for("System Manager")
+		self.check_permission_to_run()
 
 		bench: "Bench" = frappe.get_doc("Bench", self.bench)
 		try:
@@ -51,9 +58,36 @@ class BenchShell(Document):
 		self.duration = result.get("duration")
 		frappe.db.commit()
 
+	def check_permission_to_run(self):
+		"""Staff without System Manager run as the bench user, and need the consent of the team."""
+		frappe.only_for(ALLOWED_ROLES, message=True)
+		if "System Manager" in frappe.get_roles():
+			return
+		if self.as_root:
+			frappe.throw(_("Only a System Manager can run a command as root"), frappe.PermissionError)
+		self.check_team_consent()
+
+	def check_team_consent(self):
+		group = cstr(frappe.db.get_value("Bench", self.bench, "group"))
+		team, public = frappe.db.get_value("Release Group", group, ["team", "public"]) or (None, 1)
+		# A public group counts as granted in every grant check, so refuse it first
+		if public:
+			frappe.throw(
+				_("Public bench groups need a System Manager. {0} is public.").format(group),
+				frappe.PermissionError,
+			)
+		if not can_perform("Release Group", group, cstr(team), ReleaseGroupActions.SSHAccess.value):
+			frappe.throw(
+				_(
+					"Request Support Access with SSH on the bench group {0} to run commands on its benches"
+				).format(group),
+				frappe.PermissionError,
+			)
+
 
 @frappe.whitelist()
 def run_command(doc):
-	bench_shell: "BenchShell" = frappe.get_doc(json.loads(doc))
+	# The DocType is fixed, so a crafted document cannot run the method of another console.
+	bench_shell = BenchShell({**json.loads(doc), "doctype": "Bench Shell"})
 	bench_shell.run_command()
 	return bench_shell.as_dict()

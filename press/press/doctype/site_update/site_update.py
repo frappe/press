@@ -712,20 +712,17 @@ class SiteUpdate(Document):
 
 			self.bump_max_statement_time_before_recovery(site)
 
-			# Disable maintenance mode for active sites
-			activate = site.status_before_update == "Active"
 			job = agent.update_site_recover_move(
 				site,
 				self.source_bench,
 				self.deploy_type,
-				activate,
+				site.serves_requests_before_update,
 				rollback_scripts=self.get_before_migrate_scripts(rollback=True),
 				restore_touched_tables=(not self.skipped_backups and self.backup_type == "Logical"),
 			)
 		else:
 			# Site is already on the source bench
-			if site.status_before_update == "Active":
-				# Disable maintenance mode for active sites
+			if site.serves_requests_before_update:
 				job = agent.update_site_recover(site)
 			else:
 				# Site is already on source bench and maintenance mode is on

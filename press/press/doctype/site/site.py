@@ -1582,7 +1582,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def rotate_database_password(self):
-		frappe.only_for(["System Manager", "Press Support", "Press Support Engineer"], message=True)
+		frappe.only_for(["System Manager", "Press Support L1", "Press Support Engineer"], message=True)
 		self.validate_no_password_rotation_in_progress()
 		frappe.enqueue_doc(
 			self.doctype,
@@ -1649,7 +1649,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def rotate_saas_communication_secret(self):
-		frappe.only_for(["System Manager", "Press Support", "Press Support Engineer"], message=True)
+		frappe.only_for(["System Manager", "Press Support L1", "Press Support Engineer"], message=True)
 		self.validate_communication_secret_can_rotate()
 		self.saas_communication_secret = frappe.generate_hash(length=32)
 		config = {"fc_communication_secret": self.saas_communication_secret}
@@ -2106,6 +2106,11 @@ class Site(Document, TagHelpers):
 
 		return site_migration
 
+	@property
+	def serves_requests_before_update(self) -> bool:
+		"""A broken site still serves requests, so an update must not leave it in maintenance mode."""
+		return self.status_before_update in ("Active", "Broken")
+
 	def reset_previous_status(self, fix_broken=False):
 		if self.status == "Archived":
 			return
@@ -2532,7 +2537,7 @@ class Site(Document, TagHelpers):
 				frappe.throw(f"User {user} does not exist in the site", frappe.ValidationError)  # nosemgrep
 			elif "certificate has expired" in str(e):
 				frappe.throw(
-					"SSL certificate for the {self.name} has expired. Please reach out to us at <a href='https://support.frappe.io/'>support.frappe.io</a> if it is not automatically generated in a few minutes.",
+					f"SSL certificate for the {self.name} has expired. Please reach out to us at <a href='https://support.frappe.io/'>support.frappe.io</a> if it is not automatically generated in a few minutes.",
 					frappe.ValidationError,
 				)
 			elif "no space left on device" in str(e):

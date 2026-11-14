@@ -9,7 +9,7 @@ Manager only to the few admins who need shells and secrets.
 
 | Role | Scope |
 |------|-------|
-| Press Support | First-line support (L1) that finds issues. Reads everything that Press Support Engineer reads and changes nothing. Presses only buttons marked `@safe_for_readers`. Can also run the MariaDB and customer email reports, request team deletion, transfer resources between teams and rotate site passwords |
+| Press Support L1 | First-line support (L1) that finds issues. Reads everything that Press Support Engineer reads, except the bench shell and its logs, and changes nothing. Presses only buttons marked `@safe_for_readers`. Can also run the MariaDB and customer email reports, request team deletion, transfer resources between teams and rotate site passwords |
 | Press Support Engineer | Engineering support (L2). Full access to teams, sites, backups, updates, domains, webhooks, apps, release groups, benches and deploys. Read, write and every button on servers, database servers, proxy servers and virtual machines, but not create or delete. Create on TLS certificates, server activities and Press notifications, which buttons make as a side effect. Read only on agent jobs, Press jobs, incidents, restorations, TLS certificates, billing, Marketplace, Product and Partner records |
 | Press Infrastructure Manager | Servers, virtual machines, clusters, agent jobs, Press jobs, monitoring, incidents, cloud cost |
 | Press Release Manager | Apps, app sources, app releases, release groups, benches, deploy candidates, builds, deploys |
@@ -35,13 +35,13 @@ they call the method from desk. Press code that calls the method, and customers
 on the dashboard, are not affected. Press Support Engineer can press the
 buttons on agent jobs, Press jobs, restorations and incidents.
 
-Press Support is listed in `READ_ONLY_ROLES`. When a staff user reads a DocType
+Press Support L1 is listed in `READ_ONLY_ROLES`. When a staff user reads a DocType
 only through a read-only role, `check_staff_role` lets them call only the
 methods marked `@safe_for_readers`, such as `Site.get_backup_schedule` or
 `Server.ping_agent`. Mark a method safe only when it changes no record, queues
 no job and returns no secret. The rule also covers `press.api.client.run_doc_method`
 and `press.api.client.delete`. Other dashboard APIs still let every System User
-through, so Press Support is read only in desk but not yet on the dashboard.
+through, so Press Support L1 is read only in desk but not yet on the dashboard.
 
 Desk sends the whole form with a button call, and Frappe checks only read
 access. So `use_saved_document`, also a `before_request` hook, runs the button
@@ -60,11 +60,19 @@ roles, only System Manager and the owning scope role read them:
 Agent Job `request_data` and `request_files`, Ansible Play `variables`, and the
 `secret_key` of Marketplace App Subscription and Saas App Subscription.
 
+## Press Employee
+
+Every employee gets Press Employee. It only lets them request a Support
+Access from a customer: create on Support Access, and no read on any customer
+record. An accepted request then opens the named resources on the dashboard.
+It has no desk access, so it adds no desk page.
+
 ## Role Profiles
 
 | Role Profile | Roles |
 |--------------|-------|
-| Press Support | Press Support (L1) |
+| Press Employee | Press Employee, Press User |
+| Press Support L1 | Press Support L1 |
 | Press Support Engineer | Press Support Engineer (L2) |
 | Press Site Reliability Engineer | Infrastructure, Press Support Engineer |
 | Press Security Engineer | Security, Infrastructure |
@@ -74,15 +82,46 @@ Agent Job `request_data` and `request_files`, Ansible Play `variables`, and the
 | Press Marketplace Team | Marketplace |
 | Press Partnerships | Partner Manager |
 
-A user can have more than one Role Profile.
+Give every employee the Press Employee profile, and add one job profile when
+the work needs it. A user can have more than one Role Profile. On save, a user
+with a Role Profile keeps only the roles of their profiles, so do not give a
+role directly to a user who has a profile. Press Hybrid Server Manager is the
+exception: give it directly, with Press Employee and Press User, to a user who
+has no profile.
+
+## Shells and consoles
+
+Three roles open a shell. Employees follow customer consent: a team they are a
+member of needs none, and another team's resource needs an accepted Support
+Access.
+
+| Role | Tools | Rule |
+|------|-------|------|
+| Press Infrastructure Manager | Ansible Console, serial console, User SSH Certificate for one server, System Console with SQL only | `press/access/server_access.py`: shared (`public`) servers are System Manager only. Other servers need team membership, or Support Access with Server SSH on the app server. `press/access/sql_guard.py`: one read-only statement, on DocTypes that the user can read at every permlevel. Python and commit are System Manager only |
+| Press Support Engineer | Bench Shell | Bench SSH consent on the release group, as for SSH certificates. Public release groups and `as_root` are System Manager only |
+| Press Hybrid Server Manager | User SSH Certificate for a self-hosted server | No consent in Press. Hybrid servers handle it outside Press. Give it to a person directly: no Role Profile includes it |
+
+Press Infrastructure Manager is part of the Site Reliability Engineer and
+Security Engineer profiles. Press Support Engineer is part of the Support
+Engineer and Site Reliability Engineer profiles. Press Support L1 gets no
+shell. Press Infrastructure Manager and Press Hybrid Server Manager can add and
+read their own User SSH Keys. Server SSH consent counts only for the person who
+requested it.
+
+Known gap: a certificate for a server behind a proxy also names the proxy, so
+it opens a shell on the shared Proxy Server too. A jump-only principal on the
+proxies would close it.
+
+Nobody except a System Manager or Press SSH Manager issues an `all-servers`
+certificate or a certificate for another user. Server Scripts stay with System
+Manager, because a script can turn off every check here.
 
 ## System Manager only
 
 These DocTypes give shell access to servers or hold secrets. They grant no
 scope role:
 
-- Ansible Console, Bench Shell, Build Cache Shell, and their logs
-- Serial Console Log
+- Build Cache Shell
 - Certificate Authority, SSH Certificate Authority
 
 An SSH certificate gives shell access to servers, so Press SSH Manager is a
@@ -116,8 +155,9 @@ the sign-up email. The email account picks the sender of trial emails.
 
 These methods return secrets and stay System Manager only: `show_agent_password`
 on servers, `show_admin_password` on Site, the password methods on monitor,
-analytics, registry, log and trace servers, and
-`VirtualMachine.get_serial_console_credentials`.
+analytics, registry, log and trace servers,.
+`VirtualMachine.get_serial_console_credentials` is open to Press Infrastructure
+Manager under the server rule above.
 
 These actions also stay System Manager only: `Team.impersonate`,
 `Site.forcefully_remove_site`, `Managed Database Service.show_root_password`,

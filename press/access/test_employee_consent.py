@@ -168,7 +168,7 @@ class TestEmployeeConsent(FrappeTestCase):
 
 	def test_support_agent_dashboard_still_hides_backups_tab(self):
 		agent = create_test_press_admin_team()
-		frappe.get_doc("User", agent.user).add_roles("Press Support Agent")
+		frappe.get_doc("User", agent.user).add_roles("Press Employee")
 		frappe.set_user(agent.user)
 		self.assertFalse(self.site_rules().tabs_access["Backups"])
 

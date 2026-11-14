@@ -8,6 +8,7 @@ import re
 import subprocess
 from datetime import datetime
 from ipaddress import ip_network
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 import frappe
@@ -2350,40 +2351,7 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 
 		proxy = frappe.db.get_value("Proxy Server", {"status": "Active", "cluster": self.cluster}, "name")
 
-		script = f"""
-#!/usr/bin/env bash
-set -e
-
-BINLOG_DIR="/var/lib/mysql"
-INDEX_FILE="$BINLOG_DIR/mysql-bin.index"
-DELETE_N="${1:-0}"
-
-[ "$DELETE_N" -eq 0 ] && exit 0
-
-# List only actual binlog files (exclude index!)
-BINLOGS=$(ls "$BINLOG_DIR"/mysql-bin.[0-9]* 2>/dev/null | sort -V || true)
-
-TOTAL=$(printf "%s\n" $BINLOGS | wc -l)
-[ "$TOTAL" -eq 0 ] && exit 0
-
-# Cap delete count
-[ "$DELETE_N" -gt "$TOTAL" ] && DELETE_N="$TOTAL"
-
-TO_DELETE=$(printf "%s\n" $BINLOGS | head -n "$DELETE_N")
-
-# Delete binlogs
-rm -f $TO_DELETE
-
-# Fix index if it exists
-if [ -f "$INDEX_FILE" ]; then
-  grep -vF -f <(printf "%s\n" $TO_DELETE) "$INDEX_FILE" > "$INDEX_FILE.tmp"
-  mv "$INDEX_FILE.tmp" "$INDEX_FILE"
-  chown mysql:mysql "$INDEX_FILE"
-fi
-
-# Restart mariadb, as it could be stuck due to full disk
-systemctl restart mariadb
-"""
+		script = Path(__file__).with_name("force_purge_binlogs.sh").read_text()
 
 		is_failed = False
 		try:
@@ -2410,8 +2378,8 @@ systemctl restart mariadb
 				stderr=subprocess.STDOUT,
 				timeout=120,
 			)
-		except Exception:
-			log_error("Failed to purge binlogs on server")
+		except Exception as e:
+			log_error("Failed to purge binlogs on server", output=getattr(e, "output", None))
 			is_failed = True
 
 		if is_failed:
@@ -2441,7 +2409,8 @@ systemctl restart mariadb
 		self.agent.purge_binlogs_by_size_limit(self, max_binlog_gb=binlog_limit_in_gb)
 
 	def has_open_binlog_purge_job(self) -> bool:
-		"""Agent job deduplication is off by default, so an undelivered purge would pile up every 10 minutes."""
+		"""Agent job deduplication is off by default, so an undelivered purge would pile up every 10 minutes.
+		Older open jobs are stuck, and must not stop the purge forever."""
 		return bool(
 			frappe.db.exists(
 				"Agent Job",
@@ -2450,6 +2419,7 @@ systemctl restart mariadb
 					"status": ("in", ("Undelivered", "Pending", "Running")),
 					"server_type": self.doctype,
 					"server": self.name,
+					"creation": (">", frappe.utils.add_to_date(None, hours=-1)),
 				},
 			)
 		)

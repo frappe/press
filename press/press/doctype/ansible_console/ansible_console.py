@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-import json
+import re
 
 import frappe
 from ansible import constants, context
@@ -14,11 +14,21 @@ from ansible.parsing.dataloader import DataLoader
 from ansible.playbook.play import Play
 from ansible.plugins.callback import CallbackBase
 from ansible.vars.manager import VariableManager
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_timedelta
 
+from press.access.server_console import (
+	CONSOLE_DOCTYPES,
+	check_console_access,
+	check_console_role,
+	has_system_manager_role,
+)
 from press.press.doctype.virtual_machine.virtual_machine import SERIES_TO_SERVER_TYPE
 from press.utils import reconnect_on_failure
+
+# A host of Ansible's host_list inventory that is a plain name: no port, range, pattern or path.
+HOST_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]*$")
 
 
 class AnsibleConsole(Document):
@@ -42,7 +52,7 @@ class AnsibleConsole(Document):
 	# end: auto-generated types
 
 	def run(self):
-		frappe.only_for("System Manager")
+		self.inventory = check_inventory_access(self.inventory)
 		try:
 			ad_hoc = AnsibleAdHoc(sources=self.inventory)
 			for host in ad_hoc.run(self.command, self.nonce, raw_params=True):
@@ -53,13 +63,50 @@ class AnsibleConsole(Document):
 
 			traceback.print_exc()
 		log = self.as_dict()
-		log.update({"doctype": "Ansible Console Log"})
-		frappe.get_doc(log).insert()
+		# The log belongs to whoever ran it: staff read only their own logs.
+		log.update({"doctype": "Ansible Console Log", "owner": frappe.session.user})
+		frappe.get_doc(log).insert(ignore_permissions=True)
 		frappe.db.commit()
+
+
+def check_inventory_access(inventory: str | None) -> str | None:
+	"""The inventory to run. Staff without System Manager list only servers they can reach."""
+	check_console_role()
+	if has_system_manager_role():
+		return inventory
+	hosts = parse_hosts(inventory)
+	for host in hosts:
+		check_console_access(find_server_doctype(host), host)
+	return ",".join(hosts) + ","
+
+
+def parse_hosts(inventory: str | None) -> list[str]:
+	"""The host names of a comma-separated inventory. Anything else Ansible reads differently."""
+	hosts = [host.strip() for host in (inventory or "").split(",") if host.strip()]
+	if not hosts or not all(HOST_NAME.match(host) for host in hosts):
+		frappe.throw(
+			_(
+				"List servers by name, separated by commas. Groups, patterns, ranges, ports and files are not allowed: {0}"
+			).format(inventory or ""),
+			frappe.PermissionError,
+		)
+	return hosts
+
+
+def find_server_doctype(host: str) -> str:
+	"""The DocType of the one server named `host`."""
+	doctypes = [doctype for doctype in CONSOLE_DOCTYPES if frappe.db.exists(doctype, host) == host]
+	if len(doctypes) != 1:
+		frappe.throw(
+			_("{0} is not the name of a Server, Database Server or Proxy Server").format(host),
+			frappe.PermissionError,
+		)
+	return doctypes[0]
 
 
 @frappe.whitelist()
 def execute_command(doc):
+	check_inventory_access(parse_console(doc).inventory)
 	frappe.enqueue(
 		"press.press.doctype.ansible_console.ansible_console._execute_command",
 		doc=doc,
@@ -69,9 +116,16 @@ def execute_command(doc):
 
 
 def _execute_command(doc):
-	console = frappe.get_doc(json.loads(doc))
+	console = parse_console(doc)
 	console.run()
 	return console.as_dict()
+
+
+def parse_console(doc) -> AnsibleConsole:
+	values = frappe.parse_json(doc)
+	if not isinstance(values, dict) or values.get("doctype") != "Ansible Console":
+		frappe.throw(_("Send an Ansible Console document"), frappe.PermissionError)
+	return AnsibleConsole(values)
 
 
 class AnsibleCallback(CallbackBase):

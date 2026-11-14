@@ -59,25 +59,25 @@
 </template>
 
 <script setup lang="ts">
-import { createResource } from 'frappe-ui';
-import { computed, reactive, ref } from 'vue';
-import { toast } from 'vue-sonner';
-import { Checkbox, Textarea } from 'frappe-ui';
+import { Checkbox, createResource, Textarea } from 'frappe-ui'
+import { computed, reactive, ref } from 'vue'
+import { toast } from 'vue-sonner'
 
 const props = defineProps<{
-	doctype: string;
-	docname: string;
-}>();
+	doctype: string
+	docname: string
+}>()
 
-const open = ref(true);
-const reason = ref('');
+const open = ref(true)
+const reason = ref('')
 
 const permissionsState = reactive({
 	login_as_administrator: false,
 	site_domains: false,
 	site_release_group: false,
 	bench_ssh: false,
-});
+	server_ssh: false,
+})
 
 const permissionsMeta = computed(() => ({
 	login_as_administrator: {
@@ -97,7 +97,11 @@ const permissionsMeta = computed(() => ({
 		enabled:
 			props.doctype === 'Release Group' || permissionsState.site_release_group,
 	},
-}));
+	server_ssh: {
+		label: 'Server SSH',
+		enabled: props.doctype === 'Server',
+	},
+}))
 
 const request = createResource({
 	url: 'press.api.client.insert',
@@ -105,11 +109,11 @@ const request = createResource({
 		const permission = Object.keys(permissionsMeta.value).reduce(
 			(acc, permission) => {
 				// @ts-ignore
-				acc[permission] = permissionsState[permission];
-				return acc;
+				acc[permission] = permissionsState[permission]
+				return acc
 			},
 			{} as Record<string, boolean>,
-		);
+		)
 
 		return {
 			doc: {
@@ -123,12 +127,12 @@ const request = createResource({
 				],
 				...permission,
 			},
-		};
+		}
 	},
 	onSuccess: () => {
-		open.value = false;
-		toast.success('Access request submitted');
+		open.value = false
+		toast.success('Access request submitted')
 	},
 	onError: () => toast.error('There was an error submitting your request'),
-});
+})
 </script>
