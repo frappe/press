@@ -93,7 +93,7 @@ has no profile.
 
 Three roles open a shell. Employees follow customer consent: a team they are a
 member of needs none, and another team's resource needs an accepted Support
-Access.
+Access, unless it is part of an open incident (see Incidents below).
 
 | Role | Tools | Rule |
 |------|-------|------|
@@ -107,6 +107,32 @@ Engineer and Site Reliability Engineer profiles. Press Support L1 gets no
 shell. Press Infrastructure Manager and Press Hybrid Server Manager can add and
 read their own User SSH Keys. Server SSH consent counts only for the person who
 requested it.
+
+### Incidents
+
+During an incident nobody from the team is there to accept a Support Access
+request. `press/access/incident_access.py` lets Press Infrastructure Manager
+and Press Support Engineer reach the resources of an open incident without
+consent:
+
+- An incident counts when its status is Confirmed, Acknowledged or
+  Investigating, and it is less than 6 hours old. Validating is skipped,
+  because most of those resolve in a few minutes.
+- Only incidents that monitoring created count, with Administrator as the
+  owner. The `server` of an incident cannot change after insert. So staff
+  cannot open a server with an incident of their own.
+- It opens the app server of the incident and its database server. It opens
+  the proxy server only when the incident names that proxy. Shared servers are
+  included.
+- It opens the sites, benches and agent jobs on these servers. It opens a
+  release group only when all its active benches are on these servers,
+  because bench SSH covers the whole group.
+- Login as Administrator still needs consent, and so do benches of public
+  release groups in Bench Shell.
+- Role checks still apply. Press Support Engineer gets Bench Shell and bench
+  SSH, but no server console.
+- An SSH certificate for a shared app server also names its shared proxy
+  server. See the known gap below.
 
 Known gap: a certificate for a server behind a proxy also names the proxy, so
 it opens a shell on the shared Proxy Server too. A jump-only principal on the

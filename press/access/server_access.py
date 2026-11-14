@@ -2,17 +2,19 @@
 
 Shared servers hold the sites of many teams, so only System Managers reach them.
 Other servers need membership of the owning team, or its consent.
+During an open incident, SREs reach its servers, shared ones included.
 """
 
 import frappe
 from frappe import _
 from frappe.utils import now_datetime
 
+from press.access.incident_access import has_incident_access
 from press.access.support_access import is_insider
 
 
 def can_reach_server(doctype: str, name: str) -> bool:
-	if "System Manager" in frappe.get_roles():
+	if "System Manager" in frappe.get_roles() or has_incident_access((doctype, name)):
 		return True
 	server = frappe.db.get_value(doctype, name, ["public", "team"], as_dict=True)
 	if not server or server.public:
@@ -53,8 +55,9 @@ def check_server_access(doctype: str, name: str) -> None:
 	if not can_reach_server(doctype, name):
 		frappe.throw(
 			_(
-				"You cannot reach {0} {1}. Shared servers need a System Manager. Other servers need the"
-				" consent of their team: request Support Access with Server SSH from the dashboard."
+				"You cannot reach {0} {1}. Shared servers need a System Manager or an open incident. Other"
+				" servers need the consent of their team: request Support Access with Server SSH from the"
+				" dashboard."
 			).format(doctype, name),
 			frappe.PermissionError,
 		)

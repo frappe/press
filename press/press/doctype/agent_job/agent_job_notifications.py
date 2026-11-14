@@ -404,7 +404,7 @@ def get_backup_folder_path(job: AgentJob) -> str:
 	return match.group(1) if match else "private/backups"
 
 
-def has_newer_release(bench: str, app: str) -> bool:
+def has_newer_release(bench: str | None, app: str) -> bool:
 	"""False only if we know the bench is on the newest release of the app"""
 	deployed = frappe.db.get_value(
 		"Bench App", {"parent": bench, "app": app}, ["source", "release"], as_dict=True
