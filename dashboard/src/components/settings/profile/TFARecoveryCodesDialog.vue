@@ -73,6 +73,7 @@
 <script>
 import TFARecoveryCodes from './TFARecoveryCodes.vue';
 import { toast } from 'vue-sonner';
+import { getToastErrorMessage } from '../../../utils/toast';
 
 export default {
 	props: {
@@ -118,6 +119,11 @@ export default {
 				onSuccess(codes) {
 					this.recoveryCodes = codes;
 					toast.success('Recovery codes have been reset.');
+				},
+				onError(error) {
+					toast.error(
+						getToastErrorMessage(error, 'Failed to reset recovery codes.'),
+					);
 				},
 			};
 		},
