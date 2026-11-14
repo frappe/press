@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from frappe.utils import cstr
 
 from press.access.actions import ReleaseGroupActions
+from press.access.incident_access import has_incident_access
 from press.access.support_access import can_perform
 
 if TYPE_CHECKING:
@@ -76,6 +77,8 @@ class BenchShell(Document):
 				_("Public bench groups need a System Manager. {0} is public.").format(group),
 				frappe.PermissionError,
 			)
+		if has_incident_access(("Bench", cstr(self.bench))):
+			return
 		if not can_perform("Release Group", group, cstr(team), ReleaseGroupActions.SSHAccess.value):
 			frappe.throw(
 				_(
