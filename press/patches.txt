@@ -181,3 +181,4 @@ press.patches.v0_8_0.set_cluster_backup_bucket
 press.patches.v0_8_0.allow_infrastructure_manager_in_system_console
 # run by hand after deploy, with the execute command
 # press.patches.v0_8_0.bump_v16_nightly_node_version_to_24_22_1
+# press.patches.v0_8_0.reapply_slave_connections_needed_for_purge
