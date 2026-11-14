@@ -127,6 +127,7 @@
 			"label": "Server",
 			"options": "Server",
 			"reqd": 1,
+			"search_index": 1,
 			"set_only_once": 1
 		},
 		{
@@ -807,7 +808,7 @@
 			"link_fieldname": "site"
 		}
 	],
-	"modified": "2026-09-23 12:00:00.000000",
+	"modified": "2026-11-06 21:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Site",
@@ -834,6 +835,25 @@
 			"report": 1,
 			"role": "Press Support Agent",
 			"share": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support Engineer",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support"
 		}
 	],
 	"row_format": "Dynamic",

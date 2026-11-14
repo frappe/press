@@ -1,6 +1,8 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
+import frappe
+from frappe import _
 from frappe.model.document import Document
 
 
@@ -43,3 +45,7 @@ class DashboardBanner(Document):
 		type_of_scope: DF.Literal["Team", "Server", "Site", "Cluster"]
 		user_dismissals: DF.Table[DashboardBannerDismissal]
 	# end: auto-generated types
+
+	def validate(self):
+		if self.help_url and not self.help_url.startswith(("https://", "http://")):
+			frappe.throw(_("Help URL must start with https:// or http://"))

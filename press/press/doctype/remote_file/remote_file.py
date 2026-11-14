@@ -91,7 +91,7 @@ def poll_file_statuses():
 		},
 	]
 
-	for b in frappe.get_all("Backup Bucket", ["bucket_name", "cluster", "region"]):
+	for b in frappe.get_all("Backup Bucket", ["bucket_name", "region"]):
 		buckets.append(
 			{
 				"name": b["bucket_name"],

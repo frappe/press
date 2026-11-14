@@ -103,6 +103,7 @@ class LogServer(BaseServer):
 
 	@frappe.whitelist()
 	def show_kibana_password(self):
+		frappe.only_for("System Manager")
 		return self.get_password("kibana_password")
 
 	@frappe.whitelist()

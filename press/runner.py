@@ -135,7 +135,7 @@ class AnsibleCallback(CallbackBase):
 			play.status = status
 			play.start = now()
 
-		play.save()
+		play.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	@reconnect_on_failure()
@@ -162,7 +162,7 @@ class AnsibleCallback(CallbackBase):
 			task.duration = task.end - task.start
 		else:
 			task.start = now()
-		task.save()
+		task.save(ignore_permissions=True)
 		self.publish_play_progress(task.name)
 		frappe.db.commit()
 
@@ -185,7 +185,7 @@ class AnsibleCallback(CallbackBase):
 		task_name = self.tasks[role][task]
 		task = frappe.get_doc("Ansible Task", task_name)
 		task.job_id = job_id
-		task.save()
+		task.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	@reconnect_on_failure()
@@ -195,7 +195,7 @@ class AnsibleCallback(CallbackBase):
 		task = frappe.get_doc("Ansible Task", task_name)
 		task.result = json.dumps(result, indent=4)
 		task.duration = now() - task.start
-		task.save()
+		task.save(ignore_permissions=True)
 		frappe.db.commit()
 
 
@@ -285,7 +285,7 @@ class Ansible:
 				"playbook": self.playbook,
 				"play": play.get_name(),
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 		self.play = play_doc.name
 		self.tasks = {}
 		self.task_list = []
@@ -298,7 +298,7 @@ class Ansible:
 						"role": role.get_name(),
 						"task": task.name,
 					}
-				).insert()
+				).insert(ignore_permissions=True)
 				self.tasks.setdefault(role.get_name(), {})[task.name] = task_doc.name
 				self.task_list.append(task_doc.name)
 
@@ -356,7 +356,7 @@ class StepHandler:
 
 		machine_status = frappe.db.get_value("Virtual Machine", virtual_machine, "status")
 		step.status = Status.Running if machine_status != expected_status else Status.Success
-		step.save()
+		step.save(ignore_permissions=True)
 
 	def handle_agent_job(self, step: GenericStep, job: str, poll: bool = False) -> None:
 		if poll:
@@ -373,7 +373,7 @@ class StepHandler:
 		step.attempt = 1 if not step.attempt else step.attempt + 1
 
 		step.status = job_status
-		step.save()
+		step.save(ignore_permissions=True)
 
 		if step.status == Status.Failure:
 			raise
@@ -381,10 +381,10 @@ class StepHandler:
 	def handle_ansible_play(self, step: GenericStep, ansible: Ansible) -> None:
 		step.job_type = "Ansible Play"
 		step.job = ansible.play
-		step.save()
+		step.save(ignore_permissions=True)
 		ansible_play = ansible.run()
 		step.status = ansible_play.status
-		step.save()
+		step.save(ignore_permissions=True)
 
 		if step.status == Status.Failure:
 			raise
@@ -399,27 +399,27 @@ class StepHandler:
 		step.job = getattr(ansible, "play", None)
 		step.status = Status.Failure
 		step.output = str(e)
-		step.save()
+		step.save(ignore_permissions=True)
 
 	def _fail_job_step(self, step: GenericStep, e: Exception | None = None) -> None:
 		step.status = Status.Failure
 		step.output = str(e)
-		step.save()
+		step.save(ignore_permissions=True)
 
 	def fail(self, failure_status: str = Status.Failure):
 		self.status = failure_status
-		self.save()
+		self.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	def succeed(self, success_status: str = Status.Success):
 		self.status = success_status
-		self.save()
+		self.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	def handle_step_failure(self):
 		# can be overridden by controllers
 		self.error = frappe.get_traceback(with_context=True)
-		self.save()
+		self.save(ignore_permissions=True)
 
 	def get_steps(self, methods: list) -> list[dict]:
 		"""Generate a list of steps to be executed for NFS volume attachment."""
@@ -458,7 +458,7 @@ class StepHandler:
 	):
 		"""It is now required to be with a `enqueue_doc` else the first step executes in the web worker"""
 		self.status = start_status
-		self.save()
+		self.save(ignore_permissions=True)
 
 		step = self.next_step(steps)
 		if not step:
