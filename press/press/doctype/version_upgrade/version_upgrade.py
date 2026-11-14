@@ -197,11 +197,16 @@ class VersionUpgrade(Document):
 			self.status = "Scheduled"
 			self.save()
 		elif job.status in ["Failure", "Delivery Failure"]:
-			self.status = "Cancelled"
-			self.send_version_upgrade_failure_email(agent_job=job.name, bench_deploy_failure=True)
-			self.save()
+			self.cancel_for_failed_bench_deploy(agent_job=job.name)
 
-	def send_version_upgrade_failure_email(self, agent_job: str, bench_deploy_failure: bool = False) -> None:
+	def cancel_for_failed_bench_deploy(self, agent_job: str | None = None):
+		self.status = "Cancelled"
+		self.send_version_upgrade_failure_email(agent_job=agent_job, bench_deploy_failure=True)
+		self.save()
+
+	def send_version_upgrade_failure_email(
+		self, agent_job: str | None, bench_deploy_failure: bool = False
+	) -> None:
 		traceback = ""
 		output = ""
 		if agent_job:
