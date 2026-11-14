@@ -71,13 +71,13 @@ export function validateSubdomain(subdomain) {
 }
 
 // Opens the tab within the click so the popup blocker allows it, then loads
-// the URL once the (sometimes slow) login request resolves.
-export function openInNewTab(urlPromise) {
+// the URL once the (sometimes slow) request resolves.
+export function openInNewTab(urlPromise, loadingText = 'Logging in…') {
 	const tab = window.open('', '_blank')
 	if (tab) {
 		tab.opener = null
-		tab.document.title = 'Logging in…'
-		tab.document.body.textContent = 'Logging in…'
+		tab.document.title = loadingText
+		tab.document.body.textContent = loadingText
 	}
 	return Promise.resolve(urlPromise)
 		.then((url) => {
