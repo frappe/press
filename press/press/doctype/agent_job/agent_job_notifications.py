@@ -530,6 +530,10 @@ def get_default_message(job: AgentJob) -> str:
 	return f"<b>{job.job_type}</b> job failed on server <b>{job.server}</b>."
 
 
+# Customers cannot act on these failures. Each job type alerts the Frappe Cloud team instead
+JOBS_WITHOUT_FAILURE_NOTIFICATION = ("Purge Binlogs By Size Limit",)
+
+
 def send_job_failure_notification(job: AgentJob):
 	from press.press.doctype.site_migration.site_migration import (
 		get_ongoing_migration,
@@ -544,7 +548,7 @@ def send_job_failure_notification(job: AgentJob):
 	notification_type = get_notification_type(job)
 	team = None
 
-	if job.reference_doctype == "Site Database User":
+	if job.reference_doctype == "Site Database User" or job.job_type in JOBS_WITHOUT_FAILURE_NOTIFICATION:
 		return
 
 	if job.site:
