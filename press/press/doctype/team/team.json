@@ -96,6 +96,7 @@
 		"column_break_31",
 		"database_access_enabled",
 		"enable_performance_tuning",
+		"enable_enterprise_contracts",
 		"razorpay_enabled",
 		"servers_enabled",
 		"code_servers_enabled",
@@ -443,6 +444,13 @@
 			"fieldname": "enable_performance_tuning",
 			"fieldtype": "Check",
 			"label": "Enable Performance Tuning"
+		},
+		{
+			"default": "0",
+			"description": "Shows the Contracts page on the dashboard, where the team can buy an Enterprise Warranty contract",
+			"fieldname": "enable_enterprise_contracts",
+			"fieldtype": "Check",
+			"label": "Enable Enterprise Contracts"
 		},
 		{
 			"default": "0",

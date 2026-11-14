@@ -1,0 +1,136 @@
+{
+	"actions": [],
+	"autoname": "Prompt",
+	"creation": "2026-10-29 18:00:00.000000",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"enabled",
+		"title",
+		"description",
+		"pricing_section",
+		"price_inr",
+		"column_break_pricing",
+		"price_usd",
+		"max_price_lock_years",
+		"coverage_section",
+		"coverage"
+	],
+	"fields": [
+		{
+			"default": "1",
+			"fieldname": "enabled",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"label": "Enabled"
+		},
+		{
+			"fieldname": "title",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Title",
+			"reqd": 1
+		},
+		{
+			"fieldname": "description",
+			"fieldtype": "Data",
+			"label": "Description"
+		},
+		{
+			"fieldname": "pricing_section",
+			"fieldtype": "Section Break",
+			"label": "Yearly Pricing"
+		},
+		{
+			"fieldname": "price_inr",
+			"fieldtype": "Currency",
+			"in_list_view": 1,
+			"label": "Price (INR)",
+			"options": "INR",
+			"reqd": 1
+		},
+		{
+			"fieldname": "column_break_pricing",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "price_usd",
+			"fieldtype": "Currency",
+			"in_list_view": 1,
+			"label": "Price (USD)",
+			"options": "USD",
+			"reqd": 1
+		},
+		{
+			"default": "3",
+			"description": "Customers can lock the yearly price for 1 year up to this many years",
+			"fieldname": "max_price_lock_years",
+			"fieldtype": "Int",
+			"label": "Max Price Lock Period (Years)",
+			"reqd": 1
+		},
+		{
+			"fieldname": "coverage_section",
+			"fieldtype": "Section Break",
+			"label": "Coverage"
+		},
+		{
+			"description": "One item per line",
+			"fieldname": "coverage",
+			"fieldtype": "Small Text",
+			"label": "Coverage"
+		}
+	],
+	"links": [],
+	"modified": "2026-11-12 19:30:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Enterprise Warranty Plan",
+	"naming_rule": "Set by user",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Billing Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support"
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support Engineer"
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "title",
+	"track_changes": 1
+}

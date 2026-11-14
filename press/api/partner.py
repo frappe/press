@@ -11,6 +11,11 @@ from frappe.utils.data import add_days, add_months, get_first_day, get_last_day,
 from frappe.utils.user import is_system_user
 
 from press.guards import role_guard
+from press.press.doctype.enterprise_contract.partner_contribution import (
+	add_contract_shares_to_mrr,
+	contract_contribution,
+	contract_contribution_rows,
+)
 from press.utils import get_current_team
 
 
@@ -242,7 +247,7 @@ def get_partner_contribution_list(partner_email: str) -> list[dict] | None:
 				d.update({"partner_total": flt(d.total_before_discount * 83)})
 		else:
 			d.update({"partner_total": d.total_before_discount})
-	return invoices
+	return invoices + contract_contribution_rows(partner_email, partner_currency)
 
 
 @frappe.whitelist()
@@ -290,7 +295,8 @@ def get_partner_mrr(partner_email: str, prev_month: bool = False) -> list[dict] 
 		query = query.where(Invoice.due_date == last_month_end)
 
 	result = query.run(as_dict=True)
-	return [d for d in result]
+	months = [add_months(today(), -number) for number in range(1, 2 if prev_month else 13)]
+	return add_contract_shares_to_mrr(result, partner_email, partner_currency, months)
 
 
 @frappe.whitelist()
@@ -562,7 +568,7 @@ def get_current_month_partner_contribution(partner_email: str) -> float | None:
 		else:
 			total += d.total_before_discount
 
-	return total
+	return total + contract_contribution(partner_email, partner_currency, today())
 
 
 @frappe.whitelist()
@@ -606,7 +612,7 @@ def get_prev_month_partner_contribution(partner_email: str) -> float | None:
 				total += flt(d.total_before_discount * 83, 2)
 		else:
 			total += d.total_before_discount
-	return total
+	return total + contract_contribution(partner_email, partner_currency, add_months(today(), -1))
 
 
 @frappe.whitelist()
