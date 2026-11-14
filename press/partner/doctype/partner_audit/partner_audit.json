@@ -168,7 +168,7 @@
 			"link_fieldname": "partner_audit"
 		}
 	],
-	"modified": "2026-03-24 07:27:12.010435",
+	"modified": "2026-11-14 20:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Partner",
 	"name": "Partner Audit",
@@ -216,6 +216,14 @@
 			"report": 1,
 			"role": "Partner",
 			"share": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"export": 1,
+			"read": 1,
+			"role": "Site Manager",
+			"write": 1
 		}
 	],
 	"row_format": "Dynamic",

@@ -11,7 +11,6 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.access import data_console
 from press.access.data_console import PressSystemConsole
-from press.install import after_install
 
 REFUSED_QUERIES = {
 	"update `tabAgent Job Type` set name = 'x'": "Query must be of SELECT or read-only WITH type.",
@@ -167,21 +166,20 @@ def clear_console_meta():
 
 
 class TestDataConsoleInstall(FrappeTestCase):
-	"""A fresh install marks patches as done without running them, so after_install sets up the rules."""
+	"""A fresh install marks patches as done without running them, so after_sync sets up the rules."""
 
 	def tearDown(self):
 		frappe.set_user("Administrator")
 		frappe.db.rollback()
 		clear_console_meta()
 
-	@patch("press.install.create_default_cluster", new=lambda: None)
-	@patch("press.install.create_administrator_team", new=lambda: None)
-	def test_after_install_lets_data_console_role_write_system_console_and_read_console_logs(self):
+	def test_after_sync_lets_data_console_role_write_system_console_and_read_console_logs(self):
 		frappe.db.delete("Custom DocPerm", {"role": "Press Infrastructure Manager"})
 		clear_console_meta()
 		user = create_user("Press Infrastructure Manager")
 		self.assertFalse(frappe.has_permission("System Console", "write", user=user))
-		after_install()
+		for method in frappe.get_hooks("after_sync", app_name="press"):
+			frappe.get_attr(method)()
 		clear_console_meta()
 		self.assertTrue(frappe.has_permission("System Console", "write", user=user))
 		self.assertTrue(frappe.has_permission("Console Log", "read", user=user))
