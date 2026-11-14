@@ -1054,6 +1054,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		)
 		from press.press.doctype.database_server.database_server import (
 			process_add_binlogs_to_indexer_agent_job_update,
+			process_purge_binlogs_by_size_limit_job_update,
 			process_remove_binlogs_from_indexer_agent_job_update,
 		)
 		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
@@ -1246,6 +1247,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_remove_binlogs_from_indexer_agent_job_update(job)
 		elif job.job_type == "Upload Binlogs To S3":
 			process_upload_binlogs_to_s3_job_update(job)
+		elif job.job_type == "Purge Binlogs By Size Limit":
+			process_purge_binlogs_by_size_limit_job_update(job)
 		elif job.job_type == "Upload Audit Logs To S3":
 			process_upload_audit_logs_to_s3_job_update(job)
 		elif job.job_type == "Search Sites In Snapshot":

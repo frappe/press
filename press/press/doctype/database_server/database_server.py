@@ -2346,13 +2346,20 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 			if new_binlog_than_requested not in binlogs_in_disk:
 				return
 
-			self.agent.purge_binlog(database_server=self, to_binlog=new_binlog_than_requested)
-			frappe.msgprint(f"Purged to {to_binlog}", "Successfully purged binlogs")
+			purged = self.agent.purge_binlog(database_server=self, to_binlog=new_binlog_than_requested)
+			# A failed purge can still delete some binlogs
 			if self.enable_binlog_indexing:
 				self.sync_binlogs_info(index_binlogs=False, upload_binlogs=False)
 		except Exception as e:
 			frappe.throw(f"Failed to purge binlogs. Please try again later. {e!s}")
 			raise e
+
+		if not purged:
+			frappe.throw(
+				f"The binlogs up to {to_binlog} are still on disk. MariaDB can be down, or crash recovery "
+				"or a replica can still need them. Check the database server and try again."
+			)
+		frappe.msgprint(f"Purged to {to_binlog}", "Successfully purged binlogs")
 
 	@dashboard_whitelist()
 	def purge_binlogs_forcefully(self, no_of_binlogs: int):
@@ -2416,20 +2423,20 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		if binlog_limit_in_gb == 0:
 			return
 
-		if self.has_open_binlog_purge_job():
+		if self.has_recent_binlog_purge_job():
 			return
 
 		self.agent.purge_binlogs_by_size_limit(self, max_binlog_gb=binlog_limit_in_gb)
 
-	def has_open_binlog_purge_job(self) -> bool:
-		"""Agent job deduplication is off by default, so an undelivered purge would pile up every 10 minutes.
-		Older open jobs are stuck, and must not stop the purge forever."""
+	def has_recent_binlog_purge_job(self) -> bool:
+		"""Agent job deduplication is off by default, so an undelivered or a failing purge would repeat every
+		10 minutes. Wait an hour for these. Older open jobs are stuck, and must not stop the purge forever."""
 		return bool(
 			frappe.db.exists(
 				"Agent Job",
 				{
 					"job_type": "Purge Binlogs By Size Limit",
-					"status": ("in", ("Undelivered", "Pending", "Running")),
+					"status": ("in", ("Undelivered", "Pending", "Running", "Failure")),
 					"server_type": self.doctype,
 					"server": self.name,
 					"creation": (">", frappe.utils.add_to_date(None, hours=-1)),
@@ -3181,6 +3188,31 @@ def process_remove_binlogs_from_indexer_agent_job_update(job: AgentJob):
 		},
 		"indexed",
 		0,
+	)
+
+
+def process_purge_binlogs_by_size_limit_job_update(job: AgentJob):
+	"""Alert once when the purge starts to fail. MariaDB gives the reason in the job output."""
+	if job.status != "Failure" or previous_binlog_purge_job_status(job) == "Failure":
+		return
+
+	log_error(
+		"Binlog Purge Failed", server=job.server, reference_doctype=job.doctype, reference_name=job.name
+	)
+
+
+def previous_binlog_purge_job_status(job: AgentJob) -> str | None:
+	return frappe.db.get_value(
+		"Agent Job",
+		{
+			"job_type": job.job_type,
+			"server_type": job.server_type,
+			"server": job.server,
+			"status": ("in", ("Success", "Failure")),
+			"creation": ("<", job.creation),
+		},
+		"status",
+		order_by="creation desc",
 	)
 
 
