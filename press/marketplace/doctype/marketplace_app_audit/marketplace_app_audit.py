@@ -102,6 +102,8 @@ class MarketplaceAppAudit(Document):
 		)
 
 	def run_audit(self):
+		# The job runs as the publisher who asked for approval, and publishers cannot write audits
+		self.flags.ignore_permissions = True
 		self.started_at = frappe.utils.now_datetime()
 		self.status = "Running"
 		self.save()

@@ -4,14 +4,10 @@
 
 import frappe
 
-from press.patches.v0_8_0 import allow_infrastructure_manager_in_system_console
-
 
 def after_install():
 	create_administrator_team()
 	create_default_cluster()
-	# A fresh install marks patches as done without running them
-	allow_infrastructure_manager_in_system_console.execute()
 
 
 def create_administrator_team():

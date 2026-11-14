@@ -96,7 +96,7 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-11-06 21:00:00.000000",
+	"modified": "2026-11-14 20:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Marketplace",
 	"name": "Marketplace App Plan",
@@ -148,6 +148,11 @@
 			"read": 1,
 			"report": 1,
 			"role": "Press Support L1"
+		},
+		{
+			"export": 1,
+			"read": 1,
+			"role": "Report Manager"
 		}
 	],
 	"row_format": "Dynamic",

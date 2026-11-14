@@ -196,6 +196,18 @@ roles.
 - The permission rows are in each DocType JSON. The `roles` table is in each
   report JSON. A report needs `report` permission on its `ref_doctype`, so a
   report gets the role that owns that DocType.
+- Do not add a Custom DocPerm to a Press DocType. One Custom DocPerm hides every
+  rule in the DocType JSON, so the scope roles lose their access without a
+  sign. Press refuses such a rule. Change the DocType JSON instead. DocTypes
+  that were made in desk have no JSON, so they keep their rules in the
+  database.
+- The rules of Press roles on Frappe DocTypes are in
+  `press/access/core_permissions.py`: job internals, Email Queue and Email
+  Account for Press Infrastructure Manager, and the System Console. Every
+  migrate writes them, with the rules of Frappe, to Custom DocPerm. Press
+  refuses other Custom DocPerms on these DocTypes. The email message and
+  attachments are at permlevel 1, which only System Manager reads, because they
+  hold password reset links and login codes.
 - Code-level checks use `frappe.only_for([...])` with System Manager and the
   scope role.
 - The roles ship in `press/fixtures/role.json`. The profiles ship in

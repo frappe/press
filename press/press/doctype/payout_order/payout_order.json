@@ -153,7 +153,7 @@
 	"index_web_pages_for_search": 1,
 	"is_submittable": 1,
 	"links": [],
-	"modified": "2026-11-06 12:30:00.000000",
+	"modified": "2026-11-14 20:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Payout Order",
@@ -170,6 +170,7 @@
 			"report": 1,
 			"role": "System Manager",
 			"share": 1,
+			"submit": 1,
 			"write": 1
 		},
 		{
@@ -182,6 +183,7 @@
 			"report": 1,
 			"role": "Press Billing Manager",
 			"share": 1,
+			"submit": 1,
 			"write": 1
 		}
 	],
