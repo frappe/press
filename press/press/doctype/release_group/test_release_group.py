@@ -737,6 +737,20 @@ class TestReleaseGroup(FrappeTestCase):
 		self.assertEqual(counts_on(first_server), (1, 1))
 		self.assertEqual(counts_on(second_server), (2, 2))
 
+	def test_list_shows_public_groups_of_the_team_only_to_system_users(self):
+		user = frappe.get_value("Team", self.team, "user")
+		private = create_test_release_group([create_test_app()], user=user).name
+		public = create_test_release_group([create_test_app()], user=user, public=True).name
+
+		def listed_groups(user_type):
+			frappe.db.set_value("User", user, "user_type", user_type)
+			frappe.set_user(user)
+			before_request()
+			return {group.name for group in get_list("Release Group", fields=["name"])}
+
+		self.assertEqual(listed_groups("Website User"), {private})
+		self.assertEqual(listed_groups("System User"), {private, public})
+
 	def _create_group_in_two_regions(self):
 		from press.press.doctype.cluster.test_cluster import create_test_cluster
 		from press.press.doctype.server.test_server import create_test_server
