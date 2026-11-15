@@ -12,6 +12,7 @@ const groups = createListResource({
 	fields: [
 		'name',
 		'title',
+		'public',
 		'version',
 		'active_benches',
 		'site_count',
