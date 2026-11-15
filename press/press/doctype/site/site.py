@@ -147,6 +147,8 @@ SERVER_SCRIPT_DISABLED_VERSION = (
 	15  # version from which server scripts were disabled on public benches. No longer set in site
 )
 TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
+
+# Press never removes these. Without them, stored secrets and encrypted backups are unreadable.
 ENCRYPTION_KEYS = ("encryption_key", "backup_encryption_key")
 
 # Fallback when max_statement_time isn't explicitly set on the database server.
@@ -167,6 +169,21 @@ KEEP_BACKUP_TIME: Any = object()
 STREAMING_BACKUP_REQUIREMENTS = {
 	"minimum_frappe_version": 13,
 }
+
+
+def _config_row(config: dict) -> dict | None:
+	"""A configuration row for a full config write, or None if the value is empty."""
+	value = config.get("value")
+	if isinstance(value, dict | list):
+		value = json.dumps(value)
+	if value is None or cstr(value).strip() == "":
+		return None
+	return {"key": config.get("key"), "value": value, "type": config.get("type")}
+
+
+def _keep_on_full_config_write(key: str, new_keys: set[str]) -> bool:
+	"""Keys a dashboard user cannot see, and encryption keys the caller did not send."""
+	return key in get_client_blacklisted_keys() or (key in ENCRYPTION_KEYS and key not in new_keys)
 
 
 class Site(Document, TagHelpers):
@@ -2920,24 +2937,17 @@ class Site(Document, TagHelpers):
 		Args:
 		config (list): List of dicts with key, value, and type
 		"""
-		blacklisted_config = [x for x in self.configuration if x.key in get_client_blacklisted_keys()]
+		new_rows = [row for row in map(_config_row, config) if row]
+		new_keys = {row["key"] for row in new_rows}
+		kept_rows = [x for x in self.configuration if _keep_on_full_config_write(x.key, new_keys)]
 		self.configuration = []
 
-		# Maintain keys that aren't accessible to Dashboard user
-		for i, _config in enumerate(blacklisted_config):
-			_config.idx = i + 1
-			self.configuration.append(_config)
+		for i, row in enumerate(kept_rows):
+			row.idx = i + 1
+			self.configuration.append(row)
 
-		for d in config:
-			d = frappe._dict(d)
-			if isinstance(d.value, (dict, list)):
-				value = json.dumps(d.value)
-			else:
-				value = d.value
-			# Value is mandatory, skip None and empty strings
-			if value is None or cstr(value).strip() == "":
-				continue
-			self.append("configuration", {"key": d.key, "value": value, "type": d.type})
+		for row in new_rows:
+			self.append("configuration", row)
 		self.save()
 
 	def _update_configuration(self, config, save=True):
@@ -2974,15 +2984,21 @@ class Site(Document, TagHelpers):
 				f"You <a class='underline' href='https://docs.frappe.io/cloud/enable-server-script'>cannot enable server scripts</a> on public benches. Please move to a <a class='underline' href='{PRIVATE_BENCH_DOC}'>private bench</a>."
 			)
 
-	def validate_encryption_key(self, key: str, value: Any):
-		# The dashboard sends the masked value when a password key is saved unchanged
-		if key not in ENCRYPTION_KEYS or value == "*******":
-			return
-		from cryptography.fernet import Fernet, InvalidToken
+	def _validate_changed_encryption_key(self, config: dict | list):
+		"""Check an encryption_key that the caller changes. Values synced from the server are not checked."""
+		if isinstance(config, list):
+			config = {row["key"]: row["value"] for row in config}
+		value = config.get("encryption_key")
+		if value and value != json.loads(self.config or "{}").get("encryption_key"):
+			self.validate_encryption_key(value)
+
+	def validate_encryption_key(self, value: Any):
+		# backup_encryption_key is not checked. Frappe uses it as a gpg passphrase, so any string works.
+		from cryptography.fernet import Fernet
 
 		try:
 			Fernet(value)
-		except (ValueError, InvalidToken):
+		except (ValueError, TypeError):
 			frappe.throw(
 				_(
 					"This is not a valid encryption key. Please copy it exactly. Check <a href='https://docs.frappe.io/cloud/sites/migrate-an-existing-site#encryption-key' class='underline' target='_blank'>this document</a> if you have lost the encryption key."
@@ -3012,7 +3028,6 @@ class Site(Document, TagHelpers):
 					_(f"The key <b>{key}</b> is blacklisted or internal and cannot be updated")
 				)  # nosemgrep
 			self.check_server_script_enabled_on_public_bench(key)
-			self.validate_encryption_key(key, value)
 
 			_type = self._site_config_key_type(key, value)
 
@@ -3046,6 +3061,12 @@ class Site(Document, TagHelpers):
 		"""Deletes a key from site configuration, meant for dashboard and API users"""
 		if key in get_client_blacklisted_keys():
 			return None
+		if key in ENCRYPTION_KEYS:
+			frappe.throw(
+				_(
+					"You cannot delete <b>{0}</b>. The site needs it to read the data that it encrypted."
+				).format(key)
+			)
 
 		updated_config = []
 		for row in self.configuration:
@@ -3079,6 +3100,7 @@ class Site(Document, TagHelpers):
 		"""
 		if config is None:
 			config = {}
+		self._validate_changed_encryption_key(config)
 		if isinstance(config, list):
 			self._set_configuration(config)
 		else:
