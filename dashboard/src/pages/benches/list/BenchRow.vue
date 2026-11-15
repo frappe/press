@@ -240,6 +240,12 @@ const siteOptions = (site: any) => [
 							{{ data.site_count || 0 }}
 						</span>
 					</Tooltip>
+					<Badge
+						v-if="data.public"
+						label="Public"
+						theme="blue"
+						class="shrink-0"
+					/>
 				</div>
 
 				<div v-if="!pipelineId" class="flex gap-2 items-center">

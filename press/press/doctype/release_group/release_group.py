@@ -171,13 +171,16 @@ class ReleaseGroup(Document, TagHelpers):
 		query = (
 			query.where(ReleaseGroup.team == frappe.local.team().name)
 			.where(ReleaseGroup.enabled == 1)
-			.where(ReleaseGroup.public == 0)
 			.where(outside_archived_clusters())
 			.select(
 				site_count_query(server).as_("site_count"),
 				active_bench_count_query(server).as_("active_benches"),
 			)
 		)
+
+		# Public groups host new sites for everyone, so only staff see them in the list
+		if not frappe.local.system_user():
+			query = query.where(ReleaseGroup.public == 0)
 
 		if server:
 			query = (
