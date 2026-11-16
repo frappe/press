@@ -8,6 +8,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.query_builder import Criterion, JoinType
 from frappe.query_builder.functions import Count
+from frappe.utils.data import sha256_hash
 
 from press.access.utils import is_outside_employee
 from press.utils import get_current_team
@@ -28,6 +29,7 @@ class SupportAccess(Document):
 
 		access_allowed_till: DF.Datetime | None
 		allowed_for: DF.Literal["3", "6", "12", "24", "72", "168"]
+		answer_key: DF.Data | None
 		bench_ssh: DF.Check
 		login_as_administrator: DF.Check
 		reason: DF.SmallText | None
@@ -181,12 +183,12 @@ class SupportAccess(Document):
 		"""
 		Returns the possible target statuses for the current user.
 		"""
-		current_team = get_current_team()
+		# A guest answering from the email has no team
 		if self.flags.ignore_permissions:
 			return ["Pending", "Accepted", "Rejected", "Forfeited", "Revoked", "Expired"]
 		if self.acts_for_target_team:
 			return ["Accepted", "Rejected", "Revoked"]
-		if self.requested_team == current_team:
+		if self.requested_team == get_current_team():
 			return ["Pending", "Forfeited"]
 		return []
 
@@ -251,6 +253,40 @@ class SupportAccess(Document):
 			message = _("Cannot change validity period of a processed request.")
 			frappe.throw(message, frappe.ValidationError)
 
+	def create_answer_url(self) -> str:
+		"""Store the hash of a new answer key, and return the link that carries the key."""
+		key = frappe.generate_hash(length=32)
+		self.db_set("answer_key", sha256_hash(key), update_modified=False)
+		# A forged Host header must not send the key to another server
+		return frappe.utils.get_url(f"/access-request?key={key}", allow_header_override=False)
+
+	@classmethod
+	def from_answer_key(cls, key) -> "SupportAccess | None":
+		if not key or not isinstance(key, str):
+			return None
+		name = frappe.db.get_value("Support Access", {"answer_key": sha256_hash(key)})
+		return cls("Support Access", name) if name else None
+
+	def answer_from_email(self, status: str | None, allowed_for: str | None):
+		"""Answer for the target team. The answer key, sent only to the team owner, proves the caller may."""
+		self.validate_email_answer(status)
+		self.update({"status": status, "allowed_for": allowed_for or self.allowed_for})
+		self.save(ignore_permissions=True)
+
+	def validate_email_answer(self, status: str | None):
+		if self.status != "Pending":
+			frappe.throw(
+				_("This request is already {0}. It cannot be answered again.").format(self.status.lower())
+			)
+		if status not in ("Accepted", "Rejected"):
+			frappe.throw(_("Choose Accept or Reject to answer this access request."))
+		mailed_team = self.target_team
+		self.validate_target_team()
+		if self.target_team != mailed_team:
+			frappe.throw(
+				_("The resources in this request now belong to another team, so this link no longer works.")
+			)
+
 	def after_insert(self):
 		self.notify_on_request()
 
@@ -297,7 +333,7 @@ class SupportAccess(Document):
 				"title": title,
 				"message": message,
 			}
-		).insert()
+		).insert(ignore_permissions=True)  # A guest answers from the email
 
 		frappe.publish_realtime(
 			"press_notification",
@@ -320,6 +356,7 @@ class SupportAccess(Document):
 			args={
 				"reason": self.reason,
 				"resources": self.resources,
+				"answer_url": self.create_answer_url(),
 			},
 		)
 
