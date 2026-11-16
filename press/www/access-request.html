@@ -1,0 +1,127 @@
+{%- extends "templates/base.html" -%}
+
+{%- block title -%}Support Access Request{%- endblock -%}
+
+{%- block navbar -%}{%- endblock -%}
+
+{%- block footer -%}{%- endblock -%}
+
+{%- macro dashboard_link() -%}
+<a href="/dashboard/access-requests">Access Requests</a>
+{%- endmacro -%}
+
+{%- block content -%}
+<section class="access-request">
+	<div class="card">
+		<div class="card-body">
+			{%- if state in ("Pending", "error") %}
+			<h1>Support access request</h1>
+			{%- if state == "error" %}
+			<div class="alert alert-danger" role="alert">{{ error_message | e }}</div>
+			{%- endif %}
+			<p class="text-muted">
+				<strong>{{ access.requested_by | e }}</strong> from Frappe support has requested access
+				to your resources. Accept only if you asked Frappe for help with them.
+			</p>
+
+			<dl>
+				{%- if reason %}
+				<dt>Reason</dt>
+				<dd>{{ reason }}</dd>
+				{%- endif %}
+				<dt>Resources</dt>
+				<dd>
+					{%- for resource in access.resources %}
+					<div>{{ resource.document_type | e }}: {{ resource.document_name | e }}</div>
+					{%- endfor %}
+				</dd>
+				{%- if permissions %}
+				<dt>Permissions</dt>
+				<dd>{{ permissions | join(", ") | e }}</dd>
+				{%- endif %}
+			</dl>
+
+			<form method="POST">
+				<input type="hidden" name="request" value="{{ access.name | e }}">
+				<input type="hidden" name="team" value="{{ access.target_team | e }}">
+				<input type="hidden" name="_signature" value="{{ signature | e }}">
+				<input type="hidden" name="csrf_token" value="{{ frappe.session.csrf_token or '' }}">
+				<div class="form-group">
+					<label for="allowed_for">Allow access for</label>
+					<select class="form-control" id="allowed_for" name="allowed_for">
+						{%- for hours, label in validity_options.items() %}
+						<option value="{{ hours }}" {% if hours == access.allowed_for %}selected{% endif %}>{{ label }}</option>
+						{%- endfor %}
+					</select>
+				</div>
+				<div class="access-request-buttons">
+					<button type="submit" name="answer" value="Rejected" class="btn btn-default">Reject</button>
+					<button type="submit" name="answer" value="Accepted" class="btn btn-primary">Accept</button>
+				</div>
+			</form>
+
+			{%- elif state == "Accepted" and access.access_expired %}
+			<h1>Access ended</h1>
+			<p class="text-muted">
+				Frappe support could access your resources until {{ allowed_till }}. That time has passed.
+			</p>
+
+			{%- elif state == "Accepted" %}
+			<h1>Access accepted</h1>
+			<p class="text-muted">
+				Frappe support can access your resources until {{ allowed_till }}. You can revoke access
+				at any time from {{ dashboard_link() }} in the dashboard.
+			</p>
+
+			{%- elif state == "Rejected" %}
+			<h1>Access rejected</h1>
+			<p class="text-muted">Frappe support cannot access your resources. You can close this tab.</p>
+
+			{%- elif state in ("Revoked", "Forfeited", "Expired") %}
+			<h1>Request closed</h1>
+			<p class="text-muted">This request is {{ state | lower }}. No further action is needed.</p>
+
+			{%- else %}
+			<h1>Link not valid</h1>
+			<p class="text-muted">
+				This link is not valid. Open {{ dashboard_link() }} in the dashboard to answer the request.
+			</p>
+			{%- endif %}
+		</div>
+	</div>
+</section>
+{%- endblock -%}
+
+{%- block style -%}
+{{ super() }}
+<style>
+	.access-request {
+		max-width: 480px;
+		margin: 80px auto;
+		padding: 0 16px;
+	}
+
+	.access-request h1 {
+		font-size: var(--text-xl);
+		font-weight: 600;
+		margin: 0 0 12px;
+	}
+
+	.access-request a {
+		text-decoration: underline;
+	}
+
+	.access-request dt {
+		margin-top: 12px;
+	}
+
+	.access-request-buttons {
+		display: flex;
+		gap: 8px;
+	}
+
+	.access-request-buttons .btn {
+		flex: 1;
+	}
+</style>
+{%- endblock -%}
