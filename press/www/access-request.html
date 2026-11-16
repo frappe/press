@@ -33,7 +33,9 @@
 		</dl>
 
 		<form method="POST" class="access-form">
-			<input type="hidden" name="key" value="{{ frappe.form_dict.key or '' }}">
+			<input type="hidden" name="request" value="{{ access.name | e }}">
+			<input type="hidden" name="team" value="{{ access.target_team | e }}">
+			<input type="hidden" name="_signature" value="{{ signature | e }}">
 			<input type="hidden" name="csrf_token" value="{{ frappe.session.csrf_token }}">
 			<label class="access-label" for="allowed_for">Allow access for</label>
 			<select class="access-select" id="allowed_for" name="allowed_for">

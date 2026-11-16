@@ -30,7 +30,8 @@ def get_context(context):
 	A GET only shows the request, so mail scanners that open links cannot answer it. The buttons POST.
 	"""
 	context.no_cache = 1
-	access = SupportAccess.from_answer_key(frappe.form_dict.key)
+	form = frappe.form_dict
+	access = SupportAccess.from_signed_params(form.request, form.team, form._signature)
 	if not access:
 		context.state = "invalid"
 		return context
@@ -40,6 +41,7 @@ def get_context(context):
 
 	context.state = context.state or access.status
 	context.access = access
+	context.signature = form._signature  # The Jinja sandbox hides names that start with _
 	context.permissions = requested_permissions(access)
 	context.validity_options = VALIDITY_OPTIONS
 	return context

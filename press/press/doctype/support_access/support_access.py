@@ -1,6 +1,7 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
+import hmac
 
 import frappe
 import frappe.utils
@@ -8,7 +9,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.query_builder import Criterion, JoinType
 from frappe.query_builder.functions import Count
-from frappe.utils.data import sha256_hash
+from frappe.utils.verified_command import get_signed_params
 
 from press.access.utils import is_outside_employee
 from press.utils import get_current_team
@@ -29,7 +30,6 @@ class SupportAccess(Document):
 
 		access_allowed_till: DF.Datetime | None
 		allowed_for: DF.Literal["3", "6", "12", "24", "72", "168"]
-		answer_key: DF.Data | None
 		bench_ssh: DF.Check
 		login_as_administrator: DF.Check
 		reason: DF.SmallText | None
@@ -254,21 +254,25 @@ class SupportAccess(Document):
 			frappe.throw(message, frappe.ValidationError)
 
 	def create_answer_url(self) -> str:
-		"""Store the hash of a new answer key, and return the link that carries the key."""
-		key = frappe.generate_hash(length=32)
-		self.db_set("answer_key", sha256_hash(key), update_modified=False)
-		# A forged Host header must not send the key to another server
-		return frappe.utils.get_url(f"/access-request?key={key}", allow_header_override=False)
+		"""Return the link in the email, signed with the site secret for this request and its team."""
+		params = get_signed_params({"request": self.name, "team": self.target_team})
+		# A forged Host header must not send the link to another server
+		return frappe.utils.get_url(f"/access-request?{params}", allow_header_override=False)
 
 	@classmethod
-	def from_answer_key(cls, key) -> "SupportAccess | None":
-		if not key or not isinstance(key, str):
+	def from_signed_params(cls, request, team, signature) -> "SupportAccess | None":
+		"""Return the request of a link from `create_answer_url`, if the link is unchanged."""
+		if not all(isinstance(value, str) for value in (request, team, signature)):
 			return None
-		name = frappe.db.get_value("Support Access", {"answer_key": sha256_hash(key)})
-		return cls("Support Access", name) if name else None
+		expected = get_signed_params({"request": request, "team": team}).rpartition("&_signature=")[2]
+		if not hmac.compare_digest(signature, expected):
+			return None
+		if frappe.db.get_value("Support Access", request, "target_team") != team:
+			return None
+		return cls("Support Access", request)
 
 	def answer_from_email(self, status: str | None, allowed_for: str | None):
-		"""Answer for the target team. The answer key, sent only to the team owner, proves the caller may."""
+		"""Answer for the target team. The signed link, sent only to the team owner, proves the caller may."""
 		self.validate_email_answer(status)
 		self.update({"status": status, "allowed_for": allowed_for or self.allowed_for})
 		self.save(ignore_permissions=True)

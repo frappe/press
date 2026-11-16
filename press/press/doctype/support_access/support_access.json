@@ -24,8 +24,7 @@
 		"server_permissions_section",
 		"server_ssh",
 		"section_break_lwpm",
-		"resources",
-		"answer_key"
+		"resources"
 	],
 	"fields": [
 		{
@@ -143,16 +142,6 @@
 			"fieldtype": "Check",
 			"label": "Release Group",
 			"set_only_once": 1
-		},
-		{
-			"description": "SHA-256 hash of the key in the email link that answers this request",
-			"fieldname": "answer_key",
-			"fieldtype": "Data",
-			"hidden": 1,
-			"label": "Answer Key",
-			"no_copy": 1,
-			"permlevel": 1,
-			"read_only": 1
 		}
 	],
 	"grid_page_length": 50,
