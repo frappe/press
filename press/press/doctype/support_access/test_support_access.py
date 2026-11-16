@@ -463,3 +463,10 @@ class IntegrationTestSupportAccessEmailAnswer(IntegrationTestCase):
 		html = self.render_page()
 		self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", html)
 		self.assertNotIn("<script>alert(1)</script>", html)
+
+	def test_page_shows_the_saved_reason_without_escaping_it_twice(self):
+		self.access.reason = "Check the disk <b>usage</b> & logs"
+		self.access.save(ignore_permissions=True)
+		html = self.render_page()
+		self.assertIn("Check the disk <b>usage</b> &amp; logs", html)
+		self.assertNotIn("&amp;amp;", html)

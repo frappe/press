@@ -1,10 +1,10 @@
+{% extends "templates/emails/base.html" %}
 {% import "templates/emails/macros.html" as utils %}
 
-{% extends "templates/emails/base.html" %}
 {% block content %}
 <td class="text-base leading-6 text-gray-900">
     <div class="p-8 bg-white from-markdown">
-        <p><span class='font-medium'>Frappe has requested access to your resources.</p>
+        <p class="font-medium">Frappe has requested access to your resources.</p>
         <p><span class='font-medium'>Reason:</span> {{ reason }}</p>
         <div class='mb-4 space-y-2'>
             <div class='font-semibold'>Resources:</div>
@@ -15,8 +15,11 @@
             </div>
             {% endfor %}
         </div>
-        {{ utils.button('Review and Answer', answer_url) }}
-        <p>You can also answer it from Access Requests in the dashboard.</p>
+        {{ utils.button('Review and Answer', answer_url, true) }}
+        <p>
+            You can also answer it from
+            {{ utils.link('Access Requests', 'dashboard/access-requests') }} in the dashboard.
+        </p>
         {{ utils.separator() }}
         <p class="my-0">Team Frappe</p>
     </div>

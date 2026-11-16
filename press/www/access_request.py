@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe.utils import format_datetime
+from frappe.utils.html_utils import sanitize_html
 
 from press.press.doctype.support_access.support_access import SupportAccess
 
@@ -42,6 +44,9 @@ def get_context(context):
 	context.state = context.state or access.status
 	context.access = access
 	context.signature = form._signature  # The Jinja sandbox hides names that start with _
+	# Frappe stores the reason as sanitized HTML, so escaping it again would show &amp;
+	context.reason = sanitize_html(access.reason or "")
+	context.allowed_till = access_allowed_till(access)
 	context.permissions = requested_permissions(access)
 	context.validity_options = VALIDITY_OPTIONS
 	return context
@@ -59,6 +64,12 @@ def answer(access: SupportAccess, context):
 		# A web page POST commits even when the page fails, so undo a half-done answer
 		frappe.db.rollback()
 		raise
+
+
+def access_allowed_till(access: SupportAccess) -> str:
+	if not access.access_allowed_till:
+		return ""
+	return format_datetime(access.access_allowed_till, "d MMM yyyy, h:mm a")
 
 
 def requested_permissions(access: SupportAccess) -> list[str]:
