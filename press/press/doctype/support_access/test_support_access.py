@@ -7,7 +7,6 @@ from urllib.parse import parse_qs, urlparse
 
 import frappe
 from frappe.tests import IntegrationTestCase, UnitTestCase
-from frappe.utils.data import sha256_hash
 
 from press.access.support_access import has_support_access
 from press.api.client import get_list
@@ -307,7 +306,7 @@ class IntegrationTestSupportAccessAnswer(IntegrationTestCase):
 
 
 class IntegrationTestSupportAccessEmailAnswer(IntegrationTestCase):
-	"""The team owner answers a request from the link in the email, without a login."""
+	"""The team owner answers a request from the signed link in the email, without a login."""
 
 	def setUp(self):
 		super().setUp()
@@ -315,33 +314,43 @@ class IntegrationTestSupportAccessEmailAnswer(IntegrationTestCase):
 		self.sendmail = sendmail.start()
 		self.addCleanup(sendmail.stop)
 		self.site = create_test_site(team=create_test_press_admin_team().name)
+		self.access = self.create_request(self.site.name)
+		self.params = self.params_in_request_email(self.access)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def create_request(self, site: str) -> SupportAccess:
 		requester = create_test_press_admin_team()
-		self.access = frappe.get_doc(
+		return frappe.get_doc(
 			{
 				"doctype": "Support Access",
 				"requested_by": requester.user,
 				"requested_team": requester.name,
 				"reason": "Debugging",
 				"login_as_administrator": 1,
-				"resources": [{"document_type": "Site", "document_name": self.site.name}],
+				"resources": [{"document_type": "Site", "document_name": site}],
 			}
 		).insert(ignore_permissions=True)
-		self.key = self.key_in_request_email()
 
-	def tearDown(self):
-		frappe.set_user("Administrator")
-		frappe.db.rollback()
-
-	def key_in_request_email(self) -> str:
+	def params_in_request_email(self, access: SupportAccess) -> dict[str, str]:
 		(request_email,) = [
-			c for c in self.sendmail.call_args_list if c.kwargs["template"] == "access_request"
+			c
+			for c in self.sendmail.call_args_list
+			if c.kwargs["template"] == "access_request" and access.target_team in str(c.kwargs["args"])
 		]
 		answer_url = request_email.kwargs["args"]["answer_url"]
-		return parse_qs(urlparse(answer_url).query)["key"][0]
+		return {key: values[0] for key, values in parse_qs(urlparse(answer_url).query).items()}
+
+	def request_from(self, params: dict) -> SupportAccess | None:
+		return SupportAccess.from_signed_params(
+			params.get("request"), params.get("team"), params.get("_signature")
+		)
 
 	def answer_as_guest(self, status: str, allowed_for: str = "24") -> SupportAccess:
 		frappe.set_user("Guest")
-		access = SupportAccess.from_answer_key(self.key)
+		access = self.request_from(self.params)
 		access.answer_from_email(status, allowed_for)
 		return access
 
@@ -350,30 +359,63 @@ class IntegrationTestSupportAccessEmailAnswer(IntegrationTestCase):
 
 		frappe.set_user("Guest")
 		request = patch.object(frappe.local, "request", SimpleNamespace(method=method), create=True)
-		form_dict = patch.object(frappe.local, "form_dict", frappe._dict(key=self.key, **form))
+		form_dict = patch.object(frappe.local, "form_dict", frappe._dict(**self.params, **form))
 		with request, form_dict:
 			return get_context(frappe._dict())
+
+	def render_page(self) -> str:
+		from frappe.website.serve import get_response_content
+		from werkzeug.test import EnvironBuilder
+		from werkzeug.wrappers import Request
+
+		frappe.set_user("Guest")
+		request = Request(EnvironBuilder(method="GET", path="/access-request").get_environ())
+		with (
+			patch.object(frappe.local, "request", request, create=True),
+			patch.object(frappe.local, "form_dict", frappe._dict(self.params)),
+		):
+			return get_response_content("/access-request")
 
 	def status_of_request(self) -> str:
 		return frappe.db.get_value("Support Access", self.access.name, "status")
 
-	def test_request_stores_only_the_hash_of_the_key_sent_in_the_email(self):
-		stored = frappe.db.get_value("Support Access", self.access.name, "answer_key")
-		self.assertNotEqual(stored, self.key)
-		self.assertEqual(stored, sha256_hash(self.key))
+	def test_email_link_names_the_request_and_its_team_with_a_signature(self):
+		self.assertEqual(self.params["request"], self.access.name)
+		self.assertEqual(self.params["team"], self.site.team)
+		self.assertTrue(self.params["_signature"])
+		self.assertEqual(self.request_from(self.params).name, self.access.name)
 
-	def test_unknown_answer_key_finds_no_request(self):
-		self.assertIsNone(SupportAccess.from_answer_key("not-a-key"))
-		self.assertIsNone(SupportAccess.from_answer_key(None))
+	def test_link_with_a_changed_signature_finds_no_request(self):
+		self.params["_signature"] = "0" * len(self.params["_signature"])
+		self.assertIsNone(self.request_from(self.params))
 
-	def test_guest_with_the_email_key_accepts_the_request_for_the_chosen_hours_from_now(self):
+	def test_link_with_a_changed_team_finds_no_request(self):
+		self.params["team"] = create_test_press_admin_team().name
+		self.assertIsNone(self.request_from(self.params))
+
+	def test_signature_of_one_request_does_not_open_another_request(self):
+		other = self.create_request(self.site.name)
+		self.params["request"] = other.name
+		self.assertIsNone(self.request_from(self.params))
+
+	def test_link_without_a_signature_finds_no_request(self):
+		del self.params["_signature"]
+		self.assertIsNone(self.request_from(self.params))
+
+	def test_link_stops_working_when_the_request_target_team_changes(self):
+		frappe.db.set_value(
+			"Support Access", self.access.name, "target_team", create_test_press_admin_team().name
+		)
+		self.assertIsNone(self.request_from(self.params))
+
+	def test_guest_with_the_email_link_accepts_the_request_for_the_chosen_hours_from_now(self):
 		with freeze_time("2026-11-16 10:00:00"):
 			self.answer_as_guest("Accepted", allowed_for="3")
 		access_allowed_till = frappe.db.get_value("Support Access", self.access.name, "access_allowed_till")
 		self.assertEqual(self.status_of_request(), "Accepted")
 		self.assertEqual(access_allowed_till, frappe.utils.get_datetime("2026-11-16 13:00:00"))
 
-	def test_guest_with_the_email_key_rejects_the_request(self):
+	def test_guest_with_the_email_link_rejects_the_request(self):
 		self.answer_as_guest("Rejected")
 		self.assertEqual(self.status_of_request(), "Rejected")
 
@@ -386,6 +428,12 @@ class IntegrationTestSupportAccessEmailAnswer(IntegrationTestCase):
 	def test_email_answer_cannot_set_a_status_other_than_accepted_or_rejected(self):
 		with self.assertRaisesRegex(frappe.ValidationError, "Choose Accept or Reject"):
 			self.answer_as_guest("Expired")
+		self.assertEqual(self.status_of_request(), "Pending")
+
+	def test_email_link_stops_working_when_the_site_moves_to_another_team(self):
+		frappe.db.set_value("Site", self.site.name, "team", create_test_press_admin_team().name)
+		with self.assertRaisesRegex(frappe.ValidationError, "now belong to another team"):
+			self.answer_as_guest("Accepted")
 		self.assertEqual(self.status_of_request(), "Pending")
 
 	def test_opening_the_email_link_shows_the_request_without_answering_it(self):
@@ -401,43 +449,17 @@ class IntegrationTestSupportAccessEmailAnswer(IntegrationTestCase):
 		self.assertEqual(context.state, "Accepted")
 		self.assertEqual(access_allowed_till, frappe.utils.get_datetime("2026-11-16 16:00:00"))
 
+	def test_page_with_a_changed_signature_says_the_link_is_not_valid(self):
+		self.params["_signature"] = "not-a-signature"
+		self.assertEqual(self.open_page("GET").state, "invalid")
+
+	def test_page_form_carries_the_signed_params_to_the_buttons(self):
+		html = self.render_page()
+		for name, value in self.params.items():
+			self.assertIn(f'name="{name}" value="{value}"', html)
+
 	def test_page_escapes_the_reason_that_the_requester_typed(self):
 		frappe.db.set_value("Support Access", self.access.name, "reason", "<script>alert(1)</script>")
 		html = self.render_page()
 		self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", html)
 		self.assertNotIn("<script>alert(1)</script>", html)
-
-	def test_key_from_the_email_stops_working_when_the_site_moves_to_another_team(self):
-		frappe.db.set_value("Site", self.site.name, "team", create_test_press_admin_team().name)
-		with self.assertRaisesRegex(frappe.ValidationError, "now belong to another team"):
-			self.answer_as_guest("Accepted")
-		self.assertEqual(self.status_of_request(), "Pending")
-
-	def test_requesting_team_cannot_replace_the_stored_answer_key(self):
-		requester_team = frappe.db.get_value("Support Access", self.access.name, "requested_team")
-		frappe.set_user(frappe.db.get_value("Team", requester_team, "user"))
-		with patch(
-			"press.press.doctype.support_access.support_access.get_current_team", return_value=requester_team
-		):
-			access = SupportAccess("Support Access", self.access.name)
-			access.answer_key = sha256_hash("known-key")
-			access.save()
-		self.assertIsNone(SupportAccess.from_answer_key("known-key"))
-		self.assertIsNotNone(SupportAccess.from_answer_key(self.key))
-
-	def render_page(self) -> str:
-		from frappe.website.serve import get_response_content
-		from werkzeug.test import EnvironBuilder
-		from werkzeug.wrappers import Request
-
-		frappe.set_user("Guest")
-		request = Request(EnvironBuilder(method="GET", path="/access-request").get_environ())
-		with (
-			patch.object(frappe.local, "request", request, create=True),
-			patch.object(frappe.local, "form_dict", frappe._dict(key=self.key)),
-		):
-			return get_response_content("/access-request")
-
-	def test_page_with_an_unknown_key_says_the_link_is_not_valid(self):
-		self.key = "not-a-key"
-		self.assertEqual(self.open_page("GET").state, "invalid")
