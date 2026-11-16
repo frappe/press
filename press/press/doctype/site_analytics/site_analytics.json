@@ -195,7 +195,7 @@
 	"index_web_pages_for_search": 1,
 	"links": [],
 	"modified_by": "Administrator",
-	"modified": "2026-11-06 21:00:00.000000",
+	"modified": "2026-11-14 20:00:00.000000",
 	"module": "Press",
 	"name": "Site Analytics",
 	"owner": "Administrator",
@@ -219,7 +219,8 @@
 			"read": 1,
 			"report": 1,
 			"role": "Site Manager",
-			"share": 1
+			"share": 1,
+			"write": 1
 		},
 		{
 			"create": 1,

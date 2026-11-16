@@ -93,7 +93,7 @@ has no profile.
 
 Three roles open a shell. Employees follow customer consent: a team they are a
 member of needs none, and another team's resource needs an accepted Support
-Access.
+Access, unless it is part of an open incident (see Incidents below).
 
 | Role | Tools | Rule |
 |------|-------|------|
@@ -107,6 +107,32 @@ Engineer and Site Reliability Engineer profiles. Press Support L1 gets no
 shell. Press Infrastructure Manager and Press Hybrid Server Manager can add and
 read their own User SSH Keys. Server SSH consent counts only for the person who
 requested it.
+
+### Incidents
+
+During an incident nobody from the team is there to accept a Support Access
+request. `press/access/incident_access.py` lets Press Infrastructure Manager
+and Press Support Engineer reach the resources of an open incident without
+consent:
+
+- An incident counts when its status is Confirmed, Acknowledged or
+  Investigating, and it is less than 6 hours old. Validating is skipped,
+  because most of those resolve in a few minutes.
+- Only incidents that monitoring created count, with Administrator as the
+  owner. The `server` of an incident cannot change after insert. So staff
+  cannot open a server with an incident of their own.
+- It opens the app server of the incident and its database server. It opens
+  the proxy server only when the incident names that proxy. Shared servers are
+  included.
+- It opens the sites, benches and agent jobs on these servers. It opens a
+  release group only when all its active benches are on these servers,
+  because bench SSH covers the whole group.
+- Login as Administrator still needs consent, and so do benches of public
+  release groups in Bench Shell.
+- Role checks still apply. Press Support Engineer gets Bench Shell and bench
+  SSH, but no server console.
+- An SSH certificate for a shared app server also names its shared proxy
+  server. See the known gap below.
 
 Known gap: a certificate for a server behind a proxy also names the proxy, so
 it opens a shell on the shared Proxy Server too. A jump-only principal on the
@@ -170,6 +196,18 @@ roles.
 - The permission rows are in each DocType JSON. The `roles` table is in each
   report JSON. A report needs `report` permission on its `ref_doctype`, so a
   report gets the role that owns that DocType.
+- Do not add a Custom DocPerm to a Press DocType. One Custom DocPerm hides every
+  rule in the DocType JSON, so the scope roles lose their access without a
+  sign. Press refuses such a rule. Change the DocType JSON instead. DocTypes
+  that were made in desk have no JSON, so they keep their rules in the
+  database.
+- The rules of Press roles on Frappe DocTypes are in
+  `press/access/core_permissions.py`: job internals, Email Queue and Email
+  Account for Press Infrastructure Manager, and the System Console. Every
+  migrate writes them, with the rules of Frappe, to Custom DocPerm. Press
+  refuses other Custom DocPerms on these DocTypes. The email message and
+  attachments are at permlevel 1, which only System Manager reads, because they
+  hold password reset links and login codes.
 - Code-level checks use `frappe.only_for([...])` with System Manager and the
   scope role.
 - The roles ship in `press/fixtures/role.json`. The profiles ship in
