@@ -80,7 +80,7 @@ type PrimaryAction = (r: R) => {
 		prefix: Icon
 	}
 	onClick?: () => void
-}
+} | null
 type StatusBadge = (r: { documentResource: DocumentResource }) => {
 	label: string
 }
