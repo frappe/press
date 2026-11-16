@@ -11,6 +11,7 @@
     - role: nginx
     - role: agent
     - role: mount
+    - role: agent_volume
     - role: bench
     - role: docker
     - role: node_exporter
