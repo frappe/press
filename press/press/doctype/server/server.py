@@ -28,11 +28,12 @@ from frappe.utils.password import get_decrypted_password
 from frappe.utils.synchronization import filelock
 from frappe.utils.user import is_system_user
 
+from press.access.server_console import check_console_access
 from press.access.staff_roles import needs_staff_role, safe_for_readers
 from press.agent import Agent
 from press.api.account import is_limits_exceeded
 from press.api.client import dashboard_whitelist
-from press.exceptions import VolumeResizeLimitError
+from press.exceptions import OngoingAgentJob, VolumeResizeLimitError
 from press.guards import role_guard, team_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.add_on_storage_log.add_on_storage_log import (
@@ -1128,16 +1129,24 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def cleanup_unused_files(self, force: bool = True):
 		# User-triggered cleanup forces; the scheduled sweep passes force=False.
+		if self.running_cleanup_job():
+			frappe.throw(
+				"A cleanup job is already running on this server. Please wait for it to finish before starting another.",
+				OngoingAgentJob,
+			)
+
+		self._cleanup_unused_files(force=force)
+
+	@dashboard_whitelist()
+	def running_cleanup_job(self) -> str | None:
+		"""The cleanup job that blocks a new cleanup. The dashboard links to it."""
 		with suppress(frappe.DoesNotExistError):
 			cleanup_job: "AgentJob" = frappe.get_last_doc(
 				"Agent Job", {"server": self.name, "job_type": "Cleanup Unused Files"}
 			)
 			if cleanup_job.status in ["Running", "Pending"]:
-				frappe.throw(
-					"A cleanup job is already running on this server. Please wait for it to finish before starting another."
-				)
-
-		self._cleanup_unused_files(force=force)
+				return cleanup_job.name
+		return None
 
 	def is_build_server(self) -> bool:
 		# Not a field in all subclasses
@@ -2036,15 +2045,18 @@ class BaseServer(Document, TagHelpers):
 		return real_ram
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Infrastructure Manager")
 	def reboot_with_serial_console(self):
 		if self.provider != "AWS EC2":
 			raise NotImplementedError
+		check_console_access(self.doctype, self.name)
 		console = frappe.new_doc("Serial Console Log")
 		console.server_type = self.doctype
 		console.server = self.name
 		console.virtual_machine = self.virtual_machine
 		console.action = "reboot"
-		console.save()
+		# Staff only read their logs, so the console writes the log for them.
+		console.save(ignore_permissions=True)
 		console.reload()
 		console.run_sysrq()
 		# TODO: Enable after a manual trial with the button on Server

@@ -5,6 +5,10 @@ class ReleaseGroupActions(str, Enum):
 	SSHAccess = "SSH Access"
 
 
+class ServerActions(str, Enum):
+	SSHAccess = "SSH Access"
+
+
 class SiteActions(str, Enum):
 	VisitSite = "Visit Site"
 	ViewInDesk = "View in Desk"
@@ -14,6 +18,9 @@ class SiteActions(str, Enum):
 ACTIONS_RULES = {
 	"Release Group": {
 		ReleaseGroupActions.SSHAccess.value: False,
+	},
+	"Server": {
+		ServerActions.SSHAccess.value: False,
 	},
 	"Site": {
 		SiteActions.VisitSite.value: True,

@@ -162,7 +162,7 @@ def get_list(
 
 	apply_team_filter = not (
 		filters.get("skip_team_filter_for_system_user_and_support_agent")
-		and (frappe.local.system_user() or has_role("Press Support Agent"))
+		and (frappe.local.system_user() or has_role("Press Employee"))
 	)
 	if apply_team_filter and meta.has_field("team"):
 		valid_filters.team = frappe.local.team().name

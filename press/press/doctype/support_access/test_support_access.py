@@ -135,7 +135,7 @@ class IntegrationTestSupportAccessToBenchGroup(IntegrationTestCase):
 		self.site = create_test_site(team=create_test_press_admin_team().name)
 		self.group = ReleaseGroup("Release Group", self.site.group)
 		self.agent_team = create_test_press_admin_team()
-		frappe.get_doc("User", self.agent_team.user).add_roles("Press Support Agent")
+		frappe.get_doc("User", self.agent_team.user).add_roles("Press Employee")
 
 	def tearDown(self):
 		frappe.set_user("Administrator")

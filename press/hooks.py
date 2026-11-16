@@ -90,6 +90,8 @@ jinja = {
 
 # before_install = "press.install.before_install"
 after_install = "press.install.after_install"
+# After fixtures, which bring the roles of Press
+after_sync = ["press.access.core_permissions.sync_core_permissions"]
 
 # Desk Notifications
 # ------------------
@@ -181,6 +183,7 @@ doc_events = {
 		],
 	},
 	"Address": {"validate": "press.api.billing.validate_gst"},
+	"Custom DocPerm": {"validate": "press.access.core_permissions.refuse_rule_outside_code"},
 	"Country": {
 		"on_update": "press.api.account.clear_country_list_cache",
 		"on_trash": "press.api.account.clear_country_list_cache",
@@ -488,7 +491,10 @@ override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
 # 	"Task": "press.task.get_dashboard_data"
 # }
 
-override_doctype_class = {"User": "press.overrides.CustomUser"}
+override_doctype_class = {
+	"User": "press.overrides.CustomUser",
+	"System Console": "press.access.data_console.PressSystemConsole",
+}
 
 # on_logout = "press.overrides.on_logout"
 on_login = "press.overrides.on_login"
@@ -584,5 +590,6 @@ before_migrate = ["press.overrides.before_after_migrate"]
 after_migrate = [
 	"press.overrides.before_after_migrate",
 	"press.api.account.clear_country_list_cache",
+	"press.access.core_permissions.sync_core_permissions",
 	"press.sanity.checks",
 ]

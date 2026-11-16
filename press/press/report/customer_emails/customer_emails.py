@@ -58,7 +58,7 @@ CUSTOMER_TYPES = ["Active", "Inactive", "Signup"]
 
 
 def execute(filters=None):
-	frappe.only_for(["System Manager", "Press Support", "Press Support Engineer"])
+	frappe.only_for(["System Manager", "Press Support L1", "Press Support Engineer"])
 	region = (filters or {}).get("region")
 	if region not in REGIONS:
 		frappe.throw(f"Select a Region. Options: {', '.join(REGIONS)}")

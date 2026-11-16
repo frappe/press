@@ -7,7 +7,6 @@
 	"editable_grid": 1,
 	"engine": "InnoDB",
 	"field_order": [
-		"cluster",
 		"bucket_name",
 		"region",
 		"endpoint_url",
@@ -17,14 +16,6 @@
 		"replication_endpoint_url"
 	],
 	"fields": [
-		{
-			"fieldname": "cluster",
-			"fieldtype": "Link",
-			"in_list_view": 1,
-			"in_standard_filter": 1,
-			"label": "Cluster",
-			"options": "Cluster"
-		},
 		{
 			"fieldname": "bucket_name",
 			"fieldtype": "Data",
@@ -76,8 +67,13 @@
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
-	"links": [],
-	"modified": "2026-11-06 12:30:00.000000",
+	"links": [
+		{
+			"link_doctype": "Cluster",
+			"link_fieldname": "backup_bucket"
+		}
+	],
+	"modified": "2026-11-11 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Backup Bucket",

@@ -235,8 +235,8 @@ class Team(Document):
 		doc.user_info = user
 		doc.balance = self.get_balance()
 		doc.is_desk_user = user.user_type == "System User"
-		doc.is_support_agent = has_role("Press Support Agent")
-		doc.can_request_access = has_role("Press Support Agent")
+		doc.is_support_agent = has_role("Press Employee")
+		doc.can_request_access = has_role("Press Employee")
 		doc.valid_teams = get_valid_teams_for_user(frappe.session.user)
 		doc.onboarding = self.get_onboarding()
 		doc.billing_info = self.billing_info()
