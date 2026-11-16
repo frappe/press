@@ -5342,7 +5342,9 @@ def process_archive_site_job_update(job: "AgentJob"):
 		return
 	from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
 
-	_create_site_backup_from_agent_job(job)
+	# The backup is in the Archive Site job, even when the upstream job finishes last
+	archive_job = job if job.job_type == "Archive Site" else other_job
+	_create_site_backup_from_agent_job(archive_job)
 
 	site = Site("Site", job.site)
 	site.delete_physical_backups()
