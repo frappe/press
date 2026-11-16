@@ -13,6 +13,7 @@ import router from '../router'
 import { confirmDialog, icon, renderDialog } from '../utils/components'
 import { getToastErrorMessage } from '../utils/toast'
 import { getFrappeUpdateBanner } from './common'
+import { canManageApps } from './common/apps'
 import { getJobsTab } from './common/jobs'
 import { getPatchesTab } from './common/patches'
 import { tagTab } from './common/tags'
@@ -218,6 +219,7 @@ export default {
 							},
 							{
 								label: 'Fetch Latest Updates',
+								condition: () => canManageApps(releaseGroup.doc),
 								onClick() {
 									toast.promise(
 										releaseGroup.fetchLatestAppUpdates.submit({
@@ -236,6 +238,7 @@ export default {
 							},
 							{
 								label: 'Change Branch',
+								condition: () => canManageApps(releaseGroup.doc),
 								onClick() {
 									renderDialog(
 										h(ChangeAppBranchDialog, {
@@ -250,7 +253,8 @@ export default {
 							},
 							{
 								label: 'Remove App',
-								condition: () => row.name !== 'frappe',
+								condition: () =>
+									canManageApps(releaseGroup.doc) && row.name !== 'frappe',
 								onClick() {
 									if (releaseGroup.removeApp.loading) return
 									confirmDialog({
@@ -286,6 +290,7 @@ export default {
 							},
 							{
 								label: 'Apply Patch',
+								condition: () => canManageApps(releaseGroup.doc),
 								onClick: () => {
 									renderDialog(
 										h(PatchAppDialog, {
@@ -297,8 +302,12 @@ export default {
 							},
 						]
 					},
-					moreActions({ selectionMode, enterSelectionMode }) {
-						if (selectionMode) return []
+					moreActions({
+						selectionMode,
+						enterSelectionMode,
+						documentResource: releaseGroup,
+					}) {
+						if (selectionMode || !canManageApps(releaseGroup.doc)) return []
 						return [
 							{
 								label: 'Uninstall Multiple',
@@ -321,6 +330,7 @@ export default {
 						selectedRows,
 						exitSelectionMode,
 					}) {
+						if (!canManageApps(releaseGroup.doc)) return null
 						if (selectionMode) {
 							return {
 								label: selectedRows.length
