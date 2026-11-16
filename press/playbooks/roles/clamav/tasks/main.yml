@@ -1,8 +1,15 @@
 ---
+# Cisco's packages need glibc 2.28, Bionic has 2.27, and the CDN blocks 0.103.
+# Press records a scan skipped here as Skipped, and the scan role does not run.
+- name: Skip scan on Ubuntu 18.04
+  debug:
+    msg: No supported ClamAV runs on Ubuntu 18.04
+  when: ansible_distribution_release == 'bionic'
+
 # Focal only has ClamAV 0.103, which the CDN blocks since its end of life.
 # Imported, not included, so Press records each task and its error.
 - import_tasks: cisco.yml
   when: ansible_distribution_release == 'focal'
 
 - import_tasks: ubuntu.yml
-  when: ansible_distribution_release != 'focal'
+  when: ansible_distribution_release not in ['bionic', 'focal']
