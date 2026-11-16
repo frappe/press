@@ -1,0 +1,174 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Support Access Request{% endblock %}
+
+{% block page_content %}
+<div class="access-request">
+	<div class="access-card">
+		{% if state == "Pending" or state == "error" %}
+		<h1 class="access-title">Support access request</h1>
+		{% if state == "error" %}
+		<p class="access-error">{{ error_message | e }}</p>
+		{% endif %}
+		<p class="access-text">
+			<strong>{{ access.requested_by | e }}</strong> from Frappe support has requested access
+			to your resources. Accept only if you asked Frappe for help with them.
+		</p>
+
+		<dl class="access-details">
+			{% if access.reason %}
+			<dt>Reason</dt>
+			<dd>{{ access.reason | e }}</dd>
+			{% endif %}
+			<dt>Resources</dt>
+			<dd>
+				{% for resource in access.resources %}
+				<div>{{ resource.document_type | e }}: {{ resource.document_name | e }}</div>
+				{% endfor %}
+			</dd>
+			{% if permissions %}
+			<dt>Permissions</dt>
+			<dd>{{ permissions | join(", ") }}</dd>
+			{% endif %}
+		</dl>
+
+		<form method="POST" class="access-form">
+			<input type="hidden" name="key" value="{{ frappe.form_dict.key or '' }}">
+			<input type="hidden" name="csrf_token" value="{{ frappe.session.csrf_token }}">
+			<label class="access-label" for="allowed_for">Allow access for</label>
+			<select class="access-select" id="allowed_for" name="allowed_for">
+				{% for hours, label in validity_options.items() %}
+				<option value="{{ hours }}" {% if hours == access.allowed_for %}selected{% endif %}>{{ label }}</option>
+				{% endfor %}
+			</select>
+			<div class="access-buttons">
+				<button type="submit" name="answer" value="Rejected" class="access-button access-button-secondary">
+					Reject
+				</button>
+				<button type="submit" name="answer" value="Accepted" class="access-button">Accept</button>
+			</div>
+		</form>
+
+		{% elif state == "Accepted" %}
+		<h1 class="access-title">Access accepted</h1>
+		<p class="access-text">
+			Frappe support can access your resources until
+			{{ frappe.utils.format_datetime(access.access_allowed_till, "d MMM yyyy, h:mm a") }}.
+			You can revoke access at any time from Access Requests in the dashboard.
+		</p>
+
+		{% elif state == "Rejected" %}
+		<h1 class="access-title">Access rejected</h1>
+		<p class="access-text">Frappe support cannot access your resources. You can close this tab.</p>
+
+		{% elif state in ("Revoked", "Forfeited", "Expired") %}
+		<h1 class="access-title">Request closed</h1>
+		<p class="access-text">This request is {{ state | lower }}. No further action is needed.</p>
+
+		{% else %}
+		<h1 class="access-title">Link not valid</h1>
+		<p class="access-text">
+			This link is not valid. Open Access Requests in the dashboard to answer the request.
+		</p>
+		{% endif %}
+	</div>
+</div>
+
+<style>
+	.access-request {
+		display: flex;
+		justify-content: center;
+		padding: 64px 16px;
+	}
+
+	.access-card {
+		width: 100%;
+		max-width: 480px;
+		padding: 32px;
+		border: 1px solid #e2e2e2;
+		border-radius: 12px;
+		background: #fff;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+	}
+
+	.access-title {
+		font-size: 20px;
+		font-weight: 600;
+		color: #171717;
+		margin-bottom: 12px;
+	}
+
+	.access-text,
+	.access-details {
+		font-size: 14px;
+		line-height: 1.6;
+		color: #525252;
+		margin-bottom: 12px;
+	}
+
+	.access-error {
+		font-size: 14px;
+		padding: 8px 12px;
+		border-radius: 8px;
+		color: #b91c1c;
+		background: #fef2f2;
+	}
+
+	.access-details dt {
+		font-weight: 600;
+		color: #171717;
+		margin-top: 12px;
+	}
+
+	.access-form {
+		margin-top: 24px;
+	}
+
+	.access-label {
+		display: block;
+		font-size: 14px;
+		font-weight: 500;
+		color: #171717;
+		margin-bottom: 4px;
+	}
+
+	.access-select {
+		width: 100%;
+		padding: 8px;
+		font-size: 14px;
+		border: 1px solid #e2e2e2;
+		border-radius: 8px;
+	}
+
+	.access-buttons {
+		display: flex;
+		gap: 8px;
+		margin-top: 16px;
+	}
+
+	.access-button {
+		flex: 1;
+		padding: 10px 16px;
+		font-size: 14px;
+		font-weight: 500;
+		color: #fff;
+		background: #171717;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+	}
+
+	.access-button:hover {
+		background: #000;
+	}
+
+	.access-button-secondary {
+		color: #b91c1c;
+		background: #fef2f2;
+	}
+
+	.access-button-secondary:hover {
+		background: #fee2e2;
+	}
+</style>
+{% endblock %}
