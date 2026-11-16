@@ -7,6 +7,7 @@ import json
 import frappe
 from frappe.model.document import Document
 
+from press.press.doctype.payment_webhook_attempt.payment_webhook_attempt import WebhookAttemptRecorder
 from press.utils import log_error
 from press.utils.billing import get_razorpay_client
 
@@ -93,6 +94,7 @@ def razorpay_webhook_handler():
 	client = get_razorpay_client()
 	current_user = frappe.session.user
 	form_dict = frappe.local.form_dict
+	attempt = WebhookAttemptRecorder("Razorpay")
 
 	try:
 		payload = frappe.request.get_data()
@@ -112,10 +114,12 @@ def razorpay_webhook_handler():
 			return
 
 		client.utility.verify_webhook_signature(payload.decode(), signature, webhook_secret)
+		attempt.verified(**razorpay_event_details(form_dict))
 
 		# set user to Administrator, to not have to do ignore_permissions everywhere
 		frappe.set_user("Administrator")
 
+		duplicate = bool(frappe.db.exists("Razorpay Webhook Log", razorpay_order_id))
 		frappe.get_doc(
 			{
 				"doctype": "Razorpay Webhook Log",
@@ -125,6 +129,7 @@ def razorpay_webhook_handler():
 				"name": razorpay_order_id,
 			}
 		).insert(ignore_if_duplicate=True)
+		attempt.processed("Razorpay Webhook Log", razorpay_order_id, duplicate=duplicate)
 
 	except Exception as e:
 		frappe.db.rollback()
@@ -132,8 +137,22 @@ def razorpay_webhook_handler():
 			title="Razorpay Webhook Handler",
 			payment_id=form_dict["payload"]["payment"]["entity"]["id"],
 		)
+		attempt.failed(e)
 		frappe.set_user(current_user)
 		raise Exception from e
+
+
+def razorpay_event_details(form_dict) -> dict:
+	"""Pick the fields of a Razorpay webhook that the attempt log keeps."""
+	payload = form_dict.get("payload") or {}
+	entity = (payload.get("payment") or payload.get("token") or {}).get("entity") or {}
+	return {
+		"event_id": frappe.get_request_header("X-Razorpay-Event-Id"),
+		"event_type": form_dict.get("event"),
+		"event_created_at": form_dict.get("created_at"),
+		"order_id": entity.get("order_id"),
+		"payment_id": entity.get("id"),
+	}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -149,6 +168,7 @@ def razorpay_emandate_webhook_handler():
 	client = get_razorpay_client()
 	current_user = frappe.session.user
 	form_dict = frappe.local.form_dict
+	attempt = WebhookAttemptRecorder("Razorpay")
 
 	try:
 		payload = frappe.request.get_data()
@@ -156,6 +176,7 @@ def razorpay_emandate_webhook_handler():
 		webhook_secret = frappe.db.get_single_value("Press Settings", "razorpay_webhook_secret")
 
 		client.utility.verify_webhook_signature(payload.decode(), signature, webhook_secret)
+		attempt.verified(**razorpay_event_details(form_dict))
 
 		# set user to Administrator
 		frappe.set_user("Administrator")
@@ -168,6 +189,7 @@ def razorpay_emandate_webhook_handler():
 			_handle_recurring_payment_captured(form_dict)
 		elif event == "payment.failed":
 			_handle_recurring_payment_failed(form_dict)
+		attempt.processed()
 
 	except Exception as e:
 		frappe.db.rollback()
@@ -176,6 +198,7 @@ def razorpay_emandate_webhook_handler():
 			event=form_dict.get("event"),
 			payload=json.dumps(form_dict),
 		)
+		attempt.failed(e)
 		frappe.set_user(current_user)
 		raise Exception from e
 	finally:

@@ -517,6 +517,7 @@ export_python_type_annotations = True
 
 default_log_clearing_doctypes = {
 	"Alertmanager Webhook Log": 60,
+	"Payment Webhook Attempt": 90,
 	"Request Abuse Daily": 90,
 }
 
