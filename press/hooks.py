@@ -374,6 +374,7 @@ scheduler_events = {
 			"press.infrastructure.doctype.virtual_disk_resize.virtual_disk_resize.run_scheduled_resizes",
 		],
 		"*/5 * * * *": [
+			"press.press.doctype.razorpay_payment_record.razorpay_payment_record.fetch_recent_pending_payment_orders",
 			"press.saas.doctype.grove_trial_key.grove_trial_key.refill_trial_keys",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.enqueue_delete_orphaned_dedicated_snapshots",
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",

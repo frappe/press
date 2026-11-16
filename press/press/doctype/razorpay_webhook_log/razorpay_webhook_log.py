@@ -24,18 +24,16 @@ class RazorpayWebhookLog(Document):
 		from frappe.types import DF
 
 		event: DF.Data | None
+		event_id: DF.Data | None
 		payload: DF.Code | None
 		payment_id: DF.Data | None
 	# end: auto-generated types
 
 	def after_insert(self):
-		payment_record = frappe.get_doc("Razorpay Payment Record", {"order_id": self.name})
-
-		if self.event in ("order.paid", "payment.captured") and payment_record.status != "Captured":
-			payment_record.reload()
-			if payment_record.status != "Captured":
-				payment_record.update({"payment_id": self.payment_id, "status": "Captured"})
-				payment_record.save(ignore_permissions=True)
+		if self.event not in ("order.paid", "payment.captured"):
+			return
+		payment_record = frappe.get_doc("Razorpay Payment Record", {"order_id": self.name}, for_update=True)
+		payment_record.mark_captured(self.payment_id)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -121,6 +119,7 @@ def razorpay_webhook_handler():
 				"doctype": "Razorpay Webhook Log",
 				"payload": frappe.as_json(form_dict),
 				"event": form_dict.get("event"),
+				"event_id": frappe.get_request_header("X-Razorpay-Event-Id"),
 				"payment_id": form_dict["payload"]["payment"]["entity"]["id"],
 				"name": razorpay_order_id,
 			}

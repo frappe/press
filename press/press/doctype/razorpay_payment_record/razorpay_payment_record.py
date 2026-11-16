@@ -83,55 +83,55 @@ class RazorpayPaymentRecord(Document):
 
 		_enqueue_finalize_unpaid_invoices_for_team(team.name)
 
+	def mark_captured(self, payment_id: str, signature: str | None = None):
+		"""Credit the team once. Load the record with `for_update=True` before you call this."""
+		if self.status == "Captured":
+			return
+		self.payment_id = payment_id
+		self.signature = signature or self.signature
+		self.status = "Captured"
+		self.save(ignore_permissions=True)
+
 	@frappe.whitelist()
 	def sync(self):
 		try:
-			client = get_razorpay_client()
-			response = client.order.payments(self.order_id)
-
-			for item in response.get("items"):
-				if item["status"] == "captured":
-					frappe.get_doc(
-						{
-							"doctype": "Razorpay Webhook Log",
-							"payload": frappe.as_json(item),
-							"event": "order.paid",
-							"payment_id": item["id"],
-							"name": item["order_id"],
-						}
-					).insert(ignore_if_duplicate=True)
+			self.log_captured_payments()
 		except Exception:
 			log_error(title="Failed to sync Razorpay Payment Record", order_id=self.order_id)
 
+	def log_captured_payments(self):
+		response = get_razorpay_client().order.payments(self.order_id)
+		for item in response.get("items"):
+			if item["status"] == "captured":
+				frappe.get_doc(
+					{
+						"doctype": "Razorpay Webhook Log",
+						"payload": frappe.as_json(item),
+						"event": "order.paid",
+						"payment_id": item["id"],
+						"name": item["order_id"],
+					}
+				).insert(ignore_if_duplicate=True)
+
+
+def fetch_recent_pending_payment_orders():
+	"""Credit payments within minutes when the Razorpay webhook is late."""
+	fetch_pending_payment_orders(hours=2)
+
 
 def fetch_pending_payment_orders(hours=12):
-	past_12hrs_ago = datetime.now() - timedelta(hours=hours)
-	pending_orders = frappe.get_all(
+	pending_records = frappe.get_all(
 		"Razorpay Payment Record",
-		dict(status="Pending", creation=(">=", past_12hrs_ago)),
-		pluck="order_id",
+		dict(status="Pending", creation=(">=", datetime.now() - timedelta(hours=hours))),
+		pluck="name",
 	)
-
-	if not pending_orders:
-		return
-
-	client = get_razorpay_client()
-	for order_id in pending_orders:
+	for name in pending_records:
 		try:
-			response = client.order.payments(order_id)
-			for item in response.get("items"):
-				if item["status"] == "captured":
-					frappe.get_doc(
-						{
-							"doctype": "Razorpay Webhook Log",
-							"payload": frappe.as_json(item),
-							"event": "order.paid",
-							"payment_id": item["id"],
-							"name": item["order_id"],
-						}
-					).insert(ignore_if_duplicate=True)
+			RazorpayPaymentRecord("Razorpay Payment Record", name).log_captured_payments()
+			frappe.db.commit()
 		except Exception:
-			log_error(title="Failed to capture pending order", order_id=order_id)
+			frappe.db.rollback()
+			log_error(title="Failed to capture pending order", payment_record=name)
 
 	"""
 	Sample Response
