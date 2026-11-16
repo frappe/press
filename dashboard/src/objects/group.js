@@ -67,6 +67,10 @@ export default {
 		statusBadge({ documentResource: releaseGroup }) {
 			return { label: releaseGroup.doc.status }
 		},
+		extraBadges({ documentResource: releaseGroup }) {
+			if (!releaseGroup.doc.public) return []
+			return [{ label: 'Public', theme: 'blue' }]
+		},
 		banner({ documentResource: releaseGroup }) {
 			return getFrappeUpdateBanner(releaseGroup.doc, 'This bench group')
 		},

@@ -48,6 +48,8 @@ export interface DashboardObject {
 export interface Detail {
 	titleField: string
 	statusBadge: StatusBadge
+	// Shown next to the status badge, for example "Public" on a public bench.
+	extraBadges?: (r: { documentResource: DocumentResource }) => BadgeConfig[]
 	// Rendered above the tabs, so it stays on every tab of the detail page.
 	banner?: (r: {
 		documentResource: DocumentResource
@@ -84,6 +86,7 @@ type PrimaryAction = (r: R) => {
 type StatusBadge = (r: { documentResource: DocumentResource }) => {
 	label: string
 }
+type BadgeConfig = { label: string; theme?: string }
 export type Breadcrumb = { label: string; route: string }
 export type BreadcrumbArgs = {
 	documentResource: DocumentResource
