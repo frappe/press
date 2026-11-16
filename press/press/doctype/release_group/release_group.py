@@ -171,11 +171,6 @@ class ReleaseGroup(Document, TagHelpers):
 		query = (
 			query.where(ReleaseGroup.team == frappe.local.team().name)
 			.where(ReleaseGroup.enabled == 1)
-<<<<<<< HEAD
-			.where(ReleaseGroup.public == 0)
-=======
-			.where(outside_archived_clusters())
->>>>>>> 80f288f (feat(release-group): Show public groups to system users in the list)
 			.select(
 				site_count_query(server).as_("site_count"),
 				active_bench_count_query(server).as_("active_benches"),
