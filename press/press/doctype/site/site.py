@@ -1143,6 +1143,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
+	@action_guard(SiteActions.ManageApps)
 	def install_app(self, app: str, plan: str | None = None) -> str | None:
 		self.check_marketplace_app_installable(plan)
 
@@ -1160,6 +1161,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
+	@action_guard(SiteActions.ManageApps)
 	def uninstall_app(self, app: str, create_offsite_backup: bool = False, feedback: str = "") -> str:
 		from press.marketplace.doctype.marketplace_app_feedback.marketplace_app_feedback import (
 			collect_app_uninstall_feedback,

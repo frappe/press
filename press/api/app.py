@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 
+from press.api.bench import ensure_can_manage_apps
 from press.press.doctype.app.app import new_app
 from press.utils import get_current_team
 
@@ -20,6 +21,7 @@ def new(app):
 	if isinstance(app, str):
 		app = json.loads(app)
 
+	ensure_can_manage_apps(app["group"])
 	name = app["name"]
 	team = get_current_team()
 
