@@ -10,6 +10,7 @@ import frappe
 from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 
+from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 from press.press.doctype.app.test_app import create_test_app
@@ -21,7 +22,9 @@ from press.press.doctype.press_settings.test_press_settings import (
 )
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.server.test_server_monitoring import patch_public_server_health_metrics
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
+from press.press.doctype.site.test_site_shared_server_migration import CROWDED, ROOMY
 from press.press.doctype.site_action.site_action import (
 	SiteAction,
 	process_site_actions,
@@ -251,6 +254,110 @@ class TestSiteAction(FrappeTestCase):
 
 		self.assertEqual(action.status, "Scheduled")
 		self.assertEqual(action.get_argument("destination_server"), destination_server.name)
+
+	@patch.object(SiteMigration, "start", new=Mock())
+	# A second bench on a deployed group asks the agent how big the last image was
+	@patch.object(Agent, "get", new=Mock(return_value={"size": 0}))
+	def test_move_to_another_shared_server_schedules_a_migration_to_the_server_with_room(self):
+		source_bench: Bench = create_test_bench(public_server=True)
+		source_site: Site = create_test_site(bench=source_bench.name)
+		destination_server = create_test_server(
+			cluster=frappe.db.get_value("Server", source_site.server, "cluster"), public=True
+		)
+		destination_bench: Bench = create_test_bench(
+			group=frappe.get_doc("Release Group", source_bench.group), server=destination_server.name
+		)
+
+		with patch_public_server_health_metrics({source_site.server: ROOMY, destination_server.name: ROOMY}):
+			action_name = source_site.create_migration_plan(type="Move Site To Another Shared Server")
+
+		action: SiteAction = frappe.get_doc("Site Action", action_name)
+		migration: SiteMigration = frappe.get_doc("Site Migration", action.get_argument("site_migration"))
+
+		self.assertEqual(action.get_argument("destination_server"), destination_server.name)
+		self.assertEqual(action.destination_bench, destination_bench.name)
+		self.assertEqual(migration.destination_server, destination_server.name)
+		self.assertEqual(migration.destination_bench, destination_bench.name)
+		self.assertEqual(
+			frappe.db.get_value("Bench", migration.destination_bench, "group"), source_bench.group
+		)
+		self.assertEqual(migration.destination_cluster, source_site.cluster)
+
+	@patch.object(SiteMigration, "start", new=Mock())
+	@patch.object(Agent, "get", new=Mock(return_value={"size": 0}))
+	def test_second_shared_server_move_inside_the_cooldown_creates_nothing(self):
+		source_bench: Bench = create_test_bench(public_server=True)
+		source_site: Site = create_test_site(bench=source_bench.name)
+		destination_server = create_test_server(
+			cluster=frappe.db.get_value("Server", source_site.server, "cluster"), public=True
+		)
+		create_test_bench(
+			group=frappe.get_doc("Release Group", source_bench.group), server=destination_server.name
+		)
+
+		with patch_public_server_health_metrics({source_site.server: ROOMY, destination_server.name: ROOMY}):
+			first_move = source_site.create_migration_plan(type="Move Site To Another Shared Server")
+			# Finish the first move, so only the cooldown can refuse the second
+			action: SiteAction = frappe.get_doc("Site Action", first_move)
+			frappe.db.set_value("Site Migration", action.get_argument("site_migration"), "status", "Success")
+			frappe.db.set_value("Site Action", first_move, "status", "Success")
+
+			with self.assertRaises(frappe.ValidationError) as context:
+				source_site.create_migration_plan(type="Move Site To Another Shared Server")
+
+		self.assertIn("already moved to another shared server", str(context.exception))
+		self.assertEqual(
+			frappe.db.count(
+				"Site Action",
+				{"site": source_site.name, "action_type": "Move Site To Another Shared Server"},
+			),
+			1,
+		)
+
+	@patch.object(SiteMigration, "start", new=Mock())
+	@patch.object(Agent, "get", new=Mock(return_value={"size": 0}))
+	def test_cancelling_a_shared_server_move_takes_back_the_scheduled_migration(self):
+		source_bench: Bench = create_test_bench(public_server=True)
+		source_site: Site = create_test_site(bench=source_bench.name)
+		destination_server = create_test_server(
+			cluster=frappe.db.get_value("Server", source_site.server, "cluster"), public=True
+		)
+		create_test_bench(
+			group=frappe.get_doc("Release Group", source_bench.group), server=destination_server.name
+		)
+
+		with patch_public_server_health_metrics({source_site.server: ROOMY, destination_server.name: ROOMY}):
+			action_name = source_site.create_migration_plan(
+				type="Move Site To Another Shared Server",
+				scheduled_time=frappe.utils.add_to_date(None, hours=1).strftime("%Y-%m-%dT%H:%M"),
+			)
+
+		action: SiteAction = frappe.get_doc("Site Action", action_name)
+		migration_name = action.get_argument("site_migration")
+		action.cancel_action()
+
+		self.assertEqual(action.status, "Cancelled")
+		self.assertFalse(frappe.db.exists("Site Migration", migration_name))
+
+	@patch.object(Agent, "get", new=Mock(return_value={"size": 0}))
+	def test_move_to_another_shared_server_is_refused_when_no_server_has_room(self):
+		source_bench: Bench = create_test_bench(public_server=True)
+		source_site: Site = create_test_site(bench=source_bench.name)
+		crowded_server = create_test_server(
+			cluster=frappe.db.get_value("Server", source_site.server, "cluster"), public=True
+		)
+		create_test_bench(
+			group=frappe.get_doc("Release Group", source_bench.group), server=crowded_server.name
+		)
+
+		with (
+			patch_public_server_health_metrics({source_site.server: ROOMY, crowded_server.name: CROWDED}),
+			self.assertRaises(frappe.ValidationError) as context,
+		):
+			source_site.create_migration_plan(type="Move Site To Another Shared Server")
+
+		self.assertIn("has room for this site right now", str(context.exception))
+		self.assertFalse(frappe.db.exists("Site Migration", {"site": source_site.name}))
 
 	def test_process_site_actions(self):
 		"""Test that process_site_actions picks up scheduled actions"""
