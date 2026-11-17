@@ -3065,12 +3065,34 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		public_ip = allocation["PublicIp"]
 
 		# Associate with instance
-		ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
+		association = ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
+
+		# Before the sync saves the IP, so Ansible still connects over the private IP
+		if getattr(self, "nat_server", None):
+			self._remove_nat_route_for_static_ip(ec2_client, allocation_id, association["AssociationId"])
 
 		# Trigger VM sync
 		vm_doc.sync()
 
 		return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
+
+	def _remove_nat_route_for_static_ip(self, ec2_client, allocation_id: str, association_id: str):
+		"""Send replies out through the new static IP, not the NAT server."""
+		play = Ansible(
+			playbook="remove_nat_iptables.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+		).run()
+		if play.status != "Success":
+			ec2_client.disassociate_address(AssociationId=association_id)
+			ec2_client.release_address(AllocationId=allocation_id)
+			frappe.throw(
+				f"Could not remove the NAT route (Ansible Play {play.name}). Released the static IP."
+			)
+
+		for doctype in ("Server", "Database Server"):
+			frappe.db.set_value(doctype, {"virtual_machine": self.virtual_machine}, "nat_server", None)
 
 	@frappe.whitelist()
 	def add_hetzner_public_ip(self, primary_ip=None):
