@@ -20,6 +20,21 @@ def get_emails(region: str) -> dict[str, dict]:
 	return {row["email"]: row for row in rows}
 
 
+def get_active_emails(months: int) -> set[str]:
+	_, rows = execute({"region": "All customers", "active_within_months": months})
+	return {row["email"] for row in rows}
+
+
+def set_last_active(user: str, months_ago: int):
+	last_active = frappe.utils.add_months(frappe.utils.now_datetime(), -months_ago)
+	frappe.db.set_value("User", user, "last_active", last_active)
+
+
+def add_notification_email(team, email: str):
+	team.append("communication_infos", {"channel": "Email", "type": "General", "value": email})
+	team.save()
+
+
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
 class TestCustomerEmails(FrappeTestCase):
@@ -89,6 +104,34 @@ class TestCustomerEmails(FrappeTestCase):
 		request.db_insert()
 
 		self.assertNotIn(team.user, get_emails("All customers"))
+
+	def test_months_filter_keeps_users_who_used_the_dashboard_within_those_months(self):
+		recent_team = create_test_team()
+		old_team = create_test_team()
+		set_last_active(recent_team.user, months_ago=1)
+		set_last_active(old_team.user, months_ago=6)
+
+		emails = get_active_emails(months=3)
+
+		self.assertIn(recent_team.user, emails)
+		self.assertNotIn(old_team.user, emails)
+
+	def test_months_filter_leaves_out_users_who_never_used_the_dashboard(self):
+		team = create_test_team()
+
+		self.assertNotIn(team.user, get_active_emails(months=3))
+
+	def test_notification_email_without_a_login_follows_its_team_activity(self):
+		active_team = create_test_team()
+		inactive_team = create_test_team()
+		set_last_active(active_team.user, months_ago=1)
+		add_notification_email(active_team, "alerts-active@example.com")
+		add_notification_email(inactive_team, "alerts-inactive@example.com")
+
+		emails = get_active_emails(months=3)
+
+		self.assertIn("alerts-active@example.com", emails)
+		self.assertNotIn("alerts-inactive@example.com", emails)
 
 	def test_customer_type_filter_keeps_only_customers_of_that_type(self):
 		active_team = create_test_team(country="India")
