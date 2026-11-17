@@ -28,6 +28,7 @@ from frappe.utils import (
 	cint,
 	cstr,
 	flt,
+	format_datetime,
 	get_datetime,
 	get_system_timezone,
 	now_datetime,
@@ -140,6 +141,8 @@ DOCTYPE_SERVER_TYPE_MAP = {
 }
 
 ARCHIVE_AFTER_SUSPEND_DAYS = 21
+# A move between shared servers costs the site downtime, so it is rationed
+SHARED_SERVER_MOVE_COOLDOWN_DAYS = 60
 NOTIFY_BEFORE_ARCHIVAL_DAYS = 2
 CREATION_FAILURE_RETENTION_DAYS = 14
 PRIVATE_BENCH_DOC = "https://docs.frappe.io/cloud/sites/move-site-to-private-bench"
@@ -1952,6 +1955,7 @@ class Site(Document, TagHelpers):
 		type: Literal[
 			"Move Site To Different Server / Bench",
 			"Move Site To Different Region",
+			"Move Site To Another Shared Server",
 		],
 		group: str | None = None,
 		server: str | None = None,
@@ -2008,6 +2012,23 @@ class Site(Document, TagHelpers):
 							"destination_server": server or self.server,
 							"destination_release_group": group,
 							"new_release_group_name": new_group_name,
+							"skip_failing_patches": skip_failing_patches,
+						}
+					),
+					"scheduled_time": scheduled_time,
+				}
+			).insert()
+		elif type == "Move Site To Another Shared Server":
+			# Refuse before the action exists, so a blocked move leaves nothing behind
+			self.validate_shared_server_move_cooldown()
+			doc = frappe.get_doc(
+				{
+					"doctype": "Site Action",
+					"site": self.name,
+					"action_type": type,
+					"arguments": json.dumps(
+						{
+							"destination_server": server,
 							"skip_failing_patches": skip_failing_patches,
 						}
 					),
@@ -4900,7 +4921,138 @@ class Site(Document, TagHelpers):
 					"has_domain_with_a_record": self.has_domain_with_a_record,
 				},
 			},
+			"Move Site To Another Shared Server": {
+				"hidden": not self.is_on_shared_server,
+				"allow_scheduling": True,
+				"button_label": "Move Site",
+				"options": {
+					"region": self.region_title,
+					"cooldown_days": SHARED_SERVER_MOVE_COOLDOWN_DAYS,
+				},
+			},
 		}
+
+	@property
+	def is_on_shared_server(self) -> bool:
+		return not is_dedicated_server(self.server)
+
+	@property
+	def region_title(self) -> str:
+		return frappe.get_cached_value("Cluster", self.cluster, "title") or self.cluster
+
+	@dashboard_whitelist()
+	@safe_for_readers
+	def get_shared_server_migration_target(self) -> dict:
+		"""Shared server this site moves to, and the room it has to spare."""
+		if not self.is_on_shared_server:
+			frappe.throw(
+				"This site is not on a shared server, so it can't move to another one."
+				" Use the bench or the region move instead."
+			)
+
+		self.validate_shared_server_move_cooldown()
+		return {
+			"region": self.region_title,
+			"destination_server": self.pick_shared_server_for_migration(),
+		}
+
+	def validate_shared_server_move_cooldown(self, exclude_action: str | None = None) -> None:
+		"""One move per cooldown, so a site can't hop from one shared server to the next."""
+		next_move = self.next_shared_server_move_allowed_on(exclude_action)
+		if not next_move or get_datetime() >= next_move:
+			return
+
+		frappe.throw(
+			f"This site already moved to another shared server in the last"
+			f" {SHARED_SERVER_MOVE_COOLDOWN_DAYS} days. It can move again after"
+			f" {format_datetime(next_move, 'MMM d, YYYY')}."
+		)
+
+	def next_shared_server_move_allowed_on(self, exclude_action: str | None = None) -> datetime | None:
+		"""When the last move that took, or is about to take, frees the site to move again."""
+		filters = {
+			"site": self.name,
+			"action_type": "Move Site To Another Shared Server",
+			"status": ("in", ("Scheduled", "Running", "Success")),
+		}
+		if exclude_action:
+			filters["name"] = ("!=", exclude_action)
+
+		last_move = frappe.db.get_value("Site Action", filters, "creation", order_by="creation desc")
+		if not last_move:
+			return None
+
+		return add_to_date(last_move, days=SHARED_SERVER_MOVE_COOLDOWN_DAYS)
+
+	def pick_shared_server_for_migration(self, server: str | None = None) -> dict:
+		"""The roomiest shared server, or the one asked for while it still has room."""
+		servers = self.shared_servers_with_free_capacity()
+		if server:
+			servers = [candidate for candidate in servers if candidate["name"] == server]
+			if not servers:
+				frappe.throw(
+					f"Shared server {server} has no room for this site right now. Please try again later."
+				)
+
+		if not servers:
+			self._throw_no_shared_server_available()
+
+		return servers[0]
+
+	def _throw_no_shared_server_available(self):
+		"""Nowhere to go and no room to go to are different problems for the reader."""
+		if not self.active_benches_on_other_shared_servers():
+			frappe.throw(
+				f"This site's bench runs on no other shared server in {self.region_title},"
+				" so there is nowhere to move it. You can move the site to a different region instead."
+			)
+
+		frappe.throw(
+			f"No other shared server in {self.region_title} has room for this site right now."
+			" Please try again later, or move the site to a different region."
+		)
+
+	def shared_servers_with_free_capacity(self) -> list[dict]:
+		"""Shared servers in this region that run this site's bench group, the roomiest first."""
+		from press.press.doctype.server.server_monitoring import get_public_servers_with_free_capacity
+
+		benches = self.active_benches_on_other_shared_servers()
+		if not benches:
+			return []
+
+		return [
+			{
+				**server,
+				"bench": benches[server["name"]].bench,
+				"title": benches[server["name"]].title or server["name"],
+			}
+			for server in get_public_servers_with_free_capacity(list(benches))
+		]
+
+	def active_benches_on_other_shared_servers(self) -> dict[str, frappe._dict]:
+		"""Latest active bench of this site's group on every other shared server in its region."""
+		Bench = frappe.qb.DocType("Bench")
+		Server = frappe.qb.DocType("Server")
+		rows = (
+			frappe.qb.from_(Bench)
+			.select(Bench.name.as_("bench"), Server.name.as_("server"), Server.title)
+			.inner_join(Server)
+			.on(Server.name == Bench.server)
+			.where(Bench.group == self.group)
+			.where(Bench.status == "Active")
+			.where(Server.status == "Active")
+			.where(Server.public == 1)
+			.where(Server.cluster == self.cluster)
+			.where(Server.name != self.server)
+			.where(Server.exclude_for_scheduling == 0)
+			.orderby(Bench.creation, order=frappe.qb.desc)
+			.run(as_dict=True)
+		)
+
+		benches: dict[str, frappe._dict] = {}
+		for row in rows:
+			benches.setdefault(row.server, row)
+		return benches
 
 	def recent_failed_migration_servers(self) -> list[str]:
 		# A failed move leaves restore files on its destination, so a retry there hits the space pre-check.
