@@ -318,7 +318,7 @@ class Team(Document):
 			return
 		if self.is_new():
 			return
-		if not self.has_value_changed("team_members"):
+		if not self.has_team_members_changed():
 			return
 		if "System Manager" in frappe.get_roles() or self.is_team_owner() or self.is_admin_user():
 			return
@@ -328,6 +328,11 @@ class Team(Document):
 			),
 			frappe.PermissionError,
 		)
+
+	def has_team_members_changed(self) -> bool:
+		# has_value_changed compares child rows by identity, so it is true on every save
+		previous = self.get_doc_before_save()
+		return not previous or get_member_access(previous) != get_member_access(self)
 
 	def validate(self):
 		self.validate_duplicate_members()
@@ -625,15 +630,10 @@ class Team(Document):
 				)
 
 		if not self.is_new() and not self.default_payment_method:
-			# if default payment method is unset
-			# then set the is_default field for Stripe Payment Method to 0
-			payment_methods = frappe.db.get_list(
-				"Stripe Payment Method", {"team": self.name, "is_default": 1}
+			# Keep the cards in step with the team, also when staff without billing access save it
+			frappe.db.set_value(
+				"Stripe Payment Method", {"team": self.name, "is_default": 1}, "is_default", 0
 			)
-			for pm in payment_methods:
-				doc = frappe.get_doc("Stripe Payment Method", pm.name)
-				doc.is_default = 0
-				doc.save()
 
 		# Telemetry: Payment Mode Changed Event (Only for teams which have came through FC Signup and not via invite)
 		if self.has_value_changed("payment_mode") and self.payment_mode and self.account_request:
@@ -1779,6 +1779,19 @@ class Team(Document):
 				"team": self,
 			},
 		)
+
+
+def get_member_access(team: Team) -> list[tuple]:
+	return sorted(
+		(
+			member.user or "",
+			member.role or "",
+			frappe.utils.cint(member.all_servers),
+			frappe.utils.cint(member.all_release_groups),
+			frappe.utils.cint(member.all_sites),
+		)
+		for member in team.team_members
+	)
 
 
 def get_team_members(team):
