@@ -12,6 +12,7 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.account_request.test_account_request import create_test_account_request
 from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 from press.press.doctype.database_server.test_database_server import create_test_database_server
+from press.press.doctype.server import server_monitoring
 from press.press.doctype.server.server_monitoring import (
 	PUBLIC_GROUP_BUILD_FAILURE_WINDOW_DAYS,
 	STUCK_AGENT_JOBS_ALERT_THRESHOLD,
@@ -19,6 +20,7 @@ from press.press.doctype.server.server_monitoring import (
 	PublicServerHealthMetrics,
 	SignupFailureRate,
 	_breaches_signup_failure_threshold,
+	_get_excluded_public_server_disk_issues,
 	_get_failed_public_group_builds,
 	_get_incomplete_signup_rate,
 	_get_servers_with_stuck_agent_jobs,
@@ -512,3 +514,25 @@ class TestPublicServersWithFreeCapacity(FrappeTestCase):
 				get_public_servers_with_free_capacity,
 				["quiet.fc.dev"],
 			)
+
+
+@patch.object(
+	server_monitoring, "_get_public_server_pool_prometheus_connection", return_value=("url", ("user", "pass"))
+)
+@patch.object(server_monitoring, "_query_prometheus_vector")
+class TestExcludedPublicServerDiskIssues(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_excluded_public_server_above_90_percent_disk_is_reported(self, query_prometheus, _):
+		excluded = create_test_server(public=True)
+		frappe.db.set_value("Server", excluded.name, "exclude_for_scheduling", 1)
+		in_pool = create_test_server(public=True)
+		query_prometheus.return_value = [
+			{"metric": {"instance": server.name}, "value": [0, "0.95"]} for server in (excluded, in_pool)
+		]
+
+		issues = _get_excluded_public_server_disk_issues()
+
+		self.assertEqual(issues[excluded.name], ["Disk utilization: 95.00%"])
+		self.assertNotIn(in_pool.name, issues)  # the pool check already reports it
