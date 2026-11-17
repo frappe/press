@@ -2048,7 +2048,7 @@ class DatabaseServer(BaseServer):
 		)
 
 	@frappe.whitelist()
-	def adjust_memory_config(self):  # noqa: C901
+	def adjust_memory_config(self):
 		if not self.ram:
 			return
 
