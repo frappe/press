@@ -1397,6 +1397,24 @@ class TestArchiveSiteJobUpdate(FrappeTestCase):
 		self.assertEqual(self.site.status, "Broken")
 		self.assertTrue(self.site.archive_failed)
 
+	@patch("press.press.doctype.site.site.site_cleanup_after_archive", new=Mock())
+	def test_archive_backup_is_recorded_when_the_upstream_job_finishes_last(self):
+		archive_job = self._create_archive_jobs("Success")
+		for step in ("Backup Site", "Upload Site Backup to S3", "Archive Site"):
+			self._set_step_status(archive_job, step, "Success")
+		database = {"file": "database.sql.gz", "size": 100, "url": "https://example.com/database.sql.gz"}
+		archive_job.db_set(
+			"data", json.dumps({"backups": {"database": database}, "offsite": {"database.sql.gz": "path"}})
+		)
+		upstream_job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Remove Site from Upstream", "site": self.site.name}
+		)
+
+		process_archive_site_job_update(upstream_job)
+
+		self.assertEqual(frappe.db.get_value("Site", self.site.name, "status"), "Archived")
+		self.assertTrue(frappe.db.exists("Site Backup", {"job": archive_job.name, "offsite": True}))
+
 	def test_step_skipped_by_a_successful_job_still_counts_as_removed(self):
 		"""The agent skips a step it has no work for. That job succeeded, so nothing is left behind."""
 		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
