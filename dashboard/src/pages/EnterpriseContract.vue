@@ -19,7 +19,7 @@
 				</Button>
 				<Button v-if="canOrder" variant="solid" @click="ordering = true">
 					<template #prefix><lucide-plus class="size-4" /></template>
-					Order Contract
+					Subscribe
 				</Button>
 			</template>
 		</Header>

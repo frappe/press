@@ -77,7 +77,7 @@
 					v-else
 					variant="solid"
 					size="md"
-					label="Order Contract"
+					label="Subscribe"
 					@click="emit('order')"
 				/>
 			</div>
