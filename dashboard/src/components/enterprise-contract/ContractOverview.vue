@@ -173,7 +173,7 @@ const banner = computed(() => {
 		return {
 			type: 'info',
 			title:
-				'Payment received. Frappe is signing your agreement, and will email you the signed copy.',
+				'Payment received. Frappe is signing your agreement. Once signed, you can download the signed copy from this page.',
 		}
 	return null
 })

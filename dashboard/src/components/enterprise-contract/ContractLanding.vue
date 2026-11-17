@@ -128,7 +128,7 @@ const STEPS = [
 	},
 	{
 		title: 'Frappe signs',
-		text: 'We sign the agreement and email you the signed copy.',
+		text: 'We sign the agreement. Then you can download the signed copy from the contract page.',
 	},
 	{
 		title: 'Renew yearly',
