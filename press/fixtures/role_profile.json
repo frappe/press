@@ -23,7 +23,7 @@
  {
   "docstatus": 0,
   "doctype": "Role Profile",
-  "modified": "2026-11-13 21:00:00.000000",
+  "modified": "2026-11-17 21:00:00.000000",
   "name": "Press Support L1",
   "role_profile": "Press Support L1",
   "roles": [
@@ -32,13 +32,19 @@
     "parentfield": "roles",
     "parenttype": "Role Profile",
     "role": "Press Support L1"
+   },
+   {
+    "parent": "Press Support L1",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Newsletter Manager"
    }
   ]
  },
  {
   "docstatus": 0,
   "doctype": "Role Profile",
-  "modified": "2026-11-06 21:00:00.000000",
+  "modified": "2026-11-17 21:00:00.000000",
   "name": "Press Support Engineer",
   "role_profile": "Press Support Engineer",
   "roles": [
@@ -47,6 +53,12 @@
     "parentfield": "roles",
     "parenttype": "Role Profile",
     "role": "Press Support Engineer"
+   },
+   {
+    "parent": "Press Support Engineer",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "Newsletter Manager"
    }
   ]
  },
