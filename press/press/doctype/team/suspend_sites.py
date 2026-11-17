@@ -18,6 +18,7 @@ The `execute` method is the main method which is run by the scheduler on every d
 import frappe
 from frappe.utils import add_days, get_first_day, get_last_day, getdate
 
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.utils import log_error
 
 SUSPENSION_DAYS = 14
@@ -52,9 +53,8 @@ def suspend_sites_and_send_email(team):
 		frappe.db.rollback()
 	# send email
 	if sites:
-		email = team.user
 		frappe.sendmail(
-			recipients=email,
+			recipients=get_communication_info("Email", "Billing", "Team", team.name),
 			subject="Your sites have been suspended on Frappe Cloud",
 			template="suspended_sites",
 			args={
