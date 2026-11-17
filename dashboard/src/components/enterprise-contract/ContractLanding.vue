@@ -73,19 +73,13 @@
 				<div v-if="orderBlocked" class="text-base text-ink-gray-7">
 					{{ orderBlocked }}
 				</div>
-				<template v-else>
-					<Button
-						variant="solid"
-						size="md"
-						label="Order Contract"
-						@click="emit('order')"
-					/>
-					<div class="text-sm text-ink-gray-6">
-						{{ plan.currency === "INR"
-								? "Pay by bank transfer or credits."
-								: "Pay by card or credits." }}
-					</div>
-				</template>
+				<Button
+					v-else
+					variant="solid"
+					size="md"
+					label="Order Contract"
+					@click="emit('order')"
+				/>
 			</div>
 		</div>
 
@@ -132,7 +126,7 @@ const STEPS = [
 	},
 	{
 		title: 'Renew yearly',
-		text: 'Renewal opens 30 days before the year ends. We never charge you automatically.',
+		text: 'Renewal opens before the year ends. We never charge you automatically.',
 	},
 ]
 
