@@ -273,6 +273,7 @@ scheduler_events = {
 		"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.expire_backups",
 		"press.press.doctype.server_snapshot.server_snapshot.expire_snapshots",
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
+		"press.saas.doctype.product_trial.product_trial.archive_broken_standby_sites",
 		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 		"press.press.doctype.incident_settings.incident_settings.alert_if_phone_call_alerts_disabled",
