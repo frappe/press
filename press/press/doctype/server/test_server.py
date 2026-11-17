@@ -19,6 +19,7 @@ from press.exceptions import ArchiveBenchError, OngoingAgentJob
 from press.overrides import before_request
 from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
@@ -40,10 +41,10 @@ from press.press.doctype.server_plan.test_server_plan import create_test_server_
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team, create_test_team
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
+from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.server_plan.server_plan import ServerPlan
-	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())
@@ -1502,3 +1503,66 @@ class TestServerDecommissionNotice(FrappeTestCase):
 		printed = " ".join(str(call.args[0]) for call in mock_print.call_args_list)
 		self.assertIn("not sending this as already sent on", printed)
 		self.assertIn(email_queue.name, printed)
+
+
+@patch("boto3.client")
+class TestAWSStaticIP(FrappeTestCase):
+	def setUp(self):
+		cluster = create_test_cluster()
+		self.server = create_test_server(cluster=cluster.name, provider="AWS EC2")
+		frappe.db.set_value("Server", self.server.name, {"ip": None, "nat_server": "nat1.fc.dev"})
+		self.server.reload()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def mock_ec2(self, boto3_client):
+		ec2 = boto3_client.return_value
+		ec2.allocate_address.return_value = {"AllocationId": "eipalloc-test", "PublicIp": "203.0.113.10"}
+		ec2.associate_address.return_value = {"AssociationId": "eipassoc-test"}
+		return ec2
+
+	def test_aws_static_ip_on_nat_server_removes_nat_route_over_private_ip_before_vm_sync(self, boto3_client):
+		self.mock_ec2(boto3_client)
+		order = []
+		with (
+			patch("press.press.doctype.server.server.Ansible") as Ansible,
+			patch.object(VirtualMachine, "sync", side_effect=lambda: order.append("sync")),
+		):
+			Ansible.return_value.run.side_effect = lambda: order.append("remove nat route") or Mock(
+				status="Success"
+			)
+			self.server.get_static_ip()
+
+		self.assertEqual(order, ["remove nat route", "sync"])
+		self.assertEqual(Ansible.call_args.kwargs["playbook"], "remove_nat_iptables.yml")
+		self.assertIsNone(Ansible.call_args.kwargs["server"].ip)
+		self.assertIsNone(frappe.db.get_value("Server", self.server.name, "nat_server"))
+
+	def test_aws_static_ip_releases_ip_and_keeps_nat_server_when_nat_route_removal_fails(self, boto3_client):
+		ec2 = self.mock_ec2(boto3_client)
+		with (
+			patch("press.press.doctype.server.server.Ansible") as Ansible,
+			patch.object(VirtualMachine, "sync") as sync,
+		):
+			Ansible.return_value.run.return_value = Mock(status="Failure")
+			with self.assertRaisesRegex(frappe.ValidationError, "Released the static IP"):
+				self.server.get_static_ip()
+
+		ec2.disassociate_address.assert_called_once_with(AssociationId="eipassoc-test")
+		ec2.release_address.assert_called_once_with(AllocationId="eipalloc-test")
+		sync.assert_not_called()
+		self.assertEqual(frappe.db.get_value("Server", self.server.name, "nat_server"), "nat1.fc.dev")
+
+	def test_aws_static_ip_without_nat_server_skips_nat_route_removal(self, boto3_client):
+		self.mock_ec2(boto3_client)
+		frappe.db.set_value("Server", self.server.name, "nat_server", None)
+		self.server.reload()
+		with (
+			patch("press.press.doctype.server.server.Ansible") as Ansible,
+			patch.object(VirtualMachine, "sync") as sync,
+		):
+			self.server.get_static_ip()
+
+		Ansible.assert_not_called()
+		sync.assert_called_once()
