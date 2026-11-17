@@ -46,13 +46,20 @@
 			"mandatory": 0,
 			"options": "\nActive\nInactive\nSignup",
 			"wildcard_filter": 0
+		},
+		{
+			"fieldname": "active_within_months",
+			"fieldtype": "Int",
+			"label": "Used Dashboard in Last N Months",
+			"mandatory": 0,
+			"wildcard_filter": 0
 		}
 	],
 	"idx": 0,
 	"is_standard": "Yes",
 	"json": "",
 	"letterhead": null,
-	"modified": "2026-11-14 00:00:00.000000",
+	"modified": "2026-11-17 00:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Customer Emails",
