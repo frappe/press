@@ -37,7 +37,6 @@ def create_team_with_billing_address(country: str):
 		{
 			"billing_name": "Acme Industries",
 			"billing_address": address.name,
-			"enable_enterprise_contracts": 1,
 		},
 	)
 	return team

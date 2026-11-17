@@ -39,7 +39,14 @@
 			:message="contract.error"
 		/>
 		<template v-else-if="contract.data">
-			<ContractList v-if="!showForm" class="pt-4" :contracts="contracts" />
+			<ContractLanding
+				v-if="showLanding"
+				:plans="contract.data.plans"
+				:premium-servers="contract.data.premium_servers"
+				:order-blocked="contract.data.order_blocked"
+				@order="ordering = true"
+			/>
+			<ContractList v-else-if="!showForm" class="pt-4" :contracts="contracts" />
 			<div
 				v-else-if="contract.data.order_blocked"
 				class="py-24 text-center text-base text-ink-gray-6"
@@ -70,6 +77,7 @@ import {
 } from 'frappe-ui'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import ContractLanding from '../components/enterprise-contract/ContractLanding.vue'
 import ContractList from '../components/enterprise-contract/ContractList.vue'
 import OrderForm from '../components/enterprise-contract/OrderForm.vue'
 import Header from '../components/Header.vue'
@@ -89,6 +97,13 @@ const canOrder = computed(
 		contract.data?.plans.length > 0,
 )
 const ordering = ref(false)
+// A team without contracts first sees what the warranty is, then orders from there.
+const showLanding = computed(
+	() =>
+		!ordering.value &&
+		!contracts.value.length &&
+		contract.data?.plans.length > 0,
+)
 const showForm = computed(
 	() => contract.data && (ordering.value || !contracts.value.length),
 )

@@ -1,6 +1,8 @@
 # Copyright (c) 2026, Frappe and Contributors
 # See license.txt
 
+from unittest.mock import Mock, patch
+
 import frappe
 
 from press.api import enterprise_contract as contract_api
@@ -9,6 +11,9 @@ from press.press.doctype.enterprise_contract.test_enterprise_contract import (
 	EnterpriseContractTestCase,
 	create_team_with_billing_address,
 )
+from press.press.doctype.server.server import BaseServer
+from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.team.test_team import create_test_team
 from press.tests.test_staff_role_scopes import create_staff_user
 from press.utils import is_partner_user
@@ -24,22 +29,39 @@ class TestContractAccess(EnterpriseContractTestCase):
 		frappe.db.set_value("Team", partner.name, {"erpnext_partner": 1, "partner_email": partner.user})
 		return partner
 
-	def test_contracts_api_rejects_a_team_without_contracts_enabled(self):
-		frappe.db.set_value("Team", self.team.name, "enable_enterprise_contracts", 0)
+	def test_any_customer_team_sees_the_plans_and_can_order(self):
 		frappe.set_user(self.team.user)
 
-		with self.assertRaisesRegex(frappe.ValidationError, "not enabled for this team"):
-			contract_api.get()
-		with self.assertRaisesRegex(frappe.ValidationError, "not enabled for this team"):
-			contract_api.submit(self.make_order())
-		self.assertFalse(frappe.db.exists("Enterprise Contract", {"team": self.team.name}))
+		page = contract_api.get()
+		self.assertEqual([p["name"] for p in page["plans"]], [self.plan.name])
+		self.assertEqual((page["contracts"], page["premium_servers"]), ([], []))
+
+		placed = contract_api.submit(self.make_order())
+		self.assertEqual(
+			frappe.db.get_value("Enterprise Contract", placed["contract"], "status"), "Awaiting Payment"
+		)
+
+	@patch.object(BaseServer, "after_insert", new=Mock())
+	def test_team_with_a_premium_server_is_told_support_is_included(self):
+		premium = create_test_server_plan()
+		frappe.db.set_value("Server Plan", premium.name, "premium", 1)
+		included = create_test_server(team=self.team.name, plan=premium.name)
+		create_test_server(team=self.team.name, plan=create_test_server_plan().name)
+		archived = create_test_server(team=self.team.name, plan=premium.name)
+		frappe.db.set_value("Server", archived.name, "status", "Archived")
+		frappe.set_user(self.team.user)
+
+		self.assertEqual(
+			contract_api.get()["premium_servers"], [{"name": included.name, "title": included.title}]
+		)
 
 	def test_partner_team_sees_why_it_cannot_order_and_its_order_is_rejected(self):
 		partner = self.create_partner_team()
 		frappe.db.set_value(
 			"Team",
 			partner.name,
-			{"enable_enterprise_contracts": 1, "billing_address": self.team.billing_address},
+			"billing_address",
+			self.team.billing_address,
 		)
 		frappe.set_user(partner.user)
 
@@ -69,9 +91,8 @@ class TestContractAccess(EnterpriseContractTestCase):
 		self.assertFalse(is_partner_user("Administrator"))
 		self.assertTrue(contract_api.acts_as_partner(partner))
 
-	def test_contract_created_by_staff_needs_no_bank_details_and_shows_on_the_teams_dashboard(self):
+	def test_contract_created_by_staff_needs_no_bank_details(self):
 		team = create_team_with_billing_address("India")
-		frappe.db.set_value("Team", team.name, "enable_enterprise_contracts", 0)
 		frappe.db.set_single_value("Press Settings", "bank_account_number", None)
 		frappe.clear_document_cache("Press Settings", "Press Settings")
 
@@ -79,7 +100,6 @@ class TestContractAccess(EnterpriseContractTestCase):
 
 		self.assertEqual(contract.currency, "INR")
 		self.assertEqual(contract.payment_gateway, "Bank Transfer")
-		self.assertEqual(frappe.db.get_value("Team", team.name, "enable_enterprise_contracts"), 1)
 
 	def test_staff_record_a_bank_transfer_by_utr_and_link_the_frappe_io_invoice(self):
 		contract = frappe.get_doc(

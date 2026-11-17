@@ -117,10 +117,6 @@ class EnterpriseContract(Document):
 		self.yearly_price = self.plan_doc.get_price(self.currency)
 		self.payment_gateway = "Bank Transfer" if self.currency == "INR" else "Stripe"
 
-	def after_insert(self):
-		# A contract staff create in Desk must be visible to the team on the dashboard.
-		frappe.db.set_value("Team", self.team, "enable_enterprise_contracts", 1)
-
 	def onload(self):
 		# Desk shows the bank transfer buttons from these.
 		self.set_onload("payment_due", self.payment_due())

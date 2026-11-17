@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import functools
 from typing import Literal
 
 import frappe
@@ -41,21 +40,8 @@ CARD_CUSTOMER_ONLY = (
 NO_CONTRACT = "This team has no Enterprise contract to pay. Please place an order from the Contracts page."
 
 
-def contracts_enabled(fn):
-	@functools.wraps(fn)
-	def inner(*args, **kwargs):
-		if not frappe.db.get_value("Team", get_current_team(), "enable_enterprise_contracts"):
-			frappe.throw(
-				"Enterprise contracts are not enabled for this team. Please contact support to enable them."
-			)
-		return fn(*args, **kwargs)
-
-	return inner
-
-
 @frappe.whitelist()
 @role_guard.api("billing")
-@contracts_enabled
 def get():
 	team = get_current_team(get_doc=True)
 	return {
@@ -64,12 +50,28 @@ def get():
 		"gst_split": gst_split(team.billing_address),
 		"contracts": team_contracts(team.name),
 		"order_blocked": PARTNER_ORDER_BLOCKED if acts_as_partner(team) else None,
+		"premium_servers": premium_servers(team.name),
 	}
+
+
+# Enterprise support comes with these servers' plans, so the page tells the team before it sells the warranty.
+def premium_servers(team: str) -> list[dict]:
+	server = frappe.qb.DocType("Server")
+	plan = frappe.qb.DocType("Server Plan")
+	return (
+		frappe.qb.from_(server)
+		.join(plan)
+		.on(server.plan == plan.name)
+		.select(server.name, server.title)
+		.where(server.team == team)
+		.where(server.status == "Active")
+		.where(plan.premium == 1)
+		.orderby(server.creation)
+	).run(as_dict=True)
 
 
 @frappe.whitelist()
 @role_guard.api("billing")
-@contracts_enabled
 def get_contract(name: str):
 	team = get_current_team(get_doc=True)
 	if not frappe.db.exists("Enterprise Contract", {"name": name, "team": team.name}):
@@ -111,7 +113,6 @@ def payment_methods(
 # Places the order only. The dashboard then pays it on the contract page.
 @frappe.whitelist()
 @role_guard.api("billing")
-@contracts_enabled
 def submit(order: dict | str):
 	team = get_current_team(get_doc=True)
 	if acts_as_partner(team):
@@ -126,7 +127,6 @@ def submit(order: dict | str):
 
 @frappe.whitelist()
 @role_guard.api("billing")
-@contracts_enabled
 def pay(method: Literal["saved_card", "new_card", "credits"]):
 	team = get_current_team(get_doc=True)
 	if acts_as_partner(team):
@@ -147,7 +147,6 @@ def pay(method: Literal["saved_card", "new_card", "credits"]):
 # Called after the dashboard confirms a card payment, in case the webhook is late.
 @frappe.whitelist()
 @role_guard.api("billing")
-@contracts_enabled
 def confirm_card_payment():
 	name = open_contract_name(get_current_team())
 	if not name:
@@ -160,7 +159,6 @@ def confirm_card_payment():
 
 @frappe.whitelist()
 @role_guard.api("billing")
-@contracts_enabled
 def submit_transfer_reference(reference: str):
 	if acts_as_partner(get_current_team(get_doc=True)):
 		frappe.throw(PARTNER_PAYMENT_BLOCKED)
@@ -171,7 +169,6 @@ def submit_transfer_reference(reference: str):
 
 @frappe.whitelist()
 @role_guard.api("billing")
-@contracts_enabled
 def cancel_order():
 	name = awaiting_contract_name()
 	if not name:
