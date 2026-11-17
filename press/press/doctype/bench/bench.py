@@ -376,12 +376,13 @@ class Bench(Document):
 		existing = json.loads(self.config or "{}")
 		if "flow_server_manager" in existing:
 			config["flow_server_manager"] = existing["flow_server_manager"]
-		elif self.is_new() and self.is_nightly():
+		elif self.is_new() and self.has_flow():
 			config["flow_server_manager"] = "supervisor"
 
-	def is_nightly(self) -> bool:
-		# Flow ships inside frappe, and only Nightly has it for now
-		return frappe.db.get_value("Release Group", self.group, "version") == "Nightly"
+	def has_flow(self) -> bool:
+		# Flow ships inside frappe, in Version 16 and Nightly
+		version = frappe.db.get_value("Release Group", self.group, "version")
+		return version in ("Version 16", "Nightly")
 
 	def update_bench_config_with_rq_port(self, bench_config):
 		if self.is_new():
