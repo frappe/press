@@ -90,6 +90,8 @@ jinja = {
 
 # before_install = "press.install.before_install"
 after_install = "press.install.after_install"
+# After fixtures, which bring the roles of Press
+after_sync = ["press.access.core_permissions.sync_core_permissions"]
 
 # Desk Notifications
 # ------------------
@@ -181,6 +183,7 @@ doc_events = {
 		],
 	},
 	"Address": {"validate": "press.api.billing.validate_gst"},
+	"Custom DocPerm": {"validate": "press.access.core_permissions.refuse_rule_outside_code"},
 	"Country": {
 		"on_update": "press.api.account.clear_country_list_cache",
 		"on_trash": "press.api.account.clear_country_list_cache",
@@ -414,6 +417,7 @@ scheduler_events = {
 			"press.press.doctype.site_backup.site_backup.delete_failed_unavailable_backups_for_archived_sites",
 			"press.press.doctype.site_backup.site_backup.delete_agent_job_records_for_archived_sites",
 			"press.press.doctype.site_backup.site_backup.delete_site_activity_records_for_archived_sites",
+			"press.press.doctype.server.server_monitoring.alert_on_servers_with_stuck_agent_jobs",
 		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
@@ -586,5 +590,6 @@ before_migrate = ["press.overrides.before_after_migrate"]
 after_migrate = [
 	"press.overrides.before_after_migrate",
 	"press.api.account.clear_country_list_cache",
+	"press.access.core_permissions.sync_core_permissions",
 	"press.sanity.checks",
 ]
