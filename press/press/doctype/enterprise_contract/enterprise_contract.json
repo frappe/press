@@ -262,7 +262,7 @@
 		}
 	],
 	"links": [],
-	"modified": "2026-11-13 12:00:00.000000",
+	"modified": "2026-11-17 19:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Enterprise Contract",
@@ -298,7 +298,7 @@
 			"print": 1,
 			"read": 1,
 			"report": 1,
-			"role": "Press Support"
+			"role": "Press Support L1"
 		},
 		{
 			"export": 1,

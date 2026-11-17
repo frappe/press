@@ -119,7 +119,7 @@ class TestContractAccess(EnterpriseContractTestCase):
 	def test_finance_staff_record_a_bank_transfer_and_support_staff_cannot(self):
 		# A fresh copy: insert(ignore_permissions=True) leaves that flag on the created doc.
 		contract = frappe.get_doc("Enterprise Contract", create_contract(self.team, self.make_order()).name)
-		support = create_staff_user("Press Support")
+		support = create_staff_user("Press Support L1")
 		finance = create_staff_user("Press Finance")
 
 		frappe.set_user(support)
