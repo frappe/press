@@ -25,7 +25,7 @@ from press.partner.doctype.partner_onboarding.partner_onboarding import has_part
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
-from press.utils import get_valid_teams_for_user, has_role, log_error
+from press.utils import _system_user, get_valid_teams_for_user, has_role, log_error
 from press.utils import is_admin_user as check_is_admin_user
 from press.utils import is_team_owner as check_is_team_owner
 from press.utils.billing import (
@@ -1219,8 +1219,6 @@ class Team(Document):
 	@dashboard_whitelist()
 	@rate_limit(limit=10, seconds=60 * 60)
 	def invite_team_member(self, email, roles=None):
-		from frappe.utils.user import is_system_user
-
 		PressRole = frappe.qb.DocType("Press Role")
 		PressRoleUser = frappe.qb.DocType("Press Role User")
 
@@ -1233,7 +1231,7 @@ class Team(Document):
 			.where(PressRole.admin_access == 1)
 		)
 
-		if not is_system_user() and frappe.session.user != self.user and not has_admin_access.run():
+		if not _system_user() and frappe.session.user != self.user and not has_admin_access.run():
 			frappe.throw(_("Only team owner or admins can invite team members"))
 
 		if is_outside_employee(self.name):
@@ -1974,8 +1972,7 @@ def get_permission_query_conditions(user):
 	if not user:
 		user = frappe.session.user
 
-	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
-	if user_type == "System User":
+	if _system_user(user):
 		return ""
 
 	team = get_current_team()
@@ -1989,8 +1986,7 @@ def has_permission(doc, ptype, user):
 	if not user:
 		user = frappe.session.user
 
-	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
-	if user_type == "System User":
+	if _system_user(user):
 		return True
 
 	team = get_current_team(True)

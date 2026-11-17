@@ -20,7 +20,7 @@ from press.guards import role_guard
 from press.press.doctype.auto_scale_record.auto_scale_record import calculate_secondary_server_price
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.invoice_item.invoice_item import get_item_description
-from press.utils import get_current_team, log_error
+from press.utils import _system_user, get_current_team, log_error
 from press.utils.billing import (
 	convert_stripe_money,
 	get_frappe_io_connection,
@@ -1693,8 +1693,7 @@ def get_permission_query_conditions(user):
 	if not user:
 		user = frappe.session.user
 
-	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
-	if user_type == "System User":
+	if _system_user(user):
 		return ""
 
 	team = get_current_team()
@@ -1708,8 +1707,7 @@ def has_permission(doc, ptype, user):
 	if not user:
 		user = frappe.session.user
 
-	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
-	if user_type == "System User":
+	if _system_user(user):
 		return True
 
 	if ptype == "create":

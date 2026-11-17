@@ -26,7 +26,6 @@ from frappe.installer import subprocess
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.synchronization import filelock
-from frappe.utils.user import is_system_user
 
 from press.access.server_console import check_console_access
 from press.access.staff_roles import needs_staff_role, safe_for_readers
@@ -56,7 +55,7 @@ from press.press.doctype.team_change.team_change import request_transfer
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
 from press.security import fail2ban
-from press.utils import docs, fmt_timedelta, log_error
+from press.utils import _system_user, docs, fmt_timedelta, log_error
 from press.utils.raven import send_raven_message
 from press.utils.user import is_desk_user
 from press.wazuh import WazuhManager
@@ -1649,7 +1648,7 @@ class BaseServer(Document, TagHelpers):
 	def can_change_plan(  # noqa: C901
 		self, ignore_card_setup: bool, new_plan: ServerPlan, upgrade_disk: bool = False
 	) -> None:
-		if is_system_user(frappe.session.user):
+		if _system_user():
 			return
 
 		if ignore_card_setup:

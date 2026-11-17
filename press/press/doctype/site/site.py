@@ -79,7 +79,6 @@ except ImportError:
 
 from typing import TYPE_CHECKING
 
-from frappe.permissions import is_system_user
 from frappe.utils.password import get_decrypted_password
 
 from press.agent import Agent, AgentRequestSkippedException
@@ -102,6 +101,7 @@ from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 )
 from press.runner import Ansible
 from press.utils import (
+	_system_user,
 	convert,
 	fmt_timedelta,
 	get_client_blacklisted_keys,
@@ -525,10 +525,7 @@ class Site(Document, TagHelpers):
 		def outer_wrapper(func):
 			@wraps(func)
 			def wrapper(inst, *args, **kwargs):
-				user_type = frappe.session.data.user_type or frappe.get_cached_value(
-					"User", frappe.session.user, "user_type"
-				)
-				if user_type == "System User":
+				if _system_user():
 					return func(inst, *args, **kwargs)
 				if has_support_access(inst.doctype, inst.name):
 					return func(inst, *args, **kwargs)
@@ -744,7 +741,7 @@ class Site(Document, TagHelpers):
 			is_site_on_public_server = frappe.db.get_value("Server", self.server, "public")
 
 			# Don't allow free plan for non-system users
-			if not is_system_user():
+			if not _system_user():
 				is_plan_free = (plan.price_inr == 0 or plan.price_usd == 0) and not (
 					plan.dedicated_server_plan or plan.is_trial_plan
 				)
@@ -1476,7 +1473,7 @@ class Site(Document, TagHelpers):
 				"then reload the page."
 			)
 		self.validate_fatal_update_has_a_table_dump()
-		if not (force and is_system_user()):
+		if not (force and _system_user()):
 			self.validate_table_restore()
 		if not self.status_before_update:
 			self.status_before_update = self.status
@@ -3247,7 +3244,7 @@ class Site(Document, TagHelpers):
 			subscription_doc.disable()
 
 	def can_change_plan(self, ignore_card_setup):
-		if is_system_user(frappe.session.user):
+		if _system_user():
 			return
 
 		if ignore_card_setup:
