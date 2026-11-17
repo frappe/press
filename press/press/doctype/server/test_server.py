@@ -1502,3 +1502,25 @@ class TestServerDecommissionNotice(FrappeTestCase):
 		printed = " ".join(str(call.args[0]) for call in mock_print.call_args_list)
 		self.assertIn("not sending this as already sent on", printed)
 		self.assertIn(email_queue.name, printed)
+
+
+class TestAddToPublicGroups(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_add_to_public_groups_skips_groups_on_end_of_life_versions(self):
+		app = create_test_app()
+		eol_group = create_test_release_group([app], public=True, frappe_version="Version 14")
+		stable_group = create_test_release_group([app], public=True, frappe_version="Version 15")
+		frappe.db.set_value("Frappe Version", "Version 14", "status", "End of Life")
+		frappe.db.set_value("Frappe Version", "Version 15", "status", "Stable")
+		server = create_test_server(public=True)
+
+		with patch(
+			"press.press.doctype.release_group.release_group.ReleaseGroup.add_server", autospec=True
+		) as add_server:
+			Server("Server", server.name).add_to_public_groups()
+
+		groups = {call.args[0].name for call in add_server.call_args_list}
+		self.assertIn(stable_group.name, groups)
+		self.assertNotIn(eol_group.name, groups)

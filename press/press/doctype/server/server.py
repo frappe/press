@@ -660,7 +660,18 @@ class BaseServer(Document, TagHelpers):
 			log_error("Route 53 Record Creation Error", domain=domain.name, server=self.name)
 
 	def add_to_public_groups(self):
-		groups = frappe.get_all("Release Group", {"public": True, "enabled": True}, "name")
+		groups_table = frappe.qb.DocType("Release Group")
+		versions_table = frappe.qb.DocType("Frappe Version")
+		groups = (
+			frappe.qb.from_(groups_table)
+			.join(versions_table)
+			.on(groups_table.version == versions_table.name)
+			.select(groups_table.name)
+			.where(groups_table.public == 1)
+			.where(groups_table.enabled == 1)
+			.where(versions_table.status != "End of Life")  # signup hides these versions
+			.run(pluck=True)
+		)
 		for group_name in groups:
 			group: ReleaseGroup = frappe.get_doc("Release Group", group_name)
 			with suppress(frappe.ValidationError):
