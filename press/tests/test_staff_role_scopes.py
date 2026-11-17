@@ -389,6 +389,19 @@ class TestStaffRoleScopes(FrappeTestCase):
 		self.assertEqual(frappe.db.get_value("Team", name, "enabled"), 1)
 		self.assertEqual(frappe.db.get_value("Stripe Payment Method", card.name, "is_default"), 0)
 
+	def test_support_manager_can_turn_off_2fa_enforcement_of_a_team(self):
+		team = create_test_team()
+		team.append("team_members", {"user": team.user})
+		team.enforce_2fa = 1
+		team.save()
+		name = str(team.name)
+		frappe.set_user(create_staff_user("Press Support Engineer"))
+		team = Team("Team", name)
+		team.enforce_2fa = 0
+		with patch.object(Document, "__eq__", object.__eq__):
+			team.save()
+		self.assertEqual(frappe.db.get_value("Team", name, "enforce_2fa"), 0)
+
 	def test_support_manager_cannot_give_a_member_access_to_all_sites(self):
 		team = create_test_team()
 		team.append("team_members", {"user": team.user})
