@@ -2375,9 +2375,10 @@ class BaseServer(Document, TagHelpers):
 					),
 				},
 			)
-			ansible.run()
+			return ansible.run()
 		except Exception:
 			log_error("NAT Iptables Setup Exception", server=self.as_dict())
+			return None
 
 	@frappe.whitelist()
 	def remove_nat_iptables(self):
@@ -3040,7 +3041,15 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 	@frappe.whitelist()
 	def get_static_ip(self):
 		if self.provider == "AWS EC2":
-			return self.get_aws_static_ip()
+			frappe.enqueue_doc(
+				self.doctype,
+				self.name,
+				"get_aws_static_ip",
+				timeout=1200,
+				deduplicate=True,
+				job_id=f"get_static_ip||{self.doctype}||{self.name}",
+			)
+			return "Queued the static IP job. The IP shows here once it finishes. Check Ansible Plays if not."
 		if self.provider == "OCI":
 			return self.get_oci_static_ip()
 
@@ -3069,7 +3078,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		# Allocate new Elastic IP
 		allocation = ec2_client.allocate_address(Domain="vpc")
 		allocation_id = allocation["AllocationId"]
-		public_ip = allocation["PublicIp"]
 
 		# Associate with instance
 		association = ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
@@ -3081,8 +3089,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		# Trigger VM sync
 		vm_doc.sync()
 
-		return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
-
 	def _remove_nat_route_for_static_ip(self, ec2_client, allocation_id: str, association_id: str):
 		"""Send replies out through the new static IP, not the NAT server."""
 		play = Ansible(
@@ -3092,14 +3098,28 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			port=self._ssh_port(),
 		).run()
 		if play.status != "Success":
-			ec2_client.disassociate_address(AssociationId=association_id)
-			ec2_client.release_address(AllocationId=allocation_id)
-			frappe.throw(
-				f"Could not remove the NAT route (Ansible Play {play.name}). Released the static IP."
-			)
+			self._restore_nat_route_and_release_static_ip(ec2_client, allocation_id, association_id, play)
 
 		for doctype in ("Server", "Database Server"):
 			frappe.db.set_value(doctype, {"virtual_machine": self.virtual_machine}, "nat_server", None)
+
+	def _restore_nat_route_and_release_static_ip(
+		self, ec2_client, allocation_id: str, association_id: str, failed_play
+	):
+		"""Release the static IP only once the NAT route is surely back, so the server keeps egress."""
+		restore_play = self._install_nat_iptables()
+		if not restore_play or restore_play.status != "Success":
+			frappe.throw(
+				f"Could not remove the NAT route (Ansible Play {failed_play.name}) or restore it. "
+				"Kept the static IP attached so the server keeps outbound traffic."
+			)
+
+		ec2_client.disassociate_address(AssociationId=association_id)
+		ec2_client.release_address(AllocationId=allocation_id)
+		frappe.throw(
+			f"Could not remove the NAT route (Ansible Play {failed_play.name}). "
+			"Restored the NAT route and released the static IP."
+		)
 
 	@frappe.whitelist()
 	def add_hetzner_public_ip(self, primary_ip=None):
