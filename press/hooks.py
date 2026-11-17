@@ -415,6 +415,7 @@ scheduler_events = {
 			"press.press.doctype.site_backup.site_backup.delete_failed_unavailable_backups_for_archived_sites",
 			"press.press.doctype.site_backup.site_backup.delete_agent_job_records_for_archived_sites",
 			"press.press.doctype.site_backup.site_backup.delete_site_activity_records_for_archived_sites",
+			"press.press.doctype.server.server_monitoring.alert_on_servers_with_stuck_agent_jobs",
 		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
