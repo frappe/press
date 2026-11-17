@@ -762,11 +762,14 @@ def _total_stuck_jobs(row: ServerStuckAgentJobs) -> int:
 
 
 def _send_stuck_agent_jobs_alert(servers: list[ServerStuckAgentJobs]) -> None:
+	criteria = (
+		f"Undelivered + Pending jobs created in the last {STUCK_AGENT_JOBS_WINDOW_HOURS}h "
+		f"(older than {STUCK_AGENT_JOBS_MINIMUM_AGE_MINUTES}m), threshold {STUCK_AGENT_JOBS_ALERT_THRESHOLD}"
+	)
 	lines = [
 		f"**Servers With Stuck Agent Jobs** - {len(servers)}",
 		"",
-		f"Undelivered + Pending jobs created in the last {STUCK_AGENT_JOBS_WINDOW_HOURS}h "
-		f"(older than {STUCK_AGENT_JOBS_MINIMUM_AGE_MINUTES}m), threshold {STUCK_AGENT_JOBS_ALERT_THRESHOLD}",
+		criteria,
 		"",
 		"| Server | Type | Undelivered | Pending | Agent Jobs Halted |",
 		"| --- | --- | --- | --- | --- |",
