@@ -1501,6 +1501,16 @@ class TestAWSStaticIP(FrappeTestCase):
 		ec2.associate_address.return_value = {"AssociationId": "eipassoc-test"}
 		return ec2
 
+	def test_get_static_ip_on_aws_queues_the_job_and_returns_a_queued_message(self, boto3_client):
+		with patch("press.press.doctype.server.server.frappe.enqueue_doc") as enqueue_doc:
+			message = self.server.get_static_ip()
+
+		enqueue_doc.assert_called_once()
+		self.assertEqual(enqueue_doc.call_args.args[2], "get_aws_static_ip")
+		self.assertEqual(enqueue_doc.call_args.kwargs["job_id"], f"get_static_ip||Server||{self.server.name}")
+		self.assertIn("Queued the static IP job", message)
+		boto3_client.assert_not_called()
+
 	def test_aws_static_ip_on_nat_server_removes_nat_route_over_private_ip_before_vm_sync(self, boto3_client):
 		self.mock_ec2(boto3_client)
 		order = []
@@ -1511,25 +1521,48 @@ class TestAWSStaticIP(FrappeTestCase):
 			Ansible.return_value.run.side_effect = lambda: order.append("remove nat route") or Mock(
 				status="Success"
 			)
-			self.server.get_static_ip()
+			self.server.get_aws_static_ip()
 
 		self.assertEqual(order, ["remove nat route", "sync"])
 		self.assertEqual(Ansible.call_args.kwargs["playbook"], "remove_nat_iptables.yml")
 		self.assertIsNone(Ansible.call_args.kwargs["server"].ip)
 		self.assertIsNone(frappe.db.get_value("Server", self.server.name, "nat_server"))
 
-	def test_aws_static_ip_releases_ip_and_keeps_nat_server_when_nat_route_removal_fails(self, boto3_client):
+	@patch.object(BaseServer, "get_nat_gateway_ip", new=Mock(return_value="10.3.0.5"))
+	def test_aws_static_ip_restores_nat_route_then_releases_ip_when_nat_route_removal_fails(
+		self, boto3_client
+	):
 		ec2 = self.mock_ec2(boto3_client)
 		with (
 			patch("press.press.doctype.server.server.Ansible") as Ansible,
 			patch.object(VirtualMachine, "sync") as sync,
 		):
-			Ansible.return_value.run.return_value = Mock(status="Failure")
-			with self.assertRaisesRegex(frappe.ValidationError, "Released the static IP"):
-				self.server.get_static_ip()
+			Ansible.return_value.run.side_effect = [Mock(status="Failure"), Mock(status="Success")]
+			with self.assertRaisesRegex(frappe.ValidationError, "Restored the NAT route and released"):
+				self.server.get_aws_static_ip()
 
+		playbooks = [call.kwargs["playbook"] for call in Ansible.call_args_list]
+		self.assertEqual(playbooks, ["remove_nat_iptables.yml", "nat_iptables.yml"])
 		ec2.disassociate_address.assert_called_once_with(AssociationId="eipassoc-test")
 		ec2.release_address.assert_called_once_with(AllocationId="eipalloc-test")
+		sync.assert_not_called()
+		self.assertEqual(frappe.db.get_value("Server", self.server.name, "nat_server"), "nat1.fc.dev")
+
+	@patch.object(BaseServer, "get_nat_gateway_ip", new=Mock(return_value="10.3.0.5"))
+	def test_aws_static_ip_keeps_ip_attached_when_nat_route_can_be_neither_removed_nor_restored(
+		self, boto3_client
+	):
+		ec2 = self.mock_ec2(boto3_client)
+		with (
+			patch("press.press.doctype.server.server.Ansible") as Ansible,
+			patch.object(VirtualMachine, "sync") as sync,
+		):
+			Ansible.return_value.run.side_effect = [Mock(status="Failure"), Mock(status="Unreachable")]
+			with self.assertRaisesRegex(frappe.ValidationError, "Kept the static IP attached"):
+				self.server.get_aws_static_ip()
+
+		ec2.disassociate_address.assert_not_called()
+		ec2.release_address.assert_not_called()
 		sync.assert_not_called()
 		self.assertEqual(frappe.db.get_value("Server", self.server.name, "nat_server"), "nat1.fc.dev")
 
@@ -1541,7 +1574,7 @@ class TestAWSStaticIP(FrappeTestCase):
 			patch("press.press.doctype.server.server.Ansible") as Ansible,
 			patch.object(VirtualMachine, "sync") as sync,
 		):
-			self.server.get_static_ip()
+			self.server.get_aws_static_ip()
 
 		Ansible.assert_not_called()
 		sync.assert_called_once()
