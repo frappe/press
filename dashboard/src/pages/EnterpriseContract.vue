@@ -25,7 +25,7 @@
 		</Header>
 	</div>
 
-	<div class="w-full px-5" :class="{ 'mx-auto max-w-[72rem]': showForm }">
+	<div class="w-full px-5" :class="{ 'mx-auto max-w-[72rem]': ordering }">
 		<div
 			v-if="contract.loading && !contract.data"
 			class="flex flex-col items-center gap-3 py-24 text-base text-ink-gray-6"
@@ -39,26 +39,24 @@
 			:message="contract.error"
 		/>
 		<template v-else-if="contract.data">
-			<ContractLanding
-				v-if="showLanding"
-				:plans="contract.data.plans"
-				:premium-servers="contract.data.premium_servers"
-				:order-blocked="contract.data.order_blocked"
-				@order="ordering = true"
-			/>
-			<ContractList v-else-if="!showForm" class="pt-4" :contracts="contracts" />
-			<div
-				v-else-if="contract.data.order_blocked"
-				class="py-24 text-center text-base text-ink-gray-6"
-			>
-				{{ contract.data.order_blocked }}
-			</div>
 			<OrderForm
-				v-else-if="contract.data.plans.length"
+				v-if="ordering"
 				:plans="contract.data.plans"
 				:gst-split="contract.data.gst_split"
 				@placed="onPlaced"
 				@billing-saved="contract.reload()"
+			/>
+			<ContractList
+				v-else-if="contracts.length"
+				class="pt-4"
+				:contracts="contracts"
+			/>
+			<ContractLanding
+				v-else-if="contract.data.plans.length"
+				:plans="contract.data.plans"
+				:premium-servers="contract.data.premium_servers"
+				:order-blocked="contract.data.order_blocked"
+				@order="ordering = true"
 			/>
 			<div v-else class="py-24 text-center text-base text-ink-gray-6">
 				No Enterprise plan is available right now.
@@ -96,17 +94,8 @@ const canOrder = computed(
 		!contract.data?.order_blocked &&
 		contract.data?.plans.length > 0,
 )
+// Set only from the landing's Order button or the header's, both closed to a blocked team.
 const ordering = ref(false)
-// A team without contracts first sees what the warranty is, then orders from there.
-const showLanding = computed(
-	() =>
-		!ordering.value &&
-		!contracts.value.length &&
-		contract.data?.plans.length > 0,
-)
-const showForm = computed(
-	() => contract.data && (ordering.value || !contracts.value.length),
-)
 
 function onPlaced(name) {
 	router.push({ name: 'Contract', params: { name }, query: { pay: 1 } })
