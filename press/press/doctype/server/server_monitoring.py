@@ -10,6 +10,7 @@ from typing import TypedDict
 
 import frappe
 import requests
+from frappe.query_builder.functions import Count, IfNull
 from frappe.utils.password import get_decrypted_password
 
 from press.utils import log_error
@@ -32,6 +33,11 @@ INCOMPLETE_SIGNUP_RATIO_THRESHOLD = 0.9
 INCOMPLETE_SIGNUP_MINIMUM_COUNT = 10
 OOM_KILLS_ALERT_THRESHOLD = 30
 DATABASE_SERVER_DISK_USED_ALERT_THRESHOLD = 0.91
+# A halted database server misses its ~27 scheduled jobs a day; healthy servers stay under 15
+STUCK_AGENT_JOBS_ALERT_THRESHOLD = 15
+STUCK_AGENT_JOBS_WINDOW_HOURS = 24
+# Skip young jobs, so a deploy's burst of queued site jobs doesn't count
+STUCK_AGENT_JOBS_MINIMUM_AGE_MINUTES = 30
 
 
 class PublicServerHealthMetrics(TypedDict):
@@ -48,6 +54,14 @@ class PublicServerPoolDecision(TypedDict):
 	servers_with_decision: set[str]
 	server_issues: dict[str, list[str]]
 	fallback_servers_by_cluster: dict[str, str]
+
+
+class ServerStuckAgentJobs(TypedDict):
+	server_type: str
+	server: str
+	undelivered: int
+	pending: int
+	halted: bool
 
 
 class SignupFailureRate(TypedDict):
@@ -675,4 +689,104 @@ def _describe_signup_failure_rate(rate: SignupFailureRate) -> str:
 		f"[{rate['label']}]({rate['link']}): {rate['failed']} of {rate['total']} "
 		f"({failure_ratio:.2f}%) in the last {SIGNUP_ALERT_WINDOW_HOURS}h, "
 		f"threshold {rate['ratio_threshold'] * 100:.0f}%"
+	)
+
+
+def alert_on_servers_with_stuck_agent_jobs() -> None:
+	"""Alert when active servers hold many agent jobs that never ran.
+
+	Undelivered jobs pile up on a halted or unreachable server, pending ones on a stuck agent.
+	"""
+	servers = _get_servers_with_stuck_agent_jobs()
+	if servers:
+		_send_stuck_agent_jobs_alert(servers)
+
+
+def _get_servers_with_stuck_agent_jobs() -> list[ServerStuckAgentJobs]:
+	counts = _count_stuck_agent_jobs_by_server()
+	over_threshold = [row for row in counts if _total_stuck_jobs(row) >= STUCK_AGENT_JOBS_ALERT_THRESHOLD]
+	halt_flags = _get_halt_flags_of_active_servers({_server_key(row) for row in over_threshold})
+	servers = [row for row in over_threshold if _server_key(row) in halt_flags]
+	for row in servers:
+		row["halted"] = halt_flags[_server_key(row)]
+	return sorted(servers, key=_total_stuck_jobs, reverse=True)
+
+
+def _get_stuck_agent_job_counts() -> list[frappe._dict]:
+	# frappe.get_all on fc-prod has no dict aggregates, so count with frappe.qb
+	now = frappe.utils.now_datetime()
+	window_start = frappe.utils.add_to_date(now, hours=-STUCK_AGENT_JOBS_WINDOW_HOURS)
+	window_end = frappe.utils.add_to_date(now, minutes=-STUCK_AGENT_JOBS_MINIMUM_AGE_MINUTES)
+	AgentJob = frappe.qb.DocType("Agent Job")
+	return (
+		frappe.qb.from_(AgentJob)
+		.select(AgentJob.server_type, AgentJob.server, AgentJob.status, Count("*").as_("jobs"))
+		.where(AgentJob.status.isin(["Undelivered", "Pending"]))
+		.where(AgentJob.creation.between(window_start, window_end))
+		.where(IfNull(AgentJob.server, "") != "")
+		.where(IfNull(AgentJob.server_type, "") != "")
+		.groupby(AgentJob.server_type, AgentJob.server, AgentJob.status)
+		.run(as_dict=True)
+	)
+
+
+def _count_stuck_agent_jobs_by_server() -> list[ServerStuckAgentJobs]:
+	counts: dict[tuple[str, str], ServerStuckAgentJobs] = {}
+	for row in _get_stuck_agent_job_counts():
+		key = (row.server_type, row.server)
+		counts.setdefault(
+			key, {"server_type": key[0], "server": key[1], "undelivered": 0, "pending": 0, "halted": False}
+		)
+		if row.status == "Pending":
+			counts[key]["pending"] = row.jobs
+		else:
+			counts[key]["undelivered"] = row.jobs
+	return list(counts.values())
+
+
+def _get_halt_flags_of_active_servers(servers: set[tuple[str, str]]) -> dict[tuple[str, str], bool]:
+	halt_flags = {}
+	for server_type in {server_type for server_type, _ in servers}:
+		names = [name for doctype, name in servers if doctype == server_type]
+		# Registry, log and other server types have no halt flag
+		has_halt_flag = frappe.get_meta(server_type).has_field("halt_agent_jobs")
+		fields = ["name", "halt_agent_jobs"] if has_halt_flag else ["name"]
+		for server in frappe.get_all(
+			server_type, filters={"name": ("in", names), "status": "Active"}, fields=fields
+		):
+			halt_flags[(server_type, server.name)] = bool(server.get("halt_agent_jobs"))
+	return halt_flags
+
+
+def _server_key(row: ServerStuckAgentJobs) -> tuple[str, str]:
+	return (row["server_type"], row["server"])
+
+
+def _total_stuck_jobs(row: ServerStuckAgentJobs) -> int:
+	return row["undelivered"] + row["pending"]
+
+
+def _send_stuck_agent_jobs_alert(servers: list[ServerStuckAgentJobs]) -> None:
+	criteria = (
+		f"Undelivered + Pending jobs created in the last {STUCK_AGENT_JOBS_WINDOW_HOURS}h "
+		f"(older than {STUCK_AGENT_JOBS_MINIMUM_AGE_MINUTES}m), threshold {STUCK_AGENT_JOBS_ALERT_THRESHOLD}"
+	)
+	lines = [
+		f"**Servers With Stuck Agent Jobs** - {len(servers)}",
+		"",
+		criteria,
+		"",
+		"| Server | Type | Undelivered | Pending | Agent Jobs Halted |",
+		"| --- | --- | --- | --- | --- |",
+	]
+	lines.extend(_describe_server_with_stuck_agent_jobs(row) for row in servers)
+	send_raven_message("\n".join(lines), RAVEN_SERVER_ALERTS_CHANNEL)
+
+
+def _describe_server_with_stuck_agent_jobs(row: ServerStuckAgentJobs) -> str:
+	link = frappe.utils.get_url_to_form(row["server_type"], row["server"])
+	halted = "Yes" if row["halted"] else "No"
+	return (
+		f"| [{row['server']}]({link}) | {row['server_type']} | {row['undelivered']} "
+		f"| {row['pending']} | {halted} |"
 	)

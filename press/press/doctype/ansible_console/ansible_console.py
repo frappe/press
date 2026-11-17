@@ -25,6 +25,7 @@ from press.access.server_console import (
 	has_system_manager_role,
 )
 from press.press.doctype.virtual_machine.virtual_machine import SERIES_TO_SERVER_TYPE
+from press.runner import ANSIBLE_CONNECTION_TIMEOUT
 from press.utils import reconnect_on_failure
 
 # A host of Ansible's host_list inventory that is a plain name: no port, range, pattern or path.
@@ -189,6 +190,7 @@ class AnsibleAdHoc:
 			remote_user="root",
 			start_at_task=None,
 			syntax=False,
+			timeout=ANSIBLE_CONNECTION_TIMEOUT,
 			verbosity=3,
 		)
 
