@@ -1,12 +1,42 @@
+from __future__ import annotations
+
 from contextlib import suppress
+from typing import TYPE_CHECKING
 
 import frappe
+from frappe.utils import add_to_date
 
 from press.press.doctype.press_job.press_job import PressJob
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 
+if TYPE_CHECKING:
+	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.server.server import Server
+
+WARNING_INTERVAL_HOURS = 24
+
 
 class IncreaseDiskSizeJob(PressJob):
+	@classmethod
+	def should_react_to_alert(cls, server: Server | DatabaseServer, labels: dict) -> bool:
+		mountpoint = labels.get("mountpoint")
+		if server.can_auto_increase_storage(mountpoint):
+			return True
+
+		# Without auto increase the job only warns the team, so do that once a day
+		# per mountpoint instead of on every re-fire of the alert.
+		link_field = "server" if server.doctype == "Server" else "database_server"
+		return not frappe.db.exists(
+			"Add On Storage Log",
+			{
+				link_field: server.name,
+				# Same fallback the warning log is written with
+				"mountpoint": mountpoint or server.guess_data_disk_mountpoint(),
+				"is_warning": True,
+				"creation": (">", add_to_date(None, hours=-WARNING_INTERVAL_HOURS)),
+			},
+		)
+
 	@flow
 	def execute(self):
 		if not self.increase_disk_size():
@@ -40,20 +70,17 @@ class IncreaseDiskSizeJob(PressJob):
 		if self.server_doc.provider != "AWS EC2":
 			return
 
-		plays = frappe.get_all(
+		status = frappe.db.get_value(
 			"Ansible Play",
-			{"server": self.server, "play": "Extend EC2 Volume"},
-			["status"],
+			# Only this job's play counts; one from an earlier resize would skip the wait
+			{"server": self.server, "play": "Extend EC2 Volume", "creation": (">=", self.creation)},
+			"status",
 			order_by="creation desc",
-			limit=1,
 		)
-		if not plays:
-			self.defer_current_task()
-
-		if plays[0].status == "Success":
+		if status == "Success":
 			return
 
-		if plays[0].status == "Failure":
+		if status == "Failure":
 			raise Exception("Failed to extend EC2 volume")
 
 		self.defer_current_task()

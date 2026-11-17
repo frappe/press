@@ -8,6 +8,7 @@ from functools import partial
 import frappe
 from frappe.core.doctype.user.user import User
 from frappe.handler import is_whitelisted
+from frappe.query_builder import Table
 from frappe.utils import cint
 
 from press.access.support_access import has_support_access
@@ -172,14 +173,7 @@ class CustomUser(User):
 		Changes:
 		- Excluding update operations on MyISAM tables
 		"""
-		myisam_tables = frappe.db.sql_list(
-			"""SELECT
-			TABLE_NAME FROM information_schema.TABLES
-		WHERE
-			ENGINE='MyISAM'
-		AND TABLE_SCHEMA NOT IN ('mysql','information_schema','performance_schema')
-		"""
-		)
+		myisam_tables = get_myisam_tables()
 		tables = [x for x in frappe.db.get_tables() if x not in myisam_tables]
 
 		for tab in tables:
@@ -189,24 +183,26 @@ class CustomUser(User):
 				if d.get("name") in ["owner", "modified_by"]:
 					has_fields.append(d.get("name"))
 			for field in has_fields:
-				frappe.db.sql(
-					"""UPDATE `{}`
-					SET `{}` = {}
-					WHERE `{}` = {}""".format(tab, field, "%s", field, "%s"),
-					(new_name, old_name),
-				)
+				table = Table(tab)
+				frappe.qb.update(table).set(table[field], new_name).where(table[field] == old_name).run()
 
 		for dt in ["Chat Profile", "Notification Settings"]:
 			if frappe.db.exists(dt, old_name):
 				frappe.rename_doc(dt, old_name, new_name, force=True, show_alert=False)
 
 		# set email
-		frappe.db.sql(
-			"""UPDATE `tabUser`
-			SET email = %s
-			WHERE name = %s""",
-			(new_name, new_name),
-		)
+		frappe.db.set_value("User", new_name, "email", new_name, update_modified=False)
+
+
+def get_myisam_tables() -> list[str]:
+	tables = Table("TABLES", schema="information_schema")
+	return (
+		frappe.qb.from_(tables)
+		.select(tables.TABLE_NAME)
+		.where(tables.ENGINE == "MyISAM")
+		.where(tables.TABLE_SCHEMA.notin(["mysql", "information_schema", "performance_schema"]))
+		.run(pluck=True)
+	)
 
 
 def before_after_migrate():

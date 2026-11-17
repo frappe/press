@@ -1,6 +1,7 @@
 {% extends "templates/emails/base.html" %}
 
 {% block content %}
+<td class="text-base leading-6 text-gray-900">
 <div class="p-8 bg-white">
     <div class="from-markdown">
         <p>Hi {{ developer_name }},</p>
@@ -32,4 +33,5 @@
             Team Frappe Cloud</p>
     </div>
 </div>
+</td>
 {% endblock %}

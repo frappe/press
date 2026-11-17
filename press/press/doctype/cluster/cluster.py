@@ -18,7 +18,6 @@ import pydo
 from frappe.model.document import Document
 from frappe.query_builder import Criterion
 from frappe.query_builder.functions import Count, Sum
-from frappe.utils.caching import redis_cache
 from hcloud import APIException, Client
 from hcloud.firewalls.domain import FirewallRule as HetznerFirewallRule
 from hcloud.networks.domain import NetworkSubnet
@@ -74,6 +73,7 @@ class Cluster(Document):
 		availability_zone: DF.Data | None
 		aws_access_key_id: DF.Data | None
 		aws_secret_access_key: DF.Password | None
+		backup_bucket: DF.Link | None
 		beta: DF.Check
 		by_default_select_unified_mode: DF.Check
 		cidr_block: DF.Data | None
@@ -174,6 +174,7 @@ class Cluster(Document):
 		return None
 
 	def validate(self):
+		self.validate_backup_bucket()
 		self.validate_flush_table_execution_hour()
 		self.validate_monitoring_password()
 		self.validate_cidr_block()
@@ -185,6 +186,11 @@ class Cluster(Document):
 			self.validate_hetzner_api_token()
 		elif self.cloud_provider == "Frappe Compute":
 			self.validate_frappe_compute_credentials()
+
+	def validate_backup_bucket(self):
+		"""A new cluster names its bucket, so its backups never fall back to the Press Settings region."""
+		if self.is_new() and not self.backup_bucket and not frappe.flags.in_install:
+			frappe.throw("Set the Backup Bucket for the new cluster", frappe.MandatoryError)
 
 	def validate_frappe_compute_credentials(self):
 		api_secret = self.get_password("frappe_compute_api_secret")
@@ -1553,33 +1559,24 @@ class Cluster(Document):
 			return results
 		return True
 
-	@redis_cache(ttl=60 * 60 * 24)
-	def _get_hetzner_server_id_name_map(self) -> dict[str, int]:
-		return {st.name: st.id for st in self.get_hetzner_client().server_types.get_all()}
+	def _get_hetzner_available_machine_types(self) -> set[str]:
+		cache_key = f"hetzner_available_machine_types:{self.name}"
+		available_machine_types = frappe.cache.get_value(cache_key, expires=True)
+		if available_machine_types is None:
+			available_machine_types = {
+				server_type.name
+				for server_type in self.get_hetzner_client().server_types.get_all()
+				for offering in server_type.locations
+				if offering.location.name == self.region and offering.available
+			}
+			frappe.cache.set_value(cache_key, available_machine_types, expires_in_sec=60 * 60)
+		return available_machine_types
 
 	def _check_hetzner_machine_availability(self, machine_type: str | list) -> bool | dict[str, bool]:
-		client = self.get_hetzner_client()
-		machine_type_id_map = self._get_hetzner_server_id_name_map()
-
-		datacenters = client.datacenters.get_all()
-		datacenters = [dc for dc in datacenters if dc.location.name == self.region]
-		available_machine_ids = []
-		for dc in datacenters:
-			for st in dc.server_types.available:
-				available_machine_ids.append(st.id)
-
-		# For a single machine type, return a boolean to preserve the original behavior.
+		available_machine_types = self._get_hetzner_available_machine_types()
 		if isinstance(machine_type, str):
-			machine_id = machine_type_id_map.get(machine_type)
-			return machine_id in available_machine_ids
-
-		# For a list of machine types, return a mapping of name -> availability.
-		results: dict[str, bool] = {}
-		for m in machine_type:
-			# If a machine type was not resolved earlier, treat it as unavailable.
-			machine_id = machine_type_id_map.get(m)
-			results[m] = machine_id in available_machine_ids
-		return results
+			return machine_type in available_machine_types
+		return {m: m in available_machine_types for m in machine_type}
 
 	@frappe.whitelist()
 	def check_machine_availability(
@@ -2327,3 +2324,9 @@ class Cluster(Document):
 				)
 			return nat_server
 		return None
+
+
+def archived_clusters():
+	"""Subquery of the regions that are retired, or that we can no longer reach."""
+	Cluster = frappe.qb.DocType("Cluster")
+	return frappe.qb.from_(Cluster).select(Cluster.name).where(Cluster.status == "Archived")

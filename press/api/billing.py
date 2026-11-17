@@ -5,9 +5,11 @@ from __future__ import annotations
 from itertools import groupby
 
 import frappe
+import razorpay
+import stripe as stripe_sdk
 from frappe import _  # Import this for translation functionality
 from frappe.core.utils import find
-from frappe.utils import fmt_money, get_request_site_address
+from frappe.utils import flt, fmt_money, get_request_site_address
 
 from press.api.regional_payments.mpesa.utils import (
 	confirmed_by_mpesa,
@@ -23,6 +25,7 @@ from press.api.regional_payments.mpesa.utils import (
 	update_tax_id_or_phone_no,
 )
 from press.guards import role_guard
+from press.press.doctype.invoice_item.invoice_item import get_item_description
 from press.press.doctype.team.team import (
 	_enqueue_finalize_unpaid_invoices_for_team,
 	has_unsettled_invoices,
@@ -290,7 +293,7 @@ def fetch_invoice_items(invoice):
 			"Only team owners and members are permitted to download Invoice. Please contact your team admin."
 		)
 
-	return frappe.get_all(
+	items = frappe.get_all(
 		"Invoice Item",
 		{"parent": invoice, "parenttype": "Invoice"},
 		[
@@ -305,6 +308,13 @@ def fetch_invoice_items(invoice):
 			"site",
 		],
 	)
+
+	# A draft invoice has no stored descriptions. They are written at finalize.
+	for item in items:
+		if not item.description:
+			item.description = get_item_description(item)
+
+	return items
 
 
 @frappe.whitelist()
@@ -354,18 +364,23 @@ def create_payment_intent_for_buying_credits(amount):
 
 	amount = round(amount, 2)
 	stripe = get_stripe()
-	intent = stripe.PaymentIntent.create(
-		amount=int(amount * 100),
-		currency=team.currency.lower(),
-		customer=team.stripe_customer_id,
-		description="Prepaid Credits",
-		metadata=metadata,
-		payment_method_options={
-			"card": {
-				"request_three_d_secure": "any" if team.is_trusted_team else "automatic",
-			}
-		},
-	)
+	try:
+		intent = stripe.PaymentIntent.create(
+			amount=int(amount * 100),
+			currency=team.currency.lower(),
+			customer=team.stripe_customer_id,
+			description="Prepaid Credits",
+			metadata=metadata,
+			payment_method_options={
+				"card": {
+					"request_three_d_secure": "any" if team.is_trusted_team else "automatic",
+				}
+			},
+		)
+	except stripe_sdk.error.InvalidRequestError as e:
+		if e.code == "amount_too_large":
+			frappe.throw(e.user_message)
+		raise
 	capture_pulse(
 		"prepaid_credits_purchase_attempted",
 		{
@@ -867,6 +882,7 @@ def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | Non
 	)
 
 	amount = round(amount, 2)
+	_validate_razorpay_order_limit(amount, team.currency)
 	data = {
 		"amount": int(amount * 100),
 		"currency": team.currency,
@@ -879,7 +895,11 @@ def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | Non
 	}
 
 	client = get_razorpay_client()
-	order = client.order.create(data=data)
+	try:
+		order = client.order.create(data=data)
+	except razorpay.errors.BadRequestError as e:
+		frappe.log_error(title="Razorpay order rejected", defer_insert=True)
+		frappe.throw(_("Razorpay could not create this order: {0}").format(e))
 
 	payment_record = frappe.get_doc(
 		{
@@ -897,6 +917,16 @@ def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | Non
 	}
 
 
+def _validate_razorpay_order_limit(amount, currency):
+	limit = frappe.db.get_single_value("Press Settings", "razorpay_max_order_amount_inr")
+	if currency == "INR" and limit and amount > limit:
+		frappe.throw(
+			_(
+				"The total of {0} including GST is more than the {1} Razorpay accepts in one transaction. Please pay a smaller amount."
+			).format(fmt_money(amount, currency=currency), fmt_money(limit, currency=currency))
+		)
+
+
 def _validate_razorpay_order_type(transaction_type, amount, doc_name, currency):
 	if transaction_type == "Prepaid Credits":
 		_validate_prepaid_credits(amount, currency)
@@ -908,6 +938,10 @@ def _validate_razorpay_order_type(transaction_type, amount, doc_name, currency):
 
 def _validate_prepaid_credits(amount, currency):
 	minimum_amount = 100 if currency == "INR" else 5
+	# A paying team may settle a smaller unpaid amount
+	unpaid_amount = flt(total_unpaid_amount(), 2)
+	if unpaid_amount > 0:
+		minimum_amount = min(minimum_amount, unpaid_amount)
 	if amount < minimum_amount:
 		currency_symbol = "₹" if currency == "INR" else "$"
 		frappe.throw(

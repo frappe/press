@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Collapsable from '@/components/common/Collapsable.vue'
-import { duration, secsToDuration } from '@/utils/format'
+import { finishedDuration, secsToDuration } from '@/utils/format'
 import StatusIcon from './StatusIcon.vue'
 import { Spinner } from 'frappe-ui'
 
@@ -138,7 +138,7 @@ const isStageDisabled = (x) => {
 							{{ jobstep.step_name }}
 
 							<span class="text-ink-gray-5 ml-auto pr-1">
-								{{ jobstep.duration ? duration(jobstep.duration) : '' }}
+								{{ finishedDuration(jobstep.duration, jobstep.status) }}
 							</span>
 						</button>
 					</template>

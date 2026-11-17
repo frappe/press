@@ -13,3 +13,4 @@
     - role: registry
     - role: node_exporter
     - role: cadvisor
+    - role: fail2ban

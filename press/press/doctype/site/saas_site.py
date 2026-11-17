@@ -2,6 +2,8 @@ import contextlib
 import json
 
 import frappe
+from frappe.query_builder import Case, Order
+from frappe.query_builder.functions import Sum
 
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.site.site import Site
@@ -93,50 +95,39 @@ def get_saas_bench(app):
 	)
 	release_group = get_saas_group(app)
 	cluster = get_saas_cluster(app)
-	bench_servers = frappe.db.sql(  # nosemgrep
-		"""
-		SELECT
-			bench.name, bench.server
-		FROM
-			tabBench bench
-		LEFT JOIN
-			tabServer server
-		ON
-			bench.server = server.name
-		WHERE
-			server.proxy_server in %s AND server.cluster = %s AND bench.status = "Active" AND bench.group = %s
-			AND server.skip_standby_site_creation = 0
-		ORDER BY
-			server.use_for_new_sites DESC, bench.creation DESC
-	""",
-		[proxy_servers, cluster, release_group],
-		as_dict=True,
+	Bench = frappe.qb.DocType("Bench")
+	Server = frappe.qb.DocType("Server")
+	bench_servers = (
+		frappe.qb.from_(Bench)
+		.left_join(Server)
+		.on(Bench.server == Server.name)
+		.select(Bench.name, Bench.server)
+		.where(Server.proxy_server.isin(proxy_servers))
+		.where(Server.cluster == cluster)
+		.where(Bench.status == "Active")
+		.where(Bench.group == release_group)
+		.where(Server.skip_standby_site_creation == 0)
+		.orderby(Server.use_for_new_sites, order=Order.desc)
+		.orderby(Bench.creation, order=Order.desc)
+		.run(as_dict=True)
 	)
 
-	signup_servers = tuple([bs["server"] for bs in bench_servers])
-	signup_server_sub_str = tuple(signup_servers) if len(signup_servers) > 1 else f"('{signup_servers[0]}')"
-	lowest_cpu_server = frappe.db.sql(
-		f"""
-		SELECT
-			site.server,
-		SUM(
-			CASE WHEN (site.status != "Archived" and site.status != "Suspended") or NOT NULL
-			THEN plan.cpu_time_per_day ELSE 0 END
-		) as cpu_time_per_month
-		FROM
-			tabSite site
-		LEFT JOIN
-			`tabSite Plan` plan
-		ON
-			site.plan = plan.name
-		WHERE
-			site.server in {signup_server_sub_str}
-		GROUP by
-			site.server
-		ORDER by
-			cpu_time_per_month
-		LIMIT 1""",
-		as_dict=True,
+	signup_servers = [bs["server"] for bs in bench_servers]
+	SiteTable = frappe.qb.DocType("Site")
+	SitePlan = frappe.qb.DocType("Site Plan")
+	cpu_time_per_month = Sum(
+		Case().when(SiteTable.status.notin(["Archived", "Suspended"]), SitePlan.cpu_time_per_day).else_(0)
+	).as_("cpu_time_per_month")
+	lowest_cpu_server = (
+		frappe.qb.from_(SiteTable)
+		.left_join(SitePlan)
+		.on(SiteTable.plan == SitePlan.name)
+		.select(SiteTable.server, cpu_time_per_month)
+		.where(SiteTable.server.isin(signup_servers))
+		.groupby(SiteTable.server)
+		.orderby(cpu_time_per_month)
+		.limit(1)
+		.run(as_dict=True)
 	)
 	lowest_cpu_server = lowest_cpu_server[0].server if lowest_cpu_server else signup_servers[0]
 

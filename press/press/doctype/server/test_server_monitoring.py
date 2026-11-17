@@ -10,14 +10,21 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.account_request.test_account_request import create_test_account_request
+from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+from press.press.doctype.database_server.test_database_server import create_test_database_server
 from press.press.doctype.server.server_monitoring import (
+	STUCK_AGENT_JOBS_ALERT_THRESHOLD,
+	STUCK_AGENT_JOBS_WINDOW_HOURS,
 	SignupFailureRate,
 	_breaches_signup_failure_threshold,
 	_get_incomplete_signup_rate,
+	_get_servers_with_stuck_agent_jobs,
 	_get_trial_signup_failure_rate,
 	_send_signup_failure_alert,
 	alert_on_failing_signups,
+	alert_on_servers_with_stuck_agent_jobs,
 )
+from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.team.test_team import create_test_team
 
 if TYPE_CHECKING:
@@ -255,3 +262,69 @@ class TestSignupFailureAlert(FrappeTestCase):
 			alert_on_failing_signups()
 
 		send_raven_message.assert_not_called()
+
+
+def create_stuck_agent_jobs(server, count: int, status: str = "Undelivered", minutes_ago: int = 60):
+	for _ in range(count):
+		job = create_test_agent_job(server=server.name, server_type=server.doctype, status=status)
+		created = frappe.utils.add_to_date(None, minutes=-minutes_ago)
+		frappe.db.set_value("Agent Job", job.name, "creation", created, update_modified=False)
+
+
+def get_stuck_agent_jobs_row(server):
+	rows = _get_servers_with_stuck_agent_jobs()
+	return next((row for row in rows if row["server"] == server.name), None)
+
+
+class TestServersWithStuckAgentJobs(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_server_with_undelivered_and_pending_jobs_at_threshold_is_reported(self):
+		server = create_test_server()
+		create_stuck_agent_jobs(server, STUCK_AGENT_JOBS_ALERT_THRESHOLD - 1)
+		create_stuck_agent_jobs(server, 1, status="Pending")
+
+		row = get_stuck_agent_jobs_row(server)
+
+		self.assertEqual((row["undelivered"], row["pending"]), (STUCK_AGENT_JOBS_ALERT_THRESHOLD - 1, 1))
+
+	def test_server_below_threshold_is_not_reported(self):
+		server = create_test_server()
+		create_stuck_agent_jobs(server, STUCK_AGENT_JOBS_ALERT_THRESHOLD - 1)
+
+		self.assertIsNone(get_stuck_agent_jobs_row(server))
+
+	def test_jobs_younger_than_the_minimum_age_are_not_counted(self):
+		server = create_test_server()
+		create_stuck_agent_jobs(server, STUCK_AGENT_JOBS_ALERT_THRESHOLD, minutes_ago=5)
+
+		self.assertIsNone(get_stuck_agent_jobs_row(server))
+
+	def test_jobs_older_than_the_window_are_not_counted(self):
+		server = create_test_server()
+		minutes_ago = (STUCK_AGENT_JOBS_WINDOW_HOURS + 1) * 60
+		create_stuck_agent_jobs(server, STUCK_AGENT_JOBS_ALERT_THRESHOLD, minutes_ago=minutes_ago)
+
+		self.assertIsNone(get_stuck_agent_jobs_row(server))
+
+	def test_archived_server_is_not_reported(self):
+		server = create_test_server()
+		create_stuck_agent_jobs(server, STUCK_AGENT_JOBS_ALERT_THRESHOLD)
+		frappe.db.set_value("Server", server.name, "status", "Archived")
+
+		self.assertIsNone(get_stuck_agent_jobs_row(server))
+
+	@patch("press.press.doctype.server.server_monitoring.send_raven_message")
+	def test_alert_names_the_halted_database_server_with_its_job_counts(self, send_raven_message):
+		database_server = create_test_database_server()
+		frappe.db.set_value("Database Server", database_server.name, "halt_agent_jobs", 1)
+		create_stuck_agent_jobs(database_server, STUCK_AGENT_JOBS_ALERT_THRESHOLD)
+
+		alert_on_servers_with_stuck_agent_jobs()
+
+		message = send_raven_message.call_args[0][0]
+		self.assertIn(
+			f"| Database Server | {STUCK_AGENT_JOBS_ALERT_THRESHOLD} | 0 | Yes |",
+			next(line for line in message.splitlines() if database_server.name in line),
+		)

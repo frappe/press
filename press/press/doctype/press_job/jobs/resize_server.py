@@ -23,7 +23,7 @@ class ResizeServerJob(PressJob):
 	@flow
 	def execute(self):
 		self.halt_agent_jobs()
-		self.wait_for_recent_pending_agent_jobs_to_complete()
+		# self.wait_for_recent_pending_agent_jobs_to_complete()
 		self.stop_virtual_machine()
 		self.wait_for_virtual_machine_to_stop()
 

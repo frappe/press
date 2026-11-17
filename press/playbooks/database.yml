@@ -24,4 +24,5 @@
     - role: warning_banners
     - role: auditd
     - role: sshd_hardening
+    - role: fail2ban
     - role: pam

@@ -10,7 +10,7 @@ from press.press.report.server_stats.server_stats import get_servers
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 	columns = [
 		{
 			"fieldname": "server",
@@ -83,7 +83,7 @@ def get_data(filters):
 
 @frappe.whitelist()
 def update_agent(filters):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 	for server in get_servers(frappe._dict(json.loads(filters))):
 		server = frappe.get_doc(server.server_type, server.name)
 		server.update_agent_ansible()

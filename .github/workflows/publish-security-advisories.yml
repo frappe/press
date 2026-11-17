@@ -1,0 +1,69 @@
+# Publishes draft security advisories 30 days after they were created. This
+# gives sites time to update before the details of a fixed vulnerability are
+# public. Advisories in triage are not drafts, so they are never published.
+#
+# GITHUB_TOKEN cannot read or write repository security advisories. The job
+# uses SECURITY_ADVISORY_TOKEN: a fine-grained token for this repository with
+# the "Repository security advisories: Read and write" permission, owned by a
+# security manager or an administrator of the repository.
+
+name: Publish Security Advisories
+
+on:
+  schedule:
+    - cron: "0 5 * * *"  # Every day at 05:00 UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "List the advisories to publish, but do not publish them"
+        type: boolean
+        default: true
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Publish drafts older than 30 days
+        env:
+          GH_TOKEN: ${{ secrets.SECURITY_ADVISORY_TOKEN }}
+          REPO: ${{ github.repository }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          DAYS: 30
+        run: |
+          CUTOFF=$(date -u -d "$DAYS days ago" +%Y-%m-%dT%H:%M:%SZ)
+          export CUTOFF
+
+          ids=$(gh api --paginate \
+            "repos/$REPO/security-advisories?state=draft&per_page=100" \
+            --jq '.[] | select(.created_at < env.CUTOFF) | .ghsa_id')
+
+          summary() { echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+
+          if [ -z "$ids" ]; then
+            summary "No draft advisories were created before $CUTOFF."
+            exit 0
+          fi
+
+          failed=0
+          for id in $ids; do
+            url="https://github.com/$REPO/security/advisories/$id"
+            if [ "$DRY_RUN" = "true" ]; then
+              summary "- Would publish $url"
+            elif gh api -X PATCH "repos/$REPO/security-advisories/$id" \
+              -f state=published > /dev/null; then
+              summary "- Published $url"
+            else
+              # Continue, so that one bad advisory does not block the others.
+              echo "::error::Could not publish $url"
+              summary "- Could not publish $url"
+              failed=1
+            fi
+          done
+
+          exit $failed

@@ -360,7 +360,7 @@ const webhookListOptions = computed(() => ({
 				onClick: () => {
 					confirmDialog({
 						title: 'Disable Webhook',
-						message: `Endpoint - ${row.endpoint}<br>Are you sure you want to disable the webhook ?<br>`,
+						message: `Endpoint - ${row.endpoint}<br>Are you sure you want to disable the webhook?<br>`,
 						primaryAction: {
 							label: 'Disable',
 							variant: 'solid',
@@ -398,7 +398,7 @@ const webhookListOptions = computed(() => ({
 				onClick() {
 					confirmDialog({
 						title: 'Delete Webhook',
-						message: `Endpoint - ${row.endpoint}<br>Are you sure you want to delete the webhook ?<br>`,
+						message: `Endpoint - ${row.endpoint}<br>Are you sure you want to delete the webhook?<br>`,
 						primaryAction: {
 							label: 'Delete',
 							variant: 'solid',

@@ -68,7 +68,7 @@ class TestUserUtils(FrappeTestCase):
 	def test_is_system_manager_returns_false_for_regular_website_user(self):
 		email = frappe.mock("email")
 		create_test_user(email)
-		frappe.db.sql("DELETE FROM `tabHas Role` WHERE `parent` = %s", (email,))
+		frappe.db.delete("Has Role", {"parent": email})
 		user = frappe.get_value("User", {"email": email}, "name")
 		frappe.db.set_value("User", user, "user_type", "Website User")
 

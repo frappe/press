@@ -51,7 +51,7 @@ def get_boot():
 		default_team=default_team,
 		account_disabled=bool(get_disabled_team_of_user(frappe.session.user)),
 		valid_teams=get_valid_teams_for_user(frappe.session.user),
-		chat_enabled=chat_enabled(),
+		chat_enabled=chat_enabled(default_team),
 		is_system_user=frappe.session.data.user_type == "System User",
 		verify_cards_with_micro_charge=frappe.db.get_single_value(
 			"Press Settings", "verify_cards_with_micro_charge"

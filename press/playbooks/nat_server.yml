@@ -14,3 +14,4 @@
     - role: node_exporter
     - role: clamav
     - role: auditd
+    - role: fail2ban

@@ -36,7 +36,6 @@
 <script setup>
 import { BarChart } from 'echarts/charts'
 import {
-	BrushComponent,
 	DataZoomComponent,
 	GridComponent,
 	LegendComponent,
@@ -118,7 +117,6 @@ use([
 	MarkLineComponent,
 	DataZoomComponent,
 	ToolboxComponent,
-	BrushComponent,
 ])
 
 const initOptions = {
@@ -161,21 +159,12 @@ const options = ref({
 		},
 	},
 	toolbox: {
-		restore: {},
+		// Hidden: `show: false` would drop the drag-to-zoom cursor with it.
+		itemSize: 0,
 		feature: {
 			dataZoom: {
 				yAxisIndex: false,
 			},
-			brush: {
-				type: ['lineX', 'clear'],
-			},
-		},
-	},
-	brush: {
-		xAxisIndex: 'all',
-		brushLink: 'all',
-		outOfBrush: {
-			colorAlpha: 0.1,
 		},
 	},
 	xAxis: {

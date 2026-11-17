@@ -10,6 +10,7 @@ from typing import TypedDict
 
 import frappe
 import requests
+from frappe.query_builder.functions import Count, IfNull
 from frappe.utils.password import get_decrypted_password
 
 from press.utils import log_error
@@ -30,6 +31,13 @@ TRIAL_SIGNUP_MINIMUM_COUNT = 5
 # stall means signups are broken rather than merely abandoned
 INCOMPLETE_SIGNUP_RATIO_THRESHOLD = 0.9
 INCOMPLETE_SIGNUP_MINIMUM_COUNT = 10
+OOM_KILLS_ALERT_THRESHOLD = 30
+DATABASE_SERVER_DISK_USED_ALERT_THRESHOLD = 0.91
+# A halted database server misses its ~27 scheduled jobs a day; healthy servers stay under 15
+STUCK_AGENT_JOBS_ALERT_THRESHOLD = 15
+STUCK_AGENT_JOBS_WINDOW_HOURS = 24
+# Skip young jobs, so a deploy's burst of queued site jobs doesn't count
+STUCK_AGENT_JOBS_MINIMUM_AGE_MINUTES = 30
 
 
 class PublicServerHealthMetrics(TypedDict):
@@ -46,6 +54,14 @@ class PublicServerPoolDecision(TypedDict):
 	servers_with_decision: set[str]
 	server_issues: dict[str, list[str]]
 	fallback_servers_by_cluster: dict[str, str]
+
+
+class ServerStuckAgentJobs(TypedDict):
+	server_type: str
+	server: str
+	undelivered: int
+	pending: int
+	halted: bool
 
 
 class SignupFailureRate(TypedDict):
@@ -76,7 +92,8 @@ def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
 	server_plan_prices = _get_public_server_plan_prices(server_names)
 	pool_decision = _get_public_server_pool_decision(servers_by_cluster, metrics, server_plan_prices)
 	_apply_public_server_pool_decision(server_names, pool_decision)
-	_send_public_server_pool_health_alert(pool_decision["server_issues"])
+	server_issues = pool_decision["server_issues"] | _get_public_database_server_disk_issues()
+	_send_public_server_pool_health_alert(server_issues)
 	_create_no_suitable_servers_incident(pool_decision["fallback_servers_by_cluster"], metrics)
 
 
@@ -210,7 +227,7 @@ def _get_public_server_alert_issues(server: str, metrics: PublicServerHealthMetr
 		issues.append(f"CPU utilization: {(1 - cpu_idle_ratio) * 100:.2f}%")
 	if disk_used_ratio > 0.9:
 		issues.append(f"Disk utilization: {disk_used_ratio * 100:.2f}%")
-	if oom_kills > 4:
+	if oom_kills > OOM_KILLS_ALERT_THRESHOLD:
 		issues.append(f"OOM kills: {max(1, round(oom_kills))}")
 
 	return issues
@@ -318,14 +335,10 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 		f'avg by (instance) (rate(node_cpu_seconds_total{{instance=~"^({instance_matcher})$", '
 		f'job="node", mode="idle"}}[60m]))'
 	)
-	disk_used_ratio_query = (
-		f'1 - (node_filesystem_avail_bytes{{instance=~"^({instance_matcher})$", job="node", '
-		f'device!~"rootfs", mountpoint="/"}} / node_filesystem_size_bytes{{'
-		f'instance=~"^({instance_matcher})$", job="node", device!~"rootfs", mountpoint="/"}})'
-	)
+	disk_used_ratio_query = _get_disk_used_ratio_query(instance_matcher)
 	oom_kills_query = (
 		f'sum by (instance) (increase(node_vmstat_oom_kill{{instance=~"^({instance_matcher})$", '
-		f'job="node"}}[60m])) > 4'
+		f'job="node"}}[60m])) > {OOM_KILLS_ALERT_THRESHOLD}'
 	)
 
 	available_memory_bytes_results = _query_prometheus_vector(available_memory_bytes_query, url, auth)
@@ -354,6 +367,49 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 		),
 		"oom_kills": _build_public_server_metric_map(server_names, oom_kills_results, default=0.0),
 	}
+
+
+def _get_disk_used_ratio_query(instance_matcher: str, mountpoint: str = "/") -> str:
+	return (
+		f'1 - (node_filesystem_avail_bytes{{instance=~"^({instance_matcher})$", job="node", '
+		f'device!~"rootfs", mountpoint="{mountpoint}"}} / node_filesystem_size_bytes{{'
+		f'instance=~"^({instance_matcher})$", job="node", device!~"rootfs", mountpoint="{mountpoint}"}})'
+	)
+
+
+def _get_public_database_server_disk_issues() -> dict[str, list[str]]:
+	prometheus_connection = _get_public_server_pool_prometheus_connection()
+	if not prometheus_connection:
+		return {}
+
+	disk_used_ratios: dict[str, float] = {}
+	for mountpoint, server_names in _get_public_database_servers_by_data_mountpoint().items():
+		instance_matcher = "|".join(_escape_prometheus_regex_literal(name) for name in server_names)
+		query = _get_disk_used_ratio_query(instance_matcher, mountpoint)
+		results = _query_prometheus_vector(query, *prometheus_connection)
+		disk_used_ratios |= _build_public_server_metric_map(server_names, results)
+
+	return {
+		server: [f"Disk utilization: {ratio * 100:.2f}%"]
+		for server, ratio in disk_used_ratios.items()
+		if ratio > DATABASE_SERVER_DISK_USED_ALERT_THRESHOLD
+	}
+
+
+def _get_public_database_servers_by_data_mountpoint() -> dict[str, list[str]]:
+	"""Servers with a data volume keep MariaDB files off the root disk."""
+	from press.press.doctype.server.server import MARIADB_DATA_MNT_POINT
+
+	servers = frappe.get_all(
+		"Database Server",
+		filters={"status": "Active", "public": True},
+		fields=["name", "has_data_volume"],
+	)
+	servers_by_mountpoint: dict[str, list[str]] = {}
+	for server in servers:
+		mountpoint = MARIADB_DATA_MNT_POINT if server.has_data_volume else "/"
+		servers_by_mountpoint.setdefault(mountpoint, []).append(server.name)
+	return servers_by_mountpoint
 
 
 def _get_public_server_pool_prometheus_connection() -> tuple[str, tuple[str, str]] | None:
@@ -421,10 +477,15 @@ def _send_public_server_pool_health_alert(server_issues: dict[str, list[str]]) -
 		return
 
 	affected_servers = sorted(server_issues)
+	thresholds = (
+		"Thresholds: RAM utilization > 90%, CPU utilization > 50%, Disk utilization > 90% "
+		f"(database servers > {DATABASE_SERVER_DISK_USED_ALERT_THRESHOLD * 100:.0f}%), "
+		f"OOM kills > {OOM_KILLS_ALERT_THRESHOLD}"
+	)
 	header_lines = [
 		f"**Public Server Pool Health Alerts** - {len(affected_servers)}",
 		"",
-		"Thresholds: RAM utilization > 90%, CPU utilization > 50%, Disk Utilization > 90%, OOM kills > 4",
+		thresholds,
 		"",
 	]
 	table_header = [
@@ -628,4 +689,104 @@ def _describe_signup_failure_rate(rate: SignupFailureRate) -> str:
 		f"[{rate['label']}]({rate['link']}): {rate['failed']} of {rate['total']} "
 		f"({failure_ratio:.2f}%) in the last {SIGNUP_ALERT_WINDOW_HOURS}h, "
 		f"threshold {rate['ratio_threshold'] * 100:.0f}%"
+	)
+
+
+def alert_on_servers_with_stuck_agent_jobs() -> None:
+	"""Alert when active servers hold many agent jobs that never ran.
+
+	Undelivered jobs pile up on a halted or unreachable server, pending ones on a stuck agent.
+	"""
+	servers = _get_servers_with_stuck_agent_jobs()
+	if servers:
+		_send_stuck_agent_jobs_alert(servers)
+
+
+def _get_servers_with_stuck_agent_jobs() -> list[ServerStuckAgentJobs]:
+	counts = _count_stuck_agent_jobs_by_server()
+	over_threshold = [row for row in counts if _total_stuck_jobs(row) >= STUCK_AGENT_JOBS_ALERT_THRESHOLD]
+	halt_flags = _get_halt_flags_of_active_servers({_server_key(row) for row in over_threshold})
+	servers = [row for row in over_threshold if _server_key(row) in halt_flags]
+	for row in servers:
+		row["halted"] = halt_flags[_server_key(row)]
+	return sorted(servers, key=_total_stuck_jobs, reverse=True)
+
+
+def _get_stuck_agent_job_counts() -> list[frappe._dict]:
+	# frappe.get_all on fc-prod has no dict aggregates, so count with frappe.qb
+	now = frappe.utils.now_datetime()
+	window_start = frappe.utils.add_to_date(now, hours=-STUCK_AGENT_JOBS_WINDOW_HOURS)
+	window_end = frappe.utils.add_to_date(now, minutes=-STUCK_AGENT_JOBS_MINIMUM_AGE_MINUTES)
+	AgentJob = frappe.qb.DocType("Agent Job")
+	return (
+		frappe.qb.from_(AgentJob)
+		.select(AgentJob.server_type, AgentJob.server, AgentJob.status, Count("*").as_("jobs"))
+		.where(AgentJob.status.isin(["Undelivered", "Pending"]))
+		.where(AgentJob.creation.between(window_start, window_end))
+		.where(IfNull(AgentJob.server, "") != "")
+		.where(IfNull(AgentJob.server_type, "") != "")
+		.groupby(AgentJob.server_type, AgentJob.server, AgentJob.status)
+		.run(as_dict=True)
+	)
+
+
+def _count_stuck_agent_jobs_by_server() -> list[ServerStuckAgentJobs]:
+	counts: dict[tuple[str, str], ServerStuckAgentJobs] = {}
+	for row in _get_stuck_agent_job_counts():
+		key = (row.server_type, row.server)
+		counts.setdefault(
+			key, {"server_type": key[0], "server": key[1], "undelivered": 0, "pending": 0, "halted": False}
+		)
+		if row.status == "Pending":
+			counts[key]["pending"] = row.jobs
+		else:
+			counts[key]["undelivered"] = row.jobs
+	return list(counts.values())
+
+
+def _get_halt_flags_of_active_servers(servers: set[tuple[str, str]]) -> dict[tuple[str, str], bool]:
+	halt_flags = {}
+	for server_type in {server_type for server_type, _ in servers}:
+		names = [name for doctype, name in servers if doctype == server_type]
+		# Registry, log and other server types have no halt flag
+		has_halt_flag = frappe.get_meta(server_type).has_field("halt_agent_jobs")
+		fields = ["name", "halt_agent_jobs"] if has_halt_flag else ["name"]
+		for server in frappe.get_all(
+			server_type, filters={"name": ("in", names), "status": "Active"}, fields=fields
+		):
+			halt_flags[(server_type, server.name)] = bool(server.get("halt_agent_jobs"))
+	return halt_flags
+
+
+def _server_key(row: ServerStuckAgentJobs) -> tuple[str, str]:
+	return (row["server_type"], row["server"])
+
+
+def _total_stuck_jobs(row: ServerStuckAgentJobs) -> int:
+	return row["undelivered"] + row["pending"]
+
+
+def _send_stuck_agent_jobs_alert(servers: list[ServerStuckAgentJobs]) -> None:
+	criteria = (
+		f"Undelivered + Pending jobs created in the last {STUCK_AGENT_JOBS_WINDOW_HOURS}h "
+		f"(older than {STUCK_AGENT_JOBS_MINIMUM_AGE_MINUTES}m), threshold {STUCK_AGENT_JOBS_ALERT_THRESHOLD}"
+	)
+	lines = [
+		f"**Servers With Stuck Agent Jobs** - {len(servers)}",
+		"",
+		criteria,
+		"",
+		"| Server | Type | Undelivered | Pending | Agent Jobs Halted |",
+		"| --- | --- | --- | --- | --- |",
+	]
+	lines.extend(_describe_server_with_stuck_agent_jobs(row) for row in servers)
+	send_raven_message("\n".join(lines), RAVEN_SERVER_ALERTS_CHANNEL)
+
+
+def _describe_server_with_stuck_agent_jobs(row: ServerStuckAgentJobs) -> str:
+	link = frappe.utils.get_url_to_form(row["server_type"], row["server"])
+	halted = "Yes" if row["halted"] else "No"
+	return (
+		f"| [{row['server']}]({link}) | {row['server_type']} | {row['undelivered']} "
+		f"| {row['pending']} | {halted} |"
 	)
