@@ -1050,6 +1050,127 @@ class TestSite(FrappeTestCase):
 		self.assertTrue(bahrain_files.isdisjoint(deleted_files))
 		self.assertTrue(other_files.issubset(set(deleted_files)))
 
+<<<<<<< HEAD
+=======
+	@patch("press.press.doctype.remote_file.remote_file.delete_remote_backup_objects")
+	def test_delete_offsite_backups_deletes_the_site_config_file(self, mock_delete):
+		from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
+		from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+
+		site = create_test_site("configsite")
+		backup = create_test_site_backup(site=site.name)
+		config_file = create_test_remote_file(site.name).name
+		backup.db_set("remote_config_file", config_file)
+
+		site.delete_offsite_backups(keep_latest=False)
+
+		self.assertIn(config_file, mock_delete.call_args.args[0])
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+@patch("frappe.sendmail", new=Mock())
+class TestSiteInArchivedCluster(FrappeTestCase):
+	"""An archived region is hidden from customers, so we must not charge for it either."""
+
+	def setUp(self):
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.team.test_team import create_test_press_admin_team
+
+		self.team = create_test_press_admin_team()
+		self.cluster = create_test_cluster(name="Bahrain")
+		server = create_test_server(cluster=self.cluster.name)
+		self.site = create_test_site("hiddenregionsite", server=server.name, team=self.team.name)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def archive_the_region(self):
+		frappe.db.set_value("Cluster", self.cluster.name, "status", "Archived")
+
+	def test_site_is_charged_while_its_region_is_active(self):
+		self.assertTrue(self.site.can_charge_for_subscription())
+
+	def test_site_is_not_charged_once_its_region_is_archived(self):
+		self.archive_the_region()
+
+		self.assertFalse(self.site.can_charge_for_subscription())
+
+	def test_subscription_creates_no_usage_record_for_a_site_in_an_archived_region(self):
+		from press.press.doctype.subscription.test_subscription import create_test_subscription
+
+		plan = create_test_plan("Site")
+		subscription = create_test_subscription(self.site.name, plan.name, self.team.name)
+		self.archive_the_region()
+
+		self.assertIsNone(subscription.create_usage_record())
+
+	def test_site_in_an_active_region_is_not_marked_archived(self):
+		self.assertFalse(self.site.in_archived_cluster)
+
+	def test_site_in_an_archived_region_is_marked_archived(self):
+		self.archive_the_region()
+
+		self.assertTrue(self.site.in_archived_cluster)
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestSiteConfigJSONValidation(FrappeTestCase):
+	"""A JSON config value that isn't an object breaks every later save of the site."""
+
+	def setUp(self):
+		self.site = create_test_site("testsubdomain")
+		frappe.get_doc({"doctype": "Site Config Key", "key": "test_limits", "type": "JSON"}).insert()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_json_config_key_accepts_an_object(self):
+		self.site.update_config({"test_limits": {"space": 1}})
+		self.assertEqual(json.loads(self.site.config)["test_limits"], {"space": 1})
+
+	def test_json_config_key_accepts_an_array(self):
+		self.site.update_config({"test_limits": ["space"]})
+		self.assertEqual(json.loads(self.site.config)["test_limits"], ["space"])
+
+	def test_json_config_key_rejects_a_value_that_isnt_json(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"is not valid JSON",
+			self.site.update_config,
+			{"test_limits": "{space: 1}"},
+		)
+		self.site.reload()
+		self.assertNotIn("test_limits", json.loads(self.site.config))
+
+	def test_json_config_key_rejects_a_json_string(self):
+		"""A JSON string decodes to a scalar, gets stored as plain text and can't be read back."""
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"must be a JSON object or array",
+			self.site.update_config,
+			{"test_limits": '"abc"'},
+		)
+		self.site.reload()
+		self.assertNotIn("test_limits", json.loads(self.site.config))
+
+	def test_json_config_key_rejects_a_number(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"must be a JSON object or array",
+			self.site.update_config,
+			{"test_limits": 1},
+		)
+		self.site.reload()
+		self.assertNotIn("test_limits", json.loads(self.site.config))
+
+	def test_site_with_a_json_config_key_can_be_saved_again(self):
+		self.site.update_config({"test_limits": {"space": 1}})
+		self.site.reload()
+		self.site.save()
+
+>>>>>>> 04c72c5 (fix(backup): Delete the site config file when offsite backups expire)
 	def _broken_site_with_fatal_update(
 		self, backup_type: str = "Logical", deploy_type: str = "Migrate"
 	) -> Site:

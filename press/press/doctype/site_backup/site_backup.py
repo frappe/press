@@ -30,6 +30,19 @@ if TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
+<<<<<<< HEAD
+=======
+BACKUP_SUCCESS_RATE_THRESHOLD = 0.97
+BACKUP_FAILURE_ALERT_SITE_LIMIT = 20
+REMOTE_FILE_FIELDS = (
+	"remote_database_file",
+	"remote_public_file",
+	"remote_private_file",
+	"remote_config_file",
+)
+
+
+>>>>>>> 04c72c5 (fix(backup): Delete the site config file when offsite backups expire)
 class SiteBackup(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
