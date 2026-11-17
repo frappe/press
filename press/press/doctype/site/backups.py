@@ -18,7 +18,7 @@ from frappe.query_builder import CustomFunction
 from press.press.doctype.press_settings.press_settings import PressSettings
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 from press.press.doctype.site.site import Site
-from press.press.doctype.site_backup.site_backup import SiteBackup
+from press.press.doctype.site_backup.site_backup import REMOTE_FILE_FIELDS, SiteBackup
 from press.press.doctype.subscription.subscription import Subscription
 from press.utils import log_error
 
@@ -53,14 +53,10 @@ class BackupRotationScheme:
 
 	def _expire_and_get_remote_files(self, offsite_backups: list[str]) -> list[str]:
 		"""Mark backup as unavailable and return remote files to delete."""
-		remote_files_to_delete = []
+		remote_files_to_delete: list[str] = []
 		for backup in offsite_backups:
-			remote_files = frappe.db.get_value(
-				"Site Backup",
-				backup,
-				["remote_database_file", "remote_private_file", "remote_public_file"],
-			)
-			remote_files_to_delete.extend(remote_files)
+			remote_files = frappe.db.get_value("Site Backup", backup, list(REMOTE_FILE_FIELDS))
+			remote_files_to_delete.extend(file for file in remote_files or () if file)
 			frappe.db.set_value("Site Backup", backup, "files_availability", "Unavailable")
 		return remote_files_to_delete
 
