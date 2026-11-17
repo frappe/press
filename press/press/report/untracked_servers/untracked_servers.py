@@ -21,7 +21,7 @@ AWS_CLIENT_CONFIG = BotoConfig(
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 	filters = filters or {}
 	provider = filters.get("provider")
 	if not provider:

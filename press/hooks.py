@@ -90,6 +90,8 @@ jinja = {
 
 # before_install = "press.install.before_install"
 after_install = "press.install.after_install"
+# After fixtures, which bring the roles of Press
+after_sync = ["press.access.core_permissions.sync_core_permissions"]
 
 # Desk Notifications
 # ------------------
@@ -181,6 +183,7 @@ doc_events = {
 		],
 	},
 	"Address": {"validate": "press.api.billing.validate_gst"},
+	"Custom DocPerm": {"validate": "press.access.core_permissions.refuse_rule_outside_code"},
 	"Country": {
 		"on_update": "press.api.account.clear_country_list_cache",
 		"on_trash": "press.api.account.clear_country_list_cache",
@@ -252,6 +255,8 @@ scheduler_events = {
 		"press.press.doctype.invoice.invoice.sync_paid_invoices_to_frappeio",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_card_invoices",
 		"press.press.doctype.cloud_usage_anomaly.cloud_usage_anomaly.run_daily_pipeline",
+		"press.press.doctype.wazuh_server_report.wazuh_server_report.sync_wazuh_reports",
+		"press.press.doctype.request_abuse_daily.request_abuse_daily.record_yesterday",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -261,6 +266,7 @@ scheduler_events = {
 		"press.press.doctype.site.backups.schedule_physical_backups_for_sites_with_backup_time",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.saas.doctype.product_trial_request.product_trial_request.expire_long_pending_trial_requests",
+		"press.saas.doctype.grove_trial_key.grove_trial_key.revoke_archived",
 		"press.press.doctype.support_access.support_access.expire_pending_requests",
 		"press.overrides.cleanup_ansible_tmp_files",
 		"press.press.doctype.site.site.archive_suspended_sites",
@@ -372,6 +378,7 @@ scheduler_events = {
 			"press.infrastructure.doctype.virtual_disk_resize.virtual_disk_resize.run_scheduled_resizes",
 		],
 		"*/5 * * * *": [
+			"press.saas.doctype.grove_trial_key.grove_trial_key.refill_trial_keys",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.enqueue_delete_orphaned_dedicated_snapshots",
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
 			"press.press.doctype.site_replication.site_replication.update_from_site",
@@ -411,6 +418,7 @@ scheduler_events = {
 			"press.press.doctype.site_backup.site_backup.delete_failed_unavailable_backups_for_archived_sites",
 			"press.press.doctype.site_backup.site_backup.delete_agent_job_records_for_archived_sites",
 			"press.press.doctype.site_backup.site_backup.delete_site_activity_records_for_archived_sites",
+			"press.press.doctype.server.server_monitoring.alert_on_servers_with_stuck_agent_jobs",
 		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
@@ -455,6 +463,7 @@ fixtures = [
 	"MariaDB Variable",
 	"Cloud Region",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
+	{"dt": "Role Profile", "filters": [["role_profile", "like", "Press%"]]},
 	"Site Config Key Blacklist",
 	"Press Method Permission",
 	"Bench Dependency",
@@ -483,13 +492,18 @@ override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
 # 	"Task": "press.task.get_dashboard_data"
 # }
 
-override_doctype_class = {"User": "press.overrides.CustomUser"}
+override_doctype_class = {
+	"User": "press.overrides.CustomUser",
+	"System Console": "press.access.data_console.PressSystemConsole",
+}
 
 # on_logout = "press.overrides.on_logout"
 on_login = "press.overrides.on_login"
 
 before_request = [
 	"press.overrides.before_request",
+	"press.access.staff_roles.use_saved_document",
+	"press.access.staff_roles.check_staff_role",
 	"press.telemetry.monitor.add_user_context",
 	"press.telemetry.sentry.add_user_context",
 ]
@@ -511,6 +525,7 @@ export_python_type_annotations = True
 
 default_log_clearing_doctypes = {
 	"Alertmanager Webhook Log": 60,
+	"Request Abuse Daily": 90,
 }
 
 
@@ -576,5 +591,6 @@ before_migrate = ["press.overrides.before_after_migrate"]
 after_migrate = [
 	"press.overrides.before_after_migrate",
 	"press.api.account.clear_country_list_cache",
+	"press.access.core_permissions.sync_core_permissions",
 	"press.sanity.checks",
 ]

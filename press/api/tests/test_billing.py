@@ -2,15 +2,23 @@ from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 import frappe
+import razorpay
+import stripe
 from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils.data import add_days, today
 
 from press.api.billing import (
 	_validate_prepaid_credits,
+	create_payment_intent_for_buying_credits,
+	create_razorpay_order,
+	fetch_invoice_items,
 	get_cleaned_up_transactions,
 	get_processed_balance_transactions,
 	verify_m_pesa_transaction,
 )
+from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_team
 from press.utils.mpesa_utils import create_mpesa_request_log
 
@@ -357,3 +365,157 @@ class TestValidatePrepaidCredits(FrappeTestCase):
 
 		with self.assertRaisesRegex(frappe.ValidationError, "Amount should be at least ₹66.25"):
 			_validate_prepaid_credits(50, "INR")
+
+
+class TestAmountAboveGatewayLimit(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_team()
+		self.team.db_set("currency", "INR")
+		frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+		frappe.db.set_single_value("Press Settings", "razorpay_max_order_amount_inr", 500000)
+		frappe.set_user(self.team.user)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_razorpay_order_above_limit_with_gst_is_blocked_before_calling_razorpay(self, mock_client):
+		with self.assertRaisesRegex(frappe.ValidationError, r"5,?90,000.*including GST.*5,?00,000"):
+			create_razorpay_order(500000, "Prepaid Credits")
+
+		mock_client.return_value.order.create.assert_not_called()
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_razorpay_order_equal_to_limit_with_gst_creates_order(self, mock_client):
+		mock_client.return_value.order.create.return_value = {"id": "order_at_limit"}
+
+		order = create_razorpay_order(423728.81, "Prepaid Credits")
+
+		self.assertEqual(order["order_id"], "order_at_limit")
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_inr_limit_does_not_apply_to_usd_razorpay_order(self, mock_client):
+		self.team.db_set("currency", "USD")
+		mock_client.return_value.order.create.return_value = {"id": "order_usd"}
+
+		order = create_razorpay_order(600000, "Prepaid Credits")
+
+		self.assertEqual(order["order_id"], "order_usd")
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_razorpay_order_is_not_limited_when_setting_is_empty(self, mock_client):
+		frappe.db.set_single_value("Press Settings", "razorpay_max_order_amount_inr", 0)
+		mock_client.return_value.order.create.return_value = {"id": "order_no_limit"}
+
+		order = create_razorpay_order(500000, "Prepaid Credits")
+
+		self.assertEqual(order["order_id"], "order_no_limit")
+
+	@patch("press.api.billing.get_razorpay_client")
+	def test_razorpay_rejection_shows_its_reason_and_creates_no_payment_record(self, mock_client):
+		mock_client.return_value.order.create.side_effect = razorpay.errors.BadRequestError(
+			"Amount exceeds maximum amount allowed."
+		)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Amount exceeds maximum amount allowed"):
+			create_razorpay_order(1000, "Prepaid Credits")
+
+		self.assertFalse(frappe.db.exists("Razorpay Payment Record", {"team": self.team.name}))
+
+	@patch("press.api.billing.get_stripe")
+	def test_stripe_intent_above_limit_shows_stripe_message(self, mock_get_stripe):
+		mock_get_stripe.return_value.PaymentIntent.create.side_effect = stripe.error.InvalidRequestError(
+			"Amount must be no more than ₹9,999,999.99", "amount", code="amount_too_large"
+		)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Amount must be no more than"):
+			create_payment_intent_for_buying_credits(10000000)
+
+	@patch("press.api.billing.get_stripe")
+	def test_other_stripe_invalid_request_is_not_shown_to_customer(self, mock_get_stripe):
+		mock_get_stripe.return_value.PaymentIntent.create.side_effect = stripe.error.InvalidRequestError(
+			"No such customer", "customer", code="resource_missing"
+		)
+
+		with self.assertRaisesRegex(stripe.error.InvalidRequestError, "No such customer"):
+			create_payment_intent_for_buying_credits(1000)
+
+
+class TestFetchInvoiceItems(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_team()
+		self.plan = create_test_plan("Site")
+		self.site = create_test_site(team=self.team.name)
+		frappe.set_user(self.team.user)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def draft_invoice_with_item(self, **item):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert(ignore_permissions=True)
+		invoice.append(
+			"items",
+			{
+				"document_type": "Site",
+				"document_name": self.site.name,
+				"plan": self.plan.name,
+				"quantity": 5,
+				"rate": 100,
+				"amount": 500,
+				**item,
+			},
+		)
+		invoice.save(ignore_permissions=True)
+		return invoice
+
+	def test_draft_invoice_item_is_described_for_the_csv(self):
+		invoice = self.draft_invoice_with_item()
+
+		items = fetch_invoice_items(invoice.name)
+
+		self.assertEqual(
+			items[0].description,
+			f"{self.site.name} active for 5 days on {self.plan.plan_title} plan",
+		)
+
+	def test_describing_a_draft_item_does_not_store_the_description(self):
+		invoice = self.draft_invoice_with_item()
+
+		fetch_invoice_items(invoice.name)
+
+		invoice.reload()
+		self.assertFalse(invoice.items[0].description)
+
+	def test_stored_description_is_kept(self):
+		invoice = self.draft_invoice_with_item(description="Written when the invoice was finalized")
+
+		items = fetch_invoice_items(invoice.name)
+
+		self.assertEqual(items[0].description, "Written when the invoice was finalized")
+
+	def test_server_without_a_title_is_described_by_its_name(self):
+		invoice = self.draft_invoice_with_item(
+			document_type="Server", document_name=self.site.server, plan="Basic"
+		)
+		frappe.db.set_value("Server", self.site.server, "title", "")
+
+		items = fetch_invoice_items(invoice.name)
+
+		self.assertEqual(items[0].description, f"{self.site.server} active for 5 days")
+
+	def test_finalized_invoice_describes_items_the_same_way(self):
+		invoice = self.draft_invoice_with_item()
+		from_csv = fetch_invoice_items(invoice.name)[0].description
+
+		invoice.update_item_descriptions()
+
+		self.assertEqual(invoice.items[0].description, from_csv)

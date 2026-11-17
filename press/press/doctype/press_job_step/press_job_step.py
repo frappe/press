@@ -82,7 +82,7 @@ class PressJobStep(Document):
 
 		self.end = frappe.utils.now_datetime()
 		self.duration = (self.end - self.start).total_seconds()
-		self.save()
+		self.save(ignore_permissions=True)
 
 		if self.status == "Failure":
 			job.fail(local["arguments"])

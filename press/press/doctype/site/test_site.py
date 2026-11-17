@@ -204,6 +204,23 @@ class TestSite(FrappeTestCase):
 		site.get_doc(doc)
 		self.assertEqual(doc.frappe_updated_on, commit_time)
 
+	def test_empty_creation_failed_lets_the_team_run_site_actions_again(self):
+		site = create_test_site()
+		site.db_set("creation_failed", frappe.utils.now())
+		team_user = frappe.db.get_value("Team", site.team, "user")
+		frappe.db.set_value("User", team_user, "user_type", "Website User")
+		frappe.clear_cache(doctype="User")
+
+		frappe.set_user(team_user)
+		self.assertRaisesRegex(frappe.ValidationError, "site creation has failed", site.migrate)
+
+		frappe.set_user("Administrator")
+		site.empty_creation_failed()
+
+		self.assertIsNone(frappe.db.get_value("Site", site.name, "creation_failed"))
+		frappe.set_user(team_user)
+		site.migrate()
+
 	def test_restore_site_from_files_rejects_remote_file_of_another_team(self):
 		from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 		from press.press.doctype.team.test_team import create_test_team
@@ -226,6 +243,15 @@ class TestSite(FrappeTestCase):
 		site = create_test_site("testsubdomain")
 		site.host_name = "balu.codes"  # domain that doesn't exist
 		self.assertRaises(frappe.exceptions.ValidationError, site.save)
+
+	def test_deactivate_on_trial_plan_names_the_site_in_the_error(self):
+		site = create_test_site("trial-site")
+		site.db_set("plan", create_test_plan("Site", is_trial_plan=True).name)
+
+		with self.assertRaises(frappe.ValidationError) as context:
+			site.deactivate()
+
+		self.assertIn(f"The site {site.name} is currently on a trial plan", str(context.exception))
 
 	def test_db_server_restore_space_includes_app_space_on_unified_server(self):
 		"""On a unified server (shared disk) the db requirement must include app space."""
@@ -1026,6 +1052,54 @@ class TestSite(FrappeTestCase):
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
+@patch("frappe.sendmail", new=Mock())
+class TestSiteInArchivedCluster(FrappeTestCase):
+	"""An archived region is hidden from customers, so we must not charge for it either."""
+
+	def setUp(self):
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.team.test_team import create_test_press_admin_team
+
+		self.team = create_test_press_admin_team()
+		self.cluster = create_test_cluster(name="Bahrain")
+		server = create_test_server(cluster=self.cluster.name)
+		self.site = create_test_site("hiddenregionsite", server=server.name, team=self.team.name)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def archive_the_region(self):
+		frappe.db.set_value("Cluster", self.cluster.name, "status", "Archived")
+
+	def test_site_is_charged_while_its_region_is_active(self):
+		self.assertTrue(self.site.can_charge_for_subscription())
+
+	def test_site_is_not_charged_once_its_region_is_archived(self):
+		self.archive_the_region()
+
+		self.assertFalse(self.site.can_charge_for_subscription())
+
+	def test_subscription_creates_no_usage_record_for_a_site_in_an_archived_region(self):
+		from press.press.doctype.subscription.test_subscription import create_test_subscription
+
+		plan = create_test_plan("Site")
+		subscription = create_test_subscription(self.site.name, plan.name, self.team.name)
+		self.archive_the_region()
+
+		self.assertIsNone(subscription.create_usage_record())
+
+	def test_site_in_an_active_region_is_not_marked_archived(self):
+		self.assertFalse(self.site.in_archived_cluster)
+
+	def test_site_in_an_archived_region_is_marked_archived(self):
+		self.archive_the_region()
+
+		self.assertTrue(self.site.in_archived_cluster)
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestSiteConfigJSONValidation(FrappeTestCase):
 	"""A JSON config value that isn't an object breaks every later save of the site."""
 
@@ -1168,6 +1242,16 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 			frappe.ValidationError,
 			"database server is not up",
 			lambda: site.restore_tables(force=True),
+		)
+
+	def test_deactivate_on_a_trial_plan_names_the_site_in_the_error(self):
+		site = create_test_site()
+		site.db_set("plan", create_test_plan("Site", is_trial_plan=True).name)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			f"The site {site.name} is currently on a trial plan",
+			site.deactivate,
 		)
 
 	def _site_with_a_running_table_restore(self) -> Site:
@@ -1381,6 +1465,24 @@ class TestArchiveSiteJobUpdate(FrappeTestCase):
 		self.site.reload()
 		self.assertEqual(self.site.status, "Broken")
 		self.assertTrue(self.site.archive_failed)
+
+	@patch("press.press.doctype.site.site.site_cleanup_after_archive", new=Mock())
+	def test_archive_backup_is_recorded_when_the_upstream_job_finishes_last(self):
+		archive_job = self._create_archive_jobs("Success")
+		for step in ("Backup Site", "Upload Site Backup to S3", "Archive Site"):
+			self._set_step_status(archive_job, step, "Success")
+		database = {"file": "database.sql.gz", "size": 100, "url": "https://example.com/database.sql.gz"}
+		archive_job.db_set(
+			"data", json.dumps({"backups": {"database": database}, "offsite": {"database.sql.gz": "path"}})
+		)
+		upstream_job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Remove Site from Upstream", "site": self.site.name}
+		)
+
+		process_archive_site_job_update(upstream_job)
+
+		self.assertEqual(frappe.db.get_value("Site", self.site.name, "status"), "Archived")
+		self.assertTrue(frappe.db.exists("Site Backup", {"job": archive_job.name, "offsite": True}))
 
 	def test_step_skipped_by_a_successful_job_still_counts_as_removed(self):
 		"""The agent skips a step it has no work for. That job succeeded, so nothing is left behind."""

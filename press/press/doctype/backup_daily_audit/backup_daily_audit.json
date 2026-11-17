@@ -185,7 +185,7 @@
 	"in_create": 1,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-10-27 18:30:00.000000",
+	"modified": "2026-11-06 12:30:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Backup Daily Audit",
@@ -198,6 +198,15 @@
 			"read": 1,
 			"report": 1,
 			"role": "System Manager",
+			"share": 1
+		},
+		{
+			"delete": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Infrastructure Manager",
 			"share": 1
 		}
 	],

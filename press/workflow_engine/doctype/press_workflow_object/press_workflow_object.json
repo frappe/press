@@ -54,7 +54,7 @@
 	],
 	"grid_page_length": 50,
 	"links": [],
-	"modified": "2026-04-22 00:01:32.067496",
+	"modified": "2026-11-06 16:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Workflow Engine",
 	"name": "Press Workflow Object",
@@ -83,6 +83,15 @@
 			"role": "Press User",
 			"share": 1,
 			"write": 1
+		},
+		{
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Infrastructure Manager",
+			"share": 1
 		}
 	],
 	"row_format": "Dynamic",

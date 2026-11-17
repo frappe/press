@@ -91,7 +91,7 @@
 				$site.doc.status !== 'Archived'
 			"
 			class="col-span-1 lg:col-span-2"
-			title="Your site is currently on a shared bench. Upgrade plan to enjoy <a href='https://frappecloud.com/shared-hosting#benches' class='underline' target='_blank'>more benefits</a>."
+			:title="sharedBenchBannerTitle"
 			:id="$site.name"
 			type="gray"
 		>
@@ -373,6 +373,7 @@ import { getCachedDocumentResource, Progress, Tooltip } from 'frappe-ui'
 import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
 import InfoIcon from '~icons/lucide/info'
+import { getCheapestPrivateBenchPlan } from '../data/plans'
 import { renderDialog } from '../utils/components'
 import { openInNewTab, trialDays } from '../utils/site'
 import { getToastErrorMessage } from '../utils/toast'
@@ -516,6 +517,13 @@ export default {
 		},
 	},
 	computed: {
+		sharedBenchBannerTitle() {
+			const plan = getCheapestPrivateBenchPlan(this.$site.doc.server_provider)
+			const benefits = plan
+				? `Plans from ${this.$format.planTitle(plan)}/mo in this region allow a private bench`
+				: 'Upgrade plan to enjoy more benefits'
+			return `Your site is currently on a shared bench. ${benefits}. <a href='https://frappecloud.com/shared-hosting#benches' class='underline' target='_blank'>Learn more</a>.`
+		},
 		siteInformation() {
 			return [
 				{

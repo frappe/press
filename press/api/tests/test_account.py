@@ -41,6 +41,20 @@ def user_context(user: str):
 		frappe.session.data = session_data
 
 
+@contextmanager
+def browser_session(user: str):
+	"""Run the block as `user` with a session like the one a logged-in browser has."""
+	with user_context(user):
+		frappe.session.sid = "browser-session-id"
+		frappe.session.data = frappe._dict(user=user)
+		yield
+
+
+def saved_session() -> tuple:
+	"""What Frappe saves at the end of the request: the next request reads `data.user`."""
+	return frappe.session.user, frappe.session.sid, frappe.session.data.get("user")
+
+
 class TestAccountApi(TestCase):
 	"""End-to-End Tests for account/team creation via API"""
 
@@ -417,6 +431,16 @@ class TestAccountApi(TestCase):
 		self.assertEqual(session_user_while_creating["user"], "Administrator")
 		self.assertTrue(frappe.db.exists("Team Member", {"parent": team.name, "user": invited}))
 
+	def test_accept_team_invite_keeps_the_browser_session_of_the_invitee(self):
+		team = create_test_team()
+		invited = frappe.mock("email")
+		create_test_user(invited)
+		key = self._invite(team, invited, roles=None)
+
+		with browser_session(invited):
+			accept_team_invite(key)
+			self.assertEqual(saved_session(), (invited, "browser-session-id", invited))
+
 	def test_accept_team_invite_recovers_from_quoted_printable_break_in_key(self):
 		"""The invite URL is long enough that email transport wraps it with a
 		quoted-printable soft break ("=" + newline). If that artifact leaks into
@@ -541,6 +565,11 @@ class TestReactivateAccount(TestCase):
 		with user_context(self.team.user):
 			reactivate_account()
 		self.assertEqual(self.is_enabled(), 1)
+
+	def test_reactivating_keeps_the_browser_session_of_the_user(self):
+		with browser_session(self.team.user):
+			reactivate_account()
+			self.assertEqual(saved_session(), (self.team.user, "browser-session-id", self.team.user))
 
 	def test_belonging_to_another_team_does_not_hide_the_disabled_account(self):
 		other_team = create_test_team()

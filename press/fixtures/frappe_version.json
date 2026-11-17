@@ -155,9 +155,9 @@
 		],
 		"docstatus": 0,
 		"doctype": "Frappe Version",
-		"modified": "2025-05-23 11:09:57.983138",
+		"modified": "2026-11-06 12:00:00.000000",
 		"name": "Nightly",
-		"number": 15,
+		"number": 17,
 		"public": 1,
 		"status": "Develop"
 	},
