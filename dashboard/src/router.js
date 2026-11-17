@@ -493,13 +493,6 @@ let router = createRouter({
 			],
 		},
 		{
-			name: 'Impersonate',
-			path: '/impersonate/:teamId',
-			component: () => import('./pages/Impersonate.vue'),
-			props: true,
-			meta: { title: 'Impersonate' },
-		},
-		{
 			name: 'InstallApp',
 			path: '/install-app/:app',
 			component: () => import('./pages/InstallApp.vue'),
