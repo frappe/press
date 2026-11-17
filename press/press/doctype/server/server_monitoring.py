@@ -10,6 +10,7 @@ from typing import TypedDict
 
 import frappe
 import requests
+from frappe.query_builder.functions import Count, IfNull
 from frappe.utils.password import get_decrypted_password
 
 from press.utils import log_error
@@ -711,23 +712,27 @@ def _get_servers_with_stuck_agent_jobs() -> list[ServerStuckAgentJobs]:
 	return sorted(servers, key=_total_stuck_jobs, reverse=True)
 
 
-def _count_stuck_agent_jobs_by_server() -> list[ServerStuckAgentJobs]:
+def _get_stuck_agent_job_counts() -> list[frappe._dict]:
+	# frappe.get_all on fc-prod has no dict aggregates, so count with frappe.qb
 	now = frappe.utils.now_datetime()
 	window_start = frappe.utils.add_to_date(now, hours=-STUCK_AGENT_JOBS_WINDOW_HOURS)
 	window_end = frappe.utils.add_to_date(now, minutes=-STUCK_AGENT_JOBS_MINIMUM_AGE_MINUTES)
-	rows = frappe.get_all(
-		"Agent Job",
-		filters={
-			"status": ("in", ["Undelivered", "Pending"]),
-			"creation": ("between", [window_start, window_end]),
-			"server": ("is", "set"),
-			"server_type": ("is", "set"),
-		},
-		fields=["server_type", "server", "status", {"COUNT": "*", "as": "jobs"}],
-		group_by="server_type, server, status",
+	AgentJob = frappe.qb.DocType("Agent Job")
+	return (
+		frappe.qb.from_(AgentJob)
+		.select(AgentJob.server_type, AgentJob.server, AgentJob.status, Count("*").as_("jobs"))
+		.where(AgentJob.status.isin(["Undelivered", "Pending"]))
+		.where(AgentJob.creation.between(window_start, window_end))
+		.where(IfNull(AgentJob.server, "") != "")
+		.where(IfNull(AgentJob.server_type, "") != "")
+		.groupby(AgentJob.server_type, AgentJob.server, AgentJob.status)
+		.run(as_dict=True)
 	)
+
+
+def _count_stuck_agent_jobs_by_server() -> list[ServerStuckAgentJobs]:
 	counts: dict[tuple[str, str], ServerStuckAgentJobs] = {}
-	for row in rows:
+	for row in _get_stuck_agent_job_counts():
 		key = (row.server_type, row.server)
 		counts.setdefault(
 			key, {"server_type": key[0], "server": key[1], "undelivered": 0, "pending": 0, "halted": False}
