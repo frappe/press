@@ -619,24 +619,19 @@ def _send_backup_failure_email_to_user(site_backup: SiteBackup):
 
 def get_backup_bucket(cluster, region=False):
 	bucket_name = frappe.db.get_value("Cluster", cluster, "backup_bucket")
-	bucket_for_cluster = frappe.get_all(
-		"Backup Bucket", {"name": bucket_name}, ["name", "region", "endpoint_url"], limit=1
+	if not bucket_name:
+		frappe.throw(_("Set the Backup Bucket of cluster {0}").format(cluster), frappe.MandatoryError)
+
+	bucket_config = frappe.db.get_value(
+		"Backup Bucket", bucket_name, ["name", "region", "endpoint_url"], as_dict=True
 	)
-
-	# `provider` and `endpoint_url` are only configured globally on Press Settings, so the
-	# provider is always sourced from there regardless of whether a cluster bucket is used.
-	provider = frappe.db.get_single_value("Press Settings", "offsite_backups_provider")
-
-	if bucket_for_cluster:
-		bucket_config = bucket_for_cluster[0]
-		bucket_config["provider"] = provider
-	else:
-		bucket_config = {
-			"name": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
-			"region": frappe.db.get_single_value("Press Settings", "backup_region"),
-			"endpoint_url": None,
-			"provider": provider,
-		}
+	if not bucket_config:
+		frappe.throw(
+			_("Backup Bucket {0} of cluster {1} does not exist").format(bucket_name, cluster),
+			frappe.DoesNotExistError,
+		)
+	# The provider is only configured on Press Settings
+	bucket_config["provider"] = frappe.db.get_single_value("Press Settings", "offsite_backups_provider")
 
 	if region:
 		return bucket_config
