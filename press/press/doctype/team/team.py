@@ -37,6 +37,7 @@ from press.utils.billing import (
 )
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture, capture_pulse
+from press.utils.user import is_desk_user
 
 from .team_members import get_invitations, get_roles
 
@@ -284,26 +285,23 @@ class Team(Document):
 		}
 
 	def before_validate(self):
-		self.perm_relaxed_roles()
+		self.perm_team_settings()
 		self.perm_team_members()
 
-	def perm_relaxed_roles(self):
+	def perm_team_settings(self):
 		"""
-		Prevent unauthorized users from changing relaxed permissions. Only team
-		owner or admins can change relaxed permissions as it can lead to
-		security implications.
+		Only the team owner, admins and staff in desk can change the settings
+		that the dashboard edits, such as 2FA enforcement and relaxed permissions.
 		"""
-		if self.flags.ignore_permissions:
+		if self.flags.ignore_permissions or self.is_new():
 			return
-		if self.is_new():
+		if not any(self.has_value_changed(field) for field in self.dashboard_editable_fields):
 			return
-		if not self.has_value_changed("relaxed_permissions"):
-			return
-		if "System Manager" in frappe.get_roles() or self.is_team_owner() or self.is_admin_user():
+		if is_desk_user() or self.is_team_owner() or self.is_admin_user():
 			return
 		frappe.throw(
 			_(
-				"Only team owner or admins can make changes to relaxed permissions. Please contact your team admin for the same."
+				"Only team owner or admins can change team settings. Please contact your team admin for the same."
 			),
 			frappe.PermissionError,
 		)
