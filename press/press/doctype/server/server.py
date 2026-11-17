@@ -3057,6 +3057,15 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return None
 
 	def get_aws_static_ip(self):
+		try:
+			self._get_aws_static_ip()
+		except Exception as e:
+			# Queued job: a comment on the form is where staff see the failure
+			self.add_comment(text=f"Get Static IP failed: {e}")
+			frappe.db.commit()
+			raise
+
+	def _get_aws_static_ip(self):
 		cluster_doc = frappe.get_doc("Cluster", self.cluster)
 		region_name = cluster_doc.region
 		aws_access_key_id = cluster_doc.aws_access_key_id
@@ -3075,19 +3084,25 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			region_name=region_name,
 		)
 
-		# Allocate new Elastic IP
-		allocation = ec2_client.allocate_address(Domain="vpc")
-		allocation_id = allocation["AllocationId"]
-
-		# Associate with instance
-		association = ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
+		allocation_id, association_id = self._attach_elastic_ip(ec2_client, instance_id)
 
 		# Before the sync saves the IP, so Ansible still connects over the private IP
 		if getattr(self, "nat_server", None):
-			self._remove_nat_route_for_static_ip(ec2_client, allocation_id, association["AssociationId"])
+			self._remove_nat_route_for_static_ip(ec2_client, allocation_id, association_id)
 
 		# Trigger VM sync
 		vm_doc.sync()
+
+	def _attach_elastic_ip(self, ec2_client, instance_id: str) -> tuple[str, str]:
+		"""Reuse an Elastic IP that a failed earlier run left attached, else allocate one."""
+		addresses = ec2_client.describe_addresses(Filters=[{"Name": "instance-id", "Values": [instance_id]}])
+		if addresses["Addresses"]:
+			address = addresses["Addresses"][0]
+			return address["AllocationId"], address["AssociationId"]
+
+		allocation_id = ec2_client.allocate_address(Domain="vpc")["AllocationId"]
+		association = ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
+		return allocation_id, association["AssociationId"]
 
 	def _remove_nat_route_for_static_ip(self, ec2_client, allocation_id: str, association_id: str):
 		"""Send replies out through the new static IP, not the NAT server."""
