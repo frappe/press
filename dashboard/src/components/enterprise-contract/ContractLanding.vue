@@ -77,7 +77,7 @@
 					v-else
 					variant="solid"
 					size="md"
-					label="Subscribe"
+					label="Get Started"
 					@click="emit('order')"
 				/>
 			</div>
