@@ -2404,11 +2404,12 @@ class Site(Document, TagHelpers):
 		from press.press.doctype.remote_file.remote_file import (
 			delete_remote_backup_objects,
 		)
+		from press.press.doctype.site_backup.site_backup import REMOTE_FILE_FIELDS
 
 		log_site_activity(self.name, "Drop Offsite Backups")
 		self.unavail_bahrain_backups()  # TODO remove this after bahrain issue is resolved at aws
 
-		sites_remote_files = []
+		sites_remote_files: list[str] = []
 		all_backups = frappe.get_all(
 			"Site Backup",
 			filters={
@@ -2424,16 +2425,12 @@ class Site(Document, TagHelpers):
 		for backup_files in frappe.get_all(
 			"Site Backup",
 			filters={"name": ("in", site_backups)},
-			fields=[
-				"remote_database_file",
-				"remote_public_file",
-				"remote_private_file",
-			],
+			fields=list(REMOTE_FILE_FIELDS),
 			as_list=True,
 			order_by="creation desc",
 			ignore_ifnull=True,
 		):
-			sites_remote_files += backup_files
+			sites_remote_files.extend(file for file in backup_files if file)
 
 		if not sites_remote_files:
 			return None
@@ -5344,7 +5341,9 @@ def process_archive_site_job_update(job: "AgentJob"):
 		return
 	from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
 
-	_create_site_backup_from_agent_job(job)
+	# The backup is in the Archive Site job, even when the upstream job finishes last
+	archive_job = job if job.job_type == "Archive Site" else other_job
+	_create_site_backup_from_agent_job(archive_job)
 
 	site = Site("Site", job.site)
 	site.delete_physical_backups()

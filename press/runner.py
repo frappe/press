@@ -31,6 +31,9 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
+# Without it ansible-base 2.10 leaves the connection timeout at 0, so ssh
+# waits only 2s for the sudo prompt and uses no ConnectTimeout.
+ANSIBLE_CONNECTION_TIMEOUT = 30
 
 # Patch Ansible's hooks once at import and route callbacks through this thread-local
 # instead of re-patching every run. Each thread tracks its own active Ansible instance,
@@ -218,6 +221,7 @@ class Ansible:
 			remote_user=user,
 			start_at_task=None,
 			syntax=False,
+			timeout=ANSIBLE_CONNECTION_TIMEOUT,
 			verbosity=1,
 			ssh_common_args=self._get_ssh_proxy_commad(server),
 		)
