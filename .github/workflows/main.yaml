@@ -161,7 +161,10 @@ jobs:
 
   install:
     name: Setup Bench
-    runs-on: ubuntu-24.04 # Same image as the jobs that restore bench-dir
+    # Fork PRs run on GitHub-hosted runners. Other runs use the self-hosted
+    # runners in .github/runner/. Both are Ubuntu 24.04, and every job that
+    # restores bench-dir uses this same expression.
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-24.04' || 'self-hosted' }}
     needs: changes
     if: needs.changes.outputs.changed-python == 'true' || needs.changes.outputs.changed-json == 'true' || needs.changes.outputs.changed-js-vue == 'true' || needs.changes.outputs.changed-build == 'true'
 
@@ -264,7 +267,7 @@ jobs:
     needs: [changes, install]
     name: Client
     # Playwright 1.54 cannot install Chromium on ubuntu-latest (26.04)
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-24.04' || 'self-hosted' }}
     env:
       PRESS_ADMIN_USER_EMAIL: playwright@example.com
       PRESS_ADMIN_USER_PASSWORD: playwright
@@ -410,7 +413,7 @@ jobs:
   server-tests:
     needs: [changes, install]
     name: Server
-    runs-on: ubuntu-24.04 # Same image as install, which builds bench-dir
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-24.04' || 'self-hosted' }} # Same as install, which builds bench-dir
     strategy:
       fail-fast: false
       matrix:
