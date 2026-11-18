@@ -118,7 +118,7 @@ const emit = defineEmits(['order'])
 const STEPS = [
 	{
 		title: 'Order and pay',
-		text: 'Name your legal entities and contact. The year starts on the day you pay.',
+		text: 'Name your legal entities and contact. The year starts on the day your payment is confirmed.',
 	},
 	{
 		title: 'Frappe signs',

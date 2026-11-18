@@ -148,10 +148,9 @@ const banner = computed(() => {
 		}
 	if (c.status === 'Awaiting Payment' && isBank.value)
 		return {
-			type: 'success',
+			type: 'info',
 			title:
-				'<b>Order placed.</b> Pay by bank transfer to start your warranty. You can pay later: this contract stays under Enterprise Warranty in the sidebar.',
-			action: props.canPay ? payActionLabel(c) : null,
+				'Your order is placed. Pay by bank transfer below. Your warranty starts on the day we confirm the payment. You can pay later: this contract stays under Enterprise Warranty in the sidebar.',
 		}
 	if (c.status === 'Awaiting Payment')
 		return {
@@ -203,7 +202,10 @@ const periodCards = computed(() => {
 		unpaid: {
 			period: {
 				value: 'Starts on payment',
-				hint: 'One year from the day you pay',
+				// A first bank transfer counts from the day Frappe confirms it.
+				hint: isBank.value
+					? 'One year from the day we confirm your payment'
+					: 'One year from the day you pay',
 			},
 			renewal: { value: '—', hint: 'After the first year' },
 		},
