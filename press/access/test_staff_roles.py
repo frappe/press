@@ -8,6 +8,7 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.access.core_permissions import CORE_RULES
 from press.access.staff_roles import check_staff_role, use_saved_document
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.server.test_server import create_test_server
@@ -21,6 +22,23 @@ DESK_BUTTON_CALLS = [
 	("/api/resource/TLS Certificate/example.com", "TLS Certificate", "get_private_key"),
 	("/api/v2/method/run_doc_method", "Server", "generate_on_prem_failover_config"),
 ]
+
+
+SUPPORT_PROFILES = ("Press Support L1", "Press Support Engineer")
+# These run a console or an action, so they have nothing to read
+INFRASTRUCTURE_TOOLS = ["Ansible Console", "Inspect Trace ID", "System Console"]
+CHANGES = ("write", "create", "delete", "submit", "cancel", "amend", "import")
+
+
+def infrastructure_reads() -> set[str]:
+	"""The DocTypes that Press Infrastructure Manager reads, other than its own records and tools."""
+	rule = {"role": "Press Infrastructure Manager", "read": 1, "permlevel": 0, "if_owner": 0}
+	doctypes = set(
+		frappe.get_all("DocPerm", {**rule, "parent": ("not in", INFRASTRUCTURE_TOOLS)}, pluck="parent")
+	)
+	return doctypes | {
+		doctype for doctype in CORE_RULES if doctype not in (*INFRASTRUCTURE_TOOLS, "Console Log")
+	}
 
 
 def press_desk_button(path: str, doctype: str, method: str):
@@ -162,6 +180,27 @@ class TestStaffRoles(FrappeTestCase):
 		for path, form in blocked:
 			with self.subTest(path=path), self.assertRaisesRegex(frappe.PermissionError, "only read"):
 				run_hook(check_staff_role, path, form)
+
+	def test_support_profiles_read_every_doctype_that_infrastructure_managers_read(self):
+		for profile in SUPPORT_PROFILES:
+			user = create_staff_user(profile)
+			for doctype in infrastructure_reads():
+				with self.subTest(profile=profile, doctype=doctype):
+					self.assertTrue(frappe.has_permission(doctype, "read", user=user))
+
+	def test_infrastructure_reader_role_changes_nothing(self):
+		for table in ("DocPerm", "Custom DocPerm"):
+			for permission in frappe.get_all(table, {"role": "Press Infrastructure Reader"}, ["*"]):
+				with self.subTest(table=table, doctype=permission.parent):
+					self.assertEqual([ptype for ptype in CHANGES if permission[ptype]], [])
+
+	def test_support_engineer_presses_no_buttons_on_records_that_only_sres_change(self):
+		frappe.set_user(create_staff_user("Press Support Engineer"))
+		with self.assertRaisesRegex(frappe.PermissionError, "only read"):
+			press_desk_button("/api/v2/document/Cluster/x/method/add_images/", "Cluster", "add_images")
+		press_desk_button("/api/v2/document/Server/x/method/archive/", "Server", "archive")
+		frappe.set_user(create_staff_user("Press Site Reliability Engineer"))
+		press_desk_button("/api/v2/document/Cluster/x/method/add_images/", "Cluster", "add_images")
 
 	def test_roles_that_are_not_read_only_still_press_every_button(self):
 		for profiles in [

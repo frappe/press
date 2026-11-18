@@ -27,7 +27,7 @@ class TestCorePermissions(FrappeTestCase):
 	def tearDown(self):
 		frappe.set_user("Administrator")
 		frappe.db.rollback()
-		clear_meta("Error Log", "Email Queue", "Server", "Note")
+		clear_meta("Error Log", "Email Queue", "Email Account", "Server", "Note")
 
 	def test_sync_lets_infrastructure_manager_read_error_log(self):
 		frappe.db.delete("Custom DocPerm", {"parent": "Error Log"})
@@ -80,6 +80,24 @@ class TestCorePermissions(FrappeTestCase):
 		fields = get_permitted_fields("Email Queue", user=create_user("System Manager"))
 		self.assertIn("message", fields)
 		self.assertIn("attachments", fields)
+
+	def test_infrastructure_reader_reads_job_logs_and_email_accounts_without_the_api_key(self):
+		sync_core_permissions()
+		clear_meta("Email Account")
+		user = create_user("Press Infrastructure Reader")
+		for doctype in ("Error Log", "RQ Job", "Email Queue", "Email Account"):
+			with self.subTest(doctype=doctype):
+				self.assertTrue(frappe.has_permission(doctype, "read", user=user))
+				self.assertFalse(frappe.has_permission(doctype, "export", user=user))
+		self.assertNotIn("api_key", get_permitted_fields("Email Account", user=user))
+		self.assertFalse(frappe.has_permission("System Console", "read", user=user))
+
+	def test_roles_that_read_email_accounts_keep_the_api_key(self):
+		sync_core_permissions()
+		clear_meta("Email Account")
+		for role in ("System Manager", "Press Infrastructure Manager", "Press Marketplace Manager"):
+			with self.subTest(role=role):
+				self.assertIn("api_key", get_permitted_fields("Email Account", user=create_user(role)))
 
 	def test_custom_docperm_on_press_doctype_is_refused(self):
 		with self.assertRaisesRegex(frappe.PermissionError, "Change the rules of Server in its DocType JSON"):
