@@ -60,14 +60,9 @@ CUSTOMER_TYPES = ["Active", "Inactive", "Signup"]
 
 
 def execute(filters=None):
-<<<<<<< HEAD
 	frappe.only_for(["System Manager", "Press Support L1", "Press Support Engineer"])
-	region = (filters or {}).get("region")
-=======
-	frappe.only_for("System Manager")
 	filters = filters or {}
 	region = filters.get("region")
->>>>>>> 48b8b45 (feat(customer-emails): Add customer type filter to report)
 	if region not in REGIONS:
 		frappe.throw(f"Select a Region. Options: {', '.join(REGIONS)}")
 
