@@ -72,7 +72,7 @@ jobs:
           python-version: '3.10.20'
 
       - name: Cache pip
-        # Self-hosted runners keep ~/.cache between jobs, so they skip GitHub's cache.
+        # Self-hosted runners share pip and yarn caches on the VM, so they skip GitHub's cache.
         if: steps.changed-python-files.outputs.any_changed == 'true' && runner.environment == 'github-hosted'
         uses: actions/cache@v6
         with:

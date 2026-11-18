@@ -7,8 +7,8 @@ rm -f /var/run/docker.pid
 dind dockerd --group docker >/var/log/dockerd.log 2>&1 &
 timeout 60 bash -c 'until docker info >/dev/null 2>&1; do sleep 1; done'
 
-mkdir -p /cache/runs
-chown runner:runner /cache /cache/runs
+mkdir -p /cache/runs /cache/pip /cache/yarn
+chown runner:runner /cache /cache/runs /cache/pip /cache/yarn
 
 cd /home/runner
 if [ ! -f .runner ]; then
