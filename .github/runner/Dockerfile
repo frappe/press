@@ -5,6 +5,10 @@ FROM ghcr.io/actions/actions-runner:2.338.2
 
 USER root
 
+# GitHub's runners use UTC. Without a time zone, Chromium reports
+# "Etc/Unknown" and dayjs throws when the dashboard formats a date.
+ENV TZ=Etc/UTC
+
 # Docker's helper that lets dockerd run inside a container on cgroup v2.
 COPY --from=docker:29-dind /usr/local/bin/dind /usr/local/bin/dind
 
@@ -13,7 +17,7 @@ COPY --from=docker:29-dind /usr/local/bin/dind /usr/local/bin/dind
 # fails with "command not found" or a missing library.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        iptables build-essential pkg-config wget xz-utils cron \
+        iptables build-essential pkg-config wget xz-utils cron tzdata \
         mariadb-client libmariadb-dev \
         fontconfig libxrender1 libxext6 libjpeg-turbo8 \
         nodejs npm \
