@@ -44,6 +44,8 @@ FREE_MEMORY_RATIO_FOR_NEW_SITES = 0.2
 IDLE_CPU_RATIO_FOR_NEW_SITES = 0.5
 DISK_USED_RATIO_FOR_NEW_SITES = 0.85
 SERVER_DISK_USED_ALERT_THRESHOLD = 0.9
+# Older failures are history: the group has been rebuilt or left alone on purpose since
+PUBLIC_GROUP_BUILD_FAILURE_WINDOW_DAYS = 7
 
 
 class PublicServerHealthMetrics(TypedDict):
@@ -75,6 +77,14 @@ class ServerCapacity(TypedDict):
 	free_memory_percent: float
 	idle_cpu_percent: float
 	free_disk_percent: float
+
+
+class FailedPublicGroupBuild(TypedDict):
+	group: str
+	title: str
+	build: str
+	error_key: str | None
+	failed_step: str | None
 
 
 class SignupFailureRate(TypedDict):
@@ -833,3 +843,96 @@ def _describe_server_with_stuck_agent_jobs(row: ServerStuckAgentJobs) -> str:
 		f"| [{row['server']}]({link}) | {row['server_type']} | {row['undelivered']} "
 		f"| {row['pending']} | {halted} |"
 	)
+
+
+def alert_on_failed_public_group_builds() -> None:
+	"""Alert once for each public bench group whose latest build failed.
+
+	A failed build only notifies the group's team on the dashboard, and for public groups
+	that team is us, so a broken signup or shared bench group can sit unnoticed for days.
+	"""
+	builds = [
+		build for build in _get_failed_public_group_builds() if not _was_build_failure_alerted(build["build"])
+	]
+	if not builds:
+		return
+
+	_send_failed_public_group_builds_alert(builds)
+	for build in builds:
+		_mark_build_failure_alerted(build["build"])
+
+
+def _get_failed_public_group_builds() -> list[FailedPublicGroupBuild]:
+	failed: list[FailedPublicGroupBuild] = []
+	for group in frappe.get_all(
+		"Release Group", filters={"public": 1, "enabled": 1}, fields=["name", "title"]
+	):
+		build = _get_latest_build_of_group(group.name)
+		if build and build.status == "Failure":
+			failed.append(
+				{
+					"group": group.name,
+					"title": group.title,
+					"build": build.name,
+					"error_key": build.error_key,
+					"failed_step": _get_failed_build_step(build.name),
+				}
+			)
+	return failed
+
+
+def _get_latest_build_of_group(group: str) -> frappe._dict | None:
+	# A retry is a newer build, so a failure that is being retried is not the latest
+	window_start = frappe.utils.add_days(None, -PUBLIC_GROUP_BUILD_FAILURE_WINDOW_DAYS)
+	builds = frappe.get_all(
+		"Deploy Candidate Build",
+		filters={"group": group, "creation": (">", window_start)},
+		fields=["name", "status", "error_key"],
+		order_by="creation desc",
+		limit=1,
+	)
+	return builds[0] if builds else None
+
+
+def _get_failed_build_step(build: str) -> str | None:
+	steps = frappe.get_all(
+		"Deploy Candidate Build Step",
+		filters={"parenttype": "Deploy Candidate Build", "parent": build, "status": "Failure"},
+		fields=["stage", "step"],
+		order_by="idx asc",
+		limit=1,
+	)
+	return f"{steps[0].stage} / {steps[0].step}" if steps else None
+
+
+def _build_failure_alert_cache_key(build: str) -> str:
+	return f"public_group_build_failure_alerted:{build}"
+
+
+def _was_build_failure_alerted(build: str) -> bool:
+	return bool(frappe.cache.get_value(_build_failure_alert_cache_key(build)))
+
+
+def _mark_build_failure_alerted(build: str) -> None:
+	expires_in_sec = PUBLIC_GROUP_BUILD_FAILURE_WINDOW_DAYS * 24 * 60 * 60
+	frappe.cache.set_value(_build_failure_alert_cache_key(build), True, expires_in_sec=expires_in_sec)
+
+
+def _send_failed_public_group_builds_alert(builds: list[FailedPublicGroupBuild]) -> None:
+	lines = [
+		f"**Public Bench Group Builds Failed** - {len(builds)}",
+		"",
+		"| Bench Group | Build | Error | Failed Step |",
+		"| --- | --- | --- | --- |",
+	]
+	lines.extend(_describe_failed_public_group_build(build) for build in builds)
+	send_raven_message("\n".join(lines), RAVEN_SERVER_ALERTS_CHANNEL)
+
+
+def _describe_failed_public_group_build(build: FailedPublicGroupBuild) -> str:
+	group_link = frappe.utils.get_url_to_form("Release Group", build["group"])
+	build_link = frappe.utils.get_url_to_form("Deploy Candidate Build", build["build"])
+	title = _escape_markdown_table_cell(build["title"] or build["group"])
+	error = _escape_markdown_table_cell(build["error_key"] or "-")
+	step = _escape_markdown_table_cell(build["failed_step"] or "-")
+	return f"| [{title}]({group_link}) | [{build['build']}]({build_link}) | {error} | {step} |"
