@@ -14,6 +14,7 @@ from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
 	DeployCandidateBuild,
 )
@@ -27,6 +28,7 @@ from press.press.doctype.site.test_site import create_test_bench, create_test_si
 from press.press.doctype.site.test_site_shared_server_migration import CROWDED, ROOMY
 from press.press.doctype.site_action.site_action import (
 	SiteAction,
+	StepStatus,
 	process_site_actions,
 )
 from press.press.doctype.site_migration.site_migration import SiteMigration
@@ -258,7 +260,7 @@ class TestSiteAction(FrappeTestCase):
 	@patch.object(SiteMigration, "start", new=Mock())
 	# A second bench on a deployed group asks the agent how big the last image was
 	@patch.object(Agent, "get", new=Mock(return_value={"size": 0}))
-	def test_move_to_another_shared_server_schedules_a_migration_to_the_server_with_room(self):
+	def test_move_to_a_shared_server_that_runs_the_bench_skips_the_deploy(self):
 		source_bench: Bench = create_test_bench(public_server=True)
 		source_site: Site = create_test_site(bench=source_bench.name)
 		destination_server = create_test_server(
@@ -272,16 +274,59 @@ class TestSiteAction(FrappeTestCase):
 			action_name = source_site.create_migration_plan(type="Move Site To Another Shared Server")
 
 		action: SiteAction = frappe.get_doc("Site Action", action_name)
-		migration: SiteMigration = frappe.get_doc("Site Migration", action.get_argument("site_migration"))
-
 		self.assertEqual(action.get_argument("destination_server"), destination_server.name)
+
+		self.run_step(action, "deploy_bench_on_shared_server")
+		self.assertEqual(
+			action.get_step_by_method("deploy_bench_on_shared_server").status, StepStatus.Skipped
+		)
 		self.assertEqual(action.destination_bench, destination_bench.name)
+
+		self.run_step(action, "move_site_to_another_shared_server")
+		migration: SiteMigration = frappe.get_doc("Site Migration", {"site": source_site.name})
+
 		self.assertEqual(migration.destination_server, destination_server.name)
 		self.assertEqual(migration.destination_bench, destination_bench.name)
+		self.assertEqual(migration.destination_cluster, source_site.cluster)
 		self.assertEqual(
 			frappe.db.get_value("Bench", migration.destination_bench, "group"), source_bench.group
 		)
-		self.assertEqual(migration.destination_cluster, source_site.cluster)
+
+	@patch.object(SiteMigration, "start", new=Mock())
+	@patch.object(Agent, "get", new=Mock(return_value={"size": 0}))
+	def test_move_to_a_shared_server_without_the_bench_deploys_it_there_first(self):
+		source_bench: Bench = create_test_bench(public_server=True)
+		source_site: Site = create_test_site(bench=source_bench.name)
+		destination_server = create_test_server(
+			cluster=frappe.db.get_value("Server", source_site.server, "cluster"), public=True
+		)
+
+		with patch_public_server_health_metrics({source_site.server: ROOMY, destination_server.name: ROOMY}):
+			action_name = source_site.create_migration_plan(type="Move Site To Another Shared Server")
+
+		action: SiteAction = frappe.get_doc("Site Action", action_name)
+		self.assertEqual(action.get_argument("destination_release_group"), source_bench.group)
+
+		# The step adds the server to the site's own bench group and builds there.
+		# The deploy is simulated below, so the build must not run one of its own.
+		with patch.object(DeployCandidateBuild, "pre_build", new=Mock()):
+			self.run_step(action, "deploy_bench_on_shared_server")
+		group = frappe.get_doc("Release Group", source_bench.group)
+		self.assertIn(destination_server.name, [server.server for server in group.servers])
+
+		build_name = action.get_argument("new_deploy_candidate_build")
+		self.assertTrue(build_name)
+		deployed_bench = self.finish_build(build_name, destination_server.name)
+
+		# The second pass picks up the bench that build left on the server
+		self.run_step(action, "deploy_bench_on_shared_server")
+		self.assertEqual(action.destination_bench, deployed_bench.name)
+
+		self.run_step(action, "move_site_to_another_shared_server")
+		migration: SiteMigration = frappe.get_doc("Site Migration", {"site": source_site.name})
+
+		self.assertEqual(migration.destination_bench, deployed_bench.name)
+		self.assertEqual(migration.destination_server, destination_server.name)
 
 	@patch.object(SiteMigration, "start", new=Mock())
 	@patch.object(Agent, "get", new=Mock(return_value={"size": 0}))
@@ -316,21 +361,20 @@ class TestSiteAction(FrappeTestCase):
 
 	@patch.object(SiteMigration, "start", new=Mock())
 	@patch.object(Agent, "get", new=Mock(return_value={"size": 0}))
-	def test_cancelling_a_shared_server_move_takes_back_the_scheduled_migration(self):
+	def test_cancelling_a_region_move_takes_back_the_scheduled_migration(self):
 		source_bench: Bench = create_test_bench(public_server=True)
 		source_site: Site = create_test_site(bench=source_bench.name)
-		destination_server = create_test_server(
-			cluster=frappe.db.get_value("Server", source_site.server, "cluster"), public=True
-		)
+		other_region = create_test_cluster("Frankfurt", public=True)
 		create_test_bench(
-			group=frappe.get_doc("Release Group", source_bench.group), server=destination_server.name
+			group=frappe.get_doc("Release Group", source_bench.group),
+			server=create_test_server(cluster=other_region.name, public=True).name,
 		)
 
-		with patch_public_server_health_metrics({source_site.server: ROOMY, destination_server.name: ROOMY}):
-			action_name = source_site.create_migration_plan(
-				type="Move Site To Another Shared Server",
-				scheduled_time=frappe.utils.add_to_date(None, hours=1).strftime("%Y-%m-%dT%H:%M"),
-			)
+		action_name = source_site.create_migration_plan(
+			type="Move Site To Different Region",
+			cluster=other_region.name,
+			scheduled_time=frappe.utils.add_to_date(None, hours=1).strftime("%Y-%m-%dT%H:%M"),
+		)
 
 		action: SiteAction = frappe.get_doc("Site Action", action_name)
 		migration_name = action.get_argument("site_migration")
@@ -543,3 +587,165 @@ class TestSiteAction(FrappeTestCase):
 
 		with self.assertRaises(frappe.ValidationError):
 			action.cancel_action()
+<<<<<<< HEAD
+=======
+
+	def test_stop_action_fails_the_build_it_started(self):
+		"""Stopping a migration that is still building the destination bench fails that build"""
+		source_bench: Bench = create_test_bench(public_server=True)
+		source_site: Site = create_test_site(bench=source_bench.name)
+		action = self.create_running_action(source_site)
+		build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", source_bench.build)
+		build.db_set("status", "Running")
+		step = self.set_step_reference(action, "clone_and_create_bench_group", build)
+
+		action.stop_action()
+
+		self.assertEqual(frappe.db.get_value("Deploy Candidate Build", build.name, "status"), "Failure")
+		self.assertEqual(action.get_step(step.name).status, "Failure")
+		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Failure")
+
+	@patch.object(SiteMigration, "start", new=Mock())
+	def test_stop_action_fails_a_pending_site_migration_that_has_dispatched_no_job(self):
+		"""`start()` leaves a migration Pending before its first job, and that is still stoppable"""
+		source_site: Site = create_test_site(bench=create_test_bench(public_server=False).name)
+		action = self.create_running_action(source_site)
+		migration: SiteMigration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": source_site.name,
+				"destination_bench": create_test_bench().name,
+				"status": "Pending",
+			}
+		).insert()
+		self.set_step_reference(action, "move_site_to_bench_group", migration)
+
+		action.stop_action()
+
+		migration.reload()
+		self.assertEqual(migration.status, "Failure")
+		self.assertTrue(all(step.status == "Skipped" for step in migration.steps))
+		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Failure")
+
+	@patch.object(SiteUpdate, "start", new=Mock())
+	def test_stop_action_cancels_a_pending_site_update_that_has_dispatched_no_job(self):
+		"""Cancelled, not Failure, so a stopped update doesn't count as a pending one later"""
+		source_bench: Bench = create_test_bench(public_server=False)
+		source_site: Site = create_test_site(bench=source_bench.name)
+		action = self.create_running_action(source_site)
+		update = create_test_site_update(
+			source_site.name, source_bench.group, "Pending", ignore_validate=True
+		)
+		self.set_step_reference(action, "move_site_to_bench_group", update)
+
+		action.stop_action()
+
+		self.assertEqual(frappe.db.get_value("Site Update", update.name, "status"), "Cancelled")
+		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Failure")
+
+	@patch.object(SiteMigration, "start", new=Mock())
+	def test_stop_action_refuses_once_the_site_has_started_moving(self):
+		"""A migration whose first job is out has to finish, or the site is left between benches"""
+		source_site: Site = create_test_site(bench=create_test_bench(public_server=False).name)
+		action = self.create_running_action(source_site)
+		migration: SiteMigration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": source_site.name,
+				"destination_bench": create_test_bench().name,
+				"status": "Pending",
+			}
+		).insert()
+		migration.steps[0].step_job = create_test_agent_job("Deactivate Site").name
+		migration.save()
+		self.set_step_reference(action, "move_site_to_bench_group", migration)
+
+		with self.assertRaises(frappe.ValidationError) as context:
+			action.stop_action()
+
+		self.assertIn("already being moved", str(context.exception))
+		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Running")
+
+	@patch.object(SiteMigration, "start", new=Mock())
+	def test_a_step_enqueued_before_the_stop_does_not_run_after_it(self):
+		"""The move step creates the Site Migration when it runs, so a stopped action must not run it"""
+		source_bench: Bench = create_test_bench(public_server=False)
+		source_site: Site = create_test_site(bench=source_bench.name)
+		action = self.create_running_action(source_site)
+		step = action.get_step_by_method("move_site_to_bench_group")
+		step.status = "Running"
+		action.set_argument("destination_bench", create_test_bench().name)
+		action.save()
+
+		action.stop_action()
+		action.execute_step(step.name)
+
+		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Failure")
+		self.assertFalse(frappe.db.exists("Site Migration", {"site": source_site.name}))
+		self.assertFalse(frappe.db.exists("Site Update", {"site": source_site.name}))
+
+	def test_stop_action_refuses_a_scheduled_action(self):
+		"""A scheduled action is cancelled, not stopped, so the button should not reach stop_action"""
+		source_site: Site = create_test_site(bench=create_test_bench(public_server=True).name)
+		action_name = source_site.create_migration_plan(
+			type="Move Site To Different Server / Bench",
+			new_group_name="Test Group",
+		)
+		action: SiteAction = frappe.get_doc("Site Action", action_name)
+
+		with self.assertRaises(frappe.ValidationError) as context:
+			action.stop_action()
+
+		self.assertIn("Only a running migration can be stopped", str(context.exception))
+		self.assertEqual(frappe.db.get_value("Site Action", action.name, "status"), "Scheduled")
+
+	def finish_build(self, build_name: str, server: str) -> Bench:
+		"""The bench a successful build leaves behind on the server it deployed to."""
+		build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", build_name)
+		build.db_set("status", "Success")
+
+		bench: Bench = frappe.new_doc("Bench")
+		bench.update(
+			{
+				"group": frappe.db.get_value("Deploy Candidate", build.deploy_candidate, "group"),
+				"server": server,
+				"status": "Active",
+				"candidate": build.deploy_candidate,
+				"build": build.name,
+				"docker_image": frappe.mock("url"),
+			}
+		)
+		bench.insert()
+		return bench
+
+	def run_step(self, action: SiteAction, method: str) -> None:
+		"""Run one step on its own, so a step that is still Running doesn't re-enter itself."""
+		frappe.flags.disable_auto_enqueue_next_step = True
+		try:
+			action.execute_step(action.get_step_by_method(method).name)
+		finally:
+			frappe.flags.disable_auto_enqueue_next_step = False
+		action.reload()
+
+	def create_running_action(self, site: Site) -> SiteAction:
+		action: SiteAction = frappe.get_doc(
+			{
+				"doctype": "Site Action",
+				"site": site.name,
+				"action_type": "Move Site To Different Server / Bench",
+				"team": site.team,
+				"arguments": frappe.as_json({"destination_server": site.server}),
+			}
+		).insert()
+		action.status = "Running"
+		action.save()
+		return action
+
+	def set_step_reference(self, action: SiteAction, method: str, reference) -> SiteActionStep:
+		step = action.get_step_by_method(method)
+		step.status = "Running"
+		step.reference_doctype = reference.doctype
+		step.reference_name = reference.name
+		action.save()
+		return step
+>>>>>>> 326b6fe (feat(site): Deploy the bench on the shared server a site moves to)

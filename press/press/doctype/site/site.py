@@ -4925,10 +4925,17 @@ class Site(Document, TagHelpers):
 
 	def _throw_no_shared_server_available(self):
 		"""Nowhere to go and no room to go to are different problems for the reader."""
-		if not self.active_benches_on_other_shared_servers():
+		servers = self.other_shared_servers_in_region()
+		if not servers:
 			frappe.throw(
-				f"This site's bench runs on no other shared server in {self.region_title},"
-				" so there is nowhere to move it. You can move the site to a different region instead."
+				f"{self.region_title} has no other shared server to move this site to."
+				" Please move the site to a different region instead."
+			)
+
+		if self.is_group_public and not self.active_benches_on_shared_servers(list(servers)):
+			frappe.throw(
+				f"This site's shared bench runs on no other server in {self.region_title},"
+				" so there is nowhere to move it. Please move the site to a different region instead."
 			)
 
 		frappe.throw(
@@ -4937,46 +4944,64 @@ class Site(Document, TagHelpers):
 		)
 
 	def shared_servers_with_free_capacity(self) -> list[dict]:
-		"""Shared servers in this region that run this site's bench group, the roomiest first."""
+		"""Shared servers in this region with room for this site, the best destination first.
+
+		A server that already runs the site's bench comes first, because moving there needs no build.
+		"""
 		from press.press.doctype.server.server_monitoring import get_public_servers_with_free_capacity
 
-		benches = self.active_benches_on_other_shared_servers()
-		if not benches:
+		servers = self.other_shared_servers_in_region()
+		benches = self.active_benches_on_shared_servers(list(servers))
+		if self.is_group_public:
+			# A shared bench is ours to deploy, so only servers already running it will do
+			servers = {name: title for name, title in servers.items() if name in benches}
+		if not servers:
 			return []
 
-		return [
+		destinations = [
 			{
 				**server,
-				"bench": benches[server["name"]].bench,
-				"title": benches[server["name"]].title or server["name"],
+				"title": servers[server["name"]] or server["name"],
+				"bench": benches.get(server["name"]),
+				"needs_deploy": server["name"] not in benches,
 			}
-			for server in get_public_servers_with_free_capacity(list(benches))
+			for server in get_public_servers_with_free_capacity(list(servers))
 		]
+		# Stable sort, so the roomiest server still wins within each half
+		destinations.sort(key=lambda destination: destination["needs_deploy"])
+		return destinations
 
-	def active_benches_on_other_shared_servers(self) -> dict[str, frappe._dict]:
-		"""Latest active bench of this site's group on every other shared server in its region."""
-		Bench = frappe.qb.DocType("Bench")
-		Server = frappe.qb.DocType("Server")
-		rows = (
-			frappe.qb.from_(Bench)
-			.select(Bench.name.as_("bench"), Server.name.as_("server"), Server.title)
-			.inner_join(Server)
-			.on(Server.name == Bench.server)
-			.where(Bench.group == self.group)
-			.where(Bench.status == "Active")
-			.where(Server.status == "Active")
-			.where(Server.public == 1)
-			.where(Server.cluster == self.cluster)
-			.where(Server.name != self.server)
-			.where(Server.exclude_for_scheduling == 0)
-			.orderby(Bench.creation, order=frappe.qb.desc)
-			.run(as_dict=True)
+	def other_shared_servers_in_region(self) -> dict[str, str]:
+		"""Shared servers in this site's region that are open to taking it, by name and title."""
+		servers = frappe.get_all(
+			"Server",
+			filters={
+				"status": "Active",
+				"public": 1,
+				"cluster": self.cluster,
+				"name": ("!=", self.server),
+				"exclude_for_scheduling": 0,
+			},
+			fields=["name", "title"],
+		)
+		return {server.name: server.title for server in servers}
+
+	def active_benches_on_shared_servers(self, servers: list[str]) -> dict[str, str]:
+		"""Latest active bench of this site's bench group on each of those servers."""
+		if not servers:
+			return {}
+
+		benches = frappe.get_all(
+			"Bench",
+			filters={"group": self.group, "status": "Active", "server": ("in", servers)},
+			fields=["name", "server"],
+			order_by="creation desc",
 		)
 
-		benches: dict[str, frappe._dict] = {}
-		for row in rows:
-			benches.setdefault(row.server, row)
-		return benches
+		latest: dict[str, str] = {}
+		for bench in benches:
+			latest.setdefault(bench.server, bench.name)
+		return latest
 
 	def recent_failed_migration_servers(self) -> list[str]:
 		# A failed move leaves restore files on its destination, so a retry there hits the space pre-check.
