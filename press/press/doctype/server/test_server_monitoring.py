@@ -13,15 +13,18 @@ from press.press.doctype.account_request.test_account_request import create_test
 from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 from press.press.doctype.database_server.test_database_server import create_test_database_server
 from press.press.doctype.server.server_monitoring import (
+	PUBLIC_GROUP_BUILD_FAILURE_WINDOW_DAYS,
 	STUCK_AGENT_JOBS_ALERT_THRESHOLD,
 	STUCK_AGENT_JOBS_WINDOW_HOURS,
 	PublicServerHealthMetrics,
 	SignupFailureRate,
 	_breaches_signup_failure_threshold,
+	_get_failed_public_group_builds,
 	_get_incomplete_signup_rate,
 	_get_servers_with_stuck_agent_jobs,
 	_get_trial_signup_failure_rate,
 	_send_signup_failure_alert,
+	alert_on_failed_public_group_builds,
 	alert_on_failing_signups,
 	alert_on_servers_with_stuck_agent_jobs,
 	get_public_servers_with_free_capacity,
@@ -330,6 +333,110 @@ class TestServersWithStuckAgentJobs(FrappeTestCase):
 			f"| Database Server | {STUCK_AGENT_JOBS_ALERT_THRESHOLD} | 0 | Yes |",
 			next(line for line in message.splitlines() if database_server.name in line),
 		)
+
+
+def create_test_bench_group(public: bool = True, enabled: bool = True) -> str:
+	"""Bench group row with only the columns the build monitor reads."""
+	name = f"bench-test-{frappe.generate_hash(length=8)}"
+	frappe.get_doc(
+		{
+			"doctype": "Release Group",
+			"name": name,
+			"title": f"Group {name}",
+			"public": public,
+			"enabled": enabled,
+		}
+	).db_insert()
+	return name
+
+
+def create_test_group_build(
+	group: str, status: str, days_ago: float = 0, error_key: str | None = None, failed_step: bool = False
+) -> str:
+	name = frappe.generate_hash(length=10)
+	frappe.get_doc(
+		{
+			"doctype": "Deploy Candidate Build",
+			"name": name,
+			"group": group,
+			"status": status,
+			"error_key": error_key,
+			"creation": frappe.utils.add_days(None, -days_ago),
+		}
+	).db_insert()
+	if failed_step:
+		frappe.get_doc(
+			{
+				"doctype": "Deploy Candidate Build Step",
+				"parent": name,
+				"parenttype": "Deploy Candidate Build",
+				"parentfield": "build_steps",
+				"idx": 1,
+				"stage": "Run Validations",
+				"step": "Pre-build",
+				"status": "Failure",
+			}
+		).db_insert()
+	return name
+
+
+def get_failed_build_of_group(group: str):
+	return next((build for build in _get_failed_public_group_builds() if build["group"] == group), None)
+
+
+class TestFailedPublicGroupBuilds(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_public_group_whose_latest_build_failed_is_reported_with_error_and_failed_step(self):
+		group = create_test_bench_group()
+		create_test_group_build(group, "Success", days_ago=1)
+		build = create_test_group_build(group, "Failure", error_key="incompatible python", failed_step=True)
+
+		failed = get_failed_build_of_group(group)
+
+		self.assertEqual(
+			(failed["build"], failed["error_key"], failed["failed_step"]),
+			(build, "incompatible python", "Run Validations / Pre-build"),
+		)
+
+	def test_public_group_whose_failed_build_is_followed_by_a_newer_build_is_not_reported(self):
+		group = create_test_bench_group()
+		create_test_group_build(group, "Failure", days_ago=1)
+		create_test_group_build(group, "Scheduled")
+
+		self.assertIsNone(get_failed_build_of_group(group))
+
+	def test_private_group_with_a_failed_build_is_not_reported(self):
+		group = create_test_bench_group(public=False)
+		create_test_group_build(group, "Failure")
+
+		self.assertIsNone(get_failed_build_of_group(group))
+
+	def test_disabled_public_group_with_a_failed_build_is_not_reported(self):
+		group = create_test_bench_group(enabled=False)
+		create_test_group_build(group, "Failure")
+
+		self.assertIsNone(get_failed_build_of_group(group))
+
+	def test_failed_build_older_than_the_window_is_not_reported(self):
+		group = create_test_bench_group()
+		create_test_group_build(group, "Failure", days_ago=PUBLIC_GROUP_BUILD_FAILURE_WINDOW_DAYS + 1)
+
+		self.assertIsNone(get_failed_build_of_group(group))
+
+	@patch("press.press.doctype.server.server_monitoring.send_raven_message")
+	def test_failed_build_is_alerted_once_with_its_group_and_error(self, send_raven_message):
+		group = create_test_bench_group()
+		build = create_test_group_build(group, "Failure", error_key="incompatible app version found")
+
+		alert_on_failed_public_group_builds()
+		alert_on_failed_public_group_builds()
+
+		send_raven_message.assert_called_once()
+		line = next(line for line in send_raven_message.call_args[0][0].splitlines() if build in line)
+		self.assertIn(f"[Group {group}]", line)
+		self.assertIn("| incompatible app version found | - |", line)
 
 
 def build_public_server_health_metrics(
