@@ -385,13 +385,12 @@ def schedule_logical_backups_for_sites_with_backup_time():
 	sites_without_offsite = get_sites_without_offsite_backups()
 	for site in sites:
 		offsite = should_take_offsite_backup(site.name, day, offsite_setup, sites_without_offsite)
-		site_doc: Site = frappe.get_doc("Site", site.name)
-		site_doc.backup(
+		_take_scheduled_backup(
+			site.name,
 			with_files=offsite or not SiteBackup.file_backup_exists(site.name, day),
 			offsite=offsite,
 			physical=False,
 		)
-		frappe.db.commit()
 
 
 def schedule_physical_backups_for_sites_with_backup_time():
@@ -402,8 +401,19 @@ def schedule_physical_backups_for_sites_with_backup_time():
 	"""
 	sites = Site.get_sites_with_backup_time("Physical")
 	for site in sites:
-		site_doc: Site = frappe.get_doc("Site", site.name)
-		site_doc.backup(with_files=False, offsite=False, physical=True, deactivate_site_during_backup=True)
+		_take_scheduled_backup(
+			site.name, with_files=False, offsite=False, physical=True, deactivate_site_during_backup=True
+		)
+
+
+def _take_scheduled_backup(site: str, **backup_args) -> None:
+	"""Back up one site in its own transaction, so a failure skips only that site."""
+	try:
+		Site("Site", site).backup(**backup_args)
+		frappe.db.commit()
+	except Exception:
+		frappe.db.rollback()  # before log_error, else it undoes the Error Log insert
+		log_error("Site Backup Exception", site=site)
 		frappe.db.commit()
 
 
