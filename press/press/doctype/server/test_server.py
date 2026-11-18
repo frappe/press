@@ -1141,6 +1141,16 @@ class TestArchiveBenches(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
+	def test_archiving_server_with_terminated_machine_stops_billing(self):
+		create_test_press_settings()
+		server = create_test_server(plan=create_test_server_plan().name)
+		frappe.db.set_value("Virtual Machine", server.virtual_machine, "status", "Terminated")
+
+		server.archive()
+
+		self.assertEqual(frappe.db.get_value("Server", server.name, "status"), "Archived")
+		self.assertFalse(server.subscription.enabled)
+
 	def test_broken_bench_left_on_server_is_archived_instead_of_blocking_the_drop(self):
 		bench = create_test_bench()
 		bench.db_set("status", "Broken")
