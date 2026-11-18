@@ -39,9 +39,7 @@
 			class="col-span-1 overflow-hidden rounded-md border lg:col-span-2"
 		>
 			<div class="border-b px-5 py-3">
-				<h2 class="text-lg font-medium text-ink-gray-9">
-					Pay by bank transfer
-				</h2>
+				<h2 class="text-lg font-medium text-ink-gray-9">How to pay</h2>
 			</div>
 			<BankTransfer
 				:contract="contract"
@@ -117,8 +115,6 @@ const showBankTransfer = computed(
 	() =>
 		isBank.value &&
 		props.contract.payment_due &&
-		// While a UTR is checked, the banner says so and the bank details are not needed.
-		!props.contract.transfer_reference &&
 		props.options.bank_transfer &&
 		!props.options.payment_blocked,
 )
@@ -141,7 +137,8 @@ const banner = computed(() => {
 	if (c.transfer_reference)
 		return {
 			type: 'info',
-			title: `We are verifying your bank transfer (UTR ${c.transfer_reference}). This usually takes 1–2 working days.`,
+			title:
+				'We are checking your transfer. This usually takes 1 to 2 working days. Nothing else is needed from you now.',
 		}
 	if (c.payment_unfinished)
 		return {
@@ -149,12 +146,17 @@ const banner = computed(() => {
 			title: `Your last card payment of <b>${total}</b> was not completed. You can try again.`,
 			action: props.canPay ? payActionLabel(c) : null,
 		}
+	if (c.status === 'Awaiting Payment' && isBank.value)
+		return {
+			type: 'success',
+			title:
+				'<b>Order placed.</b> Pay by bank transfer to start your warranty. You can pay later: this contract stays under Enterprise Warranty in the sidebar.',
+			action: props.canPay ? payActionLabel(c) : null,
+		}
 	if (c.status === 'Awaiting Payment')
 		return {
 			type: 'info',
-			title: isBank.value
-				? `Your order is saved. Transfer <b>${total}</b> to the bank account below, then enter the UTR.`
-				: `Your order is saved. Pay <b>${total}</b> to start your contract.`,
+			title: `Your order is saved. Pay <b>${total}</b> to start your contract.`,
 			action: props.canPay ? payActionLabel(c) : null,
 		}
 	if (c.lapsed)

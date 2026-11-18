@@ -1,73 +1,130 @@
 <template>
-	<div class="flex flex-col">
-		<div
-			class="grid grid-cols-1 divide-y border-y sm:divide-x sm:divide-y-0"
-			:class="amountLines.length > 3 ? 'sm:grid-cols-4' : 'sm:grid-cols-3'"
-		>
-			<div
-				v-for="line in amountLines"
-				:key="line.label"
-				class="flex flex-col gap-1 px-4 py-3"
-			>
-				<div class="text-sm text-ink-gray-6">{{ line.label }}</div>
-				<div class="flex items-center gap-1.5 font-medium text-ink-gray-9">
-					{{ line.value }}
-					<CopyBtn v-if="line.copy" :text="line.copy" class="text-ink-gray-6" />
+	<ol class="divide-y">
+		<li class="flex gap-4 px-5 py-4">
+			<StepMarker :number="1" :state="submitted ? 'done' : 'current'" />
+			<div class="flex min-w-0 flex-1 flex-col gap-3">
+				<div>
+					<div class="text-base font-medium text-ink-gray-9">
+						Transfer {{ money(due.total) }} by NEFT or RTGS
+					</div>
+					<div class="mt-1 text-base text-ink-gray-6">
+						{{ submitted ? transferredTo : breakdown }}
+					</div>
+				</div>
+				<template v-if="!submitted">
+					<dl
+						class="grid grid-cols-[9rem_1fr] items-center gap-y-2 rounded-md bg-surface-gray-1 px-4 py-3 text-base"
+					>
+						<template v-for="row in bankRows" :key="row.label">
+							<dt class="text-ink-gray-6">{{ row.label }}</dt>
+							<dd class="flex min-w-0 items-center gap-1.5 text-ink-gray-9">
+								<span
+									class="truncate"
+									:class="{ 'font-mono': row.mono, 'font-medium': row.strong }"
+								>
+									{{ row.value }}
+								</span>
+								<CopyBtn
+									v-if="row.copy"
+									:text="row.copy"
+									class="text-ink-gray-6"
+								/>
+							</dd>
+						</template>
+					</dl>
+					<div
+						class="flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-base text-ink-gray-8"
+					>
+						<LucideInfo class="size-4 shrink-0 text-ink-gray-6" />
+						<span>
+							Write
+							<span class="rounded bg-surface-gray-2 px-1.5 font-mono"
+								>{{ contract.name }}</span
+							>
+							in the transfer remarks, so we can match your payment.
+						</span>
+						<CopyBtn
+							:text="contract.name"
+							class="ml-auto shrink-0 text-ink-gray-6"
+						/>
+					</div>
+				</template>
+			</div>
+		</li>
+
+		<li class="flex gap-4 px-5 py-4">
+			<StepMarker :number="2" :state="submitted ? 'done' : 'current'" />
+			<div class="flex min-w-0 flex-1 flex-col gap-3">
+				<div>
+					<div class="text-base font-medium text-ink-gray-9">
+						{{ submitted
+								? 'UTR submitted'
+								: 'After the transfer, enter its UTR number' }}
+					</div>
+					<div class="mt-1 text-base text-ink-gray-6">
+						<span v-if="submitted" class="font-mono"
+							>{{ contract.transfer_reference }}</span
+						>
+						<template v-else>
+							The UTR is the reference number your bank shows on the transfer
+							confirmation (12 to 22 letters and digits). We use it to find your
+							payment.
+						</template>
+					</div>
+				</div>
+				<form
+					v-if="!submitted"
+					class="flex flex-wrap items-end gap-2"
+					@submit.prevent="submitReference.submit()"
+				>
+					<FormControl
+						v-model="utr"
+						class="min-w-60 flex-1"
+						label="UTR number"
+						placeholder="e.g. 412345678901"
+					/>
+					<Button
+						type="submit"
+						variant="solid"
+						label="Submit UTR"
+						:loading="submitReference.loading"
+					/>
+				</form>
+				<ErrorMessage :message="submitReference.error" />
+			</div>
+		</li>
+
+		<li class="flex gap-4 px-5 py-4">
+			<StepMarker :number="3" :state="submitted ? 'current' : 'next'" />
+			<div>
+				<div
+					class="flex items-center gap-2 text-base font-medium"
+					:class="submitted ? 'text-ink-gray-9' : 'text-ink-gray-7'"
+				>
+					{{ verifyStep.title }}
+					<Badge v-if="submitted" theme="blue" label="In progress" />
+				</div>
+				<div class="mt-1 text-base text-ink-gray-6">
+					{{ verifyStep.description }}
 				</div>
 			</div>
-		</div>
-
-		<div class="px-4 pt-4 text-sm text-ink-gray-6">
-			Transfer by NEFT or RTGS to
-		</div>
-		<dl class="grid grid-cols-[10rem_1fr] gap-y-2 px-4 py-3">
-			<template v-for="row in bankRows" :key="row.label">
-				<dt class="text-ink-gray-6">{{ row.label }}</dt>
-				<dd class="flex items-center gap-1.5 text-ink-gray-9">
-					<span :class="{ 'font-mono': row.mono }">{{ row.value }}</span>
-					<CopyBtn v-if="row.value" :text="row.value" class="text-ink-gray-6" />
-				</dd>
-			</template>
-		</dl>
-
-		<div class="m-1.5 rounded-lg bg-surface-gray-1 px-2.5 py-2">
-			<div
-				v-if="contract.transfer_reference"
-				class="flex h-7 items-center gap-2 text-ink-gray-8"
-			>
-				<LucideHourglass class="h-4 w-4 shrink-0" />
-				<span>
-					We are verifying your transfer (UTR
-					<span class="font-mono">{{ contract.transfer_reference }}</span>).
-					This usually takes 1–2 working days.
-				</span>
-			</div>
-			<div v-else class="flex flex-wrap items-end gap-2">
-				<FormControl
-					v-model="utr"
-					class="min-w-60 flex-1"
-					label="UTR number"
-					placeholder="From your bank's transfer confirmation"
-				/>
-				<Button
-					variant="solid"
-					label="I have made the transfer"
-					:disabled="!utr"
-					:loading="submitReference.loading"
-					@click="submitReference.submit()"
-				/>
-			</div>
-			<ErrorMessage class="mt-2" :message="submitReference.error" />
-		</div>
-	</div>
+		</li>
+	</ol>
 </template>
 
 <script setup>
-import { Button, createResource, ErrorMessage, FormControl } from 'frappe-ui'
+import {
+	Badge,
+	Button,
+	createResource,
+	ErrorMessage,
+	FormControl,
+} from 'frappe-ui'
 import { computed, ref } from 'vue'
 import { currency } from '../../utils/format'
 import CopyBtn from '../utils/CopyBtn.vue'
 import { gstLines } from './format'
+import StepMarker from './StepMarker.vue'
 
 const props = defineProps({
 	contract: { type: Object, required: true },
@@ -77,6 +134,8 @@ const emit = defineEmits(['submitted'])
 
 const utr = ref('')
 const money = (amount) => currency(amount, props.contract.currency, 2)
+const due = computed(() => props.contract.amount_due)
+const submitted = computed(() => Boolean(props.contract.transfer_reference))
 
 // Banks show the UTR on the transfer confirmation; Frappe matches it on the statement.
 const submitReference = createResource({
@@ -85,36 +144,63 @@ const submitReference = createResource({
 	onSuccess: (contract) => emit('submitted', contract),
 })
 
-const amountLines = computed(() => {
-	const due = props.contract.amount_due
-	return [
-		{ label: 'Plan price', value: money(due.amount) },
-		...gstLines(due.gst, props.contract.gst_split).map((line) => ({
-			label: line.label,
-			value: money(line.amount),
-		})),
-		{
-			label: 'Amount to transfer',
-			value: money(due.total),
-			copy: String(due.total),
-		},
-	]
-})
+const breakdown = computed(() =>
+	[
+		`Plan ${money(due.value.amount)}`,
+		...gstLines(due.value.gst, props.contract.gst_split).map(
+			(line) => `${line.label} ${money(line.amount)}`,
+		),
+	].join(' + '),
+)
+
+const transferredTo = computed(
+	() =>
+		`To ${props.bank.bank_account_name}, ${props.bank.bank_ifsc_code}, remarks ${props.contract.name}`,
+)
+
+// The first payment starts the contract and Frappe signs it; a renewal adds a year.
+const verifyStep = computed(() =>
+	props.contract.payments.length
+		? {
+				title: 'We verify the payment and add your next year',
+				description: 'Usually 1 to 2 working days.',
+			}
+		: {
+				title: 'We verify the payment and sign the agreement',
+				description:
+					'Usually 1 to 2 working days. Then you can download the signed agreement from this page.',
+			},
+)
 
 const bankRows = computed(() => [
-	{ label: 'Account name', value: props.bank.bank_account_name },
+	{
+		label: 'Amount',
+		value: money(due.value.total),
+		copy: String(due.value.total),
+		strong: true,
+	},
+	{
+		label: 'Account name',
+		value: props.bank.bank_account_name,
+		copy: props.bank.bank_account_name,
+	},
 	{
 		label: 'Account number',
 		value: props.bank.bank_account_number,
+		copy: props.bank.bank_account_number,
 		mono: true,
 	},
-	{ label: 'IFSC code', value: props.bank.bank_ifsc_code, mono: true },
+	{
+		label: 'IFSC code',
+		value: props.bank.bank_ifsc_code,
+		copy: props.bank.bank_ifsc_code,
+		mono: true,
+	},
 	{
 		label: 'Bank',
 		value: [props.bank.bank_name, props.bank.bank_branch]
 			.filter(Boolean)
 			.join(', '),
 	},
-	{ label: 'Remarks', value: props.contract.name, mono: true },
 ])
 </script>
