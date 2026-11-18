@@ -21,20 +21,6 @@ import registerGlobalComponents from './components/global/register';
 import './vendor/posthog.js';
 import { pulse } from './telemetry/pulse.js';
 
-// A deploy deletes the old chunks, so a tab opened before it gets a 404 on
-// the next lazy route. Reload to get the new index. Reload at most once a
-// minute, so a chunk that is really missing does not cause a reload loop.
-window.addEventListener('vite:preloadError', () => {
-	try {
-		const last = Number(sessionStorage.getItem('chunk_reload_at'));
-		if (Date.now() - last < 60_000) return;
-		sessionStorage.setItem('chunk_reload_at', String(Date.now()));
-	} catch {
-		return;
-	}
-	window.location.reload();
-});
-
 // Temporarily kills browser-side Sentry (init, tracing, replay, envelopes).
 // Flip back to false to re-enable.
 const DISABLE_SENTRY = true;
