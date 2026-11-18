@@ -9,9 +9,12 @@ from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_to_date, now_datetime
 
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
+from press.press.doctype.press_job.jobs.create_server import CreateServerJob
 from press.press.doctype.press_job.jobs.increase_disk_size import IncreaseDiskSizeJob
+from press.press.doctype.press_settings.test_press_settings import create_test_press_settings
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
 
@@ -122,3 +125,35 @@ class TestCalculatedIncreaseDiskSize(FrappeTestCase):
 
 		mock_increase.assert_not_called()
 		self.assertIn("Press can't resize disks on provider Generic", mock_telegram.call_args.args[0])
+
+
+class TestCreateServerJobFailure(FrappeTestCase):
+	def setUp(self):
+		create_test_press_settings()
+		self.server = create_test_server(plan=create_test_server_plan().name)
+		self.job = CreateServerJob(
+			{
+				"doctype": "Press Job",
+				"job_type": "Create Server",
+				"server_type": "Server",
+				"server": self.server.name,
+				"virtual_machine": self.server.virtual_machine,
+			}
+		)
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_server_marked_broken_and_billing_stopped_when_machine_was_terminated(self):
+		frappe.db.set_value("Virtual Machine", self.server.virtual_machine, "status", "Terminated")
+
+		self.job.on_press_job_failure(None)
+
+		self.assertEqual(frappe.db.get_value("Server", self.server.name, "status"), "Broken")
+		self.assertFalse(self.server.subscription.enabled)
+
+	def test_server_and_billing_untouched_when_machine_is_still_running(self):
+		self.job.on_press_job_failure(None)
+
+		self.assertEqual(frappe.db.get_value("Server", self.server.name, "status"), "Active")
+		self.assertTrue(self.server.subscription.enabled)
