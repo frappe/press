@@ -13,7 +13,7 @@ COPY --from=docker:29-dind /usr/local/bin/dind /usr/local/bin/dind
 # fails with "command not found" or a missing library.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        iptables build-essential pkg-config wget xz-utils \
+        iptables build-essential pkg-config wget xz-utils cron \
         mariadb-client libmariadb-dev \
         fontconfig libxrender1 libxext6 libjpeg-turbo8 \
         nodejs npm \
