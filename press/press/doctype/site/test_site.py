@@ -1050,6 +1050,20 @@ class TestSite(FrappeTestCase):
 		self.assertTrue(bahrain_files.isdisjoint(deleted_files))
 		self.assertTrue(other_files.issubset(set(deleted_files)))
 
+	@patch("press.press.doctype.remote_file.remote_file.delete_remote_backup_objects")
+	def test_delete_offsite_backups_deletes_the_site_config_file(self, mock_delete):
+		from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
+		from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+
+		site = create_test_site("configsite")
+		backup = create_test_site_backup(site=site.name)
+		config_file = create_test_remote_file(site.name).name
+		backup.db_set("remote_config_file", config_file)
+
+		site.delete_offsite_backups(keep_latest=False)
+
+		self.assertIn(config_file, mock_delete.call_args.args[0])
+
 	def _broken_site_with_fatal_update(
 		self, backup_type: str = "Logical", deploy_type: str = "Migrate"
 	) -> Site:

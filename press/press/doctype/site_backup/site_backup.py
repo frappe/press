@@ -30,6 +30,14 @@ if TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
+REMOTE_FILE_FIELDS = (
+	"remote_database_file",
+	"remote_public_file",
+	"remote_private_file",
+	"remote_config_file",
+)
+
+
 class SiteBackup(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
