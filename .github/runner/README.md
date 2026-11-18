@@ -25,6 +25,7 @@ GitHub does not move a job to a GitHub-hosted runner when no self-hosted runner 
 | `runner.sh` | The entrypoint: starts dockerd, registers the runner on the first start, then runs it |
 | `cleanup.sh` | The job-started hook |
 | `compose.yaml` | Starts N runners on one VM |
+| `prune.sh` | Weekly cron job: removes Docker data that no runner uses |
 
 ## Requirements
 
@@ -81,6 +82,12 @@ Do these steps as root on the VM, unless the step says "on your computer".
 
    On GitHub, the runners show in Settings → Actions → Runners.
 
+7. Install the weekly prune. Each image rebuild leaves an old image, build cache and the volumes of the replaced containers:
+
+   ```sh
+   install -m 755 /opt/runner/prune.sh /etc/cron.weekly/runner-prune
+   ```
+
 The token expires after one hour. A runner uses the token only when it registers. The containers restart after a reboot and do not register again.
 
 ## Update the image
@@ -100,7 +107,7 @@ Do this when you change the `Dockerfile` or the scripts. New containers register
    ```sh
    cd /opt/runner
    docker compose build
-   docker compose down
+   docker compose down -v
    docker compose up -d --scale runner=6
    ```
 
@@ -127,7 +134,7 @@ To remove runners, set a lower number. Then remove the offline runners from GitH
 
 ```sh
 cd /opt/runner
-docker compose down
+docker compose down -v
 ```
 
 Then remove the offline runners from GitHub (Update the image, step 5).
