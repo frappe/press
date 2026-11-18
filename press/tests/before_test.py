@@ -2,14 +2,17 @@
 # For license information, please see license.txt
 
 
+import functools
 import os
 from contextlib import contextmanager
 from typing import Any
 
+import faker
 import frappe
 from frappe import set_user as _set_user
 from frappe.model.document import Document
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import squashify
 
 from press.utils import _get_current_team, _system_user
 
@@ -31,6 +34,19 @@ def FrappeTestCase_setUp(self) -> None:
 	frappe.local.conf.update({"throttle_user_limit": 600})
 
 
+@functools.cache
+def get_faker(locale: str) -> faker.Faker:
+	return faker.Faker(locale)
+
+
+def mock_with_cached_faker(type: str, size: int = 1, locale: str = "en"):
+	"""frappe.mock with one Faker per locale, since a new Faker costs ~30ms"""
+	fake = get_faker(locale)
+	if type not in dir(fake):
+		raise ValueError("Not a valid mock type.")
+	return squashify([getattr(fake, type)() for _ in range(size)])
+
+
 def execute():
 	settings = frappe.get_single("Press Settings")
 	if not (settings.stripe_secret_key and settings.stripe_publishable_key):
@@ -48,6 +64,7 @@ def execute():
 	FrappeTestCase.setUp = FrappeTestCase_setUp
 	FrappeTestCase.tearDown = lambda self: frappe.db.rollback()
 	FrappeTestCase.freeze_time = staticmethod(freeze_time)
+	frappe.mock = mock_with_cached_faker
 
 	# patch frappe.set_user that
 	frappe.set_user = set_user_with_current_team

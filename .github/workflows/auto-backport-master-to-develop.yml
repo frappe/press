@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   create-pr:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.SELF_HOSTED_RUNNERS == 'true' && !github.event.pull_request.head.repo.fork && 'self-hosted' || 'ubuntu-latest' }}
     if: |
       !contains(github.event.head_commit.message, 'Merge pull request') &&
       !contains(github.event.head_commit.message, 'Merge branch') &&

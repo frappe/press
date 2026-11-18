@@ -1,0 +1,16 @@
+# Self-hosted runners for frappe/press. README.md has the setup steps.
+#
+# Each container runs one runner and its own dockerd, so jobs on one VM do not
+# share port 3306, container names or /home/runner/frappe-bench.
+services:
+  runner:
+    build: .
+    privileged: true # needed to run dockerd inside the container
+    restart: unless-stopped
+    init: true # reaps the processes that jobs leave behind
+    environment:
+      RUNNER_URL: https://github.com/frappe/press
+      RUNNER_PREFIX: ${RUNNER_PREFIX:?set RUNNER_PREFIX in .env, e.g. vm101}
+      RUNNER_TOKEN: ${RUNNER_TOKEN:-}
+    volumes:
+      - /var/lib/docker # one anonymous volume per replica

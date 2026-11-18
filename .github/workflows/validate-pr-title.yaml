@@ -8,7 +8,7 @@ permissions:
 jobs:
   lint:
     name: 'Lint'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.SELF_HOSTED_RUNNERS == 'true' && !github.event.pull_request.head.repo.fork && 'self-hosted' || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v7
       - name: Setup Node.js
