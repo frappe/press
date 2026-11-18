@@ -246,7 +246,9 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Install
-        run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
+        # Self-hosted runners share the yarn cache. The lock lets one install
+        # at a time write it, like sharing=locked in press/docker/Dockerfile.
+        run: ${{ runner.environment == 'self-hosted' && 'flock /cache/yarn/.lock' || '' }} bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
       - name: Cache bench directory
         if: runner.environment == 'github-hosted'

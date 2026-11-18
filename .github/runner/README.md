@@ -10,7 +10,7 @@ The image is `ghcr.io/actions/actions-runner` (Ubuntu 24.04), plus the tools tha
 
 GitHub-hosted runners give each job a new VM. Here, a container runs many jobs. Before each job, `cleanup.sh` stops the processes and removes the containers, `~/frappe-bench` and `/data` that the previous job left.
 
-Self-hosted jobs do not use GitHub's cache. All runners on the VM share the pip and yarn caches in `/opt/runner-cache/pip` and `/opt/runner-cache/yarn`. yarn takes a file lock before it uses the cache, so two installs do not write it at the same time. Setup Bench copies the bench and the MariaDB data to `/opt/runner-cache/runs/<run id>` on the VM, and the Client and Server jobs copy them from there. `cleanup.sh` removes runs older than one day. Each run uses some GB of disk. This works only while all runners are on one VM.
+Self-hosted jobs do not use GitHub's cache. All runners on the VM share the pip and yarn caches in `/opt/runner-cache/pip` and `/opt/runner-cache/yarn`. The Install step of Setup Bench holds a file lock (`flock /cache/yarn/.lock`), so two installs do not write the yarn cache at the same time. Do not use yarn's own `--mutex`: the press postinstall runs yarn inside yarn, and the inner yarn waits forever for its parent's lock. Setup Bench copies the bench and the MariaDB data to `/opt/runner-cache/runs/<run id>` on the VM, and the Client and Server jobs copy them from there. `cleanup.sh` removes runs older than one day. Each run uses some GB of disk. This works only while all runners are on one VM.
 
 The repository variable `SELF_HOSTED_RUNNERS` selects the runners for every workflow in `.github/workflows/`:
 
