@@ -16,6 +16,7 @@ SCOPE_ROLES = {
 	"Press Support L1",
 	"Press Support Engineer",
 	"Press Infrastructure Manager",
+	"Press Infrastructure Reader",
 	"Press Release Manager",
 	"Press Billing Manager",
 	"Press Security Manager",
@@ -90,6 +91,15 @@ SECRET_FIELDS = {
 	"Saas App Subscription": ["secret_key"],
 }
 
+# Secrets that SREs need, and support does not
+INFRASTRUCTURE_SECRET_FIELDS = {
+	"Cluster": ["frappe_compute_api_key"],
+	"Monitor Server": ["webhook_token"],
+	"Storage Integration Subscription": ["secret_key"],
+	"Trace Server": ["sentry_oauth_client_secret"],
+	"Wireguard Peer": ["peer_config"],
+}
+
 SCRIPT_FIELDS = {
 	"Dashboard Banner": ["action_script"],
 	"Product Trial": ["suspension_email_content", "email_header_content", "email_account"],
@@ -107,7 +117,7 @@ SUPPORT_READS = [
 	"Marketplace App",
 	"Partner Lead",
 ]
-SUPPORT_DENIED = ["Payout Order", "Audit Log", "Wazuh Vulnerability", "SSH Certificate", "Cluster"]
+SUPPORT_DENIED = ["Payout Order", "Audit Log", "Wazuh Vulnerability", "SSH Certificate"]
 
 PROFILE_SCOPES = {
 	"Press Support L1": (SUPPORT_READS, SUPPORT_DENIED),
@@ -333,8 +343,21 @@ class TestStaffRoleScopes(FrappeTestCase):
 					"Press Support L1",
 					"Press Support Engineer",
 					"Press Infrastructure Manager",
+					"Press Infrastructure Reader",
 				}
 				self.assertEqual(leaked, set())
+
+	def test_only_system_and_infrastructure_managers_read_secrets_of_infrastructure_records(self):
+		for doctype, fieldnames in INFRASTRUCTURE_SECRET_FIELDS.items():
+			meta = frappe.get_meta(doctype)
+			with self.subTest(doctype=doctype):
+				self.assertEqual(
+					{getattr(meta.get_field(fieldname), "permlevel", None) for fieldname in fieldnames}, {1}
+				)
+				readers = frappe.get_all(
+					"DocPerm", {"parent": doctype, "permlevel": 1, "read": 1}, pluck="role"
+				)
+				self.assertEqual(set(readers), {"System Manager", "Press Infrastructure Manager"})
 
 	def test_only_system_managers_reach_fields_that_run_as_a_script_or_template(self):
 		for doctype, fieldnames in SCRIPT_FIELDS.items():
