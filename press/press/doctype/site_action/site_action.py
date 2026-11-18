@@ -64,6 +64,7 @@ class SiteAction(Document):
 			"Move From Private To Shared Bench",
 			"Move Site To Different Server / Bench",
 			"Move Site To Different Region",
+			"Move Site To Another Shared Server",
 		]
 		arguments: DF.SmallText
 		destination_bench: DF.Link | None
@@ -86,6 +87,12 @@ class SiteAction(Document):
 			return [
 				(self.pre_validate_move_site_to_different_cluster, StepType.Validation),
 				(self.process_move_site_to_different_cluster, StepType.Main),
+			]
+
+		if self.action_type == "Move Site To Another Shared Server":
+			return [
+				(self.pre_validate_move_site_to_another_shared_server, StepType.Validation),
+				(self.process_move_site_to_another_shared_server, StepType.Main),
 			]
 
 		if self.action_type == "Move Site To Different Server / Bench":
@@ -374,6 +381,27 @@ class SiteAction(Document):
 		self.save()
 		return StepStatus.Running
 
+	# Move Site to Another Shared Server
+	def pre_validate_move_site_to_another_shared_server(self):
+		"""Pre Validate Move Site To Another Shared Server"""
+		site: Site = self.site_doc
+		# This action is already in the table, so it must not block itself
+		site.validate_shared_server_move_cooldown(exclude_action=self.name)
+		destination = site.pick_shared_server_for_migration(self.get_argument("destination_server"))
+
+		self.set_argument("destination_server", destination["name"])
+		self.set_argument("destination_bench", destination["bench"])
+		self._schedule_site_migration(
+			group=site.group,
+			bench=destination["bench"],
+			server=destination["name"],
+			cluster=site.cluster,
+		)
+
+	def process_move_site_to_another_shared_server(self):
+		"""Move Site To Another Shared Server"""
+		return self._process_scheduled_site_migration()
+
 	# Move Site to Different Cluster
 	def pre_validate_move_site_to_different_cluster(self):
 		"""Pre Validate Move Site To Different Cluster"""
@@ -398,14 +426,21 @@ class SiteAction(Document):
 
 		bench, server = bench_vals
 
+		self._schedule_site_migration(group=current_group, bench=bench, server=server, cluster=target_cluster)
+
+	def process_move_site_to_different_cluster(self):
+		"""Move Site To Different Cluster"""
+		return self._process_scheduled_site_migration()
+
+	def _schedule_site_migration(self, group: str, bench: str, server: str, cluster: str) -> None:
 		site_migration: SiteMigration = frappe.get_doc(
 			{
 				"doctype": "Site Migration",
 				"site": self.site,
-				"destination_group": current_group,
+				"destination_group": group,
 				"destination_bench": bench,
 				"destination_server": server,
-				"destination_cluster": target_cluster,
+				"destination_cluster": cluster,
 				"scheduled_time": self.scheduled_time_formatted,
 				"skip_failing_patches": self.get_argument("skip_failing_patches", False),
 			}
@@ -413,19 +448,21 @@ class SiteAction(Document):
 
 		self.set_argument("site_migration", site_migration.name)
 
-	def process_move_site_to_different_cluster(self):
-		"""Move Site To Different Cluster"""
-		if self.current_step.reference_doctype == "Site Migration" and self.current_step.reference_name:
+	def _process_scheduled_site_migration(self) -> str:
+		step = self.current_step
+		assert step, "A step method only runs while its step is current"
+
+		if step.reference_doctype == "Site Migration" and step.reference_name:
 			# Site Migration is already scheduled
-			doc = frappe.get_doc("Site Migration", self.current_step.reference_name)
-			if doc.status == "Success":
+			status = frappe.db.get_value("Site Migration", step.reference_name, "status")
+			if status == "Success":
 				return StepStatus.Success
-			if doc.status == "Failure":
+			if status == "Failure":
 				return StepStatus.Failure
 			return StepStatus.Running
 
-		self.current_step.reference_doctype = "Site Migration"
-		self.current_step.reference_name = self.get_argument("site_migration")
+		step.reference_doctype = "Site Migration"
+		step.reference_name = self.get_argument("site_migration")
 		return StepStatus.Running
 
 	def _archive_newly_created_release_group(self):
@@ -620,18 +657,18 @@ class SiteAction(Document):
 			if step.status in ("Pending", "Running"):
 				step.status = "Skipped"
 
-		if self.action_type == "Move Site To Different Region":
-			site_migration_name = self.get_argument("site_migration")
-			if site_migration_name and frappe.db.exists("Site Migration", site_migration_name):
-				status = frappe.db.get_value("Site Migration", site_migration_name, "status", for_update=True)
-				if status != "Scheduled":
-					frappe.throw(
-						"Site Migration is already in progress. Cannot cancel the action.",
-						frappe.ValidationError,
-					)
-					return
+		# Actions that schedule the migration up front have to take it back
+		site_migration_name = self.get_argument("site_migration")
+		if site_migration_name and frappe.db.exists("Site Migration", site_migration_name):
+			status = frappe.db.get_value("Site Migration", site_migration_name, "status", for_update=True)
+			if status != "Scheduled":
+				frappe.throw(
+					"Site Migration is already in progress. Cannot cancel the action.",
+					frappe.ValidationError,
+				)
+				return
 
-				frappe.delete_doc("Site Migration", site_migration_name, ignore_permissions=True)
+			frappe.delete_doc("Site Migration", site_migration_name, ignore_permissions=True)
 
 		self.save(ignore_version=True)
 

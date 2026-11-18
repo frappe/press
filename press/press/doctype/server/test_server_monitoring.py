@@ -15,6 +15,7 @@ from press.press.doctype.database_server.test_database_server import create_test
 from press.press.doctype.server.server_monitoring import (
 	STUCK_AGENT_JOBS_ALERT_THRESHOLD,
 	STUCK_AGENT_JOBS_WINDOW_HOURS,
+	PublicServerHealthMetrics,
 	SignupFailureRate,
 	_breaches_signup_failure_threshold,
 	_get_incomplete_signup_rate,
@@ -23,6 +24,7 @@ from press.press.doctype.server.server_monitoring import (
 	_send_signup_failure_alert,
 	alert_on_failing_signups,
 	alert_on_servers_with_stuck_agent_jobs,
+	get_public_servers_with_free_capacity,
 )
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.team.test_team import create_test_team
@@ -328,3 +330,78 @@ class TestServersWithStuckAgentJobs(FrappeTestCase):
 			f"| Database Server | {STUCK_AGENT_JOBS_ALERT_THRESHOLD} | 0 | Yes |",
 			next(line for line in message.splitlines() if database_server.name in line),
 		)
+
+
+def build_public_server_health_metrics(
+	servers: dict[str, tuple[float, float, float]],
+) -> PublicServerHealthMetrics:
+	"""Metrics built from {server: (free memory ratio, idle cpu ratio, used disk ratio)}."""
+	return {
+		"available_memory_bytes": {server: ratios[0] * 16 * 1024**3 for server, ratios in servers.items()},
+		"available_memory_ratio": {server: ratios[0] for server, ratios in servers.items()},
+		"cpu_idle_ratio": {server: ratios[1] for server, ratios in servers.items()},
+		"disk_used_ratio": {server: ratios[2] for server, ratios in servers.items()},
+		"oom_kills": {},
+	}
+
+
+def patch_public_server_health_metrics(servers: dict[str, tuple[float, float, float]]):
+	"""Answer the Prometheus lookup with handpicked metrics, for the servers asked about."""
+	metrics = build_public_server_health_metrics(servers)
+
+	def get_metrics(server_names: list[str]) -> PublicServerHealthMetrics:
+		return {
+			metric: {server: value for server, value in values.items() if server in server_names}
+			for metric, values in metrics.items()
+		}
+
+	return patch(
+		"press.press.doctype.server.server_monitoring._get_public_server_health_metrics",
+		new=get_metrics,
+	)
+
+
+class TestPublicServersWithFreeCapacity(FrappeTestCase):
+	"""The servers a site can be moved to, picked on live memory, CPU and disk."""
+
+	def test_server_with_the_most_free_memory_and_idle_cpu_comes_first(self):
+		with patch_public_server_health_metrics(
+			{"crowded.fc.dev": (0.25, 0.55, 0.5), "roomy.fc.dev": (0.60, 0.90, 0.2)}
+		):
+			servers = get_public_servers_with_free_capacity(["crowded.fc.dev", "roomy.fc.dev"])
+
+		self.assertEqual([server["name"] for server in servers], ["roomy.fc.dev", "crowded.fc.dev"])
+		self.assertEqual(servers[0]["free_memory_percent"], 60.0)
+		self.assertEqual(servers[0]["idle_cpu_percent"], 90.0)
+		self.assertEqual(servers[0]["free_disk_percent"], 80.0)
+
+	def test_server_short_on_memory_is_left_out(self):
+		with patch_public_server_health_metrics({"tight.fc.dev": (0.19, 0.90, 0.2)}):
+			self.assertEqual(get_public_servers_with_free_capacity(["tight.fc.dev"]), [])
+
+	def test_server_short_on_idle_cpu_is_left_out(self):
+		with patch_public_server_health_metrics({"busy.fc.dev": (0.60, 0.49, 0.2)}):
+			self.assertEqual(get_public_servers_with_free_capacity(["busy.fc.dev"]), [])
+
+	def test_server_with_a_nearly_full_disk_is_left_out(self):
+		with patch_public_server_health_metrics({"full.fc.dev": (0.60, 0.90, 0.86)}):
+			self.assertEqual(get_public_servers_with_free_capacity(["full.fc.dev"]), [])
+
+	def test_server_with_disk_to_spare_is_kept(self):
+		with patch_public_server_health_metrics({"roomy.fc.dev": (0.60, 0.90, 0.84)}):
+			servers = get_public_servers_with_free_capacity(["roomy.fc.dev"])
+
+		self.assertEqual([server["name"] for server in servers], ["roomy.fc.dev"])
+		self.assertEqual(servers[0]["free_disk_percent"], 16.0)
+
+	def test_capacity_is_not_guessed_when_prometheus_has_no_answer(self):
+		with patch(
+			"press.press.doctype.server.server_monitoring._get_public_server_health_metrics",
+			new=lambda server_names: None,
+		):
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"Server capacity is unavailable right now",
+				get_public_servers_with_free_capacity,
+				["quiet.fc.dev"],
+			)
