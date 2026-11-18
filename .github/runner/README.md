@@ -8,7 +8,9 @@ Each runner is a Docker container. The container also runs its own Docker daemon
 
 The image is `ghcr.io/actions/actions-runner` (Ubuntu 24.04), plus the tools that the jobs need and that GitHub's `ubuntu-24.04` image has. The `Dockerfile` lists these tools.
 
-GitHub-hosted runners give each job a new VM. Here, a container runs many jobs. Before each job, `cleanup.sh` removes the containers, `~/frappe-bench` and `/data` that the previous job left.
+GitHub-hosted runners give each job a new VM. Here, a container runs many jobs. Before each job, `cleanup.sh` stops the processes and removes the containers, `~/frappe-bench` and `/data` that the previous job left.
+
+Self-hosted jobs do not use GitHub's cache. Each container keeps its own pip and yarn caches in `~/.cache`. Setup Bench copies the bench and the MariaDB data to `/opt/runner-cache/runs/<run id>` on the VM, and the Client and Server jobs copy them from there. `cleanup.sh` removes runs older than one day. Each run uses some GB of disk. This works only while all runners are on one VM.
 
 The repository variable `SELF_HOSTED_RUNNERS` selects the runners for every workflow in `.github/workflows/`:
 

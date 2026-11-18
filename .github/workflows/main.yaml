@@ -72,7 +72,8 @@ jobs:
           python-version: '3.10.20'
 
       - name: Cache pip
-        if: steps.changed-python-files.outputs.any_changed == 'true'
+        # Self-hosted runners keep ~/.cache between jobs, so they skip GitHub's cache.
+        if: steps.changed-python-files.outputs.any_changed == 'true' && runner.environment == 'github-hosted'
         uses: actions/cache@v6
         with:
           path: ~/.cache/pip
@@ -104,6 +105,7 @@ jobs:
           python-version: '3.10.20'
 
       - name: Cache pip
+        if: runner.environment == 'github-hosted'
         uses: actions/cache@v6
         with:
           path: ~/.cache/pip
@@ -220,6 +222,7 @@ jobs:
           sudo chmod o+x /usr/local/bin/wkhtmltopdf
 
       - name: Cache pip
+        if: runner.environment == 'github-hosted'
         uses: actions/cache@v6
         with:
           path: ~/.cache/pip
@@ -233,6 +236,7 @@ jobs:
         run: 'echo "::set-output name=dir::$(yarn cache dir)"'
 
       - name: Cache yarn
+        if: runner.environment == 'github-hosted'
         uses: actions/cache@v6
         id: yarn-cache
         with:
@@ -245,10 +249,21 @@ jobs:
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
       - name: Cache bench directory
+        if: runner.environment == 'github-hosted'
         uses: actions/cache/save@v6
         with:
           key: bench-dir-${{ github.run_id }}
           path: /home/runner/frappe-bench
+
+      # All self-hosted runners are on one VM and share /cache (see
+      # .github/runner/compose.yaml). A local copy is faster than an upload to
+      # GitHub's cache. The Client and Server jobs copy it back.
+      - name: Save bench directory on the runner VM
+        if: runner.environment == 'self-hosted'
+        run: |
+          rm -rf /cache/runs/${{ github.run_id }}
+          mkdir -p /cache/runs/${{ github.run_id }}
+          cp -a /home/runner/frappe-bench /cache/runs/${{ github.run_id }}/
 
       - name: Stop mariadb service
         run: |
@@ -259,10 +274,15 @@ jobs:
           sudo chown -R runner:runner /data/mariadb_data
 
       - name: Cache mariadb data directory
+        if: runner.environment == 'github-hosted'
         uses: actions/cache/save@v6
         with:
           key: mariadb-data-${{ github.run_id }}
           path: /data/mariadb_data
+
+      - name: Save mariadb data directory on the runner VM
+        if: runner.environment == 'self-hosted'
+        run: cp -a /data/mariadb_data /cache/runs/${{ github.run_id }}/
 
   ui-tests:
     needs: [changes, install]
@@ -285,10 +305,15 @@ jobs:
           sudo chown -R runner:runner /data/mariadb_data
 
       - name: Restore mariadb data directory from cache
+        if: runner.environment == 'github-hosted'
         uses: actions/cache/restore@v6
         with:
           key: mariadb-data-${{ github.run_id }}
           path: /data/mariadb_data
+
+      - name: Restore mariadb data directory from the runner VM
+        if: runner.environment == 'self-hosted'
+        run: cp -a /cache/runs/${{ github.run_id }}/mariadb_data/. /data/mariadb_data/
 
       - name: Change ownership of mariadb data directory (post cache restore)
         run: |
@@ -346,10 +371,15 @@ jobs:
           sudo chmod o+x /usr/local/bin/wkhtmltopdf
 
       - name: Restore bench directory from cache
+        if: runner.environment == 'github-hosted'
         uses: actions/cache/restore@v6
         with:
           path: /home/runner/frappe-bench
           key: bench-dir-${{ github.run_id }}
+
+      - name: Restore bench directory from the runner VM
+        if: runner.environment == 'self-hosted'
+        run: cp -a /cache/runs/${{ github.run_id }}/frappe-bench /home/runner/
 
       - name: Install Bench command
         run: pip install frappe-bench
@@ -431,10 +461,15 @@ jobs:
           sudo chown -R runner:runner /data/mariadb_data
 
       - name: Restore mariadb data directory from cache
+        if: runner.environment == 'github-hosted'
         uses: actions/cache/restore@v6
         with:
           key: mariadb-data-${{ github.run_id }}
           path: /data/mariadb_data
+
+      - name: Restore mariadb data directory from the runner VM
+        if: runner.environment == 'self-hosted'
+        run: cp -a /cache/runs/${{ github.run_id }}/mariadb_data/. /data/mariadb_data/
 
       - name: Change ownership of mariadb data directory (post cache restore)
         run: |
@@ -471,10 +506,15 @@ jobs:
           version: 1.0 # Arbitrary version to bust cache when needed
 
       - name: Restore bench directory from cache
+        if: runner.environment == 'github-hosted'
         uses: actions/cache/restore@v6
         with:
           path: /home/runner/frappe-bench
           key: bench-dir-${{ github.run_id }}
+
+      - name: Restore bench directory from the runner VM
+        if: runner.environment == 'self-hosted'
+        run: cp -a /cache/runs/${{ github.run_id }}/frappe-bench /home/runner/
 
       - name: Install Bench command
         run: pip install frappe-bench

@@ -7,6 +7,9 @@ rm -f /var/run/docker.pid
 dind dockerd --group docker >/var/log/dockerd.log 2>&1 &
 timeout 60 bash -c 'until docker info >/dev/null 2>&1; do sleep 1; done'
 
+mkdir -p /cache/runs
+chown runner:runner /cache /cache/runs
+
 cd /home/runner
 if [ ! -f .runner ]; then
 	runuser -u runner -- ./config.sh --unattended --replace \
