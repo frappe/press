@@ -16,7 +16,7 @@ Manager only to the few admins who need shells and secrets.
 | Press Billing Manager | Invoices, payments, payouts, subscriptions, usage records, plans |
 | Press Security Manager | Wazuh, malware scans, abuse reports, blocked domains, audit logs and User 2FA (read only) |
 | Press SSH Manager | SSH keys, SSH certificates, SSH access audits |
-| Press Product Manager | SaaS apps, product trials, dashboard banners, notifications, feedback |
+| Press Product Manager | SaaS apps, product trials, dashboard banners, notifications, feedback, and the Product Usage report. The report shows install and sign-up counts per app, but no site, team or user |
 | Press Marketplace Manager | Marketplace apps, app reviews, release approvals |
 | Partner Manager | Partners, partner leads, certificates, consultants |
 
