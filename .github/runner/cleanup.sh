@@ -18,3 +18,7 @@ done
 docker rm -f $(docker ps -aq) >/dev/null 2>&1 || true
 docker network prune -f >/dev/null
 sudo rm -rf /home/runner/frappe-bench /data
+
+# Benches that Setup Bench saved for runs that ended more than a day ago.
+# A rerun of a failed job after that time must also rerun Setup Bench.
+sudo find /cache/runs -mindepth 1 -maxdepth 1 -mmin +1440 -exec rm -rf {} +
