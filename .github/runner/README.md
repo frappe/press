@@ -10,7 +10,12 @@ The image is `ghcr.io/actions/actions-runner` (Ubuntu 24.04), plus the tools tha
 
 GitHub-hosted runners give each job a new VM. Here, a container runs many jobs. Before each job, `cleanup.sh` removes the containers, `~/frappe-bench` and `/data` that the previous job left.
 
-In `.github/workflows/main.yaml`, these jobs use the self-hosted runners: Check for Changes and Lint, Setup Bench, Server and Client. Pull requests from forks use GitHub-hosted runners, so code from a fork never runs on your VM.
+The repository variable `SELF_HOSTED_RUNNERS` selects the runners for every workflow in `.github/workflows/`:
+
+- When the value is `true`, the jobs use the self-hosted runners. Pull requests from forks still use GitHub-hosted runners, so code from a fork never runs on your VM.
+- When the value is different, or the variable does not exist, all jobs use GitHub-hosted runners.
+
+GitHub does not move a job to a GitHub-hosted runner when no self-hosted runner is online. The job waits for up to 24 hours. If the VM stops, set `SELF_HOSTED_RUNNERS` to `false` in Settings → Secrets and variables → Actions → Variables, then run the waiting workflows again.
 
 | File | Purpose |
 | --- | --- |
