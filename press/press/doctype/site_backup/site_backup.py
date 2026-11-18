@@ -640,64 +640,97 @@ REMOTE_FILE_FIELDS = (
 
 
 def get_backup_regions(backups: list[dict]) -> dict[str, dict]:
-	"""The region of the bucket that holds the files of each offsite backup.
+	"""The region of each backup in the list.
 
-	Each backup keeps the bucket it went to, so an old backup shows the region
-	it went to before the cluster changed its bucket. A backup with no remote
-	file is not offsite and gets no region.
+	An offsite backup is in the region of the bucket that holds its remote
+	files. Each backup keeps that bucket, so an old backup shows the region it
+	went to before the cluster changed its bucket. A physical backup is a disk
+	snapshot, so it is in the cluster of the site. Other backups stay on the
+	server and get no region.
 	"""
-	files = {
-		backup["name"]: next((backup.get(f) for f in REMOTE_FILE_FIELDS if backup.get(f)), None)
-		for backup in backups
-		if backup.get("name")
-	}
-	files = {name: file for name, file in files.items() if file}
-	if not files:
-		return {}
-
-	buckets = dict(
-		frappe.get_all(
-			"Remote File", {"name": ("in", list(files.values()))}, ["name", "bucket"], as_list=True
-		)
-	)
-	bucket_regions = dict(
-		frappe.get_all(
-			"Backup Bucket",
-			{"name": ("in", list({b for b in buckets.values() if b}))},
-			["name", "region"],
-			as_list=True,
-		)
-	)
-	# A file in the legacy bucket of Press Settings has no Backup Bucket
-	default_region = frappe.db.get_single_value("Press Settings", "backup_region")
-
 	sites = {backup.get("site") for backup in backups if backup.get("site")}
 	site_clusters = dict(
 		frappe.get_all("Site", {"name": ("in", list(sites))}, ["name", "cluster"], as_list=True)
 	)
+	offsite_regions = get_offsite_regions(backups)
 
-	details: dict[tuple, dict | None] = {}
+	cache: dict[tuple, dict] = {}
+
+	def details(region: str, cluster: str | None) -> dict:
+		if (region, cluster) not in cache:
+			cache[(region, cluster)] = get_region_details(region, cluster)
+		return cache[(region, cluster)]
+
 	regions = {}
 	for backup in backups:
-		file = files.get(backup.get("name"))
-		if not file:
-			continue
-		region = bucket_regions.get(buckets.get(file)) or default_region
-		if not region:
-			continue
-		key = (region, site_clusters.get(backup.get("site")))
-		if key not in details:
-			details[key] = get_region_details(*key)
-		regions[backup["name"]] = details[key]
+		name, cluster = backup.get("name"), site_clusters.get(backup.get("site"))
+		if backup.get("physical") and cluster:
+			regions[name] = get_cluster_region_details(cluster)
+		elif name in offsite_regions:
+			region, replica = offsite_regions[name]
+			regions[name] = dict(details(region, cluster))
+			if replica:
+				regions[name]["replica"] = details(replica, None)
 	return regions
 
 
-def get_region_details(region: str, cluster: str | None = None) -> dict:
-	"""The title and the flag of a region, from a cluster in that region.
+def get_offsite_regions(backups: list[dict]) -> dict[str, tuple[str, str | None]]:
+	"""The region and the replica region of the bucket of each offsite backup."""
+	files = {
+		backup["name"]: file
+		for backup in backups
+		if backup.get("name")
+		and (file := next((backup.get(f) for f in REMOTE_FILE_FIELDS if backup.get(f)), None))
+	}
+	if not files:
+		return {}
 
-	The given cluster comes first, then public clusters. If no cluster with a
-	flag is in the region, the region code is the title.
+	file_buckets = dict(
+		frappe.get_all(
+			"Remote File", {"name": ("in", list(files.values()))}, ["name", "bucket"], as_list=True
+		)
+	)
+	buckets = {
+		b.name: b
+		for b in frappe.get_all(
+			"Backup Bucket",
+			{"name": ("in", list({b for b in file_buckets.values() if b}))},
+			["name", "region", "replication_enabled", "replication_region"],
+		)
+	}
+	# A file in the legacy bucket of Press Settings has no Backup Bucket
+	default_region = frappe.db.get_single_value("Press Settings", "backup_region")
+
+	regions = {}
+	for name, file in files.items():
+		bucket = buckets.get(file_buckets.get(file))
+		region = (bucket and bucket.region) or default_region
+		if region:
+			replica = bucket and bucket.replication_enabled and bucket.replication_region
+			regions[name] = (region, replica or None)
+	return regions
+
+
+def get_cluster_region_details(cluster: str) -> dict:
+	"""The title and the flag of a cluster, for a backup that stays in it."""
+	doc = frappe.get_cached_value("Cluster", cluster, ["title", "region", "image"], as_dict=True)
+	if doc.image:
+		return {"region": doc.region or cluster, "title": doc.title or cluster, "image": doc.image}
+	if doc.region:
+		return get_region_details(doc.region, cluster)
+	return {"region": cluster, "title": doc.title or cluster, "image": None}
+
+
+def get_region_details(region: str, cluster: str | None = None) -> dict:
+	"""The title and the flag of a region.
+
+	The first source that knows the region gives the result. First, a cluster
+	with a flag in the region: the given cluster, then public clusters, then
+	the other clusters by name. Next, the city and the country of a known
+	region code. Last, the region code with no flag.
 	"""
+	from press.press.doctype.cloud_region.cloud_region import REGION_LOCATIONS, get_flag_url
+
 	clusters = frappe.get_all(
 		"Cluster",
 		filters={"region": region, "image": ("is", "set")},
@@ -705,11 +738,14 @@ def get_region_details(region: str, cluster: str | None = None) -> dict:
 		order_by="public desc, name asc",
 	)
 	match = next((c for c in clusters if c.name == cluster), clusters[0] if clusters else None)
-	return {
-		"region": region,
-		"title": (match and match.title) or region,
-		"image": match and match.image,
-	}
+	if match:
+		return {"region": region, "title": match.title or match.name, "image": match.image}
+
+	if region in REGION_LOCATIONS:
+		city, country = REGION_LOCATIONS[region]
+		return {"region": region, "title": city, "image": get_flag_url(country)}
+
+	return {"region": region, "title": region, "image": None}
 
 
 def get_backup_bucket(cluster, region=False):

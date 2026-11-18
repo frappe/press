@@ -465,18 +465,22 @@ class TestBackupRegions(FrappeTestCase):
 				"remote_config_file",
 				"remote_public_file",
 				"remote_private_file",
+				"physical",
 			],
 		)
 		return get_backup_regions(rows)
 
 	def test_each_backup_gets_the_region_of_its_own_bucket(self):
-		create_test_backup_bucket("virginia.backups.test", "us-east-1")
-		old = create_test_site_backup(self.site.name, bucket="virginia.backups.test")
+		create_test_backup_bucket("sao-paulo.backups.test", "sa-east-1")
+		old = create_test_site_backup(self.site.name, bucket="sao-paulo.backups.test")
 		new = create_test_site_backup(self.site.name, bucket="frankfurt.backups.test")
 
 		regions = self.get_regions(old, new)
 
-		self.assertEqual(regions[old.name], {"region": "us-east-1", "title": "us-east-1", "image": None})
+		self.assertEqual(
+			regions[old.name],
+			{"region": "sa-east-1", "title": "São Paulo", "image": "https://flagcdn.com/w40/br.png"},
+		)
 		self.assertEqual(
 			regions[new.name],
 			{"region": "eu-central-1", "title": "Frankfurt", "image": "/files/flag-germany.svg"},
@@ -492,6 +496,42 @@ class TestBackupRegions(FrappeTestCase):
 		backup = create_test_site_backup(self.site.name, offsite=False)
 
 		self.assertEqual(self.get_regions(backup), {})
+
+	def test_a_bucket_in_an_unknown_region_gets_the_region_code(self):
+		create_test_backup_bucket("unknown.backups.test", "xx-test-1")
+		backup = create_test_site_backup(self.site.name, bucket="unknown.backups.test")
+
+		self.assertEqual(
+			self.get_regions(backup)[backup.name],
+			{"region": "xx-test-1", "title": "xx-test-1", "image": None},
+		)
+
+	def test_a_physical_backup_gets_the_cluster_of_the_site(self):
+		frappe.db.set_value(
+			"Cluster",
+			self.site.cluster,
+			{"title": "Home", "image": "/files/home.svg", "region": "ap-south-1"},
+		)
+		backup = create_test_site_backup(self.site.name, offsite=False)
+		backup.db_set("physical", 1)
+
+		self.assertEqual(
+			self.get_regions(backup)[backup.name],
+			{"region": "ap-south-1", "title": "Home", "image": "/files/home.svg"},
+		)
+
+	def test_a_replicated_bucket_gives_the_replica_region(self):
+		bucket = create_test_backup_bucket("replicated.backups.test", "eu-central-1")
+		bucket.db_set({"replication_enabled": 1, "replication_region": "us-east-2"})
+		backup = create_test_site_backup(self.site.name, bucket=bucket.name)
+
+		region = self.get_regions(backup)[backup.name]
+
+		self.assertEqual(region["title"], "Frankfurt")
+		self.assertEqual(
+			region["replica"],
+			{"region": "us-east-2", "title": "Ohio", "image": "https://flagcdn.com/w40/us.png"},
+		)
 
 
 @patch("press.press.doctype.site_backup.site_backup.send_raven_message")
