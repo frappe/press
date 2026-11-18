@@ -12,7 +12,11 @@
 // A numbered step: done shows a tick, current is filled, next is outlined.
 defineProps({
 	number: { type: Number, required: true },
-	state: { type: String, required: true },
+	state: {
+		type: String,
+		required: true,
+		validator: (s) => ['done', 'current', 'next'].includes(s),
+	},
 })
 
 const classes = {

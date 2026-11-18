@@ -57,9 +57,7 @@
 			<div class="flex min-w-0 flex-1 flex-col gap-3">
 				<div>
 					<div class="text-base font-medium text-ink-gray-9">
-						{{ submitted
-								? 'UTR submitted'
-								: 'After the transfer, enter its UTR number' }}
+						{{ utrStepTitle }}
 					</div>
 					<div class="mt-1 text-base text-ink-gray-6">
 						<span v-if="submitted" class="font-mono"
@@ -155,7 +153,13 @@ const breakdown = computed(() =>
 
 const transferredTo = computed(
 	() =>
-		`To ${props.bank.bank_account_name}, ${props.bank.bank_ifsc_code}, remarks ${props.contract.name}`,
+		`Sent to ${props.bank.bank_account_name} (${props.bank.bank_ifsc_code})`,
+)
+
+const utrStepTitle = computed(() =>
+	submitted.value
+		? 'UTR submitted'
+		: 'After the transfer, enter its UTR number',
 )
 
 // The first payment starts the contract and Frappe signs it; a renewal adds a year.
@@ -168,7 +172,7 @@ const verifyStep = computed(() =>
 		: {
 				title: 'We verify the payment and sign the agreement',
 				description:
-					'Usually 1 to 2 working days. Then you can download the signed agreement from this page.',
+					'We confirm the payment in 1 to 2 working days, then sign the agreement. You can download it from this page.',
 			},
 )
 
