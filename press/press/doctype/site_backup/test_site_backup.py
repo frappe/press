@@ -272,6 +272,20 @@ class TestSiteBackup(FrappeTestCase):
 		self.assertEqual(jobs[0].server, self.site.server)
 		self.assertEqual(jobs[0].reference_name, self.site_backup.name)
 
+	@patch("press.press.doctype.site_backup.site_backup._send_backup_failure_email_to_user")
+	@patch("press.press.doctype.agent_job.agent_job.Agent.cancel_job")
+	def test_cancelled_backup_job_fails_the_backup_quietly(self, mock_cancel_job, mock_send_email):
+		self.job.db_set({"status": "Running", "job_id": 7})
+		self.job.reload()
+
+		self.job.cancel_and_mark_cancelled("test")
+
+		mock_cancel_job.assert_called_once_with(7)
+		self.assertEqual(self.job.status, "Cancelled")
+		self.assertEqual(frappe.db.get_value("Site Backup", self.site_backup.name, "status"), "Failure")
+		mock_send_email.assert_called_once()
+		self.assertTrue(mock_send_email.call_args.kwargs["cancelled"])
+
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_backup_failing_for_other_reason_does_not_start_fix_global_search_job(self):
 		self._fail_backup_job("mariadb-dump: Got error: 2013: Lost connection to server during query")
