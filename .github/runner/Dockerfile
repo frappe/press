@@ -1,7 +1,11 @@
-# Self-hosted runner for the bench jobs in .github/workflows/main.yaml.
+# Self-hosted runner for the workflows in .github/workflows/.
 # The base image is Ubuntu 24.04 with a "runner" user, passwordless sudo and
 # the Docker binaries, like GitHub's ubuntu-24.04 image.
 FROM ghcr.io/actions/actions-runner:2.338.2
+
+# The default Node of GitHub's ubuntu-24.04 image is 22. Workflows that call
+# setup-node without a version use it. commitlint needs 22.12 or later.
+ARG NODE_VERSION=22.23.5
 
 USER root
 
@@ -12,8 +16,8 @@ ENV TZ=Etc/UTC
 # Docker's helper that lets dockerd run inside a container on cgroup v2.
 COPY --from=docker:29-dind /usr/local/bin/dind /usr/local/bin/dind
 
-# Tools that GitHub's ubuntu-24.04 image has and main.yaml / install.sh use.
-# ponytail: list found by reading main.yaml; add packages here when a job
+# Tools that GitHub's ubuntu-24.04 image has and the workflows use.
+# ponytail: list found by reading the workflows; add packages here when a job
 # fails with "command not found" or a missing library.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -21,7 +25,8 @@ RUN apt-get update \
         python-is-python3 gh \
         mariadb-client libmariadb-dev \
         fontconfig libxrender1 libxext6 libjpeg-turbo8 \
-        nodejs npm \
+    && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
+        | tar -xJ -C /usr/local --strip-components=1 \
     && npm install -g yarn \
     && npx -y playwright@1.54 install-deps chromium \
     && groupadd -f systemd-journal \
