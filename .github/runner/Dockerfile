@@ -32,6 +32,14 @@ RUN apt-get update \
     && groupadd -f systemd-journal \
     && rm -rf /var/lib/apt/lists/*
 
+# All runners on the VM share the pip and yarn caches in /cache, like the
+# BuildKit cache mounts in press/docker/Dockerfile. pip is safe to share.
+# Two yarn v1 installs that write one cache at the same time can corrupt it,
+# so yarn takes a file lock first (the same as sharing=locked).
+ENV PIP_CACHE_DIR=/cache/pip
+RUN printf 'cache-folder "/cache/yarn"\n--mutex "file:/cache/yarn/.mutex"\n' > /home/runner/.yarnrc \
+    && chown runner:runner /home/runner/.yarnrc
+
 COPY runner.sh cleanup.sh /usr/local/bin/
 
 ENTRYPOINT ["/usr/local/bin/runner.sh"]
