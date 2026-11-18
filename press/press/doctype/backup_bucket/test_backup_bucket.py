@@ -50,23 +50,52 @@ class TestBackupBucket(FrappeTestCase):
 				("shared.backups.test", "eu-central-1", "https://s3.eu-central-1.amazonaws.com"),
 			)
 
-	def test_cluster_without_a_bucket_backs_up_to_the_press_settings_bucket(self):
+	def test_backup_of_a_cluster_without_a_bucket_fails_instead_of_using_the_press_settings_bucket(self):
 		cluster = create_generic_cluster("Legacy", create_test_backup_bucket("legacy.backups.test").name)
 		cluster.db_set("backup_bucket", None)
 		frappe.db.set_single_value("Press Settings", "aws_s3_bucket", "fallback.backups.test")
 
-		self.assertEqual(get_backup_bucket("Legacy"), "fallback.backups.test")
+		with self.assertRaisesRegex(frappe.MandatoryError, "Set the Backup Bucket of cluster Legacy"):
+			get_backup_bucket("Legacy")
 
 	def test_new_cluster_without_a_backup_bucket_is_rejected(self):
-		with self.assertRaisesRegex(frappe.MandatoryError, "Set the Backup Bucket for the new cluster"):
+		with self.assertRaisesRegex(frappe.MandatoryError, "backup_bucket"):
 			create_generic_cluster("No Bucket", None)
 
 		self.assertFalse(frappe.db.exists("Cluster", "No Bucket"))
 
-	def test_existing_cluster_without_a_backup_bucket_still_saves(self):
+	def test_existing_cluster_without_a_backup_bucket_cannot_be_saved(self):
 		cluster = create_generic_cluster("Old", create_test_backup_bucket("old.backups.test").name)
 		cluster.db_set("backup_bucket", None)
 
-		Cluster("Cluster", "Old").save(ignore_permissions=True)
+		with self.assertRaisesRegex(frappe.MandatoryError, "backup_bucket"):
+			Cluster("Cluster", "Old").save(ignore_permissions=True)
 
-		self.assertIsNone(frappe.db.get_value("Cluster", "Old", "backup_bucket"))
+	def test_patch_gives_clusters_without_a_bucket_the_press_settings_bucket(self):
+		from press.patches.v0_8_0 import set_missing_cluster_backup_buckets
+
+		own_bucket = create_test_backup_bucket("own.backups.test").name
+		create_generic_cluster("Has Bucket", own_bucket)
+		create_generic_cluster("No Bucket", own_bucket).db_set("backup_bucket", None)
+		frappe.db.set_single_value("Press Settings", "aws_s3_bucket", "settings.backups.test")
+		frappe.db.set_single_value("Press Settings", "backup_region", "ap-south-1")
+
+		set_missing_cluster_backup_buckets.execute()
+		# A second run finds the bucket record and no cluster to update
+		set_missing_cluster_backup_buckets.execute()
+
+		self.assertEqual(
+			frappe.db.get_value("Cluster", "No Bucket", "backup_bucket"), "settings.backups.test"
+		)
+		self.assertEqual(frappe.db.get_value("Cluster", "Has Bucket", "backup_bucket"), own_bucket)
+		self.assertEqual(
+			frappe.db.get_value("Backup Bucket", "settings.backups.test", "region"), "ap-south-1"
+		)
+
+	def test_agent_sends_no_offsite_config_for_a_cluster_without_a_bucket(self):
+		from press.agent import Agent
+
+		cluster = create_generic_cluster("Legacy", create_test_backup_bucket("legacy.backups.test").name)
+		cluster.db_set("backup_bucket", None)
+
+		self.assertIsNone(Agent("agent.test")._get_offsite_backup_config("Legacy", "path"))
