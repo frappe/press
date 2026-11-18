@@ -1530,6 +1530,7 @@ class BaseServer(Document, TagHelpers):
 			if vm_status == "Terminated":
 				self.status = "Archived"
 				self.save()
+				self.disable_subscription()
 				return
 
 		if frappe.db.exists(
@@ -1624,6 +1625,11 @@ class BaseServer(Document, TagHelpers):
 
 	def _archive(self, reason=None):
 		self.run_press_job("Archive Server", arguments={"reason": reason})
+
+	def mark_provisioning_failed(self):
+		"""The machine is gone, so stop billing for a server that cannot come up."""
+		frappe.db.set_value(self.doctype, self.name, "status", "Broken")
+		self.disable_subscription()
 
 	def disable_subscription(self):
 		subscription = self.subscription
