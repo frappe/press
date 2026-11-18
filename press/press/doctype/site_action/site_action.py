@@ -95,7 +95,8 @@ class SiteAction(Document):
 		if self.action_type == "Move Site To Another Shared Server":
 			return [
 				(self.pre_validate_move_site_to_another_shared_server, StepType.Validation),
-				(self.process_move_site_to_another_shared_server, StepType.Main),
+				(self.deploy_bench_on_shared_server, StepType.Preparation),
+				(self.move_site_to_another_shared_server, StepType.Main),
 			]
 
 		if self.action_type == "Move Site To Different Server / Bench":
@@ -234,6 +235,9 @@ class SiteAction(Document):
 							# Ideally this should never happen
 							# but to avoid infinite loop, we will break after 100 attempts and raise the error
 							raise e
+
+				# Remembered so a failed build archives this group and no other
+				self.set_argument("created_release_group", new_group.name)
 
 			# Set essential arguments for next steps
 			self.set_argument("destination_server", self.get_argument("destination_server", site.server))
@@ -393,17 +397,16 @@ class SiteAction(Document):
 		destination = site.pick_shared_server_for_migration(self.get_argument("destination_server"))
 
 		self.set_argument("destination_server", destination["name"])
-		self.set_argument("destination_bench", destination["bench"])
-		self._schedule_site_migration(
-			group=site.group,
-			bench=destination["bench"],
-			server=destination["name"],
-			cluster=site.cluster,
-		)
+		# The site keeps its own bench group, wherever that bench has to be built
+		self.set_argument("destination_release_group", site.group)
 
-	def process_move_site_to_another_shared_server(self):
+	def deploy_bench_on_shared_server(self):
+		"""Deploy the Bench on the Shared Server"""
+		return self.clone_and_create_bench_group()
+
+	def move_site_to_another_shared_server(self):
 		"""Move Site To Another Shared Server"""
-		return self._process_scheduled_site_migration()
+		return self.move_site_to_bench_group()
 
 	# Move Site to Different Cluster
 	def pre_validate_move_site_to_different_cluster(self):
@@ -472,9 +475,9 @@ class SiteAction(Document):
 		# If Release Group is 'Awaiting Deploy'
 		from press.press.doctype.release_group.release_group import get_status
 
-		# Try to remove it
+		# Only the group this action cloned, never a group the site already had
 		with contextlib.suppress(frappe.DoesNotExistError):
-			release_group_name = self.get_argument("destination_release_group")
+			release_group_name = self.get_argument("created_release_group")
 			if release_group_name and get_status(release_group_name) == "Awaiting Deploy":
 				release_group: ReleaseGroup = frappe.get_doc("Release Group", release_group_name)
 				release_group.archive()
