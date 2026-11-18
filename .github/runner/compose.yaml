@@ -1,13 +1,4 @@
-# Self-hosted runners for frappe/press. On each VM:
-#
-#   apt-get install -y docker.io docker-compose-v2 docker-buildx
-#   # copy this directory to the VM, then in it:
-#   printf 'RUNNER_PREFIX=vm101\nRUNNER_TOKEN=<token>\n' > .env
-#   docker compose up -d --build --scale runner=6
-#
-# Get the token from Settings > Actions > Runners > New self-hosted runner.
-# It expires after 1 hour, but a runner needs it only when it registers. A
-# container that compose recreates registers again and needs a new token.
+# Self-hosted runners for frappe/press. README.md has the setup steps.
 #
 # Each container runs one runner and its own dockerd, so jobs on one VM do not
 # share port 3306, container names or /home/runner/frappe-bench.
