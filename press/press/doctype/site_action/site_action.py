@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 	from collections.abc import Callable
 
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server.server import Server
@@ -167,6 +168,7 @@ class SiteAction(Document):
 			site: Site = frappe.get_doc("Site", self.site)
 			current_group: ReleaseGroup = frappe.get_doc("Release Group", site.group)
 			new_group: ReleaseGroup | None = None
+			is_cloned_group = False
 
 			# If destination release group is provided, we will use that release group
 			if self.get_argument("destination_release_group"):
@@ -187,6 +189,7 @@ class SiteAction(Document):
 
 			# Else, we will clone current release group
 			else:
+				is_cloned_group = True
 				new_group_title = self._ensure_no_duplicate_release_group_title(
 					self.get_argument("new_release_group_name") or f"{site.group} - Cloned"
 				)
@@ -235,6 +238,8 @@ class SiteAction(Document):
 
 			# Create deploy candidate and schedule build and deploy
 			deploy_candidate = new_group.create_deploy_candidate()
+			if deploy_candidate and is_cloned_group:
+				self._pin_candidate_to_site_bench(deploy_candidate, site)
 			deploy_candidate_build_name = create_platform_build_and_deploy(
 				deploy_candidate=deploy_candidate.name,
 				server=server.name,
@@ -879,6 +884,24 @@ class SiteAction(Document):
 				f"Site has following apps: {apps} which are not present in the destination release group. Please {install} those apps in the destination release group or {remove} them from the site before moving.",
 				frappe.ValidationError,
 			)
+
+	def _pin_candidate_to_site_bench(self, deploy_candidate: "DeployCandidate", site: "Site") -> None:
+		"""A cloned group has no bench yet, so create_deploy_candidate() picks the
+		latest releases. Pin the candidate to what the site is running now."""
+		if not site.bench:
+			return
+
+		bench_apps = {a.app: a for a in frappe.get_doc("Bench", site.bench).apps}
+		for row in deploy_candidate.apps:
+			bench_app = bench_apps.get(row.app)
+			if not bench_app:
+				continue
+			row.source = bench_app.source
+			row.release = bench_app.release
+			row.hash = bench_app.hash
+			row.pullable_release = None
+			row.pullable_hash = None
+		deploy_candidate.save()
 
 	def _ensure_no_duplicate_release_group_title(self, name: str) -> str:
 		if not name:
