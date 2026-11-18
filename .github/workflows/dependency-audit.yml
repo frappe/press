@@ -14,7 +14,7 @@ concurrency:
 jobs:
   deps-vulnerable-check:
     name: 'Vulnerable Dependency Check'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.SELF_HOSTED_RUNNERS == 'true' && !github.event.pull_request.head.repo.fork && 'self-hosted' || 'ubuntu-latest' }}
 
     steps:
       - uses: actions/checkout@v6
