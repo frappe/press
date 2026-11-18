@@ -86,6 +86,8 @@ def set_test_offsite_backup_credentials():
 
 	settings.offsite_backups_access_key_id = "test"
 	settings.offsite_backups_secret_access_key = frappe.mock("password")
+	# A fresh test site has no certbot directory or EFF email, which are mandatory
+	settings.flags.ignore_mandatory = True
 	settings.save()
 	frappe.db.commit()  # nosemgrep
 
