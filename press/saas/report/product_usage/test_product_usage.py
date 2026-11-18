@@ -5,7 +5,7 @@ from __future__ import annotations
 import frappe
 from frappe.desk.query_report import run
 from frappe.model.naming import make_autoname
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 from frappe.utils import add_days, get_datetime, now_datetime, today
 
 from press.press.doctype.app.test_app import create_test_app
@@ -20,7 +20,7 @@ from press.saas.report.product_usage.product_usage import execute
 from press.tests.test_staff_role_scopes import create_staff_user
 
 
-class TestProductUsage(FrappeTestCase):
+class TestProductUsage(IntegrationTestCase):
 	def setUp(self):
 		app = create_test_app(make_autoname("product_app_.#####"), "Product App")
 		product = create_test_product_trial(app)
