@@ -462,7 +462,8 @@
 			"fieldname": "backup_bucket",
 			"fieldtype": "Link",
 			"label": "Backup Bucket",
-			"options": "Backup Bucket"
+			"options": "Backup Bucket",
+			"reqd": 1
 		},
 		{
 			"fieldname": "location_section",
