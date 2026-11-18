@@ -1,7 +1,9 @@
 <template>
 	<div class="sticky top-0 z-10 shrink-0">
 		<Header>
-			<Breadcrumbs :items="[{ label: 'Contracts', route: '/contracts' }]" />
+			<Breadcrumbs
+				:items="[{ label: 'Enterprise Warranty', route: '/enterprise-warranty' }]"
+			/>
 			<Button
 				v-if="ordering"
 				class="ml-auto"

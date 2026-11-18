@@ -250,14 +250,14 @@ let router = createRouter({
 			],
 		},
 		{
-			name: 'Contracts',
-			path: '/contracts',
+			name: 'Enterprise Warranty',
+			path: '/enterprise-warranty',
 			component: () => import('./pages/EnterpriseContract.vue'),
-			meta: { title: 'Contracts' },
+			meta: { title: 'Enterprise Warranty' },
 		},
 		{
 			name: 'Contract',
-			path: '/contracts/:name',
+			path: '/enterprise-warranty/:name',
 			component: () => import('./pages/EnterpriseContractDetail.vue'),
 			props: true,
 			meta: { title: 'Contract' },

@@ -19,7 +19,7 @@
 		<Button
 			variant="solid"
 			label="See Enterprise Warranty"
-			:route="{ name: 'Contracts' }"
+			:route="{ name: 'Enterprise Warranty' }"
 		/>
 	</div>
 </template>

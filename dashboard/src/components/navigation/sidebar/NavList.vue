@@ -157,10 +157,10 @@ const list = computed(() => {
 		},
 
 		{
-			name: 'Contracts',
+			name: 'Enterprise Warranty',
 			icon: LucideFileSignature,
-			route: '/contracts',
-			isActive: ['Contracts', 'Contract'].includes(routeName),
+			route: '/enterprise-warranty',
+			isActive: ['Enterprise Warranty', 'Contract'].includes(routeName),
 			condition: $team.doc?.is_desk_user || $session.hasBillingAccess,
 			disabled: enforce2FA,
 		},

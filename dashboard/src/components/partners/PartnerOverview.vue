@@ -52,9 +52,9 @@
 			</h3>
 			<p class="text-base text-ink-gray-7">
 				Clients who run Frappe on their own servers can buy a yearly warranty
-				from Frappe on the Contracts page of their Frappe Cloud dashboard. Each
-				contract your clients buy counts towards your partner contribution,
-				spread over 12 months.
+				from Frappe on the Enterprise Warranty page of their Frappe Cloud
+				dashboard. Each contract your clients buy counts towards your partner
+				contribution, spread over 12 months.
 			</p>
 		</div>
 

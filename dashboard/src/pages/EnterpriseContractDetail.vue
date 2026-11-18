@@ -4,8 +4,8 @@
 			<div class="flex items-center gap-2">
 				<Breadcrumbs
 					:items="[
-						{ label: 'Contracts', route: '/contracts' },
-						{ label: name, route: `/contracts/${name}` },
+						{ label: 'Enterprise Warranty', route: '/enterprise-warranty' },
+						{ label: name, route: `/enterprise-warranty/${name}` },
 					]"
 				/>
 				<Badge
