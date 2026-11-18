@@ -9,26 +9,36 @@ from frappe.core.doctype.doctype.doctype import clear_permissions_cache
 from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 
 INFRASTRUCTURE = "Press Infrastructure Manager"
+# Support reads what SREs read, and changes nothing. No export, which would dump whole logs.
+READER = {"role": "Press Infrastructure Reader", "read": 1}
 # Roles of other apps, which a site may not have
 OPTIONAL_ROLES = {"Agent"}
 
 CORE_RULES: dict[str, list[dict]] = {
 	# Job internals, so that SREs can debug without System Manager
-	"RQ Job": [{"role": INFRASTRUCTURE, "read": 1}],
-	"RQ Worker": [{"role": INFRASTRUCTURE, "read": 1}],
-	"Error Log": [{"role": INFRASTRUCTURE, "read": 1}],
-	"Scheduled Job Log": [{"role": INFRASTRUCTURE, "read": 1}],
-	"Scheduled Job Type": [{"role": INFRASTRUCTURE, "read": 1}],
-	"Patch Log": [{"role": INFRASTRUCTURE, "read": 1}],
+	"RQ Job": [{"role": INFRASTRUCTURE, "read": 1}, READER],
+	"RQ Worker": [{"role": INFRASTRUCTURE, "read": 1}, READER],
+	"Error Log": [{"role": INFRASTRUCTURE, "read": 1}, READER],
+	"Scheduled Job Log": [{"role": INFRASTRUCTURE, "read": 1}, READER],
+	"Scheduled Job Type": [{"role": INFRASTRUCTURE, "read": 1}, READER],
+	"Patch Log": [{"role": INFRASTRUCTURE, "read": 1}, READER],
 	"Email Queue": [
 		{"role": INFRASTRUCTURE, "read": 1},
+		READER,
 		# The message and attachments are at permlevel 1, see FIELD_LEVELS
 		{"role": "System Manager", "permlevel": 1, "read": 1, "write": 1, "export": 1},
 	],
 	"Email Account": [
 		{"role": INFRASTRUCTURE, "read": 1},
+		READER,
 		{"role": "Press Marketplace Manager", "read": 1, "export": 1},
 		{"role": "Agent", "read": 1, "export": 1},
+		# The Frappe Mail API key is at permlevel 1, see FIELD_LEVELS
+		{"role": "System Manager", "permlevel": 1, "read": 1, "write": 1},
+		{"role": "Inbox User", "permlevel": 1, "read": 1},
+		{"role": INFRASTRUCTURE, "permlevel": 1, "read": 1},
+		{"role": "Press Marketplace Manager", "permlevel": 1, "read": 1},
+		{"role": "Agent", "permlevel": 1, "read": 1},
 	],
 	# The SQL guard in press/access/sql_guard.py limits what the console runs
 	"System Console": [{"role": INFRASTRUCTURE, "read": 1, "write": 1}],
@@ -38,6 +48,7 @@ CORE_RULES: dict[str, list[dict]] = {
 # Email bodies hold password reset links and login codes
 FIELD_LEVELS: dict[str, dict[str, int]] = {
 	"Email Queue": {"message": 1, "attachments": 1},
+	"Email Account": {"api_key": 1},
 }
 
 
