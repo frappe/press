@@ -71,6 +71,11 @@ class TestSharedServerMigration(FrappeTestCase):
 		)
 		return action.name
 
+	def make_group_public(self):
+		frappe.db.set_value("Release Group", self.group.name, "public", 1)
+		frappe.clear_document_cache("Release Group", self.group.name)
+		self.site = frappe.get_doc("Site", self.site.name)
+
 	def offered_servers(self, capacity: dict[str, tuple[float, float, float]]) -> list[dict]:
 		with patch_public_server_health_metrics({self.site.server: ROOMY, **capacity}):
 			return self.site.shared_servers_with_free_capacity()
@@ -100,11 +105,35 @@ class TestSharedServerMigration(FrappeTestCase):
 
 		self.assertEqual(self.offered_servers({destination.name: ROOMY}), [])
 
-	def test_shared_server_without_an_active_bench_of_the_group_is_not_offered(self):
-		destination = self.add_server_running_the_group()
-		frappe.db.set_value("Bench", {"server": destination.name}, "status", "Archived")
+	def test_shared_server_that_does_not_run_the_bench_yet_is_offered_for_a_deploy(self):
+		destination = create_test_server(cluster=self.region, public=True)
 
-		self.assertEqual(self.offered_servers({destination.name: ROOMY}), [])
+		servers = self.offered_servers({destination.name: ROOMY})
+
+		self.assertEqual([server["name"] for server in servers], [destination.name])
+		self.assertTrue(servers[0]["needs_deploy"])
+		self.assertIsNone(servers[0]["bench"])
+
+	def test_server_that_already_runs_the_bench_beats_a_roomier_one_without_it(self):
+		running_the_bench = self.add_server_running_the_group()
+		roomier = create_test_server(cluster=self.region, public=True)
+
+		with patch_public_server_health_metrics(
+			{self.site.server: ROOMY, running_the_bench.name: (0.25, 0.55, 0.5), roomier.name: ROOMY}
+		):
+			destination = self.site.pick_shared_server_for_migration()
+
+		self.assertEqual(destination["name"], running_the_bench.name)
+		self.assertFalse(destination["needs_deploy"])
+
+	def test_shared_bench_is_only_offered_servers_that_already_run_it(self):
+		self.make_group_public()
+		without_the_bench = create_test_server(cluster=self.region, public=True)
+		with_the_bench = self.add_server_running_the_group()
+
+		servers = self.offered_servers({without_the_bench.name: ROOMY, with_the_bench.name: ROOMY})
+
+		self.assertEqual([server["name"] for server in servers], [with_the_bench.name])
 
 	def test_shared_server_held_back_from_scheduling_is_not_offered(self):
 		destination = self.add_server_running_the_group()
@@ -150,11 +179,29 @@ class TestSharedServerMigration(FrappeTestCase):
 				crowded.name,
 			)
 
-	def test_site_whose_bench_runs_on_no_other_shared_server_is_told_where_to_go_instead(self):
+	def test_region_with_no_other_shared_server_is_told_to_try_another_region(self):
+		alone_in_region = create_test_cluster("Oslo", public=True)
+		site: Site = create_test_site(
+			bench=create_test_bench(
+				server=create_test_server(cluster=alone_in_region.name, public=True).name
+			).name
+		)
+
+		with patch_public_server_health_metrics({site.server: ROOMY}):
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"Oslo has no other shared server to move this site to",
+				site.pick_shared_server_for_migration,
+			)
+
+	def test_shared_bench_that_runs_nowhere_else_is_told_to_try_another_region(self):
+		self.make_group_public()
+		create_test_server(cluster=self.region, public=True)
+
 		with patch_public_server_health_metrics({self.site.server: ROOMY}):
 			self.assertRaisesRegex(
 				frappe.ValidationError,
-				"bench runs on no other shared server in .*You can move the site to a different region",
+				"shared bench runs on no other server in .*move the site to a different region",
 				self.site.pick_shared_server_for_migration,
 			)
 
@@ -208,6 +255,7 @@ class TestSharedServerMigration(FrappeTestCase):
 		self.assertEqual(target["region"], self.site.region_title)
 		self.assertEqual(target["destination_server"]["name"], destination.name)
 		self.assertEqual(target["destination_server"]["free_memory_percent"], 60.0)
+		self.assertFalse(target["destination_server"]["needs_deploy"])
 
 	def test_site_on_a_dedicated_server_cannot_move_to_a_shared_server(self):
 		dedicated_bench = create_test_bench()
