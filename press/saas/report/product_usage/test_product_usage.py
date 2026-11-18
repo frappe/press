@@ -103,7 +103,7 @@ class TestProductUsage(FrappeTestCase):
 
 	def test_product_team_runs_the_report_and_gets_only_counts_per_app(self):
 		self.create_site()
-		frappe.set_user(create_staff_user("Press Employee", "Press Product Team"))
+		frappe.set_user(create_staff_user("Press Product Team"))
 
 		result = run("Product Usage", {"from_date": add_days(today(), -1), "to_date": today()})
 
