@@ -49,7 +49,9 @@
 					OEM support from Frappe
 				</div>
 				<h2 class="text-2xl font-semibold text-ink-gray-9">{{ plan.title }}</h2>
-				<p class="text-base leading-relaxed text-ink-gray-7">
+				<p
+					class="whitespace-pre-line text-base leading-relaxed text-ink-gray-7"
+				>
 					{{ plan.description ||
 						"A yearly contract with Frappe for the apps you run, on Frappe Cloud or on your own servers." }}
 				</p>

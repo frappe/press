@@ -33,7 +33,7 @@
 		},
 		{
 			"fieldname": "description",
-			"fieldtype": "Data",
+			"fieldtype": "Long Text",
 			"label": "Description"
 		},
 		{
@@ -82,7 +82,7 @@
 		}
 	],
 	"links": [],
-	"modified": "2026-11-17 19:00:00.000000",
+	"modified": "2026-11-18 14:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Enterprise Warranty Plan",

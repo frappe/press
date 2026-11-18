@@ -18,7 +18,7 @@ class EnterpriseWarrantyPlan(Document):
 		from frappe.types import DF
 
 		coverage: DF.SmallText | None
-		description: DF.Data | None
+		description: DF.LongText | None
 		enabled: DF.Check
 		max_price_lock_years: DF.Int
 		price_inr: DF.Currency

@@ -39,7 +39,9 @@
 				<div
 					class="mt-2 rounded-md border border-outline-gray-3 p-4 text-base text-ink-gray-9"
 				>
-					<div v-if="plan.description" class="mb-4">{{ plan.description }}</div>
+					<div v-if="plan.description" class="mb-4 whitespace-pre-line">
+						{{ plan.description }}
+					</div>
 					<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 						<div
 							v-for="item in plan.coverage"
