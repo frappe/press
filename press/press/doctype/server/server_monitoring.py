@@ -105,7 +105,11 @@ def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
 	server_plan_prices = _get_public_server_plan_prices(server_names)
 	pool_decision = _get_public_server_pool_decision(servers_by_cluster, metrics, server_plan_prices)
 	_apply_public_server_pool_decision(server_names, pool_decision)
-	server_issues = pool_decision["server_issues"] | _get_public_database_server_disk_issues()
+	server_issues = (
+		pool_decision["server_issues"]
+		| _get_public_database_server_disk_issues()
+		| _get_excluded_public_server_disk_issues()
+	)
 	_send_public_server_pool_health_alert(server_issues)
 	_create_no_suitable_servers_incident(pool_decision["fallback_servers_by_cluster"], metrics)
 
@@ -418,6 +422,26 @@ def _get_disk_used_ratio_query(instance_matcher: str, mountpoint: str = "/") -> 
 		f'device!~"rootfs", mountpoint="{mountpoint}"}} / node_filesystem_size_bytes{{'
 		f'instance=~"^({instance_matcher})$", job="node", device!~"rootfs", mountpoint="{mountpoint}"}})'
 	)
+
+
+def _get_excluded_public_server_disk_issues() -> dict[str, list[str]]:
+	"""Excluded servers skip the pool check, but still host benches and get deploys."""
+	servers = frappe.get_all(
+		"Server",
+		filters={"status": "Active", "is_primary": True, "public": True, "exclude_for_scheduling": True},
+		pluck="name",
+	)
+	prometheus_connection = _get_public_server_pool_prometheus_connection()
+	if not (servers and prometheus_connection):
+		return {}
+
+	instance_matcher = "|".join(_escape_prometheus_regex_literal(name) for name in servers)
+	results = _query_prometheus_vector(_get_disk_used_ratio_query(instance_matcher), *prometheus_connection)
+	return {
+		server: [f"Disk utilization: {ratio * 100:.2f}%"]
+		for server, ratio in _build_public_server_metric_map(servers, results).items()
+		if ratio > 0.9
+	}
 
 
 def _get_public_database_server_disk_issues() -> dict[str, list[str]]:
