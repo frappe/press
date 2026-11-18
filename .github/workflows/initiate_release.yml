@@ -10,7 +10,7 @@ on:
 
 jobs:
   create-release:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.SELF_HOSTED_RUNNERS == 'true' && !github.event.pull_request.head.repo.fork && 'self-hosted' || 'ubuntu-latest' }}
 
     steps:
       - name: Checkout
