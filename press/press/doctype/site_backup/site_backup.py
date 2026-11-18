@@ -471,11 +471,18 @@ class OngoingSnapshotError(Exception):
 	pass
 
 
-def track_offsite_backups(site: str, backup_data: dict, offsite_backup_data: dict) -> tuple:
+def get_uploaded_bucket(job: AgentJob) -> str:
+	"""The bucket the agent uploaded to. The cluster's bucket can change after the upload."""
+	offsite_config = json.loads(job.request_data or "{}").get("offsite") or {}
+	return offsite_config.get("bucket") or get_backup_bucket(frappe.db.get_value("Site", job.site, "cluster"))
+
+
+def track_offsite_backups(job: AgentJob, backup_data: dict, offsite_backup_data: dict) -> tuple:
+	site = job.site
 	remote_files = {"database": None, "site_config": None, "public": None, "private": None}
 
 	if offsite_backup_data:
-		bucket = get_backup_bucket(frappe.db.get_value("Site", site, "cluster"))
+		bucket = get_uploaded_bucket(job)
 		for type, backup in backup_data.items():
 			file_name, file_size = backup["file"], backup["size"]
 			file_path = offsite_backup_data.get(file_name)
@@ -540,7 +547,7 @@ def process_backup_site_job_update(job):
 					remote_config_file,
 					remote_public,
 					remote_private,
-				) = track_offsite_backups(job.site, backup_data, offsite_backup_data)
+				) = track_offsite_backups(job, backup_data, offsite_backup_data)
 
 				site_backup_dict = {
 					"files_availability": "Available",
@@ -705,7 +712,7 @@ def _create_site_backup_from_agent_job(job: "AgentJob"):
 			remote_config_file,
 			remote_public,
 			remote_private,
-		) = track_offsite_backups(job.site, backup_data, offsite_backup_data)
+		) = track_offsite_backups(job, backup_data, offsite_backup_data)
 
 		site_server = frappe.db.get_value("Site", job.site, "server")
 		site_backup = frappe.get_doc(

@@ -283,6 +283,40 @@ class TestSiteBackup(FrappeTestCase):
 		self.assertTrue(is_global_search_crashed(output))
 		self.assertFalse(is_global_search_crashed("Table './_db/tabUser' is marked as crashed"))
 
+	def test_archive_backup_records_the_bucket_the_agent_uploaded_to_not_the_clusters_current_one(self):
+		from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
+
+		database = {"file": "db.sql.gz", "size": 100, "url": "https://example.com/db.sql.gz"}
+		archive_job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Archive Site",
+				"site": self.site.name,
+				"server_type": "Server",
+				"server": self.site.server,
+				"request_path": "archive",
+				"request_data": json.dumps({"offsite": {"bucket": "uploaded-to.backups.frappe.cloud"}}),
+				"status": "Success",
+				"data": json.dumps({"backups": {"database": database}, "offsite": {"db.sql.gz": "path"}}),
+			}
+		).insert()
+		for step in ("Backup Site", "Upload Site Backup to S3"):
+			frappe.get_doc(
+				{
+					"doctype": "Agent Job Step",
+					"agent_job": archive_job.name,
+					"step_name": step,
+					"status": "Success",
+				}
+			).insert()
+
+		_create_site_backup_from_agent_job(archive_job)
+
+		self.assertEqual(
+			frappe.get_all("Remote File", {"site": self.site.name}, pluck="bucket"),
+			["uploaded-to.backups.frappe.cloud"],
+		)
+
 	def test_archiving_site_with_offsite_backup_creates_site_backup_record(self):
 		"""
 		When a site is archived after taking an offsite backup, test if a Site Backup record is created from the 'Archive Site' agent job's response.
