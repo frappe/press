@@ -16,7 +16,8 @@ concurrency:
 jobs:
   changes:
     name: Check for Changes and Lint
-    runs-on: ubuntu-latest
+    # The bench jobs wait for this job, so it runs where they run.
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'self-hosted' }}
     outputs:
       changed-python: ${{ steps.changed-python-files.outputs.any_changed }}
       changed-python-files: ${{ steps.changed-python-files.outputs.all_changed_files }}
