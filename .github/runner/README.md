@@ -25,7 +25,7 @@ GitHub does not move a job to a GitHub-hosted runner when no self-hosted runner 
 | `runner.sh` | The entrypoint: starts dockerd, registers the runner on the first start, then runs it |
 | `cleanup.sh` | The job-started hook |
 | `compose.yaml` | Starts N runners on one VM |
-| `prune.sh` | Weekly cron job: removes Docker data that no runner uses |
+| `prune.sh` | Weekly cron job: stops the runners, removes unused Docker data and saved runs, then starts the runners. Clears the pip and yarn caches on the first Sunday of each month |
 
 ## Requirements
 
@@ -82,7 +82,7 @@ Do these steps as root on the VM, unless the step says "on your computer".
 
    On GitHub, the runners show in Settings → Actions → Runners.
 
-7. Install the weekly prune. Each image rebuild leaves an old image, build cache and the volumes of the replaced containers:
+7. Install the weekly prune. Each image rebuild leaves an old image, build cache and the volumes of the replaced containers, and the shared caches grow. The prune waits up to 30 minutes for running jobs, then stops the runners for about one minute. Cron runs it on Sunday morning. On the first Sunday of each month, it also clears the pip and yarn caches:
 
    ```sh
    install -m 755 /opt/runner/prune.sh /etc/cron.weekly/runner-prune
