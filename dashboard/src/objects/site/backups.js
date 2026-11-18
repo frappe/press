@@ -56,7 +56,7 @@ export function backupRecordsOptions() {
 			{
 				label: 'Timestamp',
 				fieldname: 'creation',
-				width: 1,
+				width: 1.5,
 				format(value) {
 					return `Backup on ${date(value, 'llll')}`
 				},
@@ -117,6 +117,24 @@ export function backupRecordsOptions() {
 				type: 'Icon',
 				Icon(value) {
 					return value ? 'check' : ''
+				},
+			},
+			{
+				// The region of the bucket that holds the offsite files of this backup
+				label: 'Region',
+				fieldname: 'region',
+				width: '140px',
+				format(value) {
+					return value?.title || ''
+				},
+				prefix(row) {
+					if (!row.region?.image) return
+					return h('img', {
+						src: row.region.image,
+						alt: row.region.title,
+						title: row.region.region,
+						class: 'h-4 w-4',
+					})
 				},
 			},
 		],
