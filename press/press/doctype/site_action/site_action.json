@@ -28,7 +28,7 @@
 			"in_list_view": 1,
 			"in_standard_filter": 1,
 			"label": "Action Type",
-			"options": "Move From Private To Shared Bench\nMove Site To Different Server / Bench\nMove Site To Different Region",
+			"options": "Move From Private To Shared Bench\nMove Site To Different Server / Bench\nMove Site To Different Region\nMove Site To Another Shared Server",
 			"reqd": 1
 		},
 		{

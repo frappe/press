@@ -7,7 +7,7 @@
 				? [
 						{
 							label: selectedMigrationChoiceDetails?.button_label || 'Proceed',
-							disabled: migrationRequestLoading,
+							disabled: cannotProceed,
 							variant: 'solid',
 							onClick: triggerMigration,
 						},
@@ -241,6 +241,50 @@
 					</div>
 				</div>
 
+				<!-- Move Site to Another Shared Server -->
+				<div
+					v-else-if="
+						selectedMigrationMode === 'Move Site To Another Shared Server'
+					"
+					class="flex flex-col gap-3"
+				>
+					<div
+						v-if="$resources.sharedServerTarget.loading"
+						class="flex h-20 items-center justify-center"
+					>
+						<Spinner class="h-4 w-4 text-ink-gray-6" />
+					</div>
+					<div
+						v-else-if="sharedServerDestination"
+						class="flex flex-col gap-3 rounded-md border p-3"
+					>
+						<div>
+							<p class="text-sm text-ink-gray-7">Destination server</p>
+							<p class="mt-1 text-base font-medium text-ink-gray-9">
+								{{ sharedServerDestination.title }}
+							</p>
+						</div>
+						<p class="text-p-base text-ink-gray-6">
+							This is the shared server in {{ sharedServerRegion }} with the
+							most room to spare right now. The site keeps its bench group and
+							its plan.
+						</p>
+						<div
+							class="flex flex-wrap gap-x-6 gap-y-1 text-p-base text-ink-gray-7"
+						>
+							<span>
+								Memory free: {{ sharedServerDestination.free_memory_percent }}%
+							</span>
+							<span>
+								CPU idle: {{ sharedServerDestination.idle_cpu_percent }}%
+							</span>
+							<span>
+								Disk free: {{ sharedServerDestination.free_disk_percent }}%
+							</span>
+						</div>
+					</div>
+				</div>
+
 				<!-- Checkbox  -->
 				<Checkbox
 					v-if="selectedMigrationMode"
@@ -357,8 +401,11 @@ export default {
 		}
 	},
 	watch: {
-		selectedMigrationMode() {
+		selectedMigrationMode(mode) {
 			this.resetValues(true)
+			if (mode === 'Move Site To Another Shared Server') {
+				this.$resources.sharedServerTarget.submit()
+			}
 		},
 	},
 	resources: {
@@ -376,6 +423,23 @@ export default {
 				auto: true,
 				onSuccess: () => {
 					this.autoSelectMigrationOption()
+				},
+			}
+		},
+		sharedServerTarget() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'get_shared_server_migration_target',
+					}
+				},
+				onSuccess: (result) => {
+					// The plan is created against this server, and the backend checks
+					// again that it still has room when the move runs.
+					this.selectedServerToMoveTo = result?.message?.destination_server?.name
 				},
 			}
 		},
@@ -445,6 +509,7 @@ export default {
 			return (
 				this.$resources?.createMigrationPlan?.error ??
 				this.$resources?.migrateSite?.error ??
+				this.$resources?.sharedServerTarget?.error ??
 				''
 			)
 		},
@@ -551,6 +616,26 @@ export default {
 					?.dedicated_servers_for_new_release_group ?? []
 			)
 		},
+		sharedServerTarget() {
+			return this.$resources?.sharedServerTarget?.data?.message ?? null
+		},
+		sharedServerDestination() {
+			return this.sharedServerTarget?.destination_server ?? null
+		},
+		sharedServerRegion() {
+			return this.sharedServerTarget?.region ?? ''
+		},
+		sharedServerCooldownDays() {
+			if (this.selectedMigrationMode !== 'Move Site To Another Shared Server')
+				return 0
+			return this.selectedMigrationChoiceOptions?.cooldown_days ?? 0
+		},
+		cannotProceed() {
+			if (this.migrationRequestLoading) return true
+			if (this.selectedMigrationMode === 'Move Site To Another Shared Server')
+				return !this.sharedServerDestination
+			return false
+		},
 		availableRegionsToMoveSiteTo() {
 			if (this.selectedMigrationMode !== 'Move Site To Different Region')
 				return []
@@ -573,6 +658,9 @@ export default {
 					'Site will be unavailable during this process.',
 				'Move Site To Different Region':
 					'Site will be unavailable during this process.',
+				'Move Site To Another Shared Server': this.sharedServerCooldownDays
+					? `Site will be unavailable during this process, and it can move to another shared server only once every ${this.sharedServerCooldownDays} days.`
+					: 'Site will be unavailable during this process.',
 			}[this.selectedMigrationMode]
 		},
 		scheduledTimeInIST() {
@@ -626,6 +714,9 @@ export default {
 			}
 			if (this.$resources?.migrateSite) {
 				this.$resources.migrateSite.error = null
+			}
+			if (this.$resources?.sharedServerTarget) {
+				this.$resources.sharedServerTarget.error = null
 			}
 		},
 		openServerActions(action) {
