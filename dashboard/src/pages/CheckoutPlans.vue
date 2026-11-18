@@ -89,7 +89,7 @@ export default {
 					this.$plural(plan.cpu_time_per_day, 'hour', 'hours') +
 					' CPU per day',
 				this.formatBytes(plan.max_database_usage, 0, 2) + ' Database',
-				this.formatBytes(plan.max_storage_usage, 0, 2) + ' Storge',
+				this.formatBytes(plan.max_storage_usage, 0, 2) + ' Storage',
 			];
 			if (plan.support_included) {
 				features.push('Product warranty + Support');
