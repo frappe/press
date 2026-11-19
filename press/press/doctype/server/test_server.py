@@ -667,6 +667,20 @@ class TestServer(FrappeTestCase):
 			server._install_wazuh_agent("wazuh.example.com", "4.12.0-1")
 		self.assertEqual(Ansible.call_args.kwargs["variables"]["wazuh_agent_version"], "4.12.0-1")
 
+	def test_set_additional_config_enqueues_the_sctp_block_on_the_server(self):
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.frappe.enqueue_doc") as enqueue_doc:
+			server.set_additional_config()
+		enqueue_doc.assert_any_call("Server", server.name, "_block_sctp")
+
+	def test_block_sctp_runs_the_block_sctp_playbook_on_the_server(self):
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			server._block_sctp()
+		self.assertEqual(Ansible.call_args.kwargs["playbook"], "block_sctp.yml")
+		self.assertEqual(Ansible.call_args.kwargs["server"], server)
+		Ansible.return_value.run.assert_called_once()
+
 	def test_reconcile_installs_wazuh_agent_only_on_active_set_up_servers_without_it(self):
 		self._configure_wazuh()
 		missing = create_test_server()

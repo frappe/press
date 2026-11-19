@@ -1947,6 +1947,17 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Swappiness Setup Exception", doc=self)
 
+	def block_sctp(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_block_sctp")
+
+	def _block_sctp(self):
+		Ansible(
+			playbook="block_sctp.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+		).run()
+
 	@frappe.whitelist()
 	def update_tls_certificate(self, throw_on_failure: bool = False):
 		from press.press.doctype.tls_certificate.tls_certificate import (
@@ -2898,6 +2909,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		"""Set both `Server` and `Database Server` additional config for Unified Servers"""
 		# Common config for both Server and Database Server
 		self.set_swappiness()
+		self.block_sctp()
 		self.add_glass_file()
 		self.install_filebeat()
 
@@ -2945,6 +2957,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				self.add_or_update_mariadb_variable("tmpdir", "value_str", "/opt/volumes/mariadb/tmp")
 
 		self.set_swappiness()
+		self.block_sctp()
 		self.add_glass_file()
 		self.install_filebeat()
 		self.install_wazuh_agent_if_configured()
