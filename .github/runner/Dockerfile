@@ -21,10 +21,9 @@ COPY --from=docker:29-dind /usr/local/bin/dind /usr/local/bin/dind
 # fails with "command not found" or a missing library.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        iptables build-essential pkg-config wget xz-utils cron tzdata \
+        iptables build-essential pkg-config xz-utils cron tzdata \
         python-is-python3 gh \
         mariadb-client libmariadb-dev \
-        fontconfig libxrender1 libxext6 libjpeg-turbo8 \
     && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
         | tar -xJ -C /usr/local --strip-components=1 \
     && npm install -g yarn \
