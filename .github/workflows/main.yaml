@@ -519,7 +519,10 @@ jobs:
         working-directory: /home/runner/frappe-bench
         run: |
           bench --site test_site set-config allow_tests true
-          bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 3 --build-number ${{ matrix.container }}
+          # bench runs ../env/bin/python -m frappe.utils.bench_helper from sites/. This runs
+          # the same CLI, with the test files split by their times in test-durations.json.
+          cd sites && ../env/bin/python ${GITHUB_WORKSPACE}/.github/helper/run-server-tests.py \
+            frappe --site test_site run-parallel-tests --app press --with-coverage --total-builds 3 --build-number ${{ matrix.container }}
         env:
           TYPE: server
           COVERAGE_RCFILE: /home/runner/frappe-bench/apps/press/.coveragerc
