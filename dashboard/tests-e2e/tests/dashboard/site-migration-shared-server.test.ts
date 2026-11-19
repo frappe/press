@@ -9,6 +9,8 @@ const DESTINATION = {
 	free_memory_percent: 62,
 	idle_cpu_percent: 78,
 	free_disk_percent: 71,
+	bench: 'bench-0001-000002-f4-mumbai',
+	needs_deploy: false,
 }
 
 // Mirrors `frappe.throw` from Site.pick_shared_server_for_migration. frappe-ui
@@ -75,8 +77,17 @@ function migrationOptions(isDedicatedServer: boolean) {
 	}
 }
 
-const migrationTarget = {
-	message: { message: { region: 'Mumbai', destination_server: DESTINATION } },
+function migrationTarget(needsDeploy: boolean) {
+	return {
+		message: {
+			message: {
+				region: 'Mumbai',
+				destination_server: needsDeploy
+					? { ...DESTINATION, bench: null, needs_deploy: true }
+					: DESTINATION,
+			},
+		},
+	}
 }
 
 function docMethod(route: Route): string | null {
@@ -85,7 +96,7 @@ function docMethod(route: Route): string | null {
 
 async function mockSite(
 	page: Page,
-	{ isDedicatedServer = false, hasRoom = true } = {},
+	{ isDedicatedServer = false, hasRoom = true, needsDeploy = false } = {},
 ) {
 	await page.route(
 		/\/api\/method\/press\.api\.client\.get\b/,
@@ -129,7 +140,9 @@ async function mockSite(
 				await route.fulfill({
 					status: hasRoom ? 200 : 417,
 					contentType: 'application/json',
-					body: JSON.stringify(hasRoom ? migrationTarget : noRoomError),
+					body: JSON.stringify(
+						hasRoom ? migrationTarget(needsDeploy) : noRoomError,
+					),
 				})
 			} else {
 				await route.continue()
@@ -181,6 +194,42 @@ test('moves a site on a shared server to the shared server with room', async ({
 	await expect(dialog.getByText('CPU idle: 78%')).toBeVisible()
 	await expect(dialog.getByText('Disk free: 71%')).toBeVisible()
 	await expect(dialog.getByRole('button', { name: 'Move Site' })).toBeEnabled()
+})
+
+test('says the bench gets deployed when the server does not run it yet', async ({
+	page,
+}) => {
+	await mockSite(page, { needsDeploy: true })
+	await page.goto(`/dashboard/sites/${SITE_NAME}/actions`)
+
+	await expect(page.getByRole('heading', { name: SHORTCUT })).toBeVisible({
+		timeout: 30000,
+	})
+	await shortcutRow(page).getByRole('button', { name: 'Move Site' }).click()
+
+	const dialog = page.getByRole('dialog', { name: 'Migrate Site' })
+	await expect(dialog.getByText(DESTINATION.title)).toBeVisible()
+	await expect(
+		dialog.getByText('Your bench does not run there yet, so we deploy it first'),
+	).toBeVisible()
+	// One click still does the whole thing
+	await expect(dialog.getByRole('button', { name: 'Move Site' })).toBeEnabled()
+})
+
+test('leaves out the deploy note when the server already runs the bench', async ({
+	page,
+}) => {
+	await mockSite(page)
+	await page.goto(`/dashboard/sites/${SITE_NAME}/actions`)
+
+	await expect(page.getByRole('heading', { name: SHORTCUT })).toBeVisible({
+		timeout: 30000,
+	})
+	await shortcutRow(page).getByRole('button', { name: 'Move Site' }).click()
+
+	const dialog = page.getByRole('dialog', { name: 'Migrate Site' })
+	await expect(dialog.getByText(DESTINATION.title)).toBeVisible()
+	await expect(dialog.getByText('so we deploy it first')).toHaveCount(0)
 })
 
 test('offers no shared server move to a site on a dedicated server', async ({

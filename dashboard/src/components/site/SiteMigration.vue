@@ -269,6 +269,14 @@
 							most room to spare right now. The site keeps its bench group and
 							its plan.
 						</p>
+						<p
+							v-if="sharedServerDestination.needs_deploy"
+							class="text-p-base text-ink-gray-6"
+						>
+							Your bench does not run there yet, so we deploy it first. That
+							takes a few minutes, and the site stays up until the move itself
+							starts.
+						</p>
 						<div
 							class="flex flex-wrap gap-x-6 gap-y-1 text-p-base text-ink-gray-7"
 						>
