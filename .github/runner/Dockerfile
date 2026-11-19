@@ -16,15 +16,16 @@ ENV TZ=Etc/UTC
 # Docker's helper that lets dockerd run inside a container on cgroup v2.
 COPY --from=docker:29-dind /usr/local/bin/dind /usr/local/bin/dind
 
-# Tools that GitHub's ubuntu-24.04 image has and the workflows use.
+# Tools that GitHub's ubuntu-24.04 image has and the workflows use, and the
+# packages of the "Cache apt" steps in main.yaml, which self-hosted jobs skip.
 # ponytail: list found by reading the workflows; add packages here when a job
 # fails with "command not found" or a missing library.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        iptables build-essential pkg-config wget xz-utils cron tzdata \
+        iptables build-essential pkg-config xz-utils cron tzdata \
         python-is-python3 gh \
         mariadb-client libmariadb-dev \
-        fontconfig libxrender1 libxext6 libjpeg-turbo8 \
+        redis-server libcups2-dev \
     && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
         | tar -xJ -C /usr/local --strip-components=1 \
     && npm install -g yarn \
