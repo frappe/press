@@ -13,7 +13,7 @@ DASHBOARD_METHODS = {
 	"press.api.client.run_doc_method": ("dt", None),
 	"press.api.client.delete": ("doctype", "delete"),
 }
-READ_ONLY_ROLES = {"Press Support L1"}
+READ_ONLY_ROLES = {"Press Support L1", "Press Infrastructure Reader"}
 METHOD_PATH = re.compile(r"^/api/(?:v1/|v2/)?method/(.+?)/?$")
 RESOURCE_PATH = re.compile(r"^/api/(?:v1/)?resource/([^/]+)/.+$")
 DOCUMENT_PATH = re.compile(r"^/api/v2/document/([^/]+)/.+/method/([^/]+)/?$")

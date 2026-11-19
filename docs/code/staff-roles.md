@@ -12,6 +12,7 @@ Manager only to the few admins who need shells and secrets.
 | Press Support L1 | First-line support (L1) that finds issues. Reads everything that Press Support Engineer reads, except the bench shell and its logs, and changes nothing. Presses only buttons marked `@safe_for_readers`. Can also run the MariaDB and customer email reports, request team deletion, transfer resources between teams and rotate site passwords |
 | Press Support Engineer | Engineering support (L2). Full access to teams, sites, backups, updates, domains, webhooks, apps, release groups, benches and deploys. Read, write and every button on servers, database servers, proxy servers and virtual machines, but not create or delete. Create on TLS certificates, server activities and Press notifications, which buttons make as a side effect. Read only on agent jobs, Press jobs, incidents, restorations, TLS certificates, billing, Marketplace, Product and Partner records |
 | Press Infrastructure Manager | Servers, virtual machines, clusters, agent jobs, Press jobs, monitoring, incidents, cloud cost |
+| Press Infrastructure Reader | Reads every DocType that Press Infrastructure Manager reads, and changes nothing. Gets no console, shell, SSH key or report. Both support profiles include it |
 | Press Release Manager | Apps, app sources, app releases, release groups, benches, deploy candidates, builds, deploys |
 | Press Billing Manager | Invoices, payments, payouts, subscriptions, usage records, plans |
 | Press Security Manager | Wazuh, malware scans, abuse reports, blocked domains, audit logs and User 2FA (read only) |
@@ -20,7 +21,7 @@ Manager only to the few admins who need shells and secrets.
 | Press Marketplace Manager | Marketplace apps, app reviews, release approvals |
 | Partner Manager | Partners, partner leads, certificates, consultants |
 
-Except for the two support roles, the scopes do not share read access. For example, a
+Except for the support roles and Press Infrastructure Reader, the scopes do not share read access. For example, a
 Billing Manager cannot open a Site. Add a second scope role or a second Role
 Profile when a job needs both.
 
@@ -35,8 +36,8 @@ they call the method from desk. Press code that calls the method, and customers
 on the dashboard, are not affected. Press Support Engineer can press the
 buttons on agent jobs, Press jobs, restorations and incidents.
 
-Press Support L1 is listed in `READ_ONLY_ROLES`. When a staff user reads a DocType
-only through a read-only role, `check_staff_role` lets them call only the
+Press Support L1 and Press Infrastructure Reader are listed in `READ_ONLY_ROLES`.
+When a staff user reads a DocType only through read-only roles, `check_staff_role` lets them call only the
 methods marked `@safe_for_readers`, such as `Site.get_backup_schedule` or
 `Server.ping_agent`. Mark a method safe only when it changes no record, queues
 no job and returns no secret. The rule also covers `press.api.client.run_doc_method`
@@ -60,6 +61,20 @@ roles, only System Manager and the owning scope role read them:
 Agent Job `request_data` and `request_files`, Ansible Play `variables`, and the
 `secret_key` of Marketplace App Subscription and Saas App Subscription.
 
+These secret fields are at permlevel 1 so that Press Infrastructure Reader does
+not see them. System Manager and Press Infrastructure Manager read them: Cluster
+`frappe_compute_api_key`, Monitor Server `webhook_token`, Storage Integration
+Subscription `secret_key`, Trace Server `sentry_oauth_client_secret`, and
+Wireguard Peer `peer_config`, which holds the private key of the peer. The
+`api_key` of Email Account is also at permlevel 1, and every role that reads
+Email Account except Press Infrastructure Reader reads it.
+
+Press Infrastructure Reader still reads the logs that SREs read: Error Log, RQ
+Job, Scheduled Job Log, Agent Request Failure, Process Snapshot and Press
+Workflow Object. Their tracebacks and arguments can hold secrets. On the
+Frappe DocTypes in `core_permissions.py`, the role reads only, without report
+or export.
+
 ## Press Employee
 
 Every employee gets Press Employee. It only lets them request a Support
@@ -72,8 +87,8 @@ It has no desk access, so it adds no desk page.
 | Role Profile | Roles |
 |--------------|-------|
 | Press Employee | Press Employee, Press User |
-| Press Support L1 | Press Support L1 |
-| Press Support Engineer | Press Support Engineer (L2) |
+| Press Support L1 | Press Support L1, Infrastructure Reader |
+| Press Support Engineer | Press Support Engineer (L2), Infrastructure Reader |
 | Press Site Reliability Engineer | Infrastructure, Press Support Engineer |
 | Press Security Engineer | Security, Infrastructure |
 | Press SSH Access Manager | SSH Manager |
@@ -203,7 +218,8 @@ roles.
   database.
 - The rules of Press roles on Frappe DocTypes are in
   `press/access/core_permissions.py`: job internals, Email Queue and Email
-  Account for Press Infrastructure Manager, and the System Console. Every
+  Account for Press Infrastructure Manager and Press Infrastructure Reader, and
+  the System Console. Every
   migrate writes them, with the rules of Frappe, to Custom DocPerm. Press
   refuses other Custom DocPerms on these DocTypes. The email message and
   attachments are at permlevel 1, which only System Manager reads, because they
