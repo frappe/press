@@ -1,4 +1,6 @@
 ---
+# Ubuntu's packages supply the systemd unit, /etc/nginx and the www-data setup.
+# The binary and the headers-more module are then replaced with our own build.
 - name: Install NGINX
   apt:
     pkg:
@@ -9,73 +11,179 @@
     state: present
   ignore_errors: yes
 
-- name: Setup NGINX Source Repository
-  copy:
-    content: 'deb-src http://nginx.org/packages/mainline/ubuntu/ {{ ansible_distribution_release }} nginx'
-    dest: /etc/apt/sources.list.d/nginx.list
-
-- name: Add NGINX Repository Key
-  apt_key:
-    url: https://nginx.org/keys/nginx_signing.key
-    state: present
-
-- name: Update APT Cache
-  apt:
-    update_cache: yes
-
-- name: Install NGINX Build Dependencies
-  apt:
-    pkg:
-      - nginx
-    state: build-dep
-  ignore_errors: yes
-
-- name: Extract NGINX Version
-  shell: "nginx -v 2>&1 | grep -oP '[\\d.]*'"
-  register: nginx_version
-
-- name: Create NGINX Source Directory
+# Older versions of this role added this repository for build-dep. Its signing
+# key has expired, which fails apt update.
+- name: Remove NGINX Source Repository
   file:
-    dest: /opt/nginx
-    state: directory
+    path: /etc/apt/sources.list.d/nginx.list
+    state: absent
 
-- name: Download NGINX Source Archive
-  unarchive:
-    src: http://nginx.org/download/nginx-{{ nginx_version.stdout }}.tar.gz
-    dest: /opt/nginx
-    remote_src: yes
+- name: Hold Ubuntu NGINX Packages
+  shell: >
+    dpkg-query -W -f '${db:Status-Abbrev} ${Package}\n' 'nginx*' 'libnginx-mod-*'
+    | awk '$1 ~ /^[ih]i/ {print $2}' | xargs -r apt-mark hold
 
-- name: Clone NGINX VTS Module Repository
-  git:
-    repo: https://github.com/vozlt/nginx-module-vts
-    dest: /opt/nginx-modules/nginx-module-vts
+- name: Check NGINX Version
+  command: nginx -v
+  register: nginx_installed_version
+  changed_when: false
 
-- name: Extract NGINX Compile Flags
-  shell: "nginx -V 2>&1 | grep -oP '\\--with-[-\\w]* '  | tr '\\n' ' '"
-  register: nginx_compile_flags
+- name: Build NGINX {{ nginx_version }}
+  when: ("nginx/" ~ nginx_version) not in nginx_installed_version.stderr
+  vars:
+    nginx_source_directory: '{{ nginx_build_directory }}/nginx-{{ nginx_version }}'
+    headers_more_directory: '{{ nginx_build_directory }}/headers-more-nginx-module-{{ headers_more_version }}'
+  block:
+    - name: Install NGINX Build Dependencies
+      apt:
+        pkg:
+          - build-essential
+          - libpcre3-dev
+          - libssl-dev
+          - zlib1g-dev
+        update_cache: yes
 
-- name: Configure NGINX Modules
-  shell: './configure {{ nginx_compile_flags.stdout }} --add-dynamic-module=/opt/nginx-modules/nginx-module-vts'
-  args:
-    chdir: '/opt/nginx/nginx-{{ nginx_version.stdout }}'
+    - name: Create NGINX Build Directory
+      file:
+        path: '{{ nginx_build_directory }}'
+        state: directory
 
-- name: Compile NGINX modules
-  shell: 'make modules'
-  args:
-    chdir: '/opt/nginx/nginx-{{ nginx_version.stdout }}'
+    - name: Download NGINX Source
+      get_url:
+        url: https://nginx.org/download/nginx-{{ nginx_version }}.tar.gz
+        dest: '{{ nginx_build_directory }}/nginx-{{ nginx_version }}.tar.gz'
+        checksum: 'sha256:{{ nginx_sha256 }}'
 
-- name: Copy NGINX VTS Module Shared Object File
-  copy:
-    src: '/opt/nginx/nginx-{{ nginx_version.stdout }}/objs/ngx_http_vhost_traffic_status_module.so'
-    dest: /usr/lib/nginx/modules
-    remote_src: yes
+    - name: Download headers-more Module Source
+      get_url:
+        url: https://github.com/openresty/headers-more-nginx-module/archive/refs/tags/v{{ headers_more_version }}.tar.gz
+        dest: '{{ nginx_build_directory }}/headers-more-{{ headers_more_version }}.tar.gz'
+        checksum: 'sha256:{{ headers_more_sha256 }}'
 
-- name: Create VTS Database File
-  file:
-    path: /var/log/nginx/vts.db
-    state: touch
-    owner: www-data
-    group: www-data
+    - name: Extract Sources
+      unarchive:
+        src: '{{ nginx_build_directory }}/{{ item }}.tar.gz'
+        dest: '{{ nginx_build_directory }}'
+        remote_src: yes
+      loop:
+        - nginx-{{ nginx_version }}
+        - headers-more-{{ headers_more_version }}
+
+    # Paths match Ubuntu's package. Stream is built in for proxy failover.
+    - name: Configure NGINX
+      command: >
+        ./configure
+        --with-cc-opt='-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fPIC -Wdate-time -D_FORTIFY_SOURCE=2'
+        --with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -fPIC'
+        --prefix=/usr/share/nginx
+        --conf-path=/etc/nginx/nginx.conf
+        --http-log-path=/var/log/nginx/access.log
+        --error-log-path=/var/log/nginx/error.log
+        --lock-path=/var/lock/nginx.lock
+        --pid-path=/run/nginx.pid
+        --modules-path=/usr/lib/nginx/modules
+        --http-client-body-temp-path=/var/lib/nginx/body
+        --http-fastcgi-temp-path=/var/lib/nginx/fastcgi
+        --http-proxy-temp-path=/var/lib/nginx/proxy
+        --http-scgi-temp-path=/var/lib/nginx/scgi
+        --http-uwsgi-temp-path=/var/lib/nginx/uwsgi
+        --with-compat
+        --with-debug
+        --with-pcre-jit
+        --with-threads
+        --with-http_ssl_module
+        --with-http_v2_module
+        --with-http_stub_status_module
+        --with-http_realip_module
+        --with-http_auth_request_module
+        --with-http_dav_module
+        --with-http_slice_module
+        --with-http_addition_module
+        --with-http_gunzip_module
+        --with-http_gzip_static_module
+        --with-http_sub_module
+        --with-stream
+        --with-stream_ssl_module
+        --with-stream_ssl_preread_module
+        --add-dynamic-module={{ headers_more_directory }}
+      args:
+        chdir: '{{ nginx_source_directory }}'
+
+    - name: Compile NGINX
+      command: make -j{{ ansible_processor_vcpus }}
+      args:
+        chdir: '{{ nginx_source_directory }}'
+
+    # Ubuntu's nginx.conf loads every module in modules-enabled. Those modules
+    # are built for Ubuntu's nginx and do not load into ours.
+    - name: Find Ubuntu NGINX Module Configs
+      find:
+        paths: /etc/nginx/modules-enabled
+        patterns: '*.conf'
+        file_type: any
+      register: ubuntu_module_configs
+
+    - name: Disable Ubuntu NGINX Modules
+      file:
+        path: '{{ item.path }}'
+        state: absent
+      loop: '{{ ubuntu_module_configs.files }}'
+      loop_control:
+        label: '{{ item.path }}'
+
+    - name: Back Up NGINX Binary and Module
+      copy:
+        src: '{{ item }}'
+        dest: '{{ item }}.old'
+        remote_src: yes
+        mode: preserve
+      loop:
+        - /usr/sbin/nginx
+        - /usr/lib/nginx/modules/ngx_http_headers_more_filter_module.so
+
+    - name: Install NGINX Binary and Module
+      block:
+        - name: Install NGINX Binary
+          copy:
+            src: '{{ nginx_source_directory }}/objs/nginx'
+            dest: /usr/sbin/nginx
+            remote_src: yes
+            mode: '0755'
+
+        - name: Install headers-more Module
+          copy:
+            src: '{{ nginx_source_directory }}/objs/ngx_http_headers_more_filter_module.so'
+            dest: /usr/lib/nginx/modules/ngx_http_headers_more_filter_module.so
+            remote_src: yes
+            mode: '0644'
+
+        - name: Test NGINX Configuration
+          command: nginx -t
+      rescue:
+        # nginx is not restarted yet, so the old binary still serves traffic.
+        - name: Restore NGINX Binary and Module
+          copy:
+            src: '{{ item }}.old'
+            dest: '{{ item }}'
+            remote_src: yes
+            mode: preserve
+          loop:
+            - /usr/sbin/nginx
+            - /usr/lib/nginx/modules/ngx_http_headers_more_filter_module.so
+
+        # Ubuntu links 50-mod-x.conf to modules-available/mod-x.conf.
+        - name: Restore Ubuntu NGINX Modules
+          file:
+            src: "/usr/share/nginx/modules-available/{{ item.path | basename | regex_replace('^[0-9]+-', '') }}"
+            dest: '{{ item.path }}'
+            state: link
+          loop: '{{ ubuntu_module_configs.files }}'
+          loop_control:
+            label: '{{ item.path }}'
+
+        - name: Fail Upgrade
+          fail:
+            msg: 'NGINX {{ nginx_version }} rejected the configuration. The old binary was restored.'
 
 - name: Remove Default Enabled NGINX Virtual Host
   file:
