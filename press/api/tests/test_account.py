@@ -16,7 +16,7 @@ from press.api.account import (
 	signup,
 	validate_pincode,
 )
-from press.overrides import on_login
+from press.overrides import login_via_frappe, on_login
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.team.team import Team
 from press.press.doctype.team.team_members import get_invitations
@@ -543,6 +543,35 @@ class TestDisable2FA(TestCase):
 		with user_context(self.team.user):
 			self.assertRaisesRegex(frappe.ValidationError, "code is incorrect", disable_2fa, "000000")
 		self.assertEqual(frappe.db.get_value("User 2FA", self.team.user, "enabled"), 1)
+
+
+class TestLoginViaFrappe(TestCase):
+	def setUp(self):
+		self.team = create_test_team()
+		create_test_user_2fa(self.team.user)
+		self.login_hook = Mock(side_effect=lambda code, state: on_login(Mock(user=self.team.user)))
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def login_via_frappe(self):
+		"""Frappe's OAuth callback, with the provider round trip replaced by the login hook."""
+		with user_context("Guest"), patch("press.overrides.oauth2_logins.login_via_frappe", self.login_hook):
+			login_via_frappe("code", "state")
+
+	def test_login_via_frappe_logs_in_a_user_with_2fa_without_the_press_2fa_code(self):
+		self.login_via_frappe()
+		self.login_hook.assert_called_once_with("code", "state")
+
+	def test_other_logins_still_need_the_press_2fa_code_after_a_login_via_frappe(self):
+		self.login_via_frappe()
+		with user_context("Guest"):
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"Please re-login to verify your identity.",
+				on_login,
+				Mock(user=self.team.user),
+			)
 
 
 class TestReactivateAccount(TestCase):
