@@ -1101,7 +1101,7 @@ def get_frappe_io_auth_url() -> str | None:
 		and get_oauth_keys(provider.name)
 		and provider.get_password("client_secret")
 	):
-		return get_oauth2_authorize_url(provider.name, redirect_to="")
+		return get_oauth2_authorize_url(provider.name, redirect_to="/dashboard")
 	return None
 
 
