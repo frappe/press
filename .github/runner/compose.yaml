@@ -14,3 +14,8 @@ services:
       RUNNER_TOKEN: ${RUNNER_TOKEN:-}
     volumes:
       - /var/lib/docker # one anonymous volume per replica
+      # Shared by all runners on this VM. Setup Bench saves the bench for the
+      # Client and Server jobs of the same run in /cache/runs/<run id>.
+      # ponytail: works only while all runners are on one VM; with more VMs,
+      # use GitHub's cache again or a shared cache server.
+      - /opt/runner-cache:/cache

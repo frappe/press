@@ -8,7 +8,9 @@ Each runner is a Docker container. The container also runs its own Docker daemon
 
 The image is `ghcr.io/actions/actions-runner` (Ubuntu 24.04), plus the tools that the jobs need and that GitHub's `ubuntu-24.04` image has. The `Dockerfile` lists these tools.
 
-GitHub-hosted runners give each job a new VM. Here, a container runs many jobs. Before each job, `cleanup.sh` removes the containers, `~/frappe-bench` and `/data` that the previous job left.
+GitHub-hosted runners give each job a new VM. Here, a container runs many jobs. Before each job, `cleanup.sh` stops the processes and removes the containers, `~/frappe-bench` and `/data` that the previous job left.
+
+Self-hosted jobs do not use GitHub's cache. All runners on the VM share the pip and yarn caches in `/opt/runner-cache/pip` and `/opt/runner-cache/yarn`. The Install step of Setup Bench holds a file lock (`flock /cache/yarn/.lock`), so two installs do not write the yarn cache at the same time. Do not use yarn's own `--mutex`: the press postinstall runs yarn inside yarn, and the inner yarn waits forever for its parent's lock. Setup Bench copies the bench and the MariaDB data to `/opt/runner-cache/runs/<run id>` on the VM, and the Client and Server jobs copy them from there. `cleanup.sh` removes runs older than one day. Each run uses some GB of disk. This works only while all runners are on one VM.
 
 The repository variable `SELF_HOSTED_RUNNERS` selects the runners for every workflow in `.github/workflows/`:
 
@@ -23,6 +25,7 @@ GitHub does not move a job to a GitHub-hosted runner when no self-hosted runner 
 | `runner.sh` | The entrypoint: starts dockerd, registers the runner on the first start, then runs it |
 | `cleanup.sh` | The job-started hook |
 | `compose.yaml` | Starts N runners on one VM |
+| `prune.sh` | Weekly cron job: stops the runners, removes unused Docker data and saved runs, then starts the runners. Clears the pip and yarn caches on the first Sunday of each month |
 
 ## Requirements
 
@@ -79,6 +82,12 @@ Do these steps as root on the VM, unless the step says "on your computer".
 
    On GitHub, the runners show in Settings → Actions → Runners.
 
+7. Install the weekly prune. Each image rebuild leaves an old image, build cache and the volumes of the replaced containers, and the shared caches grow. The prune waits up to 30 minutes for running jobs, then stops the runners for about one minute. Cron runs it on Sunday morning. On the first Sunday of each month, it also clears the pip and yarn caches:
+
+   ```sh
+   install -m 755 /opt/runner/prune.sh /etc/cron.weekly/runner-prune
+   ```
+
 The token expires after one hour. A runner uses the token only when it registers. The containers restart after a reboot and do not register again.
 
 ## Update the image
@@ -98,7 +107,7 @@ Do this when you change the `Dockerfile` or the scripts. New containers register
    ```sh
    cd /opt/runner
    docker compose build
-   docker compose down
+   docker compose down -v
    docker compose up -d --scale runner=6
    ```
 
@@ -125,7 +134,7 @@ To remove runners, set a lower number. Then remove the offline runners from GitH
 
 ```sh
 cd /opt/runner
-docker compose down
+docker compose down -v
 ```
 
 Then remove the offline runners from GitHub (Update the image, step 5).
