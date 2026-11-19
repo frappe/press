@@ -10,7 +10,7 @@ import frappe
 import requests
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import flt, sbool
+from frappe.utils import cint, flt, sbool
 
 from press.access.actions import ReleaseGroupActions
 from press.access.decorators import ensure_can_perform
@@ -1259,7 +1259,8 @@ def search_releases(
 		q.where((AppRelease.public == 1) & (AppRelease.status == "Approved"))
 		.where((AppRelease.app == app) & (AppRelease.source == source))
 		.orderby(AppRelease.timestamp, order=frappe.qb.desc)
-		.limit(limit)
+		# Postponed annotations skip the type check of Frappe, so limit can arrive as a string
+		.limit(cint(limit))
 	)
 
 	return q.run(as_dict=1)
