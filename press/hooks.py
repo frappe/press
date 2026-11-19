@@ -482,7 +482,10 @@ before_tests = "press.tests.before_test.execute"
 # Overriding Methods
 # ------------------------------
 #
-override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
+override_whitelisted_methods = {
+	"upload_file": "press.overrides.upload_file",
+	"frappe.integrations.oauth2_logins.login_via_frappe": "press.overrides.login_via_frappe",
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
