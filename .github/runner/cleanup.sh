@@ -17,6 +17,8 @@ done
 
 docker rm -f $(docker ps -aq) >/dev/null 2>&1 || true
 docker network prune -f >/dev/null
+# Lazy, because the processes killed above can still hold files in the mount.
+sudo umount --lazy /home/runner/frappe-bench 2>/dev/null || true
 sudo rm -rf /home/runner/frappe-bench /data
 
 # Benches that Setup Bench saved for runs that ended more than a day ago.
