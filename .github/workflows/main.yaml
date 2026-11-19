@@ -247,7 +247,7 @@ jobs:
 
       # All self-hosted runners are on one VM and share /cache (see
       # .github/runner/compose.yaml). A local copy is faster than an upload to
-      # GitHub's cache. The Client and Server jobs copy it back.
+      # GitHub's cache. The Client and Server jobs mount it with overlayfs.
       - name: Save bench directory on the runner VM
         if: runner.environment == 'self-hosted'
         run: |
@@ -355,9 +355,9 @@ jobs:
           path: /home/runner/frappe-bench
           key: bench-dir-${{ github.run_id }}
 
-      - name: Restore bench directory from the runner VM
+      - name: Mount bench directory from the runner VM
         if: runner.environment == 'self-hosted'
-        run: cp -a /cache/runs/${{ github.run_id }}/frappe-bench /home/runner/
+        run: bash ${GITHUB_WORKSPACE}/.github/helper/mount-bench.sh
 
       - name: Install Bench command
         run: pip install frappe-bench
@@ -418,6 +418,11 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           name: press-dashboard
           flags: dashboard
+
+      # The old cleanup.sh in the runner image cannot remove a mounted bench.
+      - name: Unmount bench directory
+        if: always() && runner.environment == 'self-hosted'
+        run: if mountpoint -q /home/runner/frappe-bench; then sudo umount --lazy /home/runner/frappe-bench; fi
 
   server-tests:
     needs: [changes, install]
@@ -493,9 +498,9 @@ jobs:
           path: /home/runner/frappe-bench
           key: bench-dir-${{ github.run_id }}
 
-      - name: Restore bench directory from the runner VM
+      - name: Mount bench directory from the runner VM
         if: runner.environment == 'self-hosted'
-        run: cp -a /cache/runs/${{ github.run_id }}/frappe-bench /home/runner/
+        run: bash ${GITHUB_WORKSPACE}/.github/helper/mount-bench.sh
 
       - name: Install Bench command
         run: pip install frappe-bench
@@ -540,6 +545,11 @@ jobs:
           name: bench-start-logs-${{ matrix.container }}
           path: /home/runner/frappe-bench/bench_start_logs.txt
         if: always()
+
+      # The old cleanup.sh in the runner image cannot remove a mounted bench.
+      - name: Unmount bench directory
+        if: always() && runner.environment == 'self-hosted'
+        run: if mountpoint -q /home/runner/frappe-bench; then sudo umount --lazy /home/runner/frappe-bench; fi
 
   coverage:
     name: Coverage Wrap Up
