@@ -23,6 +23,18 @@
     dpkg-query -W -f '${db:Status-Abbrev} ${Package}\n' 'nginx*' 'libnginx-mod-*'
     | awk '$1 ~ /^[ih]i/ {print $2}' | xargs -r apt-mark hold
 
+# VTS is off on all servers, but configs that the agent rendered before the
+# option existed still load it, and nginx 1.31.9 refuses the 1.18 module. The
+# real files are edited, because /etc/nginx/nginx.conf is a symlink to the first.
+- name: Remove VTS from NGINX Configs
+  lineinfile:
+    path: '{{ item }}'
+    regexp: 'vhost_traffic_status'
+    state: absent
+  loop:
+    - /home/frappe/agent/nginx/nginx.conf
+    - /home/frappe/agent/nginx.conf
+
 - name: Check NGINX Version
   command: nginx -v
   register: nginx_installed_version
@@ -207,3 +219,13 @@
     name: nginx
     state: restarted
     enabled: yes
+
+# Only after the restart: if a config still loaded VTS, the restart failed first.
+- name: Remove VTS Module Files
+  file:
+    path: '{{ item }}'
+    state: absent
+  loop:
+    - /usr/lib/nginx/modules/ngx_http_vhost_traffic_status_module.so
+    - /var/log/nginx/vts.db
+    - /opt/nginx-modules/nginx-module-vts
