@@ -3,6 +3,7 @@
 
 frappe.ui.form.on('NFS Server', {
 	refresh(frm) {
+		press.add_console_button(frm)
 		;[
 			[
 				__('Prepare Server'),
