@@ -4,12 +4,17 @@
 # `docker compose build` on the VM. gh needs admin access to frappe/press.
 #
 # Usage: rolling.sh <ssh destination> <RUNNER_PREFIX> [number of runners]
+# The number of runners defaults to the number of containers on the VM.
 set -euo pipefail
 
-host=$1 prefix=$2 count=${3:-6}
+host=$1 prefix=$2
 api=repos/frappe/press/actions/runners
 
-vm() { ssh "$host" "$@"; }
+# Without a keepalive, a call on a dropped connection waits forever. With it,
+# the call fails after about two minutes, and you run the script again.
+vm() { ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=4 "$host" "$@"; }
+
+count=${3:-$(vm 'cd /opt/runner && docker compose ps -q | wc -l')}
 
 while true; do
 	new=$(vm 'docker image inspect -f "{{.Id}}" runner-runner')
