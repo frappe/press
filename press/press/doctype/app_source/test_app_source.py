@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.api.github import GithubFetchError
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.team.test_team import create_test_team
@@ -114,3 +115,51 @@ class TestAppSource(FrappeTestCase):
 		source.last_github_poll_failed = False
 
 		self.assertFalse(source.branch_deleted)
+
+
+class TestAppSourceRepoUrl(FrappeTestCase):
+	def setUp(self):
+		frappe.db.set_single_value("Press Settings", "github_access_token", "github_pat_press")
+		frappe.db.set_single_value("Press Settings", "clone_with_github_access_token", 0)
+		self.source: AppSource = frappe.get_doc(
+			{
+				"doctype": "App Source",
+				"app": "hrms",
+				"repository_url": "https://github.com/frappe/hrms",
+				"repository_owner": "frappe",
+				"repository": "hrms",
+			}
+		)
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_repo_url_without_installation_has_no_token_while_cloning_with_press_token_is_off(self):
+		self.assertEqual(self.source.get_repo_url(), "https://github.com/frappe/hrms")
+
+	def test_repo_url_without_installation_carries_press_token_once_cloning_with_it_is_on(self):
+		frappe.db.set_single_value("Press Settings", "clone_with_github_access_token", 1)
+
+		self.assertEqual(
+			self.source.get_repo_url(), "https://x-access-token:github_pat_press@github.com/frappe/hrms"
+		)
+
+	@patch("press.press.doctype.app_source.app_source.get_access_token", return_value="ghs_installation")
+	def test_repo_url_with_installation_uses_installation_token_over_press_token(self, get_access_token):
+		frappe.db.set_single_value("Press Settings", "clone_with_github_access_token", 1)
+		self.source.github_installation_id = "12345"
+
+		self.assertEqual(
+			self.source.get_repo_url(), "https://x-access-token:ghs_installation@github.com/frappe/hrms"
+		)
+		get_access_token.assert_called_once_with("12345")
+
+	@patch("press.press.doctype.app_source.app_source.get_access_token", return_value=None)
+	def test_repo_url_with_installation_raises_when_installation_token_cannot_be_fetched(self, _):
+		self.source.github_installation_id = "12345"
+
+		with self.assertRaises(GithubFetchError) as context:
+			self.source.get_repo_url()
+
+		# deploy_notifications.py matches on this message
+		self.assertEqual(context.exception.args[0], "App installation token could not be fetched")
