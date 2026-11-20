@@ -61,7 +61,7 @@ def get_package_manager_files_from_repo(app: str, repo_path: str):
 
 
 def _get_package_manager_files_from_repo(
-	repo_path: str,
+	repo_path: str | Path,
 	recursive: bool,
 ) -> tuple[Path | None, list[Path]]:
 	pyproject_toml: Path | None = None
