@@ -22,7 +22,6 @@ from press.exceptions import TeamHeaderNotInRequestError
 from press.guards import role_guard
 from press.guards.role_guard.notification import restrict_to_roles
 from press.telemetry import sentry
-from press.utils import has_role
 
 if typing.TYPE_CHECKING:
 	from frappe.model.meta import Meta
@@ -160,11 +159,7 @@ def get_list(
 			"To fetch child table records, please provide both 'parenttype' and 'parent' in the filters."
 		)
 
-	apply_team_filter = not (
-		filters.get("skip_team_filter_for_system_user_and_support_agent")
-		and (frappe.local.system_user() or has_role("Press Employee"))
-	)
-	if apply_team_filter and meta.has_field("team"):
+	if not skips_team_filter(filters, valid_filters) and meta.has_field("team"):
 		valid_filters.team = frappe.local.team().name
 
 	query = get_list_query(
@@ -195,6 +190,27 @@ def get_list(
 		return query
 
 	return []
+
+
+def skips_team_filter(filters: dict, valid_filters: frappe._dict) -> bool:
+	"""Staff can list the records of another team under a document that they can access."""
+	if not filters.get("skip_team_filter_for_system_user_and_support_agent"):
+		return False
+	if frappe.local.system_user():
+		return True
+	parent = parent_in_filters(valid_filters)
+	return parent is not None and has_support_access(*parent)
+
+
+def parent_in_filters(filters: frappe._dict) -> tuple[str, str] | None:
+	"""The one document that the filters limit a list to."""
+	group = filters.get("group") or filters.get("release_group")
+	if isinstance(group, str):
+		return ("Release Group", group)
+	doctype, name = filters.get("document_type"), filters.get("document_name")
+	if isinstance(doctype, str) and isinstance(name, str) and frappe.db.exists("DocType", doctype):
+		return (doctype, name)
+	return None
 
 
 def get_list_query(

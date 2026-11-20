@@ -26,6 +26,25 @@ def create_test_employee(role: str = "Press Marketplace Manager") -> Team:
 	return team
 
 
+def grant_site_access(employee: Team, site: str, **permissions):
+	"""An accepted Support Access from the team of `site` to `employee`."""
+	access = frappe.get_doc(
+		{
+			"doctype": "Support Access",
+			"requested_by": employee.user,
+			"requested_team": employee.name,
+			"reason": "Debugging",
+			"resources": [{"document_type": "Site", "document_name": site}],
+		}
+	).insert(ignore_permissions=True)
+	allowed_till = frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=1)
+	frappe.db.set_value(
+		"Support Access",
+		access.name,
+		{"status": "Accepted", "access_allowed_till": allowed_till, **permissions},
+	)
+
+
 @patch("frappe.sendmail", new=Mock())
 @patch.object(Site, "get_login_sid", new=Mock(return_value="sid"))
 class TestEmployeeConsent(FrappeTestCase):
@@ -47,21 +66,7 @@ class TestEmployeeConsent(FrappeTestCase):
 		self.addCleanup(switched.stop)
 
 	def grant(self, **permissions):
-		access = frappe.get_doc(
-			{
-				"doctype": "Support Access",
-				"requested_by": self.employee.user,
-				"requested_team": self.employee.name,
-				"reason": "Debugging",
-				"resources": [{"document_type": "Site", "document_name": self.site.name}],
-			}
-		).insert(ignore_permissions=True)
-		allowed_till = frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=1)
-		frappe.db.set_value(
-			"Support Access",
-			access.name,
-			{"status": "Accepted", "access_allowed_till": allowed_till, **permissions},
-		)
+		grant_site_access(self.employee, self.site.name, **permissions)
 
 	def site_rules(self) -> frappe._dict:
 		data = frappe._dict(doctype="Site", name=self.site.name, team=self.site.team)

@@ -83,11 +83,6 @@ frappe.ui.form.on('Team', {
 			'Actions',
 		)
 
-		frm.add_custom_button('Impersonate Team', () => {
-			let team = frm.doc.name
-			window.open(`/dashboard/impersonate/${team}`)
-		})
-
 		if (frm.doc.payment_mode === 'Partner Credits') {
 			frm.add_custom_button('Get Partner Credits', () =>
 				frm.call('get_available_partner_credits').then((d) => {

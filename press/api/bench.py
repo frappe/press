@@ -39,6 +39,7 @@ from press.press.doctype.site_config.site_config import parse_json_config_value
 from press.press.doctype.team.team import get_child_team_members
 from press.press.doctype.team_change.team_change import confirm_transfer
 from press.utils import (
+	_system_user,
 	docs,
 	get_app_tag,
 	get_client_blacklisted_keys,
@@ -65,8 +66,7 @@ def new(bench):
 		frappe.throw("A bench group with this name already exists. Please choose a different name.")
 
 	if bench["server"] and not (
-		frappe.session.data.user_type == "System User"
-		or frappe.db.get_value("Server", bench["server"], "team") == team.name
+		_system_user() or frappe.db.get_value("Server", bench["server"], "team") == team.name
 	):
 		# Keep this message generic — do not reveal anything about servers the
 		# requesting team doesn't own, to avoid server enumeration.

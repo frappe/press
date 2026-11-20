@@ -73,20 +73,6 @@ export default {
 
 			return [
 				{
-					label: 'Impersonate Server Owner',
-					title: 'Impersonate Server Owner', // for label to pop-up on hover
-					slots: {
-						icon: defineAsyncComponent(
-							() => import('~icons/lucide/venetian-mask'),
-						),
-					},
-					condition: () =>
-						$team.doc?.is_desk_user && server.doc.team !== $team.name,
-					onClick() {
-						switchToTeam(server.doc.team)
-					},
-				},
-				{
 					label: 'Options',
 					button: {
 						label: 'Options',

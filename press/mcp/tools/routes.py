@@ -354,14 +354,6 @@ ROUTES: dict[tuple[str, ...], dict[str, Any]] = {
 			"productId": {"represents": "Product", "role": "primary"},
 		},
 	},
-	("/impersonate", ":teamId"): {
-		"route": "/impersonate/:teamId",
-		"page": "Team impersonation",
-		"primary_param": "teamId",
-		"params": {
-			"teamId": {"represents": "Team", "role": "primary"},
-		},
-	},
 	("/install-app", ":app"): {
 		"route": "/install-app/:app",
 		"page": "Install Marketplace App",

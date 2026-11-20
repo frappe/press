@@ -10,6 +10,7 @@ from frappe.model.base_document import get_controller
 from frappe.tests.utils import FrappeTestCase
 
 from press.access import ownership
+from press.access.test_employee_consent import grant_site_access
 from press.api.client import (
 	ALLOWED_DOCTYPES,
 	check_document_access,
@@ -574,12 +575,13 @@ class TestSetValue(FrappeTestCase):
 		self.assertEqual(frappe.db.get_value("Subscription", subscription.name, "enabled"), 1)
 
 
+@patch("frappe.sendmail", new=Mock())
 class TestSupportAgentTeamFilter(FrappeTestCase):
 	"""The dashboard shows a support agent a page it must also fill with data.
 
-	A support agent reads another team's agent job, but `get_list` pins every
-	doctype with a `team` field to the agent's own team. The error banner above
-	the job page stayed empty until the agent impersonated the customer.
+	A support agent with consent reads another team's agent job, but `get_list`
+	pins every doctype with a `team` field to the agent's own team. The error
+	banner above the job page stayed empty until the agent impersonated the customer.
 	"""
 
 	def setUp(self):
@@ -593,13 +595,16 @@ class TestSupportAgentTeamFilter(FrappeTestCase):
 		frappe.db.rollback()
 
 	def create_notification_for(self, team):
+		job = create_test_agent_job()
+		self.site = create_test_site(team=team.name)
+		job.db_set("site", self.site.name)
 		return frappe.get_doc(
 			{
 				"doctype": "Press Notification",
 				"team": team.name,
 				"type": "Agent Job Failure",
 				"document_type": "Agent Job",
-				"document_name": create_test_agent_job().name,
+				"document_name": job.name,
 				"class": "Error",
 				"is_actionable": True,
 				"title": "Server out of memory error",
@@ -618,8 +623,9 @@ class TestSupportAgentTeamFilter(FrappeTestCase):
 			"skip_team_filter_for_system_user_and_support_agent": skip_team_filter,
 		}
 
-	def test_support_agent_reads_the_notification_of_another_team(self):
+	def test_support_agent_with_consent_reads_the_notification_of_another_team(self):
 		self.make_support_agent(self.team)
+		grant_site_access(self.team, self.site.name)
 
 		sign_in_as(self.team)
 		names = [
@@ -629,8 +635,20 @@ class TestSupportAgentTeamFilter(FrappeTestCase):
 
 		self.assertEqual(names, [self.notification.name])
 
+	def test_support_agent_without_consent_reads_nothing_even_with_the_skip_filter(self):
+		self.make_support_agent(self.team)
+
+		sign_in_as(self.team)
+		names = [
+			row.name
+			for row in get_list("Press Notification", fields=["name"], filters=self.banner_filters(True))
+		]
+
+		self.assertEqual(names, [])
+
 	def test_support_agent_reads_nothing_without_the_skip_filter(self):
 		self.make_support_agent(self.team)
+		grant_site_access(self.team, self.site.name)
 
 		sign_in_as(self.team)
 		names = [

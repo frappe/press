@@ -19,7 +19,6 @@ from frappe.utils import cint, flt, sbool, time_diff_in_hours
 from frappe.utils.data import format_datetime, get_datetime
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.typing_validations import validate_argument_types
-from frappe.utils.user import is_system_user
 
 from press.access.support_access import has_support_access
 from press.guards import role_guard
@@ -89,12 +88,8 @@ def protected(doctypes):
 
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
-		user_type = frappe.session.data.user_type or frappe.get_cached_value(
-			"User", frappe.session.user, "user_type"
-		)
-
 		# System users have access to all endpoints.
-		if user_type == "System User":
+		if _system_user():
 			return wrapped(*args, **kwargs)
 
 		# Get the name of the document being accessed.
@@ -402,7 +397,7 @@ def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -
 		as_dict=True,
 	)
 
-	is_system_user = frappe.session.data.user_type == "System User"
+	is_system_user = _system_user()
 
 	_check_warranty_restrictions(
 		site,
@@ -1599,7 +1594,7 @@ def get_plans(name=None, rg=None):
 		release_group_name = rg if rg else frappe.db.get_value("Site", site_name, "group")
 		release_group = frappe.get_doc("Release Group", release_group_name)
 		is_private_bench = release_group.team == team and not release_group.public
-		is_system_user = frappe.db.get_value("User", frappe.session.user, "user_type") == "System User"
+		is_system_user = _system_user()
 		# poor man's bench paywall
 		# this will not allow creation of $10 sites on private benches
 		# wanted to avoid adding a new field, so doing this with a date check :)
@@ -1751,7 +1746,7 @@ def get(name):
 	rg_info = frappe.db.get_value("Release Group", site.group, ["team", "version", "public"], as_dict=True)
 	group_team = rg_info.team
 	frappe_version = rg_info.version
-	group_name = site.group if group_team == team or is_system_user(frappe.session.user) else None
+	group_name = site.group if group_team == team or _system_user() else None
 
 	server = frappe.db.get_value(
 		"Server",
@@ -2103,7 +2098,7 @@ def current_plan(name):
 		"total_database_usage": total_database_usage,
 		"total_storage_usage": total_storage_usage,
 		"database_access": plan.database_access if plan else None,
-		"monitor_access": (is_system_user(frappe.session.user) or (plan.monitor_access if plan else None)),
+		"monitor_access": (_system_user() or (plan.monitor_access if plan else None)),
 		"usage_in_percent": {
 			"cpu": site.current_cpu_usage,
 			"disk": site.current_disk_usage,

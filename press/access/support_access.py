@@ -6,6 +6,7 @@ from press import utils as press_utils
 from press.access import utils as access_utils
 from press.access.actions import ACTIONS_RULES, ReleaseGroupActions, ServerActions, SiteActions
 from press.access.incident_access import has_incident_access
+from press.utils.user import is_employee
 
 TAB_DF_MAP = {
 	"Site": {
@@ -36,6 +37,7 @@ COVERING_LINKS = {
 	"Deploy Candidate": (("group", "Release Group"),),
 	"Deploy Candidate Build": (("group", "Release Group"),),
 	"Release Pipeline": (("release_group", "Release Group"),),
+	"Site Update": (("site", "Site"),),
 }
 
 
@@ -104,7 +106,7 @@ def has_support_access(doctype: str, docname: str) -> bool:
 
 def has_grant(doctype: str, docname: str, rule: str | None) -> bool:
 	"""Whether an accepted Support Access lets an employee or support agent use `rule`."""
-	if not (press_utils._system_user() or press_utils.has_role("Press Employee")):
+	if not is_employee():
 		return False
 
 	covering = resources_covering(doctype, docname)
