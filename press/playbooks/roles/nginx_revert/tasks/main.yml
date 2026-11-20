@@ -1,0 +1,38 @@
+---
+# Reverts the nginx role: puts back the binary and the headers-more module that
+# it saved as .old. VTS stays removed.
+- name: Restore NGINX Binary and Module
+  copy:
+    src: '{{ item }}.old'
+    dest: '{{ item }}'
+    remote_src: yes
+    mode: preserve
+  loop:
+    - /usr/sbin/nginx
+    - /usr/lib/nginx/modules/ngx_http_headers_more_filter_module.so
+
+# The agent renders `http2 on;` only for nginx 1.31.9 or later, and the old
+# binary rejects it. With the old binary back, later renders leave it out.
+- name: Remove HTTP/2 from NGINX Configs
+  shell: >
+    grep -rlZ 'http2 on;' /home/frappe/agent/nginx.conf /home/frappe/agent/nginx /home/frappe/benches/*/nginx.conf 2>/dev/null
+    | xargs -0r sed -i '/^\s*http2 on;\s*$/d'
+
+# The nginx role removed these links. The postinst of each Ubuntu module
+# package names its link as mod-x.conf:NN-mod-x.conf.
+- name: Restore Ubuntu NGINX Modules
+  shell: >
+    grep -ho '[a-z0-9-]*\.conf:[0-9]*-[a-z0-9-]*\.conf' /var/lib/dpkg/info/libnginx-mod-*.postinst
+    | while IFS=: read from to; do ln -sfn /usr/share/nginx/modules-available/$from /etc/nginx/modules-enabled/$to; done
+
+- name: Unhold Ubuntu NGINX Packages
+  shell: apt-mark showhold | grep -E '^(nginx|libnginx-mod-)' | xargs -r apt-mark unhold
+
+- name: Test NGINX Configuration
+  command: nginx -t
+  changed_when: false
+
+- name: Restart NGINX
+  service:
+    name: nginx
+    state: restarted
