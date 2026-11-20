@@ -1,22 +1,33 @@
 <template>
 	<div class="space-y-5">
-		<div class="ml-auto mr-0 w-max space-x-2">
-			<Button
-				icon-left="refresh-cw"
-				label="Reload"
-				variant="subtle"
-				@click="() => roles.reload()"
-			/>
-			<Button
-				icon-left="plus"
-				variant="solid"
-				label="Create Role"
-				@click="showCreateDialog = !showCreateDialog"
-			/>
+		<div class="flex items-center justify-between">
+			<TextInput
+				placeholder="Search roles"
+				class="max-w-[20rem]"
+				v-model="searchQuery"
+			>
+				<template #prefix>
+					<lucide-search class="h-4 w-4 text-ink-gray-5" />
+				</template>
+			</TextInput>
+			<div class="space-x-2">
+				<Button
+					icon-left="refresh-cw"
+					label="Reload"
+					variant="subtle"
+					@click="() => roles.reload()"
+				/>
+				<Button
+					icon-left="plus"
+					variant="solid"
+					label="Create Role"
+					@click="showCreateDialog = !showCreateDialog"
+				/>
+			</div>
 		</div>
 		<div class="grid grid-cols-3 gap-4 text-base">
 			<RouterLink
-				v-for="role in roles.data"
+				v-for="role in filteredRoles"
 				:to="{
 					name: 'SettingsPermissionRolePermissions',
 					params: {
@@ -67,12 +78,6 @@
 				</div>
 			</RouterLink>
 		</div>
-		<Button
-			v-if="roles.hasNextPage"
-			icon-left="plus"
-			label="Load More"
-			@click="() => roles.next()"
-		/>
 		<RoleCreateDialog
 			v-model="showCreateDialog"
 			@create="
@@ -97,8 +102,9 @@
 </template>
 
 <script setup lang="ts">
-import { createListResource, createResource } from 'frappe-ui'
-import { onMounted, ref } from 'vue'
+import { createListResource, createResource, TextInput } from 'frappe-ui'
+import Fuse from 'fuse.js'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import RoleCreateDialog from './RoleCreateDialog.vue'
 
@@ -128,7 +134,21 @@ const roles = createListResource({
 	],
 	sortBy: 'title',
 	sortOrder: 'asc',
+	// Load all roles so that the search covers every role, not only the first page
+	pageLength: 99999,
 	auto: true,
+})
+
+const searchQuery = ref('')
+
+const filteredRoles = computed(() => {
+	const query = searchQuery.value.trim()
+	if (!query) {
+		return roles.data
+	}
+
+	const fuse = new Fuse(roles.data, { keys: ['title'], threshold: 0.3 })
+	return fuse.search(query).map((result) => result.item)
 })
 
 const insert = createResource({
