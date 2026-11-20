@@ -182,3 +182,4 @@ press.patches.v0_8_0.remove_custom_docperms_of_press_doctypes
 press.patches.v0_8_0.set_missing_cluster_backup_buckets
 # run by hand after deploy, with the execute command
 # press.patches.v0_8_0.bump_v16_nightly_node_version_to_24_22_1
+# press.patches.v0_8_0.reapply_slave_connections_needed_for_purge
