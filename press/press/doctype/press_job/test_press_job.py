@@ -11,6 +11,7 @@ from frappe.utils import add_to_date, now_datetime
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 from press.press.doctype.press_job.jobs.create_server import CreateServerJob
 from press.press.doctype.press_job.jobs.increase_disk_size import IncreaseDiskSizeJob
+from press.press.doctype.press_job.jobs.trigger_build_server_cleanup import TriggerBuildServerCleanupJob
 from press.press.doctype.press_settings.test_press_settings import create_test_press_settings
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.server.test_server import create_test_server
@@ -157,3 +158,38 @@ class TestCreateServerJobFailure(FrappeTestCase):
 
 		self.assertEqual(frappe.db.get_value("Server", self.server.name, "status"), "Active")
 		self.assertTrue(self.server.subscription.enabled)
+
+
+def make_build_cleanup_job(age_minutes: int) -> TriggerBuildServerCleanupJob:
+	return TriggerBuildServerCleanupJob(
+		{
+			"doctype": "Press Job",
+			"job_type": "Trigger Build Server Cleanup",
+			"server_type": "Server",
+			"server": "rb-test.frappe.cloud",
+			"creation": add_to_date(now_datetime(), minutes=-age_minutes),
+		}
+	)
+
+
+@patch.object(TriggerBuildServerCleanupJob, "defer_current_task")
+@patch(
+	"press.press.doctype.press_job.jobs.trigger_build_server_cleanup.get_active_build_count_by_build_server",
+	return_value={"rb-test.frappe.cloud": 2},
+)
+class TestTriggerBuildServerCleanupJob(FrappeTestCase):
+	def test_prune_waits_while_builds_run_on_the_server(self, _builds: Mock, mock_defer: Mock):
+		make_build_cleanup_job(age_minutes=5).wait_for_running_builds()
+
+		mock_defer.assert_called_once()
+
+	def test_prune_stops_waiting_for_builds_after_30_minutes(self, _builds: Mock, mock_defer: Mock):
+		make_build_cleanup_job(age_minutes=31).wait_for_running_builds()
+
+		mock_defer.assert_not_called()
+
+	def test_prune_does_not_wait_when_no_builds_run_on_the_server(self, mock_builds: Mock, mock_defer: Mock):
+		mock_builds.return_value = {"other.frappe.cloud": 3}
+		make_build_cleanup_job(age_minutes=5).wait_for_running_builds()
+
+		mock_defer.assert_not_called()
