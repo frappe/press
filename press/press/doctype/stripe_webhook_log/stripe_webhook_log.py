@@ -10,6 +10,7 @@ from frappe.model.document import Document
 
 import press.utils
 from press.api.billing import get_stripe
+from press.press.doctype.payment_webhook_attempt.payment_webhook_attempt import WebhookAttemptRecorder
 from press.utils.telemetry import capture_pulse
 
 
@@ -148,25 +149,41 @@ def allow_insert_log(event):
 def stripe_webhook_handler():
 	current_user = frappe.session.user
 	form_dict = frappe.local.form_dict
+	attempt = WebhookAttemptRecorder("Stripe")
 	try:
 		payload = frappe.request.get_data()
 		signature = frappe.get_request_header("Stripe-Signature")
 		# parse payload will verify the request
 		event = parse_payload(payload, signature)
+		attempt.verified(**stripe_event_details(event))
 		# set user to Administrator, to not have to do ignore_permissions everywhere
 		frappe.set_user("Administrator")
 
 		if not allow_insert_log(event):
+			attempt.processed("Stripe Webhook Log", event.get("id"), duplicate=True)
 			return
 		frappe.get_doc(
 			doctype="Stripe Webhook Log",
 			payload=frappe.as_json(event),
 		).insert()
-	except Exception:
+		attempt.processed("Stripe Webhook Log", event.get("id"))
+	except Exception as e:
 		frappe.db.rollback()
 		press.utils.log_error(title="Stripe Webhook Handler", stripe_event_id=form_dict.id)
+		attempt.failed(e)
 		frappe.set_user(current_user)
 		raise
+
+
+def stripe_event_details(event) -> dict:
+	"""Pick the fields of a Stripe event that the attempt log keeps."""
+	return {
+		"event_id": event.get("id"),
+		"event_type": event.get("type"),
+		"event_created_at": event.get("created"),
+		"order_id": get_invoice_id(event),
+		"payment_id": get_intent_id(event),
+	}
 
 
 def get_intent_id(form_dict):
