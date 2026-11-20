@@ -11,12 +11,6 @@
 - targets:
     - '{{ press_app_server }}'
   labels:
-    job: nginx
-    __metrics_path__: /metrics/nginx
-
-- targets:
-    - '{{ press_app_server }}'
-  labels:
     job: cadvisor
     __metrics_path__: /metrics/cadvisor
 

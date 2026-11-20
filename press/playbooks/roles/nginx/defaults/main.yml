@@ -1,0 +1,9 @@
+---
+# nginx.org has no 1.31 packages for Ubuntu 20.04, so nginx is built from source
+# on 20.04 and 22.04 alike. Checksums come from tarballs with a valid nginx.org
+# PGP signature.
+nginx_version: 1.31.9
+nginx_sha256: a11c5eeee2e257f4478f0e649f84b0040787d277d2d3e5233952aa6b6dcb80ad  # pragma: allowlist secret
+headers_more_version: '0.42'
+headers_more_sha256: 6f0e023e40149b19c8f9548a648ac53ac010e27829aee109abe88106609c041f  # pragma: allowlist secret
+nginx_build_directory: /opt/nginx
