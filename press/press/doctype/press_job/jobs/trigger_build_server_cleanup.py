@@ -34,4 +34,4 @@ class TriggerBuildServerCleanupJob(PressJob):
 			return
 
 		# Prune in this task, so that the job stays open (and new builds stay away) until the prune ends
-		self.server_doc._prune_docker_system()
+		self.server_doc._prune_docker_system(throw_on_failure=True)
