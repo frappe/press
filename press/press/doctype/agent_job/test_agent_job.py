@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 
 import frappe
 import responses
+from frappe.core.utils import find
 from frappe.handler import run_doc_method as frappe_run_doc_method
 from frappe.model.naming import make_autoname
 from frappe.tests.ui_test_helpers import create_test_user
@@ -25,6 +26,7 @@ from press.press.doctype.agent_job.agent_job import (
 	lock_doc_updated_by_job,
 	update_job,
 	update_step,
+	update_steps,
 )
 from press.press.doctype.agent_job.agent_job_notifications import (
 	DOC_URLS,
@@ -365,6 +367,51 @@ class TestAgentJob(FrappeTestCase):
 		self.assertEqual(in_execution_job.name, job.name)
 
 		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", True)
+
+
+def import_agent_job_type_from_fixture(job_type: str):
+	"""Import one Agent Job Type from the fixture file, so that the test reads
+	the fixture and not the copy that the test site imported at its last migrate."""
+	from frappe.modules.import_file import import_doc
+
+	path = frappe.get_app_path("press", "fixtures", "agent_job_type.json")
+	with open(path) as f:
+		docdict = find(json.load(f), lambda d: d["name"] == job_type)
+	return import_doc(docdict)
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestRemoteBuilderSteps(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		import_agent_job_type_from_fixture("Run Remote Builder")
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_failed_prepare_build_context_is_recorded_on_the_remote_build_job(self):
+		job = create_test_agent_job(job_type="Run Remote Builder", status="Running", job_id=1)
+		polled_steps = [
+			{"name": "Clone Repositories", "status": "Success"},
+			{"name": "Prepare Build Context", "status": "Failure"},
+			{"name": "Run Validations", "status": "Pending"},
+			{"name": "Build Image", "status": "Pending"},
+			{"name": "Push Docker Image", "status": "Pending"},
+			{"name": "Cleanup Context", "status": "Pending"},
+		]
+		for step in polled_steps:
+			step.update(
+				start="2026-11-09 10:00:00",
+				end="2026-11-09 10:00:05",
+				duration="00:00:05",
+				data={"traceback": "Prepare failed"} if step["status"] == "Failure" else {},
+			)
+
+		update_steps(job.name, {"steps": polled_steps})
+
+		step = frappe.get_doc("Agent Job Step", {"agent_job": job.name, "step_name": "Prepare Build Context"})
+		self.assertEqual(step.status, "Failure")
+		self.assertEqual(step.traceback, "Prepare failed")
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
