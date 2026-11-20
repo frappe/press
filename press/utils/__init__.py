@@ -269,6 +269,22 @@ def get_valid_teams_for_user(user):
 	return frappe.db.get_all("Team", filters={"name": ("in", teams), "enabled": 1}, fields=["name", "user"])
 
 
+# The owner or a member of an enabled partner team, in any team they act in.
+def is_partner_user(user: str) -> bool:
+	team = frappe.qb.DocType("Team")
+	member = frappe.qb.DocType("Team Member")
+	rows = (
+		frappe.qb.from_(team)
+		.left_join(member)
+		.on((member.parent == team.name) & (member.parenttype == "Team"))
+		.select(team.name)
+		.where((team.erpnext_partner == 1) & (team.enabled == 1))
+		.where((team.user == user) | (member.user == user))
+		.limit(1)
+	).run()
+	return bool(rows)
+
+
 def is_user_part_of_team(user, team):
 	"""Returns True if user is the team owner or an explicit member of the team"""
 	if frappe.db.get_value("Team", team, "user") == user:

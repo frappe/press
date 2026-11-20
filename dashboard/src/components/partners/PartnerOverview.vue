@@ -44,6 +44,20 @@
 			</div>
 		</div>
 
+		<div
+			class="flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 p-5"
+		>
+			<h3 class="text-base font-medium text-ink-gray-9">
+				Enterprise Warranty for your self-hosted clients
+			</h3>
+			<p class="text-base text-ink-gray-7">
+				Clients who run Frappe on their own servers can buy a yearly warranty
+				from Frappe on the Enterprise Warranty page of their Frappe Cloud
+				dashboard. Each contract your clients buy counts towards your partner
+				contribution, spread over 12 months.
+			</p>
+		</div>
+
 		<div class="rounded-lg text-base text-ink-gray-9 border">
 			<div class="flex flex-col gap-4 p-5">
 				<div class="flex items-center gap-2">

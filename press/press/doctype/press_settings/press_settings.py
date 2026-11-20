@@ -51,6 +51,11 @@ class PressSettings(Document):
 		backup_limit: DF.Int
 		backup_offset: DF.Int
 		backup_region: DF.Data | None
+		bank_account_name: DF.Data | None
+		bank_account_number: DF.Data | None
+		bank_branch: DF.Data | None
+		bank_ifsc_code: DF.Data | None
+		bank_name: DF.Data | None
 		backup_rotation_scheme: DF.Literal["FIFO", "Grandfather-father-son"]
 		bench_configuration: DF.Code
 		branch: DF.Data | None
@@ -176,6 +181,7 @@ class PressSettings(Document):
 		github_app_public_link: DF.Data | None
 		github_pat_token: DF.Data | None
 		github_webhook_secret: DF.Data | None
+		gst_home_state: DF.Data | None
 		gst_percentage: DF.Float
 		hetzner_server_limit: DF.Int
 		hetzner_vcpu_limit: DF.Int
