@@ -841,6 +841,7 @@ class VirtualMachine(Document):
 				"ansible_memtotal_mb": memory,
 				"mariadb_root_password": server.get_password("mariadb_root_password"),
 				"db_port": server.db_port or 3306,
+				"is_unified_server": server.is_unified_server,
 			}
 		if server.doctype == "Server" and server.is_unified_server:
 			database_server: DatabaseServer = frappe.get_doc("Database Server", server.database_server)
@@ -850,6 +851,7 @@ class VirtualMachine(Document):
 				"ansible_memtotal_mb": memory,
 				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
 				"db_port": database_server.db_port or 3306,
+				"is_unified_server": True,
 			}
 
 		return None
