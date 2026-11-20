@@ -317,6 +317,15 @@ class TestStaffRoleScopes(FrappeTestCase):
 		self.assertTrue(frappe.has_permission("Server", "write", user=user))
 		self.assertFalse(frappe.has_permission("Server", "create", user=user))
 
+	def test_support_engineer_resizes_disks_and_support_l1_only_reads_them(self):
+		engineer = create_staff_user("Press Support Engineer")
+		l1 = create_staff_user("Press Support L1")
+		for ptype in ("create", "write"):
+			with self.subTest(ptype=ptype):
+				self.assertTrue(frappe.has_permission("Virtual Disk Resize", ptype, user=engineer))
+				self.assertFalse(frappe.has_permission("Virtual Disk Resize", ptype, user=l1))
+		self.assertFalse(frappe.has_permission("Virtual Disk Resize", "delete", user=engineer))
+
 	def test_scope_roles_cannot_call_methods_that_return_secrets(self):
 		frappe.set_user(create_staff_user(*PROFILE_SCOPES))
 		for doctype, method in SECRET_METHODS:
