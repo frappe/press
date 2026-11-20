@@ -362,24 +362,43 @@ class TestAgentJobFailureCharts(FrappeTestCase):
 
 		self.assertEqual(self.datasets("Build Failures by Cluster"), {"Frankfurt": [0, 1], "Mumbai": [2, 0]})
 
-	def test_successful_new_bench_jobs_that_ended_in_the_period_fall_into_minute_bins_by_cluster(self):
+	def test_minutes_of_successful_new_bench_jobs_are_summed_by_creation_and_stacked_by_cluster(self):
 		mumbai = create_test_server(cluster="Mumbai").name
 		frankfurt = create_test_server(cluster=create_test_cluster("Frankfurt", "eu-central-1").name).name
-		for server, status, start, end in [
-			(mumbai, "Success", "2026-09-10 10:00:00", "2026-09-10 10:02:30"),
-			(mumbai, "Success", "2026-09-10 10:10:00", "2026-09-10 10:22:00"),
-			(frankfurt, "Success", "2026-09-10 10:00:00", "2026-09-10 10:03:00"),
-			(frankfurt, "Failure", "2026-09-10 10:00:00", "2026-09-10 10:01:00"),
-			(frankfurt, "Success", "2026-09-10 09:00:00", "2026-09-10 09:05:00"),
+		for server, status, creation, start, end in [
+			(mumbai, "Success", "10:01:00", "10:01:10", "10:03:40"),
+			(mumbai, "Success", "10:02:00", "10:05:00", "10:17:00"),
+			(frankfurt, "Success", "10:31:00", "10:31:00", "10:34:00"),
+			(frankfurt, "Failure", "10:31:00", "10:31:00", "10:32:00"),
+			(frankfurt, "Success", "09:58:00", "10:00:00", "10:05:00"),
 		]:
-			self.job(server, "New Bench", status, start, end=end, start=start)
+			day = "2026-09-10 "
+			self.job(server, "New Bench", status, day + creation, end=day + end, start=day + start)
 
-		chart = get_selected_chart("New Bench Duration by Cluster", self.period, [])
+		self.assertEqual(
+			self.datasets("New Bench Duration by Cluster"), {"Frankfurt": [0, 3], "Mumbai": [14.5, 0]}
+		)
 
-		self.assertEqual(chart["data"]["labels"][:2], ["0-1 min", "1-2 min"])
+	def test_remote_builder_wait_is_the_median_from_creation_to_start_and_a_queued_job_counts_until_now(self):
+		f1 = create_test_server().name
+		f2 = create_test_server().name
+		day = "2026-09-10 "
+		for server, status, creation, start in [
+			(f1, "Success", "10:01:00", "10:03:00"),
+			(f1, "Running", "10:02:00", "10:06:00"),
+			(f2, "Failure", "10:31:00", "10:32:00"),
+			(f2, "Pending", "10:40:00", None),
+			(f2, "Delivery Failure", "10:41:00", None),
+			(f2, "Success", "09:58:00", "10:20:00"),
+		]:
+			self.job(server, "Run Remote Builder", status, day + creation, start=start and day + start)
+
+		with patch(f"{get_period.__module__}.now_datetime", return_value=datetime(2026, 9, 10, 10, 50)):
+			chart = get_selected_chart("Remote Builder Wait by Build Server", self.period, [])
+
 		datasets = {dataset["name"]: dataset["values"] for dataset in chart["data"]["datasets"]}
-		self.assertEqual(datasets["Mumbai"], [0, 0, 1] + [0] * 9 + [1])
-		self.assertEqual(datasets["Frankfurt"], [0, 0, 0, 1] + [0] * 9)
+		self.assertEqual(datasets[f1], [3] + [0] * 11)
+		self.assertEqual(datasets[f2], [0] * 6 + [1, 0, 10, 0, 0, 0])
 
 	def test_docker_and_registry_prune_plays_are_stacked_by_server_and_other_plays_are_left_out(self):
 		for server, playbook, creation in [
