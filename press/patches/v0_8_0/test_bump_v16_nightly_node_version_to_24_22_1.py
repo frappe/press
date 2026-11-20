@@ -46,8 +46,8 @@ class TestBumpV16NightlyNodeVersion(FrappeTestCase):
 			find(dependencies, lambda d: d["key"] == dependency)["value"] = version
 		update_dependencies(self.group.name, json.dumps(dependencies))
 
-	def test_new_version_16_group_gets_node_24_22_1_and_pip_26_2_2_from_frappe_version(self):
-		self.assertEqual(self.version("NODE_VERSION"), "24.22.1")
+	def test_new_version_16_group_gets_node_24_22_3_and_pip_26_2_2_from_frappe_version(self):
+		self.assertEqual(self.version("NODE_VERSION"), "24.22.3")
 		self.assertEqual(self.version("PIP_VERSION"), "26.2.2")
 
 	def test_patch_bumps_node_24_and_pip_25_3_group_and_shows_update_available(self):
