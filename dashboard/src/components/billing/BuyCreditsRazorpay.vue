@@ -168,9 +168,20 @@ function handlePaymentFailure(response) {
 	toast.error('Payment failed')
 }
 
-function handlePaymentSuccess() {
+const confirmPayment = createResource({
+	url: 'press.api.billing.handle_razorpay_payment_success',
+	onSuccess: () => {
+		emit('success')
+		toast.success('Payment successful')
+	},
+	onError: () => {
+		emit('success')
+		toast.success('Payment received. Credits will be added in a few minutes.')
+	},
+})
+
+function handlePaymentSuccess(response) {
 	isPaymentComplete.value = true
-	emit('success')
-	toast.success('Payment successful')
+	confirmPayment.submit({ response })
 }
 </script>

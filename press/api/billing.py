@@ -999,14 +999,7 @@ def handle_razorpay_payment_success(response):
 		{"order_id": response.get("razorpay_order_id")},
 		for_update=True,
 	)
-	payment_record.update(
-		{
-			"payment_id": response.get("razorpay_payment_id"),
-			"signature": response.get("razorpay_signature"),
-			"status": "Captured",
-		}
-	)
-	payment_record.save(ignore_permissions=True)
+	payment_record.mark_captured(response.get("razorpay_payment_id"), response.get("razorpay_signature"))
 
 
 @frappe.whitelist()
