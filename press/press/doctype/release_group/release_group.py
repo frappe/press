@@ -904,10 +904,15 @@ class ReleaseGroup(Document, TagHelpers):
 				continue
 
 			last_image_size = self._get_last_deployed_image_size(server, last_deployed_bench)
+			if not last_image_size:
+				continue
 
-			if last_image_size and (free_space < last_image_size):
+			# New Bench pulls the image and then copies its sites folder out with `cp -LR`,
+			# on the same volume. ponytail: 2x is an upper bound; measure the copy if it blocks too often.
+			required_size = 2 * last_image_size
+			if free_space < required_size:
 				self._try_server_size_increase_or_throw(
-					server, mountpoint, required_size=last_image_size - free_space
+					server, mountpoint, required_size=required_size - free_space
 				)
 
 	def check_auto_scales(self) -> None:
