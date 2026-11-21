@@ -245,7 +245,8 @@ class SiteAction(Document):
 			server: Server = frappe.get_doc("Server", self.get_argument("destination_server"))
 
 			# Create deploy candidate and schedule build and deploy
-			deploy_candidate = new_group.create_deploy_candidate()
+			# Check storage only on the destination server, as the bench is deployed only there
+			deploy_candidate = new_group.create_deploy_candidate(servers_to_check=[server.name])
 			deploy_candidate_build_name = create_platform_build_and_deploy(
 				deploy_candidate=deploy_candidate.name,
 				server=server.name,
