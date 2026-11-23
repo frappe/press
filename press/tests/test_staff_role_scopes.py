@@ -36,6 +36,7 @@ SHELL_ROLES = {
 HYBRID_ROLE = "Press Hybrid Server Manager"
 
 SYSTEM_MANAGER_ONLY = {
+	"Bare Metal Inventory",
 	"Build Cache Shell",
 	"Certificate Authority",
 	"Mail Setup",
