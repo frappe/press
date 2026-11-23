@@ -14,7 +14,7 @@
       - software-properties-common
   register: result
   until: result.failed == false
-  retries: 5
+  retries: 15
   delay: 120
 
 - name: Add Elasticsearch Repository Key
@@ -28,7 +28,7 @@
     state: present
   register: result
   until: result.failed == false
-  retries: 5
+  retries: 15
   delay: 120
 
 - name: Remove new Elasticsearch Repository
@@ -38,7 +38,7 @@
     update_cache: true
   register: result
   until: result.failed == false
-  retries: 5
+  retries: 15
   delay: 120
 
 - name: Uninstall newer version of Filebeat
@@ -47,7 +47,7 @@
     state: absent
   register: result
   until: result.failed == false
-  retries: 5
+  retries: 15
   delay: 120
 
 - name: Install Filebeat
@@ -56,7 +56,7 @@
     state: latest
   register: result
   until: result.failed == false
-  retries: 5
+  retries: 15
   delay: 120
 
 - name: Setup Filebeat

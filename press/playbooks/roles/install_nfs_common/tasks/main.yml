@@ -7,5 +7,5 @@
     state: present
   register: result
   until: result.failed == false
-  retries: 5
+  retries: 15
   delay: 120
