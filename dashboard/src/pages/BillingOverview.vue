@@ -5,6 +5,7 @@
 	>
 		<BillingSummary />
 		<PaymentDetails />
+		<CloseAccountCard />
 	</div>
 	<div v-else class="mt-12 flex flex-1 items-center justify-center">
 		<Spinner class="h-8" />
@@ -14,6 +15,7 @@
 <script setup>
 import BillingSummary from '../components/billing/BillingSummary.vue';
 import PaymentDetails from '../components/billing/PaymentDetails.vue';
+import CloseAccountCard from '../components/billing/CloseAccountCard.vue';
 import { Spinner, createResource } from 'frappe-ui';
 import { computed, provide, inject } from 'vue';
 
