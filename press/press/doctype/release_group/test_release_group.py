@@ -690,6 +690,22 @@ class TestReleaseGroup(FrappeTestCase):
 			test_release_group.check_app_server_storage()
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_storage_check_needs_room_for_the_image_and_the_copied_sites_folder(self):
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.site.test_site import create_test_bench
+
+		server = create_test_server(auto_increase_storage=False)
+		test_release_group = create_test_release_group([create_test_app()], servers=[server.name])
+		create_test_bench(group=test_release_group)
+
+		with (
+			self.assertRaisesRegex(frappe.ValidationError, "Not enough space on server"),
+			patch.object(BaseServer, "free_space", mock_free_space(space_required=8 * 1024**3)),
+			patch.object(Agent, "get", mock_image_size(5)),
+		):  # 8 GiB free fits a 5 GiB image, but not the image plus its sites copy
+			test_release_group.check_app_server_storage()
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	@patch.object(BaseServer, "calculated_increase_disk_size", Mock())
 	@patch.object(Agent, "get", mock_image_size(60))
 	@patch.object(BaseServer, "free_space", mock_free_space(space_required=5400000000))
