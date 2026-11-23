@@ -695,6 +695,9 @@ class Site(Document, TagHelpers):
 			)
 
 	def validate_site_plan(self):  # noqa: C901
+		if self.is_new() and not getattr(self, "subscription_plan", None) and not is_system_user():
+			# a site without a plan gets no subscription and is never billed
+			frappe.throw("Please select a plan for the site.")  # nosemgrep
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
 			"""
 			If `release_groups` in site plan is empty, then site can be deployed in any release group.
