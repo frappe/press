@@ -66,6 +66,7 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 	def after_insert(self):
 		self.add_deletion_steps()
 		self.set_users_anonymized()
+		self.send_verification_mail()
 
 	def validate(self):
 		self.validate_sites_states()
@@ -266,6 +267,21 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 	def validate_outstanding_invoices(self):
 		if self.team_doc.is_defaulter():
 			frappe.throw("You have Unpaid Invoices. Clear them to delete your account")
+
+
+def request_team_deletion(team: str) -> TeamDeletionRequest:
+	"""Create a request, or send the email again if one waits for verification."""
+	pending = frappe.db.get_value("Team Deletion Request", {"team": team, "status": "Pending Verification"})
+	if not pending:
+		# Customers have no role on this doctype. before_insert checks the team owner instead.
+		return frappe.get_doc({"doctype": "Team Deletion Request", "team": team}).insert(
+			ignore_permissions=True
+		)
+
+	request = TeamDeletionRequest("Team Deletion Request", pending)
+	request.validate_team_owner()
+	request.send_verification_mail()
+	return request
 
 
 def process_team_deletion_requests():

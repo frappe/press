@@ -29,6 +29,7 @@ from press.press.doctype.team.team import (
 	get_child_team_members,
 	get_team_members,
 )
+from press.press.doctype.team_deletion_request import team_deletion_request
 from press.utils import (
 	docs,
 	get_country_info,
@@ -467,10 +468,16 @@ def reactivate_account():
 
 
 @frappe.whitelist()
+@rate_limit(limit=5, seconds=60 * 60)
 def request_team_deletion():
-	team = get_current_team(get_doc=True)
-	doc = frappe.get_doc({"doctype": "Team Deletion Request", "team": team.name}).insert()
-	return doc.name
+	return team_deletion_request.request_team_deletion(get_current_team()).name
+
+
+@frappe.whitelist()
+def team_deletion_status() -> str | None:
+	return frappe.db.get_value(
+		"Team Deletion Request", {"team": get_current_team()}, "status", order_by="creation desc"
+	)
 
 
 @frappe.whitelist(allow_guest=True)

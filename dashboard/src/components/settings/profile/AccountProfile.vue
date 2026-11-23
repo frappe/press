@@ -119,6 +119,7 @@
 					</Button>
 				</template>
 			</ListItem>
+			<DeleteAccountItem v-if="$team?.doc?.user === $session?.user" />
 		</div>
 		<Dialog
 			:options="{
@@ -239,10 +240,12 @@ import AddPrepaidCreditsDialog from '../../billing/AddPrepaidCreditsDialog.vue'
 import CommunicationInfoDialog from '../../CommunicationInfoDialog.vue'
 import TFADialog from './TFADialog.vue'
 import TFARecoveryCodesDialog from './TFARecoveryCodesDialog.vue'
+import DeleteAccountItem from './DeleteAccountItem.vue'
 
 export default {
 	name: 'AccountProfile',
 	components: {
+		DeleteAccountItem,
 		TFADialog,
 		TFARecoveryCodesDialog,
 		FileUploader,
