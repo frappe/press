@@ -206,5 +206,5 @@ class TestRavenNotification(FrappeTestCase):
 	def test_raven_message_goes_to_the_alerts_channel(self, send_raven_message, enqueue_doc):
 		create_test_alertmanager_webhook_log(alert=self.rule).send_raven_notification()
 		message, channel = send_raven_message.call_args.args
-		self.assertEqual(channel, "alerts")
+		self.assertEqual(channel, "Frappe Cloud-alerts")
 		self.assertIn(self.rule.name, message)

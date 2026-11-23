@@ -159,7 +159,9 @@ class SiteDatabaseUser(Document):
 
 	def _get_database_name(self):
 		site = frappe.get_doc("Site", self.site)
-		db_name = site.fetch_info().get("config", {}).get("db_name")
+		# Ask the agent, not Site.database_name: a site migration changes the name before the next sync.
+		# database_only skips the walk over the site files, which times out on large sites.
+		db_name = site.fetch_info(database_only=True).get("config", {}).get("db_name")
 		if not db_name:
 			frappe.throw(
 				"We couldn't fetch the database name for this site. Please make sure the site is active and try again."

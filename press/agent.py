@@ -279,7 +279,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def new_site_from_backup(self, site: "Site", skip_failing_patches=False):
+	def new_site_from_backup(self, site: "Site", skip_failing_patches=False, skip_migrate=False):
 		site.check_space_on_server_for_restore()
 		apps = [app.app for app in site.apps]
 
@@ -319,6 +319,7 @@ class Agent:
 			"public": public_link,
 			"private": private_link,
 			"skip_failing_patches": skip_failing_patches,
+			"skip_migrate": skip_migrate,
 			"managed_database_config": self._get_managed_db_config(site),
 			"agent_job_timeout": self._get_restore_timeout(site),
 		}
@@ -408,6 +409,16 @@ class Agent:
 			reference_name=reference_name,
 		)
 
+	def fix_global_search(self, site, reference_doctype=None, reference_name=None):
+		return self.create_agent_job(
+			"Fix global search",
+			f"benches/{site.bench}/sites/{site.name}/fix_global_search",
+			bench=site.bench,
+			site=site.name,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
 	def update_site(
 		self,
 		site,
@@ -418,10 +429,9 @@ class Agent:
 		before_migrate_scripts=None,
 		skip_search_index=True,
 	):
-		activate = site.status_before_update in ("Active", "Broken")
 		data = {
 			"target": target,
-			"activate": activate,
+			"activate": site.serves_requests_before_update,
 			"skip_failing_patches": skip_failing_patches,
 			"skip_backups": skip_backups,
 			"before_migrate_scripts": before_migrate_scripts,
@@ -436,8 +446,7 @@ class Agent:
 		)
 
 	def restore_site_tables(self, site):
-		activate = site.status_before_update == "Active"
-		data = {"activate": activate}
+		data = {"activate": site.serves_requests_before_update}
 		return self.create_agent_job(
 			"Restore Site Tables",
 			f"benches/{site.bench}/sites/{site.name}/update/migrate/restore",
@@ -1130,6 +1139,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		host=None,
 		reference_doctype=None,
 		reference_name=None,
+		deduplicate=True,
 	):
 		"""
 		Check if job already exists in Undelivered, Pending, Running state
@@ -1140,7 +1150,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Press Settings", "disable_agent_job_deduplication", cache=True
 		)
 
-		if not disable_agent_job_deduplication:
+		if deduplicate and not disable_agent_job_deduplication:
 			existing_job = self.get_similar_in_execution_job(
 				job_type, path, bench, site, code_server, upstream, host, method
 			)
@@ -1167,7 +1177,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 				"reference_doctype": reference_doctype,
 				"reference_name": reference_name,
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 		return job
 
 	def get_similar_in_execution_job(
@@ -1883,9 +1893,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if offsite_config:
 			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw(
-				"Offsite Backups aren't set up yet. Please configure offsite backup storage in Press Settings before taking an offsite backup."
-			)
+			frappe.throw(f"Set the Backup Bucket of cluster {cluster} before taking an offsite backup")
 
 		return self.create_agent_job(
 			"Backup Database From Snapshot",
@@ -1914,9 +1922,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if offsite_config:
 			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw(
-				"Offsite Backups aren't set up yet. Please configure offsite backup storage in Press Settings before taking an offsite backup."
-			)
+			frappe.throw(f"Set the Backup Bucket of cluster {cluster} before taking an offsite backup")
 
 		return self.create_agent_job(
 			"Backup Files From Snapshot",
@@ -2051,12 +2057,13 @@ Response: {reason or getattr(result, "text", "Unknown")}
 	def _get_offsite_backup_config(self, cluster: str, backups_path: str) -> dict | None:
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
+		# The callers handle a cluster that has no offsite storage set up yet
+		if not frappe.db.get_value("Cluster", cluster, "backup_bucket"):
+			return None
+
 		settings = frappe.get_single("Press Settings")
 		backup_bucket_config = get_backup_bucket(cluster, region=True)
 		bucket_name = backup_bucket_config.get("name")
-
-		if not (settings.aws_s3_bucket or bucket_name):
-			return None
 
 		auth = {
 			"ACCESS_KEY": settings.offsite_backups_access_key_id,

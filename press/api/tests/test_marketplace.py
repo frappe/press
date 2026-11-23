@@ -29,6 +29,7 @@ from press.api.marketplace import (
 	get_subscriptions_list,
 	new_app,
 	options_for_quick_install,
+	options_for_version,
 	releases,
 	remove_version,
 	reset_features_for_plan,
@@ -406,6 +407,27 @@ class TestAPIMarketplace(FrappeTestCase):
 		)
 		results = branches(self.app_source.name)
 		self.assertEqual(len(results), 2)
+
+	@responses.activate
+	def test_options_for_version_lists_source_branches_for_team_user(self):
+		if not frappe.db.exists("Frappe Version", "Version 99"):
+			frappe.get_doc({"doctype": "Frappe Version", "name": "Version 99", "number": 99}).insert()
+		frappe.db.set_value("Frappe Version", "Version 99", "public", 1)
+		frappe.set_user(self.team.user)
+		responses.get(
+			url=f"https://api.github.com/repos/{self.app_source.repository_owner}/{self.app_source.repository}/branches?per_page=100&page=1",
+			json=PAYLOAD,
+			status=200,
+			headers={},
+		)
+		options = {
+			option["version"]: option["branch"] for option in options_for_version(self.marketplace_app.name)
+		}
+		owner, repository = self.app_source.repository_owner, self.app_source.repository
+		self.assertCountEqual(
+			options["Version 99"],
+			[f"{owner}/{repository}/develop", f"{owner}/{repository}/enterprise-staging"],
+		)
 
 	def test_update_app_image_by_owner(self):
 		frappe.set_user(self.team.user)

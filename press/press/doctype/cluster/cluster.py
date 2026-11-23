@@ -73,6 +73,7 @@ class Cluster(Document):
 		availability_zone: DF.Data | None
 		aws_access_key_id: DF.Data | None
 		aws_secret_access_key: DF.Password | None
+		backup_bucket: DF.Link
 		beta: DF.Check
 		by_default_select_unified_mode: DF.Check
 		cidr_block: DF.Data | None
@@ -2317,3 +2318,9 @@ class Cluster(Document):
 				)
 			return nat_server
 		return None
+
+
+def archived_clusters():
+	"""Subquery of the regions that are retired, or that we can no longer reach."""
+	Cluster = frappe.qb.DocType("Cluster")
+	return frappe.qb.from_(Cluster).select(Cluster.name).where(Cluster.status == "Archived")

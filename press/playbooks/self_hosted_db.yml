@@ -6,6 +6,7 @@
   gather_facts: yes
   roles:
     - role: essentials
+    - role: block_sctp
     - role: user
     - role: mariadb
     - role: nginx

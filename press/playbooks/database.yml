@@ -7,6 +7,7 @@
   roles:
     - role: nat_iptables
     - role: essentials
+    - role: block_sctp
     - role: user
     - role: mount
     - role: mariadb
@@ -24,4 +25,5 @@
     - role: warning_banners
     - role: auditd
     - role: sshd_hardening
+    - role: fail2ban
     - role: pam

@@ -4,8 +4,13 @@ from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import escape_html
 
 from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.press_notification.press_notification import (
+	notify_backup_access,
+	notify_resource_access,
+)
 
 
 class SiteActivity(Document):
@@ -60,17 +65,11 @@ class SiteActivity(Document):
 		if self.team == "Administrator":
 			return
 
-		if self.action == "Login as Administrator" and self.reason:
-			recipients = get_communication_info("Email", "Site Activity", "Site", self.site)
-			if recipients:
-				frappe.sendmail(
-					recipients=recipients,
-					subject="Administrator login to your site",
-					template="admin_login",
-					args={"site": self.site, "user": self.owner, "reason": self.reason},
-					reference_doctype=self.doctype,
-					reference_name=self.name,
-				)
+		if self.action == "Login as Administrator":
+			self.notify_admin_login()
+
+		if self.action == "Access Offsite Backups":
+			self.notify_backup_access()
 
 		if self.action == "Disable Monitoring And Alerts" and self.reason:
 			recipients = get_communication_info("Email", "Site Activity", "Site", self.site)
@@ -83,6 +82,16 @@ class SiteActivity(Document):
 					reference_doctype=self.doctype,
 					reference_name=self.name,
 				)
+
+	def notify_admin_login(self):
+		message = f"{self.owner} logged in to {self.site} as Administrator."
+		if self.reason:
+			message += f" Reason: {escape_html(self.reason)}"
+		title = f"Administrator login to {self.site}"
+		notify_resource_access(self, "Site", self.site, title, message)
+
+	def notify_backup_access(self):
+		notify_backup_access(self, "Site", self.site, self.site)
 
 
 def log_site_activity(site, action, reason=None, job=None):

@@ -1,12 +1,28 @@
+# Copyright (c) 2026, Frappe and contributors
+# For license information, please see license.txt
+
 from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from press.api.saas import get_site_url_and_sid
+from press.api.saas import account_request, get_site_url_and_sid
 from press.press.doctype.account_request.test_account_request import create_test_account_request
 from press.press.doctype.site.site import Site
 from press.press.doctype.site.test_site import create_test_site
+
+
+class TestAccountRequest(FrappeTestCase):
+	@patch("press.api.saas.check_subdomain_availability", return_value=True)
+	def test_invalid_country_is_escaped_in_the_error(self, _):
+		country = "<img src=x onerror=alert(1)>"
+
+		with self.assertRaises(frappe.ValidationError) as context:
+			account_request("subdomain", "guest@example.com", "Guest", "User", country, "frappe")
+
+		message = str(context.exception)
+		self.assertNotIn(country, message)
+		self.assertIn(frappe.utils.escape_html(country), message)
 
 
 class TestAPISaas(FrappeTestCase):
@@ -53,3 +69,23 @@ class TestAPISaas(FrappeTestCase):
 
 		with self.assertRaises(frappe.ValidationError):
 			self.get_url(self.account_request.request_key, domain_side_effect=spend_key_concurrently)
+
+	def get_team_user_url(self):
+		self.site.db_set("additional_system_user_created", 1)
+		frappe.set_user("Guest")
+		with (
+			patch("press.api.saas.get_erpnext_domain", return_value=self.site.domain),
+			patch.object(Site, "get_login_sid", return_value="x"),
+		):
+			return get_site_url_and_sid(self.account_request.request_key)
+
+	def test_setup_key_logs_guest_in_as_team_user_without_consent_check_or_notification(self):
+		url = self.get_team_user_url()
+		self.assertEqual(url, f"https://{self.site.host_name or self.site.name}/app?sid=x")
+		notification = {"team": self.site.team, "type": "Resource Access", "reference_name": self.site.name}
+		self.assertFalse(frappe.db.exists("Press Notification", notification))
+
+	def test_setup_key_refuses_team_user_login_to_inactive_site(self):
+		self.site.db_set("status", "Suspended")
+		with self.assertRaisesRegex(frappe.ValidationError, "Site is in .*suspended.* state"):
+			self.get_team_user_url()

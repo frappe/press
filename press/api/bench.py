@@ -10,8 +10,10 @@ import frappe
 import requests
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import flt, sbool
+from frappe.utils import cint, flt, sbool
 
+from press.access.actions import ReleaseGroupActions
+from press.access.decorators import ensure_can_perform
 from press.api.github import branches, get_access_token
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
@@ -35,6 +37,7 @@ from press.press.doctype.release_group.release_group import (
 )
 from press.press.doctype.site_config.site_config import parse_json_config_value
 from press.press.doctype.team.team import get_child_team_members
+from press.press.doctype.team_change.team_change import confirm_transfer
 from press.utils import (
 	docs,
 	get_app_tag,
@@ -567,10 +570,16 @@ def add_app(name, source, app):
 @frappe.whitelist()
 @protected("Release Group")
 def add_apps(name, apps):
+	ensure_can_manage_apps(name)
 	release_group: "ReleaseGroup" = frappe.get_doc("Release Group", name)
 	for app in apps:
 		app_name, source = app.values()
 		release_group.update_source(frappe._dict(name=source, app=app_name))
+
+
+def ensure_can_manage_apps(group: str) -> None:
+	team = frappe.db.get_value("Release Group", group, "team")
+	ensure_can_perform("Release Group", group, team, ReleaseGroupActions.ManageApps.value)
 
 
 @frappe.whitelist()
@@ -1135,6 +1144,7 @@ def rename(name, title):
 @frappe.whitelist()
 @protected("Release Group")
 def apply_patch(release_group: str, app: str, patch_config: dict) -> list[str]:
+	ensure_can_manage_apps(release_group)
 	team = get_current_team()
 
 	return create_app_patch(
@@ -1217,60 +1227,13 @@ def redeploy(name: str, dc_name: str, no_cache: bool = False) -> str:
 
 @frappe.whitelist(allow_guest=True)
 def confirm_bench_transfer(key: str):
-	from frappe import _
-
-	if frappe.session.user == "Guest":
-		return frappe.respond_as_web_page(
-			_("Not Permitted"),
-			_("You need to be logged in to confirm the bench transfer."),
-			http_status_code=403,
-			indicator_color="red",
-			primary_action="/dashboard/login",
-			primary_label=_("Login"),
-		)
-
-	if not isinstance(key, str):
-		return frappe.respond_as_web_page(
-			_("Not Permitted"),
-			_("The link you are using is invalid."),
-			http_status_code=403,
-			indicator_color="red",
-		)
-
-	if team_change := frappe.db.get_value("Team Change", {"key": key}):
-		team_change = frappe.get_doc("Team Change", team_change)
-		to_team = team_change.to_team
-		if not frappe.db.get_value(
-			"Team Member", {"user": frappe.session.user, "parent": to_team, "parenttype": "Team"}
-		):
-			return frappe.respond_as_web_page(
-				_("Not Permitted"),
-				_("You are not a member of the team to which the site is being transferred."),
-				http_status_code=403,
-				indicator_color="red",
-			)
-
-		team_change.transfer_completed = True
-		team_change.save()
-		frappe.db.commit()
-
-		frappe.response.type = "redirect"
-		frappe.response.location = f"/dashboard/groups/{team_change.document_name}"
-		return None
-
-	return frappe.respond_as_web_page(
-		_("Not Permitted"),
-		_("The link you are using is invalid or expired."),
-		http_status_code=403,
-		indicator_color="red",
-	)
+	return confirm_transfer(key, "Release Group")
 
 
 @frappe.whitelist()
 def search_releases(
 	app: str,
 	source: str,
-	fields: list,
 	query: str | None = None,
 	limit: int = 10,
 	current_release: str | None = None,
@@ -1284,7 +1247,7 @@ def search_releases(
 		frappe.qb.from_(AppRelease)
 		.left_join(YankedAppRelease)
 		.on(YankedAppRelease.hash == AppRelease.hash)
-		.select(*fields)
+		.select(AppRelease.name, AppRelease.message, AppRelease.timestamp, AppRelease.hash)
 		.where(YankedAppRelease.hash.isnull())
 		.where(AppRelease.hash.like(f"%{query.strip()}%") | AppRelease.message.like(f"%{query.strip()}%"))
 	)
@@ -1298,7 +1261,8 @@ def search_releases(
 		q.where((AppRelease.public == 1) & (AppRelease.status == "Approved"))
 		.where((AppRelease.app == app) & (AppRelease.source == source))
 		.orderby(AppRelease.timestamp, order=frappe.qb.desc)
-		.limit(limit)
+		# Postponed annotations skip the type check of Frappe, so limit can arrive as a string
+		.limit(cint(limit))
 	)
 
 	return q.run(as_dict=1)

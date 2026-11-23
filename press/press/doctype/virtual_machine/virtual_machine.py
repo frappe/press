@@ -42,6 +42,8 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
+from press.access.server_console import check_console_access, check_console_role, has_system_manager_role
+from press.access.staff_roles import needs_staff_role, safe_for_readers
 from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
@@ -2344,6 +2346,7 @@ class VirtualMachine(Document):
 		self.save()
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_ebs_performance(self):
 		if self.cloud_provider == "AWS EC2":
 			volume = self.volumes[0]
@@ -2364,6 +2367,7 @@ class VirtualMachine(Document):
 		self.sync()
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_oci_volume_performance(self):
 		if self.cloud_provider == "OCI":
 			volume = self.volumes[0]
@@ -2669,7 +2673,9 @@ class VirtualMachine(Document):
 		return groups
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Infrastructure Manager")
 	def get_serial_console_credentials(self):
+		self.check_serial_console_access()
 		client = self.client("ec2-instance-connect")
 		client.send_serial_console_ssh_public_key(
 			InstanceId=self.instance_id,
@@ -2685,7 +2691,18 @@ class VirtualMachine(Document):
 			"command": f"ssh {username}@{host}",
 		}
 
+	def check_serial_console_access(self):
+		"""Staff without System Manager reach the serial console only of a server they can reach."""
+		check_console_role()
+		if has_system_manager_role():
+			return
+		server = self.get_server()
+		if not server:
+			frappe.throw(f"Virtual Machine {self.name} has no server", frappe.PermissionError)
+		check_console_access(server.doctype, server.name)
+
 	@frappe.whitelist()
+	@needs_staff_role("Press Infrastructure Manager")
 	def reboot_with_serial_console(self):
 		if self.cloud_provider == "AWS EC2":
 			self.get_server().reboot_with_serial_console()
@@ -2700,11 +2717,11 @@ class VirtualMachine(Document):
 
 		self.sync()
 
-	def attach_to_firewall(self, firewall_id: int):
+	def attach_to_firewall(self, firewall_id: str | int):
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_instance_attribute(
 				InstanceId=self.instance_id,
-				Groups=[*self.get_security_groups(), firewall_id],
+				Groups=list(dict.fromkeys([*self.get_security_groups(), firewall_id])),
 			)
 
 		elif self.cloud_provider == "OCI":
@@ -2720,21 +2737,30 @@ class VirtualMachine(Document):
 			).data
 
 			vnic_id = attachments[0].vnic_id
-			network_client.update_vnic(
-				vnic_id,
-				UpdateVnicDetails(network_security_group_ids=[*self.get_security_groups(), firewall_id]),
-			)
+
+			nsg_ids = network_client.get_vnic(vnic_id).data.nsg_ids or []
+
+			if firewall_id not in nsg_ids:
+				network_client.update_vnic(
+					vnic_id,
+					UpdateVnicDetails(nsg_ids=[*nsg_ids, firewall_id]),
+				)
 
 		elif self.cloud_provider == "Hetzner":
 			from hcloud.firewalls.domain import FirewallResource
 
 			client = self.client()
 			firewall = client.firewalls.get_by_id(firewall_id)
-			firewall.apply_to_resources(
-				resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
-			)
+			try:
+				firewall.apply_to_resources(
+					resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
+				)
+			except APIException as e:
+				# A retry finds the firewall already applied
+				if e.code != "firewall_already_applied":
+					raise
 
-	def detach_from_firewall(self, firewall_id: int):
+	def detach_from_firewall(self, firewall_id: str | int):
 		if self.cloud_provider == "AWS EC2":
 			security_groups = [sg for sg in self.get_security_groups() if sg != firewall_id]
 
@@ -2757,19 +2783,25 @@ class VirtualMachine(Document):
 
 			vnic_id = attachments[0].vnic_id
 
-			nsg_ids = [nsg for nsg in self.get_security_groups() if nsg != firewall_id]
+			nsg_ids = network_client.get_vnic(vnic_id).data.nsg_ids or []
 
-			network_client.update_vnic(vnic_id, UpdateVnicDetails(network_security_group_ids=nsg_ids))
+			if firewall_id in nsg_ids:
+				nsg_ids = [nsg for nsg in nsg_ids if nsg != firewall_id]
+				network_client.update_vnic(vnic_id, UpdateVnicDetails(nsg_ids=nsg_ids))
 
 		elif self.cloud_provider == "Hetzner":
 			from hcloud.firewalls.domain import FirewallResource
 
 			client = self.client()
 			firewall = client.firewalls.get_by_id(firewall_id)
-
-			firewall.remove_from_resources(
-				resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
-			)
+			try:
+				firewall.remove_from_resources(
+					resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
+				)
+			except APIException as e:
+				# A retry finds the firewall already removed
+				if e.code != "firewall_already_removed":
+					raise
 
 	@classmethod
 	def bulk_sync_aws(cls):

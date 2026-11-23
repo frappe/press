@@ -1,27 +1,15 @@
 ---
-- name: Install ClamAV
-  apt:
-    pkg:
-      - clamav
-      - clamav-base
-    state: latest
-    update_cache: yes
-    cache_valid_time: 86400
+# Cisco's packages need glibc 2.28, Bionic has 2.27, and the CDN blocks 0.103.
+# Press records a scan skipped here as Skipped, and the scan role does not run.
+- name: Skip scan on Ubuntu 18.04
+  debug:
+    msg: No supported ClamAV runs on Ubuntu 18.04
+  when: ansible_distribution_release == 'bionic'
 
-- name: Configure freshclam
-  replace:
-    dest: /etc/clamav/freshclam.conf
-    regexp: '^{{ item.source_name }}'
-    replace: '{{ item.target_name }}'
-  with_items:
-    - { source_name: 'Example', target_name: '#Example' }
-    - { source_name: '#UpdateLogFile', target_name: 'UpdateLogFile' }
-    - { source_name: '#DatabaseDirectory', target_name: 'DatabaseDirectory' }
-    - { source_name: '#LogTime', target_name: 'LogTime' }
+# Focal only has ClamAV 0.103, which the CDN blocks since its end of life.
+# Imported, not included, so Press records each task and its error.
+- import_tasks: cisco.yml
+  when: ansible_distribution_release == 'focal'
 
-# Definitions update right before a scan, so an idle daemon need not run all day
-- name: Disable automatic update of virus definitions
-  service:
-    name: clamav-freshclam
-    state: stopped
-    enabled: no
+- import_tasks: ubuntu.yml
+  when: ansible_distribution_release not in ['bionic', 'focal']

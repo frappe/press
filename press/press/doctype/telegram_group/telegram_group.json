@@ -24,14 +24,14 @@
 		},
 		{
 			"fieldname": "token",
-			"fieldtype": "Data",
+			"fieldtype": "Password",
 			"in_list_view": 1,
 			"label": "Token"
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2023-12-14 12:49:59.132352",
+	"modified": "2026-10-22 00:15:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Telegram Group",

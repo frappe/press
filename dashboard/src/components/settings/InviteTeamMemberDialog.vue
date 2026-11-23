@@ -51,6 +51,8 @@ export default {
 				type: 'list',
 				doctype: 'Press Role',
 				fields: ['name', 'title'],
+				orderBy: 'title asc',
+				pageLength: 99999,
 				initialData: [],
 				auto: true,
 			}
