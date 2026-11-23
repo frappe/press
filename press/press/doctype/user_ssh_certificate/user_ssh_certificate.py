@@ -10,9 +10,10 @@ import shlex
 import subprocess
 
 import frappe
-from frappe import safe_decode
+from frappe import _, safe_decode
 from frappe.model.document import Document
 
+from press.access.server_access import check_server_access
 from press.utils import log_error
 
 
@@ -42,6 +43,7 @@ class UserSSHCertificate(Document):
 	# end: auto-generated types
 
 	def validate(self):
+		self.validate_issuer()
 		if not self.ssh_public_key:
 			frappe.throw("Please make sure that a valid public key has been added in team doc.")
 
@@ -50,6 +52,60 @@ class UserSSHCertificate(Document):
 			base64.b64decode(self.ssh_public_key.strip().split()[1])
 		except binascii.Error:
 			frappe.throw("Please ensure that the attached text is a valid public key")
+
+	def validate_issuer(self):
+		"""Staff without full SSH rights issue a certificate for themselves, for one server they may reach."""
+		roles = frappe.get_roles()
+		if "System Manager" in roles or "Press SSH Manager" in roles:
+			return
+		self.validate_own_certificate()
+		self.validate_single_server()
+		self.validate_server_role(roles)
+
+	def validate_own_certificate(self):
+		if self.user != frappe.session.user:
+			frappe.throw(_("You can only issue an SSH certificate for yourself."), frappe.PermissionError)
+		self.validate_own_key()
+
+	def validate_own_key(self):
+		"""The public key is fetched from the User SSH Key. Compare it too, so a pasted key cannot pass."""
+		key = frappe.db.get_value("User SSH Key", self.user_ssh_key, ["user", "ssh_public_key"], as_dict=True)
+		if not key or key.user != self.user or key.ssh_public_key != self.ssh_public_key:  # type: ignore[union-attr]
+			frappe.throw(
+				_("You can only issue an SSH certificate for an SSH key of your own."), frappe.PermissionError
+			)
+
+	def validate_single_server(self):
+		if self.all_servers:
+			frappe.throw(
+				_("Only System Managers can issue an SSH certificate for all servers."),
+				frappe.PermissionError,
+			)
+		if not (self.server_type and self.access_server):
+			frappe.throw(_("Select the server that the SSH certificate is for."), frappe.PermissionError)
+
+	def validate_server_role(self, roles: list[str]):
+		if "Press Hybrid Server Manager" in roles and self.is_self_hosted_server():
+			return
+		if "Press Infrastructure Manager" in roles:
+			check_server_access(self.server_type, str(self.access_server))
+		elif "Press Hybrid Server Manager" in roles:
+			frappe.throw(
+				_(
+					"Press Hybrid Server Manager reaches only self-hosted servers. {0} {1} is not self-hosted."
+				).format(self.server_type, self.access_server),
+				frappe.PermissionError,
+			)
+		else:
+			frappe.throw(
+				_(
+					"You need the Press Infrastructure Manager or Press Hybrid Server Manager role to issue an SSH certificate."
+				),
+				frappe.PermissionError,
+			)
+
+	def is_self_hosted_server(self) -> bool:
+		return bool(frappe.db.get_value(self.server_type, self.access_server, "is_self_hosted"))
 
 	def before_insert(self):
 		if frappe.get_all(

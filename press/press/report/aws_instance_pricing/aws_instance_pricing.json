@@ -141,7 +141,7 @@
  "is_standard": "Yes",
  "json": "{}",
  "letterhead": null,
- "modified": "2023-11-06 19:08:45.728372",
+ "modified": "2026-11-06 12:30:00.000000",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "AWS Instance Pricing",
@@ -153,6 +153,9 @@
  "roles": [
   {
    "role": "System Manager"
+  },
+  {
+   "role": "Press Infrastructure Manager"
   }
  ]
 }

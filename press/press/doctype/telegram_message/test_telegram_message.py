@@ -15,6 +15,10 @@ from press.telegram_utils import NetworkError, RetryAfter, Telegram
 
 @patch.object(Telegram, "send")
 class TestTelegramMessage(FrappeTestCase):
+	def setUp(self):
+		# send() commits, so queued messages from earlier tests survive their rollback.
+		frappe.db.delete("Telegram Message", {"status": "Queued"})
+
 	def tearDown(self):
 		frappe.db.rollback()
 

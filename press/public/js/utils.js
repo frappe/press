@@ -72,6 +72,36 @@ function format_date_time(date_time, show_date = false, show_time = false) {
 	return render_date
 }
 
+// Toolbar button that shows the server's SSH command
+press.add_console_button = function (frm) {
+	if (frm.is_new()) {
+		return
+	}
+	frm.add_custom_button(__('Console'), () =>
+		frm
+			.call('get_ssh_command')
+			.then((r) => press.show_console_dialog(r.message)),
+	)
+}
+
+press.show_console_dialog = function (command) {
+	const dialog = new frappe.ui.Dialog({
+		title: __('Console'),
+		fields: [
+			{
+				fieldtype: 'Code',
+				fieldname: 'command',
+				label: __('SSH Command'),
+				read_only: 1,
+				default: command,
+			},
+		],
+		primary_action_label: __('Copy'),
+		primary_action: () => frappe.utils.copy_to_clipboard(command),
+	})
+	dialog.show()
+}
+
 // Open a new Team Change for `from_team`, with an optional first resource row
 press.new_team_change = function (from_team, transfer_type, resource) {
 	frappe.model.with_doctype('Team Change', () => {

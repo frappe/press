@@ -14,6 +14,7 @@ frappe.ui.form.on('Server', {
 		})
 	},
 	refresh: function (frm) {
+		press.add_console_button(frm)
 		frm.add_web_link(
 			`/dashboard/servers/${frm.doc.name}`,
 			__('Visit Dashboard'),

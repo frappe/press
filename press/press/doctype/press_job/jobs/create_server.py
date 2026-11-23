@@ -69,6 +69,13 @@ class CreateServerJob(PressJob):
 		)
 
 	@property
+	def is_virtual_machine_terminated(self) -> bool:
+		# Read fresh: provisioning terminates the machine after this job loaded it
+		if not self.virtual_machine:
+			return False
+		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "status") == "Terminated"
+
+	@property
 	def is_fs_server(self):
 		return self.server.startswith("fs") and self.server_type == "Server"
 
@@ -374,6 +381,9 @@ class CreateServerJob(PressJob):
 	def on_press_job_failure(self, _):
 		if self.server_type not in ["Server", "Database Server"]:
 			return
+
+		if self.is_virtual_machine_terminated:
+			self.server_doc.mark_provisioning_failed()
 
 		# Mark Server Snapshot Recovery as failed if the server provisioning was for recovery
 		if self.server_doc.is_for_recovery:

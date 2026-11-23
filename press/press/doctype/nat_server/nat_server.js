@@ -3,6 +3,7 @@
 
 frappe.ui.form.on('NAT Server', {
 	refresh(frm) {
+		press.add_console_button(frm)
 		;[
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],

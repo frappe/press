@@ -17,6 +17,7 @@ from frappe.model.document import Document
 from frappe.query_builder.functions import Date
 from frappe.utils import now_datetime
 
+from press.access.staff_roles import needs_staff_role
 from press.exceptions import (
 	DNSValidationError,
 	TLSRetryLimitExceeded,
@@ -277,6 +278,7 @@ class TLSCertificate(Document):
 			self.full_chain = f"{self.certificate}\n{self.intermediate_chain}"
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Infrastructure Manager")
 	def get_private_key(self) -> str | None:
 		"""Return the decrypted private key.
 
