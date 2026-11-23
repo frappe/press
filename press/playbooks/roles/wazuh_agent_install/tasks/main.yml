@@ -7,7 +7,7 @@
     state: present
   register: result
   until: result.failed == false
-  retries: 5
+  retries: 15
   delay: 120
 
 - name: Download Key
@@ -50,8 +50,8 @@
     -o APT::Get::List-Cleanup=0
   register: wazuh_repository_update
   until: wazuh_repository_update.rc == 0
-  retries: 5
-  delay: 10
+  retries: 15
+  delay: 120
   changed_when: false
 
 - name: Install Pinned Agent
@@ -62,7 +62,7 @@
       changed_when: false
       register: wazuh_agent_unhold
       until: wazuh_agent_unhold.failed == false
-      retries: 5
+      retries: 15
       delay: 120
 
     - name: Install Agent
@@ -76,8 +76,8 @@
       # A new server's first apt run (cloud-init, unattended-upgrades) holds the dpkg lock for minutes
       register: wazuh_agent_install
       until: wazuh_agent_install is succeeded
-      retries: 10
-      delay: 30
+      retries: 15
+      delay: 120
   always:
     # Stop apt upgrade from moving the agent ahead of the manager, even after a failed install.
     - name: Hold Agent
@@ -86,7 +86,7 @@
         selection: hold
       register: wazuh_agent_hold
       until: wazuh_agent_hold.failed == false
-      retries: 5
+      retries: 15
       delay: 120
 
 # apt is a no-op when the pinned version is already installed, so the postinst never re-reads
