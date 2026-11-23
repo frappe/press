@@ -20,6 +20,8 @@ Guidelines for writing good code in this project.
   requirements that no one asked for.
 - Fail loud at the boundary. If an external call fails, raise the error. Do not
   catch it and fall back. The operator retries with the button.
+- Always create feature branches off of the latest head of frappe/press's develop
+  branch.
 
 ## Functions and methods
 

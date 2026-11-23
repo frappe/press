@@ -41,7 +41,6 @@ from press.utils import otp as otp_purpose
 from press.utils import user as user_utils
 from press.utils.otp import OneTimePassword
 from press.utils.telemetry import capture
-from press.utils.user import as_administrator
 
 if TYPE_CHECKING:
 	from press.press.doctype.account_request.account_request import AccountRequest
@@ -333,13 +332,9 @@ def accept_team_invite(key: str):
 			"This invite can't be accepted with the current account. Please sign in with the invited account or request a new invite."
 		)
 
-	# Adding the member triggers side effects the invited user can't perform
-	# themselves (e.g. an Email Group Member subscription), which raise a
-	# PermissionError for a plain Press User. Run as Administrator, mirroring
-	# setup_account. This elevation was dropped in f1a0e80ba in favour of
-	# ignore_permissions, but that only covers the Team and User saves, not
-	# those side effects.
-	with as_administrator():
+	# Adding the member has side effects that a plain Press User cannot do,
+	# such as an Email Group Member subscription.
+	with user_utils.as_administrator():
 		add_invited_member_to_team(account_request)
 
 	account_request.db_set("request_key", None)
@@ -464,10 +459,8 @@ def reactivate_account():
 			"You don't have a disabled account to reactivate. Please log in with the account you disabled."
 		)
 
-	# The team is disabled, so get_current_team throws for this session and every
-	# permission check on the team and its sites fails. Run as Administrator,
-	# mirroring setup_account.
-	with as_administrator():
+	# The team is disabled, so every permission check on it fails for this session.
+	with user_utils.as_administrator():
 		Team("Team", team_name).enable_account()
 
 	return team_name
@@ -1108,7 +1101,7 @@ def get_frappe_io_auth_url() -> str | None:
 		and get_oauth_keys(provider.name)
 		and provider.get_password("client_secret")
 	):
-		return get_oauth2_authorize_url(provider.name, redirect_to="")
+		return get_oauth2_authorize_url(provider.name, redirect_to="/dashboard")
 	return None
 
 

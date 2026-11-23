@@ -8,7 +8,7 @@ from press.api.server import calculate_swap, prometheus_query, total_resource, u
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 	columns = [
 		{
 			"fieldname": "server",

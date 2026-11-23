@@ -15,10 +15,11 @@ import frappe
 import pytz
 from frappe.query_builder import CustomFunction
 
+from press.exceptions import SiteUpdateInProgress
 from press.press.doctype.press_settings.press_settings import PressSettings
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 from press.press.doctype.site.site import Site
-from press.press.doctype.site_backup.site_backup import SiteBackup
+from press.press.doctype.site_backup.site_backup import REMOTE_FILE_FIELDS, SiteBackup
 from press.press.doctype.subscription.subscription import Subscription
 from press.utils import log_error
 
@@ -53,14 +54,10 @@ class BackupRotationScheme:
 
 	def _expire_and_get_remote_files(self, offsite_backups: list[str]) -> list[str]:
 		"""Mark backup as unavailable and return remote files to delete."""
-		remote_files_to_delete = []
+		remote_files_to_delete: list[str] = []
 		for backup in offsite_backups:
-			remote_files = frappe.db.get_value(
-				"Site Backup",
-				backup,
-				["remote_database_file", "remote_private_file", "remote_public_file"],
-			)
-			remote_files_to_delete.extend(remote_files)
+			remote_files = frappe.db.get_value("Site Backup", backup, list(REMOTE_FILE_FIELDS))
+			remote_files_to_delete.extend(file for file in remote_files or () if file)
 			frappe.db.set_value("Site Backup", backup, "files_availability", "Unavailable")
 		return remote_files_to_delete
 
@@ -274,7 +271,7 @@ class ScheduledBackupJob:
 		self.server_time = datetime.now()
 		self.sites = Site.get_sites_for_backup(self.interval, backup_type=self.backup_type)
 		if self.backup_type == "Logical":
-			self.sites_without_offsite = Subscription.get_sites_without_offsite_backups()
+			self.sites_without_offsite = get_sites_without_offsite_backups()
 		else:
 			self.sites_without_offsite = []
 
@@ -350,10 +347,21 @@ class ScheduledBackupJob:
 				return True
 			return False
 
+		except SiteUpdateInProgress:
+			frappe.db.rollback()
+			return False
+
 		except Exception:
 			log_error("Site Backup Exception", site=site)
 			frappe.db.rollback()
 			return False
+
+
+def get_sites_without_offsite_backups() -> list[str]:
+	"""Sites that take no offsite backup: the plan leaves it out, or the site turned it off."""
+	return Subscription.get_sites_without_offsite_backups() + frappe.get_all(
+		"Site", {"skip_offsite_backups": 1}, pluck="name"
+	)
 
 
 def should_take_offsite_backup(
@@ -379,16 +387,15 @@ def schedule_logical_backups_for_sites_with_backup_time():
 
 	day = frappe.utils.getdate()
 	offsite_setup = PressSettings.is_offsite_setup()
-	sites_without_offsite = Subscription.get_sites_without_offsite_backups()
+	sites_without_offsite = get_sites_without_offsite_backups()
 	for site in sites:
 		offsite = should_take_offsite_backup(site.name, day, offsite_setup, sites_without_offsite)
-		site_doc: Site = frappe.get_doc("Site", site.name)
-		site_doc.backup(
+		_take_scheduled_backup(
+			site.name,
 			with_files=offsite or not SiteBackup.file_backup_exists(site.name, day),
 			offsite=offsite,
 			physical=False,
 		)
-		frappe.db.commit()
 
 
 def schedule_physical_backups_for_sites_with_backup_time():
@@ -399,8 +406,19 @@ def schedule_physical_backups_for_sites_with_backup_time():
 	"""
 	sites = Site.get_sites_with_backup_time("Physical")
 	for site in sites:
-		site_doc: Site = frappe.get_doc("Site", site.name)
-		site_doc.backup(with_files=False, offsite=False, physical=True, deactivate_site_during_backup=True)
+		_take_scheduled_backup(
+			site.name, with_files=False, offsite=False, physical=True, deactivate_site_during_backup=True
+		)
+
+
+def _take_scheduled_backup(site: str, **backup_args) -> None:
+	"""Back up one site in its own transaction, so a failure skips only that site."""
+	try:
+		Site("Site", site).backup(**backup_args)
+		frappe.db.commit()
+	except Exception:
+		frappe.db.rollback()  # before log_error, else it undoes the Error Log insert
+		log_error("Site Backup Exception", site=site)
 		frappe.db.commit()
 
 

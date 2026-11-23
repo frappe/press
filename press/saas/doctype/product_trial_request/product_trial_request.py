@@ -15,6 +15,7 @@ from frappe.utils.caching import redis_cache
 from frappe.utils.data import add_to_date, now_datetime
 from frappe.utils.telemetry import init_telemetry
 
+from press.access.staff_roles import needs_staff_role
 from press.api.client import dashboard_whitelist
 from press.press.doctype.root_domain.root_domain import get_domains
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
@@ -320,6 +321,7 @@ class ProductTrialRequest(Document):
 						)
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Product Manager")
 	def get_setup_wizard_payload(self):
 		import json
 
@@ -374,6 +376,7 @@ class ProductTrialRequest(Document):
 			frappe.throw("The domain is invalid. Please enter a valid domain name.")
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Product Manager")
 	def create_site(self, subdomain: str, domain: str):
 		"""
 		Trigger the site creation process for the product trial request.
@@ -535,6 +538,7 @@ class ProductTrialRequest(Document):
 		return response.status_code == 200
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Product Manager")
 	def get_login_sid(self):
 		site: Site = frappe.get_doc("Site", self.site)
 		redirect_to_after_login = frappe.db.get_value(

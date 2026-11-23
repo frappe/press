@@ -28,10 +28,12 @@ from frappe.utils.password import get_decrypted_password
 from frappe.utils.synchronization import filelock
 from frappe.utils.user import is_system_user
 
+from press.access.server_console import check_console_access
+from press.access.staff_roles import needs_staff_role, safe_for_readers
 from press.agent import Agent
 from press.api.account import is_limits_exceeded
 from press.api.client import dashboard_whitelist
-from press.exceptions import VolumeResizeLimitError
+from press.exceptions import OngoingAgentJob, VolumeResizeLimitError
 from press.guards import role_guard, team_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.add_on_storage_log.add_on_storage_log import (
@@ -267,6 +269,7 @@ class BaseServer(Document, TagHelpers):
 		return doc
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_communication_infos(self):
 		return (
 			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
@@ -289,6 +292,7 @@ class BaseServer(Document, TagHelpers):
 		update_infos("Server", self.name, values)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_storage_usage(self):
 		"""Get storage usage of the application server"""
 		try:
@@ -745,11 +749,13 @@ class BaseServer(Document, TagHelpers):
 		return settings.branch or "master"
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def ping_agent(self):
 		agent = Agent(self.name, self.doctype)
 		return agent.ping()
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def ping_mariadb(self) -> bool:
 		try:
 			agent = Agent(self.name, self.doctype)
@@ -1123,16 +1129,24 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def cleanup_unused_files(self, force: bool = True):
 		# User-triggered cleanup forces; the scheduled sweep passes force=False.
+		if self.running_cleanup_job():
+			frappe.throw(
+				"A cleanup job is already running on this server. Please wait for it to finish before starting another.",
+				OngoingAgentJob,
+			)
+
+		self._cleanup_unused_files(force=force)
+
+	@dashboard_whitelist()
+	def running_cleanup_job(self) -> str | None:
+		"""The cleanup job that blocks a new cleanup. The dashboard links to it."""
 		with suppress(frappe.DoesNotExistError):
 			cleanup_job: "AgentJob" = frappe.get_last_doc(
 				"Agent Job", {"server": self.name, "job_type": "Cleanup Unused Files"}
 			)
 			if cleanup_job.status in ["Running", "Pending"]:
-				frappe.throw(
-					"A cleanup job is already running on this server. Please wait for it to finish before starting another."
-				)
-
-		self._cleanup_unused_files(force=force)
+				return cleanup_job.name
+		return None
 
 	def is_build_server(self) -> bool:
 		# Not a field in all subclasses
@@ -1527,6 +1541,7 @@ class BaseServer(Document, TagHelpers):
 			if vm_status == "Terminated":
 				self.status = "Archived"
 				self.save()
+				self.disable_subscription()
 				return
 
 		if frappe.db.exists(
@@ -1621,6 +1636,11 @@ class BaseServer(Document, TagHelpers):
 
 	def _archive(self, reason=None):
 		self.run_press_job("Archive Server", arguments={"reason": reason})
+
+	def mark_provisioning_failed(self):
+		"""The machine is gone, so stop billing for a server that cannot come up."""
+		frappe.db.set_value(self.doctype, self.name, "status", "Broken")
+		self.disable_subscription()
 
 	def disable_subscription(self):
 		subscription = self.subscription
@@ -1723,7 +1743,7 @@ class BaseServer(Document, TagHelpers):
 				"virtual_machine": self.virtual_machine,
 				"arguments": json.dumps(arguments, indent=2, sort_keys=True),
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 
 	def get_certificate(self):
 		certificate_name = frappe.db.get_value(
@@ -1938,6 +1958,17 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Swappiness Setup Exception", doc=self)
 
+	def block_sctp(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_block_sctp")
+
+	def _block_sctp(self):
+		Ansible(
+			playbook="block_sctp.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+		).run()
+
 	@frappe.whitelist()
 	def update_tls_certificate(self, throw_on_failure: bool = False):
 		from press.press.doctype.tls_certificate.tls_certificate import (
@@ -1959,11 +1990,13 @@ class BaseServer(Document, TagHelpers):
 		update_server_tls_certifcate(self, certificate, throw_on_failure=throw_on_failure)
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def show_agent_version(self) -> str:
 		return self.agent.get_version()["commit"]
 
 	@frappe.whitelist()
 	def show_agent_password(self) -> str:
+		frappe.only_for("System Manager")
 		return self.get_password("agent_password")
 
 	@property
@@ -2029,15 +2062,18 @@ class BaseServer(Document, TagHelpers):
 		return real_ram
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Infrastructure Manager")
 	def reboot_with_serial_console(self):
 		if self.provider != "AWS EC2":
 			raise NotImplementedError
+		check_console_access(self.doctype, self.name)
 		console = frappe.new_doc("Serial Console Log")
 		console.server_type = self.doctype
 		console.server = self.name
 		console.virtual_machine = self.virtual_machine
 		console.action = "reboot"
-		console.save()
+		# Staff only read their logs, so the console writes the log for them.
+		console.save(ignore_permissions=True)
 		console.reload()
 		console.run_sysrq()
 		# TODO: Enable after a manual trial with the button on Server
@@ -2356,9 +2392,10 @@ class BaseServer(Document, TagHelpers):
 					),
 				},
 			)
-			ansible.run()
+			return ansible.run()
 		except Exception:
 			log_error("NAT Iptables Setup Exception", server=self.as_dict())
+			return None
 
 	@frappe.whitelist()
 	def remove_nat_iptables(self):
@@ -2883,6 +2920,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		"""Set both `Server` and `Database Server` additional config for Unified Servers"""
 		# Common config for both Server and Database Server
 		self.set_swappiness()
+		self.block_sctp()
 		self.add_glass_file()
 		self.install_filebeat()
 
@@ -2930,6 +2968,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				self.add_or_update_mariadb_variable("tmpdir", "value_str", "/opt/volumes/mariadb/tmp")
 
 		self.set_swappiness()
+		self.block_sctp()
 		self.add_glass_file()
 		self.install_filebeat()
 		self.install_wazuh_agent_if_configured()
@@ -3021,7 +3060,15 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 	@frappe.whitelist()
 	def get_static_ip(self):
 		if self.provider == "AWS EC2":
-			return self.get_aws_static_ip()
+			frappe.enqueue_doc(
+				self.doctype,
+				self.name,
+				"get_aws_static_ip",
+				timeout=1200,
+				deduplicate=True,
+				job_id=f"get_static_ip||{self.doctype}||{self.name}",
+			)
+			return "Queued the static IP job. The IP shows here once it finishes. Check Ansible Plays if not."
 		if self.provider == "OCI":
 			return self.get_oci_static_ip()
 
@@ -3029,6 +3076,15 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return None
 
 	def get_aws_static_ip(self):
+		try:
+			self._get_aws_static_ip()
+		except Exception as e:
+			# Queued job: a comment on the form is where staff see the failure
+			self.add_comment(text=f"Get Static IP failed: {e}")
+			frappe.db.commit()
+			raise
+
+	def _get_aws_static_ip(self):
 		cluster_doc = frappe.get_doc("Cluster", self.cluster)
 		region_name = cluster_doc.region
 		aws_access_key_id = cluster_doc.aws_access_key_id
@@ -3047,18 +3103,57 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			region_name=region_name,
 		)
 
-		# Allocate new Elastic IP
-		allocation = ec2_client.allocate_address(Domain="vpc")
-		allocation_id = allocation["AllocationId"]
-		public_ip = allocation["PublicIp"]
+		allocation_id, association_id = self._attach_elastic_ip(ec2_client, instance_id)
 
-		# Associate with instance
-		ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
+		# Before the sync saves the IP, so Ansible still connects over the private IP
+		if getattr(self, "nat_server", None):
+			self._remove_nat_route_for_static_ip(ec2_client, allocation_id, association_id)
 
 		# Trigger VM sync
 		vm_doc.sync()
 
-		return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
+	def _attach_elastic_ip(self, ec2_client, instance_id: str) -> tuple[str, str]:
+		"""Reuse an Elastic IP that a failed earlier run left attached, else allocate one."""
+		addresses = ec2_client.describe_addresses(Filters=[{"Name": "instance-id", "Values": [instance_id]}])
+		if addresses["Addresses"]:
+			address = addresses["Addresses"][0]
+			return address["AllocationId"], address["AssociationId"]
+
+		allocation_id = ec2_client.allocate_address(Domain="vpc")["AllocationId"]
+		association = ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
+		return allocation_id, association["AssociationId"]
+
+	def _remove_nat_route_for_static_ip(self, ec2_client, allocation_id: str, association_id: str):
+		"""Send replies out through the new static IP, not the NAT server."""
+		play = Ansible(
+			playbook="remove_nat_iptables.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+		).run()
+		if play.status != "Success":
+			self._restore_nat_route_and_release_static_ip(ec2_client, allocation_id, association_id, play)
+
+		for doctype in ("Server", "Database Server"):
+			frappe.db.set_value(doctype, {"virtual_machine": self.virtual_machine}, "nat_server", None)
+
+	def _restore_nat_route_and_release_static_ip(
+		self, ec2_client, allocation_id: str, association_id: str, failed_play
+	):
+		"""Release the static IP only once the NAT route is surely back, so the server keeps egress."""
+		restore_play = self._install_nat_iptables()
+		if not restore_play or restore_play.status != "Success":
+			frappe.throw(
+				f"Could not remove the NAT route (Ansible Play {failed_play.name}) or restore it. "
+				"Kept the static IP attached so the server keeps outbound traffic."
+			)
+
+		ec2_client.disassociate_address(AssociationId=association_id)
+		ec2_client.release_address(AllocationId=allocation_id)
+		frappe.throw(
+			f"Could not remove the NAT route (Ansible Play {failed_play.name}). "
+			"Restored the NAT route and released the static IP."
+		)
 
 	@frappe.whitelist()
 	def add_hetzner_public_ip(self, primary_ip=None):
@@ -4084,6 +4179,7 @@ class Server(BaseServer):
 		)
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Infrastructure Manager")
 	def generate_on_prem_failover_config(self):
 		if not self.enable_on_prem_failover_support:
 			frappe.throw("On-Prem Failover support is not enabled for this server.")  # nosemgrep

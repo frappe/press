@@ -22,6 +22,7 @@ from frappe.utils.data import add_to_date
 
 from press.access.actions import ReleaseGroupActions
 from press.access.decorators import action_guard
+from press.access.staff_roles import safe_for_readers
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.api.github import get_frappe_branch_major_version
@@ -56,6 +57,7 @@ if TYPE_CHECKING:
 	from datetime import datetime
 	from typing import Any
 
+	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.team.team import Team
 	from press.press.doctype.user_ssh_key.user_ssh_key import UserSSHKey
 
@@ -169,13 +171,16 @@ class ReleaseGroup(Document, TagHelpers):
 		query = (
 			query.where(ReleaseGroup.team == frappe.local.team().name)
 			.where(ReleaseGroup.enabled == 1)
-			.where(ReleaseGroup.public == 0)
 			.where(outside_archived_clusters())
 			.select(
 				site_count_query(server).as_("site_count"),
 				active_bench_count_query(server).as_("active_benches"),
 			)
 		)
+
+		# Public groups host new sites for everyone, so only staff see them in the list
+		if not frappe.local.system_user():
+			query = query.where(ReleaseGroup.public == 0)
 
 		if server:
 			query = (
@@ -899,10 +904,15 @@ class ReleaseGroup(Document, TagHelpers):
 				continue
 
 			last_image_size = self._get_last_deployed_image_size(server, last_deployed_bench)
+			if not last_image_size:
+				continue
 
-			if last_image_size and (free_space < last_image_size):
+			# New Bench pulls the image and then copies its sites folder out with `cp -LR`,
+			# on the same volume. ponytail: 2x is an upper bound; measure the copy if it blocks too often.
+			required_size = 2 * last_image_size
+			if free_space < required_size:
 				self._try_server_size_increase_or_throw(
-					server, mountpoint, required_size=last_image_size - free_space
+					server, mountpoint, required_size=required_size - free_space
 				)
 
 	def check_auto_scales(self) -> None:
@@ -1091,6 +1101,7 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def deploy_information(self):
 		out = frappe._dict(update_available=False)
 		last_deployed_bench = get_last_doc(
@@ -1133,6 +1144,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return out
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def deployed_versions(self):
 		Bench = frappe.qb.DocType("Bench")
 		Server = frappe.qb.DocType("Server")
@@ -1216,6 +1228,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return deployed_versions
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_app_versions(self, bench):
 		apps = frappe.db.get_all(
 			"Bench App",
@@ -1243,6 +1256,7 @@ class ReleaseGroup(Document, TagHelpers):
 		request_transfer(self, team_mail_id, reason, title=self.title or self.name)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_private_apps(self) -> list[str]:
 		"""Apps from private repositories, which the new owner must connect to their own GitHub"""
 		sources = [app.source for app in self.apps]
@@ -1689,6 +1703,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.remove_app(source.app)
 
 	@dashboard_whitelist()
+	@action_guard(ReleaseGroupActions.ManageApps)
 	def change_app_branch(self, app: str, to_branch: str) -> None:
 		current_app_source = self.get_app_source(app)
 
@@ -1807,6 +1822,58 @@ class ReleaseGroup(Document, TagHelpers):
 
 		self.add_server(server, deploy=True)
 
+	@dashboard_whitelist()
+	def remove_region(self, region: str):
+		"""
+		Remove a region from release group. Archives its benches and unlinks its servers.
+		"""
+		servers = self.get_servers_in_cluster(region)
+		self.validate_region_removal(region, servers)
+		benches = self.get_benches_to_archive(servers)
+		for bench in benches:
+			bench.ready_to_archive()
+
+		self.servers = [row for row in self.servers if row.server not in servers]
+		self.save()
+		for bench in benches:
+			bench.archive()
+
+	def get_servers_in_cluster(self, cluster: str) -> list[str]:
+		servers = [row.server for row in self.servers]
+		return frappe.get_all("Server", {"name": ("in", servers), "cluster": cluster}, pluck="name")
+
+	def validate_region_removal(self, region: str, servers: list[str]):
+		clusters = self.get_clusters()
+		if region not in clusters:
+			frappe.throw(_("Region {0} is not part of this bench group").format(region))
+		if len(clusters) == 1:
+			frappe.throw(_("You cannot remove the only region of a bench group"))
+		if frappe.db.exists(
+			"Site", {"group": self.name, "server": ("in", servers), "status": ("!=", "Archived")}
+		):
+			frappe.throw(_("Move or archive the sites in region {0} before you remove it").format(region))
+		if frappe.db.exists(
+			"Bench",
+			{
+				"group": self.name,
+				"server": ("in", servers),
+				"status": ("in", ("Pending", "Installing", "Updating")),
+			},
+		):
+			frappe.throw(
+				_("A deploy is in progress in region {0}. Try again after it finishes").format(region)
+			)
+
+	def get_benches_to_archive(self, servers: list[str]) -> list[Bench]:
+		from press.press.doctype.bench.bench import Bench
+
+		benches = frappe.get_all(
+			"Bench",
+			{"group": self.name, "server": ("in", servers), "status": ("in", ("Active", "Broken"))},
+			pluck="name",
+		)
+		return [Bench("Bench", bench) for bench in benches]
+
 	def get_last_successful_candidate_build(self, platform: str | None = None) -> DeployCandidateBuild | None:
 		try:
 			filters = {"status": "Success", "group": self.name}
@@ -1904,6 +1971,7 @@ class ReleaseGroup(Document, TagHelpers):
 			Bench("Bench", bench.name).update_bench_config(force=True)
 
 	@dashboard_whitelist()
+	@action_guard(ReleaseGroupActions.ManageApps)
 	def add_app(self, app, is_update: bool = False):
 		if isinstance(app, str):
 			app = json.loads(app)
@@ -1946,6 +2014,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.update_source(source, is_update)
 
 	@dashboard_whitelist()
+	@action_guard(ReleaseGroupActions.ManageApps)
 	def remove_app(self, app: str):
 		"""Remove app from release group"""
 
@@ -1957,6 +2026,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return app
 
 	@dashboard_whitelist()
+	@action_guard(ReleaseGroupActions.ManageApps)
 	def fetch_latest_app_update(self, app: str):
 		app_source = self.get_app_source(app)
 		app_source.create_release(force=True)

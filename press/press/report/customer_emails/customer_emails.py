@@ -1,6 +1,8 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
+from datetime import datetime
+
 import frappe
 
 # fmt: off
@@ -58,17 +60,24 @@ CUSTOMER_TYPES = ["Active", "Inactive", "Signup"]
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
-	region = (filters or {}).get("region")
+	frappe.only_for(["System Manager", "Press Support L1", "Press Support Engineer"])
+	filters = filters or {}
+	region = filters.get("region")
 	if region not in REGIONS:
 		frappe.throw(f"Select a Region. Options: {', '.join(REGIONS)}")
 
 	columns = frappe.get_doc("Report", "Customer Emails").get_columns()
-	return columns, get_rows(REGIONS[region])
+	months = frappe.utils.cint(filters.get("active_within_months"))
+	return columns, get_rows(REGIONS[region], filters.get("customer_type"), months)
 
 
-def get_rows(region: dict) -> list[dict]:
-	rows = [row for row in get_customers().values() if is_in_region(row["countries"], region)]
+def get_rows(region: dict, customer_type: str | None = None, active_within_months: int = 0) -> list[dict]:
+	customers = list(get_customers().values())
+	if active_within_months > 0:
+		customers = keep_recently_active(customers, active_within_months)
+	rows = [row for row in customers if is_in_region(row["countries"], region)]
+	if customer_type:
+		rows = [row for row in rows if row["customer_type"] == customer_type]
 	rows.sort(key=lambda row: (CUSTOMER_TYPES.index(row["customer_type"]), row["email"]))
 	return [
 		{
@@ -79,6 +88,43 @@ def get_rows(region: dict) -> list[dict]:
 		}
 		for row in rows
 	]
+
+
+def keep_recently_active(customers: list[dict], months: int) -> list[dict]:
+	cutoff = frappe.utils.add_months(frappe.utils.now_datetime(), -months)
+	last_active = get_last_active()
+	team_last_active = get_team_last_active(customers, last_active)
+	return [row for row in customers if is_recently_active(row, cutoff, last_active, team_last_active)]
+
+
+def is_recently_active(
+	row: dict,
+	cutoff: datetime,
+	last_active: dict[str, datetime | None],
+	team_last_active: dict[str, datetime],
+) -> bool:
+	"""An email with its own login counts by that login, any other email by its teams"""
+	if row["email"] in last_active:
+		active = last_active[row["email"]]
+		return bool(active and active >= cutoff)
+	return any(team_last_active[team] >= cutoff for team in row["teams"] if team in team_last_active)
+
+
+def get_last_active() -> dict[str, datetime | None]:
+	"""Last dashboard use per user, keyed by email (a User is named by its email)"""
+	users = frappe.get_all("User", fields=["name", "last_active"])
+	return {user.name.lower(): user.last_active for user in users}
+
+
+def get_team_last_active(
+	customers: list[dict], last_active: dict[str, datetime | None]
+) -> dict[str, datetime]:
+	team_last_active: dict[str, datetime] = {}
+	for row in customers:
+		if active := last_active.get(row["email"]):
+			for team in row["teams"]:
+				team_last_active[team] = max(team_last_active.get(team, active), active)
+	return team_last_active
 
 
 def is_in_region(countries: set[str], region: dict) -> bool:

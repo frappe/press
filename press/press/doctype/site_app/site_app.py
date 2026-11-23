@@ -6,7 +6,9 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import cstr
 
-from press.api.site import get_installed_apps
+from press.api.client import raise_not_permitted
+from press.api.site import get_installed_apps, has_protected_access
+from press.utils import get_current_team
 
 
 class SiteApp(Document):
@@ -29,6 +31,8 @@ class SiteApp(Document):
 		site = cstr(filters.get("parent", "")) if filters else None
 		if not site:
 			return None
+		if not has_protected_access("Site", site, get_current_team()):
+			raise_not_permitted()
 
 		site_doc = frappe.get_doc("Site", site)
 		installed_apps = get_installed_apps(site_doc, filters)
