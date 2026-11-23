@@ -15,6 +15,8 @@ from ansible.inventory.manager import InventoryManager
 from ansible.module_utils.common.collections import ImmutableDict
 from ansible.parsing.dataloader import DataLoader
 from ansible.playbook import Playbook
+from ansible.playbook.block import Block
+from ansible.playbook.task import Task
 from ansible.plugins.action.async_status import ActionModule
 from ansible.plugins.callback import CallbackBase
 from ansible.utils.display import Display
@@ -29,6 +31,9 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
+# Without it ansible-base 2.10 leaves the connection timeout at 0, so ssh
+# waits only 2s for the sudo prompt and uses no ConnectTimeout.
+ANSIBLE_CONNECTION_TIMEOUT = 30
 
 # Patch Ansible's hooks once at import and route callbacks through this thread-local
 # instead of re-patching every run. Each thread tracks its own active Ansible instance,
@@ -133,7 +138,7 @@ class AnsibleCallback(CallbackBase):
 			play.status = status
 			play.start = now()
 
-		play.save()
+		play.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	@reconnect_on_failure()
@@ -160,7 +165,7 @@ class AnsibleCallback(CallbackBase):
 			task.duration = task.end - task.start
 		else:
 			task.start = now()
-		task.save()
+		task.save(ignore_permissions=True)
 		self.publish_play_progress(task.name)
 		frappe.db.commit()
 
@@ -183,7 +188,7 @@ class AnsibleCallback(CallbackBase):
 		task_name = self.tasks[role][task]
 		task = frappe.get_doc("Ansible Task", task_name)
 		task.job_id = job_id
-		task.save()
+		task.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	@reconnect_on_failure()
@@ -193,7 +198,7 @@ class AnsibleCallback(CallbackBase):
 		task = frappe.get_doc("Ansible Task", task_name)
 		task.result = json.dumps(result, indent=4)
 		task.duration = now() - task.start
-		task.save()
+		task.save(ignore_permissions=True)
 		frappe.db.commit()
 
 
@@ -216,6 +221,7 @@ class Ansible:
 			remote_user=user,
 			start_at_task=None,
 			syntax=False,
+			timeout=ANSIBLE_CONNECTION_TIMEOUT,
 			verbosity=1,
 			ssh_common_args=self._get_ssh_proxy_commad(server),
 		)
@@ -283,23 +289,32 @@ class Ansible:
 				"playbook": self.playbook,
 				"play": play.get_name(),
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 		self.play = play_doc.name
 		self.tasks = {}
 		self.task_list = []
 		for role in play.get_roles():
-			for block in role.get_task_blocks():
-				for task in block.block:
-					task_doc = frappe.get_doc(
-						{
-							"doctype": "Ansible Task",
-							"play": self.play,
-							"role": role.get_name(),
-							"task": task.name,
-						}
-					).insert()
-					self.tasks.setdefault(role.get_name(), {})[task.name] = task_doc.name
-					self.task_list.append(task_doc.name)
+			for task in tasks_of(role.get_task_blocks()):
+				task_doc = frappe.get_doc(
+					{
+						"doctype": "Ansible Task",
+						"play": self.play,
+						"role": role.get_name(),
+						"task": task.name,
+					}
+				).insert(ignore_permissions=True)
+				self.tasks.setdefault(role.get_name(), {})[task.name] = task_doc.name
+				self.task_list.append(task_doc.name)
+
+
+def tasks_of(blocks: list[Block]) -> typing.Iterator[Task]:
+	"""Every task in the blocks, also inside a `block:` or an `import_tasks`, which Ansible loads as blocks."""
+	for block in blocks:
+		for task in block.block + block.rescue + block.always:
+			if isinstance(task, Block):
+				yield from tasks_of([task])
+			else:
+				yield task
 
 
 class Status(str, Enum):
@@ -345,7 +360,7 @@ class StepHandler:
 
 		machine_status = frappe.db.get_value("Virtual Machine", virtual_machine, "status")
 		step.status = Status.Running if machine_status != expected_status else Status.Success
-		step.save()
+		step.save(ignore_permissions=True)
 
 	def handle_agent_job(self, step: GenericStep, job: str, poll: bool = False) -> None:
 		if poll:
@@ -362,7 +377,7 @@ class StepHandler:
 		step.attempt = 1 if not step.attempt else step.attempt + 1
 
 		step.status = job_status
-		step.save()
+		step.save(ignore_permissions=True)
 
 		if step.status == Status.Failure:
 			raise
@@ -370,10 +385,10 @@ class StepHandler:
 	def handle_ansible_play(self, step: GenericStep, ansible: Ansible) -> None:
 		step.job_type = "Ansible Play"
 		step.job = ansible.play
-		step.save()
+		step.save(ignore_permissions=True)
 		ansible_play = ansible.run()
 		step.status = ansible_play.status
-		step.save()
+		step.save(ignore_permissions=True)
 
 		if step.status == Status.Failure:
 			raise
@@ -388,27 +403,27 @@ class StepHandler:
 		step.job = getattr(ansible, "play", None)
 		step.status = Status.Failure
 		step.output = str(e)
-		step.save()
+		step.save(ignore_permissions=True)
 
 	def _fail_job_step(self, step: GenericStep, e: Exception | None = None) -> None:
 		step.status = Status.Failure
 		step.output = str(e)
-		step.save()
+		step.save(ignore_permissions=True)
 
 	def fail(self, failure_status: str = Status.Failure):
 		self.status = failure_status
-		self.save()
+		self.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	def succeed(self, success_status: str = Status.Success):
 		self.status = success_status
-		self.save()
+		self.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	def handle_step_failure(self):
 		# can be overridden by controllers
 		self.error = frappe.get_traceback(with_context=True)
-		self.save()
+		self.save(ignore_permissions=True)
 
 	def get_steps(self, methods: list) -> list[dict]:
 		"""Generate a list of steps to be executed for NFS volume attachment."""
@@ -447,7 +462,7 @@ class StepHandler:
 	):
 		"""It is now required to be with a `enqueue_doc` else the first step executes in the web worker"""
 		self.status = start_status
-		self.save()
+		self.save(ignore_permissions=True)
 
 		step = self.next_step(steps)
 		if not step:

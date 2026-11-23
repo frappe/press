@@ -26,4 +26,6 @@ def create_administrator_team():
 
 def create_default_cluster():
 	default_cluster = frappe.get_doc({"doctype": "Cluster", "name": "Default"})
+	# No bucket exists at install. Set one before the first offsite backup or the next save.
+	default_cluster.flags.ignore_mandatory = True
 	default_cluster.insert()

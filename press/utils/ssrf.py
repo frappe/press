@@ -18,26 +18,69 @@ from __future__ import annotations
 
 import ipaddress
 import socket
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import requests
 from requests.adapters import HTTPAdapter
+
+MAX_REDIRECTS = 3
+DEFAULT_TIMEOUT = (5, 10)
 
 
 class SSRFError(Exception):
 	"""The webhook endpoint points at a private, internal, or unresolvable address."""
 
 
+def get(url: str, **kwargs) -> requests.Response:
+	"""GET a customer-controlled `url`, refusing any non-public target or redirect."""
+	return _follow_redirects("GET", url, **kwargs)
+
+
+def head(url: str, **kwargs) -> requests.Response:
+	"""HEAD a customer-controlled `url`, refusing any non-public target or redirect."""
+	return _follow_redirects("HEAD", url, **kwargs)
+
+
 def post(url: str, **kwargs) -> requests.Response:
-	"""POST to a customer-controlled `url`, refusing any non-public target."""
+	"""POST to a customer-controlled `url`, refusing any non-public target. Never redirects."""
+	return _send("POST", url, **kwargs)
+
+
+def validate(url: str):
+	"""Refuse `url` unless it is http(s) and its host resolves to public addresses only."""
+	_resolve_public_ip(_hostname(url))
+
+
+def _follow_redirects(method: str, url: str, **kwargs) -> requests.Response:
+	"""Follow up to MAX_REDIRECTS redirects, and check each target like the first URL."""
+	for _ in range(MAX_REDIRECTS + 1):
+		response = _send(method, url, **kwargs)
+		if not response.is_redirect:
+			return response
+		url = urljoin(url, response.headers["Location"])
+	raise SSRFError("The URL redirects too many times.")
+
+
+def _send(method: str, url: str, **kwargs) -> requests.Response:
+	hostname = _hostname(url)
+	ip = _resolve_public_ip(hostname)
+	kwargs["allow_redirects"] = False
+	kwargs.setdefault("timeout", DEFAULT_TIMEOUT)
+	with requests.Session() as session:
+		session.mount(f"{urlsplit(url).scheme}://", _PinnedIPAdapter(ip, hostname))
+		response = session.request(method, url, **kwargs)
+	# The adapter rewrites the URL to the pinned IP. Callers expect the URL they asked for.
+	response.url = url
+	return response
+
+
+def _hostname(url: str) -> str:
 	parts = urlsplit(url)
+	if parts.scheme and parts.scheme not in ("http", "https"):
+		raise SSRFError("Only http and https URLs are allowed.")
 	if not parts.hostname:
 		raise SSRFError("The endpoint URL has no host.")
-	ip = _resolve_public_ip(parts.hostname)
-	kwargs["allow_redirects"] = False
-	with requests.Session() as session:
-		session.mount(f"{parts.scheme}://", _PinnedIPAdapter(ip, parts.hostname))
-		return session.post(url, **kwargs)
+	return parts.hostname
 
 
 def _resolve_public_ip(hostname: str) -> str:
@@ -47,11 +90,16 @@ def _resolve_public_ip(hostname: str) -> str:
 	except socket.gaierror as error:
 		raise SSRFError(f"Could not resolve the endpoint host '{hostname}'.") from error
 
-	ips = {str(address[4][0]) for address in addresses}
+	ips = [str(address[4][0]) for address in addresses]
 	for ip in ips:
 		if not _is_public(ip):
 			raise SSRFError("The endpoint resolves to a private or internal address, which is not allowed.")
-	return next(iter(ips))
+	return _prefer_ipv4(ips)
+
+
+def _prefer_ipv4(ips: list[str]) -> str:
+	"""Pick an IPv4 address when the host is dual-stack, as the control plane may lack IPv6 egress."""
+	return next((ip for ip in ips if ipaddress.ip_address(ip).version == 4), ips[0])
 
 
 def _is_public(ip: str) -> bool:

@@ -234,6 +234,7 @@ import { toast } from 'vue-sonner'
 import FileUploader from '@/components/FileUploader.vue'
 import router from '../../../router'
 import { confirmDialog, renderDialog } from '../../../utils/components'
+import { openInvoicePaymentPage } from '../../../utils/invoice'
 import AddPrepaidCreditsDialog from '../../billing/AddPrepaidCreditsDialog.vue'
 import CommunicationInfoDialog from '../../CommunicationInfoDialog.vue'
 import TFADialog from './TFADialog.vue'
@@ -418,9 +419,7 @@ export default {
 										invoice.stripe_invoice_url &&
 										this.$team.doc.payment_mode === 'Card'
 									) {
-										window.open(
-											`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`,
-										)
+										openInvoicePaymentPage(invoice.name)
 									} else {
 										this.showAddPrepaidCreditsDialog = true
 									}

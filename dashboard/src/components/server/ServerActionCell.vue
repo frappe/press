@@ -66,6 +66,7 @@ function getServerActionHandler(action) {
 		'Reboot server': onRebootServer,
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
+		'Transfer server': onTransferServer,
 		'Cleanup Server': onCleanupServer,
 		'Enable Autoscale': onSetupSecondaryServer,
 		'Disable Autoscale': onTeardownSecondaryServer,
@@ -251,6 +252,43 @@ function onRebootServer() {
 	})
 }
 
+function onTransferServer() {
+	confirmDialog({
+		title: 'Transfer Server Ownership',
+		message: `<div class="space-y-2 text-base text-ink-gray-7">
+			<p>The database server, and all bench groups and sites on this server, move with it.</p>
+			<p>The new owner will be billed for the server and can see its past activity.</p>
+			<p><strong>This can't be undone.</strong> The confirmation link expires in 48 hours.</p>
+		</div>`,
+		fields: [
+			{
+				label: 'Email address of the team that will own the server',
+				fieldname: 'email',
+			},
+			{
+				label: 'Reason for transfer',
+				fieldname: 'reason',
+				type: 'textarea',
+			},
+		],
+		primaryAction: {
+			label: 'Transfer',
+			variant: 'solid',
+			onClick: ({ hide, values }) => {
+				if (!values.email) {
+					throw new Error('Please enter a valid email address')
+				}
+				return server.sendTransferRequest
+					.submit({ team_mail_id: values.email, reason: values.reason || '' })
+					.then(() => {
+						hide()
+						toast.success(`Transfer request sent to ${values.email}.`)
+					})
+			},
+		},
+	})
+}
+
 function onRenameServer() {
 	confirmDialog({
 		title: 'Rename Server',
@@ -317,7 +355,7 @@ function onEnableAutoDiskExpansion() {
 function onDisableAutoDiskExpansion() {
 	confirmDialog({
 		title: 'Disable automatic storage disk expansion',
-		message: `<div class="prose text-base">Disable auto add on storage?<br>This can effect server uptime <a href="https://docs.frappe.io/cloud/storage-addons">Know more</a></br></div>`,
+		message: `<div class="prose text-base">Disable auto add on storage?<br>This can affect server uptime <a href="https://docs.frappe.io/cloud/storage-addons">Know more</a></br></div>`,
 		primaryAction: {
 			label: 'Disable',
 			theme: 'red',
@@ -393,7 +431,7 @@ function onEnableBinlogIndexing() {
 	if (!server.enableBinlogIndexing) return
 	confirmDialog({
 		title: 'Enable Binlog Indexing',
-		message: `Are you sure you want to enable the Binlog Indexing on the database server <b>${server.doc.name}</b> ?<br><br><b>Note:</b> Binlog indexes will consume additional disk space (10% of total binlog size). It can take upto 1 day to index existing binlogs depending on the size of binlogs.`,
+		message: `Are you sure you want to enable the Binlog Indexing on the database server <b>${server.doc.name}</b>?<br><br><b>Note:</b> Binlog indexes will consume additional disk space (10% of total binlog size). It can take upto 1 day to index existing binlogs depending on the size of binlogs.`,
 		primaryAction: {
 			label: 'Enable Binlog Indexing',
 		},
@@ -419,7 +457,7 @@ function onDisableBinlogIndexing() {
 	if (!server.disableBinlogIndexing) return
 	confirmDialog({
 		title: 'Disable Binlog Indexing',
-		message: `Are you sure you want to disable the Binlog Indexing on the database server <b>${server.doc.name}</b> ?<br><br><b>Note:</b> Disabling binlog indexing will remove all existing binlog indexes from the server.`,
+		message: `Are you sure you want to disable the Binlog Indexing on the database server <b>${server.doc.name}</b>?<br><br><b>Note:</b> Disabling binlog indexing will remove all existing binlog indexes from the server.`,
 		primaryAction: {
 			label: 'Disable Binlog Indexing',
 		},
@@ -445,7 +483,7 @@ function onEnablePerformanceSchema() {
 	if (!server.enablePerformanceSchema) return
 	confirmDialog({
 		title: 'Enable Performance Schema',
-		message: `Are you sure you want to enable the Performance Schema on the database server <b>${server.doc.name}</b> ?<br><br><b>Note:</b> Your database server will be restarted to apply the changes. Your sites will face few minutes of downtime.`,
+		message: `Are you sure you want to enable the Performance Schema on the database server <b>${server.doc.name}</b>?<br><br><b>Note:</b> Your database server will be restarted to apply the changes. Your sites will face few minutes of downtime.`,
 		fields: [
 			{
 				label: 'Please type the server name to confirm',
@@ -480,7 +518,7 @@ function onDisablePerformanceSchema() {
 	if (!server.disablePerformanceSchema) return
 	confirmDialog({
 		title: 'Disable Performance Schema',
-		message: `Are you sure you want to disable the Performance Schema on the database server <b>${server.doc.name}</b> ?<br><br><b>Note:</b> Your database server will be restarted to apply the changes. Your sites will face few minutes of downtime.`,
+		message: `Are you sure you want to disable the Performance Schema on the database server <b>${server.doc.name}</b>?<br><br><b>Note:</b> Your database server will be restarted to apply the changes. Your sites will face few minutes of downtime.`,
 		fields: [
 			{
 				label: 'Please type the server name to confirm',
@@ -730,7 +768,7 @@ function onUpdateMaxDBConnections() {
 	if (!server.updateMaxDbConnections) return
 	confirmDialog({
 		title: 'Update Max DB Connections',
-		message: `Are you sure you want to change the Max DB Connections of the database server <b>${server.doc.name}</b> ?<br><br> Recommended Max DB Connections is <b>${server.doc.mariadb_variables_recommended_values.max_connections}</b>`,
+		message: `Are you sure you want to change the Max DB Connections of the database server <b>${server.doc.name}</b>?<br><br> Recommended Max DB Connections is <b>${server.doc.mariadb_variables_recommended_values.max_connections}</b>`,
 		fields: [
 			{
 				label: 'Enter the new Max DB Connections',

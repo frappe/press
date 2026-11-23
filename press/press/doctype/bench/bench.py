@@ -14,6 +14,8 @@ import pytz
 from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
+from frappe.permissions import is_system_user
+from frappe.query_builder.functions import Sum
 from frappe.utils import get_system_timezone
 
 from press.agent import Agent
@@ -147,6 +149,8 @@ class Bench(Document):
 
 	@staticmethod
 	def get_list_query(query):
+		from press.press.doctype.cluster.cluster import archived_clusters
+
 		Bench = frappe.qb.DocType("Bench")
 		Server = frappe.qb.DocType("Server")
 		Site = frappe.qb.DocType("Site")
@@ -166,6 +170,8 @@ class Bench(Document):
 				Server.public.as_("on_public_server"),
 			)
 			.where(Bench.status != "Archived")
+			# A bench in an archived region cannot be reached, so the dashboard omits it.
+			.where(Bench.cluster.notin(archived_clusters()))
 			.join(Server)
 			.on(Server.name == Bench.server)
 			.run(as_dict=1)
@@ -190,6 +196,9 @@ class Bench(Document):
 			"User SSH Key", {"user": frappe.session.user, "is_default": 1}, limit=1
 		)
 		doc.user_ssh_key = bool(user_ssh_key)
+		doc.ssh_access_denied_reason = frappe.get_cached_doc(
+			"Release Group", self.group
+		).ssh_access_denied_reason()
 		doc.proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 
 		group = frappe.db.get_value(
@@ -327,6 +336,8 @@ class Bench(Document):
 				"Managed Database Service", self.managed_database_service, "port"
 			)
 
+		self.add_flow_server_manager(config)
+
 		press_settings_common_site_config: str = frappe.db.get_single_value(
 			"Press Settings", "bench_configuration"
 		)
@@ -362,6 +373,21 @@ class Bench(Document):
 		self.update_bench_config_with_rq_port(bench_config)
 		self.add_limits(bench_config)
 		self.update_bench_config_with_rg_config(bench_config)
+
+	def add_flow_server_manager(self, config: dict):
+		# agent reads this key and runs Flow's agent server under supervisor.
+		# validate rebuilds config on each save, so keep the value a bench has
+		# already. This lets us turn off a crashing Flow server on one bench.
+		existing = json.loads(self.config or "{}")
+		if "flow_server_manager" in existing:
+			config["flow_server_manager"] = existing["flow_server_manager"]
+		elif self.is_new() and self.has_flow():
+			config["flow_server_manager"] = "supervisor"
+
+	def has_flow(self) -> bool:
+		# Flow ships inside frappe, in Version 16 and Nightly
+		version = frappe.db.get_value("Release Group", self.group, "version")
+		return version in ("Version 16", "Nightly")
 
 	def update_bench_config_with_rq_port(self, bench_config):
 		if self.is_new():
@@ -446,17 +472,16 @@ class Bench(Document):
 		agent.force_update_bench_limits(self.name, self.get_limits())
 
 	def get_unused_port_offset(self):
-		benches = frappe.db.sql(
-			"""SELECT `port_offset` FROM `tabBench`
-			WHERE `tabBench`.server = %s
-			AND `tabBench`.status != 'Archived'
-			FOR UPDATE;
-			""",
-			(self.server,),
-			as_dict=True,
+		Bench = frappe.qb.DocType("Bench")
+		used_offsets = (
+			frappe.qb.from_(Bench)
+			.select(Bench.port_offset)
+			.where(Bench.server == self.server)
+			.where(Bench.status != "Archived")
+			.for_update()
+			.run(pluck=True)
 		)
 		all_offsets = range(0, 1000)
-		used_offsets = map(lambda x: x.port_offset, benches)
 		available_offsets = set(all_offsets) - set(used_offsets)
 		return min(available_offsets)
 
@@ -503,8 +528,8 @@ class Bench(Document):
 		frappe.db.commit()
 
 	@dashboard_whitelist()
-	def archive(self, retry_new_bench: bool = False):
-		self.ready_to_archive()
+	def archive(self, retry_new_bench: bool = False, force: bool = False):
+		self.ready_to_archive(force and is_system_user())
 		self.status = "Pending"
 		self.save()  # lock 1
 
@@ -678,23 +703,19 @@ class Bench(Document):
 
 		= sum of cpu time per day
 		"""
+		SiteTable = frappe.qb.DocType("Site")
+		Subscription = frappe.qb.DocType("Subscription")
+		SitePlan = frappe.qb.DocType("Site Plan")
 		return (
-			frappe.db.sql_list(
-				# minimum plan is taken as 10
-				f"""
-			SELECT SUM(plan.cpu_time_per_day)
-			FROM tabSite site
-
-			JOIN tabSubscription subscription
-			ON site.name = subscription.document_name
-
-			JOIN `tabSite Plan` plan
-			ON subscription.plan = plan.name
-
-			WHERE site.bench = "{self.name}"
-			AND site.status in ("Active", "Pending", "Updating")
-				"""
-			)[0]
+			frappe.qb.from_(SiteTable)
+			.join(Subscription)
+			.on(SiteTable.name == Subscription.document_name)
+			.join(SitePlan)
+			.on(Subscription.plan == SitePlan.name)
+			.select(Sum(SitePlan.cpu_time_per_day))
+			.where(SiteTable.bench == self.name)
+			.where(SiteTable.status.isin(["Active", "Pending", "Updating"]))
+			.run(pluck=True)[0]
 			or 0
 		)
 
@@ -1188,22 +1209,40 @@ class Bench(Document):
 				ArchiveBenchError,
 			)
 
-	def ready_to_archive(self):
-		self.check_scaled_up_server()
-		self.check_bench_resetting()
-		self.check_last_archive()
-		self.check_archive_jobs()
-		self.check_ongoing_jobs()
-		self.check_ongoing_site_updates()
-		self.check_unarchived_sites()
-		if get_scheduled_version_upgrades(self):
-			frappe.throw(
-				"Version upgrade is in progress. Please try again after some time.", ArchiveBenchError
-			)
+	def is_upgrade_destination(self) -> bool:
+		"""Whether a cross-group Site Update would land on this bench.
 
+		validate_destination_bench takes the newest active bench of the group on the
+		server, so that is the one a scheduled upgrade cannot lose.
+		"""
+		return self.name == frappe.db.get_value(
+			"Bench",
+			{"group": self.group, "server": self.server, "status": "Active"},
+			"name",
+			order_by="creation desc",
+		)
+
+	def check_scheduled_version_upgrades(self, force: bool = False):
+		"""Refuse the archive while an upgrade to this bench's group is scheduled.
+
+		The query matches the group and the server, not a bench, so it holds every
+		bench of the group there. Force narrows it to the bench the upgrade would
+		land on: dropping that one leaves the upgrade with no destination, and it
+		fails when it starts.
+		"""
+		if not get_scheduled_version_upgrades(self):
+			return
+
+		if force and not self.is_upgrade_destination():
+			return
+
+		frappe.throw("Version upgrade is in progress. Please try again after some time.", ArchiveBenchError)
+
+	def check_pending_site_operations(self):
+		"""Both of these name this bench as the destination."""
 		if get_unfinished_site_migrations(self):
 			frappe.throw(
-				"There are pending site migrations on bench {self.name}. Please try after the site migrations are done.",
+				f"There are pending site migrations on bench {self.name}. Please try after the site migrations are done.",
 				ArchiveBenchError,
 			)
 
@@ -1212,6 +1251,37 @@ class Bench(Document):
 				"There seems to be some pending actions on the site. Please finish them before attempting to archive the bench.",
 				ArchiveBenchError,
 			)
+
+	def check_work_in_progress(self):
+		"""Refuse the archive while the bench is busy. Force skips these."""
+		self.check_scaled_up_server()
+		self.check_bench_resetting()
+		self.check_last_archive()
+		self.check_ongoing_jobs()
+
+	def check_sites_in_flight(self):
+		"""Refuse the archive while a site is on its way to or from this bench.
+
+		Force never skips these. An unfinished update, migration or action still
+		points the site at its source bench, so check_unarchived_sites sees nothing
+		on the destination while the agent restores the site there.
+		"""
+		self.check_ongoing_site_updates()
+		self.check_pending_site_operations()
+
+	def ready_to_archive(self, force: bool = False):
+		"""Raise unless the bench can be archived.
+
+		``force`` skips the checks that are judgement calls, for a system user who can
+		see more than the checks can. It never skips a running archive job, a site on
+		its way to this bench, a site still on it, or an upgrade that would land here.
+		"""
+		if not force:
+			self.check_work_in_progress()
+		self.check_archive_jobs()
+		self.check_scheduled_version_upgrades(force)
+		self.check_sites_in_flight()
+		self.check_unarchived_sites()
 
 	def update_apps_after_inplace_update(
 		self,
@@ -1547,26 +1617,29 @@ def try_archive(bench: str):
 
 
 def archive_obsolete_benches(group: str | None = None, server: str | None = None):
-	query_substr = ""
-	if group and server:
-		query_substr = f"AND bench.group = '{group}' AND bench.server = '{server}'"
-	benches = frappe.db.sql(
-		f"""
-		SELECT
-			bench.name, bench.server, bench.group, bench.candidate, bench.creation, bench.last_archive_failure, bench.resetting_bench, g.public, g.central_bench
-		FROM
-			tabBench bench
-		LEFT JOIN
-			`tabRelease Group` g
-		ON
-			bench.group = g.name
-		WHERE
-			bench.status = "Active" {query_substr}
-		ORDER BY
-			bench.server
-	""",
-		as_dict=True,
+	Bench = frappe.qb.DocType("Bench")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	query = (
+		frappe.qb.from_(Bench)
+		.left_join(ReleaseGroup)
+		.on(Bench.group == ReleaseGroup.name)
+		.select(
+			Bench.name,
+			Bench.server,
+			Bench.group,
+			Bench.candidate,
+			Bench.creation,
+			Bench.last_archive_failure,
+			Bench.resetting_bench,
+			ReleaseGroup.public,
+			ReleaseGroup.central_bench,
+		)
+		.where(Bench.status == "Active")
+		.orderby(Bench.server)
 	)
+	if group and server:
+		query = query.where((Bench.group == group) & (Bench.server == server))
+	benches = query.run(as_dict=True)
 
 	benches_by_server = groupby(benches, lambda x: x.server)
 	for server_benches in benches_by_server:

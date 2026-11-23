@@ -3,12 +3,13 @@
 
 
 import json
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 import frappe
 from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 
+from press.exceptions import SiteBackupInProgress, SiteUpdateInProgress
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.agent_job_notifications import get_details
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
@@ -30,12 +31,14 @@ from press.press.doctype.site.site import (
 	Site,
 )
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
+from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.site_update.site_update import (
 	STATEMENT_TIME_BUMP_SIZE_MB,
 	SiteUpdate,
 	is_site_in_deploy_hours,
 	run_scheduled_updates,
+	schedule_updates_server,
 	sites_with_available_update,
 )
 from press.press.doctype.subscription.test_subscription import create_test_subscription
@@ -529,6 +532,153 @@ class TestSiteUpdate(FrappeTestCase):
 		self.assertEqual(frappe.get_value("Site Update", site_update_name, "status"), "Cancelled")
 		self.assertTrue(frappe.db.exists("Press Notification", {"type": "Site Update", "team": site.team}))
 
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_migrate_update_of_standby_site_skips_backups(self):
+		site = self._migrate_site_with_difference()
+		frappe.db.set_value("Site", site.name, "is_standby", 1)
+
+		site_update = frappe.get_doc("Site Update", site.schedule_update())
+
+		self.assertEqual(site_update.deploy_type, "Migrate")
+		self.assertTrue(site_update.skipped_backups)
+		agent_job = frappe.get_doc("Agent Job", site_update.update_job)
+		self.assertTrue(json.loads(agent_job.request_data)["skip_backups"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_site_handed_out_from_pool_before_its_update_starts_takes_backups(self):
+		site = self._migrate_site_with_difference()
+		frappe.db.set_value("Site", site.name, "is_standby", 1)
+		later = frappe.utils.add_to_date(None, hours=1)
+		site_update = frappe.get_doc("Site Update", site.schedule_update(scheduled_time=later))
+
+		frappe.db.set_value("Site", site.name, "is_standby", 0)
+		site_update.start()
+
+		site_update.reload()
+		self.assertFalse(site_update.skipped_backups)
+		agent_job = frappe.get_doc("Agent Job", site_update.update_job)
+		self.assertFalse(json.loads(agent_job.request_data)["skip_backups"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_migrate_update_of_customer_site_still_takes_backups(self):
+		site = self._migrate_site_with_difference()
+
+		site_update = frappe.get_doc("Site Update", site.schedule_update())
+
+		self.assertEqual(site_update.deploy_type, "Migrate")
+		self.assertFalse(site_update.skipped_backups)
+		agent_job = frappe.get_doc("Agent Job", site_update.update_job)
+		self.assertFalse(json.loads(agent_job.request_data)["skip_backups"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch.object(SiteUpdate, "triggered_by_user", new=PropertyMock(return_value=True))
+	def test_user_migrate_update_with_ongoing_backup_asks_to_cancel_it(self):
+		site = self._migrate_site_with_difference()
+		create_test_site_backup(site.name, offsite=False, status="Pending")
+
+		self.assertRaises(SiteBackupInProgress, site.schedule_update)
+		self.assertFalse(frappe.db.exists("Site Update", {"site": site.name}))
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch.object(SiteUpdate, "triggered_by_user", new=PropertyMock(return_value=True))
+	@patch("press.press.doctype.agent_job.agent_job.Agent.cancel_job")
+	def test_confirmed_migrate_update_cancels_ongoing_backups_and_starts(self, mock_cancel_job):
+		site = self._migrate_site_with_difference()
+		backup = create_test_site_backup(site.name, offsite=False, status="Pending")
+		frappe.db.set_value("Agent Job", backup.job, {"status": "Running", "job_id": 42})
+
+		site_update = frappe.get_doc("Site Update", site.schedule_update(cancel_ongoing_backups=True))
+
+		mock_cancel_job.assert_called_once_with(42)
+		self.assertEqual(frappe.db.get_value("Agent Job", backup.job, "status"), "Cancelled")
+		self.assertEqual(frappe.db.get_value("Site Backup", backup.name, "status"), "Failure")
+		self.assertTrue(site_update.update_job)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch.object(SiteUpdate, "triggered_by_user", new=PropertyMock(return_value=True))
+	def test_scheduled_update_doesnt_ask_about_ongoing_backups(self):
+		site = self._migrate_site_with_difference()
+		create_test_site_backup(site.name, offsite=False, status="Pending")
+		later = frappe.utils.add_to_date(None, hours=1)
+
+		self.assertTrue(site.schedule_update(scheduled_time=later))
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_backup_is_refused_while_the_site_migrates(self):
+		site = self._migrate_site_with_difference()
+		site.schedule_update()
+		site.reload()
+
+		self.assertRaises(SiteUpdateInProgress, site.backup)
+
+	def _sites_on_bench_with_update(
+		self, standby: int, customer: int, queue_size: int = 10
+	) -> tuple[list[str], list[str]]:
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+
+		standby_sites = [create_test_site(bench=bench1.name).name for _ in range(standby)]
+		for site in standby_sites:
+			frappe.db.set_value("Site", site, "is_standby", 1)
+		customer_sites = [create_test_site(bench=bench1.name).name for _ in range(customer)]
+		frappe.db.set_single_value("Press Settings", "auto_update_queue_size", queue_size)
+		return standby_sites, customer_sites
+
+	@patch.object(SiteUpdate, "start", new=Mock())
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	def test_all_standby_sites_on_a_bench_are_scheduled_in_one_run_but_customer_sites_one_per_bench(
+		self,
+	):
+		standby_sites, customer_sites = self._sites_on_bench_with_update(standby=3, customer=3)
+		server = frappe.db.get_value("Site", standby_sites[0], "server")
+
+		with patch("press.press.doctype.site_update.site_update.is_site_in_deploy_hours", return_value=True):
+			schedule_updates_server(server)
+
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", standby_sites)}), 3)
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", customer_sites)}), 1)
+
+	@patch.object(SiteUpdate, "start", new=Mock())
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	def test_customer_sites_wait_for_deploy_hours_while_standby_sites_move(self):
+		standby_sites, customer_sites = self._sites_on_bench_with_update(standby=2, customer=2)
+		server = frappe.db.get_value("Site", standby_sites[0], "server")
+
+		with patch("press.press.doctype.site_update.site_update.is_site_in_deploy_hours", return_value=False):
+			schedule_updates_server(server)
+
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", standby_sites)}), 2)
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", customer_sites)}), 0)
+
+	@patch.object(SiteUpdate, "start", new=Mock())
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	def test_standby_sites_spend_the_server_update_budget_before_customer_sites(self):
+		# A queue size of 1 lets a run schedule 2 updates on the server.
+		standby_sites, customer_sites = self._sites_on_bench_with_update(standby=2, customer=2, queue_size=1)
+		server = frappe.db.get_value("Site", standby_sites[0], "server")
+
+		with patch("press.press.doctype.site_update.site_update.is_site_in_deploy_hours", return_value=True):
+			schedule_updates_server(server)
+
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", standby_sites)}), 2)
+		self.assertEqual(frappe.db.count("Site Update", {"site": ("in", customer_sites)}), 0)
+
+	@patch.object(SiteUpdate, "start", new=Mock())
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	def test_no_updates_are_scheduled_when_the_server_queue_is_full(self):
+		standby_sites, customer_sites = self._sites_on_bench_with_update(standby=1, customer=2, queue_size=0)
+		server = frappe.db.get_value("Site", standby_sites[0], "server")
+		frappe.get_doc("Site", customer_sites[0]).schedule_update()  # stays Pending
+
+		with patch("press.press.doctype.site_update.site_update.is_site_in_deploy_hours", return_value=True):
+			schedule_updates_server(server)
+
+		self.assertEqual(frappe.db.count("Site Update", {"site": standby_sites[0]}), 0)
+		self.assertEqual(frappe.db.count("Site Update", {"site": customer_sites[1]}), 0)
+
 	def test_standby_site_is_updated_even_outside_deploy_hours(self):
 		"""A standby site must bypass the deploy-hours filter; regression for is_standby not being fetched."""
 		app = create_test_app()
@@ -604,6 +754,35 @@ class TestSiteUpdate(FrappeTestCase):
 		difference.flags.ignore_validate = True
 		difference.save()
 		return create_test_site(bench=bench1.name)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_recovery_of_failed_update_on_broken_site_disables_maintenance_mode(self):
+		site = self._migrate_site_with_difference()
+		frappe.db.set_value("Site", site.name, "status", "Broken")
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [
+						{"name": "Backup Site Tables", "status": "Success"},
+						{"name": "Move Site", "status": "Success"},
+						{"name": "Migrate Site", "status": "Failure"},
+					],
+				},
+				"Recover Failed Site Migrate": {"status": "Success"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		recover_job = frappe.get_value("Site Update", site_update, "recover_job")
+		request_data = json.loads(frappe.get_value("Agent Job", recover_job, "request_data"))
+		self.assertTrue(
+			request_data["activate"],
+			"The update put a broken site in maintenance mode, so recovery must take it out again",
+		)
 
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 	def test_skipped_backups_update_failure_goes_fatal_without_attempting_recovery(self):
@@ -879,3 +1058,18 @@ class TestSiteUpdate(FrappeTestCase):
 		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
 
 		self.assertTrue(site.schedule_update())
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_a_cancelled_update_does_not_start_and_dispatch_a_job(self):
+		"""A stop that wins the row must not be undone by the `start()` it was racing"""
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench.name)
+		update = create_test_site_update(site.name, group.name, "Cancelled", ignore_validate=True)
+
+		update.start()
+
+		update.reload()
+		self.assertEqual(update.status, "Cancelled")
+		self.assertIsNone(update.update_job)

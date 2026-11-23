@@ -13,10 +13,18 @@ from press.press.doctype.agent_job.agent_job import AgentJob, process_job_update
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_activity.test_site_activity import create_test_site_activity
-from press.press.doctype.site_backup.site_backup import alert_if_backup_success_rate_is_low
+from press.press.doctype.site_backup.site_backup import (
+	alert_if_backup_success_rate_is_low,
+	is_global_search_crashed,
+)
 
 if TYPE_CHECKING:
 	from datetime import datetime
+
+CRASHED_GLOBAL_SEARCH_OUTPUT = (
+	"mariadb-dump: Couldn't execute 'show create table `__global_search`': Table"
+	" './_db/__global_search' is marked as crashed and last (automatic?) repair failed (144)"
+)
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
@@ -236,6 +244,95 @@ class TestSiteBackup(FrappeTestCase):
 		self.assertTrue(self.site_backup.remote_public_file)
 		self.assertTrue(self.site_backup.remote_private_file)
 		self.assertTrue(self.site_backup.remote_config_file)
+
+	# The failure notification commits, which would leak this site into later tests
+	@patch("press.press.doctype.agent_job.agent_job_notifications.send_job_failure_notification", new=Mock())
+	def _fail_backup_job(self, output: str):
+		self.job.db_set("status", "Failure")
+		self.job.db_set("output", output)
+		process_job_updates(self.job.name)
+
+	def _fix_global_search_jobs(self):
+		return frappe.get_all(
+			"Agent Job",
+			filters={"job_type": "Fix global search", "site": self.site.name},
+			fields=["request_path", "bench", "server", "reference_doctype", "reference_name"],
+		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_backup_failing_on_crashed_global_search_starts_fix_job_on_site_bench(self):
+		self._fail_backup_job(CRASHED_GLOBAL_SEARCH_OUTPUT)
+
+		jobs = self._fix_global_search_jobs()
+		self.assertEqual(len(jobs), 1)
+		self.assertEqual(
+			jobs[0].request_path, f"benches/{self.site.bench}/sites/{self.site.name}/fix_global_search"
+		)
+		self.assertEqual(jobs[0].bench, self.site.bench)
+		self.assertEqual(jobs[0].server, self.site.server)
+		self.assertEqual(jobs[0].reference_name, self.site_backup.name)
+
+	@patch("press.press.doctype.site_backup.site_backup._send_backup_failure_email_to_user")
+	@patch("press.press.doctype.agent_job.agent_job.Agent.cancel_job")
+	def test_cancelled_backup_job_fails_the_backup_quietly(self, mock_cancel_job, mock_send_email):
+		self.job.db_set({"status": "Running", "job_id": 7})
+		self.job.reload()
+
+		self.job.cancel_and_mark_cancelled("test")
+
+		mock_cancel_job.assert_called_once_with(7)
+		self.assertEqual(self.job.status, "Cancelled")
+		self.assertEqual(frappe.db.get_value("Site Backup", self.site_backup.name, "status"), "Failure")
+		mock_send_email.assert_called_once()
+		self.assertTrue(mock_send_email.call_args.kwargs["cancelled"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_backup_failing_for_other_reason_does_not_start_fix_global_search_job(self):
+		self._fail_backup_job("mariadb-dump: Got error: 2013: Lost connection to server during query")
+
+		self.assertEqual(self._fix_global_search_jobs(), [])
+
+	def test_crashed_global_search_is_detected_when_dump_fails_on_a_select(self):
+		output = (
+			"mariadb-dump: Error 145: Table './_db/__global_search' is marked as crashed"
+			" and should be repaired when dumping table `__global_search` at row: 0"
+		)
+		self.assertTrue(is_global_search_crashed(output))
+		self.assertFalse(is_global_search_crashed("Table './_db/tabUser' is marked as crashed"))
+
+	def test_archive_backup_records_the_bucket_the_agent_uploaded_to_not_the_clusters_current_one(self):
+		from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
+
+		database = {"file": "db.sql.gz", "size": 100, "url": "https://example.com/db.sql.gz"}
+		archive_job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Archive Site",
+				"site": self.site.name,
+				"server_type": "Server",
+				"server": self.site.server,
+				"request_path": "archive",
+				"request_data": json.dumps({"offsite": {"bucket": "uploaded-to.backups.frappe.cloud"}}),
+				"status": "Success",
+				"data": json.dumps({"backups": {"database": database}, "offsite": {"db.sql.gz": "path"}}),
+			}
+		).insert()
+		for step in ("Backup Site", "Upload Site Backup to S3"):
+			frappe.get_doc(
+				{
+					"doctype": "Agent Job Step",
+					"agent_job": archive_job.name,
+					"step_name": step,
+					"status": "Success",
+				}
+			).insert()
+
+		_create_site_backup_from_agent_job(archive_job)
+
+		self.assertEqual(
+			frappe.get_all("Remote File", {"site": self.site.name}, pluck="bucket"),
+			["uploaded-to.backups.frappe.cloud"],
+		)
 
 	def test_archiving_site_with_offsite_backup_creates_site_backup_record(self):
 		"""

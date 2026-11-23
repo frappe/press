@@ -37,6 +37,7 @@ def account_request(
 	"""
 	return: Stripe setup intent and AR key if stripe flow, else None
 	"""
+	from frappe.utils import escape_html
 	from frappe.utils.html_utils import clean_html
 
 	email = email.strip().lower()
@@ -46,9 +47,12 @@ def account_request(
 		frappe.throw(f"Subdomain {subdomain} is already taken. Please try with some other subdomain.")
 
 	all_countries = frappe.db.get_all("Country", pluck="name")
-	country = find(all_countries, lambda x: x.lower() == country.lower())
-	if not country:
-		frappe.throw("{country} is not a valid country. Please choose the correct country value.")
+	country_name = find(all_countries, lambda x: x.lower() == country.lower())
+	if not country_name:
+		frappe.throw(
+			f"{escape_html(country)} is not a valid country. Please choose the correct country value."
+		)
+	country = country_name
 
 	team = frappe.db.get_value("Team", {"user": email})
 	if team and frappe.db.exists("Invoice", {"team": team, "status": "Unpaid", "type": "Subscription"}):
@@ -122,7 +126,7 @@ def create_or_rename_saas_site(app, account_request):
 
 @frappe.whitelist()
 def new_saas_site(subdomain, app):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Product Manager"])
 
 	pooled_site = get_pooled_saas_site(app)
 	if pooled_site:
@@ -367,6 +371,40 @@ def get_site_url_and_sid(key, app=None):
 
 	name = frappe.db.get_value("Site", {"subdomain": account_request.subdomain, "domain": domain})
 	site: "Site" = frappe.get_doc("Site", name)
+
+	# The key mints a login session, so spend it; lock the row so a replay can't race the first use.
+	key_details = frappe.db.get_value(
+		"Account Request",
+		account_request.name,
+		["request_key", "request_key_expiration_time"],
+		as_dict=True,
+		for_update=True,
+	)
+	if (
+		not key_details.request_key
+		or key_details.request_key != account_request.request_key
+		or (
+			key_details.request_key_expiration_time
+			and key_details.request_key_expiration_time < frappe.utils.now_datetime()
+		)
+	):
+		frappe.throw("Invalid or Expired Key")  # nosemgrep
+	frappe.db.set_value(
+		"Account Request",
+		account_request.name,
+		{"request_key": "", "request_key_expiration_time": None},
+		update_modified=False,
+	)
+
+	# The spent key proves the caller signed up for the site, so no consent is needed.
 	if site.additional_system_user_created:
-		return site.login_as_team()
+		validate_site_active_for_login(site)
+		return site.team_login_url()
 	return site.login_as_admin()
+
+
+def validate_site_active_for_login(site: "Site"):
+	if site.status != "Active":
+		frappe.throw(  # nosemgrep
+			f"Site is in {frappe.bold(site.status.lower())} state. Your site has to be active to {frappe.bold('log in')}."
+		)

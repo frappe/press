@@ -17,7 +17,6 @@ class BackupBucket(Document):
 		from frappe.types import DF
 
 		bucket_name: DF.Data | None
-		cluster: DF.Link | None
 		endpoint_url: DF.Data | None
 		region: DF.Data | None
 		replication_bucket: DF.Data | None
@@ -36,7 +35,7 @@ def get_replication_target(bucket_name: str) -> dict | None:
 	if not frappe.db.exists("Backup Bucket", bucket_name):
 		return None
 
-	bucket: BackupBucket = frappe.get_doc("Backup Bucket", bucket_name)
+	bucket = BackupBucket("Backup Bucket", bucket_name)
 	if not bucket.replication_enabled:
 		return None
 
