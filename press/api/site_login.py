@@ -110,7 +110,7 @@ def send_otp(email: str):
 	"""
 
 	last_otp = frappe.db.get_value("Site User Session", {"user": email}, "otp_generated_at")
-	if last_otp and (frappe.utils.now_datetime() - last_otp).seconds < 30:
+	if last_otp and (frappe.utils.now_datetime() - last_otp).total_seconds() < 30:
 		return frappe.throw("Please wait for 30 seconds before sending the OTP again")  # nosemgrep
 
 	session = frappe.get_doc({"doctype": "Site User Session", "user": email}).insert(ignore_permissions=True)
@@ -134,7 +134,7 @@ def verify_otp(email: str, otp: str):
 	if not session.otp:
 		return frappe.throw("OTP is not set. Please set OTP and try.")
 
-	if (frappe.utils.now_datetime() - session.otp_generated_at).seconds > 300:
+	if (frappe.utils.now_datetime() - session.otp_generated_at).total_seconds() > 300:
 		return frappe.throw("OTP is expired. Please re-send and try again")
 
 	ip_tracker = get_login_attempt_tracker(frappe.local.request_ip)
