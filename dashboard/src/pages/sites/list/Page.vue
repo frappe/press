@@ -3,20 +3,21 @@ import {
 	Badge,
 	Button,
 	Combobox,
-	Dropdown,
-	MultiSelect,
-	TextInput,
-	Tooltip,
-  Spinner,
 	createDocumentResource,
 	createListResource,
+	Dropdown,
+	MultiSelect,
+	Spinner,
+	TextInput,
+	Tooltip,
 } from 'frappe-ui'
 import { unparse } from 'papaparse'
-import { defineAsyncComponent, h, ref } from 'vue'
+import { defineAsyncComponent, h, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import BillingAlerts from '@/components/BillingAlerts.vue'
-import LinkControl from '@/components/LinkControl.vue'
 import Scrollbar from '@/components/common/Scrollbar.vue'
 import Header from '@/components/Header.vue'
+import LinkControl from '@/components/LinkControl.vue'
 import { getTeam } from '@/data/team'
 import { clusterOptions } from '@/objects/common'
 import { renderDialog } from '@/utils/components'
@@ -36,8 +37,35 @@ const statusOptions = [
 }))
 const regionOptions = clusterOptions.filter(Boolean)
 
+const route = useRoute()
+const router = useRouter()
+
+// Pilot links here with a backup access request to approve.
+if (route.query['v1-migration']) {
+	const V1MigrationApprovalDialog = defineAsyncComponent(
+		() => import('@/components/site/V1MigrationApprovalDialog.vue'),
+	)
+	renderDialog(
+		h(V1MigrationApprovalDialog, {
+			requestName: String(route.query['v1-migration']),
+		}),
+	)
+}
+
+const liveStatuses = statusOptions
+	.filter((o) => o.value !== 'Archived')
+	.map((o) => o.value)
+
+// A shared link can ask for a status, for example /sites?status=Archived
+const statusesInQuery = (query: unknown) =>
+	String(query ?? '')
+		.split(',')
+		.filter((value) => statusOptions.some((o) => o.value === value))
+
+const requestedStatuses = statusesInQuery(route.query.status)
+
 const selectedStatuses = ref<string[]>(
-	statusOptions.filter((o) => o.value !== 'Archived').map((o) => o.value),
+	requestedStatuses.length ? requestedStatuses : liveStatuses,
 )
 
 const initialFilters = { status: ['in', selectedStatuses.value] }
@@ -73,12 +101,67 @@ const sitesCount = createListResource({
 	orderBy: 'creation desc',
 	pageLength: 100000,
 	auto: true,
+	onSuccess: (data: any[]) => showArchivedSitesIfTeamHasNoLiveSites(data),
 })
 
-const applyStatusFilter = (value: string[]) => {
+const selectStatuses = (value: string[]) => {
 	selectedStatuses.value = value
+	router.replace({
+		query: {
+			...route.query,
+			status: value.length ? value.join(',') : undefined,
+		},
+	})
 	applyFilter('status', value.length ? ['in', value] : undefined)
 }
+
+const applyStatusFilter = (value: string[]) => {
+	selectStatuses(value)
+}
+
+const archivedSites = createListResource({
+	doctype: 'Site',
+	fields: ['name'],
+	filters: { status: 'Archived' },
+	pageLength: 1,
+	auto: false,
+	onSuccess: (data: any[]) => {
+		// A team with no site at all keeps the default list, where it can
+		// create the first site
+		if (!data?.length) return
+		selectStatuses(['Archived'])
+	},
+})
+
+// The check runs on the first load, and again after the user archives a site.
+// It must not run on an unrelated filter change, or a filter with no result
+// would move the user to the archived sites.
+let checkLiveSitesOnNextCount = !requestedStatuses.length
+
+// A team that dropped all of its sites gets an empty list and no next step.
+// Show the archived sites instead, because they are the only sites left.
+// `sitesCount` carries the same filters as `sites`, and it has no shared cache,
+// so its result is a reliable count of the live sites of the team.
+const showArchivedSitesIfTeamHasNoLiveSites = (liveSites: any[]) => {
+	if (!checkLiveSitesOnNextCount) return
+	checkLiveSitesOnNextCount = false
+	if (liveSites?.length) return
+	archivedSites.reload()
+}
+
+// Vue keeps this page when only the query changes, for example on the back
+// button. Read the new status from the URL and apply it.
+watch(
+	() => route.query.status,
+	(query) => {
+		const statuses = statusesInQuery(query)
+		const value = statuses.length ? statuses : liveStatuses
+		if (value.join() === selectedStatuses.value.join()) return
+		checkLiveSitesOnNextCount = !statuses.length
+		selectedStatuses.value = value
+		applyFilter('status', ['in', value])
+	},
+)
 
 const moreActions = [
 	{ label: 'Export as CSV', icon: 'download', onClick: () => exportCSV() },
@@ -123,7 +206,13 @@ const dropSite = (site: any) => {
 		h(ArchiveSiteDialog, {
 			site: siteResource,
 			modelValue: true,
-			onArchived: () => sites.reload(),
+			onArchived: () => {
+				// The user can archive the last live site from this page
+				checkLiveSitesOnNextCount =
+					selectedStatuses.value.join() === liveStatuses.join()
+				sites.reload()
+				sitesCount.reload()
+			},
 		}),
 	)
 }
@@ -203,7 +292,7 @@ const exportCSV = () => {
 			<BillingAlerts ctx-type="List Page" />
 		</div>
 
-		<div class="flex items-center gap-2 px-5 pb-3 overflow-auto">
+		<div class="flex items-center gap-2 px-5 pt-4 pb-3 overflow-auto">
 			<TextInput
 				placeholder="Search sites"
 				class="w-56 shrink-0"
@@ -331,7 +420,7 @@ const exportCSV = () => {
 							</Badge>
 						</td>
 
-						<td> {{ sitePlan(site) }} </td>
+						<td>{{ sitePlan(site) }} </td>
 
 						<td>
 							<span class="flex gap-1.5 items-center">
@@ -347,7 +436,7 @@ const exportCSV = () => {
 						<td>
 							{{ site.group_public ? 'Shared' : site.group_title }}
 						</td>
-						<td> {{ site.version }}</td>
+						<td>{{ site.version }}</td>
 
 						<td class="w-px">
 							<div class="flex justify-end">

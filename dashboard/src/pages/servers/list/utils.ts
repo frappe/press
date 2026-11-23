@@ -1,13 +1,13 @@
 import { createDocumentResource } from 'frappe-ui'
 import { toast } from 'vue-sonner'
-import { confirmDialog } from '@/utils/components'
 import router from '@/router'
+import { confirmDialog } from '@/utils/components'
 
 export function dropBench(bench: any) {
-  const releaseGroup = createDocumentResource({
-    doctype: 'Release Group',
-    name: bench.name,
-  })
+	const releaseGroup = createDocumentResource({
+		doctype: 'Release Group',
+		name: bench.name,
+	})
 
 	confirmDialog({
 		title: 'Drop Bench',
@@ -23,7 +23,7 @@ export function dropBench(bench: any) {
 			theme: 'red',
 			onClick: ({ hide, values }) => {
 				if (releaseGroup.delete.loading) return
-				if (values.confirmBenchName !== bench.title) {
+				if (values.confirmBenchName?.trim() !== bench.title.trim()) {
 					throw new Error('Bench name does not match')
 				}
 				toast.promise(

@@ -13,6 +13,7 @@ import router from '../router'
 import { confirmDialog, icon, renderDialog } from '../utils/components'
 import { getToastErrorMessage } from '../utils/toast'
 import { getFrappeUpdateBanner } from './common'
+import { canManageApps } from './common/apps'
 import { getJobsTab } from './common/jobs'
 import { getPatchesTab } from './common/patches'
 import { tagTab } from './common/tags'
@@ -45,11 +46,13 @@ export default {
 		deleteEnvironmentVariable: 'delete_environment_variable',
 		updateDependency: 'update_dependency',
 		addRegion: 'add_region',
+		removeRegion: 'remove_region',
 		deployedVersions: 'deployed_versions',
 		getAppVersions: 'get_app_versions',
 		getCertificate: 'get_certificate',
 		generateCertificate: 'generate_certificate',
 		sendTransferRequest: 'send_change_team_request',
+		getPrivateApps: 'get_private_apps',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
 		redeploy: 'redeploy',
@@ -64,6 +67,10 @@ export default {
 		titleField: 'title',
 		statusBadge({ documentResource: releaseGroup }) {
 			return { label: releaseGroup.doc.status }
+		},
+		extraBadges({ documentResource: releaseGroup }) {
+			if (!releaseGroup.doc.public) return []
+			return [{ label: 'Public', theme: 'blue' }]
 		},
 		banner({ documentResource: releaseGroup }) {
 			return getFrappeUpdateBanner(releaseGroup.doc, 'This bench group')
@@ -162,6 +169,17 @@ export default {
 							suffix(row) {
 								if (!row.last_github_poll_failed) return
 
+								if (row.branch_deleted)
+									return h(
+										Tooltip,
+										{
+											text: `The ${row.branch} branch no longer exists on GitHub. Change the branch to resume updates.`,
+											placement: 'top',
+											class: 'rounded-full bg-surface-gray-2 p-1',
+										},
+										() => [h(icon('alert-circle', 'w-3 h-3'), {})],
+									)
+
 								return h(
 									Tooltip,
 									{
@@ -182,8 +200,14 @@ export default {
 								)
 							},
 							format(value, row) {
-								let { update_available, deployed, last_github_poll_failed } =
-									row
+								let {
+									update_available,
+									deployed,
+									last_github_poll_failed,
+									branch_deleted,
+								} = row
+
+								if (branch_deleted) return 'Branch Deleted'
 
 								return last_github_poll_failed
 									? 'Action Required'
@@ -192,6 +216,9 @@ export default {
 										: update_available
 											? 'Update Available'
 											: 'Latest Version'
+							},
+							theme(value, row) {
+								return row.last_github_poll_failed ? 'red' : 'gray'
 							},
 							width: 0.5,
 						},
@@ -216,6 +243,7 @@ export default {
 							},
 							{
 								label: 'Fetch Latest Updates',
+								condition: () => canManageApps(releaseGroup.doc),
 								onClick() {
 									toast.promise(
 										releaseGroup.fetchLatestAppUpdates.submit({
@@ -234,6 +262,7 @@ export default {
 							},
 							{
 								label: 'Change Branch',
+								condition: () => canManageApps(releaseGroup.doc),
 								onClick() {
 									renderDialog(
 										h(ChangeAppBranchDialog, {
@@ -248,7 +277,8 @@ export default {
 							},
 							{
 								label: 'Remove App',
-								condition: () => row.name !== 'frappe',
+								condition: () =>
+									canManageApps(releaseGroup.doc) && row.name !== 'frappe',
 								onClick() {
 									if (releaseGroup.removeApp.loading) return
 									confirmDialog({
@@ -284,6 +314,7 @@ export default {
 							},
 							{
 								label: 'Apply Patch',
+								condition: () => canManageApps(releaseGroup.doc),
 								onClick: () => {
 									renderDialog(
 										h(PatchAppDialog, {
@@ -295,8 +326,12 @@ export default {
 							},
 						]
 					},
-					moreActions({ selectionMode, enterSelectionMode }) {
-						if (selectionMode) return []
+					moreActions({
+						selectionMode,
+						enterSelectionMode,
+						documentResource: releaseGroup,
+					}) {
+						if (selectionMode || !canManageApps(releaseGroup.doc)) return []
 						return [
 							{
 								label: 'Uninstall Multiple',
@@ -319,6 +354,7 @@ export default {
 						selectedRows,
 						exitSelectionMode,
 					}) {
+						if (!canManageApps(releaseGroup.doc)) return null
 						if (selectionMode) {
 							return {
 								label: selectedRows.length
@@ -591,6 +627,48 @@ export default {
 							},
 						},
 					],
+					rowActions({
+						row,
+						listResource: clusters,
+						documentResource: releaseGroup,
+					}) {
+						return [
+							{
+								label: 'Remove Region',
+								condition: () => clusters.data?.length > 1,
+								onClick() {
+									confirmDialog({
+										title: 'Remove Region',
+										message: `Are you sure you want to remove the region <b>${row.title}</b>? The benches in this region will be archived. Move or archive the sites in this region first.`,
+										primaryAction: {
+											label: 'Remove',
+											variant: 'solid',
+											theme: 'red',
+										},
+										onSuccess({ hide }) {
+											if (releaseGroup.removeRegion.loading) return
+											toast.promise(
+												releaseGroup.removeRegion.submit(
+													{ region: row.name },
+													{
+														onSuccess: () => {
+															clusters.reload()
+															hide()
+														},
+													},
+												),
+												{
+													loading: `Removing region ${row.title}...`,
+													success: () => `Region ${row.title} removed`,
+													error: (e) => getToastErrorMessage(e),
+												},
+											)
+										},
+									})
+								},
+							},
+						]
+					},
 					primaryAction({
 						listResource: clusters,
 						documentResource: releaseGroup,
@@ -828,17 +906,20 @@ export default {
 		{
 			name: 'Deploy Candidate',
 			path: 'deploys/:id',
+			meta: { title: 'Deploy' },
 			component: () => import('../components/benches/pipeline/Details.vue'),
 			props: { deployview: true },
 		},
 		{
 			name: 'Release Pipeline',
 			path: 'pipeline/:id',
+			meta: { title: 'Pipeline' },
 			component: () => import('../components/benches/pipeline/Details.vue'),
 		},
 		{
 			name: 'Release Group Job',
 			path: 'jobs/:id',
+			meta: { title: 'Job' },
 			component: () => import('../pages/JobPage.vue'),
 		},
 	],

@@ -13,6 +13,7 @@ from frappe.tests.utils import FrappeTestCase
 from press.agent import Agent
 from press.api.bench import deploy_information
 from press.api.client import get_list
+from press.overrides import before_request
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
@@ -103,6 +104,7 @@ class TestReleaseGroup(FrappeTestCase):
 		self.team = create_test_team().name
 
 	def tearDown(self):
+		frappe.set_user("Administrator")
 		frappe.db.rollback()
 
 	def test_get_doc_reports_commit_time_of_frappe_on_the_newest_active_bench(self):
@@ -451,6 +453,19 @@ class TestReleaseGroup(FrappeTestCase):
 			self.assertNotIn(env.key, internal_environment_variables_keys)
 			self.assertIn(env.key, non_internal_environment_variables_keys)
 
+	def test_update_environment_variable_rejects_a_newline_in_the_value(self):
+		rg = create_test_release_group([create_test_app()])
+		with self.assertRaisesRegex(frappe.ValidationError, "must not contain newlines"):
+			rg.update_environment_variable({"MY_VAR": "foo\nRUN touch /tmp/pwned"})
+		rg.reload()
+		self.assertEqual(rg.environment_variables, [])
+
+	def test_release_group_save_rejects_a_newline_in_the_key(self):
+		rg = create_test_release_group([create_test_app()])
+		rg.append("environment_variables", {"key": "MY_VAR\nRUN id", "value": "foo"})
+		with self.assertRaisesRegex(frappe.ValidationError, "must not contain newlines"):
+			rg.save()
+
 	def test_add_environment_variable(self):
 		rg = create_test_release_group([create_test_app()])
 		rg.update_environment_variable({"test_key": "test_value"})
@@ -675,6 +690,22 @@ class TestReleaseGroup(FrappeTestCase):
 			test_release_group.check_app_server_storage()
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_storage_check_needs_room_for_the_image_and_the_copied_sites_folder(self):
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.site.test_site import create_test_bench
+
+		server = create_test_server(auto_increase_storage=False)
+		test_release_group = create_test_release_group([create_test_app()], servers=[server.name])
+		create_test_bench(group=test_release_group)
+
+		with (
+			self.assertRaisesRegex(frappe.ValidationError, "Not enough space on server"),
+			patch.object(BaseServer, "free_space", mock_free_space(space_required=8 * 1024**3)),
+			patch.object(Agent, "get", mock_image_size(5)),
+		):  # 8 GiB free fits a 5 GiB image, but not the image plus its sites copy
+			test_release_group.check_app_server_storage()
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	@patch.object(BaseServer, "calculated_increase_disk_size", Mock())
 	@patch.object(Agent, "get", mock_image_size(60))
 	@patch.object(BaseServer, "free_space", mock_free_space(space_required=5400000000))
@@ -691,3 +722,110 @@ class TestReleaseGroup(FrappeTestCase):
 		create_test_bench(group=test_release_group)
 
 		test_release_group.check_app_server_storage()
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	# The second bench of a group makes the storage precheck ask the agent for the size of
+	# the last deployed image. Nothing is really deployed here, so skip the precheck rather
+	# than fake a size for it.
+	@patch.object(ReleaseGroup, "check_app_server_storage", new=Mock())
+	def test_counts_of_a_group_on_two_servers_are_scoped_to_the_filtered_server(self):
+		"""A group runs on two servers. Each server card must count only its own benches and sites."""
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.site.test_site import create_test_bench, create_test_site
+
+		app = create_test_app()
+		user = frappe.get_value("Team", self.team, "user")
+		first_server = create_test_server(team=self.team).name
+		second_server = create_test_server(team=self.team).name
+		group = create_test_release_group([app], user=user, servers=[first_server, second_server])
+
+		create_test_site(bench=create_test_bench(group=group, server=first_server).name, team=self.team)
+		for _ in range(2):
+			create_test_site(bench=create_test_bench(group=group, server=second_server).name, team=self.team)
+
+		frappe.set_user(user)
+		before_request()
+
+		def counts_on(server):
+			[fetched] = get_list("Release Group", fields=["name"], filters={"server": server})
+			return fetched.active_benches, fetched.site_count
+
+		self.assertEqual(counts_on(first_server), (1, 1))
+		self.assertEqual(counts_on(second_server), (2, 2))
+
+	def test_list_shows_public_groups_of_the_team_only_to_system_users(self):
+		user = frappe.get_value("Team", self.team, "user")
+		private = create_test_release_group([create_test_app()], user=user).name
+		public = create_test_release_group([create_test_app()], user=user, public=True).name
+
+		def listed_groups(user_type):
+			frappe.db.set_value("User", user, "user_type", user_type)
+			frappe.set_user(user)
+			before_request()
+			return {group.name for group in get_list("Release Group", fields=["name"])}
+
+		self.assertEqual(listed_groups("Website User"), {private})
+		self.assertEqual(listed_groups("System User"), {private, public})
+
+	def _create_group_in_two_regions(self):
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.server.test_server import create_test_server
+
+		second_cluster = create_test_cluster("Jeddah", public=True).name
+		first_server = create_test_server(cluster="Default").name
+		second_server = create_test_server(cluster=second_cluster).name
+		group = create_test_release_group([create_test_app()], servers=[first_server, second_server])
+		return group, second_cluster, second_server
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_remove_region_unlinks_its_servers_and_archives_its_benches(self):
+		from press.press.doctype.site.test_site import create_test_bench
+
+		group, region, server = self._create_group_in_two_regions()
+		bench = create_test_bench(group=group, server=server)
+		frappe.db.set_value("Agent Job", {"bench": bench.name}, "status", "Success")
+
+		group.remove_region(region)
+		group.reload()
+
+		self.assertNotIn(server, [row.server for row in group.servers])
+		self.assertNotIn(region, group.get_clusters())
+		self.assertEqual(frappe.db.get_value("Bench", bench.name, "status"), "Pending")
+		self.assertTrue(frappe.db.exists("Agent Job", {"bench": bench.name, "job_type": "Archive Bench"}))
+
+	def test_remove_region_rejects_the_only_region_of_the_group(self):
+		from press.press.doctype.server.test_server import create_test_server
+
+		server = create_test_server(cluster="Default").name
+		group = create_test_release_group([create_test_app()], servers=[server])
+
+		with self.assertRaisesRegex(frappe.ValidationError, "You cannot remove the only region"):
+			group.remove_region("Default")
+		self.assertEqual([row.server for row in group.servers], [server])
+
+	def test_remove_region_rejects_a_region_that_still_has_sites(self):
+		from press.press.doctype.site.test_site import create_test_bench, create_test_site
+
+		group, region, server = self._create_group_in_two_regions()
+		create_test_site(bench=create_test_bench(group=group, server=server).name)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Move or archive the sites in region"):
+			group.remove_region(region)
+		self.assertIn(region, group.get_clusters())
+
+	def test_remove_region_rejects_a_region_with_a_deploy_in_progress(self):
+		from press.press.doctype.site.test_site import create_test_bench
+
+		group, region, server = self._create_group_in_two_regions()
+		bench = create_test_bench(group=group, server=server)
+		frappe.db.set_value("Bench", bench.name, "status", "Installing")
+
+		with self.assertRaisesRegex(frappe.ValidationError, "A deploy is in progress in region"):
+			group.remove_region(region)
+		self.assertIn(region, group.get_clusters())
+
+	def test_remove_region_rejects_a_region_outside_the_group(self):
+		group, _, _ = self._create_group_in_two_regions()
+
+		with self.assertRaisesRegex(frappe.ValidationError, "is not part of this bench group"):
+			group.remove_region("Mumbai")

@@ -27,6 +27,21 @@ export function dayjsIST(dateTimeString) {
 	return dayjs(dateTimeString).tz('Asia/Calcutta');
 }
 
+// Times of day (HH:mm) with no date of their own. Anchoring them to today keeps
+// the offset right for timezones that observe DST.
+export function timeLocal(serverTime) {
+	return convertTimeOfDay(serverTime, 'Asia/Calcutta', dayjs.tz.guess());
+}
+
+export function timeServer(localTime) {
+	return convertTimeOfDay(localTime, dayjs.tz.guess(), 'Asia/Calcutta');
+}
+
+function convertTimeOfDay(time, from, to) {
+	const today = dayjs().format('YYYY-MM-DD');
+	return dayjs.tz(`${today} ${time}`, from).tz(to).format('HH:mm');
+}
+
 export function dayjsFloorToMinutes(d, interval) {
 	const minutes = d.minute();
 	const floored = Math.floor(minutes / interval) * interval;

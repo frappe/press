@@ -50,6 +50,10 @@ class CreateServerJob(PressJob):
 		# wazuh, ...) - they'd still be running when the reboot lands
 		self.set_docker_mtu_hetzner()
 
+		# Before set_additional_config, so provisioning waits for rclone instead of
+		# racing the apt plays that step enqueues
+		self.enable_backup_streaming()
+
 		self.set_additional_config()
 
 		if self.is_fs_server:
@@ -60,6 +64,13 @@ class CreateServerJob(PressJob):
 		return self.server_type == "Database Server" and self.arguments_dict.get(
 			"setup_db_replication", False
 		)
+
+	@property
+	def is_virtual_machine_terminated(self) -> bool:
+		# Read fresh: provisioning terminates the machine after this job loaded it
+		if not self.virtual_machine:
+			return False
+		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "status") == "Terminated"
 
 	@property
 	def is_fs_server(self):
@@ -294,6 +305,13 @@ class CreateServerJob(PressJob):
 
 		self.server_doc.start_replication()
 
+	@task(queue="long", timeout=1200)
+	def enable_backup_streaming(self):
+		if self.server_type != "Server":
+			return
+
+		self.server_doc.enable_backup_streaming()
+
 	@task
 	def set_additional_config(self):
 		self.server_doc.set_additional_config()
@@ -352,6 +370,9 @@ class CreateServerJob(PressJob):
 	def on_press_job_failure(self, _):
 		if self.server_type not in ["Server", "Database Server"]:
 			return
+
+		if self.is_virtual_machine_terminated:
+			self.server_doc.mark_provisioning_failed()
 
 		# Mark Server Snapshot Recovery as failed if the server provisioning was for recovery
 		if self.server_doc.is_for_recovery:

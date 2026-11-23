@@ -2,6 +2,7 @@
 # See license.txt
 from __future__ import annotations
 
+from contextlib import contextmanager
 from unittest.mock import Mock, patch
 
 import frappe
@@ -11,7 +12,8 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
 )
-from press.press.doctype.team.team import Team
+from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.team.team import Team, check_budget_alerts
 
 
 def allow_server_creation(team: Team):
@@ -31,6 +33,18 @@ def allow_server_creation(team: Team):
 
 	team.db_set({"billing_address": address.name, "servers_enabled": 1})
 	team.reload()
+
+
+@contextmanager
+def as_member(user: str, team: str):
+	"""Act as a dashboard user of `team`, the way a request with the team header does."""
+	frappe.set_user(user)
+	frappe.local.request = frappe._dict(method="POST", headers={"X-Press-Team": team})
+	try:
+		yield
+	finally:
+		del frappe.local.request
+		frappe.set_user("Administrator")
 
 
 def create_test_press_admin_team(
@@ -75,9 +89,65 @@ def create_test_team(
 	return team
 
 
+def create_paid_invoice(team: Team):
+	invoice = frappe.get_doc({"doctype": "Invoice", "team": team.name, "type": "Prepaid Credits"}).insert(
+		ignore_permissions=True
+	)
+	invoice.db_set({"status": "Paid", "amount_paid": 100})
+
+
+def add_card(team: Team):
+	team.db_set({"payment_mode": "Card", "default_payment_method": "pm-test", "billing_address": "addr-test"})
+
+
+def subscribe_to_server_plan(team: Team, price_usd: float):
+	from press.press.doctype.server.test_server import create_test_server
+	from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
+	from press.press.doctype.subscription.test_subscription import create_test_subscription
+
+	plan = create_test_server_plan()
+	plan.db_set("price_usd", price_usd)
+	server = create_test_server(team=team.name)
+	create_test_subscription(server.name, plan.name, team.name, "Server", "Server Plan")
+
+
 class TestTeam(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
+
+	def test_new_team_cannot_skip_ssh_wait_with_card_and_paid_trial_site_plan(self):
+		from press.press.doctype.site.test_site import create_test_site
+		from press.press.doctype.site_plan.test_site_plan import create_test_plan
+		from press.press.doctype.subscription.test_subscription import create_test_subscription
+
+		team = create_test_team()
+		add_card(team)
+		plan = create_test_plan("Site", price_usd=10, is_trial_plan=True)
+		site = create_test_site(team=team.name)
+		create_test_subscription(site.name, plan.name, team.name)
+		self.assertFalse(team.can_skip_ssh_wait())
+
+	def test_new_team_can_skip_ssh_wait_after_buying_credits(self):
+		team = create_test_team()
+		create_paid_invoice(team)
+		self.assertTrue(team.can_skip_ssh_wait())
+
+	def test_new_team_can_skip_ssh_wait_with_card_and_paid_server_plan(self):
+		team = create_test_team()
+		add_card(team)
+		subscribe_to_server_plan(team, price_usd=200)
+		self.assertTrue(team.can_skip_ssh_wait())
+
+	def test_new_team_cannot_skip_ssh_wait_with_card_but_only_free_plan(self):
+		team = create_test_team()
+		add_card(team)
+		subscribe_to_server_plan(team, price_usd=0)
+		self.assertFalse(team.can_skip_ssh_wait())
+
+	def test_new_team_cannot_skip_ssh_wait_with_paid_plan_but_no_payment_method(self):
+		team = create_test_team()
+		subscribe_to_server_plan(team, price_usd=200)
+		self.assertFalse(team.can_skip_ssh_wait())
 
 	def test_switching_to_card_payment_mode_moves_beginner_team_to_growth_tier(self):
 		team = create_test_team()
@@ -118,6 +188,31 @@ class TestTeam(FrappeTestCase):
 			)
 		self.assertEqual(team.billing_name, "first name last name")
 
+	def test_member_without_admin_access_cannot_turn_off_2fa_enforcement(self):
+		team = create_test_team()
+		team.db_set("enforce_2fa", 1)
+		member = frappe.mock("email")
+		team.create_user_for_member("Jane", "Doe", member)
+		team = Team("Team", team.name)
+		team.enforce_2fa = 0
+		with (
+			as_member(member, str(team.name)),
+			self.assertRaisesRegex(
+				frappe.PermissionError, "Only team owner or admins can change team settings"
+			),
+		):
+			team.save()
+
+	def test_member_without_admin_access_can_save_the_team_without_changing_settings(self):
+		team = create_test_team()
+		member = frappe.mock("email")
+		team.create_user_for_member("Jane", "Doe", member)
+		team = Team("Team", team.name)
+		team.team_title = "Renamed"
+		with as_member(member, str(team.name)):
+			team.save()
+		self.assertEqual(frappe.db.get_value("Team", team.name, "team_title"), "Renamed")
+
 	def test_create_user_for_member_adds_team_member(self):
 		Team.create_user("sys_mgr", email="testuser1@gmail.com")
 		team = create_test_team()
@@ -137,6 +232,40 @@ class TestTeam(FrappeTestCase):
 				account_request2, "John", "Meyer", "jonmeyer@gmail.com", country="Pakistan"
 			)
 		self.assertEqual(team2.currency, "USD")
+
+	def test_can_create_site_blocks_team_with_two_or_more_unpaid_subscription_invoices(self):
+		team = create_test_team()
+		for _ in range(2):
+			frappe.get_doc(
+				{"doctype": "Invoice", "team": team.name, "type": "Subscription", "status": "Unpaid"}
+			).insert(ignore_permissions=True)
+
+		allow, why = team.can_create_site()
+
+		self.assertFalse(allow)
+		self.assertEqual(why, "Please settle your outstanding invoices to create new sites")
+
+	def test_validate_can_create_server_blocks_team_with_two_or_more_unpaid_subscription_invoices(self):
+		team = create_test_team()
+		allow_server_creation(team)
+		for _ in range(2):
+			frappe.get_doc(
+				{"doctype": "Invoice", "team": team.name, "type": "Subscription", "status": "Unpaid"}
+			).insert(ignore_permissions=True)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Please settle your outstanding invoices"):
+			team.validate_can_create_server()
+
+	def test_can_create_site_blocks_team_that_has_exceeded_its_spending_limit(self):
+		team = create_test_team()
+		team.db_set({"apply_limits": 1, "spending_limit": 100})
+		with patch.object(Team, "total_subscribed_amount", return_value=100):
+			allow, why = team.can_create_site()
+
+		self.assertFalse(allow)
+		self.assertEqual(
+			why, "You have exceeded your spending limit. Please contact support to increase your limits."
+		)
 
 	def test_total_subscribed_amount_skips_legacy_subscriptions_with_null_plan_fields(self):
 		team = create_test_team()
@@ -223,3 +352,48 @@ class TestTeam(FrappeTestCase):
 		second = team.create_upcoming_invoice(date)
 
 		self.assertEqual(second.name, first.name)
+
+
+BILLING_EMAIL = "billing-contact@example.com"
+
+
+class TestBudgetAlerts(FrappeTestCase):
+	def setUp(self):
+		# Recipients are cached, and teams reuse emails across tests
+		get_communication_info.clear_cache()
+		self.team = create_test_team()
+		self.team.db_set({"receive_budget_alerts": 1, "monthly_alert_threshold": 10})
+		self.create_invoice_over_threshold()
+
+	def tearDown(self):
+		frappe.db.rollback()
+		get_communication_info.clear_cache()
+
+	def create_invoice_over_threshold(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=frappe.utils.get_first_day(frappe.utils.getdate()),
+			period_end=frappe.utils.get_last_day(frappe.utils.getdate()),
+		).insert()
+		invoice.db_set("total", 100)
+
+	def add_billing_email(self):
+		self.team.append(
+			"communication_infos", {"channel": "Email", "type": "Billing", "value": BILLING_EMAIL}
+		)
+		self.team.save()
+		get_communication_info.clear_cache()
+
+	def alert(self) -> list[str]:
+		with patch.object(frappe, "sendmail") as sendmail:
+			check_budget_alerts()
+		return sendmail.call_args.kwargs["recipients"]
+
+	def test_budget_alert_goes_to_the_billing_contact_when_one_is_set(self):
+		self.add_billing_email()
+
+		self.assertEqual(self.alert(), [BILLING_EMAIL])
+
+	def test_budget_alert_goes_to_the_team_owner_without_a_billing_contact(self):
+		self.assertEqual(self.alert(), [self.team.user])

@@ -5,14 +5,18 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.press_settings.press_settings import PressSettings
 from press.press.doctype.site.backups import (
 	ScheduledBackupJob,
+	get_sites_without_offsite_backups,
 	schedule_logical_backups_for_sites_with_backup_time,
 	schedule_physical_backups_for_sites_with_backup_time,
 )
 from press.press.doctype.site.site import Site
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
+from press.press.doctype.subscription.subscription import Subscription
 
 
 @patch("press.press.doctype.site.backups.frappe.db.commit", new=MagicMock)
@@ -236,3 +240,321 @@ class TestScheduledBackupJob(FrappeTestCase):
 			schedule_logical_backups_for_sites_with_backup_time()
 		mock_backup.assert_called_once()
 		mock_backup.reset_mock()
+
+	def _create_site_with_backup_times(self, *times: str) -> Site:
+		site: Site = create_test_site()
+		site.schedule_logical_backup_at_custom_time = True
+		for backup_time in times:
+			site.append("logical_backup_times", {"backup_time": backup_time})
+		site.save()
+		return site
+
+	def test_custom_time_backup_is_not_offsite_on_a_plan_without_offsite_backups(self):
+		site = self._create_site_with_backup_times("00:00")
+
+		with (
+			patch.object(PressSettings, "is_offsite_setup", return_value=True),
+			patch.object(Subscription, "get_sites_without_offsite_backups", return_value=[site.name]),
+			self.freeze_time("2021-01-01 00:00"),
+		):
+			schedule_logical_backups_for_sites_with_backup_time()
+
+		self.assertEqual(self._offsite_count(site.name), 0)
+		self.assertEqual(frappe.db.count("Site Backup", {"site": site.name}), 1)
+
+	def test_custom_time_backup_is_not_offsite_when_the_site_turned_offsite_off(self):
+		site = self._create_site_with_backup_times("00:00")
+		site.update_backup_schedule(offsite=False)
+
+		with (
+			patch.object(PressSettings, "is_offsite_setup", return_value=True),
+			patch.object(Subscription, "get_sites_without_offsite_backups", return_value=[]),
+			self.freeze_time("2021-01-01 00:00"),
+		):
+			schedule_logical_backups_for_sites_with_backup_time()
+
+		self.assertEqual(self._offsite_count(site.name), 0)
+		self.assertEqual(frappe.db.count("Site Backup", {"site": site.name}), 1)
+
+	def test_a_site_that_turned_offsite_off_is_left_out_of_the_offsite_backups(self):
+		site = create_test_site()
+		site.update_backup_schedule(offsite=False)
+
+		with patch.object(Subscription, "get_sites_without_offsite_backups", return_value=[]):
+			self.assertIn(site.name, get_sites_without_offsite_backups())
+
+	def test_custom_time_backups_go_offsite_only_once_a_day(self):
+		site = self._create_site_with_backup_times("00:00", "01:00")
+
+		with (
+			patch.object(PressSettings, "is_offsite_setup", return_value=True),
+			patch.object(Subscription, "get_sites_without_offsite_backups", return_value=[]),
+		):
+			with self.freeze_time("2021-01-01 00:00"):
+				schedule_logical_backups_for_sites_with_backup_time()
+			frappe.get_last_doc("Site Backup", {"site": site.name}).db_set("status", "Success")
+			with self.freeze_time("2021-01-01 01:00"):
+				schedule_logical_backups_for_sites_with_backup_time()
+
+		self.assertEqual(self._offsite_count(site.name), 1)
+		self.assertEqual(frappe.db.count("Site Backup", {"site": site.name}), 2)
+
+	def _fail_backup_of(self, failing_site: Site, run_other_backups: bool = True):
+		"""Patch Site.backup to time out for one site. Other sites back up for real when asked."""
+		original_backup = Site.backup
+
+		def backup(site: Site, **kwargs):
+			if site.name == failing_site.name:
+				raise frappe.QueryTimeoutError("Lock wait timeout exceeded; try restarting transaction")
+			return original_backup(site, **kwargs) if run_other_backups else None
+
+		return patch.object(Site, "backup", autospec=True, side_effect=backup)
+
+	def _create_site_with_physical_backup_time(self, backup_time: str) -> Site:
+		site: Site = create_test_site()
+		site.skip_scheduled_physical_backups = False
+		site.schedule_physical_backup_at_custom_time = True
+		site.append("physical_backup_times", {"backup_time": backup_time})
+		site.save()
+		return site
+
+	@patch("press.press.doctype.site.backups.log_error")
+	def test_custom_time_logical_backup_failure_of_one_site_does_not_skip_the_other_sites(
+		self, mock_log_error
+	):
+		failing_site = self._create_site_with_backup_times("00:00")
+		other_site = self._create_site_with_backup_times("00:00")
+
+		with self._fail_backup_of(failing_site), self.freeze_time("2021-01-01 00:00"):
+			schedule_logical_backups_for_sites_with_backup_time()
+
+		self.assertEqual(frappe.db.count("Site Backup", {"site": failing_site.name}), 0)
+		self.assertEqual(frappe.db.count("Site Backup", {"site": other_site.name}), 1)
+		mock_log_error.assert_called_once_with("Site Backup Exception", site=failing_site.name)
+
+	@patch("press.press.doctype.site.backups.log_error")
+	def test_custom_time_physical_backup_failure_of_one_site_does_not_skip_the_other_sites(
+		self, mock_log_error
+	):
+		failing_site = self._create_site_with_physical_backup_time("00:00:00")
+		other_site = self._create_site_with_physical_backup_time("00:00:00")
+
+		with (
+			self._fail_backup_of(failing_site, run_other_backups=False) as mock_backup,
+			self.freeze_time("2021-01-01 00:00"),
+		):
+			schedule_physical_backups_for_sites_with_backup_time()
+
+		backed_up_sites = [call.args[0].name for call in mock_backup.call_args_list]
+		self.assertCountEqual(backed_up_sites, [failing_site.name, other_site.name])
+		mock_log_error.assert_called_once_with("Site Backup Exception", site=failing_site.name)
+
+
+@patch.object(AgentJob, "after_insert", new=Mock())
+class TestBackupSchedule(FrappeTestCase):
+	"""The backup schedule as the dashboard reads and writes it."""
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _create_site(self, price_usd: float = 25.0, offsite_backups: bool = True) -> Site:
+		plan = create_test_plan(
+			"Site",
+			plan_name=f"Test Site Plan USD {price_usd}{' with offsite backups' if offsite_backups else ''}",
+			price_usd=price_usd,
+			offsite_backups=offsite_backups,
+		)
+		return create_test_site(plan=plan.name)
+
+	def test_setting_a_backup_time_takes_the_site_off_the_default_schedule(self):
+		site = self._create_site()
+
+		site.update_backup_schedule("02:00")
+
+		site.reload()
+		self.assertEqual(
+			site.get_backup_schedule(),
+			{
+				"custom": True,
+				"times": ["02:00"],
+				"can_set_time": True,
+				"can_set_offsite": True,
+				"offsite": True,
+			},
+		)
+		self.assertNotIn(site.name, [s.name for s in Site.get_sites_for_backup(6)])
+
+	def test_clearing_the_backup_time_returns_the_site_to_the_default_schedule(self):
+		site = self._create_site()
+		site.update_backup_schedule("02:00")
+		site.reload()
+
+		site.update_backup_schedule(None)
+
+		site.reload()
+		self.assertEqual(
+			site.get_backup_schedule(),
+			{
+				"custom": False,
+				"times": [],
+				"can_set_time": True,
+				"can_set_offsite": True,
+				"offsite": True,
+			},
+		)
+
+	def test_the_dashboard_cannot_change_the_backup_times_we_set_up(self):
+		site = self._create_site()
+		for backup_time in ("02:00:00", "08:00:00"):
+			site.append("logical_backup_times", {"backup_time": backup_time})
+		site.schedule_logical_backup_at_custom_time = True
+		site.save()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Write to support",
+			site.update_backup_schedule,
+			"14:00",
+		)
+		site.reload()
+		self.assertEqual(
+			site.get_backup_schedule(),
+			{
+				"custom": True,
+				"times": ["02:00", "08:00"],
+				"can_set_time": True,
+				"can_set_offsite": True,
+				"offsite": True,
+			},
+		)
+
+	def test_backup_schedule_rejects_a_time_that_is_not_hh_mm(self):
+		site = self._create_site()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"not a valid backup time",
+			site.update_backup_schedule,
+			"2 AM",
+		)
+
+	def test_backup_schedule_is_not_offered_below_the_cutoff_price(self):
+		site = self._create_site(price_usd=10.0)
+
+		self.assertFalse(site.plan_allows_backup_schedule())
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"does not come with a backup schedule",
+			site.update_backup_schedule,
+			"02:00",
+		)
+
+	def test_backup_schedule_is_offered_on_enterprise_plans_priced_at_zero(self):
+		site = self._create_site(price_usd=0.0)
+
+		self.assertTrue(site.plan_allows_backup_schedule())
+
+	def test_backup_schedule_is_not_offered_on_plans_without_offsite_backups(self):
+		site = self._create_site(price_usd=0.0, offsite_backups=False)
+
+		self.assertFalse(site.plan_allows_backup_schedule())
+
+	def test_offsite_backups_stay_on_until_the_site_turns_them_off(self):
+		site = self._create_site()
+
+		self.assertTrue(site.get_backup_schedule()["offsite"])
+
+		site.update_backup_schedule(offsite=False)
+
+		site.reload()
+		self.assertTrue(site.skip_offsite_backups)
+		self.assertFalse(site.get_backup_schedule()["offsite"])
+
+	def test_offsite_backups_can_be_turned_back_on(self):
+		site = self._create_site()
+		site.update_backup_schedule(offsite=False)
+		site.reload()
+
+		site.update_backup_schedule(offsite=True)
+
+		site.reload()
+		self.assertFalse(site.skip_offsite_backups)
+		self.assertTrue(site.get_backup_schedule()["offsite"])
+
+	def test_the_dialog_writes_the_time_and_the_switch_in_one_save(self):
+		"""Two requests raced: the save of the time wrote back the flag it read first."""
+		site = self._create_site()
+
+		site.update_backup_schedule(time="02:00", offsite=False)
+
+		site.reload()
+		self.assertTrue(site.skip_offsite_backups)
+		self.assertEqual(site.get_backup_schedule()["times"], ["02:00"])
+
+	def test_moving_the_backup_time_keeps_offsite_backups_off(self):
+		"""A caller that sends only the time must not turn offsite backups back on."""
+		site = self._create_site()
+		site.update_backup_schedule(offsite=False)
+		site.reload()
+
+		site.update_backup_schedule("02:00")
+
+		site.reload()
+		self.assertTrue(site.skip_offsite_backups)
+		self.assertEqual(site.get_backup_schedule()["times"], ["02:00"])
+
+	def test_a_site_with_the_times_we_set_up_can_still_turn_offsite_backups_off(self):
+		"""The dialog sends no time for such a site, and that must not clear the times."""
+		site = self._create_site()
+		for backup_time in ("02:00:00", "08:00:00"):
+			site.append("logical_backup_times", {"backup_time": backup_time})
+		site.schedule_logical_backup_at_custom_time = True
+		site.save()
+
+		site.update_backup_schedule(offsite=False)
+
+		site.reload()
+		self.assertTrue(site.skip_offsite_backups)
+		self.assertEqual(site.get_backup_schedule()["times"], ["02:00", "08:00"])
+
+	def test_the_switch_is_offered_to_a_site_the_scheduler_sends_offsite(self):
+		site = self._create_site()
+
+		self.assertTrue(site.offsite_backups_available())
+		self.assertTrue(site.get_backup_schedule()["can_set_offsite"])
+
+	def test_the_switch_is_withheld_when_the_subscription_plan_has_no_offsite_backups(self):
+		"""The scheduler drops a site by its subscription, so the switch has to read that too."""
+		site = self._create_site()
+		plan_without_offsite = create_test_plan("Site", plan_name="Test No Offsite", offsite_backups=False)
+		frappe.get_doc(
+			{
+				"doctype": "Subscription",
+				"team": site.team,
+				"document_type": "Site",
+				"document_name": site.name,
+				"plan_type": "Site Plan",
+				"plan": plan_without_offsite.name,
+			}
+		).insert(ignore_permissions=True)
+		site.reload()  # the subscription touched the site row
+
+		self.assertFalse(site.offsite_backups_available())
+		self.assertFalse(site.get_backup_schedule()["can_set_offsite"])
+
+		site.update_backup_schedule(offsite=False)
+		site.reload()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"takes no offsite backups",
+			site.update_backup_schedule,
+			offsite=True,
+		)
+
+	def test_a_site_without_a_subscription_keeps_its_offsite_backups(self):
+		"""`Subscription.get_sites_without_offsite_backups` never names such a site."""
+		site = self._create_site()
+
+		self.assertFalse(frappe.db.exists("Subscription", {"document_name": site.name}))
+		self.assertTrue(site.offsite_backups_available())

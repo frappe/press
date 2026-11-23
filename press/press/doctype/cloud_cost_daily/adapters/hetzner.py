@@ -100,9 +100,7 @@ class HetznerCostSource(CostSource):
 		]
 
 	def location_of(self, server):
-		if server.datacenter and server.datacenter.location:
-			return server.datacenter.location.name
-		return ""
+		return server.location.name if server.location else ""
 
 	def price_for_location(self, prices, location):
 		for price in prices or []:

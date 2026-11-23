@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 from contextlib import suppress
 from typing import TypedDict
 
 import frappe
 import requests
+from frappe.query_builder.functions import Count, IfNull
 from frappe.utils.password import get_decrypted_password
 
 from press.utils import log_error
@@ -16,6 +18,34 @@ from press.utils.raven import send_raven_message
 
 RAVEN_SERVER_ALERTS_CHANNEL = "frappe-cloud-server-alerts"
 PROMETHEUS_REGEX_META_CHAR_PATTERN = re.compile(r"([\\.^$*+?()[\]{}|])")
+
+# No dedicated signup channel yet, so signup alerts land with the other alerts
+RAVEN_SIGNUP_ALERTS_CHANNEL = RAVEN_SERVER_ALERTS_CHANNEL
+SIGNUP_ALERT_WINDOW_HOURS = 1
+# Time a signup gets to read the mail and finish before it counts as incomplete
+SIGNUP_COMPLETION_GRACE_HOURS = 1
+TEST_SIGNUP_EMAIL_PATTERN = "fc-signup-test%"
+TRIAL_SIGNUP_FAILURE_RATIO_THRESHOLD = 0.3
+TRIAL_SIGNUP_MINIMUM_COUNT = 5
+# Most people who ask for a verification mail never finish, so only a near-total
+# stall means signups are broken rather than merely abandoned
+INCOMPLETE_SIGNUP_RATIO_THRESHOLD = 0.9
+INCOMPLETE_SIGNUP_MINIMUM_COUNT = 10
+OOM_KILLS_ALERT_THRESHOLD = 30
+DATABASE_SERVER_DISK_USED_ALERT_THRESHOLD = 0.91
+# A halted database server misses its ~27 scheduled jobs a day; healthy servers stay under 15
+STUCK_AGENT_JOBS_ALERT_THRESHOLD = 15
+STUCK_AGENT_JOBS_WINDOW_HOURS = 24
+# Skip young jobs, so a deploy's burst of queued site jobs doesn't count
+STUCK_AGENT_JOBS_MINIMUM_AGE_MINUTES = 30
+# A public server has room for more sites while it keeps this much memory, CPU and disk free.
+# The disk line sits below the alert threshold: a site that lands here brings its data with it.
+FREE_MEMORY_RATIO_FOR_NEW_SITES = 0.2
+IDLE_CPU_RATIO_FOR_NEW_SITES = 0.5
+DISK_USED_RATIO_FOR_NEW_SITES = 0.85
+SERVER_DISK_USED_ALERT_THRESHOLD = 0.9
+# Older failures are history: the group has been rebuilt or left alone on purpose since
+PUBLIC_GROUP_BUILD_FAILURE_WINDOW_DAYS = 7
 
 
 class PublicServerHealthMetrics(TypedDict):
@@ -32,6 +62,39 @@ class PublicServerPoolDecision(TypedDict):
 	servers_with_decision: set[str]
 	server_issues: dict[str, list[str]]
 	fallback_servers_by_cluster: dict[str, str]
+
+
+class ServerStuckAgentJobs(TypedDict):
+	server_type: str
+	server: str
+	undelivered: int
+	pending: int
+	halted: bool
+
+
+class ServerCapacity(TypedDict):
+	name: str
+	free_memory_percent: float
+	idle_cpu_percent: float
+	free_disk_percent: float
+
+
+class FailedPublicGroupBuild(TypedDict):
+	group: str
+	title: str
+	build: str
+	error_key: str | None
+	failed_step: str | None
+
+
+class SignupFailureRate(TypedDict):
+	label: str
+	failed: int
+	total: int
+	ratio_threshold: float
+	minimum_count: int
+	breakdown: dict[str, int]
+	link: str
 
 
 def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
@@ -52,7 +115,12 @@ def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
 	server_plan_prices = _get_public_server_plan_prices(server_names)
 	pool_decision = _get_public_server_pool_decision(servers_by_cluster, metrics, server_plan_prices)
 	_apply_public_server_pool_decision(server_names, pool_decision)
-	_send_public_server_pool_health_alert(pool_decision["server_issues"])
+	server_issues = (
+		pool_decision["server_issues"]
+		| _get_public_database_server_disk_issues()
+		| _get_excluded_public_server_disk_issues()
+	)
+	_send_public_server_pool_health_alert(server_issues)
 	_create_no_suitable_servers_incident(pool_decision["fallback_servers_by_cluster"], metrics)
 
 
@@ -115,7 +183,8 @@ def _get_public_server_pool_decision(
 		healthy_servers = [
 			server
 			for server in candidates
-			if ram_available_ratio[server] >= 0.2 and cpu_idle_ratio[server] >= 0.5
+			if ram_available_ratio[server] >= FREE_MEMORY_RATIO_FOR_NEW_SITES
+			and cpu_idle_ratio[server] >= IDLE_CPU_RATIO_FOR_NEW_SITES
 		]
 		decision["servers_with_decision"].update(cluster_servers)
 
@@ -184,9 +253,9 @@ def _get_public_server_alert_issues(server: str, metrics: PublicServerHealthMetr
 		issues.append(f"RAM utilization: {(1 - ram_available_ratio) * 100:.2f}%")
 	if cpu_idle_ratio is not None and 1 - cpu_idle_ratio > 0.5:
 		issues.append(f"CPU utilization: {(1 - cpu_idle_ratio) * 100:.2f}%")
-	if disk_used_ratio > 0.9:
+	if disk_used_ratio > SERVER_DISK_USED_ALERT_THRESHOLD:
 		issues.append(f"Disk utilization: {disk_used_ratio * 100:.2f}%")
-	if oom_kills > 4:
+	if oom_kills > OOM_KILLS_ALERT_THRESHOLD:
 		issues.append(f"OOM kills: {max(1, round(oom_kills))}")
 
 	return issues
@@ -228,6 +297,35 @@ def _get_least_bad_pool_score(
 		metrics["available_memory_ratio"].get(server, 0.0),
 		metrics["available_memory_bytes"].get(server, 0.0),
 	)
+
+
+def get_public_servers_with_free_capacity(server_names: list[str]) -> list[ServerCapacity]:
+	"""Servers that have room for another site, the one with the most room first."""
+	metrics = _get_public_server_health_metrics(server_names)
+	if not metrics:
+		frappe.throw("Server capacity is unavailable right now. Please try again in a few minutes.")
+		return []
+
+	servers = [server for server in server_names if _has_free_capacity_for_sites(server, metrics)]
+	servers.sort(key=lambda server: _get_site_pool_score(server, metrics), reverse=True)
+	return [_get_server_capacity(server, metrics) for server in servers]
+
+
+def _has_free_capacity_for_sites(server: str, metrics: PublicServerHealthMetrics) -> bool:
+	return (
+		metrics["available_memory_ratio"].get(server, 0.0) >= FREE_MEMORY_RATIO_FOR_NEW_SITES
+		and metrics["cpu_idle_ratio"].get(server, 0.0) >= IDLE_CPU_RATIO_FOR_NEW_SITES
+		and metrics["disk_used_ratio"].get(server, 0.0) < DISK_USED_RATIO_FOR_NEW_SITES
+	)
+
+
+def _get_server_capacity(server: str, metrics: PublicServerHealthMetrics) -> ServerCapacity:
+	return {
+		"name": server,
+		"free_memory_percent": round(metrics["available_memory_ratio"].get(server, 0.0) * 100, 1),
+		"idle_cpu_percent": round(metrics["cpu_idle_ratio"].get(server, 0.0) * 100, 1),
+		"free_disk_percent": round((1 - metrics["disk_used_ratio"].get(server, 0.0)) * 100, 1),
+	}
 
 
 def _apply_public_server_pool_decision(
@@ -294,14 +392,10 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 		f'avg by (instance) (rate(node_cpu_seconds_total{{instance=~"^({instance_matcher})$", '
 		f'job="node", mode="idle"}}[60m]))'
 	)
-	disk_used_ratio_query = (
-		f'1 - (node_filesystem_avail_bytes{{instance=~"^({instance_matcher})$", job="node", '
-		f'device!~"rootfs", mountpoint="/"}} / node_filesystem_size_bytes{{'
-		f'instance=~"^({instance_matcher})$", job="node", device!~"rootfs", mountpoint="/"}})'
-	)
+	disk_used_ratio_query = _get_disk_used_ratio_query(instance_matcher)
 	oom_kills_query = (
 		f'sum by (instance) (increase(node_vmstat_oom_kill{{instance=~"^({instance_matcher})$", '
-		f'job="node"}}[60m])) > 4'
+		f'job="node"}}[60m])) > {OOM_KILLS_ALERT_THRESHOLD}'
 	)
 
 	available_memory_bytes_results = _query_prometheus_vector(available_memory_bytes_query, url, auth)
@@ -330,6 +424,69 @@ def _get_public_server_health_metrics(server_names: list[str]) -> PublicServerHe
 		),
 		"oom_kills": _build_public_server_metric_map(server_names, oom_kills_results, default=0.0),
 	}
+
+
+def _get_disk_used_ratio_query(instance_matcher: str, mountpoint: str = "/") -> str:
+	return (
+		f'1 - (node_filesystem_avail_bytes{{instance=~"^({instance_matcher})$", job="node", '
+		f'device!~"rootfs", mountpoint="{mountpoint}"}} / node_filesystem_size_bytes{{'
+		f'instance=~"^({instance_matcher})$", job="node", device!~"rootfs", mountpoint="{mountpoint}"}})'
+	)
+
+
+def _get_excluded_public_server_disk_issues() -> dict[str, list[str]]:
+	"""Excluded servers skip the pool check, but still host benches and get deploys."""
+	servers = frappe.get_all(
+		"Server",
+		filters={"status": "Active", "is_primary": True, "public": True, "exclude_for_scheduling": True},
+		pluck="name",
+	)
+	prometheus_connection = _get_public_server_pool_prometheus_connection()
+	if not (servers and prometheus_connection):
+		return {}
+
+	instance_matcher = "|".join(_escape_prometheus_regex_literal(name) for name in servers)
+	results = _query_prometheus_vector(_get_disk_used_ratio_query(instance_matcher), *prometheus_connection)
+	return {
+		server: [f"Disk utilization: {ratio * 100:.2f}%"]
+		for server, ratio in _build_public_server_metric_map(servers, results).items()
+		if ratio > 0.9
+	}
+
+
+def _get_public_database_server_disk_issues() -> dict[str, list[str]]:
+	prometheus_connection = _get_public_server_pool_prometheus_connection()
+	if not prometheus_connection:
+		return {}
+
+	disk_used_ratios: dict[str, float] = {}
+	for mountpoint, server_names in _get_public_database_servers_by_data_mountpoint().items():
+		instance_matcher = "|".join(_escape_prometheus_regex_literal(name) for name in server_names)
+		query = _get_disk_used_ratio_query(instance_matcher, mountpoint)
+		results = _query_prometheus_vector(query, *prometheus_connection)
+		disk_used_ratios |= _build_public_server_metric_map(server_names, results)
+
+	return {
+		server: [f"Disk utilization: {ratio * 100:.2f}%"]
+		for server, ratio in disk_used_ratios.items()
+		if ratio > DATABASE_SERVER_DISK_USED_ALERT_THRESHOLD
+	}
+
+
+def _get_public_database_servers_by_data_mountpoint() -> dict[str, list[str]]:
+	"""Servers with a data volume keep MariaDB files off the root disk."""
+	from press.press.doctype.server.server import MARIADB_DATA_MNT_POINT
+
+	servers = frappe.get_all(
+		"Database Server",
+		filters={"status": "Active", "public": True},
+		fields=["name", "has_data_volume"],
+	)
+	servers_by_mountpoint: dict[str, list[str]] = {}
+	for server in servers:
+		mountpoint = MARIADB_DATA_MNT_POINT if server.has_data_volume else "/"
+		servers_by_mountpoint.setdefault(mountpoint, []).append(server.name)
+	return servers_by_mountpoint
 
 
 def _get_public_server_pool_prometheus_connection() -> tuple[str, tuple[str, str]] | None:
@@ -397,10 +554,15 @@ def _send_public_server_pool_health_alert(server_issues: dict[str, list[str]]) -
 		return
 
 	affected_servers = sorted(server_issues)
+	thresholds = (
+		"Thresholds: RAM utilization > 90%, CPU utilization > 50%, Disk utilization > 90% "
+		f"(database servers > {DATABASE_SERVER_DISK_USED_ALERT_THRESHOLD * 100:.0f}%), "
+		f"OOM kills > {OOM_KILLS_ALERT_THRESHOLD}"
+	)
 	header_lines = [
 		f"**Public Server Pool Health Alerts** - {len(affected_servers)}",
 		"",
-		"Thresholds: RAM utilization > 90%, CPU utilization > 50%, Disk Utilization > 90%, OOM kills > 4",
+		thresholds,
 		"",
 	]
 	table_header = [
@@ -501,3 +663,300 @@ def _open_public_server_pool_incident_exists(subject: str, cluster: str | None =
 	if cluster:
 		filters["cluster"] = cluster
 	return bool(frappe.db.exists("Incident", filters))
+
+
+def alert_on_failing_signups() -> None:
+	"""Alert when a large share of recent signups failed.
+
+	Two independent signals: product trial signups that errored out, and signups that
+	never became a team. Each is compared against its own ratio, over a volume floor,
+	so a single person walking away at 3am doesn't page anyone.
+	"""
+	rates = [_get_trial_signup_failure_rate(), _get_incomplete_signup_rate()]
+	breached = [rate for rate in rates if _breaches_signup_failure_threshold(rate)]
+	if breached:
+		_send_signup_failure_alert(breached)
+
+
+def _get_trial_signup_failure_rate() -> SignupFailureRate:
+	"""Product trial signups that settled in the window - errored out against site created.
+
+	Windowed on when the status last changed, not on creation: a request that took three
+	hours to fail is a failure this hour, and windowing on creation would drop it for
+	good, exactly when provisioning is slow enough to be the outage worth alerting on.
+	Not on `modified` either - a later write, like the accessibility check at login, would
+	drag a long-settled request into this window and alert on an outcome from yesterday.
+	"""
+	requests = frappe.get_all(
+		"Product Trial Request",
+		filters={
+			"status_updated_on": (
+				">",
+				frappe.utils.add_to_date(None, hours=-SIGNUP_ALERT_WINDOW_HOURS),
+			),
+			"status": ("in", ["Error", "Site Created"]),
+			"owner": ("not like", TEST_SIGNUP_EMAIL_PATTERN),
+		},
+		fields=["status", "product_trial"],
+	)
+	failed = [request for request in requests if request.status == "Error"]
+	return {
+		"label": "Product trial signups that errored out",
+		"failed": len(failed),
+		"total": len(requests),
+		"ratio_threshold": TRIAL_SIGNUP_FAILURE_RATIO_THRESHOLD,
+		"minimum_count": TRIAL_SIGNUP_MINIMUM_COUNT,
+		"breakdown": Counter(request.product_trial or "Unknown" for request in failed),
+		"link": frappe.utils.get_url("/app/product-trial-request?status=Error"),
+	}
+
+
+def _get_incomplete_signup_rate() -> SignupFailureRate:
+	"""Signups that asked for verification but never ended up with a team."""
+	emails = set(_get_signup_emails_past_grace_period())
+	teams = frappe.get_all("Team", filters={"user": ("in", list(emails))}, pluck="user") if emails else []
+	return {
+		"label": "Signups that never became a team",
+		"failed": len(emails - set(teams)),
+		"total": len(emails),
+		"ratio_threshold": INCOMPLETE_SIGNUP_RATIO_THRESHOLD,
+		"minimum_count": INCOMPLETE_SIGNUP_MINIMUM_COUNT,
+		"breakdown": {},
+		"link": frappe.utils.get_url("/app/account-request"),
+	}
+
+
+def _get_signup_emails_past_grace_period() -> list[str]:
+	"""Emails from signup requests old enough to have finished, but no older than the window.
+
+	Team invites are left out - a member joining an existing team is a different funnel.
+	"""
+	window_end = frappe.utils.add_to_date(None, hours=-SIGNUP_COMPLETION_GRACE_HOURS)
+	window_start = frappe.utils.add_to_date(window_end, hours=-SIGNUP_ALERT_WINDOW_HOURS)
+	return frappe.get_all(
+		"Account Request",
+		filters={
+			"creation": ("between", [window_start, window_end]),
+			"invited_by": ("is", "not set"),
+			"email": ("not like", TEST_SIGNUP_EMAIL_PATTERN),
+		},
+		pluck="email",
+	)
+
+
+def _breaches_signup_failure_threshold(rate: SignupFailureRate) -> bool:
+	if rate["total"] < rate["minimum_count"]:
+		return False
+	return rate["failed"] / rate["total"] > rate["ratio_threshold"]
+
+
+def _send_signup_failure_alert(rates: list[SignupFailureRate]) -> None:
+	lines = [f"**Signup Failure Alerts** - {len(rates)}", ""]
+	for rate in rates:
+		lines.append(_describe_signup_failure_rate(rate))
+		lines.extend(f"- {name}: {count}" for name, count in sorted(rate["breakdown"].items()))
+		lines.append("")
+
+	send_raven_message("\n".join(lines).strip(), RAVEN_SIGNUP_ALERTS_CHANNEL)
+
+
+def _describe_signup_failure_rate(rate: SignupFailureRate) -> str:
+	failure_ratio = rate["failed"] / rate["total"] * 100
+	return (
+		f"[{rate['label']}]({rate['link']}): {rate['failed']} of {rate['total']} "
+		f"({failure_ratio:.2f}%) in the last {SIGNUP_ALERT_WINDOW_HOURS}h, "
+		f"threshold {rate['ratio_threshold'] * 100:.0f}%"
+	)
+
+
+def alert_on_servers_with_stuck_agent_jobs() -> None:
+	"""Alert when active servers hold many agent jobs that never ran.
+
+	Undelivered jobs pile up on a halted or unreachable server, pending ones on a stuck agent.
+	"""
+	servers = _get_servers_with_stuck_agent_jobs()
+	if servers:
+		_send_stuck_agent_jobs_alert(servers)
+
+
+def _get_servers_with_stuck_agent_jobs() -> list[ServerStuckAgentJobs]:
+	counts = _count_stuck_agent_jobs_by_server()
+	over_threshold = [row for row in counts if _total_stuck_jobs(row) >= STUCK_AGENT_JOBS_ALERT_THRESHOLD]
+	halt_flags = _get_halt_flags_of_active_servers({_server_key(row) for row in over_threshold})
+	servers = [row for row in over_threshold if _server_key(row) in halt_flags]
+	for row in servers:
+		row["halted"] = halt_flags[_server_key(row)]
+	return sorted(servers, key=_total_stuck_jobs, reverse=True)
+
+
+def _get_stuck_agent_job_counts() -> list[frappe._dict]:
+	# frappe.get_all on fc-prod has no dict aggregates, so count with frappe.qb
+	now = frappe.utils.now_datetime()
+	window_start = frappe.utils.add_to_date(now, hours=-STUCK_AGENT_JOBS_WINDOW_HOURS)
+	window_end = frappe.utils.add_to_date(now, minutes=-STUCK_AGENT_JOBS_MINIMUM_AGE_MINUTES)
+	AgentJob = frappe.qb.DocType("Agent Job")
+	return (
+		frappe.qb.from_(AgentJob)
+		.select(AgentJob.server_type, AgentJob.server, AgentJob.status, Count("*").as_("jobs"))
+		.where(AgentJob.status.isin(["Undelivered", "Pending"]))
+		.where(AgentJob.creation.between(window_start, window_end))
+		.where(IfNull(AgentJob.server, "") != "")
+		.where(IfNull(AgentJob.server_type, "") != "")
+		.groupby(AgentJob.server_type, AgentJob.server, AgentJob.status)
+		.run(as_dict=True)
+	)
+
+
+def _count_stuck_agent_jobs_by_server() -> list[ServerStuckAgentJobs]:
+	counts: dict[tuple[str, str], ServerStuckAgentJobs] = {}
+	for row in _get_stuck_agent_job_counts():
+		key = (row.server_type, row.server)
+		counts.setdefault(
+			key, {"server_type": key[0], "server": key[1], "undelivered": 0, "pending": 0, "halted": False}
+		)
+		if row.status == "Pending":
+			counts[key]["pending"] = row.jobs
+		else:
+			counts[key]["undelivered"] = row.jobs
+	return list(counts.values())
+
+
+def _get_halt_flags_of_active_servers(servers: set[tuple[str, str]]) -> dict[tuple[str, str], bool]:
+	halt_flags = {}
+	for server_type in {server_type for server_type, _ in servers}:
+		names = [name for doctype, name in servers if doctype == server_type]
+		# Registry, log and other server types have no halt flag
+		has_halt_flag = frappe.get_meta(server_type).has_field("halt_agent_jobs")
+		fields = ["name", "halt_agent_jobs"] if has_halt_flag else ["name"]
+		for server in frappe.get_all(
+			server_type, filters={"name": ("in", names), "status": "Active"}, fields=fields
+		):
+			halt_flags[(server_type, server.name)] = bool(server.get("halt_agent_jobs"))
+	return halt_flags
+
+
+def _server_key(row: ServerStuckAgentJobs) -> tuple[str, str]:
+	return (row["server_type"], row["server"])
+
+
+def _total_stuck_jobs(row: ServerStuckAgentJobs) -> int:
+	return row["undelivered"] + row["pending"]
+
+
+def _send_stuck_agent_jobs_alert(servers: list[ServerStuckAgentJobs]) -> None:
+	criteria = (
+		f"Undelivered + Pending jobs created in the last {STUCK_AGENT_JOBS_WINDOW_HOURS}h "
+		f"(older than {STUCK_AGENT_JOBS_MINIMUM_AGE_MINUTES}m), threshold {STUCK_AGENT_JOBS_ALERT_THRESHOLD}"
+	)
+	lines = [
+		f"**Servers With Stuck Agent Jobs** - {len(servers)}",
+		"",
+		criteria,
+		"",
+		"| Server | Type | Undelivered | Pending | Agent Jobs Halted |",
+		"| --- | --- | --- | --- | --- |",
+	]
+	lines.extend(_describe_server_with_stuck_agent_jobs(row) for row in servers)
+	send_raven_message("\n".join(lines), RAVEN_SERVER_ALERTS_CHANNEL)
+
+
+def _describe_server_with_stuck_agent_jobs(row: ServerStuckAgentJobs) -> str:
+	link = frappe.utils.get_url_to_form(row["server_type"], row["server"])
+	halted = "Yes" if row["halted"] else "No"
+	return (
+		f"| [{row['server']}]({link}) | {row['server_type']} | {row['undelivered']} "
+		f"| {row['pending']} | {halted} |"
+	)
+
+
+def alert_on_failed_public_group_builds() -> None:
+	"""Alert once for each public bench group whose latest build failed.
+
+	A failed build only notifies the group's team on the dashboard, and for public groups
+	that team is us, so a broken signup or shared bench group can sit unnoticed for days.
+	"""
+	builds = [
+		build for build in _get_failed_public_group_builds() if not _was_build_failure_alerted(build["build"])
+	]
+	if not builds:
+		return
+
+	_send_failed_public_group_builds_alert(builds)
+	for build in builds:
+		_mark_build_failure_alerted(build["build"])
+
+
+def _get_failed_public_group_builds() -> list[FailedPublicGroupBuild]:
+	failed: list[FailedPublicGroupBuild] = []
+	for group in frappe.get_all(
+		"Release Group", filters={"public": 1, "enabled": 1}, fields=["name", "title"]
+	):
+		build = _get_latest_build_of_group(group.name)
+		if build and build.status == "Failure":
+			failed.append(
+				{
+					"group": group.name,
+					"title": group.title,
+					"build": build.name,
+					"error_key": build.error_key,
+					"failed_step": _get_failed_build_step(build.name),
+				}
+			)
+	return failed
+
+
+def _get_latest_build_of_group(group: str) -> frappe._dict | None:
+	# A retry is a newer build, so a failure that is being retried is not the latest
+	window_start = frappe.utils.add_days(None, -PUBLIC_GROUP_BUILD_FAILURE_WINDOW_DAYS)
+	builds = frappe.get_all(
+		"Deploy Candidate Build",
+		filters={"group": group, "creation": (">", window_start)},
+		fields=["name", "status", "error_key"],
+		order_by="creation desc",
+		limit=1,
+	)
+	return builds[0] if builds else None
+
+
+def _get_failed_build_step(build: str) -> str | None:
+	steps = frappe.get_all(
+		"Deploy Candidate Build Step",
+		filters={"parenttype": "Deploy Candidate Build", "parent": build, "status": "Failure"},
+		fields=["stage", "step"],
+		order_by="idx asc",
+		limit=1,
+	)
+	return f"{steps[0].stage} / {steps[0].step}" if steps else None
+
+
+def _build_failure_alert_cache_key(build: str) -> str:
+	return f"public_group_build_failure_alerted:{build}"
+
+
+def _was_build_failure_alerted(build: str) -> bool:
+	return bool(frappe.cache.get_value(_build_failure_alert_cache_key(build)))
+
+
+def _mark_build_failure_alerted(build: str) -> None:
+	expires_in_sec = PUBLIC_GROUP_BUILD_FAILURE_WINDOW_DAYS * 24 * 60 * 60
+	frappe.cache.set_value(_build_failure_alert_cache_key(build), True, expires_in_sec=expires_in_sec)
+
+
+def _send_failed_public_group_builds_alert(builds: list[FailedPublicGroupBuild]) -> None:
+	lines = [
+		f"**Public Bench Group Builds Failed** - {len(builds)}",
+		"",
+		"| Bench Group | Build | Error | Failed Step |",
+		"| --- | --- | --- | --- |",
+	]
+	lines.extend(_describe_failed_public_group_build(build) for build in builds)
+	send_raven_message("\n".join(lines), RAVEN_SERVER_ALERTS_CHANNEL)
+
+
+def _describe_failed_public_group_build(build: FailedPublicGroupBuild) -> str:
+	group_link = frappe.utils.get_url_to_form("Release Group", build["group"])
+	build_link = frappe.utils.get_url_to_form("Deploy Candidate Build", build["build"])
+	title = _escape_markdown_table_cell(build["title"] or build["group"])
+	error = _escape_markdown_table_cell(build["error_key"] or "-")
+	step = _escape_markdown_table_cell(build["failed_step"] or "-")
+	return f"| [{title}]({group_link}) | [{build['build']}]({build_link}) | {error} | {step} |"

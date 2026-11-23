@@ -4,7 +4,9 @@ from contextlib import suppress
 from typing import TYPE_CHECKING
 
 import frappe
+import requests
 
+from press.agent import AgentRequestSkippedException
 from press.press.doctype.agent_job.agent_job import Agent, handle_polled_jobs, poll_random_jobs
 from press.press.doctype.press_job.press_job import PressJob
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
@@ -21,7 +23,7 @@ class ResizeServerJob(PressJob):
 	@flow
 	def execute(self):
 		self.halt_agent_jobs()
-		self.wait_for_recent_pending_agent_jobs_to_complete()
+		# self.wait_for_recent_pending_agent_jobs_to_complete()
 		self.stop_virtual_machine()
 		self.wait_for_virtual_machine_to_stop()
 
@@ -34,6 +36,8 @@ class ResizeServerJob(PressJob):
 		self.start_agent_jobs()
 		self.set_additional_config()
 		self.increase_disk_size()
+		# TODO: Enable after a manual trial with the button on Server
+		# self.restore_truncated_configs()
 
 	@task
 	def halt_agent_jobs(self):
@@ -60,7 +64,19 @@ class ResizeServerJob(PressJob):
 
 		agent = Agent(self.server_doc.name, server_type=self.server_type)
 		pending_ids = [j.job_id for j in pending_jobs]
-		if not (polled_jobs := poll_random_jobs(agent, pending_ids)):
+
+		try:
+			polled_jobs = poll_random_jobs(agent, pending_ids)
+		except (AgentRequestSkippedException, requests.RequestException):
+			# Agent is down. Retry a few times, then skip the wait and resize anyway.
+			failures = (self.kv.get("agent_poll_failures") or 0) + 1
+			self.kv.set("agent_poll_failures", failures)
+			if failures < 5:
+				self.defer_current_task()
+			print(f"Agent unreachable after {failures} attempts, skipping wait\n{frappe.get_traceback()}")
+			return
+
+		if not polled_jobs:
 			self.defer_current_task()
 
 		handle_polled_jobs(polled_jobs, pending_jobs)
@@ -150,6 +166,10 @@ class ResizeServerJob(PressJob):
 			elif self.server_type == "Server":
 				self.server_doc.auto_scale_workers()
 
+	@task(queue="long", timeout=900)
+	def restore_truncated_configs(self):
+		self.server_doc.restore_truncated_configs()
+
 	@task
 	def increase_disk_size(self):
 		if not self.server_doc.plan:
@@ -162,9 +182,21 @@ class ResizeServerJob(PressJob):
 		with suppress(Exception):
 			self.server_doc.increase_disk_size(increment=plan_disk_size - self.virtual_machine_doc.disk_size)
 
+	@property
+	def machine_is_resized(self) -> bool:
+		with suppress(Exception):
+			self.virtual_machine_doc.sync()
+
+		return self.virtual_machine_doc.machine_type == self.arguments_dict.machine_type
+
 	def on_press_job_failure(self, workflow: PressWorkflow):
 		self.start_virtual_machine()
 		self.start_agent_jobs()
+
+		# A later step failed, not the resize. Reverting the plan would bill the
+		# team for a size the machine no longer has.
+		if self.machine_is_resized:
+			return
 
 		# Find out the last plan change of the server
 		self.server_doc.reload()

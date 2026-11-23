@@ -2,28 +2,27 @@
 import {
 	Badge,
 	Button,
+	createDocumentResource,
+	createListResource,
 	Dropdown,
 	Spinner,
 	Tooltip,
-	createDocumentResource,
-	createListResource,
 } from 'frappe-ui'
-
-import { renderDialog } from '@/utils/components'
 import {
-	h,
-	ref,
-	defineAsyncComponent,
-	onBeforeUnmount,
 	computed,
+	defineAsyncComponent,
+	h,
+	onBeforeUnmount,
 	reactive,
+	ref,
 	watch,
 } from 'vue'
-import { dropBench } from './utils'
+import Collapsable from '@/components/common/Collapsable.vue'
+import { renderDialog } from '@/utils/components'
 
 import { dayjsLocal } from '@/utils/dayjs'
 import { getSiteStatusBadge } from '@/utils/site'
-import Collapsable from '@/components/common/Collapsable.vue'
+import { dropBench } from './utils'
 
 interface Props {
 	data: any
@@ -40,12 +39,13 @@ const sites = createListResource({
 	fields: ['name', 'status', 'bench', 'creation', 'host_name'],
 	filters: {
 		group: props.data.name,
+		server: props.server.name,
 		host_name: ['is', 'set'],
 		skip_team_filter_for_system_user_and_support_agent: true,
 	},
 	orderBy: 'creation desc',
 	pageLength: 5,
-	cache: ['sitesRes', props.data.name],
+	cache: ['sitesRes', props.data.name, props.server.name],
 	auto: true,
 })
 
@@ -128,7 +128,13 @@ const addSite = (e, bench) => {
 	const AddSiteDialog = defineAsyncComponent(
 		() => import('./AddSiteDialog.vue'),
 	)
-	renderDialog(h(AddSiteDialog, { bench, onSiteCreated: () => sites.reload() }))
+	renderDialog(
+		h(AddSiteDialog, {
+			bench,
+			server: props.server,
+			onSiteCreated: () => sites.reload(),
+		}),
+	)
 }
 
 const benchOptions = (bench) => [
@@ -140,7 +146,10 @@ const benchOptions = (bench) => [
 	{ label: 'App Marketplace', route: '/apps', icon: LucideStore },
 	{
 		label: 'Bench Actions',
-		route: { name: 'Release Group Detail Actions', params: { name: bench.name } },
+		route: {
+			name: 'Release Group Detail Actions',
+			params: { name: bench.name },
+		},
 		icon: LucideSlidersVertical,
 	},
 	{
@@ -388,9 +397,11 @@ onBeforeUnmount(() => {
 				{{ site.status }}
 			</Badge>
 
-			<span class="text-ink-gray-8"
-				>{{ dayjsLocal(site.creation).fromNow() }}</span
-			>
+			<Tooltip :text="dayjsLocal(site.creation).format('LLLL')">
+				<span class="text-ink-gray-8"
+					>{{ dayjsLocal(site.creation).fromNow() }}</span
+				>
+			</Tooltip>
 			<Dropdown :options="siteOptions(site)">
 				<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
 			</Dropdown>

@@ -12,10 +12,12 @@ from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.core.utils import find
 from frappe.model.document import Document
-from frappe.query_builder.functions import Count
+from frappe.query_builder.functions import Count, GroupConcat
 from frappe.rate_limiter import rate_limit
 from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_form, getdate, random_string
 
+from press.access.staff_roles import safe_for_readers
+from press.access.utils import is_outside_employee
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
 from press.guards.team_guard import only_admin
@@ -35,7 +37,7 @@ from press.utils.billing import (
 )
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture, capture_pulse
-from press.utils.user import is_system_manager
+from press.utils.user import is_desk_user
 
 from .team_members import get_invitations, get_roles
 
@@ -234,8 +236,8 @@ class Team(Document):
 		doc.user_info = user
 		doc.balance = self.get_balance()
 		doc.is_desk_user = user.user_type == "System User"
-		doc.is_support_agent = has_role("Press Support Agent")
-		doc.can_request_access = has_role("Press Support Agent")
+		doc.is_support_agent = has_role("Press Employee")
+		doc.can_request_access = has_role("Press Employee")
 		doc.valid_teams = get_valid_teams_for_user(frappe.session.user)
 		doc.onboarding = self.get_onboarding()
 		doc.billing_info = self.billing_info()
@@ -272,6 +274,7 @@ class Team(Document):
 		load_address_and_contact(self)
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_home_data(self):
 		return {
 			"sites": frappe.db.get_all(
@@ -282,26 +285,23 @@ class Team(Document):
 		}
 
 	def before_validate(self):
-		self.perm_relaxed_roles()
+		self.perm_team_settings()
 		self.perm_team_members()
 
-	def perm_relaxed_roles(self):
+	def perm_team_settings(self):
 		"""
-		Prevent unauthorized users from changing relaxed permissions. Only team
-		owner or admins can change relaxed permissions as it can lead to
-		security implications.
+		Only the team owner, admins and staff in desk can change the settings
+		that the dashboard edits, such as 2FA enforcement and relaxed permissions.
 		"""
-		if self.flags.ignore_permissions:
+		if self.flags.ignore_permissions or self.is_new():
 			return
-		if self.is_new():
+		if not any(self.has_value_changed(field) for field in self.dashboard_editable_fields):
 			return
-		if not self.has_value_changed("relaxed_permissions"):
-			return
-		if is_system_manager() or self.is_team_owner() or self.is_admin_user():
+		if is_desk_user() or self.is_team_owner() or self.is_admin_user():
 			return
 		frappe.throw(
 			_(
-				"Only team owner or admins can make changes to relaxed permissions. Please contact your team admin for the same."
+				"Only team owner or admins can change team settings. Please contact your team admin for the same."
 			),
 			frappe.PermissionError,
 		)
@@ -316,9 +316,9 @@ class Team(Document):
 			return
 		if self.is_new():
 			return
-		if not self.has_value_changed("team_members"):
+		if not self.has_team_members_changed():
 			return
-		if is_system_manager() or self.is_team_owner() or self.is_admin_user():
+		if "System Manager" in frappe.get_roles() or self.is_team_owner() or self.is_admin_user():
 			return
 		frappe.throw(
 			_(
@@ -326,6 +326,11 @@ class Team(Document):
 			),
 			frappe.PermissionError,
 		)
+
+	def has_team_members_changed(self) -> bool:
+		# has_value_changed compares child rows by identity, so it is true on every save
+		previous = self.get_doc_before_save()
+		return not previous or get_member_access(previous) != get_member_access(self)
 
 	def validate(self):
 		self.validate_duplicate_members()
@@ -623,15 +628,10 @@ class Team(Document):
 				)
 
 		if not self.is_new() and not self.default_payment_method:
-			# if default payment method is unset
-			# then set the is_default field for Stripe Payment Method to 0
-			payment_methods = frappe.db.get_list(
-				"Stripe Payment Method", {"team": self.name, "is_default": 1}
+			# Keep the cards in step with the team, also when staff without billing access save it
+			frappe.db.set_value(
+				"Stripe Payment Method", {"team": self.name, "is_default": 1}, "is_default", 0
 			)
-			for pm in payment_methods:
-				doc = frappe.get_doc("Stripe Payment Method", pm.name)
-				doc.is_default = 0
-				doc.save()
 
 		# Telemetry: Payment Mode Changed Event (Only for teams which have came through FC Signup and not via invite)
 		if self.has_value_changed("payment_mode") and self.payment_mode and self.account_request:
@@ -736,7 +736,7 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def ban(self):
-		frappe.only_for("System Manager")
+		frappe.only_for(["System Manager", "Press Support Engineer"])
 		self.banned = 1
 		self.enabled = 0
 		linked_user = frappe.get_doc("User", self.user)
@@ -747,6 +747,7 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
+		frappe.only_for(["Partner Manager", "System Manager"], message=True)
 		self.erpnext_partner = 1
 		if not self.partner_email:
 			self.partner_email = self.user
@@ -755,7 +756,9 @@ class Team(Document):
 		self.partner_status = "Active"
 		self.save(ignore_permissions=True)
 		self.create_partner_referral_code()
-		frappe.get_doc("User", self.user).add_roles("Partner")
+		user = frappe.get_doc("User", self.user)
+		user.append_roles("Partner")
+		user.save(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
@@ -811,6 +814,12 @@ class Team(Document):
 
 		return unpaid_invoices
 
+	def has_unpaid_invoices(self):
+		"""Two or more unpaid subscription invoices blocks new sites and servers, matching the New Site and New Server forms."""
+		return (
+			frappe.db.count("Invoice", {"team": self.name, "status": "Unpaid", "type": "Subscription"}) >= 2
+		)
+
 	def create_stripe_customer(self):
 		if not self.stripe_customer_id:
 			stripe = get_stripe()
@@ -835,6 +844,7 @@ class Team(Document):
 		return self.razorpay_customer_id
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_communication_infos(self):
 		return (
 			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
@@ -1089,10 +1099,12 @@ class Team(Document):
 		return check_is_admin_user(self.name)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_team_members(self):
 		return get_team_members(self.name)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def members(self):
 		users = [member.user for member in self.team_members]
 
@@ -1222,6 +1234,11 @@ class Team(Document):
 		if not is_system_user() and frappe.session.user != self.user and not has_admin_access.run():
 			frappe.throw(_("Only team owner or admins can invite team members"))
 
+		if is_outside_employee(self.name):
+			frappe.throw(
+				_("Employees cannot invite members to a team they do not belong to"), frappe.PermissionError
+			)
+
 		frappe.utils.validate_email_address(email, True)
 
 		if frappe.db.exists("Team Member", {"user": email, "parent": self.name, "parenttype": "Team"}):
@@ -1287,6 +1304,7 @@ class Team(Document):
 		)
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_balance(self):
 		res = frappe.get_all(
 			"Balance Transaction",
@@ -1305,6 +1323,14 @@ class Team(Document):
 
 		if not self.enabled:
 			why = "You cannot create a new site as your account is disabled"
+			return (False, why)
+
+		if self.has_unpaid_invoices():
+			why = "Please settle your outstanding invoices to create new sites"
+			return (False, why)
+
+		if self.apply_limits and self.spending_limit <= self.total_subscribed_amount():
+			why = "You have exceeded your spending limit. Please contact support to increase your limits."
 			return (False, why)
 
 		if self.free_account or self.parent_team or self.billing_team:
@@ -1367,6 +1393,9 @@ class Team(Document):
 		if not self.enabled:
 			frappe.throw("You cannot create a new server because your account is disabled")
 
+		if self.has_unpaid_invoices():
+			frappe.throw("Please settle your outstanding invoices to create a new server")
+
 		if not self.billing_address:
 			frappe.throw(
 				"You don't have billing details added. Please add billing details from settings to continue."
@@ -1383,9 +1412,28 @@ class Team(Document):
 		if self.free_account or self.billing_team or self.payment_mode:
 			return True
 
+		return self.has_paid_invoice()
+
+	def can_skip_ssh_wait(self):
+		return self.has_paid_invoice() or (self.is_payment_mode_set() and self.has_paid_subscription())
+
+	def has_paid_invoice(self):
 		return bool(
 			frappe.db.exists("Invoice", {"team": self.name, "amount_paid": (">", 0), "status": "Paid"})
 		)
+
+	def has_paid_subscription(self):
+		paid_plan_filters = {
+			"Site Plan": {"price_usd": (">", 0), "is_trial_plan": 0},
+			"Server Plan": {"price_usd": (">", 0)},
+		}
+		for plan_type, filters in paid_plan_filters.items():
+			plans = frappe.get_all(
+				"Subscription", {"team": self.name, "enabled": 1, "plan_type": plan_type}, pluck="plan"
+			)
+			if plans and frappe.db.exists(plan_type, {"name": ("in", plans), **filters}):
+				return True
+		return False
 
 	def billing_info(self):
 		micro_debit_charge_field = (
@@ -1731,6 +1779,19 @@ class Team(Document):
 		)
 
 
+def get_member_access(team: Team) -> list[tuple]:
+	return sorted(
+		(
+			member.user or "",
+			member.role or "",
+			frappe.utils.cint(member.all_servers),
+			frappe.utils.cint(member.all_release_groups),
+			frappe.utils.cint(member.all_sites),
+		)
+		for member in team.team_members
+	)
+
+
 def get_team_members(team):
 	if not frappe.db.exists("Team", team):
 		return []
@@ -1740,24 +1801,24 @@ def get_team_members(team):
 
 	users = []
 	if member_emails:
-		users = frappe.db.sql(
-			"""
-				select
-					u.name,
-					u.first_name,
-					u.last_name,
-					u.full_name,
-					u.user_image,
-					u.name as email,
-					GROUP_CONCAT(r.`role`) as roles
-				from `tabUser` u
-				left join `tabHas Role` r
-				on (r.parent = u.name)
-				where u.name in %s
-				group by u.name
-			""",
-			[member_emails],
-			as_dict=True,
+		User = frappe.qb.DocType("User")
+		HasRole = frappe.qb.DocType("Has Role")
+		users = (
+			frappe.qb.from_(User)
+			.left_join(HasRole)
+			.on(HasRole.parent == User.name)
+			.select(
+				User.name,
+				User.first_name,
+				User.last_name,
+				User.full_name,
+				User.user_image,
+				User.name.as_("email"),
+				GroupConcat(HasRole.role).as_("roles"),
+			)
+			.where(User.name.isin(member_emails))
+			.groupby(User.name)
+			.run(as_dict=True)
 		)
 		for user in users:
 			user.roles = (user.roles or "").split(",")
@@ -1777,15 +1838,13 @@ def get_child_team_members(team):
 
 	child_teams = []
 	if child_team_members:
-		child_teams = frappe.db.sql(
-			"""
-				select t.name, t.team_title, t.parent_team, t.user
-				from `tabTeam` t
-				where t.name in %s
-				and t.enabled = 1
-			""",
-			[child_team_members],
-			as_dict=True,
+		Team = frappe.qb.DocType("Team")
+		child_teams = (
+			frappe.qb.from_(Team)
+			.select(Team.name, Team.team_title, Team.parent_team, Team.user)
+			.where(Team.name.isin(child_team_members))
+			.where(Team.enabled == 1)
+			.run(as_dict=True)
 		)
 
 	return child_teams
@@ -2106,7 +2165,7 @@ def send_budget_alert_email(team_info, invoice):
 		subject = f"Frappe Cloud Budget Alert for {team_user}"
 
 		frappe.sendmail(
-			recipients=team_user,
+			recipients=get_communication_info("Email", "Billing", "Team", team_info["name"]),
 			subject=subject,
 			template="budget_alert",
 			args={

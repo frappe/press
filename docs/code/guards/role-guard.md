@@ -142,6 +142,7 @@ class methods and standalone functions.
 | `Press Webhook Attempt`| Checks the `allow_webhook_configuration` flag.               |
 | `Press Webhook Log`    | Checks the `allow_webhook_configuration` flag.               |
 | `Site Backup`          | Resolved through the parent Site's resource permission.      |
+| `Press Notification`   | Resolved through its `reference_doctype` and `reference_name`. Support Access notifications are always permitted. |
 | `Server Snapshot`      | Resolved through the parent Server's resource permission.    |
 
 For Sites, Servers, and Release Groups, an `all_<doctype>s` flag (e.g.,
@@ -157,14 +158,7 @@ from press.guards import role_guard
 @frappe.whitelist()
 @role_guard.document(document_type=lambda _: "Site")
 @role_guard.document(document_type=lambda _: "Release Group")
-def get_notifications(
-    filters=None,
-    order_by="creation desc",
-    limit_start=None,
-    limit_page_length=None,
-    sites=None,
-    release_groups=None,
-):
+def get_usage_summary(sites=None, release_groups=None):
     # ...
 ```
 
@@ -187,9 +181,27 @@ def get_site_data(site_name):
 
 ### `role_guard.is_restricted()`
 
-Returns `True` if the current user is subject to role-based restrictions (i.e.,
-roles are enabled, the user is not a System Manager, and not a team
-owner/admin).
+Returns `True` if the current user is subject to role-based restrictions: roles
+are enabled, the user is not a System Manager or a team owner/admin, and the
+user is not in relaxed mode without roles.
+
+### `role_guard.is_plain_member()`
+
+Like `is_restricted()`, but ignores relaxed mode. Use it to decide who may
+manage roles, where a member without roles must still not act as an admin.
+
+### `role_guard.restricts(document_type)`
+
+Returns `True` if the Press Roles limit the user to some documents of this type,
+that is, the user is restricted and has no `all_<doctype>s` flag for it.
+
+### `role_guard.filter_permitted(query, document_type, field)`
+
+Adds a condition to a query that keeps only rows where `field` is a permitted
+document of `document_type`. It returns no row when the roles permit none.
+`role_guard.permitted_condition(document_type, field)` returns the same
+condition, or `None` when the type is not restricted, for use in larger
+conditions.
 
 ### `role_guard.permitted_documents(document_type)`
 
@@ -218,14 +230,16 @@ The role guard module is split across several files:
 | `api.py`            | Maps API scopes to permission keys.              |
 | `document.py`       | Document-level permission checks and resource queries. |
 | `marketplace.py`    | Marketplace App permission check.                |
+| `notification.py`   | Press Notification check and list filter (via the referenced document). |
 | `server_snapshot.py`| Server Snapshot permission check (via parent Server). |
 | `site_backup.py`    | Site Backup permission check (via parent Site).  |
 | `webhook.py`        | Webhook permission check.                        |
 
 ## Warnings
 
-While the role guard restricts who can call an API or access a document, it **does
-not** modify queries or filter data. A protected API can still leak data if the
+While the role guard restricts who can call an API or access a document, its
+decorators **do not** modify queries or filter data. Use
+`role_guard.filter_permitted` for lists. A protected API can still leak data if the
 developer does not apply appropriate team filters. Always apply necessary
 filters to ensure users can only access data they are authorized to see.
 

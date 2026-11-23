@@ -9,6 +9,9 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
+from press.press.doctype.backup_bucket.backup_bucket import BackupBucket
+from press.press.doctype.backup_bucket.test_backup_bucket import create_test_backup_bucket
+from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.backup_history import (
 	AGENT_JOB_TYPE,
@@ -42,6 +45,7 @@ class TestBackupHistory(FrappeTestCase):
 		# Backdate, or the clamp to site creation hides every date these tests use
 		frappe.db.set_value("Site", self.site.name, "creation", "2023-01-01 00:00:00", update_modified=False)
 		self.setup_press_settings()
+		self.setup_cluster_bucket()
 		boto3.client("s3", region_name=REGION).create_bucket(Bucket=BUCKET)
 		# Building a test bench leaves failures against its server, which would make
 		# every test look like it is talking to an unreachable agent
@@ -74,7 +78,7 @@ class TestBackupHistory(FrappeTestCase):
 		get_backup_history(self.site.name, start, end)
 		return get_backup_history(self.site.name, start, end)
 
-	def given_undelivered_job(self, minutes_ago: int):
+	def given_undelivered_job(self, minutes_ago: int, status: str = "Undelivered"):
 		"""A job the agent never acknowledged, which leaves job_id at 0."""
 		if not frappe.db.exists("Agent Job Type", AGENT_JOB_TYPE):
 			frappe.get_doc(
@@ -93,7 +97,7 @@ class TestBackupHistory(FrappeTestCase):
 				"server_type": "Server",
 				"server": self.server,
 				"site": self.site.name,
-				"status": "Undelivered",
+				"status": status,
 				"job_type": AGENT_JOB_TYPE,
 				"request_method": "POST",
 				"request_path": "server/backup-jobs",
@@ -165,19 +169,22 @@ class TestBackupHistory(FrappeTestCase):
 		).db_insert()
 		return remote_file
 
-	def add_cluster_bucket(self, replication_enabled: bool):
-		"""A Backup Bucket for the site's cluster, which get_backup_bucket resolves ahead of Press Settings."""
-		frappe.get_doc(
+	def setup_cluster_bucket(self):
+		"""Point the site's cluster at BUCKET, as every new cluster names its bucket."""
+		create_test_backup_bucket(BUCKET, REGION)
+		Cluster("Cluster", str(self.site.cluster)).db_set("backup_bucket", BUCKET)
+
+	def set_replication(self, replication_enabled: bool):
+		"""Turn replication on or off for the site's cluster bucket."""
+		bucket = BackupBucket("Backup Bucket", BUCKET)
+		bucket.update(
 			{
-				"doctype": "Backup Bucket",
-				"cluster": frappe.db.get_value("Site", self.site.name, "cluster"),
-				"bucket_name": BUCKET,
-				"region": REGION,
 				"replication_enabled": int(replication_enabled),
 				"replication_bucket": REPLICA_BUCKET,
 				"replication_region": REGION,
 			}
-		).insert(ignore_permissions=True)
+		)
+		bucket.save(ignore_permissions=True)
 		boto3.client("s3", region_name=REGION).create_bucket(Bucket=REPLICA_BUCKET)
 
 	def given_agent_jobs(self, jobs: list[dict], truncated: bool = False, day: str = "2023-10-02"):
@@ -314,7 +321,7 @@ class TestBackupHistory(FrappeTestCase):
 		self.assertEqual([set(day) for day in history], [keys, keys, keys])
 
 	def test_replicated_bucket_is_read_instead_of_the_primary(self):
-		self.add_cluster_bucket(replication_enabled=True)
+		self.set_replication(replication_enabled=True)
 		# Only the replica holds it, as happens once the primary expires the object
 		boto3.client("s3", region_name=REGION).put_object(
 			Bucket=REPLICA_BUCKET,
@@ -328,7 +335,7 @@ class TestBackupHistory(FrappeTestCase):
 		self.assertEqual(day["database"], 64)
 
 	def test_primary_bucket_is_read_when_replication_is_off(self):
-		self.add_cluster_bucket(replication_enabled=False)
+		self.set_replication(replication_enabled=False)
 		self.upload_backup("2023-10-02", "20231002_000502-database.sql.gz", body=b"x" * 32)
 		boto3.client("s3", region_name=REGION).put_object(
 			Bucket=REPLICA_BUCKET,
@@ -633,6 +640,27 @@ class TestBackupHistory(FrappeTestCase):
 
 	def test_a_job_left_undelivered_is_not_waited_on(self):
 		self.given_undelivered_job(minutes_ago=5)
+
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_not_called()
+
+	def test_an_old_delivery_failure_does_not_stop_asking_the_server(self):
+		self.given_undelivered_job(minutes_ago=24 * 60, status="Delivery Failure")
+
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_called_once()
+
+	def test_an_old_failure_without_a_job_id_does_not_stop_asking_the_server(self):
+		self.given_undelivered_job(minutes_ago=24 * 60, status="Failure")
+
+		self.audit_trail("2023-10-02", "2023-10-02")
+
+		self.queue_backup_jobs.assert_called_once()
+
+	def test_a_job_still_retrying_delivery_for_a_day_is_not_waited_on(self):
+		self.given_undelivered_job(minutes_ago=24 * 60)
 
 		self.audit_trail("2023-10-02", "2023-10-02")
 

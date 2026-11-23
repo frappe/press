@@ -74,8 +74,12 @@ const toggleSort = () => {
 
 <template>
 	<Header class="sticky top-0 z-10 bg-surface-white mb-5">
-		<Breadcrumbs :items="[{ label: 'Servers', route: '/ser' }]" />
-		<Button class="ml-auto mr-2" @click="servers.reload()">
+		<Breadcrumbs :items="[{ label: 'Servers', route: '/servers' }]" />
+		<Button
+			class="ml-auto mr-2"
+			:loading="servers.list?.loading"
+			@click="servers.reload()"
+		>
 			<template #icon>
 				<lucide-refresh-ccw class="size-4" />
 			</template>
@@ -91,7 +95,7 @@ const toggleSort = () => {
 		<TextInput
 			placeholder="Search server"
 			:debounce="500"
-			@update:modelValue="v => applyFilters('title', ['like', `%${v.toLowerCase()}%`])"
+			@update:modelValue="v => applyFilters('_search', v || undefined)"
 		>
 			<template #prefix>
 				<lucide-search class="size-4 text-ink-gray-5" />

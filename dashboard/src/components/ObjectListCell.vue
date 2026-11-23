@@ -42,7 +42,9 @@
 		<div class="text-base text-ink-gray-6" v-else-if="column.type == 'Timestamp'">
 			<div class="flex">
 				<Tooltip :text="$format.date(value)">
-					{{ value ? $dayjs(value).fromNow() : '' }}
+					<!-- Tooltip attaches its hover handlers to the element it wraps, so the
+					     relative time needs a span of its own -->
+					<span>{{ value ? $dayjs(value).fromNow() : '' }}</span>
 				</Tooltip>
 			</div>
 		</div>

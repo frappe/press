@@ -22,7 +22,7 @@ def send_developer_email(email, app_name, repository_url):
 
 @frappe.whitelist()
 def send_emails(columns, data):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Marketplace Manager"])
 	data = json.loads(data)
 	for row in data:
 		visibility = row.get("visibility")
@@ -62,7 +62,7 @@ def check_repository_visibility(repository_url, personal_access_token):
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Marketplace Manager"])
 
 	columns = [
 		{"fieldname": "app_name", "label": "Application Name", "fieldtype": "Data", "width": 200},
@@ -76,27 +76,26 @@ def execute(filters=None):
 		},
 	]
 
-	data = frappe.db.sql(
-		"""
-        SELECT
-			ma.name AS app_name,
-			t.user AS team,
-			asrc.repository_url AS repository_url
-		FROM
-			`tabMarketplace App` ma
-		JOIN
-			`tabMarketplace App Version` mav ON ma.name = mav.parent
-		JOIN
-			`tabApp Source` asrc ON mav.source = asrc.name
-		JOIN
-			`tabTeam` t ON ma.team = t.name
-		WHERE
-			asrc.enabled = 1 AND
-			ma.status = 'Published'
-		GROUP BY
-			repository_url
-        """,
-		as_dict=True,
+	MarketplaceApp = frappe.qb.DocType("Marketplace App")
+	MarketplaceAppVersion = frappe.qb.DocType("Marketplace App Version")
+	AppSource = frappe.qb.DocType("App Source")
+	Team = frappe.qb.DocType("Team")
+	data = (
+		frappe.qb.from_(MarketplaceApp)
+		.join(MarketplaceAppVersion)
+		.on(MarketplaceApp.name == MarketplaceAppVersion.parent)
+		.join(AppSource)
+		.on(MarketplaceAppVersion.source == AppSource.name)
+		.join(Team)
+		.on(MarketplaceApp.team == Team.name)
+		.select(
+			MarketplaceApp.name.as_("app_name"),
+			Team.user.as_("team"),
+			AppSource.repository_url.as_("repository_url"),
+		)
+		.where((AppSource.enabled == 1) & (MarketplaceApp.status == "Published"))
+		.groupby(AppSource.repository_url)
+		.run(as_dict=True)
 	)
 	personal_access_token = frappe.db.get_value("Press Settings", "None", "github_pat_token")
 

@@ -90,6 +90,7 @@ class SiteGroupDeploy(Document):
 				& (Server.cluster == self.cluster)
 				& (Server.provider == self.provider)
 				& (Server.public == 1)
+				& (Server.exclude_for_scheduling == 0)
 			)
 			.orderby(Server.use_for_new_benches, order=frappe.qb.desc)
 		).run(pluck=True)

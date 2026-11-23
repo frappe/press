@@ -21,9 +21,10 @@ from frappe.utils import (
 	now_datetime,
 )
 
+from press.access.staff_roles import safe_for_readers
 from press.access.support_access import has_support_access
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
-from press.api.client import dashboard_whitelist, is_owned_by_team
+from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
 )
@@ -34,11 +35,17 @@ from press.press.doctype.site_migration.site_migration import (
 )
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error, timer
+from press.utils.redact import redact_secrets
+from press.utils.user import as_administrator
 
 AGENT_LOG_KEY = "agent-jobs"
 AGENT_JOB_TIMEOUT_HOURS = 4
+# fail_old_jobs gives up on a job this old, so the poller skips it too
+STUCK_JOB_DAYS = 2
 
 BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
+
+FREE_TEXT_JOB_DATA_KEYS = ("output", "traceback", "command")
 
 # Jobs a team can cancel from the dashboard. Restricted to long running jobs whose
 # failure path Press already handles — Broken site, failed backup, or (for site
@@ -82,7 +89,9 @@ class AgentJob(Document):
 		server_type: DF.Link
 		site: DF.Link | None
 		start: DF.Datetime | None
-		status: DF.Literal["Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure"]
+		status: DF.Literal[
+			"Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure", "Cancelled"
+		]
 		traceback: DF.Code | None
 		upstream: DF.Link | None
 	# end: auto-generated types
@@ -197,7 +206,7 @@ class AgentJob(Document):
 			]
 
 			self.status = "Pending"
-			self.save()
+			self.save(ignore_permissions=True)
 		except AgentRequestSkippedException:
 			self.retry_count = 0
 			self.set_status_and_next_retry_at()
@@ -205,7 +214,7 @@ class AgentJob(Document):
 		except Exception:
 			if 400 <= cint(self.flags.get("status_code", 0)) <= 499:
 				self.status = "Failure"
-				self.save()
+				self.save(ignore_permissions=True)
 				frappe.db.commit()
 
 				process_job_updates(self.name)
@@ -249,7 +258,7 @@ class AgentJob(Document):
 		self.status = "Undelivered"
 		self.next_retry_at = next_retry_at
 
-		self.save()
+		self.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	def create_agent_job_steps(self):
@@ -264,10 +273,26 @@ class AgentJob(Document):
 					"duration": "00:00:00",
 				}
 			)
-			doc.insert()
+			doc.insert(ignore_permissions=True)
+
+	def validate_not_a_superseded_password_rotation(self):
+		# Resending an older rotation's db_password after a newer rotation would break the site
+		if self.job_type != "Update Site Configuration" or '"db_password"' not in (self.request_data or ""):
+			return
+		if frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "Update Site Configuration",
+				"site": self.site,
+				"creation": (">", self.creation),
+				"request_data": ("like", '%"db_password"%'),
+			},
+		):
+			frappe.throw("A newer database password rotation exists for this site. Retry that job instead.")
 
 	@frappe.whitelist()
 	def retry(self):
+		self.validate_not_a_superseded_password_rotation()
 		return frappe.get_doc(
 			{
 				"doctype": "Agent Job",
@@ -284,12 +309,18 @@ class AgentJob(Document):
 				"request_files": self.request_files,
 				"request_method": self.request_method,
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def retry_in_place(self):
+		self.validate_not_a_superseded_password_rotation()
 		self.enqueue_http_request()
 		frappe.db.commit()
+
+	@frappe.whitelist()
+	@safe_for_readers
+	def get_agent_endpoint(self):
+		return Agent(self.server, server_type=self.server_type).get_request_url(f"jobs/{self.job_id}")
 
 	@frappe.whitelist()
 	def get_status(self):
@@ -316,28 +347,44 @@ class AgentJob(Document):
 	@frappe.whitelist()
 	def succeed_and_process_job_updates(self):
 		self.status = "Success"
-		self.save()
+		self.save(ignore_permissions=True)
 		self.process_job_updates()
 
 	@frappe.whitelist()
 	def fail_and_process_job_updates(self):
 		self.status = "Failure"
-		self.save()
+		self.save(ignore_permissions=True)
 		self.process_job_updates()
 
 	@frappe.whitelist()
 	def process_job_updates(self):
 		process_job_updates(self.name)
 
-	@dashboard_whitelist()
+	@frappe.whitelist()
 	def cancel_job(self):
 		if self.status not in ("Pending", "Running"):
 			frappe.throw(f"Can't cancel a job that is {self.status}")
 		if not frappe.local.system_user():
 			self.validate_dashboard_cancellation()
 
-		agent = Agent(self.server, server_type=self.server_type)
-		agent.cancel_job(self.job_id)
+		with as_administrator():
+			Agent(self.server, server_type=self.server_type).cancel_job(self.job_id)
+		self.add_comment("Info", "Cancelled the job")
+
+	def cancel_and_mark_cancelled(self, reason: str):
+		"""Stop the job and record it as Cancelled, which the agent can't report itself."""
+		if self.status in ("Pending", "Running") and self.job_id:
+			Agent(self.server, server_type=self.server_type).cancel_job(self.job_id)
+
+		self.status = "Cancelled"
+		self.save()
+		AgentJobStep = frappe.qb.DocType("Agent Job Step")
+		frappe.qb.update(AgentJobStep).set(AgentJobStep.status, "Failure").where(
+			(AgentJobStep.status == "Running") & (AgentJobStep.agent_job == self.name)
+		).run()
+		skip_pending_steps(self.name)
+		self.add_comment("Info", f"Cancelled the job: {reason}")
+		process_job_updates(self.name)
 
 	def validate_dashboard_cancellation(self):
 		if self.job_type not in DASHBOARD_CANCELLABLE_JOB_TYPES:
@@ -441,7 +488,7 @@ def job_detail(job):
 
 	if job.status == "Pending":
 		current = {"name": job.job_type, "status": "Waiting", "index": -1}
-	elif job.status in ("Success", "Failure"):
+	elif job.status in ("Success", "Failure", "Cancelled"):
 		current = {"name": job.job_type, "status": job.status, "index": len(steps)}
 
 	current["total"] = len(steps)
@@ -603,7 +650,7 @@ def populate_output_cache(polled_job, job):
 				output = command.get("output", "").strip()
 				if output:
 					lines.append(output)
-			frappe.cache.hset("agent_job_step_output", step.name, "\n".join(lines))
+			frappe.cache.hset("agent_job_step_output", step.name, redact_secrets("\n".join(lines)))
 
 
 def filter_active_servers(servers):
@@ -636,7 +683,10 @@ def poll_pending_jobs():
 	"""
 	Poll pending job fetches the status of Pending Jobs from all servers.
 	"""
-	filters = {"status": ("in", ["Pending", "Running", "Undelivered"])}
+	filters = {
+		"status": ("in", ["Pending", "Running", "Undelivered"]),
+		"creation": (">=", add_days(None, -STUCK_JOB_DAYS)),
+	}
 	if random.random() > 0.1:
 		# Experimenting with fewer polls (only for backup jobs)
 		# Reduce poll frequency for Backup Site jobs
@@ -676,7 +726,7 @@ def fail_old_jobs():
 		{
 			"status": ("in", ["Pending", "Running"]),
 			"job_id": ("!=", 0),
-			"creation": ("<", add_days(None, -2)),
+			"creation": ("<", add_days(None, -STUCK_JOB_DAYS)),
 		},
 		limit=100,
 		order_by="RAND()",
@@ -688,7 +738,7 @@ def fail_old_jobs():
 		"Agent Job",
 		{
 			"job_id": 0,
-			"creation": ("<", add_days(None, -2)),
+			"creation": ("<", add_days(None, -STUCK_JOB_DAYS)),
 			"status": ("!=", "Delivery Failure"),
 		},
 		limit=100,
@@ -746,8 +796,20 @@ def lock_doc_updated_by_job(job_name):
 	return None
 
 
+def redact_job_data(data):
+	# Only the free text fields; other keys carry results that callbacks read back
+	if not isinstance(data, dict):
+		return data
+
+	return {
+		**data,
+		**{key: redact_secrets(data[key]) for key in FREE_TEXT_JOB_DATA_KEYS if key in data},
+	}
+
+
 def update_job(job_name, job):
-	job_data = json.dumps(job["data"], indent=4, sort_keys=True)
+	data = redact_job_data(job["data"])
+	job_data = json.dumps(data, indent=4, sort_keys=True)
 	frappe.db.set_value(
 		"Agent Job",
 		job_name,
@@ -757,8 +819,8 @@ def update_job(job_name, job):
 			"duration": job["duration"],
 			"status": job["status"],
 			"data": job_data,
-			"output": job["data"].get("output"),
-			"traceback": job["data"].get("traceback"),
+			"output": data.get("output"),
+			"traceback": data.get("traceback"),
 		},
 	)
 
@@ -787,13 +849,14 @@ def update_steps(job_name, job):
 
 
 def update_step(step_name, step):
-	step_data = json.dumps(step["data"], indent=4, sort_keys=True)
+	data = redact_job_data(step["data"])
+	step_data = json.dumps(data, indent=4, sort_keys=True)
 
 	output = None
 	traceback = None
-	if isinstance(step["data"], dict):
-		traceback = to_str(step["data"].get("traceback", ""))
-		output = to_str(step["data"].get("output", ""))
+	if isinstance(data, dict):
+		traceback = redact_secrets(to_str(data.get("traceback", "")))
+		output = redact_secrets(to_str(data.get("output", "")))
 
 	frappe.db.set_value(
 		"Agent Job Step",
@@ -811,11 +874,10 @@ def update_step(step_name, step):
 
 
 def skip_pending_steps(job_name):
-	frappe.db.sql(
-		"""UPDATE  `tabAgent Job Step` SET  status = 'Skipped'
-		WHERE status = 'Pending' AND agent_job = %s""",
-		job_name,
-	)
+	AgentJobStep = frappe.qb.DocType("Agent Job Step")
+	frappe.qb.update(AgentJobStep).set(AgentJobStep.status, "Skipped").where(
+		(AgentJobStep.status == "Pending") & (AgentJobStep.agent_job == job_name)
+	).run()
 
 
 def get_next_retry_at(job_retry_count):
@@ -1008,6 +1070,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		)
 		from press.press.doctype.database_server.database_server import (
 			process_add_binlogs_to_indexer_agent_job_update,
+			process_purge_binlogs_by_size_limit_job_update,
 			process_remove_binlogs_from_indexer_agent_job_update,
 		)
 		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
@@ -1200,6 +1263,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_remove_binlogs_from_indexer_agent_job_update(job)
 		elif job.job_type == "Upload Binlogs To S3":
 			process_upload_binlogs_to_s3_job_update(job)
+		elif job.job_type == "Purge Binlogs By Size Limit":
+			process_purge_binlogs_by_size_limit_job_update(job)
 		elif job.job_type == "Upload Audit Logs To S3":
 			process_upload_audit_logs_to_s3_job_update(job)
 		elif job.job_type == "Search Sites In Snapshot":
@@ -1285,6 +1350,8 @@ def update_job_step_status():
 
 def on_doctype_update():
 	frappe.db.add_index("Agent Job", ["status", "server"])
+	# Covers poll_pending_jobs, so it reads no table rows
+	frappe.db.add_index("Agent Job", ["status", "creation", "job_type", "server", "server_type"])
 	frappe.db.add_index("Agent Job", ["reference_doctype", "reference_name"])
 	# We don't need modified index, it's harmful on constantly updating tables
 	frappe.db.sql_ddl("drop index if exists modified on `tabAgent Job`")
@@ -1389,3 +1456,26 @@ def agent_poll_count_stats_daily():
 	start_time = frappe.utils.add_to_date(None, hours=-24)
 	end_time = frappe.utils.add_to_date(None, minutes=-1)
 	agent_poll_count_stats(start_time, end_time, min_count, duration)
+
+
+@frappe.whitelist()
+def cancel_job_from_dashboard(name: str):
+	"""Cancel a job from the job page.
+
+	Agent Job grants a dashboard user no permission at all, so frappe refuses
+	the read that `run_doc_method` does before it calls the method. The team
+	check runs here instead, against the site the job belongs to, and the
+	cancel itself runs as Administrator.
+
+	`frappe.get_doc` reads a dict as a new document, so the name is checked here
+	rather than left to the annotation, which frappe validates only in a request.
+	"""
+	if not isinstance(name, str):
+		frappe.throw("Job name must be a string", frappe.ValidationError)
+
+	job: AgentJob = frappe.get_doc("Agent Job", name)
+	if not has_support_access("Site", job.site):
+		is_owned_by_team("Site", job.site, raise_exception=True)
+
+	job.validate_dashboard_cancellation()
+	job.cancel_job()

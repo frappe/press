@@ -139,7 +139,7 @@
 				</div>
 				<!-- Message -->
 				<AlertBanner
-					title="Do you want to cleanup the reclaimable space ?"
+					title="Do you want to cleanup the reclaimable space?"
 					type="info"
 					:showIcon="false"
 					class="my-3"
@@ -264,6 +264,7 @@
 										tab.label === 'Full Table Scan Queries') &&
 									!isPerformanceSchemaEnabled
 								"
+								:isDedicatedServer="isDedicatedServer"
 							/>
 							<ResultTable
 								v-else
@@ -300,6 +301,7 @@
 										tab.label === 'Suggested Indexes') &&
 									!isPerformanceSchemaEnabled
 								"
+								:isDedicatedServer="isDedicatedServer"
 							/>
 							<div v-else-if="tab.label === 'Suggested Indexes'">
 								<div
@@ -759,6 +761,9 @@ export default {
 				),
 			};
 		},
+		isDedicatedServer() {
+			return Boolean(this.site_info?.is_dedicated_server);
+		},
 		isPerformanceSchemaEnabled() {
 			const result = this.$resources.databasePerformanceReport?.data?.message;
 			if (!result) return false;
@@ -944,8 +949,8 @@ export default {
 			confirmDialog({
 				title: 'Optimize Database Tables',
 				message: tableName
-					? `Do you want to optimize the table <strong>${tableName}</strong> to reclaim space ?<br>`
-					: `Frappe Cloud will find tables where reclaimable space exceeds 100 MB or 20% of the table size.<br>Are you sure you want to optimize the database tables ?<br>`,
+					? `Do you want to optimize the table <strong>${tableName}</strong> to reclaim space?<br>`
+					: `Frappe Cloud will find tables where reclaimable space exceeds 100 MB or 20% of the table size.<br>Are you sure you want to optimize the database tables?<br>`,
 				primaryAction: {
 					label: 'Optimize',
 					variant: 'solid',

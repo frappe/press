@@ -1,0 +1,7 @@
+---
+# A Long Term Support release, for Focal only
+# https://github.com/Cisco-Talos/clamav/releases
+clamav_version: 1.4.6
+clamav_checksums:
+  x86_64: sha256:d3ee9e401974855a1edc1761b1425417d126de618d5f0c91cd51209f69f6fcc2
+  aarch64: sha256:a29cc95aeb225f0dc1b99024b49f1cc109502cb17aaf168637d0901aa9674fe8

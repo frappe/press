@@ -8,7 +8,7 @@ from frappe import _
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
-from press.guards.role_guard import is_restricted
+from press.guards.role_guard import is_plain_member
 from press.overrides import get_permission_query_conditions_for_doctype
 
 
@@ -87,4 +87,4 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype("T
 
 
 def has_permission(doc, ptype, user):
-	return not is_restricted()
+	return not is_plain_member()

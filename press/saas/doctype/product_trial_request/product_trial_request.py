@@ -15,6 +15,7 @@ from frappe.utils.caching import redis_cache
 from frappe.utils.data import add_to_date, now_datetime
 from frappe.utils.telemetry import init_telemetry
 
+from press.access.staff_roles import needs_staff_role
 from press.api.client import dashboard_whitelist
 from press.press.doctype.root_domain.root_domain import get_domains
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
@@ -55,6 +56,7 @@ class ProductTrialRequest(Document):
 			"Error",
 			"Expired",
 		]
+		status_updated_on: DF.Datetime | None
 		team: DF.Link | None
 		tracked_agent_jobs: DF.Code | None
 	# end: auto-generated types
@@ -282,6 +284,12 @@ class ProductTrialRequest(Document):
 		self.save(ignore_permissions=True)
 		return True
 
+	def before_save(self):
+		if self.has_value_changed("status"):
+			# `modified` moves on every later write - a subscription flag, an accessibility
+			# check at login - so anything asking when a request settled needs its own stamp
+			self.status_updated_on = now_datetime()
+
 	def after_insert(self):
 		self.capture_posthog_event("product_trial_request_created")
 
@@ -313,6 +321,7 @@ class ProductTrialRequest(Document):
 						)
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Product Manager")
 	def get_setup_wizard_payload(self):
 		import json
 
@@ -367,6 +376,7 @@ class ProductTrialRequest(Document):
 			frappe.throw("The domain is invalid. Please enter a valid domain name.")
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Product Manager")
 	def create_site(self, subdomain: str, domain: str):
 		"""
 		Trigger the site creation process for the product trial request.
@@ -392,6 +402,7 @@ class ProductTrialRequest(Document):
 				team=self.team,
 				cluster=cluster,
 				account_request=self.account_request,
+				product_trial_request=self.name,
 			)
 			self.is_standby_site = is_standby_site
 			self.site = site.name
@@ -514,6 +525,20 @@ class ProductTrialRequest(Document):
 			)
 
 	@dashboard_whitelist()
+	def is_site_reachable(self) -> bool:
+		# A proxy that doesn't know the domain yet redirects to the dashboard instead
+		import requests
+
+		try:
+			response = requests.get(
+				f"https://{self.domain or self.site}/api/method/ping", allow_redirects=False, timeout=5
+			)
+		except requests.RequestException:
+			return False
+		return response.status_code == 200
+
+	@dashboard_whitelist()
+	@needs_staff_role("Press Product Manager")
 	def get_login_sid(self):
 		site: Site = frappe.get_doc("Site", self.site)
 		redirect_to_after_login = frappe.db.get_value(
@@ -521,7 +546,7 @@ class ProductTrialRequest(Document):
 			self.product_trial,
 			"redirect_to_after_login",
 		)
-		if site.additional_system_user_created and site.setup_wizard_complete:
+		if site.additional_system_user_created and site.is_setup_wizard_complete():
 			# go to setup wizard as admin only
 			# they'll log in as user after setup wizard
 			email = frappe.db.get_value("Team", self.team, "user")
@@ -556,8 +581,7 @@ def expire_long_pending_trial_requests():
 	frappe.db.set_value(
 		"Product Trial Request",
 		{"status": "Pending", "creation": ("<", add_to_date(now_datetime(), hours=-6))},
-		"status",
-		"Expired",
+		{"status": "Expired", "status_updated_on": now_datetime()},
 		update_modified=False,
 	)
 

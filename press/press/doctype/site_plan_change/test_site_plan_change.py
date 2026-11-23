@@ -2,6 +2,8 @@
 # See license.txt
 
 
+from datetime import datetime
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
@@ -76,3 +78,27 @@ class TestSitePlanChange(FrappeTestCase):
 			}
 		).insert(ignore_permissions=True)
 		self.assertEqual(frappe.db.get_value("Site", self.site.name, "plan"), self.nano_plan.name)
+
+	def test_initial_plan_change_of_claimed_standby_site_is_dated_at_signup(self):
+		pooled_on = datetime(2026, 9, 20, 20, 35)
+		claimed_on = datetime(2026, 9, 23, 15, 2)
+		standby_site = create_test_site(
+			subdomain="claimedstandbysite", creation=pooled_on, signup_time=claimed_on
+		)
+
+		standby_site._create_initial_site_plan_change(self.unlimited_plan.name)
+
+		self.assertEqual(self.get_initial_plan_timestamp(standby_site), claimed_on)
+
+	def test_initial_plan_change_falls_back_to_creation_for_site_without_signup_time(self):
+		created_on = datetime(2026, 9, 20, 20, 35)
+		site = create_test_site(subdomain="sitewithoutsignuptime", creation=created_on)
+
+		site._create_initial_site_plan_change(self.unlimited_plan.name)
+
+		self.assertEqual(self.get_initial_plan_timestamp(site), created_on)
+
+	def get_initial_plan_timestamp(self, site):
+		return frappe.db.get_value(
+			"Site Plan Change", {"site": site.name, "type": "Initial Plan"}, "timestamp"
+		)

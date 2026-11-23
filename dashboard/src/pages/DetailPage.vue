@@ -8,10 +8,21 @@
 					v-if="$resources.document?.doc && badge"
 					v-bind="badge"
 				/>
+				<Badge
+					v-for="extraBadge in extraBadges"
+					:key="extraBadge.label"
+					class="hidden sm:inline-flex"
+					v-bind="extraBadge"
+				/>
 			</div>
 			<div class="flex justify-between items-center mt-1 space-x-2 sm:mt-0">
-				<div class="sm:hidden">
+				<div class="sm:hidden space-x-2">
 					<Badge v-if="$resources.document?.doc && badge" v-bind="badge" />
+					<Badge
+						v-for="extraBadge in extraBadges"
+						:key="extraBadge.label"
+						v-bind="extraBadge"
+					/>
 				</div>
 				<AccessRequestButton
 					:doctype="object.doctype"
@@ -76,6 +87,7 @@ import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
 import AccessRequestButton from '../components/AccessRequestButton.vue';
 import PageBanner from '../components/PageBanner.vue';
+import { leafTitle, pageTitle } from '../utils/title';
 
 let subscribed = {};
 
@@ -98,6 +110,9 @@ export default {
 		TabsWithRouter,
 		PageBanner,
 		FBreadcrumbs: Breadcrumbs,
+	},
+	pageMeta() {
+		return { title: pageTitle(this.title, leafTitle(this.$route)) };
 	},
 	resources: {
 		document() {
@@ -160,6 +175,14 @@ export default {
 				});
 			}
 			return null;
+		},
+		extraBadges() {
+			if (this.object.detail.extraBadges && this.$resources.document?.doc) {
+				return this.object.detail.extraBadges({
+					documentResource: this.$resources.document,
+				});
+			}
+			return [];
 		},
 		banner() {
 			if (this.object.detail.banner && this.$resources.document?.doc) {

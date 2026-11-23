@@ -6,6 +6,7 @@
   gather_facts: yes
   roles:
     - role: essentials
+    - role: block_sctp
     - role: user
     - role: nginx
     - role: agent_monitoring_setup
@@ -14,3 +15,4 @@
     - role: node_exporter
     - role: clamav
     - role: auditd
+    - role: fail2ban

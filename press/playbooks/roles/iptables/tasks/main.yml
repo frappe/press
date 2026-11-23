@@ -11,6 +11,18 @@
     rule_num: 1
     jump: DROP
 
+- name: Block metadata server from the host itself
+  iptables:
+    chain: OUTPUT
+    protocol: tcp
+    destination: 169.254.169.254
+    destination_port: '80, 443'
+    match: multiport
+    action: insert
+    rule_num: 1
+    jump: REJECT
+    reject_with: icmp-port-unreachable
+
 - name: Create directory for iptables rules
   file:
     path: /etc/iptables

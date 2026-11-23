@@ -1,12 +1,10 @@
 import functools
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
-from press.utils import get_current_team
-
-from .actions import ACTIONS_RULES
-from .support_access import has_support_access
+from .support_access import can_perform
 
 
 def action_guard(action: str):
@@ -17,32 +15,19 @@ def action_guard(action: str):
 	decorated method to execute.
 	"""
 
-	def throw_err():
-		msg = "You do not have permission to perform this action"
-		frappe.throw(msg, frappe.PermissionError)
-
 	def decorator(fn):
 		@functools.wraps(fn)
 		def wrapper(instance: Document, *args, **kwargs):
-			if frappe.local.system_user():
-				return fn(instance, *args, **kwargs)
-
-			current_team = get_current_team()
-			instance_team = getattr(instance, "team", None)
-
-			if instance_team and instance_team == current_team:
-				return fn(instance, *args, **kwargs)
-
-			if has_support_access(instance.doctype, instance.name, action):
-				return fn(instance, *args, **kwargs)
-
-			doctype_rules = ACTIONS_RULES.get(instance.doctype, {})
-			action_allowed = doctype_rules.get(action, True)
-			if not action_allowed:
-				throw_err()
-
+			team = getattr(instance, "team", None)
+			ensure_can_perform(instance.doctype, str(instance.name), team, action)
 			return fn(instance, *args, **kwargs)
 
 		return wrapper
 
 	return decorator
+
+
+def ensure_can_perform(doctype: str, docname: str, team: str | None, action: str) -> None:
+	"""Refuse `action` on `docname` when the access rules do not allow it."""
+	if not can_perform(doctype, docname, team, action):
+		frappe.throw(_("You do not have permission to perform this action"), frappe.PermissionError)

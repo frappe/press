@@ -7,7 +7,7 @@
 				? [
 						{
 							label: selectedMigrationChoiceDetails?.button_label || 'Proceed',
-							disabled: migrationRequestLoading,
+							disabled: cannotProceed,
 							variant: 'solid',
 							onClick: triggerMigration,
 						},
@@ -241,6 +241,58 @@
 					</div>
 				</div>
 
+				<!-- Move Site to Another Shared Server -->
+				<div
+					v-else-if="
+						selectedMigrationMode === 'Move Site To Another Shared Server'
+					"
+					class="flex flex-col gap-3"
+				>
+					<div
+						v-if="$resources.sharedServerTarget.loading"
+						class="flex h-20 items-center justify-center"
+					>
+						<Spinner class="h-4 w-4 text-ink-gray-6" />
+					</div>
+					<div
+						v-else-if="sharedServerDestination"
+						class="flex flex-col gap-3 rounded-md border p-3"
+					>
+						<div>
+							<p class="text-sm text-ink-gray-7">Destination server</p>
+							<p class="mt-1 text-base font-medium text-ink-gray-9">
+								{{ sharedServerDestination.title }}
+							</p>
+						</div>
+						<p class="text-p-base text-ink-gray-6">
+							This is the shared server in {{ sharedServerRegion }} with the
+							most room to spare right now. The site keeps its bench group and
+							its plan.
+						</p>
+						<p
+							v-if="sharedServerDestination.needs_deploy"
+							class="text-p-base text-ink-gray-6"
+						>
+							Your bench does not run there yet, so we deploy it first. That
+							takes a few minutes, and the site stays up until the move itself
+							starts.
+						</p>
+						<div
+							class="flex flex-wrap gap-x-6 gap-y-1 text-p-base text-ink-gray-7"
+						>
+							<span>
+								Memory free: {{ sharedServerDestination.free_memory_percent }}%
+							</span>
+							<span>
+								CPU idle: {{ sharedServerDestination.idle_cpu_percent }}%
+							</span>
+							<span>
+								Disk free: {{ sharedServerDestination.free_disk_percent }}%
+							</span>
+						</div>
+					</div>
+				</div>
+
 				<!-- Checkbox  -->
 				<Checkbox
 					v-if="selectedMigrationMode"
@@ -255,10 +307,13 @@
 					<DateTimeControl v-model="scheduledTime" :hideLabel="true" />
 				</div>
 
-				<!-- Error Message (the space banner below replaces it with a friendlier one) -->
-				<ErrorMessage v-if="!showSpaceCleanupHelp" :message="errorMessage" />
+				<!-- Error Message (the space banner below replaces the out-of-space one) -->
+				<ErrorMessage
+					v-if="!(showSpaceCleanupHelp && isInsufficientSpaceError)"
+					:message="errorMessage"
+				/>
 
-				<!-- Previous attempt ran out of disk space: explain and offer the cleanup actions -->
+				<!-- A recent move failed: its leftover files eat space on the dedicated server -->
 				<div
 					v-if="showSpaceCleanupHelp"
 					class="flex flex-col gap-3 rounded-md bg-surface-amber-2 p-3"
@@ -268,7 +323,8 @@
 							class="mt-0.5 size-4 shrink-0 text-ink-amber-3"
 						/>
 						<p class="text-p-base text-ink-gray-8">
-							The previous migration used up some storage.
+							A recent migration failed and may have left files on the server.
+							Free up space first, or the move can fail again.
 							<a
 								:href="storageAddonsDocUrl"
 								target="_blank"
@@ -276,7 +332,7 @@
 								class="underline"
 								>Add more storage</a
 							>
-							or use the actions below, then try again.
+							or use the actions below.
 						</p>
 					</div>
 					<div class="flex flex-wrap items-center gap-x-4 gap-y-2 pl-6">
@@ -353,8 +409,11 @@ export default {
 		}
 	},
 	watch: {
-		selectedMigrationMode() {
+		selectedMigrationMode(mode) {
 			this.resetValues(true)
+			if (mode === 'Move Site To Another Shared Server') {
+				this.$resources.sharedServerTarget.submit()
+			}
 		},
 	},
 	resources: {
@@ -372,6 +431,23 @@ export default {
 				auto: true,
 				onSuccess: () => {
 					this.autoSelectMigrationOption()
+				},
+			}
+		},
+		sharedServerTarget() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'get_shared_server_migration_target',
+					}
+				},
+				onSuccess: (result) => {
+					// The plan is created against this server, and the backend checks
+					// again that it still has room when the move runs.
+					this.selectedServerToMoveTo = result?.message?.destination_server?.name
 				},
 			}
 		},
@@ -441,6 +517,7 @@ export default {
 			return (
 				this.$resources?.createMigrationPlan?.error ??
 				this.$resources?.migrateSite?.error ??
+				this.$resources?.sharedServerTarget?.error ??
 				''
 			)
 		},
@@ -453,20 +530,24 @@ export default {
 			return /Insufficient estimated space/i.test(text)
 		},
 		showSpaceCleanupHelp() {
-			// Only after a prior migration actually left files behind, and only for
-			// dedicated servers — shared servers auto-extend and lack these actions.
+			// Shown before the retry, not only after it fails. Only for dedicated
+			// servers — shared servers auto-extend and lack these actions.
 			return (
-				this.isInsufficientSpaceError &&
 				this.isDedicatedServerMove &&
-				this.hasRecentFailedMigration
+				this.recentFailedMigrationServers.includes(this.cleanupTargetServer)
 			)
 		},
 		isDedicatedServerMove() {
-			return (
-				this.selectedMigrationMode ===
-					'Move Site To Different Server / Bench' &&
-				this.selectedServerType === 'Dedicated Server'
+			if (
+				this.selectedMigrationMode !== 'Move Site To Different Server / Bench'
 			)
+				return false
+			if (this.benchMovementType === 'Create A New Bench')
+				return this.selectedServerType === 'Dedicated Server'
+			const server = this.availableServersForSelectedReleaseGroup.find(
+				(e) => e.name === this.selectedServerToMoveTo,
+			)
+			return Boolean(server) && !server.public
 		},
 		cleanupTargetServer() {
 			return this.selectedServerToMoveTo || this.$site?.doc?.server
@@ -492,15 +573,15 @@ export default {
 		},
 		migrationChoices() {
 			return Object.keys(this.migrationOptions)
-				.filter((e) => typeof this.migrationOptions[e] === 'object' && this.migrationOptions[e]  != null)
+				.filter((e) => this.migrationOptions[e]?.button_label)
 				.map((e) => ({
 					label: e,
 					value: e,
 				}))
 				.filter((e) => !this.migrationOptions[e.value].hidden)
 		},
-		hasRecentFailedMigration() {
-			return this.migrationOptions?.has_recent_failed_migration ?? false
+		recentFailedMigrationServers() {
+			return this.migrationOptions?.recent_failed_migration_servers ?? []
 		},
 		selectedMigrationChoiceDetails() {
 			return this.migrationOptions[this.selectedMigrationMode]
@@ -543,6 +624,26 @@ export default {
 					?.dedicated_servers_for_new_release_group ?? []
 			)
 		},
+		sharedServerTarget() {
+			return this.$resources?.sharedServerTarget?.data?.message ?? null
+		},
+		sharedServerDestination() {
+			return this.sharedServerTarget?.destination_server ?? null
+		},
+		sharedServerRegion() {
+			return this.sharedServerTarget?.region ?? ''
+		},
+		sharedServerCooldownDays() {
+			if (this.selectedMigrationMode !== 'Move Site To Another Shared Server')
+				return 0
+			return this.selectedMigrationChoiceOptions?.cooldown_days ?? 0
+		},
+		cannotProceed() {
+			if (this.migrationRequestLoading) return true
+			if (this.selectedMigrationMode === 'Move Site To Another Shared Server')
+				return !this.sharedServerDestination
+			return false
+		},
 		availableRegionsToMoveSiteTo() {
 			if (this.selectedMigrationMode !== 'Move Site To Different Region')
 				return []
@@ -550,12 +651,12 @@ export default {
 		},
 		customDomainWarning() {
 			if (!this.selectedMigrationChoiceOptions?.has_domain_with_a_record)
-				return '';
+				return ''
 			const region = this.availableRegionsToMoveSiteTo.find(
 				(e) => e.name === this.selectedRegion,
-			);
-			if (!region?.inbound_ip) return '';
-			return `This site has custom domains pointing to an A record. After the migration, update them to <strong>${region.inbound_ip}</strong>, or switch them to a CNAME record pointing to <strong>${this.site}</strong>. Until then those domains will not resolve. <a href="https://docs.frappe.io/cloud/sites/custom-domains" target="_blank" class="underline">Read more</a>`;
+			)
+			if (!region?.inbound_ip) return ''
+			return `This site has custom domains pointing to an A record. After the migration, update them to <strong>${region.inbound_ip}</strong>, or switch them to a CNAME record pointing to <strong>${this.site}</strong>. Until then those domains will not resolve. <a href="https://docs.frappe.io/cloud/sites/custom-domains" target="_blank" class="underline">Read more</a>`
 		},
 		warningMessage() {
 			return {
@@ -565,6 +666,9 @@ export default {
 					'Site will be unavailable during this process.',
 				'Move Site To Different Region':
 					'Site will be unavailable during this process.',
+				'Move Site To Another Shared Server': this.sharedServerCooldownDays
+					? `Site will be unavailable during this process, and it can move to another shared server only once every ${this.sharedServerCooldownDays} days.`
+					: 'Site will be unavailable during this process.',
 			}[this.selectedMigrationMode]
 		},
 		scheduledTimeInIST() {
@@ -618,6 +722,9 @@ export default {
 			}
 			if (this.$resources?.migrateSite) {
 				this.$resources.migrateSite.error = null
+			}
+			if (this.$resources?.sharedServerTarget) {
+				this.$resources.sharedServerTarget.error = null
 			}
 		},
 		openServerActions(action) {

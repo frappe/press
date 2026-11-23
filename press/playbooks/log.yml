@@ -6,6 +6,7 @@
   gather_facts: yes
   roles:
     - role: essentials
+    - role: block_sctp
     - role: user
     - role: nginx
     - role: agent
@@ -15,3 +16,4 @@
     - role: elasticsearch_exporter
     - role: kibana
     - role: filebeat_elasticsearch
+    - role: fail2ban
