@@ -5,6 +5,10 @@
       - gnupg
       - apt-transport-https
     state: present
+  register: result
+  until: result.failed == false
+  retries: 5
+  delay: 120
 
 - name: Download Key
   get_url:
@@ -56,6 +60,10 @@
     - name: Unhold Agent
       command: apt-mark unhold wazuh-agent
       changed_when: false
+      register: wazuh_agent_unhold
+      until: wazuh_agent_unhold.failed == false
+      retries: 5
+      delay: 120
 
     - name: Install Agent
       apt:
@@ -76,6 +84,10 @@
       dpkg_selections:
         name: wazuh-agent
         selection: hold
+      register: wazuh_agent_hold
+      until: wazuh_agent_hold.failed == false
+      retries: 5
+      delay: 120
 
 # apt is a no-op when the pinned version is already installed, so the postinst never re-reads
 # WAZUH_MANAGER. Register explicitly when the agent holds no key, or when Press says the manager
