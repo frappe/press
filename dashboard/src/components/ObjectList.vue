@@ -363,8 +363,14 @@ export default {
 					label: '',
 					key: '__actions',
 					type: 'Actions',
-					width: '100px',
+					width: '32px',
 					align: 'right',
+					headerClass: 'sticky right-0 -mr-2 pr-2 rounded-r bg-surface-gray-2',
+					cellClass: [
+						'sticky right-0 -mr-2 pr-2 rounded-r bg-surface-white',
+						(this.options.onRowClick || this.options.route) &&
+							'group-hover/row:bg-surface-menu-bar',
+					],
 					actions: (row) => this.options.rowActions({ ...this.context, row }),
 				})
 			}

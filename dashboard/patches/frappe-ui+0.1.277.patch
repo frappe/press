@@ -1,0 +1,96 @@
+diff --git a/node_modules/frappe-ui/src/components/ListView/ListGroups.vue b/node_modules/frappe-ui/src/components/ListView/ListGroups.vue
+index cc7f32d..060ecf0 100644
+--- a/node_modules/frappe-ui/src/components/ListView/ListGroups.vue
++++ b/node_modules/frappe-ui/src/components/ListView/ListGroups.vue
+@@ -1,5 +1,5 @@
+ <template>
+-  <div class="h-full overflow-y-auto">
++  <div>
+     <div v-for="group in list.rows" :key="group.group">
+       <slot>
+         <ListGroupHeader :group="group">
+diff --git a/node_modules/frappe-ui/src/components/ListView/ListHeader.vue b/node_modules/frappe-ui/src/components/ListView/ListHeader.vue
+index bc129be..cc50d3e 100644
+--- a/node_modules/frappe-ui/src/components/ListView/ListHeader.vue
++++ b/node_modules/frappe-ui/src/components/ListView/ListHeader.vue
+@@ -1,6 +1,6 @@
+ <template>
+   <div
+-    class="mb-2 grid items-center gap-4 rounded bg-surface-gray-2 p-2"
++    class="sticky top-0 z-10 mb-2 grid items-center gap-4 rounded bg-surface-gray-2 p-2"
+     :style="{
+       gridTemplateColumns: getGridTemplateColumns(
+         list.columns,
+diff --git a/node_modules/frappe-ui/src/components/ListView/ListHeaderItem.vue b/node_modules/frappe-ui/src/components/ListView/ListHeaderItem.vue
+index 2d06dcf..9b12481 100644
+--- a/node_modules/frappe-ui/src/components/ListView/ListHeaderItem.vue
++++ b/node_modules/frappe-ui/src/components/ListView/ListHeaderItem.vue
+@@ -2,7 +2,10 @@
+   <div
+     ref="columnRef"
+     class="group relative flex items-center"
+-    :class="item.align ? alignmentMap[item.align] : 'justify-between'"
++    :class="[
++      item.align ? alignmentMap[item.align] : 'justify-between',
++      item.headerClass,
++    ]"
+   >
+     <div
+       class="flex items-center gap-2 truncate text-sm text-ink-gray-5"
+diff --git a/node_modules/frappe-ui/src/components/ListView/ListRow.vue b/node_modules/frappe-ui/src/components/ListView/ListRow.vue
+index 0890e97..03ee589 100644
+--- a/node_modules/frappe-ui/src/components/ListView/ListRow.vue
++++ b/node_modules/frappe-ui/src/components/ListView/ListRow.vue
+@@ -12,7 +12,7 @@
+         : '',
+       row.disabled ? 'pointer-events-none' : '',
+     ]"
+-    class="flex flex-col transition-all duration-300 ease-in-out"
++    class="group/row flex flex-col transition-all duration-300 ease-in-out"
+     v-bind="{
+       ...getLinkBindings(),
+       onClick: onRowClick,
+@@ -60,6 +60,7 @@
+             alignmentMap[column.align],
+             i == 0 ? 'text-ink-gray-9' : 'text-ink-gray-7',
+             'overflow-x-hidden',
++            column.cellClass,
+           ]"
+         >
+           <slot v-bind="{ idx: i, column, item: row[column.key], isActive }">
+diff --git a/node_modules/frappe-ui/src/components/ListView/ListRows.vue b/node_modules/frappe-ui/src/components/ListView/ListRows.vue
+index 767f75d..9d48e04 100644
+--- a/node_modules/frappe-ui/src/components/ListView/ListRows.vue
++++ b/node_modules/frappe-ui/src/components/ListView/ListRows.vue
+@@ -1,5 +1,5 @@
+ <template>
+-  <div class="h-full overflow-y-auto">
++  <div>
+     <slot>
+       <ListRow v-for="row in list.rows" :key="row[list.rowKey]" :row="row" />
+     </slot>
+diff --git a/node_modules/frappe-ui/src/components/ListView/ListSelectBanner.vue b/node_modules/frappe-ui/src/components/ListView/ListSelectBanner.vue
+index 02a3358..aeb196f 100644
+--- a/node_modules/frappe-ui/src/components/ListView/ListSelectBanner.vue
++++ b/node_modules/frappe-ui/src/components/ListView/ListSelectBanner.vue
+@@ -9,7 +9,7 @@
+   >
+     <div
+       v-if="list.selections.size"
+-      class="absolute inset-x-0 bottom-6 mx-auto w-max text-base"
++      class="sticky bottom-6 mx-auto w-max text-base"
+     >
+       <div
+         class="flex min-w-[596px] items-center gap-3 rounded-lg bg-surface-white px-4 py-2 shadow-2xl"
+diff --git a/node_modules/frappe-ui/src/components/ListView/ListView.vue b/node_modules/frappe-ui/src/components/ListView/ListView.vue
+index f74f4ec..ab96aa7 100644
+--- a/node_modules/frappe-ui/src/components/ListView/ListView.vue
++++ b/node_modules/frappe-ui/src/components/ListView/ListView.vue
+@@ -1,6 +1,6 @@
+ <template>
+   <div class="relative flex w-full flex-1 flex-col overflow-x-auto">
+-    <div class="flex w-max min-w-full flex-col overflow-y-hidden" :class="$attrs.class" :style="$attrs.style">
++    <div class="flex w-max min-w-full flex-col" :class="$attrs.class" :style="$attrs.style">
+       <slot v-bind="{ showGroupedRows, selectable }">
+         <ListHeader />
+         <template v-if="props.rows.length">

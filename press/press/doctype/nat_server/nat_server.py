@@ -7,6 +7,7 @@ import frappe
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
 
 
@@ -88,6 +89,7 @@ class NATServer(BaseServer):
 			config = self.get_config() | {
 				"primary_ip": self.private_ip,
 				"secondary_ip": self.secondary_private_ip,
+				"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 			}
 			ansible = Ansible(
 				playbook="nat_server.yml",

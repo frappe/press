@@ -17,9 +17,10 @@ from frappe.utils import convert_utc_to_system_timezone
 from frappe.utils.caching import site_cache
 from frappe.utils.data import cint
 
+from press.access.staff_roles import safe_for_readers
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
-from press.exceptions import SiteAlreadyArchived, SiteUnderMaintenance
+from press.exceptions import SiteAlreadyArchived, SiteBackupInProgress, SiteUnderMaintenance
 from press.press.doctype.logical_replication_backup.logical_replication_backup import (
 	get_logical_replication_backup_restoration_steps,
 )
@@ -165,6 +166,7 @@ class SiteUpdate(Document):
 		self.validate_pending_updates()
 		self.validate_past_failed_updates()
 		self.set_backup_type()
+		self.validate_ongoing_backups()
 
 	def validate_destination_bench(self, differences):
 		if not self.destination_bench:
@@ -209,6 +211,19 @@ class SiteUpdate(Document):
 	def validate_pending_updates(self):
 		if self.has_pending_updates():
 			frappe.throw("An update is already pending for this site", frappe.ValidationError)
+
+	def validate_ongoing_backups(self):
+		"""Ask the user before a migrate that would make the site's running backups fail."""
+		if not self.is_new() or self.scheduled_time or self.deploy_type != "Migrate":
+			return
+		if not self.triggered_by_user or self.flags.cancel_ongoing_backups:
+			return
+		if frappe.get_doc("Site", self.site).get_ongoing_backup_jobs():
+			frappe.throw(
+				"A backup of this site is in progress, and it will fail if the site updates now. "
+				"If you continue, all ongoing backups of this site will be cancelled.",
+				SiteBackupInProgress,
+			)
 
 	@property
 	def triggered_by_user(self):
@@ -291,6 +306,10 @@ class SiteUpdate(Document):
 		if self.skipped_backups or self.deploy_type != "Migrate":
 			return
 
+		# A standby site skips its backup at start, so it needs no snapshot.
+		if frappe.db.get_value("Site", self.site, "is_standby"):
+			return
+
 		# No provider also means no database server, as with a configured RDS server.
 		if self.database_server_provider != "AWS EC2":
 			return
@@ -362,6 +381,11 @@ class SiteUpdate(Document):
 
 	@dashboard_whitelist()
 	def start(self):
+		# Hold the row for the rest of this transaction, so a stop cannot read "no job yet" and
+		# cancel the update between the save below and the agent request at the end
+		if frappe.db.get_value("Site Update", self.name, "status", for_update=True) == "Cancelled":
+			return
+
 		previous_status = self.status
 
 		self.status = "Pending"
@@ -392,12 +416,32 @@ class SiteUpdate(Document):
 
 			return
 
+		self.skip_backups_for_standby_site()
+		self.cancel_ongoing_backups_when_asked(site)
 		if self.use_physical_backup:
 			self.deactivate_site()
 		elif self.use_logical_replication_backup:
 			self.create_logical_replication_backup_record()
 		else:
 			self.create_update_site_agent_request()
+
+	def skip_backups_for_standby_site(self):
+		"""Skip the backup of a site still in the standby pool once its move has started."""
+		# Checked at start, not insert, since a site can leave the pool in between.
+		if not self.skipped_backups and frappe.db.get_value("Site", self.site, "is_standby"):
+			self.skipped_backups = True
+			self.save()
+
+	def cancel_ongoing_backups_when_asked(self, site: Site):
+		"""Cancel the site's running backups when the user chose to update anyway."""
+		if self.flags.cancel_ongoing_backups:
+			site.cancel_ongoing_backups()
+
+	def has_started_moving_site(self) -> bool:
+		"""True once a job has been dispatched against the site, to back it up or to update it."""
+		return bool(
+			self.update_job or self.deactivate_site_job or self.site_backup or self.logical_replication_backup
+		)
 
 	def fail_with_notification(self, reason: str):
 		frappe.db.set_value("Site Update", self.name, "status", "Cancelled")
@@ -688,20 +732,17 @@ class SiteUpdate(Document):
 
 			self.bump_max_statement_time_before_recovery(site)
 
-			# Disable maintenance mode for active sites
-			activate = site.status_before_update == "Active"
 			job = agent.update_site_recover_move(
 				site,
 				self.source_bench,
 				self.deploy_type,
-				activate,
+				site.serves_requests_before_update,
 				rollback_scripts=self.get_before_migrate_scripts(rollback=True),
 				restore_touched_tables=(not self.skipped_backups and self.backup_type == "Logical"),
 			)
 		else:
 			# Site is already on the source bench
-			if site.status_before_update == "Active":
-				# Disable maintenance mode for active sites
+			if site.serves_requests_before_update:
 				job = agent.update_site_recover(site)
 			else:
 				# Site is already on source bench and maintenance mode is on
@@ -718,6 +759,7 @@ class SiteUpdate(Document):
 				frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_steps(self):  # noqa: C901
 		"""
 		{
@@ -901,22 +943,25 @@ def update_status(name: str, status: str):
 @site_cache(ttl=60)
 def benches_with_available_update(site=None, server=None):
 	site_bench = frappe.db.get_value("Site", site, "bench") if site else None
-	values = {}
-	if site:
-		values["site_bench"] = site_bench
-	if server:
-		values["server"] = server
-	source_benches_info = frappe.db.sql(
-		f"""
-		SELECT sb.name AS source_bench, sb.candidate AS source_candidate, sb.server AS server, dcd.destination AS destination_candidate
-		FROM `tabBench` sb, `tabDeploy Candidate Difference` dcd
-		WHERE sb.status IN ('Active', 'Broken') AND sb.candidate = dcd.source
-		{"AND sb.name = %(site_bench)s" if site else ""}
-		{"AND sb.server = %(server)s" if server else ""}
-		""",
-		values=values,
-		as_dict=True,
+	Bench = frappe.qb.DocType("Bench")
+	DeployCandidateDifference = frappe.qb.DocType("Deploy Candidate Difference")
+	query = (
+		frappe.qb.from_(Bench)
+		.join(DeployCandidateDifference)
+		.on(Bench.candidate == DeployCandidateDifference.source)
+		.select(
+			Bench.name.as_("source_bench"),
+			Bench.candidate.as_("source_candidate"),
+			Bench.server.as_("server"),
+			DeployCandidateDifference.destination.as_("destination_candidate"),
+		)
+		.where(Bench.status.isin(["Active", "Broken"]))
 	)
+	if site:
+		query = query.where(Bench.name == site_bench)
+	if server:
+		query = query.where(Bench.server == server)
+	source_benches_info = query.run(as_dict=True)
 
 	destination_candidates = list(set(d["destination_candidate"] for d in source_benches_info))
 
@@ -968,9 +1013,24 @@ def schedule_updates():
 
 
 def schedule_updates_server(server):
-	# Prevent flooding the queue
 	queue_size = frappe.db.get_single_value("Press Settings", "auto_update_queue_size")
-	pending_update_count = frappe.db.count(
+	if count_pending_updates(server) > queue_size:
+		return
+
+	sites = sites_with_available_update(server)
+	# One budget per server, as large as before: queue_size + 1 new updates a run.
+	# Standby sites spend it first, customer sites get what is left.
+	limit = queue_size + 1
+	standby_sites = [site for site in sites if site.is_standby]
+	limit -= schedule_site_updates(standby_sites, limit, one_per_bench=False)
+
+	customer_sites = [site for site in sites if not site.is_standby and is_site_in_deploy_hours(site)]
+	schedule_site_updates(customer_sites, limit, one_per_bench=True)
+
+
+def count_pending_updates(server: str) -> int:
+	"""Count the updates on a server that are still waiting or running."""
+	return frappe.db.count(
 		"Site Update",
 		{
 			"status": ("in", ("Pending", "Running")),
@@ -978,12 +1038,10 @@ def schedule_updates_server(server):
 			"creation": (">", frappe.utils.add_to_date(None, hours=-4)),
 		},
 	)
-	if pending_update_count > queue_size:
-		return
 
-	sites = sites_with_available_update(server)
-	sites = list(filter(is_site_in_deploy_hours, sites))
 
+def schedule_site_updates(sites: list, limit: int, one_per_bench: bool) -> int:
+	"""Schedule updates for up to `limit` of the sites and return how many were scheduled."""
 	# If a site can't be updated for some reason, then we shouldn't get stuck
 	# Shuffle sites list, to achieve this
 	random.shuffle(sites)
@@ -991,9 +1049,9 @@ def schedule_updates_server(server):
 	benches = {}
 	update_triggered_count = 0
 	for site in sites:
-		if site.bench in benches:
+		if one_per_bench and site.bench in benches:
 			continue
-		if update_triggered_count > queue_size:
+		if update_triggered_count >= limit:
 			break
 		if not should_try_update(site) or frappe.db.exists(
 			"Site Update",
@@ -1015,6 +1073,8 @@ def schedule_updates_server(server):
 		except Exception:
 			log_error("Site Update Exception", site=site)
 			frappe.db.rollback()
+
+	return update_triggered_count
 
 
 def should_try_update(site: Site):
@@ -1325,6 +1385,7 @@ def run_scheduled_updates():
 def on_doctype_update():
 	frappe.db.add_index("Site Update", ["site", "source_candidate", "destination_candidate"])
 	frappe.db.add_index("Site Update", ["server", "status"])
+	frappe.db.add_index("Site Update", ["destination_candidate", "status"])
 
 
 def process_callback_from_logical_replication_backup(backup: "LogicalReplicationBackup"):  # noqa: C901

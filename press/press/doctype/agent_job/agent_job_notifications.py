@@ -36,6 +36,12 @@ MatchStrings = str | list[str]
 # Bench app directory in a traceback frame, app names are python module names
 APP_FRAME = re.compile(r"/apps/([a-z_][a-z0-9_]*)/")
 
+# `cp -LR sites/.` follows the sites/assets/<app> symlink into the app's public folder
+NODE_MODULES_SYMLINK = re.compile(r"cannot stat 'sites/\./assets/([a-z_][a-z0-9_]*)/node_modules'")
+
+# Path in the error that Frappe raises when it tries to delete a folder as an old backup file
+BACKUP_FOLDER_PATH = re.compile(r"IsADirectoryError: .*?'([^']*/private/backups/[^']+)'")
+
 if typing.TYPE_CHECKING:
 	# TYPE_CHECKING guard for code below cause DeployCandidate
 	# might cause circular import.
@@ -69,6 +75,8 @@ class JobErr(Enum):
 	APP_UPDATE = auto()
 	APP_DEBUG = auto()
 	PKG_RESOURCES = auto()
+	DISK_FULL = auto()
+	NODE_MODULES_SYMLINK = auto()
 
 
 DOC_URLS = {
@@ -84,6 +92,8 @@ DOC_URLS = {
 	JobErr.APP_UPDATE: "https://docs.frappe.io/cloud/benches/updating_a_bench",
 	JobErr.APP_DEBUG: "https://frappecloud.com/docs/benches/debugging",
 	JobErr.PKG_RESOURCES: "https://docs.frappe.io/cloud/private-benches/common-issues/pkg-resources-error-when-updating-site",
+	JobErr.DISK_FULL: "https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#server-analytics",
+	JobErr.NODE_MODULES_SYMLINK: None,
 }
 
 
@@ -111,6 +121,8 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("returned non-zero exit status 137", update_with_oom_err),
 		("returned non-zero exit status 143", update_with_oom_err),
 		("b'Terminated\\n'", update_with_oom_err),
+		# Before the tar/gzip handlers: a full disk also truncates extracted backups
+		("No space left on device", update_with_disk_full_err),
 		("Row size too large", update_with_row_size_too_large_err),
 		("Data truncated for column", update_with_data_truncated_for_column_err),
 		("BrokenPipeError", update_with_broken_pipe_err),
@@ -122,6 +134,8 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("Unknown command '\\-'.", update_with_unknown_command_hyphen_err),
 		('redis_host, redis_port = redis_url.split(":")', update_with_redis_unpack_error),
 		("Site might have lot of jobs in queue.", update_with_rq_jobs_in_queue_err),
+		("/node_modules': No such file or directory", update_with_node_modules_symlink_err),
+		(["IsADirectoryError", "/private/backups/"], update_with_folder_in_backups_err),
 		# Keep last: matches any traceback, only actionable if the failing app is identifiable
 		("/apps/", update_with_app_failure_err),
 	]
@@ -243,6 +257,33 @@ def update_with_oom_err(
 	if not frappe.db.get_value(job.server_type, job.server, "public"):
 		return True
 	return False
+
+
+def update_with_disk_full_err(details: Details, job: AgentJob):
+	# Only dedicated servers, users can't add storage to a public server
+	if job.on_public_server:
+		return False
+
+	details["title"] = "Server disk full"
+
+	details["message"] = (
+		f"<p>The server ran out of disk space while the {job.job_type} job was running.</p>"
+		f'<p>Check the <i>Disk Space</i> chart in the <a class="underline" href="{get_disk_chart_url(job)}">server analytics</a>.'
+		" Free up space or increase the storage of the server, then retry the job.</p>"
+	)
+
+	details["assistance_url"] = DOC_URLS[JobErr.DISK_FULL]
+
+	return True
+
+
+def get_disk_chart_url(job: AgentJob) -> str:
+	"""Database server charts are a tab of the app server's analytics page"""
+	if job.server_type != "Database Server":
+		return f"/dashboard/servers/{job.server}/analytics"
+
+	app_server = frappe.db.get_value("Server", {"database_server": job.server}, "name")
+	return f"/dashboard/servers/{app_server}/analytics?server={job.server}"
 
 
 def update_with_row_size_too_large_err(details: Details, job: AgentJob):
@@ -380,7 +421,61 @@ def update_with_rq_jobs_in_queue_err(details: Details, job: AgentJob):
 	return True
 
 
-def has_newer_release(bench: str, app: str) -> bool:
+def update_with_node_modules_symlink_err(details: Details, job: AgentJob):
+	"""`bench build` symlinks <app>/public/node_modules to the app's node_modules.
+	If the app commits that symlink, it points to a path that does not exist on
+	the server and copying the sites folder out of the image fails."""
+	if job.job_type != "New Bench":
+		return False
+
+	match = NODE_MODULES_SYMLINK.search(f"{job.traceback or ''}\n{job.output or ''}")
+	if not match:
+		return False
+
+	app = match.group(1)
+	details["title"] = f"New Bench failed because of the {app} app"
+
+	details["message"] = (
+		f"<p>The <b>New Bench</b> job failed in the <b>Initialize Bench</b> step, because of an issue in the <b>{app}</b> app."
+		" Your sites continue to run on the old bench.</p>"
+		f"<p><b>Cause:</b> the {app} repository contains the symlink <code>{app}/public/node_modules</code>."
+		" The command <code>bench build</code> makes this symlink on a developer's computer, and it was committed by mistake."
+		" It points to a folder that does not exist on the server, so the bench can't be set up.</p>"
+		"<p><b>Fix:</b> remove the symlink from the app repository, then push the commit:</p>"
+		'<pre class="rounded-sm bg-surface-gray-2 p-3 text-xs">'
+		f"git rm --cached {app}/public/node_modules\n"
+		f"echo '{app}/public/node_modules' >> .gitignore\n"
+		"git commit -am 'chore: Remove node_modules symlink'</pre>"
+		"<p>Then deploy the bench group again with the new release of the app."
+		" If you don't own the app, ask its maintainer to make this change.</p>"
+	)
+
+	details["assistance_url"] = DOC_URLS[JobErr.NODE_MODULES_SYMLINK]
+
+	return True
+
+
+def update_with_folder_in_backups_err(details: Details, job: AgentJob):
+	"""Frappe deletes old files in private/backups before a backup, and fails on a folder"""
+	details["title"] = "Backup failed because of a folder in the backups folder"
+
+	details["message"] = (
+		f"<p>The backup of site <b>{job.site}</b> failed because of the folder <code>{get_backup_folder_path(job)}</code>.</p>"
+		"<p>Before each backup, Frappe deletes old files in the <code>private/backups</code> folder of the site."
+		" It cannot delete a folder, so the backup stops.</p>"
+		"<p>Delete all folders in <code>private/backups</code>, or move them to a different location. Then take the backup again."
+		" If an app or a script makes these folders, change it to use a different location.</p>"
+	)
+
+	return True
+
+
+def get_backup_folder_path(job: AgentJob) -> str:
+	match = BACKUP_FOLDER_PATH.search(f"{job.traceback or ''}\n{job.output or ''}")
+	return match.group(1) if match else "private/backups"
+
+
+def has_newer_release(bench: str | None, app: str) -> bool:
 	"""False only if we know the bench is on the newest release of the app"""
 	deployed = frappe.db.get_value(
 		"Bench App", {"parent": bench, "app": app}, ["source", "release"], as_dict=True
@@ -458,13 +553,20 @@ def update_with_check_for_update_message(details: Details, job: AgentJob, app: s
 
 
 def get_failing_app_and_source(job: AgentJob) -> tuple[str, str] | None:
-	"""Innermost app in the traceback that is installed on the bench, with its app source"""
+	"""Innermost app in the traceback that is installed on the bench, with its app source
+
+	Frappe is never the failing app. Every error passes through framework frames
+	(patch handler, database layer). So the innermost frame is frappe even when
+	another app raised the error. Frappe always has a newer release, so the banner
+	showed on every failed update."""
 	text = f"{job.traceback or ''}\n{job.output or ''}"
 	group = frappe.db.get_value("Bench", job.bench, "group")
 	if not group:
 		return None
 
 	for app in reversed(APP_FRAME.findall(text)):
+		if app == "frappe":
+			continue
 		source = frappe.db.get_value("Release Group App", {"parent": group, "app": app}, "source")
 		if source:
 			return app, source
@@ -499,6 +601,10 @@ def get_default_message(job: AgentJob) -> str:
 	return f"<b>{job.job_type}</b> job failed on server <b>{job.server}</b>."
 
 
+# Customers cannot act on these failures. Each job type alerts the Frappe Cloud team instead
+JOBS_WITHOUT_FAILURE_NOTIFICATION = ("Purge Binlogs By Size Limit",)
+
+
 def send_job_failure_notification(job: AgentJob):
 	from press.press.doctype.site_migration.site_migration import (
 		get_ongoing_migration,
@@ -513,11 +619,13 @@ def send_job_failure_notification(job: AgentJob):
 	notification_type = get_notification_type(job)
 	team = None
 
-	if job.reference_doctype == "Site Database User":
+	if job.reference_doctype == "Site Database User" or job.job_type in JOBS_WITHOUT_FAILURE_NOTIFICATION:
 		return
 
 	if job.site:
 		team = frappe.get_value("Site", job.site, "team")
+	elif job.job_type == "New Bench" and job.bench:
+		team = get_new_bench_team(job)
 	else:
 		if job.server_type not in ["Server", "Database Server"]:
 			return
@@ -532,6 +640,18 @@ def send_job_failure_notification(job: AgentJob):
 		return
 
 	create_job_failed_notification(job, team, notification_type)
+
+
+def get_new_bench_team(job: AgentJob) -> str | None:
+	"""The bench group owner fixes a broken app, even on a public server.
+
+	Public servers only notify on actionable errors, the rest are ours to fix."""
+	if (
+		frappe.db.get_value(job.server_type, job.server, "public")
+		and not get_details(job, "", "")["is_actionable"]
+	):
+		return None
+	return frappe.db.get_value("Bench", job.bench, "team")
 
 
 def get_notification_type(job: AgentJob) -> str:

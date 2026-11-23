@@ -3,11 +3,13 @@
 
 frappe.ui.form.on('Release Group', {
 	refresh: function (frm) {
-		frm.add_web_link(
-			`/dashboard/groups/${frm.doc.name}`,
-			__('Visit Dashboard'),
-		);
-		[
+		frm.add_web_link(`/dashboard/groups/${frm.doc.name}`, __('Visit Dashboard'))
+		frm.add_custom_button(
+			__('Transfer to Team'),
+			() => press.new_team_change(frm.doc.team, 'Specific Resources', frm.doc),
+			__('Actions'),
+		)
+		;[
 			[__('Create Deploy Candidate'), 'create_deploy_candidate'],
 			[
 				__('Create Duplicate Deploy Candidate'),
@@ -25,13 +27,13 @@ frappe.ui.form.on('Release Group', {
 							message: __(`New {0} for this bench was created successfully.`, [
 								`<a href="/app/deploy-candidate/${message.name}">Deploy Candidate</a>`,
 							]),
-						});
-						frm.refresh();
-					});
+						})
+						frm.refresh()
+					})
 				},
 				__('Actions'),
-			);
-		});
+			)
+		})
 
 		frm.add_custom_button(
 			'Change Server',
@@ -50,16 +52,16 @@ frappe.ui.form.on('Release Group', {
 					primary_action({ server }) {
 						frm.call('change_server', { server }).then((r) => {
 							if (!r.exc) {
-								frappe.show_alert(`Server changed to ${server}`);
+								frappe.show_alert(`Server changed to ${server}`)
 							}
-							d.hide();
-						});
+							d.hide()
+						})
 					},
-				});
-				d.show();
+				})
+				d.show()
 			},
 			__('Actions'),
-		);
+		)
 
 		frm.add_custom_button(
 			'Add Server',
@@ -92,16 +94,16 @@ frappe.ui.form.on('Release Group', {
 								if (!r.exc) {
 									frappe.show_alert(
 										`Added ${server} and deployed last successful candidate`,
-									);
+									)
 								}
-								d.hide();
-							});
+								d.hide()
+							})
 					},
-				});
-				d.show();
+				})
+				d.show()
 			},
 			__('Actions'),
-		);
+		)
 		frm.add_custom_button(
 			'Redeploy on Missing Servers',
 			() => {
@@ -110,14 +112,14 @@ frappe.ui.form.on('Release Group', {
 					() => {
 						frm.call('redeploy_on_missing_servers').then((r) => {
 							if (!r.exc) {
-								frappe.show_alert(`Redeploy triggered on missing servers`);
+								frappe.show_alert(`Redeploy triggered on missing servers`)
 							}
-						});
+						})
 					},
-				);
+				)
 			},
 			__('Actions'),
-		);
+		)
 
 		frm.add_custom_button(
 			'Clone Group',
@@ -132,14 +134,14 @@ frappe.ui.form.on('Release Group', {
 						},
 					],
 					({ group_title }) => {
-						frm.call('clone_group', { title: group_title });
+						frm.call('clone_group', { title: group_title })
 					},
 					'Clone Group',
-				);
+				)
 			},
 			__('Actions'),
-		);
+		)
 
-		frm.set_df_property('dependencies', 'cannot_add_rows', 1);
+		frm.set_df_property('dependencies', 'cannot_add_rows', 1)
 	},
-});
+})

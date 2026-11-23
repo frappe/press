@@ -93,6 +93,7 @@ function getRoutes() {
 		{
 			name: 'Bench Job',
 			path: 'jobs/:id',
+			meta: { title: 'Job' },
 			component: () => import('../pages/JobPage.vue'),
 		},
 		{

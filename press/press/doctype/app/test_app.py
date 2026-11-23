@@ -147,7 +147,7 @@ class TestApp(FrappeTestCase):
 
 		accepted_custom_version_strings = [
 			(">=16.0.0,<17.0.0", {"Version 16", "Nightly"}),
-			(">=15.0.0,<16.0.0", {"Version 15", "Nightly"}),  # Nightly's version number is 15 for some reason
+			(">=15.0.0,<16.0.0", {"Version 15"}),
 			(">=14.0.0,<15.0.0", {"Version 14"}),
 			(">=13.0.0,<14.0.0", {"Version 13"}),
 		]
@@ -197,12 +197,9 @@ class TestApp(FrappeTestCase):
 			(">=16.0.0,<17.0.0", {"Version 16", "Nightly"}),
 			# Support stuff like alpha and dev
 			(">=17.0.0-dev,<18.0.0", {"Nightly"}),
-			(
-				">=15.75.0-alpha,<16.0.0",
-				{"Version 15", "Nightly"},
-			),  # Nightly's version number is 15 for some reason
-			(">=15.75.0,<16.0.0", {"Version 15", "Nightly"}),
-			(">=15.55.0,<15.75.0", {"Version 15", "Nightly"}),
+			(">=15.75.0-alpha,<16.0.0", {"Version 15"}),
+			(">=15.75.0,<16.0.0", {"Version 15"}),
+			(">=15.55.0,<15.75.0", {"Version 15"}),
 			(">=13.50.0,<14.0.0", {"Version 13"}),
 		]
 

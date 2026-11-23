@@ -272,7 +272,8 @@
 		{
 			"fieldname": "webhook_token",
 			"fieldtype": "Data",
-			"label": "Webhook Token"
+			"label": "Webhook Token",
+			"permlevel": 1
 		},
 		{
 			"default": "0",
@@ -301,7 +302,7 @@
 			"link_fieldname": "server"
 		}
 	],
-	"modified": "2026-09-17 14:45:12.000000",
+	"modified": "2026-11-18 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Monitor Server",
@@ -317,6 +318,37 @@
 			"report": 1,
 			"role": "System Manager",
 			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Infrastructure Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Infrastructure Reader"
+		},
+		{
+			"permlevel": 1,
+			"read": 1,
+			"role": "System Manager",
+			"write": 1
+		},
+		{
+			"permlevel": 1,
+			"read": 1,
+			"role": "Press Infrastructure Manager",
 			"write": 1
 		}
 	],

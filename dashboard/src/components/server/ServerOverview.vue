@@ -8,7 +8,7 @@
 			v-if="$appServer?.doc?.is_server_disk_full"
 			class="mb-5"
 			type="error"
-			title="This server is out of disk space. Sites on it may stop responding until space is freed up."
+			title="This server is out of disk space. Until space is freed up, sites on it may stop responding and backups may fail, leaving your data unprotected."
 		>
 			<Button
 				class="ml-auto min-w-[7rem]"

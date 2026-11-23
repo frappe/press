@@ -25,6 +25,7 @@ from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
 	Status as DeployCandidateBuildStatus,
 )
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import fail_remote_job
+from press.utils.user import as_administrator
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 
@@ -231,13 +232,9 @@ class ReleasePipeline(WorkflowBuilder):
 		self._cancel_running_builds()
 
 	def _cancel_running_builds(self):
-		current_user = frappe.session.user
-		frappe.set_user("Administrator")
-		try:
+		with as_administrator():
 			for pipeline_build in self.pipeline_builds:
 				self._cancel_build_if_running(pipeline_build.build)
-		finally:
-			frappe.set_user(current_user)
 
 	def _cancel_build_if_running(self, build: str):
 		status = frappe.db.get_value("Deploy Candidate Build", build, "status")
@@ -580,9 +577,12 @@ class ReleasePipeline(WorkflowBuilder):
 			parsed_supported_frappe_version = parse_frappe_version(
 				version_string=supported_frappe_version,
 				app_title="frappe",
-				ease_versioning_constrains=False,
+				ease_versioning_constrains=True,
 			)
 		except frappe.ValidationError:
+			return []
+
+		if not parsed_supported_frappe_version:
 			return []
 
 		# Dependencies go right before the app that needs them, so they are built first

@@ -20,6 +20,7 @@ from press.api.bench import (
 	get,
 	get_branches_for_marketplace_app,
 	new,
+	search_releases,
 	update_config,
 	update_dependencies,
 )
@@ -218,6 +219,60 @@ class TestAPIBench(FrappeTestCase):
 		branches = get_branches_for_marketplace_app(app.name, marketplace_app.name, live_source)
 
 		self.assertEqual(branches, [{"name": "master"}])
+
+	def test_search_releases_selects_fixed_columns_when_caller_passes_fields(self):
+		release = create_test_app_release(self.app_source)
+		frappe.db.set_value("App Release", release.name, "public", 1)
+		injected_field = "hash` FROM `tabUser` WHERE SLEEP(5)-- -"
+
+		releases = frappe.call(
+			search_releases,
+			app=self.app.name,
+			source=self.app_source.name,
+			query=release.hash[:7],
+			fields=["name", injected_field],
+		)
+
+		self.assertEqual(
+			releases,
+			[
+				{
+					"name": release.name,
+					"message": release.message,
+					"timestamp": release.timestamp,
+					"hash": release.hash,
+				}
+			],
+		)
+
+	def test_search_releases_casts_non_numeric_limit_to_zero(self):
+		release = create_test_app_release(self.app_source)
+		frappe.db.set_value("App Release", release.name, "public", 1)
+
+		releases = frappe.call(
+			search_releases,
+			app=self.app.name,
+			source=self.app_source.name,
+			query=release.hash[:7],
+			limit="ten",
+		)
+
+		self.assertEqual(releases, [])
+		self.assertTrue(frappe.db.last_query.endswith("LIMIT 0"))
+
+	def test_search_releases_accepts_numeric_string_limit(self):
+		release = create_test_app_release(self.app_source)
+		frappe.db.set_value("App Release", release.name, "public", 1)
+
+		releases = frappe.call(
+			search_releases,
+			app=self.app.name,
+			source=self.app_source.name,
+			query=release.hash[:7],
+			limit="1",
+		)
+
+		self.assertEqual([r.name for r in releases], [release.name])
 
 
 class TestAPIBenchConfig(FrappeTestCase):

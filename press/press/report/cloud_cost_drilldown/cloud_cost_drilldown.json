@@ -10,7 +10,7 @@
 	"is_standard": "Yes",
 	"json": "",
 	"letterhead": null,
-	"modified": "2026-08-18 10:00:00.000000",
+	"modified": "2026-11-06 12:30:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Cloud Cost Drilldown",
@@ -19,5 +19,5 @@
 	"ref_doctype": "Cloud Cost Daily",
 	"report_name": "Cloud Cost Drilldown",
 	"report_type": "Script Report",
-	"roles": [{ "role": "System Manager" }]
+	"roles": [{ "role": "System Manager" }, { "role": "Press Infrastructure Manager" }]
 }
