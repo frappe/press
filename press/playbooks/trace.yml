@@ -6,6 +6,7 @@
   gather_facts: yes
   roles:
     - role: essentials
+    - role: block_sctp
     - role: user
     - role: nginx
     - role: agent
@@ -13,3 +14,4 @@
     - role: filebeat
     - role: docker
     - role: sentry
+    - role: fail2ban

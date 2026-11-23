@@ -2,7 +2,11 @@ import functools
 from typing import TYPE_CHECKING
 
 import frappe
+import frappe.utils
 import rq
+from frappe.query_builder import Order
+from frappe.query_builder.functions import Abs, Cast
+from pypika.analytics import RowNumber
 
 from press.api.analytics import get_current_cpu_usage_for_sites_on_server
 from press.press.doctype.site_plan.site_plan import get_plan_config
@@ -74,60 +78,59 @@ def update_cpu_usage_server(server):
 			frappe.db.rollback()
 
 
+def get_changed_disk_usages():
+	"""Latest Site Usage of each site in the past 12 hours, where it moved more than 1% of the plan"""
+	SiteUsage = frappe.qb.DocType("Site Usage")
+	Subscription = frappe.qb.DocType("Subscription")
+	SiteTable = frappe.qb.DocType("Site")
+	SitePlan = frappe.qb.DocType("Site Plan")
+
+	usage = (
+		frappe.qb.from_(SiteUsage)
+		.select(
+			SiteUsage.site,
+			SiteUsage.database,
+			(SiteUsage.public + SiteUsage.private).as_("disk"),
+			RowNumber().over(SiteUsage.site).orderby(SiteUsage.creation, order=Order.desc).as_("rank"),
+		)
+		.where(SiteUsage.creation > frappe.utils.add_to_date(frappe.utils.now(), hours=-12))
+	).as_("usage")
+
+	joined = (
+		frappe.qb.from_(usage)
+		.join(Subscription)
+		.on(usage.site == Subscription.document_name)
+		.left_join(SiteTable)
+		.on(usage.site == SiteTable.name)
+		.left_join(SitePlan)
+		.on(Subscription.plan == SitePlan.name)
+		.select(
+			usage.site,
+			SiteTable.current_database_usage,
+			SiteTable.current_disk_usage,
+			Cast(usage.database / SitePlan.max_database_usage * 100, "INTEGER").as_("latest_database_usage"),
+			Cast(usage.disk / SitePlan.max_storage_usage * 100, "INTEGER").as_("latest_disk_usage"),
+		)
+		.where(usage.rank == 1)
+		.where(Subscription.document_type == "Site")
+		.where(SiteTable.status != "Archived")
+	).as_("joined")
+
+	return (
+		frappe.qb.from_(joined)
+		.select(joined.site, joined.latest_database_usage, joined.latest_disk_usage)
+		.where(
+			(Abs(joined.latest_database_usage - joined.current_database_usage) > 1)
+			| (Abs(joined.latest_disk_usage - joined.current_disk_usage) > 1)
+		)
+		.run(as_dict=True)
+	)
+
+
 def update_disk_usages():
 	"""Update Storage and Database Usages fields Site.current_database_usage and Site.current_disk_usage for sites that have Site Usage documents"""
 
-	latest_disk_usages = frappe.db.sql(
-		"""WITH disk_usage AS (
-			SELECT
-				`site`,
-				`database`,
-				`public` + `private` as disk,
-				ROW_NUMBER() OVER (PARTITION BY `site` ORDER BY `creation` DESC) AS 'rank'
-			FROM
-				`tabSite Usage`
-			WHERE
-				`creation` > %s
-		),
-		joined AS (
-			SELECT
-				u.site,
-				site.current_database_usage,
-				site.current_disk_usage,
-				CAST(u.database / plan.max_database_usage * 100 AS INTEGER) AS latest_database_usage,
-				CAST(u.disk / plan.max_storage_usage * 100 AS INTEGER) AS latest_disk_usage
-			FROM
-				disk_usage u
-			INNER JOIN
-				`tabSubscription` s
-			ON
-				u.site = s.document_name
-			LEFT JOIN
-				`tabSite` site
-			ON
-				u.site = site.name
-			LEFT JOIN
-				`tabSite Plan` plan
-			ON
-				s.plan = plan.name
-			WHERE
-				`rank` = 1 AND
-				s.`document_type` = 'Site' AND
-				site.`status` != "Archived"
-		)
-		SELECT
-			j.site,
-			j.latest_database_usage,
-			j.latest_disk_usage
-		FROM
-			joined j
-		WHERE
-			ABS(j.latest_database_usage - j.current_database_usage ) > 1 OR
-			ABS(j.latest_disk_usage - j.current_disk_usage) > 1
-	""",
-		values=(frappe.utils.add_to_date(frappe.utils.now(), hours=-12),),
-		as_dict=True,
-	)
+	latest_disk_usages = get_changed_disk_usages()
 
 	for usage in latest_disk_usages:
 		try:

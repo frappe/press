@@ -331,23 +331,18 @@ class AppRelease(Document):
 		self.save(ignore_permissions=True)
 
 	def create_release_differences(self):
-		releases = frappe.db.sql(
-			"""
-			SELECT
-				DISTINCT(app.release)
-			FROM
-				`tabBench` bench
-			LEFT JOIN
-				`tabBench App` app
-			ON
-				bench.name = app.parent
-			WHERE
-				bench.status != "Archived" AND
-				app.source = %s AND
-				app.release != %s
-		""",
-			(self.source, self.name),
-			as_dict=True,
+		Bench = frappe.qb.DocType("Bench")
+		BenchApp = frappe.qb.DocType("Bench App")
+		releases = (
+			frappe.qb.from_(Bench)
+			.left_join(BenchApp)
+			.on(Bench.name == BenchApp.parent)
+			.select(BenchApp.release)
+			.distinct()
+			.where(Bench.status != "Archived")
+			.where(BenchApp.source == self.source)
+			.where(BenchApp.release != self.name)
+			.run(as_dict=True)
 		)
 		for release in releases:
 			difference = frappe.get_doc(

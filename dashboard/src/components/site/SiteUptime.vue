@@ -40,12 +40,11 @@
 						</Tooltip>
 					</div>
 				</div>
-				<div
-					class="flex items-center justify-center w-full h-1/3 max-h-24 gap-1"
-				>
+				<div class="flex items-center justify-center w-full h-10 gap-2">
 					<Button
 						v-if="chunkedData.length > 1"
 						@click="scrollPrev"
+						label="Previous uptime chunk"
 						:disabled="currentChunkIndex === 0"
 						class="rounded-full h-8 w-8"
 					>
@@ -61,8 +60,7 @@
 						<div
 							v-for="(group, index) in chunkedData"
 							:key="index"
-							:ref="getUptimeChunkId(index)"
-							class="flex w-full flex-shrink-0 snap-start justify-center"
+							class="flex w-full flex-shrink-0 snap-start justify-center gap-0.5"
 							:class="chunkedData.length > 1 && 'px-2'"
 						>
 							<div
@@ -70,10 +68,10 @@
 								:key="d.date"
 								@mouseenter="inspectBar(d)"
 								@mouseleave="clearInspect()"
-								class="rounded-full flex-shrink-0 h-full max-w-4"
+								class="h-full min-w-0 max-w-4 transition-opacity duration-150"
 								:style="`width: ${barWidth};`"
 								:class="[
-									'hover:brightness-[110%] border-r border-white',
+									hoveringOn.key && hoveringOn.key !== d.date && 'opacity-40',
 									Date.parse(d.date) < Date.parse(siteCreation || new Date(0))
 										? 'bg-surface-gray-4'
 										: d.value === 1
@@ -101,6 +99,7 @@
 					<Button
 						v-if="chunkedData.length > 1"
 						@click="scrollNext"
+						label="Next uptime chunk"
 						:disabled="currentChunkIndex === chunkedData.length - 1"
 						class="rounded-full h-8 w-8"
 					>
@@ -108,18 +107,18 @@
 					</Button>
 				</div>
 				<div
-					class="flex justify-between w-full text-[11px] text-ink-gray-7 font-normal mt-1"
+					class="flex justify-between w-full text-[11px] text-ink-gray-5 font-normal mt-1.5"
 				>
 					<div
-						class="flex-shrink transition-all duration-300 bg-surface-gray-3"
-						:class="highlightDates ? 'bg-opacity-100' : 'bg-opacity-0'"
+						class="flex-shrink rounded px-1 -mx-1 transition-colors duration-300"
+						:class="highlightDates && 'bg-surface-gray-3'"
 					>
 						{{ firstDateTime }}
 					</div>
 
 					<div
-						class="w-fit flex-shrink transition-all duration-300 bg-surface-gray-3"
-						:class="highlightDates ? 'bg-opacity-100' : 'bg-opacity-0'"
+						class="w-fit flex-shrink rounded px-1 -mx-1 transition-colors duration-300"
+						:class="highlightDates && 'bg-surface-gray-3'"
 					>
 						{{ lastDateTime }}
 					</div>
@@ -130,11 +129,10 @@
 </template>
 
 <script>
-import dayjs from '../../utils/dayjs';
-import { icon } from '../../utils/components';
-import { Tooltip, getCachedDocumentResource } from 'frappe-ui';
-import { uuid4 } from '@sentry/core';
-import NoDataMsg from '@/components/common/NoDataMsg.vue';
+import { getCachedDocumentResource, Tooltip } from 'frappe-ui'
+import NoDataMsg from '@/components/common/NoDataMsg.vue'
+import { icon } from '../../utils/components'
+import dayjs from '../../utils/dayjs'
 
 export default {
 	name: 'SiteUptime',
@@ -147,9 +145,8 @@ export default {
 	emits: ['datazoom'],
 	data() {
 		return {
-			carouselId: uuid4(),
 			chunkSize: null,
-			maxChunkSize: 60,
+			maxChunkSize: window.innerWidth < 640 ? 14 : 60,
 			currentChunkIndex: 0,
 			hoveringOn: {
 				key: null, // (== date)
@@ -163,20 +160,24 @@ export default {
 			highlightDates: false,
 			firstRender: true,
 			siteCreation: null,
-		};
+		}
 	},
 	created() {
-		const site = getCachedDocumentResource('Site', this.site);
-		this.siteCreation = site?.doc?.creation;
+		const site = getCachedDocumentResource('Site', this.site)
+		this.siteCreation = site?.doc?.creation
+	},
+	mounted() {
+		window.addEventListener('resize', this.updateMaxChunkSize)
 	},
 	beforeUnmount() {
-		const el = this.$refs.scrollContainer;
-		el?.removeEventListener('scroll', this.handleScroll);
+		window.removeEventListener('resize', this.updateMaxChunkSize)
+		const el = this.$refs.scrollContainer
+		el?.removeEventListener('scroll', this.handleScroll)
 	},
 	computed: {
 		subtitle() {
-			let total = 0;
-			let i = 0;
+			let total = 0
+			let i = 0
 			for (; i < this.filteredData.length; i++) {
 				// there could be empty objects at the end of the array
 				// so we don't have to count them
@@ -184,13 +185,13 @@ export default {
 					typeof this.filteredData[i].value !== 'number' ||
 					this.filteredData[i].value === -1
 				)
-					continue;
+					continue
 
-				total += this.filteredData[i].value;
+				total += this.filteredData[i].value
 			}
-			const average = ((total / i) * 100).toFixed(2);
+			const average = ((total / i) * 100).toFixed(2)
 
-			return !isNaN(average) ? `${average}% Overall Uptime` : '';
+			return !isNaN(average) ? `${average}% Overall Uptime` : ''
 		},
 		interval() {
 			if (
@@ -198,65 +199,65 @@ export default {
 				typeof this.timegrain != 'number' ||
 				this.filteredData.length < 2
 			)
-				return '';
+				return ''
 
-			return dayjs.duration(this.timegrain * 1000).humanize();
+			return dayjs.duration(this.timegrain * 1000).humanize()
 		},
 		filteredData() {
-			if (!this.data?.length) return [];
-			const filtered = this.data.filter((obj) => typeof obj.value == 'number');
-			this.chunkSize = this.getOptimalChunkSizeFromDataLength(filtered.length);
-			return filtered;
+			if (!this.data?.length) return []
+			const filtered = this.data.filter((obj) => typeof obj.value == 'number')
+			this.chunkSize = this.getOptimalChunkSizeFromDataLength(filtered.length)
+			return filtered
 		},
 		chunkedData() {
-			const size = this.chunkSize;
-			const chunks = [];
+			const size = this.chunkSize
+			const chunks = []
 
 			for (let i = 0; i < this.filteredData.length; i += size) {
-				chunks.push(this.filteredData.slice(i, i + size));
+				chunks.push(this.filteredData.slice(i, i + size))
 			}
 
-			return chunks;
+			return chunks
 		},
 		firstDateTime() {
 			return this.formatDate(
 				this.chunkedData.at(this.currentChunkIndex).at(0)?.date,
-			);
+			)
 		},
 		firstOverallDateTime() {
-			return this.formatDate(this.filteredData.at(0)?.date);
+			return this.formatDate(this.filteredData.at(0)?.date)
 		},
 		lastDateTime() {
 			return this.formatDate(
 				this.chunkedData.at(this.currentChunkIndex).at(-1)?.date,
-			);
+			)
 		},
 		lastOverallDateTime() {
-			return this.formatDate(this.filteredData.at(-1)?.date);
+			return this.formatDate(this.filteredData.at(-1)?.date)
 		},
 		barWidth() {
-			if (!this.filteredData?.length) return '0%';
-			const percentageWidth = 100 / this.filteredData.length;
-			return Math.max(percentageWidth, (100 / this.chunkSize).toFixed(2)) + '%';
+			if (!this.filteredData?.length) return '0%'
+			const percentageWidth = 100 / this.filteredData.length
+			return Math.max(percentageWidth, (100 / this.chunkSize).toFixed(2)) + '%'
 		},
 	},
 	methods: {
 		updateTsFilter(evt) {
-			const { startDate, endDate } = evt.target.dataset;
-			this.$emit('datazoom', { startDate, endDate });
+			const { startDate, endDate } = evt.target.dataset
+			this.$emit('datazoom', { startDate, endDate })
 		},
 		formatDate(date) {
-			return dayjs(date).format('ddd, D MMM YYYY, hh:mm a');
+			return dayjs(date).format('ddd, D MMM YYYY, hh:mm a')
 		},
 		inspectBar({ date, value }) {
-			let endDate = date;
-			let startDate = new Date(date) - this.timegrain * 1000;
+			let endDate = date
+			let startDate = new Date(date) - this.timegrain * 1000
 			const sameDayEndDate = dayjs(endDate).isSame(dayjs(startDate), 'day')
 				? dayjs(endDate).format('hh:mm a')
-				: null;
-			endDate = this.formatDate(endDate);
-			startDate = this.formatDate(startDate);
-			const percentValue = value !== -1 ? (value * 100).toFixed(2) : '0.00';
+				: null
+			endDate = this.formatDate(endDate)
+			startDate = this.formatDate(startDate)
+			const percentValue = value !== -1 ? (value * 100).toFixed(2) : '0.00'
 			const colour =
 				Date.parse(date) < Date.parse(this.siteCreation)
 					? ''
@@ -264,7 +265,7 @@ export default {
 						? 'text-green-500'
 						: value > 0
 							? 'text-yellow-500'
-							: 'text-red-500';
+							: 'text-red-500'
 
 			this.hoveringOn = {
 				key: date,
@@ -274,10 +275,7 @@ export default {
 				startDate,
 				colour,
 				sameDayEndDate,
-			};
-		},
-		getUptimeChunkId(chunkIndex) {
-			return `uptime-${this.carouselId}-${chunkIndex}`;
+			}
 		},
 		clearInspect() {
 			this.hoveringOn = {
@@ -287,51 +285,68 @@ export default {
 				percentValue: null,
 				startDate: null,
 				colour: null,
-			};
+			}
 		},
 		scrollNext() {
-			if (this.currentChunkIndex >= this.chunkedData.length - 1) return;
-			this.currentChunkIndex++;
+			if (this.currentChunkIndex >= this.chunkedData.length - 1) return
+			this.currentChunkIndex++
 		},
 		scrollPrev() {
-			if (this.currentChunkIndex <= 0) return;
-			this.currentChunkIndex--;
+			if (this.currentChunkIndex <= 0) return
+			this.currentChunkIndex--
 		},
 		scrollToCurrentChunk() {
 			this.$nextTick(() => {
-				this.$refs[
-					this.getUptimeChunkId(this.currentChunkIndex)
-				]?.[0]?.scrollIntoView({ behavior: 'smooth', container: 'nearest' });
-			});
+				// Scroll only the carousel; scrollIntoView also scrolls the page
+				const el = this.$refs.scrollContainer
+				el?.scrollTo({
+					left: this.currentChunkIndex * el.clientWidth,
+					behavior: 'smooth',
+				})
+			})
 		},
 		getOptimalChunkSizeFromDataLength(N) {
-			const maxSize = this.maxChunkSize;
-			const numChunks = Math.ceil(N / maxSize);
-			const baseSize = Math.floor(N / numChunks);
-			return baseSize + 1;
+			const maxSize = this.maxChunkSize
+			const numChunks = Math.ceil(N / maxSize)
+			return Math.ceil(N / numChunks)
+		},
+		updateMaxChunkSize() {
+			const maxChunkSize = window.innerWidth < 640 ? 14 : 60
+			if (maxChunkSize === this.maxChunkSize) return
+
+			this.currentChunkIndex = 0
+			this.maxChunkSize = maxChunkSize
 		},
 	},
 	watch: {
+		loading(isLoading, wasLoading) {
+			if (wasLoading && !isLoading) this.scrollToCurrentChunk()
+		},
 		chunkedData() {
-			if (!!this.chunkedData.length && this.firstRender) {
-				this.$nextTick(() => {
-					this.currentChunkIndex = this.chunkedData.length - 1;
-				});
+			const chunkCount = this.chunkedData.length
+			// Keep the index while a reload empties the data
+			if (!chunkCount) return
+			if (this.firstRender) {
+				this.firstRender = false
+				this.currentChunkIndex = chunkCount - 1
+				return
 			}
+
+			this.currentChunkIndex = Math.min(this.currentChunkIndex, chunkCount - 1)
 		},
 		currentChunkIndex() {
-			this.highlightDates = true;
+			this.highlightDates = true
 
-			clearTimeout(this._highlightTimeout);
+			clearTimeout(this._highlightTimeout)
 
 			this._highlightTimeout = setTimeout(() => {
-				this.highlightDates = false;
-			}, 300);
+				this.highlightDates = false
+			}, 300)
 
-			this.scrollToCurrentChunk();
+			this.scrollToCurrentChunk()
 		},
 	},
-};
+}
 </script>
 <style>
 .no-scrollbar::-webkit-scrollbar {

@@ -2,6 +2,7 @@
 # See license.txt
 
 import datetime
+import json
 from unittest.mock import MagicMock, Mock, call, patch
 
 import frappe
@@ -114,6 +115,45 @@ class TestAPISite(FrappeTestCase):
 		self.assertEqual(created_site.team, self.team.name)
 		self.assertEqual(created_site.bench, bench.name)
 		self.assertEqual(created_site.status, "Pending")
+
+	@patch("press.press.doctype.site.site.Site.sync_apps", new=Mock())
+	def test_new_site_on_dedicated_server_becomes_active_on_a_dedicated_plan_without_a_rate_limit(self):
+		from press.api.site import new
+
+		app = create_test_app()
+		server = create_test_server(team=self.team.name)
+		create_test_plan("Site", cpu_time=10, dedicated_server_plan=True)
+		shared_plan = create_test_plan("Site", cpu_time=2, private_benches=True)
+		group = create_test_release_group([app], user=self.team.user, servers=[server.name])
+		create_test_bench(group=group, server=server.name)
+		frappe.set_user(self.team.user)
+
+		with fake_agent_job(
+			{
+				"New Site": {"status": "Success"},
+				"Update Site Configuration": {"status": "Success"},
+				"Add Site to Upstream": {"status": "Success"},
+			}
+		):
+			new(
+				{
+					"name": "dedicated-site",
+					"version": group.version,
+					"plan": shared_plan.name,
+					"apps": [app.name],
+					"cluster": server.cluster,
+					"domain": self.domain,
+					"server": server.name,
+				}
+			)
+			poll_pending_jobs()
+
+		site = frappe.get_last_doc("Site", {"subdomain": "dedicated-site"})
+		new_site_job = frappe.get_last_doc("Agent Job", {"job_type": "New Site", "site": site.name})
+		self.assertEqual(site.status, "Active")
+		self.assertTrue(frappe.db.get_value("Site Plan", site.plan, "dedicated_server_plan"))
+		self.assertEqual(json.loads(site.config)["rate_limit"], {})
+		self.assertEqual(json.loads(new_site_job.request_data)["config"]["rate_limit"], {})
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_creating_new_site_with_customized_site_plan_should_allow_only_specified_apps(
@@ -898,6 +938,41 @@ erpnext 0.8.3	    HEAD
 		)
 
 		self.assertEqual(frappe.db.get_value("Remote File", name, "file_path"), file_path)
+
+	def test_uploaded_backup_info_rejects_url_that_fails_the_url_check(self):
+		from press.api.site import uploaded_backup_info
+		from press.utils.test_ssrf import resolve_to
+
+		frappe.set_user(self.team.user)
+		with (
+			patch("press.utils.ssrf.socket.getaddrinfo", return_value=resolve_to("10.0.0.5")),
+			self.assertRaisesRegex(frappe.ValidationError, "private or internal"),
+		):
+			uploaded_backup_info(
+				file="config.json", url="http://files.example.com/config.json", type="config"
+			)
+
+	def test_get_backup_links_shows_a_generic_message_when_the_fetch_fails(self):
+		"""The full error goes to the log."""
+		from press.api.site import get_backup_links
+		from press.utils.test_ssrf import resolve_to
+
+		frappe.set_user(self.team.user)
+		with (
+			patch("press.utils.ssrf.socket.getaddrinfo", return_value=resolve_to("127.0.0.1")),
+			patch("requests.adapters.HTTPAdapter.send") as send,
+			# log_error re-raises in tests
+			patch("press.api.site.log_error") as log_error,
+			self.assertRaises(frappe.ValidationError) as context,
+		):
+			get_backup_links("http://site.example.com", "user@example.com", "password")
+
+		send.assert_not_called()
+		log_error.assert_called_once()
+		self.assertEqual(
+			str(context.exception),
+			"Could not fetch backups from the site. Please check the site URL and try again.",
+		)
 
 	def test_new_site_rejects_backup_of_another_team_for_dashboard_user(self):
 		from press.api.site import validate_files_for_new_site

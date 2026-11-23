@@ -12,6 +12,7 @@ import frappe
 import responses
 from frappe.handler import run_doc_method as frappe_run_doc_method
 from frappe.model.naming import make_autoname
+from frappe.tests.ui_test_helpers import create_test_user
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days
 
@@ -22,14 +23,22 @@ from press.press.doctype.agent_job.agent_job import (
 	cancel_job_from_dashboard,
 	fail_old_jobs,
 	lock_doc_updated_by_job,
+	update_job,
+	update_step,
 )
-from press.press.doctype.agent_job.agent_job_notifications import DOC_URLS, JobErr, get_details
+from press.press.doctype.agent_job.agent_job_notifications import (
+	DOC_URLS,
+	JobErr,
+	get_details,
+	send_job_failure_notification,
+)
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
+from press.utils.redact import redact_secrets
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 if TYPE_CHECKING:
@@ -449,6 +458,19 @@ class TestCancelJobFromDashboard(FrappeTestCase):
 
 		cancel_job.assert_called_once_with(42)
 
+	@responses.activate
+	def test_a_dashboard_cancel_reaches_the_agent_and_records_the_team_user(self):
+		"""The agent call runs as Administrator, and the comment names the caller."""
+		job = self.mine["site"]
+		responses.post(re.compile(rf".*/agent/jobs/{job.job_id}/cancel"), json={})
+		self.sign_in_as(self.team)
+
+		cancel_job_from_dashboard(job.name)
+
+		self.assertEqual(len(responses.calls), 1)
+		comment = frappe.get_last_doc("Comment", {"reference_name": job.name, "comment_type": "Info"})
+		self.assertEqual((comment.content, comment.owner), ("Cancelled the job", self.team.user))
+
 	def test_a_team_cannot_cancel_the_backup_of_another_teams_site(self):
 		self.sign_in_as(self.team)
 
@@ -493,13 +515,17 @@ class TestCancelJobFromDashboard(FrappeTestCase):
 	def test_an_operator_cancels_a_job_from_the_desk_form(self):
 		"""The desk button calls `frm.call('cancel_job')`, so the method stays
 		whitelisted. Only the dashboard route moved to the endpoint."""
-		frappe.set_user("Administrator")
+		operator = frappe.mock("email")
+		create_test_user(operator)
+		frappe.set_user(operator)
 		frappe.local.request = frappe._dict(method="POST", headers=frappe._dict())
 
 		with patch.object(Agent, "cancel_job") as cancel_job:
 			frappe_run_doc_method("cancel_job", dt="Agent Job", dn=self.mine["site"].name)
 
 		cancel_job.assert_called_once_with(42)
+		comment = frappe.get_last_doc("Comment", {"reference_name": self.mine["site"].name})
+		self.assertEqual((comment.content, comment.owner), ("Cancelled the job", operator))
 
 	def test_the_endpoint_refuses_a_name_that_is_not_a_string(self):
 		"""`frappe.get_doc` reads a dict as a new document, and frappe validates
@@ -601,6 +627,134 @@ class TestAgentJobNotifications(FrappeTestCase):
 
 		self.assertFalse(details["is_actionable"])
 		self.assertIsNone(details["assistance_url"])
+
+	DISK_FULL_TRACEBACK = (
+		"redis.exceptions.ResponseError: MISCONF Errors writing to the AOF file: No space left on device"
+	)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_disk_full_on_dedicated_server_links_the_disk_chart(self):
+		job = self.restore_job(public=False)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Server disk full")
+		self.assertIn(f"/dashboard/servers/{job.server}/analytics", details["message"])
+		self.assertEqual(details["assistance_url"], DOC_URLS[JobErr.DISK_FULL])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_disk_full_on_public_server_is_not_actionable(self):
+		details = get_details(self.restore_job(public=True), "", "")
+
+		self.assertFalse(details["is_actionable"])
+
+	NODE_MODULES_OUTPUT = "cp: cannot stat 'sites/./assets/dummy_app/node_modules': No such file or directory"
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_committed_node_modules_symlink_tells_the_team_to_fix_the_app(self):
+		details = get_details(self.new_bench_job(self.NODE_MODULES_OUTPUT), "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "New Bench failed because of the dummy_app app")
+		self.assertIn("git rm --cached dummy_app/public/node_modules", details["message"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_node_modules_error_outside_new_bench_is_not_actionable(self):
+		job = self.new_bench_job(self.NODE_MODULES_OUTPUT)
+		job.job_type = "Rebuild Bench Assets"
+
+		self.assertFalse(get_details(job, "", "")["is_actionable"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch("press.press.doctype.agent_job.agent_job_notifications.frappe.db.commit", new=Mock())
+	def test_new_bench_on_public_server_notifies_the_bench_team_of_a_broken_app(self):
+		job = self.new_bench_job(self.NODE_MODULES_OUTPUT)
+
+		send_job_failure_notification(job)
+
+		notification = frappe.get_last_doc(
+			"Press Notification", {"document_type": "Agent Job", "document_name": job.name}
+		)
+		self.assertEqual(notification.team, frappe.db.get_value("Bench", job.bench, "team"))
+		self.assertTrue(notification.is_actionable)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch("press.press.doctype.agent_job.agent_job_notifications.frappe.db.commit", new=Mock())
+	def test_new_bench_on_public_server_does_not_notify_of_an_unknown_error(self):
+		job = self.new_bench_job("docker: Error response from daemon: pull access denied")
+
+		send_job_failure_notification(job)
+
+		self.assertFalse(
+			frappe.db.exists("Press Notification", {"document_type": "Agent Job", "document_name": job.name})
+		)
+
+	def new_bench_job(self, output: str) -> AgentJob:
+		bench = create_test_bench()
+		frappe.db.set_value("Server", bench.server, "public", True)
+		return frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "New Bench",
+				"request_path": "benches",
+				"request_data": "{}",
+				"bench": bench.name,
+				"server_type": "Server",
+				"server": bench.server,
+				"status": "Failure",
+				"output": output,
+			}
+		).insert(ignore_permissions=True)
+
+	FOLDER_IN_BACKUPS_TRACEBACK = (
+		'  File "apps/frappe/frappe/utils/backups.py", line 662, in delete_temp_backups\n'
+		"    os.remove(this_file_path)\n"
+		"IsADirectoryError: [Errno 21] Is a directory: './test.frappe.dev/private/backups/uom-night-20261102'"
+	)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_folder_in_backups_folder_names_the_folder_to_delete(self):
+		details = get_details(self.backup_job(self.FOLDER_IN_BACKUPS_TRACEBACK), "", "")
+
+		self.assertTrue(details["is_actionable"])
+		self.assertEqual(details["title"], "Backup failed because of a folder in the backups folder")
+		self.assertIn("<code>./test.frappe.dev/private/backups/uom-night-20261102</code>", details["message"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_folder_error_outside_backups_folder_is_not_actionable(self):
+		traceback = "IsADirectoryError: [Errno 21] Is a directory: './test.frappe.dev/public/files/reports'"
+
+		details = get_details(self.backup_job(traceback), "", "")
+
+		self.assertFalse(details["is_actionable"])
+
+	def backup_job(self, traceback: str) -> AgentJob:
+		site = create_test_site()
+		return frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Backup Site",
+				"site": site.name,
+				"server_type": "Server",
+				"server": site.server,
+				"traceback": traceback,
+			}
+		)
+
+	def restore_job(self, public: bool) -> AgentJob:
+		site = create_test_site()
+		frappe.db.set_value("Server", site.server, "public", public)
+		return frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Restore Site",
+				"site": site.name,
+				"server_type": "Server",
+				"server": site.server,
+				"traceback": self.DISK_FULL_TRACEBACK,
+			}
+		)
 
 	def site_with_app(
 		self, app_name: str, owned_by_site_team: bool = True, newer_release: bool = False
@@ -739,3 +893,106 @@ class TestAgentJobNotifications(FrappeTestCase):
 
 		self.assertFalse(details["is_actionable"])
 		self.assertIsNone(details["assistance_url"])
+
+
+class TestAgentJobOutputRedaction(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_masks_password_attribute_in_traceback_variables(self):
+		text = "self = BackupGenerator(db_name='_db1', password='fake-db-password', user='_db1')"
+
+		redacted = redact_secrets(text)
+
+		self.assertNotIn("fake-db-password", redacted)
+		self.assertIn("password='********'", redacted)
+		self.assertIn("db_name='_db1'", redacted)
+
+	def test_masks_command_line_and_json_secrets(self):
+		self.assertEqual(
+			redact_secrets("docker login -u frappe -p ghp_token123 registry.frappe.cloud"),
+			"docker login -u frappe -p ******** registry.frappe.cloud",
+		)
+		self.assertEqual(redact_secrets('{"db_password": "xyz"}'), '{"db_password": "********"}')
+		self.assertEqual(
+			redact_secrets("aws_secret_access_key=AKIA1 x=1"), "aws_secret_access_key=******** x=1"
+		)
+
+	def test_masks_mysql_attached_password_and_password_flags(self):
+		self.assertEqual(
+			redact_secrets("mariadb -h db -P 3306 -u _db1 -pfakevalue _db1 -e 'select 1'"),
+			"mariadb -h db -P 3306 -u _db1 -p******** _db1 -e 'select 1'",
+		)
+		self.assertEqual(
+			redact_secrets("bench restore --mariadb-root-password fakeroot --admin-password fakeadmin"),
+			"bench restore --mariadb-root-password ******** --admin-password ********",
+		)
+
+	def test_masks_list_command_and_keeps_list_without_secrets(self):
+		self.assertEqual(
+			redact_secrets(["docker", "login", "-u", "frappe", "-p", "fakevalue", "registry.frappe.cloud"]),
+			"docker login -u frappe -p ******** registry.frappe.cloud",
+		)
+		self.assertEqual(redact_secrets(["ls", "-la"]), ["ls", "-la"])
+
+	def test_masks_credentials_in_url_and_keeps_commit_hash(self):
+		self.assertEqual(
+			redact_secrets(
+				"hash 6c876ea06963ec90ffbc0673e65b48328680fdd8: https://x-access-token:ghs_abc@github.com/a/b"
+			),
+			"hash 6c876ea06963ec90ffbc0673e65b48328680fdd8: https://********@github.com/a/b",
+		)
+
+	def test_keeps_text_without_secret_values(self):
+		for text in (
+			"Access denied for user 'u'@'h' (using password: YES)",
+			"Password reset email sent",
+			"docker login --password-stdin registry.frappe.cloud",
+			"mysqldump -u root -p --all-databases",
+			"ssh -p 22 host && docker run -p 3306:6033 image",
+			"primary_key=name keyword=value",
+		):
+			self.assertEqual(redact_secrets(text), text)
+
+	def test_update_job_stores_redacted_output_traceback_and_data(self):
+		job = create_test_agent_job(status="Running")
+
+		update_job(
+			job.name,
+			{
+				"start": None,
+				"end": None,
+				"duration": None,
+				"status": "Failure",
+				"data": {
+					"output": "password='leaked-output'",  # pragma: allowlist secret
+					"traceback": "self = Conn(password='leaked-traceback')",
+					"result": {"token": "kept-for-callbacks"},
+				},
+			},
+		)
+
+		job.reload()
+		for field in ("output", "traceback", "data"):
+			self.assertNotIn("leaked", job.get(field))
+		self.assertIn("kept-for-callbacks", job.data)
+
+	def test_update_step_stores_redacted_output(self):
+		step = {
+			"start": None,
+			"end": None,
+			"duration": None,
+			"status": "Failure",
+			"data": {
+				"output": "--password=leaked",
+				"traceback": "token: leaked",
+				"command": "docker login -u frappe -p leaked registry.frappe.cloud",
+			},
+		}
+
+		with patch("press.press.doctype.agent_job.agent_job.frappe.db.set_value") as set_value:
+			update_step("step-name", step)
+
+		values = set_value.call_args.args[2]
+		for field in ("output", "traceback", "data"):
+			self.assertNotIn("leaked", values[field])

@@ -3,6 +3,7 @@
 
 frappe.ui.form.on('Proxy Server', {
 	refresh: function (frm) {
+		press.add_console_button(frm)
 		;[
 			[
 				__('Ping Agent'),

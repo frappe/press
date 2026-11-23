@@ -12,18 +12,18 @@ frappe.ui.form.on('Product Trial Request', {
 				freeze_message: __('Generating Setup Wizard Payload'),
 				callback: function (r) {
 					if (r.exc) {
-						frappe.msgprint(r.exc);
+						frappe.msgprint(r.exc)
 					} else {
 						frappe.msgprint({
 							title: __('Setup Wizard Payload'),
 							message: JSON.stringify(r.message, null, 4),
-						});
+						})
 					}
 				},
 				error: function (r) {
-					frappe.msgprint(r.message);
+					frappe.msgprint(r.message)
 				},
-			});
-		});
+			})
+		})
 	},
-});
+})

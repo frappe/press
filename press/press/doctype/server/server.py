@@ -28,11 +28,13 @@ from frappe.utils.password import get_decrypted_password
 from frappe.utils.synchronization import filelock
 from frappe.utils.user import is_system_user
 
+from press.access.server_console import check_console_access
+from press.access.staff_roles import needs_staff_role, safe_for_readers
 from press.agent import Agent
 from press.api.account import is_limits_exceeded
 from press.api.client import dashboard_whitelist
-from press.exceptions import VolumeResizeLimitError
-from press.guards import role_guard
+from press.exceptions import OngoingAgentJob, VolumeResizeLimitError
+from press.guards import role_guard, team_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.add_on_storage_log.add_on_storage_log import (
 	insert_addon_storage_log,
@@ -50,8 +52,10 @@ from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server_monitoring import RAVEN_SERVER_ALERTS_CHANNEL
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
+from press.press.doctype.team_change.team_change import request_transfer
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import docs, fmt_timedelta, log_error
 from press.utils.raven import send_raven_message
 from press.utils.user import is_desk_user
@@ -107,6 +111,9 @@ PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN = 50
 MARIADB_DATA_MNT_POINT = "/opt/volumes/mariadb"
 BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
 GLASS_FILE_SIZE = 200 * 1024 * 1024  # /root/glass, see glass_file.yml
+DISK_RESIZE_PROVIDERS = ("AWS EC2", "OCI", "Frappe Compute")
+# clamscan holds about 1 GB of signatures in memory, too much for small servers
+MALWARE_SCAN_MIN_RAM = 8192  # MB
 
 
 class BaseServer(Document, TagHelpers):
@@ -132,6 +139,8 @@ class BaseServer(Document, TagHelpers):
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
+		from press.press.doctype.cluster.cluster import archived_clusters
+
 		Server = frappe.qb.DocType("Server")
 
 		# not a real field, so validate_filters strips it before it reaches the
@@ -153,6 +162,8 @@ class BaseServer(Document, TagHelpers):
 			)
 
 		query = query.where(Server.is_for_recovery != 1).where(Server.team == frappe.local.team().name)
+		# A server in an archived region cannot be reached, so the dashboard omits it.
+		query = query.where(Server.cluster.notin(archived_clusters()))
 		results = query.run(as_dict=True)
 
 		for result in results:
@@ -253,10 +264,12 @@ class BaseServer(Document, TagHelpers):
 		if self.doctype == "Server":
 			doc.secondary_server = self.secondary_server
 			doc.scaled_up = self.scaled_up
+			doc.malware_scan = self.get_malware_scan_summary()
 
 		return doc
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_communication_infos(self):
 		return (
 			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
@@ -279,6 +292,7 @@ class BaseServer(Document, TagHelpers):
 		update_infos("Server", self.name, values)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_storage_usage(self):
 		"""Get storage usage of the application server"""
 		try:
@@ -735,11 +749,13 @@ class BaseServer(Document, TagHelpers):
 		return settings.branch or "master"
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def ping_agent(self):
 		agent = Agent(self.name, self.doctype)
 		return agent.ping()
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def ping_mariadb(self) -> bool:
 		try:
 			agent = Agent(self.name, self.doctype)
@@ -822,6 +838,7 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
+					"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 					"server": self.name,
 					"private_ip": self.private_ip,
 					"proxy_ip": self.get_proxy_ip(),
@@ -995,52 +1012,13 @@ class BaseServer(Document, TagHelpers):
 			)
 			play = ansible.run()
 			if play.status == "Success":
-				# The YARA config lives in ossec.conf, so it goes with the agent
 				frappe.db.set_value(
 					self.doctype,
 					self.name,
-					{
-						"is_wazuh_agent_installed": False,
-						"wazuh_agent_status": None,
-						"is_yara_installed": False,
-					},
+					{"is_wazuh_agent_installed": False, "wazuh_agent_status": None},
 				)
 		except Exception:
 			log_error("Wazuh Agent Uninstall Exception", server=self.as_dict())
-
-	@frappe.whitelist()
-	def install_yara(self):
-		"""Scan files the Wazuh agent reports as changed against a YARA ruleset."""
-		if not self.is_wazuh_agent_installed:
-			frappe.throw(
-				"YARA scanning reads the Wazuh agent's file integrity events. "
-				"Please install the Wazuh agent on this server first."
-			)
-		# Stamped before the enqueue, so a server we cannot even queue still yields its turn
-		frappe.db.set_value(self.doctype, self.name, "yara_install_last_attempt", frappe.utils.now_datetime())
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_install_yara",
-			queue="long",
-			timeout=1200,
-			job_id=f"yara_install:{self.doctype}:{self.name}",
-			deduplicate=True,
-		)
-
-	def _install_yara(self):
-		try:
-			ansible = Ansible(
-				playbook="wazuh_yara_install.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-			)
-			play = ansible.run()
-			if play.status == "Success":
-				frappe.db.set_value(self.doctype, self.name, "is_yara_installed", True)
-		except Exception:
-			log_error("YARA Install Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def deregister_wazuh_agent(self):
@@ -1151,16 +1129,24 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def cleanup_unused_files(self, force: bool = True):
 		# User-triggered cleanup forces; the scheduled sweep passes force=False.
+		if self.running_cleanup_job():
+			frappe.throw(
+				"A cleanup job is already running on this server. Please wait for it to finish before starting another.",
+				OngoingAgentJob,
+			)
+
+		self._cleanup_unused_files(force=force)
+
+	@dashboard_whitelist()
+	def running_cleanup_job(self) -> str | None:
+		"""The cleanup job that blocks a new cleanup. The dashboard links to it."""
 		with suppress(frappe.DoesNotExistError):
 			cleanup_job: "AgentJob" = frappe.get_last_doc(
 				"Agent Job", {"server": self.name, "job_type": "Cleanup Unused Files"}
 			)
 			if cleanup_job.status in ["Running", "Pending"]:
-				frappe.throw(
-					"A cleanup job is already running on this server. Please wait for it to finish before starting another."
-				)
-
-		self._cleanup_unused_files(force=force)
+				return cleanup_job.name
+		return None
 
 	def is_build_server(self) -> bool:
 		# Not a field in all subclasses
@@ -1344,7 +1330,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def increase_disk_size(self, increment=50, mountpoint=None, log: str | None = None):
-		if self.provider not in ("AWS EC2", "OCI", "Frappe Compute"):
+		if self.provider not in DISK_RESIZE_PROVIDERS:
 			return
 		if self.provider == "AWS EC2" and self.time_to_wait_before_updating_volume:
 			frappe.throw(
@@ -1555,6 +1541,7 @@ class BaseServer(Document, TagHelpers):
 			if vm_status == "Terminated":
 				self.status = "Archived"
 				self.save()
+				self.disable_subscription()
 				return
 
 		if frappe.db.exists(
@@ -1649,6 +1636,11 @@ class BaseServer(Document, TagHelpers):
 
 	def _archive(self, reason=None):
 		self.run_press_job("Archive Server", arguments={"reason": reason})
+
+	def mark_provisioning_failed(self):
+		"""The machine is gone, so stop billing for a server that cannot come up."""
+		frappe.db.set_value(self.doctype, self.name, "status", "Broken")
+		self.disable_subscription()
 
 	def disable_subscription(self):
 		subscription = self.subscription
@@ -1751,7 +1743,7 @@ class BaseServer(Document, TagHelpers):
 				"virtual_machine": self.virtual_machine,
 				"arguments": json.dumps(arguments, indent=2, sort_keys=True),
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 
 	def get_certificate(self):
 		certificate_name = frappe.db.get_value(
@@ -1800,6 +1792,7 @@ class BaseServer(Document, TagHelpers):
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
+				variables={"fail2ban_ignore_ips": fail2ban.ignore_ips()},
 			)
 			ansible.run()
 		except Exception:
@@ -1965,6 +1958,17 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Swappiness Setup Exception", doc=self)
 
+	def block_sctp(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_block_sctp")
+
+	def _block_sctp(self):
+		Ansible(
+			playbook="block_sctp.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+		).run()
+
 	@frappe.whitelist()
 	def update_tls_certificate(self, throw_on_failure: bool = False):
 		from press.press.doctype.tls_certificate.tls_certificate import (
@@ -1986,11 +1990,13 @@ class BaseServer(Document, TagHelpers):
 		update_server_tls_certifcate(self, certificate, throw_on_failure=throw_on_failure)
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def show_agent_version(self) -> str:
 		return self.agent.get_version()["commit"]
 
 	@frappe.whitelist()
 	def show_agent_password(self) -> str:
+		frappe.only_for("System Manager")
 		return self.get_password("agent_password")
 
 	@property
@@ -2056,15 +2062,18 @@ class BaseServer(Document, TagHelpers):
 		return real_ram
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Infrastructure Manager")
 	def reboot_with_serial_console(self):
 		if self.provider != "AWS EC2":
 			raise NotImplementedError
+		check_console_access(self.doctype, self.name)
 		console = frappe.new_doc("Serial Console Log")
 		console.server_type = self.doctype
 		console.server = self.name
 		console.virtual_machine = self.virtual_machine
 		console.action = "reboot"
-		console.save()
+		# Staff only read their logs, so the console writes the log for them.
+		console.save(ignore_permissions=True)
 		console.reload()
 		console.run_sysrq()
 		# TODO: Enable after a manual trial with the button on Server
@@ -2103,6 +2112,31 @@ class BaseServer(Document, TagHelpers):
 	def rename(self, title):
 		self.title = title
 		self.save()
+
+	@frappe.whitelist()
+	def setup_fail2ban(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200)
+
+	def _setup_fail2ban(self):
+		Ansible(
+			playbook="fail2ban.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+			variables={"fail2ban_ignore_ips": fail2ban.ignore_ips()},
+		).run()
+
+	@frappe.whitelist()
+	def remove_fail2ban(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_remove_fail2ban", queue="long", timeout=1200)
+
+	def _remove_fail2ban(self):
+		Ansible(
+			playbook="fail2ban_remove.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+		).run()
 
 	def validate_mounts(self):
 		if not self.virtual_machine:
@@ -2358,9 +2392,10 @@ class BaseServer(Document, TagHelpers):
 					),
 				},
 			)
-			ansible.run()
+			return ansible.run()
 		except Exception:
 			log_error("NAT Iptables Setup Exception", server=self.as_dict())
+			return None
 
 	@frappe.whitelist()
 	def remove_nat_iptables(self):
@@ -2561,8 +2596,9 @@ class BaseServer(Document, TagHelpers):
 			60,
 			60,
 		)["datasets"]
-		if response:
-			return response[0]["values"][-1]
+		value = _latest_prometheus_bytes(response)
+		if value is not None:
+			return value
 		return 50 * 1024 * 1024 * 1024  # Assume 50GB free space
 
 	def is_disk_full(self, mountpoint: str) -> bool:
@@ -2580,9 +2616,10 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			120,
 			120,
 		)["datasets"]
-		if not response:
+		value = _latest_prometheus_bytes(response)
+		if value is None:
 			return -20 * 1024 * 1024 * 1024
-		return response[0]["values"][-1]
+		return value
 
 	def disk_capacity(self, mountpoint: str) -> int:
 		from press.api.server import prometheus_query
@@ -2594,8 +2631,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			120,
 			120,
 		)["datasets"]
-		if response:
-			return response[0]["values"][-1]
+		value = _latest_prometheus_bytes(response)
+		if value is not None:
+			return value
 		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size") * 1024 * 1024 * 1024
 
 	def size_to_increase_by_for_20_percent_available(self, mountpoint: str):  # min 50 GB, max 250 GB
@@ -2648,6 +2686,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			},
 		)
 
+	def can_auto_increase_storage(self, mountpoint: str | None) -> bool:
+		"""Whether a disk alert on this mountpoint should resize it without asking the team"""
+		if self.provider not in DISK_RESIZE_PROVIDERS:
+			return False
+		return bool(self.auto_increase_storage or (self.has_data_volume and mountpoint == "/"))
+
+	def disk_increase_skip_reason(self) -> str:
+		if self.provider not in DISK_RESIZE_PROVIDERS:
+			return f"Press can't resize disks on provider {self.provider}"
+		return "auto disk increase disabled by user"
+
 	def calculated_increase_disk_size(
 		self,
 		mountpoint: str,
@@ -2656,7 +2705,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		"""
 		Calculate required disk increase for servers and handle notifications accordingly.
 		Returns True if the disk was increased, False if it was left as is.
-				- For servers with `auto_increase_storage` enabled:
+				- For servers with `auto_increase_storage` enabled, on a provider Press can resize:
 					- Compute the required storage increase.
 					- Automatically apply the increase.
 					- Send an email notification about the auto-added storage.
@@ -2672,11 +2721,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		current_disk_usage = round((disk_capacity - self.free_space(mountpoint)) / 1024 / 1024 / 1024, 2)
 
-		if not server.auto_increase_storage and (not server.has_data_volume or mountpoint != "/"):
+		if not server.can_auto_increase_storage(mountpoint):
 			TelegramMessage.enqueue(
 				f"Not increasing disk (mount point {mountpoint}) on "
 				f"[{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) "
-				f"by {buffer + additional}G as auto disk increase disabled by user",
+				f"by {buffer + additional}G as {server.disk_increase_skip_reason()}",
 				"Information",
 			)
 			insert_addon_storage_log(
@@ -2871,6 +2920,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		"""Set both `Server` and `Database Server` additional config for Unified Servers"""
 		# Common config for both Server and Database Server
 		self.set_swappiness()
+		self.block_sctp()
 		self.add_glass_file()
 		self.install_filebeat()
 
@@ -2918,6 +2968,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				self.add_or_update_mariadb_variable("tmpdir", "value_str", "/opt/volumes/mariadb/tmp")
 
 		self.set_swappiness()
+		self.block_sctp()
 		self.add_glass_file()
 		self.install_filebeat()
 		self.install_wazuh_agent_if_configured()
@@ -3009,7 +3060,15 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 	@frappe.whitelist()
 	def get_static_ip(self):
 		if self.provider == "AWS EC2":
-			return self.get_aws_static_ip()
+			frappe.enqueue_doc(
+				self.doctype,
+				self.name,
+				"get_aws_static_ip",
+				timeout=1200,
+				deduplicate=True,
+				job_id=f"get_static_ip||{self.doctype}||{self.name}",
+			)
+			return "Queued the static IP job. The IP shows here once it finishes. Check Ansible Plays if not."
 		if self.provider == "OCI":
 			return self.get_oci_static_ip()
 
@@ -3017,6 +3076,15 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return None
 
 	def get_aws_static_ip(self):
+		try:
+			self._get_aws_static_ip()
+		except Exception as e:
+			# Queued job: a comment on the form is where staff see the failure
+			self.add_comment(text=f"Get Static IP failed: {e}")
+			frappe.db.commit()
+			raise
+
+	def _get_aws_static_ip(self):
 		cluster_doc = frappe.get_doc("Cluster", self.cluster)
 		region_name = cluster_doc.region
 		aws_access_key_id = cluster_doc.aws_access_key_id
@@ -3035,18 +3103,57 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			region_name=region_name,
 		)
 
-		# Allocate new Elastic IP
-		allocation = ec2_client.allocate_address(Domain="vpc")
-		allocation_id = allocation["AllocationId"]
-		public_ip = allocation["PublicIp"]
+		allocation_id, association_id = self._attach_elastic_ip(ec2_client, instance_id)
 
-		# Associate with instance
-		ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
+		# Before the sync saves the IP, so Ansible still connects over the private IP
+		if getattr(self, "nat_server", None):
+			self._remove_nat_route_for_static_ip(ec2_client, allocation_id, association_id)
 
 		# Trigger VM sync
 		vm_doc.sync()
 
-		return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
+	def _attach_elastic_ip(self, ec2_client, instance_id: str) -> tuple[str, str]:
+		"""Reuse an Elastic IP that a failed earlier run left attached, else allocate one."""
+		addresses = ec2_client.describe_addresses(Filters=[{"Name": "instance-id", "Values": [instance_id]}])
+		if addresses["Addresses"]:
+			address = addresses["Addresses"][0]
+			return address["AllocationId"], address["AssociationId"]
+
+		allocation_id = ec2_client.allocate_address(Domain="vpc")["AllocationId"]
+		association = ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
+		return allocation_id, association["AssociationId"]
+
+	def _remove_nat_route_for_static_ip(self, ec2_client, allocation_id: str, association_id: str):
+		"""Send replies out through the new static IP, not the NAT server."""
+		play = Ansible(
+			playbook="remove_nat_iptables.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+		).run()
+		if play.status != "Success":
+			self._restore_nat_route_and_release_static_ip(ec2_client, allocation_id, association_id, play)
+
+		for doctype in ("Server", "Database Server"):
+			frappe.db.set_value(doctype, {"virtual_machine": self.virtual_machine}, "nat_server", None)
+
+	def _restore_nat_route_and_release_static_ip(
+		self, ec2_client, allocation_id: str, association_id: str, failed_play
+	):
+		"""Release the static IP only once the NAT route is surely back, so the server keeps egress."""
+		restore_play = self._install_nat_iptables()
+		if not restore_play or restore_play.status != "Success":
+			frappe.throw(
+				f"Could not remove the NAT route (Ansible Play {failed_play.name}) or restore it. "
+				"Kept the static IP attached so the server keeps outbound traffic."
+			)
+
+		ec2_client.disassociate_address(AssociationId=association_id)
+		ec2_client.release_address(AllocationId=allocation_id)
+		frappe.throw(
+			f"Could not remove the NAT route (Ansible Play {failed_play.name}). "
+			"Restored the NAT route and released the static IP."
+		)
 
 	@frappe.whitelist()
 	def add_hetzner_public_ip(self, primary_ip=None):
@@ -3215,6 +3322,7 @@ class Server(BaseServer):
 		disable_agent_update: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
+		enable_malware_scan: DF.Check
 		enable_on_prem_failover_support: DF.Check
 		exclude_for_scheduling: DF.Check
 		frappe_public_key: DF.Code | None
@@ -3247,8 +3355,6 @@ class Server(BaseServer):
 		is_wazuh_agent_installed: DF.Check
 		wazuh_agent_status: DF.Data | None
 		wazuh_install_last_attempt: DF.Datetime | None
-		is_yara_installed: DF.Check
-		yara_install_last_attempt: DF.Datetime | None
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]
@@ -3303,6 +3409,7 @@ class Server(BaseServer):
 		super().validate()
 		self.set_db_healthcheck_token()
 		self.validate_managed_database_service()
+		self.validate_malware_scan_ram()
 
 	def set_db_healthcheck_token(self):
 		if not self.db_healthcheck_token:
@@ -3315,6 +3422,11 @@ class Server(BaseServer):
 			self.database_server = ""
 		else:
 			self.managed_database_service = ""
+
+	def validate_malware_scan_ram(self):
+		turned_on = self.has_value_changed("enable_malware_scan") and self.enable_malware_scan
+		if turned_on and (self.ram or 0) < MALWARE_SCAN_MIN_RAM:
+			frappe.throw(_("Malware scan needs a server with at least 8 GB of RAM"))
 
 	def on_update(self):  # noqa: C901
 		# If Database Server is changed for the server then change it for all the benches
@@ -3358,6 +3470,35 @@ class Server(BaseServer):
 		if self.is_new() and is_dedicated_server(self.name):
 			self.set_dedicated_server_site_warranty_quota_and_cooldown()
 
+		if self.has_value_changed("enable_malware_scan") and self.enable_malware_scan:
+			self.scan_for_malware()
+
+	def scan_for_malware(self):
+		from press.press.doctype.malware_scan.malware_scan import is_scan_active
+
+		if is_scan_active(self.name):
+			return
+		frappe.get_doc({"doctype": "Malware Scan", "server_type": self.doctype, "server": self.name}).insert()
+
+	@dashboard_whitelist()
+	def toggle_malware_scan(self, enable: bool):
+		self.enable_malware_scan = enable
+		self.save()
+
+	def get_malware_scan_summary(self) -> dict:
+		last_scan = frappe.db.get_value(
+			"Malware Scan",
+			{"server": self.name},
+			["status", "modified", "scanned_files"],
+			as_dict=True,
+			order_by="creation desc",
+		)
+		return {
+			"enabled": self.enable_malware_scan,
+			"has_enough_ram": (self.ram or 0) >= MALWARE_SCAN_MIN_RAM,
+			"last_scan": last_scan,
+		}
+
 	def update_db_server(self):
 		if not self.database_server:
 			return
@@ -3380,19 +3521,39 @@ class Server(BaseServer):
 
 	def get_actions(self):
 		server_actions = super().get_actions()
+		group = "Application Server Actions" if not self.is_unified_server else "Server Actions"
 
-		return [
+		actions = [
 			{
 				"action": "Notification Settings",
 				"description": "Manage notification channels",
 				"button_label": "Manage",
 				"doc_method": "dummy",
-				"group": ("Application Server Actions" if not self.is_unified_server else "Server Actions"),
+				"group": group,
 				"server_doctype": "Server",
 				"server_name": self.name,
 			},
 			*server_actions,
 		]
+		if self.status == "Active" and not self.is_self_hosted:
+			actions.append(
+				{
+					"action": "Transfer server",
+					"description": "Transfer ownership of this server to another team",
+					"button_label": "Transfer",
+					"doc_method": "send_change_team_request",
+					"group": group,
+					"server_doctype": "Server",
+					"server_name": self.name,
+				}
+			)
+		return actions
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def send_change_team_request(self, team_mail_id: str, reason: str | None = None):
+		"""Send email to team to accept server transfer request"""
+		request_transfer(self, team_mail_id, reason, title=self.title or self.name)
 
 	def update_subscription(self):
 		subscription = self.subscription
@@ -3700,6 +3861,7 @@ class Server(BaseServer):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
+					"fail2ban_ignore_ips": fail2ban.ignore_ips(),
 					"server": self.name,
 					"private_ip": self.private_ip,
 					"proxy_ip": self.get_proxy_ip(),
@@ -3810,34 +3972,6 @@ class Server(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Agent Sentry Setup Exception", server=self.as_dict())
-
-	@frappe.whitelist()
-	def whitelist_ipaddress(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_whitelist_ip", queue="short", timeout=1200)
-
-	def _whitelist_ip(self):
-		proxy_server = frappe.get_value("Server", self.name, "proxy_server")
-		proxy_server_ip = frappe.get_doc("Proxy Server", proxy_server).ip
-
-		try:
-			ansible = Ansible(
-				playbook="whitelist_ipaddress.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-				variables={"ip_address": proxy_server_ip},
-			)
-			play = ansible.run()
-			self.reload()
-			self.reload()
-			if play.status == "Success":
-				self.status = "Active"
-			else:
-				self.status = "Broken"
-		except Exception:
-			self.status = "Broken"
-			log_error("Proxy IP Whitelist Exception", server=self.as_dict())
-		self.save()
 
 	@frappe.whitelist()
 	def agent_set_proxy_ip(self):
@@ -4045,6 +4179,7 @@ class Server(BaseServer):
 		)
 
 	@dashboard_whitelist()
+	@needs_staff_role("Press Infrastructure Manager")
 	def generate_on_prem_failover_config(self):
 		if not self.enable_on_prem_failover_support:
 			frappe.throw("On-Prem Failover support is not enabled for this server.")  # nosemgrep
@@ -4608,30 +4743,10 @@ class Server(BaseServer):
 		yields the same id, so a re-run finds the earlier Email Queue row and skips, while any
 		changed parameter (e.g. a new deadline) yields a new id that sends again.
 		"""
-		payload = json.dumps({"team": team, **args}, sort_keys=True, default=str)
-		digest = hashlib.sha256(payload.encode()).hexdigest()[:24]
-		return f"decommission-notice-{digest}@frappecloud.com"
+		return notice_message_id("decommission-notice", team, args)
 
 	def check_duplicate_dispatch_within_days(self, message_id: str, days: int) -> frappe._dict | None:
-		"""Return the most recent dispatch of this exact notice within `days`, else None.
-
-		Keyed on the Message-Id (a real, queryable Email Queue column that we set), so the
-		match is exact. Only sent or in-flight rows count; a failed ("Error") send does not
-		suppress a retry.
-		"""
-		since = frappe.utils.add_days(frappe.utils.now_datetime(), -days)
-		dispatches = frappe.get_all(
-			"Email Queue",
-			filters={
-				"message_id": message_id,
-				"status": ("in", ["Not Sent", "Sending", "Sent", "Partially Sent"]),
-				"creation": (">", since),
-			},
-			fields=["name", "creation"],
-			order_by="creation desc",
-			limit=1,
-		)
-		return dispatches[0] if dispatches else None
+		return find_recent_notice_dispatch(message_id, days)
 
 	def notify_teams_before_decommission(
 		self,
@@ -4691,6 +4806,31 @@ class Server(BaseServer):
 			)
 			if verbose:
 				print(f"  queued {team}: {len(sites)} site(s) -> {', '.join(recipients)}")
+
+
+def notice_message_id(kind: str, team: str, args: dict) -> str:
+	"""Deterministic Message-Id for a console-sent notice, unique per kind, team and parameters."""
+	payload = json.dumps({"team": team, **args}, sort_keys=True, default=str)
+	digest = hashlib.sha256(payload.encode()).hexdigest()[:24]
+	return f"{kind}-{digest}@frappecloud.com"
+
+
+def find_recent_notice_dispatch(message_id: str, days: int) -> frappe._dict | None:
+	"""Most recent sent or in-flight Email Queue row with this Message-Id within `days`, else None.
+	A failed ("Error") send does not count, so it doesn't suppress a retry."""
+	since = frappe.utils.add_days(frappe.utils.now_datetime(), -days)
+	dispatches = frappe.get_all(
+		"Email Queue",
+		filters={
+			"message_id": message_id,
+			"status": ("in", ["Not Sent", "Sending", "Sent", "Partially Sent"]),
+			"creation": (">", since),
+		},
+		fields=["name", "creation"],
+		order_by="creation desc",
+		limit=1,
+	)
+	return dispatches[0] if dispatches else None
 
 
 def scale_workers(now=False):
@@ -4783,26 +4923,6 @@ def servers_needing_wazuh_agent() -> list[tuple[str, str]]:
 			"is_wazuh_agent_installed": 0,
 			"wazuh_agent_status": UNREGISTERED_WAZUH_AGENT_STATUS,
 		},
-	)
-
-
-def install_missing_yara():
-	"""Install YARA scanning on the enrolled servers that have waited longest for it."""
-	if not is_wazuh_configured():
-		return
-	for server_type, name in servers_needing_yara()[:WAZUH_INSTALL_BATCH_SIZE]:
-		try:
-			frappe.get_doc(server_type, name).install_yara()
-		except Exception:
-			# A full queue or one broken server must not take the rest of the batch with it
-			log_error("YARA Enqueue Exception", server_type=server_type, server=name)
-
-
-def servers_needing_yara() -> list[tuple[str, str]]:
-	"""Servers already reporting to the manager but with no ruleset to scan against."""
-	return longest_waiting_servers(
-		"yara_install_last_attempt",
-		filters={"is_wazuh_agent_installed": 1, "is_yara_installed": 0},
 	)
 
 
@@ -5068,6 +5188,18 @@ def _refresh_bench_pool_and_raise_capacity_incidents(
 				available_memory_bytes=available_memory,
 				minimum_required_memory_bytes=minimum_bench_memory_bytes,
 			)
+
+
+def _latest_prometheus_bytes(datasets: list[dict]) -> int | None:
+	"""Return the newest byte value of the first series, or None if there is no sample.
+
+	prometheus_query fills empty time slots with None. The last slot is often
+	empty because the query window can end after the newest scrape.
+	"""
+	if not datasets:
+		return None
+	value = next((v for v in reversed(datasets[0]["values"]) if v is not None), None)
+	return None if value is None else int(value)
 
 
 def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[str]]]:

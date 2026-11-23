@@ -20,10 +20,21 @@
             2. You will be billed for this site under the team {{ new_team }}
             <br>
             {% endif %}
+            {% if type == 'server' %}
+            2. Its database server, {{ group_count }} bench group(s) and {{ site_count }} site(s) will be
+            transferred with it
             <br>
+            3. You will be billed {{ monthly_price }} per month for the server plans under the team {{ new_team }}
+            <br>
+            4. You will be able to see the past activity of this server
+            <br>
+            <br>
+            This transfer can't be undone. To give the server back, you need to transfer it again.
+            <br>
+            {% endif %}
+            <br>
+            This link works once and expires on {{ expires_on }}.
             If you are not aware of this request, ignore the confirmation email.
-            <br>
-            <!-- Note: The temporary link will expire in {{ minutes }} minutes. -->
         </p>
         {{ utils.button('Accept Transfer', transfer_url, true) }}
         {{ utils.separator() }}
