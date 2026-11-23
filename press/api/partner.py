@@ -177,7 +177,9 @@ def transfer_credits(amount: float, customer: str) -> float | None:
 		)
 
 	amt = frappe.utils.flt(amount)
-	partner_doc = frappe.get_doc("Team", partner)
+	if amt <= 0:
+		frappe.throw("The amount to transfer must be more than 0.")
+	partner_doc = partner
 	credits_available = partner_doc.get_balance()
 	partner_level = partner_doc.get_partner_level()
 	discount_percent = DISCOUNT_MAP.get(partner_level[0]) if partner_level else 0
@@ -511,9 +513,11 @@ def get_partner_invoices(due_date: str | None = None, status: str | None = None)
 @role_guard.api("partner")
 def get_invoice_items(invoice: str) -> list[dict] | None:
 	team = get_current_team(get_doc=True)
-	if team.name != frappe.db.get_value(
-		"Invoice", invoice, "team"
-	) and team.partner_email != frappe.db.get_value("Invoice", invoice, "partner_email"):
+	invoice_team, invoice_partner_email = frappe.db.get_value("Invoice", invoice, ["team", "partner_email"])
+	is_partner_of_invoice = (
+		team.erpnext_partner and team.partner_email and team.partner_email == invoice_partner_email
+	)
+	if team.name != invoice_team and not is_partner_of_invoice:
 		return None
 	data = frappe.get_all(
 		"Invoice Item",
