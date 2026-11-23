@@ -4,6 +4,16 @@
   become: true
   become_user: root
   gather_facts: true
+  pre_tasks:
+    # A new server's first unattended-upgrades run holds the dpkg lock for over 10 minutes
+    - name: Wait for Boot-Time APT Runs to Finish
+      ansible.builtin.command: systemctl is-active --quiet apt-daily.service apt-daily-upgrade.service
+      register: apt_daily_status
+      until: apt_daily_status.rc != 0
+      failed_when: apt_daily_status.rc == 0
+      changed_when: false
+      retries: 60
+      delay: 30
   roles:
     - role: mariadb_10_4_to_10_6
     - role: mariadb_10_6_to_11_8
