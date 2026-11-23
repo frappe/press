@@ -1,8 +1,9 @@
+{% import "templates/emails/macros.html" as utils %}
 {% extends "templates/emails/base.html" %}
 
 {% block content %}
-<div class="p-8 bg-white text-base leading-6 text-gray-900">
-	<div class="from-markdown">
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white from-markdown">
 		<h2>Security Alert</h2>
 		<p>Hey there!</p>
 		<p>
@@ -17,8 +18,8 @@
 			<li>Review any recent account activity</li>
 		</ul>
 		<p>You can access your security settings here:</p>
-		<p><a href="{{ link }}">Security Settings</a></p>
+		{{ utils.button('Security Settings', link, true) }}
 		<p>If you recognize this activity, you can ignore this email.</p>
 	</div>
-</div>
+</td>
 {% endblock %}

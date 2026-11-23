@@ -353,9 +353,16 @@ class DeployCandidateBuild(Document):
 				"requires_version_based_get_pip": requires_version_based_get_pip,
 				"is_arm_build": self.platform == "arm64",
 				"use_asset_store": self.uses_asset_store(),
+				"install_wkhtmltopdf": self.needs_wkhtmltopdf(),
 			},
 			is_path=True,
 		)
+
+	def needs_wkhtmltopdf(self) -> bool:
+		version = frappe.db.get_value("Release Group", self.candidate.group, "version")
+		if version == "Nightly":
+			return False
+		return (frappe.db.get_value("Frappe Version", version, "number") or 0) < 17
 
 	def uses_asset_store(self) -> bool:
 		"""Any group with Use App Cache downloads stored assets; only public groups upload them."""

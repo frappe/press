@@ -53,7 +53,7 @@
 		"docstatus": 0,
 		"doctype": "Bench Dependency",
 		"internal": 0,
-		"modified": "2023-10-06 15:45:18.593014",
+		"modified": "2026-11-20 12:00:00.000000",
 		"name": "NODE_VERSION",
 		"supported_versions": [
 			{
@@ -95,6 +95,18 @@
 			{
 				"supported_frappe_version": "Version 15",
 				"version": "24.22.1"
+			},
+			{
+				"supported_frappe_version": "Version 16",
+				"version": "24.22.3"
+			},
+			{
+				"supported_frappe_version": "Nightly",
+				"version": "24.22.3"
+			},
+			{
+				"supported_frappe_version": "Version 15",
+				"version": "24.22.3"
 			}
 		],
 		"title": "Node Version"

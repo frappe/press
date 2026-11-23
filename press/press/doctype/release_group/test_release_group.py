@@ -690,6 +690,22 @@ class TestReleaseGroup(FrappeTestCase):
 			test_release_group.check_app_server_storage()
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_storage_check_needs_room_for_the_image_and_the_copied_sites_folder(self):
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.site.test_site import create_test_bench
+
+		server = create_test_server(auto_increase_storage=False)
+		test_release_group = create_test_release_group([create_test_app()], servers=[server.name])
+		create_test_bench(group=test_release_group)
+
+		with (
+			self.assertRaisesRegex(frappe.ValidationError, "Not enough space on server"),
+			patch.object(BaseServer, "free_space", mock_free_space(space_required=8 * 1024**3)),
+			patch.object(Agent, "get", mock_image_size(5)),
+		):  # 8 GiB free fits a 5 GiB image, but not the image plus its sites copy
+			test_release_group.check_app_server_storage()
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	@patch.object(BaseServer, "calculated_increase_disk_size", Mock())
 	@patch.object(Agent, "get", mock_image_size(60))
 	@patch.object(BaseServer, "free_space", mock_free_space(space_required=5400000000))
@@ -736,3 +752,80 @@ class TestReleaseGroup(FrappeTestCase):
 
 		self.assertEqual(counts_on(first_server), (1, 1))
 		self.assertEqual(counts_on(second_server), (2, 2))
+
+	def test_list_shows_public_groups_of_the_team_only_to_system_users(self):
+		user = frappe.get_value("Team", self.team, "user")
+		private = create_test_release_group([create_test_app()], user=user).name
+		public = create_test_release_group([create_test_app()], user=user, public=True).name
+
+		def listed_groups(user_type):
+			frappe.db.set_value("User", user, "user_type", user_type)
+			frappe.set_user(user)
+			before_request()
+			return {group.name for group in get_list("Release Group", fields=["name"])}
+
+		self.assertEqual(listed_groups("Website User"), {private})
+		self.assertEqual(listed_groups("System User"), {private, public})
+
+	def _create_group_in_two_regions(self):
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.server.test_server import create_test_server
+
+		second_cluster = create_test_cluster("Jeddah", public=True).name
+		first_server = create_test_server(cluster="Default").name
+		second_server = create_test_server(cluster=second_cluster).name
+		group = create_test_release_group([create_test_app()], servers=[first_server, second_server])
+		return group, second_cluster, second_server
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_remove_region_unlinks_its_servers_and_archives_its_benches(self):
+		from press.press.doctype.site.test_site import create_test_bench
+
+		group, region, server = self._create_group_in_two_regions()
+		bench = create_test_bench(group=group, server=server)
+		frappe.db.set_value("Agent Job", {"bench": bench.name}, "status", "Success")
+
+		group.remove_region(region)
+		group.reload()
+
+		self.assertNotIn(server, [row.server for row in group.servers])
+		self.assertNotIn(region, group.get_clusters())
+		self.assertEqual(frappe.db.get_value("Bench", bench.name, "status"), "Pending")
+		self.assertTrue(frappe.db.exists("Agent Job", {"bench": bench.name, "job_type": "Archive Bench"}))
+
+	def test_remove_region_rejects_the_only_region_of_the_group(self):
+		from press.press.doctype.server.test_server import create_test_server
+
+		server = create_test_server(cluster="Default").name
+		group = create_test_release_group([create_test_app()], servers=[server])
+
+		with self.assertRaisesRegex(frappe.ValidationError, "You cannot remove the only region"):
+			group.remove_region("Default")
+		self.assertEqual([row.server for row in group.servers], [server])
+
+	def test_remove_region_rejects_a_region_that_still_has_sites(self):
+		from press.press.doctype.site.test_site import create_test_bench, create_test_site
+
+		group, region, server = self._create_group_in_two_regions()
+		create_test_site(bench=create_test_bench(group=group, server=server).name)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Move or archive the sites in region"):
+			group.remove_region(region)
+		self.assertIn(region, group.get_clusters())
+
+	def test_remove_region_rejects_a_region_with_a_deploy_in_progress(self):
+		from press.press.doctype.site.test_site import create_test_bench
+
+		group, region, server = self._create_group_in_two_regions()
+		bench = create_test_bench(group=group, server=server)
+		frappe.db.set_value("Bench", bench.name, "status", "Installing")
+
+		with self.assertRaisesRegex(frappe.ValidationError, "A deploy is in progress in region"):
+			group.remove_region(region)
+		self.assertIn(region, group.get_clusters())
+
+	def test_remove_region_rejects_a_region_outside_the_group(self):
+		group, _, _ = self._create_group_in_two_regions()
+
+		with self.assertRaisesRegex(frappe.ValidationError, "is not part of this bench group"):
+			group.remove_region("Mumbai")

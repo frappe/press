@@ -14,9 +14,15 @@ frappe.ui.form.on('Server', {
 		})
 	},
 	refresh: function (frm) {
+		press.add_console_button(frm)
 		frm.add_web_link(
 			`/dashboard/servers/${frm.doc.name}`,
 			__('Visit Dashboard'),
+		)
+		frm.add_custom_button(
+			__('Transfer to Team'),
+			() => press.new_team_change(frm.doc.team, 'Specific Resources', frm.doc),
+			__('Actions'),
 		)
 
 		const ping_actions = [

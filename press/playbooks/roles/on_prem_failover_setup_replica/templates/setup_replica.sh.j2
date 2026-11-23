@@ -25,7 +25,7 @@ docker run -d \
     --network on_prem_replica_net \
     --ip 172.29.230.22 \
     -v {{ database_base_directory }}/var/lib/mysql:/var/lib/mysql \
-    mariadb:10.6 \
+    mariadb:{{ replica_mariadb_version }} \
     --server-id=9999 \
     --bind-address=0.0.0.0 \
     --read-only=1 \
@@ -35,9 +35,14 @@ docker run -d \
 
 echo "Waiting for MariaDB container to initialize..."
 for i in {1..100}; do
-    if docker exec fc-dr-db-replica mysqladmin ping -uroot -p'{{ mariadb_root_password }}' --silent; then
+    if docker exec fc-dr-db-replica mariadb-admin ping -uroot -p'{{ mariadb_root_password }}' --silent; then
         echo "MariaDB is ready!"
         break
+    fi
+    if [ "$i" -eq 100 ]; then
+        echo "Error: MariaDB did not start. Container logs:"
+        docker logs --tail 50 fc-dr-db-replica
+        exit 1
     fi
     echo "Waiting... ($i/100)"
     sleep 2
@@ -55,22 +60,22 @@ MASTER_GTID=$(cat {{ database_base_directory }}/master_gtid.txt)
 echo "Using master GTID: $MASTER_GTID"
 
 # Stop and reset slave
-docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "STOP SLAVE;" || true
-docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "RESET SLAVE ALL;" || true
+docker exec fc-dr-db-replica mariadb -uroot -p'{{ mariadb_root_password }}' -e "STOP SLAVE;" || true
+docker exec fc-dr-db-replica mariadb -uroot -p'{{ mariadb_root_password }}' -e "RESET SLAVE ALL;" || true
 
 # Apply the GTID position back to the replica
 if [ ! -z "$MASTER_GTID" ]; then
-    docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "SET GLOBAL gtid_slave_pos = '$MASTER_GTID';"
+    docker exec fc-dr-db-replica mariadb -uroot -p'{{ mariadb_root_password }}' -e "SET GLOBAL gtid_slave_pos = '$MASTER_GTID';"
 fi
 
-docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "CHANGE MASTER TO MASTER_HOST='{{ primary_private_ip }}', MASTER_USER='root', MASTER_PASSWORD='{{ mariadb_root_password }}', MASTER_PORT={{ primary_db_port }}, MASTER_USE_GTID=slave_pos;"
-docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "START SLAVE;"
+docker exec fc-dr-db-replica mariadb -uroot -p'{{ mariadb_root_password }}' -e "CHANGE MASTER TO MASTER_HOST='{{ primary_private_ip }}', MASTER_USER='root', MASTER_PASSWORD='{{ mariadb_root_password }}', MASTER_PORT={{ primary_db_port }}, MASTER_USE_GTID=slave_pos;"
+docker exec fc-dr-db-replica mariadb -uroot -p'{{ mariadb_root_password }}' -e "START SLAVE;"
 
 
 # Wait and check slave status
 echo "Checking replication status..."
 for i in {1..30}; do  # max 30 attempts
-    STATUS=$(docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -N -B -e "SHOW SLAVE STATUS\G" | grep -E 'Last_IO_Error|Last_SQL_Error' | awk '{print $2}')
+    STATUS=$(docker exec fc-dr-db-replica mariadb -uroot -p'{{ mariadb_root_password }}' -N -B -e "SHOW SLAVE STATUS\G" | grep -E 'Last_IO_Error|Last_SQL_Error' | awk '{print $2}')
 
     IO_ERROR=$(echo "$STATUS" | sed -n '1p')
     SQL_ERROR=$(echo "$STATUS" | sed -n '2p')

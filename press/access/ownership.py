@@ -56,11 +56,16 @@ USER_FIELDS: dict[str, str] = {
 
 # Doctypes owned through a link to a document that carries a `team` field.
 LINKED_OWNERS: dict[str, tuple[str, str]] = {
-	"Agent Job": ("bench", "Bench"),
 	"Auto Scale Record": ("primary_server", "Server"),
 	"Marketplace App Plan": ("app", "Marketplace App"),
 	"New Bench Queue": ("group", "Release Group"),
 	"Server Firewall": ("server_id", "Server"),
+}
+
+# Doctypes owned through any one of several links. A site's job can run on a
+# shared bench, so the team that owns the site owns the job as well.
+ANY_LINKED_OWNERS: dict[str, tuple[tuple[str, str], ...]] = {
+	"Agent Job": (("site", "Site"), ("bench", "Bench")),
 }
 
 # Doctypes owned through a dynamic link, where another field names the doctype
@@ -73,6 +78,10 @@ DYNAMICALLY_LINKED_OWNERS: dict[str, tuple[str, str]] = {
 # can hang off a site, a bench, a group or a server and no single join covers
 # all four. Both refuse to list anything unless the caller names one it owns.
 SELF_SCOPED_DOCTYPES = frozenset({"Agent Job", "Ansible Play"})
+
+# Doctypes that Press User cannot read by DocPerm, so desk and /api/resource
+# stay closed. The dashboard reads them on the ownership check alone.
+OWNERSHIP_READ_DOCTYPES = frozenset({"Agent Job", "Ansible Play"})
 
 
 def current_team() -> str:
@@ -98,7 +107,7 @@ def has_document_access(doctype: str, name: str, doc=None) -> bool:
 	if doctype in USER_FIELDS:
 		return frappe.db.get_value(doctype, name, USER_FIELDS[doctype]) == frappe.session.user
 
-	if doctype in LINKED_OWNERS:
+	if owner_links(doctype):
 		return has_linked_access(doctype, name)
 
 	if doctype in DYNAMICALLY_LINKED_OWNERS:
@@ -121,11 +130,23 @@ def has_parent_access(doctype: str, name: str) -> bool:
 	return has_document_access(parent.parenttype, parent.parent)
 
 
-def has_linked_access(doctype: str, name: str) -> bool:
-	link_field, linked_doctype = LINKED_OWNERS[doctype]
-	linked_name = frappe.db.get_value(doctype, name, link_field)
+def owner_links(doctype: str) -> tuple[tuple[str, str], ...]:
+	if doctype in LINKED_OWNERS:
+		return (LINKED_OWNERS[doctype],)
 
-	return bool(linked_name) and has_document_access(linked_doctype, linked_name)
+	return ANY_LINKED_OWNERS.get(doctype, ())
+
+
+def has_linked_access(doctype: str, name: str) -> bool:
+	links = owner_links(doctype)
+	values = frappe.db.get_value(doctype, name, [field for field, _ in links], as_dict=True)
+	if not isinstance(values, dict):
+		return False
+
+	return any(
+		values.get(field) and has_document_access(linked_doctype, values[field])
+		for field, linked_doctype in links
+	)
 
 
 def has_dynamically_linked_access(doctype: str, name: str) -> bool:

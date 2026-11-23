@@ -48,6 +48,7 @@ import { loadStripe } from '@stripe/stripe-js'
 import { Button, createResource, ErrorMessage, Spinner } from 'frappe-ui'
 import { inject, nextTick, ref } from 'vue'
 import { toast } from 'vue-sonner'
+import { getStripeErrorMessage } from '@/utils/stripeError'
 import { DashboardError } from '../../utils/error'
 
 const props = defineProps({
@@ -154,7 +155,7 @@ async function onBuyClick() {
 	})
 
 	if (payload.error) {
-		errorMessage.value = payload.error.message
+		errorMessage.value = getStripeErrorMessage(payload.error)
 		paymentInProgress.value = false
 	} else {
 		toast.success(

@@ -3,6 +3,7 @@
 
 frappe.ui.form.on('Monitor Server', {
 	refresh: function (frm) {
+		press.add_console_button(frm)
 		;[
 			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
 			[__('Ping Ansible'), 'ping_ansible', true],
