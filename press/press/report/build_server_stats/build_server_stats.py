@@ -85,7 +85,7 @@ def from_utc(moment):
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Press Infrastructure Manager"])
 	filters = frappe._dict(filters or {})
 	period = get_period(filters)
 	builds = get_builds(period)

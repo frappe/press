@@ -1,0 +1,35 @@
+---
+# A Linux SCTP bug lets a local user (or a compromised nginx worker, also
+# from inside a container) get root. No kernel fix exists yet, and nothing
+# on our servers uses SCTP, so stop the kernel from loading the module.
+- name: Prevent the SCTP kernel module from loading
+  copy:
+    dest: /etc/modprobe.d/disable-sctp.conf
+    content: |
+      install sctp /bin/false
+      blacklist sctp
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Check if the SCTP kernel module is loaded
+  stat:
+    path: /sys/module/sctp
+  register: sctp_module
+
+# Once loaded, SCTP holds a control socket per network namespace, so the
+# kernel usually refuses to unload it. Try anyway, then fail loudly.
+- name: Unload the SCTP kernel module
+  command: modprobe -r sctp
+  register: sctp_unload
+  failed_when: false
+  changed_when: sctp_unload.rc == 0
+  when: sctp_module.stat.exists
+
+- name: Fail if the SCTP kernel module is still loaded
+  fail:
+    msg: >-
+      The sctp kernel module is loaded and cannot be unloaded
+      ({{ sctp_unload.stderr | default('') | trim }}). The block is in place,
+      but the host stays exposed until you reboot it.
+  when: sctp_module.stat.exists and sctp_unload.rc != 0

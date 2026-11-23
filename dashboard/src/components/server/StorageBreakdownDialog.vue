@@ -82,7 +82,7 @@
 
 				<div v-if="serverType === 'Database Server'" class="mt-4">
 					<AlertBanner
-						title="Are you looking to purge binary logs or reduce retention to free up space ?"
+						title="Are you looking to purge binary logs or reduce retention to free up space?"
 						type="info"
 						:showIcon="false"
 					>

@@ -21,6 +21,7 @@ from frappe.utils import (
 	now_datetime,
 )
 
+from press.access.staff_roles import safe_for_readers
 from press.access.support_access import has_support_access
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
@@ -88,7 +89,9 @@ class AgentJob(Document):
 		server_type: DF.Link
 		site: DF.Link | None
 		start: DF.Datetime | None
-		status: DF.Literal["Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure"]
+		status: DF.Literal[
+			"Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure", "Cancelled"
+		]
 		traceback: DF.Code | None
 		upstream: DF.Link | None
 	# end: auto-generated types
@@ -203,7 +206,7 @@ class AgentJob(Document):
 			]
 
 			self.status = "Pending"
-			self.save()
+			self.save(ignore_permissions=True)
 		except AgentRequestSkippedException:
 			self.retry_count = 0
 			self.set_status_and_next_retry_at()
@@ -211,7 +214,7 @@ class AgentJob(Document):
 		except Exception:
 			if 400 <= cint(self.flags.get("status_code", 0)) <= 499:
 				self.status = "Failure"
-				self.save()
+				self.save(ignore_permissions=True)
 				frappe.db.commit()
 
 				process_job_updates(self.name)
@@ -255,7 +258,7 @@ class AgentJob(Document):
 		self.status = "Undelivered"
 		self.next_retry_at = next_retry_at
 
-		self.save()
+		self.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	def create_agent_job_steps(self):
@@ -270,7 +273,7 @@ class AgentJob(Document):
 					"duration": "00:00:00",
 				}
 			)
-			doc.insert()
+			doc.insert(ignore_permissions=True)
 
 	def validate_not_a_superseded_password_rotation(self):
 		# Resending an older rotation's db_password after a newer rotation would break the site
@@ -306,7 +309,7 @@ class AgentJob(Document):
 				"request_files": self.request_files,
 				"request_method": self.request_method,
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def retry_in_place(self):
@@ -315,6 +318,7 @@ class AgentJob(Document):
 		frappe.db.commit()
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_agent_endpoint(self):
 		return Agent(self.server, server_type=self.server_type).get_request_url(f"jobs/{self.job_id}")
 
@@ -343,13 +347,13 @@ class AgentJob(Document):
 	@frappe.whitelist()
 	def succeed_and_process_job_updates(self):
 		self.status = "Success"
-		self.save()
+		self.save(ignore_permissions=True)
 		self.process_job_updates()
 
 	@frappe.whitelist()
 	def fail_and_process_job_updates(self):
 		self.status = "Failure"
-		self.save()
+		self.save(ignore_permissions=True)
 		self.process_job_updates()
 
 	@frappe.whitelist()
@@ -366,6 +370,21 @@ class AgentJob(Document):
 		with as_administrator():
 			Agent(self.server, server_type=self.server_type).cancel_job(self.job_id)
 		self.add_comment("Info", "Cancelled the job")
+
+	def cancel_and_mark_cancelled(self, reason: str):
+		"""Stop the job and record it as Cancelled, which the agent can't report itself."""
+		if self.status in ("Pending", "Running") and self.job_id:
+			Agent(self.server, server_type=self.server_type).cancel_job(self.job_id)
+
+		self.status = "Cancelled"
+		self.save()
+		AgentJobStep = frappe.qb.DocType("Agent Job Step")
+		frappe.qb.update(AgentJobStep).set(AgentJobStep.status, "Failure").where(
+			(AgentJobStep.status == "Running") & (AgentJobStep.agent_job == self.name)
+		).run()
+		skip_pending_steps(self.name)
+		self.add_comment("Info", f"Cancelled the job: {reason}")
+		process_job_updates(self.name)
 
 	def validate_dashboard_cancellation(self):
 		if self.job_type not in DASHBOARD_CANCELLABLE_JOB_TYPES:
@@ -469,7 +488,7 @@ def job_detail(job):
 
 	if job.status == "Pending":
 		current = {"name": job.job_type, "status": "Waiting", "index": -1}
-	elif job.status in ("Success", "Failure"):
+	elif job.status in ("Success", "Failure", "Cancelled"):
 		current = {"name": job.job_type, "status": job.status, "index": len(steps)}
 
 	current["total"] = len(steps)
@@ -1051,6 +1070,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		)
 		from press.press.doctype.database_server.database_server import (
 			process_add_binlogs_to_indexer_agent_job_update,
+			process_purge_binlogs_by_size_limit_job_update,
 			process_remove_binlogs_from_indexer_agent_job_update,
 		)
 		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
@@ -1243,6 +1263,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_remove_binlogs_from_indexer_agent_job_update(job)
 		elif job.job_type == "Upload Binlogs To S3":
 			process_upload_binlogs_to_s3_job_update(job)
+		elif job.job_type == "Purge Binlogs By Size Limit":
+			process_purge_binlogs_by_size_limit_job_update(job)
 		elif job.job_type == "Upload Audit Logs To S3":
 			process_upload_audit_logs_to_s3_job_update(job)
 		elif job.job_type == "Search Sites In Snapshot":

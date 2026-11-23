@@ -24,12 +24,17 @@
 - name: Install ClamAV {{ clamav_version }}
   when: installed_clamav.stdout is not match('ii ' ~ clamav_version ~ '(-|$)')
   block:
-    # In /root, so a non-root user cannot plant or swap the package
+    # In /root, so a non-root user cannot plant or swap the package. curl, not
+    # get_url, which fails to import where pip changed the system's pyOpenSSL.
     - name: Download ClamAV
-      get_url:
-        url: https://github.com/Cisco-Talos/clamav/releases/download/clamav-{{ clamav_version }}/clamav-{{ clamav_version }}.linux.{{ ansible_architecture }}.deb
-        dest: /root/clamav-{{ clamav_version }}.deb
-        checksum: '{{ clamav_checksums[ansible_architecture] }}'
+      shell: |
+        set -e
+        curl --fail --silent --show-error --location --retry 3 --connect-timeout 30 --max-time 900 \
+          --output {{ package }} \
+          https://github.com/Cisco-Talos/clamav/releases/download/clamav-{{ clamav_version }}/clamav-{{ clamav_version }}.linux.{{ ansible_architecture }}.deb
+        echo '{{ clamav_checksums[ansible_architecture].split(":")[1] }}  {{ package }}' | sha256sum --check --quiet
+      vars:
+        package: /root/clamav-{{ clamav_version }}.deb
 
     - name: Install ClamAV from Cisco
       apt:

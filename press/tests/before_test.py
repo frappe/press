@@ -2,14 +2,17 @@
 # For license information, please see license.txt
 
 
+import functools
 import os
 from contextlib import contextmanager
 from typing import Any
 
+import faker
 import frappe
 from frappe import set_user as _set_user
 from frappe.model.document import Document
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import squashify
 
 from press.utils import _get_current_team, _system_user
 
@@ -31,10 +34,25 @@ def FrappeTestCase_setUp(self) -> None:
 	frappe.local.conf.update({"throttle_user_limit": 600})
 
 
+@functools.cache
+def get_faker(locale: str) -> faker.Faker:
+	return faker.Faker(locale)
+
+
+def mock_with_cached_faker(type: str, size: int = 1, locale: str = "en"):
+	"""frappe.mock with one Faker per locale, since a new Faker costs ~30ms"""
+	fake = get_faker(locale)
+	if type not in dir(fake):
+		raise ValueError("Not a valid mock type.")
+	return squashify([getattr(fake, type)() for _ in range(size)])
+
+
 def execute():
 	settings = frappe.get_single("Press Settings")
 	if not (settings.stripe_secret_key and settings.stripe_publishable_key):
 		create_test_stripe_credentials()
+	set_test_backup_bucket_on_clusters()
+	set_test_offsite_backup_credentials()
 	import cssutils
 
 	# Silence the cssutils errors that are mostly pointless
@@ -46,6 +64,7 @@ def execute():
 	FrappeTestCase.setUp = FrappeTestCase_setUp
 	FrappeTestCase.tearDown = lambda self: frappe.db.rollback()
 	FrappeTestCase.freeze_time = staticmethod(freeze_time)
+	frappe.mock = mock_with_cached_faker
 
 	# patch frappe.set_user that
 	frappe.set_user = set_user_with_current_team
@@ -58,6 +77,36 @@ def execute():
 def set_user_with_current_team(user):
 	_set_user(user)
 	frappe.local._current_team = None
+
+
+def set_test_backup_bucket_on_clusters():
+	"""Clusters made without a bucket, such as Default at install, cannot take offsite backups."""
+	from press.press.doctype.backup_bucket.test_backup_bucket import create_test_backup_bucket
+
+	without_bucket = {"backup_bucket": ("is", "not set")}
+	if not frappe.db.exists("Cluster", without_bucket):
+		return
+
+	bucket = create_test_backup_bucket("default.backups.test").name
+	frappe.db.set_value("Cluster", without_bucket, "backup_bucket", bucket)
+	# Each test rolls back, so the fixture must be committed to last
+	frappe.db.commit()  # nosemgrep
+
+
+def set_test_offsite_backup_credentials():
+	"""A cluster with a bucket sends offsite credentials to the agent."""
+	from press.press.doctype.press_settings.press_settings import PressSettings
+
+	settings = PressSettings("Press Settings", "Press Settings")
+	if settings.offsite_backups_access_key_id:
+		return
+
+	settings.offsite_backups_access_key_id = "test"
+	settings.offsite_backups_secret_access_key = frappe.mock("password")
+	# A fresh test site has no certbot directory or EFF email, which are mandatory
+	settings.flags.ignore_mandatory = True
+	settings.save()
+	frappe.db.commit()  # nosemgrep
 
 
 def create_test_stripe_credentials():

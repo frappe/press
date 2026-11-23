@@ -70,20 +70,17 @@ class IncreaseDiskSizeJob(PressJob):
 		if self.server_doc.provider != "AWS EC2":
 			return
 
-		plays = frappe.get_all(
+		status = frappe.db.get_value(
 			"Ansible Play",
-			{"server": self.server, "play": "Extend EC2 Volume"},
-			["status"],
+			# Only this job's play counts; one from an earlier resize would skip the wait
+			{"server": self.server, "play": "Extend EC2 Volume", "creation": (">=", self.creation)},
+			"status",
 			order_by="creation desc",
-			limit=1,
 		)
-		if not plays:
-			self.defer_current_task()
-
-		if plays[0].status == "Success":
+		if status == "Success":
 			return
 
-		if plays[0].status == "Failure":
+		if status == "Failure":
 			raise Exception("Failed to extend EC2 volume")
 
 		self.defer_current_task()
