@@ -771,6 +771,7 @@ class Site(Document, TagHelpers):
 			if self.subscription_plan != chosen_plan:
 				# before_insert wrote the config from the chosen plan
 				self._update_configuration(self.get_plan_config(), save=False)
+				self.update_config_preview()
 
 	def validate_backup_times(self):
 		if self.schedule_logical_backup_at_custom_time and len(self.logical_backup_times) == 0:
