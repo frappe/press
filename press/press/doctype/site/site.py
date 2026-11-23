@@ -754,6 +754,7 @@ class Site(Document, TagHelpers):
 				if is_plan_free:
 					frappe.throw("You can't select a free plan!")  # nosemgrep
 
+			chosen_plan = self.subscription_plan
 			# If site is on public server, don't allow unlimited plans
 			if is_site_on_public_server and plan.dedicated_server_plan:
 				self.subscription_plan = frappe.db.get_value(
@@ -777,6 +778,10 @@ class Site(Document, TagHelpers):
 						"support_included": 0,
 					},
 				)
+
+			if self.subscription_plan != chosen_plan:
+				# before_insert wrote the config from the chosen plan
+				self._update_configuration(self.get_plan_config(), save=False)
 
 	def validate_backup_times(self):
 		if self.schedule_logical_backup_at_custom_time and len(self.logical_backup_times) == 0:

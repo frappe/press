@@ -1388,6 +1388,16 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 
 		self.assertEqual(site.get_plan_config()["rate_limit"], {"limit": 36000, "window": 86400})
 
+	def test_site_moved_to_dedicated_plan_on_creation_does_not_keep_the_chosen_plans_rate_limit(self):
+		"""validate_site_plan swaps a shared plan for a dedicated one after before_insert wrote the config."""
+		create_test_plan("Site", cpu_time=10, dedicated_server_plan=True)
+		shared_plan = create_test_plan("Site", cpu_time=2)
+
+		site = create_test_site(subscription_plan=shared_plan.name)
+
+		self.assertTrue(frappe.db.get_value("Site Plan", site.subscription_plan, "dedicated_server_plan"))
+		self.assertEqual(json.loads(site.config)["rate_limit"], {})
+
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestSiteConfigEncryptionKeyValidation(FrappeTestCase):
