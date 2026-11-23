@@ -28,6 +28,7 @@ from frappe.utils import (
 	cint,
 	cstr,
 	flt,
+	format_datetime,
 	get_datetime,
 	get_system_timezone,
 	now_datetime,
@@ -38,6 +39,7 @@ from frappe.utils.caching import redis_cache
 
 from press.access.actions import SiteActions
 from press.access.decorators import action_guard
+from press.access.staff_roles import safe_for_readers
 from press.access.support_access import has_support_access
 from press.access.utils import is_outside_employee
 from press.exceptions import (
@@ -139,6 +141,8 @@ DOCTYPE_SERVER_TYPE_MAP = {
 }
 
 ARCHIVE_AFTER_SUSPEND_DAYS = 21
+# A move between shared servers costs the site downtime, so it is rationed
+SHARED_SERVER_MOVE_COOLDOWN_DAYS = 60
 NOTIFY_BEFORE_ARCHIVAL_DAYS = 2
 CREATION_FAILURE_RETENTION_DAYS = 14
 PRIVATE_BENCH_DOC = "https://docs.frappe.io/cloud/sites/move-site-to-private-bench"
@@ -156,6 +160,10 @@ STATEMENT_TIME_INCREMENT = 3600
 
 # Picking a backup time is for plans from this price up. Ref: USD 25.
 MINIMUM_BACKUP_SCHEDULE_PLAN_PRICE_USD = 25
+
+# A caller that leaves the backup time out keeps the schedule the site has. No
+# JSON value can reach this, so it cannot collide with a time the caller sends.
+KEEP_BACKUP_TIME: Any = object()
 
 # Conditions a site must satisfy for the agent to stream offsite backup
 # artifacts straight to S3 instead of uploading them after the dump finishes.
@@ -237,6 +245,7 @@ class Site(Document, TagHelpers):
 		site_usage_exceeded_on: DF.Datetime | None
 		skip_auto_updates: DF.Check
 		skip_failing_patches: DF.Check
+		skip_offsite_backups: DF.Check
 		skip_scheduled_logical_backups: DF.Check
 		skip_scheduled_physical_backups: DF.Check
 		staging: DF.Check
@@ -386,6 +395,7 @@ class Site(Document, TagHelpers):
 		return Agent(self.database_server_name, server_type="Database Server")
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def is_replica_server_available(self) -> bool:
 		return bool(
 			frappe.db.exists(
@@ -427,7 +437,9 @@ class Site(Document, TagHelpers):
 		doc.frappe_updated_on = get_frappe_release_timestamp(self.bench)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
-		doc.can_schedule_backups = self.plan_allows_backup_schedule()
+		doc.can_manage_backup_schedule = (
+			self.offsite_backups_available() or self.plan_allows_backup_schedule()
+		)
 		doc.last_updated = self.last_updated
 		doc.creation_failure_retention_days = CREATION_FAILURE_RETENTION_DAYS
 		doc.has_scheduled_updates = bool(
@@ -742,6 +754,7 @@ class Site(Document, TagHelpers):
 				if is_plan_free:
 					frappe.throw("You can't select a free plan!")  # nosemgrep
 
+			chosen_plan = self.subscription_plan
 			# If site is on public server, don't allow unlimited plans
 			if is_site_on_public_server and plan.dedicated_server_plan:
 				self.subscription_plan = frappe.db.get_value(
@@ -765,6 +778,11 @@ class Site(Document, TagHelpers):
 						"support_included": 0,
 					},
 				)
+
+			if self.subscription_plan != chosen_plan:
+				# before_insert wrote the config from the chosen plan
+				self._update_configuration(self.get_plan_config(), save=False)
+				self.update_config_preview()
 
 	def validate_backup_times(self):
 		if self.schedule_logical_backup_at_custom_time and len(self.logical_backup_times) == 0:
@@ -791,31 +809,76 @@ class Site(Document, TagHelpers):
 				)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_backup_schedule(self) -> dict:
 		"""Times are on the server's clock, same as the scheduler reads them."""
 		return {
 			"custom": bool(self.schedule_logical_backup_at_custom_time),
-			"times": sorted(
-				frappe.utils.get_time(row.backup_time).strftime("%H:%M") for row in self.logical_backup_times
-			),
+			"times": self.backup_times(),
+			"can_set_time": self.plan_allows_backup_schedule(),
+			"can_set_offsite": self.offsite_backups_available(),
+			"offsite": not self.skip_offsite_backups,
 		}
+
+	def backup_times(self) -> list[str]:
+		return sorted(
+			frappe.utils.get_time(row.backup_time).strftime("%H:%M") for row in self.logical_backup_times
+		)
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def update_backup_schedule(self, time: str | None = None):
+	def update_backup_schedule(self, time: str | None = KEEP_BACKUP_TIME, offsite: bool | None = None):
+		"""Write both controls of the Backup Schedule dialog in one save.
+
+		One request for each control would race. The save below writes back every
+		field it read, and that undoes the change the other request made.
+
+		Leave `time` out to keep the schedule. The dialog leaves it out for a site
+		that shows no time control, where `None` would read as "back to default".
+		Leave `offsite` out to keep the switch as it is, so that a caller that only
+		moves the time cannot turn offsite backups back on.
+		"""
+		changed = []
+		if offsite is not None:
+			changed.append(self.set_offsite_backups(offsite))
+		if time is not KEEP_BACKUP_TIME:
+			changed.append(self.set_backup_time(time))
+		if any(changed):
+			self.save()
+
+	def set_backup_time(self, time: str | None) -> bool:
 		"""Move the site's backups to a time of its own. No time means back to the default schedule.
 
-		One time a day — each extra time is one more backup we pay for. We set up
-		more times than that for a site ourselves. Logical only — physical backups
-		deactivate the site while they run.
+		One time a day, because each extra time is one more backup we pay for. We
+		set up more times than that for a site ourselves. Logical only, because
+		physical backups deactivate the site while they run.
 		"""
-		self.validate_backup_schedule_is_editable()
+		if self.backup_times() == ([time] if time else []):
+			return False
 
+		self.validate_backup_schedule_is_editable()
 		self.logical_backup_times = []
 		if time:
 			self.append("logical_backup_times", {"backup_time": parse_backup_time(time)})
 		self.schedule_logical_backup_at_custom_time = bool(time)
-		self.save()
+		return True
+
+	def set_offsite_backups(self, offsite: bool) -> bool:
+		"""Off leaves the backup on the server, where the bench deletes it within a day.
+
+		A backup that runs for an archive or a migration still goes offsite,
+		because a restore needs it.
+		"""
+		skip = not offsite
+		if bool(self.skip_offsite_backups) == skip:
+			return False
+
+		if offsite and not self.offsite_backups_available():
+			frappe.throw(
+				"This site takes no offsite backups. Change to a plan that includes them, then turn them on again."
+			)
+		self.skip_offsite_backups = skip
+		return True
 
 	def validate_backup_schedule_is_editable(self):
 		if not self.plan_allows_backup_schedule():
@@ -838,6 +901,18 @@ class Site(Document, TagHelpers):
 		if not plan.offsite_backups:
 			return False
 		return plan.price_usd == 0 or plan.price_usd >= MINIMUM_BACKUP_SCHEDULE_PLAN_PRICE_USD
+
+	def offsite_backups_available(self) -> bool:
+		"""Whether the scheduler would send this site offsite, if it has not turned it off.
+
+		The scheduler drops a site by its subscription plan, not by `plan`, and a
+		site with no subscription keeps its offsite backups. Read the same rows,
+		or the dashboard hides the switch from sites that do take offsite backups.
+		"""
+		plans = frappe.get_all(
+			"Subscription", {"document_type": "Site", "document_name": self.name}, pluck="plan"
+		)
+		return all(frappe.get_cached_value("Site Plan", plan, "offsite_backups") for plan in plans if plan)
 
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)
@@ -1077,6 +1152,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
+	@action_guard(SiteActions.ManageApps)
 	def install_app(self, app: str, plan: str | None = None) -> str | None:
 		self.check_marketplace_app_installable(plan)
 
@@ -1094,6 +1170,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
+	@action_guard(SiteActions.ManageApps)
 	def uninstall_app(self, app: str, create_offsite_backup: bool = False, feedback: str = "") -> str:
 		from press.marketplace.doctype.marketplace_app_feedback.marketplace_app_feedback import (
 			collect_app_uninstall_feedback,
@@ -1349,6 +1426,7 @@ class Site(Document, TagHelpers):
 		return job.name
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def last_migrate_failed(self):
 		"""Returns `True` if the last site update's(`Migrate` deploy type) migrate site job step failed, `False` otherwise"""
 
@@ -1515,7 +1593,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def rotate_database_password(self):
-		frappe.only_for("System Manager", message=True)
+		frappe.only_for(["System Manager", "Press Support L1", "Press Support Engineer"], message=True)
 		self.validate_no_password_rotation_in_progress()
 		frappe.enqueue_doc(
 			self.doctype,
@@ -1582,7 +1660,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def rotate_saas_communication_secret(self):
-		frappe.only_for("System Manager", message=True)
+		frappe.only_for(["System Manager", "Press Support L1", "Press Support Engineer"], message=True)
 		self.validate_communication_secret_can_rotate()
 		self.saas_communication_secret = frappe.generate_hash(length=32)
 		config = {"fc_communication_secret": self.saas_communication_secret}
@@ -1792,6 +1870,34 @@ class Site(Document, TagHelpers):
 			"Site Update", {"site": self.name, "status": "Scheduled"}, "scheduled_time"
 		)
 
+	def get_ongoing_backup_jobs(self) -> list[str]:
+		return frappe.get_all(
+			"Agent Job",
+			filters={
+				"site": self.name,
+				"job_type": "Backup Site",
+				"status": ("in", ["Undelivered", "Pending", "Running"]),
+			},
+			pluck="name",
+		)
+
+	def cancel_ongoing_backups(self):
+		for name in self.get_ongoing_backup_jobs():
+			job: AgentJob = frappe.get_doc("Agent Job", name)
+			job.cancel_and_mark_cancelled("A site update was started")
+
+	def is_migrate_running(self) -> bool:
+		return bool(
+			frappe.db.exists(
+				"Agent Job",
+				{
+					"site": self.name,
+					"job_type": "Update Site Migrate",
+					"status": ("in", ["Undelivered", "Pending", "Running"]),
+				},
+			)
+		)
+
 	def check_move_scheduled(self):
 		if time := self.site_migration_scheduled():
 			frappe.throw(f"Site Migration is scheduled for {self.name} at {time}")  # nosemgrep
@@ -1826,6 +1932,7 @@ class Site(Document, TagHelpers):
 		skip_backups: bool = False,
 		physical_backup: bool = False,
 		scheduled_time: str | None = None,
+		cancel_ongoing_backups: bool = False,
 	):
 		log_site_activity(self.name, "Update")
 
@@ -1839,7 +1946,9 @@ class Site(Document, TagHelpers):
 				"status": "Scheduled" if scheduled_time else "Pending",
 				"scheduled_time": scheduled_time,
 			}
-		).insert()
+		)
+		doc.flags.cancel_ongoing_backups = cancel_ongoing_backups
+		doc.insert()
 		return doc.name
 
 	@dashboard_whitelist()
@@ -1883,6 +1992,7 @@ class Site(Document, TagHelpers):
 		type: Literal[
 			"Move Site To Different Server / Bench",
 			"Move Site To Different Region",
+			"Move Site To Another Shared Server",
 		],
 		group: str | None = None,
 		server: str | None = None,
@@ -1945,6 +2055,23 @@ class Site(Document, TagHelpers):
 					"scheduled_time": scheduled_time,
 				}
 			).insert()
+		elif type == "Move Site To Another Shared Server":
+			# Refuse before the action exists, so a blocked move leaves nothing behind
+			self.validate_shared_server_move_cooldown()
+			doc = frappe.get_doc(
+				{
+					"doctype": "Site Action",
+					"site": self.name,
+					"action_type": type,
+					"arguments": json.dumps(
+						{
+							"destination_server": server,
+							"skip_failing_patches": skip_failing_patches,
+						}
+					),
+					"scheduled_time": scheduled_time,
+				}
+			).insert()
 		elif type == "Move Site To Different Region":
 			doc = frappe.get_doc(
 				{
@@ -1981,7 +2108,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def move_to_bench(self, bench, deactivate=True, skip_failing_patches=False):
-		frappe.only_for("System Manager")
+		frappe.only_for(["System Manager", "Press Support Engineer"])
 		self.ready_for_move()
 
 		if bench == self.bench:
@@ -2038,6 +2165,11 @@ class Site(Document, TagHelpers):
 			site_migration.start()
 
 		return site_migration
+
+	@property
+	def serves_requests_before_update(self) -> bool:
+		"""A broken site still serves requests, so an update must not leave it in maintenance mode."""
+		return self.status_before_update in ("Active", "Broken")
 
 	def reset_previous_status(self, fix_broken=False):
 		if self.status == "Archived":
@@ -2330,11 +2462,12 @@ class Site(Document, TagHelpers):
 		from press.press.doctype.remote_file.remote_file import (
 			delete_remote_backup_objects,
 		)
+		from press.press.doctype.site_backup.site_backup import REMOTE_FILE_FIELDS
 
 		log_site_activity(self.name, "Drop Offsite Backups")
 		self.unavail_bahrain_backups()  # TODO remove this after bahrain issue is resolved at aws
 
-		sites_remote_files = []
+		sites_remote_files: list[str] = []
 		all_backups = frappe.get_all(
 			"Site Backup",
 			filters={
@@ -2350,16 +2483,12 @@ class Site(Document, TagHelpers):
 		for backup_files in frappe.get_all(
 			"Site Backup",
 			filters={"name": ("in", site_backups)},
-			fields=[
-				"remote_database_file",
-				"remote_public_file",
-				"remote_private_file",
-			],
+			fields=list(REMOTE_FILE_FIELDS),
 			as_list=True,
 			order_by="creation desc",
 			ignore_ifnull=True,
 		):
-			sites_remote_files += backup_files
+			sites_remote_files.extend(file for file in backup_files if file)
 
 		if not sites_remote_files:
 			return None
@@ -2444,6 +2573,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def show_admin_password(self):
+		frappe.only_for("System Manager")
 		frappe.msgprint(self.get_password("admin_password"), title="Password", indicator="green")
 
 	def get_connection_as_admin(self):
@@ -2464,7 +2594,7 @@ class Site(Document, TagHelpers):
 				frappe.throw(f"User {user} does not exist in the site", frappe.ValidationError)  # nosemgrep
 			elif "certificate has expired" in str(e):
 				frappe.throw(
-					"SSL certificate for the {self.name} has expired. Please reach out to us at <a href='https://support.frappe.io/'>support.frappe.io</a> if it is not automatically generated in a few minutes.",
+					f"SSL certificate for the {self.name} has expired. Please reach out to us at <a href='https://support.frappe.io/'>support.frappe.io</a> if it is not automatically generated in a few minutes.",
 					frappe.ValidationError,
 				)
 			elif "no space left on device" in str(e):
@@ -2806,6 +2936,11 @@ class Site(Document, TagHelpers):
 					now_datetime(), seconds=exponential_backoff_duration
 				)
 				self.save()
+
+	@frappe.whitelist()
+	def empty_creation_failed(self):
+		"""Unblock site actions on a working site that a failed restore marked as failed"""
+		self.db_set("creation_failed", None)
 
 	@frappe.whitelist()
 	def set_status_based_on_ping(self):
@@ -3208,6 +3343,7 @@ class Site(Document, TagHelpers):
 		self.change_plan(plan)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def last_plan_change(self):
 		"""Most recent plan change for this site, for showing 'last changed on' in the dashboard."""
 		return frappe.db.get_value(
@@ -3288,8 +3424,8 @@ class Site(Document, TagHelpers):
 		if self.plan and plan.is_trial_plan:
 			frappe.throw(
 				_(
-					"The site {self.name} is currently on a trial plan. Cannot <b>deactivate site on a trial plan</b>"
-				)
+					"The site {0} is currently on a trial plan. Cannot <b>deactivate site on a trial plan</b>"
+				).format(self.name)
 			)
 
 		if self.plan and plan.is_frappe_plan:
@@ -3623,6 +3759,7 @@ class Site(Document, TagHelpers):
 			frappe.throw("Database Access is already being enabled on this site. Please check after a while.")
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_auto_update_window(self):
 		"""Tell when an automatic update of this site can start.
 
@@ -3726,6 +3863,7 @@ class Site(Document, TagHelpers):
 		}
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_database_performance_report(self):
 		from press.press.report.mariadb_slow_queries.mariadb_slow_queries import get_data as get_slow_queries
 
@@ -4071,10 +4209,12 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@redis_cache(ttl=60)
+	@safe_for_readers
 	def get_current_usage(self):
 		return self.current_usage
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_actions(self):
 		actions = [
 			{
@@ -4275,6 +4415,7 @@ class Site(Document, TagHelpers):
 		}
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def fetch_database_processes(self):
 		agent = Agent(self.server)
 		if agent.should_skip_requests():
@@ -4509,6 +4650,7 @@ class Site(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def binlog_indexing_service_status(self):
 		hosted_on_shared_server = bool(
 			frappe.db.get_value("Database Server", self.database_server_name, "public", cache=True)
@@ -4663,6 +4805,7 @@ class Site(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_communication_infos(self):
 		return (
 			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
@@ -4679,6 +4822,7 @@ class Site(Document, TagHelpers):
 		update_infos("Site", self.name, values)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_migration_options(self):  # noqa
 		release_group: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		version = frappe.db.get_value("Release Group", self.group, "version")
@@ -4814,7 +4958,163 @@ class Site(Document, TagHelpers):
 					"has_domain_with_a_record": self.has_domain_with_a_record,
 				},
 			},
+			"Move Site To Another Shared Server": {
+				"hidden": not self.is_on_shared_server,
+				"allow_scheduling": True,
+				"button_label": "Move Site",
+				"options": {
+					"region": self.region_title,
+					"cooldown_days": SHARED_SERVER_MOVE_COOLDOWN_DAYS,
+				},
+			},
 		}
+
+	@property
+	def is_on_shared_server(self) -> bool:
+		return not is_dedicated_server(self.server)
+
+	@property
+	def region_title(self) -> str:
+		return frappe.get_cached_value("Cluster", self.cluster, "title") or self.cluster
+
+	@dashboard_whitelist()
+	@safe_for_readers
+	def get_shared_server_migration_target(self) -> dict:
+		"""Shared server this site moves to, and the room it has to spare."""
+		if not self.is_on_shared_server:
+			frappe.throw(
+				"This site is not on a shared server, so it can't move to another one."
+				" Use the bench or the region move instead."
+			)
+
+		self.validate_shared_server_move_cooldown()
+		return {
+			"region": self.region_title,
+			"destination_server": self.pick_shared_server_for_migration(),
+		}
+
+	def validate_shared_server_move_cooldown(self, exclude_action: str | None = None) -> None:
+		"""One move per cooldown, so a site can't hop from one shared server to the next."""
+		next_move = self.next_shared_server_move_allowed_on(exclude_action)
+		if not next_move or get_datetime() >= next_move:
+			return
+
+		frappe.throw(
+			f"This site already moved to another shared server in the last"
+			f" {SHARED_SERVER_MOVE_COOLDOWN_DAYS} days. It can move again after"
+			f" {format_datetime(next_move, 'MMM d, YYYY')}."
+		)
+
+	def next_shared_server_move_allowed_on(self, exclude_action: str | None = None) -> datetime | None:
+		"""When the last move that took, or is about to take, frees the site to move again."""
+		filters = {
+			"site": self.name,
+			"action_type": "Move Site To Another Shared Server",
+			"status": ("in", ("Scheduled", "Running", "Success")),
+		}
+		if exclude_action:
+			filters["name"] = ("!=", exclude_action)
+
+		last_move = frappe.db.get_value("Site Action", filters, "creation", order_by="creation desc")
+		if not last_move:
+			return None
+
+		return add_to_date(last_move, days=SHARED_SERVER_MOVE_COOLDOWN_DAYS)
+
+	def pick_shared_server_for_migration(self, server: str | None = None) -> dict:
+		"""The roomiest shared server, or the one asked for while it still has room."""
+		servers = self.shared_servers_with_free_capacity()
+		if server:
+			servers = [candidate for candidate in servers if candidate["name"] == server]
+			if not servers:
+				frappe.throw(
+					f"Shared server {server} has no room for this site right now. Please try again later."
+				)
+
+		if not servers:
+			self._throw_no_shared_server_available()
+
+		return servers[0]
+
+	def _throw_no_shared_server_available(self):
+		"""Nowhere to go and no room to go to are different problems for the reader."""
+		servers = self.other_shared_servers_in_region()
+		if not servers:
+			frappe.throw(
+				f"{self.region_title} has no other shared server to move this site to."
+				" Please move the site to a different region instead."
+			)
+
+		if self.is_group_public and not self.active_benches_on_shared_servers(list(servers)):
+			frappe.throw(
+				f"This site's shared bench runs on no other server in {self.region_title},"
+				" so there is nowhere to move it. Please move the site to a different region instead."
+			)
+
+		frappe.throw(
+			f"No other shared server in {self.region_title} has room for this site right now."
+			" Please try again later, or move the site to a different region."
+		)
+
+	def shared_servers_with_free_capacity(self) -> list[dict]:
+		"""Shared servers in this region with room for this site, the best destination first.
+
+		A server that already runs the site's bench comes first, because moving there needs no build.
+		"""
+		from press.press.doctype.server.server_monitoring import get_public_servers_with_free_capacity
+
+		servers = self.other_shared_servers_in_region()
+		benches = self.active_benches_on_shared_servers(list(servers))
+		if self.is_group_public:
+			# A shared bench is ours to deploy, so only servers already running it will do
+			servers = {name: title for name, title in servers.items() if name in benches}
+		if not servers:
+			return []
+
+		destinations = [
+			{
+				**server,
+				"title": servers[server["name"]] or server["name"],
+				"bench": benches.get(server["name"]),
+				"needs_deploy": server["name"] not in benches,
+			}
+			for server in get_public_servers_with_free_capacity(list(servers))
+		]
+		# Stable sort, so the roomiest server still wins within each half
+		destinations.sort(key=lambda destination: destination["needs_deploy"])
+		return destinations
+
+	def other_shared_servers_in_region(self) -> dict[str, str]:
+		"""Shared servers in this site's region that are open to taking it, by name and title."""
+		servers = frappe.get_all(
+			"Server",
+			filters={
+				"status": "Active",
+				"public": 1,
+				"cluster": self.cluster,
+				"name": ("!=", self.server),
+				"exclude_for_scheduling": 0,
+			},
+			fields=["name", "title"],
+		)
+		return {server.name: server.title for server in servers}
+
+	def active_benches_on_shared_servers(self, servers: list[str]) -> dict[str, str]:
+		"""Latest active bench of this site's bench group on each of those servers."""
+		if not servers:
+			return {}
+
+		benches = frappe.get_all(
+			"Bench",
+			filters={"group": self.group, "status": "Active", "server": ("in", servers)},
+			fields=["name", "server"],
+			order_by="creation desc",
+		)
+
+		latest: dict[str, str] = {}
+		for bench in benches:
+			latest.setdefault(bench.server, bench.name)
+		return latest
 
 	def recent_failed_migration_servers(self) -> list[str]:
 		# A failed move leaves restore files on its destination, so a retry there hits the space pre-check.
@@ -5255,7 +5555,9 @@ def process_archive_site_job_update(job: "AgentJob"):
 		return
 	from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
 
-	_create_site_backup_from_agent_job(job)
+	# The backup is in the Archive Site job, even when the upstream job finishes last
+	archive_job = job if job.job_type == "Archive Site" else other_job
+	_create_site_backup_from_agent_job(archive_job)
 
 	site = Site("Site", job.site)
 	site.delete_physical_backups()
@@ -6093,6 +6395,8 @@ def archive_creation_failed_sites():
 		["creation_failed", "!=", None],
 		["creation_failed", "<", creation_failure_retention_date],
 		["status", "=", "Broken"],
+		# archive_broken_standby_sites archives these without the backup that fails on them
+		["is_standby", "=", 0],
 	]
 
 	failed_sites = frappe.db.get_all("Site", filters=filters, fields=["name"], pluck="name")

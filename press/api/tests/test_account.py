@@ -16,7 +16,7 @@ from press.api.account import (
 	signup,
 	validate_pincode,
 )
-from press.overrides import on_login
+from press.overrides import login_via_frappe, on_login
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.team.team import Team
 from press.press.doctype.team.team_members import get_invitations
@@ -39,6 +39,20 @@ def user_context(user: str):
 	finally:
 		frappe.set_user(session_user)
 		frappe.session.data = session_data
+
+
+@contextmanager
+def browser_session(user: str):
+	"""Run the block as `user` with a session like the one a logged-in browser has."""
+	with user_context(user):
+		frappe.session.sid = "browser-session-id"
+		frappe.session.data = frappe._dict(user=user)
+		yield
+
+
+def saved_session() -> tuple:
+	"""What Frappe saves at the end of the request: the next request reads `data.user`."""
+	return frappe.session.user, frappe.session.sid, frappe.session.data.get("user")
 
 
 class TestAccountApi(TestCase):
@@ -411,35 +425,21 @@ class TestAccountApi(TestCase):
 			user_context(invited),
 			patch.object(Team, "create_user_for_member", record_session_user),
 		):
-			frappe.session.sid = "browser-session-id"
-			frappe.session.data = frappe._dict(user=invited, user_type="Website User")
 			accept_team_invite(key)
 			self.assertEqual(frappe.session.user, invited)
-			# Frappe saves the session after the request, so a lost sid or data logs the user out
-			self.assertEqual(frappe.session.sid, "browser-session-id")
-			self.assertEqual(frappe.session.data, {"user": invited, "user_type": "Website User"})
 
 		self.assertEqual(session_user_while_creating["user"], "Administrator")
 		self.assertTrue(frappe.db.exists("Team Member", {"parent": team.name, "user": invited}))
 
-	def test_accept_team_invite_keeps_the_invitee_session(self):
-		"""frappe.set_user overwrites the sid and data of the live session, and
-		Frappe saves that session after the request. If acceptance does not
-		restore them, the next request resumes as user None and the invitee is
-		locked out until they clear their cookies."""
+	def test_accept_team_invite_keeps_the_browser_session_of_the_invitee(self):
 		team = create_test_team()
 		invited = frappe.mock("email")
 		create_test_user(invited)
 		key = self._invite(team, invited, roles=None)
 
-		with user_context(invited):
-			frappe.session.sid = "browser-session-id"
-			frappe.session.data = frappe._dict(user=invited, user_type="Website User")
+		with browser_session(invited):
 			accept_team_invite(key)
-
-			self.assertEqual(frappe.session.user, invited)
-			self.assertEqual(frappe.session.sid, "browser-session-id")
-			self.assertEqual(frappe.session.data, {"user": invited, "user_type": "Website User"})
+			self.assertEqual(saved_session(), (invited, "browser-session-id", invited))
 
 	def test_accept_team_invite_recovers_from_quoted_printable_break_in_key(self):
 		"""The invite URL is long enough that email transport wraps it with a
@@ -545,6 +545,35 @@ class TestDisable2FA(TestCase):
 		self.assertEqual(frappe.db.get_value("User 2FA", self.team.user, "enabled"), 1)
 
 
+class TestLoginViaFrappe(TestCase):
+	def setUp(self):
+		self.team = create_test_team()
+		create_test_user_2fa(self.team.user)
+		self.login_hook = Mock(side_effect=lambda code, state: on_login(Mock(user=self.team.user)))
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def login_via_frappe(self):
+		"""Frappe's OAuth callback, with the provider round trip replaced by the login hook."""
+		with user_context("Guest"), patch("press.overrides.oauth2_logins.login_via_frappe", self.login_hook):
+			login_via_frappe("code", "state")
+
+	def test_login_via_frappe_logs_in_a_user_with_2fa_without_the_press_2fa_code(self):
+		self.login_via_frappe()
+		self.login_hook.assert_called_once_with("code", "state")
+
+	def test_other_logins_still_need_the_press_2fa_code_after_a_login_via_frappe(self):
+		self.login_via_frappe()
+		with user_context("Guest"):
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"Please re-login to verify your identity.",
+				on_login,
+				Mock(user=self.team.user),
+			)
+
+
 class TestReactivateAccount(TestCase):
 	def setUp(self):
 		self.team = create_test_team()
@@ -566,15 +595,10 @@ class TestReactivateAccount(TestCase):
 			reactivate_account()
 		self.assertEqual(self.is_enabled(), 1)
 
-	def test_reactivating_keeps_the_user_session(self):
-		with user_context(self.team.user):
-			frappe.session.sid = "browser-session-id"
-			frappe.session.data = frappe._dict(user=self.team.user, user_type="Website User")
+	def test_reactivating_keeps_the_browser_session_of_the_user(self):
+		with browser_session(self.team.user):
 			reactivate_account()
-
-			self.assertEqual(frappe.session.user, self.team.user)
-			self.assertEqual(frappe.session.sid, "browser-session-id")
-			self.assertEqual(frappe.session.data, {"user": self.team.user, "user_type": "Website User"})
+			self.assertEqual(saved_session(), (self.team.user, "browser-session-id", self.team.user))
 
 	def test_belonging_to_another_team_does_not_hide_the_disabled_account(self):
 		other_team = create_test_team()

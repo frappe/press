@@ -332,8 +332,8 @@ def accept_team_invite(key: str):
 			"This invite can't be accepted with the current account. Please sign in with the invited account or request a new invite."
 		)
 
-	# Adding a member has side effects (an Email Group Member) that a Press User can't create.
-	# A bare frappe.set_user pair would break the invitee's session, so keep it.
+	# Adding the member has side effects that a plain Press User cannot do,
+	# such as an Email Group Member subscription.
 	with user_utils.as_administrator():
 		add_invited_member_to_team(account_request)
 
@@ -459,7 +459,7 @@ def reactivate_account():
 			"You don't have a disabled account to reactivate. Please log in with the account you disabled."
 		)
 
-	# The team is disabled, so every permission check for this user fails.
+	# The team is disabled, so every permission check on it fails for this session.
 	with user_utils.as_administrator():
 		Team("Team", team_name).enable_account()
 
@@ -1101,7 +1101,7 @@ def get_frappe_io_auth_url() -> str | None:
 		and get_oauth_keys(provider.name)
 		and provider.get_password("client_secret")
 	):
-		return get_oauth2_authorize_url(provider.name, redirect_to="")
+		return get_oauth2_authorize_url(provider.name, redirect_to="/dashboard")
 	return None
 
 

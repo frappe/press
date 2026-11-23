@@ -275,7 +275,7 @@ export function backupRecordsOptions() {
 											row.creation,
 										).format(
 											'lll',
-										)}</b> ?<br><br>This will overwrite all <b>data</b> & <b>apps</b> in your site with those from the backup.`,
+										)}</b>?<br><br>This will overwrite all <b>data</b> & <b>apps</b> in your site with those from the backup.`,
 										onSuccess({ hide }) {
 											toast.promise(
 												site.restoreSiteFromPhysicalBackup.submit({
@@ -306,7 +306,7 @@ export function backupRecordsOptions() {
 											row.creation,
 										).format(
 											'lll',
-										)}</b> ?<br><br>This will overwrite all <b>data</b> & <b>apps</b> in your site with those from the backup.`,
+										)}</b>?<br><br>This will overwrite all <b>data</b> & <b>apps</b> in your site with those from the backup.`,
 										onSuccess({ hide }) {
 											toast.promise(
 												site.restoreSiteFromFiles.submit({
@@ -445,7 +445,7 @@ export function backupRecordsOptions() {
 		},
 		secondaryAction({ documentResource: site }) {
 			if (site.doc?.status !== 'Active') return null
-			if (!site.doc?.can_schedule_backups) return null
+			if (!site.doc?.can_manage_backup_schedule) return null
 			return {
 				label: 'Backup Schedule',
 				slots: {

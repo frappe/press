@@ -65,7 +65,7 @@
 	"index_web_pages_for_search": 1,
 	"issingle": 1,
 	"links": [],
-	"modified": "2023-11-24 14:46:36.102377",
+	"modified": "2026-11-13 18:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Ansible Console",
@@ -76,6 +76,14 @@
 			"print": 1,
 			"read": 1,
 			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"role": "Press Infrastructure Manager",
 			"share": 1,
 			"write": 1
 		}

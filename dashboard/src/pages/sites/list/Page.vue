@@ -14,7 +14,6 @@ import {
 import { unparse } from 'papaparse'
 import { defineAsyncComponent, h, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AlertBanner from '@/components/AlertBanner.vue'
 import BillingAlerts from '@/components/BillingAlerts.vue'
 import Scrollbar from '@/components/common/Scrollbar.vue'
 import Header from '@/components/Header.vue'
@@ -68,7 +67,6 @@ const requestedStatuses = statusesInQuery(route.query.status)
 const selectedStatuses = ref<string[]>(
 	requestedStatuses.length ? requestedStatuses : liveStatuses,
 )
-const showsArchivedFallback = ref(false)
 
 const initialFilters = { status: ['in', selectedStatuses.value] }
 
@@ -118,7 +116,6 @@ const selectStatuses = (value: string[]) => {
 }
 
 const applyStatusFilter = (value: string[]) => {
-	showsArchivedFallback.value = false
 	selectStatuses(value)
 }
 
@@ -132,7 +129,6 @@ const archivedSites = createListResource({
 		// A team with no site at all keeps the default list, where it can
 		// create the first site
 		if (!data?.length) return
-		showsArchivedFallback.value = true
 		selectStatuses(['Archived'])
 	},
 })
@@ -161,7 +157,6 @@ watch(
 		const statuses = statusesInQuery(query)
 		const value = statuses.length ? statuses : liveStatuses
 		if (value.join() === selectedStatuses.value.join()) return
-		showsArchivedFallback.value = false
 		checkLiveSitesOnNextCount = !statuses.length
 		selectedStatuses.value = value
 		applyFilter('status', ['in', value])
@@ -297,14 +292,7 @@ const exportCSV = () => {
 			<BillingAlerts ctx-type="List Page" />
 		</div>
 
-		<div v-if="showsArchivedFallback" class="px-5 pt-4">
-			<AlertBanner
-				title="Your team has no live sites. This page shows your archived sites."
-				type="info"
-			/>
-		</div>
-
-		<div class="flex items-center gap-2 px-5 pb-3 overflow-auto">
+		<div class="flex items-center gap-2 px-5 pt-4 pb-3 overflow-auto">
 			<TextInput
 				placeholder="Search sites"
 				class="w-56 shrink-0"

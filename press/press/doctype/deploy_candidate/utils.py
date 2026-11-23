@@ -61,7 +61,7 @@ def get_package_manager_files_from_repo(app: str, repo_path: str):
 
 
 def _get_package_manager_files_from_repo(
-	repo_path: str,
+	repo_path: str | Path,
 	recursive: bool,
 ) -> tuple[Path | None, list[Path]]:
 	pyproject_toml: Path | None = None
@@ -194,6 +194,10 @@ def get_build_server_with_least_active_builds(platform: str) -> str | None:
 	if not build_servers:
 		return None
 
+	# A prune slows builds that run with it. Keep at least one server in rotation.
+	in_cleanup = set(get_build_servers_in_cleanup())
+	build_servers = [s for s in build_servers if s not in in_cleanup] or build_servers
+
 	if len(build_servers) == 1:
 		return build_servers[0]
 
@@ -203,6 +207,19 @@ def get_build_server_with_least_active_builds(platform: str) -> str | None:
 	build_count_tuples = [(s, build_count.get(s, 0)) for s in build_servers]
 	build_count_tuples.sort(key=lambda x: x[1])
 	return build_count_tuples[0][0]
+
+
+def get_build_servers_in_cleanup() -> list[str]:
+	# The prune has a 2 hour timeout. An older open job is stuck, and must not hold a server out forever.
+	return frappe.get_all(
+		"Press Job",
+		filters={
+			"job_type": "Trigger Build Server Cleanup",
+			"status": ("in", ["Pending", "Running"]),
+			"creation": (">", frappe.utils.now_datetime() - timedelta(hours=3)),
+		},
+		pluck="server",
+	)
 
 
 def get_active_build_count_by_build_server():

@@ -1,19 +1,20 @@
-import { toast } from 'vue-sonner';
-import { getTeam } from '../../data/team';
-import { confirmDialog, icon, renderDialog } from '../../utils/components';
-import { h } from 'vue';
-import PatchAppDialog from '../../components/group/PatchAppDialog.vue';
-import { ColumnField, FilterField, Tab } from './types';
-import { isMobile } from '../../utils/device';
+import { h } from 'vue'
+import { toast } from 'vue-sonner'
+import PatchAppDialog from '../../components/group/PatchAppDialog.vue'
+import { getTeam } from '../../data/team'
+import { confirmDialog, icon, renderDialog } from '../../utils/components'
+import { isMobile } from '../../utils/device'
+import { canManageApps } from './apps'
+import { ColumnField, FilterField, Tab } from './types'
 
 const statusTheme = {
 	Applied: 'green',
 	'Not Applied': 'gray',
 	'In Process': 'orange',
 	Failure: 'red',
-};
+}
 
-type Status = keyof typeof statusTheme;
+type Status = keyof typeof statusTheme
 
 export function getPatchesTab(forBench: boolean) {
 	return {
@@ -48,20 +49,21 @@ export function getPatchesTab(forBench: boolean) {
 				] satisfies FilterField[],
 			columns: getPatchesTabColumns(forBench),
 			primaryAction({ listResource: apps, documentResource: doc }) {
+				if (!canManageApps(doc.doc)) return null
 				return {
 					label: 'Apply Patch',
 					slots: {
 						prefix: icon('plus'),
 					},
 					onClick() {
-						const group = doc.doctype === 'Bench' ? doc.doc.group : doc.name;
+						const group = doc.doctype === 'Bench' ? doc.doc.group : doc.name
 
-						renderDialog(h(PatchAppDialog, { group: group, app: '' }));
+						renderDialog(h(PatchAppDialog, { group: group, app: '' }))
 					},
-				};
+				}
 			},
-			rowActions({ row, listResource }) {
-				let team = getTeam();
+			rowActions({ row, listResource, documentResource: doc }) {
+				let team = getTeam()
 				return [
 					{
 						label: 'View in Desk',
@@ -69,13 +71,14 @@ export function getPatchesTab(forBench: boolean) {
 						onClick() {
 							window.open(
 								`${window.location.protocol}//${window.location.host}/app/app-patch/${row.name}`,
-								'_blank'
-							);
+								'_blank',
+							)
 						},
 					},
 					{
 						label: 'Apply Patch',
-						condition: () => row.status !== 'In Process',
+						condition: () =>
+							canManageApps(doc.doc) && row.status !== 'In Process',
 						onClick: () => {
 							toast.promise(
 								listResource.runDocMethod.submit({
@@ -86,13 +89,14 @@ export function getPatchesTab(forBench: boolean) {
 									loading: 'Creating job to apply patch',
 									success: () => 'Patch apply in process',
 									error: () => 'Failed to apply patch',
-								}
-							);
+								},
+							)
 						},
 					},
 					{
 						label: 'Revert Patch',
-						condition: () => row.status !== 'In Process',
+						condition: () =>
+							canManageApps(doc.doc) && row.status !== 'In Process',
 						onClick: () => {
 							toast.promise(
 								listResource.runDocMethod.submit({
@@ -103,13 +107,14 @@ export function getPatchesTab(forBench: boolean) {
 									loading: 'Creating job to revert patch',
 									success: () => 'Patch reversion in process',
 									error: () => 'Failed to revert patch',
-								}
-							);
+								},
+							)
 						},
 					},
 					{
 						label: 'Delete',
-						condition: () => row.status === 'Not Applied',
+						condition: () =>
+							canManageApps(doc.doc) && row.status === 'Not Applied',
 						onClick: () => {
 							confirmDialog({
 								title: 'Delete Patch',
@@ -123,16 +128,16 @@ export function getPatchesTab(forBench: boolean) {
 											loading: 'Deleting...',
 											success: () => 'Patch deleted',
 											error: () => 'Failed to delete patch',
-										}
-									);
+										},
+									)
 								},
-							});
+							})
 						},
 					},
-				];
+				]
 			},
 		},
-	} satisfies Tab;
+	} satisfies Tab
 }
 
 function getPatchesTabColumns(forBench: boolean) {
@@ -165,16 +170,16 @@ function getPatchesTabColumns(forBench: boolean) {
 			width: forBench ? undefined : '300px',
 			format(value) {
 				if (!value) {
-					return '-';
+					return '-'
 				}
 
-				const url = new URL(value);
-				return url.hostname + url.pathname;
+				const url = new URL(value)
+				return url.hostname + url.pathname
 			},
 			link: (value) => String(value),
 		},
-	];
+	]
 
-	if (forBench) return columns.filter((f) => f.fieldname !== 'bench');
-	return columns;
+	if (forBench) return columns.filter((f) => f.fieldname !== 'bench')
+	return columns
 }

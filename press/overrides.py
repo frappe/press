@@ -8,6 +8,7 @@ from functools import partial
 import frappe
 from frappe.core.doctype.user.user import User
 from frappe.handler import is_whitelisted
+from frappe.integrations import oauth2_logins
 from frappe.query_builder import Table
 from frappe.utils import cint
 
@@ -61,6 +62,8 @@ def upload_file():
 def on_login(login_manager):
 	if frappe.session.user and frappe.session.data and frappe.session.data.user_type == "System User":
 		return
+	if frappe.flags.login_via_frappe:
+		return
 	user = login_manager.user
 	has_2fa = frappe.db.get_value(
 		"User 2FA", {"user": user, "enabled": 1}, ["last_verified_at"], as_dict=True
@@ -70,6 +73,16 @@ def on_login(login_manager):
 		or has_2fa.get("last_verified_at") < frappe.utils.add_to_date(None, seconds=-10)
 	):
 		frappe.throw("Please re-login to verify your identity.")
+
+
+@frappe.whitelist(allow_guest=True)
+def login_via_frappe(code: str, state: str):
+	"""Skip Press 2FA: frappe.io asks for its own 2FA code at login."""
+	frappe.flags.login_via_frappe = True
+	try:
+		oauth2_logins.login_via_frappe(code, state)
+	finally:
+		frappe.flags.login_via_frappe = False
 
 
 def before_job():

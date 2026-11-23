@@ -90,6 +90,8 @@ jinja = {
 
 # before_install = "press.install.before_install"
 after_install = "press.install.after_install"
+# After fixtures, which bring the roles of Press
+after_sync = ["press.access.core_permissions.sync_core_permissions"]
 
 # Desk Notifications
 # ------------------
@@ -181,6 +183,7 @@ doc_events = {
 		],
 	},
 	"Address": {"validate": "press.api.billing.validate_gst"},
+	"Custom DocPerm": {"validate": "press.access.core_permissions.refuse_rule_outside_code"},
 	"Country": {
 		"on_update": "press.api.account.clear_country_list_cache",
 		"on_trash": "press.api.account.clear_country_list_cache",
@@ -252,6 +255,8 @@ scheduler_events = {
 		"press.press.doctype.invoice.invoice.sync_paid_invoices_to_frappeio",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_card_invoices",
 		"press.press.doctype.cloud_usage_anomaly.cloud_usage_anomaly.run_daily_pipeline",
+		"press.press.doctype.wazuh_server_report.wazuh_server_report.sync_wazuh_reports",
+		"press.press.doctype.request_abuse_daily.request_abuse_daily.record_yesterday",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -270,12 +275,14 @@ scheduler_events = {
 		"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.expire_backups",
 		"press.press.doctype.server_snapshot.server_snapshot.expire_snapshots",
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
+		"press.saas.doctype.product_trial.product_trial.archive_broken_standby_sites",
 		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 		"press.press.doctype.server.server.sync_wazuh_agent_status",
 		"press.press.doctype.server.server.install_missing_wazuh_agents",
 		"press.press.doctype.incident_settings.incident_settings.alert_if_phone_call_alerts_disabled",
 		"press.press.doctype.server.server_monitoring.alert_on_failing_signups",
+		"press.press.doctype.server.server_monitoring.alert_on_failed_public_group_builds",
 		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",
 		"press.press.doctype.database_server.database_server.upload_audit_logs_to_s3",
 		"press.press.doctype.site_backup.site_backup.alert_if_backup_success_rate_is_low",
@@ -412,6 +419,7 @@ scheduler_events = {
 			"press.press.doctype.site_backup.site_backup.delete_failed_unavailable_backups_for_archived_sites",
 			"press.press.doctype.site_backup.site_backup.delete_agent_job_records_for_archived_sites",
 			"press.press.doctype.site_backup.site_backup.delete_site_activity_records_for_archived_sites",
+			"press.press.doctype.server.server_monitoring.alert_on_servers_with_stuck_agent_jobs",
 		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
@@ -456,6 +464,7 @@ fixtures = [
 	"MariaDB Variable",
 	"Cloud Region",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
+	{"dt": "Role Profile", "filters": [["role_profile", "like", "Press%"]]},
 	"Site Config Key Blacklist",
 	"Press Method Permission",
 	"Bench Dependency",
@@ -475,7 +484,10 @@ before_tests = "press.tests.before_test.execute"
 # Overriding Methods
 # ------------------------------
 #
-override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
+override_whitelisted_methods = {
+	"upload_file": "press.overrides.upload_file",
+	"frappe.integrations.oauth2_logins.login_via_frappe": "press.overrides.login_via_frappe",
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
@@ -484,13 +496,18 @@ override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
 # 	"Task": "press.task.get_dashboard_data"
 # }
 
-override_doctype_class = {"User": "press.overrides.CustomUser"}
+override_doctype_class = {
+	"User": "press.overrides.CustomUser",
+	"System Console": "press.access.data_console.PressSystemConsole",
+}
 
 # on_logout = "press.overrides.on_logout"
 on_login = "press.overrides.on_login"
 
 before_request = [
 	"press.overrides.before_request",
+	"press.access.staff_roles.use_saved_document",
+	"press.access.staff_roles.check_staff_role",
 	"press.telemetry.monitor.add_user_context",
 	"press.telemetry.sentry.add_user_context",
 ]
@@ -512,6 +529,7 @@ export_python_type_annotations = True
 
 default_log_clearing_doctypes = {
 	"Alertmanager Webhook Log": 60,
+	"Request Abuse Daily": 90,
 }
 
 
@@ -577,5 +595,6 @@ before_migrate = ["press.overrides.before_after_migrate"]
 after_migrate = [
 	"press.overrides.before_after_migrate",
 	"press.api.account.clear_country_list_cache",
+	"press.access.core_permissions.sync_core_permissions",
 	"press.sanity.checks",
 ]
