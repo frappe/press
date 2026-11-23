@@ -1893,9 +1893,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if offsite_config:
 			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw(
-				"Offsite Backups aren't set up yet. Please configure offsite backup storage in Press Settings before taking an offsite backup."
-			)
+			frappe.throw(f"Set the Backup Bucket of cluster {cluster} before taking an offsite backup")
 
 		return self.create_agent_job(
 			"Backup Database From Snapshot",
@@ -1924,9 +1922,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if offsite_config:
 			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw(
-				"Offsite Backups aren't set up yet. Please configure offsite backup storage in Press Settings before taking an offsite backup."
-			)
+			frappe.throw(f"Set the Backup Bucket of cluster {cluster} before taking an offsite backup")
 
 		return self.create_agent_job(
 			"Backup Files From Snapshot",
@@ -2061,12 +2057,13 @@ Response: {reason or getattr(result, "text", "Unknown")}
 	def _get_offsite_backup_config(self, cluster: str, backups_path: str) -> dict | None:
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
+		# The callers handle a cluster that has no offsite storage set up yet
+		if not frappe.db.get_value("Cluster", cluster, "backup_bucket"):
+			return None
+
 		settings = frappe.get_single("Press Settings")
 		backup_bucket_config = get_backup_bucket(cluster, region=True)
 		bucket_name = backup_bucket_config.get("name")
-
-		if not (settings.aws_s3_bucket or bucket_name):
-			return None
 
 		auth = {
 			"ACCESS_KEY": settings.offsite_backups_access_key_id,

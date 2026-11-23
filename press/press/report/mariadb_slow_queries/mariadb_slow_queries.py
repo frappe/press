@@ -19,7 +19,7 @@ from press.utils.sql import format_sql
 
 def execute(filters=None):
 	frappe.only_for(
-		["System Manager", "Site Manager", "Press User", "Press Support", "Press Support Engineer"]
+		["System Manager", "Site Manager", "Press User", "Press Support L1", "Press Support Engineer"]
 	)
 	filters.database = frappe.db.get_value("Site", filters.site, "database_name")
 

@@ -171,13 +171,16 @@ class ReleaseGroup(Document, TagHelpers):
 		query = (
 			query.where(ReleaseGroup.team == frappe.local.team().name)
 			.where(ReleaseGroup.enabled == 1)
-			.where(ReleaseGroup.public == 0)
 			.where(outside_archived_clusters())
 			.select(
 				site_count_query(server).as_("site_count"),
 				active_bench_count_query(server).as_("active_benches"),
 			)
 		)
+
+		# Public groups host new sites for everyone, so only staff see them in the list
+		if not frappe.local.system_user():
+			query = query.where(ReleaseGroup.public == 0)
 
 		if server:
 			query = (
@@ -901,10 +904,15 @@ class ReleaseGroup(Document, TagHelpers):
 				continue
 
 			last_image_size = self._get_last_deployed_image_size(server, last_deployed_bench)
+			if not last_image_size:
+				continue
 
-			if last_image_size and (free_space < last_image_size):
+			# New Bench pulls the image and then copies its sites folder out with `cp -LR`,
+			# on the same volume. ponytail: 2x is an upper bound; measure the copy if it blocks too often.
+			required_size = 2 * last_image_size
+			if free_space < required_size:
 				self._try_server_size_increase_or_throw(
-					server, mountpoint, required_size=last_image_size - free_space
+					server, mountpoint, required_size=required_size - free_space
 				)
 
 	def check_auto_scales(self) -> None:
@@ -1695,6 +1703,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.remove_app(source.app)
 
 	@dashboard_whitelist()
+	@action_guard(ReleaseGroupActions.ManageApps)
 	def change_app_branch(self, app: str, to_branch: str) -> None:
 		current_app_source = self.get_app_source(app)
 
@@ -1962,6 +1971,7 @@ class ReleaseGroup(Document, TagHelpers):
 			Bench("Bench", bench.name).update_bench_config(force=True)
 
 	@dashboard_whitelist()
+	@action_guard(ReleaseGroupActions.ManageApps)
 	def add_app(self, app, is_update: bool = False):
 		if isinstance(app, str):
 			app = json.loads(app)
@@ -2004,6 +2014,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.update_source(source, is_update)
 
 	@dashboard_whitelist()
+	@action_guard(ReleaseGroupActions.ManageApps)
 	def remove_app(self, app: str):
 		"""Remove app from release group"""
 
@@ -2015,6 +2026,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return app
 
 	@dashboard_whitelist()
+	@action_guard(ReleaseGroupActions.ManageApps)
 	def fetch_latest_app_update(self, app: str):
 		app_source = self.get_app_source(app)
 		app_source.create_release(force=True)

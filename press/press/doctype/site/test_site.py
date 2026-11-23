@@ -1050,6 +1050,20 @@ class TestSite(FrappeTestCase):
 		self.assertTrue(bahrain_files.isdisjoint(deleted_files))
 		self.assertTrue(other_files.issubset(set(deleted_files)))
 
+	@patch("press.press.doctype.remote_file.remote_file.delete_remote_backup_objects")
+	def test_delete_offsite_backups_deletes_the_site_config_file(self, mock_delete):
+		from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
+		from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+
+		site = create_test_site("configsite")
+		backup = create_test_site_backup(site=site.name)
+		config_file = create_test_remote_file(site.name).name
+		backup.db_set("remote_config_file", config_file)
+
+		site.delete_offsite_backups(keep_latest=False)
+
+		self.assertIn(config_file, mock_delete.call_args.args[0])
+
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 @patch("frappe.sendmail", new=Mock())
@@ -1244,6 +1258,16 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 			lambda: site.restore_tables(force=True),
 		)
 
+	def test_deactivate_on_a_trial_plan_names_the_site_in_the_error(self):
+		site = create_test_site()
+		site.db_set("plan", create_test_plan("Site", is_trial_plan=True).name)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			f"The site {site.name} is currently on a trial plan",
+			site.deactivate,
+		)
+
 	def _site_with_a_running_table_restore(self) -> Site:
 		from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 
@@ -1364,6 +1388,16 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 
 		self.assertEqual(site.get_plan_config()["rate_limit"], {"limit": 36000, "window": 86400})
 
+	def test_site_moved_to_dedicated_plan_on_creation_does_not_keep_the_chosen_plans_rate_limit(self):
+		"""validate_site_plan swaps a shared plan for a dedicated one after before_insert wrote the config."""
+		create_test_plan("Site", cpu_time=10, dedicated_server_plan=True)
+		shared_plan = create_test_plan("Site", cpu_time=2)
+
+		site = create_test_site(subscription_plan=shared_plan.name)
+
+		self.assertTrue(frappe.db.get_value("Site Plan", site.subscription_plan, "dedicated_server_plan"))
+		self.assertEqual(json.loads(site.config)["rate_limit"], {})
+
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestSiteConfigEncryptionKeyValidation(FrappeTestCase):
@@ -1455,6 +1489,24 @@ class TestArchiveSiteJobUpdate(FrappeTestCase):
 		self.site.reload()
 		self.assertEqual(self.site.status, "Broken")
 		self.assertTrue(self.site.archive_failed)
+
+	@patch("press.press.doctype.site.site.site_cleanup_after_archive", new=Mock())
+	def test_archive_backup_is_recorded_when_the_upstream_job_finishes_last(self):
+		archive_job = self._create_archive_jobs("Success")
+		for step in ("Backup Site", "Upload Site Backup to S3", "Archive Site"):
+			self._set_step_status(archive_job, step, "Success")
+		database = {"file": "database.sql.gz", "size": 100, "url": "https://example.com/database.sql.gz"}
+		archive_job.db_set(
+			"data", json.dumps({"backups": {"database": database}, "offsite": {"database.sql.gz": "path"}})
+		)
+		upstream_job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Remove Site from Upstream", "site": self.site.name}
+		)
+
+		process_archive_site_job_update(upstream_job)
+
+		self.assertEqual(frappe.db.get_value("Site", self.site.name, "status"), "Archived")
+		self.assertTrue(frappe.db.exists("Site Backup", {"job": archive_job.name, "offsite": True}))
 
 	def test_step_skipped_by_a_successful_job_still_counts_as_removed(self):
 		"""The agent skips a step it has no work for. That job succeeded, so nothing is left behind."""

@@ -77,6 +77,8 @@
 		"enable_periodic_flush_table",
 		"flush_table_execution_hour",
 		"column_break_vgmf",
+		"backups_section",
+		"backup_bucket",
 		"location_section",
 		"country"
 	],
@@ -451,6 +453,19 @@
 			"label": "Enable Periodic FLUSH TABLE"
 		},
 		{
+			"fieldname": "backups_section",
+			"fieldtype": "Section Break",
+			"label": "Backups"
+		},
+		{
+			"description": "Offsite backups of the sites and servers in this cluster go to this bucket",
+			"fieldname": "backup_bucket",
+			"fieldtype": "Link",
+			"label": "Backup Bucket",
+			"options": "Backup Bucket",
+			"reqd": 1
+		},
+		{
 			"fieldname": "location_section",
 			"fieldtype": "Section Break",
 			"label": "Location"
@@ -506,7 +521,8 @@
 		{
 			"fieldname": "frappe_compute_api_key",
 			"fieldtype": "Data",
-			"label": "Frappe Compute API Key"
+			"label": "Frappe Compute API Key",
+			"permlevel": 1
 		},
 		{
 			"fieldname": "frappe_compute_api_secret",
@@ -555,7 +571,7 @@
 			"link_fieldname": "document_name"
 		}
 	],
-	"modified": "2026-11-06 12:30:00.000000",
+	"modified": "2026-11-18 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Cluster",
@@ -584,6 +600,25 @@
 			"report": 1,
 			"role": "Press Infrastructure Manager",
 			"share": 1,
+			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Infrastructure Reader"
+		},
+		{
+			"permlevel": 1,
+			"read": 1,
+			"role": "System Manager",
+			"write": 1
+		},
+		{
+			"permlevel": 1,
+			"read": 1,
+			"role": "Press Infrastructure Manager",
 			"write": 1
 		}
 	],
