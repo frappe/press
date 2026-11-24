@@ -434,6 +434,7 @@ class Site(Document, TagHelpers):
 		doc.has_scheduled_updates = bool(
 			frappe.db.exists("Site Update", {"site": self.name, "status": "Scheduled"})
 		)
+		doc.scheduled_version_upgrade = self.get_scheduled_version_upgrade()
 		doc.update_information = self.get_update_information()
 		doc.fatal_update = (
 			frappe.db.get_value(
@@ -832,6 +833,19 @@ class Site(Document, TagHelpers):
 			)
 		if len(self.logical_backup_times) > 1:
 			frappe.throw("We set up the backup times of your site. Write to support to change them.")
+
+	def get_scheduled_version_upgrade(self) -> dict | None:
+		"""The next scheduled Version Upgrade, so the dashboard can show it before it starts"""
+		upgrade = frappe.db.get_value(
+			"Version Upgrade",
+			{"site": self.name, "status": "Scheduled"},
+			["scheduled_time", "destination_group"],
+			as_dict=True,
+			order_by="scheduled_time asc",
+		)
+		if upgrade:
+			upgrade.version = frappe.db.get_value("Release Group", upgrade.destination_group, "version")
+		return upgrade
 
 	def plan_allows_backup_schedule(self) -> bool:
 		"""Entry-level plans stay on the default schedule.
