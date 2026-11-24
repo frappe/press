@@ -17,7 +17,7 @@ from frappe.website.website_generator import WebsiteGenerator
 
 from press.access.staff_roles import needs_staff_role, safe_for_readers
 from press.api.client import dashboard_whitelist
-from press.api.github import app, get_access_token
+from press.api.github import get_access_token, get_app_info
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	get_app_plan_features,
 )
@@ -395,8 +395,8 @@ class MarketplaceApp(WebsiteGenerator):
 		source_doc: "AppSource" = frappe.get_doc("App Source", template_source)
 		validate_frappe_version_for_branch(
 			app_name=self.app,
-			owner=source_doc.repository_owner,
-			repository=source_doc.repository,
+			owner=repo_owner,
+			repository=repo_name,
 			branch=branch,
 			version=version,
 			github_installation_id=source_doc.github_installation_id,
@@ -810,7 +810,7 @@ def validate_frappe_version_for_branch(
 	"""Check if the version being added is supported by the branch comparing the frappe versions in pyproject.toml
 	Only check for lower bounds major version compatibility in case `ease_versioning_constrains` is set to True
 	"""
-	app_info = app(
+	app_info = get_app_info(
 		owner=owner,
 		repository=repository,
 		branch=branch,
