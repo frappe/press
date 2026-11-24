@@ -200,9 +200,9 @@ class MarketplaceApp(WebsiteGenerator):
 			frappe.throw(f"App {self.name} already exists. Please contact support.")
 
 	def validate_github_installations(self):
-		"""Check the installation passed in and the ones newly added sources use."""
+		"""Check the installation passed in and the sources new to this team."""
 		before = self.get_doc_before_save()
-		known = {row.source for row in before.sources} if before else set()
+		known = {row.source for row in before.sources} if before and before.team == self.team else set()
 		sources = [row.source for row in self.sources if row.source not in known]
 		used = (
 			frappe.get_all("App Source", {"name": ("in", sources)}, pluck="github_installation_id")
