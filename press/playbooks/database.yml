@@ -7,6 +7,7 @@
   roles:
     - role: nat_iptables
     - role: essentials
+    - role: block_sctp
     - role: user
     - role: mount
     - role: mariadb

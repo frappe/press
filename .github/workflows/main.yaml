@@ -16,7 +16,7 @@ concurrency:
 jobs:
   changes:
     name: Check for Changes and Lint
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.SELF_HOSTED_RUNNERS == 'true' && !github.event.pull_request.head.repo.fork && 'self-hosted' || 'ubuntu-latest' }}
     outputs:
       changed-python: ${{ steps.changed-python-files.outputs.any_changed }}
       changed-python-files: ${{ steps.changed-python-files.outputs.all_changed_files }}
@@ -26,32 +26,32 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Get changed python files
         id: changed-python-files
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@v47
         with:
           files: |
             **.py
 
       - name: Get changed build files
         id: changed-build-files
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@v47
         with:
           files: |
             pyproject.toml
 
       - name: Get changed json files
         id: changed-json-files
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@v47
         with:
           files: |
             **.json
 
       - name: Get changed js or vue files
         id: changed-js-vue-files
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@v47
         with:
           files: |
             **.js
@@ -67,13 +67,14 @@ jobs:
 
       - name: Set up Python
         if: steps.changed-python-files.outputs.any_changed == 'true'
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.10.20'
 
       - name: Cache pip
-        if: steps.changed-python-files.outputs.any_changed == 'true'
-        uses: actions/cache@v4
+        # Self-hosted runners share pip and yarn caches on the VM, so they skip GitHub's cache.
+        if: steps.changed-python-files.outputs.any_changed == 'true' && runner.environment == 'github-hosted'
+        uses: actions/cache@v6
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
@@ -91,20 +92,21 @@ jobs:
 
   format:
     name: Format & Type Check
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.SELF_HOSTED_RUNNERS == 'true' && !github.event.pull_request.head.repo.fork && 'self-hosted' || 'ubuntu-latest' }}
     needs: changes
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.10.20'
 
       - name: Cache pip
-        uses: actions/cache@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@v6
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
@@ -147,10 +149,10 @@ jobs:
 
   semgrep:
     name: Semgrep Rules
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.SELF_HOSTED_RUNNERS == 'true' && !github.event.pull_request.head.repo.fork && 'self-hosted' || 'ubuntu-latest' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.10.20'
 
@@ -161,7 +163,11 @@ jobs:
 
   install:
     name: Setup Bench
-    runs-on: ubuntu-24.04 # Same image as the jobs that restore bench-dir
+    # With the repository variable SELF_HOSTED_RUNNERS set to true, jobs use
+    # the self-hosted runners in .github/runner/, except for fork PRs. Both
+    # are Ubuntu 24.04, and every job that restores bench-dir uses this same
+    # expression.
+    runs-on: ${{ vars.SELF_HOSTED_RUNNERS == 'true' && !github.event.pull_request.head.repo.fork && 'self-hosted' || 'ubuntu-24.04' }}
     needs: changes
     if: needs.changes.outputs.changed-python == 'true' || needs.changes.outputs.changed-json == 'true' || needs.changes.outputs.changed-js-vue == 'true' || needs.changes.outputs.changed-build == 'true'
 
@@ -178,45 +184,34 @@ jobs:
 
     steps:
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.10.20'
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           check-latest: true
 
+      # The self-hosted runner image has these packages (.github/runner/Dockerfile).
       - name: Refresh apt index
+        if: runner.environment == 'github-hosted'
         run: sudo apt-get update
 
       - name: Cache apt
+        if: runner.environment == 'github-hosted'
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: redis-server libcups2-dev
           version: 1.0 # Arbitrary version to bust cache when needed
 
-      - name: Cache wkhtmltopdf
-        id: cache-wkhtmltopdf
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/bin/wkhtmltopdf
-          key: ${{ runner.os }}-wkhtmltopdf-0.12.3
-
-      - name: Install wkhtmltopdf
-        if: steps.cache-wkhtmltopdf.outputs.cache-hit != 'true'
-        run: |
-          wget -O /tmp/wkhtmltox.tar.xz https://github.com/frappe/wkhtmltopdf/raw/master/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz
-          tar -xf /tmp/wkhtmltox.tar.xz -C /tmp
-          sudo mv /tmp/wkhtmltox/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
-          sudo chmod o+x /usr/local/bin/wkhtmltopdf
-
       - name: Cache pip
-        uses: actions/cache@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@v6
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
@@ -229,7 +224,8 @@ jobs:
         run: 'echo "::set-output name=dir::$(yarn cache dir)"'
 
       - name: Cache yarn
-        uses: actions/cache@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@v6
         id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -238,13 +234,26 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Install
-        run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
+        # Self-hosted runners share the yarn cache. The lock lets one install
+        # at a time write it, like sharing=locked in press/docker/Dockerfile.
+        run: ${{ runner.environment == 'self-hosted' && 'flock /cache/yarn/.lock' || '' }} bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
       - name: Cache bench directory
-        uses: actions/cache/save@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache/save@v6
         with:
           key: bench-dir-${{ github.run_id }}
           path: /home/runner/frappe-bench
+
+      # All self-hosted runners are on one VM and share /cache (see
+      # .github/runner/compose.yaml). A local copy is faster than an upload to
+      # GitHub's cache. The Client and Server jobs mount it with overlayfs.
+      - name: Save bench directory on the runner VM
+        if: runner.environment == 'self-hosted'
+        run: |
+          rm -rf /cache/runs/${{ github.run_id }}
+          mkdir -p /cache/runs/${{ github.run_id }}
+          cp -a /home/runner/frappe-bench /cache/runs/${{ github.run_id }}/
 
       - name: Stop mariadb service
         run: |
@@ -255,16 +264,21 @@ jobs:
           sudo chown -R runner:runner /data/mariadb_data
 
       - name: Cache mariadb data directory
-        uses: actions/cache/save@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache/save@v6
         with:
           key: mariadb-data-${{ github.run_id }}
           path: /data/mariadb_data
+
+      - name: Save mariadb data directory on the runner VM
+        if: runner.environment == 'self-hosted'
+        run: cp -a /data/mariadb_data /cache/runs/${{ github.run_id }}/
 
   ui-tests:
     needs: [changes, install]
     name: Client
     # Playwright 1.54 cannot install Chromium on ubuntu-latest (26.04)
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.SELF_HOSTED_RUNNERS == 'true' && !github.event.pull_request.head.repo.fork && 'self-hosted' || 'ubuntu-24.04' }}
     env:
       PRESS_ADMIN_USER_EMAIL: playwright@example.com
       PRESS_ADMIN_USER_PASSWORD: playwright
@@ -281,10 +295,15 @@ jobs:
           sudo chown -R runner:runner /data/mariadb_data
 
       - name: Restore mariadb data directory from cache
-        uses: actions/cache/restore@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache/restore@v6
         with:
           key: mariadb-data-${{ github.run_id }}
           path: /data/mariadb_data
+
+      - name: Restore mariadb data directory from the runner VM
+        if: runner.environment == 'self-hosted'
+        run: cp -a /cache/runs/${{ github.run_id }}/mariadb_data/. /data/mariadb_data/
 
       - name: Change ownership of mariadb data directory (post cache restore)
         run: |
@@ -304,48 +323,41 @@ jobs:
             mariadb:10.6
 
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.10.20'
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 18
           check-latest: true
 
+      # The self-hosted runner image has these packages (.github/runner/Dockerfile).
       - name: Refresh apt index
+        if: runner.environment == 'github-hosted'
         run: sudo apt-get update
 
       - name: Cache apt
+        if: runner.environment == 'github-hosted'
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: redis-server libcups2-dev
           version: 1.0 # Arbitrary version to bust cache when needed
 
-      - name: Cache wkhtmltopdf
-        id: cache-wkhtmltopdf
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/bin/wkhtmltopdf
-          key: ${{ runner.os }}-wkhtmltopdf-0.12.3
-
-      - name: Install wkhtmltopdf
-        if: steps.cache-wkhtmltopdf.outputs.cache-hit != 'true'
-        run: |
-          wget -O /tmp/wkhtmltox.tar.xz https://github.com/frappe/wkhtmltopdf/raw/master/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz
-          tar -xf /tmp/wkhtmltox.tar.xz -C /tmp
-          sudo mv /tmp/wkhtmltox/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
-          sudo chmod o+x /usr/local/bin/wkhtmltopdf
-
       - name: Restore bench directory from cache
-        uses: actions/cache/restore@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache/restore@v6
         with:
           path: /home/runner/frappe-bench
           key: bench-dir-${{ github.run_id }}
+
+      - name: Mount bench directory from the runner VM
+        if: runner.environment == 'self-hosted'
+        run: bash ${GITHUB_WORKSPACE}/.github/helper/mount-bench.sh
 
       - name: Install Bench command
         run: pip install frappe-bench
@@ -368,7 +380,7 @@ jobs:
           echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
 
       - name: Expose GitHub Runtime
-        uses: crazy-max/ghaction-github-runtime@v3
+        uses: crazy-max/ghaction-github-runtime@v4
 
       - name: Install Playwright browsers
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
@@ -391,13 +403,13 @@ jobs:
 
       - name: Upload Playwright Test report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: /home/runner/frappe-bench/apps/press/dashboard/playwright-report
 
       - name: Upload coverage data
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           disable_search: true
           files: /home/runner/frappe-bench/apps/press/dashboard/coverage/cobertura-coverage.xml
@@ -407,10 +419,15 @@ jobs:
           name: press-dashboard
           flags: dashboard
 
+      # The old cleanup.sh in the runner image cannot remove a mounted bench.
+      - name: Unmount bench directory
+        if: always() && runner.environment == 'self-hosted'
+        run: if mountpoint -q /home/runner/frappe-bench; then sudo umount --lazy /home/runner/frappe-bench; fi
+
   server-tests:
     needs: [changes, install]
     name: Server
-    runs-on: ubuntu-24.04 # Same image as install, which builds bench-dir
+    runs-on: ${{ vars.SELF_HOSTED_RUNNERS == 'true' && !github.event.pull_request.head.repo.fork && 'self-hosted' || 'ubuntu-24.04' }} # Same as install, which builds bench-dir
     strategy:
       fail-fast: false
       matrix:
@@ -427,10 +444,15 @@ jobs:
           sudo chown -R runner:runner /data/mariadb_data
 
       - name: Restore mariadb data directory from cache
-        uses: actions/cache/restore@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache/restore@v6
         with:
           key: mariadb-data-${{ github.run_id }}
           path: /data/mariadb_data
+
+      - name: Restore mariadb data directory from the runner VM
+        if: runner.environment == 'self-hosted'
+        run: cp -a /cache/runs/${{ github.run_id }}/mariadb_data/. /data/mariadb_data/
 
       - name: Change ownership of mariadb data directory (post cache restore)
         run: |
@@ -450,27 +472,35 @@ jobs:
             mariadb:10.6
 
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.10.20'
 
+      # The self-hosted runner image has these packages (.github/runner/Dockerfile).
       - name: Refresh apt index
+        if: runner.environment == 'github-hosted'
         run: sudo apt-get update
 
       - name: Cache apt
+        if: runner.environment == 'github-hosted'
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: redis-server libcups2-dev
           version: 1.0 # Arbitrary version to bust cache when needed
 
       - name: Restore bench directory from cache
-        uses: actions/cache/restore@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache/restore@v6
         with:
           path: /home/runner/frappe-bench
           key: bench-dir-${{ github.run_id }}
+
+      - name: Mount bench directory from the runner VM
+        if: runner.environment == 'self-hosted'
+        run: bash ${GITHUB_WORKSPACE}/.github/helper/mount-bench.sh
 
       - name: Install Bench command
         run: pip install frappe-bench
@@ -485,12 +515,10 @@ jobs:
           echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
 
       - name: Expose GitHub Runtime
-        uses: crazy-max/ghaction-github-runtime@v3
+        uses: crazy-max/ghaction-github-runtime@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          install: true
+        uses: docker/setup-buildx-action@v4
 
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
@@ -502,33 +530,38 @@ jobs:
           COVERAGE_RCFILE: /home/runner/frappe-bench/apps/press/.coveragerc
 
       - name: Upload coverage reports to Codecov
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.container }}
           path: /home/runner/frappe-bench/sites/coverage.xml
         if: always()
 
       - name: Upload bench start logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bench-start-logs-${{ matrix.container }}
           path: /home/runner/frappe-bench/bench_start_logs.txt
         if: always()
 
+      # The old cleanup.sh in the runner image cannot remove a mounted bench.
+      - name: Unmount bench directory
+        if: always() && runner.environment == 'self-hosted'
+        run: if mountpoint -q /home/runner/frappe-bench; then sudo umount --lazy /home/runner/frappe-bench; fi
+
   coverage:
     name: Coverage Wrap Up
     needs: server-tests
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.SELF_HOSTED_RUNNERS == 'true' && !github.event.pull_request.head.repo.fork && 'self-hosted' || 'ubuntu-latest' }}
     steps:
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
 
       - name: Upload coverage data
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           fail_ci_if_error: false
           verbose: true
@@ -538,7 +571,7 @@ jobs:
     name: Tests Pass
     needs: [server-tests, ui-tests]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.SELF_HOSTED_RUNNERS == 'true' && !github.event.pull_request.head.repo.fork && 'self-hosted' || 'ubuntu-latest' }}
     permissions: {}
     steps:
       - name: Check test results

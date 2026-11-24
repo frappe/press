@@ -21,6 +21,7 @@ CONFIRM_METHODS = {
 	"Server": "press.api.server.confirm_server_transfer",
 }
 DASHBOARD_ROUTES = {"Site": "sites", "Release Group": "groups", "Server": "servers"}
+CANCELLED_MESSAGE = "This transfer request was cancelled by the sender."
 
 
 class TeamChange(Document):
@@ -35,6 +36,9 @@ class TeamChange(Document):
 		from press.press.doctype.team_change_resource.team_change_resource import TeamChangeResource
 
 		balance_moved: DF.Float
+		cancelled: DF.Check
+		cancelled_by: DF.Link | None
+		cancelled_on: DF.Datetime | None
 		document_name: DF.DynamicLink | None
 		document_type: DF.Link | None
 		exchange_rate: DF.Float
@@ -123,7 +127,7 @@ class TeamChange(Document):
 		self.admin_transfer.transfer()
 
 	def validate_desk_transfer(self):
-		frappe.only_for(["System Manager", "Press Support", "Press Support Engineer"])
+		frappe.only_for(["System Manager", "Press Support L1", "Press Support Engineer"])
 		if self.is_dashboard_request:
 			frappe.throw(
 				"This is a dashboard request, which the receiving team accepts from the emailed link. "
@@ -162,6 +166,7 @@ class TeamChange(Document):
 				"document_type": self.document_type,
 				"document_name": self.document_name,
 				"transfer_completed": 0,
+				"cancelled": 0,
 				"expires_on": (">", now_datetime()),
 			},
 			["to_team", "expires_on"],
@@ -171,7 +176,8 @@ class TeamChange(Document):
 			to_email = frappe.db.get_value("Team", pending.to_team, "user")
 			frappe.throw(
 				f"A transfer request for this {self.label} was already sent to {to_email}. "
-				f"You can send a new request after {format_datetime(pending.expires_on, 'd MMM yyyy, h:mm a')}."
+				f"You can send a new request after {format_datetime(pending.expires_on, 'd MMM yyyy, h:mm a')}, "
+				"or cancel the current one from Actions."
 			)
 
 	def validate_document_can_move(self):
@@ -184,12 +190,27 @@ class TeamChange(Document):
 			)
 
 	def validate_acceptance(self):
+		if self.cancelled:
+			frappe.throw(_("This transfer request was cancelled by the sender."))
 		if self.is_expired:
 			frappe.throw(
 				f"This link has expired. Please ask the sender to send a new {self.label} transfer request."
 			)
 		for team in (self.from_team, self.to_team):
 			validate_team_enabled(team)
+
+	def cancel(self):
+		"""Withdraw a request the receiving team hasn't accepted. Its link stops working."""
+		if self.transfer_completed:
+			frappe.throw(
+				f"The transfer was already accepted, so this {self.label} now belongs to another team."
+			)
+		if self.cancelled:
+			return
+		self.cancelled = 1
+		self.cancelled_by = frappe.session.user
+		self.cancelled_on = now_datetime()
+		self.save(ignore_permissions=True)  # Team Change is System Manager only; the caller checks the team
 
 	def send_confirmation_email(self, title: str):
 		to_email = frappe.db.get_value("Team", self.to_team, "user")
@@ -268,7 +289,8 @@ def confirm_transfer(key: str, document_type: str):
 	if not name:
 		return _not_permitted("The link you are using is invalid or expired.")
 
-	team_change = TeamChange("Team Change", name)
+	# Locked, so a cancel from the sender can't land between these checks and the save
+	team_change = TeamChange("Team Change", name, for_update=True)
 	if error := _link_error(team_change):
 		return _not_permitted(error)
 
@@ -289,6 +311,8 @@ def confirm_transfer(key: str, document_type: str):
 def _link_error(team_change: TeamChange) -> str | None:
 	if team_change.transfer_completed:
 		return "This link has already been used."
+	if team_change.cancelled:
+		return CANCELLED_MESSAGE
 	if team_change.is_expired:
 		return f"This link has expired. Please ask the sender to send a new {team_change.label} transfer request."
 	if not frappe.db.exists(

@@ -84,7 +84,7 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 			frappe.rename_doc("Team", self.team, self.name)
 
 	def validate_team_owner(self):
-		staff_roles = {"System Manager", "Press Support", "Press Support Engineer"}
+		staff_roles = {"System Manager", "Press Support L1", "Press Support Engineer"}
 		if self.team_doc.user == frappe.session.user or staff_roles.intersection(frappe.get_roles()):
 			return
 

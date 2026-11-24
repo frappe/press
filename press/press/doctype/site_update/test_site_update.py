@@ -3,12 +3,13 @@
 
 
 import json
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 import frappe
 from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 
+from press.exceptions import SiteBackupInProgress, SiteUpdateInProgress
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.agent_job_notifications import get_details
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
@@ -30,6 +31,7 @@ from press.press.doctype.site.site import (
 	Site,
 )
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
+from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.site_update.site_update import (
 	STATEMENT_TIME_BUMP_SIZE_MB,
@@ -567,6 +569,47 @@ class TestSiteUpdate(FrappeTestCase):
 		self.assertFalse(site_update.skipped_backups)
 		agent_job = frappe.get_doc("Agent Job", site_update.update_job)
 		self.assertFalse(json.loads(agent_job.request_data)["skip_backups"])
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch.object(SiteUpdate, "triggered_by_user", new=PropertyMock(return_value=True))
+	def test_user_migrate_update_with_ongoing_backup_asks_to_cancel_it(self):
+		site = self._migrate_site_with_difference()
+		create_test_site_backup(site.name, offsite=False, status="Pending")
+
+		self.assertRaises(SiteBackupInProgress, site.schedule_update)
+		self.assertFalse(frappe.db.exists("Site Update", {"site": site.name}))
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch.object(SiteUpdate, "triggered_by_user", new=PropertyMock(return_value=True))
+	@patch("press.press.doctype.agent_job.agent_job.Agent.cancel_job")
+	def test_confirmed_migrate_update_cancels_ongoing_backups_and_starts(self, mock_cancel_job):
+		site = self._migrate_site_with_difference()
+		backup = create_test_site_backup(site.name, offsite=False, status="Pending")
+		frappe.db.set_value("Agent Job", backup.job, {"status": "Running", "job_id": 42})
+
+		site_update = frappe.get_doc("Site Update", site.schedule_update(cancel_ongoing_backups=True))
+
+		mock_cancel_job.assert_called_once_with(42)
+		self.assertEqual(frappe.db.get_value("Agent Job", backup.job, "status"), "Cancelled")
+		self.assertEqual(frappe.db.get_value("Site Backup", backup.name, "status"), "Failure")
+		self.assertTrue(site_update.update_job)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch.object(SiteUpdate, "triggered_by_user", new=PropertyMock(return_value=True))
+	def test_scheduled_update_doesnt_ask_about_ongoing_backups(self):
+		site = self._migrate_site_with_difference()
+		create_test_site_backup(site.name, offsite=False, status="Pending")
+		later = frappe.utils.add_to_date(None, hours=1)
+
+		self.assertTrue(site.schedule_update(scheduled_time=later))
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_backup_is_refused_while_the_site_migrates(self):
+		site = self._migrate_site_with_difference()
+		site.schedule_update()
+		site.reload()
+
+		self.assertRaises(SiteUpdateInProgress, site.backup)
 
 	def _sites_on_bench_with_update(
 		self, standby: int, customer: int, queue_size: int = 10

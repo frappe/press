@@ -23,6 +23,9 @@
 		"document_type",
 		"document_name",
 		"expires_on",
+		"cancelled",
+		"cancelled_by",
+		"cancelled_on",
 		"key"
 	],
 	"fields": [
@@ -152,11 +155,35 @@
 			"label": "Expires On",
 			"read_only": 1
 		},
+		{
+			"default": "0",
+			"description": "The sender withdrew this request before it was accepted. The link no longer works.",
+			"fieldname": "cancelled",
+			"fieldtype": "Check",
+			"in_standard_filter": 1,
+			"label": "Cancelled",
+			"read_only": 1
+		},
+		{
+			"depends_on": "cancelled",
+			"fieldname": "cancelled_by",
+			"fieldtype": "Link",
+			"label": "Cancelled By",
+			"options": "User",
+			"read_only": 1
+		},
+		{
+			"depends_on": "cancelled",
+			"fieldname": "cancelled_on",
+			"fieldtype": "Datetime",
+			"label": "Cancelled On",
+			"read_only": 1
+		},
 		{ "fieldname": "key", "fieldtype": "Data", "label": "Key", "read_only": 1 }
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-11-06 21:00:00.000000",
+	"modified": "2026-11-24 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Team Change",
@@ -191,7 +218,7 @@
 			"print": 1,
 			"read": 1,
 			"report": 1,
-			"role": "Press Support"
+			"role": "Press Support L1"
 		}
 	],
 	"sort_field": "modified",

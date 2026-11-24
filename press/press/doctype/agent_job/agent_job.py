@@ -89,7 +89,9 @@ class AgentJob(Document):
 		server_type: DF.Link
 		site: DF.Link | None
 		start: DF.Datetime | None
-		status: DF.Literal["Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure"]
+		status: DF.Literal[
+			"Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure", "Cancelled"
+		]
 		traceback: DF.Code | None
 		upstream: DF.Link | None
 	# end: auto-generated types
@@ -369,6 +371,21 @@ class AgentJob(Document):
 			Agent(self.server, server_type=self.server_type).cancel_job(self.job_id)
 		self.add_comment("Info", "Cancelled the job")
 
+	def cancel_and_mark_cancelled(self, reason: str):
+		"""Stop the job and record it as Cancelled, which the agent can't report itself."""
+		if self.status in ("Pending", "Running") and self.job_id:
+			Agent(self.server, server_type=self.server_type).cancel_job(self.job_id)
+
+		self.status = "Cancelled"
+		self.save()
+		AgentJobStep = frappe.qb.DocType("Agent Job Step")
+		frappe.qb.update(AgentJobStep).set(AgentJobStep.status, "Failure").where(
+			(AgentJobStep.status == "Running") & (AgentJobStep.agent_job == self.name)
+		).run()
+		skip_pending_steps(self.name)
+		self.add_comment("Info", f"Cancelled the job: {reason}")
+		process_job_updates(self.name)
+
 	def validate_dashboard_cancellation(self):
 		if self.job_type not in DASHBOARD_CANCELLABLE_JOB_TYPES:
 			frappe.throw(f"{self.job_type} jobs can't be cancelled")
@@ -471,7 +488,7 @@ def job_detail(job):
 
 	if job.status == "Pending":
 		current = {"name": job.job_type, "status": "Waiting", "index": -1}
-	elif job.status in ("Success", "Failure"):
+	elif job.status in ("Success", "Failure", "Cancelled"):
 		current = {"name": job.job_type, "status": job.status, "index": len(steps)}
 
 	current["total"] = len(steps)
@@ -1053,6 +1070,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		)
 		from press.press.doctype.database_server.database_server import (
 			process_add_binlogs_to_indexer_agent_job_update,
+			process_purge_binlogs_by_size_limit_job_update,
 			process_remove_binlogs_from_indexer_agent_job_update,
 		)
 		from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
@@ -1245,6 +1263,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_remove_binlogs_from_indexer_agent_job_update(job)
 		elif job.job_type == "Upload Binlogs To S3":
 			process_upload_binlogs_to_s3_job_update(job)
+		elif job.job_type == "Purge Binlogs By Size Limit":
+			process_purge_binlogs_by_size_limit_job_update(job)
 		elif job.job_type == "Upload Audit Logs To S3":
 			process_upload_audit_logs_to_s3_job_update(job)
 		elif job.job_type == "Search Sites In Snapshot":

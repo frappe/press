@@ -119,7 +119,7 @@ def validate_can_move(doctype: str, name: str, from_team: str):
 @frappe.validate_and_sanitize_search_inputs
 def transferable_doctypes(doctype, txt, searchfield, start, page_len, filters):
 	"""Link query for the Document Type of a resource row"""
-	frappe.only_for(["System Manager", "Press Support", "Press Support Engineer"])
+	frappe.only_for(["System Manager", "Press Support L1", "Press Support Engineer"])
 	return [[name] for name in TRANSFER_RULES if txt.lower() in name.lower()]
 
 
@@ -127,7 +127,7 @@ def transferable_doctypes(doctype, txt, searchfield, start, page_len, filters):
 @frappe.validate_and_sanitize_search_inputs
 def transferable_resources(doctype, txt, searchfield, start, page_len, filters):
 	"""Link query for the Document Name of a resource row: what the source team may move"""
-	frappe.only_for(["System Manager", "Press Support", "Press Support Engineer"])
+	frappe.only_for(["System Manager", "Press Support L1", "Press Support Engineer"])
 	if doctype not in TRANSFER_RULES:
 		return []
 	return frappe.get_all(

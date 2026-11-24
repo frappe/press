@@ -10,8 +10,10 @@ import frappe
 import requests
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import flt, sbool
+from frappe.utils import cint, flt, sbool
 
+from press.access.actions import ReleaseGroupActions
+from press.access.decorators import ensure_can_perform
 from press.api.github import branches, get_access_token
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
@@ -568,10 +570,16 @@ def add_app(name, source, app):
 @frappe.whitelist()
 @protected("Release Group")
 def add_apps(name, apps):
+	ensure_can_manage_apps(name)
 	release_group: "ReleaseGroup" = frappe.get_doc("Release Group", name)
 	for app in apps:
 		app_name, source = app.values()
 		release_group.update_source(frappe._dict(name=source, app=app_name))
+
+
+def ensure_can_manage_apps(group: str) -> None:
+	team = frappe.db.get_value("Release Group", group, "team")
+	ensure_can_perform("Release Group", group, team, ReleaseGroupActions.ManageApps.value)
 
 
 @frappe.whitelist()
@@ -1136,6 +1144,7 @@ def rename(name, title):
 @frappe.whitelist()
 @protected("Release Group")
 def apply_patch(release_group: str, app: str, patch_config: dict) -> list[str]:
+	ensure_can_manage_apps(release_group)
 	team = get_current_team()
 
 	return create_app_patch(
@@ -1252,7 +1261,8 @@ def search_releases(
 		q.where((AppRelease.public == 1) & (AppRelease.status == "Approved"))
 		.where((AppRelease.app == app) & (AppRelease.source == source))
 		.orderby(AppRelease.timestamp, order=frappe.qb.desc)
-		.limit(limit)
+		# Postponed annotations skip the type check of Frappe, so limit can arrive as a string
+		.limit(cint(limit))
 	)
 
 	return q.run(as_dict=1)

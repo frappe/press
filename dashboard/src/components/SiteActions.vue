@@ -95,11 +95,29 @@ export default {
 					group: 'Dangerous Actions',
 				},
 				{
-					label: 'Move to a Different Server / Bench',
+					// A site on a shared bench moves off it; a site on a private bench
+					// moves between its own benches and servers.
+					label: (site) =>
+						site.group_public
+							? 'Move to a Private Bench'
+							: 'Move to a Different Bench or Server',
 					action: 'Move Site To Different Server / Bench',
-					description: 'Move this site to another private bench or server.',
+					description: (site) =>
+						site.group_public
+							? 'Leave the shared bench. You choose the bench and the server, and you decide when it updates.'
+							: 'Move this site to another of your benches, or to one of your other servers.',
+					buttonLabel: 'Choose Bench',
+					group: 'General Actions',
+				},
+				{
+					label: 'Move to Another Shared Server',
+					action: 'Move Site To Another Shared Server',
+					// The dialog carries the rest: the server we picked and the 60-day limit
+					description:
+						'Stay on shared hosting, on a quieter machine in the same region.',
 					buttonLabel: 'Move Site',
 					group: 'General Actions',
+					condition: (site) => !site.is_dedicated_server,
 				},
 				{
 					label: 'Move to a Different Region',
@@ -133,9 +151,21 @@ export default {
 	},
 	methods: {
 		migrationShortcutsFor(group) {
-			return this.migrationShortcuts.filter(
-				(shortcut) => shortcut.group === group,
-			)
+			return this.migrationShortcuts
+				.filter(
+					(shortcut) =>
+						shortcut.group === group &&
+						(!shortcut.condition || shortcut.condition(this.$site.doc)),
+				)
+				.map((shortcut) => ({
+					...shortcut,
+					label: this.textForSite(shortcut.label),
+					description: this.textForSite(shortcut.description),
+				}))
+		},
+		textForSite(text) {
+			// A label or description can depend on the site it is shown for
+			return typeof text === 'function' ? text(this.$site.doc) : text
 		},
 		openSiteMigrationsDoc() {
 			window.open(
