@@ -898,6 +898,9 @@ class VirtualMachine(Document):
 			context.update(
 				{
 					"log_requests": True,
+					"mariadb_monitor_password": frappe.get_doc("Cluster", server.cluster).get_password(
+						"mariadb_monitor_password"
+					),
 					"mariadb_config": frappe.render_template(
 						"press/playbooks/roles/mariadb/templates/mariadb.cnf",
 						mariadb_context,

@@ -123,6 +123,31 @@ class TestDatabaseServer(FrappeTestCase):
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
+	def test_update_mariadb_monitor_password_sets_the_cluster_password_on_the_monitor_user(
+		self, Mock_Ansible: Mock
+	):
+		server = create_test_database_server()
+		server.update_mariadb_monitor_password()
+		Mock_Ansible.assert_called_with(
+			playbook="mariadb_monitor_user.yml",
+			server=server,
+			user=server.ssh_user or "root",
+			port=server.ssh_port or 22,
+			variables={
+				"mariadb_root_password": server.get_password("mariadb_root_password"),
+				"mariadb_monitor_password": frappe.get_doc("Cluster", server.cluster).get_password(
+					"mariadb_monitor_password"
+				),
+			},
+		)
+
+	@patch(
+		"press.press.doctype.database_server.database_server.Ansible",
+	)
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
 	def test_reconfigure_mariadb_exporter_play_runs_on_reconfigure_fn_call(self, Mock_Ansible: Mock):
 		server = create_test_database_server()
 		server.reconfigure_mariadb_exporter()
