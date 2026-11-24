@@ -146,11 +146,41 @@ class TestGitHubInstallation(FrappeTestCase):
 			patch(
 				"press.api.github.requests.get", return_value=make_response({"repositories": [repository]})
 			),
+			patch("press.press.doctype.github_installation.github_installation.log_error") as log_error,
 		):
 			data = options()
 
 		self.assertTrue(data["authorized"])
 		self.assertEqual([installation["login"] for installation in data["installations"]], ["beta"])
+		log_error.assert_called_once()
+
+	def test_options_skips_installation_github_refuses_repositories_for_and_lists_the_rest(self):
+		from press.api.github import options
+
+		self._save_access_token(
+			self.team.name, [make_installation(11, 101, "acme"), make_installation(12, 102, "beta")]
+		)
+		repository = {"id": 1, "name": "app", "private": True, "html_url": "url", "default_branch": "main"}
+		responses = {
+			"token-11": make_response({"message": "Resource not accessible by integration"}, ok=False),
+			"token-12": make_response({"repositories": [repository]}),
+		}
+
+		def get(url, params, headers):
+			return responses[headers["Authorization"].removeprefix("token ")]
+
+		with (
+			patch("press.api.github.get_current_team", return_value=self.team.name),
+			patch(
+				"press.api.github.get_access_token", side_effect=lambda installation: f"token-{installation}"
+			),
+			patch("press.api.github.requests.get", side_effect=get),
+			patch("press.press.doctype.github_installation.github_installation.log_error") as log_error,
+		):
+			data = options()
+
+		self.assertEqual([installation["login"] for installation in data["installations"]], ["beta"])
+		log_error.assert_called_once()
 
 	def test_options_for_flagged_team_without_installations_asks_to_connect(self):
 		from press.api.github import options
@@ -187,6 +217,7 @@ class TestGitHubInstallation(FrappeTestCase):
 		from press.api.github import branches
 
 		source = self._create_app_source(create_test_team().name)
+		frappe.db.set_value("User", self.team.user, "user_type", "Website User")
 		frappe.set_user(self.team.user)
 		with (
 			patch("press.api.github.get_branches") as get_branches,

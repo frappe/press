@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
+
+from press.utils import log_error
 
 INSTALLATION_REPOSITORIES_URL = "https://api.github.com/installation/repositories"
 
@@ -34,7 +37,9 @@ class GitHubInstallation(Document):
 	def validate_account_is_unique_for_team(self):
 		filters = {"team": self.team, "account_id": self.account_id, "name": ("!=", self.name)}
 		if frappe.db.exists("GitHub Installation", filters):
-			frappe.throw(f"GitHub account {self.account_login} is already linked to team {self.team}")
+			frappe.throw(
+				_("GitHub account {0} is already linked to team {1}").format(self.account_login, self.team)
+			)
 
 	def update_from_github(self, installation: dict):
 		account = installation["account"]
@@ -50,10 +55,11 @@ class GitHubInstallation(Document):
 		)
 
 	def as_selector_option(self) -> dict | None:
-		from press.api.github import fetch_repositories, get_access_token
-
-		# GitHub mints no token for a suspended or removed installation
-		if not (token := get_access_token(self.installation_id)):
+		"""None when GitHub refuses this installation, so the team's other installations still show."""
+		try:
+			repositories = self.fetch_repositories()
+		except Exception:
+			log_error("GitHub Installation Repositories Error", doc=self)
 			return None
 
 		return {
@@ -61,8 +67,16 @@ class GitHubInstallation(Document):
 			"login": self.account_login,
 			"url": self.installation_url,
 			"image": self.account_avatar_url,
-			"repos": fetch_repositories(INSTALLATION_REPOSITORIES_URL, token),
+			"repos": repositories,
 		}
+
+	def fetch_repositories(self) -> list[dict]:
+		from press.api.github import fetch_repositories, get_access_token
+
+		# GitHub mints no token for a suspended or removed installation
+		if not (token := get_access_token(self.installation_id)):
+			frappe.throw(_("GitHub gave no access token for installation {0}").format(self.installation_id))
+		return fetch_repositories(INSTALLATION_REPOSITORIES_URL, token)
 
 
 def is_enabled_for_team(team: str) -> bool:
@@ -70,8 +84,10 @@ def is_enabled_for_team(team: str) -> bool:
 
 
 def get_selector_options(team: str) -> dict:
-	names = frappe.get_all("GitHub Installation", {"team": team, "enabled": 1}, pluck="name")
-	options = [GitHubInstallation("GitHub Installation", name).as_selector_option() for name in names]
+	rows = frappe.get_all("GitHub Installation", {"team": team, "enabled": 1}, ["*"])
+	options = [
+		GitHubInstallation({**row, "doctype": "GitHub Installation"}).as_selector_option() for row in rows
+	]
 	installations = [option for option in options if option]
 	return {"authorized": bool(installations), "installations": installations}
 
@@ -115,6 +131,6 @@ def validate_team_can_use_installation(team: str, installation_id: str | int | N
 	filters = {"team": team, "installation_id": str(installation_id), "enabled": 1}
 	if not frappe.db.exists("GitHub Installation", filters):
 		frappe.throw(
-			"This GitHub account isn't connected to your team. Connect it from GitHub and try again.",
+			_("This GitHub account isn't connected to your team. Connect it from GitHub and try again."),
 			frappe.PermissionError,
 		)
