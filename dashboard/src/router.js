@@ -250,6 +250,19 @@ let router = createRouter({
 			],
 		},
 		{
+			name: 'Enterprise Warranty',
+			path: '/enterprise-warranty',
+			component: () => import('./pages/EnterpriseContract.vue'),
+			meta: { title: 'Enterprise Warranty' },
+		},
+		{
+			name: 'Contract',
+			path: '/enterprise-warranty/:name',
+			component: () => import('./pages/EnterpriseContractDetail.vue'),
+			props: true,
+			meta: { title: 'Contract' },
+		},
+		{
 			path: '/settings',
 			name: 'Settings',
 			redirect: { name: 'SettingsProfile' },

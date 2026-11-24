@@ -157,6 +157,15 @@ const list = computed(() => {
 		},
 
 		{
+			name: 'Enterprise Warranty',
+			icon: LucideFileSignature,
+			route: '/enterprise-warranty',
+			isActive: ['Enterprise Warranty', 'Contract'].includes(routeName),
+			condition: $team.doc?.is_desk_user || $session.hasBillingAccess,
+			disabled: enforce2FA,
+		},
+
+		{
 			name: 'Partnership',
 			icon: LucideGlobe,
 			route: activePartner ? '/partners' : '/partner-onboarding',
