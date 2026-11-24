@@ -754,7 +754,7 @@ def candidate(name: str) -> dict | None:
 		"status": build.status,
 		"creation": build.creation,
 		"deployed": False,
-		"build_steps": build.build_steps,
+		"build_steps": build.get_redacted_build_steps(),
 		"build_start": build.build_start,
 		"build_end": build.build_end,
 		"build_duration": build.build_duration,
