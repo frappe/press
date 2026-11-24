@@ -14,7 +14,7 @@ from frappe.utils import cint, flt, sbool
 
 from press.access.actions import ReleaseGroupActions
 from press.access.decorators import ensure_can_perform
-from press.api.github import branches, get_access_token
+from press.api.github import get_access_token, get_branches
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app.app import get_app_from_policies
@@ -957,7 +957,7 @@ def branch_list(name: str, app: str) -> list[dict]:
 	if marketplace_app and app_source.public and (not belongs_to_current_team(marketplace_app[0])):
 		return get_branches_for_marketplace_app(app, marketplace_app[0], app_source)
 
-	return branches(repo_owner, repo_name, installation_id)
+	return get_branches(repo_owner, repo_name, installation_id)
 
 
 @frappe.whitelist()
