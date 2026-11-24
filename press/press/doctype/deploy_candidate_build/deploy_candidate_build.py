@@ -49,6 +49,7 @@ from press.press.doctype.deploy_candidate.utils import (
 )
 from press.utils import get_current_team, log_error
 from press.utils.environment_variable import validate_environment_variable
+from press.utils.redact import redact_secrets
 from press.utils.webhook import create_webhook_event
 
 if typing.TYPE_CHECKING:
@@ -267,7 +268,15 @@ class DeployCandidateBuild(Document):
 		doc.is_cache_failure = self.status == Status.FAILURE.value and is_cache_related_failure(
 			self.build_output or ""
 		)
+		doc.build_steps = self.get_redacted_build_steps()
 		return doc
+
+	def get_redacted_build_steps(self) -> list[dict]:
+		"""Build steps with secrets masked, for the dashboard"""
+		return [
+			{**step.as_dict(), "command": redact_secrets(step.command), "output": redact_secrets(step.output)}
+			for step in self.build_steps
+		]
 
 	@cached_property
 	def candidate(self) -> DeployCandidate:
@@ -1037,7 +1046,7 @@ class DeployCandidateBuild(Document):
 				f"bench_deploy:{self.name}:steps",
 				doctype=self.doctype,
 				docname=self.name,
-				message={"steps": self.build_steps, "name": self.name},
+				message={"steps": self.get_redacted_build_steps(), "name": self.name},
 			)
 		else:
 			frappe.publish_realtime(
