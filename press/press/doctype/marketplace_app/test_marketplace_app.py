@@ -243,6 +243,25 @@ class TestMarketplaceApp(FrappeTestCase):
 
 		self.assertFalse(frappe.db.exists("Marketplace App", app_name))
 
+	@patch.object(AppSource, "create_release", new=Mock())
+	@patch.object(AppSource, "validate_dependent_apps", new=Mock())
+	def test_source_row_of_another_team_cannot_be_added_to_own_listing(self):
+		own_team = create_team_with_press_user()
+		other_team = create_team_with_press_user()
+		app_name = f"owner_app_{frappe.generate_hash(length=8).lower()}"
+		app = create_test_app(app_name, "Owner Test App")
+		repository_url = f"https://github.com/acme/{app_name}"
+		own_source = create_test_app_source("Version 14", app, repository_url, team=own_team.name)
+		other_source = create_test_app_source("Version 14", app, repository_url, "develop", other_team.name)
+		listing = create_test_marketplace_app(
+			app_name, own_team.name, [{"version": "Version 14", "source": own_source.name}]
+		)
+
+		with self.set_user(own_team.user):
+			listing.append("sources", {"version": "Version 14", "source": other_source.name})
+			with self.assertRaisesRegex(frappe.PermissionError, "belong to your team"):
+				listing.save()
+
 	def test_press_user_can_manage_only_own_team_marketplace_app_plans(self):
 		own_team = create_team_with_press_user()
 		other_team = create_team_with_press_user()
