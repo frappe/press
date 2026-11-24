@@ -184,6 +184,7 @@ class MarketplaceApp(WebsiteGenerator):
 		frappe.get_doc("Yanked App Release", {"hash": hash}).delete()
 
 	def before_insert(self):
+		self.validate_github_installations()
 		if not frappe.flags.in_test:
 			self.check_if_duplicate()
 			self.create_app_and_source_if_needed()
@@ -198,8 +199,14 @@ class MarketplaceApp(WebsiteGenerator):
 		if frappe.db.exists("Marketplace App", self.name):
 			frappe.throw(f"App {self.name} already exists. Please contact support.")
 
+	def validate_github_installations(self):
+		"""Check the installation passed in and the ones the given sources use."""
+		sources = [row.source for row in self.sources]
+		used = frappe.get_all("App Source", {"name": ("in", sources)}, pluck="github_installation_id")
+		for installation in {self.get("github_installation_id"), *used}:
+			validate_team_can_use_installation(self.team, installation)
+
 	def create_app_and_source_if_needed(self):
-		validate_team_can_use_installation(self.team, self.github_installation_id)
 		if frappe.db.exists("App", self.app or self.name):
 			app_doc = frappe.get_doc("App", self.app or self.name)
 		else:
