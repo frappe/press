@@ -211,6 +211,33 @@ test('shows the failed build step output when a failed deploy opens', async ({
 	await expect(page.getByText(buildMock.build_steps[1].output)).toBeVisible()
 })
 
+test('keeps the build traceback when the build loads after the notifications', async ({
+	page,
+}) => {
+	const traceback = 'Traceback (most recent call last): uv resolution failed'
+	await openFailedBuild(page, { ...genericNotificationMock, traceback })
+
+	// Load the build last, so its steps arrive after the traceback is shown
+	const isBuild = (url) =>
+		new URL(url).searchParams.get('doctype') === 'Deploy Candidate Build'
+	await page.route(
+		/\/api\/method\/press\.api\.client\.get\b/,
+		async (route) => {
+			if (isBuild(route.request().url()))
+				await new Promise((resolve) => setTimeout(resolve, 1000))
+			await route.fallback()
+		},
+	)
+	const buildLoaded = page.waitForResponse((response) =>
+		isBuild(response.url()),
+	)
+	await page.reload()
+	await buildLoaded
+
+	await expect(page.getByText(traceback)).toBeVisible()
+	await expect(page.getByText(buildMock.build_steps[1].output)).toHaveCount(0)
+})
+
 test('hides the failed build output after a switch to the architecture that built', async ({
 	page,
 }) => {

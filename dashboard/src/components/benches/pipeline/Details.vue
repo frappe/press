@@ -268,6 +268,8 @@ watch(
 	() => builds.value[activeBuildId.value]?.doc?.build_steps,
 	(steps) => {
 		if (!steps || steps.some((x) => x.name === output.id)) return
+		// The notification's traceback explains the failure better, keep it
+		if (errList.value.some((x) => x.traceback)) return
 
 		const failedStep = steps.find((x) => x.status === 'Failure')
 		if (failedStep) setAutomaticOutput([failedStep])
