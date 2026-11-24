@@ -11,7 +11,9 @@
           su frappe frappe
           size 100M
           rotate 1
-          compress
           missingok
           notifempty
       }
+
+- name: Rotate agent cron logs that are already over the limit
+  command: logrotate /etc/logrotate.d/agent_cron_logs
