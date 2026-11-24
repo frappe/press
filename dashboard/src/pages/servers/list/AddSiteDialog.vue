@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Button, Checkbox, createResource, Dialog, TextInput } from 'frappe-ui'
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import SitePlansCards from '@/components/SitePlansCards.vue'
+import { fetchPlans } from '@/data/plans'
 import router from '@/router'
 
 interface Props {
@@ -16,6 +18,9 @@ const addedApps = reactive<any[]>([])
 const siteOptions = ref<any>({})
 const emit = defineEmits<{ siteCreated: [] }>()
 const formType = ref('addApps')
+const plan = ref<any>(null)
+
+onMounted(fetchPlans)
 
 const handleAppSelection = (cond: boolean, app: any) => {
 	if (cond && !addedApps.includes(app)) addedApps.push(app)
@@ -31,6 +36,7 @@ const installableApps = createResource({
 	transform(data: any) {
 		const version = data.versions?.[0]
 		siteOptions.value = {
+			version: version?.name,
 			domain: data.domain,
 			group: version?.group?.name,
 			cluster: version?.group?.clusters?.[0]?.name,
@@ -84,6 +90,12 @@ const newSite = createResource({
 	},
 })
 
+const next = () => {
+	if (formType.value == 'addApps') formType.value = 'siteInput'
+	else if (formType.value == 'siteInput') formType.value = 'plan'
+	else submitForm()
+}
+
 const submitForm = () => {
 	newSite.submit({
 		doc: {
@@ -93,6 +105,7 @@ const submitForm = () => {
 			...placement.value,
 			group: siteOptions.value.group,
 			domain: siteOptions.value.domain,
+			subscription_plan: plan.value?.name,
 		},
 	})
 }
@@ -153,6 +166,20 @@ const submitForm = () => {
 				</div>
 			</template>
 
+			<template v-else-if="formType == 'plan'">
+				<div class="mb-3 font-medium">Select a plan</div>
+
+				<SitePlansCards
+					v-model="plan"
+					:isPrivateBenchSite="true"
+					:selectedCluster="placement.cluster"
+					:selectedApps="addedApps"
+					:selectedVersion="siteOptions.version"
+				/>
+
+				<ErrorMessage :message="newSite.error" class="mt-2" />
+			</template>
+
 			<template v-else>
 				<label> Name your new site </label>
 				<TextInput
@@ -195,7 +222,11 @@ const submitForm = () => {
 					Looking for Marketplace Apps?
 				</a>
 
-				<Button v-else variant="ghost" @click="formType = 'addApps'">
+				<Button
+					v-else
+					variant="ghost"
+					@click="formType = formType == 'plan' ? 'siteInput' : 'addApps'"
+				>
 					<template #prefix>
 						<LucideChevronLeft class="size-4" />
 					</template>
@@ -206,13 +237,11 @@ const submitForm = () => {
 
 				<Button
 					variant="solid"
-					@click="() => {
-               if(formType == 'addApps') formType = 'siteInput'
-               else submitForm()
-            }"
+					:disabled="formType == 'plan' && !plan"
 					:loading="newSite.loading"
+					@click="next"
 				>
-					{{ formType == 'addApps' ? 'Next' : 'Add and deploy site' }}
+					{{ formType == 'plan' ? 'Add and deploy site' : 'Next' }}
 				</Button>
 			</div>
 		</template>

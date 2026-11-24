@@ -46,6 +46,27 @@ test('Add Site on the bench list sends a plan with the new site', async ({
 				}),
 			),
 	)
+	await page.route(/\/api\/method\/press\.api\.site\.get_site_plans/, (route) =>
+		route.fulfill(
+			json([
+				{
+					name: 'Plan 10',
+					price_usd: 10,
+					price_inr: 800,
+					cpu_time_per_day: 1,
+					max_database_usage: 1024,
+					max_storage_usage: 5120,
+					private_benches: 1,
+					dedicated_server_plan: 0,
+					restricted_plan: 0,
+					clusters: [],
+					allowed_apps: [],
+					bench_versions: [],
+					cloud_providers: [],
+				},
+			]),
+		),
+	)
 	const insertRequest = page.waitForRequest(
 		/\/api\/method\/press\.api\.client\.insert/,
 	)
@@ -62,10 +83,12 @@ test('Add Site on the bench list sends a plan with the new site', async ({
 	const dialog = page.getByRole('dialog')
 	await dialog.getByRole('button', { name: 'Next' }).click()
 	await dialog.getByPlaceholder('Enter site name').fill('unbilled')
+	await dialog.getByRole('button', { name: 'Next' }).click()
+	await dialog.getByText('compute hour').click()
 	await dialog.getByRole('button', { name: 'Add and deploy site' }).click()
 
 	const { doc } = (await insertRequest).postDataJSON()
 	expect(doc.subdomain).toBe('unbilled')
 	// Without a plan the site gets no subscription and is never billed.
-	expect(doc.subscription_plan).toBeTruthy()
+	expect(doc.subscription_plan).toBe('Plan 10')
 })
