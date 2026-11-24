@@ -76,10 +76,10 @@ class TestPressJob(FrappeTestCase):
 		job = self.create_job("Resize Server")
 		workflow = self.create_workflow(job, failed_step="Stop Virtual Machine")
 
-		with patch("press.press.doctype.press_job.press_job.send_raven_message") as send_raven_message:
+		with patch("press.press.doctype.press_job.press_job.frappe.enqueue") as enqueue:
 			job.alert_failure(workflow)
 
-		message, channel = send_raven_message.call_args[0]
+		message, channel = enqueue.call_args.kwargs["text"], enqueue.call_args.kwargs["channel"]
 		self.assertIn("Resize Server failed", message)
 		self.assertIn(self.server.name, message)
 		self.assertIn("Stop Virtual Machine", message)
@@ -89,39 +89,39 @@ class TestPressJob(FrappeTestCase):
 		job = self.create_job("Create Server")
 		workflow = self.create_workflow(job)
 
-		with patch("press.press.doctype.press_job.press_job.send_raven_message") as send_raven_message:
+		with patch("press.press.doctype.press_job.press_job.frappe.enqueue") as enqueue:
 			job.alert_failure(workflow)
 
-		send_raven_message.assert_called_once()
-		self.assertIn("Unknown", send_raven_message.call_args[0][0])
+		enqueue.assert_called_once()
+		self.assertIn("Unknown", enqueue.call_args.kwargs["text"])
 
 	def test_failed_archive_server_job_is_alerted(self):
 		job = self.create_job("Archive Server")
 		workflow = self.create_workflow(job, failed_step="Archive Server")
 
-		with patch("press.press.doctype.press_job.press_job.send_raven_message") as send_raven_message:
+		with patch("press.press.doctype.press_job.press_job.frappe.enqueue") as enqueue:
 			job.alert_failure(workflow)
 
-		send_raven_message.assert_called_once()
+		enqueue.assert_called_once()
 
 	def test_other_failed_jobs_are_not_alerted(self):
 		job = self.create_job("Increase Disk Size")
 		workflow = self.create_workflow(job, failed_step="Increase Disk Size")
 
-		with patch("press.press.doctype.press_job.press_job.send_raven_message") as send_raven_message:
+		with patch("press.press.doctype.press_job.press_job.frappe.enqueue") as enqueue:
 			job.alert_failure(workflow)
 
-		send_raven_message.assert_not_called()
+		enqueue.assert_not_called()
 
 	def test_no_alert_when_the_setting_disables_them(self):
 		frappe.db.set_single_value("Press Settings", "disable_press_job_failure_alerts", 1)
 		job = self.create_job("Resize Server")
 		workflow = self.create_workflow(job, failed_step="Stop Virtual Machine")
 
-		with patch("press.press.doctype.press_job.press_job.send_raven_message") as send_raven_message:
+		with patch("press.press.doctype.press_job.press_job.frappe.enqueue") as enqueue:
 			job.alert_failure(workflow)
 
-		send_raven_message.assert_not_called()
+		enqueue.assert_not_called()
 
 
 def make_increase_disk_size_job(resized: bool) -> IncreaseDiskSizeJob:

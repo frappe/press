@@ -264,11 +264,14 @@ class PressJob(WorkflowBuilder):
 		if frappe.db.get_single_value("Press Settings", "disable_press_job_failure_alerts"):
 			return
 
-		send_raven_message(
-			f"**{self.job_type} failed** - {self.server}\n\n"
+		# A background job, so a Raven error or timeout cannot fail the press job
+		frappe.enqueue(
+			send_raven_message,
+			text=f"**{self.job_type} failed** - {self.server}\n\n"
 			f"Step: {get_failed_step(workflow) or 'Unknown'}\n"
 			f"Job: {frappe.utils.get_url_to_form(self.doctype, self.name)}",
-			RAVEN_SERVER_ALERTS_CHANNEL,
+			channel=RAVEN_SERVER_ALERTS_CHANNEL,
+			enqueue_after_commit=True,
 		)
 
 	@frappe.whitelist()
