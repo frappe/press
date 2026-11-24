@@ -13,6 +13,7 @@ from moto import mock_aws
 
 from press.press.doctype.backup_bucket.test_backup_bucket import create_test_backup_bucket
 from press.press.doctype.cluster.cluster import Cluster
+from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.proxy_server.proxy_server import ProxyServer
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 from press.press.doctype.server.server import BaseServer
@@ -112,6 +113,31 @@ class TestCluster(FrappeTestCase):
 @patch("press.press.doctype.cluster.cluster.frappe.enqueue_doc", new=foreground_enqueue_doc)
 @patch("press.press.doctype.cluster.cluster.frappe.db.commit", new=MagicMock())
 class TestPrivateCluster(TestCluster):
+	def test_new_cluster_gets_a_random_mariadb_monitor_password_instead_of_the_default(self):
+		cluster = create_test_cluster(name="Monitor Password Test")
+		password = cluster.get_password("mariadb_monitor_password")
+		self.assertEqual(len(password), 32)
+		self.assertNotEqual(password, "monitor")
+
+	@patch.object(ProxyServer, "_setup_proxysql_monitor")
+	@patch.object(DatabaseServer, "_update_mariadb_monitor_password")
+	def test_rotating_the_monitor_password_updates_database_servers_before_proxies(
+		self, update_database_server: Mock, setup_proxy_server: Mock
+	):
+		from press.press.doctype.database_server.test_database_server import create_test_database_server
+		from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
+
+		calls = Mock()
+		calls.attach_mock(update_database_server, "database_server")
+		calls.attach_mock(setup_proxy_server, "proxy_server")
+		cluster = create_test_cluster(name="Rotation Test")
+		create_test_database_server(cluster="Rotation Test").db_set("is_primary", 1)
+		create_test_proxy_server(cluster="Rotation Test").db_set("is_proxysql_setup", 1)
+
+		cluster._rotate_mariadb_monitor_password()
+
+		self.assertEqual([call[0] for call in calls.mock_calls], ["database_server", "proxy_server"])
+
 	@mock_aws
 	def test_add_images_copies_VMIs_from_other_region(self):
 		self._setup_fake_vmis(["m", "f"])  # mumbai

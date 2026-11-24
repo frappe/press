@@ -64,7 +64,6 @@
 		"is_ssh_proxy_setup",
 		"proxysql_section",
 		"proxysql_admin_password",
-		"proxysql_monitor_password",
 		"is_proxysql_setup",
 		"memory_limits_section",
 		"mem_limits",
@@ -280,12 +279,6 @@
 			"fieldname": "is_proxysql_setup",
 			"fieldtype": "Check",
 			"label": "Is ProxySQL Setup",
-			"read_only": 1
-		},
-		{
-			"fieldname": "proxysql_monitor_password",
-			"fieldtype": "Password",
-			"label": "ProxySQL Monitor Password",
 			"read_only": 1
 		},
 		{
@@ -514,7 +507,7 @@
 		}
 	],
 	"links": [],
-	"modified": "2026-11-06 21:00:00.000000",
+	"modified": "2026-11-24 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Proxy Server",

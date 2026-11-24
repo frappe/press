@@ -99,6 +99,7 @@ class Cluster(Document):
 		hetzner_api_token: DF.Password | None
 		hybrid: DF.Check
 		image: DF.AttachImage | None
+		mariadb_monitor_password: DF.Password | None
 		monitoring_password: DF.Password | None
 		nat_security_group_id: DF.Data | None
 		network_acl_id: DF.Data | None
@@ -176,6 +177,7 @@ class Cluster(Document):
 	def validate(self):
 		self.validate_flush_table_execution_hour()
 		self.validate_monitoring_password()
+		self.validate_mariadb_monitor_password()
 		self.validate_cidr_block()
 		if self.cloud_provider == "AWS EC2":
 			self.validate_aws_credentials()
@@ -695,6 +697,35 @@ class Cluster(Document):
 	def validate_monitoring_password(self):
 		if not self.monitoring_password:
 			self.monitoring_password = frappe.generate_hash()
+
+	def validate_mariadb_monitor_password(self):
+		if not self.mariadb_monitor_password:
+			self.mariadb_monitor_password = frappe.generate_hash(length=32)
+
+	@frappe.whitelist(methods=["POST"])
+	def rotate_mariadb_monitor_password(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_rotate_mariadb_monitor_password",
+			queue="long",
+			timeout=7200,
+			enqueue_after_commit=True,
+		)
+
+	def _rotate_mariadb_monitor_password(self):
+		"""ProxySQL health checks fail between the two steps, so run them back to back."""
+		from press.press.doctype.database_server.database_server import DatabaseServer
+		from press.press.doctype.proxy_server.proxy_server import ProxyServer
+
+		for name in frappe.get_all(
+			"Database Server", {"cluster": self.name, "status": "Active", "is_primary": 1}, pluck="name"
+		):
+			DatabaseServer("Database Server", name)._update_mariadb_monitor_password()
+		for name in frappe.get_all(
+			"Proxy Server", {"cluster": self.name, "status": "Active", "is_proxysql_setup": 1}, pluck="name"
+		):
+			ProxyServer("Proxy Server", name)._setup_proxysql_monitor()
 
 	def provision_on_aws_ec2(self):
 		client = self.get_aws_client()
