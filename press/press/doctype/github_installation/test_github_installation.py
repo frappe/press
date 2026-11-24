@@ -264,6 +264,74 @@ class TestGitHubInstallation(FrappeTestCase):
 
 		self.assertFalse(frappe.db.exists("App", "private_app"))
 
+	def test_marketplace_app_insert_rejects_installation_not_linked_to_flagged_team(self):
+		marketplace_app = frappe.get_doc(
+			{
+				"doctype": "Marketplace App",
+				"name": "private_app",
+				"title": "Private App",
+				"team": self.team.name,
+				"repository_url": "https://github.com/someone-else/private-app",
+				"branch": "main",
+				"frappe_version": "Version 14",
+				"github_installation_id": "999",
+			}
+		)
+
+		with self.assertRaisesRegex(frappe.PermissionError, "isn't connected to your team"):
+			marketplace_app.insert()
+
+		self.assertFalse(frappe.db.exists("Marketplace App", "private_app"))
+
+	@patch.object(AppSource, "create_release", create_test_app_release)
+	def test_marketplace_app_insert_rejects_source_whose_installation_is_not_linked(self):
+		source = self._create_app_source(self.team.name)
+		marketplace_app = frappe.get_doc(
+			{
+				"doctype": "Marketplace App",
+				"app": source.app,
+				"title": "Frappe",
+				"team": self.team.name,
+				"sources": [{"version": "Version 14", "source": source.name}],
+			}
+		)
+
+		with self.assertRaisesRegex(frappe.PermissionError, "isn't connected to your team"):
+			marketplace_app.insert()
+
+		self.assertFalse(frappe.db.exists("Marketplace App", {"app": source.app, "team": self.team.name}))
+
+	@patch.object(AppSource, "create_release", create_test_app_release)
+	def test_adding_source_with_unlinked_installation_to_existing_listing_is_rejected(self):
+		listing = self._create_listing()
+		new_source = self._create_listing_source("develop")
+		frappe.db.set_value("App Source", new_source.name, "github_installation_id", "11")
+		listing.append("sources", {"version": "Version 14", "source": new_source.name})
+
+		with self.assertRaisesRegex(frappe.PermissionError, "isn't connected to your team"):
+			listing.save()
+
+	@patch.object(AppSource, "create_release", create_test_app_release)
+	def test_listing_whose_older_source_lost_its_installation_can_still_be_edited(self):
+		listing = self._create_listing()
+		frappe.db.set_value("App Source", listing.sources[0].source, "github_installation_id", "11")
+		listing.description = "Still editable"
+
+		listing.save()
+
+		self.assertEqual(
+			frappe.db.get_value("Marketplace App", listing.name, "description"), "Still editable"
+		)
+
+	@patch.object(AppSource, "create_release", create_test_app_release)
+	def test_moving_listing_to_team_without_its_sources_installation_is_rejected(self):
+		listing = self._create_listing(create_test_team().name)
+		frappe.db.set_value("App Source", listing.sources[0].source, "github_installation_id", "11")
+		listing.team = self.team.name
+
+		with self.assertRaisesRegex(frappe.PermissionError, "isn't connected to your team"):
+			listing.save()
+
 	def test_new_app_rejects_installation_not_linked_to_flagged_team(self):
 		from press.api.app import new
 
@@ -302,6 +370,25 @@ class TestGitHubInstallation(FrappeTestCase):
 		source = create_test_app_source("Version 14", create_test_app(), team=team)
 		frappe.db.set_value("App Source", source.name, "github_installation_id", "11")
 		return source
+
+	def _create_listing_source(self, branch: str, team: str | None = None) -> AppSource:
+		app = create_test_app("listed_app", "Listed App")
+		return create_test_app_source(
+			"Version 14",
+			app,
+			"https://github.com/acme/listed_app",
+			branch=branch,
+			team=team or self.team.name,
+		)
+
+	def _create_listing(self, team: str | None = None):
+		from press.press.doctype.marketplace_app.test_marketplace_app import create_test_marketplace_app
+
+		team = team or self.team.name
+		source = self._create_listing_source("main", team)
+		return create_test_marketplace_app(
+			"listed_app", team, [{"version": "Version 14", "source": source.name}]
+		)
 
 	def _send_installation_webhook(self, action: str, installation: dict):
 		payload = {"action": action, "installation": installation}

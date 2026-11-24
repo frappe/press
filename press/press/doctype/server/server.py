@@ -872,6 +872,7 @@ class BaseServer(Document, TagHelpers):
 					"server_id": database_server.server_id,
 					"allocator": database_server.memory_allocator.lower(),
 					"mariadb_root_password": database_server_config.mariadb_root_password,
+					"mariadb_monitor_password": database_server_config.mariadb_monitor_password,
 					"mariadb_depends_on_mounts": database_server_config.mariadb_depends_on_mounts,
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
 					**self.get_mount_variables(),  # Currently same as database server since no volumes

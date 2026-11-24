@@ -90,6 +90,11 @@ runcmd:
     systemctl restart statsd_exporter || true
 {% endif %}
 
+{% if server.doctype == 'Database Server' or is_unified_server %}
+# The image has the default monitor password; replace it with the cluster's
+- mariadb --host=localhost -e "ALTER USER IF EXISTS 'monitor'@'%' IDENTIFIED BY '{{ mariadb_monitor_password }}'"
+{% endif %}
+
 write_files:
 - path: /etc/systemd/system/statsd_exporter.service
   permissions: "0644"
