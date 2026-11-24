@@ -5,7 +5,7 @@ import json
 from contextlib import suppress
 from functools import cached_property
 from itertools import chain
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, TypedDict, cast
 from urllib.parse import urlparse
 
 import frappe
@@ -1763,9 +1763,10 @@ class ReleaseGroup(Document, TagHelpers):
 	def _validate_frappe_branch_matches_bench_version(
 		self, current_app_source: AppSource, to_branch: str
 	) -> None:
+		# App Source validate always sets the repository fields
 		target_major_version = fetch_frappe_branch_major_version(
-			current_app_source.repository_owner,
-			current_app_source.repository,
+			cast("str", current_app_source.repository_owner),
+			cast("str", current_app_source.repository),
 			to_branch,
 			current_app_source.github_installation_id,
 		)
