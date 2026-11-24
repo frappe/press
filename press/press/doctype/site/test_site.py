@@ -1913,3 +1913,39 @@ class TestRotateSaasCommunicationSecret(FrappeTestCase):
 			self.site.create_sync_user_webhook()
 
 		connection.update.assert_not_called()
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestSiteRenderSafeExecConfig(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def site_on_group(self, public: bool) -> Site:
+		group = create_test_release_group([create_test_app()], public=public)
+		return create_test_site(bench=create_test_bench(group=group).name)
+
+	def test_site_on_public_bench_cannot_set_disable_render_safe_exec(self):
+		site = self.site_on_group(public=True)
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"cannot set <b>disable_render_safe_exec</b> on a public bench",
+			site.update_config,
+			{"disable_render_safe_exec": 1},
+		)
+		site.reload()
+		self.assertNotIn("disable_render_safe_exec", json.loads(site.config))
+
+	def test_site_on_central_bench_cannot_set_disable_render_safe_exec(self):
+		site = self.site_on_group(public=False)
+		frappe.db.set_value("Release Group", site.group, "central_bench", 1)
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"cannot set <b>disable_render_safe_exec</b> on a public bench",
+			site.update_config,
+			{"disable_render_safe_exec": 1},
+		)
+
+	def test_site_on_private_bench_can_set_disable_render_safe_exec(self):
+		site = self.site_on_group(public=False)
+		site.update_config({"disable_render_safe_exec": 1})
+		self.assertEqual(json.loads(site.config)["disable_render_safe_exec"], 1)
