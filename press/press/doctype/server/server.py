@@ -2065,15 +2065,14 @@ class BaseServer(Document, TagHelpers):
 		console.save(ignore_permissions=True)
 		console.reload()
 		console.run_sysrq()
-		# TODO: Enable after a manual trial with the button on Server
-		# frappe.enqueue_doc(
-		# self.doctype,
-		# self.name,
-		# "restore_truncated_configs",
-		# wait_for_reboot=True,
-		# queue="long",
-		# timeout=1200,
-		# )
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"restore_truncated_configs",
+			wait_for_reboot=True,
+			queue="long",
+			timeout=1200,
+		)
 
 	@dashboard_whitelist()
 	def reboot(self):
@@ -2087,15 +2086,14 @@ class BaseServer(Document, TagHelpers):
 			raise NotImplementedError
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.reboot()
-		# TODO: Enable after a manual trial with the button on Server
-		# frappe.enqueue_doc(
-		# self.doctype,
-		# self.name,
-		# "restore_truncated_configs",
-		# wait_for_reboot=True,
-		# queue="long",
-		# timeout=1200,
-		# )
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"restore_truncated_configs",
+			wait_for_reboot=True,
+			queue="long",
+			timeout=1200,
+		)
 
 	@dashboard_whitelist()
 	def rename(self, title):
