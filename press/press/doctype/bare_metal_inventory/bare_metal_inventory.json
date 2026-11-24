@@ -70,7 +70,8 @@
 		{
 			"fieldname": "root_password",
 			"fieldtype": "Password",
-			"label": "Root Password"
+			"label": "Root Password",
+			"permlevel": 1
 		},
 		{
 			"fieldname": "column_break_credentials",
@@ -84,7 +85,8 @@
 		{
 			"fieldname": "bmc_password",
 			"fieldtype": "Password",
-			"label": "BMC Password"
+			"label": "BMC Password",
+			"permlevel": 1
 		},
 		{
 			"fieldname": "default_credentials_section",
@@ -99,12 +101,13 @@
 		{
 			"fieldname": "default_password",
 			"fieldtype": "Password",
-			"label": "Default Password"
+			"label": "Default Password",
+			"permlevel": 1
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-11-24 12:00:00.000000",
+	"modified": "2026-11-24 15:30:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Bare Metal Inventory",
@@ -121,6 +124,51 @@
 			"report": 1,
 			"role": "System Manager",
 			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Infrastructure Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Infrastructure Reader"
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support Engineer"
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support L1"
+		},
+		{
+			"permlevel": 1,
+			"read": 1,
+			"role": "System Manager",
+			"write": 1
+		},
+		{
+			"permlevel": 1,
+			"read": 1,
+			"role": "Press Infrastructure Manager",
 			"write": 1
 		}
 	],

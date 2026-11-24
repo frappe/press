@@ -15,18 +15,40 @@ def create_test_bare_metal_inventory(name: str = "bm-test-1", public_ip_address:
 			"private_ip_address": "10.0.0.10",
 			"bmc_ip_address": "10.1.0.10",
 			"root_user": "root",
-			"root_password": "root-secret",
+			"root_password": "root-secret",  # pragma: allowlist secret
 			"bmc_user": "admin",
-			"bmc_password": "bmc-secret",
+			"bmc_password": "bmc-secret",  # pragma: allowlist secret
 			"default_user": "frappe",
-			"default_password": "default-secret",
+			"default_password": "default-secret",  # pragma: allowlist secret
 		}
 	).insert()
+
+
+def create_user_with_role(role: str) -> str:
+	user = frappe.new_doc("User")
+	user.update({"email": frappe.mock("email"), "first_name": "Staff", "send_welcome_email": 0})
+	user.append("roles", {"role": role})
+	user.insert(ignore_permissions=True)
+	return str(user.name)
 
 
 class TestBareMetalInventory(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
+
+	def test_infrastructure_manager_creates_and_changes_inventory(self):
+		user = create_user_with_role("Press Infrastructure Manager")
+		for ptype in ("read", "create", "write", "delete"):
+			with self.subTest(ptype=ptype):
+				self.assertTrue(frappe.has_permission("Bare Metal Inventory", ptype, user=user))
+
+	def test_infrastructure_reader_and_support_read_inventory_but_cannot_change_it(self):
+		for role in ("Press Infrastructure Reader", "Press Support Engineer", "Press Support L1"):
+			user = create_user_with_role(role)
+			with self.subTest(role=role):
+				self.assertTrue(frappe.has_permission("Bare Metal Inventory", "read", user=user))
+				for ptype in ("create", "write", "delete"):
+					self.assertFalse(frappe.has_permission("Bare Metal Inventory", ptype, user=user), ptype)
 
 	def test_inventory_is_named_by_user(self):
 		inventory = create_test_bare_metal_inventory(name="bm-test-1")
