@@ -909,6 +909,7 @@ class DatabaseServer(BaseServer):
 					"allocator": self.memory_allocator.lower(),
 					"db_port": self.db_port or 3306,
 					"mariadb_root_password": config.mariadb_root_password,
+					"mariadb_monitor_password": config.mariadb_monitor_password,
 					"certificate_private_key": config.certificate.get_private_key(),
 					"certificate_full_chain": config.certificate.full_chain,
 					"certificate_intermediate_chain": config.certificate.intermediate_chain,
@@ -959,6 +960,7 @@ class DatabaseServer(BaseServer):
 				agent_repository_url=self.get_agent_repository_url(),
 				agent_branch=self.get_agent_repository_branch(),
 				mariadb_root_password=self.get_password("mariadb_root_password"),
+				mariadb_monitor_password=self.get_mariadb_monitor_password(),
 				certificate=certificate,
 				monitoring_password=frappe.get_doc("Cluster", self.cluster).get_password(
 					"monitoring_password"
@@ -967,6 +969,32 @@ class DatabaseServer(BaseServer):
 				kibana_password=kibana_password,
 			)
 		)
+
+	def get_mariadb_monitor_password(self) -> str:
+		return frappe.get_doc("Cluster", self.cluster).get_password("mariadb_monitor_password")
+
+	@frappe.whitelist(methods=["POST"])
+	def update_mariadb_monitor_password(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_update_mariadb_monitor_password",
+			queue="long",
+			timeout=1200,
+			enqueue_after_commit=True,
+		)
+
+	def _update_mariadb_monitor_password(self):
+		Ansible(
+			playbook="mariadb_monitor_user.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+			variables={
+				"mariadb_root_password": self.get_password("mariadb_root_password"),
+				"mariadb_monitor_password": self.get_mariadb_monitor_password(),
+			},
+		).run()
 
 	def ansible_run(self, command: str) -> dict[str, str]:
 		inventory = f"{self.name},"
@@ -1227,6 +1255,7 @@ class DatabaseServer(BaseServer):
 				variables={
 					"private_ip": self.private_ip,
 					"mariadb_root_password": mariadb_root_password,
+					"mariadb_monitor_password": self.get_mariadb_monitor_password(),
 				},
 			)
 			play = ansible.run()

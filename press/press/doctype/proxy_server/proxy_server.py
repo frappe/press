@@ -70,7 +70,6 @@ class ProxyServer(BaseServer):
 			"Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean", "Frappe Compute"
 		]
 		proxysql_admin_password: DF.Password | None
-		proxysql_monitor_password: DF.Password | None
 		public: DF.Check
 		root_public_key: DF.Code | None
 		self_hosted_server_domain: DF.Data | None
@@ -231,25 +230,12 @@ class ProxyServer(BaseServer):
 
 	def _setup_proxysql(self):
 		try:
-			default_hostgroup = (
-				frappe.get_all(
-					"Database Server",
-					"MIN(server_id)",
-					{"status": "Active", "cluster": self.cluster},
-					as_list=True,
-				)[0][0]
-				or 0
-			)
 			ansible = Ansible(
 				playbook="proxysql.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={
-					"server": self.name,
-					"proxysql_admin_password": self.get_password("proxysql_admin_password"),
-					"default_hostgroup": default_hostgroup,
-				},
+				variables=self.get_proxysql_monitor_variables(),
 			)
 			play = ansible.run()
 			if play.status == "Success":
@@ -358,26 +344,41 @@ class ProxyServer(BaseServer):
 
 	def _setup_proxysql_monitor(self):
 		try:
-			default_hostgroup = frappe.get_all(
-				"Database Server",
-				"MIN(server_id)",
-				{"status": "Active", "cluster": self.cluster},
-				as_list=True,
-			)[0][0]
 			ansible = Ansible(
 				playbook="proxysql_monitor.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={
-					"server": self.name,
-					"proxysql_admin_password": self.get_password("proxysql_admin_password"),
-					"default_hostgroup": default_hostgroup,
-				},
+				variables=self.get_proxysql_monitor_variables(),
 			)
 			ansible.run()
 		except Exception:
 			log_error("ProxySQL Monitor Setup Exception", server=self.as_dict())
+
+	def get_proxysql_monitor_variables(self) -> dict:
+		"""ProxySQL health checks and the exporter both log in to MariaDB as the monitor user."""
+		variables = {
+			"proxysql_admin_password": self.get_password("proxysql_admin_password"),
+			"mariadb_monitor_password": frappe.get_doc("Cluster", self.cluster).get_password(
+				"mariadb_monitor_password"
+			),
+		}
+		# Without these, proxysql.yml skips the exporter and proxysql_monitor.yml fails
+		if database_server := self.get_monitored_database_server():
+			variables["database_server_private_ip"] = database_server.private_ip
+			variables["database_server_port"] = database_server.db_port or 3306
+		return variables
+
+	def get_monitored_database_server(self) -> frappe._dict | None:
+		"""The exporter connects straight to the first active database server of the cluster."""
+		database_servers = frappe.get_all(
+			"Database Server",
+			filters={"status": "Active", "cluster": self.cluster},
+			fields=["private_ip", "db_port"],
+			order_by="server_id asc",
+			limit=1,
+		)
+		return database_servers[0] if database_servers else None
 
 	@frappe.whitelist()
 	def setup_wireguard(self):
