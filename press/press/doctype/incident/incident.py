@@ -31,6 +31,7 @@ from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.server.server import MARIADB_DATA_MNT_POINT
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
+from press.utils.raven import send_raven_message
 
 if TYPE_CHECKING:
 	from frappe.types import DF
@@ -650,11 +651,10 @@ class Incident(WebsiteGenerator):
 		return call.fetch().status  # will eventually be no-answer
 
 	def notify_unable_to_reach_twilio(self):
-		TelegramMessage.enqueue(
-			f"""Unable to reach Twilio for Incident in {self.server}
-
-Likely due to insufficient balance or incorrect credentials""",
-			reraise=True,
+		send_raven_message(
+			f"⚠️ **Unable to reach Twilio** for Incident in {self.server}. "
+			"Likely due to insufficient balance or incorrect credentials.",
+			frappe.db.get_single_value("Press Settings", "raven_incidents_channel"),
 		)
 
 	def call_human(self, human: IncidentSettingsUser | IncidentSettingsSelfHostedUser):
