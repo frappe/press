@@ -181,19 +181,19 @@ class TestAPIMarketplace(FrappeTestCase):
 
 	def test_add_app(self):
 		app = create_test_app("test_app", "Test App")
-		app_source = create_test_app_source(version=self.version, app=app, team=self.team.name)
+		app_source = create_test_app_source(version=self.version, app=app)
 		marketplace_app = add_app(source=app_source.name, app=app.name)
 		self.assertIsNotNone(frappe.db.exists("Marketplace App", marketplace_app))
 
 	def test_add_app_already_added(self):
 		app = create_test_app("test_app3", "Test App 3")
-		app_source = create_test_app_source(version=self.version, app=app, team=self.team.name)
+		app_source = create_test_app_source(version=self.version, app=app)
 		create_test_marketplace_app(
 			app=app.name,
 			team=self.team.name,
 			sources=[{"version": self.version, "source": app_source.name}],
 		)
-		new_source = create_test_app_source(version="Nightly", app=app, team=self.team.name)
+		new_source = create_test_app_source(version="Nightly", app=app)
 		frappe.set_user(self.team.user)
 		marketplace_app = add_app(source=new_source.name, app=app.name)
 		self.assertIsNotNone(frappe.db.exists("Marketplace App", marketplace_app))
