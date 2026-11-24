@@ -264,6 +264,25 @@ class TestGitHubInstallation(FrappeTestCase):
 
 		self.assertFalse(frappe.db.exists("App", "private_app"))
 
+	def test_marketplace_app_insert_rejects_installation_not_linked_to_flagged_team(self):
+		marketplace_app = frappe.get_doc(
+			{
+				"doctype": "Marketplace App",
+				"name": "private_app",
+				"title": "Private App",
+				"team": self.team.name,
+				"repository_url": "https://github.com/someone-else/private-app",
+				"branch": "main",
+				"frappe_version": "Version 14",
+				"github_installation_id": "999",
+			}
+		)
+
+		with self.assertRaisesRegex(frappe.PermissionError, "isn't connected to your team"):
+			marketplace_app.create_app_and_source_if_needed()
+
+		self.assertFalse(frappe.db.exists("App", "private_app"))
+
 	def test_new_app_rejects_installation_not_linked_to_flagged_team(self):
 		from press.api.app import new
 

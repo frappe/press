@@ -27,6 +27,7 @@ from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.app_release_approval_request.app_release_approval_request import (
 	AppReleaseApprovalRequest,
 )
+from press.press.doctype.github_installation.github_installation import validate_team_can_use_installation
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 from press.utils import docs, get_current_team, get_last_doc
 
@@ -198,6 +199,7 @@ class MarketplaceApp(WebsiteGenerator):
 			frappe.throw(f"App {self.name} already exists. Please contact support.")
 
 	def create_app_and_source_if_needed(self):
+		validate_team_can_use_installation(self.team, self.github_installation_id)
 		if frappe.db.exists("App", self.app or self.name):
 			app_doc = frappe.get_doc("App", self.app or self.name)
 		else:
