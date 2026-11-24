@@ -478,9 +478,17 @@ export function backupRecordsOptions() {
 				return
 			}
 
-			return getUpsellBanner(
-				site,
-				'Your site is currently on a shared bench. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.',
+			return (
+				getUpsellBanner(
+					site,
+					'Your site is currently on a shared bench. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.',
+				) || {
+					title:
+						'You can restore an offsite backup to this site, or to another site, from the menu (⋯) of the backup. <b>Take Backup</b> makes a new backup that you can download. To restore files from your computer, use <b>Restore with files</b> in Actions. <a href="https://docs.frappe.io/cloud/sites/backups" class="underline" target="_blank">How backups work</a>',
+					dismissable: true,
+					id: `${site.doc.name}-backups-help`,
+					type: 'gray',
+				}
 			)
 		},
 	}
