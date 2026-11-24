@@ -27,6 +27,7 @@ from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.app_release_approval_request.app_release_approval_request import (
 	AppReleaseApprovalRequest,
 )
+from press.press.doctype.github_installation.github_installation import validate_team_can_use_installation
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 from press.utils import docs, get_current_team, get_last_doc
 
@@ -183,6 +184,7 @@ class MarketplaceApp(WebsiteGenerator):
 		frappe.get_doc("Yanked App Release", {"hash": hash}).delete()
 
 	def before_insert(self):
+		self.validate_github_installations()
 		if not frappe.flags.in_test:
 			self.check_if_duplicate()
 			self.create_app_and_source_if_needed()
@@ -196,6 +198,19 @@ class MarketplaceApp(WebsiteGenerator):
 	def check_if_duplicate(self):
 		if frappe.db.exists("Marketplace App", self.name):
 			frappe.throw(f"App {self.name} already exists. Please contact support.")
+
+	def validate_github_installations(self):
+		"""Check the installation passed in and those of sources new to this team."""
+		for installation in {self.get("github_installation_id"), *self.get_new_source_installations()}:
+			validate_team_can_use_installation(self.team, installation)
+
+	def get_new_source_installations(self) -> list[str]:
+		before = self.get_doc_before_save()
+		known = {row.source for row in before.sources} if before and before.team == self.team else set()
+		names = [row.source for row in self.sources if row.source not in known]
+		if not names:
+			return []
+		return frappe.get_all("App Source", {"name": ("in", names)}, pluck="github_installation_id")
 
 	def create_app_and_source_if_needed(self):
 		if frappe.db.exists("App", self.app or self.name):
@@ -223,6 +238,8 @@ class MarketplaceApp(WebsiteGenerator):
 
 		self.published = self.status == "Published"
 		self.validate_sources()
+		if not self.is_new():
+			self.validate_github_installations()
 		self.validate_number_of_screenshots()
 		self.validate_summary()
 
