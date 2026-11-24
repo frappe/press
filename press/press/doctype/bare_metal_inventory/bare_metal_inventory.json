@@ -1,6 +1,6 @@
 {
 	"actions": [],
-	"autoname": "field:public_ip_address",
+	"autoname": "Prompt",
 	"creation": "2026-11-23 12:00:00.000000",
 	"doctype": "DocType",
 	"engine": "InnoDB",
@@ -10,12 +10,16 @@
 		"private_ip_address",
 		"column_break_network",
 		"bmc_ip_address",
+		"domain",
 		"credentials_section",
 		"root_user",
 		"root_password",
 		"column_break_credentials",
 		"bmc_user",
-		"bmc_password"
+		"bmc_password",
+		"default_credentials_section",
+		"default_user",
+		"default_password"
 	],
 	"fields": [
 		{
@@ -48,6 +52,12 @@
 			"label": "BMC IP Address"
 		},
 		{
+			"fieldname": "domain",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Domain"
+		},
+		{
 			"fieldname": "credentials_section",
 			"fieldtype": "Section Break",
 			"label": "Credentials"
@@ -75,15 +85,30 @@
 			"fieldname": "bmc_password",
 			"fieldtype": "Password",
 			"label": "BMC Password"
+		},
+		{
+			"fieldname": "default_credentials_section",
+			"fieldtype": "Section Break",
+			"label": "Default Credentials"
+		},
+		{
+			"fieldname": "default_user",
+			"fieldtype": "Data",
+			"label": "Default User"
+		},
+		{
+			"fieldname": "default_password",
+			"fieldtype": "Password",
+			"label": "Default Password"
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-11-23 12:00:00.000000",
+	"modified": "2026-11-24 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Bare Metal Inventory",
-	"naming_rule": "By fieldname",
+	"naming_rule": "Set by user",
 	"owner": "Administrator",
 	"permissions": [
 		{

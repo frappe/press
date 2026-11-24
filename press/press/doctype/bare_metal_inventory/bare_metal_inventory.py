@@ -16,6 +16,9 @@ class BareMetalInventory(Document):
 		bmc_ip_address: DF.Data | None
 		bmc_password: DF.Password | None
 		bmc_user: DF.Data | None
+		default_password: DF.Password | None
+		default_user: DF.Data | None
+		domain: DF.Data | None
 		private_ip_address: DF.Data | None
 		public_ip_address: DF.Data
 		root_password: DF.Password | None
