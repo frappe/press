@@ -251,7 +251,7 @@ export default {
 		selectedGithubUserData() {
 			if (!this.selectedGithubUser) return null
 			return this.options.installations.find(
-				(i) => i.id === Number(this.selectedGithubUser.id),
+				(i) => String(i.id) === String(this.selectedGithubUser.id),
 			)
 		},
 		needsAuthorization() {
