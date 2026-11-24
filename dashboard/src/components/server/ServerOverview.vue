@@ -18,6 +18,34 @@
 				More Info
 			</Button>
 		</AlertBanner>
+		<AlertBanner
+			v-if="$appServer?.doc?.is_database_io_high"
+			class="mb-5"
+			type="warning"
+			title="The database server waits on the disk for more than half of its time. With more memory, it can serve more queries from memory."
+		>
+			<Button
+				class="ml-auto min-w-[7rem]"
+				variant="outline"
+				link="https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan"
+			>
+				More Info
+			</Button>
+		</AlertBanner>
+		<AlertBanner
+			v-if="$appServer?.doc?.is_database_cpu_high"
+			class="mb-5"
+			type="warning"
+			title="The CPU of the database server is busy for more than half of its time. Slow queries are the usual cause. Examine the slow query reports of your sites."
+		>
+			<Button
+				class="ml-auto min-w-[7rem]"
+				variant="outline"
+				link="https://docs.frappe.io/cloud/faq/mariadb-slow-queries-in-your-site"
+			>
+				More Info
+			</Button>
+		</AlertBanner>
 		<div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
 			<div
 				v-for="server in servers"
