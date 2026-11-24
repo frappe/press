@@ -40,6 +40,8 @@ export const siteStatusBadges = {
 	Archived: { theme: 'gray', dot: 'bg-surface-gray-4' },
 	Pending: { theme: 'orange', dot: 'bg-surface-amber-3' },
 	Installing: { theme: 'blue', dot: 'bg-surface-blue-3' },
+	Updating: { theme: 'blue', dot: 'bg-surface-blue-3' },
+	Recovering: { theme: 'orange', dot: 'bg-surface-amber-3' },
 	Broken: { theme: 'red', dot: 'bg-surface-red-5' },
 	Draft: { theme: 'orange', dot: 'bg-surface-orange-3' },
 	AwaitingApproval: { theme: 'orange', dot: 'bg-surface-orange-3' },

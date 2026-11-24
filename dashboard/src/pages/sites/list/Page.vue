@@ -27,6 +27,8 @@ import { getSiteStatusBadge, trialDays } from '@/utils/site'
 const statusOptions = [
 	'Pending',
 	'Installing',
+	'Updating',
+	'Recovering',
 	'Active',
 	'Inactive',
 	'Suspended',
