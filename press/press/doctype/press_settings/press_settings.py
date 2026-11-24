@@ -329,7 +329,8 @@ class PressSettings(Document):
 
 	def sync_firewalls_on_production_ip_change(self):
 		"""Server firewalls allow the production IPs. Without a sync, they keep the old ones."""
-		if not self.has_value_changed("production_server_ip"):
+		# The installer creates Press Settings with no earlier version, and has no queue yet.
+		if not self.get_doc_before_save() or not self.has_value_changed("production_server_ip"):
 			return
 		frappe.enqueue(
 			"press.press.doctype.server_firewall.server_firewall.sync_enabled_firewalls",
