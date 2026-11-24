@@ -29,7 +29,7 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 )
 from press.press.doctype.github_installation.github_installation import validate_team_can_use_installation
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
-from press.utils import _system_user, docs, get_current_team, get_last_doc
+from press.utils import docs, get_current_team, get_last_doc
 
 if TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
@@ -202,7 +202,8 @@ class MarketplaceApp(WebsiteGenerator):
 	def validate_new_sources(self):
 		"""Sources new to this team must be its own and use installations it has linked."""
 		sources = self.get_new_sources()
-		if not _system_user() and any(source.team != self.team for source in sources):
+		# Administrator runs scripts and patches; everyone else lists only the team's sources
+		if frappe.session.user != "Administrator" and any(source.team != self.team for source in sources):
 			frappe.throw(_("You can only list app sources that belong to your team."), frappe.PermissionError)
 
 		used = {source.github_installation_id for source in sources}
