@@ -65,6 +65,7 @@ from press.press.doctype.site.site_plan_utils import (
 	get_available_warranty_quota_for_server,
 	get_next_allowed_dedicated_product_warranty_change_date,
 )
+from press.press.doctype.team_change.pending_request import cancel_transfer_requests, transfer_action
 from press.press.doctype.team_change.team_change import request_transfer
 from press.saas.doctype.product_trial.product_trial import create_free_app_subscription
 from press.utils.jobs import has_job_timeout_exceeded
@@ -2442,6 +2443,12 @@ class Site(Document, TagHelpers):
 		request_transfer(self, team_mail_id, reason, title=self.host_name or self.name)
 
 	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def cancel_change_team_request(self):
+		"""Withdraw the transfer request before the receiving team accepts it"""
+		cancel_transfer_requests(self)
+
+	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
@@ -4161,12 +4168,15 @@ class Site(Document, TagHelpers):
 				"button_label": "Manage",
 				"doc_method": "dummy",
 			},
-			{
-				"action": "Transfer site",
-				"description": "Transfer ownership of this site to another team",
-				"button_label": "Transfer",
-				"doc_method": "send_change_team_request",
-			},
+			transfer_action(
+				self,
+				{
+					"action": "Transfer site",
+					"description": "Transfer ownership of this site to another team",
+					"button_label": "Transfer",
+					"doc_method": "send_change_team_request",
+				},
+			),
 			{
 				"action": "Version upgrade",
 				"description": "Upgrade your site to a major version",

@@ -42,6 +42,7 @@ from press.press.doctype.site_config.site_config import (
 	decode_json_config_value,
 	parse_json_config_value,
 )
+from press.press.doctype.team_change.pending_request import cancel_transfer_requests, transfer_action
 from press.press.doctype.team_change.team_change import request_transfer
 from press.utils import (
 	fmt_timedelta,
@@ -247,12 +248,15 @@ class ReleaseGroup(Document, TagHelpers):
 				"button_label": "Rename",
 				"doc_method": "rename",
 			},
-			{
-				"action": "Transfer Bench",
-				"description": "Transfer ownership of this bench to another team",
-				"button_label": "Transfer",
-				"doc_method": "send_change_team_request",
-			},
+			transfer_action(
+				self,
+				{
+					"action": "Transfer Bench",
+					"description": "Transfer ownership of this bench to another team",
+					"button_label": "Transfer",
+					"doc_method": "send_change_team_request",
+				},
+			),
 			{
 				"action": "Drop Bench",
 				"description": "Drop the bench",
@@ -1253,6 +1257,12 @@ class ReleaseGroup(Document, TagHelpers):
 	def send_change_team_request(self, team_mail_id: str, reason: str):
 		"""Send email to team to accept bench transfer request"""
 		request_transfer(self, team_mail_id, reason, title=self.title or self.name)
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def cancel_change_team_request(self):
+		"""Withdraw the transfer request before the receiving team accepts it"""
+		cancel_transfer_requests(self)
 
 	@dashboard_whitelist()
 	@safe_for_readers

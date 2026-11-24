@@ -241,6 +241,94 @@ class TestTeamChange(FrappeTestCase):
 
 		self.assertEqual(frappe.db.get_value("Site", site.name, "team"), receiver.name)
 
+	def test_link_of_a_cancelled_site_transfer_request_says_cancelled_and_keeps_the_owner(self):
+		site = create_test_site(team=self.from_team.name)
+		team_change = self._request(site)
+		self._cancel(site)
+		self._confirm(team_change)
+
+		self.assertEqual(frappe.db.get_value("Site", site.name, "team"), self.from_team.name)
+		self.assertIn("cancelled by the sender", frappe.local.response.get("message", ""))
+		team_change.reload()
+		self.assertTrue(team_change.cancelled)
+		self.assertEqual(team_change.cancelled_by, self.from_team.user)
+
+	def test_cancel_after_the_receiver_accepted_is_refused_and_the_site_stays_moved(self):
+		site = create_test_site(team=self.from_team.name)
+		self._confirm(self._request(site))
+
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._cancel(site)
+		self.assertIn("If the transfer was already accepted", str(cm.exception))
+		self.assertEqual(frappe.db.get_value("Site", site.name, "team"), self.to_team.name)
+
+	def test_accepted_team_change_cannot_be_marked_cancelled(self):
+		site = create_test_site(team=self.from_team.name)
+		team_change = self._request(site)
+		self._confirm(team_change)
+
+		with self.assertRaises(frappe.ValidationError) as cm:
+			TeamChange("Team Change", team_change.name).cancel()
+		self.assertIn("already accepted", str(cm.exception))
+
+	def test_new_site_transfer_request_is_allowed_right_after_the_old_one_is_cancelled(self):
+		site = create_test_site(team=self.from_team.name)
+		self._request(site)
+		self._cancel(site)
+		self.assertFalse(self._request(site).cancelled)
+
+	def test_cancelling_twice_is_safe_and_keeps_a_single_cancelled_request(self):
+		site = create_test_site(team=self.from_team.name)
+		self._request(site)
+		self._cancel(site)
+		self._cancel(site)
+		self.assertEqual(frappe.db.count("Team Change", {"document_name": site.name, "cancelled": 1}), 1)
+
+	def test_cancel_transfer_request_rejected_for_member_without_admin_access(self):
+		site = create_test_site(team=self.from_team.name)
+		self._request(site)
+		member = create_test_press_admin_team().user
+		self.from_team.append("team_members", {"user": member})
+		self.from_team.save(ignore_permissions=True)
+		site.flags.ignore_permissions = False  # left on by insert, it would skip the admin check
+
+		with user_context(member), self.assertRaises(frappe.PermissionError) as cm:
+			site.cancel_change_team_request()
+		self.assertIn("Only team admin", str(cm.exception))
+		self.assertFalse(frappe.db.exists("Team Change", {"document_name": site.name, "cancelled": 1}))
+
+	def test_server_transfer_request_can_be_cancelled_even_after_a_blocker_appears(self):
+		server = create_test_server(team=self.from_team.name)
+		team_change = self._request(server)
+		self.to_team.db_set("servers_enabled", 0)
+		self._cancel(server)
+		self.assertTrue(frappe.db.get_value("Team Change", team_change.name, "cancelled"))
+
+	def test_site_actions_show_a_cancel_row_only_while_a_request_is_pending(self):
+		site = create_test_site(team=self.from_team.name)
+		self.assertIn("Transfer site", self._action_labels(site))
+
+		self._request(site)
+		self.assertIn("Cancel transfer request", self._action_labels(site))
+		self.assertNotIn("Transfer site", self._action_labels(site))
+
+		self._cancel(site)
+		self.assertIn("Transfer site", self._action_labels(site))
+
+	def test_server_actions_keep_the_cancel_row_when_the_server_is_no_longer_active(self):
+		server = create_test_server(team=self.from_team.name)
+		self._request(server)
+		server.db_set("status", "Broken")
+		self.assertIn("Cancel transfer request", self._action_labels(server))
+
+	def _cancel(self, doc):
+		with user_context(self.from_team.user):
+			doc.cancel_change_team_request()
+
+	@staticmethod
+	def _action_labels(doc) -> list[str]:
+		return [action["action"] for action in doc.get_actions()]
+
 	def _request(self, doc) -> TeamChange:
 		with user_context(self.from_team.user):
 			doc.send_change_team_request(self.to_team.user, "test")
