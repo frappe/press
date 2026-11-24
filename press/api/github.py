@@ -441,12 +441,19 @@ def branches(owner: str, name: str, installation: str | None = None, app_source:
 	"""
 	Return ALL branches for the repo, following GitHub pagination.
 	"""
-	if installation:
-		validate_team_can_use_installation(get_current_team(), installation)
-	elif app_source:
-		installation = frappe.db.get_value("App Source", app_source, "github_installation_id")
+	if app_source and not installation:
+		return get_branches_for_app_source(app_source)
 
+	validate_team_can_use_installation(get_current_team(), installation)
 	return get_branches(owner, name, installation)
+
+
+def get_branches_for_app_source(app_source: str) -> list[dict]:
+	source = frappe.get_doc("App Source", app_source)
+	if not source.public and not source.has_permission("read"):
+		frappe.throw("You don't have access to this app source.", frappe.PermissionError)
+
+	return get_branches(source.repository_owner, source.repository, source.github_installation_id)
 
 
 def get_branches(owner: str, name: str, installation: str | None = None) -> list[dict]:
@@ -549,6 +556,13 @@ def _get_compatible_frappe_version_from_pyproject(
 
 @frappe.whitelist()
 def get_frappe_branch_major_version(
+	owner: str, repository: str, branch: str, installation: str | None = None
+) -> int:
+	validate_team_can_use_installation(get_current_team(), installation)
+	return fetch_frappe_branch_major_version(owner, repository, branch, installation)
+
+
+def fetch_frappe_branch_major_version(
 	owner: str, repository: str, branch: str, installation: str | None = None
 ) -> int:
 	"""Get the major Frappe version declared in `frappe/__init__.py` of the given branch."""

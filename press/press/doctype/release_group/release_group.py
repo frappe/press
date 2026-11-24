@@ -25,7 +25,7 @@ from press.access.decorators import action_guard
 from press.access.staff_roles import safe_for_readers
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
-from press.api.github import get_frappe_branch_major_version
+from press.api.github import fetch_frappe_branch_major_version
 from press.exceptions import ImageNotFoundInRegistry, InsufficientSpaceOnServer, VolumeResizeLimitError
 from press.guards import role_guard, team_guard
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -33,6 +33,7 @@ from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from press.press.doctype.deploy_candidate.utils import is_suspended
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
+from press.press.doctype.github_installation.github_installation import validate_team_can_use_installation
 from press.press.doctype.marketplace_app.marketplace_app import (
 	validate_frappe_version_for_branch,
 )
@@ -1752,7 +1753,7 @@ class ReleaseGroup(Document, TagHelpers):
 	def _validate_frappe_branch_matches_bench_version(
 		self, current_app_source: AppSource, to_branch: str
 	) -> None:
-		target_major_version = get_frappe_branch_major_version(
+		target_major_version = fetch_frappe_branch_major_version(
 			current_app_source.repository_owner,
 			current_app_source.repository,
 			to_branch,
@@ -1979,6 +1980,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if not (name := app.get("name")):
 			return
 
+		validate_team_can_use_installation(self.team, app.get("github_installation_id"))
 		if frappe.db.exists("App", name):
 			app_doc: "App" = frappe.get_doc("App", name)
 		else:

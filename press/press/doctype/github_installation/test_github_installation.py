@@ -9,6 +9,10 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.app_release.test_app_release import create_test_app_release
+from press.press.doctype.app_source.app_source import AppSource
+from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.team.test_team import create_test_team
 
 
@@ -78,12 +82,24 @@ class TestGitHubInstallation(FrappeTestCase):
 			self._send_installation_webhook(action, make_installation(11, 101, "acme"))
 			self.assertEqual(self._linked(self.team.name), {("11", "acme", 0)})
 
-	def test_reinstall_webhook_reenables_row_with_new_installation_id(self):
+	def test_reinstall_and_unsuspend_webhooks_keep_rows_disabled_until_team_reconnects(self):
 		self._save_access_token(self.team.name, [make_installation(11, 101, "acme")])
 		self._send_installation_webhook("deleted", make_installation(11, 101, "acme"))
 		self._send_installation_webhook("created", make_installation(21, 101, "acme"))
+		self._send_installation_webhook("unsuspend", make_installation(21, 101, "acme"))
+		self.assertEqual(self._linked(self.team.name), {("11", "acme", 0)})
 
+		self._save_access_token(self.team.name, [make_installation(21, 101, "acme")])
 		self.assertEqual(self._linked(self.team.name), {("21", "acme", 1)})
+
+	def test_oauth_link_failure_midway_leaves_no_installation_linked(self):
+		broken = make_installation(12, 102, "beta")
+		del broken["html_url"]
+
+		with self.assertRaises(KeyError):
+			self._save_access_token(self.team.name, [make_installation(11, 101, "acme"), broken])
+
+		self.assertEqual(self._linked(self.team.name), set())
 
 	def test_install_webhook_for_unlinked_account_links_no_team(self):
 		self._send_installation_webhook("created", make_installation(31, 301, "stranger"))
@@ -116,6 +132,26 @@ class TestGitHubInstallation(FrappeTestCase):
 		self.assertEqual([installation["login"] for installation in data["installations"]], ["acme"])
 		self.assertEqual(data["installations"][0]["repos"][0]["name"], "app")
 
+	def test_options_skips_installation_github_mints_no_token_for_and_lists_the_rest(self):
+		from press.api.github import options
+
+		self._save_access_token(
+			self.team.name, [make_installation(11, 101, "acme"), make_installation(12, 102, "beta")]
+		)
+		repository = {"id": 1, "name": "app", "private": True, "html_url": "url", "default_branch": "main"}
+
+		with (
+			patch("press.api.github.get_current_team", return_value=self.team.name),
+			patch("press.api.github.get_access_token", side_effect={"11": None, "12": "token"}.get),
+			patch(
+				"press.api.github.requests.get", return_value=make_response({"repositories": [repository]})
+			),
+		):
+			data = options()
+
+		self.assertTrue(data["authorized"])
+		self.assertEqual([installation["login"] for installation in data["installations"]], ["beta"])
+
 	def test_options_for_flagged_team_without_installations_asks_to_connect(self):
 		from press.api.github import options
 
@@ -145,6 +181,57 @@ class TestGitHubInstallation(FrappeTestCase):
 			branches("acme", "app", installation="11")
 
 		get_branches.assert_called_once_with("acme", "app", "11")
+
+	@patch.object(AppSource, "create_release", create_test_app_release)
+	def test_branches_rejects_another_teams_private_app_source(self):
+		from press.api.github import branches
+
+		source = self._create_app_source(create_test_team().name)
+		frappe.set_user(self.team.user)
+		with (
+			patch("press.api.github.get_branches") as get_branches,
+			self.assertRaisesRegex(frappe.PermissionError, "don't have access to this app source"),
+		):
+			branches("frappe", "erpnext", app_source=source.name)
+
+		get_branches.assert_not_called()
+
+	@patch.object(AppSource, "create_release", create_test_app_release)
+	def test_branches_with_app_source_uses_the_sources_repository_not_the_clients(self):
+		from press.api.github import branches
+
+		source = self._create_app_source(self.team.name)
+		with patch("press.api.github.get_branches", return_value=[]) as get_branches:
+			branches("someone-else", "private-app", app_source=source.name)
+
+		get_branches.assert_called_once_with("frappe", "erpnext", "11")
+
+	def test_get_frappe_branch_major_version_rejects_installation_not_linked_to_flagged_team(self):
+		from press.api.github import get_frappe_branch_major_version
+
+		with (
+			patch("press.api.github.get_current_team", return_value=self.team.name),
+			patch("press.api.github.fetch_frappe_branch_major_version") as fetch,
+			self.assertRaisesRegex(frappe.PermissionError, "isn't connected to your team"),
+		):
+			get_frappe_branch_major_version("someone-else", "private-app", "main", installation="999")
+
+		fetch.assert_not_called()
+
+	def test_release_group_add_app_rejects_installation_not_linked_to_flagged_team(self):
+		group = frappe.get_doc({"doctype": "Release Group", "team": self.team.name})
+		app = {
+			"name": "private_app",
+			"title": "Private App",
+			"repository_url": "https://github.com/someone-else/private-app",
+			"branch": "main",
+			"github_installation_id": "999",
+		}
+
+		with self.assertRaisesRegex(frappe.PermissionError, "isn't connected to your team"):
+			group.add_app(app)
+
+		self.assertFalse(frappe.db.exists("App", "private_app"))
 
 	def test_new_app_rejects_installation_not_linked_to_flagged_team(self):
 		from press.api.app import new
@@ -179,6 +266,11 @@ class TestGitHubInstallation(FrappeTestCase):
 		response = make_response({"installations": installations})
 		with patch("press.api.github.requests.get", return_value=response):
 			save_access_token(team, "user-token")
+
+	def _create_app_source(self, team: str) -> AppSource:
+		source = create_test_app_source("Version 14", create_test_app(), team=team)
+		frappe.db.set_value("App Source", source.name, "github_installation_id", "11")
+		return source
 
 	def _send_installation_webhook(self, action: str, installation: dict):
 		payload = {"action": action, "installation": installation}

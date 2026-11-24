@@ -46,10 +46,12 @@ def get_context(context):
 				raise frappe.PermissionError("Not permitted to update this team's GitHub access token")
 
 			redirect_url = frappe.utils.get_url(decoded_state["redirect_url"])
-			obtain_access_token(code, team)
+			if token := obtain_access_token(code, team):
+				save_access_token(team, token)
 			frappe.db.commit()
 		except Exception:
 			log_error("GitHub OAuth Authorization Error")
+			frappe.db.commit()  # GET requests roll back, which would drop the error log
 
 	frappe.flags.redirect_location = redirect_url
 	raise frappe.Redirect
@@ -71,7 +73,7 @@ def start_user_authorization(state):
 	raise frappe.Redirect
 
 
-def obtain_access_token(code, team):
+def obtain_access_token(code, team) -> str | None:
 	response = None
 	try:
 		client_id = frappe.db.get_single_value("Press Settings", "github_app_client_id")
@@ -81,9 +83,10 @@ def obtain_access_token(code, team):
 		response = requests.post(
 			"https://github.com/login/oauth/access_token", data=data, headers=headers
 		).json()
-		save_access_token(team, response["access_token"])
+		return response["access_token"]
 	except Exception:
 		log_error("Access Token Error", team=team, response=summarize_github_token_response(response))
+		return None
 
 
 def save_access_token(team: str, token: str):
