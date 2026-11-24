@@ -42,6 +42,7 @@ function getBenchActionHandler(action) {
 	const actionHandlers = {
 		'Rename Bench': onRenameBench,
 		'Transfer Bench': onTransferBench,
+		'Cancel transfer request': onCancelTransfer,
 		'Drop Bench': onDropBench,
 	}
 	if (actionHandlers[action]) {
@@ -96,6 +97,25 @@ function privateAppsWarning(apps) {
 	</div>`
 }
 
+function onCancelTransfer() {
+	return confirmDialog({
+		title: 'Cancel Transfer Request',
+		message:
+			'Cancel the request to transfer this bench? The link in the email to the receiving team will stop working. You can send a new request afterwards.',
+		primaryAction: {
+			label: 'Cancel request',
+			variant: 'solid',
+			theme: 'red',
+			onClick: ({ hide }) => {
+				return releaseGroup.cancelTransferRequest.submit().then(() => {
+					hide()
+					toast.success('Transfer request cancelled')
+				})
+			},
+		},
+	})
+}
+
 async function onTransferBench() {
 	const privateApps = await releaseGroup.getPrivateApps.submit()
 	confirmDialog({
@@ -126,7 +146,7 @@ async function onTransferBench() {
 					.then(() => {
 						hide()
 						toast.success(
-							`Transfer request sent to ${values.email} successfully.`,
+							`Transfer request sent to ${values.email}. You can cancel it from Actions until it's accepted.`,
 						)
 					})
 			},

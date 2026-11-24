@@ -31,6 +31,7 @@ export default {
 		runningCleanupJob: 'running_cleanup_job',
 		dropServer: 'drop_server',
 		sendTransferRequest: 'send_change_team_request',
+		cancelTransferRequest: 'cancel_change_team_request',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
 		deleteSnapshot: 'delete_snapshot',
