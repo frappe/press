@@ -11,6 +11,7 @@
 		"column_break_2",
 		"status",
 		"monitoring_password",
+		"mariadb_monitor_password",
 		"image",
 		"section_break_ymkq",
 		"public",
@@ -94,6 +95,12 @@
 			"fieldtype": "Password",
 			"label": "Monitoring Password",
 			"set_only_once": 1
+		},
+		{
+			"description": "Password of the MariaDB monitor user. ProxySQL and the proxy's mysqld_exporter use it.",
+			"fieldname": "mariadb_monitor_password",
+			"fieldtype": "Password",
+			"label": "MariaDB Monitor Password"
 		},
 		{
 			"default": "Generic",
@@ -571,7 +578,7 @@
 			"link_fieldname": "document_name"
 		}
 	],
-	"modified": "2026-11-18 12:00:00.000000",
+	"modified": "2026-11-24 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Cluster",
