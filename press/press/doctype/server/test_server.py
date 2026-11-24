@@ -1578,6 +1578,28 @@ class TestAgentVolume(FrappeTestCase):
 		self.assertEqual(Ansible.call_args.kwargs["variables"], {"agent_volume_size": 12})
 
 
+class TestAddToPublicGroups(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_add_to_public_groups_skips_groups_on_end_of_life_versions(self):
+		app = create_test_app()
+		eol_group = create_test_release_group([app], public=True, frappe_version="Version 14")
+		stable_group = create_test_release_group([app], public=True, frappe_version="Version 15")
+		frappe.db.set_value("Frappe Version", "Version 14", "status", "End of Life")
+		frappe.db.set_value("Frappe Version", "Version 15", "status", "Stable")
+		server = create_test_server(public=True)
+
+		with patch(
+			"press.press.doctype.release_group.release_group.ReleaseGroup.add_server", autospec=True
+		) as add_server:
+			Server("Server", server.name).add_to_public_groups()
+
+		groups = {call.args[0].name for call in add_server.call_args_list}
+		self.assertIn(stable_group.name, groups)
+		self.assertNotIn(eol_group.name, groups)
+
+
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 @patch("boto3.client")
 class TestAWSStaticIP(FrappeTestCase):

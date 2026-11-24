@@ -52,6 +52,7 @@ from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server_monitoring import RAVEN_SERVER_ALERTS_CHANNEL
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
+from press.press.doctype.team_change.pending_request import cancel_transfer_requests, transfer_action
 from press.press.doctype.team_change.team_change import request_transfer
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
@@ -660,7 +661,18 @@ class BaseServer(Document, TagHelpers):
 			log_error("Route 53 Record Creation Error", domain=domain.name, server=self.name)
 
 	def add_to_public_groups(self):
-		groups = frappe.get_all("Release Group", {"public": True, "enabled": True}, "name")
+		groups_table = frappe.qb.DocType("Release Group")
+		versions_table = frappe.qb.DocType("Frappe Version")
+		groups = (
+			frappe.qb.from_(groups_table)
+			.join(versions_table)
+			.on(groups_table.version == versions_table.name)
+			.select(groups_table.name)
+			.where(groups_table.public == 1)
+			.where(groups_table.enabled == 1)
+			.where(versions_table.status != "End of Life")  # signup hides these versions
+			.run(pluck=True)
+		)
 		for group_name in groups:
 			group: ReleaseGroup = frappe.get_doc("Release Group", group_name)
 			with suppress(frappe.ValidationError):
@@ -918,7 +930,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def install_filebeat(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_install_filebeat", queue="long", timeout=1200)
+		frappe.enqueue_doc(self.doctype, self.name, "_install_filebeat", queue="long", timeout=3600)
 
 	def _install_filebeat(self):
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
@@ -962,7 +974,7 @@ class BaseServer(Document, TagHelpers):
 			wazuh_server=frappe.db.get_single_value("Press Settings", "wazuh_server"),
 			wazuh_agent_version=frappe.db.get_single_value("Press Settings", "wazuh_agent_version"),
 			queue="long",
-			timeout=1200,
+			timeout=3600,
 			# The hourly reconcile must not queue a second play while one is still running
 			job_id=f"wazuh_install:{self.doctype}:{self.name}",
 			deduplicate=True,
@@ -3535,18 +3547,22 @@ class Server(BaseServer):
 			},
 			*server_actions,
 		]
-		if self.status == "Active" and not self.is_self_hosted:
-			actions.append(
-				{
-					"action": "Transfer server",
-					"description": "Transfer ownership of this server to another team",
-					"button_label": "Transfer",
-					"doc_method": "send_change_team_request",
-					"group": group,
-					"server_doctype": "Server",
-					"server_name": self.name,
-				}
-			)
+		transfer = transfer_action(
+			self,
+			{
+				"action": "Transfer server",
+				"description": "Transfer ownership of this server to another team",
+				"button_label": "Transfer",
+				"doc_method": "send_change_team_request",
+				"group": group,
+				"server_doctype": "Server",
+				"server_name": self.name,
+			},
+		)
+		# A pending request can always be cancelled, even once the server can't be transferred
+		is_cancel_row = transfer["doc_method"] == "cancel_change_team_request"
+		if is_cancel_row or (self.status == "Active" and not self.is_self_hosted):
+			actions.append(transfer)
 		return actions
 
 	@dashboard_whitelist()
@@ -3554,6 +3570,12 @@ class Server(BaseServer):
 	def send_change_team_request(self, team_mail_id: str, reason: str | None = None):
 		"""Send email to team to accept server transfer request"""
 		request_transfer(self, team_mail_id, reason, title=self.title or self.name)
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def cancel_change_team_request(self):
+		"""Withdraw the transfer request before the receiving team accepts it"""
+		cancel_transfer_requests(self)
 
 	def update_subscription(self):
 		subscription = self.subscription
@@ -3734,7 +3756,7 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def setup_ncdu(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu")
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu", queue="long", timeout=3600)
 
 	@frappe.whitelist()
 	def setup_agent_volume(self):
@@ -3772,7 +3794,7 @@ class Server(BaseServer):
 	@frappe.whitelist()
 	def install_nfs_common(self):
 		"""Install nfs common on this server"""
-		frappe.enqueue_doc(self.doctype, self.name, "_install_nfs_common")
+		frappe.enqueue_doc(self.doctype, self.name, "_install_nfs_common", queue="long", timeout=3600)
 
 	def _install_nfs_common(self):
 		try:
@@ -4437,6 +4459,8 @@ class Server(BaseServer):
 			self.doctype,
 			self.name,
 			"_install_earlyoom",
+			queue="long",
+			timeout=3600,
 		)
 
 	def _install_earlyoom(self):

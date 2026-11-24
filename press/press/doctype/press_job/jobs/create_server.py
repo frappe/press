@@ -274,7 +274,7 @@ class CreateServerJob(PressJob):
 	def update_agent(self):
 		self.server_doc._update_agent_ansible(throw_on_failure=True)
 
-	@task(queue="long", timeout=1800)
+	@task(queue="long", timeout=3600)
 	def upgrade_mariadb(self):
 		if self.server_type == "Database Server":
 			play = self.server_doc._upgrade_mariadb()
@@ -285,7 +285,7 @@ class CreateServerJob(PressJob):
 			database_server: DatabaseServer = frappe.get_doc(
 				"Database Server", self.server_doc.database_server
 			)
-			database_server._upgrade_mariadb()
+			database_server._upgrade_mariadb(throw_on_failure=True)
 
 	@task(queue="long", timeout=1200)
 	def prepare_mariadb_replica(self):

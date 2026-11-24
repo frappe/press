@@ -42,6 +42,7 @@ from press.press.doctype.site_config.site_config import (
 	decode_json_config_value,
 	parse_json_config_value,
 )
+from press.press.doctype.team_change.pending_request import cancel_transfer_requests, transfer_action
 from press.press.doctype.team_change.team_change import request_transfer
 from press.utils import (
 	fmt_timedelta,
@@ -248,12 +249,15 @@ class ReleaseGroup(Document, TagHelpers):
 				"button_label": "Rename",
 				"doc_method": "rename",
 			},
-			{
-				"action": "Transfer Bench",
-				"description": "Transfer ownership of this bench to another team",
-				"button_label": "Transfer",
-				"doc_method": "send_change_team_request",
-			},
+			transfer_action(
+				self,
+				{
+					"action": "Transfer Bench",
+					"description": "Transfer ownership of this bench to another team",
+					"button_label": "Transfer",
+					"doc_method": "send_change_team_request",
+				},
+			),
 			{
 				"action": "Drop Bench",
 				"description": "Drop the bench",
@@ -908,8 +912,9 @@ class ReleaseGroup(Document, TagHelpers):
 				continue
 
 			# New Bench pulls the image and then copies its sites folder out with `cp -LR`,
-			# on the same volume. ponytail: 2x is an upper bound; measure the copy if it blocks too often.
-			required_size = 2 * last_image_size
+			# on the same volume. The sites copy is usually much smaller than the image,
+			# so 1.5x covers it without blocking deploys that 2x (the worst case) blocked.
+			required_size = 1.5 * last_image_size
 			if free_space < required_size:
 				self._try_server_size_increase_or_throw(
 					server, mountpoint, required_size=required_size - free_space
@@ -1254,6 +1259,12 @@ class ReleaseGroup(Document, TagHelpers):
 	def send_change_team_request(self, team_mail_id: str, reason: str):
 		"""Send email to team to accept bench transfer request"""
 		request_transfer(self, team_mail_id, reason, title=self.title or self.name)
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def cancel_change_team_request(self):
+		"""Withdraw the transfer request before the receiving team accepts it"""
+		cancel_transfer_requests(self)
 
 	@dashboard_whitelist()
 	@safe_for_readers

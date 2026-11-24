@@ -67,6 +67,7 @@ function getServerActionHandler(action) {
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
 		'Transfer server': onTransferServer,
+		'Cancel transfer request': onCancelTransfer,
 		'Cleanup Server': onCleanupServer,
 		'Enable Autoscale': onSetupSecondaryServer,
 		'Disable Autoscale': onTeardownSecondaryServer,
@@ -252,6 +253,25 @@ function onRebootServer() {
 	})
 }
 
+function onCancelTransfer() {
+	return confirmDialog({
+		title: 'Cancel Transfer Request',
+		message:
+			'Cancel the request to transfer this server? The link in the email to the receiving team will stop working. You can send a new request afterwards.',
+		primaryAction: {
+			label: 'Cancel request',
+			variant: 'solid',
+			theme: 'red',
+			onClick: ({ hide }) => {
+				return server.cancelTransferRequest.submit().then(() => {
+					hide()
+					toast.success('Transfer request cancelled')
+				})
+			},
+		},
+	})
+}
+
 function onTransferServer() {
 	confirmDialog({
 		title: 'Transfer Server Ownership',
@@ -282,7 +302,9 @@ function onTransferServer() {
 					.submit({ team_mail_id: values.email, reason: values.reason || '' })
 					.then(() => {
 						hide()
-						toast.success(`Transfer request sent to ${values.email}.`)
+						toast.success(
+							`Transfer request sent to ${values.email}. You can cancel it from Actions until it's accepted.`,
+						)
 					})
 			},
 		},

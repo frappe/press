@@ -195,6 +195,15 @@ class TestCreateServerJobFailure(FrappeTestCase):
 		self.assertEqual(frappe.db.get_value("Server", self.server.name, "status"), "Active")
 		self.assertTrue(self.server.subscription.enabled)
 
+	@patch("press.press.doctype.database_server.database_server.Ansible")
+	def test_unified_server_job_stops_when_mariadb_upgrade_fails(self, mock_ansible: Mock):
+		# Going on would push 11.8-only variables to MariaDB 10.6, which then fails to start
+		mock_ansible.return_value.run.return_value = Mock(status="Failure")
+		self.server.db_set("is_unified_server", 1)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Failed to upgrade MariaDB on server"):
+			self.job.upgrade_mariadb()
+
 
 def make_build_cleanup_job(age_minutes: int) -> TriggerBuildServerCleanupJob:
 	return TriggerBuildServerCleanupJob(

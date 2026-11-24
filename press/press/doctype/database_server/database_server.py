@@ -638,7 +638,7 @@ class DatabaseServer(BaseServer):
 		self.run_press_job("Upgrade MariaDB")
 
 	def upgrade_mariadb(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb", timeout=1800)
+		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb", timeout=3600)
 
 	def _upgrade_mariadb(self, throw_on_failure: bool = False):
 		ansible = Ansible(
