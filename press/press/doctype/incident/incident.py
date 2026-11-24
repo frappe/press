@@ -664,9 +664,11 @@ class Incident(WebsiteGenerator):
 				to=human.phone,
 				from_=self.twilio_phone_number,
 			)
-		except TwilioRestException:
-			self.notify_unable_to_reach_twilio()
-			raise
+		except TwilioRestException as e:
+			error = e
+		# Outside the except, so a Raven error log does not carry the Twilio traceback
+		self.notify_unable_to_reach_twilio()
+		raise error
 
 	def _attempt_call_human(self, human) -> bool:
 		"""Returns True if call was picked up (stop calling), False to continue to next human."""
