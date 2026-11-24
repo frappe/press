@@ -41,9 +41,8 @@ if TYPE_CHECKING:
 
 # Site Usage stores sizes in MB
 LARGE_DATABASE_SIZE_MB = 100 * 1024
-# The slowest version upgrade migrate from May to Nov 2026 ran 6.5 min/GB; this gives 3x headroom.
-VERSION_UPGRADE_SECONDS_PER_GB = 20 * 60
-DEFAULT_AGENT_JOB_TIMEOUT = 4 * 3600
+# A disk-bound version upgrade ran over 21 min/GB, so above this size it can pass the 4-hour default.
+LONG_MIGRATE_DATABASE_SIZE_MB = 10 * 1024
 MAXIMUM_AGENT_JOB_TIMEOUT = 24 * 3600  # the agent ignores a longer timeout
 # Above this a recovery migrate risks the statement timeout, so the bump is worthwhile.
 # Well below LARGE_DATABASE_SIZE_MB above, which gates a different thing — read both.
@@ -535,13 +534,10 @@ class SiteUpdate(Document):
 		self.set_update_job_value(job)
 
 	def get_migrate_timeout(self, site: Site) -> int | None:
-		"""A version upgrade gets time for its database size. None keeps the agent's default."""
-		if self.group == self.destination_group:
+		"""A large version upgrade gets the agent maximum. None keeps the agent's default."""
+		if self.group == self.destination_group or site.database_size <= LONG_MIGRATE_DATABASE_SIZE_MB:
 			return None
-		timeout = int(site.database_size / 1024 * VERSION_UPGRADE_SECONDS_PER_GB)
-		if timeout <= DEFAULT_AGENT_JOB_TIMEOUT:
-			return None
-		return min(timeout, MAXIMUM_AGENT_JOB_TIMEOUT)
+		return MAXIMUM_AGENT_JOB_TIMEOUT
 
 	def set_update_job_value(self, job):
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
