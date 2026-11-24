@@ -798,14 +798,26 @@ def lock_doc_updated_by_job(job_name):
 
 
 def redact_job_data(data):
-	# Only the free text fields; other keys carry results that callbacks read back
-	if not isinstance(data, dict):
-		return data
+	# Only the free text fields, at any depth; other keys carry results that callbacks read back
+	if isinstance(data, dict):
+		return {key: _redact_job_value(key, value) for key, value in data.items()}
+	if isinstance(data, list):
+		return [redact_job_data(item) for item in data]
+	return data
 
-	return {
-		**data,
-		**{key: redact_secrets(data[key]) for key in FREE_TEXT_JOB_DATA_KEYS if key in data},
-	}
+
+def _redact_job_value(key, value):
+	# Some steps nest results, e.g. {"tables": {table: {"command": ...}}}
+	if key in FREE_TEXT_JOB_DATA_KEYS and _is_text(value):
+		return redact_secrets(value)
+	return redact_job_data(value)
+
+
+def _is_text(value):
+	# An argv list can hold ints (ports) or None, but not nested results
+	if isinstance(value, list | tuple):
+		return not any(isinstance(part, dict | list | tuple) for part in value)
+	return isinstance(value, str)
 
 
 def update_job(job_name, job):
