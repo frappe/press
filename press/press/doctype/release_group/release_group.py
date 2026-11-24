@@ -5,7 +5,7 @@ import json
 from contextlib import suppress
 from functools import cached_property
 from itertools import chain
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, TypedDict, cast
 from urllib.parse import urlparse
 
 import frappe
@@ -25,7 +25,7 @@ from press.access.decorators import action_guard
 from press.access.staff_roles import safe_for_readers
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
-from press.api.github import get_frappe_branch_major_version
+from press.api.github import fetch_frappe_branch_major_version
 from press.exceptions import ImageNotFoundInRegistry, InsufficientSpaceOnServer, VolumeResizeLimitError
 from press.guards import role_guard, team_guard
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -33,6 +33,7 @@ from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from press.press.doctype.deploy_candidate.utils import is_suspended
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
+from press.press.doctype.github_installation.github_installation import validate_team_can_use_installation
 from press.press.doctype.marketplace_app.marketplace_app import (
 	validate_frappe_version_for_branch,
 )
@@ -912,8 +913,9 @@ class ReleaseGroup(Document, TagHelpers):
 				continue
 
 			# New Bench pulls the image and then copies its sites folder out with `cp -LR`,
-			# on the same volume. ponytail: 2x is an upper bound; measure the copy if it blocks too often.
-			required_size = 2 * last_image_size
+			# on the same volume. The sites copy is usually much smaller than the image,
+			# so 1.5x covers it without blocking deploys that 2x (the worst case) blocked.
+			required_size = 1.5 * last_image_size
 			if free_space < required_size:
 				self._try_server_size_increase_or_throw(
 					server, mountpoint, required_size=required_size - free_space
@@ -1762,9 +1764,10 @@ class ReleaseGroup(Document, TagHelpers):
 	def _validate_frappe_branch_matches_bench_version(
 		self, current_app_source: AppSource, to_branch: str
 	) -> None:
-		target_major_version = get_frappe_branch_major_version(
-			current_app_source.repository_owner,
-			current_app_source.repository,
+		# App Source validate always sets the repository fields
+		target_major_version = fetch_frappe_branch_major_version(
+			cast("str", current_app_source.repository_owner),
+			cast("str", current_app_source.repository),
 			to_branch,
 			current_app_source.github_installation_id,
 		)
@@ -1989,6 +1992,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if not (name := app.get("name")):
 			return
 
+		validate_team_can_use_installation(self.team, app.get("github_installation_id"))
 		if frappe.db.exists("App", name):
 			app_doc: "App" = frappe.get_doc("App", name)
 		else:

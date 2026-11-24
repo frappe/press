@@ -661,7 +661,18 @@ class BaseServer(Document, TagHelpers):
 			log_error("Route 53 Record Creation Error", domain=domain.name, server=self.name)
 
 	def add_to_public_groups(self):
-		groups = frappe.get_all("Release Group", {"public": True, "enabled": True}, "name")
+		groups_table = frappe.qb.DocType("Release Group")
+		versions_table = frappe.qb.DocType("Frappe Version")
+		groups = (
+			frappe.qb.from_(groups_table)
+			.join(versions_table)
+			.on(groups_table.version == versions_table.name)
+			.select(groups_table.name)
+			.where(groups_table.public == 1)
+			.where(groups_table.enabled == 1)
+			.where(versions_table.status != "End of Life")  # signup hides these versions
+			.run(pluck=True)
+		)
 		for group_name in groups:
 			group: ReleaseGroup = frappe.get_doc("Release Group", group_name)
 			with suppress(frappe.ValidationError):
@@ -919,7 +930,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def install_filebeat(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_install_filebeat", queue="long", timeout=1200)
+		frappe.enqueue_doc(self.doctype, self.name, "_install_filebeat", queue="long", timeout=3600)
 
 	def _install_filebeat(self):
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
@@ -963,7 +974,7 @@ class BaseServer(Document, TagHelpers):
 			wazuh_server=frappe.db.get_single_value("Press Settings", "wazuh_server"),
 			wazuh_agent_version=frappe.db.get_single_value("Press Settings", "wazuh_agent_version"),
 			queue="long",
-			timeout=1200,
+			timeout=3600,
 			# The hourly reconcile must not queue a second play while one is still running
 			job_id=f"wazuh_install:{self.doctype}:{self.name}",
 			deduplicate=True,
@@ -2077,15 +2088,14 @@ class BaseServer(Document, TagHelpers):
 		console.save(ignore_permissions=True)
 		console.reload()
 		console.run_sysrq()
-		# TODO: Enable after a manual trial with the button on Server
-		# frappe.enqueue_doc(
-		# self.doctype,
-		# self.name,
-		# "restore_truncated_configs",
-		# wait_for_reboot=True,
-		# queue="long",
-		# timeout=1200,
-		# )
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"restore_truncated_configs",
+			wait_for_reboot=True,
+			queue="long",
+			timeout=1200,
+		)
 
 	@dashboard_whitelist()
 	def reboot(self):
@@ -2099,15 +2109,14 @@ class BaseServer(Document, TagHelpers):
 			raise NotImplementedError
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.reboot()
-		# TODO: Enable after a manual trial with the button on Server
-		# frappe.enqueue_doc(
-		# self.doctype,
-		# self.name,
-		# "restore_truncated_configs",
-		# wait_for_reboot=True,
-		# queue="long",
-		# timeout=1200,
-		# )
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"restore_truncated_configs",
+			wait_for_reboot=True,
+			queue="long",
+			timeout=1200,
+		)
 
 	@dashboard_whitelist()
 	def rename(self, title):
@@ -3745,7 +3754,7 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def setup_ncdu(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu")
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu", queue="long", timeout=3600)
 
 	@frappe.whitelist()
 	def setup_rclone(self):
@@ -3754,7 +3763,7 @@ class Server(BaseServer):
 	@frappe.whitelist()
 	def install_nfs_common(self):
 		"""Install nfs common on this server"""
-		frappe.enqueue_doc(self.doctype, self.name, "_install_nfs_common")
+		frappe.enqueue_doc(self.doctype, self.name, "_install_nfs_common", queue="long", timeout=3600)
 
 	def _install_nfs_common(self):
 		try:
@@ -4419,6 +4428,8 @@ class Server(BaseServer):
 			self.doctype,
 			self.name,
 			"_install_earlyoom",
+			queue="long",
+			timeout=3600,
 		)
 
 	def _install_earlyoom(self):

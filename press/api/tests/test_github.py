@@ -241,9 +241,9 @@ class TestGitHubAuthorization(FrappeTestCase):
 
 	def test_obtain_access_token_redacts_oauth_code_and_token_from_logs(self):
 		response = {
-			"access_token": "secret-token",
-			"scope": "repo",
-			"token_type": "bearer",
+			"error": "bad_verification_code",
+			"error_description": "The code passed is incorrect or expired.",
+			"error_uri": "https://docs.github.com",
 		}
 
 		with (
@@ -253,25 +253,22 @@ class TestGitHubAuthorization(FrappeTestCase):
 				"press.www.github.authorize.frappe.db.get_single_value",
 				side_effect=["client-id", "client-secret"],
 			),
-			patch(
-				"press.www.github.authorize.frappe.db.set_value",
-				side_effect=RuntimeError("db failure"),
-			),
 		):
 			post.return_value.json.return_value = response
-			self._obtain_access_token()("oauth-code", self.team.name)
+			token = self._obtain_access_token()("oauth-code", self.team.name)
 
+		self.assertIsNone(token)
 		log_error.assert_called_once()
 		self.assertNotIn("code", log_error.call_args.kwargs)
 		self.assertEqual(
 			log_error.call_args.kwargs["response"],
 			{
-				"error": None,
-				"error_description": None,
-				"error_uri": None,
-				"has_access_token": True,
-				"scope": "repo",
-				"token_type": "bearer",
+				"error": "bad_verification_code",
+				"error_description": "The code passed is incorrect or expired.",
+				"error_uri": "https://docs.github.com",
+				"has_access_token": False,
+				"scope": None,
+				"token_type": None,
 			},
 		)
 
