@@ -57,7 +57,7 @@
 							upgradeStep === 'ready_to_upgrade' &&
 							!appCompatibility.can_upgrade
 						"
-						:title="`Migration isn't possible due to incompatible app(s): <b>${appCompatibility.incompatible.join(', ')}</b>`"
+						:title="incompatibleAppsMessage"
 						type="error"
 					/>
 
@@ -277,7 +277,7 @@
 				class="w-full"
 				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
 				variant="subtle"
-				:label="targetDateTime ? 'Schedule Upgrade' : 'Upgrade Now'"
+				label="Close"
 				@click="show = false"
 			/>
 			<!-- Create bench and upgrade -->
@@ -355,6 +355,20 @@ export default {
 				return null;
 
 			return `Version ${nextNumber + 1}`;
+		},
+		incompatibleAppsMessage() {
+			const apps = this.appCompatibility.incompatible
+				.map(
+					(app) =>
+						`<li><b>${app.title}</b> (${app.repository}, branch ${app.branch})</li>`,
+				)
+				.join('');
+			const single = this.appCompatibility.incompatible.length === 1;
+			const subject = single ? 'This app blocks' : 'These apps block';
+			const object = single ? 'it' : 'them';
+			return `${subject} the upgrade to ${this.nextVersion}. The bench group installs ${object} from a public Marketplace source that has no ${this.nextVersion} release:
+				<ul class="my-1 list-disc pl-5">${apps}</ul>
+				To continue, ask the app publisher to add a ${this.nextVersion} release. Or, in the bench group, change the app to your own GitHub source. Then this dialog lets you select a branch for ${this.nextVersion}.`;
 		},
 		message() {
 			if (this.$site.doc?.version === this.$site.doc?.latest_frappe_version) {

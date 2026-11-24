@@ -3116,7 +3116,14 @@ def _check_public_apps_compatibility(public_apps, source_map, next_version):
 			continue
 
 		source = source_map.get(app)
-		incompatible.append(source.app_title if source else app)
+		incompatible.append(
+			{
+				"app": app,
+				"title": source.app_title or app,
+				"repository": f"{source.repository_owner}/{source.repository}",
+				"branch": source.branch,
+			}
+		)
 
 	return incompatible
 
