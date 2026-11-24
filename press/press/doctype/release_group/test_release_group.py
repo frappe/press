@@ -35,7 +35,7 @@ if typing.TYPE_CHECKING:
 # tests shouldn't reach the network anyway. 14 matches create_test_release_group's
 # default frappe_version.
 mock_frappe_branch_major_version = patch(
-	"press.press.doctype.release_group.release_group.get_frappe_branch_major_version",
+	"press.press.doctype.release_group.release_group.fetch_frappe_branch_major_version",
 	new=Mock(return_value=14),
 )
 

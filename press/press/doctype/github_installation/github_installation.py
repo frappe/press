@@ -49,17 +49,19 @@ class GitHubInstallation(Document):
 			}
 		)
 
-	def as_selector_option(self) -> dict:
+	def as_selector_option(self) -> dict | None:
 		from press.api.github import fetch_repositories, get_access_token
+
+		# GitHub mints no token for a suspended or removed installation
+		if not (token := get_access_token(self.installation_id)):
+			return None
 
 		return {
 			"id": self.installation_id,
 			"login": self.account_login,
 			"url": self.installation_url,
 			"image": self.account_avatar_url,
-			"repos": fetch_repositories(
-				INSTALLATION_REPOSITORIES_URL, get_access_token(self.installation_id)
-			),
+			"repos": fetch_repositories(INSTALLATION_REPOSITORIES_URL, token),
 		}
 
 
@@ -69,16 +71,23 @@ def is_enabled_for_team(team: str) -> bool:
 
 def get_selector_options(team: str) -> dict:
 	names = frappe.get_all("GitHub Installation", {"team": team, "enabled": 1}, pluck="name")
-	installations = [GitHubInstallation("GitHub Installation", name).as_selector_option() for name in names]
+	options = [GitHubInstallation("GitHub Installation", name).as_selector_option() for name in names]
+	installations = [option for option in options if option]
 	return {"authorized": bool(installations), "installations": installations}
 
 
 def link_installations(team: str, user_token: str):
-	"""Link every installation the GitHub user can see to the team."""
+	"""Link every installation the GitHub user can see to the team, all or nothing."""
 	from press.api.github import fetch_installations
 
-	for installation in fetch_installations(user_token):
-		link_installation(team, installation)
+	installations = fetch_installations(user_token)
+	frappe.db.savepoint("link_github_installations")
+	try:
+		for installation in installations:
+			link_installation(team, installation)
+	except Exception:
+		frappe.db.rollback(save_point="link_github_installations")
+		raise
 
 
 def link_installation(team: str, installation: dict):
@@ -92,16 +101,10 @@ def link_installation(team: str, installation: dict):
 	doc.save(ignore_permissions=True)
 
 
-def update_installation_from_webhook(installation: dict, enabled: bool):
-	"""Update rows already linked to this GitHub account. Webhooks never link a new team."""
+def disable_installations_for_account(installation: dict):
+	"""Webhooks only take access away. Only the OAuth flow links or re-enables a team."""
 	frappe.db.set_value(
-		"GitHub Installation",
-		{"account_id": str(installation["account"]["id"])},
-		{
-			"installation_id": str(installation["id"]),
-			"account_login": installation["account"]["login"],
-			"enabled": enabled,
-		},
+		"GitHub Installation", {"account_id": str(installation["account"]["id"])}, "enabled", 0
 	)
 
 
