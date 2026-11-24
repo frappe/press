@@ -5,6 +5,7 @@
 import datetime
 import json
 import random
+import time
 import typing
 from dataclasses import dataclass
 from enum import Enum
@@ -35,6 +36,10 @@ if typing.TYPE_CHECKING:
 
 
 INVESTIGATION_WINDOW = 5  # Use 5m timeframe
+DATABASE_RECOVERY_POLL_SECONDS = 30
+DATABASE_RECOVERY_TIMEOUT = datetime.timedelta(minutes=10)  # A reboot that takes longer needs a human
+REBOOT_CLOCK_MARGIN = datetime.timedelta(minutes=2)  # The reboot step saves after the reboot starts
+RESOURCE_CAUSES = ("has_high_cpu_load", "has_high_memory_usage", "has_high_system_load")
 
 
 class Status(str, Enum):
@@ -86,6 +91,7 @@ class PrometheusInvestigationHelper:
 			"has_high_cpu_load",
 			"has_high_memory_usage",
 			"has_high_system_load",
+			"is_mariadb_down",
 		],
 	}
 
@@ -247,6 +253,18 @@ class PrometheusInvestigationHelper:
 
 		return mountpoints
 
+	def is_mariadb_down(self, instance: str, step: "InvestigationStep"):
+		"""Check if MariaDB is down"""
+		query = f'mysql_up{{instance="{instance}",job="mariadb"}}'
+		metric_data = self.prometheus_client.get_current_metric_value(query)
+
+		if not metric_data:
+			self.is_unable_to_investigate(step)
+			return
+
+		step.is_likely_cause = float(metric_data[0]["value"][-1]) == 0
+		step.save()
+
 	def are_sites_on_proxy_down(self, instance: str, step: "InvestigationStep"):
 		"""Randomly sample and ping 10% of sites on proxy"""
 
@@ -356,13 +374,65 @@ class DatabaseInvestigationActions:
 			else:
 				virtual_machine_doc.reboot()
 			step.status = StepStatus.Success
-		except Exception:
+		except Exception as e:
 			step.status = StepStatus.Failure
+			step.output = str(e)
 
 		step.save()
 
+	def wait_for_database(self, step: "ActionStep"):
+		"""Wait for MariaDB to come back after the reboot"""
+		reboot = self._action_step(self.initiate_database_reboot)
+		if reboot.status == StepStatus.Failure:
+			step.status = StepStatus.Failure
+			step.output = "The reboot failed, so MariaDB will not come back"
+			step.save()
+			return
+
+		time.sleep(DATABASE_RECOVERY_POLL_SECONDS)
+		step.is_waiting = True
+		step.attempt = (step.attempt or 0) + 1
+		step.status = StepStatus.Running
+		if self._database_is_back_since(reboot.modified):
+			step.status = StepStatus.Success
+		elif frappe.utils.now_datetime() - reboot.modified > DATABASE_RECOVERY_TIMEOUT:
+			step.status = StepStatus.Failure
+			step.output = "MariaDB did not come back within the wait time"
+		step.save()
+
+	def _database_is_back_since(self, rebooted_at: datetime.datetime) -> bool:
+		# A mysql_up of 1 can be from the scrape before the reboot, so also ask for a new boot
+		from press.api.server import prometheus_instant_value
+
+		database_server = self._database_server()
+		booted_at = prometheus_instant_value(
+			f'node_boot_time_seconds{{instance="{database_server.virtual_machine}",job="node"}}'
+		)
+		earliest_boot = get_utc_time(rebooted_at) - REBOOT_CLOCK_MARGIN
+		return bool(booted_at) and booted_at > earliest_boot.timestamp() and database_server.is_mariadb_up()
+
+	def _action_step(self, method: typing.Callable) -> "frappe._dict":
+		# The investigator copy held here is from before the steps ran, so read the step fresh
+		return frappe.db.get_value(
+			"Action Step",
+			{"parent": self.investigator.name, "method_name": method.__name__},
+			["status", "modified"],
+			as_dict=True,
+		)
+
+	def _database_server(self) -> "DatabaseServer":
+		database_server = frappe.db.get_value("Server", self.investigator.server, "database_server")
+		return frappe.get_cached_doc("Database Server", database_server)
+
 	def restart_benches(self, step: "ActionStep"):
 		"""Restart benches to establish connection after reboot"""
+		wait = self._action_step(self.wait_for_database)
+		if wait and wait.status == StepStatus.Failure:
+			step.status = StepStatus.Skipped
+			step.output = "MariaDB is not back, so the benches cannot connect"
+			step.save()
+			return
+
 		step.status = StepStatus.Running
 		step.save()
 
@@ -383,37 +453,53 @@ class DatabaseInvestigationActions:
 
 	def add_database_server_investigation_actions(self):
 		"""
-		In case of database resource incidents we do the following
+		In case of database incidents we do the following
 			- Unreachable or missing metrics from promethues results in a database server reboot
-			- Busy resources result in a mariadb reboot post a process list capture.
+			- Busy resources or a down MariaDB result in a reboot post a process list capture.
+		Benches restart only after MariaDB is back, so that they reconnect to a running database.
 		"""
-		database_resource_investigation_steps = [
-			step
-			for step in self.investigator.database_investigation_steps
-			if step.method != PrometheusInvestigationHelper.has_high_disk_usage.__name__
-		]  # If all resource investigation steps have missing data then just reboot?
+		if self._all_database_metrics_missing():
+			actions = [self.initiate_database_reboot]  # Without metrics, a wait for MariaDB cannot end
+		elif self._needs_reboot():
+			actions = self._reboot_actions()
+		else:
+			actions = []
 
-		if all([step.is_unable_to_investigate for step in database_resource_investigation_steps]):
-			# We need to think about missing data from prometheus here?
-			for step in self.investigator.get_steps([self.initiate_database_reboot]):
-				self.investigator.append("action_steps", step)
-
-			self.investigator.save()
-			return
-
-		resource_causes = {
-			PrometheusInvestigationHelper.has_high_cpu_load.__name__,
-			PrometheusInvestigationHelper.has_high_memory_usage.__name__,
-			PrometheusInvestigationHelper.has_high_system_load.__name__,
-		}
-		database_likely_causes = set(self.investigator.likely_causes["database"])
-		if database_likely_causes and database_likely_causes.intersection(resource_causes):
-			for step in self.investigator.get_steps(
-				[self.capture_process_list, self.initiate_database_reboot, self.restart_benches]
-			):
-				self.investigator.append("action_steps", step)
-
+		for step in self.investigator.get_steps(actions):
+			self.investigator.append("action_steps", step)
 		self.investigator.save()
+
+	def _all_database_metrics_missing(self) -> bool:
+		not_resource_checks = (
+			PrometheusInvestigationHelper.has_high_disk_usage.__name__,
+			PrometheusInvestigationHelper.is_mariadb_down.__name__,
+		)
+		steps = self.investigator.database_investigation_steps
+		return all(step.is_unable_to_investigate for step in steps if step.method not in not_resource_checks)
+
+	def _needs_reboot(self) -> bool:
+		causes = set(self.investigator.likely_causes["database"])
+		if causes.intersection(RESOURCE_CAUSES):
+			return True
+		# A full disk keeps MariaDB down after a reboot too
+		return (
+			PrometheusInvestigationHelper.is_mariadb_down.__name__ in causes
+			and PrometheusInvestigationHelper.has_high_disk_usage.__name__ not in causes
+		)
+
+	def _reboot_actions(self) -> list[typing.Callable]:
+		mariadb_check = find(
+			self.investigator.database_investigation_steps,
+			lambda s: s.method == PrometheusInvestigationHelper.is_mariadb_down.__name__,
+		)
+		if mariadb_check.is_unable_to_investigate:  # Without mysql_up, a wait for MariaDB cannot end
+			return [self.capture_process_list, self.initiate_database_reboot, self.restart_benches]
+		return [
+			self.capture_process_list,
+			self.initiate_database_reboot,
+			self.wait_for_database,
+			self.restart_benches,
+		]
 
 
 class AppServerInvestigationActions:
@@ -669,6 +755,13 @@ class IncidentInvestigator(Document, StepHandler):
 
 		step.status = StepStatus.Success
 		step.save()
+
+	@property
+	def database_did_not_recover(self) -> bool:
+		"""Whether the wait for MariaDB after the reboot ended in failure"""
+		wait_for_database = DatabaseInvestigationActions.wait_for_database.__name__
+		step = find(self.action_steps, lambda s: s.method_name == wait_for_database)
+		return bool(step and step.status == StepStatus.Failure)
 
 	### Some helper methods for initiating investigation steps
 	@property

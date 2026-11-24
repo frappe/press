@@ -619,7 +619,9 @@ def prometheus_instant_value(query: str) -> float | None:
 	url = f"https://{monitor_server}/prometheus/api/v1/query"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 	try:
-		response = requests.get(url, params={"query": query}, auth=("frappe", str(password))).json()
+		response = requests.get(
+			url, params={"query": query}, auth=("frappe", str(password)), timeout=10
+		).json()
 	except requests.exceptions.RequestException:
 		frappe.throw("Unable to connect to monitor server", MonitorServerDown)
 

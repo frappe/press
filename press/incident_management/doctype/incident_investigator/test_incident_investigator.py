@@ -3,7 +3,9 @@
 
 
 import re
+import time
 import typing
+from contextlib import contextmanager
 from unittest.mock import Mock, patch
 
 import frappe
@@ -11,6 +13,7 @@ from frappe.tests.utils import FrappeTestCase
 from prometheus_api_client import PrometheusConnect
 
 from press.incident_management.doctype.incident_investigator.incident_investigator import (
+	DatabaseInvestigationActions,
 	IncidentInvestigator,
 )
 from press.incident_management.doctype.incident_investigator.utils.incident_pattern_detector import (
@@ -19,6 +22,7 @@ from press.incident_management.doctype.incident_investigator.utils.incident_patt
 from press.incident_management.doctype.incident_pattern.incident_pattern import (
 	IncidentPattern,
 )
+from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.incident.incident import Incident
 from press.press.doctype.server.test_server import (
 	create_test_database_server,
@@ -33,6 +37,8 @@ from press.utils.test import foreground_enqueue_doc
 
 if typing.TYPE_CHECKING:
 	from collections.abc import Callable
+
+	from press.incident_management.doctype.action_step.action_step import ActionStep
 
 
 class MockStep(frappe._dict):
@@ -70,6 +76,29 @@ def mock_disk_usage(is_high: bool = False, mountpoint: str = "/opt/volumes/bench
 				"value": [1755018815.605, "383623069" if is_high else "38362306900"],
 			}
 		]
+
+	return wrapper
+
+
+def booted_after_reboot() -> float:
+	return time.time() + 60
+
+
+def booted_before_reboot() -> float:
+	return time.time() - 24 * 60 * 60
+
+
+def mock_mariadb_up(is_up: bool | None, disk_full: bool = False):
+	"""mysql_up reads 1, 0, or nothing for None; other queries get the disk mock"""
+	disk_usage = mock_disk_usage(is_high=disk_full)
+
+	def wrapper(*args, **kwargs):
+		query = args[-1]  # Patched onto the class, so the client comes first
+		if "mysql_up" in query and is_up is None:
+			return []
+		if "mysql_up" in query:
+			return [{"metric": {"__name__": "mysql_up"}, "value": [1755018815.605, "1" if is_up else "0"]}]
+		return disk_usage(*args, **kwargs)
 
 	return wrapper
 
@@ -211,6 +240,9 @@ def make_custom_query_range_side_effect(
 @patch(
 	"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.db.commit", Mock()
 )
+@patch("press.incident_management.doctype.incident_investigator.incident_investigator.time.sleep", Mock())
+@patch.object(DatabaseServer, "is_mariadb_up", Mock(return_value=True))
+@patch("press.api.server.prometheus_instant_value", Mock(side_effect=lambda query: booted_after_reboot()))
 class TestIncidentInvestigator(FrappeTestCase):
 	@classmethod
 	def setUpClass(cls):
@@ -248,7 +280,8 @@ class TestIncidentInvestigator(FrappeTestCase):
 			self.assertTrue(step.is_likely_cause)
 
 		for step in investigator.database_investigation_steps:
-			self.assertTrue(step.is_likely_cause)
+			# The disk mock answers the mysql_up query too, with a non-zero value
+			self.assertEqual(bool(step.is_likely_cause), step.method != "is_mariadb_down")
 
 		self.assertEqual(investigator.status, "Completed")
 		self.assertEqual(
@@ -268,19 +301,20 @@ class TestIncidentInvestigator(FrappeTestCase):
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
 
 		for step in investigator.database_investigation_steps:
-			if step.method == "has_high_disk_usage":
+			if step.method in ("has_high_disk_usage", "is_mariadb_down"):
 				self.assertFalse(step.is_likely_cause)
 			else:
 				self.assertTrue(step.is_likely_cause)
 
 		self.assertEqual(investigator.status, "Completed")
-		self.assertEqual(len(investigator.action_steps), 8)  # Investigate benches memory as well
+		self.assertEqual(len(investigator.action_steps), 9)  # Investigate benches memory as well
 
 		self.assertListEqual(
 			[step.method_name for step in investigator.action_steps],
 			[
 				"capture_process_list",
 				"initiate_database_reboot",
+				"wait_for_database",
 				"restart_benches",
 				"get_bench_memory_usage_data",
 				"get_oom_kill_events",
@@ -313,13 +347,14 @@ class TestIncidentInvestigator(FrappeTestCase):
 				self.assertTrue(step.is_likely_cause)
 
 		# Since database has high memory and high cpu add database action step
-		self.assertEqual(len(investigator.action_steps), 8)  # App server actions
+		self.assertEqual(len(investigator.action_steps), 9)  # App server actions
 
 		self.assertListEqual(
 			[step.method_name for step in investigator.action_steps],
 			[
 				"capture_process_list",
 				"initiate_database_reboot",
+				"wait_for_database",
 				"restart_benches",
 				"get_bench_memory_usage_data",
 				"get_oom_kill_events",
@@ -344,11 +379,11 @@ class TestIncidentInvestigator(FrappeTestCase):
 			if step.method == "has_high_cpu_load" or step.method == "has_high_memory_load":
 				self.assertTrue(step.is_unable_to_investigate)
 
-		self.assertEqual(
-			len(investigator.action_steps), 3
-		)  # All of resource investigations need to be unreachable for action to be added
-		step = investigator.action_steps[0]
-		self.assertEqual(step.method_name, "initiate_database_reboot")
+		# All of resource investigations need to be unreachable for action to be added
+		self.assertListEqual(
+			[step.method_name for step in investigator.action_steps],
+			["initiate_database_reboot", "add_investigation_findings", "detect_patterns"],
+		)  # Without metrics, a wait for MariaDB cannot end
 		incident = frappe.get_doc("Incident", investigator.incident)
 		self.assertTrue(incident.phone_call)
 
@@ -406,6 +441,161 @@ class TestIncidentInvestigator(FrappeTestCase):
 		self.assertEqual(len(investigator.action_steps), 0)
 
 		self.assertEqual(investigator.status, "Completed")
+
+	@patch.object(IncidentInvestigator, "before_insert", Mock())
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_mariadb_up(is_up=False))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=False))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	def test_down_mariadb_on_a_healthy_host_reboots_and_waits_for_mariadb_before_restarting_benches(self):
+		create_test_incident(self.server.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
+		self.assertEqual(investigator.likely_causes["database"], ["is_mariadb_down"])
+		self.assertListEqual(
+			[step.method_name for step in investigator.action_steps],
+			[
+				"capture_process_list",
+				"initiate_database_reboot",
+				"wait_for_database",
+				"restart_benches",
+				"add_investigation_findings",
+				"detect_patterns",
+			],
+		)
+
+	@patch.object(IncidentInvestigator, "before_insert", Mock())
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_mariadb_up(is_up=True))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=False))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	def test_running_mariadb_on_a_healthy_host_takes_no_action(self):
+		create_test_incident(self.server.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
+		self.assertEqual(investigator.likely_causes["database"], [])
+		self.assertEqual(len(investigator.action_steps), 0)
+
+	@patch.object(IncidentInvestigator, "before_insert", Mock())
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_mariadb_up(is_up=False, disk_full=True))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=False))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	def test_down_mariadb_on_a_full_disk_is_not_rebooted(self):
+		create_test_incident(self.server.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
+		self.assertIn("is_mariadb_down", investigator.likely_causes["database"])
+		self.assertEqual(len(investigator.action_steps), 0, "A reboot does not free the disk")
+
+	@patch.object(IncidentInvestigator, "before_insert", Mock())
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_mariadb_up(is_up=None))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=True))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=True))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	def test_reboot_without_mysql_up_data_does_not_wait_for_mariadb(self):
+		create_test_incident(self.server.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
+		database_actions = [s.method_name for s in investigator.action_steps][:3]
+		self.assertListEqual(
+			database_actions, ["capture_process_list", "initiate_database_reboot", "restart_benches"]
+		)
+
+	def test_wait_for_database_succeeds_once_the_host_rebooted_and_mariadb_is_up(self):
+		investigator, wait_step, _ = self._investigator_after_reboot(reboot_status="Success")
+
+		with self._database_state(booted=booted_after_reboot, mariadb_up=True):
+			DatabaseInvestigationActions(investigator).wait_for_database(wait_step)
+
+		self.assertEqual(wait_step.status, "Success")
+		self.assertEqual(wait_step.attempt, 1)
+
+	def test_wait_for_database_ignores_a_mysql_up_scraped_before_the_reboot(self):
+		investigator, wait_step, _ = self._investigator_after_reboot(reboot_status="Success")
+
+		with self._database_state(booted=booted_before_reboot, mariadb_up=True):
+			DatabaseInvestigationActions(investigator).wait_for_database(wait_step)
+
+		self.assertEqual(wait_step.status, "Running", "The host has not booted since the reboot")
+
+	def test_wait_for_database_keeps_waiting_while_mariadb_is_down(self):
+		investigator, wait_step, _ = self._investigator_after_reboot(reboot_status="Success")
+
+		with self._database_state(booted=booted_after_reboot, mariadb_up=False):
+			DatabaseInvestigationActions(investigator).wait_for_database(wait_step)
+
+		self.assertEqual(wait_step.status, "Running", "The runner calls a Running step again")
+		self.assertTrue(wait_step.is_waiting)
+
+	def test_wait_for_database_fails_when_mariadb_is_still_down_after_the_timeout(self):
+		investigator, wait_step, _ = self._investigator_after_reboot(reboot_status="Success")
+		reboot_step = investigator.action_steps[0]
+		reboot_step.db_set(
+			"modified", frappe.utils.add_to_date(minutes=-11), update_modified=False
+		)  # Rebooted 11 minutes ago
+
+		with self._database_state(booted=booted_after_reboot, mariadb_up=False):
+			DatabaseInvestigationActions(investigator).wait_for_database(wait_step)
+
+		self.assertEqual(wait_step.status, "Failure")
+		self.assertEqual(wait_step.output, "MariaDB did not come back within the wait time")
+		self.assertTrue(investigator.reload().database_did_not_recover)
+
+	def test_wait_for_database_fails_at_once_when_the_reboot_failed(self):
+		investigator, wait_step, _ = self._investigator_after_reboot(reboot_status="Failure")
+
+		with self._database_state(booted=booted_after_reboot, mariadb_up=True):
+			DatabaseInvestigationActions(investigator).wait_for_database(wait_step)
+
+		self.assertEqual(wait_step.status, "Failure")
+		self.assertEqual(wait_step.output, "The reboot failed, so MariaDB will not come back")
+
+	def test_restart_benches_is_skipped_when_mariadb_did_not_come_back(self):
+		investigator, wait_step, restart_step = self._investigator_after_reboot(reboot_status="Success")
+		wait_step.db_set("status", "Failure")
+
+		DatabaseInvestigationActions(investigator).restart_benches(restart_step)
+
+		self.assertEqual(restart_step.status, "Skipped")
+		self.assertEqual(restart_step.output, "MariaDB is not back, so the benches cannot connect")
+
+	@patch.object(IncidentInvestigator, "before_insert", Mock())
+	@patch.object(IncidentInvestigator, "after_insert", Mock())
+	def _investigator_after_reboot(
+		self, reboot_status: str
+	) -> tuple[IncidentInvestigator, "ActionStep", "ActionStep"]:
+		investigator: IncidentInvestigator = frappe.get_doc(
+			{"doctype": "Incident Investigator", "server": self.server.name}
+		).insert()
+		for name, status in (
+			("initiate_database_reboot", reboot_status),
+			("wait_for_database", "Pending"),
+			("restart_benches", "Pending"),
+		):
+			investigator.append("action_steps", {"step_name": name, "method_name": name, "status": status})
+		investigator.save()
+		return investigator, investigator.action_steps[1], investigator.action_steps[2]
+
+	@contextmanager
+	def _database_state(self, booted: float, mariadb_up: bool):
+		with (
+			patch("press.api.server.prometheus_instant_value", Mock(return_value=booted())),
+			patch.object(DatabaseServer, "is_mariadb_up", Mock(return_value=mariadb_up)),
+		):
+			yield
 
 	@patch(
 		"press.incident_management.doctype.incident_investigator.incident_investigator.get_prometheus_client",
