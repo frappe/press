@@ -123,6 +123,51 @@ class TestDatabaseServer(FrappeTestCase):
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
+	def test_memory_limits_play_skips_memory_high_on_unified_server(self, Mock_Ansible: MagicMock):
+		server = create_test_database_server()
+		server.is_unified_server = True
+		server.memory_high = 1
+		server.memory_max = 2
+		server.save()
+
+		memory_limits_play = find(
+			Mock_Ansible.call_args_list,
+			lambda call: call.kwargs["playbook"] == "database_memory_limits.yml",
+		)
+		self.assertIsNone(memory_limits_play.kwargs["variables"]["memory_high"])
+		self.assertEqual(memory_limits_play.kwargs["variables"]["memory_max"], 2)
+
+	def test_mariadb_systemd_templates_omit_memory_high_on_unified_server(self):
+		memory_conf = frappe.render_template(
+			"press/playbooks/roles/mariadb_systemd_limits/templates/memory.conf",
+			{"ansible_memtotal_mb": 16384, "is_unified_server": True},
+			is_path=True,
+		)
+		memory_custom_conf = frappe.render_template(
+			"press/playbooks/roles/mariadb_systemd_limits/templates/memory-custom.conf",
+			{"memory_high": "", "memory_max": 7, "memory_swap_max": 0.1},
+			is_path=True,
+		)
+
+		self.assertEqual(memory_conf, "[Service]\nMemoryMax=15G\nMemorySwapMax=100M")
+		self.assertEqual(memory_custom_conf, "[Service]\nMemoryMax=7G\nMemorySwapMax=0.1G")
+
+	def test_mariadb_systemd_template_keeps_memory_high_on_database_server(self):
+		memory_conf = frappe.render_template(
+			"press/playbooks/roles/mariadb_systemd_limits/templates/memory.conf",
+			{"ansible_memtotal_mb": 16384},
+			is_path=True,
+		)
+
+		self.assertEqual(memory_conf, "[Service]\nMemoryHigh=14G\nMemoryMax=15G\nMemorySwapMax=100M")
+
+	@patch(
+		"press.press.doctype.database_server.database_server.Ansible",
+	)
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
 	def test_reconfigure_mariadb_exporter_play_runs_on_reconfigure_fn_call(self, Mock_Ansible: Mock):
 		server = create_test_database_server()
 		server.reconfigure_mariadb_exporter()
@@ -233,6 +278,20 @@ class TestDatabaseServer(FrappeTestCase):
 			).value_int,
 			int(15007.248 * 0.65),
 		)
+
+	@patch("press.press.doctype.database_server.database_server.Ansible", new=Mock())
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	def test_adjust_memory_config_sets_memory_high_to_zero_on_unified_server(self):
+		server = create_test_database_server()
+		server.is_unified_server = True
+		server.save()
+		server.adjust_memory_config()
+		server.reload()
+		self.assertEqual(server.memory_high, 0)
+		self.assertEqual(server.memory_max, round(server.ram_for_mariadb / 1024, 3))
 
 	@patch("press.api.server.prometheus_instant_value")
 	def test_is_mariadb_up_reads_the_currently_scraped_mysql_up_value(self, mysql_up: Mock):

@@ -517,7 +517,7 @@ class DatabaseServer(BaseServer):
 
 	def _update_memory_limits(self):
 		self.memory_swap_max = self.memory_swap_max or 0.1
-		if not self.memory_high or not self.memory_max:
+		if not self.memory_max or not (self.memory_high or self.is_unified_server):
 			return
 		ansible = Ansible(
 			playbook="database_memory_limits.yml",
@@ -526,7 +526,7 @@ class DatabaseServer(BaseServer):
 			port=self.ssh_port or 22,
 			variables={
 				"server": self.name,
-				"memory_high": self.memory_high,
+				"memory_high": self.mariadb_memory_high,
 				"memory_max": self.memory_max,
 				"memory_swap_max": self.memory_swap_max,
 			},
@@ -534,6 +534,11 @@ class DatabaseServer(BaseServer):
 		play = ansible.run()
 		if play.status == "Failure":
 			log_error("Database Server Update Memory Limits Error", server=self.name)
+
+	@property
+	def mariadb_memory_high(self) -> float | None:
+		# Unified servers share RAM with the benches, so do not throttle MariaDB
+		return None if self.is_unified_server else self.memory_high
 
 	def update_mariadb_system_variables(self):
 		variables_to_update = self.get_variables_to_update()
@@ -2047,7 +2052,7 @@ class DatabaseServer(BaseServer):
 		if not self.ram:
 			return
 
-		self.memory_high = round(max(self.ram_for_mariadb / 1024 - 1, 1), 3)
+		self.memory_high = 0 if self.is_unified_server else round(max(self.ram_for_mariadb / 1024 - 1, 1), 3)
 		self.memory_max = round(max(self.ram_for_mariadb / 1024, 2), 3)
 
 		max_recommended_connections = max(50, self.recommended_max_db_connections)
