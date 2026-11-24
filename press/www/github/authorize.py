@@ -12,7 +12,11 @@ from press.api.github import (
 	get_github_authorize_url,
 	get_github_callback_login_redirect,
 )
-from press.utils import get_valid_teams_for_user, log_error
+from press.press.doctype.github_installation.github_installation import (
+	is_enabled_for_team,
+	link_installations,
+)
+from press.utils import get_current_team, get_valid_teams_for_user, log_error
 
 
 def get_context(context):
@@ -29,6 +33,9 @@ def get_context(context):
 		# The token stored on the team may now be stale, so start user
 		# authorization to exchange a fresh code for a new access token.
 		start_user_authorization(state)
+
+	if not state and frappe.form_dict.installation_id:
+		start_authorization_for_current_team()
 
 	if code and state:
 		try:
@@ -74,9 +81,26 @@ def obtain_access_token(code, team):
 		response = requests.post(
 			"https://github.com/login/oauth/access_token", data=data, headers=headers
 		).json()
-		frappe.db.set_value("Team", team, "github_access_token", response["access_token"])
+		save_access_token(team, response["access_token"])
 	except Exception:
 		log_error("Access Token Error", team=team, response=summarize_github_token_response(response))
+
+
+def save_access_token(team: str, token: str):
+	if is_enabled_for_team(team):
+		link_installations(team, token)
+	else:
+		frappe.db.set_value("Team", team, "github_access_token", token)
+
+
+def start_authorization_for_current_team():
+	"""Link an install made on github.com, which comes back without our state."""
+	team = get_current_team()
+	if not is_enabled_for_team(team):
+		return
+
+	frappe.flags.redirect_location = get_github_authorize_url(encode_github_oauth_state(team))
+	raise frappe.Redirect
 
 
 def summarize_github_token_response(response):
