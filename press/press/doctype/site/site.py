@@ -3027,8 +3027,11 @@ class Site(Document, TagHelpers):
 			and self.is_group_public
 			and self.is_this_version_or_above(SERVER_SCRIPT_DISABLED_VERSION)
 		):
+			migrations = f"/dashboard/sites/{self.name}/migrations"
 			frappe.throw(
-				f"You <a class='underline' href='https://docs.frappe.io/cloud/enable-server-script'>cannot enable server scripts</a> on public benches. Please move to a <a class='underline' href='{PRIVATE_BENCH_DOC}'>private bench</a>."
+				f"You <a class='underline' href='https://docs.frappe.io/cloud/enable-server-script'>cannot enable server scripts</a> on shared benches. "
+				f"To use them, move the site to a private bench from the <a class='underline' href='{migrations}'>Migrations tab</a> "
+				f"(<a class='underline' href='{PRIVATE_BENCH_DOC}'>how</a>)."
 			)
 
 	def validate_encryption_key(self, key: str, value: Any):

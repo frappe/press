@@ -8,6 +8,7 @@
 	>
 		<template #body-content>
 			<ObjectList :options="listOptions" />
+			<SharedBenchAppsNote :site="site" @close="show = false" />
 		</template>
 	</Dialog>
 </template>
@@ -19,6 +20,7 @@ import { toast } from 'vue-sonner';
 import { renderDialog } from '../../utils/components';
 import router from '../../router';
 import ObjectList from '../ObjectList.vue';
+import SharedBenchAppsNote from './SharedBenchAppsNote.vue';
 import { getToastErrorMessage } from '../../utils/toast';
 
 export default {
@@ -31,6 +33,7 @@ export default {
 	emits: ['installed'],
 	components: {
 		ObjectList,
+		SharedBenchAppsNote,
 	},
 	data() {
 		return {

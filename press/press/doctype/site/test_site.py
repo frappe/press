@@ -647,6 +647,13 @@ class TestSite(FrappeTestCase):
 			"Auto updates can't be disabled for sites on public benches" in str(context.exception)
 		)
 
+	def test_server_script_error_on_shared_bench_links_to_site_migrations_tab(self):
+		rg = create_test_release_group([create_test_app()], public=True, frappe_version="Version 15")
+		bench = create_test_bench(group=rg)
+		site = create_test_site("testsite", bench=bench.name)
+		with self.assertRaisesRegex(frappe.ValidationError, f"/dashboard/sites/{site.name}/migrations"):
+			site.check_server_script_enabled_on_public_bench("server_script_enabled")
+
 	def test_user_can_disable_auto_update_if_site_in_private_bench(self):
 		rg = create_test_release_group([create_test_app()], public=False)
 		bench = create_test_bench(group=rg)
