@@ -22,6 +22,6 @@ class UpgradeMariaDBJob(PressJob):
 		snapshot = frappe.get_last_doc("Virtual Disk Snapshot", {"virtual_machine": self.virtual_machine})
 		snapshot.add_comment(text="Before MariaDB Upgrade")
 
-	@task(queue="long", timeout=1800)
+	@task(queue="long", timeout=3600)
 	def upgrade_mariadb(self):
 		self.server_doc._upgrade_mariadb(throw_on_failure=True)
