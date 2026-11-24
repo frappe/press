@@ -46,6 +46,7 @@ TELEGRAM_NOTIFICATION_TEMPLATE = """
 Instances:
 {%- for instance in instances %}
 	- [{{ instance["name"] }}]({{ instance["link"] }}) [→]({{ instance["name"] }})
+{%- if instance["failed_volume_extend_play"] %} [resize blocked: Extend EC2 Volume failed]({{ instance["failed_volume_extend_play"] }}){% endif %}
 {%- endfor %}
 
 {% if labels -%}
@@ -253,6 +254,8 @@ class AlertmanagerWebhookLog(Document):
 		for instance in self.instances:
 			if instance["doctype"]:
 				instance["link"] = get_url_to_form(instance["doctype"], instance["name"])
+			if rule.press_job_type == "Increase Disk Size":
+				instance["failed_volume_extend_play"] = failed_volume_extend_play_url(instance)
 
 		context.update({"instances": self.instances, "labels": labels, "rule": rule})
 		return frappe.render_template(TELEGRAM_NOTIFICATION_TEMPLATE, context)
@@ -336,6 +339,13 @@ class AlertmanagerWebhookLog(Document):
 				frappe.db.commit()  # commit inside filelock to avoid deadlock when inserting in gap
 		except Exception:
 			log_error("Incident creation failed")
+
+
+def failed_volume_extend_play_url(instance: dict) -> str | None:
+	if instance["doctype"] not in ("Server", "Database Server"):
+		return None
+	play = frappe.get_doc(instance["doctype"], instance["name"]).failed_volume_extend_play()
+	return get_url_to_form("Ansible Play", play) if play else None
 
 
 def instances_in_payload(payload: str) -> set[str]:

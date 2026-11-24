@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import get_url_to_form
 from frappe.utils.data import add_to_date
 
 from press.api.client import get
@@ -16,6 +17,7 @@ from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log impor
 	DISK_FULL_ALERT_WINDOW_HOURS,
 	disk_full_servers,
 )
+from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import (
 	create_test_prometheus_alert_rule,
 )
@@ -208,3 +210,25 @@ class TestRavenNotification(FrappeTestCase):
 		message, channel = send_raven_message.call_args.args
 		self.assertEqual(channel, "Frappe Cloud-alerts")
 		self.assertIn(self.rule.name, message)
+
+
+class TestFailedVolumeExtendColumn(FrappeTestCase):
+	def setUp(self):
+		self.rule = create_test_prometheus_alert_rule(name="Disk Full Test")
+		self.server = create_test_server(auto_increase_storage=True, provider="AWS EC2")
+		self.log = create_test_alertmanager_webhook_log(alert=self.rule, instance=self.server.name)
+		frappe.db.set_value(self.rule.doctype, self.rule.name, "press_job_type", "Increase Disk Size")
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_disk_alert_links_the_failed_extend_ec2_volume_play(self):
+		play = create_test_ansible_play("Extend EC2 Volume", server=self.server.name, status="Failure")
+		message = self.log.generate_telegram_message()
+		self.assertIn(
+			f"[resize blocked: Extend EC2 Volume failed]({get_url_to_form(play.doctype, play.name)})", message
+		)
+
+	def test_disk_alert_has_no_third_column_after_extend_ec2_volume_play_succeeds(self):
+		create_test_ansible_play("Extend EC2 Volume", server=self.server.name, status="Success")
+		self.assertNotIn("resize blocked", self.log.generate_telegram_message())
