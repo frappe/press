@@ -162,7 +162,7 @@ def get_list(
 
 	apply_team_filter = not (
 		filters.get("skip_team_filter_for_system_user_and_support_agent")
-		and (frappe.local.system_user() or has_role("Press Support Agent"))
+		and (frappe.local.system_user() or has_role("Press Employee"))
 	)
 	if apply_team_filter and meta.has_field("team"):
 		valid_filters.team = frappe.local.team().name
@@ -242,7 +242,7 @@ def get(doctype, name):  # noqa: C901
 	check_permissions(doctype)
 	is_support = has_support_access(doctype, name)
 	is_system_user = frappe.local.system_user()
-	check_permission = not (is_system_user or is_support)
+	check_permission = not (is_system_user or is_support or doctype in ownership.OWNERSHIP_READ_DOCTYPES)
 
 	try:
 		doc = frappe.get_doc(doctype, name, check_permission=check_permission)

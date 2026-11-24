@@ -9,6 +9,7 @@ from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
+from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.site.backups import FIFO, GFS, cleanup_offsite
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
@@ -207,7 +208,7 @@ class TestGFS(FrappeTestCase):
 		gfs = GFS()
 		gfs.cleanup_offsite()
 		mock_del_remote_backup_objects.assert_called_once()
-		args, kwargs = mock_del_remote_backup_objects.call_args
+		args, _ = mock_del_remote_backup_objects.call_args
 		self.assertEqual(len(args[0]), 3 * 2, msg=mock_del_remote_backup_objects.call_args)
 
 
@@ -259,6 +260,25 @@ class TestFIFO(FrappeTestCase):
 		mock_del_remote_backup_objects.assert_called_once()
 		args = mock_del_remote_backup_objects.call_args[0]
 		self.assertEqual(len(args[0]), 3 * 2, msg=mock_del_remote_backup_objects.call_args)
+
+	@patch("press.press.doctype.site.backups.delete_remote_backup_objects")
+	@patch("press.press.doctype.site.backups.frappe.db.commit")
+	def test_rotation_deletes_the_site_config_file_of_an_expired_backup(
+		self, mock_frappe_commit, mock_del_remote_backup_objects
+	):
+		site = create_test_site("testsubdomain")
+		fifo = FIFO()
+		fifo.offsite_backups_count = 1
+
+		expired = create_test_site_backup(site.name, frappe.utils.getdate() - timedelta(1))
+		config_file = create_test_remote_file(site.name).name
+		expired.db_set("remote_config_file", config_file)
+		create_test_site_backup(site.name)
+
+		fifo.cleanup_offsite()
+
+		deleted_files = mock_del_remote_backup_objects.call_args.args[0]
+		self.assertIn(config_file, deleted_files)
 
 	def test_press_setting_updates_new_object(self):
 		"""Ensure updating press settings updates new FIFO objects."""

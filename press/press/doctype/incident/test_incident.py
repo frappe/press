@@ -374,39 +374,49 @@ class TestIncident(FrappeTestCase):
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
 
-	@given(get_total_and_firing_for_ongoing_incident())
-	@settings(max_examples=20, deadline=timedelta(seconds=5))
-	def test_is_enough_firing_is_true_for_ongoing_incident(self, total_firing):
+	def test_is_enough_firing_is_true_for_ongoing_incident(self):
+		# One alert for all examples: only the patched instance counts vary
 		alert = create_test_alertmanager_webhook_log()
-		total, firing = total_firing
-		firing_instances = [0] * firing
-		with (
-			patch.object(AlertmanagerWebhookLog, "total_instances", new=total),
-			patch.object(
-				AlertmanagerWebhookLog,
-				"past_alert_instances",
-				new=lambda x, y: firing_instances,
-			),
-		):
-			self.assertTrue(alert.is_enough_firing)
 
-	@given(get_total_firing_and_resolved_for_resolved_incident())
-	@settings(max_examples=20, deadline=timedelta(seconds=5))
-	def test_is_enough_firing_is_false_for_resolved_incident(self, total_firing_resolved):
+		@given(get_total_and_firing_for_ongoing_incident())
+		@settings(max_examples=20, deadline=timedelta(seconds=5))
+		def check(total_firing):
+			total, firing = total_firing
+			firing_instances = [0] * firing
+			with (
+				patch.object(AlertmanagerWebhookLog, "total_instances", new=total),
+				patch.object(
+					AlertmanagerWebhookLog,
+					"past_alert_instances",
+					new=lambda x, y: firing_instances,
+				),
+			):
+				self.assertTrue(alert.is_enough_firing)
+
+		check()
+
+	def test_is_enough_firing_is_false_for_resolved_incident(self):
+		# One alert for all examples: only the patched instance counts vary
 		alert = create_test_alertmanager_webhook_log(status="resolved")
-		total, firing, resolved = total_firing_resolved
-		firing_instances = set(range(firing))
-		resolved_instances = set(range(resolved))
 
-		with (
-			patch.object(AlertmanagerWebhookLog, "total_instances", new=total),
-			patch.object(
-				AlertmanagerWebhookLog,
-				"past_alert_instances",
-				side_effect=[firing_instances, resolved_instances],
-			),
-		):
-			self.assertFalse(alert.is_enough_firing)
+		@given(get_total_firing_and_resolved_for_resolved_incident())
+		@settings(max_examples=20, deadline=timedelta(seconds=5))
+		def check(total_firing_resolved):
+			total, firing, resolved = total_firing_resolved
+			firing_instances = set(range(firing))
+			resolved_instances = set(range(resolved))
+
+			with (
+				patch.object(AlertmanagerWebhookLog, "total_instances", new=total),
+				patch.object(
+					AlertmanagerWebhookLog,
+					"past_alert_instances",
+					side_effect=[firing_instances, resolved_instances],
+				),
+			):
+				self.assertFalse(alert.is_enough_firing)
+
+		check()
 
 	def test_incident_does_not_resolve_when_other_alerts_are_still_firing_but_does_when_less_than_required_sites_are_down(
 		self,

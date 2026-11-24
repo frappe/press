@@ -11,12 +11,12 @@ agents = [
 	"balamurali@erpnext.com",
 	"jayanta@frappe.io",
 	"saurabh@erpnext.com",
-	"shadrak@erpnext.com",
+	"ayush@frappe.io",
 	"aradhya@frappe.io",
 	"sabu@frappe.io",
 	"tanmoy@frappe.io",
 	"prathamesh@frappe.io",
-	"sidhant@frappe.io",
+	"sidhanth@frappe.io",
 ]
 
 

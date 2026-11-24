@@ -7,7 +7,18 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from press.utils.plan_change import attach_plan_details, snapshot_plans
 from press.utils.webhook import create_webhook_event
+
+# What the dashboard reads to describe a site plan: its price and its limits.
+SITE_PLAN_FIELDS = (
+	"plan_title",
+	"price_inr",
+	"price_usd",
+	"cpu_time_per_day",
+	"max_storage_usage",
+	"dedicated_server_plan",
+)
 
 
 class SitePlanChange(Document):
@@ -20,14 +31,22 @@ class SitePlanChange(Document):
 		from frappe.types import DF
 
 		from_plan: DF.Link | None
+		from_plan_snapshot: DF.JSON | None
 		site: DF.Link
 		team: DF.Link | None
 		timestamp: DF.Datetime | None
 		to_plan: DF.Link
+		to_plan_snapshot: DF.JSON | None
 		type: DF.Literal["", "Initial Plan", "Upgrade", "Downgrade"]
 	# end: auto-generated types
 
 	dashboard_fields = ("from_plan", "to_plan", "type", "site", "timestamp")
+
+	@staticmethod
+	def get_list_query(query, **list_args):
+		rows = query.run(as_dict=True)
+		attach_plan_details(rows, "Site Plan Change", "Site Plan", SITE_PLAN_FIELDS)
+		return rows
 
 	def validate(self):
 		if not self.from_plan and self.to_plan:
@@ -55,6 +74,9 @@ class SitePlanChange(Document):
 
 		if self.type == "Initial Plan":
 			self.from_plan = ""
+
+		if self.is_new():
+			snapshot_plans(self, "Site Plan", SITE_PLAN_FIELDS)
 
 	def after_insert(self):
 		if self.team != "Administrator":

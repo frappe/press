@@ -167,4 +167,4 @@ class PrometheusAlertRule(Document):
 				"virtual_machine": server.virtual_machine,
 				"arguments": json.dumps(arguments, indent=2, sort_keys=True),
 			}
-		).insert()
+		).insert(ignore_permissions=True)
