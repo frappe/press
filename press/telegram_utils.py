@@ -49,6 +49,9 @@ class Telegram:
 	def send(self, message, html=False, reraise=False):
 		if not message:
 			return None
+		if not self.token and not reraise:
+			# Telegram is not set up, so there is nothing to send to
+			return None
 		try:
 			return self.call(
 				"sendMessage",

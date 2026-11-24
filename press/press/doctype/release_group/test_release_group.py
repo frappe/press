@@ -700,9 +700,9 @@ class TestReleaseGroup(FrappeTestCase):
 
 		with (
 			self.assertRaisesRegex(frappe.ValidationError, "Not enough space on server"),
-			patch.object(BaseServer, "free_space", mock_free_space(space_required=8 * 1024**3)),
+			patch.object(BaseServer, "free_space", mock_free_space(space_required=7 * 1024**3)),
 			patch.object(Agent, "get", mock_image_size(5)),
-		):  # 8 GiB free fits a 5 GiB image, but not the image plus its sites copy
+		):  # 7 GiB free fits a 5 GiB image, but not 1.5x of it for the sites copy
 			test_release_group.check_app_server_storage()
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())

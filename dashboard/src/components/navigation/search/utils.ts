@@ -18,8 +18,10 @@ export const filterLabels = (data, query) => {
 			continue;
 		}
 
-		const filtered = v.items.filter((item) =>
-			item.name.toLowerCase().includes(q),
+		const filtered = v.items.filter(
+			(item) =>
+				item.name.toLowerCase().includes(q) ||
+				item.keywords?.some((keyword) => keyword.includes(q)),
 		);
 
 		if (filtered.length) {

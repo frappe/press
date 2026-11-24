@@ -77,6 +77,13 @@ class TestTelegramToken(FrappeTestCase):
 		group = create_test_telegram_group()
 		self.assertEqual(Telegram(group=group.name).token, "settings-token")
 
+	def test_send_skips_without_error_when_no_bot_token_is_set(self):
+		frappe.db.delete("__Auth", {"doctype": "Press Settings", "fieldname": "telegram_bot_token"})
+		group = create_test_telegram_group()
+		with patch.object(Telegram, "call") as call:
+			self.assertIsNone(Telegram(group=group.name).send("Disk full"))
+		call.assert_not_called()
+
 
 class TestTelegramProcess(FrappeTestCase):
 	def tearDown(self):
