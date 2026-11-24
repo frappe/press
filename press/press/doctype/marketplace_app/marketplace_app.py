@@ -29,7 +29,7 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 )
 from press.press.doctype.github_installation.github_installation import validate_team_can_use_installation
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
-from press.utils import docs, get_current_team, get_last_doc
+from press.utils import _system_user, docs, get_current_team, get_last_doc
 
 if TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
@@ -184,7 +184,7 @@ class MarketplaceApp(WebsiteGenerator):
 		frappe.get_doc("Yanked App Release", {"hash": hash}).delete()
 
 	def before_insert(self):
-		self.validate_github_installations()
+		self.validate_new_sources()
 		if not frappe.flags.in_test:
 			self.check_if_duplicate()
 			self.create_app_and_source_if_needed()
@@ -199,18 +199,23 @@ class MarketplaceApp(WebsiteGenerator):
 		if frappe.db.exists("Marketplace App", self.name):
 			frappe.throw(f"App {self.name} already exists. Please contact support.")
 
-	def validate_github_installations(self):
-		"""Check the installation passed in and the sources new to this team."""
-		before = self.get_doc_before_save()
-		known = {row.source for row in before.sources} if before and before.team == self.team else set()
-		sources = [row.source for row in self.sources if row.source not in known]
-		used = (
-			frappe.get_all("App Source", {"name": ("in", sources)}, pluck="github_installation_id")
-			if sources
-			else []
-		)
+	def validate_new_sources(self):
+		"""Sources new to this team must be its own and use installations it has linked."""
+		sources = self.get_new_sources()
+		if not _system_user() and any(source.team != self.team for source in sources):
+			frappe.throw(_("You can only list app sources that belong to your team."), frappe.PermissionError)
+
+		used = {source.github_installation_id for source in sources}
 		for installation in {self.get("github_installation_id"), *used}:
 			validate_team_can_use_installation(self.team, installation)
+
+	def get_new_sources(self) -> list[frappe._dict]:
+		before = self.get_doc_before_save()
+		known = {row.source for row in before.sources} if before and before.team == self.team else set()
+		names = [row.source for row in self.sources if row.source not in known]
+		if not names:
+			return []
+		return frappe.get_all("App Source", {"name": ("in", names)}, ["team", "github_installation_id"])
 
 	def create_app_and_source_if_needed(self):
 		if frappe.db.exists("App", self.app or self.name):
@@ -239,7 +244,7 @@ class MarketplaceApp(WebsiteGenerator):
 		self.published = self.status == "Published"
 		self.validate_sources()
 		if not self.is_new():
-			self.validate_github_installations()
+			self.validate_new_sources()
 		self.validate_number_of_screenshots()
 		self.validate_summary()
 

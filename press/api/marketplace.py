@@ -22,15 +22,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	get_total_installs_by_app,
 )
-from press.utils import (
-	_system_user,
-	docs,
-	get_app_tag,
-	get_current_team,
-	get_last_doc,
-	is_user_part_of_team,
-	unique,
-)
+from press.utils import docs, get_app_tag, get_current_team, get_last_doc, is_user_part_of_team, unique
 from press.utils.billing import get_frappe_io_connection
 
 if TYPE_CHECKING:
@@ -782,7 +774,6 @@ def new_app(app: dict):
 
 @frappe.whitelist()
 def add_app(source: str, app: str):
-	validate_source_belongs_to_current_team(source)
 	if not is_on_marketplace(app):
 		supported_versions = frappe.get_all("App Source Version", filters={"parent": source}, pluck="version")
 		marketplace_app = frappe.get_doc(
@@ -818,14 +809,6 @@ def add_app(source: str, app: str):
 			)
 
 	return marketplace_app.name
-
-
-def validate_source_belongs_to_current_team(source: str):
-	if _system_user():
-		return
-
-	if frappe.db.get_value("App Source", source, "team") != get_current_team():
-		frappe.throw(_("You can only list app sources that belong to your team."), frappe.PermissionError)
 
 
 @frappe.whitelist()
