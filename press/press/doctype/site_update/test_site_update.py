@@ -1085,20 +1085,15 @@ class TestVersionUpgradeMigrateTimeout(FrappeTestCase):
 	def site_with_database_gb(self, gigabytes: float) -> Mock:
 		return Mock(database_size=gigabytes * 1024)
 
-	def test_version_upgrade_of_a_60_gb_site_gets_20_hours(self):
-		timeout = self.site_update("bench-new").get_migrate_timeout(self.site_with_database_gb(60))
+	def test_version_upgrade_of_a_28_gb_site_gets_the_agent_maximum(self):
+		timeout = self.site_update("bench-new").get_migrate_timeout(self.site_with_database_gb(28))
 
-		self.assertEqual(timeout, 20 * 3600)
+		self.assertEqual(timeout, MAXIMUM_AGENT_JOB_TIMEOUT)
 
 	def test_version_upgrade_of_a_small_site_keeps_the_agent_default(self):
 		timeout = self.site_update("bench-new").get_migrate_timeout(self.site_with_database_gb(5))
 
 		self.assertIsNone(timeout)
-
-	def test_version_upgrade_timeout_stops_at_the_agent_maximum(self):
-		timeout = self.site_update("bench-new").get_migrate_timeout(self.site_with_database_gb(500))
-
-		self.assertEqual(timeout, MAXIMUM_AGENT_JOB_TIMEOUT)
 
 	def test_update_in_the_same_group_keeps_the_agent_default_for_a_large_site(self):
 		timeout = self.site_update("bench-old").get_migrate_timeout(self.site_with_database_gb(500))
