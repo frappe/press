@@ -379,8 +379,10 @@ export default {
 				const finalizeInvoicesDialog = defineAsyncComponent(
 					() => import('../../billing/FinalizeInvoicesDialog.vue'),
 				)
+				this.showDisableAccountDialog = false
 				renderDialog(h(finalizeInvoicesDialog))
-			} else if (this.unpaidInvoices) {
+				return
+			} else if (this.unpaidInvoices?.length) {
 				if (this.unpaidInvoices.length > 1) {
 					this.showDisableAccountDialog = false
 					if (this.$team.doc.payment_mode === 'Prepaid Credits') {
@@ -400,8 +402,9 @@ export default {
 							},
 						})
 					}
+					return
 				} else {
-					let invoice = this.unpaidInvoices
+					let invoice = this.unpaidInvoices[0]
 					if (invoice.amount_due > minAmount) {
 						this.showDisableAccountDialog = false
 						confirmDialog({
@@ -427,6 +430,7 @@ export default {
 								},
 							},
 						})
+						return
 					}
 				}
 			}
