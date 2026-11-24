@@ -770,7 +770,7 @@ def _describe_signup_failure_rate(rate: SignupFailureRate) -> str:
 
 
 def alert_on_servers_with_stuck_agent_jobs() -> None:
-	"""Alert when active servers hold many agent jobs that never ran.
+	"""Alert when active servers outside archived regions hold many agent jobs that never ran.
 
 	Undelivered jobs pile up on a halted or unreachable server, pending ones on a stuck agent.
 	"""
@@ -823,14 +823,17 @@ def _count_stuck_agent_jobs_by_server() -> list[ServerStuckAgentJobs]:
 
 def _get_halt_flags_of_active_servers(servers: set[tuple[str, str]]) -> dict[tuple[str, str], bool]:
 	halt_flags = {}
+	archived_clusters = frappe.get_all("Cluster", filters={"status": "Archived"}, pluck="name")
 	for server_type in {server_type for server_type, _ in servers}:
 		names = [name for doctype, name in servers if doctype == server_type]
+		meta = frappe.get_meta(server_type)
+		filters = {"name": ("in", names), "status": "Active"}
+		# Servers in an archived region can't be reached, so their jobs pile up for good
+		if archived_clusters and meta.has_field("cluster"):
+			filters["cluster"] = ("not in", archived_clusters)
 		# Registry, log and other server types have no halt flag
-		has_halt_flag = frappe.get_meta(server_type).has_field("halt_agent_jobs")
-		fields = ["name", "halt_agent_jobs"] if has_halt_flag else ["name"]
-		for server in frappe.get_all(
-			server_type, filters={"name": ("in", names), "status": "Active"}, fields=fields
-		):
+		fields = ["name", "halt_agent_jobs"] if meta.has_field("halt_agent_jobs") else ["name"]
+		for server in frappe.get_all(server_type, filters=filters, fields=fields):
 			halt_flags[(server_type, server.name)] = bool(server.get("halt_agent_jobs"))
 	return halt_flags
 
