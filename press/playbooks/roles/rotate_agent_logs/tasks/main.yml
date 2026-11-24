@@ -1,0 +1,19 @@
+---
+# Supervisor rotates its own logs. The cron jobs append to these with >>, so nothing else does.
+- name: Ensure logrotate configuration for agent cron logs
+  copy:
+    dest: /etc/logrotate.d/agent_cron_logs
+    content: |
+      /home/frappe/agent/logs/usage.log
+      /home/frappe/agent/logs/usage.error.log
+      /home/frappe/agent/logs/analytics.log
+      /home/frappe/agent/logs/analytics.error.log {
+          su frappe frappe
+          size 100M
+          rotate 1
+          missingok
+          notifempty
+      }
+
+- name: Rotate agent cron logs that are already over the limit
+  command: logrotate /etc/logrotate.d/agent_cron_logs
