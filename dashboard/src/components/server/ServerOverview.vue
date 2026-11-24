@@ -13,6 +13,17 @@
 			<Button
 				class="ml-auto min-w-[7rem]"
 				variant="outline"
+				:route="{
+					name: 'Server Detail Actions',
+					params: { name: $appServer.doc.name },
+					query: { action: 'Cleanup Server' },
+				}"
+			>
+				Cleanup Server
+			</Button>
+			<Button
+				class="ml-2 min-w-[7rem]"
+				variant="outline"
 				link="https://docs.frappe.io/cloud/storage-addons"
 			>
 				More Info
@@ -169,6 +180,9 @@
 										<Tooltip v-if="d.help" :text="d.help">
 											<lucide-info class="mt-2 h-4 w-4 text-ink-gray-5" />
 										</Tooltip>
+									</div>
+									<div v-if="d.note" class="mt-1 text-sm text-ink-gray-5">
+										{{ d.note }}
 									</div>
 								</div>
 							</div>
@@ -544,6 +558,9 @@ export default {
 									diskSize - (currentPlan?.disk || 0) > 0
 										? `Add-on storage: ${diskSize - (currentPlan?.disk || 0)} GB`
 										: '',
+								note: doc.auto_increase_storage
+									? 'Auto Increase Storage is on'
+									: '',
 								actions: [
 									{
 										label: 'Increase Storage',
