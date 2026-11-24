@@ -108,6 +108,17 @@ class TestPressSettingsProductionServerIPs(FrappeTestCase):
 		)
 
 	@patch("press.press.doctype.press_settings.press_settings.frappe.enqueue")
+	def test_creating_the_settings_does_not_sync_the_firewalls(self, enqueue: Mock):
+		"""The installer creates the settings before any queue runs, as `init_singles` does here."""
+		settings = frappe.new_doc("Press Settings")
+		settings.production_server_ip = "203.0.113.7"
+		settings.flags.ignore_mandatory = True
+		settings.flags.ignore_validate = True
+		settings.save()
+
+		enqueue.assert_not_called()
+
+	@patch("press.press.doctype.press_settings.press_settings.frappe.enqueue")
 	def test_a_save_without_an_ip_change_does_not_sync_the_firewalls(self, enqueue: Mock):
 		self.settings.save()
 
