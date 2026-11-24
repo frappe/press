@@ -4,7 +4,8 @@ from frappe.utils import cstr
 
 from press import utils as press_utils
 from press.access import utils as access_utils
-from press.access.actions import ACTIONS_RULES, ReleaseGroupActions, SiteActions
+from press.access.actions import ACTIONS_RULES, ReleaseGroupActions, ServerActions, SiteActions
+from press.access.incident_access import has_incident_access
 
 TAB_DF_MAP = {
 	"Site": {
@@ -16,11 +17,17 @@ ACTION_DF_MAP = {
 	"Release Group": {
 		ReleaseGroupActions.SSHAccess.value: "bench_ssh",
 	},
+	"Server": {
+		ServerActions.SSHAccess.value: "server_ssh",
+	},
 	"Site": {
 		SiteActions.LoginAsAdmin.value: "login_as_administrator",
 	},
 }
 
+
+# Rules that an open incident does not open. They still need the consent of the team.
+CONSENT_ONLY_RULES = {SiteActions.LoginAsAdmin.value}
 
 # A grant covers a document when it covers any document that the document links to.
 COVERING_LINKS = {
@@ -97,12 +104,15 @@ def has_support_access(doctype: str, docname: str) -> bool:
 
 def has_grant(doctype: str, docname: str, rule: str | None) -> bool:
 	"""Whether an accepted Support Access lets an employee or support agent use `rule`."""
-	if not (press_utils._system_user() or press_utils.has_role("Press Support Agent")):
+	if not (press_utils._system_user() or press_utils.has_role("Press Employee")):
 		return False
 
+	covering = resources_covering(doctype, docname)
+	if rule not in CONSENT_ONLY_RULES and has_incident_access((doctype, docname), *covering):
+		return True
+
 	return any(
-		is_granted(covering_doctype, covering_name, rule)
-		for covering_doctype, covering_name in resources_covering(doctype, docname)
+		is_granted(covering_doctype, covering_name, rule) for covering_doctype, covering_name in covering
 	)
 
 

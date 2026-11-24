@@ -11,6 +11,21 @@
     name: mariadb
     state: restarted
 
+- name: Get MariaDB version of the primary
+  ansible.builtin.command: mariadbd --version
+  register: primary_mariadb_version_cmd
+  changed_when: false
+
+# The replica must run the same major.minor as the primary. MariaDB cannot downgrade a data directory.
+- name: Set MariaDB image version for the replica
+  ansible.builtin.set_fact:
+    replica_mariadb_version: "{{ primary_mariadb_version_cmd.stdout | regex_search('[0-9]+\\.[0-9]+(?=\\.[0-9]+-MariaDB)') }}"
+
+- name: Make sure the MariaDB version was found
+  ansible.builtin.assert:
+    that: replica_mariadb_version
+    fail_msg: "Cannot read the MariaDB version from: {{ primary_mariadb_version_cmd.stdout }}"
+
 - name: Template replica setup script on DB Server
   template:
     src: setup_replica.sh.j2
