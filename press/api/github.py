@@ -19,6 +19,7 @@ import jwt
 import requests
 import semantic_version as sv
 import tomli
+from frappe import _
 from frappe.utils.verified_command import get_secret
 
 from press.press.doctype.github_installation.github_installation import (
@@ -315,9 +316,8 @@ def fetch_repositories(url: str, token: str | None) -> list[dict]:
 	while not is_last_page:
 		response = requests.get(url, params={"per_page": 100, "page": current_page}, headers=headers)
 		if not response.ok:
-			frappe.throw(
-				"Error fetching repositories from GitHub: " + response.json().get("message", "Unknown error")
-			)
+			message = response.json().get("message", "Unknown error")
+			frappe.throw(_("Error fetching repositories from GitHub: {0}").format(message))
 		if len(response.json().get("repositories", [])) < 100:
 			is_last_page = True
 
@@ -449,7 +449,7 @@ def branches(owner: str, name: str, installation: str | None = None, app_source:
 def get_branches_for_app_source(app_source: str) -> list[dict]:
 	source = frappe.get_doc("App Source", app_source)
 	if not source.public and not source.has_permission("read"):
-		frappe.throw("You don't have access to this app source.", frappe.PermissionError)
+		frappe.throw(_("You don't have access to this app source."), frappe.PermissionError)
 
 	return get_branches(source.repository_owner, source.repository, source.github_installation_id)
 
