@@ -8,10 +8,21 @@
 					v-if="$resources.document?.doc && badge"
 					v-bind="badge"
 				/>
+				<Badge
+					v-for="extraBadge in extraBadges"
+					:key="extraBadge.label"
+					class="hidden sm:inline-flex"
+					v-bind="extraBadge"
+				/>
 			</div>
 			<div class="flex justify-between items-center mt-1 space-x-2 sm:mt-0">
-				<div class="sm:hidden">
+				<div class="sm:hidden space-x-2">
 					<Badge v-if="$resources.document?.doc && badge" v-bind="badge" />
+					<Badge
+						v-for="extraBadge in extraBadges"
+						:key="extraBadge.label"
+						v-bind="extraBadge"
+					/>
 				</div>
 				<AccessRequestButton
 					:doctype="object.doctype"
@@ -164,6 +175,14 @@ export default {
 				});
 			}
 			return null;
+		},
+		extraBadges() {
+			if (this.object.detail.extraBadges && this.$resources.document?.doc) {
+				return this.object.detail.extraBadges({
+					documentResource: this.$resources.document,
+				});
+			}
+			return [];
 		},
 		banner() {
 			if (this.object.detail.banner && this.$resources.document?.doc) {

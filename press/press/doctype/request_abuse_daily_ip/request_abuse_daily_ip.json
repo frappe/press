@@ -1,0 +1,35 @@
+{
+	"actions": [],
+	"creation": "2026-11-05 18:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": ["ip", "rate_limited"],
+	"fields": [
+		{
+			"fieldname": "ip",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "IP"
+		},
+		{
+			"description": "Requests from this IP that got HTTP 429",
+			"fieldname": "rate_limited",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Rate Limited"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"istable": 1,
+	"links": [],
+	"modified": "2026-11-05 18:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Request Abuse Daily IP",
+	"owner": "Administrator",
+	"permissions": [],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": []
+}

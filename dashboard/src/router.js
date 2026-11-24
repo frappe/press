@@ -779,4 +779,23 @@ function logoutWithTeamError() {
 	router.push({ name: 'Login', query: { reason: 'INVALID_TEAM' } })
 }
 
+// A deploy deletes the old chunks, so a tab opened before it gets a 404 on
+// the next lazy route. Load the target page in full to get the new index.
+// Do it at most once a minute, so a chunk that is really missing does not
+// cause a reload loop.
+const chunkLoadError =
+	/dynamically imported module|Importing a module script failed|Unable to preload CSS/
+
+router.onError((error, to) => {
+	if (!chunkLoadError.test(error?.message)) return
+	try {
+		const last = Number(sessionStorage.getItem('chunk_reload_at'))
+		if (Date.now() - last < 60_000) return
+		sessionStorage.setItem('chunk_reload_at', String(Date.now()))
+	} catch {
+		return
+	}
+	window.location.assign(router.resolve(to.fullPath).href)
+})
+
 export default router

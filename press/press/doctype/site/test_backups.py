@@ -299,6 +299,56 @@ class TestScheduledBackupJob(FrappeTestCase):
 		self.assertEqual(self._offsite_count(site.name), 1)
 		self.assertEqual(frappe.db.count("Site Backup", {"site": site.name}), 2)
 
+	def _fail_backup_of(self, failing_site: Site, run_other_backups: bool = True):
+		"""Patch Site.backup to time out for one site. Other sites back up for real when asked."""
+		original_backup = Site.backup
+
+		def backup(site: Site, **kwargs):
+			if site.name == failing_site.name:
+				raise frappe.QueryTimeoutError("Lock wait timeout exceeded; try restarting transaction")
+			return original_backup(site, **kwargs) if run_other_backups else None
+
+		return patch.object(Site, "backup", autospec=True, side_effect=backup)
+
+	def _create_site_with_physical_backup_time(self, backup_time: str) -> Site:
+		site: Site = create_test_site()
+		site.skip_scheduled_physical_backups = False
+		site.schedule_physical_backup_at_custom_time = True
+		site.append("physical_backup_times", {"backup_time": backup_time})
+		site.save()
+		return site
+
+	@patch("press.press.doctype.site.backups.log_error")
+	def test_custom_time_logical_backup_failure_of_one_site_does_not_skip_the_other_sites(
+		self, mock_log_error
+	):
+		failing_site = self._create_site_with_backup_times("00:00")
+		other_site = self._create_site_with_backup_times("00:00")
+
+		with self._fail_backup_of(failing_site), self.freeze_time("2021-01-01 00:00"):
+			schedule_logical_backups_for_sites_with_backup_time()
+
+		self.assertEqual(frappe.db.count("Site Backup", {"site": failing_site.name}), 0)
+		self.assertEqual(frappe.db.count("Site Backup", {"site": other_site.name}), 1)
+		mock_log_error.assert_called_once_with("Site Backup Exception", site=failing_site.name)
+
+	@patch("press.press.doctype.site.backups.log_error")
+	def test_custom_time_physical_backup_failure_of_one_site_does_not_skip_the_other_sites(
+		self, mock_log_error
+	):
+		failing_site = self._create_site_with_physical_backup_time("00:00:00")
+		other_site = self._create_site_with_physical_backup_time("00:00:00")
+
+		with (
+			self._fail_backup_of(failing_site, run_other_backups=False) as mock_backup,
+			self.freeze_time("2021-01-01 00:00"),
+		):
+			schedule_physical_backups_for_sites_with_backup_time()
+
+		backed_up_sites = [call.args[0].name for call in mock_backup.call_args_list]
+		self.assertCountEqual(backed_up_sites, [failing_site.name, other_site.name])
+		mock_log_error.assert_called_once_with("Site Backup Exception", site=failing_site.name)
+
 
 @patch.object(AgentJob, "after_insert", new=Mock())
 class TestBackupSchedule(FrappeTestCase):

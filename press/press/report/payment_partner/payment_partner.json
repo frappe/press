@@ -9,7 +9,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letterhead": null,
- "modified": "2024-11-25 15:50:14.609170",
+ "modified": "2026-11-06 12:30:00.000000",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment Partner",
@@ -24,6 +24,9 @@
   },
   {
    "role": "Guest"
+  },
+  {
+   "role": "Press Billing Manager"
   }
  ]
 }

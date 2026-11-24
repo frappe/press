@@ -1,0 +1,233 @@
+# Staff roles
+
+Frappe Cloud employees get access through scope roles, not through System
+Manager. Each scope role gives full access to one area. A Role Profile combines
+the scope roles that one job needs. Give an employee a Role Profile. Give System
+Manager only to the few admins who need shells and secrets.
+
+## Scope roles
+
+| Role | Scope |
+|------|-------|
+| Press Support L1 | First-line support (L1) that finds issues. Reads everything that Press Support Engineer reads, except the bench shell and its logs, and changes nothing. Presses only buttons marked `@safe_for_readers`. Can also run the MariaDB and customer email reports, request team deletion, transfer resources between teams and rotate site passwords |
+| Press Support Engineer | Engineering support (L2). Full access to teams, sites, backups, updates, domains, webhooks, apps, release groups, benches and deploys. Read, write and every button on servers, database servers, proxy servers and virtual machines, but not create or delete. Create and write on virtual disk resizes, but not delete. Create on TLS certificates, server activities and Press notifications, which buttons make as a side effect. Read only on agent jobs, Press jobs, incidents, restorations, TLS certificates, billing, Marketplace, Product and Partner records |
+| Press Infrastructure Manager | Servers, virtual machines, clusters, agent jobs, Press jobs, monitoring, incidents, cloud cost |
+| Press Infrastructure Reader | Reads every DocType that Press Infrastructure Manager reads, and changes nothing. Gets no console, shell, SSH key or report. Both support profiles include it |
+| Press Release Manager | Apps, app sources, app releases, release groups, benches, deploy candidates, builds, deploys |
+| Press Billing Manager | Invoices, payments, payouts, subscriptions, usage records, plans |
+| Press Security Manager | Wazuh, malware scans, abuse reports, blocked domains, audit logs and User 2FA (read only) |
+| Press SSH Manager | SSH keys, SSH certificates, SSH access audits |
+| Press Product Manager | SaaS apps, product trials, dashboard banners, notifications, feedback |
+| Press Marketplace Manager | Marketplace apps, app reviews, release approvals |
+| Partner Manager | Partners, partner leads, certificates, consultants |
+
+Except for the support roles and Press Infrastructure Reader, the scopes do not share read access. For example, a
+Billing Manager cannot open a Site. Add a second scope role or a second Role
+Profile when a job needs both.
+
+Read only on a DocType does not stop the buttons on it, because Frappe runs a
+whitelisted document method for any user who can read the record. So
+`@needs_staff_role(...)` in `press/access/staff_roles.py` marks the buttons that
+belong to one scope: on Invoice, Subscription, Marketplace App, Marketplace App
+Subscription, Product Trial Request and Partner Approval Request, the TLS
+Certificate private key, and the on-prem failover config on Server. The
+`check_staff_role` `before_request` hook stops desk staff without that role when
+they call the method from desk. Press code that calls the method, and customers
+on the dashboard, are not affected. Press Support Engineer can press the
+buttons on agent jobs, Press jobs, restorations and incidents.
+
+Press Support L1 and Press Infrastructure Reader are listed in `READ_ONLY_ROLES`.
+When a staff user reads a DocType only through read-only roles, `check_staff_role` lets them call only the
+methods marked `@safe_for_readers`, such as `Site.get_backup_schedule` or
+`Server.ping_agent`. Mark a method safe only when it changes no record, queues
+no job and returns no secret. The rule also covers `press.api.client.run_doc_method`
+and `press.api.client.delete`. Other dashboard APIs still let every System User
+through, so Press Support L1 is read only in desk but not yet on the dashboard.
+
+Desk sends the whole form with a button call, and Frappe checks only read
+access. So `use_saved_document`, also a `before_request` hook, runs the button
+on the saved record when the staff user cannot write it, and refuses a new
+record that they cannot create. This is why the engine code for Agent Job,
+Agent Job Step, Ansible Play, Ansible Task, Press Job, Press Job Step and the
+`StepHandler` in `press/runner.py` can insert and save with
+`ignore_permissions`: read-only staff press their buttons without create or
+write rights, and still cannot change what the engine sends.
+
+Plan changes stay with Billing: Support cannot create a Site Plan Change or a
+Plan Change, because both write a Subscription.
+
+These fields hold secrets in plain text and are at permlevel 1. Of the staff
+roles, only System Manager and the owning scope role read them:
+Agent Job `request_data` and `request_files`, Ansible Play `variables`, and the
+`secret_key` of Marketplace App Subscription and Saas App Subscription.
+
+These secret fields are at permlevel 1 so that Press Infrastructure Reader does
+not see them. System Manager and Press Infrastructure Manager read them: Cluster
+`frappe_compute_api_key`, Monitor Server `webhook_token`, Storage Integration
+Subscription `secret_key`, Trace Server `sentry_oauth_client_secret`, and
+Wireguard Peer `peer_config`, which holds the private key of the peer. The
+`api_key` of Email Account is also at permlevel 1, and every role that reads
+Email Account except Press Infrastructure Reader reads it.
+
+Press Infrastructure Reader still reads the logs that SREs read: Error Log, RQ
+Job, Scheduled Job Log, Agent Request Failure, Process Snapshot and Press
+Workflow Object. Their tracebacks and arguments can hold secrets. On the
+Frappe DocTypes in `core_permissions.py`, the role reads only, without report
+or export.
+
+## Press Employee
+
+Every employee gets Press Employee. It only lets them request a Support
+Access from a customer: create on Support Access, and no read on any customer
+record. An accepted request then opens the named resources on the dashboard.
+It has no desk access, so it adds no desk page.
+
+## Role Profiles
+
+| Role Profile | Roles |
+|--------------|-------|
+| Press Employee | Press Employee, Press User |
+| Press Support L1 | Press Support L1, Infrastructure Reader |
+| Press Support Engineer | Press Support Engineer (L2), Infrastructure Reader |
+| Press Site Reliability Engineer | Infrastructure, Press Support Engineer |
+| Press Security Engineer | Security, Infrastructure |
+| Press SSH Access Manager | SSH Manager |
+| Press Finance | Billing |
+| Press Product Team | Product |
+| Press Marketplace Team | Marketplace |
+| Press Partnerships | Partner Manager |
+
+Give every employee the Press Employee profile, and add one job profile when
+the work needs it. A user can have more than one Role Profile. On save, a user
+with a Role Profile keeps only the roles of their profiles, so do not give a
+role directly to a user who has a profile. Press Hybrid Server Manager is the
+exception: give it directly, with Press Employee and Press User, to a user who
+has no profile.
+
+## Shells and consoles
+
+Three roles open a shell. Employees follow customer consent: a team they are a
+member of needs none, and another team's resource needs an accepted Support
+Access, unless it is part of an open incident (see Incidents below).
+
+| Role | Tools | Rule |
+|------|-------|------|
+| Press Infrastructure Manager | Ansible Console, serial console, User SSH Certificate for one server, System Console with SQL only | `press/access/server_access.py`: shared (`public`) servers are System Manager only. Other servers need team membership, or Support Access with Server SSH on the app server. `press/access/sql_guard.py`: one read-only statement, on DocTypes that the user can read at every permlevel. Python and commit are System Manager only |
+| Press Support Engineer | Bench Shell | Bench SSH consent on the release group, as for SSH certificates. Public release groups and `as_root` are System Manager only |
+| Press Hybrid Server Manager | User SSH Certificate for a self-hosted server | No consent in Press. Hybrid servers handle it outside Press. Give it to a person directly: no Role Profile includes it |
+
+Press Infrastructure Manager is part of the Site Reliability Engineer and
+Security Engineer profiles. Press Support Engineer is part of the Support
+Engineer and Site Reliability Engineer profiles. Press Support L1 gets no
+shell. Press Infrastructure Manager and Press Hybrid Server Manager can add and
+read their own User SSH Keys. Server SSH consent counts only for the person who
+requested it.
+
+### Incidents
+
+During an incident nobody from the team is there to accept a Support Access
+request. `press/access/incident_access.py` lets Press Infrastructure Manager
+and Press Support Engineer reach the resources of an open incident without
+consent:
+
+- An incident counts when its status is Confirmed, Acknowledged or
+  Investigating, and it is less than 6 hours old. Validating is skipped,
+  because most of those resolve in a few minutes.
+- Only incidents that monitoring created count, with Administrator as the
+  owner. The `server` of an incident cannot change after insert. So staff
+  cannot open a server with an incident of their own.
+- It opens the app server of the incident and its database server. It opens
+  the proxy server only when the incident names that proxy. Shared servers are
+  included.
+- It opens the sites, benches and agent jobs on these servers. It opens a
+  release group only when all its active benches are on these servers,
+  because bench SSH covers the whole group.
+- Login as Administrator still needs consent, and so do benches of public
+  release groups in Bench Shell.
+- Role checks still apply. Press Support Engineer gets Bench Shell and bench
+  SSH, but no server console.
+- An SSH certificate for a shared app server also names its shared proxy
+  server. See the known gap below.
+
+Known gap: a certificate for a server behind a proxy also names the proxy, so
+it opens a shell on the shared Proxy Server too. A jump-only principal on the
+proxies would close it.
+
+Nobody except a System Manager or Press SSH Manager issues an `all-servers`
+certificate or a certificate for another user. Server Scripts stay with System
+Manager, because a script can turn off every check here.
+
+## System Manager only
+
+These DocTypes give shell access to servers or hold secrets. They grant no
+scope role:
+
+- Build Cache Shell
+- Certificate Authority, SSH Certificate Authority
+
+An SSH certificate gives shell access to servers, so Press SSH Manager is a
+role of its own, in its own Role Profile. No other profile includes it. The
+SSH Certificate Authority, which holds the signing key, stays System Manager
+only.
+- Press Settings, Payment Gateway, Mpesa Setup, Mail Setup, Telegram Group
+- Saas Remote Login, Site Access Token
+
+Press Infrastructure Manager only reads these DocTypes:
+
+- Agent Job: creating or editing a job sends any request to a server agent,
+  which reaches the build cache shell and customer databases.
+- Press Job Type: its step scripts run through `safe_exec`.
+- Press Workflow, Press Workflow Task, Press Workflow Object and Press Workflow
+  Test: a task calls the method and arguments that it names, and objects are
+  loaded with `pickle`. The workflow engine inserts these records itself, so
+  Press Jobs still work.
+
+Press Release Manager and the support roles only read App Rename, because site updates run its
+before-migrate and rollback scripts on customer benches.
+
+The `action_script` field of Dashboard Banner is at permlevel 1, which only
+System Manager can read or write. The script runs as JavaScript in every
+customer's dashboard. Press Product Manager can still create banners.
+
+The Product Trial fields `suspension_email_content`, `email_header_content` and
+`email_account` are at permlevel 1 for the same reason. The server renders the
+suspension email as Jinja, which can read any table. The header is raw HTML in
+the sign-up email. The email account picks the sender of trial emails.
+
+These methods return secrets and stay System Manager only: `show_agent_password`
+on servers, `show_admin_password` on Site, the password methods on monitor,
+analytics, registry, log and trace servers,.
+`VirtualMachine.get_serial_console_credentials` is open to Press Infrastructure
+Manager under the server rule above.
+
+These actions also stay System Manager only: `Team.impersonate`,
+`Site.forcefully_remove_site`, `Managed Database Service.show_root_password`,
+the MCP endpoint, and Grove credential rotation. `frappe.client.get_password`
+is System Manager only in Frappe, so Password fields stay hidden from scope
+roles.
+
+## Where the rules live
+
+- The permission rows are in each DocType JSON. The `roles` table is in each
+  report JSON. A report needs `report` permission on its `ref_doctype`, so a
+  report gets the role that owns that DocType.
+- Do not add a Custom DocPerm to a Press DocType. One Custom DocPerm hides every
+  rule in the DocType JSON, so the scope roles lose their access without a
+  sign. Press refuses such a rule. Change the DocType JSON instead. DocTypes
+  that were made in desk have no JSON, so they keep their rules in the
+  database.
+- The rules of Press roles on Frappe DocTypes are in
+  `press/access/core_permissions.py`: job internals, Email Queue and Email
+  Account for Press Infrastructure Manager and Press Infrastructure Reader, and
+  the System Console. Every
+  migrate writes them, with the rules of Frappe, to Custom DocPerm. Press
+  refuses other Custom DocPerms on these DocTypes. The email message and
+  attachments are at permlevel 1, which only System Manager reads, because they
+  hold password reset links and login codes.
+- Code-level checks use `frappe.only_for([...])` with System Manager and the
+  scope role.
+- The roles ship in `press/fixtures/role.json`. The profiles ship in
+  `press/fixtures/role_profile.json`.
+- `press/tests/test_staff_role_scopes.py` fails when a new DocType grants
+  System Manager but no scope role. Add a scope role to the new DocType, or add
+  it to `SYSTEM_MANAGER_ONLY` in that test.

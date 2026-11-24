@@ -11,7 +11,9 @@
 		"to_plan",
 		"column_break_5",
 		"type",
-		"timestamp"
+		"timestamp",
+		"from_plan_snapshot",
+		"to_plan_snapshot"
 	],
 	"fields": [
 		{
@@ -58,10 +60,22 @@
 			"fieldname": "timestamp",
 			"fieldtype": "Datetime",
 			"label": "Timestamp"
+		},
+		{
+			"fieldname": "from_plan_snapshot",
+			"fieldtype": "JSON",
+			"label": "From Plan Snapshot",
+			"read_only": 1
+		},
+		{
+			"fieldname": "to_plan_snapshot",
+			"fieldtype": "JSON",
+			"label": "To Plan Snapshot",
+			"read_only": 1
 		}
 	],
 	"links": [],
-	"modified": "2025-03-18 10:10:37.246343",
+	"modified": "2026-11-13 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Site Plan Change",
@@ -90,6 +104,32 @@
 			"role": "Site Manager",
 			"share": 1,
 			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Billing Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support Engineer"
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support L1"
 		}
 	],
 	"quick_entry": 1,
