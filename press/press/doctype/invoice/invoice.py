@@ -13,6 +13,7 @@ from frappe.model.document import Document
 from frappe.utils import flt, getdate, now
 from frappe.utils.data import fmt_money
 
+from press.access.staff_roles import needs_staff_role
 from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
 from press.guards import role_guard
@@ -292,6 +293,7 @@ class Invoice(Document):
 		self.apply_taxes_if_applicable()
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def finalize_invoice(self):  # noqa: C901
 		if self.type == "Prepaid Credits":
 			return
@@ -825,6 +827,7 @@ class Invoice(Document):
 		return f"Frappe Cloud Subscription ({period_string})"
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def finalize_stripe_invoice(self):
 		stripe = get_stripe()
 		try:
@@ -1179,6 +1182,7 @@ class Invoice(Document):
 		)
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def create_invoice_on_frappeio(self):  # noqa: C901
 		if self.flags.skip_frappe_invoice:
 			return None
@@ -1389,6 +1393,7 @@ class Invoice(Document):
 			frappe.log_error(str(e), "Error fetching Sales Invoice PDF on external site")
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def refund(self, reason):
 		stripe = get_stripe()
 		charge = None
@@ -1414,6 +1419,7 @@ class Invoice(Document):
 		self.add_comment(text=f"Refund reason: {reason}")
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def change_stripe_invoice_status(self, status):
 		stripe = get_stripe()
 		try:
@@ -1430,6 +1436,7 @@ class Invoice(Document):
 			raise
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Billing Manager")
 	def refresh_stripe_payment_link(self):
 		stripe = get_stripe()
 		try:

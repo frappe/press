@@ -118,7 +118,7 @@
 	"grid_page_length": 50,
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-11-03 13:13:30.117920",
+	"modified": "2026-11-06 12:30:00.000000",
 	"modified_by": "Administrator",
 	"module": "SaaS",
 	"name": "Grove Settings",
@@ -131,6 +131,16 @@
 			"print": 1,
 			"read": 1,
 			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"role": "Press Product Manager",
 			"share": 1,
 			"write": 1
 		}

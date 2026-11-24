@@ -11,6 +11,7 @@ from hcloud.locations.domain import Location
 from hcloud.server_types.domain import ServerType, ServerTypeLocation
 from moto import mock_aws
 
+from press.press.doctype.backup_bucket.test_backup_bucket import create_test_backup_bucket
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.proxy_server.proxy_server import ProxyServer
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
@@ -50,6 +51,7 @@ def create_test_cluster(
 			"public": public,
 			"hybrid": hybrid,
 			"add_default_servers": add_default_servers,
+			"backup_bucket": create_test_backup_bucket(f"{frappe.scrub(name)}.backups.test", region).name,
 		}
 	).insert(ignore_if_duplicate=True)
 	cluster.reload()
@@ -91,6 +93,7 @@ class TestCluster(FrappeTestCase):
 				"aws_access_key_id": aws_access_key_id,
 				"aws_secret_access_key": aws_secret_access_key,
 				"public": public,
+				"backup_bucket": create_test_backup_bucket("mumbai-2.backups.test").name,
 			}
 		)
 		cluster.insert()

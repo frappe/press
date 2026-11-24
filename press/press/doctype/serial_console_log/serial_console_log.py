@@ -10,6 +10,8 @@ import frappe
 import pexpect
 from frappe.model.document import Document
 
+from press.access.server_console import check_console_access, check_console_role
+from press.access.staff_roles import needs_staff_role
 from press.press.doctype.deploy_candidate.deploy_candidate import ansi_escape
 
 
@@ -55,7 +57,9 @@ class SerialConsoleLog(Document):
 		self.command, self.message = SYSRQ_COMMANDS.get(self.action, ("h", "HELP"))
 
 	@frappe.whitelist()
+	@needs_staff_role("Press Infrastructure Manager")
 	def run_sysrq(self):
+		check_console_access(self.server_type, self.server)
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
@@ -156,7 +160,7 @@ SYSRQ_COMMANDS = {
 
 @frappe.whitelist()
 def run_sysrq(doc):
-	frappe.only_for("System Manager")
+	check_console_role()
 	parsed_doc = frappe.parse_json(doc)
 	frappe.get_doc(parsed_doc.doctype, parsed_doc.name).run_sysrq()
 	return doc

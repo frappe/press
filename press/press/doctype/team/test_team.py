@@ -2,6 +2,7 @@
 # See license.txt
 from __future__ import annotations
 
+from contextlib import contextmanager
 from unittest.mock import Mock, patch
 
 import frappe
@@ -11,7 +12,8 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
 )
-from press.press.doctype.team.team import Team
+from press.press.doctype.communication_info.communication_info import get_communication_info
+from press.press.doctype.team.team import Team, check_budget_alerts
 
 
 def allow_server_creation(team: Team):
@@ -31,6 +33,18 @@ def allow_server_creation(team: Team):
 
 	team.db_set({"billing_address": address.name, "servers_enabled": 1})
 	team.reload()
+
+
+@contextmanager
+def as_member(user: str, team: str):
+	"""Act as a dashboard user of `team`, the way a request with the team header does."""
+	frappe.set_user(user)
+	frappe.local.request = frappe._dict(method="POST", headers={"X-Press-Team": team})
+	try:
+		yield
+	finally:
+		del frappe.local.request
+		frappe.set_user("Administrator")
 
 
 def create_test_press_admin_team(
@@ -174,6 +188,31 @@ class TestTeam(FrappeTestCase):
 			)
 		self.assertEqual(team.billing_name, "first name last name")
 
+	def test_member_without_admin_access_cannot_turn_off_2fa_enforcement(self):
+		team = create_test_team()
+		team.db_set("enforce_2fa", 1)
+		member = frappe.mock("email")
+		team.create_user_for_member("Jane", "Doe", member)
+		team = Team("Team", team.name)
+		team.enforce_2fa = 0
+		with (
+			as_member(member, str(team.name)),
+			self.assertRaisesRegex(
+				frappe.PermissionError, "Only team owner or admins can change team settings"
+			),
+		):
+			team.save()
+
+	def test_member_without_admin_access_can_save_the_team_without_changing_settings(self):
+		team = create_test_team()
+		member = frappe.mock("email")
+		team.create_user_for_member("Jane", "Doe", member)
+		team = Team("Team", team.name)
+		team.team_title = "Renamed"
+		with as_member(member, str(team.name)):
+			team.save()
+		self.assertEqual(frappe.db.get_value("Team", team.name, "team_title"), "Renamed")
+
 	def test_create_user_for_member_adds_team_member(self):
 		Team.create_user("sys_mgr", email="testuser1@gmail.com")
 		team = create_test_team()
@@ -313,3 +352,48 @@ class TestTeam(FrappeTestCase):
 		second = team.create_upcoming_invoice(date)
 
 		self.assertEqual(second.name, first.name)
+
+
+BILLING_EMAIL = "billing-contact@example.com"
+
+
+class TestBudgetAlerts(FrappeTestCase):
+	def setUp(self):
+		# Recipients are cached, and teams reuse emails across tests
+		get_communication_info.clear_cache()
+		self.team = create_test_team()
+		self.team.db_set({"receive_budget_alerts": 1, "monthly_alert_threshold": 10})
+		self.create_invoice_over_threshold()
+
+	def tearDown(self):
+		frappe.db.rollback()
+		get_communication_info.clear_cache()
+
+	def create_invoice_over_threshold(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=frappe.utils.get_first_day(frappe.utils.getdate()),
+			period_end=frappe.utils.get_last_day(frappe.utils.getdate()),
+		).insert()
+		invoice.db_set("total", 100)
+
+	def add_billing_email(self):
+		self.team.append(
+			"communication_infos", {"channel": "Email", "type": "Billing", "value": BILLING_EMAIL}
+		)
+		self.team.save()
+		get_communication_info.clear_cache()
+
+	def alert(self) -> list[str]:
+		with patch.object(frappe, "sendmail") as sendmail:
+			check_budget_alerts()
+		return sendmail.call_args.kwargs["recipients"]
+
+	def test_budget_alert_goes_to_the_billing_contact_when_one_is_set(self):
+		self.add_billing_email()
+
+		self.assertEqual(self.alert(), [BILLING_EMAIL])
+
+	def test_budget_alert_goes_to_the_team_owner_without_a_billing_contact(self):
+		self.assertEqual(self.alert(), [self.team.user])

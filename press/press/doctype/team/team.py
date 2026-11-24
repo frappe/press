@@ -16,6 +16,7 @@ from frappe.query_builder.functions import Count, GroupConcat
 from frappe.rate_limiter import rate_limit
 from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_form, getdate, random_string
 
+from press.access.staff_roles import safe_for_readers
 from press.access.utils import is_outside_employee
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
@@ -36,7 +37,7 @@ from press.utils.billing import (
 )
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture, capture_pulse
-from press.utils.user import is_system_manager
+from press.utils.user import is_desk_user
 
 from .team_members import get_invitations, get_roles
 
@@ -235,8 +236,8 @@ class Team(Document):
 		doc.user_info = user
 		doc.balance = self.get_balance()
 		doc.is_desk_user = user.user_type == "System User"
-		doc.is_support_agent = has_role("Press Support Agent")
-		doc.can_request_access = has_role("Press Support Agent")
+		doc.is_support_agent = has_role("Press Employee")
+		doc.can_request_access = has_role("Press Employee")
 		doc.valid_teams = get_valid_teams_for_user(frappe.session.user)
 		doc.onboarding = self.get_onboarding()
 		doc.billing_info = self.billing_info()
@@ -273,6 +274,7 @@ class Team(Document):
 		load_address_and_contact(self)
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_home_data(self):
 		return {
 			"sites": frappe.db.get_all(
@@ -283,26 +285,23 @@ class Team(Document):
 		}
 
 	def before_validate(self):
-		self.perm_relaxed_roles()
+		self.perm_team_settings()
 		self.perm_team_members()
 
-	def perm_relaxed_roles(self):
+	def perm_team_settings(self):
 		"""
-		Prevent unauthorized users from changing relaxed permissions. Only team
-		owner or admins can change relaxed permissions as it can lead to
-		security implications.
+		Only the team owner, admins and staff in desk can change the settings
+		that the dashboard edits, such as 2FA enforcement and relaxed permissions.
 		"""
-		if self.flags.ignore_permissions:
+		if self.flags.ignore_permissions or self.is_new():
 			return
-		if self.is_new():
+		if not any(self.has_value_changed(field) for field in self.dashboard_editable_fields):
 			return
-		if not self.has_value_changed("relaxed_permissions"):
-			return
-		if is_system_manager() or self.is_team_owner() or self.is_admin_user():
+		if is_desk_user() or self.is_team_owner() or self.is_admin_user():
 			return
 		frappe.throw(
 			_(
-				"Only team owner or admins can make changes to relaxed permissions. Please contact your team admin for the same."
+				"Only team owner or admins can change team settings. Please contact your team admin for the same."
 			),
 			frappe.PermissionError,
 		)
@@ -317,9 +316,9 @@ class Team(Document):
 			return
 		if self.is_new():
 			return
-		if not self.has_value_changed("team_members"):
+		if not self.has_team_members_changed():
 			return
-		if is_system_manager() or self.is_team_owner() or self.is_admin_user():
+		if "System Manager" in frappe.get_roles() or self.is_team_owner() or self.is_admin_user():
 			return
 		frappe.throw(
 			_(
@@ -327,6 +326,11 @@ class Team(Document):
 			),
 			frappe.PermissionError,
 		)
+
+	def has_team_members_changed(self) -> bool:
+		# has_value_changed compares child rows by identity, so it is true on every save
+		previous = self.get_doc_before_save()
+		return not previous or get_member_access(previous) != get_member_access(self)
 
 	def validate(self):
 		self.validate_duplicate_members()
@@ -624,15 +628,10 @@ class Team(Document):
 				)
 
 		if not self.is_new() and not self.default_payment_method:
-			# if default payment method is unset
-			# then set the is_default field for Stripe Payment Method to 0
-			payment_methods = frappe.db.get_list(
-				"Stripe Payment Method", {"team": self.name, "is_default": 1}
+			# Keep the cards in step with the team, also when staff without billing access save it
+			frappe.db.set_value(
+				"Stripe Payment Method", {"team": self.name, "is_default": 1}, "is_default", 0
 			)
-			for pm in payment_methods:
-				doc = frappe.get_doc("Stripe Payment Method", pm.name)
-				doc.is_default = 0
-				doc.save()
 
 		# Telemetry: Payment Mode Changed Event (Only for teams which have came through FC Signup and not via invite)
 		if self.has_value_changed("payment_mode") and self.payment_mode and self.account_request:
@@ -737,7 +736,7 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def ban(self):
-		frappe.only_for("System Manager")
+		frappe.only_for(["System Manager", "Press Support Engineer"])
 		self.banned = 1
 		self.enabled = 0
 		linked_user = frappe.get_doc("User", self.user)
@@ -845,6 +844,7 @@ class Team(Document):
 		return self.razorpay_customer_id
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_communication_infos(self):
 		return (
 			[{"channel": c.channel, "type": c.type, "value": c.value} for c in self.communication_infos]
@@ -1099,10 +1099,12 @@ class Team(Document):
 		return check_is_admin_user(self.name)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def get_team_members(self):
 		return get_team_members(self.name)
 
 	@dashboard_whitelist()
+	@safe_for_readers
 	def members(self):
 		users = [member.user for member in self.team_members]
 
@@ -1302,6 +1304,7 @@ class Team(Document):
 		)
 
 	@frappe.whitelist()
+	@safe_for_readers
 	def get_balance(self):
 		res = frappe.get_all(
 			"Balance Transaction",
@@ -1776,6 +1779,19 @@ class Team(Document):
 		)
 
 
+def get_member_access(team: Team) -> list[tuple]:
+	return sorted(
+		(
+			member.user or "",
+			member.role or "",
+			frappe.utils.cint(member.all_servers),
+			frappe.utils.cint(member.all_release_groups),
+			frappe.utils.cint(member.all_sites),
+		)
+		for member in team.team_members
+	)
+
+
 def get_team_members(team):
 	if not frappe.db.exists("Team", team):
 		return []
@@ -2149,7 +2165,7 @@ def send_budget_alert_email(team_info, invoice):
 		subject = f"Frappe Cloud Budget Alert for {team_user}"
 
 		frappe.sendmail(
-			recipients=team_user,
+			recipients=get_communication_info("Email", "Billing", "Team", team_info["name"]),
 			subject=subject,
 			template="budget_alert",
 			args={
