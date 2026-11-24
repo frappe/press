@@ -3,6 +3,7 @@
 
 
 import json
+import math
 from typing import ClassVar
 
 import frappe
@@ -71,6 +72,14 @@ def parse_json_config_value(key: str, value):
 			)
 		)
 	return value
+
+
+def decode_number_config_value(value):
+	"""Keep the decimals of a number, but write a whole number such as 5.0 as 5."""
+	number = json.loads(value) if isinstance(value, str) else value
+	if isinstance(number, float) and not math.isfinite(number):
+		frappe.throw(_("Value of a Number config key must be a finite number, not {0}").format(number))
+	return int(number) if isinstance(number, float) and number.is_integer() else number
 
 
 def decode_json_config_value(key: str, value):
