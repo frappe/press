@@ -9,12 +9,16 @@ from typing import TYPE_CHECKING
 import frappe
 
 from press.press.audit import get_benches_in_server
+from press.press.doctype.server.server_monitoring import RAVEN_SERVER_ALERTS_CHANNEL
+from press.utils.raven import send_raven_message
 
 if TYPE_CHECKING:
 	from press.press.doctype.site_backup.site_backup import SiteBackup
 
 BATCH_SIZE = 50
 BACKUP_SIZE_LIMIT = 2 * 1024 * 1024 * 1024  # 2 GB
+# ponytail: one hardcoded owner; move to Press Settings if it changes
+ALERT_MENTION = '<span data-id="shadrak@erpnext.com" data-type="userMention">@Shadrak</span>'
 
 
 class BackupTest:
@@ -60,7 +64,8 @@ class BackupTest:
 
 		return sites
 
-	def start(self):
+	def start(self) -> int:
+		started = frappe.utils.now_datetime()
 		for site in self.sites:
 			try:
 				frappe.get_doc(
@@ -73,6 +78,8 @@ class BackupTest:
 				).insert()
 			except Exception:
 				frappe.log_error("Backup Restore Test insertion failed")
+		# A failed site creation rolls back its test record, so count what is left
+		return frappe.db.count("Backup Restoration Test", {"creation": (">=", started)})
 
 	def is_last_backup_size_less_than_limit(self, site: str) -> bool:
 		try:
@@ -143,6 +150,22 @@ def archive_backup_test_sites():
 				site.archive(reason="Backup Restoration Test")
 
 
+def alert_backup_restoration_test_failure(text: str) -> None:
+	send_raven_message(
+		f"**Backup Restoration Test failed** {ALERT_MENTION}\n\n{text}", RAVEN_SERVER_ALERTS_CHANNEL
+	)
+
+
 def run_backup_restore_test():
-	backup_restoration_test = BackupTest()
-	backup_restoration_test.start()
+	try:
+		backup_restoration_test = BackupTest()
+		created = backup_restoration_test.start()
+	except Exception:
+		alert_backup_restoration_test_failure("The quarterly job stopped. See the Scheduled Job Log.")
+		raise
+
+	picked = len(backup_restoration_test.sites)
+	if not created or created < picked:
+		alert_backup_restoration_test_failure(
+			f"The job created {created} of {picked} tests. See the Error Log for *Site Creation Error*."
+		)
