@@ -34,6 +34,7 @@ from press.press.doctype.site.test_site import create_test_bench, create_test_si
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.site_update.site_update import (
+	MAXIMUM_AGENT_JOB_TIMEOUT,
 	STATEMENT_TIME_BUMP_SIZE_MB,
 	SiteUpdate,
 	is_site_in_deploy_hours,
@@ -1058,3 +1059,26 @@ class TestSiteUpdate(FrappeTestCase):
 		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
 
 		self.assertTrue(site.schedule_update())
+
+
+class TestVersionUpgradeMigrateTimeout(FrappeTestCase):
+	def site_update(self, destination_group: str) -> SiteUpdate:
+		return frappe.get_doc(doctype="Site Update", group="bench-old", destination_group=destination_group)
+
+	def site_with_database_gb(self, gigabytes: float) -> Mock:
+		return Mock(database_size=gigabytes * 1024)
+
+	def test_version_upgrade_of_a_28_gb_site_gets_the_agent_maximum(self):
+		timeout = self.site_update("bench-new").get_migrate_timeout(self.site_with_database_gb(28))
+
+		self.assertEqual(timeout, MAXIMUM_AGENT_JOB_TIMEOUT)
+
+	def test_version_upgrade_of_a_small_site_keeps_the_agent_default(self):
+		timeout = self.site_update("bench-new").get_migrate_timeout(self.site_with_database_gb(5))
+
+		self.assertIsNone(timeout)
+
+	def test_update_in_the_same_group_keeps_the_agent_default_for_a_large_site(self):
+		timeout = self.site_update("bench-old").get_migrate_timeout(self.site_with_database_gb(500))
+
+		self.assertIsNone(timeout)
