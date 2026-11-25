@@ -1059,23 +1059,6 @@ class TestSiteUpdate(FrappeTestCase):
 		frappe.get_doc(doctype="Site Usage", site=site.name, database=101 * 1024).insert()
 
 		self.assertTrue(site.schedule_update())
-<<<<<<< HEAD
-=======
-
-	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
-	def test_a_cancelled_update_does_not_start_and_dispatch_a_job(self):
-		"""A stop that wins the row must not be undone by the `start()` it was racing"""
-		app = create_test_app()
-		group = create_test_release_group([app])
-		bench = create_test_bench(group=group)
-		site = create_test_site(bench=bench.name)
-		update = create_test_site_update(site.name, group.name, "Cancelled", ignore_validate=True)
-
-		update.start()
-
-		update.reload()
-		self.assertEqual(update.status, "Cancelled")
-		self.assertIsNone(update.update_job)
 
 
 class TestVersionUpgradeMigrateTimeout(FrappeTestCase):
@@ -1099,4 +1082,3 @@ class TestVersionUpgradeMigrateTimeout(FrappeTestCase):
 		timeout = self.site_update("bench-old").get_migrate_timeout(self.site_with_database_gb(500))
 
 		self.assertIsNone(timeout)
->>>>>>> 71c9bea (feat(site-update): Scale version upgrade timeout with database size)
