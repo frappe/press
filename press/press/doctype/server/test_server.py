@@ -1565,16 +1565,25 @@ class TestAgentVolume(FrappeTestCase):
 			with self.assertRaisesRegex(Exception, "agent_volume.yml failed .* See Ansible Play play-1"):
 				server._setup_agent_volume()
 
-	def test_resize_agent_volume_passes_size_from_dialog_to_playbook_as_gigabytes(self):
+	def test_increase_agent_volume_passes_size_from_dialog_to_playbook_as_gigabytes(self):
 		server = create_test_server()
 		with (
 			patch("press.press.doctype.server.server.frappe.enqueue_doc", new=foreground_enqueue_doc),
 			patch("press.press.doctype.server.server.Ansible") as Ansible,
 		):
 			Ansible.return_value.run.return_value = Mock(status="Success")
-			server.resize_agent_volume("12")
-		self.assertEqual(Ansible.call_args.kwargs["playbook"], "resize_agent_volume.yml")
-		self.assertEqual(Ansible.call_args.kwargs["variables"], {"agent_volume_size": 12})
+			server.increase_agent_volume("3")
+		self.assertEqual(Ansible.call_args.kwargs["playbook"], "increase_agent_volume.yml")
+		self.assertEqual(Ansible.call_args.kwargs["variables"], {"agent_volume_increase": 3})
+
+	def test_increase_agent_volume_refuses_less_than_1_gb(self):
+		server = create_test_server()
+		with (
+			patch("press.press.doctype.server.server.frappe.enqueue_doc") as enqueue_doc,
+			self.assertRaisesRegex(frappe.ValidationError, "at least 1 GB"),
+		):
+			server.increase_agent_volume("0")
+		enqueue_doc.assert_not_called()
 
 
 class TestAddToPublicGroups(FrappeTestCase):

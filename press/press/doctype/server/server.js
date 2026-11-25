@@ -543,20 +543,29 @@ frappe.ui.form.on('Server', {
 			)
 			if (!frm.doc.has_data_volume) {
 				frm.add_custom_button(
-					__('Resize Agent Volume'),
+					__('Increase Agent Volume'),
 					() => {
-						frappe.prompt(
-							{
-								fieldtype: 'Int',
-								label: __('Agent Volume Size (GB)'),
-								description: __('The agent volume can only grow.'),
-								fieldname: 'size',
-								default: 8,
-								reqd: 1,
-							},
-							(args) => frm.call('resize_agent_volume', args),
-							__('Resize Agent Volume'),
-						)
+						const dialog = new frappe.ui.Dialog({
+							title: __('Increase Agent Volume'),
+							fields: [
+								{
+									fieldtype: 'Int',
+									label: __('Size To Add (GB)'),
+									description: __('Add space to the agent volume'),
+									fieldname: 'size',
+									default: 2,
+									reqd: 1,
+								},
+							],
+						})
+
+						dialog.set_primary_action(__('Increase Agent Volume'), (args) => {
+							frm.call('increase_agent_volume', args).then(() => {
+								dialog.hide()
+								frm.refresh()
+							})
+						})
+						dialog.show()
 					},
 					__('Actions'),
 				)

@@ -3769,11 +3769,14 @@ class Server(BaseServer):
 		self._run_agent_volume_play("agent_volume.yml")
 
 	@frappe.whitelist()
-	def resize_agent_volume(self, size: int):
-		frappe.enqueue_doc(self.doctype, self.name, "_resize_agent_volume", size=int(size))
+	def increase_agent_volume(self, size: int = 2):
+		size = int(size)
+		if size < 1:
+			frappe.throw("Add at least 1 GB to the agent volume.")
+		frappe.enqueue_doc(self.doctype, self.name, "_increase_agent_volume", size=size)
 
-	def _resize_agent_volume(self, size: int):
-		self._run_agent_volume_play("resize_agent_volume.yml", {"agent_volume_size": size})
+	def _increase_agent_volume(self, size: int):
+		self._run_agent_volume_play("increase_agent_volume.yml", {"agent_volume_increase": size})
 
 	def _run_agent_volume_play(self, playbook: str, variables: dict | None = None):
 		# Raises, so the Create Server job and the enqueued job both fail with the play
