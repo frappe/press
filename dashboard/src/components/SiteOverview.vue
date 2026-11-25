@@ -188,10 +188,10 @@
 						class="flex items-center justify-between text-base text-ink-gray-7"
 					>
 						<span>Compute</span>
-						<Tooltip text="How is CPU usage calculated?">
+						<Tooltip text="How is Compute calculated?">
 							<Button
 								variant="ghost"
-								link="https://docs.frappe.io/cloud/faq/billing#how-is-cpu-usage-calculated-and-throttled"
+								link="https://docs.frappe.io/cloud/billing/how-is-cpu-usage-compute-calculated-and-throttled"
 								icon="help-circle"
 							/>
 						</Tooltip>
