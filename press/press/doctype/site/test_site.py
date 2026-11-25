@@ -1420,6 +1420,31 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 		self.assertEqual(json.loads(site.config)["rate_limit"], {})
 
 
+class TestSiteConfigNumberValues(FrappeTestCase):
+	def setUp(self):
+		self.site = create_test_site("testsubdomain")
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_number_config_value_keeps_its_decimals(self):
+		self.site.update_config({"test_ratio": 1.5})
+		self.assertEqual(json.loads(self.site.config)["test_ratio"], 1.5)
+
+	def test_whole_number_config_value_is_written_as_an_integer(self):
+		self.site.update_config({"test_ratio": 5.0})
+		self.assertEqual(json.loads(self.site.config)["test_ratio"], 5)
+		self.assertIsInstance(json.loads(self.site.config)["test_ratio"], int)
+
+	def test_number_config_value_that_is_not_finite_is_rejected(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"must be a finite number",
+			self.site.update_config,
+			{"test_ratio": float("inf")},
+		)
+
+
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestSiteConfigEncryptionKeyValidation(FrappeTestCase):
 	def setUp(self):

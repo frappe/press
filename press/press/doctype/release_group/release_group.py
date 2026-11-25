@@ -41,6 +41,7 @@ from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
 from press.press.doctype.site_config.site_config import (
 	decode_json_config_value,
+	decode_number_config_value,
 	parse_json_config_value,
 )
 from press.press.doctype.team_change.pending_request import cancel_transfer_requests, transfer_action
@@ -527,7 +528,7 @@ class ReleaseGroup(Document, TagHelpers):
 			row.type = key_type
 
 			if key_type == "Number":
-				key_value = int(row.value) if isinstance(row.value, float | int) else json.loads(row.value)
+				key_value = decode_number_config_value(row.value)
 			elif key_type == "Boolean":
 				key_value = row.value if isinstance(row.value, bool) else bool(json.loads(cstr(row.value)))
 			elif key_type == "JSON":
