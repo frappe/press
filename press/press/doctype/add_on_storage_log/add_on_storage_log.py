@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import typing
+from urllib.parse import quote
 
 import frappe
 from frappe.model.document import Document
@@ -49,11 +50,41 @@ class AddOnStorageLog(Document):
 				"available_disk_space": f"{self.available_disk_space} GiB",
 				"increase_by": f"{self.adding_storage} GiB",
 				"used_storage_percentage": "90%",
+				"monthly_cost": monthly_storage_cost(server, self.adding_storage),
+				"actions": disk_space_actions(server),
 			},
 		)
 
 		self.notification_sent = True
 		self.save()
+
+
+def disk_space_actions(server: "BaseServer") -> list[dict[str, str]]:
+	"""Dashboard links that free disk space or change storage, for the disk emails"""
+	app_server = (
+		server.name
+		if server.doctype == "Server"
+		else frappe.db.get_value("Server", {"database_server": server.name}, "name")
+	)
+	if not app_server:
+		return []
+
+	page = frappe.utils.get_url(f"/dashboard/servers/{app_server}")
+	if server.doctype == "Server":
+		actions = ["Cleanup Server"]
+	else:
+		actions = ["Manage Database Binlogs", "Update Binlog Size Limit"]
+	links = [{"label": action, "url": f"{page}/actions?action={quote(action)}"} for action in actions]
+	links.append({"label": "Storage and Auto Increase Storage settings", "url": f"{page}/overview"})
+	return links
+
+
+def monthly_storage_cost(server: "BaseServer", storage_gb: float) -> str:
+	"""Price of the added storage per month, in the team's currency"""
+	currency = frappe.db.get_value("Team", server.team, "currency") or "USD"
+	price_field = "price_inr" if currency == "INR" else "price_usd"
+	price = frappe.db.get_value("Server Storage Plan", {"enabled": 1}, price_field) or 0
+	return frappe.utils.fmt_money(price * storage_gb, currency=currency)
 
 
 def insert_addon_storage_log(

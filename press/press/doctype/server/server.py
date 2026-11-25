@@ -37,6 +37,7 @@ from press.exceptions import OngoingAgentJob, VolumeResizeLimitError
 from press.guards import role_guard, team_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.add_on_storage_log.add_on_storage_log import (
+	disk_space_actions,
 	insert_addon_storage_log,
 )
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
@@ -311,10 +312,10 @@ class BaseServer(Document, TagHelpers):
 		current_disk_usage: int | None = None,
 	) -> None:
 		add_on_storage_log = None
-		storage_parameters = {
+		storage_parameters: dict[str, typing.Any] = {
 			"doctype": "Add On Storage Log",
 			"adding_storage": increment,
-			is_auto_triggered: is_auto_triggered,
+			"is_auto_triggered": is_auto_triggered,
 		}
 
 		if not isinstance(server, str):
@@ -2694,6 +2695,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				"available_disk_space": f"{disk_capacity_flt} GiB",
 				"used_storage_percentage": "80%",
 				"increase_by": f"{recommended_increase} GiB",
+				"actions": disk_space_actions(server),
 			},
 		)
 
