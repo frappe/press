@@ -18,6 +18,8 @@ from press.utils.unique_name_generator import generate as generate_random_name
 # A site update marks a site Broken before its recovery job finishes
 BROKEN_STANDBY_SITE_GRACE_HOURS = 2
 BROKEN_STANDBY_SITES_PER_SERVER = 5
+# Spam filters and most mail clients do not know SVG
+EMAIL_IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".gif")
 
 
 class ProductTrial(Document):
@@ -40,6 +42,7 @@ class ProductTrial(Document):
 		email_account: DF.Link | None
 		email_full_logo: DF.AttachImage | None
 		email_header_content: DF.Code
+		email_logo: DF.AttachImage | None
 		email_subject: DF.Data
 		enable_hybrid_pooling: DF.Check
 		enable_pooling: DF.Check
@@ -91,6 +94,15 @@ class ProductTrial(Document):
 			self.cleanup_remaining_pool = 0
 
 		self.validate_hybrid_rules()
+		self.validate_email_logos()
+
+	def validate_email_logos(self):
+		for fieldname in ("email_logo", "email_full_logo"):
+			file_url = self.get(fieldname)
+			if not file_url or not self.has_value_changed(fieldname):
+				continue
+			if not file_url.lower().endswith(EMAIL_IMAGE_EXTENSIONS):
+				frappe.throw(f"{self.meta.get_label(fieldname)} must be a PNG, JPEG or GIF image.")
 
 	def validate_hybrid_rules(self):
 		for rule in self.hybrid_pool_rules:
@@ -780,7 +792,7 @@ def send_suspend_mail(site_name: str, product_name: str) -> None:
 	product = frappe.db.get_value(
 		"Product Trial",
 		product_name,
-		["title", "suspension_email_subject", "suspension_email_content", "email_full_logo", "logo"],
+		["title", "suspension_email_subject", "suspension_email_content", "email_full_logo", "email_logo"],
 		as_dict=True,
 	)
 
@@ -793,15 +805,14 @@ def send_suspend_mail(site_name: str, product_name: str) -> None:
 		or f"Your {product.title} site is expired"
 	)
 	recipient = frappe.get_value("Team", site.team, "user")
-	args = {}
+	args = {"title": product.title}
 	inline_images = []
 	# TODO: enable it when we use the full logo
 	# if product.email_full_logo:
 	# 	args.update({"image_path": get_url(product.email_full_logo, True)})
-	if product.logo:
-		args.update({"logo": get_url(product.logo, True), "title": product.title})
+	if product.email_logo:
 		try:
-			logo_name = product.logo[1:]
+			logo_name = product.email_logo[1:]
 			args.update({"logo_name": logo_name})
 			with open(frappe.utils.get_site_path("public", logo_name), "rb") as logo_file:
 				inline_images.append(

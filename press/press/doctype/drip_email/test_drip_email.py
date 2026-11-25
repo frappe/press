@@ -190,7 +190,9 @@ class TestDripEmail(FrappeTestCase):
 			os.makedirs(os.path.dirname(logo_path), exist_ok=True)
 			with open(logo_path, "wb") as logo_file:
 				logo_file.write(b"\x89PNG\r\n")
-			frappe.db.set_value("Product Trial", test_product_trial.name, "logo", f"/files/{logo_filename}")
+			frappe.db.set_value(
+				"Product Trial", test_product_trial.name, "email_logo", f"/files/{logo_filename}"
+			)
 
 			with patch("frappe.sendmail") as sendmail:
 				drip_email.send_mail(
@@ -204,3 +206,22 @@ class TestDripEmail(FrappeTestCase):
 		self.assertEqual(kwargs["args"]["logo_name"], f"files/{logo_filename}")
 		self.assertEqual(len(kwargs["inline_images"]), 1)
 		self.assertEqual(kwargs["inline_images"][0]["filename"], f"files/{logo_filename}")
+
+	def test_drip_email_does_not_embed_the_svg_dashboard_logo(self):
+		test_app = create_test_app("wiki", "Wiki")
+		test_product_trial = create_test_product_trial(test_app)
+		frappe.db.set_value("Product Trial", test_product_trial.name, "logo", "/files/wiki.svg")
+		drip_email = create_test_drip_email(0, product_trial=test_product_trial.name)
+		drip_email.content_type = "HTML"
+		drip_email.message_html = "<p>hi</p>"
+		account_request = frappe.get_doc(
+			"Account Request",
+			create_test_account_request("s1", saas=True, product_trial=test_product_trial.name).name,
+		)
+
+		with patch("frappe.sendmail") as sendmail:
+			drip_email.send_mail(context={"account_request": account_request}, recipient="user@example.com")
+
+		kwargs = sendmail.call_args.kwargs
+		self.assertNotIn("logo_name", kwargs["args"])
+		self.assertEqual(kwargs["inline_images"], [])

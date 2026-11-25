@@ -106,16 +106,18 @@ class DripEmail(Document):
 		else:
 			if not self.product_trial:
 				frappe.throw(_("Product Trial is required when Send Raw is disabled"))
-			app = frappe.db.get_value("Product Trial", self.product_trial, ["title", "logo"], as_dict=True)
+			app = frappe.db.get_value(
+				"Product Trial", self.product_trial, ["title", "email_logo"], as_dict=True
+			)
 			if not app:
 				frappe.throw(_("Product Trial {0} not found").format(self.product_trial))
 			args = {"message": message, "title": app.title}
 			inline_images = []
-			if app.logo:
+			if app.email_logo:
 				# get_filecontent_from_path resolves the path and guards against traversal.
-				logo_content = get_filecontent_from_path(app.logo)
+				logo_content = get_filecontent_from_path(app.email_logo)
 				if logo_content:
-					logo_name = app.logo[1:]
+					logo_name = app.email_logo[1:]
 					args["logo_name"] = logo_name
 					inline_images.append({"filename": logo_name, "filecontent": logo_content})
 			kwargs["template"] = "product_trial_email"
