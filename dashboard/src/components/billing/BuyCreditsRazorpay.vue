@@ -170,15 +170,18 @@ function handlePaymentFailure(response) {
 
 const confirmPayment = createResource({
 	url: 'press.api.billing.handle_razorpay_payment_success',
-	onSuccess: () => {
-		emit('success')
-		toast.success('Payment successful')
-	},
-	onError: () => {
-		emit('success')
-		toast.success('Payment received. Credits will be added in a few minutes.')
-	},
+	onSuccess: (status) => showPaymentReceived(status === 'Captured'),
+	onError: () => showPaymentReceived(false),
 })
+
+function showPaymentReceived(credited) {
+	emit('success')
+	toast.success(
+		credited
+			? 'Payment successful'
+			: 'Payment received. Credits will be added in a few minutes.',
+	)
+}
 
 function handlePaymentSuccess(response) {
 	isPaymentComplete.value = true

@@ -97,6 +97,23 @@ class TestRazorpayPaymentRecord(FrappeTestCase):
 		self.assertEqual(record.signature, "signature")
 		self.assertEqual(len(self.prepaid_credit_invoices()), 1)
 
+	def test_checkout_callback_credits_team_when_razorpay_reports_payment_captured(self):
+		record = create_pending_payment_record(self.team.name, self.order_id)
+
+		record.mark_captured_if_paid(self.payment_id, "signature")
+
+		self.assertEqual(record.status, "Captured")
+		self.assertEqual(len(self.prepaid_credit_invoices()), 1)
+
+	def test_checkout_callback_leaves_authorized_payment_pending_for_the_capture_webhook(self):
+		self.client.payment.fetch.return_value["status"] = "authorized"
+		record = create_pending_payment_record(self.team.name, self.order_id)
+
+		record.mark_captured_if_paid(self.payment_id, "signature")
+
+		self.assertEqual(frappe.db.get_value("Razorpay Payment Record", record.name, "status"), "Pending")
+		self.assertEqual(self.prepaid_credit_invoices(), [])
+
 	def test_late_webhook_does_not_credit_again_after_checkout_callback_credited_the_team(self):
 		record = create_pending_payment_record(self.team.name, self.order_id)
 		record.mark_captured(self.payment_id, "signature")

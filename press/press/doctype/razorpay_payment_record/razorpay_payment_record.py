@@ -92,6 +92,11 @@ class RazorpayPaymentRecord(Document):
 		self.status = "Captured"
 		self.save(ignore_permissions=True)
 
+	def mark_captured_if_paid(self, payment_id: str, signature: str):
+		"""Leave an authorized payment Pending, so the authorized-payment webhook still captures it."""
+		if self.status == "Pending" and is_payment_captured(payment_id):
+			self.mark_captured(payment_id, signature)
+
 	@frappe.whitelist()
 	def sync(self):
 		try:
@@ -112,6 +117,10 @@ class RazorpayPaymentRecord(Document):
 						"name": item["order_id"],
 					}
 				).insert(ignore_if_duplicate=True)
+
+
+def is_payment_captured(payment_id: str) -> bool:
+	return get_razorpay_client().payment.fetch(payment_id)["status"] == "captured"
 
 
 def fetch_recent_pending_payment_orders():

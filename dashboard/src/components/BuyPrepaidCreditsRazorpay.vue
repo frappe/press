@@ -164,12 +164,18 @@ export default {
 		},
 		async handlePaymentSuccess(response) {
 			this.isPaymentComplete = true
-			await this.$resources.confirmPayment.submit({ response }).catch(() => {})
+			const status = await this.$resources.confirmPayment
+				.submit({ response })
+				.catch(() => null)
 			if (this.isOnboarding) {
 				this.checkForOnboardingPaymentCompletion()
 			} else {
 				this.$emit('success')
-				toast.success('Payment successful')
+				toast.success(
+					status === 'Captured'
+						? 'Payment successful'
+						: 'Payment received. Credits will be added in a few minutes.',
+				)
 			}
 		},
 		async checkForOnboardingPaymentCompletion() {
