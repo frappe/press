@@ -13,7 +13,18 @@
 			<br />
 			To ensure that the server is not overloaded we are auto increasing the
 			storage by <strong>{{ increase_by }}</strong><br />
+			{% if monthly_cost %}
+			This adds <strong>{{ monthly_cost }}</strong> per month to your bill.
+			Auto Increase Storage is turned on for this server.<br />
+			{% endif %}
 			<br />
+			{% if actions %}
+			<strong>Free disk space or change storage</strong><br />
+			{% for action in actions %}
+			<a href="{{ action.url }}" target="_blank">{{ action.label }}</a><br />
+			{% endfor %}
+			<br />
+			{% endif %}
 
 			To disable auto disk expansion please refer the following
 			<a href="https://docs.frappe.io/cloud/storage-addons" target="_blank"

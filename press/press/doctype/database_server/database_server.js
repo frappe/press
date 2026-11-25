@@ -228,6 +228,13 @@ frappe.ui.form.on('Database Server', {
 				__('MariaDB'),
 			],
 			[
+				__('Update MariaDB Monitor Password'),
+				'update_mariadb_monitor_password',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_primary,
+				__('MariaDB'),
+			],
+			[
 				__('Setup Deadlock Logger'),
 				'setup_deadlock_logger',
 				true,

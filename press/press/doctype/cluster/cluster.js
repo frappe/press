@@ -30,6 +30,11 @@ frappe.ui.form.on('Cluster', {
 			[__('Create Proxy'), 'create_proxy', frm.doc.status === 'Active'],
 			[__('Add Images'), 'add_images', frm.doc.status === 'Active'],
 			[
+				__('Rotate MariaDB Monitor Password'),
+				'rotate_mariadb_monitor_password',
+				frm.doc.status === 'Active',
+			],
+			[
 				__('Assign NAT Security Group'),
 				'assign_nat_security_group',
 				frm.doc.status === 'Active' && !frm.doc.nat_security_group_id,

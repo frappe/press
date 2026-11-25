@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import ipaddress
 import secrets
 
 import boto3
@@ -211,7 +212,7 @@ class PressSettings(Document):
 		press_monitoring_password: DF.Password | None
 		press_trial_plan: DF.Link | None
 		print_format: DF.Data | None
-		production_server_ip: DF.Data | None
+		production_server_ip: DF.SmallText | None
 		publish_docs: DF.Check
 		pulse_api_key: DF.Data | None
 		pulse_site: DF.Data | None
@@ -295,6 +296,7 @@ class PressSettings(Document):
 
 	def validate(self):
 		fail2ban.validate_ips(self.fail2ban_ignore_ips)
+		self.validate_production_server_ips()
 
 		if self.max_concurrent_physical_restorations > 5:
 			frappe.throw("Please set Max Concurrent Physical Restorations to less than 5.")
@@ -311,6 +313,32 @@ class PressSettings(Document):
 
 		if self.minimum_rebuild_memory < 2:
 			frappe.throw("Please set the minimum rebuild memory to 2 GB or more.")
+
+	def validate_production_server_ips(self):
+		for ip in (self.production_server_ip or "").split():
+			try:
+				ipaddress.ip_network(ip, strict=False)
+			except ValueError:
+				frappe.throw(
+					f"{ip} in Production Server IPs is not an IP address or network. "
+					"Enter one IP address or CIDR network, like 203.0.113.7 or 203.0.113.0/24, per line."
+				)
+
+	def on_update(self):
+		self.sync_firewalls_on_production_ip_change()
+
+	def sync_firewalls_on_production_ip_change(self):
+		"""Server firewalls allow the production IPs. Without a sync, they keep the old ones."""
+		# The installer creates Press Settings with no earlier version, and has no queue yet.
+		if not self.get_doc_before_save() or not self.has_value_changed("production_server_ip"):
+			return
+		frappe.enqueue(
+			"press.press.doctype.server_firewall.server_firewall.sync_enabled_firewalls",
+			queue="default",
+			enqueue_after_commit=True,
+			deduplicate=True,
+			job_id="sync_enabled_firewalls",
+		)
 
 	@frappe.whitelist()
 	def create_stripe_webhook(self):

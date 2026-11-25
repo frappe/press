@@ -161,3 +161,7 @@
   become: yes
   become_user: frappe
   command: "htpasswd -Bb /home/frappe/agent/nginx/monitoring.htpasswd frappe {{ monitoring_password | quote }}"
+
+- name: Rotate Agent Cron Logs
+  import_role:
+    name: rotate_agent_logs

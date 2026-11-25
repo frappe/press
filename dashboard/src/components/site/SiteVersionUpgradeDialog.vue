@@ -441,8 +441,14 @@ export default {
 					scheduled_datetime: this.datetimeInIST,
 				},
 				onSuccess: (data) => {
-					toast.success("Site's version upgrade has been scheduled.");
+					toast.success(
+						"Site's version upgrade has been scheduled. Follow it on the Updates tab.",
+					);
 					this.show = false;
+					this.$router.push({
+						name: 'Site Detail Updates',
+						params: { name: this.site },
+					});
 				},
 			};
 		},
