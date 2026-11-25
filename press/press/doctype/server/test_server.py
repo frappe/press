@@ -1534,22 +1534,21 @@ class TestAgentVolume(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_agent_volume_job_timeout_outlasts_agent_worker_stop_wait(self):
-		"""Workers get up to 1500 seconds (stopwaitsecs) to finish their running jobs."""
+	def test_setup_agent_volume_starts_press_job(self):
 		server = create_test_server()
-		with patch("press.press.doctype.server.server.frappe.enqueue_doc") as enqueue_doc:
+		with patch.object(Server, "run_press_job") as run_press_job:
 			server.setup_agent_volume()
-		self.assertGreater(enqueue_doc.call_args.kwargs["timeout"], 1500)
+		run_press_job.assert_called_once_with("Setup Agent Volume")
 
 	def test_setup_agent_volume_refused_on_server_with_data_volume_even_if_unmounted(self):
 		server = create_test_server()
 		server.has_data_volume = 1  # Set directly; the test VM's fetch_from overwrites the helper argument
 		with (
-			patch("press.press.doctype.server.server.frappe.enqueue_doc") as enqueue_doc,
+			patch.object(Server, "run_press_job") as run_press_job,
 			self.assertRaisesRegex(frappe.ValidationError, "This server has a data volume"),
 		):
 			server.setup_agent_volume()
-		enqueue_doc.assert_not_called()
+		run_press_job.assert_not_called()
 
 	def test_setup_agent_volume_runs_agent_volume_playbook(self):
 		server = create_test_server()

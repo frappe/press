@@ -8,9 +8,11 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_to_date, now_datetime
 
+from press.agent import AgentRequestSkippedException
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 from press.press.doctype.press_job.jobs.create_server import CreateServerJob
 from press.press.doctype.press_job.jobs.increase_disk_size import IncreaseDiskSizeJob
+from press.press.doctype.press_job.jobs.setup_agent_volume import SetupAgentVolumeJob
 from press.press.doctype.press_job.jobs.trigger_build_server_cleanup import TriggerBuildServerCleanupJob
 from press.press.doctype.press_settings.test_press_settings import create_test_press_settings
 from press.press.doctype.server.server import BaseServer
@@ -71,6 +73,88 @@ class TestCreateServerJobAgentVolume(FrappeTestCase):
 		job.server_doc._setup_agent_volume.side_effect = Exception("agent_volume.yml failed")
 		with self.assertRaisesRegex(Exception, "agent_volume.yml failed"):
 			job.setup_agent_volume()
+
+
+def make_setup_agent_volume_job(server: str, age_hours: int) -> SetupAgentVolumeJob:
+	return SetupAgentVolumeJob(
+		{
+			"doctype": "Press Job",
+			"job_type": "Setup Agent Volume",
+			"server_type": "Server",
+			"server": server,
+			"creation": add_to_date(now_datetime(), hours=-age_hours),
+		}
+	)
+
+
+def make_agent_job(server: str, status: str, job_id: int) -> str:
+	job = frappe.get_doc(
+		{
+			"doctype": "Agent Job",
+			"server_type": "Server",
+			"server": server,
+			"job_type": "Backup Site",
+			"status": status,
+			"job_id": job_id,
+			"request_method": "POST",
+			"request_path": "benches",
+		}
+	)
+	job.db_insert()  # insert() hooks need redis and deliver the job
+	return job.name
+
+
+@patch.object(SetupAgentVolumeJob, "defer_current_task")
+@patch("press.press.doctype.press_job.jobs.setup_agent_volume.handle_polled_jobs")
+@patch("press.press.doctype.press_job.jobs.setup_agent_volume.poll_random_jobs")
+class TestSetupAgentVolumeJob(FrappeTestCase):
+	def setUp(self):
+		self.server = create_test_server()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_waits_while_an_agent_job_runs(self, poll: Mock, _handle: Mock, defer: Mock):
+		make_agent_job(self.server.name, status="Running", job_id=1)
+
+		make_setup_agent_volume_job(self.server.name, age_hours=4).wait_for_agent_jobs()
+
+		poll.assert_called_once()
+		defer.assert_called_once()
+
+	def test_does_not_wait_for_undelivered_agent_jobs(self, poll: Mock, _handle: Mock, defer: Mock):
+		make_agent_job(self.server.name, status="Undelivered", job_id=0)
+
+		make_setup_agent_volume_job(self.server.name, age_hours=1).wait_for_agent_jobs()
+
+		poll.assert_not_called()
+		defer.assert_not_called()
+
+	def test_keeps_waiting_while_agent_is_unreachable(self, poll: Mock, _handle: Mock, defer: Mock):
+		make_agent_job(self.server.name, status="Running", job_id=1)
+		poll.side_effect = AgentRequestSkippedException("Previous 3 requests have failed.")
+
+		make_setup_agent_volume_job(self.server.name, age_hours=1).wait_for_agent_jobs()
+
+		defer.assert_called_once()
+
+	def test_fails_when_agent_jobs_still_run_after_12_hours(self, _poll: Mock, _handle: Mock, defer: Mock):
+		agent_job = make_agent_job(self.server.name, status="Running", job_id=1)
+
+		with self.assertRaisesRegex(frappe.ValidationError, agent_job):
+			make_setup_agent_volume_job(self.server.name, age_hours=13).wait_for_agent_jobs()
+		defer.assert_not_called()
+
+	def test_failed_job_resumes_agent_jobs(self, _poll: Mock, _handle: Mock, _defer: Mock):
+		frappe.db.set_value("Server", self.server.name, "halt_agent_jobs", True)
+
+		make_setup_agent_volume_job(self.server.name, age_hours=1).on_press_job_failure(Mock())
+
+		self.assertFalse(frappe.db.get_value("Server", self.server.name, "halt_agent_jobs"))
+
+	def test_play_timeout_outlasts_agent_worker_stop_wait(self, _poll: Mock, _handle: Mock, _defer: Mock):
+		"""Workers get up to 1500 seconds (stopwaitsecs) to stop."""
+		self.assertGreater(SetupAgentVolumeJob.setup_agent_volume._timeout, 1500)
 
 
 @patch.object(IncreaseDiskSizeJob, "restart_active_benches")

@@ -48,6 +48,7 @@ def _init_jobs_registry() -> None:
 	from press.press.doctype.press_job.jobs.resume_services_after_snapshot import (
 		ResumeServicesAfterSnapshotJob,
 	)
+	from press.press.doctype.press_job.jobs.setup_agent_volume import SetupAgentVolumeJob
 	from press.press.doctype.press_job.jobs.setup_on_prem_failover import SetupOnPremFailoverJob
 	from press.press.doctype.press_job.jobs.snapshot_disk import SnapshotDiskJob
 	from press.press.doctype.press_job.jobs.stop_and_start_server import StopAndStartServerJob
@@ -73,6 +74,7 @@ def _init_jobs_registry() -> None:
 		"Reset Swap": ResetSwapOnServerJob,
 		"Resize Server": ResizeServerJob,
 		"Resume Services After Snapshot": ResumeServicesAfterSnapshotJob,
+		"Setup Agent Volume": SetupAgentVolumeJob,
 		"Setup On-Prem Failover": SetupOnPremFailoverJob,
 		"Snapshot Disk": SnapshotDiskJob,
 		"Stop and Start Server": StopAndStartServerJob,

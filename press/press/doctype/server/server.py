@@ -3763,7 +3763,7 @@ class Server(BaseServer):
 		# The play only checks the live mount, so an unmounted data volume would slip past it
 		if self.has_data_volume:
 			frappe.throw("This server has a data volume. It does not need an agent volume.")
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_volume", queue="long", timeout=3600)
+		self.run_press_job("Setup Agent Volume")
 
 	def _setup_agent_volume(self):
 		self._run_agent_volume_play("agent_volume.yml")
