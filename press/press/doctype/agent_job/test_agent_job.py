@@ -391,7 +391,7 @@ class TestCancelJob(FrappeTestCase):
 
 		job.validate_dashboard_cancellation()  # doesn't raise
 
-	def test_dashboard_cant_cancel_a_site_update_that_skipped_backups(self):
+	def test_dashboard_can_cancel_a_site_update_that_skipped_backups(self):
 		job = create_test_agent_job(job_type="Update Site Migrate", status="Running", job_id=42)
 		site_update = frappe.get_doc(
 			doctype="Site Update",
@@ -402,11 +402,7 @@ class TestCancelJob(FrappeTestCase):
 		)
 		site_update.db_insert()
 
-		self.assertRaisesRegex(
-			frappe.ValidationError,
-			"backups skipped",
-			job.validate_dashboard_cancellation,
-		)
+		job.validate_dashboard_cancellation()  # doesn't raise
 
 
 class TestCancelJobFromDashboard(FrappeTestCase):
