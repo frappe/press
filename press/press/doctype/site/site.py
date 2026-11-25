@@ -95,6 +95,7 @@ from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
 from press.press.doctype.site_config.site_config import (
 	decode_json_config_value,
+	decode_number_config_value,
 	parse_json_config_value,
 )
 from press.press.doctype.site_plan.site_plan import get_plan_config
@@ -1014,7 +1015,7 @@ class Site(Document, TagHelpers):
 			row.type = key_type
 
 			if key_type == "Number":
-				key_value = int(row.value) if isinstance(row.value, float | int) else json.loads(row.value)
+				key_value = decode_number_config_value(row.value)
 			elif key_type == "Boolean":
 				key_value = (
 					row.value if isinstance(row.value, bool) else bool(sbool(json.loads(cstr(row.value))))
