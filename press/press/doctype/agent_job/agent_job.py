@@ -230,10 +230,14 @@ class AgentJob(Document):
 			else:
 				monitor = None
 
+			job = self.as_dict()
+			# The request carries passwords such as mariadb_root_password, and the log file keeps them
+			job.pop("request_data", None)
+			job.pop("request_files", None)
 			data = {
 				"monitor": monitor,
 				"timestamp": frappe.utils.now(),
-				"job": self.as_dict(),
+				"job": job,
 			}
 			serialized = json.dumps(data, sort_keys=True, default=str, separators=(",", ":"))
 			frappe.cache().rpush(AGENT_LOG_KEY, serialized)
@@ -1400,7 +1404,6 @@ def flush():
 	try:
 		# Fetch all entries without removing from cache
 		logs = frappe.cache().lrange(AGENT_LOG_KEY, 0, -1)
-		print("LOGS", logs)
 		if logs:
 			logs = list(map(frappe.safe_decode, logs))
 			with open(log_file, "a", os.O_NONBLOCK) as f:
