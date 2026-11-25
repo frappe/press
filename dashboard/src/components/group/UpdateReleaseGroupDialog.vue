@@ -49,6 +49,16 @@
 					<p v-else class="text-center text-base text-ink-gray-6">
 						No apps to update
 					</p>
+					<p
+						v-if="
+							lastDeploy &&
+							benchDocResource.doc.deploy_information.update_available
+						"
+						class="mt-3 text-sm text-ink-gray-6"
+					>
+						Only the apps that you select are updated. The other apps stay on
+						their current version.
+					</p>
 				</div>
 
 				<!-- Remove Apps Step -->
@@ -59,7 +69,13 @@
 
 				<!-- Select Site Step -->
 				<div v-else-if="step === 'select-sites'">
-					<h2 class="mb-4 text-lg font-medium">Select sites to update</h2>
+					<h2 class="mb-2 text-lg font-medium">Select sites to update</h2>
+					<p class="mb-4 text-sm text-ink-gray-6">
+						The sites that you select are updated after the deploy. To update a
+						site at a time that you choose, do not select it here. After the
+						deploy, open the site, click <b>Update Available</b> and set the
+						schedule time.
+					</p>
 					<GenericList
 						class="max-h-[500px]"
 						v-if="benchDocResource.doc.deploy_information.sites.length"
