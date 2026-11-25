@@ -1944,11 +1944,7 @@
 	],
 	"issingle": 1,
 	"links": [],
-<<<<<<< HEAD
-	"modified": "2026-10-23 13:05:58.242982",
-=======
 	"modified": "2026-11-24 12:00:00.000000",
->>>>>>> 64e1f3c (feat(server-firewall): Allow several Press production IPs)
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",
