@@ -115,7 +115,11 @@ def monitor_server_and_refresh_new_bench_and_site_server_pool() -> None:
 	server_plan_prices = _get_public_server_plan_prices(server_names)
 	pool_decision = _get_public_server_pool_decision(servers_by_cluster, metrics, server_plan_prices)
 	_apply_public_server_pool_decision(server_names, pool_decision)
-	server_issues = pool_decision["server_issues"] | _get_public_database_server_disk_issues()
+	server_issues = (
+		pool_decision["server_issues"]
+		| _get_public_database_server_disk_issues()
+		| _get_excluded_public_server_disk_issues()
+	)
 	_send_public_server_pool_health_alert(server_issues)
 	_create_no_suitable_servers_incident(pool_decision["fallback_servers_by_cluster"], metrics)
 
@@ -428,6 +432,26 @@ def _get_disk_used_ratio_query(instance_matcher: str, mountpoint: str = "/") -> 
 		f'device!~"rootfs", mountpoint="{mountpoint}"}} / node_filesystem_size_bytes{{'
 		f'instance=~"^({instance_matcher})$", job="node", device!~"rootfs", mountpoint="{mountpoint}"}})'
 	)
+
+
+def _get_excluded_public_server_disk_issues() -> dict[str, list[str]]:
+	"""Excluded servers skip the pool check, but still host benches and get deploys."""
+	servers = frappe.get_all(
+		"Server",
+		filters={"status": "Active", "is_primary": True, "public": True, "exclude_for_scheduling": True},
+		pluck="name",
+	)
+	prometheus_connection = _get_public_server_pool_prometheus_connection()
+	if not (servers and prometheus_connection):
+		return {}
+
+	instance_matcher = "|".join(_escape_prometheus_regex_literal(name) for name in servers)
+	results = _query_prometheus_vector(_get_disk_used_ratio_query(instance_matcher), *prometheus_connection)
+	return {
+		server: [f"Disk utilization: {ratio * 100:.2f}%"]
+		for server, ratio in _build_public_server_metric_map(servers, results).items()
+		if ratio > 0.9
+	}
 
 
 def _get_public_database_server_disk_issues() -> dict[str, list[str]]:
@@ -746,7 +770,7 @@ def _describe_signup_failure_rate(rate: SignupFailureRate) -> str:
 
 
 def alert_on_servers_with_stuck_agent_jobs() -> None:
-	"""Alert when active servers hold many agent jobs that never ran.
+	"""Alert when active servers outside archived regions hold many agent jobs that never ran.
 
 	Undelivered jobs pile up on a halted or unreachable server, pending ones on a stuck agent.
 	"""
@@ -799,14 +823,17 @@ def _count_stuck_agent_jobs_by_server() -> list[ServerStuckAgentJobs]:
 
 def _get_halt_flags_of_active_servers(servers: set[tuple[str, str]]) -> dict[tuple[str, str], bool]:
 	halt_flags = {}
+	archived_clusters = frappe.get_all("Cluster", filters={"status": "Archived"}, pluck="name")
 	for server_type in {server_type for server_type, _ in servers}:
 		names = [name for doctype, name in servers if doctype == server_type]
+		meta = frappe.get_meta(server_type)
+		filters = {"name": ("in", names), "status": "Active"}
+		# Servers in an archived region can't be reached, so their jobs pile up for good
+		if archived_clusters and meta.has_field("cluster"):
+			filters["cluster"] = ("not in", archived_clusters)
 		# Registry, log and other server types have no halt flag
-		has_halt_flag = frappe.get_meta(server_type).has_field("halt_agent_jobs")
-		fields = ["name", "halt_agent_jobs"] if has_halt_flag else ["name"]
-		for server in frappe.get_all(
-			server_type, filters={"name": ("in", names), "status": "Active"}, fields=fields
-		):
+		fields = ["name", "halt_agent_jobs"] if meta.has_field("halt_agent_jobs") else ["name"]
+		for server in frappe.get_all(server_type, filters=filters, fields=fields):
 			halt_flags[(server_type, server.name)] = bool(server.get("halt_agent_jobs"))
 	return halt_flags
 

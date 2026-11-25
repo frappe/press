@@ -307,6 +307,31 @@ class TestDeployCandidateBuild(FrappeTestCase):
 
 		self.assertFalse(client.get("Deploy Candidate Build", build.name).is_cache_failure)
 
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=Mock())
+	@patch.object(DeployCandidateBuild, "_process_run_build", new=Mock())
+	@patch.object(Bench, "after_insert", new=Mock())
+	def test_dashboard_masks_credentials_in_build_step_command_and_output(self, mock_commit):
+		build = self.create_failed_build()
+		clone = "git clone https://x-access-token:ghs_abc@github.com/a/b"  # pragma: allowlist secret
+		build.append(
+			"build_steps",
+			{
+				"stage": "Clone",
+				"stage_slug": "clone",
+				"step": "b",
+				"step_slug": "b",
+				"status": "Failure",
+				"command": clone,
+				"output": f"Cloning into 'b'...\nfatal: unable to access {clone}",
+			},
+		)
+		build.build_steps[-1].db_insert()
+
+		step = client.get("Deploy Candidate Build", build.name).build_steps[-1]
+
+		self.assertEqual(step.get("command"), "git clone https://********@github.com/a/b")
+		self.assertNotIn("ghs_abc", step.get("output"))
+
 	def redeploy_and_capture_no_cache(self, no_cache):
 		"""Redeploy a failed build and return the no_cache the new build sends to the agent.
 

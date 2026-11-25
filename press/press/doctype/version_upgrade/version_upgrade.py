@@ -15,7 +15,7 @@ from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
 from press.press.doctype.site.site import TRANSITORY_STATES
-from press.utils import log_error
+from press.utils import docs, log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
@@ -102,10 +102,14 @@ class VersionUpgrade(Document):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
 		bench_apps = [app.app for app in frappe.get_doc("Release Group", self.destination_group).apps]
 		if diff := set(site_apps) - set(bench_apps):
-			frappe.throw(
-				f"Destination Group {self.destination_group} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
-				frappe.ValidationError,
-			)
+			message = f"Destination Group {self.destination_group} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}"
+			if frappe.db.get_value("Release Group", self.destination_group, "public"):
+				message += (
+					". The shared bench of the next version does not have these apps. "
+					"Move the site to a private bench group that has all of its apps, then upgrade from there. "
+					f"{docs.doc_link(docs.VERSION_UPGRADE)}."
+				)
+			frappe.throw(message, frappe.ValidationError)
 
 	def validate_versions(self):
 		source_version = frappe.get_value("Release Group", self.source_group, "version")

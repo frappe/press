@@ -26,6 +26,14 @@ export const index = computed(() => {
 				{ name: 'Developer', route: '/settings/developer', icon: LucideCode },
 
 				{
+					name: 'Close Account',
+					route: '/settings/profile?disable=1',
+					icon: LucideUserX,
+					keywords: ['cancel subscription', 'delete account', 'disable account'],
+					condition: team.doc?.user === session.user && team.doc?.enabled,
+				},
+
+				{
 					name: 'Roles',
 					route: '/settings/permissions/roles',
 					icon: LucideLock,

@@ -1,6 +1,8 @@
 # Copyright (c) 2026, Frappe and Contributors
 # See license.txt
 
+from unittest.mock import patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, getdate
@@ -34,6 +36,10 @@ class TestCloudUsageAnomaly(FrappeTestCase):
 		settings = frappe.get_single("Cloud Cost Settings")
 		settings.update({"enabled": 1, "minimum_daily_cost_impact": 5, "minimum_series_cost": 1})
 		settings.save()
+
+		raven = patch("press.press.doctype.cloud_usage_anomaly.cloud_usage_anomaly.send_raven_message")
+		self.send_raven_message = raven.start()
+		self.addCleanup(raven.stop)
 
 	def day(self, offset):
 		"""Offset 0 is the oldest day in the detection window, offset 29 the newest."""
@@ -237,13 +243,12 @@ class TestCloudUsageAnomaly(FrappeTestCase):
 		"""A usage type with no driver mapped is the case we understand least. Recording
 		it and staying quiet would make an unmapped series the safest place for a leak
 		to hide."""
-		before = frappe.db.count("Telegram Message")
 		self.seed_cost("AWS Key Management Service", "APS3-KMS-Requests", [400] * 20 + [700] * 10)
 
 		detect_anomalies()
 
 		self.assertEqual(frappe.get_last_doc("Cloud Usage Anomaly").verdict, "No Driver")
-		self.assertEqual(frappe.db.count("Telegram Message"), before + 1)
+		self.send_raven_message.assert_called_once()
 
 	def test_oci_is_matched_on_its_service_not_on_aws_usage_type_names(self):
 		self.seed_cost(

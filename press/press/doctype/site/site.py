@@ -65,6 +65,7 @@ from press.press.doctype.site.site_plan_utils import (
 	get_available_warranty_quota_for_server,
 	get_next_allowed_dedicated_product_warranty_change_date,
 )
+from press.press.doctype.team_change.pending_request import cancel_transfer_requests, transfer_action
 from press.press.doctype.team_change.team_change import request_transfer
 from press.saas.doctype.product_trial.product_trial import create_free_app_subscription
 from press.utils.jobs import has_job_timeout_exceeded
@@ -445,6 +446,7 @@ class Site(Document, TagHelpers):
 		doc.has_scheduled_updates = bool(
 			frappe.db.exists("Site Update", {"site": self.name, "status": "Scheduled"})
 		)
+		doc.scheduled_version_upgrade = self.get_scheduled_version_upgrade()
 		doc.update_information = self.get_update_information()
 		doc.fatal_update = (
 			frappe.db.get_value(
@@ -485,6 +487,7 @@ class Site(Document, TagHelpers):
 				get_next_allowed_dedicated_product_warranty_change_date(self.name)
 			)
 			doc.dedicated_server_warranty_limit = get_available_warranty_quota_for_server(self.server)
+			doc.dedicated_server_price_usd = self.get_dedicated_server_price()
 
 		doc.suspension_reason = (
 			frappe.db.get_value("Site Activity", {"site": self.name, "action": "Suspend Site"}, "reason")
@@ -887,6 +890,19 @@ class Site(Document, TagHelpers):
 			)
 		if len(self.logical_backup_times) > 1:
 			frappe.throw("We set up the backup times of your site. Write to support to change them.")
+
+	def get_scheduled_version_upgrade(self) -> dict | None:
+		"""The next scheduled Version Upgrade, so the dashboard can show it before it starts"""
+		upgrade = frappe.db.get_value(
+			"Version Upgrade",
+			{"site": self.name, "status": "Scheduled"},
+			["scheduled_time", "destination_group"],
+			as_dict=True,
+			order_by="scheduled_time asc",
+		)
+		if upgrade:
+			upgrade.version = frappe.db.get_value("Release Group", upgrade.destination_group, "version")
+		return upgrade
 
 	def plan_allows_backup_schedule(self) -> bool:
 		"""Entry-level plans stay on the default schedule.
@@ -2509,6 +2525,12 @@ class Site(Document, TagHelpers):
 		request_transfer(self, team_mail_id, reason, title=self.host_name or self.name)
 
 	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def cancel_change_team_request(self):
+		"""Withdraw the transfer request before the receiving team accepts it"""
+		cancel_transfer_requests(self)
+
+	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
@@ -3341,6 +3363,11 @@ class Site(Document, TagHelpers):
 
 		validate_plan(self.server, self.name, plan)
 		self.change_plan(plan)
+
+	def get_dedicated_server_price(self) -> float:
+		from press.api.site import get_dedicated_server_price
+
+		return get_dedicated_server_price(self.server)
 
 	@dashboard_whitelist()
 	@safe_for_readers
@@ -4237,12 +4264,15 @@ class Site(Document, TagHelpers):
 				"button_label": "Manage",
 				"doc_method": "dummy",
 			},
-			{
-				"action": "Transfer site",
-				"description": "Transfer ownership of this site to another team",
-				"button_label": "Transfer",
-				"doc_method": "send_change_team_request",
-			},
+			transfer_action(
+				self,
+				{
+					"action": "Transfer site",
+					"description": "Transfer ownership of this site to another team",
+					"button_label": "Transfer",
+					"doc_method": "send_change_team_request",
+				},
+			),
 			{
 				"action": "Version upgrade",
 				"description": "Upgrade your site to a major version",

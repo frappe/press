@@ -1,7 +1,10 @@
 # Copyright (c) 2022, Frappe and Contributors
 # See license.txt
 
+from __future__ import annotations
+
 import json
+from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
 import frappe
@@ -11,15 +14,114 @@ from frappe.utils import add_to_date, now_datetime
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 from press.press.doctype.press_job.jobs.create_server import CreateServerJob
 from press.press.doctype.press_job.jobs.increase_disk_size import IncreaseDiskSizeJob
+from press.press.doctype.press_job.jobs.trigger_build_server_cleanup import TriggerBuildServerCleanupJob
 from press.press.doctype.press_settings.test_press_settings import create_test_press_settings
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
+if TYPE_CHECKING:
+	from press.press.doctype.press_job.press_job import PressJob
+
 
 class TestPressJob(FrappeTestCase):
-	pass
+	def setUp(self):
+		self.server = create_test_server()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def create_job(self, job_type: str) -> PressJob:
+		job = frappe.get_doc(
+			{
+				"doctype": "Press Job",
+				"job_type": job_type,
+				"server_type": "Server",
+				"server": self.server.name,
+				"arguments": json.dumps({}),
+			}
+		)
+		job.db_insert()
+		job.reload()
+		return job
+
+	def create_workflow(self, job: PressJob, failed_step: str | None = None):
+		workflow = frappe.get_doc(
+			{
+				"doctype": "Press Workflow",
+				"linked_doctype": "Press Job",
+				"linked_docname": job.name,
+				"main_method_name": "execute",
+				"status": "Failure",
+			}
+		)
+		workflow.db_insert()
+
+		if failed_step:
+			task = frappe.get_doc(
+				{
+					"doctype": "Press Workflow Task",
+					"workflow": workflow.name,
+					"method_name": "a_step",
+					"method_title": failed_step,
+					"status": "Failure",
+				}
+			)
+			task.db_insert()
+
+		return workflow
+
+	def test_failed_resize_server_job_names_the_server_and_the_failed_step(self):
+		job = self.create_job("Resize Server")
+		workflow = self.create_workflow(job, failed_step="Stop Virtual Machine")
+
+		with patch("press.press.doctype.press_job.press_job.frappe.enqueue") as enqueue:
+			job.alert_failure(workflow)
+
+		message, channel = enqueue.call_args.kwargs["text"], enqueue.call_args.kwargs["channel"]
+		self.assertIn("Resize Server failed", message)
+		self.assertIn(self.server.name, message)
+		self.assertIn("Stop Virtual Machine", message)
+		self.assertEqual(channel, "frappe-cloud-server-alerts")
+
+	def test_failed_create_server_job_is_alerted(self):
+		job = self.create_job("Create Server")
+		workflow = self.create_workflow(job)
+
+		with patch("press.press.doctype.press_job.press_job.frappe.enqueue") as enqueue:
+			job.alert_failure(workflow)
+
+		enqueue.assert_called_once()
+		self.assertIn("Unknown", enqueue.call_args.kwargs["text"])
+
+	def test_failed_archive_server_job_is_alerted(self):
+		job = self.create_job("Archive Server")
+		workflow = self.create_workflow(job, failed_step="Archive Server")
+
+		with patch("press.press.doctype.press_job.press_job.frappe.enqueue") as enqueue:
+			job.alert_failure(workflow)
+
+		enqueue.assert_called_once()
+
+	def test_other_failed_jobs_are_not_alerted(self):
+		job = self.create_job("Increase Disk Size")
+		workflow = self.create_workflow(job, failed_step="Increase Disk Size")
+
+		with patch("press.press.doctype.press_job.press_job.frappe.enqueue") as enqueue:
+			job.alert_failure(workflow)
+
+		enqueue.assert_not_called()
+
+	def test_no_alert_when_the_setting_disables_them(self):
+		frappe.db.set_single_value("Press Settings", "disable_press_job_failure_alerts", 1)
+		job = self.create_job("Resize Server")
+		workflow = self.create_workflow(job, failed_step="Stop Virtual Machine")
+
+		with patch("press.press.doctype.press_job.press_job.frappe.enqueue") as enqueue:
+			job.alert_failure(workflow)
+
+		enqueue.assert_not_called()
 
 
 def make_increase_disk_size_job(resized: bool) -> IncreaseDiskSizeJob:
@@ -157,3 +259,47 @@ class TestCreateServerJobFailure(FrappeTestCase):
 
 		self.assertEqual(frappe.db.get_value("Server", self.server.name, "status"), "Active")
 		self.assertTrue(self.server.subscription.enabled)
+
+	@patch("press.press.doctype.database_server.database_server.Ansible")
+	def test_unified_server_job_stops_when_mariadb_upgrade_fails(self, mock_ansible: Mock):
+		# Going on would push 11.8-only variables to MariaDB 10.6, which then fails to start
+		mock_ansible.return_value.run.return_value = Mock(status="Failure")
+		self.server.db_set("is_unified_server", 1)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Failed to upgrade MariaDB on server"):
+			self.job.upgrade_mariadb()
+
+
+def make_build_cleanup_job(age_minutes: int) -> TriggerBuildServerCleanupJob:
+	return TriggerBuildServerCleanupJob(
+		{
+			"doctype": "Press Job",
+			"job_type": "Trigger Build Server Cleanup",
+			"server_type": "Server",
+			"server": "rb-test.frappe.cloud",
+			"creation": add_to_date(now_datetime(), minutes=-age_minutes),
+		}
+	)
+
+
+@patch.object(TriggerBuildServerCleanupJob, "defer_current_task")
+@patch(
+	"press.press.doctype.press_job.jobs.trigger_build_server_cleanup.get_active_build_count_by_build_server",
+	return_value={"rb-test.frappe.cloud": 2},
+)
+class TestTriggerBuildServerCleanupJob(FrappeTestCase):
+	def test_prune_waits_while_builds_run_on_the_server(self, _builds: Mock, mock_defer: Mock):
+		make_build_cleanup_job(age_minutes=5).wait_for_running_builds()
+
+		mock_defer.assert_called_once()
+
+	def test_prune_stops_waiting_for_builds_after_30_minutes(self, _builds: Mock, mock_defer: Mock):
+		make_build_cleanup_job(age_minutes=31).wait_for_running_builds()
+
+		mock_defer.assert_not_called()
+
+	def test_prune_does_not_wait_when_no_builds_run_on_the_server(self, mock_builds: Mock, mock_defer: Mock):
+		mock_builds.return_value = {"other.frappe.cloud": 3}
+		make_build_cleanup_job(age_minutes=5).wait_for_running_builds()
+
+		mock_defer.assert_not_called()

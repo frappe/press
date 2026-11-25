@@ -150,8 +150,7 @@ export default {
 				},
 			}
 		},
-		// a site update that skipped backups has nothing to recover from,
-		// so its migrate job can't be cancelled
+		// a site update that skipped backups can't roll back, so it gets a stronger warning
 		siteUpdate() {
 			return {
 				type: 'list',
@@ -203,10 +202,11 @@ export default {
 			if (!cancellableJobTypes.includes(this.job.job_type)) return false
 			if (this.job.job_type !== 'Update Site Migrate') return true
 
-			// wait for the site update, so the button doesn't flash for an
-			// update that turns out to have skipped its backups
-			const siteUpdate = this.$resources.siteUpdate.data?.[0]
-			return Boolean(siteUpdate) && !siteUpdate.skipped_backups
+			// wait for the site update, so the dialog shows the right warning
+			return Boolean(this.$resources.siteUpdate.data?.[0])
+		},
+		skippedBackups() {
+			return Boolean(this.$resources.siteUpdate.data?.[0]?.skipped_backups)
 		},
 		dropdownOptions() {
 			return [
@@ -254,6 +254,8 @@ export default {
 	},
 	methods: {
 		confirmCancel() {
+			if (this.skippedBackups) return this.confirmCancelWithoutBackup()
+
 			// a cancelled site update rolls itself back, so it isn't destructive
 			const isSiteUpdate = this.job.job_type === 'Update Site Migrate'
 			const message = isSiteUpdate
@@ -267,17 +269,43 @@ export default {
 					label: 'Cancel Job',
 					variant: 'solid',
 					theme: isSiteUpdate ? 'gray' : 'red',
-					onClick: ({ hide }) => {
-						toast.promise(this.$resources.cancelJob.submit(), {
-							loading: 'Cancelling job...',
-							success: () => {
-								hide()
-								return 'Job will be cancelled shortly'
-							},
-							error: (e) => getToastErrorMessage(e, 'Failed to cancel job'),
-						})
+					onClick: ({ hide }) => this.cancel(hide),
+				},
+			})
+		},
+		confirmCancelWithoutBackup() {
+			confirmDialog({
+				title: 'Cancel Update Without Backup',
+				message: `<b>This update did not take a backup, so the site can't roll back.</b><br><br>
+					If you cancel, the migration stops part of the way. The site stays on the new bench with a <b>partly migrated database</b>, and it is marked as <b>Broken</b>.<br><br>
+					To use the site again, you must restore it from a backup. Cancel only if you have a recent backup of this site.`,
+				fields: [
+					{
+						label: 'Please type the site name to confirm.',
+						fieldname: 'confirmSiteName',
+					},
+				],
+				primaryAction: {
+					label: 'Cancel Update',
+					variant: 'solid',
+					theme: 'red',
+					onClick: ({ hide, values }) => {
+						if (values.confirmSiteName !== this.job.site) {
+							throw new Error('Site name does not match')
+						}
+						this.cancel(hide)
 					},
 				},
+			})
+		},
+		cancel(hide) {
+			toast.promise(this.$resources.cancelJob.submit(), {
+				loading: 'Cancelling job...',
+				success: () => {
+					hide()
+					return 'Job will be cancelled shortly'
+				},
+				error: (e) => getToastErrorMessage(e, 'Failed to cancel job'),
 			})
 		},
 		reload() {

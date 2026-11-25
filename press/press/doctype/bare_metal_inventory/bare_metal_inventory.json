@@ -1,0 +1,178 @@
+{
+	"actions": [],
+	"autoname": "Prompt",
+	"creation": "2026-11-23 12:00:00.000000",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"network_section",
+		"public_ip_address",
+		"private_ip_address",
+		"column_break_network",
+		"bmc_ip_address",
+		"domain",
+		"credentials_section",
+		"root_user",
+		"root_password",
+		"column_break_credentials",
+		"bmc_user",
+		"bmc_password",
+		"default_credentials_section",
+		"default_user",
+		"default_password"
+	],
+	"fields": [
+		{
+			"fieldname": "network_section",
+			"fieldtype": "Section Break",
+			"label": "Network"
+		},
+		{
+			"fieldname": "public_ip_address",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Public IP Address",
+			"reqd": 1,
+			"unique": 1
+		},
+		{
+			"fieldname": "private_ip_address",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Private IP Address"
+		},
+		{
+			"fieldname": "column_break_network",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "bmc_ip_address",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "BMC IP Address"
+		},
+		{
+			"fieldname": "domain",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Domain"
+		},
+		{
+			"fieldname": "credentials_section",
+			"fieldtype": "Section Break",
+			"label": "Credentials"
+		},
+		{
+			"fieldname": "root_user",
+			"fieldtype": "Data",
+			"label": "Root User"
+		},
+		{
+			"fieldname": "root_password",
+			"fieldtype": "Password",
+			"label": "Root Password",
+			"permlevel": 1
+		},
+		{
+			"fieldname": "column_break_credentials",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "bmc_user",
+			"fieldtype": "Data",
+			"label": "BMC User"
+		},
+		{
+			"fieldname": "bmc_password",
+			"fieldtype": "Password",
+			"label": "BMC Password",
+			"permlevel": 1
+		},
+		{
+			"fieldname": "default_credentials_section",
+			"fieldtype": "Section Break",
+			"label": "Default Credentials"
+		},
+		{
+			"fieldname": "default_user",
+			"fieldtype": "Data",
+			"label": "Default User"
+		},
+		{
+			"fieldname": "default_password",
+			"fieldtype": "Password",
+			"label": "Default Password",
+			"permlevel": 1
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-11-24 15:30:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Bare Metal Inventory",
+	"naming_rule": "Set by user",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Infrastructure Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Infrastructure Reader"
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support Engineer"
+		},
+		{
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Support L1"
+		},
+		{
+			"permlevel": 1,
+			"read": 1,
+			"role": "System Manager",
+			"write": 1
+		},
+		{
+			"permlevel": 1,
+			"read": 1,
+			"role": "Press Infrastructure Manager",
+			"write": 1
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": []
+}

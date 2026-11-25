@@ -61,9 +61,19 @@ export default {
 		}
 	},
 	computed: {
+		isPaidByPartner() {
+			// Usage of these teams goes to the invoice of the billing team
+			return (
+				this.$team.doc.payment_mode === 'Paid By Partner' &&
+				Boolean(this.$team.doc.billing_team)
+			)
+		},
 		options() {
 			return {
 				doctype: 'Invoice',
+				emptyStateMessage: this.isPaidByPartner
+					? 'Your partner pays for this account, so your partner gets the invoices.'
+					: undefined,
 				fields: [
 					'type',
 					'invoice_pdf',
