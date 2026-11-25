@@ -30,6 +30,7 @@ class BackupTest:
 				status="Active",
 				public=True,
 				is_primary=True,
+				cluster=("not in", frappe.get_all("Cluster", dict(status="Archived"), pluck="name")),
 			),
 			pluck="name",
 		)
@@ -101,7 +102,16 @@ class BackupTest:
 			return True
 
 	def get_benches(self, server: str) -> list[str]:
-		benches = get_benches_in_server(server)
+		try:
+			benches = get_benches_in_server(server)
+		except Exception:
+			# One unreachable agent must not stop the whole quarterly test
+			frappe.log_error(
+				"Backup Restoration Test: could not list benches",
+				reference_doctype="Server",
+				reference_name=server,
+			)
+			return []
 
 		# select all benches from central benches
 		# TODO: provision to run for all release groups
