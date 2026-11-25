@@ -5246,6 +5246,13 @@ def update_backup_restoration_test_status(job, updated_status):
 		status_map[updated_status],
 	)
 	frappe.db.commit()
+	if status_map[updated_status] == "Failure":
+		from press.press.doctype.backup_restoration_test.backup_test import (
+			alert_backup_restoration_test_failure,
+		)
+
+		url = frappe.utils.get_url_to_form("Backup Restoration Test", backup_tests[0])
+		alert_backup_restoration_test_failure(f"Test site {job.site} is broken: {url}")
 
 
 def process_new_site_job_update(job):  # noqa: C901

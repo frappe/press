@@ -6,7 +6,7 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from press.press.doctype.backup_restoration_test.backup_test import BackupTest
+from press.press.doctype.backup_restoration_test.backup_test import BackupTest, run_backup_restore_test
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.server.test_server import create_test_server
 
@@ -31,3 +31,18 @@ class TestBackupRestorationTest(FrappeTestCase):
 		called = [call.args[0] for call in get_benches_in_server.call_args_list]
 		self.assertIn(live, called)
 		self.assertNotIn(archived, called)
+
+	@patch("press.press.doctype.backup_restoration_test.backup_test.send_raven_message")
+	def test_raven_alert_mentions_owner_when_no_test_is_created(self, send_raven_message):
+		create_test_server(public=True)
+
+		with patch(
+			"press.press.doctype.backup_restoration_test.backup_test.get_benches_in_server",
+			side_effect=Exception("502"),
+		):
+			run_backup_restore_test()
+
+		send_raven_message.assert_called_once()
+		message = send_raven_message.call_args.args[0]
+		self.assertIn("created 0 of 0 tests", message)
+		self.assertIn('data-id="shadrak@erpnext.com"', message)
