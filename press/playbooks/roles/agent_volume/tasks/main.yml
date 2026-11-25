@@ -38,10 +38,12 @@
         path: /home/frappe/agent.img
         mode: '0600'
 
+    # mkfs discards by punching holes in a file, which frees the blocks that fallocate reserved
     - name: Format Agent Volume Image
       filesystem:
         fstype: ext4
         dev: /home/frappe/agent.img
+        opts: -E nodiscard
 
     - name: Create Staging Mount Point
       file:
@@ -108,3 +110,37 @@
   supervisorctl:
     name: 'agent:'
     state: started
+
+# Holes in agent.img need free space on the root disk when they are written.
+# With a full root disk, those writes fail, and writes without fsync are lost silently.
+# fstrim.timer trims fstab mounts every week, and on a loop device a trim punches holes in agent.img.
+# Kernel 5.4 cannot turn discards off for a loop device, so fill the holes again after each trim.
+- name: Create fstrim Drop-In Directory
+  when: bench_volume.rc != 0
+  file:
+    path: /etc/systemd/system/fstrim.service.d
+    state: directory
+
+- name: Allocate Agent Volume Image After fstrim
+  when: bench_volume.rc != 0
+  copy:
+    dest: /etc/systemd/system/fstrim.service.d/agent-volume.conf
+    content: |
+      [Service]
+      # util-linux 2.34 (Ubuntu 20.04) hides /home from fstrim and makes it read-only
+      ProtectHome=no
+      ReadWritePaths=/home/frappe/agent.img
+      ExecStopPost=-/bin/sh -c 'fallocate -l `stat -c %%s /home/frappe/agent.img` /home/frappe/agent.img'
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Reload Systemd For fstrim Drop-In
+  when: bench_volume.rc != 0
+  systemd:
+    daemon_reload: true
+
+# Fills any holes that a trim already made
+- name: Allocate Holes In Agent Volume Image
+  when: bench_volume.rc != 0
+  shell: fallocate -l $(stat -c %s /home/frappe/agent.img) /home/frappe/agent.img
