@@ -6,6 +6,7 @@ import ipaddress
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import cstr
 
 from press.overrides import has_permission as has_press_permission
 from press.press.doctype.server.server import Server
@@ -174,14 +175,8 @@ class ServerFirewall(Document):
 			ips.append(proxy_ip)
 		if nat_ip := self.server.get_nat_gateway_ip():
 			ips.append(str(ipaddress.ip_network(nat_ip + "/24", strict=False)))
-		if self.production_ip:
-			ips.append(self.production_ip)
+		ips.extend(production_ips())
 		return ips
-
-	@property
-	def production_ip(self) -> str | None:
-		"""Return the production server IP from Press Settings."""
-		return frappe.db.get_single_value("Press Settings", "production_server_ip", cache=True)
 
 	@property
 	def server(self) -> Server:
@@ -192,6 +187,17 @@ class ServerFirewall(Document):
 def has_permission(doc, user=None, permission_type=None) -> bool:
 	"""Check if the user has permission to access this firewall's server."""
 	return has_press_permission(doc.server, permission_type, user)
+
+
+def production_ips() -> list[str]:
+	"""Return the IPs of the Press production host from Press Settings, one per line."""
+	return cstr(frappe.db.get_single_value("Press Settings", "production_server_ip", cache=True)).split()
+
+
+def sync_enabled_firewalls():
+	"""Sync each enabled firewall, so that its allow lists have the current production IPs."""
+	for name in frappe.get_all("Server Firewall", {"enabled": 1}, pluck="name"):
+		frappe.get_doc("Server Firewall", name).sync()
 
 
 def from_server(doc, method=None) -> ServerFirewall | None:

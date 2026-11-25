@@ -1791,9 +1791,10 @@
 			"label": "General"
 		},
 		{
+			"description": "Public IPs or networks of the Press production host, one per line. Server firewalls always allow them. During a move to a new host, list the old and the new IP.",
 			"fieldname": "production_server_ip",
-			"fieldtype": "Data",
-			"label": "Production Server IP"
+			"fieldtype": "Small Text",
+			"label": "Production Server IPs"
 		},
 		{
 			"default": "30",
@@ -1951,7 +1952,7 @@
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-10-23 13:05:58.242982",
+	"modified": "2026-11-24 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",
