@@ -677,6 +677,69 @@ insights 0.8.3	    HEAD
 
 	@patch.object(RemoteFile, "exists", new=Mock(return_value=True))
 	@patch.object(RemoteFile, "download_link", new="http://test.com")
+	def test_restore_of_deactivated_site_turns_off_maintenance_mode_and_activates_it_on_proxy(self):
+		from press.api.site import restore
+
+		bench = create_test_bench(group=create_test_release_group([create_test_app()]))
+		frappe.set_user(self.team.user)
+		site = create_test_site(bench=bench.name)
+		database = create_test_remote_file(site.name).name
+		with fake_agent_job(
+			{
+				"Update Site Configuration": {"status": "Success"},
+				"Update Site Status": {"status": "Success"},
+				"Restore Site": {"status": "Success", "data": frappe._dict(output="frappe 15.0.0-dev HEAD")},
+			}
+		):
+			site.deactivate()
+			site.save()
+			restore(site.name, {"database": database})
+			poll_pending_jobs()
+
+		site.reload()
+		self.assertEqual(site.status, "Active")
+		self.assertEqual(site.get_config_value_for_key("maintenance_mode"), 0)
+		proxy_statuses = frappe.get_all(
+			"Agent Job",
+			{"job_type": "Update Site Status", "site": site.name},
+			pluck="request_data",
+			order_by="creation asc",
+		)
+		self.assertEqual(
+			[json.loads(data)["status"] for data in proxy_statuses], ["deactivated", "activated"]
+		)
+
+	@patch.object(RemoteFile, "exists", new=Mock(return_value=True))
+	@patch.object(RemoteFile, "download_link", new="http://test.com")
+	def test_restore_of_suspended_site_by_support_keeps_it_suspended_on_proxy(self):
+		from press.api.site import restore
+
+		bench = create_test_bench(group=create_test_release_group([create_test_app()]))
+		site = create_test_site(bench=bench.name)
+		database = create_test_remote_file(site.name).name
+		with fake_agent_job(
+			{
+				"Update Site Configuration": {"status": "Success"},
+				"Update Site Status": {"status": "Success"},
+				"Restore Site": {"status": "Success", "data": frappe._dict(output="frappe 15.0.0-dev HEAD")},
+			}
+		):
+			site.suspend()
+			site.save()
+			restore(site.name, {"database": database})
+			poll_pending_jobs()
+
+		site.reload()
+		self.assertEqual(site.get_config_value_for_key("maintenance_mode"), 1)
+		proxy_statuses = frappe.get_all(
+			"Agent Job",
+			{"job_type": "Update Site Status", "site": site.name},
+			pluck="request_data",
+		)
+		self.assertEqual([json.loads(data)["status"] for data in proxy_statuses], ["suspended"])
+
+	@patch.object(RemoteFile, "exists", new=Mock(return_value=True))
+	@patch.object(RemoteFile, "download_link", new="http://test.com")
 	@patch("press.press.doctype.site.site.marketplace_app_hook")
 	def test_restore_job_runs_marketplace_hooks_for_apps_found_in_backup(
 		self, mock_marketplace_app_hook: Mock
