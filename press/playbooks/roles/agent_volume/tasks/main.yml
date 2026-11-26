@@ -129,10 +129,8 @@
     dest: /etc/systemd/system/fstrim.service.d/agent-volume.conf
     content: |
       [Service]
-      # util-linux 2.34 (Ubuntu 20.04) hides /home from fstrim and makes it read-only
-      ProtectHome=no
-      ReadWritePaths=/home/frappe/agent.img
-      ExecStopPost=-/bin/sh -c 'fallocate -l `stat -c %%s /home/frappe/agent.img` /home/frappe/agent.img'
+      # + runs this outside the sandbox, which hides /home on Ubuntu 20.04
+      ExecStopPost=-+/bin/sh -c 'fallocate -l `stat -c %%s /home/frappe/agent.img` /home/frappe/agent.img'
     owner: root
     group: root
     mode: 0644
