@@ -23,7 +23,7 @@ _JOBS_REGISTRY: dict[str, type] = {}
 
 # These failures require human intervention, so notify the server alerts
 # channel when they occur.
-ALERTED_JOB_TYPES = ("Create Server", "Archive Server", "Resize Server")
+ALERTED_JOB_TYPES = ("Create Server", "Archive Server", "Resize Server", "Setup Agent Volume")
 
 
 def _init_jobs_registry() -> None:

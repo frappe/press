@@ -106,6 +106,16 @@ class TestPressJob(FrappeTestCase):
 
 		enqueue.assert_called_once()
 
+	def test_failed_setup_agent_volume_job_is_alerted(self):
+		job = self.create_job("Setup Agent Volume")
+		workflow = self.create_workflow(job, failed_step="Setup Agent Volume")
+
+		with patch("press.press.doctype.press_job.press_job.frappe.enqueue") as enqueue:
+			job.alert_failure(workflow)
+
+		enqueue.assert_called_once()
+		self.assertIn("Setup Agent Volume failed", enqueue.call_args.kwargs["text"])
+
 	def test_other_failed_jobs_are_not_alerted(self):
 		job = self.create_job("Increase Disk Size")
 		workflow = self.create_workflow(job, failed_step="Increase Disk Size")
