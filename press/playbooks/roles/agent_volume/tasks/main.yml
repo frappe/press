@@ -38,12 +38,13 @@
         path: /home/frappe/agent.img
         mode: '0600'
 
-    # mkfs discards by punching holes in a file, which frees the blocks that fallocate reserved
+    # mkfs discards by punching holes in a file, which frees the blocks that fallocate reserved.
+    # Lazy init zeroes the inode tables after the first mount, and the loop device punches holes for those zeroes.
     - name: Format Agent Volume Image
       filesystem:
         fstype: ext4
         dev: /home/frappe/agent.img
-        opts: -E nodiscard
+        opts: -E nodiscard,lazy_itable_init=0,lazy_journal_init=0
 
     - name: Create Staging Mount Point
       file:
