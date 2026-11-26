@@ -6,6 +6,17 @@
   changed_when: false
   failed_when: false
 
+# A run that failed after the move left the agent in agent.old. Put it back, so a retry starts over.
+# mv -T replaces only an empty directory, such as a mount point that the mount task made.
+- name: Restore Agent Directory After A Failed Move
+  when: bench_volume.rc != 0
+  shell: |
+    if [ -d /home/frappe/agent.old ] && ! mountpoint -q /home/frappe/agent; then
+      mv -T /home/frappe/agent.old /home/frappe/agent && echo restored
+    fi
+  register: agent_restore
+  changed_when: "'restored' in agent_restore.stdout"
+
 - name: Check For Agent Volume
   command: mountpoint -q /home/frappe/agent
   register: agent_volume
@@ -78,36 +89,48 @@
         opts: loop,nofail,noinit_itable
         state: mounted
 
-    - name: Create Drop-In Directories
-      file:
-        path: /etc/systemd/system/{{ item }}.service.d
-        state: directory
-      loop: [supervisor, nginx]
+# The tasks below are outside the block, so a retry after a failed run finishes them.
+# BindsTo stops supervisor and nginx when the mount is missing, so they run only on a mounted agent volume.
+- name: Check For Mounted Agent Volume
+  command: mountpoint -q /home/frappe/agent
+  register: agent_volume_mounted
+  changed_when: false
+  failed_when: false
 
-    - name: Set Supervisor and NGINX to depend on Agent Volume
-      template:
-        src: mounts.conf
-        dest: /etc/systemd/system/{{ item }}.service.d/mounts.conf
-        owner: root
-        group: root
-        mode: 0644
-      loop: [supervisor, nginx]
+- name: Create Drop-In Directories
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
+  file:
+    path: /etc/systemd/system/{{ item }}.service.d
+    state: directory
+  loop: [supervisor, nginx]
 
-    - name: Reload Systemd
-      systemd:
-        daemon_reload: true
+- name: Set Supervisor and NGINX to depend on Agent Volume
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
+  template:
+    src: mounts.conf
+    dest: /etc/systemd/system/{{ item }}.service.d/mounts.conf
+    owner: root
+    group: root
+    mode: 0644
+  loop: [supervisor, nginx]
 
-    - name: Remove Old Agent Directory
-      file:
-        path: /home/frappe/agent.old
-        state: absent
+- name: Reload Systemd
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
+  systemd:
+    daemon_reload: true
 
-    - name: Reload NGINX
-      service:
-        name: nginx
-        state: reloaded
+- name: Remove Old Agent Directory
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
+  file:
+    path: /home/frappe/agent.old
+    state: absent
 
-# Outside the block, so a retry after a failed run starts the agent again
+- name: Reload NGINX
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
+  service:
+    name: nginx
+    state: reloaded
+
 - name: Start Agent
   supervisorctl:
     name: 'agent:'
@@ -118,13 +141,13 @@
 # fstrim.timer trims fstab mounts every week, and on a loop device a trim punches holes in agent.img.
 # Kernel 5.4 cannot turn discards off for a loop device, so fill the holes again after each trim.
 - name: Create fstrim Drop-In Directory
-  when: bench_volume.rc != 0
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
   file:
     path: /etc/systemd/system/fstrim.service.d
     state: directory
 
 - name: Allocate Agent Volume Image After fstrim
-  when: bench_volume.rc != 0
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
   copy:
     dest: /etc/systemd/system/fstrim.service.d/agent-volume.conf
     content: |
@@ -136,11 +159,11 @@
     mode: 0644
 
 - name: Reload Systemd For fstrim Drop-In
-  when: bench_volume.rc != 0
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
   systemd:
     daemon_reload: true
 
 # Fills any holes that a trim already made
 - name: Allocate Holes In Agent Volume Image
-  when: bench_volume.rc != 0
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
   shell: fallocate -l $(stat -c %s /home/frappe/agent.img) /home/frappe/agent.img
