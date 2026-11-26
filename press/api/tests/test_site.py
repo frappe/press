@@ -683,7 +683,7 @@ insights 0.8.3	    HEAD
 
 		bench = create_test_bench(group=create_test_release_group([create_test_app()]))
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=bench.name)
+		site = create_test_site(bench=bench.name, subscription_plan=self.plan)
 		database = create_test_remote_file(site.name).name
 		with fake_agent_job(
 			{
