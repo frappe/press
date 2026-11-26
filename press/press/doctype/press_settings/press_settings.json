@@ -210,6 +210,7 @@
 		"column_break_pqic",
 		"raven_secret_access_key",
 		"raven_incidents_channel",
+		"disable_press_job_failure_alerts",
 		"marketplace_tab",
 		"marketplace_settings_section",
 		"max_allowed_screenshots",
@@ -1797,9 +1798,10 @@
 			"label": "General"
 		},
 		{
+			"description": "Public IPs or networks of the Press production host, one per line. Server firewalls always allow them. During a move to a new host, list the old and the new IP.",
 			"fieldname": "production_server_ip",
-			"fieldtype": "Data",
-			"label": "Production Server IP"
+			"fieldtype": "Small Text",
+			"label": "Production Server IPs"
 		},
 		{
 			"default": "30",
@@ -1946,11 +1948,18 @@
 			"fieldname": "raven_incidents_channel",
 			"fieldtype": "Data",
 			"label": "Raven Incidents Channel"
+		},
+		{
+			"default": "0",
+			"description": "Stop posting to the server alerts channel when a Create Server, Archive Server or Resize Server job fails",
+			"fieldname": "disable_press_job_failure_alerts",
+			"fieldtype": "Check",
+			"label": "Disable Press Job Failure Alerts"
 		}
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-10-30 12:00:00.000000",
+	"modified": "2026-11-24 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",

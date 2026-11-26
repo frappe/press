@@ -170,6 +170,11 @@
 					</ul>
 					You can log in later to enable your account. Do you want to continue?
 				</div>
+				<DisableAccountChecklist
+					:unpaid-invoices="unpaidInvoices || []"
+					:draft-invoice="draftInvoice"
+					@navigate="showDisableAccountDialog = false"
+				/>
 				<FormControl
 					v-if="user.is_2fa_enabled"
 					class="mt-4"
@@ -237,6 +242,7 @@ import { confirmDialog, renderDialog } from '../../../utils/components'
 import { openInvoicePaymentPage } from '../../../utils/invoice'
 import AddPrepaidCreditsDialog from '../../billing/AddPrepaidCreditsDialog.vue'
 import CommunicationInfoDialog from '../../CommunicationInfoDialog.vue'
+import DisableAccountChecklist from './DisableAccountChecklist.vue'
 import TFADialog from './TFADialog.vue'
 import TFARecoveryCodesDialog from './TFARecoveryCodesDialog.vue'
 
@@ -247,6 +253,7 @@ export default {
 		TFARecoveryCodesDialog,
 		FileUploader,
 		AddPrepaidCreditsDialog,
+		DisableAccountChecklist,
 		Switch,
 	},
 	data() {
@@ -263,6 +270,12 @@ export default {
 			showMessage: false,
 			draftInvoice: {},
 			unpaidInvoices: [] | {},
+		}
+	},
+	mounted() {
+		// Billing and search open this dialog with ?disable=1
+		if (this.$route.query.disable && this.teamEnabled) {
+			this.showDisableAccountDialog = true
 		}
 	},
 	computed: {
@@ -379,8 +392,10 @@ export default {
 				const finalizeInvoicesDialog = defineAsyncComponent(
 					() => import('../../billing/FinalizeInvoicesDialog.vue'),
 				)
+				this.showDisableAccountDialog = false
 				renderDialog(h(finalizeInvoicesDialog))
-			} else if (this.unpaidInvoices) {
+				return
+			} else if (this.unpaidInvoices?.length) {
 				if (this.unpaidInvoices.length > 1) {
 					this.showDisableAccountDialog = false
 					if (this.$team.doc.payment_mode === 'Prepaid Credits') {
@@ -400,8 +415,9 @@ export default {
 							},
 						})
 					}
+					return
 				} else {
-					let invoice = this.unpaidInvoices
+					let invoice = this.unpaidInvoices[0]
 					if (invoice.amount_due > minAmount) {
 						this.showDisableAccountDialog = false
 						confirmDialog({
@@ -427,6 +443,7 @@ export default {
 								},
 							},
 						})
+						return
 					}
 				}
 			}

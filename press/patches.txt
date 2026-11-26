@@ -82,7 +82,6 @@ press.press.doctype.team.patches.set_payment_mode
 press.patches.v0_0_1.add_team_name_as_default_notify_email
 press.press.doctype.team.patches.set_referrer_id
 press.press.doctype.team.patches.set_partner_email
-press.press.doctype.proxy_server.patches.generate_proxysql_monitor_password
 press.press.doctype.virtual_machine.patches.populate_volumes_table
 press.press.doctype.release_group.patches.set_bench_dependency_in_release_group
 press.press.doctype.press_settings.patches.move_stripe_credentials_to_press_settings
@@ -180,5 +179,6 @@ press.patches.v0_8_0.fix_dashboard_banner_help_urls
 press.patches.v0_8_0.set_cluster_backup_bucket
 press.patches.v0_8_0.remove_custom_docperms_of_press_doctypes
 press.patches.v0_8_0.set_missing_cluster_backup_buckets
+press.patches.v0_8_0.set_cluster_mariadb_monitor_password
 # run by hand after deploy, with the execute command
 # press.patches.v0_8_0.bump_v16_nightly_node_version_to_24_22_1

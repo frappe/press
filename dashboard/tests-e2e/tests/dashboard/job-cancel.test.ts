@@ -119,12 +119,33 @@ test('explains the rollback without a red button when cancelling a site update',
 	await expect(confirmButton(page)).not.toHaveClass(RED_BUTTON)
 })
 
-test('does not offer cancel for a site update that skipped backups', async ({
+test('asks for the site name before cancelling a site update that skipped backups', async ({
 	page,
 }) => {
 	await mockJobPage(page, 'Update Site Migrate', 'Running', true)
 
-	await expect(cancelButton(page)).toHaveCount(0)
+	let cancelled = false
+	await page.route(
+		/\/api\/method\/press\.press\.doctype\.agent_job\.agent_job\.cancel_job_from_dashboard/,
+		async (route) => {
+			cancelled = true
+			await fulfill(route, {})
+		},
+	)
+
+	await cancelButton(page).click()
+	const dialog = page.getByRole('dialog')
+	const confirm = dialog.getByRole('button', { name: 'Cancel Update' })
+	await expect(confirm).toHaveClass(RED_BUTTON)
+
+	await dialog.getByRole('textbox').fill('wrong.fc.frappe.dev')
+	await confirm.click()
+	await expect(dialog.getByText('Site name does not match')).toBeVisible()
+	expect(cancelled).toBe(false)
+
+	await dialog.getByRole('textbox').fill(SITE_NAME)
+	await confirm.click()
+	await expect.poll(() => cancelled).toBe(true)
 })
 
 test('does not offer cancel for a finished restore job', async ({ page }) => {

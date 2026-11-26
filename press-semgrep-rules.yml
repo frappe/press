@@ -137,6 +137,74 @@ rules:
         - https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_loops.html#retrying-a-task-until-a-condition-is-met
         - https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-community-changelogs
 
+  - id: apt-without-retries
+    languages:
+      - yaml
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: |
+                  name: $NAME
+                  ...
+                  $MODULE: $ARGS
+              - metavariable-regex:
+                  metavariable: $MODULE
+                  regex: ^(ansible\.builtin\.)?(apt|package|dpkg_selections)$
+          - patterns:
+              - pattern: |
+                  name: $NAME
+                  ...
+                  $MODULE: $ARGS
+              - metavariable-regex:
+                  metavariable: $MODULE
+                  regex: ^(ansible\.builtin\.)?apt_repository$
+              - pattern-not: |
+                  name: $NAME
+                  ...
+                  $MODULE:
+                    ...
+                    update_cache: no
+                    ...
+              - pattern-not: |
+                  name: $NAME
+                  ...
+                  $MODULE:
+                    ...
+                    update_cache: false
+                    ...
+          - patterns:
+              - pattern: |
+                  name: $NAME
+                  ...
+                  $MODULE: $ARGS
+              - metavariable-regex:
+                  metavariable: $MODULE
+                  regex: ^(ansible\.builtin\.)?(command|shell)$
+              - metavariable-regex:
+                  metavariable: $ARGS
+                  regex: ^(apt-mark|apt-get|apt install|dpkg -i)
+      - pattern-not-inside: |
+          retries: $RETRIES
+          ...
+      # A task that tolerates failure does not need to wait out the lock.
+      - pattern-not-inside: |
+          ignore_errors: $IGNORE
+          ...
+      - pattern-not-inside: |
+          failed_when: $FAILED
+          ...
+      - focus-metavariable: $MODULE
+
+    paths:
+      include:
+        - 'press/playbooks/**/*.yml'
+    message: apt task has no retries. Unattended upgrades can hold the dpkg lock and fail it. Add register, until, retries and delay.
+    severity: ERROR
+    metadata:
+      category: correctness
+      references:
+        - https://github.com/frappe/press/commit/28aad3d13005614465625cd86900028dd9a56abd
+
   - id: frappe-exceptions-in-press-job-type
     languages:
       - generic

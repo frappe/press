@@ -47,7 +47,6 @@ from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import
 )
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
-from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils.test import foreground_enqueue_doc
 
 if typing.TYPE_CHECKING:
@@ -736,9 +735,8 @@ class TestIncident(FrappeTestCase):
 
 		self.assertEqual(len(humans), 2)  # fallback to all default users
 
-	@patch.object(TelegramMessage, "enqueue")
-	def test_telegram_message_is_sent_when_unable_to_reach_twilio(self, mock_telegram_send):
-		print(mock_telegram_send)
+	@patch("press.press.doctype.incident.incident.send_raven_message")
+	def test_raven_message_is_sent_when_unable_to_reach_twilio(self, mock_send_raven_message):
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
 		with (
@@ -746,7 +744,7 @@ class TestIncident(FrappeTestCase):
 			suppress(TwilioRestException),
 		):
 			incident.call_humans()
-		mock_telegram_send.assert_called_once()
+		mock_send_raven_message.assert_called_once()
 
 	@patch(
 		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",

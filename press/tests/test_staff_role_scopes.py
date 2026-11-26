@@ -93,6 +93,7 @@ SECRET_FIELDS = {
 
 # Secrets that SREs need, and support does not
 INFRASTRUCTURE_SECRET_FIELDS = {
+	"Bare Metal Inventory": ["root_password", "bmc_password", "default_password"],
 	"Cluster": ["frappe_compute_api_key"],
 	"Monitor Server": ["webhook_token"],
 	"Storage Integration Subscription": ["secret_key"],

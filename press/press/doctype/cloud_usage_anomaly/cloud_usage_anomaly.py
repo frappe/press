@@ -21,7 +21,8 @@ from press.press.doctype.cloud_usage_driver.cloud_usage_driver import (
 	DRIVER_SNAPSHOT_SIZE,
 	DRIVER_VOLUME_SIZE,
 )
-from press.press.doctype.telegram_message.telegram_message import TelegramMessage
+from press.press.doctype.server.server_monitoring import RAVEN_SERVER_ALERTS_CHANNEL
+from press.utils.raven import send_raven_message
 
 DAYS_PER_MONTH = 30
 
@@ -391,11 +392,7 @@ def notify(anomaly):
 	if anomaly.verdict == "Organic":
 		return
 
-	TelegramMessage.enqueue(
-		message=f"*Unexplained cloud usage*\n\n{anomaly.summary}",
-		topic="Cloud Cost",
-		priority="Medium",
-	)
+	send_raven_message(f"**Unexplained cloud usage**\n\n{anomaly.summary}", RAVEN_SERVER_ALERTS_CHANNEL)
 
 
 def is_dismissed(anomaly):

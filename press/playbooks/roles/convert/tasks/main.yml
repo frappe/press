@@ -13,7 +13,7 @@
     group: root
     mode: 0644
 
-- name: Get All Users 
+- name: Get All Users
   mysql_query:
     login_user: root
     login_password: "{{ mariadb_root_password }}"
@@ -75,12 +75,5 @@
     append: true
 
 - name: Create Monitor User
-  mysql_user:
-    login_user: root
-    login_password: "{{ mariadb_root_password }}"
-    check_implicit_admin: yes
-    name: monitor
-    host: "%"
-    priv: "sys.*:SELECT"
-    password: "monitor"
-    state: present
+  include_role:
+    name: mariadb_monitor_user

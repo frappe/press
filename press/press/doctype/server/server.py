@@ -37,6 +37,7 @@ from press.exceptions import OngoingAgentJob, VolumeResizeLimitError
 from press.guards import role_guard, team_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.add_on_storage_log.add_on_storage_log import (
+	disk_space_actions,
 	insert_addon_storage_log,
 )
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
@@ -52,6 +53,7 @@ from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server_monitoring import RAVEN_SERVER_ALERTS_CHANNEL
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
+from press.press.doctype.team_change.pending_request import cancel_transfer_requests, transfer_action
 from press.press.doctype.team_change.team_change import request_transfer
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
@@ -310,10 +312,10 @@ class BaseServer(Document, TagHelpers):
 		current_disk_usage: int | None = None,
 	) -> None:
 		add_on_storage_log = None
-		storage_parameters = {
+		storage_parameters: dict[str, typing.Any] = {
 			"doctype": "Add On Storage Log",
 			"adding_storage": increment,
-			is_auto_triggered: is_auto_triggered,
+			"is_auto_triggered": is_auto_triggered,
 		}
 
 		if not isinstance(server, str):
@@ -660,7 +662,18 @@ class BaseServer(Document, TagHelpers):
 			log_error("Route 53 Record Creation Error", domain=domain.name, server=self.name)
 
 	def add_to_public_groups(self):
-		groups = frappe.get_all("Release Group", {"public": True, "enabled": True}, "name")
+		groups_table = frappe.qb.DocType("Release Group")
+		versions_table = frappe.qb.DocType("Frappe Version")
+		groups = (
+			frappe.qb.from_(groups_table)
+			.join(versions_table)
+			.on(groups_table.version == versions_table.name)
+			.select(groups_table.name)
+			.where(groups_table.public == 1)
+			.where(groups_table.enabled == 1)
+			.where(versions_table.status != "End of Life")  # signup hides these versions
+			.run(pluck=True)
+		)
 		for group_name in groups:
 			group: ReleaseGroup = frappe.get_doc("Release Group", group_name)
 			with suppress(frappe.ValidationError):
@@ -860,6 +873,7 @@ class BaseServer(Document, TagHelpers):
 					"server_id": database_server.server_id,
 					"allocator": database_server.memory_allocator.lower(),
 					"mariadb_root_password": database_server_config.mariadb_root_password,
+					"mariadb_monitor_password": database_server_config.mariadb_monitor_password,
 					"mariadb_depends_on_mounts": database_server_config.mariadb_depends_on_mounts,
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
 					**self.get_mount_variables(),  # Currently same as database server since no volumes
@@ -918,7 +932,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def install_filebeat(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_install_filebeat", queue="long", timeout=1200)
+		frappe.enqueue_doc(self.doctype, self.name, "_install_filebeat", queue="long", timeout=3600)
 
 	def _install_filebeat(self):
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
@@ -962,7 +976,7 @@ class BaseServer(Document, TagHelpers):
 			wazuh_server=frappe.db.get_single_value("Press Settings", "wazuh_server"),
 			wazuh_agent_version=frappe.db.get_single_value("Press Settings", "wazuh_agent_version"),
 			queue="long",
-			timeout=1200,
+			timeout=3600,
 			# The hourly reconcile must not queue a second play while one is still running
 			job_id=f"wazuh_install:{self.doctype}:{self.name}",
 			deduplicate=True,
@@ -2076,15 +2090,14 @@ class BaseServer(Document, TagHelpers):
 		console.save(ignore_permissions=True)
 		console.reload()
 		console.run_sysrq()
-		# TODO: Enable after a manual trial with the button on Server
-		# frappe.enqueue_doc(
-		# self.doctype,
-		# self.name,
-		# "restore_truncated_configs",
-		# wait_for_reboot=True,
-		# queue="long",
-		# timeout=1200,
-		# )
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"restore_truncated_configs",
+			wait_for_reboot=True,
+			queue="long",
+			timeout=1200,
+		)
 
 	@dashboard_whitelist()
 	def reboot(self):
@@ -2098,15 +2111,14 @@ class BaseServer(Document, TagHelpers):
 			raise NotImplementedError
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.reboot()
-		# TODO: Enable after a manual trial with the button on Server
-		# frappe.enqueue_doc(
-		# self.doctype,
-		# self.name,
-		# "restore_truncated_configs",
-		# wait_for_reboot=True,
-		# queue="long",
-		# timeout=1200,
-		# )
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"restore_truncated_configs",
+			wait_for_reboot=True,
+			queue="long",
+			timeout=1200,
+		)
 
 	@dashboard_whitelist()
 	def rename(self, title):
@@ -2683,6 +2695,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				"available_disk_space": f"{disk_capacity_flt} GiB",
 				"used_storage_percentage": "80%",
 				"increase_by": f"{recommended_increase} GiB",
+				"actions": disk_space_actions(server),
 			},
 		)
 
@@ -3535,18 +3548,22 @@ class Server(BaseServer):
 			},
 			*server_actions,
 		]
-		if self.status == "Active" and not self.is_self_hosted:
-			actions.append(
-				{
-					"action": "Transfer server",
-					"description": "Transfer ownership of this server to another team",
-					"button_label": "Transfer",
-					"doc_method": "send_change_team_request",
-					"group": group,
-					"server_doctype": "Server",
-					"server_name": self.name,
-				}
-			)
+		transfer = transfer_action(
+			self,
+			{
+				"action": "Transfer server",
+				"description": "Transfer ownership of this server to another team",
+				"button_label": "Transfer",
+				"doc_method": "send_change_team_request",
+				"group": group,
+				"server_doctype": "Server",
+				"server_name": self.name,
+			},
+		)
+		# A pending request can always be cancelled, even once the server can't be transferred
+		is_cancel_row = transfer["doc_method"] == "cancel_change_team_request"
+		if is_cancel_row or (self.status == "Active" and not self.is_self_hosted):
+			actions.append(transfer)
 		return actions
 
 	@dashboard_whitelist()
@@ -3554,6 +3571,12 @@ class Server(BaseServer):
 	def send_change_team_request(self, team_mail_id: str, reason: str | None = None):
 		"""Send email to team to accept server transfer request"""
 		request_transfer(self, team_mail_id, reason, title=self.title or self.name)
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def cancel_change_team_request(self):
+		"""Withdraw the transfer request before the receiving team accepts it"""
+		cancel_transfer_requests(self)
 
 	def update_subscription(self):
 		subscription = self.subscription
@@ -3734,7 +3757,7 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def setup_ncdu(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu")
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu", queue="long", timeout=3600)
 
 	@frappe.whitelist()
 	def setup_rclone(self):
@@ -3743,7 +3766,7 @@ class Server(BaseServer):
 	@frappe.whitelist()
 	def install_nfs_common(self):
 		"""Install nfs common on this server"""
-		frappe.enqueue_doc(self.doctype, self.name, "_install_nfs_common")
+		frappe.enqueue_doc(self.doctype, self.name, "_install_nfs_common", queue="long", timeout=3600)
 
 	def _install_nfs_common(self):
 		try:
@@ -4408,6 +4431,8 @@ class Server(BaseServer):
 			self.doctype,
 			self.name,
 			"_install_earlyoom",
+			queue="long",
+			timeout=3600,
 		)
 
 	def _install_earlyoom(self):

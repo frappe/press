@@ -15,6 +15,13 @@
 			storage by <strong>{{ increase_by }}</strong><br />
 			<br />
 
+			{% if actions %}
+			<strong>Free disk space or change storage</strong><br />
+			{% for action in actions %}
+			<a href="{{ action.url }}" target="_blank">{{ action.label }}</a><br />
+			{% endfor %}
+			<br />
+			{% endif %}
 			To enable auto disk expansion please refer the following
 			<a href="https://docs.frappe.io/cloud/storage-addons" target="_blank"
 				><b>documentation</b></a
