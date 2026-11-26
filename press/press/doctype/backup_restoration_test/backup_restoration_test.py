@@ -63,9 +63,12 @@ class BackupRestorationTest(Document):
 
 	def create_brt_site(self) -> None:
 		site_dict = prepare_site(str(self.site))
-		server = frappe.get_value("Site", self.site, "server")
+		# No server: Site.set_bench_for_server only allows the server's own team,
+		# and this job runs as Administrator. Any bench of the group in the same
+		# cluster restores the backup just as well.
+		site_dict["cluster"] = frappe.get_value("Site", self.site, "cluster")
 		try:
-			site_job = _new(site_dict, server, True)
+			site_job = _new(site_dict, ignore_plan_validation=True)
 			self.test_site = site_job.get("site")
 			self.status = "Running"
 			self.save()
