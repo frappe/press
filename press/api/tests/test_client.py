@@ -16,6 +16,7 @@ from press.api.client import (
 	check_document_write_access,
 	get,
 	get_list,
+	insert,
 	set_value,
 	values_being_set,
 	writable_values,
@@ -427,6 +428,42 @@ class TestSetValue(FrappeTestCase):
 			set_value("Subscription", subscription.name, {"enabled": 0})
 
 		self.assertEqual(frappe.db.get_value("Subscription", subscription.name, "enabled"), 1)
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+@patch("press.press.doctype.site.site._change_dns_record", new=Mock())
+class TestInsertSite(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_press_admin_team()
+		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
+		self.team.payment_mode = "Prepaid Credits"
+		self.team.save()
+		self.bench = create_test_bench(user=self.team.user)
+		self.domain = frappe.db.get_single_value("Press Settings", "domain")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def site_payload(self, subdomain: str, **extra) -> dict:
+		"""What the bench list's Add Site dialog sends."""
+		return {
+			"doctype": "Site",
+			"subdomain": subdomain,
+			"apps": [{"app": "frappe"}],
+			"cluster": self.bench.cluster,
+			"group": self.bench.group,
+			"domain": self.domain,
+			**extra,
+		}
+
+	def test_insert_refuses_a_site_without_a_plan_so_it_cannot_go_unbilled(self):
+		sign_in_as(self.team)
+		with self.assertRaisesRegex(frappe.ValidationError, "Please select a plan for the site"):
+			insert(self.site_payload("no-plan-site"))
+
+		self.assertFalse(frappe.db.exists("Site", {"subdomain": "no-plan-site"}))
 
 
 class TestSupportAgentTeamFilter(FrappeTestCase):
