@@ -1580,7 +1580,7 @@ class TestAgentVolume(FrappeTestCase):
 		server = create_test_server()
 		with (
 			patch("press.press.doctype.server.server.frappe.enqueue_doc") as enqueue_doc,
-			self.assertRaisesRegex(frappe.ValidationError, "at least 1 GB"),
+			self.assertRaisesRegex(frappe.ValidationError, "must be 1 GB or more"),
 		):
 			server.increase_agent_volume("0")
 		enqueue_doc.assert_not_called()

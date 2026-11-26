@@ -3772,7 +3772,7 @@ class Server(BaseServer):
 	def increase_agent_volume(self, size: int = 2):
 		size = int(size)
 		if size < 1:
-			frappe.throw("Add at least 1 GB to the agent volume.")
+			frappe.throw("The size to add must be 1 GB or more. Enter a whole number of GB, such as 2.")
 		frappe.enqueue_doc(self.doctype, self.name, "_increase_agent_volume", size=size)
 
 	def _increase_agent_volume(self, size: int):
