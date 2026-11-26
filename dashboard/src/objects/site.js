@@ -6,7 +6,7 @@ import AddDomainDialog from '../components/AddDomainDialog.vue'
 import GenericDialog from '../components/GenericDialog.vue'
 import ObjectList from '../components/ObjectList.vue'
 import SiteActions from '../components/SiteActions.vue'
-import { getTeam, switchToTeam } from '../data/team'
+import { getTeam } from '../data/team'
 import router from '../router'
 import { getRunningJobs } from '../utils/agentJob'
 import { confirmDialog, icon, renderDialog } from '../utils/components'
@@ -1301,25 +1301,6 @@ export default {
 						renderDialog(
 							h(SiteEnableMonitoringDialog, { site: site.doc?.name }),
 						)
-					},
-				},
-				{
-					label: 'Impersonate Site Owner',
-					title: 'Impersonate Site Owner', // for label to pop-up on hover
-					slots: {
-						icon: defineAsyncComponent(async () => {
-							const mod = await import('~icons/lucide/venetian-mask')
-							return {
-								render() {
-									return h(mod.default, { class: 'w-5 h-5' })
-								},
-							}
-						}),
-					},
-					condition: () =>
-						$team.doc?.is_desk_user && site.doc.team !== $team.name,
-					onClick() {
-						switchToTeam(site.doc.team)
 					},
 				},
 				{

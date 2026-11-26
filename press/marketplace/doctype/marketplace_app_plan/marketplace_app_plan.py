@@ -7,13 +7,14 @@ import frappe
 from frappe import cint
 
 from press.press.doctype.site_plan.plan import Plan
+from press.utils import _system_user
 
 
 def get_permission_query_conditions(user: str | None = None) -> str:
 	if not user:
 		user = frappe.session.user
 
-	if frappe.db.get_value("User", user, "user_type", cache=True) == "System User":
+	if _system_user(user):
 		return ""
 
 	from press.utils import get_current_team
@@ -32,7 +33,7 @@ def has_permission(doc, ptype: str, user: str | None = None) -> bool:
 	if not user:
 		user = frappe.session.user
 
-	if frappe.db.get_value("User", user, "user_type", cache=True) == "System User":
+	if _system_user(user):
 		return True
 
 	if ptype == "create" and not doc.app:

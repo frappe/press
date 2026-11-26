@@ -8,7 +8,7 @@ import LucideRocket from '~icons/lucide/rocket'
 import AddAppDialog from '../components/group/AddAppDialog.vue'
 import ChangeAppBranchDialog from '../components/group/ChangeAppBranchDialog.vue'
 import PatchAppDialog from '../components/group/PatchAppDialog.vue'
-import { getTeam, switchToTeam } from '../data/team'
+import { getTeam } from '../data/team'
 import router from '../router'
 import { confirmDialog, icon, renderDialog } from '../utils/components'
 import { getToastErrorMessage } from '../utils/toast'
@@ -832,20 +832,6 @@ export default {
 			}
 
 			return [
-				{
-					label: 'Impersonate Group Owner',
-					title: 'Impersonate Group Owner', // for label to pop-up on hover
-					slots: {
-						icon: defineAsyncComponent(
-							() => import('~icons/lucide/venetian-mask'),
-						),
-					},
-					condition: () =>
-						team.doc?.is_desk_user && group.doc.team !== team.name,
-					onClick() {
-						switchToTeam(group.doc.team)
-					},
-				},
 				{
 					label: group.doc?.deploy_information?.last_deploy
 						? 'Update Available'

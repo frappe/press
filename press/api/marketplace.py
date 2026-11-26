@@ -22,7 +22,15 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	get_total_installs_by_app,
 )
-from press.utils import docs, get_app_tag, get_current_team, get_last_doc, is_user_part_of_team, unique
+from press.utils import (
+	_system_user,
+	docs,
+	get_app_tag,
+	get_current_team,
+	get_last_doc,
+	is_user_part_of_team,
+	unique,
+)
 from press.utils.billing import get_frappe_io_connection
 
 if TYPE_CHECKING:
@@ -921,7 +929,7 @@ def get_apps_with_plans(apps: list[str], release_group: str):
 def change_app_plan(subscription: str, new_plan: str):
 	team = get_current_team(get_doc=True)
 	subscription_doc = frappe.get_doc("Subscription", subscription)
-	if subscription_doc.team != team.name and frappe.session.data.user_type != "System User":
+	if subscription_doc.team != team.name and not _system_user():
 		frappe.throw("Not Permitted", frappe.PermissionError)
 
 	plan = frappe.db.get_value("Marketplace App Plan", new_plan, ["app", "price_usd"], as_dict=True)
@@ -1068,7 +1076,7 @@ def update_app_plan(app_plan_name: str, updated_plan_data: dict):
 		frappe.throw("Please enter a title for the plan.")
 
 	app_plan_doc = frappe.get_doc("Marketplace App Plan", app_plan_name)
-	if frappe.session.data.user_type != "System User":
+	if not _system_user():
 		app_team = frappe.db.get_value("Marketplace App", app_plan_doc.app, "team")
 		if app_team != get_current_team():
 			frappe.throw("Not Permitted", frappe.PermissionError)

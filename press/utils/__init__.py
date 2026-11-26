@@ -32,6 +32,7 @@ from frappe.utils.caching import redis_cache, site_cache
 from press.guards import mfa
 from press.utils import ssrf
 from press.utils.email_validator import validate_email
+from press.utils.user import is_staff_on_dashboard
 
 if TYPE_CHECKING:
 	from press.press.doctype.team.team import Team
@@ -125,7 +126,7 @@ def get_current_team(get_doc=False) -> Team | str:
 			)
 		)
 
-	system_user = frappe.session.data.user_type == "System User"
+	system_user = _system_user()
 
 	# get team passed via request header
 	x_press_team = frappe.get_request_header("X-Press-Team")
@@ -199,8 +200,12 @@ def is_admin_user(team: str) -> bool:
 	)
 
 
-def _system_user():
-	return frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
+def _system_user(user: str | None = None) -> bool:
+	"""A desk user with staff access. On the dashboard, staff get the access of a customer."""
+	user = user or frappe.session.user
+	if is_staff_on_dashboard(user):
+		return False
+	return frappe.get_cached_value("User", user, "user_type") == "System User"
 
 
 def has_role(role, user=None):

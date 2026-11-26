@@ -17,7 +17,7 @@ from frappe.model.document import Document
 
 from press.api.github import GithubFetchError, get_access_token
 from press.press.doctype.app_source.app_source import AppSource
-from press.utils import log_error
+from press.utils import _system_user, log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
@@ -472,8 +472,7 @@ def get_permission_query_conditions(user):
 	if not user:
 		user = frappe.session.user
 
-	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
-	if user_type == "System User":
+	if _system_user(user):
 		return ""
 
 	team = get_current_team()
@@ -487,8 +486,7 @@ def has_permission(doc, ptype, user):
 	if not user:
 		user = frappe.session.user
 
-	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
-	if user_type == "System User":
+	if _system_user(user):
 		return True
 
 	team = get_current_team()

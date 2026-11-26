@@ -1,8 +1,8 @@
 import { Tooltip } from 'frappe-ui'
 import type { VNode } from 'vue'
-import { defineAsyncComponent, h } from 'vue'
+import { h } from 'vue'
 import LucideAppWindow from '~icons/lucide/app-window'
-import { getTeam, switchToTeam } from '../data/team'
+import { getTeam } from '../data/team'
 import { icon } from '../utils/components'
 import {
 	clusterOptions,
@@ -57,16 +57,6 @@ function getDetail() {
 									`${window.location.protocol}//${window.location.host}/app/bench/${res.name}`,
 									'_blank',
 								)
-							},
-						},
-						{
-							label: 'Impersonate Team',
-							icon: defineAsyncComponent(
-								() => import('~icons/lucide/venetian-mask'),
-							),
-							condition: () => window.is_system_user ?? false,
-							onClick() {
-								switchToTeam(res.doc.team)
 							},
 						},
 					],

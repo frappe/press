@@ -30,8 +30,7 @@ function getCurrentTeam() {
 	if (
 		!currentTeam ||
 		(currentTeam !== window.default_team &&
-			!window.valid_teams.map((t) => t.name).includes(currentTeam) &&
-			!window.is_system_user)
+			!window.valid_teams.map((t) => t.name).includes(currentTeam))
 	) {
 		currentTeam = window.default_team
 		if (currentTeam) localStorage.setItem('current_team', currentTeam)
