@@ -31,3 +31,7 @@
 
 - name: Grow Agent Volume Filesystem
   command: resize2fs {{ agent_volume_device.stdout }}
+
+# resize2fs zeroes the new inode tables, and the loop device punches holes for those zeroes
+- name: Allocate Holes In Agent Volume Image
+  command: fallocate -l {{ agent_volume_image.stat.size + (agent_volume_increase | int) * 1073741824 }} /home/frappe/agent.img

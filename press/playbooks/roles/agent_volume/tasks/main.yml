@@ -74,7 +74,8 @@
         src: /home/frappe/agent.img
         path: /home/frappe/agent
         fstype: ext4
-        opts: loop,nofail
+        # noinit_itable: the background inode table init writes zeroes, and the loop device punches holes for them
+        opts: loop,nofail,noinit_itable
         state: mounted
 
     - name: Create Drop-In Directories
