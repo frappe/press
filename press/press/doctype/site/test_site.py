@@ -204,6 +204,27 @@ class TestSite(FrappeTestCase):
 		site.get_doc(doc)
 		self.assertEqual(doc.frappe_updated_on, commit_time)
 
+	def test_get_doc_reports_server_price_for_a_site_on_a_dedicated_server(self):
+		from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
+
+		site = create_test_site()
+		server_plan = create_test_server_plan(server_type="Server")
+		frappe.db.set_value("Server Plan", server_plan.name, "price_usd", 120)
+		frappe.db.set_value("Server", site.server, {"public": 0, "plan": server_plan.name})
+		frappe.db.set_value("Database Server", Server("Server", site.server).database_server, "plan", None)
+
+		doc = frappe._dict()
+		site.get_doc(doc)
+		self.assertEqual(doc.dedicated_server_price_usd, 120)
+
+	def test_get_doc_does_not_report_server_price_for_a_site_on_a_shared_server(self):
+		site = create_test_site()
+		frappe.db.set_value("Server", site.server, "public", 1)
+
+		doc = frappe._dict()
+		site.get_doc(doc)
+		self.assertNotIn("dedicated_server_price_usd", doc)
+
 	def test_empty_creation_failed_lets_the_team_run_site_actions_again(self):
 		site = create_test_site()
 		site.db_set("creation_failed", frappe.utils.now())
@@ -1397,6 +1418,31 @@ class TestSiteConfigJSONValidation(FrappeTestCase):
 
 		self.assertTrue(frappe.db.get_value("Site Plan", site.subscription_plan, "dedicated_server_plan"))
 		self.assertEqual(json.loads(site.config)["rate_limit"], {})
+
+
+class TestSiteConfigNumberValues(FrappeTestCase):
+	def setUp(self):
+		self.site = create_test_site("testsubdomain")
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_number_config_value_keeps_its_decimals(self):
+		self.site.update_config({"test_ratio": 1.5})
+		self.assertEqual(json.loads(self.site.config)["test_ratio"], 1.5)
+
+	def test_whole_number_config_value_is_written_as_an_integer(self):
+		self.site.update_config({"test_ratio": 5.0})
+		self.assertEqual(json.loads(self.site.config)["test_ratio"], 5)
+		self.assertIsInstance(json.loads(self.site.config)["test_ratio"], int)
+
+	def test_number_config_value_that_is_not_finite_is_rejected(self):
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"must be a finite number",
+			self.site.update_config,
+			{"test_ratio": float("inf")},
+		)
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())

@@ -52,14 +52,25 @@
 						/>
 					</div>
 
-					<AlertBanner
+					<div
 						v-else-if="
 							upgradeStep === 'ready_to_upgrade' &&
 							!appCompatibility.can_upgrade
 						"
-						:title="`Migration isn't possible due to incompatible app(s): <b>${appCompatibility.incompatible.join(', ')}</b>`"
-						type="error"
-					/>
+						class="space-y-3"
+					>
+						<AlertBanner
+							:title="`Migration isn't possible due to incompatible app(s): <b>${appCompatibility.incompatible.join(', ')}</b>`"
+							type="error"
+						/>
+						<p class="text-sm text-ink-gray-7">
+							These apps use a public source, such as a Marketplace app, that
+							has no release for {{ nextVersion }} yet. To upgrade now, open the bench
+							group, and change the source of each app to your own GitHub
+							repository with a branch for {{ nextVersion }}. Or wait for a
+							release of the app for {{ nextVersion }}.
+						</p>
+					</div>
 
 					<div
 						v-else-if="
@@ -277,7 +288,7 @@
 				class="w-full"
 				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
 				variant="subtle"
-				:label="targetDateTime ? 'Schedule Upgrade' : 'Upgrade Now'"
+				label="Close"
 				@click="show = false"
 			/>
 			<!-- Create bench and upgrade -->
@@ -427,8 +438,14 @@ export default {
 					scheduled_datetime: this.datetimeInIST,
 				},
 				onSuccess: (data) => {
-					toast.success("Site's version upgrade has been scheduled.");
+					toast.success(
+						"Site's version upgrade has been scheduled. Follow it on the Updates tab.",
+					);
 					this.show = false;
+					this.$router.push({
+						name: 'Site Detail Updates',
+						params: { name: this.site },
+					});
 				},
 			};
 		},

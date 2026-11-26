@@ -10,6 +10,7 @@ from press.agent import Agent
 from press.api.client import set_value
 from press.api.tests.test_client import sign_in_as
 from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.server_firewall.server_firewall import ServerFirewall, sync_enabled_firewalls
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
 
@@ -125,3 +126,34 @@ class TestServerFirewallNginxSync(FrappeTestCase):
 
 		ip_accept, _, proxy_ip = update_nginx_access.call_args.args
 		self.assertIn(proxy_ip, ip_accept)
+
+
+class TestServerFirewallProductionIPs(FrappeTestCase):
+	"""During a move to a new Press host, servers must allow both the old and the new host."""
+
+	def setUp(self):
+		super().setUp()
+		self.firewall = frappe.get_doc("Server Firewall", {"server_id": create_test_server().name})
+		frappe.db.set_single_value("Press Settings", "production_server_ip", "203.0.113.7\n198.51.100.0/24")
+		frappe.db.value_cache.clear()  # set_single_value leaves the cached value of this request
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_every_production_ip_is_protected(self):
+		protected = self.firewall.get_protected_ips()
+
+		self.assertIn("203.0.113.7", protected)
+		self.assertIn("198.51.100.0/24", protected)
+
+	@patch.object(ServerFirewall, "sync", autospec=True)
+	def test_sync_enabled_firewalls_skips_the_disabled_ones(self, sync):
+		enabled = frappe.get_doc("Server Firewall", {"server_id": create_test_server().name})
+		enabled.db_set("enabled", 1)
+		self.firewall.db_set("enabled", 0)
+
+		sync_enabled_firewalls()
+
+		synced = [call.args[0].name for call in sync.call_args_list]
+		self.assertIn(enabled.name, synced)
+		self.assertNotIn(self.firewall.name, synced)

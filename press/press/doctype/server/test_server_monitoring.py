@@ -11,6 +11,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.account_request.test_account_request import create_test_account_request
 from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
+from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.database_server.test_database_server import create_test_database_server
 from press.press.doctype.server import server_monitoring
 from press.press.doctype.server.server_monitoring import (
@@ -319,6 +320,14 @@ class TestServersWithStuckAgentJobs(FrappeTestCase):
 		server = create_test_server()
 		create_stuck_agent_jobs(server, STUCK_AGENT_JOBS_ALERT_THRESHOLD)
 		frappe.db.set_value("Server", server.name, "status", "Archived")
+
+		self.assertIsNone(get_stuck_agent_jobs_row(server))
+
+	def test_server_in_an_archived_region_is_not_reported(self):
+		cluster = create_test_cluster(name="Bahrain")
+		server = create_test_server(cluster=cluster.name)
+		create_stuck_agent_jobs(server, STUCK_AGENT_JOBS_ALERT_THRESHOLD)
+		frappe.db.set_value("Cluster", cluster.name, "status", "Archived")
 
 		self.assertIsNone(get_stuck_agent_jobs_row(server))
 

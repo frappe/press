@@ -562,7 +562,10 @@ def server_snapshots_using(VirtualDiskSnapshot, field: str):
 
 
 def sync_all_snapshots_from_aws():
-	regions = frappe.get_all("Cloud Region", {"provider": "AWS EC2"}, pluck="name")
+	# Skip regions without an active cluster: Bahrain hangs until the job times out
+	regions = frappe.get_all(
+		"Cluster", {"cloud_provider": "AWS EC2", "status": "Active"}, pluck="region", distinct=True
+	)
 	for region in regions:
 		if not frappe.db.exists("Virtual Disk Snapshot", {"region": region}):
 			continue
@@ -581,6 +584,7 @@ def sync_all_snapshots_from_aws():
 				try:
 					delete_duplicate_snapshot_docs(snapshot)
 					if _update_snapshot_if_exists(snapshot, random_snapshot):
+						frappe.db.commit()  # else a later failure rolls it back
 						continue
 					tag_name = next(tag["Value"] for tag in snapshot["Tags"] if tag["Key"] == "Name")
 					virtual_machine = tag_name.split(" - ")[1]

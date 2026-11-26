@@ -104,6 +104,7 @@
 		"security_portal_enabled",
 		"benches_enabled",
 		"mpesa_enabled",
+		"github_installations_enabled",
 		"discounts_section",
 		"discounts",
 		"is_us_eu",
@@ -465,6 +466,13 @@
 			"label": "Mpesa Enabled"
 		},
 		{
+			"default": "0",
+			"description": "List GitHub repositories with the GitHub App's installation tokens instead of the team's GitHub access token",
+			"fieldname": "github_installations_enabled",
+			"fieldtype": "Check",
+			"label": "Use GitHub App Access Tokens"
+		},
+		{
 			"fieldname": "column_break_uyxo",
 			"fieldtype": "Column Break"
 		},
@@ -795,7 +803,7 @@
 			"link_fieldname": "team"
 		}
 	],
-	"modified": "2026-11-06 21:00:00.000000",
+	"modified": "2026-11-24 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Team",

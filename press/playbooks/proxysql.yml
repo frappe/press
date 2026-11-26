@@ -8,3 +8,4 @@
     - role: docker
     - role: proxysql
     - role: proxysql_monitor
+      when: database_server_private_ip is defined

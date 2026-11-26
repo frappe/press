@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import typing
 from unittest.mock import Mock, patch
 
@@ -35,7 +36,7 @@ if typing.TYPE_CHECKING:
 # tests shouldn't reach the network anyway. 14 matches create_test_release_group's
 # default frappe_version.
 mock_frappe_branch_major_version = patch(
-	"press.press.doctype.release_group.release_group.get_frappe_branch_major_version",
+	"press.press.doctype.release_group.release_group.fetch_frappe_branch_major_version",
 	new=Mock(return_value=14),
 )
 
@@ -121,6 +122,12 @@ class TestReleaseGroup(FrappeTestCase):
 		doc = frappe._dict()
 		group.get_doc(doc)
 		self.assertEqual(doc.frappe_updated_on, commit_time)
+
+	def test_number_common_site_config_value_keeps_its_decimals(self):
+		group = create_test_release_group([create_test_app()])
+		group.append("common_site_config_table", {"key": "test_ratio", "value": 1.5, "type": "Number"})
+		group.save()
+		self.assertEqual(json.loads(group.common_site_config)["test_ratio"], 1.5)
 
 	def test_get_doc_reports_no_commit_time_when_group_has_no_active_bench(self):
 		group = create_test_release_group([create_test_app()])
@@ -700,9 +707,9 @@ class TestReleaseGroup(FrappeTestCase):
 
 		with (
 			self.assertRaisesRegex(frappe.ValidationError, "Not enough space on server"),
-			patch.object(BaseServer, "free_space", mock_free_space(space_required=8 * 1024**3)),
+			patch.object(BaseServer, "free_space", mock_free_space(space_required=7 * 1024**3)),
 			patch.object(Agent, "get", mock_image_size(5)),
-		):  # 8 GiB free fits a 5 GiB image, but not the image plus its sites copy
+		):  # 7 GiB free fits a 5 GiB image, but not 1.5x of it for the sites copy
 			test_release_group.check_app_server_storage()
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())

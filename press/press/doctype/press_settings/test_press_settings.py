@@ -80,3 +80,46 @@ class TestPressSettings(FrappeTestCase):
 		secret = get_telegram_webhook_secret()
 		create_test_press_settings()
 		self.assertEqual(get_telegram_webhook_secret(), secret)
+
+
+class TestPressSettingsProductionServerIPs(FrappeTestCase):
+	def setUp(self):
+		super().setUp()
+		create_test_press_settings()
+		self.settings = frappe.get_doc("Press Settings")
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_a_value_that_is_not_an_ip_is_refused(self):
+		self.settings.production_server_ip = "203.0.113.7\nnot-an-ip"
+		with self.assertRaises(frappe.ValidationError):
+			self.settings.save()
+
+	@patch("press.press.doctype.press_settings.press_settings.frappe.enqueue")
+	def test_a_new_production_ip_syncs_the_firewalls(self, enqueue: Mock):
+		self.settings.production_server_ip = "203.0.113.7\n203.0.113.8"
+		self.settings.save()
+
+		enqueue.assert_called_once()
+		self.assertEqual(
+			enqueue.call_args.args[0],
+			"press.press.doctype.server_firewall.server_firewall.sync_enabled_firewalls",
+		)
+
+	@patch("press.press.doctype.press_settings.press_settings.frappe.enqueue")
+	def test_creating_the_settings_does_not_sync_the_firewalls(self, enqueue: Mock):
+		"""The installer creates the settings before any queue runs, as `init_singles` does here."""
+		settings = frappe.new_doc("Press Settings")
+		settings.production_server_ip = "203.0.113.7"
+		settings.flags.ignore_mandatory = True
+		settings.flags.ignore_validate = True
+		settings.save()
+
+		enqueue.assert_not_called()
+
+	@patch("press.press.doctype.press_settings.press_settings.frappe.enqueue")
+	def test_a_save_without_an_ip_change_does_not_sync_the_firewalls(self, enqueue: Mock):
+		self.settings.save()
+
+		enqueue.assert_not_called()

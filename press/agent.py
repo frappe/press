@@ -428,6 +428,7 @@ class Agent:
 		skip_backups=False,
 		before_migrate_scripts=None,
 		skip_search_index=True,
+		agent_job_timeout: int | None = None,
 	):
 		data = {
 			"target": target,
@@ -437,6 +438,8 @@ class Agent:
 			"before_migrate_scripts": before_migrate_scripts,
 			"skip_search_index": skip_search_index,
 		}
+		if agent_job_timeout:
+			data["agent_job_timeout"] = agent_job_timeout
 		return self.create_agent_job(
 			f"Update Site {deploy_type}",
 			f"benches/{site.bench}/sites/{site.name}/update/{deploy_type.lower()}",
