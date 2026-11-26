@@ -69,3 +69,7 @@ class SetupAgentVolumeJob(PressJob):
 
 	def on_press_job_failure(self, workflow: PressWorkflow):
 		self.start_agent_jobs()
+		# The play may have stopped the agent, or left it in agent.old
+		frappe.enqueue_doc(
+			self.server_type, self.server, "_restore_agent_directory", queue="long", timeout=600
+		)

@@ -6,17 +6,6 @@
   changed_when: false
   failed_when: false
 
-# A run that failed after the move left the agent in agent.old. Put it back, so a retry starts over.
-# mv -T replaces only an empty directory, such as a mount point that the mount task made.
-- name: Restore Agent Directory After A Failed Move
-  when: bench_volume.rc != 0
-  shell: |
-    if [ -d /home/frappe/agent.old ] && ! mountpoint -q /home/frappe/agent; then
-      mv -T /home/frappe/agent.old /home/frappe/agent && echo restored
-    fi
-  register: agent_restore
-  changed_when: "'restored' in agent_restore.stdout"
-
 - name: Check For Agent Volume
   command: mountpoint -q /home/frappe/agent
   register: agent_volume

@@ -1557,6 +1557,13 @@ class TestAgentVolume(FrappeTestCase):
 			server._setup_agent_volume()
 		self.assertEqual(Ansible.call_args.kwargs["playbook"], "agent_volume.yml")
 
+	def test_restore_agent_directory_runs_restore_playbook(self):
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._restore_agent_directory()
+		self.assertEqual(Ansible.call_args.kwargs["playbook"], "restore_agent_directory.yml")
+
 	def test_setup_agent_volume_raises_with_play_name_when_play_fails(self):
 		server = create_test_server()
 		with patch("press.press.doctype.server.server.Ansible") as Ansible:

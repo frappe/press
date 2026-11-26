@@ -12,6 +12,7 @@
     - role: nginx
     - role: agent
     - role: mount
+    - role: restore_agent_directory
     - role: agent_volume
     - role: bench
     - role: docker

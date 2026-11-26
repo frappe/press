@@ -145,12 +145,14 @@ class TestSetupAgentVolumeJob(FrappeTestCase):
 			make_setup_agent_volume_job(self.server.name, age_hours=13).wait_for_agent_jobs()
 		defer.assert_not_called()
 
-	def test_failed_job_resumes_agent_jobs(self, _poll: Mock, _handle: Mock, _defer: Mock):
+	def test_failed_job_resumes_agent_jobs_and_restores_agent(self, _poll: Mock, _handle: Mock, _defer: Mock):
 		frappe.db.set_value("Server", self.server.name, "halt_agent_jobs", True)
 
-		make_setup_agent_volume_job(self.server.name, age_hours=1).on_press_job_failure(Mock())
+		with patch("press.press.doctype.press_job.jobs.setup_agent_volume.frappe.enqueue_doc") as enqueue_doc:
+			make_setup_agent_volume_job(self.server.name, age_hours=1).on_press_job_failure(Mock())
 
 		self.assertFalse(frappe.db.get_value("Server", self.server.name, "halt_agent_jobs"))
+		self.assertEqual(enqueue_doc.call_args.args, ("Server", self.server.name, "_restore_agent_directory"))
 
 	def test_play_timeout_outlasts_agent_worker_stop_wait(self, _poll: Mock, _handle: Mock, _defer: Mock):
 		"""Workers get up to 1500 seconds (stopwaitsecs) to stop."""

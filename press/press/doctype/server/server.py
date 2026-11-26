@@ -3778,6 +3778,9 @@ class Server(BaseServer):
 	def _increase_agent_volume(self, size: int):
 		self._run_agent_volume_play("increase_agent_volume.yml", {"agent_volume_increase": size})
 
+	def _restore_agent_directory(self):
+		self._run_agent_volume_play("restore_agent_directory.yml")
+
 	def _run_agent_volume_play(self, playbook: str, variables: dict | None = None):
 		# Raises, so the Create Server job and the enqueued job both fail with the play
 		play = Ansible(
