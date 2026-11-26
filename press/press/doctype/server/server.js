@@ -188,13 +188,6 @@ frappe.ui.form.on('Server', {
 				__('Setup'),
 			],
 			[
-				__('Setup Unified Server'),
-				'setup_unified_server',
-				true,
-				frm.doc.is_unified_server,
-				__('Setup'),
-			],
-			[
 				__('Add to Proxy'),
 				'add_upstream_to_proxy',
 				true,
