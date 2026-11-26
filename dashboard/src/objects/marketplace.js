@@ -4,6 +4,7 @@ import { RouterLink } from "vue-router";
 import { toast } from "vue-sonner";
 import GenericDialog from "../components/GenericDialog.vue";
 import ChangeAppBranchDialog from "../components/marketplace/ChangeAppBranchDialog.vue";
+import MarketplaceEmptyState from "../components/marketplace/MarketplaceEmptyState.vue";
 import PlansDialog from "../components/marketplace/PlansDialog.vue";
 import ObjectList from "../components/ObjectList.vue";
 import router from "../router";
@@ -80,6 +81,9 @@ export default {
 					renderDialog(h(NewMarketplaceAppDialog));
 				},
 			};
+		},
+		emptyState() {
+			return h(MarketplaceEmptyState);
 		},
 	},
 	detail: {
