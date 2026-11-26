@@ -52,6 +52,7 @@ from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server_monitoring import RAVEN_SERVER_ALERTS_CHANNEL
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
+from press.press.doctype.team_change.pending_request import cancel_transfer_requests, transfer_action
 from press.press.doctype.team_change.team_change import request_transfer
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
@@ -3538,18 +3539,22 @@ class Server(BaseServer):
 			},
 			*server_actions,
 		]
-		if self.status == "Active" and not self.is_self_hosted:
-			actions.append(
-				{
-					"action": "Transfer server",
-					"description": "Transfer ownership of this server to another team",
-					"button_label": "Transfer",
-					"doc_method": "send_change_team_request",
-					"group": group,
-					"server_doctype": "Server",
-					"server_name": self.name,
-				}
-			)
+		transfer = transfer_action(
+			self,
+			{
+				"action": "Transfer server",
+				"description": "Transfer ownership of this server to another team",
+				"button_label": "Transfer",
+				"doc_method": "send_change_team_request",
+				"group": group,
+				"server_doctype": "Server",
+				"server_name": self.name,
+			},
+		)
+		# A pending request can always be cancelled, even once the server can't be transferred
+		is_cancel_row = transfer["doc_method"] == "cancel_change_team_request"
+		if is_cancel_row or (self.status == "Active" and not self.is_self_hosted):
+			actions.append(transfer)
 		return actions
 
 	@dashboard_whitelist()
@@ -3557,6 +3562,12 @@ class Server(BaseServer):
 	def send_change_team_request(self, team_mail_id: str, reason: str | None = None):
 		"""Send email to team to accept server transfer request"""
 		request_transfer(self, team_mail_id, reason, title=self.title or self.name)
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def cancel_change_team_request(self):
+		"""Withdraw the transfer request before the receiving team accepts it"""
+		cancel_transfer_requests(self)
 
 	def update_subscription(self):
 		subscription = self.subscription
