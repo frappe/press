@@ -115,6 +115,9 @@ class TestChangedDiskUsages(FrappeTestCase):
 		)
 
 
+# The job commits after each site it mails. Without this the test data outlives
+# the rollback in tearDown and breaks every later test that counts sites.
+@patch.object(frappe.db, "commit", new=Mock())
 @patch(
 	"press.press.doctype.site.site_usages.get_communication_info",
 	new=Mock(return_value=["owner@example.com"]),
