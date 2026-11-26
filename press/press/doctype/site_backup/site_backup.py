@@ -649,16 +649,13 @@ def get_backup_bucket(cluster, region=False):
 		frappe.throw(_("Set the Backup Bucket of cluster {0}").format(cluster), frappe.MandatoryError)
 
 	bucket_config = frappe.db.get_value(
-		"Backup Bucket", bucket_name, ["name", "region", "endpoint_url"], as_dict=True
+		"Backup Bucket", bucket_name, ["name", "region", "endpoint_url", "provider"], as_dict=True
 	)
 	if not bucket_config:
 		frappe.throw(
 			_("Backup Bucket {0} of cluster {1} does not exist").format(bucket_name, cluster),
 			frappe.DoesNotExistError,
 		)
-	# The provider is only configured on Press Settings
-	bucket_config["provider"] = frappe.db.get_single_value("Press Settings", "offsite_backups_provider")
-
 	if region:
 		return bucket_config
 

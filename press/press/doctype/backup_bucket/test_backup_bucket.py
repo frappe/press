@@ -99,3 +99,85 @@ class TestBackupBucket(FrappeTestCase):
 		cluster.db_set("backup_bucket", None)
 
 		self.assertIsNone(Agent("agent.test")._get_offsite_backup_config("Legacy", "path"))
+
+
+OCI_ENDPOINT = "https://namespace.compat.objectstorage.me-jeddah-1.oraclecloud.com"
+
+
+def set_oci_keys():
+	frappe.db.set_single_value("Press Settings", "oci_offsite_backups_access_key_id", "oci-access-key")
+	settings = frappe.get_single("Press Settings")
+	settings.oci_offsite_backups_secret_access_key = "oci-secret-key"
+	settings.save(ignore_permissions=True)
+
+
+def new_oci_bucket(endpoint_url: str = OCI_ENDPOINT):
+	return frappe.get_doc(
+		{
+			"doctype": "Backup Bucket",
+			"bucket_name": "oci.jeddah.backups.test",
+			"provider": "OCI",
+			"region": "me-jeddah-1",
+			"endpoint_url": endpoint_url,
+		}
+	)
+
+
+class TestOCIBackupBucket(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_oci_bucket_is_rejected_until_press_settings_has_the_oci_keys(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "Set the OCI offsite backup keys"):
+			new_oci_bucket().insert(ignore_permissions=True)
+
+	def test_oci_bucket_with_an_endpoint_of_another_region_is_rejected(self):
+		set_oci_keys()
+		endpoint = "https://namespace.compat.objectstorage.sa-saopaulo-1.oraclecloud.com"
+
+		with self.assertRaisesRegex(
+			frappe.ValidationError,
+			"must be https://NAMESPACE.compat.objectstorage.me-jeddah-1.oraclecloud.com",
+		):
+			new_oci_bucket(endpoint).insert(ignore_permissions=True)
+
+	def test_oci_bucket_with_replication_is_rejected(self):
+		set_oci_keys()
+		bucket = new_oci_bucket()
+		bucket.update(
+			{
+				"replication_enabled": 1,
+				"replication_bucket": "replica",
+				"replication_region": "me-riyadh-1",
+				"replication_endpoint_url": OCI_ENDPOINT,
+			}
+		)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Replication is not supported for OCI"):
+			bucket.insert(ignore_permissions=True)
+
+	def test_agent_gets_the_oci_keys_and_endpoint_for_a_cluster_with_an_oci_bucket(self):
+		from press.agent import Agent
+
+		set_oci_keys()
+		bucket = new_oci_bucket().insert(ignore_permissions=True)
+		create_generic_cluster("OCI Jeddah Test", bucket.name)
+
+		auth = Agent("agent.test")._get_offsite_backup_config("OCI Jeddah Test", "path")["auth"]
+
+		self.assertEqual(
+			(auth["ACCESS_KEY"], auth["SECRET_KEY"], auth["PROVIDER"], auth["ENDPOINT_URL"]),
+			("oci-access-key", "oci-secret-key", "OCI", OCI_ENDPOINT),
+		)
+
+	def test_aws_bucket_still_gets_the_aws_keys_when_oci_keys_are_set(self):
+		from press.press.doctype.backup_bucket.backup_bucket import (
+			get_bucket_credentials,
+			get_provider_credentials,
+		)
+
+		set_oci_keys()
+		bucket = create_test_backup_bucket("aws.mumbai.backups.test")
+
+		self.assertEqual(get_bucket_credentials(bucket.name), get_provider_credentials("AWS S3"))
+		self.assertNotEqual(get_bucket_credentials(bucket.name)[0], "oci-access-key")
