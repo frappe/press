@@ -14,8 +14,7 @@ class StopAndStartServerJob(PressJob):
 		self.wait_for_virtual_machine_to_start()
 
 		self.wait_for_server_to_be_accessible()
-		# TODO: Enable after a manual trial with the button on Server
-		# self.restore_truncated_configs()
+		self.restore_truncated_configs()
 
 	@task
 	def stop_virtual_machine(self):
