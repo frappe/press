@@ -12,7 +12,11 @@ from boto3 import client
 from frappe.utils import add_days, cint, getdate
 
 from press.agent import Agent
-from press.press.doctype.backup_bucket.backup_bucket import get_bucket_credentials, get_replication_target
+from press.press.doctype.backup_bucket.backup_bucket import (
+	get_bucket_provider,
+	get_provider_credentials,
+	get_replication_target,
+)
 from press.press.doctype.site_backup.site_backup import get_backup_bucket
 from press.utils import chunk
 
@@ -472,7 +476,7 @@ def list_stored_backups(site: str, start: date, end: date) -> dict[str, dict]:
 
 def get_offsite_credentials(bucket_name: str) -> tuple[str, str] | None:
 	"""None on a bench where offsite backups were never set up, which is not an error."""
-	return get_bucket_credentials(bucket_name, raise_exception=False)
+	return get_provider_credentials(get_bucket_provider(bucket_name))
 
 
 def list_bucket(

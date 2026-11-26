@@ -61,16 +61,18 @@ class BackupBucket(Document):
 			)
 
 
-def get_bucket_credentials(bucket_name: str, raise_exception: bool = True) -> tuple[str, str] | None:
-	"""The access key and secret key for a bucket, picked by the bucket's provider.
-
-	A bucket that is not a Backup Bucket, like the one in Press Settings, is on AWS.
-	"""
-	provider = frappe.db.get_value("Backup Bucket", bucket_name, "provider") or "AWS S3"
+def get_bucket_credentials(bucket_name: str) -> tuple[str, str]:
+	"""The access key and secret key for a bucket, picked by the bucket's provider."""
+	provider = get_bucket_provider(bucket_name)
 	credentials = get_provider_credentials(provider)
-	if not credentials and raise_exception:
-		frappe.throw(_("Set the {0} offsite backup keys in Press Settings").format(provider))
+	if not credentials:
+		raise frappe.ValidationError(_("Set the {0} offsite backup keys in Press Settings").format(provider))
 	return credentials
+
+
+def get_bucket_provider(bucket_name: str) -> str:
+	"""A bucket that is not a Backup Bucket, like the one in Press Settings, is on AWS."""
+	return frappe.db.get_value("Backup Bucket", bucket_name, "provider") or "AWS S3"
 
 
 def get_provider_credentials(provider: str) -> tuple[str, str] | None:
