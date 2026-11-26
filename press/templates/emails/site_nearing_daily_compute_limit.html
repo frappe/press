@@ -1,0 +1,58 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white from-markdown">
+		<p class="mb-4 font-bold">
+			{% if over_limit %}
+			Your site has used up its daily compute limit
+			{% else %}
+			Your site is close to its daily compute limit
+			{% endif %}
+		</p>
+		<p class="mb-6">
+			Hi,<br /><br />
+
+			{% if over_limit %}
+			Site <strong>{{ site }}</strong> has used all the compute time that the {{ plan }} plan
+			includes for today. Until the limit resets, the site answers some requests with an error.
+			{% else %}
+			Site <strong>{{ site }}</strong> has used <strong>{{ usage }}%</strong> of the compute time
+			that the {{ plan }} plan includes for today. At 100% the site starts to answer some requests
+			with an error.
+			{% endif %}
+			The plan includes {{ "%g"|format(compute_hours) }} {{ "hour" if compute_hours == 1 else "hours" }} of
+			compute each day. The count resets at the end of the day.
+		</p>
+
+		<p class="mb-6">
+			You have two options:<br /><br />
+
+			<strong>1. Find what uses the time</strong><br />
+			Open the Insights tab of the site and scroll to Advanced analytics. The Slowest Requests and
+			Slowest Background Jobs charts show which endpoints take the most time. See
+			<a href="https://docs.frappe.io/cloud/daily-usage-limit-reached" target="_blank"><b>what to do
+			when the daily usage limit is reached</b></a>.<br /><br />
+
+			<strong>2. Upgrade the plan</strong><br />
+			A larger plan includes more compute time each day. The change applies right away. See
+			<a href="https://docs.frappe.io/cloud/how-to-change-a-site-plan" target="_blank"><b>how to
+			change a site's plan</b></a>.
+		</p>
+
+		{{ utils.button("Open site insights", action_url) }}
+
+		<p class="mb-6 mt-6">
+			<strong>Need help?</strong><br />
+			If you have any questions, reach us at
+			<a href="https://support.frappe.io/helpdesk/" target="_blank"><b>Frappe Cloud Support</b></a>.
+		</p>
+
+		{{ utils.separator() }}
+		{{ utils.signature() }}
+	</div>
+</td>
+
+{% endblock %}

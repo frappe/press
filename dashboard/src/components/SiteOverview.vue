@@ -62,6 +62,21 @@
 		</AlertBanner>
 
 		<AlertBanner
+			v-if="isNearingDailyComputeLimit"
+			class="col-span-1 lg:col-span-2"
+			type="warning"
+			:title="dailyComputeLimitBannerTitle"
+		>
+			<Button
+				class="ml-auto min-w-[7rem]"
+				variant="outline"
+				link="https://docs.frappe.io/cloud/daily-usage-limit-reached"
+			>
+				More Info
+			</Button>
+		</AlertBanner>
+
+		<AlertBanner
 			v-if="$site.doc.is_monitoring_disabled && $site.doc.status !== 'Archived'"
 			class="col-span-1 lg:col-span-2"
 			title="Site monitoring is disabled, which means we won’t be able to notify you of any downtime. Please re-enable monitoring at your earliest convenience."
@@ -381,6 +396,7 @@ import { toast } from 'vue-sonner'
 import InfoIcon from '~icons/lucide/info'
 import { getCheapestPrivateBenchPlan } from '../data/plans'
 import { renderDialog } from '../utils/components'
+import { plural } from '../utils/format'
 import { openInNewTab, trialDays } from '../utils/site'
 import { getToastErrorMessage } from '../utils/toast'
 import AlertBanner from './AlertBanner.vue'
@@ -388,6 +404,9 @@ import BenchActionsDropdown from './BenchActionsDropdown.vue'
 import CustomAlerts from './CustomAlerts.vue'
 import DismissableBanner from './DismissableBanner.vue'
 import SiteDailyUsage from './SiteDailyUsage.vue'
+
+// A site is rate limited once it uses all the compute its plan allows for the day
+const DAILY_COMPUTE_WARNING_THRESHOLD = 80
 
 export default {
 	name: 'SiteOverview',
@@ -618,6 +637,30 @@ export default {
 		},
 		currentUsageLoading() {
 			return this.$resources?.currentUsage?.loading ?? true
+		},
+		dailyComputeUsage() {
+			const limit = this.currentPlan?.cpu_time_per_day
+			if (!limit || this.currentUsageLoading) return 0
+			return Math.round((this.currentUsage.cpu / limit) * 100)
+		},
+		isNearingDailyComputeLimit() {
+			if (this.$site?.doc?.status !== 'Active') return false
+			if (this.$site?.doc?.is_dedicated_server) return false
+			return this.dailyComputeUsage >= DAILY_COMPUTE_WARNING_THRESHOLD
+		},
+		dailyComputeLimitBannerTitle() {
+			const used =
+				this.dailyComputeUsage >= 100
+					? 'This site has used all the compute time its plan includes for today. Some requests will fail until the count resets.'
+					: `This site has used ${this.dailyComputeUsage}% of the compute time its plan includes for today. At 100%, requests start to fail.`
+			return `${used}${this.dailyComputeResetText}`
+		},
+		dailyComputeResetText() {
+			const hours = Math.ceil(
+				this.currentUsage.hours_until_cpu_usage_resets ?? 0,
+			)
+			if (!hours) return ''
+			return ` The count resets in ${hours} ${plural(hours, 'hour', 'hours')}.`
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site)
