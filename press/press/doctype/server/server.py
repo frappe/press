@@ -37,6 +37,7 @@ from press.exceptions import OngoingAgentJob, VolumeResizeLimitError
 from press.guards import role_guard, team_guard
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.add_on_storage_log.add_on_storage_log import (
+	disk_space_actions,
 	insert_addon_storage_log,
 )
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
@@ -311,10 +312,10 @@ class BaseServer(Document, TagHelpers):
 		current_disk_usage: int | None = None,
 	) -> None:
 		add_on_storage_log = None
-		storage_parameters = {
+		storage_parameters: dict[str, typing.Any] = {
 			"doctype": "Add On Storage Log",
 			"adding_storage": increment,
-			is_auto_triggered: is_auto_triggered,
+			"is_auto_triggered": is_auto_triggered,
 		}
 
 		if not isinstance(server, str):
@@ -872,6 +873,7 @@ class BaseServer(Document, TagHelpers):
 					"server_id": database_server.server_id,
 					"allocator": database_server.memory_allocator.lower(),
 					"mariadb_root_password": database_server_config.mariadb_root_password,
+					"mariadb_monitor_password": database_server_config.mariadb_monitor_password,
 					"mariadb_depends_on_mounts": database_server_config.mariadb_depends_on_mounts,
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
 					**self.get_mount_variables(),  # Currently same as database server since no volumes
@@ -2088,15 +2090,14 @@ class BaseServer(Document, TagHelpers):
 		console.save(ignore_permissions=True)
 		console.reload()
 		console.run_sysrq()
-		# TODO: Enable after a manual trial with the button on Server
-		# frappe.enqueue_doc(
-		# self.doctype,
-		# self.name,
-		# "restore_truncated_configs",
-		# wait_for_reboot=True,
-		# queue="long",
-		# timeout=1200,
-		# )
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"restore_truncated_configs",
+			wait_for_reboot=True,
+			queue="long",
+			timeout=1200,
+		)
 
 	@dashboard_whitelist()
 	def reboot(self):
@@ -2110,15 +2111,14 @@ class BaseServer(Document, TagHelpers):
 			raise NotImplementedError
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.reboot()
-		# TODO: Enable after a manual trial with the button on Server
-		# frappe.enqueue_doc(
-		# self.doctype,
-		# self.name,
-		# "restore_truncated_configs",
-		# wait_for_reboot=True,
-		# queue="long",
-		# timeout=1200,
-		# )
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"restore_truncated_configs",
+			wait_for_reboot=True,
+			queue="long",
+			timeout=1200,
+		)
 
 	@dashboard_whitelist()
 	def rename(self, title):
@@ -2695,6 +2695,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				"available_disk_space": f"{disk_capacity_flt} GiB",
 				"used_storage_percentage": "80%",
 				"increase_by": f"{recommended_increase} GiB",
+				"actions": disk_space_actions(server),
 			},
 		)
 

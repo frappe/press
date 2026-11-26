@@ -67,3 +67,7 @@
   supervisorctl:
     name: 'agent:'
     state: started
+
+- name: Rotate Agent Cron Logs
+  import_role:
+    name: rotate_agent_logs

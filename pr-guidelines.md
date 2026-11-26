@@ -5,6 +5,14 @@ Guidelines for opening pull requests in this project.
 Open pull requests against the `develop` branch, not `master`. Add the
 `backport-master` label to each pull request.
 
+CI runs commitlint on the PR title. Write the title as a commit header, with
+the rules in [commit-guidelines.md](commit-guidelines.md). The title must be 72
+characters or fewer. Before you open the pull request, lint the title:
+
+```bash
+echo "<title>" | npx commitlint
+```
+
 Never hard-wrap the PR description at 80 characters, or at any width. GitHub
 renders the description as markdown and wraps it for the reader. Hand-wrapped
 lines break when the reader changes the width of the box, and they are hard to

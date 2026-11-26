@@ -19,8 +19,14 @@ import jwt
 import requests
 import semantic_version as sv
 import tomli
+from frappe import _
 from frappe.utils.verified_command import get_secret
 
+from press.press.doctype.github_installation.github_installation import (
+	get_selector_options,
+	is_enabled_for_team,
+	validate_team_can_use_installation,
+)
 from press.utils import docs, get_current_team, log_error
 
 if TYPE_CHECKING:
@@ -184,8 +190,10 @@ def clear_current_team_access_token(team: str | None = None):
 @frappe.whitelist()
 def options():
 	team = get_current_team()
-	token = frappe.db.get_value("Team", team, "github_access_token")
+	if is_enabled_for_team(team):
+		return get_selector_options(team)
 
+	token = frappe.db.get_value("Team", team, "github_access_token")
 	return {
 		"authorized": bool(token),
 		"installations": installations(token) if token else [],
@@ -295,6 +303,10 @@ def installations(token):
 
 
 def repositories(installation, token):
+	return fetch_repositories(f"https://api.github.com/user/installations/{installation}/repositories", token)
+
+
+def fetch_repositories(url: str, token: str | None) -> list[dict]:
 	headers = {
 		"Authorization": f"token {token}",
 		"Accept": "application/vnd.github.machine-man-preview+json",
@@ -302,11 +314,10 @@ def repositories(installation, token):
 	repositories = []
 	current_page, is_last_page = 1, False
 	while not is_last_page:
-		response = requests.get(
-			f"https://api.github.com/user/installations/{installation}/repositories",
-			params={"per_page": 100, "page": current_page},
-			headers=headers,
-		)
+		response = requests.get(url, params={"per_page": 100, "page": current_page}, headers=headers)
+		if not response.ok:
+			message = response.json().get("message", "Unknown error")
+			frappe.throw(_("Error fetching repositories from GitHub: {0}").format(message))
 		if len(response.json().get("repositories", [])) < 100:
 			is_last_page = True
 
@@ -327,6 +338,7 @@ def repositories(installation, token):
 
 @frappe.whitelist()
 def repository(owner: str, name: str, installation: str | None = None):
+	validate_team_can_use_installation(get_current_team(), installation)
 	token = ""
 	if not installation:
 		token = frappe.db.get_value("Press Settings", "github_access_token")
@@ -362,6 +374,11 @@ def repository(owner: str, name: str, installation: str | None = None):
 
 @frappe.whitelist()
 def app(owner: str, repository: str, branch: str, installation: str | None = None):
+	validate_team_can_use_installation(get_current_team(), installation)
+	return get_app_info(owner, repository, branch, installation)
+
+
+def get_app_info(owner: str, repository: str, branch: str, installation: str | None = None):
 	headers = get_auth_headers(installation)
 	response = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/branches/{branch}",
@@ -415,9 +432,22 @@ def branches(owner: str, name: str, installation: str | None = None, app_source:
 	"""
 	Return ALL branches for the repo, following GitHub pagination.
 	"""
-	if not installation and app_source:
-		installation = frappe.db.get_value("App Source", app_source, "github_installation_id")
+	if app_source and not installation:
+		return get_branches_for_app_source(app_source)
 
+	validate_team_can_use_installation(get_current_team(), installation)
+	return get_branches(owner, name, installation)
+
+
+def get_branches_for_app_source(app_source: str) -> list[dict]:
+	source = frappe.get_doc("App Source", app_source)
+	if not source.public and not source.has_permission("read"):
+		frappe.throw(_("You don't have access to this app source."), frappe.PermissionError)
+
+	return get_branches(source.repository_owner, source.repository, source.github_installation_id)
+
+
+def get_branches(owner: str, name: str, installation: str | None = None) -> list[dict]:
 	headers = get_auth_headers(installation)
 
 	out: list[dict] = []
@@ -517,6 +547,13 @@ def _get_compatible_frappe_version_from_pyproject(
 
 @frappe.whitelist()
 def get_frappe_branch_major_version(
+	owner: str, repository: str, branch: str, installation: str | None = None
+) -> int:
+	validate_team_can_use_installation(get_current_team(), installation)
+	return fetch_frappe_branch_major_version(owner, repository, branch, installation)
+
+
+def fetch_frappe_branch_major_version(
 	owner: str, repository: str, branch: str, installation: str | None = None
 ) -> int:
 	"""Get the major Frappe version declared in `frappe/__init__.py` of the given branch."""

@@ -12,6 +12,7 @@ from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 
+from press.press.doctype.github_installation.github_installation import disable_installations_for_account
 from press.utils import log_error
 
 if TYPE_CHECKING:
@@ -112,6 +113,7 @@ class GitHubWebhookLog(Document):
 
 	def handle_installation_deletion(self, payload):
 		owner = payload["installation"]["account"]["login"]
+		disable_installations_for_account(payload["installation"])
 		repositories = payload.get("repositories", [])
 
 		for repo in repositories:

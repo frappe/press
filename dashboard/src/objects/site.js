@@ -1042,6 +1042,16 @@ export default {
 						if (message) {
 							return { title: message, type: 'warning' }
 						}
+						const upgrade = site.doc?.scheduled_version_upgrade
+						if (upgrade) {
+							return {
+								title: `A version upgrade to <b>${upgrade.version}</b> is scheduled for <b>${date(
+									upgrade.scheduled_time,
+									'lll',
+								)}</b>. It shows in this list when it starts.`,
+								type: 'gray',
+							}
+						}
 						const bannerTitle =
 							'Your site is currently on a shared bench. Upgrade to a private bench to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.'
 						return getUpsellBanner(site, bannerTitle)

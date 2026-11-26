@@ -229,10 +229,14 @@ class AgentJob(Document):
 			else:
 				monitor = None
 
+			job = self.as_dict()
+			# The request carries passwords such as mariadb_root_password, and the log file keeps them
+			job.pop("request_data", None)
+			job.pop("request_files", None)
 			data = {
 				"monitor": monitor,
 				"timestamp": frappe.utils.now(),
-				"job": self.as_dict(),
+				"job": job,
 			}
 			serialized = json.dumps(data, sort_keys=True, default=str, separators=(",", ":"))
 			frappe.cache().rpush(AGENT_LOG_KEY, serialized)
@@ -389,17 +393,6 @@ class AgentJob(Document):
 	def validate_dashboard_cancellation(self):
 		if self.job_type not in DASHBOARD_CANCELLABLE_JOB_TYPES:
 			frappe.throw(f"{self.job_type} jobs can't be cancelled")
-
-		# Without a backup the failed update has nothing to recover from, so
-		# cancelling would leave the site broken on the destination bench.
-		if self.job_type == "Update Site Migrate" and frappe.db.exists(
-			"Site Update", {"update_job": self.name, "skipped_backups": 1}
-		):
-			frappe.throw(
-				"This site update started with backups skipped. "
-				"Without a backup the site cannot be rolled back to the old bench. "
-				"Wait for the update to finish."
-			)
 
 	def on_trash(self):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
@@ -797,14 +790,26 @@ def lock_doc_updated_by_job(job_name):
 
 
 def redact_job_data(data):
-	# Only the free text fields; other keys carry results that callbacks read back
-	if not isinstance(data, dict):
-		return data
+	# Only the free text fields, at any depth; other keys carry results that callbacks read back
+	if isinstance(data, dict):
+		return {key: _redact_job_value(key, value) for key, value in data.items()}
+	if isinstance(data, list):
+		return [redact_job_data(item) for item in data]
+	return data
 
-	return {
-		**data,
-		**{key: redact_secrets(data[key]) for key in FREE_TEXT_JOB_DATA_KEYS if key in data},
-	}
+
+def _redact_job_value(key, value):
+	# Some steps nest results, e.g. {"tables": {table: {"command": ...}}}
+	if key in FREE_TEXT_JOB_DATA_KEYS and _is_text(value):
+		return redact_secrets(value)
+	return redact_job_data(value)
+
+
+def _is_text(value):
+	# An argv list can hold ints (ports) or None, but not nested results
+	if isinstance(value, list | tuple):
+		return not any(isinstance(part, dict | list | tuple) for part in value)
+	return isinstance(value, str)
 
 
 def update_job(job_name, job):
@@ -1378,7 +1383,6 @@ def flush():
 	try:
 		# Fetch all entries without removing from cache
 		logs = frappe.cache().lrange(AGENT_LOG_KEY, 0, -1)
-		print("LOGS", logs)
 		if logs:
 			logs = list(map(frappe.safe_decode, logs))
 			with open(log_file, "a", os.O_NONBLOCK) as f:

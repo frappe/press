@@ -96,6 +96,7 @@ from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
 from press.press.doctype.site_config.site_config import (
 	decode_json_config_value,
+	decode_number_config_value,
 	parse_json_config_value,
 )
 from press.press.doctype.site_plan.site_plan import get_plan_config
@@ -446,6 +447,7 @@ class Site(Document, TagHelpers):
 		doc.has_scheduled_updates = bool(
 			frappe.db.exists("Site Update", {"site": self.name, "status": "Scheduled"})
 		)
+		doc.scheduled_version_upgrade = self.get_scheduled_version_upgrade()
 		doc.update_information = self.get_update_information()
 		doc.fatal_update = (
 			frappe.db.get_value(
@@ -890,6 +892,19 @@ class Site(Document, TagHelpers):
 		if len(self.logical_backup_times) > 1:
 			frappe.throw("We set up the backup times of your site. Write to support to change them.")
 
+	def get_scheduled_version_upgrade(self) -> dict | None:
+		"""The next scheduled Version Upgrade, so the dashboard can show it before it starts"""
+		upgrade = frappe.db.get_value(
+			"Version Upgrade",
+			{"site": self.name, "status": "Scheduled"},
+			["scheduled_time", "destination_group"],
+			as_dict=True,
+			order_by="scheduled_time asc",
+		)
+		if upgrade:
+			upgrade.version = frappe.db.get_value("Release Group", upgrade.destination_group, "version")
+		return upgrade
+
 	def plan_allows_backup_schedule(self) -> bool:
 		"""Entry-level plans stay on the default schedule.
 
@@ -1083,7 +1098,7 @@ class Site(Document, TagHelpers):
 			row.type = key_type
 
 			if key_type == "Number":
-				key_value = int(row.value) if isinstance(row.value, float | int) else json.loads(row.value)
+				key_value = decode_number_config_value(row.value)
 			elif key_type == "Boolean":
 				key_value = (
 					row.value if isinstance(row.value, bool) else bool(sbool(json.loads(cstr(row.value))))
@@ -3472,6 +3487,28 @@ class Site(Document, TagHelpers):
 		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
 
+	def get_restore_hold(self) -> str | None:
+		"""The status that a hold gives the site. A restore replaces the status with Pending, so read the hold."""
+		if not self.get_config_value_for_key("maintenance_mode"):
+			return None
+		# Support can restore a suspended site. Activate keeps suspended_at, so also need maintenance_mode.
+		return "Suspended" if self.suspended_at else "Inactive"
+
+	def activate_after_restore(self):
+		"""A restore marks the site Active, so also remove the hold of a deactivated site."""
+		if self.get_restore_hold() != "Inactive":
+			return
+		log_site_activity(self.name, "Activate Site", "Restore")
+		self.update_site_config({"maintenance_mode": 0})
+		self.update_site_status_on_proxy("activated")
+
+	def keep_suspension_after_restore(self, restore_ran: bool):
+		"""The Pending save of the restore enabled the subscription again."""
+		if restore_ran:
+			# A restored config file turns maintenance_mode off on the server
+			self.update_site_config({"maintenance_mode": 1})
+		self.disable_subscription()
+
 	@frappe.whitelist()
 	def suspend(self, reason=None, skip_reload=False):
 		log_site_activity(self.name, "Suspend Site", reason)
@@ -5328,6 +5365,13 @@ def update_backup_restoration_test_status(job, updated_status):
 		status_map[updated_status],
 	)
 	frappe.db.commit()
+	if status_map[updated_status] == "Failure":
+		from press.press.doctype.backup_restoration_test.backup_test import (
+			alert_backup_restoration_test_failure,
+		)
+
+		url = frappe.utils.get_url_to_form("Backup Restoration Test", backup_tests[0])
+		alert_backup_restoration_test_failure(f"Test site {job.site} is broken: {url}")
 
 
 def process_new_site_job_update(job):  # noqa: C901
@@ -5643,23 +5687,32 @@ def process_marketplace_hooks_for_backup_restore(apps_from_backup: set[str], sit
 			marketplace_app_hook(app=app, site=site, op="uninstall")
 
 
-def process_restore_job_update(job, force=False):
-	"""
-	force: force updates apps table sync
-	"""
-	updated_status = {
+def get_status_after_restore(job_status: str, hold: str | None) -> str:
+	"""A restore that did not run keeps the hold. A restore that ran lifts a deactivation, not a suspension."""
+	if hold == "Suspended" and job_status in ("Success", "Delivery Failure"):
+		return "Suspended"
+	if hold == "Inactive" and job_status == "Delivery Failure":
+		return "Inactive"
+	return {
 		"Pending": "Pending",
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Broken",
 		"Delivery Failure": "Active",
-	}[job.status]
+	}[job_status]
 
-	site_status = frappe.get_value("Site", job.site, "status")
-	if force or updated_status != site_status:
+
+def process_restore_job_update(job, force=False):
+	"""
+	force: force updates apps table sync
+	"""
+	site = Site("Site", job.site)
+	hold = site.get_restore_hold()
+	updated_status = get_status_after_restore(job.status, hold)
+
+	if force or updated_status != site.status:
 		if job.status == "Success":
 			apps_from_backup: list[str] = [line.split()[0] for line in job.output.splitlines() if line]
-			site = Site("Site", job.site)
 			is_unified_server = frappe.db.get_value("Server", site.server, "is_unified_server")
 			# Only noticed this on unified servers
 			if is_unified_server:
@@ -5671,9 +5724,12 @@ def process_restore_job_update(job, force=False):
 			site.db_set("creation_failed", None)
 			site.db_set("fatal_site_update", None)
 			site.db_set("database_name", None)
+			site.activate_after_restore()
 
 		elif job.status == "Failure":
 			frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
+		if hold == "Suspended" and job.status in ("Success", "Failure", "Delivery Failure"):
+			site.keep_suspension_after_restore(restore_ran=job.status != "Delivery Failure")
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
 

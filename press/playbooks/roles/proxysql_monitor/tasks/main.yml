@@ -30,8 +30,10 @@
     dest: /home/frappe/proxysql/monitor.cnf
     owner: root
     group: root
-    mode: 0644
+    mode: 0600
+  no_log: true
 
+# The exporter connects to MariaDB directly; ProxySQL must reject this user
 - name: Remove ProxySQL Monitor User
   mysql_query:
     login_user: frappe
@@ -44,18 +46,17 @@
       - SAVE MYSQL USERS FROM RUNTIME
       - SAVE MYSQL USERS TO DISK
 
-
-- name: Create ProxySQL Monitoring User
+- name: Set ProxySQL Monitor Password
   mysql_query:
     login_user: frappe
     login_password: "{{ proxysql_admin_password }}"
     login_host: 127.0.0.1
     login_port: 6032
     query:
-      - "INSERT INTO mysql_users (username, password, default_hostgroup, default_schema, use_ssl, max_connections) VALUES ('monitor', 'monitor', {{ default_hostgroup }}, NULL, 1, 16)"
-      - LOAD MYSQL USERS TO RUNTIME
-      - SAVE MYSQL USERS FROM RUNTIME
-      - SAVE MYSQL USERS TO DISK
+      - "UPDATE global_variables SET variable_value = '{{ mariadb_monitor_password }}' WHERE variable_name = 'mysql-monitor_password'"
+      - LOAD MYSQL VARIABLES TO RUNTIME
+      - SAVE MYSQL VARIABLES TO DISK
+  no_log: true
 
 - name: Create MySQL Exporter Systemd Service File
   template:

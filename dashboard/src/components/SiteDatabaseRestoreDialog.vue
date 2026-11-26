@@ -7,6 +7,15 @@
 		<template v-slot:body-content>
 			<div class="space-y-4">
 				<p class="text-base">Restore your site using a previous backup.</p>
+				<p class="text-sm text-ink-gray-6">
+					Each file can be up to 5 GB. For larger files, use the
+					<a
+						class="underline"
+						href="https://docs.frappe.io/cloud/sites/migrate-an-existing-site#migrate-using-fc-restore-cli"
+						target="_blank"
+						>FC Restore CLI</a
+					>.
+				</p>
 				<div
 					class="flex items-center rounded border border-outline-gray-1 bg-surface-gray-2 p-4 text-sm text-ink-gray-6"
 				>
