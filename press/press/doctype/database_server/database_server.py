@@ -2048,13 +2048,18 @@ class DatabaseServer(BaseServer):
 	def recommended_max_db_connections(self):
 		"""
 		Based on historical data, the simple formula for recommending max_connections is:
-		5 DB Users per GB of RAM
+		5 DB Users per GB of RAM (10 per GB on public servers)
 
-		e.g. For 4GB of server, this will be 20
+		e.g. For 4GB of server, this will be 20 (40 if public)
+
+		Public servers host many benches, each with its own gunicorn and background
+		workers, so they run out of connections much sooner than dedicated servers.
+		At 10 per GB, the InnoDB buffer pool still gets ~60-65% of RAM.
 
 		But, set lower bound of 50 connections
 		"""
-		return 5 * round(self.ram / 1024)
+		connections_per_gb = 10 if self.public else 5
+		return connections_per_gb * round(self.ram / 1024)
 
 	@property
 	def ram_for_mariadb(self):
@@ -2072,21 +2077,16 @@ class DatabaseServer(BaseServer):
 		)
 
 	@frappe.whitelist()
-	def adjust_memory_config(self):  # noqa: C901
+	def adjust_memory_config(self):
 		if not self.ram:
 			return
 
 		self.memory_high = round(max(self.ram_for_mariadb / 1024 - 1, 1), 3)
 		self.memory_max = round(max(self.ram_for_mariadb / 1024, 2), 3)
 
+		# recommended_innodb_buffer_pool_size already leaves room for these connections,
+		# so they don't need to be reduced again when the buffer pool is below 65% of RAM
 		max_recommended_connections = max(50, self.recommended_max_db_connections)
-		# Check if we can add some extra connections
-		if self.recommended_innodb_buffer_pool_size < int(self.ram_for_mariadb * 0.65):
-			extra_connections = round(
-				(self.recommended_innodb_buffer_pool_size - int(self.ram_for_mariadb * 0.65))
-				/ self.memory_per_db_connection
-			)
-			max_recommended_connections += extra_connections
 
 		self.add_or_update_mariadb_variable(
 			"innodb_buffer_pool_size",
