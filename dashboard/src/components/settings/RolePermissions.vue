@@ -175,8 +175,13 @@ const permissionsResources = [
 		label: "All Sites",
 	},
 	{
+<<<<<<< HEAD
 		key: "all_release_groups",
 		label: "All Release Groups",
+=======
+		key: 'all_release_groups',
+		label: 'All Benches',
+>>>>>>> 6422b84 (fix(dashboard): Rename All Release Groups role permission to All Benches)
 	},
 ];
 
