@@ -1,0 +1,158 @@
+---
+# Agent gets its own filesystem, so a full root disk does not stop it
+- name: Check For Bench Data Volume
+  command: mountpoint -q /opt/volumes/benches
+  register: bench_volume
+  changed_when: false
+  failed_when: false
+
+- name: Check For Agent Volume
+  command: mountpoint -q /home/frappe/agent
+  register: agent_volume
+  changed_when: false
+  failed_when: false
+
+- name: Move Agent To Its Own Volume
+  when: bench_volume.rc != 0 and agent_volume.rc != 0
+  block:
+    - name: Measure Agent Directory
+      command: du -sxB1 /home/frappe/agent
+      register: agent_directory
+      changed_when: false
+
+    # Fails before the agent stops, so a copy cannot run out of space and leave the agent down
+    - name: Refuse An Agent Directory Too Large For The Agent Volume
+      vars:
+        agent_directory_size: '{{ agent_directory.stdout.split()[0] | int }}'
+      assert:
+        that: (agent_directory_size | int) <= 5 * 1073741824 * 0.8
+        fail_msg: 'The agent directory is {{ ((agent_directory_size | int) / 1073741824) | round(1) }}G. It must be 4G or less to fit in the 5G agent volume.'
+
+    - name: Allocate Agent Volume Image
+      command: fallocate -l 5G /home/frappe/agent.img
+      args:
+        creates: /home/frappe/agent.img
+
+    - name: Restrict Agent Volume Image Permissions
+      file:
+        path: /home/frappe/agent.img
+        mode: '0600'
+
+    # mkfs discards by punching holes in a file, which frees the blocks that fallocate reserved.
+    # Lazy init zeroes the inode tables after the first mount, and the loop device punches holes for those zeroes.
+    - name: Format Agent Volume Image
+      filesystem:
+        fstype: ext4
+        dev: /home/frappe/agent.img
+        opts: -E nodiscard,lazy_itable_init=0,lazy_journal_init=0
+
+    - name: Create Staging Mount Point
+      file:
+        path: /mnt/agent
+        state: directory
+
+    # Workers finish their running jobs first, while redis is still up
+    - name: Stop Agent
+      shell: |
+        supervisorctl stop $(supervisorctl status | awk '/agent:worker/{print $1}')
+        supervisorctl stop agent:*
+
+    # One task, because Press does not track tasks in a nested block or in always
+    - name: Copy Agent Directory To Agent Volume
+      shell: |
+        mount -o loop /home/frappe/agent.img /mnt/agent || exit 1
+        cp -a /home/frappe/agent/. /mnt/agent/
+        status=$?
+        umount /mnt/agent
+        exit $status
+
+    - name: Move Old Agent Directory Aside
+      command: mv /home/frappe/agent /home/frappe/agent.old
+
+    - name: Mount Agent Volume
+      ansible.posix.mount:
+        src: /home/frappe/agent.img
+        path: /home/frappe/agent
+        fstype: ext4
+        # noinit_itable: the background inode table init writes zeroes, and the loop device punches holes for them
+        opts: loop,nofail,noinit_itable
+        state: mounted
+
+# The tasks below are outside the block, so a retry after a failed run finishes them.
+# BindsTo stops supervisor and nginx when the mount is missing, so they run only on a mounted agent volume.
+- name: Check For Mounted Agent Volume
+  command: mountpoint -q /home/frappe/agent
+  register: agent_volume_mounted
+  changed_when: false
+  failed_when: false
+
+- name: Create Drop-In Directories
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
+  file:
+    path: /etc/systemd/system/{{ item }}.service.d
+    state: directory
+  loop: [supervisor, nginx]
+
+- name: Set Supervisor and NGINX to depend on Agent Volume
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
+  template:
+    src: mounts.conf
+    dest: /etc/systemd/system/{{ item }}.service.d/mounts.conf
+    owner: root
+    group: root
+    mode: 0644
+  loop: [supervisor, nginx]
+
+- name: Reload Systemd
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
+  systemd:
+    daemon_reload: true
+
+- name: Remove Old Agent Directory
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
+  file:
+    path: /home/frappe/agent.old
+    state: absent
+
+- name: Reload NGINX
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
+  service:
+    name: nginx
+    state: reloaded
+
+- name: Start Agent
+  supervisorctl:
+    name: 'agent:'
+    state: started
+
+# Holes in agent.img need free space on the root disk when they are written.
+# With a full root disk, those writes fail, and writes without fsync are lost silently.
+# fstrim.timer trims fstab mounts every week, and on a loop device a trim punches holes in agent.img.
+# Kernel 5.4 cannot turn discards off for a loop device, so fill the holes again after each trim.
+- name: Create fstrim Drop-In Directory
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
+  file:
+    path: /etc/systemd/system/fstrim.service.d
+    state: directory
+
+- name: Allocate Agent Volume Image After fstrim
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
+  copy:
+    dest: /etc/systemd/system/fstrim.service.d/agent-volume.conf
+    content: |
+      [Service]
+      # + runs this outside the sandbox, which hides /home on Ubuntu 20.04
+      ExecStopPost=-+/bin/sh -c 'fallocate -l `stat -c %%s /home/frappe/agent.img` /home/frappe/agent.img'
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Reload Systemd For fstrim Drop-In
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
+  systemd:
+    daemon_reload: true
+
+# Fills any holes that a trim already made
+- name: Allocate Holes In Agent Volume Image
+  when: bench_volume.rc != 0 and agent_volume_mounted.rc == 0
+  shell: fallocate -l $(stat -c %s /home/frappe/agent.img) /home/frappe/agent.img

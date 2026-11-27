@@ -885,8 +885,10 @@ class BaseServer(Document, TagHelpers):
 
 			if play.status == "Success":
 				self.status = "Active"
+				self.is_server_setup = True
 				self.set_auditd_setup_from_base_playbook()
 				database_server.status = "Active"
+				database_server.is_server_setup = True
 				database_server.set_auditd_setup_from_base_playbook()
 			else:
 				self.status = "Broken"
@@ -3758,6 +3760,41 @@ class Server(BaseServer):
 	@frappe.whitelist()
 	def setup_ncdu(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu", queue="long", timeout=3600)
+
+	@frappe.whitelist()
+	def setup_agent_volume(self):
+		# The play only checks the live mount, so an unmounted data volume would slip past it
+		if self.has_data_volume:
+			frappe.throw("This server has a data volume. It does not need an agent volume.")
+		self.run_press_job("Setup Agent Volume")
+
+	def _setup_agent_volume(self):
+		self._run_agent_volume_play("agent_volume.yml")
+
+	@frappe.whitelist()
+	def increase_agent_volume(self, size: int = 2):
+		size = int(size)
+		if size < 1:
+			frappe.throw("The size to add must be 1 GB or more. Enter a whole number of GB, such as 2.")
+		frappe.enqueue_doc(self.doctype, self.name, "_increase_agent_volume", size=size)
+
+	def _increase_agent_volume(self, size: int):
+		self._run_agent_volume_play("increase_agent_volume.yml", {"agent_volume_increase": size})
+
+	def _restore_agent_directory(self):
+		self._run_agent_volume_play("restore_agent_directory.yml")
+
+	def _run_agent_volume_play(self, playbook: str, variables: dict | None = None):
+		# Raises, so the Create Server job and the enqueued job both fail with the play
+		play = Ansible(
+			playbook=playbook,
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+			variables=variables,
+		).run()
+		if play.status != "Success":
+			raise Exception(f"{playbook} failed on {self.name}. See Ansible Play {play.name}.")
 
 	@frappe.whitelist()
 	def setup_rclone(self):

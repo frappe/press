@@ -42,6 +42,7 @@ from press.press.doctype.site.test_site import create_test_bench, create_test_si
 from press.press.doctype.team.test_team import create_test_press_admin_team, create_test_team
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+from press.utils.test import foreground_enqueue_doc
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.server_plan.server_plan import ServerPlan
@@ -1527,6 +1528,89 @@ class TestServerDecommissionNotice(FrappeTestCase):
 		printed = " ".join(str(call.args[0]) for call in mock_print.call_args_list)
 		self.assertIn("not sending this as already sent on", printed)
 		self.assertIn(email_queue.name, printed)
+
+
+class TestAgentVolume(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_setup_agent_volume_starts_press_job(self):
+		server = create_test_server()
+		with patch.object(Server, "run_press_job") as run_press_job:
+			server.setup_agent_volume()
+		run_press_job.assert_called_once_with("Setup Agent Volume")
+
+	def test_setup_agent_volume_refused_on_server_with_data_volume_even_if_unmounted(self):
+		server = create_test_server()
+		server.has_data_volume = 1  # Set directly; the test VM's fetch_from overwrites the helper argument
+		with (
+			patch.object(Server, "run_press_job") as run_press_job,
+			self.assertRaisesRegex(frappe.ValidationError, "This server has a data volume"),
+		):
+			server.setup_agent_volume()
+		run_press_job.assert_not_called()
+
+	def test_setup_agent_volume_runs_agent_volume_playbook(self):
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._setup_agent_volume()
+		self.assertEqual(Ansible.call_args.kwargs["playbook"], "agent_volume.yml")
+
+	def test_successful_unified_server_setup_marks_both_servers_set_up(self):
+		"""Setup Unified Server shows only while is_server_setup is off, so a server in use must not show it."""
+		server = create_test_server()
+		frappe.db.set_value("Database Server", server.database_server, "memory_allocator", "System")
+		with (
+			patch("press.press.doctype.server.server.Ansible") as Ansible,
+			patch.object(Server, "get_certificate"),
+			patch.object(Server, "get_log_server", return_value=(None, None)),
+			patch.object(Server, "get_nat_gateway_ip", return_value=None),
+			patch("press.press.doctype.database_server.database_server.DatabaseServer._get_config"),
+		):
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._setup_unified_server()
+
+		self.assertEqual(Ansible.call_args.kwargs["playbook"], "unified_server.yml")
+		self.assertEqual(
+			frappe.db.get_value("Server", server.name, ["status", "is_server_setup"]), ("Active", 1)
+		)
+		self.assertEqual(frappe.db.get_value("Database Server", server.database_server, "is_server_setup"), 1)
+
+	def test_restore_agent_directory_runs_restore_playbook(self):
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._restore_agent_directory()
+		self.assertEqual(Ansible.call_args.kwargs["playbook"], "restore_agent_directory.yml")
+
+	def test_setup_agent_volume_raises_with_play_name_when_play_fails(self):
+		server = create_test_server()
+		with patch("press.press.doctype.server.server.Ansible") as Ansible:
+			Ansible.return_value.run.return_value = Mock(status="Failure")
+			Ansible.return_value.run.return_value.name = "play-1"  # Mock(name=) only sets the repr
+			with self.assertRaisesRegex(Exception, "agent_volume.yml failed .* See Ansible Play play-1"):
+				server._setup_agent_volume()
+
+	def test_increase_agent_volume_passes_size_from_dialog_to_playbook_as_gigabytes(self):
+		server = create_test_server()
+		with (
+			patch("press.press.doctype.server.server.frappe.enqueue_doc", new=foreground_enqueue_doc),
+			patch("press.press.doctype.server.server.Ansible") as Ansible,
+		):
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server.increase_agent_volume("3")
+		self.assertEqual(Ansible.call_args.kwargs["playbook"], "increase_agent_volume.yml")
+		self.assertEqual(Ansible.call_args.kwargs["variables"], {"agent_volume_increase": 3})
+
+	def test_increase_agent_volume_refuses_less_than_1_gb(self):
+		server = create_test_server()
+		with (
+			patch("press.press.doctype.server.server.frappe.enqueue_doc") as enqueue_doc,
+			self.assertRaisesRegex(frappe.ValidationError, "must be 1 GB or more"),
+		):
+			server.increase_agent_volume("0")
+		enqueue_doc.assert_not_called()
 
 
 class TestAddToPublicGroups(FrappeTestCase):

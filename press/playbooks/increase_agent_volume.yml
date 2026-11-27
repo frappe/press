@@ -1,0 +1,8 @@
+---
+- name: Increase Agent Volume
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  roles:
+    - role: increase_agent_volume
