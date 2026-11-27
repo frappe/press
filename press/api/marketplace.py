@@ -16,7 +16,7 @@ from press.api.site import (
 	protected,
 )
 from press.press.doctype.app.app import new_app as new_app_doc
-from press.press.doctype.github_installation.github_installation import validate_team_can_use_installation
+from press.press.doctype.github_installation.github_installation import validate_team_can_use_repository
 from press.press.doctype.marketplace_app.marketplace_app import (
 	MarketplaceApp,
 	get_plans_for_app,
@@ -754,7 +754,7 @@ def is_on_marketplace(app: str) -> bool:
 def new_app(app: dict):
 	name = app["name"]
 	team = get_current_team()
-	validate_team_can_use_installation(team, app["github_installation_id"])
+	validate_team_can_use_repository(team, app["github_installation_id"], app["repository_url"])
 
 	if frappe.db.exists("App", name):
 		app_doc = frappe.get_doc("App", name)
