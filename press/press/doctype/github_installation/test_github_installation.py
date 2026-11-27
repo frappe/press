@@ -15,6 +15,8 @@ from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.team.test_team import create_test_team
 
+MODULE = "press.press.doctype.github_installation.github_installation"
+
 
 def make_installation(installation_id: int, account_id: int, login: str) -> dict:
 	return {
@@ -106,7 +108,7 @@ class TestGitHubInstallation(FrappeTestCase):
 
 		self.assertFalse(frappe.db.exists("GitHub Installation", {"account_id": "301"}))
 
-	def test_options_lists_enabled_installations_with_repos_from_installation_token(self):
+	def test_options_lists_enabled_installations_without_calling_github(self):
 		from press.api.github import options
 
 		self._save_access_token(
@@ -115,6 +117,41 @@ class TestGitHubInstallation(FrappeTestCase):
 		frappe.db.set_value(
 			"GitHub Installation", {"team": self.team.name, "account_id": "102"}, "enabled", 0
 		)
+
+		with (
+			patch("press.api.github.get_current_team", return_value=self.team.name),
+			patch("press.api.github.get_access_token") as get_access_token,
+			patch("press.api.github.requests.get") as get,
+		):
+			data = options()
+
+		get_access_token.assert_not_called()
+		get.assert_not_called()
+		self.assertTrue(data["authorized"])
+		self.assertEqual([installation["login"] for installation in data["installations"]], ["acme"])
+		self.assertNotIn("repos", data["installations"][0])
+
+	def test_options_for_team_without_flag_lists_installations_with_one_call_and_no_repos(self):
+		from press.api.github import options
+
+		frappe.db.set_value("Team", self.team.name, "github_installations_enabled", 0)
+		frappe.db.set_value("Team", self.team.name, "github_access_token", "user-token")
+		response = make_response({"installations": [make_installation(11, 101, "acme")]})
+
+		with (
+			patch("press.api.github.get_current_team", return_value=self.team.name),
+			patch("press.api.github.requests.get", return_value=response) as get,
+		):
+			data = options()
+
+		get.assert_called_once()
+		self.assertEqual(data["installations"][0]["login"], "acme")
+		self.assertNotIn("repos", data["installations"][0])
+
+	def test_installation_repositories_lists_repos_with_installation_token_for_linked_installation(self):
+		from press.api.github import installation_repositories
+
+		self._save_access_token(self.team.name, [make_installation(11, 101, "acme")])
 		repository = {"id": 1, "name": "app", "private": True, "html_url": "url", "default_branch": "main"}
 
 		with (
@@ -124,63 +161,87 @@ class TestGitHubInstallation(FrappeTestCase):
 				"press.api.github.requests.get", return_value=make_response({"repositories": [repository]})
 			) as get,
 		):
-			data = options()
+			repositories = installation_repositories("11")
 
 		get_access_token.assert_called_once_with("11")
 		self.assertEqual(get.call_args.args[0], "https://api.github.com/installation/repositories")
-		self.assertTrue(data["authorized"])
-		self.assertEqual([installation["login"] for installation in data["installations"]], ["acme"])
-		self.assertEqual(data["installations"][0]["repos"][0]["name"], "app")
-
-	def test_options_skips_installation_github_mints_no_token_for_and_lists_the_rest(self):
-		from press.api.github import options
-
-		self._save_access_token(
-			self.team.name, [make_installation(11, 101, "acme"), make_installation(12, 102, "beta")]
+		self.assertEqual(get.call_args.kwargs["headers"]["Authorization"], "token installation-token")
+		self.assertEqual(
+			repositories,
+			[{"id": 1, "name": "app", "private": True, "url": "url", "default_branch": "main"}],
 		)
-		repository = {"id": 1, "name": "app", "private": True, "html_url": "url", "default_branch": "main"}
+
+	def test_installation_repositories_rejects_installation_not_linked_to_flagged_team(self):
+		from press.api.github import installation_repositories
+
+		self._save_access_token(self.team.name, [make_installation(11, 101, "acme")])
+		frappe.db.set_value("GitHub Installation", {"team": self.team.name}, "enabled", 0)
+
+		for installation in ("11", "999"):
+			with (
+				patch("press.api.github.get_current_team", return_value=self.team.name),
+				patch("press.api.github.get_access_token") as get_access_token,
+				self.assertRaisesRegex(frappe.PermissionError, "isn't connected to your team"),
+			):
+				installation_repositories(installation)
+
+			get_access_token.assert_not_called()
+
+	def test_installation_repositories_logs_and_fails_when_github_mints_no_token(self):
+		from press.api.github import installation_repositories
+
+		self._save_access_token(self.team.name, [make_installation(11, 101, "acme")])
 
 		with (
 			patch("press.api.github.get_current_team", return_value=self.team.name),
-			patch("press.api.github.get_access_token", side_effect={"11": None, "12": "token"}.get),
-			patch(
-				"press.api.github.requests.get", return_value=make_response({"repositories": [repository]})
-			),
-			patch("press.press.doctype.github_installation.github_installation.log_error") as log_error,
+			patch("press.api.github.get_access_token", return_value=None),
+			patch("press.api.github.requests.get") as get,
+			patch(f"{MODULE}.log_error") as log_error,
+			patch(f"{MODULE}.frappe.db.commit") as commit,
+			self.assertRaisesRegex(frappe.ValidationError, "GitHub gave no access token for installation 11"),
 		):
-			data = options()
+			installation_repositories("11")
 
-		self.assertTrue(data["authorized"])
-		self.assertEqual([installation["login"] for installation in data["installations"]], ["beta"])
-		log_error.assert_called_once()
+		get.assert_not_called()
+		self.assertEqual(log_error.call_args.args[0], "GitHub Installation Repositories Error")
+		self.assertEqual(log_error.call_args.kwargs["doc"].installation_id, "11")
+		commit.assert_called_once()
 
-	def test_options_skips_installation_github_refuses_repositories_for_and_lists_the_rest(self):
-		from press.api.github import options
+	def test_installation_repositories_logs_and_fails_with_githubs_message_when_listing_is_refused(self):
+		from press.api.github import installation_repositories
 
-		self._save_access_token(
-			self.team.name, [make_installation(11, 101, "acme"), make_installation(12, 102, "beta")]
-		)
-		repository = {"id": 1, "name": "app", "private": True, "html_url": "url", "default_branch": "main"}
-		responses = {
-			"token-11": make_response({"message": "Resource not accessible by integration"}, ok=False),
-			"token-12": make_response({"repositories": [repository]}),
-		}
-
-		def get(url, params, headers):
-			return responses[headers["Authorization"].removeprefix("token ")]
+		self._save_access_token(self.team.name, [make_installation(11, 101, "acme")])
+		refused = make_response({"message": "Resource not accessible by integration"}, ok=False)
 
 		with (
 			patch("press.api.github.get_current_team", return_value=self.team.name),
-			patch(
-				"press.api.github.get_access_token", side_effect=lambda installation: f"token-{installation}"
+			patch("press.api.github.get_access_token", return_value="installation-token"),
+			patch("press.api.github.requests.get", return_value=refused),
+			patch(f"{MODULE}.log_error") as log_error,
+			patch(f"{MODULE}.frappe.db.commit") as commit,
+			self.assertRaisesRegex(
+				frappe.ValidationError, "Error fetching repositories from GitHub: Resource not accessible"
 			),
-			patch("press.api.github.requests.get", side_effect=get),
-			patch("press.press.doctype.github_installation.github_installation.log_error") as log_error,
 		):
-			data = options()
+			installation_repositories("11")
 
-		self.assertEqual([installation["login"] for installation in data["installations"]], ["beta"])
 		log_error.assert_called_once()
+		commit.assert_called_once()
+
+	def test_installation_repositories_for_team_without_flag_uses_the_teams_user_token(self):
+		from press.api.github import installation_repositories
+
+		frappe.db.set_value("Team", self.team.name, "github_installations_enabled", 0)
+		frappe.db.set_value("Team", self.team.name, "github_access_token", "user-token")
+
+		with (
+			patch("press.api.github.get_current_team", return_value=self.team.name),
+			patch("press.api.github.requests.get", return_value=make_response({"repositories": []})) as get,
+		):
+			installation_repositories("11")
+
+		self.assertEqual(get.call_args.args[0], "https://api.github.com/user/installations/11/repositories")
+		self.assertEqual(get.call_args.kwargs["headers"]["Authorization"], "token user-token")
 
 	def test_options_for_flagged_team_without_installations_asks_to_connect(self):
 		from press.api.github import options

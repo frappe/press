@@ -80,12 +80,22 @@
 			</Link>
 		</span>
 		<ErrorMessage :message="$resources.installationUrl.error" />
+		<div
+			v-if="selectedGithubUserData && $resources.repositories?.loading"
+			class="flex justify-center"
+		>
+			<LoadingText />
+		</div>
+		<ErrorMessage
+			v-else-if="selectedGithubUserData && $resources.repositories?.error"
+			:message="$resources.repositories.error"
+		/>
 		<FormControl
 			type="combobox"
-			v-if="selectedGithubUserData"
+			v-else-if="selectedGithubUserData"
 			label="Choose GitHub Repository"
 			:options="
-				(selectedGithubUserData.repos || []).map((r) => ({
+				repositories.map((r) => ({
 					label: r.name,
 					value: r.name,
 				}))
@@ -93,7 +103,7 @@
 			:modelValue="selectedGithubRepository?.value"
 			@update:modelValue="
 				(optionValue) => {
-					selectedGithubRepository = (selectedGithubUserData.repos || []).find(
+					selectedGithubRepository = repositories.find(
 						(option) => option.name === optionValue,
 					);
 				}
@@ -152,6 +162,7 @@ export default {
 	},
 	watch: {
 		selectedGithubUser() {
+			this.selectedGithubRepository = null
 			this.selectedBranch = ''
 			this.$emit('fieldChange')
 		},
@@ -167,12 +178,10 @@ export default {
 				installation: this.selectedGithubUser?.id,
 			})
 
-			if (this.selectedGithubUserData) {
-				let defaultBranch = this.selectedGithubUserData.repos.find(
-					(r) => r.name === repo.name,
-				).default_branch
-				this.selectedBranch = { label: defaultBranch, value: defaultBranch }
-			} else this.selectedBranch = ''
+			this.selectedBranch = {
+				label: repo.default_branch,
+				value: repo.default_branch,
+			}
 		},
 		selectedBranch(newSelectedBranch) {
 			if (this.appOwner && this.appName && newSelectedBranch)
@@ -202,6 +211,15 @@ export default {
 				onSuccess(installationData) {
 					window.location.href = this.getInstallationLink(installationData)
 				},
+			}
+		},
+		repositories() {
+			// A new resource per installation, so a late reply for an earlier pick is dropped
+			if (!this.selectedGithubUser) return null
+			return {
+				url: 'press.api.github.installation_repositories',
+				params: { installation: String(this.selectedGithubUser.id) },
+				auto: true,
 			}
 		},
 		branches() {
@@ -235,6 +253,9 @@ export default {
 	computed: {
 		options() {
 			return this.$resources.options.data
+		},
+		repositories() {
+			return this.$resources.repositories?.data || []
 		},
 		appOwner() {
 			return this.selectedGithubUser?.login
