@@ -188,6 +188,14 @@ frappe.ui.form.on('Server', {
 				__('Setup'),
 			],
 			[
+				__('Setup Unified Server'),
+				'setup_unified_server',
+				true,
+				// Only before setup: on a server in use, the play moves the agent without waiting for agent jobs
+				frm.doc.is_unified_server && !frm.doc.is_server_setup,
+				__('Setup'),
+			],
+			[
 				__('Add to Proxy'),
 				'add_upstream_to_proxy',
 				true,

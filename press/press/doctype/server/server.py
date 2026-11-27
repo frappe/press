@@ -885,8 +885,10 @@ class BaseServer(Document, TagHelpers):
 
 			if play.status == "Success":
 				self.status = "Active"
+				self.is_server_setup = True
 				self.set_auditd_setup_from_base_playbook()
 				database_server.status = "Active"
+				database_server.is_server_setup = True
 				database_server.set_auditd_setup_from_base_playbook()
 			else:
 				self.status = "Broken"

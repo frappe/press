@@ -1557,6 +1557,26 @@ class TestAgentVolume(FrappeTestCase):
 			server._setup_agent_volume()
 		self.assertEqual(Ansible.call_args.kwargs["playbook"], "agent_volume.yml")
 
+	def test_successful_unified_server_setup_marks_both_servers_set_up(self):
+		"""Setup Unified Server shows only while is_server_setup is off, so a server in use must not show it."""
+		server = create_test_server()
+		frappe.db.set_value("Database Server", server.database_server, "memory_allocator", "System")
+		with (
+			patch("press.press.doctype.server.server.Ansible") as Ansible,
+			patch.object(Server, "get_certificate"),
+			patch.object(Server, "get_log_server", return_value=(None, None)),
+			patch.object(Server, "get_nat_gateway_ip", return_value=None),
+			patch("press.press.doctype.database_server.database_server.DatabaseServer._get_config"),
+		):
+			Ansible.return_value.run.return_value = Mock(status="Success")
+			server._setup_unified_server()
+
+		self.assertEqual(Ansible.call_args.kwargs["playbook"], "unified_server.yml")
+		self.assertEqual(
+			frappe.db.get_value("Server", server.name, ["status", "is_server_setup"]), ("Active", 1)
+		)
+		self.assertEqual(frappe.db.get_value("Database Server", server.database_server, "is_server_setup"), 1)
+
 	def test_restore_agent_directory_runs_restore_playbook(self):
 		server = create_test_server()
 		with patch("press.press.doctype.server.server.Ansible") as Ansible:
