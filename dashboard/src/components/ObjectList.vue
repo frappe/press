@@ -128,6 +128,10 @@
 				<div v-else-if="$list?.list?.error" class="py-4 text-center">
 					<ErrorMessage :message="$list.list.error" />
 				</div>
+				<component
+					v-else-if="options.emptyState"
+					:is="options.emptyState(context)"
+				/>
 				<div
 					v-else
 					class="text-center text-sm leading-10 text-ink-gray-5 pb-[1.75rem]"
