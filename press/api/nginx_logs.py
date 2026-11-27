@@ -4,15 +4,19 @@
 
 from __future__ import annotations
 
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 import frappe
 from elasticsearch import Elasticsearch
-from frappe.utils import convert_utc_to_timezone, get_datetime, getdate
+from frappe.utils import convert_utc_to_timezone, get_datetime
 from frappe.utils.password import get_decrypted_password
 
+from press.api.analytics import auto_timespan_timegrain, parse_iso_datetime
 from press.api.site import protected
 from press.guards import site
+
+if TYPE_CHECKING:
+	from datetime import datetime
 
 LIMIT: Final[int] = 200
 MINIMUM_STATUS: Final[dict[str, int]] = {"All": 0, "Errors (4xx, 5xx)": 400, "Server Errors (5xx)": 500}
@@ -27,19 +31,66 @@ FIELDS: Final[list[str]] = [
 ]
 
 
+STATUS_CLASSES: Final[list[dict]] = [
+	{"key": "2xx, 3xx", "to": 400},
+	{"key": "4xx", "from": 400, "to": 500},
+	{"key": "5xx", "from": 500},
+]
+
+
 @frappe.whitelist()
 @protected("Site")
 @site.feature("monitor_access", site_key="name")
-def get(name: str, timezone: str, date: str, status: str = "All") -> list[dict]:
+def get(name: str, timezone: str, start: str, end: str, status: str = "All") -> dict:
+	start_time, end_time = parse_iso_datetime(start), parse_iso_datetime(end)
 	query = site_query(name)
 	query["bool"]["filter"] += [
-		{"range": {"@timestamp": day_range(date, timezone)}},
+		{"range": {"@timestamp": {"gte": start_time.isoformat(), "lte": end_time.isoformat()}}},
 		{"range": {"http.response.status_code": {"gte": MINIMUM_STATUS[status]}}},
 	]
 	response = log_server_client().search(
-		index="filebeat-*", query=query, sort=[{"@timestamp": "desc"}], size=LIMIT, source=FIELDS
+		index="filebeat-*",
+		query=query,
+		sort=[{"@timestamp": "desc"}],
+		size=LIMIT,
+		source=FIELDS,
+		aggs={"histogram": histogram_aggregation(start_time, end_time, timezone)},
 	)
-	return [to_row(hit["_source"], timezone) for hit in response["hits"]["hits"]]
+	return {
+		"rows": [to_row(hit["_source"], timezone) for hit in response["hits"]["hits"]],
+		"histogram": to_histogram(response["aggregations"]["histogram"]["buckets"]),
+	}
+
+
+def histogram_aggregation(start: datetime, end: datetime, timezone: str) -> dict:
+	"""Request counts in about 60 buckets, split by status class, labelled in the viewer's timezone."""
+	_, interval = auto_timespan_timegrain(start, end)
+	return {
+		"date_histogram": {
+			"field": "@timestamp",
+			"fixed_interval": f"{max(interval, 1)}s",
+			"time_zone": timezone,
+			"format": "yyyy-MM-dd HH:mm:ss",
+			"min_doc_count": 0,
+			"extended_bounds": {"min": start.isoformat(), "max": end.isoformat()},
+		},
+		"aggs": {"status": {"range": {"field": "http.response.status_code", "ranges": STATUS_CLASSES}}},
+	}
+
+
+def to_histogram(buckets: list[dict]) -> dict:
+	"""Shape the buckets for the dashboard BarChart: one stacked dataset per status class."""
+	return {
+		"labels": [bucket["key_as_string"] for bucket in buckets],
+		"datasets": [
+			{
+				"path": status_class["key"],
+				"stack": "status",
+				"values": [bucket["status"]["buckets"][index]["doc_count"] for bucket in buckets],
+			}
+			for index, status_class in enumerate(STATUS_CLASSES)
+		],
+	}
 
 
 def site_query(site_name: str) -> dict:
@@ -54,11 +105,6 @@ def site_query(site_name: str) -> dict:
 			"minimum_should_match": 1,
 		}
 	}
-
-
-def day_range(date: str, timezone: str) -> dict:
-	day = getdate(date).isoformat()
-	return {"gte": day, "lt": f"{day}||+1d", "time_zone": timezone}
 
 
 def log_server_client() -> Elasticsearch:
