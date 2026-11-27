@@ -286,7 +286,7 @@ class OffsiteBackupCheck(Audit):
 			resolve_bucket,
 		)
 
-		credentials = get_offsite_credentials()
+		credentials = get_offsite_credentials(bucket_name)
 		if not credentials:
 			raise frappe.ValidationError("Set the offsite backup credentials in Press Settings")
 		bucket = resolve_bucket(bucket_name)

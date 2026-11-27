@@ -10,10 +10,13 @@ from urllib.parse import parse_qs, urlparse
 import frappe
 from boto3 import client
 from frappe.utils import add_days, cint, getdate
-from frappe.utils.password import get_decrypted_password
 
 from press.agent import Agent
-from press.press.doctype.backup_bucket.backup_bucket import get_replication_target
+from press.press.doctype.backup_bucket.backup_bucket import (
+	get_bucket_provider,
+	get_provider_credentials,
+	get_replication_target,
+)
 from press.press.doctype.site_backup.site_backup import get_backup_bucket
 from press.utils import chunk
 
@@ -460,30 +463,20 @@ def get_site_buckets(site: str) -> list[dict]:
 
 
 def list_stored_backups(site: str, start: date, end: date) -> dict[str, dict]:
-	credentials = get_offsite_credentials()
-	if not credentials:
-		return {}
-
 	days: dict[str, dict] = {}
 	for bucket in get_site_buckets(site):
+		credentials = get_offsite_credentials(bucket["name"])
+		if not credentials:
+			continue
 		# The current cluster's bucket is walked first, so it wins where both hold a day
 		for day, entry in list_bucket(bucket, site, start, end, credentials).items():
 			days.setdefault(day, entry)
 	return days
 
 
-def get_offsite_credentials() -> tuple[str, str] | None:
+def get_offsite_credentials(bucket_name: str) -> tuple[str, str] | None:
 	"""None on a bench where offsite backups were never set up, which is not an error."""
-	access_key = frappe.db.get_single_value("Press Settings", "offsite_backups_access_key_id")
-	secret_key = get_decrypted_password(
-		"Press Settings",
-		"Press Settings",
-		"offsite_backups_secret_access_key",
-		raise_exception=False,
-	)
-	if not (access_key and secret_key):
-		return None
-	return access_key, secret_key
+	return get_provider_credentials(get_bucket_provider(bucket_name))
 
 
 def list_bucket(

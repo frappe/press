@@ -8,6 +8,7 @@
 	"engine": "InnoDB",
 	"field_order": [
 		"bucket_name",
+		"provider",
 		"region",
 		"endpoint_url",
 		"replication_enabled",
@@ -25,6 +26,17 @@
 			"unique": 1
 		},
 		{
+			"default": "AWS S3",
+			"fieldname": "provider",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Provider",
+			"options": "AWS S3\nOCI",
+			"reqd": 1,
+			"description": "Press uses the keys of this provider from Press Settings"
+		},
+		{
 			"fieldname": "region",
 			"fieldtype": "Data",
 			"in_list_view": 1,
@@ -34,7 +46,9 @@
 		{
 			"fieldname": "endpoint_url",
 			"fieldtype": "Data",
-			"label": "Endpoint URL"
+			"label": "Endpoint URL",
+			"mandatory_depends_on": "eval: doc.provider == \"OCI\"",
+			"description": "For OCI: https://<namespace>.compat.objectstorage.<region>.oraclecloud.com"
 		},
 		{
 			"default": "0",
@@ -73,7 +87,7 @@
 			"link_fieldname": "backup_bucket"
 		}
 	],
-	"modified": "2026-11-18 12:00:00.000000",
+	"modified": "2026-11-26 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Backup Bucket",

@@ -199,6 +199,8 @@ class PressSettings(Document):
 		new_bench_concurrency_limit: DF.Int
 		ngrok_auth_token: DF.Data | None
 		npo_discount: DF.Float
+		oci_offsite_backups_access_key_id: DF.Data | None
+		oci_offsite_backups_secret_access_key: DF.Password | None
 		offsite_backups_access_key_id: DF.Data | None
 		offsite_backups_count: DF.Int
 		offsite_backups_provider: DF.Literal["AWS S3"]

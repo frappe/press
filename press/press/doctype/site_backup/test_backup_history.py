@@ -577,7 +577,7 @@ class TestBackupHistory(FrappeTestCase):
 		self.record_backup("2023-10-02", "20231002_000502-database.sql.gz", size=64)
 
 		with patch(
-			"press.press.doctype.site_backup.backup_history.get_decrypted_password",
+			"press.press.doctype.backup_bucket.backup_bucket.get_decrypted_password",
 			return_value=None,
 		):
 			history = self.audit_trail("2023-10-01", "2023-10-02")

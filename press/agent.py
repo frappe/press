@@ -2058,19 +2058,20 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		)
 
 	def _get_offsite_backup_config(self, cluster: str, backups_path: str) -> dict | None:
+		from press.press.doctype.backup_bucket.backup_bucket import get_bucket_credentials
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
 		# The callers handle a cluster that has no offsite storage set up yet
 		if not frappe.db.get_value("Cluster", cluster, "backup_bucket"):
 			return None
 
-		settings = frappe.get_single("Press Settings")
 		backup_bucket_config = get_backup_bucket(cluster, region=True)
 		bucket_name = backup_bucket_config.get("name")
+		access_key, secret_key = get_bucket_credentials(bucket_name)
 
 		auth = {
-			"ACCESS_KEY": settings.offsite_backups_access_key_id,
-			"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
+			"ACCESS_KEY": access_key,
+			"SECRET_KEY": secret_key,
 			"REGION": backup_bucket_config.get("region"),
 			"PROVIDER": backup_bucket_config.get("provider"),
 			"ENDPOINT_URL": backup_bucket_config.get("endpoint_url"),
