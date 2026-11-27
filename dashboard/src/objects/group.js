@@ -466,6 +466,15 @@ export default {
 					orderBy: 'creation desc',
 					fields: ['name'],
 					pageLength: 999,
+					banner({ documentResource: releaseGroup }) {
+						return {
+							id: `${releaseGroup.name}-bench-config-help`,
+							type: 'general',
+							dismissable: true,
+							title:
+								'Config keys apply to all sites in this bench group. To change the request timeout of Gunicorn, add <b>http_timeout</b> in seconds. To change the timeout of a background job queue, add <b>workers</b> as JSON, for example <code class="whitespace-nowrap">{"long": {"timeout": 3000}}</code>. <a class="underline" href="https://docs.frappe.io/cloud/benches/bench-config" target="_blank">Read more</a>',
+						}
+					},
 					columns: [
 						{
 							label: 'Config Name',
@@ -727,6 +736,15 @@ export default {
 					},
 					orderBy: 'creation desc',
 					fields: ['name'],
+					banner({ documentResource: releaseGroup }) {
+						return {
+							id: `${releaseGroup.name}-bench-env-help`,
+							type: 'general',
+							dismissable: true,
+							title:
+								'Environment variables go into the bench image, so a change applies after the next deploy. For the request timeout of Gunicorn, use the <b>http_timeout</b> key in the Config tab. For other Gunicorn options, add <b>GUNICORN_CMD_ARGS</b>, for example <code class="whitespace-nowrap">--limit-request-line 8190</code>.',
+						}
+					},
 					columns: [
 						{
 							label: 'Environment Variable Name',
