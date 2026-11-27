@@ -697,6 +697,19 @@ class IncidentInvestigator(Document, StepHandler):
 			.run(pluck=True)
 		)
 
+	def is_disk_resize_running(self) -> bool:
+		"""A resize stops services and copies data, so it looks like an incident. A reboot kills the copy."""
+		database_server = frappe.db.get_value("Server", self.server, "database_server")
+		virtual_machines = [
+			frappe.db.get_value("Server", self.server, "virtual_machine"),
+			frappe.db.get_value("Database Server", database_server, "virtual_machine"),
+		]
+		return bool(
+			frappe.db.exists(
+				"Virtual Disk Resize", {"virtual_machine": ("in", virtual_machines), "status": "Running"}
+			)
+		)
+
 	def add_investigation_steps(self):
 		"""Add Investigation steps for [f/m/n] server"""
 		for step_key, methods in PrometheusInvestigationHelper.INVESTIGATION_CHECKS.items():
@@ -822,7 +835,10 @@ class IncidentInvestigator(Document, StepHandler):
 		execute_action_steps = frappe.db.get_single_value(
 			"Press Settings", "execute_incident_action", cache=True
 		)
-		stop_incident_actions = frappe.db.get_value("Server", self.server, "stop_incident_actions")
+		stop_incident_actions = (
+			frappe.db.get_value("Server", self.server, "stop_incident_actions")
+			or self.is_disk_resize_running()
+		)
 
 		pattern_detector = IncidentPatternDetector(self)
 

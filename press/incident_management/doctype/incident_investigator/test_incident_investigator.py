@@ -407,6 +407,35 @@ class TestIncidentInvestigator(FrappeTestCase):
 
 		self.assertEqual(investigator.status, "Completed")
 
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=True))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=True))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	@patch("press.runner.frappe.enqueue_doc", foreground_enqueue_doc)
+	def test_database_is_not_rebooted_while_disk_resize_is_running_on_its_virtual_machine(self):
+		disk_resize = frappe.get_doc(
+			{
+				"doctype": "Virtual Disk Resize",
+				"virtual_machine": self.database_server.virtual_machine,
+				"status": "Running",
+			}
+		)
+		disk_resize.db_insert()  # Skip the hooks, they talk to AWS
+		self.addCleanup(disk_resize.delete)
+
+		with patch.object(VirtualMachine, "reboot_with_serial_console") as reboot:
+			incident = create_test_incident(self.server.name)
+
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+		self.assertEqual(investigator.incident, incident.name)
+		self.assertIn("initiate_database_reboot", [step.method_name for step in investigator.action_steps])
+		self.assertEqual({step.status for step in investigator.action_steps}, {"Pending"})
+		self.assertEqual(investigator.status, "Completed")
+		reboot.assert_not_called()
+
 	@patch(
 		"press.incident_management.doctype.incident_investigator.incident_investigator.get_prometheus_client",
 		get_mock_prometheus_client,
