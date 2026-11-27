@@ -21,6 +21,7 @@ PERMISSION_FIELDS = [
 	"allow_site_creation",
 	"allow_webhook_configuration",
 	"all_release_groups",
+	"all_repositories",
 	"all_servers",
 	"all_sites",
 ]

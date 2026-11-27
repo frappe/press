@@ -80,7 +80,7 @@
 
 <script setup lang="ts">
 import { Switch } from 'frappe-ui'
-import { inject } from 'vue'
+import { computed, inject } from 'vue'
 
 const team = inject('team')
 
@@ -90,6 +90,7 @@ const props = withDefaults(
 		all_servers?: number
 		all_sites?: number
 		all_release_groups?: number
+		all_repositories?: number
 		allow_bench_creation?: number
 		allow_apps?: number
 		allow_billing?: number
@@ -109,6 +110,7 @@ const props = withDefaults(
 		all_servers: 0,
 		all_sites: 0,
 		all_release_groups: 0,
+		all_repositories: 1,
 		allow_bench_creation: 0,
 		allow_apps: 0,
 		allow_billing: 0,
@@ -167,7 +169,8 @@ const permissionsGeneral = [
 	},
 ]
 
-const permissionsResources = [
+// Repositories come from the team's GitHub Installations, which need the team flag
+const permissionsResources = computed(() => [
 	{
 		key: 'all_servers',
 		label: 'All Servers',
@@ -180,7 +183,10 @@ const permissionsResources = [
 		key: 'all_release_groups',
 		label: 'All Benches',
 	},
-]
+	...(team?.doc?.github_installations_enabled
+		? [{ key: 'all_repositories', label: 'All Repositories' }]
+		: []),
+])
 
 const permissionsPartner = [
 	{

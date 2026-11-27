@@ -33,7 +33,7 @@ from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from press.press.doctype.deploy_candidate.utils import is_suspended
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
-from press.press.doctype.github_installation.github_installation import validate_team_can_use_installation
+from press.press.doctype.github_installation.github_installation import validate_team_can_use_repository
 from press.press.doctype.marketplace_app.marketplace_app import (
 	validate_frappe_version_for_branch,
 )
@@ -1993,7 +1993,9 @@ class ReleaseGroup(Document, TagHelpers):
 		if not (name := app.get("name")):
 			return
 
-		validate_team_can_use_installation(self.team, app.get("github_installation_id"))
+		validate_team_can_use_repository(
+			self.team, app.get("github_installation_id"), app.get("repository_url")
+		)
 		if frappe.db.exists("App", name):
 			app_doc: "App" = frappe.get_doc("App", name)
 		else:

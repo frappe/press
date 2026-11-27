@@ -27,7 +27,7 @@ from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.app_release_approval_request.app_release_approval_request import (
 	AppReleaseApprovalRequest,
 )
-from press.press.doctype.github_installation.github_installation import validate_team_can_use_installation
+from press.press.doctype.github_installation.github_installation import validate_team_can_use_repository
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 from press.utils import docs, get_current_team, get_last_doc
 
@@ -200,17 +200,20 @@ class MarketplaceApp(WebsiteGenerator):
 			frappe.throw(f"App {self.name} already exists. Please contact support.")
 
 	def validate_github_installations(self):
-		"""Check the installation passed in and those of sources new to this team."""
-		for installation in {self.get("github_installation_id"), *self.get_new_source_installations()}:
-			validate_team_can_use_installation(self.team, installation)
+		"""Check the repository passed in and those of sources new to this team."""
+		passed_in = (self.get("github_installation_id"), self.get("repository_url"))
+		for installation, repository_url in {passed_in, *self.get_new_source_repositories()}:
+			validate_team_can_use_repository(self.team, installation, repository_url)
 
-	def get_new_source_installations(self) -> list[str]:
+	def get_new_source_repositories(self) -> list[tuple]:
 		before = self.get_doc_before_save()
 		known = {row.source for row in before.sources} if before and before.team == self.team else set()
 		names = [row.source for row in self.sources if row.source not in known]
 		if not names:
 			return []
-		return frappe.get_all("App Source", {"name": ("in", names)}, pluck="github_installation_id")
+		fields = ["github_installation_id", "repository_url"]
+		rows = frappe.get_all("App Source", {"name": ("in", names)}, fields, as_list=True)
+		return [tuple(row) for row in rows]
 
 	def create_app_and_source_if_needed(self):
 		if frappe.db.exists("App", self.app or self.name):

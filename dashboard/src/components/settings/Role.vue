@@ -109,6 +109,7 @@
 		:all_servers="role.doc?.all_servers"
 		:all_sites="role.doc?.all_sites"
 		:all_release_groups="role.doc?.all_release_groups"
+		:all_repositories="role.doc?.all_repositories"
 		:allow_bench_creation="role.doc?.allow_bench_creation"
 		:allow_apps="role.doc?.allow_apps"
 		:allow_billing="role.doc?.allow_billing"

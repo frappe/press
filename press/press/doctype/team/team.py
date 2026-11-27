@@ -192,6 +192,7 @@ class Team(Document):
 		"company_logo",
 		"hybrid_servers_enabled",
 		"relaxed_permissions",
+		"github_installations_enabled",
 		"upi_autopay_enabled",
 		"default_razorpay_mandate",
 		"tier",
