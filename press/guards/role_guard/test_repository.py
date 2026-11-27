@@ -26,11 +26,11 @@ class TestRoleRepositoryAccess(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 		self.team = create_test_team()
-		frappe.db.set_value("Team", self.team.name, "github_installations_enabled", 1)
-		self.link([make_installation(11, 101, "acme"), make_installation(12, 102, "beta")])
 		self.member = create_user(f"{frappe.generate_hash(length=8)}@example.com").name
+		self.team.github_installations_enabled = 1
 		self.team.append("team_members", {"user": self.member})
 		self.team.save()
+		self.link([make_installation(11, 101, "acme"), make_installation(12, 102, "beta")])
 		self.role = create_permission_role(self.team.name)
 		self.role.add_user(self.member)
 

@@ -247,7 +247,7 @@ class TestGitHubInstallation(FrappeTestCase):
 		from press.api.github import options
 
 		with patch("press.api.github.get_current_team", return_value=self.team.name):
-			self.assertEqual(options(), {"authorized": False, "installations": []})
+			self.assertEqual(options(), {"authorized": False, "installations": [], "restricted": False})
 
 	def test_branches_rejects_installation_not_linked_to_flagged_team(self):
 		from press.api.github import branches
