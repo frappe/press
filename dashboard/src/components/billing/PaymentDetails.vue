@@ -211,6 +211,7 @@ import {
 	Tooltip,
 } from 'frappe-ui'
 import { computed, defineAsyncComponent, h, inject, ref } from 'vue'
+import { toast } from 'vue-sonner'
 import router from '../../router'
 import {
 	cardBrandIcon,
@@ -218,6 +219,7 @@ import {
 	renderDialog,
 } from '../../utils/components'
 import { openInvoicePaymentPage } from '../../utils/invoice'
+import { getToastErrorMessage } from '../../utils/toast'
 import AddCardDialog from './AddCardDialog.vue'
 import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue'
 import BillingDetailsDialog from './BillingDetailsDialog.vue'
@@ -250,6 +252,8 @@ const billingDetails = createResource({
 const changePaymentMode = createResource({
 	url: 'press.api.billing.change_payment_mode',
 	onSuccess: () => setTimeout(() => team.reload(), 1000),
+	onError: (error) =>
+		toast.error(getToastErrorMessage(error, 'Failed to change payment mode')),
 })
 
 const billingDetailsSummary = computed(() => {
