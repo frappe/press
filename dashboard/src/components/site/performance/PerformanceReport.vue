@@ -5,6 +5,7 @@
 			<h2 class="font-semibold">{{ title }}</h2>
 		</div>
 		<div v-if="$site.doc?.current_plan?.monitor_access" class="mt-5">
+			<slot />
 			<ObjectList :options="reportOptions" />
 		</div>
 		<div class="flex justify-center" v-else>
