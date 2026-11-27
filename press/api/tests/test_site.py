@@ -892,6 +892,45 @@ erpnext 0.8.3	    HEAD
 		self.assertEqual(site.apps[1].app, "erpnext")
 		self.assertEqual(site.status, "Active")
 
+	def test_upgrade_check_names_the_repository_and_branch_of_a_public_app_without_next_version(self):
+		from press.api.site import check_app_compatibility_for_upgrade
+		from press.press.doctype.app_source.test_app_source import create_test_app_source
+
+		frappe_app = create_test_app()
+		frappe_source = create_test_app_source("Version 15", frappe_app)
+		create_test_app_source("Version 16", frappe_app)
+		staff_loans = create_test_app("staff_loans", "Staff Loans")
+		staff_loans_source = create_test_app_source(
+			"Version 15",
+			staff_loans,
+			repository_url="https://github.com/VVSD-LTD/staff_loans",
+			branch="version-15",
+		)
+		for source in (frappe_source, staff_loans_source):
+			frappe.db.set_value("App Source", source.name, "public", 1)
+
+		group = create_test_release_group(
+			[frappe_app, staff_loans],
+			frappe_version="Version 15",
+			app_sources=[frappe_source.name, staff_loans_source.name],
+		)
+		site = create_test_site(bench=create_test_bench(group=group).name)
+
+		result = check_app_compatibility_for_upgrade(site.name, "Version 15")
+
+		self.assertFalse(result["can_upgrade"])
+		self.assertEqual(
+			result["incompatible"],
+			[
+				{
+					"app": "staff_loans",
+					"title": "Staff Loans",
+					"repository": "VVSD-LTD/staff_loans",
+					"branch": "version-15",
+				}
+			],
+		)
+
 	def test_version_upgrade_api_upgrades_site(self):
 		from press.api.site import get_private_groups_for_upgrade, version_upgrade
 		from press.press.doctype.site_update.site_update import process_update_site_job_update

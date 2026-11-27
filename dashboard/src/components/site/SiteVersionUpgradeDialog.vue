@@ -52,25 +52,14 @@
 						/>
 					</div>
 
-					<div
+					<AlertBanner
 						v-else-if="
 							upgradeStep === 'ready_to_upgrade' &&
 							!appCompatibility.can_upgrade
 						"
-						class="space-y-3"
-					>
-						<AlertBanner
-							:title="`Migration isn't possible due to incompatible app(s): <b>${appCompatibility.incompatible.join(', ')}</b>`"
-							type="error"
-						/>
-						<p class="text-sm text-ink-gray-7">
-							These apps use a public source, such as a Marketplace app, that
-							has no release for {{ nextVersion }} yet. To upgrade now, open the bench
-							group, and change the source of each app to your own GitHub
-							repository with a branch for {{ nextVersion }}. Or wait for a
-							release of the app for {{ nextVersion }}.
-						</p>
-					</div>
+						:title="incompatibleAppsMessage"
+						type="error"
+					/>
 
 					<div
 						v-else-if="
@@ -366,6 +355,20 @@ export default {
 				return null;
 
 			return `Version ${nextNumber + 1}`;
+		},
+		incompatibleAppsMessage() {
+			const apps = this.appCompatibility.incompatible
+				.map(
+					(app) =>
+						`<li><b>${app.title}</b> (${app.repository}, branch ${app.branch})</li>`,
+				)
+				.join('');
+			const single = this.appCompatibility.incompatible.length === 1;
+			const subject = single ? 'This app blocks' : 'These apps block';
+			const object = single ? 'it' : 'them';
+			return `${subject} the upgrade to ${this.nextVersion}. The bench group installs ${object} from a public Marketplace source that has no ${this.nextVersion} release:
+				<ul class="my-1 list-disc pl-5">${apps}</ul>
+				To continue, ask the app publisher to add a ${this.nextVersion} release. Or, in the bench group, change the app to your own GitHub source. Then this dialog lets you select a branch for ${this.nextVersion}.`;
 		},
 		message() {
 			if (this.$site.doc?.version === this.$site.doc?.latest_frappe_version) {
