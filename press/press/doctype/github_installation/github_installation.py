@@ -7,6 +7,8 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from press.utils import log_error
+
 INSTALLATION_REPOSITORIES_URL = "https://api.github.com/installation/repositories"
 
 
@@ -86,7 +88,13 @@ def get_selector_repositories(team: str, installation_id: str) -> list[dict]:
 	validate_team_can_use_installation(team, installation_id)
 	filters = {"team": team, "installation_id": str(installation_id), "enabled": 1}
 	name = frappe.db.get_value("GitHub Installation", filters)
-	return GitHubInstallation("GitHub Installation", name).fetch_repositories()
+	installation = GitHubInstallation("GitHub Installation", name)
+	try:
+		return installation.fetch_repositories()
+	except Exception:
+		log_error("GitHub Installation Repositories Error", doc=installation)
+		frappe.db.commit()  # The request rolls back on the raise, which would drop the error log
+		raise
 
 
 def link_installations(team: str, user_token: str):
