@@ -206,9 +206,15 @@ class TestDeployCandidateBuild(FrappeTestCase):
 
 	def test_dockerfile_makes_the_bundled_chromium_executable(self, _mock_commit):
 		self.assertIn(
-			"chmod 0755 /home/frappe/frappe-bench/chromium/chrome-linux/headless_shell",
+			"chmod 0755 /home/frappe/chromium/chrome-linux/headless_shell",
 			self.deploy_candidate_build._generate_dockerfile(),
 		)
+
+	def test_dockerfile_bundles_chromium_before_bench_init(self, _mock_commit):
+		# A layer above bench init stays cached when the Frappe commit changes
+		dockerfile = self.deploy_candidate_build._generate_dockerfile()
+		self.assertLess(dockerfile.index("#stage-setup-chromium"), dockerfile.index("bench init"))
+		self.assertIn("ln -s /home/frappe/chromium /home/frappe/frappe-bench/chromium", dockerfile)
 
 	def test_dockerfile_generation_refuses_a_stored_variable_with_a_newline(self, _mock_commit):
 		self.deploy_candidate.append(
