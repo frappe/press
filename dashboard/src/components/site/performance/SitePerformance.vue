@@ -2,7 +2,7 @@
 	<ObjectList class="px-3" :options="options" />
 </template>
 <script>
-import ObjectList from '../../ObjectList.vue';
+import ObjectList from '../../ObjectList.vue'
 
 export default {
 	props: ['name'],
@@ -16,7 +16,7 @@ export default {
 					return {
 						name: row.route,
 						params: { name: this.name },
-					};
+					}
 				},
 				data: () => [
 					{
@@ -24,6 +24,12 @@ export default {
 						description:
 							'View detailed logs of all HTTP requests made to the website.',
 						route: 'Site Performance Request Logs',
+					},
+					{
+						title: 'Nginx Log Report',
+						description:
+							'View the requests that reached the proxy, with their status codes. Use it to find errors that the site did not log.',
+						route: 'Site Performance Nginx Logs',
 					},
 					{
 						title: 'Process List Report',
@@ -55,8 +61,8 @@ export default {
 						class: 'text-ink-gray-7',
 					},
 				],
-			};
+			}
 		},
 	},
-};
+}
 </script>

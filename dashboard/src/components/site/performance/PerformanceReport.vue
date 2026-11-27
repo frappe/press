@@ -5,6 +5,7 @@
 			<h2 class="font-semibold">{{ title }}</h2>
 		</div>
 		<div v-if="$site.doc?.current_plan?.monitor_access" class="mt-5">
+			<slot />
 			<ObjectList :options="reportOptions" />
 		</div>
 		<div class="flex justify-center" v-else>
@@ -20,10 +21,10 @@
 </template>
 
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
-import { defineAsyncComponent, h } from 'vue';
-import { renderDialog } from '../../../utils/components';
-import ObjectList from '../../ObjectList.vue';
+import { getCachedDocumentResource } from 'frappe-ui'
+import { defineAsyncComponent, h } from 'vue'
+import { renderDialog } from '../../../utils/components'
+import ObjectList from '../../ObjectList.vue'
 
 export default {
 	name: 'PerformanceReport',
@@ -46,19 +47,19 @@ export default {
 	},
 	computed: {
 		$site() {
-			return getCachedDocumentResource('Site', this.site);
+			return getCachedDocumentResource('Site', this.site)
 		},
 	},
 	methods: {
 		showPlanChangeDialog() {
 			const SitePlansDialog = defineAsyncComponent(
 				() => import('../../ManageSitePlansDialog.vue'),
-			);
-			renderDialog(h(SitePlansDialog, { site: this.site }));
+			)
+			renderDialog(h(SitePlansDialog, { site: this.site }))
 		},
 		goBack() {
-			this.$router.go(-1);
+			this.$router.go(-1)
 		},
 	},
-};
+}
 </script>
