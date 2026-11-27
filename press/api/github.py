@@ -26,6 +26,7 @@ from press.press.doctype.github_installation.github_installation import (
 	get_selector_options,
 	get_selector_repositories,
 	is_enabled_for_team,
+	validate_member_can_connect,
 	validate_team_can_use_repository,
 )
 from press.utils import docs, get_current_team, log_error
@@ -85,6 +86,7 @@ def hook(*args, **kwargs):
 
 
 def get_installation_data(team: str, redirect_url: str | None = None) -> dict[str, str]:
+	validate_member_can_connect(team)
 	public_link = frappe.db.get_single_value("Press Settings", "github_app_public_link")
 	return {
 		"installation_url": f"{public_link}/installations/new",
