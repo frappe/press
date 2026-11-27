@@ -712,11 +712,12 @@ insights 0.8.3	    HEAD
 
 	@patch.object(RemoteFile, "exists", new=Mock(return_value=True))
 	@patch.object(RemoteFile, "download_link", new="http://test.com")
-	def test_restore_of_suspended_site_by_support_keeps_it_suspended_on_proxy(self):
+	def test_restore_of_suspended_site_by_support_keeps_it_suspended_and_unbilled(self):
 		from press.api.site import restore
 
 		bench = create_test_bench(group=create_test_release_group([create_test_app()]))
-		site = create_test_site(bench=bench.name)
+		site = create_test_site(bench=bench.name, subscription_plan=create_test_plan("Site").name)
+		subscription = {"document_type": "Site", "document_name": site.name}
 		database = create_test_remote_file(site.name).name
 		with fake_agent_job(
 			{
@@ -728,16 +729,61 @@ insights 0.8.3	    HEAD
 			site.suspend()
 			site.save()
 			restore(site.name, {"database": database})
+			self.assertTrue(frappe.db.get_value("Subscription", subscription, "enabled"))
 			poll_pending_jobs()
 
 		site.reload()
+		self.assertEqual(site.status, "Suspended")
 		self.assertEqual(site.get_config_value_for_key("maintenance_mode"), 1)
+		self.assertFalse(frappe.db.get_value("Subscription", subscription, "enabled"))
 		proxy_statuses = frappe.get_all(
 			"Agent Job",
 			{"job_type": "Update Site Status", "site": site.name},
 			pluck="request_data",
 		)
 		self.assertEqual([json.loads(data)["status"] for data in proxy_statuses], ["suspended"])
+
+	def test_restore_that_never_reached_the_server_keeps_a_deactivated_site_inactive(self):
+		from press.press.doctype.site.site import process_restore_job_update
+
+		bench = create_test_bench(group=create_test_release_group([create_test_app()]))
+		site = create_test_site(bench=bench.name)
+		with fake_agent_job(
+			{
+				"Update Site Configuration": {"status": "Success"},
+				"Update Site Status": {"status": "Success"},
+			}
+		):
+			site.deactivate()
+			site.save()
+		site.db_set("status", "Pending")  # as restore_site does
+
+		process_restore_job_update(frappe._dict(site=site.name, status="Delivery Failure"))
+
+		self.assertEqual(frappe.db.get_value("Site", site.name, "status"), "Inactive")
+
+	def test_restore_that_never_reached_the_server_keeps_a_suspended_site_suspended_and_unbilled(self):
+		from press.press.doctype.site.site import process_restore_job_update
+
+		bench = create_test_bench(group=create_test_release_group([create_test_app()]))
+		site = create_test_site(bench=bench.name, subscription_plan=create_test_plan("Site").name)
+		subscription = {"document_type": "Site", "document_name": site.name}
+		with fake_agent_job(
+			{
+				"Update Site Configuration": {"status": "Success"},
+				"Update Site Status": {"status": "Success"},
+			}
+		):
+			site.suspend()
+			site.save()
+		site.status = "Pending"  # as restore_site does
+		site.save()
+		self.assertTrue(frappe.db.get_value("Subscription", subscription, "enabled"))
+
+		process_restore_job_update(frappe._dict(site=site.name, status="Delivery Failure"))
+
+		self.assertEqual(frappe.db.get_value("Site", site.name, "status"), "Suspended")
+		self.assertFalse(frappe.db.get_value("Subscription", subscription, "enabled"))
 
 	@patch.object(RemoteFile, "exists", new=Mock(return_value=True))
 	@patch.object(RemoteFile, "download_link", new="http://test.com")
