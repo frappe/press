@@ -263,6 +263,21 @@ watch(
 	{ immediate: true },
 )
 
+// Show the failed step's output, unless a step of this build is already selected
+watch(
+	() => builds.value[activeBuildId.value]?.doc?.build_steps,
+	(steps) => {
+		if (!steps || steps.some((x) => x.name === output.id)) return
+		// The notification's traceback explains the failure better, keep it
+		if (errList.value.some((x) => x.traceback)) return
+
+		const failedStep = steps.find((x) => x.status === 'Failure')
+		if (failedStep) setAutomaticOutput([failedStep])
+		else if (output.id) setOutput({ val: null, opened: output.opened })
+	},
+	{ immediate: true },
+)
+
 watch(
 	() => pipeline?.doc?.status,
 	(x) => {
