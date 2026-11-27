@@ -1,0 +1,176 @@
+{
+	"actions": [],
+	"autoname": "hash",
+	"creation": "2026-11-16 15:00:00.000000",
+	"description": "One delivery of a payment gateway webhook to Press. Rows older than 90 days are deleted.",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"gateway",
+		"event_type",
+		"event_id",
+		"status",
+		"column_break_ids",
+		"order_id",
+		"payment_id",
+		"webhook_log_type",
+		"webhook_log",
+		"timing_section",
+		"event_created_at",
+		"received_at",
+		"log_created_at",
+		"column_break_timing",
+		"delivery_delay",
+		"processing_time",
+		"error_section",
+		"error"
+	],
+	"fields": [
+		{
+			"fieldname": "gateway",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Gateway",
+			"options": "Razorpay\nStripe",
+			"read_only": 1
+		},
+		{
+			"fieldname": "event_type",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Event Type",
+			"read_only": 1
+		},
+		{
+			"fieldname": "event_id",
+			"fieldtype": "Data",
+			"label": "Event ID",
+			"read_only": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Status",
+			"options": "Processed\nDuplicate\nFailed",
+			"read_only": 1
+		},
+		{ "fieldname": "column_break_ids", "fieldtype": "Column Break" },
+		{
+			"fieldname": "order_id",
+			"fieldtype": "Data",
+			"in_standard_filter": 1,
+			"label": "Order / Invoice ID",
+			"read_only": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "payment_id",
+			"fieldtype": "Data",
+			"in_standard_filter": 1,
+			"label": "Payment ID",
+			"read_only": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "webhook_log_type",
+			"fieldtype": "Link",
+			"label": "Webhook Log Type",
+			"options": "DocType",
+			"read_only": 1
+		},
+		{
+			"fieldname": "webhook_log",
+			"fieldtype": "Dynamic Link",
+			"label": "Webhook Log",
+			"options": "webhook_log_type",
+			"read_only": 1
+		},
+		{
+			"fieldname": "timing_section",
+			"fieldtype": "Section Break",
+			"label": "Timing"
+		},
+		{
+			"description": "When the gateway created the event.",
+			"fieldname": "event_created_at",
+			"fieldtype": "Datetime",
+			"label": "Event Created At",
+			"read_only": 1
+		},
+		{
+			"description": "When the request reached the Press handler.",
+			"fieldname": "received_at",
+			"fieldtype": "Datetime",
+			"label": "Received At",
+			"read_only": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "log_created_at",
+			"fieldtype": "Datetime",
+			"label": "Log Created At",
+			"read_only": 1
+		},
+		{ "fieldname": "column_break_timing", "fieldtype": "Column Break" },
+		{
+			"description": "Seconds from event creation to arrival at Press.",
+			"fieldname": "delivery_delay",
+			"fieldtype": "Float",
+			"in_list_view": 1,
+			"label": "Delivery Delay (s)",
+			"read_only": 1
+		},
+		{
+			"description": "Seconds Press took to handle the request.",
+			"fieldname": "processing_time",
+			"fieldtype": "Float",
+			"label": "Processing Time (s)",
+			"read_only": 1
+		},
+		{
+			"collapsible": 1,
+			"depends_on": "error",
+			"fieldname": "error_section",
+			"fieldtype": "Section Break",
+			"label": "Error"
+		},
+		{
+			"fieldname": "error",
+			"fieldtype": "Small Text",
+			"label": "Error",
+			"read_only": 1
+		}
+	],
+	"in_create": 1,
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-11-16 15:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Payment Webhook Attempt",
+	"naming_rule": "Random",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"delete": 1,
+			"export": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager"
+		},
+		{
+			"export": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Billing Manager"
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "event_type"
+}
