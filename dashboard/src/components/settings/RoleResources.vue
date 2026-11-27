@@ -4,9 +4,10 @@
 			class="grid grid-cols-3 gap-4 text-base"
 			v-if="resources && resources.length > 0"
 		>
-			<RouterLink
+			<component
+				:is="resource.document_type === REPOSITORY ? 'a' : RouterLink"
 				v-for="resource in resources"
-				:to="toLink(resource)"
+				v-bind="linkAttributes(resource)"
 				class="text-sm border rounded flex group py-3 px-3.5"
 			>
 				<div class="flex gap-4 rounded transition min-w-0">
@@ -30,9 +31,7 @@
 							>{{ resource.document_name }}</span
 						>
 						<span class="text-ink-gray-5 text-xs"
-							>{{ resource.document_type == 'Release Group'
-								? 'Bench'
-								: resource.document_type }}</span
+							>{{ typeLabels[resource.document_type] ?? resource.document_type }}</span
 						>
 					</div>
 				</div>
@@ -44,7 +43,7 @@
 						removeResource(resource.document_type, resource.document_name)
 					"
 				/>
-			</RouterLink>
+			</component>
 		</div>
 
 		<div
@@ -54,7 +53,7 @@
 			No resources to show
 		</div>
 		<div>
-			<Button label="Include" icon-left="globe" @click="open = !open" />
+			<Button label="Include" icon-left="globe" @click="openIncludeDialog" />
 		</div>
 		<Dialog
 			v-model="open"
@@ -72,6 +71,9 @@
 		>
 			<template #body-content>
 				<div class="mb-2 text-base">Include a resource in this role.</div>
+				<div v-if="repositoriesLoading" class="mb-2 text-sm text-ink-gray-5">
+					Loading GitHub repositories...
+				</div>
 				<MultiSelect
 					:options="resourcesToIncludeOptions"
 					:model-value="
@@ -100,9 +102,11 @@
 <script setup lang="ts">
 import { Button, FeatherIcon, MultiSelect } from 'frappe-ui'
 import { computed, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import { toast } from 'vue-sonner'
+import { getTeam } from '../../data/team'
 import { getToastErrorMessage } from '../../utils/toast'
-import { teamResources } from './data'
+import { fetchTeamRepositories, REPOSITORY, teamResources } from './data'
 
 type Resource = { document_type: string; document_name: string }
 
@@ -117,19 +121,45 @@ const props = withDefaults(
 	},
 )
 
+const team = getTeam()
+
 const colorClasses = {
 	'Release Group': 'bg-surface-blue-2 text-ink-blue-2',
 	Server: 'bg-surface-amber-1 text-ink-amber-2',
 	Site: 'bg-surface-green-2 text-ink-green-2',
+	[REPOSITORY]: 'bg-surface-gray-2 text-ink-gray-7',
 }
 
 const icons = {
 	'Release Group': 'package',
 	Server: 'server',
 	Site: 'globe',
+	[REPOSITORY]: 'github',
+}
+
+const typeLabels = {
+	'Release Group': 'Bench',
+	[REPOSITORY]: 'Repository',
 }
 
 const open = ref(false)
+const repositories = ref<Array<Resource & { label: string; value: string }>>([])
+const repositoriesLoading = ref(false)
+
+// Repositories come from GitHub, so they load when the dialog first opens
+const openIncludeDialog = async () => {
+	open.value = true
+	const loaded = repositories.value.length || repositoriesLoading.value
+	if (!team.doc?.github_installations_enabled || loaded) {
+		return
+	}
+	repositoriesLoading.value = true
+	try {
+		repositories.value = await fetchTeamRepositories()
+	} finally {
+		repositoriesLoading.value = false
+	}
+}
 
 const resourcesToIncludeModel = ref<Array<Resource>>([])
 
@@ -155,7 +185,7 @@ const removeResource = async (documentType: string, documentName: string) => {
 }
 
 const resourcesToIncludeOptions = computed(() => {
-	return teamResources.value.filter(
+	return [...teamResources.value, ...repositories.value].filter(
 		(resource) =>
 			!props.resources?.some(
 				(r) =>
@@ -164,6 +194,14 @@ const resourcesToIncludeOptions = computed(() => {
 			),
 	)
 })
+
+const linkAttributes = (resource: any) => {
+	if (resource.document_type === REPOSITORY) {
+		const href = `https://github.com/${resource.document_name}`
+		return { href, target: '_blank', rel: 'noopener noreferrer' }
+	}
+	return { to: toLink(resource) }
+}
 
 const toLink = (resource: any) => {
 	if (resource.document_type === 'Site') {

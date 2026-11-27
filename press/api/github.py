@@ -26,7 +26,8 @@ from press.press.doctype.github_installation.github_installation import (
 	get_selector_options,
 	get_selector_repositories,
 	is_enabled_for_team,
-	validate_team_can_use_installation,
+	validate_member_can_connect,
+	validate_team_can_use_repository,
 )
 from press.utils import docs, get_current_team, log_error
 
@@ -85,6 +86,7 @@ def hook(*args, **kwargs):
 
 
 def get_installation_data(team: str, redirect_url: str | None = None) -> dict[str, str]:
+	validate_member_can_connect(team)
 	public_link = frappe.db.get_single_value("Press Settings", "github_app_public_link")
 	return {
 		"installation_url": f"{public_link}/installations/new",
@@ -348,7 +350,7 @@ def fetch_repositories(url: str, token: str | None) -> list[dict]:
 
 @frappe.whitelist()
 def repository(owner: str, name: str, installation: str | None = None):
-	validate_team_can_use_installation(get_current_team(), installation)
+	validate_team_can_use_repository(get_current_team(), installation, f"{owner}/{name}")
 	token = ""
 	if not installation:
 		token = frappe.db.get_value("Press Settings", "github_access_token")
@@ -384,7 +386,7 @@ def repository(owner: str, name: str, installation: str | None = None):
 
 @frappe.whitelist()
 def app(owner: str, repository: str, branch: str, installation: str | None = None):
-	validate_team_can_use_installation(get_current_team(), installation)
+	validate_team_can_use_repository(get_current_team(), installation, f"{owner}/{repository}")
 	return get_app_info(owner, repository, branch, installation)
 
 
@@ -445,7 +447,7 @@ def branches(owner: str, name: str, installation: str | None = None, app_source:
 	if app_source and not installation:
 		return get_branches_for_app_source(app_source)
 
-	validate_team_can_use_installation(get_current_team(), installation)
+	validate_team_can_use_repository(get_current_team(), installation, f"{owner}/{name}")
 	return get_branches(owner, name, installation)
 
 
@@ -559,7 +561,7 @@ def _get_compatible_frappe_version_from_pyproject(
 def get_frappe_branch_major_version(
 	owner: str, repository: str, branch: str, installation: str | None = None
 ) -> int:
-	validate_team_can_use_installation(get_current_team(), installation)
+	validate_team_can_use_repository(get_current_team(), installation, f"{owner}/{repository}")
 	return fetch_frappe_branch_major_version(owner, repository, branch, installation)
 
 

@@ -33,7 +33,10 @@ from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from press.press.doctype.deploy_candidate.utils import is_suspended
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
-from press.press.doctype.github_installation.github_installation import validate_team_can_use_installation
+from press.press.doctype.github_installation.github_installation import (
+	validate_member_can_use_repository,
+	validate_team_can_use_repository,
+)
 from press.press.doctype.marketplace_app.marketplace_app import (
 	validate_frappe_version_for_branch,
 )
@@ -274,6 +277,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_title()
 		self.validate_frappe_app()
 		self.validate_duplicate_app()
+		self.validate_new_app_repositories()
 		self.validate_servers()
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
@@ -696,6 +700,21 @@ class ReleaseGroup(Document, TagHelpers):
 			if app_name in apps:
 				frappe.throw(f"App {app.app} can be added only once", frappe.ValidationError)
 			apps.add(app_name)
+
+	def validate_new_app_repositories(self):
+		"""Press Roles can limit a member to some repositories, also for sources the team already has."""
+		for installation, repository_url in self.get_new_private_source_repositories():
+			validate_member_can_use_repository(self.team, installation, repository_url)
+
+	def get_new_private_source_repositories(self) -> list[tuple]:
+		before = self.get_doc_before_save()
+		known = {row.source for row in before.apps} if before else set()
+		names = [row.source for row in self.apps if row.source not in known]
+		if not names:
+			return []
+		filters = {"name": ("in", names), "public": 0}
+		fields = ["github_installation_id", "repository_url"]
+		return [tuple(row) for row in frappe.get_all("App Source", filters, fields, as_list=True)]
 
 	def validate_app_version(self, source: str):
 		"""App Source must be compatible with the release group's bench version.
@@ -1993,7 +2012,9 @@ class ReleaseGroup(Document, TagHelpers):
 		if not (name := app.get("name")):
 			return
 
-		validate_team_can_use_installation(self.team, app.get("github_installation_id"))
+		validate_team_can_use_repository(
+			self.team, app.get("github_installation_id"), app.get("repository_url")
+		)
 		if frappe.db.exists("App", name):
 			app_doc: "App" = frappe.get_doc("App", name)
 		else:

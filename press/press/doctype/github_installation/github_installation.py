@@ -3,10 +3,13 @@
 
 from __future__ import annotations
 
+from urllib.parse import urlparse
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from press.guards import role_guard
 from press.utils import log_error
 
 INSTALLATION_REPOSITORIES_URL = "https://api.github.com/installation/repositories"
@@ -70,6 +73,12 @@ class GitHubInstallation(Document):
 			frappe.throw(_("GitHub gave no access token for installation {0}").format(self.installation_id))
 		return fetch_repositories(INSTALLATION_REPOSITORIES_URL, token)
 
+	def filter_permitted(self, repositories: list[dict]) -> list[dict]:
+		"""Keep the repositories the session user's Press Roles permit."""
+		if (permitted := role_guard.permitted_repositories()) is None:
+			return repositories
+		return [row for row in repositories if f"{self.account_login}/{row['name']}".lower() in permitted]
+
 
 def is_enabled_for_team(team: str) -> bool:
 	return bool(frappe.db.get_value("Team", team, "github_installations_enabled"))
@@ -78,10 +87,19 @@ def is_enabled_for_team(team: str) -> bool:
 def get_selector_options(team: str) -> dict:
 	"""Reads only the team's rows; repositories load per installation when the user picks one."""
 	rows = frappe.get_all("GitHub Installation", {"team": team, "enabled": 1}, ["*"])
+	permitted = role_guard.permitted_repositories()
 	installations = [
-		GitHubInstallation({**row, "doctype": "GitHub Installation"}).as_selector_option() for row in rows
+		GitHubInstallation({**row, "doctype": "GitHub Installation"}).as_selector_option()
+		for row in rows
+		if permits_account(permitted, row.account_login)
 	]
-	return {"authorized": bool(installations), "installations": installations}
+	return {"authorized": bool(rows), "installations": installations, "restricted": permitted is not None}
+
+
+def permits_account(permitted: set[str] | None, login: str | None) -> bool:
+	"""Check whether `permitted` (from Press Roles) holds a repository of the GitHub account `login`."""
+	prefix = f"{login or ''}/".lower()
+	return permitted is None or any(repository.startswith(prefix) for repository in permitted)
 
 
 def get_selector_repositories(team: str, installation_id: str) -> list[dict]:
@@ -90,11 +108,12 @@ def get_selector_repositories(team: str, installation_id: str) -> list[dict]:
 	name = frappe.db.get_value("GitHub Installation", filters)
 	installation = GitHubInstallation("GitHub Installation", name)
 	try:
-		return installation.fetch_repositories()
+		repositories = installation.fetch_repositories()
 	except Exception:
 		log_error("GitHub Installation Repositories Error", doc=installation)
 		frappe.db.commit()  # The request rolls back on the raise, which would drop the error log
 		raise
+	return installation.filter_permitted(repositories)
 
 
 def link_installations(team: str, user_token: str):
@@ -137,5 +156,39 @@ def validate_team_can_use_installation(team: str, installation_id: str | int | N
 	if not frappe.db.exists("GitHub Installation", filters):
 		frappe.throw(
 			_("This GitHub account isn't connected to your team. Connect it from GitHub and try again."),
+			frappe.PermissionError,
+		)
+
+
+def validate_team_can_use_repository(team: str, installation_id: str | int | None, repository: str | None):
+	"""`repository` is owner/name or its GitHub URL. Press Roles can limit members to some repositories."""
+	validate_team_can_use_installation(team, installation_id)
+	validate_member_can_use_repository(team, installation_id, repository)
+
+
+def validate_member_can_use_repository(team: str, installation_id: str | int | None, repository: str | None):
+	"""Check only the Press Roles, for sources the team already has."""
+	if not installation_id or not is_enabled_for_team(team):
+		return
+
+	name = get_repository_name(repository)
+	if not role_guard.permits_repository(name):
+		frappe.throw(
+			_("Your role doesn't give you access to the repository {0}.").format(name),
+			frappe.PermissionError,
+		)
+
+
+def get_repository_name(repository: str | None) -> str:
+	"""owner/name from owner/name or https://github.com/owner/name(.git)."""
+	path = urlparse(repository or "").path.strip("/").removesuffix(".git")
+	return "/".join(path.split("/")[:2])
+
+
+def validate_member_can_connect(team: str):
+	"""Connecting links every GitHub account the user sees to the team, so a role limited to some repositories can't."""
+	if is_enabled_for_team(team) and role_guard.permitted_repositories() is not None:
+		frappe.throw(
+			_("Your role can't connect GitHub accounts. Ask your team owner or an admin."),
 			frappe.PermissionError,
 		)

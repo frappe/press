@@ -15,6 +15,7 @@ from press.api.github import (
 from press.press.doctype.github_installation.github_installation import (
 	is_enabled_for_team,
 	link_installations,
+	validate_member_can_connect,
 )
 from press.utils import get_current_team, get_valid_teams_for_user, log_error
 
@@ -102,6 +103,7 @@ def start_authorization_for_current_team():
 	if not is_enabled_for_team(team):
 		return
 
+	validate_member_can_connect(team)
 	frappe.flags.redirect_location = get_github_authorize_url(encode_github_oauth_state(team))
 	raise frappe.Redirect
 
