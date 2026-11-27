@@ -903,15 +903,16 @@ class ReleaseGroup(Document, TagHelpers):
 			log_error("Failed to fetch last image size", data=e)
 			return None
 
-	def check_app_server_storage(self):
+	def check_app_server_storage(self, servers: list[str] | None = None):
 		"""
 		Check storage on the app server before deploying
 		Check if the free space on the server is more than the last
 		image deployed, assuming new image to be created will have the same or more
 		size than the last time.
+		Pass `servers` to check only those servers, instead of all servers of the group.
 		"""
-		for server in self.servers:
-			server: Server = frappe.get_cached_doc("Server", server.server)
+		for server_name in servers or [row.server for row in self.servers]:
+			server: Server = frappe.get_cached_doc("Server", server_name)
 
 			if server.is_self_hosted:
 				continue
@@ -977,12 +978,13 @@ class ReleaseGroup(Document, TagHelpers):
 		run_will_fail_check=False,
 		validate_pre_candidate_checks: bool = True,
 		ignore_permissions: bool = False,
+		servers_to_check: list[str] | None = None,
 	) -> "DeployCandidate | None":
 		if not self.enabled:
 			return None
 
 		if validate_pre_candidate_checks:
-			self.check_app_server_storage()
+			self.check_app_server_storage(servers_to_check)
 			self.check_auto_scales()
 
 		apps = self.get_apps_to_update(apps_to_update)
