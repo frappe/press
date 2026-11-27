@@ -7,12 +7,6 @@
 - targets:
     - "{{ item.name }}"
   labels:
-    job: nginx
-    __metrics_path__: /metrics/nginx
-
-- targets:
-    - "{{ item.name }}"
-  labels:
     job: cadvisor
     __metrics_path__: /metrics/cadvisor
 
