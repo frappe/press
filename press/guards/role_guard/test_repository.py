@@ -7,7 +7,7 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from press.api.github import branches, installation_repositories, options
+from press.api.github import branches, get_installation_url, installation_repositories, options
 from press.press.doctype.github_installation.github_installation import link_installations
 from press.press.doctype.github_installation.test_github_installation import (
 	make_installation,
@@ -53,6 +53,46 @@ class TestRoleRepositoryAccess(FrappeTestCase):
 			data = options()
 
 		self.assertEqual([installation["login"] for installation in data["installations"]], ["acme"])
+		self.assertTrue(data["restricted"])
+
+	def test_options_for_member_whose_role_grants_no_repository_is_restricted_and_empty(self):
+		self.role.all_repositories = 0
+		self.role.save()
+
+		with self.as_member():
+			data = options()
+
+		self.assertEqual((data["installations"], data["restricted"]), ([], True))
+
+	def test_options_for_member_with_all_repositories_is_not_restricted(self):
+		with self.as_member():
+			data = options()
+
+		self.assertEqual(len(data["installations"]), 2)
+		self.assertFalse(data["restricted"])
+
+	def test_restricted_member_cannot_start_connecting_github(self):
+		self.restrict_to("acme/app")
+
+		with (
+			self.as_member(),
+			self.assertRaisesRegex(frappe.PermissionError, "can't connect GitHub accounts"),
+		):
+			get_installation_url()
+
+	def test_member_with_all_repositories_can_start_connecting_github(self):
+		with self.as_member():
+			data = get_installation_url()
+
+		self.assertTrue(data["state"])
+
+	def test_member_of_team_without_roles_can_start_connecting_github(self):
+		frappe.delete_doc("Press Role", self.role.name, force=True)
+
+		with self.as_member():
+			data = get_installation_url()
+
+		self.assertTrue(data["state"])
 
 	def test_installation_repositories_for_restricted_member_lists_only_granted_repositories(self):
 		self.restrict_to("acme/app")

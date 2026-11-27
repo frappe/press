@@ -93,7 +93,7 @@ def get_selector_options(team: str) -> dict:
 		for row in rows
 		if permits_account(permitted, row.account_login)
 	]
-	return {"authorized": bool(rows), "installations": installations}
+	return {"authorized": bool(rows), "installations": installations, "restricted": permitted is not None}
 
 
 def permits_account(permitted: set[str] | None, login: str | None) -> bool:
@@ -178,3 +178,12 @@ def get_repository_name(repository: str | None) -> str:
 	"""owner/name from owner/name or https://github.com/owner/name(.git)."""
 	path = urlparse(repository or "").path.strip("/").removesuffix(".git")
 	return "/".join(path.split("/")[:2])
+
+
+def validate_member_can_connect(team: str):
+	"""Connecting links every GitHub account the user sees to the team, so a role limited to some repositories can't."""
+	if is_enabled_for_team(team) and role_guard.permitted_repositories() is not None:
+		frappe.throw(
+			_("Your role can't connect GitHub accounts. Ask your team owner or an admin."),
+			frappe.PermissionError,
+		)
