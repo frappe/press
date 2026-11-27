@@ -59,6 +59,60 @@ class TestVersionUpgrade(FrappeTestCase):
 			group2.name,
 		)
 
+	def test_missing_apps_error_on_shared_destination_tells_user_to_move_to_private_bench(self):
+		server = create_test_server()
+		app1 = create_test_app()  # frappe
+		app2 = create_test_app("app2", "App 2")
+
+		group1 = create_test_release_group([app1, app2])
+		group2 = create_test_release_group([app1], public=True)
+
+		source_bench = create_test_bench(group=group1, server=server.name)
+		create_test_bench(group=group2, server=server.name)
+
+		site = create_test_site(bench=source_bench.name)
+		site.install_app(app2.name)
+
+		group2.append("servers", {"server": server.name})
+		group2.save()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Move the site to a private bench group that has all of its apps",
+			create_test_version_upgrade,
+			site.name,
+			group2.name,
+		)
+
+	def test_site_doc_shows_scheduled_version_upgrade_with_target_version(self):
+		server = create_test_server()
+		app1 = create_test_app()  # frappe
+
+		group1 = create_test_release_group([app1])
+		group2 = create_test_release_group([app1], frappe_version="Version 15")
+
+		source_bench = create_test_bench(group=group1, server=server.name)
+		create_test_bench(group=group2, server=server.name)
+		site = create_test_site(bench=source_bench.name)
+		group2.append("servers", {"server": server.name})
+		group2.save()
+
+		self.assertIsNone(site.get_scheduled_version_upgrade())
+
+		scheduled_time = frappe.utils.add_days(frappe.utils.now_datetime(), 1)
+		frappe.get_doc(
+			dict(
+				doctype="Version Upgrade",
+				site=site.name,
+				destination_group=group2.name,
+				scheduled_time=scheduled_time,
+			)
+		).insert()
+
+		upgrade = site.get_scheduled_version_upgrade()
+		self.assertEqual(upgrade.version, "Version 15")
+		self.assertEqual(upgrade.destination_group, group2.name)
+
 	def test_version_upgrade_creates_site_update_even_when_past_updates_failed(self):
 		server = create_test_server()
 		app1 = create_test_app()  # frappe
