@@ -1,4 +1,4 @@
-import { createResource, Tooltip } from 'frappe-ui'
+import { createResource } from 'frappe-ui'
 import { defineAsyncComponent, h } from 'vue'
 import { toast } from 'vue-sonner'
 import router from '../../router'
@@ -169,7 +169,7 @@ export function backupRecordsOptions() {
 						site.doc?.host_name || site.doc?.name
 					}</b> that was created on ${date(backup.creation, 'llll')}.${
 						!backup.offsite
-							? '<br><br><div class="p-2 bg-surface-gray-2 rounded border-outline-gray-1">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
+							? '<br><br><div class="p-2 bg-surface-gray-2 rounded border-outline-gray-1">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup. If the download of a large file fails, download it from an offsite backup. Offsite files download from our storage, not from your site.<div>'
 							: ''
 					}`,
 					onSuccess({ hide }) {
@@ -202,6 +202,25 @@ export function backupRecordsOptions() {
 					hide()
 					window.open(newUrl)
 				}
+			}
+
+			// Restore reads the uploaded (remote) files, and only offsite backups have them
+			const isOnsite = !row.offsite && !row.physical
+
+			function explainOnsiteRestore() {
+				confirmDialog({
+					title: 'Restore needs an offsite backup',
+					message:
+						'This backup is stored only on the server of your site, so the dashboard cannot restore it.<br><br>' +
+						'You can do one of these:<ul class="list-disc pl-5 mt-2 space-y-1">' +
+						'<li>Restore an offsite backup. Frappe Cloud uploads one backup each day to offsite storage. Turn on the <b>Offsite Backups</b> filter to see them.</li>' +
+						'<li>Download the files of this backup, then open <b>Actions</b> and use <b>Restore with files</b>.</li></ul>',
+					primaryAction: { label: 'Go to Actions' },
+					onSuccess({ hide }) {
+						hide()
+						router.push({ name: 'Site Detail Actions', params: { name: site.name } })
+					},
+				})
 			}
 
 			return [
@@ -254,12 +273,12 @@ export function backupRecordsOptions() {
 				},
 				{
 					group: 'Restore',
-					condition: () => row.offsite || row.physical,
 					items: [
 						{
 							label: 'Restore Backup',
 							condition: () => site.doc.status !== 'Archived',
 							onClick() {
+								if (isOnsite) return explainOnsiteRestore()
 								if (row.physical && row.ready_to_restore) {
 									toast.error(
 										'Physical Snapshot is not ready to restore. Try again after 10 minutes.',
@@ -342,6 +361,7 @@ export function backupRecordsOptions() {
 							label: 'Restore Backup on another Site',
 							condition: () => !row.physical,
 							onClick() {
+								if (isOnsite) return explainOnsiteRestore()
 								let SelectSiteForRestore = defineAsyncComponent(
 									() =>
 										import('../../components/site/SelectSiteForRestore.vue'),
@@ -449,7 +469,7 @@ export function backupRecordsOptions() {
 			return {
 				label: 'Backup Schedule',
 				slots: {
-					icon: () => h(Tooltip, { text: 'Backup Schedule' }, icon('settings')),
+					prefix: icon('settings'),
 				},
 				onClick() {
 					renderDialog(
