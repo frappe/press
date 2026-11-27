@@ -2,7 +2,7 @@
 	<ObjectList class="px-3" :options="options" />
 </template>
 <script>
-import ObjectList from '../../ObjectList.vue';
+import ObjectList from '../../ObjectList.vue'
 
 export default {
 	props: ['name'],
@@ -16,7 +16,7 @@ export default {
 					return {
 						name: row.route,
 						params: { name: this.name },
-					};
+					}
 				},
 				data: () => [
 					{
@@ -55,8 +55,8 @@ export default {
 						class: 'text-ink-gray-7',
 					},
 				],
-			};
+			}
 		},
 	},
-};
+}
 </script>
