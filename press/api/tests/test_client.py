@@ -22,6 +22,7 @@ from press.api.client import (
 	writable_values,
 )
 from press.overrides import before_request
+from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.agent_job.test_agent_job import create_test_agent_job
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 from press.press.doctype.server.test_server import create_test_server
