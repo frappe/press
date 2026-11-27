@@ -167,6 +167,13 @@ frappe.ui.form.on('Server', {
 				__('Setup'),
 			],
 			[
+				__('Setup Agent Volume'),
+				'setup_agent_volume',
+				true,
+				frm.doc.is_server_setup && !frm.doc.has_data_volume,
+				__('Setup'),
+			],
+			[
 				__('Prepare Server'),
 				'prepare_server',
 				true,
@@ -184,7 +191,8 @@ frappe.ui.form.on('Server', {
 				__('Setup Unified Server'),
 				'setup_unified_server',
 				true,
-				frm.doc.is_unified_server,
+				// Only before setup: on a server in use, the play moves the agent without waiting for agent jobs
+				frm.doc.is_unified_server && !frm.doc.is_server_setup,
 				__('Setup'),
 			],
 			[
@@ -534,6 +542,35 @@ frappe.ui.form.on('Server', {
 				},
 				__('Actions'),
 			)
+			if (!frm.doc.has_data_volume) {
+				frm.add_custom_button(
+					__('Increase Agent Volume'),
+					() => {
+						const dialog = new frappe.ui.Dialog({
+							title: __('Increase Agent Volume'),
+							fields: [
+								{
+									fieldtype: 'Int',
+									label: __('Size To Add (GB)'),
+									description: __('Add space to the agent volume'),
+									fieldname: 'size',
+									default: 2,
+									reqd: 1,
+								},
+							],
+						})
+
+						dialog.set_primary_action(__('Increase Agent Volume'), (args) => {
+							frm.call('increase_agent_volume', args).then(() => {
+								dialog.hide()
+								frm.refresh()
+							})
+						})
+						dialog.show()
+					},
+					__('Actions'),
+				)
+			}
 
 			frm.add_custom_button(
 				__('Snapshot Both Servers'),

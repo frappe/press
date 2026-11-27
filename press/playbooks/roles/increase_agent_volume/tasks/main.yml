@@ -1,0 +1,37 @@
+---
+# Grows the agent volume while it stays mounted, so the agent keeps running
+- name: Find Agent Volume Loop Device
+  command: findmnt -n -o SOURCE /home/frappe/agent
+  register: agent_volume_device
+  changed_when: false
+
+- name: Get Agent Volume Image Size
+  stat:
+    path: /home/frappe/agent.img
+  register: agent_volume_image
+
+- name: Get Root Disk Space
+  command: df -B1 --output=size,avail /home/frappe/agent.img
+  register: root_disk
+  changed_when: false
+
+- name: Refuse To Leave Less Than 10% Of Root Disk Free
+  vars:
+    root_size: '{{ root_disk.stdout_lines[1].split()[0] | int }}'
+    root_free: '{{ root_disk.stdout_lines[1].split()[1] | int }}'
+  assert:
+    that: (root_free | int) - (agent_volume_increase | int) * 1073741824 >= (root_size | int) * 0.1
+    fail_msg: 'The root disk has {{ ((root_free | int) / 1073741824) | round(1) }}G free. Adding {{ agent_volume_increase }}G to the agent volume leaves less than 10% of it free.'
+
+- name: Grow Agent Volume Image
+  command: fallocate -l {{ agent_volume_image.stat.size + (agent_volume_increase | int) * 1073741824 }} /home/frappe/agent.img
+
+- name: Refresh Loop Device Size
+  command: losetup -c {{ agent_volume_device.stdout }}
+
+- name: Grow Agent Volume Filesystem
+  command: resize2fs {{ agent_volume_device.stdout }}
+
+# resize2fs zeroes the new inode tables, and the loop device punches holes for those zeroes
+- name: Allocate Holes In Agent Volume Image
+  command: fallocate -l {{ agent_volume_image.stat.size + (agent_volume_increase | int) * 1073741824 }} /home/frappe/agent.img

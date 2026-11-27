@@ -1,0 +1,15 @@
+---
+# A run of agent_volume that failed after the move left the agent in agent.old. Put it back.
+# mv -T replaces only an empty directory, such as a mount point that the mount task made.
+- name: Restore Agent Directory After A Failed Move
+  shell: |
+    if [ -d /home/frappe/agent.old ] && ! mountpoint -q /home/frappe/agent; then
+      mv -T /home/frappe/agent.old /home/frappe/agent && echo restored
+    fi
+  register: agent_restore
+  changed_when: "'restored' in agent_restore.stdout"
+
+- name: Start Agent
+  supervisorctl:
+    name: 'agent:'
+    state: started
