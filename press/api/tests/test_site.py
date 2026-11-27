@@ -52,6 +52,7 @@ class TestAPISite(FrappeTestCase):
 		self.team.save()
 
 		self.domain = frappe.db.get_single_value("Press Settings", "domain")
+		self.plan = create_test_plan("Site").name
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -359,7 +360,7 @@ class TestAPISite(FrappeTestCase):
 		bench = create_test_bench()
 		group = frappe.get_last_doc("Release Group", {"name": bench.group})
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=bench.name)
+		site = create_test_site(bench=bench.name, subscription_plan=self.plan)
 		site.reload()
 		site_details = get(site.name)
 		self.assertEqual(site_details["name"], site.name)
@@ -436,7 +437,7 @@ class TestAPISite(FrappeTestCase):
 
 		self._setup_site_update()
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=self.bench1.name)
+		site = create_test_site(bench=self.bench1.name, subscription_plan=self.plan)
 		out = check_for_updates(site.name)
 		self.assertEqual(out["update_available"], True)
 
@@ -447,7 +448,7 @@ class TestAPISite(FrappeTestCase):
 		bench = create_test_bench()
 
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=bench.name)
+		site = create_test_site(bench=bench.name, subscription_plan=self.plan)
 		out = check_for_updates(site.name)
 		self.assertEqual(out["update_available"], False)
 
@@ -461,7 +462,7 @@ class TestAPISite(FrappeTestCase):
 		bench = create_test_bench(group=group)
 
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=bench.name)
+		site = create_test_site(bench=bench.name, subscription_plan=self.plan)
 		out = installed_apps(site.name)
 		self.assertEqual(len(out), 2)
 		self.assertEqual(out[0]["name"], group.apps[0].source)
@@ -483,7 +484,7 @@ class TestAPISite(FrappeTestCase):
 		create_test_bench(group=group2, server=bench.server)  # app3 shouldn't show in available_apps
 
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=bench.name, apps=[app1.name])
+		site = create_test_site(bench=bench.name, apps=[app1.name], subscription_plan=self.plan)
 		out = available_apps(site.name)
 		self.assertEqual(len(out), 1)
 		self.assertEqual(out[0]["name"], group.apps[1].source)
@@ -542,7 +543,7 @@ class TestAPISite(FrappeTestCase):
 		bench = create_test_bench(group=group)
 
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=bench.name, apps=[app.name])
+		site = create_test_site(bench=bench.name, apps=[app.name], subscription_plan=self.plan)
 		with fake_agent_job("Install App on Site", "Success"):
 			install_app(site.name, app2.name)
 			mock_get_site_apps.return_value = [app.name, app2.name]
@@ -551,7 +552,7 @@ class TestAPISite(FrappeTestCase):
 		self.assertEqual(len(site.apps), 2)
 		self.assertEqual(site.status, "Active")
 
-		site = create_test_site(bench=bench.name, apps=[app.name])
+		site = create_test_site(bench=bench.name, apps=[app.name], subscription_plan=self.plan)
 		with fake_agent_job("Install App on Site", "Failure"):
 			install_app(site.name, app2.name)
 			mock_get_site_apps.return_value = [app.name]
@@ -570,7 +571,7 @@ class TestAPISite(FrappeTestCase):
 		bench = create_test_bench(group=group)
 
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=bench.name, apps=[app.name, app2.name])
+		site = create_test_site(bench=bench.name, apps=[app.name, app2.name], subscription_plan=self.plan)
 		with fake_agent_job("Uninstall App from Site", "Success"):
 			uninstall_app(site.name, app2.name)
 			mock_get_site_apps.return_value = [app.name]
@@ -580,7 +581,7 @@ class TestAPISite(FrappeTestCase):
 		self.assertEqual(len(site.apps), 1)
 		self.assertEqual(site.status, "Active")
 
-		site = create_test_site(bench=bench.name, apps=[app.name, app2.name])
+		site = create_test_site(bench=bench.name, apps=[app.name, app2.name], subscription_plan=self.plan)
 		with fake_agent_job("Uninstall App from Site", "Failure"):
 			uninstall_app(site.name, app2.name)
 			mock_get_site_apps.return_value = [app.name, app2.name]
@@ -601,7 +602,7 @@ class TestAPISite(FrappeTestCase):
 		bench = create_test_bench(group=group)
 
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=bench.name, apps=[app.name, app2.name])
+		site = create_test_site(bench=bench.name, apps=[app.name, app2.name], subscription_plan=self.plan)
 		database = create_test_remote_file(site.name).name
 		public = create_test_remote_file(site.name).name
 		private = create_test_remote_file(site.name).name
@@ -647,7 +648,7 @@ insights 0.8.3	    HEAD
 		bench = create_test_bench(group=group)
 
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=bench.name, apps=[app.name, app2.name])
+		site = create_test_site(bench=bench.name, apps=[app.name, app2.name], subscription_plan=self.plan)
 		database = create_test_remote_file(site.name).name
 		public = create_test_remote_file(site.name).name
 		private = create_test_remote_file(site.name).name
@@ -682,7 +683,7 @@ insights 0.8.3	    HEAD
 
 		bench = create_test_bench(group=create_test_release_group([create_test_app()]))
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=bench.name)
+		site = create_test_site(bench=bench.name, subscription_plan=self.plan)
 		database = create_test_remote_file(site.name).name
 		with fake_agent_job(
 			{
@@ -755,7 +756,7 @@ insights 0.8.3	    HEAD
 		bench = create_test_bench(group=group)
 
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=bench.name, apps=[app.name, app2.name])
+		site = create_test_site(bench=bench.name, apps=[app.name, app2.name], subscription_plan=self.plan)
 		database = create_test_remote_file(site.name).name
 		public = create_test_remote_file(site.name).name
 		private = create_test_remote_file(site.name).name
