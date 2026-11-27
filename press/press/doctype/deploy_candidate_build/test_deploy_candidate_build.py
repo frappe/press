@@ -58,6 +58,58 @@ class TestDeployCandidateBuild(FrappeTestCase):
 		self.x86_build_server = create_test_server(platform="x86_64", use_for_build=True)
 		self.arm_build_server = create_test_server(platform="arm64", use_for_build=True)
 
+	def test_legacy_release_group_build_server_does_not_override_platform_pool(self):
+		candidate = DeployCandidateBuild({"group": "test-group", "platform": "x86_64"})
+		with (
+			patch(
+				"press.press.doctype.deploy_candidate_build.deploy_candidate_build.frappe.get_value",
+				side_effect=["legacy-build-server", 0],
+			),
+			patch(
+				"press.press.doctype.deploy_candidate_build.deploy_candidate_build.get_intel_build_server_with_least_active_builds",
+				return_value="platform-build-server",
+			),
+		):
+			self.assertEqual(candidate._select_build_server(), "platform-build-server")
+
+	def test_explicit_build_only_server_is_selected_for_its_release_group(self):
+		candidate = DeployCandidateBuild({"group": "test-group", "platform": "x86_64"})
+		build_server = frappe._dict(
+			{"use_for_build": True, "status": "Active", "platform": "x86_64"}
+		)
+		with (
+			patch(
+				"press.press.doctype.deploy_candidate_build.deploy_candidate_build.frappe.get_value",
+				side_effect=["build-only-server", 1],
+			),
+			patch(
+				"press.press.doctype.deploy_candidate_build.deploy_candidate_build.frappe.get_doc",
+				return_value=build_server,
+			),
+		):
+			self.assertEqual(candidate._select_build_server(), "build-only-server")
+
+	def test_explicit_build_only_server_is_skipped_for_other_platform(self):
+		candidate = DeployCandidateBuild({"group": "test-group", "platform": "arm64"})
+		build_server = frappe._dict(
+			{"use_for_build": True, "status": "Active", "platform": "x86_64"}
+		)
+		with (
+			patch(
+				"press.press.doctype.deploy_candidate_build.deploy_candidate_build.frappe.get_value",
+				side_effect=["build-only-server", 1],
+			),
+			patch(
+				"press.press.doctype.deploy_candidate_build.deploy_candidate_build.frappe.get_doc",
+				return_value=build_server,
+			),
+			patch(
+				"press.press.doctype.deploy_candidate_build.deploy_candidate_build.get_arm_build_server_with_least_active_builds",
+				return_value="arm-build-server",
+			),
+		):
+			self.assertEqual(candidate._select_build_server(), "arm-build-server")
+
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc", new=Mock())
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
 	@patch.object(DeployCandidateBuild, "_process_run_build", new=Mock())
