@@ -102,7 +102,7 @@ export const fetchTeamRepositories = async () => {
 			const repositories = await fetchResource(
 				'press.api.github.installation_repositories',
 				{ installation: String(installation.id) },
-			)
+			).catch(() => [])
 			return (repositories || []).map((repository: any) => {
 				const name = `${installation.login}/${repository.name}`
 				return {

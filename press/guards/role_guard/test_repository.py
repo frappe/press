@@ -8,6 +8,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.api.github import branches, get_installation_url, installation_repositories, options
+from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.github_installation.github_installation import link_installations
 from press.press.doctype.github_installation.test_github_installation import (
 	make_installation,
@@ -138,6 +139,20 @@ class TestRoleRepositoryAccess(FrappeTestCase):
 
 		self.assertFalse(frappe.db.exists("App", "other_app"))
 
+	def test_release_group_rejects_a_team_source_of_a_repository_the_members_role_does_not_grant(self):
+		self.restrict_to("acme/app")
+		group = self.group_with_source("acme/other")
+
+		with self.as_member(), self.assertRaisesRegex(frappe.PermissionError, "repository acme/other"):
+			group.validate_new_app_repositories()
+
+	def test_release_group_allows_a_team_source_of_a_repository_the_members_role_grants(self):
+		self.restrict_to("acme/app")
+		group = self.group_with_source("acme/app")
+
+		with self.as_member():
+			group.validate_new_app_repositories()
+
 	def test_add_resource_stores_repository_with_its_installation_and_remove_resource_drops_it(self):
 		self.role.add_resource([{"document_type": REPOSITORY, "document_name": "acme/app"}])
 		self.assertEqual(
@@ -159,6 +174,23 @@ class TestRoleRepositoryAccess(FrappeTestCase):
 		self.role.all_repositories = 0
 		self.role.save()
 		self.role.add_resource([{"document_type": REPOSITORY, "document_name": repository}])
+
+	def group_with_source(self, repository: str):
+		"""An unsaved Release Group with a private App Source of the team; db_insert skips GitHub calls."""
+		source = frappe.get_doc(
+			{
+				"doctype": "App Source",
+				"app": create_test_app().name,
+				"repository_url": f"https://github.com/{repository}",
+				"branch": "main",
+				"team": self.team.name,
+				"github_installation_id": "11",
+			}
+		)
+		source.name = frappe.generate_hash(length=10)
+		source.db_insert()
+		apps = [{"app": source.app, "source": source.name}]
+		return frappe.get_doc({"doctype": "Release Group", "team": self.team.name, "apps": apps})
 
 	def installation_name(self, installation_id: str) -> str:
 		filters = {"team": self.team.name, "installation_id": installation_id}
