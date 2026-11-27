@@ -176,7 +176,7 @@ const permissionsResources = [
 	},
 	{
 		key: "all_release_groups",
-		label: "All Release Groups",
+		label: "All Benches",
 	},
 ];
 
