@@ -26,6 +26,12 @@ export default {
 						route: 'Site Performance Request Logs',
 					},
 					{
+						title: 'Nginx Log Report',
+						description:
+							'View the requests that reached the proxy, with their status codes. Use it to find errors that the site did not log.',
+						route: 'Site Performance Nginx Logs',
+					},
+					{
 						title: 'Process List Report',
 						description:
 							'Monitor active database processes, their status, and resource usage.',

@@ -279,6 +279,12 @@ export default {
 							import('../components/site/performance/SiteRequestLogs.vue'),
 					},
 					{
+						name: 'Site Performance Nginx Logs',
+						path: 'performance/nginx-log',
+						component: () =>
+							import('../components/site/performance/SiteNginxLogs.vue'),
+					},
+					{
 						name: 'Site Performance Deadlock Report',
 						path: 'performance/deadlock-report',
 						component: () =>

@@ -17,6 +17,7 @@ const tabs = [
 			'Site Performance Slow Queries',
 			'Site Performance Process List',
 			'Site Performance Request Logs',
+			'Site Performance Nginx Logs',
 			'Site Performance Deadlock Report',
 		],
 	},
