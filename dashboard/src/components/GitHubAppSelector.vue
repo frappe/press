@@ -32,6 +32,13 @@
 			<ErrorMessage :message="$resources.options.error?.messages?.[0]" />
 		</div>
 	</div>
+	<p
+		v-else-if="options.restricted && !options.installations.length"
+		class="pt-2 text-sm text-ink-gray-6"
+	>
+		Your role doesn't give you access to any GitHub repositories. Ask your team
+		owner or an admin to add them to your role.
+	</p>
 	<div v-else class="space-y-4">
 		<FormControl
 			type="combobox"
@@ -69,7 +76,11 @@
 				<FeatherIcon v-else name="user" class="mr-2 h-4 w-4" />
 			</template>
 		</FormControl>
-		<span class="text-sm text-ink-gray-6">
+		<span v-if="options.restricted" class="text-sm text-ink-gray-6">
+			Don't see your organization? Ask your team owner or an admin to add its
+			repositories to your role.
+		</span>
+		<span v-else class="text-sm text-ink-gray-6">
 			Don't see your organization?
 			<Link
 				href="#"
@@ -120,7 +131,14 @@
 			</template>
 		</FormControl>
 
-		<p v-if="selectedGithubUserData" class="!mt-2 text-sm text-ink-gray-6">
+		<p
+			v-if="selectedGithubUserData && options.restricted"
+			class="!mt-2 text-sm text-ink-gray-6"
+		>
+			Don't see your repository here? Ask your team owner or an admin to add it
+			to your role.
+		</p>
+		<p v-else-if="selectedGithubUserData" class="!mt-2 text-sm text-ink-gray-6">
 			Don't see your repository here?
 			<Link :href="selectedGithubUserData.url" class="font-medium">
 				Add from GitHub
