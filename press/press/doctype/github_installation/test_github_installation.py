@@ -15,6 +15,8 @@ from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.team.test_team import create_test_team
 
+MODULE = "press.press.doctype.github_installation.github_installation"
+
 
 def make_installation(installation_id: int, account_id: int, login: str) -> dict:
 	return {
@@ -185,7 +187,7 @@ class TestGitHubInstallation(FrappeTestCase):
 
 			get_access_token.assert_not_called()
 
-	def test_installation_repositories_fails_when_github_mints_no_token(self):
+	def test_installation_repositories_logs_and_fails_when_github_mints_no_token(self):
 		from press.api.github import installation_repositories
 
 		self._save_access_token(self.team.name, [make_installation(11, 101, "acme")])
@@ -194,13 +196,18 @@ class TestGitHubInstallation(FrappeTestCase):
 			patch("press.api.github.get_current_team", return_value=self.team.name),
 			patch("press.api.github.get_access_token", return_value=None),
 			patch("press.api.github.requests.get") as get,
+			patch(f"{MODULE}.log_error") as log_error,
+			patch(f"{MODULE}.frappe.db.commit") as commit,
 			self.assertRaisesRegex(frappe.ValidationError, "GitHub gave no access token for installation 11"),
 		):
 			installation_repositories("11")
 
 		get.assert_not_called()
+		self.assertEqual(log_error.call_args.args[0], "GitHub Installation Repositories Error")
+		self.assertEqual(log_error.call_args.kwargs["doc"].installation_id, "11")
+		commit.assert_called_once()
 
-	def test_installation_repositories_fails_with_githubs_message_when_listing_is_refused(self):
+	def test_installation_repositories_logs_and_fails_with_githubs_message_when_listing_is_refused(self):
 		from press.api.github import installation_repositories
 
 		self._save_access_token(self.team.name, [make_installation(11, 101, "acme")])
@@ -210,11 +217,16 @@ class TestGitHubInstallation(FrappeTestCase):
 			patch("press.api.github.get_current_team", return_value=self.team.name),
 			patch("press.api.github.get_access_token", return_value="installation-token"),
 			patch("press.api.github.requests.get", return_value=refused),
+			patch(f"{MODULE}.log_error") as log_error,
+			patch(f"{MODULE}.frappe.db.commit") as commit,
 			self.assertRaisesRegex(
 				frappe.ValidationError, "Error fetching repositories from GitHub: Resource not accessible"
 			),
 		):
 			installation_repositories("11")
+
+		log_error.assert_called_once()
+		commit.assert_called_once()
 
 	def test_installation_repositories_for_team_without_flag_uses_the_teams_user_token(self):
 		from press.api.github import installation_repositories
