@@ -54,20 +54,12 @@ class GitHubInstallation(Document):
 			}
 		)
 
-	def as_selector_option(self) -> dict | None:
-		"""None when GitHub refuses this installation, so the team's other installations still show."""
-		try:
-			repositories = self.fetch_repositories()
-		except Exception:
-			log_error("GitHub Installation Repositories Error", doc=self)
-			return None
-
+	def as_selector_option(self) -> dict:
 		return {
 			"id": self.installation_id,
 			"login": self.account_login,
 			"url": self.installation_url,
 			"image": self.account_avatar_url,
-			"repos": repositories,
 		}
 
 	def fetch_repositories(self) -> list[dict]:
@@ -84,12 +76,25 @@ def is_enabled_for_team(team: str) -> bool:
 
 
 def get_selector_options(team: str) -> dict:
+	"""Reads only the team's rows; repositories load per installation when the user picks one."""
 	rows = frappe.get_all("GitHub Installation", {"team": team, "enabled": 1}, ["*"])
-	options = [
+	installations = [
 		GitHubInstallation({**row, "doctype": "GitHub Installation"}).as_selector_option() for row in rows
 	]
-	installations = [option for option in options if option]
 	return {"authorized": bool(installations), "installations": installations}
+
+
+def get_selector_repositories(team: str, installation_id: str) -> list[dict]:
+	validate_team_can_use_installation(team, installation_id)
+	filters = {"team": team, "installation_id": str(installation_id), "enabled": 1}
+	name = frappe.db.get_value("GitHub Installation", filters)
+	installation = GitHubInstallation("GitHub Installation", name)
+	try:
+		return installation.fetch_repositories()
+	except Exception:
+		log_error("GitHub Installation Repositories Error", doc=installation)
+		frappe.db.commit()  # The request rolls back on the raise, which would drop the error log
+		raise
 
 
 def link_installations(team: str, user_token: str):
