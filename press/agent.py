@@ -1399,6 +1399,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			data=data,
 			reference_doctype="Deploy Candidate Build",
 			reference_name=reference_name,
+			deduplicate=False,
 		)
 
 	def run_patch_build(self, data: dict):
