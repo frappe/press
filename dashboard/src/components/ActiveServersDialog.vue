@@ -4,11 +4,12 @@
 			<div class="prose text-base">
 				Please drop the following active servers before disabling the account:
 				<ul class="pt-2">
-					<li
-						class="font-semibold"
-						v-for="server in $resources.activeServers.data"
-					>
-						{{ server.title }} - {{ server.name }}
+					<li v-for="server in $resources.activeServers.data">
+						<a
+							class="cursor-pointer font-semibold"
+							@click="openServer(server.name)"
+							>{{ server.title ? `${server.title} - ` : '' }}{{ server.name }}</a
+						>
 					</li>
 				</ul>
 			</div>
@@ -21,6 +22,8 @@
 	</Dialog>
 </template>
 <script>
+import router from '../router';
+
 export default {
 	name: 'ActiveServersDialog',
 	data() {
@@ -36,7 +39,12 @@ export default {
 	},
 	methods: {
 		redirectToServer() {
-			window.location = '/servers';
+			this.showDialog = false;
+			router.push({ name: 'Server List' });
+		},
+		openServer(name) {
+			this.showDialog = false;
+			router.push({ name: 'Server Detail', params: { name } });
 		},
 	},
 };
