@@ -37,6 +37,7 @@
 		"email_account",
 		"column_break_gokr",
 		"email_full_logo",
+		"email_logo",
 		"section_break_ncgc",
 		"email_subject",
 		"email_header_content",
@@ -178,6 +179,12 @@
 			"label": "Full Logo"
 		},
 		{
+			"description": "PNG, JPEG or GIF embedded in trial emails. Most mail clients do not show SVG.",
+			"fieldname": "email_logo",
+			"fieldtype": "Attach Image",
+			"label": "Email Logo"
+		},
+		{
 			"fieldname": "section_break_ncgc",
 			"fieldtype": "Section Break",
 			"label": "Signup E-mail"
@@ -251,7 +258,7 @@
 		}
 	],
 	"modified_by": "Administrator",
-	"modified": "2026-11-06 22:00:00.000000",
+	"modified": "2026-11-25 12:00:00.000000",
 	"module": "SaaS",
 	"name": "Product Trial",
 	"naming_rule": "Set by user",

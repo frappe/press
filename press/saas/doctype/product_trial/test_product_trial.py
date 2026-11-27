@@ -260,3 +260,56 @@ class TestProductTrial(FrappeTestCase):
 		archive_broken_standby_sites()
 
 		self.assertEqual(archive.call_count, 1)
+
+
+class TestProductTrialEmailLogos(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_svg_email_logo_is_rejected_because_mail_clients_do_not_show_it(self):
+		product_trial = create_test_product_trial(create_test_app("wiki", "Wiki"))
+		product_trial.email_logo = "/files/wiki.svg"
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Email Logo must be a PNG, JPEG or GIF image"):
+			product_trial.save()
+
+	def test_svg_full_logo_is_rejected_because_mail_clients_do_not_show_it(self):
+		product_trial = create_test_product_trial(create_test_app("wiki", "Wiki"))
+		product_trial.email_full_logo = "/files/wiki-full.SVG"
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Full Logo must be a PNG, JPEG or GIF image"):
+			product_trial.save()
+
+	def test_png_email_logo_and_svg_dashboard_logo_are_accepted(self):
+		product_trial = create_test_product_trial(create_test_app("wiki", "Wiki"))
+		product_trial.logo = "/files/wiki.svg"
+		product_trial.email_logo = "/files/wiki.png"
+		product_trial.save()
+
+		self.assertEqual(
+			frappe.db.get_value("Product Trial", product_trial.name, "email_logo"), "/files/wiki.png"
+		)
+
+	def test_unchanged_svg_full_logo_does_not_block_other_edits(self):
+		product_trial = create_test_product_trial(create_test_app("wiki", "Wiki"))
+		frappe.db.set_value("Product Trial", product_trial.name, "email_full_logo", "/files/wiki-full.svg")
+		product_trial.reload()
+		product_trial.title = "Wiki Trial"
+		product_trial.save()
+
+		self.assertEqual(frappe.db.get_value("Product Trial", product_trial.name, "title"), "Wiki Trial")
+
+	def test_email_logo_patch_copies_only_raster_logos(self):
+		from press.saas.doctype.product_trial.patches import set_email_logo
+
+		png_trial = create_test_product_trial(create_test_app("wiki", "Wiki"))
+		svg_trial = create_test_product_trial(create_test_app("hrms", "HR"))
+		frappe.db.set_value("Product Trial", png_trial.name, "logo", "/files/wiki.png")
+		frappe.db.set_value("Product Trial", svg_trial.name, "logo", "/files/hr.svg")
+
+		set_email_logo.execute()
+
+		self.assertEqual(
+			frappe.db.get_value("Product Trial", png_trial.name, "email_logo"), "/files/wiki.png"
+		)
+		self.assertIsNone(frappe.db.get_value("Product Trial", svg_trial.name, "email_logo"))
