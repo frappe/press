@@ -79,13 +79,19 @@
 </template>
 
 <script setup lang="ts">
+<<<<<<< HEAD
 import { Switch } from "frappe-ui";
 import { inject } from "vue";
+=======
+import { Switch } from 'frappe-ui'
+import { computed, inject } from 'vue'
+>>>>>>> e509cc9 (feat(roles): Add All Repositories toggle and repository resources)
 
 const team = inject("team");
 
 const props = withDefaults(
 	defineProps<{
+<<<<<<< HEAD
 		admin_access?: number;
 		all_servers?: number;
 		all_sites?: number;
@@ -102,12 +108,33 @@ const props = withDefaults(
 		allow_leads?: number;
 		allow_contribution?: number;
 		disabled?: boolean;
+=======
+		admin_access?: number
+		all_servers?: number
+		all_sites?: number
+		all_release_groups?: number
+		all_repositories?: number
+		allow_bench_creation?: number
+		allow_apps?: number
+		allow_billing?: number
+		allow_partner?: number
+		allow_server_creation?: number
+		allow_site_creation?: number
+		allow_webhook_configuration?: number
+		allow_dashboard?: number
+		allow_customer?: number
+		allow_leads?: number
+		allow_contribution?: number
+		allow_local_payment?: number
+		disabled?: boolean
+>>>>>>> e509cc9 (feat(roles): Add All Repositories toggle and repository resources)
 	}>(),
 	{
 		admin_access: 0,
 		all_servers: 0,
 		all_sites: 0,
 		all_release_groups: 0,
+		all_repositories: 1,
 		allow_bench_creation: 0,
 		allow_apps: 0,
 		allow_billing: 0,
@@ -165,7 +192,8 @@ const permissionsGeneral = [
 	},
 ];
 
-const permissionsResources = [
+// Repositories come from the team's GitHub Installations, which need the team flag
+const permissionsResources = computed(() => [
 	{
 		key: "all_servers",
 		label: "All Servers",
@@ -178,7 +206,14 @@ const permissionsResources = [
 		key: "all_release_groups",
 		label: "All Benches",
 	},
+<<<<<<< HEAD
 ];
+=======
+	...(team?.doc?.github_installations_enabled
+		? [{ key: 'all_repositories', label: 'All Repositories' }]
+		: []),
+])
+>>>>>>> e509cc9 (feat(roles): Add All Repositories toggle and repository resources)
 
 const permissionsPartner = [
 	{

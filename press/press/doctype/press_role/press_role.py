@@ -13,6 +13,9 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.team.team_members import PERMISSION_FIELDS
 from press.utils import get_current_team, is_admin_user, is_team_owner
 
+# Not a doctype: a role's GitHub repositories live in its `repositories` table
+REPOSITORY = "GitHub Repository"
+
 
 class PressRole(Document):
 	# begin: auto-generated types
@@ -23,11 +26,13 @@ class PressRole(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.press_role_repository.press_role_repository import PressRoleRepository
 		from press.press.doctype.press_role_resource.press_role_resource import PressRoleResource
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
 		admin_access: DF.Check
 		all_release_groups: DF.Check
+		all_repositories: DF.Check
 		all_servers: DF.Check
 		all_sites: DF.Check
 		allow_apps: DF.Check
@@ -41,6 +46,7 @@ class PressRole(Document):
 		allow_server_creation: DF.Check
 		allow_site_creation: DF.Check
 		allow_webhook_configuration: DF.Check
+		repositories: DF.Table[PressRoleRepository]
 		resources: DF.Table[PressRoleResource]
 		team: DF.Link
 		title: DF.Data
@@ -52,6 +58,7 @@ class PressRole(Document):
 		"all_servers",
 		"all_sites",
 		"all_release_groups",
+		"all_repositories",
 		"allow_apps",
 		"allow_bench_creation",
 		"allow_billing",
@@ -65,6 +72,7 @@ class PressRole(Document):
 		"allow_site_creation",
 		"allow_local_payment",
 		"allow_webhook_configuration",
+		"repositories",
 		"resources",
 		"team",
 		"title",
@@ -77,6 +85,7 @@ class PressRole(Document):
 	dashboard_editable_fields = (
 		"admin_access",
 		"all_release_groups",
+		"all_repositories",
 		"all_servers",
 		"all_sites",
 		"allow_apps",
@@ -158,38 +167,56 @@ class PressRole(Document):
 	@team_guard.only_admin()
 	def add_resource(self, resources: list[dict[str, str]]):
 		self.reload_for_update()
-		existing = {(row.document_type, row.document_name) for row in self.get("resources")}
 		for resource in resources:
-			document_type = resource["document_type"]
-			document_name = resource["document_name"]
-			if (document_type, document_name) in existing:
-				message = _("{0} already belongs to {1}").format(document_name, self.title)
-				frappe.throw(message, frappe.ValidationError)
-
-			document_team = frappe.db.get_value(document_type, document_name, "team")
-			if document_team is None:
-				frappe.throw(
-					_("Document {0} does not exist").format(document_name),
-					frappe.DoesNotExistError,
-				)
-			if document_team != self.team:
-				frappe.throw(
-					_("Document {0} is not associated with this team").format(document_name),
-					frappe.ValidationError,
-				)
-			self.append("resources", {"document_type": document_type, "document_name": document_name})
-			existing.add((document_type, document_name))
+			if resource["document_type"] == REPOSITORY:
+				self.append_repository(resource["document_name"])
+			else:
+				self.append_document(resource["document_type"], resource["document_name"])
 		self.save()
+
+	def append_document(self, document_type: str, document_name: str):
+		if self.get("resources", {"document_type": document_type, "document_name": document_name}):
+			message = _("{0} already belongs to {1}").format(document_name, self.title)
+			frappe.throw(message, frappe.ValidationError)
+
+		document_team = frappe.db.get_value(document_type, document_name, "team")
+		if document_team is None:
+			frappe.throw(
+				_("Document {0} does not exist").format(document_name),
+				frappe.DoesNotExistError,
+			)
+		if document_team != self.team:
+			frappe.throw(
+				_("Document {0} is not associated with this team").format(document_name),
+				frappe.ValidationError,
+			)
+		self.append("resources", {"document_type": document_type, "document_name": document_name})
+
+	def append_repository(self, repository: str):
+		"""`repository` is owner/name, in a GitHub account linked to the team."""
+		if self.get("repositories", {"repository": repository}):
+			message = _("{0} already belongs to {1}").format(repository, self.title)
+			frappe.throw(message, frappe.ValidationError)
+
+		owner = repository.partition("/")[0]
+		filters = {"team": self.team, "account_login": owner, "enabled": 1}
+		if not (installation := frappe.db.get_value("GitHub Installation", filters)):
+			message = _("Repository {0} isn't in a GitHub account connected to this team").format(repository)
+			frappe.throw(message, frappe.ValidationError)
+		self.append("repositories", {"repository": repository, "github_installation": installation})
 
 	@dashboard_whitelist()
 	@team_guard.only_admin()
 	def remove_resource(self, document_type: str, document_name: str):
 		self.reload_for_update()
-		resources = self.get("resources", {"document_type": document_type, "document_name": document_name})
-		if not resources:
+		if document_type == REPOSITORY:
+			rows = self.get("repositories", {"repository": document_name})
+		else:
+			rows = self.get("resources", {"document_type": document_type, "document_name": document_name})
+		if not rows:
 			message = _("Resource {0} does not belong to {1}").format(document_name, self.title)
 			frappe.throw(message, frappe.ValidationError)
-		self.remove(resources.pop())
+		self.remove(rows.pop())
 		self.save()
 
 	@dashboard_whitelist()
@@ -214,7 +241,9 @@ class PressRole(Document):
 		frappe.db.set_value("Account Request", {"press_role": self.name}, "press_role", None)
 
 	def get_doc(self, doc):
-		doc["resources"] = self.get_flat_resources(doc["resources"])
+		doc["resources"] = self.get_flat_resources(doc["resources"]) + self.get_flat_repositories(
+			doc.pop("repositories", [])
+		)
 		doc["users"] = self.get_flat_users(doc.get("users", []))
 
 	def get_flat_resources(self, resources):
@@ -238,6 +267,17 @@ class PressRole(Document):
 			row["document_title"] = titles.get(key, row["document_name"])
 			flat_resources.append(row)
 		return flat_resources
+
+	def get_flat_repositories(self, repositories):
+		"""Repositories show as resources, so the dashboard lists and removes them in one place."""
+		return [
+			{
+				"document_type": REPOSITORY,
+				"document_name": row.repository,
+				"document_title": row.repository.partition("/")[2],
+			}
+			for row in repositories
+		]
 
 	def get_flat_users(self, users):
 		usernames = [user.user for user in users]

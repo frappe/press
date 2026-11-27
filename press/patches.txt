@@ -179,5 +179,6 @@ press.patches.v0_8_0.set_cluster_backup_bucket
 press.patches.v0_8_0.remove_custom_docperms_of_press_doctypes
 press.patches.v0_8_0.set_missing_cluster_backup_buckets
 press.patches.v0_8_0.set_cluster_mariadb_monitor_password
+press.press.doctype.press_role.patches.set_all_repositories
 # run by hand after deploy, with the execute command
 # press.patches.v0_8_0.bump_v16_nightly_node_version_to_24_22_1

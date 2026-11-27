@@ -21,6 +21,7 @@ from .document import check as document_check
 from .document import has_user_permission
 from .marketplace import check as marketplace_check
 from .notification import check as notification_check
+from .repository import check as repository_check
 from .server_snapshot import check as server_snapshot_check
 from .site_backup import check as site_backup_check
 from .webhook import check as webhook_check
@@ -223,6 +224,19 @@ def is_plain_member() -> bool:
 def restricts(document_type: str) -> bool:
 	"""Check whether the Press Roles limit the current user to some documents of this type."""
 	return is_restricted() and not has_user_permission(document_type)
+
+
+def permitted_repositories() -> set[str] | None:
+	"""Lowercased owner/name of the GitHub repositories the Press Roles permit, or None when they permit all."""
+	if not is_restricted():
+		return None
+	return repository_check(base_query())
+
+
+def permits_repository(repository: str) -> bool:
+	"""Check whether the Press Roles permit the GitHub repository `owner/name`."""
+	permitted = permitted_repositories()
+	return permitted is None or repository.lower() in permitted
 
 
 def permitted_documents(document_type: str) -> list[str]:
