@@ -24,6 +24,7 @@ from frappe.utils.verified_command import get_secret
 
 from press.press.doctype.github_installation.github_installation import (
 	get_selector_options,
+	get_selector_repositories,
 	is_enabled_for_team,
 	validate_team_can_use_installation,
 )
@@ -200,6 +201,16 @@ def options():
 	}
 
 
+@frappe.whitelist()
+def installation_repositories(installation: str):
+	team = get_current_team()
+	if is_enabled_for_team(team):
+		return get_selector_repositories(team, installation)
+
+	token = frappe.db.get_value("Team", team, "github_access_token")
+	return repositories(installation, token)
+
+
 def get_safe_github_redirect_url(redirect_url: str | None = None) -> str:
 	if not redirect_url:
 		return DEFAULT_GITHUB_REDIRECT_PATH
@@ -295,7 +306,6 @@ def installations(token):
 				"login": installation["account"]["login"],
 				"url": installation["html_url"],
 				"image": installation["account"]["avatar_url"],
-				"repos": repositories(installation["id"], token),
 			}
 		)
 
