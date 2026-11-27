@@ -351,7 +351,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{ "create": 1, "role": "Press User", "write": 1 },
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 },
 		{
 			"create": 1,
 			"delete": 1,
