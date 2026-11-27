@@ -12,6 +12,8 @@ from github import Github
 
 from press.api.github import get_access_token
 
+GITHUB_COMPARE_FILE_LIMIT = 300
+
 
 class AppReleaseDifference(Document):
 	# begin: auto-generated types
@@ -111,6 +113,9 @@ class AppReleaseDifference(Document):
 
 
 def is_migrate_needed(files):
+	if is_file_list_truncated(files):
+		return True
+
 	patches_file_regex = re.compile(r"\w+/patches\.txt")
 	if any(map(patches_file_regex.match, files)):
 		return True
@@ -133,3 +138,8 @@ def is_migrate_needed(files):
 
 	json_regex = re.compile(r"\w+/\w+/\w+/(.+)/\1\.json")
 	return any(map(json_regex.match, files))
+
+
+def is_file_list_truncated(files):
+	# GitHub's compare API lists at most 300 files, so a full list may hide migrate-worthy changes
+	return len(files) >= GITHUB_COMPARE_FILE_LIMIT
