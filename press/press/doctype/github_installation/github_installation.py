@@ -163,6 +163,11 @@ def validate_team_can_use_installation(team: str, installation_id: str | int | N
 def validate_team_can_use_repository(team: str, installation_id: str | int | None, repository: str | None):
 	"""`repository` is owner/name or its GitHub URL. Press Roles can limit members to some repositories."""
 	validate_team_can_use_installation(team, installation_id)
+	validate_member_can_use_repository(team, installation_id, repository)
+
+
+def validate_member_can_use_repository(team: str, installation_id: str | int | None, repository: str | None):
+	"""Check only the Press Roles, for sources the team already has."""
 	if not installation_id or not is_enabled_for_team(team):
 		return
 
