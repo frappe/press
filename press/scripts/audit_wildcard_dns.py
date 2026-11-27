@@ -45,7 +45,7 @@ def fix(domain):
 					"ResourceRecordSet": {
 						"Name": f"*.{domain}",
 						"Type": "A",
-						"TTL": 600,
+						"TTL": 900,
 						"ResourceRecords": [{"Value": ip}],
 					},
 				}

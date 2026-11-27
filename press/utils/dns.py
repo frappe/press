@@ -86,7 +86,7 @@ def _change_dns_record(method: str, domain: RootDomain, proxy_server: str, recor
 		record = {
 			"Name": record_name,
 			"Type": "CNAME",
-			"TTL": 600,
+			"TTL": 900,
 			"ResourceRecords": [{"Value": proxy_server}],
 		}
 		if method == "DELETE" and record_name:

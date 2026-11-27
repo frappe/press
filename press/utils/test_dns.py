@@ -39,21 +39,21 @@ class TestChangeDNSRecord(FrappeTestCase):
 		with patch("press.utils.dns.boto3.client", return_value=client):
 			_change_dns_record(method, root_domain(), target, record_name="site.fc.dev")
 
-	def test_dns_record_upsert_sends_ttl_600(self):
+	def test_dns_record_upsert_sends_ttl_900(self):
 		client = route53_client()
 		self.change(client, "UPSERT", "n2.fc.dev")
-		self.assertEqual(sent_record(client)["TTL"], 600)
+		self.assertEqual(sent_record(client)["TTL"], 900)
 
 	def test_dns_record_delete_sends_the_ttl_route53_has_for_an_older_record(self):
-		client = route53_client([cname("n1.fc.dev", 900)])
+		client = route53_client([cname("n1.fc.dev", 600)])
 		self.change(client, "DELETE", "n1.fc.dev")
-		self.assertEqual(sent_record(client), cname("n1.fc.dev", 900))
+		self.assertEqual(sent_record(client), cname("n1.fc.dev", 600))
 
 	def test_dns_record_delete_does_not_take_a_record_pointing_at_another_proxy(self):
-		client = route53_client([cname("n3.fc.dev", 900)])
+		client = route53_client([cname("n3.fc.dev", 600)])
 		self.change(client, "DELETE", "n1.fc.dev")
 		self.assertEqual(sent_record(client)["ResourceRecords"], [{"Value": "n1.fc.dev"}])
-		self.assertEqual(sent_record(client)["TTL"], 600)
+		self.assertEqual(sent_record(client)["TTL"], 900)
 
 
 class TestCheckDNS(FrappeTestCase):
