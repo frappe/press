@@ -933,8 +933,8 @@ class ReleaseGroup(Document, TagHelpers):
 
 			# New Bench pulls the image and then copies its sites folder out with `cp -LR`,
 			# on the same volume. The sites copy is usually much smaller than the image,
-			# so 1.5x covers it without blocking deploys that 2x (the worst case) blocked.
-			required_size = 1.5 * last_image_size
+			# so 1.25x covers it without blocking deploys that 2x (the worst case) blocked.
+			required_size = 1.25 * last_image_size
 			if free_space < required_size:
 				self._try_server_size_increase_or_throw(
 					server, mountpoint, required_size=required_size - free_space
